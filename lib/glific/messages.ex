@@ -516,7 +516,13 @@ defmodule Glific.Messages do
       |> Templates.parse_buttons(is_translated, session_template.has_buttons)
       |> parse_template_vars(parameters)
 
+    parsed_body =
+      session_template
+      |> parse_template_vars(parameters)
+      |> Map.get(:body)
+
     %{
+      parsed_body: parsed_body,
       body: updated_template.body,
       type: updated_template.type,
       is_hsm: updated_template.is_hsm,
@@ -548,6 +554,10 @@ defmodule Glific.Messages do
       ) do
     contact_vars = %{"contact" => Contacts.get_contact_field_map(attrs.receiver_id)}
     parsed_params = Enum.map(parameters, &MessageVarParser.parse(&1, contact_vars))
+
+    ## As per the WhatsApp policy the params in an HSM can not have more then two
+    ## consecutive spaces and a new line.
+    parsed_params = Enum.map(parsed_params, &Enum.join(String.split(&1), " "))
 
     attrs = Map.put(attrs, :parameters, parsed_params)
 
@@ -909,7 +919,7 @@ defmodule Glific.Messages do
 
   # for all input contact ids that do not have messages attached to them
   # return a conversation data type with empty messages
-  # we dont add empty conversations when we have either include tags or include users set
+  # we don't add empty conversations when we have either include tags or include users set
   @spec add_empty_conversations([Conversation.t()], map()) :: [Conversation.t()]
   defp add_empty_conversations(results, %{filter: %{include_tags: _tags}}),
     do: results
@@ -942,7 +952,7 @@ defmodule Glific.Messages do
     # the difference is the empty contacts id list
     empty_contact_ids = contact_ids -- present_contact_ids
 
-    # lets load all contacts ids in one query, rather than multiople single queries
+    # lets load all contacts ids in one query, rather than multiple single queries
     empty_results =
       Contact
       |> where([c], c.id in ^empty_contact_ids)

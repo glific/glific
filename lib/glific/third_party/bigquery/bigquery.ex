@@ -15,6 +15,8 @@ defmodule Glific.BigQuery do
     Flows.FlowCount,
     Flows.FlowResult,
     Flows.FlowRevision,
+    Flows.MessageBroadcast,
+    Flows.MessageBroadcastContact,
     Jobs,
     Messages.Message,
     Messages.MessageConversation,
@@ -45,9 +47,12 @@ defmodule Glific.BigQuery do
     "flow_contexts" => :flow_context_schema,
     "profiles" => :profile_schema,
     "contact_histories" => :contact_history_schema,
-    "message_conversations" => :message_conversation_schema
+    "message_conversations" => :message_conversation_schema,
+    "message_broadcasts" => :message_broadcasts_schema,
+    "message_broadcast_contacts" => :message_broadcast_contacts_schema
   }
 
+  @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
   defp bigquery_tables(organization_id) do
     if organization_id == Saas.organization_id(),
       do: Map.put(@bigquery_tables, "stats_all", :stats_all_schema),
@@ -59,30 +64,25 @@ defmodule Glific.BigQuery do
   """
   @spec sync_schema_with_bigquery(non_neg_integer) :: {:ok, any} | {:error, any}
   def sync_schema_with_bigquery(organization_id) do
-    fetch_bigquery_credentials(organization_id)
-    |> case do
-      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
-        case create_dataset(conn, project_id, dataset_id) do
-          {:ok, _} ->
-            do_refresh_the_schema(organization_id, %{
-              conn: conn,
-              dataset_id: dataset_id,
-              project_id: project_id
-            })
+    with {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} <-
+           fetch_bigquery_credentials(organization_id) do
+      case create_dataset(conn, project_id, dataset_id) do
+        {:ok, _} ->
+          do_refresh_the_schema(organization_id, %{
+            conn: conn,
+            dataset_id: dataset_id,
+            project_id: project_id
+          })
 
-          {:error, response} ->
-            handle_sync_errors(response, organization_id, %{
-              conn: conn,
-              dataset_id: dataset_id,
-              project_id: project_id
-            })
-        end
+          {:ok, "Refreshing Bigquery Schema"}
 
-      {:error, error} ->
-        {:error, error}
-
-      _ ->
-        {:ok, "bigquery is not active"}
+        {:error, response} ->
+          handle_sync_errors(response, organization_id, %{
+            conn: conn,
+            dataset_id: dataset_id,
+            project_id: project_id
+          })
+      end
     end
   end
 
@@ -95,7 +95,7 @@ defmodule Glific.BigQuery do
     organization.services["bigquery"]
     |> case do
       nil ->
-        nil
+        {:ok, "BigQuery is not active"}
 
       credentials ->
         decode_bigquery_credential(credentials, org_contact, organization_id)
@@ -117,14 +117,14 @@ defmodule Glific.BigQuery do
         token = Partners.get_goth_token(organization_id, "bigquery")
 
         if is_nil(token) do
-          token
+          {:error, "Error fetching token with Service Account JSON"}
         else
           conn = Connection.new(token.token)
           {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
         end
 
-      {:error, error} ->
-        {:error, error}
+      {:error, _error} ->
+        {:error, "Invalid Service Account JSON"}
     end
   end
 
@@ -140,10 +140,11 @@ defmodule Glific.BigQuery do
     "flow_contexts" => Flows.FlowContext,
     "profiles" => Profile,
     "contact_histories" => ContactHistory,
-    "message_conversations" => MessageConversation
+    "message_conversations" => MessageConversation,
+    "message_broadcasts" => MessageBroadcast,
+    "message_broadcast_contacts" => MessageBroadcastContact
   }
 
-  # @spec get_table_struct(String.t()) :: Message.t() | Contact.t() | FlowResult.t() | FlowRevision.t()
   @doc false
   @spec get_table_struct(String.t()) :: atom()
   def get_table_struct(table_name),
@@ -206,19 +207,19 @@ defmodule Glific.BigQuery do
       {:ok, data} ->
         error = data["error"]
 
-        if error["status"] == "ALREADY_EXISTS" do
-          do_refresh_the_schema(organization_id, attrs)
+        case error["status"] do
+          "ALREADY_EXISTS" ->
+            do_refresh_the_schema(organization_id, attrs)
+            {:ok, "Refreshing Bigquery Schema"}
+
+          "PERMISSION_DENIED" ->
+            {:error,
+             "Account does not have sufficient permissions to create dataset to BigQuery."}
+
+          _ ->
+            {:error,
+             "Account deactivated with error code #{error["code"]} status #{error["status"]}"}
         end
-
-        if error["status"] == "PERMISSION_DENIED",
-          do:
-            Partners.disable_credential(
-              organization_id,
-              "bigquery",
-              "Account does not have sufficient permissions to create data set to BigQuery."
-            )
-
-        {:ok, data}
 
       _ ->
         raise("Error while sync data with bigquery. #{inspect(response)}")

@@ -49,7 +49,7 @@ defmodule Glific.Partners do
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
     |> Enum.reject(fn provider ->
-      Enum.member?(["goth", "chatbase"], provider.shortcode)
+      Enum.member?(["goth"], provider.shortcode)
     end)
   end
 
@@ -607,7 +607,7 @@ defmodule Glific.Partners do
       FunWithFlags.enabled?(:flow_uuid_display, for: %{organization_id: id}) ->
         true
 
-      # the below 2 conds are just for testing and prototyping purposes
+      # the below 2 conditions are just for testing and prototyping purposes
       # we'll get rid of them when we start using this actively
       Application.get_env(:glific, :environment) == :prod && id == 2 ->
         true
@@ -771,7 +771,7 @@ defmodule Glific.Partners do
   The handler is expected to take the organization id as its first argument. The second argument
   is expected to be a map of arguments passed in by the cron job, and can be ignored if not used
 
-  The list is a restricted list of organizations, so we dont repeatedly do work. The convention is as
+  The list is a restricted list of organizations, so we don't repeatedly do work. The convention is as
   follows:
 
   list == nil - the action should not be performed for any organization
@@ -922,12 +922,20 @@ defmodule Glific.Partners do
   @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
           {:ok, any} | {:error, any}
   defp credential_update_callback(organization, credential, "bigquery") do
+    Caches.remove(organization.id, [{:provider_token, "bigquery"}])
+
     case BigQuery.sync_schema_with_bigquery(organization.id) do
       {:ok, _callback} ->
         {:ok, credential}
 
-      {:error, _error} ->
-        {:error, "Invalid Credentials"}
+      {:error, error} ->
+        Partners.disable_credential(
+          organization.id,
+          "bigquery",
+          error
+        )
+
+        {:error, error}
     end
   end
 
@@ -999,7 +1007,7 @@ defmodule Glific.Partners do
   """
   @spec get_goth_token(non_neg_integer, String.t()) :: nil | Goth.Token.t()
   def get_goth_token(organization_id, provider_shortcode) do
-    key = {:provider_shortcode, provider_shortcode}
+    key = {:provider_token, provider_shortcode}
     organization = organization(organization_id)
 
     if is_nil(organization.services[provider_shortcode]) do
@@ -1011,6 +1019,10 @@ defmodule Glific.Partners do
           res
 
         _ ->
+          Logger.error(
+            "Could not fetch token for service #{provider_shortcode} for org id: #{organization_id}"
+          )
+
           nil
       end
     end
@@ -1018,7 +1030,7 @@ defmodule Glific.Partners do
 
   @spec load_goth_token(tuple()) :: tuple()
   defp load_goth_token(cache_key) do
-    {organization_id, {:provider_shortcode, provider_shortcode}} = cache_key
+    {organization_id, {:provider_token, provider_shortcode}} = cache_key
 
     organization = organization(organization_id)
     credentials = organization.services[provider_shortcode] |> config()
@@ -1030,7 +1042,7 @@ defmodule Glific.Partners do
       |> case do
         {:ok, token} ->
           opts = [ttl: :timer.seconds(token.expires - System.system_time(:second) - 60)]
-          Caches.set(organization_id, {:provider_shortcode, provider_shortcode}, token, opts)
+          Caches.set(organization_id, {:provider_token, provider_shortcode}, token, opts)
           {:ignore, token}
 
         {:error, error} ->
@@ -1277,7 +1289,7 @@ defmodule Glific.Partners do
           Ecto.Queryable.t()
   defp filter_organization_data_with(query, filter) do
     query = Repo.filter_with(query, filter)
-    # these filters are specfic to webhook logs only.
+    # these filters are specific to webhook logs only.
     # We might want to move them in the repo in the future.
     Enum.reduce(filter, query, fn
       {:key, key}, query ->

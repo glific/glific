@@ -26,6 +26,10 @@
         "config": { "cases": {} },
         "position": { "top": 40, "left": 600 }
       },
+      "5b3f4a08-b7f5-4a81-991d-ff63cb0f3964": {
+        "type": "execute_actions",
+        "position": { "top": 820, "left": 640 }
+      },
       "667bff37-fb11-4ce6-a196-fa11b286233c": {
         "type": "execute_actions",
         "position": { "top": 280, "left": 420 }
@@ -47,6 +51,11 @@
       "a01ab1d6-49b8-4d88-90f2-0cb6cff26a93": {
         "type": "execute_actions",
         "position": { "top": 520, "left": 80 }
+      },
+      "f5539329-71de-49ef-88ec-df0b37b84582": {
+        "type": "split_by_expression",
+        "config": { "cases": {} },
+        "position": { "top": 680, "left": 920 }
       },
       "f8407d51-749a-4686-906e-b8a96ff1a0f7": {
         "type": "execute_actions",
@@ -295,7 +304,7 @@
         },
         {
           "uuid": "e09877b3-7477-433e-9b7e-4bcbb6445014",
-          "destination_uuid": null
+          "destination_uuid": "f5539329-71de-49ef-88ec-df0b37b84582"
         }
       ],
       "router": {
@@ -414,6 +423,74 @@
               "uuid": "this is a bad uuid"
             }
           ]
+        }
+      ]
+    },
+    {
+      "uuid": "f5539329-71de-49ef-88ec-df0b37b84582",
+      "exits": [
+        {
+          "uuid": "5e8cbd47-84f9-4eca-9f89-62cf0958ab9a",
+          "destination_uuid": "5b3f4a08-b7f5-4a81-991d-ff63cb0f3964"
+        },
+        { "uuid": "dc6108f6-d93b-4218-83ab-0885340dd5e8" },
+        { "uuid": "dc5dcf7a-5da2-400b-a2e8-e0b0f352ad50" }
+      ],
+      "router": {
+        "type": "switch",
+        "cases": [
+          {
+            "type": "has_any_word",
+            "uuid": "071a20ea-bdd6-4982-b275-d64bf300b965",
+            "arguments": ["help"],
+            "category_uuid": "0d61ec76-ec05-4ae2-afbf-a2e55851847b"
+          },
+          {
+            "type": "has_number",
+            "uuid": "88330ecd-163a-4cbe-b57a-1fc82bb8c267",
+            "arguments": [],
+            "category_uuid": "06df9f04-4a0a-4491-b15a-1f286a189849"
+          }
+        ],
+        "operand": "@results.flow_keyword.input",
+        "categories": [
+          {
+            "name": "Hello",
+            "uuid": "0d61ec76-ec05-4ae2-afbf-a2e55851847b",
+            "exit_uuid": "5e8cbd47-84f9-4eca-9f89-62cf0958ab9a"
+          },
+          {
+            "name": "Has Number",
+            "uuid": "06df9f04-4a0a-4491-b15a-1f286a189849",
+            "exit_uuid": "dc6108f6-d93b-4218-83ab-0885340dd5e8"
+          },
+          {
+            "name": "Other",
+            "uuid": "12c26f90-63a3-46e6-ac04-efe59a719513",
+            "exit_uuid": "dc5dcf7a-5da2-400b-a2e8-e0b0f352ad50"
+          }
+        ],
+        "default_category_uuid": "12c26f90-63a3-46e6-ac04-efe59a719513"
+      },
+      "actions": []
+    },
+    {
+      "uuid": "5b3f4a08-b7f5-4a81-991d-ff63cb0f3964",
+      "exits": [
+        {
+          "uuid": "d58c89a4-dd28-4a1c-9bd9-7eb7338c3c61",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "text": "Contact joined using help keyword",
+          "type": "send_msg",
+          "uuid": "517da1a9-91b5-4d4a-98c1-580bab63b256",
+          "labels": [],
+          "all_urns": false,
+          "attachments": [],
+          "quick_replies": []
         }
       ]
     }

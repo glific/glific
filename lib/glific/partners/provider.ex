@@ -48,7 +48,7 @@ defmodule Glific.Partners.Provider do
   end
 
   @doc """
-  Standard changeset pattern we use for all datat types
+  Standard changeset pattern we use for all data types
   """
   @spec changeset(Provider.t(), map()) :: Ecto.Changeset.t()
   def changeset(provider, attrs) do

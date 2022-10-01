@@ -88,7 +88,7 @@ defmodule Glific.GCS do
   end
 
   @doc """
-  Generate a sigend url for a private file
+  Generate a signed URL for a private file
   """
   @spec get_signed_url(String.t(), non_neg_integer, keyword) :: String.t()
   def get_signed_url(file_name, organization_id, opts \\ []) do

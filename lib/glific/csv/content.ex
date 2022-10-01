@@ -18,7 +18,7 @@ defmodule Glific.CSV.Content do
     # The level of this menu item, helps us with layout
     field :level, :integer
 
-    # the position of this menu item, when we are stiching the higher level
+    # the position of this menu item, when we are stitching the higher level
     # content together
     field :position, :integer
 
