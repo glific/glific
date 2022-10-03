@@ -75,7 +75,9 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     %{
       interactive_content: interactive_content,
       msg: message.body,
-      interactive_type: message.type
+      interactive_type: message.type,
+      media_url: get_in(attrs, [:interactive_content, "content", "url"]),
+      interactive_media_type: get_in(attrs, [:interactive_content, "content", "type"])
     }
     |> send_message(message, attrs)
   end
