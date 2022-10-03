@@ -90,15 +90,9 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
     end
   end
 
-  @interactive_media_type %{
-    "image" => "IMAGE",
-    "video" => "VIDEO"
-  }
-
+  @spec check_for_media_interactive(map(), map()) :: map()
   defp check_for_media_interactive(payload, %{"interactive_media_type" => media_type} = message)
        when media_type in ["image", "video"] do
-    media_type = Map.get(@interactive_media_type, media_type)
-
     payload
     |> Map.merge(%{
       "isTemplate" => "false",
