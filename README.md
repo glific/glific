@@ -344,3 +344,9 @@ to update your codebase from the glific repository.
 ## Chat with us
 
 - [Chat on Discord](https://discord.gg/me6NCMu)
+
+## Funders
+
+Thanks to our generous funders over the past few years who have funded this project:
+
+[![Foss United](http://fossunited.org/files/github-badge.svg)](https://fossunited.org/)
