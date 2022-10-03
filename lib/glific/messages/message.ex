@@ -128,7 +128,7 @@ defmodule Glific.Messages.Message do
     field(:publish?, :boolean, default: true, virtual: true)
 
     # adding an extra virtual field so we can hang dynamic data to pass during processing of
-    # agents and flows. Specifically used for now during dialog flow
+    # agents and flows. Specifically used for now during Dialogflow
     field(:extra, :map, default: %{intent: nil}, virtual: true)
 
     field(:is_hsm, :boolean, default: false)
