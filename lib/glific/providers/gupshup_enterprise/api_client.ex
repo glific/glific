@@ -80,7 +80,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
         "interactive_type" => interactive_type
       }
       |> Map.merge(@common_params)
-      |> Map.merge(@default_send_interactive_template_params)
+      |> check_for_media_interactive(message)
       |> then(
         &gupshup_post(@gupshup_enterprise_url, &1, %{
           "userid" => credentials.two_way_user_id,
@@ -89,6 +89,22 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
       )
     end
   end
+
+  @spec check_for_media_interactive(map(), map()) :: map()
+  defp check_for_media_interactive(payload, %{"interactive_media_type" => media_type} = message)
+       when media_type in ["image", "video"] do
+    payload
+    |> Map.merge(%{
+      "isTemplate" => "false",
+      "method" => "SendMediaMessage",
+      "msg_type" => media_type,
+      "media_url" => message["media_url"],
+      "caption" => message["msg"]
+    })
+  end
+
+  defp check_for_media_interactive(payload, _message),
+    do: Map.merge(payload, @default_send_interactive_template_params)
 
   @doc """
   Sending HSM template to contact

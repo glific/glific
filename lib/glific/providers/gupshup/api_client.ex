@@ -120,7 +120,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   end
 
   @doc """
-  Build the gupshup user list url
+  Build the Gupshup user list url
   """
   @spec users_get(String.t(), String.t()) :: Tesla.Env.result() | {:error, String.t()}
   def users_get(api_key, app_name) do

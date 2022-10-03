@@ -1,6 +1,6 @@
 defmodule GlificWeb.Resolvers.Messages do
   @moduledoc """
-  Message Resolver which sits between the GraphQL schema and Glific Message Context API. This layer basically stiches together
+  Message Resolver which sits between the GraphQL schema and Glific Message Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
 
@@ -156,7 +156,7 @@ defmodule GlificWeb.Resolvers.Messages do
 
   # Message Media Resolver which sits between the GraphQL schema and Glific
   # Message Context API.
-  # This layer basically stiches together
+  # This layer basically stitches together
   # one or more calls to resolve the incoming queries.
 
   @doc """
@@ -225,7 +225,7 @@ defmodule GlificWeb.Resolvers.Messages do
     end
   end
 
-  ## Subcriptions
+  ## Subscriptions
 
   @doc false
   @spec publish_message(map(), any(), any()) ::
