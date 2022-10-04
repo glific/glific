@@ -59,6 +59,19 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
 
   @spec process_gupshup(non_neg_integer(), map(), Message.t(), map()) ::
           {:ok, Message.t()} | {:error, String.t()}
+  defp process_gupshup(
+         org_id,
+         payload,
+         %{"is_hsm" => true} = message,
+         %{"template_type" => template_type} = attrs
+       )
+       when template_type in ["image", "video"] do
+    attrs = Jason.decode!(payload["message"]) |> Map.put("send_to", payload["send_to"])
+
+    ApiClient.send_media_template(org_id, attrs)
+    |> ResponseHandler.handle_response(message)
+  end
+
   defp process_gupshup(org_id, payload, %{"is_hsm" => true} = message, attrs) do
     body = Jason.decode!(payload["message"])
 

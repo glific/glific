@@ -129,6 +129,24 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
     end
   end
 
+  @doc """
+  Sending Media HSM template to contact
+  """
+  @spec send_media_template(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
+  def send_media_template(org_id, attrs) do
+    with {:ok, credentials} <- get_credentials(org_id) do
+      attrs
+      |> Map.merge(@common_params)
+      |> Map.merge(%{"method" => "SendMediaMessage"})
+      |> then(
+        &gupshup_post(@gupshup_enterprise_url, &1, %{
+          "userid" => credentials.hsm_user_id,
+          "password" => credentials.hsm_password
+        })
+      )
+    end
+  end
+
   @spec is_button_template(map(), boolean()) :: map()
   defp is_button_template(attrs, false), do: attrs
   defp is_button_template(attrs, true), do: Map.merge(attrs, @button_template_params)
