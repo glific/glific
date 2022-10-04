@@ -72,12 +72,16 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   def send_interactive(message, attrs) do
     interactive_content = parse_interactive_message(attrs.interactive_content, message.type)
 
+    interactive_media_type =
+      get_in(attrs, [:interactive_content, "content", "type"])
+      |> then(&if &1 == "file", do: "document", else: &1)
+
     %{
       interactive_content: interactive_content,
-      msg: message.body,
+      msg: get_in(attrs, [:interactive_content, "content", "text"]),
       interactive_type: message.type,
       media_url: get_in(attrs, [:interactive_content, "content", "url"]),
-      interactive_media_type: get_in(attrs, [:interactive_content, "content", "type"])
+      interactive_media_type: interactive_media_type
     }
     |> send_message(message, attrs)
   end
