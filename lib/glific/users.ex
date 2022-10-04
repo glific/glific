@@ -17,6 +17,8 @@ defmodule Glific.Users do
     Users.User
   }
 
+  require Logger
+
   @doc """
   Returns the list of filtered users.
 
@@ -86,7 +88,7 @@ defmodule Glific.Users do
   end
 
   # special type of comparison to allow for nils, we permit comparing with
-  # nil (and treat it as not being updated), since we dont update these values
+  # nil (and treat it as not being updated), since we don't update these values
   @spec is_updated?(any, any) :: boolean
   defp is_updated?(_original, nil = _new), do: false
   defp is_updated?(original, new), do: original != new
@@ -190,6 +192,12 @@ defmodule Glific.Users do
   @spec delete_user(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def delete_user(%User{} = user) do
     # lets invalidate the tokens and socket for this user
+    current_user = Repo.get_current_user()
+
+    Logger.info(
+      "Deleting user from org_id: #{user.organization_id} user_id: #{user.id} name: #{user.name} phone: #{user.phone} by #{current_user.name}"
+    )
+
     GlificWeb.APIAuthPlug.delete_all_user_sessions(@pow_config, user)
 
     Repo.delete(user)

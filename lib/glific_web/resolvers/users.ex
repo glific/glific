@@ -1,6 +1,6 @@
 defmodule GlificWeb.Resolvers.Users do
   @moduledoc """
-  User Resolver which sits between the GraphQL schema and Glific User Context API. This layer basically stiches together
+  User Resolver which sits between the GraphQL schema and Glific User Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
 
