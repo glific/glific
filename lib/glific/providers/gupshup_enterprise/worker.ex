@@ -66,7 +66,10 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
          %{"template_type" => template_type} = attrs
        )
        when template_type in ["image", "video"] do
-    attrs = Jason.decode!(payload["message"]) |> Map.put("send_to", payload["send_to"])
+    attrs =
+      Jason.decode!(payload["message"])
+      |> Map.put("send_to", payload["send_to"])
+      |> Map.put("has_buttons", attrs["has_buttons"])
 
     ApiClient.send_media_template(org_id, attrs)
     |> ResponseHandler.handle_response(message)

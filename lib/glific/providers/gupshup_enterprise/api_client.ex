@@ -138,6 +138,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
       attrs
       |> Map.merge(@common_params)
       |> Map.merge(%{"method" => "SendMediaMessage"})
+      |> is_button_template(attrs["has_buttons"])
       |> then(
         &gupshup_post(@gupshup_enterprise_url, &1, %{
           "userid" => credentials.hsm_user_id,
