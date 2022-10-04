@@ -65,7 +65,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
          %{"is_hsm" => true} = message,
          %{"template_type" => template_type} = attrs
        )
-       when template_type in ["image", "video"] do
+       when template_type in ["image", "video", "document"] do
     attrs =
       Jason.decode!(payload["message"])
       |> Map.put("send_to", payload["send_to"])
