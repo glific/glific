@@ -353,4 +353,4 @@ Thanks to our generous funders over the past few years who have funded this proj
 - [The Agency Fund](https://agency.fund/)
 - [Cisco](https://www.cisco.com/c/en/us/about/csr.html)
 - [Omidyar Network India](https://www.omidyarnetwork.in)
-- [FossUnited](https://fossunited.org/)
+- [FOSS United](https://fossunited.org/)
