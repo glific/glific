@@ -148,8 +148,7 @@ defmodule Glific.Contacts.Import do
         {:ok, %{message: "All contacts added"}}
 
       _ ->
-        {:error,
-         %{message: "All contacts could not be opted in due to some errors", details: errors}}
+        {:error, %{message: errors}}
     end
   end
 
@@ -215,10 +214,10 @@ defmodule Glific.Contacts.Import do
   defp add_contact_to_groups(collection, contact) do
     collection
     |> Groups.load_group_by_label()
-    |> Enum.each(fn group_id ->
+    |> Enum.each(fn group ->
       Groups.create_contact_group(%{
         contact_id: contact.id,
-        group_id: group_id,
+        group_id: group.id,
         organization_id: contact.organization_id
       })
     end)

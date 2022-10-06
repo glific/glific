@@ -316,9 +316,11 @@ defmodule Glific.Groups do
   def load_group_by_label(group_label) do
     group_label
     |> Enum.reduce([], fn label, acc ->
-      [from(g in Group, where: g.label == ^label, select: %{id: g.id}) |> Repo.one() | acc]
+      case Repo.get_by(Group, %{label: label}) do
+        nil -> "Sorry, some collections mentioned in the sheet doesn't exit."
+        group -> [group | acc]
+      end
     end)
-    |> Enum.flat_map(fn %{id: res} -> [res] end)
   end
 
   @doc """
