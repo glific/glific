@@ -158,10 +158,7 @@ defmodule Glific.Messages do
 
     %Message{}
     |> Message.changeset(attrs)
-    |> Repo.insert(
-      returning: [:message_number, :session_uuid, :context_message_id],
-      timeout: 6_000
-    )
+    |> Repo.insert(returning: [:message_number, :session_uuid, :context_message_id])
   end
 
   @spec put_contact_id(map()) :: map()
