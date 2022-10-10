@@ -1,6 +1,6 @@
 defmodule Glific.Taggers.Status do
   @moduledoc """
-  This module will be responsible for all the contact and message status tagging. Like new contacttagg and unread
+  This module will be responsible for all the contact and message status tagging. Like new contact tag and unread
   """
 
   @doc false

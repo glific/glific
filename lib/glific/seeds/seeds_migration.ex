@@ -34,7 +34,7 @@ defmodule Glific.Seeds.SeedsMigration do
 
   One function to rule them all. This function is invoked manually by a glific developer
   to add data from the DB. This seems the cleanest way to do such things. We use phases to
-  seperate different migrations
+  separate different migrations
   """
   @spec migrate_data(atom(), Organization.t() | nil) :: :ok
   def migrate_data(phase, organization \\ nil) do
