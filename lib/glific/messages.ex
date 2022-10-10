@@ -160,7 +160,7 @@ defmodule Glific.Messages do
     |> Message.changeset(attrs)
     |> Repo.insert(
       returning: [:message_number, :session_uuid, :context_message_id],
-      timeout: 6_000
+      timeout: 45_000
     )
   end
 
