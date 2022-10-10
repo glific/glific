@@ -730,7 +730,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         message_broadcast_id: row.message_broadcast_id,
         bsp_status: row.bsp_status,
         group_id: row.group_id,
-        group_name: row.group.label
+        group_name: if(!is_nil(row.group), do: row.group.label)
       }
       |> Map.merge(message_media_info(row.media))
       |> Map.merge(message_template_info(row))
