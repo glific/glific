@@ -98,7 +98,6 @@ defmodule Glific.Contacts.Import do
   """
   @spec import_contacts(integer, map(), [{atom(), String.t()}]) :: tuple()
   def import_contacts(organization_id, user, opts \\ []) do
-    IO.inspect(organization_id)
     if length(opts) > 1 do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
@@ -142,7 +141,10 @@ defmodule Glific.Contacts.Import do
       )
       |> Enum.map(fn {:ok, result} -> result end)
 
-    errors = result |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end) |> Enum.map(fn %{error: error} -> error end)
+    errors =
+      result
+      |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
+      |> Enum.map(fn %{error: error} -> error end)
 
     case errors do
       [] ->
@@ -172,7 +174,6 @@ defmodule Glific.Contacts.Import do
   end
 
   defp process_data(user, contact_attrs, _attrs) do
-    IO.inspect(contact_attrs)
     if user.roles == [:glific_admin] do
       {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
 
@@ -216,10 +217,10 @@ defmodule Glific.Contacts.Import do
   defp add_contact_to_groups(collection, contact) do
     collection
     |> Groups.load_group_by_label()
-    |> Enum.each(fn group_id ->
+    |> Enum.each(fn group ->
       Groups.create_contact_group(%{
         contact_id: contact.id,
-        group_id: group_id,
+        group_id: group.id,
         organization_id: contact.organization_id
       })
     end)
