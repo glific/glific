@@ -141,14 +141,14 @@ defmodule Glific.Contacts.Import do
       )
       |> Enum.map(fn {:ok, result} -> result end)
 
-    errors = result |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
+    errors = result |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end) |> Enum.map(fn %{error: error} -> error end)
 
     case errors do
       [] ->
         {:ok, %{message: "All contacts added"}}
 
       _ ->
-        {:error, %{message: errors}}
+        {:error, errors}
     end
   end
 
@@ -214,10 +214,10 @@ defmodule Glific.Contacts.Import do
   defp add_contact_to_groups(collection, contact) do
     collection
     |> Groups.load_group_by_label()
-    |> Enum.each(fn group ->
+    |> Enum.each(fn group_id ->
       Groups.create_contact_group(%{
         contact_id: contact.id,
-        group_id: group.id,
+        group_id: group_id,
         organization_id: contact.organization_id
       })
     end)
