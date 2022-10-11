@@ -83,7 +83,7 @@ defmodule GlificWeb.Resolvers.Contacts do
         %{context: %{current_user: user}}
       ) do
     IO.inspect(params)
-    Glific.parse_maybe_integer(params["id"])
+    Glific.parse_maybe_integer(params.id)
     |> elem(1)
     |> Import.import_contacts(user, [{type, data}])
   end

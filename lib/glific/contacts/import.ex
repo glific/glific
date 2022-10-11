@@ -98,6 +98,7 @@ defmodule Glific.Contacts.Import do
   """
   @spec import_contacts(integer, map(), [{atom(), String.t()}]) :: tuple()
   def import_contacts(organization_id, user, opts \\ []) do
+    IO.inspect(organization_id)
     if length(opts) > 1 do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
