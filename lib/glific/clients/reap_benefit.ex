@@ -70,7 +70,8 @@ defmodule Glific.Clients.ReapBenefit do
         "email" => fields["contact"]["phone"] <> "@solveninja.org ",
         "first_name" => fields["contact"]["name"],
         "mobile_no" => fields["contact"]["phone"],
-        "username" => fields["contact"]["name"]
+        "username" => fields["contact"]["name"],
+        "location" => fields["contact"]["Administrative_area_level_2"]
       }
       |> Jason.encode!()
 

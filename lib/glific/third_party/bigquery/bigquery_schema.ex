@@ -453,6 +453,18 @@ defmodule Glific.BigQuery.Schema do
         name: "profile_id",
         type: "INTEGER",
         mode: "NULLABLE"
+      },
+      %{
+        description: "ID of group reference to the group table",
+        name: "group_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "label of the group referenced to in group table",
+        name: "group_name",
+        type: "STRING",
+        mode: "NULLABLE"
       }
     ]
   end

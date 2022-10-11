@@ -6,14 +6,14 @@ defmodule Glific.MixProject do
   @test_envs [:test, :test_full]
   @oban_envs [:prod, :dev] ++ @test_envs
   # comment above line
-  # ifyou dont have Oban pro license, this is your best hack
+  # if you don't have Oban pro license, this is your best hack
   # uncomment below line
   # @oban_envs [:prod]
 
   def project do
     [
       app: :glific,
-      version: "4.7.9",
+      version: "4.8.1",
       elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
