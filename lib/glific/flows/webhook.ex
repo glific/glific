@@ -343,7 +343,15 @@ defmodule Glific.Flows.Webhook do
   @spec webhook_list_response_to_map(any()) :: any()
   defp webhook_list_response_to_map(response_json) when is_list(response_json) do
     Enum.with_index(response_json)
-    |> Enum.map(fn {value, index} -> {index, value} end)
+    |> Enum.map(fn {value, index} ->
+      {index, webhook_list_response_to_map(value)}
+    end)
+    |> Enum.into(%{})
+  end
+
+  defp webhook_list_response_to_map(response_json) when is_map(response_json) do
+    response_json
+    |> Enum.map(fn {key, value} -> {key, webhook_list_response_to_map(value)} end)
     |> Enum.into(%{})
   end
 
