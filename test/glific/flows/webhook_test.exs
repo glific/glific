@@ -30,7 +30,12 @@ defmodule Glific.Flows.WebhookTest do
       %{
         "content" => "Your score: 31 is not divisible by 2, 3, 5 or 7",
         "score" => "31",
-        "status" => "5"
+        "status" => "5",
+        "list_key" => [
+          %{
+            "list_nest_key" => "list_nest_value"
+          }
+        ]
       }
     ]
 
@@ -107,7 +112,7 @@ defmodule Glific.Flows.WebhookTest do
       assert webhook_log.url == "www.one.com/#{contact_id}"
     end
 
-    test "execute a webhook for post method should not break and update the webhook log in case of array/list reponse",
+    test "execute a webhook for post method should not break and update the webhook log in case of array/list response",
          attrs do
       Tesla.Mock.mock(fn
         %{method: :post} ->
@@ -137,6 +142,12 @@ defmodule Glific.Flows.WebhookTest do
       Webhook.execute(action, context)
       assert Webhook.execute(action, context) == nil
       Oban.drain_queue(queue: :webhook)
+
+      webhook_log = List.first(WebhookLog.list_webhook_logs(%{filter: attrs}))
+
+      response = webhook_log.response_json
+
+      assert get_in(response, ["0", "list_key", "0", "list_nest_key"]) == "list_nest_value"
     end
   end
 
