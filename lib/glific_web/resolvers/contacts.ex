@@ -1,7 +1,7 @@
 defmodule GlificWeb.Resolvers.Contacts do
   @moduledoc """
   Contact Resolver which sits between the GraphQL schema and Glific Contact Context API.
-  This layer basically stiches together one or more calls to resolve the incoming queries.
+  This layer basically stitches together one or more calls to resolve the incoming queries.
   """
   import GlificWeb.Gettext
 

@@ -1,6 +1,6 @@
 defmodule GlificWeb.Resolvers.Searches do
   @moduledoc """
-  Searches Resolver which sits between the GraphQL schema and Glific saved_search Context API. This layer basically stiches together
+  Searches Resolver which sits between the GraphQL schema and Glific saved_search Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
 

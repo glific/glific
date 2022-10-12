@@ -1,7 +1,7 @@
 defmodule GlificWeb.Resolvers.FlowLabels do
   @moduledoc """
   Flow Labels Resolver which sits between the GraphQL schema and Glific Flow Label Context API.
-  This layer basically stiches together one or more calls to resolve the incoming queries.
+  This layer basically stitches together one or more calls to resolve the incoming queries.
   """
   alias Glific.{
     Flows.FlowLabel,
