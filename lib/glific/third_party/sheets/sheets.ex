@@ -26,16 +26,20 @@ defmodule Glific.Sheets do
   """
   @spec create_sheet(map()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
   def create_sheet(attrs) do
-    attrs =
-      ApiClient.get_csv_content(url: attrs.url)
-      |> Enum.reduce(%{}, fn {_, row}, acc ->
-        Map.merge(acc, clean_row_values(row))
-      end)
-      |> then(&Map.merge(attrs, %{data: &1, synced_at: DateTime.utc_now()}))
+    attrs = fetch_sheet_data(attrs)
 
     %Sheet{}
     |> Sheet.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @spec fetch_sheet_data(map()) :: map()
+  defp fetch_sheet_data(attrs) do
+    ApiClient.get_csv_content(url: attrs.url)
+    |> Enum.reduce(%{}, fn {_, row}, acc ->
+      Map.merge(acc, clean_row_values(row))
+    end)
+    |> then(&Map.merge(attrs, %{data: &1, synced_at: DateTime.utc_now()}))
   end
 
   @spec clean_row_values(map()) :: map()
