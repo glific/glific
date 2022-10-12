@@ -89,4 +89,18 @@ defmodule Glific.Erase do
       &Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true)
     )
   end
+
+  @doc """
+  Do the daily DB cleaner tasks
+  """
+  @spec perform_daily() :: any
+  def perform_daily do
+    [
+      "REINDEX TABLE global.oban_jobs"
+    ]
+    |> Enum.each(
+      # need such a large timeout specifically to vacuum the messages
+      &Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true)
+    )
+  end
 end

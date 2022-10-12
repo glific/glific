@@ -5,7 +5,7 @@ defmodule Glific.Taggers.Keyword do
   """
   alias Glific.Messages.Message
 
-  # hardcoding greeting as 5, since this is our testcase
+  # hardcoding greeting as 5, since this is our test case
   # need to handle keywords in tags
 
   @doc false

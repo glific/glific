@@ -124,11 +124,11 @@ defmodule Glific.Messages.Message do
 
     # should we publish this message. When we are sending to a group, it could be to a large
     # number of contacts which will overwhelm the frontend. Hence we suppress the subscription
-    # when sendign to a group
+    # when sending to a group
     field(:publish?, :boolean, default: true, virtual: true)
 
     # adding an extra virtual field so we can hang dynamic data to pass during processing of
-    # agents and flows. Specifically used for now during dialogflow
+    # agents and flows. Specifically used for now during Dialogflow
     field(:extra, :map, default: %{intent: nil}, virtual: true)
 
     field(:is_hsm, :boolean, default: false)

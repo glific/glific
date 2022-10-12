@@ -1,6 +1,6 @@
 defmodule GlificWeb.Resolvers.Partners do
   @moduledoc """
-  Partners Resolver which sits between the GraphQL schema and Glific Partners Context API. This layer basically stiches together
+  Partners Resolver which sits between the GraphQL schema and Glific Partners Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
   import GlificWeb.Gettext
@@ -239,7 +239,7 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
-  Get organization's credential by shorcode/service
+  Get organization's credential by shortcode/service
   """
   @spec credential(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}

@@ -168,7 +168,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     defp seed_messages(organization, sender_id) do
-      # we dont need the generated dev messages
+      # we don't need the generated dev messages
       if organization.id == 1,
         do: Repo.query!("TRUNCATE messages CASCADE;")
 

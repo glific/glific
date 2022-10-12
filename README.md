@@ -344,3 +344,13 @@ to update your codebase from the glific repository.
 ## Chat with us
 
 - [Chat on Discord](https://discord.gg/me6NCMu)
+
+## Funders
+
+Thanks to our generous funders over the past few years who have funded this project:
+
+- [Project Tech4Dev](https://chintugudiya.org/tech4dev/)
+- [The Agency Fund](https://agency.fund/)
+- [Cisco](https://www.cisco.com/c/en/us/about/csr.html)
+- [Omidyar Network India](https://www.omidyarnetwork.in)
+- [FOSS United](https://fossunited.org/)

@@ -728,7 +728,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
         latitude: if(!is_nil(row.location), do: row.location.latitude),
         errors: BigQuery.format_json(row.errors),
         message_broadcast_id: row.message_broadcast_id,
-        bsp_status: row.bsp_status
+        bsp_status: row.bsp_status,
+        group_id: row.group_id,
+        group_name: if(!is_nil(row.group), do: row.group.label)
       }
       |> Map.merge(message_media_info(row.media))
       |> Map.merge(message_template_info(row))
@@ -853,7 +855,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :media,
         :flow_object,
         :location,
-        :template
+        :template,
+        :group
       ])
 
   defp get_query("message_conversations", organization_id, attrs),

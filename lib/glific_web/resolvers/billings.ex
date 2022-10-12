@@ -1,6 +1,6 @@
 defmodule GlificWeb.Resolvers.Billings do
   @moduledoc """
-  Billing Resolver which sits between the GraphQL schema and Glific Billing Context API. This layer basically stiches together
+  Billing Resolver which sits between the GraphQL schema and Glific Billing Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
 
