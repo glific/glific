@@ -22,13 +22,16 @@ defmodule Glific.Groups.ContactGroup do
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           group: Group.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
-          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          inserted_at: :utc_datetime_usec | nil,
+          updated_at: :utc_datetime_usec | nil
         }
 
   schema "contacts_groups" do
     belongs_to :contact, Contact
     belongs_to :group, Group
     belongs_to :organization, Organization
+    timestamps(type: :utc_datetime)
   end
 
   @doc """
