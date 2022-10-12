@@ -42,5 +42,13 @@ defmodule GlificWeb.Schema.SheetTypes do
       middleware(Authorize, :manager)
       resolve(&Resolvers.Sheets.create_sheet/3)
     end
+
+    field :update_sheet, :sheet_result do
+      arg(:id, non_null(:id))
+      arg(:input, non_null(:sheet_input))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Sheets.update_sheet/3)
+    end
+
   end
 end
