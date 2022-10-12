@@ -1,6 +1,6 @@
 defmodule GlificWeb.Resolvers.Settings do
   @moduledoc """
-  Settings Resolver which sits between the GraphQL schema and Glific Settings Context API. This layer basically stiches together
+  Settings Resolver which sits between the GraphQL schema and Glific Settings Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
 

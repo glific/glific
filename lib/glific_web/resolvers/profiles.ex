@@ -1,7 +1,7 @@
 defmodule GlificWeb.Resolvers.Profiles do
   @moduledoc """
   Profile Resolver which sits between the GraphQL schema and Glific Profile Context API.
-  This layer basically stiches together one or more calls to resolve the incoming queries.
+  This layer basically stitches together one or more calls to resolve the incoming queries.
   """
 
   import GlificWeb.Gettext
@@ -42,7 +42,7 @@ defmodule GlificWeb.Resolvers.Profiles do
     end
   end
 
-  @doc "This methhod will delete a profile"
+  @doc "This method will delete a profile"
   @spec delete_profile(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_profile(_, %{id: id}, %{context: %{current_user: user}}) do
