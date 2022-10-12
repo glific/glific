@@ -5,7 +5,7 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
 
   alias Plug.Conn
 
-  alias Glific.{Partners, Partners.Organization, Repo}
+  alias Glific.{Appsignal, Partners, Partners.Organization, Repo}
   alias GlificWeb.Providers.Gupshup.Router
 
   @doc false
@@ -40,6 +40,24 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
   end
 
   @doc false
+  def call(
+        %Conn{params: %{"type" => type, "payload" => %{"deductions" => _deductions}}} = conn,
+        opts
+      ) do
+    organization = build_context(conn)
+
+    path =
+      ["gupshup"] ++
+        if Glific.safe_string_to_atom(organization.status) == :active,
+          do: [type, "conversations"],
+          else: ["not_active_or_approved"]
+
+    conn
+    |> change_path_info(path)
+    |> Router.call(opts)
+  end
+
+  @doc false
   def call(%Conn{params: %{"type" => type}} = conn, opts) do
     conn
     |> change_path_info(["gupshup", type, "unknown"])
@@ -55,6 +73,9 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
 
   @doc false
   @spec change_path_info(Plug.Conn.t(), list()) :: Plug.Conn.t()
-  def change_path_info(conn, new_path),
-    do: put_in(conn.path_info, new_path)
+  def change_path_info(conn, new_path) do
+    ## setting up appsignal namespace so that we can ignore this
+    Appsignal.set_namespace("gupshup_webhooks")
+    put_in(conn.path_info, new_path)
+  end
 end

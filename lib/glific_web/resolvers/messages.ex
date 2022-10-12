@@ -1,10 +1,8 @@
 defmodule GlificWeb.Resolvers.Messages do
   @moduledoc """
-  Message Resolver which sits between the GraphQL schema and Glific Message Context API. This layer basically stiches together
+  Message Resolver which sits between the GraphQL schema and Glific Message Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
-
-  import GlificWeb.Gettext
 
   alias Glific.{
     Contacts.Contact,
@@ -110,19 +108,6 @@ defmodule GlificWeb.Resolvers.Messages do
          do: {:ok, %{success: true, contact_ids: contact_ids}}
   end
 
-  ## This is just a temparary solution to avoid the
-  ## timeout issue while sending messages to groups.
-  ## For small groups it should be fine.
-  ## For large groups it should be better to use the flows.
-
-  @error_message "There are too many contacts in the group. Please use flows instead of direct messages."
-  @contact_limit_to_send_message_to_group 30
-
-  @spec can_send_message_to_group?(non_neg_integer()) :: boolean()
-  defp can_send_message_to_group?(group_id) do
-    Glific.Groups.contacts_count(%{id: group_id}) <= @contact_limit_to_send_message_to_group
-  end
-
   @doc """
   Create and send message to contacts of a group
   """
@@ -131,9 +116,7 @@ defmodule GlificWeb.Resolvers.Messages do
   def create_and_send_message_to_group(_, %{input: message_params, group_id: group_id}, %{
         context: %{current_user: current_user}
       }) do
-    if can_send_message_to_group?(group_id),
-      do: send_message_to_group(message_params, group_id, current_user, :session),
-      else: {:error, dgettext("errors", @error_message)}
+    send_message_to_group(message_params, group_id, current_user, :session)
   end
 
   @doc false
@@ -142,15 +125,12 @@ defmodule GlificWeb.Resolvers.Messages do
   def send_hsm_message_to_group(_, %{group_id: group_id} = attrs, %{
         context: %{current_user: user}
       }) do
-    if can_send_message_to_group?(group_id),
-      do:
-        send_message_to_group(
-          Map.put(attrs, :user_id, user.id),
-          group_id,
-          user,
-          :hsm
-        ),
-      else: {:error, dgettext("errors", @error_message)}
+    send_message_to_group(
+      Map.put(attrs, :user_id, user.id),
+      group_id,
+      user,
+      :hsm
+    )
   end
 
   @doc false
@@ -176,7 +156,7 @@ defmodule GlificWeb.Resolvers.Messages do
 
   # Message Media Resolver which sits between the GraphQL schema and Glific
   # Message Context API.
-  # This layer basically stiches together
+  # This layer basically stitches together
   # one or more calls to resolve the incoming queries.
 
   @doc """
@@ -245,7 +225,7 @@ defmodule GlificWeb.Resolvers.Messages do
     end
   end
 
-  ## Subcriptions
+  ## Subscriptions
 
   @doc false
   @spec publish_message(map(), any(), any()) ::

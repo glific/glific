@@ -55,8 +55,8 @@ defmodule Glific.Contacts.Contact do
           is_org_replied: boolean,
           is_contact_replied: boolean,
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
-          active_profile_id: non_neg_integer | nil,
           active_profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
+          active_profile_id: non_neg_integer | nil,
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
@@ -104,12 +104,11 @@ defmodule Glific.Contacts.Contact do
     field :settings, :map, default: %{}
     field :fields, :map, default: %{}
 
-    belongs_to :active_profile, Profile
     belongs_to :language, Language
+    belongs_to :active_profile, Profile
     belongs_to :organization, Organization
 
     has_one :user, User
-    has_many :profiles, Profile
     many_to_many :tags, Tag, join_through: "contacts_tags", on_replace: :delete
 
     many_to_many :groups, Group, join_through: "contacts_groups", on_replace: :delete

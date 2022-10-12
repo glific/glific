@@ -407,13 +407,13 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "refrence ID for an HSM",
+        description: "reference ID for an HSM",
         name: "template_uuid",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        description: "refrence ID for an interactive template",
+        description: "reference ID for an interactive template",
         name: "interactive_template_id",
         type: "INTEGER",
         mode: "NULLABLE"
@@ -437,9 +437,33 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "ID of the message media table refrence to the message media table",
+        description: "message broadcast id when a flow or message started for a group",
+        name: "message_broadcast_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of the message media table reference to the message media table",
         name: "media_id",
         type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of the profile table reference to the profile table",
+        name: "profile_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of group reference to the group table",
+        name: "group_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "label of the group referenced to in group table",
+        name: "group_name",
+        type: "STRING",
         mode: "NULLABLE"
       }
     ]
@@ -620,19 +644,19 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "contact id refrences to the contact table",
+        description: "contact id references to the contact table",
         name: "contact_id",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        description: "contact phone refrences to the contact table",
+        description: "contact phone references to the contact table",
         name: "contact_phone",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        description: "local result of a perticular flow context",
+        description: "local result of a particular flow context",
         name: "results",
         type: "STRING",
         mode: "NULLABLE"
@@ -656,14 +680,21 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "Parent flow context id refrences to the flow context table",
+        description: "Parent flow context id references to the flow context table",
         name: "parent_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },
       %{
-        description: "flow_broadcast_id refrences to the flow broadcast table",
+        description:
+          "flow broadcast id references to the flow broadcast table, this is an old one. We will remove it in the future",
         name: "flow_broadcast_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "message broadcast id references to the flow broadcast table",
+        name: "message_broadcast_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },
@@ -709,6 +740,12 @@ defmodule Glific.BigQuery.Schema do
         name: "updated_at",
         type: "DATETIME",
         mode: "REQUIRED"
+      },
+      %{
+        description: "ID of the profile table reference to the profile table",
+        name: "profile_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
       }
     ]
   end
@@ -745,7 +782,7 @@ defmodule Glific.BigQuery.Schema do
       },
       %{
         description:
-          "Unique ID of the flow; we store flows with both id and uuid, since floweditor always refers to a flow by its uuid ",
+          "Unique ID of the flow; we store flows with both id and uuid, since flow editor always refers to a flow by its uuid ",
         name: "uuid",
         type: "STRING",
         mode: "REQUIRED"
@@ -789,6 +826,12 @@ defmodule Glific.BigQuery.Schema do
       %{
         description: "ID of the flow context with which the user is associated to in the flow",
         name: "flow_context_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of the profile table reference to the profile table",
+        name: "profile_id",
         type: "INTEGER",
         mode: "NULLABLE"
       }
@@ -839,7 +882,7 @@ defmodule Glific.BigQuery.Schema do
       },
       %{
         description:
-          "Unique ID of the flow; we store flows with both id and uuid, since floweditor always refers to a flow by its uuid ",
+          "Unique ID of the flow; we store flows with both id and uuid, since flow editor always refers to a flow by its uuid ",
         name: "flow_uuid",
         type: "STRING",
         mode: "REQUIRED"
@@ -857,7 +900,7 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "JSON object for storing the recenet messages",
+        description: "JSON object for storing the recent messages",
         name: "recent_messages",
         type: "STRING",
         mode: "NULLABLE"
@@ -1171,6 +1214,267 @@ defmodule Glific.BigQuery.Schema do
         name: "bq_inserted_at",
         type: "DATETIME",
         mode: "NULLABLE"
+      },
+      %{
+        description: "ID of the profile table reference to the profile table",
+        name: "profile_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for message conversation table
+  """
+  @spec message_conversation_schema :: list()
+  def message_conversation_schema do
+    [
+      %{
+        description: "Unique ID for the message conversation",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Conversation ID for the message",
+        name: "conversation_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Conversation ID for the message",
+        name: "conversation_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Deduction type for the message conversation",
+        name: "deduction_type",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Status if the message conversation was billed",
+        name: "is_billable",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the message conversation was first created",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the message conversation was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Reference for the message",
+        name: "message_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Message conversation payload received from Gupshup",
+        name: "payload",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Phone number of the contact",
+        name: "phone",
+        type: "STRING",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for message broadcast contacts table
+  """
+  @spec message_broadcast_contacts_schema :: list()
+  def message_broadcast_contacts_schema do
+    [
+      %{
+        description: "Unique ID for the message broadcast contacts",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Reference for the message broadcast",
+        name: "message_broadcast_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Phone number of the contact",
+        name: "phone",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Status of Broadcast",
+        name: "status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the message broadcast contact was processed",
+        name: "processed_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the message broadcast contact was first created",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the message broadcast contact was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for message broadcasts table
+  """
+  @spec message_broadcasts_schema :: list()
+  def message_broadcasts_schema do
+    [
+      %{
+        description: "Unique ID for the message broadcast contacts",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Reference for the flow",
+        name: "flow_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Name of the Flow",
+        name: "flow_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Reference for the collection",
+        name: "group_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Name of the collection",
+        name: "group_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Status of Broadcast",
+        name: "status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Reference for the message",
+        name: "message_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Reference for the user",
+        name: "user_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Phone number of the user",
+        name: "user_phone",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Type of broadcast",
+        name: "broadcast_type",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Message Params",
+        name: "message_params",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the message broadcast was started",
+        name: "started_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the message broadcast was completed",
+        name: "completed_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the message broadcast was first created",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the message broadcast was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
       }
     ]
   end
@@ -1189,7 +1493,7 @@ defmodule Glific.BigQuery.Schema do
       || (
         SELECT STRING_AGG(DISTINCT "(SELECT value FROM UNNEST(fields) WHERE label = '" || label || "') AS " || REPLACE(label, ' ', '_')
         )
-        FROM `#{project_id}.#{dataset_id}.contacts`, unnest(fields)
+        FROM `#{project_id}.#{dataset_id}.contacts`, UNNEST(fields)
       ) || '''
       ,(SELECT MIN(inserted_at) FROM UNNEST(fields)) AS inserted_at,
       (SELECT MAX(inserted_at) FROM UNNEST(fields)) AS last_updated_at

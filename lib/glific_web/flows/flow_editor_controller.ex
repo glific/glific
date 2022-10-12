@@ -5,6 +5,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
   use GlificWeb, :controller
 
+  plug :set_appsignal_namespace
+
   alias Glific.{
     Contacts,
     Dialogflow,
@@ -21,6 +23,12 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Templates.InteractiveTemplates,
     Users.User
   }
+
+  defp set_appsignal_namespace(conn, _params) do
+    # Configures all actions in this controller to report
+    Glific.Appsignal.set_namespace("flow_editor_controller")
+    conn
+  end
 
   @doc false
   @spec globals(Plug.Conn.t(), map) :: Plug.Conn.t()

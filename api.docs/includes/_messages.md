@@ -1162,7 +1162,7 @@ mutation markContactMessagesAsRead($contactId : Gid!) {
 </tr>
 
 <tr>
-<td colspan="2" valign="top"><strong>FlowBroadcastId</strong></td>
+<td colspan="2" valign="top"><strong>MessageBroadcastId</strong></td>
 <td valign="top"><a href="#id">Id</a></td>
 <td></td>
 </tr>
@@ -1400,6 +1400,16 @@ Match the tags included
 </tr>
 
 <tr>
+<td colspan="2" valign="top"><strong>FlowID</strong></td>
+<td valign="top">[<a href="#int">Integer</a>]</td>
+<td>
+
+Match the Flow ID
+
+</td>
+</tr>
+
+<tr>
 <td colspan="2" valign="top"><strong>TagsExcluded</strong></td>
 <td valign="top">[<a href="#gid">Gid</a>]</td>
 <td>
@@ -1475,6 +1485,12 @@ Match the tags excluded
 <tr>
 <td colspan="2" valign="top"><strong>send_at</strong></td>
 <td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>flow_id</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
 <td></td>
 </tr>
 

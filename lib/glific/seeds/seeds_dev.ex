@@ -17,6 +17,7 @@ if Code.ensure_loaded?(Faker) do
       Groups.Group,
       Messages.Message,
       Messages.MessageMedia,
+      Notifications,
       Notifications.Notification,
       Partners.Billing,
       Partners.Organization,
@@ -1097,7 +1098,7 @@ if Code.ensure_loaded?(Faker) do
         category: "Partner",
         message:
           "Disabling bigquery. Account does not have sufficient permissions to insert data to BigQuery.",
-        severity: "Critical",
+        severity: Notifications.types().critical,
         organization_id: organization.id,
         entity: %{
           id: 2,
@@ -1108,7 +1109,7 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert!(%Notification{
         category: "Message",
         message: "Cannot send session message to contact, invalid bsp status.",
-        severity: "Warning",
+        severity: Notifications.types().warning,
         organization_id: organization.id,
         entity: %{
           id: 1,
@@ -1126,7 +1127,7 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert!(%Notification{
         category: "Flow",
         message: "Cannot send session message to contact, invalid bsp status.",
-        severity: "Warning",
+        severity: Notifications.types().warning,
         organization_id: organization.id,
         entity: %{
           flow_id: 3,
@@ -1134,6 +1135,32 @@ if Code.ensure_loaded?(Faker) do
           contact_id: 3,
           flow_uuid: "12c25af0-37a2-4a69-8e26-9cfd98cab5c6",
           name: "Preference Workflow"
+        }
+      })
+
+      Repo.insert!(%Notification{
+        category: "Templates",
+        message: "Template Account balance has been approved",
+        severity: Notifications.types().info,
+        organization_id: organization.id,
+        entity: %{
+          id: 1,
+          shortcode: "account_balance",
+          label: "Account Balance",
+          uuid: "98c7dec4-f05a-4a76-a25a-f7a50d821f27"
+        }
+      })
+
+      Repo.insert!(%Notification{
+        category: "Templates",
+        message: "Template OTP Message has been rejected",
+        severity: Notifications.types().info,
+        organization_id: organization.id,
+        entity: %{
+          id: 9,
+          shortcode: "otp",
+          label: "OTP Message",
+          uuid: "98c7dec4-f05a-4a76-a25a-f7a50d821f27"
         }
       })
     end
@@ -1161,8 +1188,10 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
-    @spec seed_interactives(Organization.t()) :: nil
-    def seed_interactives(organization) do
+    @spec seed_interactives(Organization.t() | nil) :: nil
+    def seed_interactives(organization \\ nil) do
+      organization = get_organization(organization)
+
       [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
       interactive_content = %{
@@ -1378,6 +1407,51 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
+    @spec seed_optin_interactives(Organization.t() | nil) :: nil
+    def seed_optin_interactives(organization \\ nil) do
+      organization = get_organization(organization)
+      [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
+
+      interactive_content = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "text" =>
+            "Welcome to our NGO bot. Thank you for contacting us. To stay connected with us, kindly grant us permission to message you\n\nPress 👍 to give us permission. We promise to send you amazing content.\nPress 👎 if you'd rather message us when you need information.",
+          "type" => "text",
+          "header" => "Optin template"
+        },
+        "options" => [%{"type" => "text", "title" => "👍"}, %{"type" => "text", "title" => "👎"}]
+      }
+
+      interactive_content_hin = %{
+        type: "quick_reply",
+        content: %{
+          text:
+            "हमारे NGO बॉट में आपका स्वागत है। हमसे संपर्क करने के लिए धन्यवाद। हमारे साथ जुड़े रहने के लिए, कृपया हमें आपको संदेश भेजने की अनुमति दें\n\nहमें अनुमति देने के लिए 👍 दबाएं। हम आपको केवल महत्वपूर्ण जानकारी भेजने का वादा करते हैं।\n\nयदि आपको जानकारी की आवश्यकता होने पर आप हमें संदेश भेजना चाहते हैं तो 👎 दबाएं।",
+          type: "text",
+          header: "Optin template"
+        },
+        options: [
+          %{type: "text", title: "👍"},
+          %{type: "text", title: "👎"}
+        ]
+      }
+
+      Repo.insert!(%InteractiveTemplate{
+        label: get_in(interactive_content, ["content", "header"]),
+        type: :quick_reply,
+        interactive_content: interactive_content,
+        organization_id: organization.id,
+        language_id: en.id,
+        send_with_title: false,
+        translations: %{
+          "1" => interactive_content,
+          "2" => interactive_content_hin
+        }
+      })
+    end
+
+    @doc false
     @spec seed_contact_history(Organization.t()) :: nil
     def seed_contact_history(organization) do
       {:ok, contact} =
@@ -1470,6 +1544,8 @@ if Code.ensure_loaded?(Faker) do
 
       seed_flow_labels(organization)
 
+      seed_interactives(organization)
+
       seed_flows(organization)
 
       seed_flow_results(organization)
@@ -1489,8 +1565,6 @@ if Code.ensure_loaded?(Faker) do
       hsm_templates(organization)
 
       seed_notification(organization)
-
-      seed_interactives(organization)
 
       seed_contact_history(organization)
 

@@ -64,19 +64,19 @@ jobs:
         uses: actions/cache@v1
         id: elixir-plt-cache #id to use in retrieve action
         with:
-          path: priv/plts
+          path: priv/plts_v1
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Create PLTs
         if: steps.elixir-plt-cache.outputs.cache-hit != 'true'
         run: |
-          mkdir -p priv/plts
+          mkdir -p priv/plts_v1
           mix dialyzer --plt
 
       - name: Run check
         run: mix check
 
-      - name: Coveralls for code covarage
+      - name: Coveralls for code coverage
         run: mix do compile --warnings-as-errors, coveralls.json
 
       - name: Code coverage

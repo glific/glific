@@ -4,6 +4,7 @@ defmodule Glific.Profiles do
   """
 
   import Ecto.Query, warn: false
+  require Logger
 
   alias Glific.{
     Contacts,
@@ -127,9 +128,13 @@ defmodule Glific.Profiles do
       {:ok, %Profile{}}
 
   """
-  @spec switch_profile(Contact.t(), String.t()) :: Contact.t()
+  @spec switch_profile(Contact.t(), String.t()) :: {:ok, Contact.t()} | {:error, Contact.t()}
   def switch_profile(contact, profile_index) do
     contact = Repo.preload(contact, [:active_profile])
+
+    Logger.info(
+      "Switching Profile for org_id: #{contact.organization_id} contact_id: #{contact.id} with profile_index: #{profile_index}"
+    )
 
     with {:ok, index} <- Glific.parse_maybe_integer(profile_index),
          {profile, _index} <- fetch_indexed_profile(contact, index),
@@ -139,9 +144,9 @@ defmodule Glific.Profiles do
              language_id: profile.language_id,
              fields: profile.fields
            }) do
-      Contacts.get_contact!(contact.id)
+      {:ok, Contacts.get_contact!(contact.id)}
     else
-      _ -> contact
+      _ -> {:error, contact}
     end
   end
 
@@ -179,14 +184,14 @@ defmodule Glific.Profiles do
   def handle_flow_action(:switch_profile, context, action) do
     value = ContactField.parse_contact_field_value(context, action.value)
 
-    with contact <- switch_profile(context.contact, value),
+    with {:ok, contact} <- switch_profile(context.contact, value),
          context <- Map.put(context, :contact, contact) do
       contact = Repo.preload(contact, [:active_profile])
 
       Contacts.capture_history(context.contact.id, :profile_switched, %{
         event_label: "Switched profile to #{contact.active_profile.name}",
         event_meta: %{
-          method: "switched profile via flow: #{context.flow.name}"
+          method: "Switched profile via flow: #{context.flow.name}"
         }
       })
 
@@ -206,7 +211,10 @@ defmodule Glific.Profiles do
       organization_id: context.contact.organization_id
     }
 
-    case create_profile(attrs) do
+    attrs
+    |> is_first_profile(context)
+    |> create_profile()
+    |> case do
       {:ok, profile} ->
         indexed_profile = get_indexed_profile(context.contact)
 
@@ -225,5 +233,14 @@ defmodule Glific.Profiles do
 
   def handle_flow_action(_profile_type, context, _action) do
     {context, Messages.create_temp_message(context.organization_id, "Failure")}
+  end
+
+  # Sync existing contact fields to the first profile to prevent data loss
+  @spec is_first_profile(map(), FlowContext.t()) :: map()
+  defp is_first_profile(attrs, context) do
+    profile_count =
+      Repo.one(from(p in Profile, select: count("*"), where: p.contact_id == ^attrs.contact_id))
+
+    if profile_count == 0, do: Map.merge(attrs, %{fields: context.contact.fields}), else: attrs
   end
 end

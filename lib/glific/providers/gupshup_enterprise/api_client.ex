@@ -80,7 +80,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
         "interactive_type" => interactive_type
       }
       |> Map.merge(@common_params)
-      |> Map.merge(@default_send_interactive_template_params)
+      |> check_for_media_interactive(message)
       |> then(
         &gupshup_post(@gupshup_enterprise_url, &1, %{
           "userid" => credentials.two_way_user_id,
@@ -89,6 +89,22 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
       )
     end
   end
+
+  @spec check_for_media_interactive(map(), map()) :: map()
+  defp check_for_media_interactive(payload, %{"interactive_media_type" => media_type} = message)
+       when media_type in ["image", "video", "document"] do
+    payload
+    |> Map.merge(%{
+      "isTemplate" => "false",
+      "method" => "SendMediaMessage",
+      "msg_type" => media_type,
+      "media_url" => message["media_url"],
+      "caption" => message["msg"]
+    })
+  end
+
+  defp check_for_media_interactive(payload, _message),
+    do: Map.merge(payload, @default_send_interactive_template_params)
 
   @doc """
   Sending HSM template to contact
@@ -103,6 +119,25 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
       })
       |> Map.merge(@common_params)
       |> Map.merge(@default_send_template_params)
+      |> is_button_template(attrs["has_buttons"])
+      |> then(
+        &gupshup_post(@gupshup_enterprise_url, &1, %{
+          "userid" => credentials.hsm_user_id,
+          "password" => credentials.hsm_password
+        })
+      )
+    end
+  end
+
+  @doc """
+  Sending Media HSM template to contact
+  """
+  @spec send_media_template(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
+  def send_media_template(org_id, attrs) do
+    with {:ok, credentials} <- get_credentials(org_id) do
+      attrs
+      |> Map.merge(@common_params)
+      |> Map.merge(%{"method" => "SendMediaMessage"})
       |> is_button_template(attrs["has_buttons"])
       |> then(
         &gupshup_post(@gupshup_enterprise_url, &1, %{

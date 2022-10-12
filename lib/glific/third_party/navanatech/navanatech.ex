@@ -1,6 +1,6 @@
 defmodule Glific.Navanatech do
   @moduledoc """
-  Glific Navanatech for all api calls to navatech
+  Glific Navanatech for all API calls to navatech
   """
 
   alias Glific.Partners

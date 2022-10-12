@@ -903,7 +903,7 @@ defmodule Glific.PartnersTest do
           organization_id: organization_id
         }
 
-        Glific.Caches.remove(organization_id, [{:provider_shortcode, "bigquery"}])
+        Glific.Caches.remove(organization_id, [{:provider_token, "bigquery"}])
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
@@ -937,7 +937,7 @@ defmodule Glific.PartnersTest do
           organization_id: organization_id
         }
 
-        Glific.Caches.remove(organization_id, [{:provider_shortcode, "google_cloud_storage"}])
+        Glific.Caches.remove(organization_id, [{:provider_token, "google_cloud_storage"}])
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
@@ -976,7 +976,7 @@ defmodule Glific.PartnersTest do
           organization_id: organization_id
         }
 
-        Glific.Caches.remove(organization_id, [{:provider_shortcode, "google_cloud_storage"}])
+        Glific.Caches.remove(organization_id, [{:provider_token, "google_cloud_storage"}])
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
@@ -1021,7 +1021,7 @@ defmodule Glific.PartnersTest do
           organization_id: organization_id
         }
 
-        Glific.Caches.remove(organization_id, [{:provider_shortcode, "bigquery"}])
+        Glific.Caches.remove(organization_id, [{:provider_token, "bigquery"}])
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 

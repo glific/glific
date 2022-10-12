@@ -49,7 +49,7 @@ defmodule Glific.Flows.Node do
   end
 
   @doc """
-  Process a json structure from floweditor to the Glific data types
+  Process a json structure from flow editor to the Glific data types
   """
   @spec process(map(), map(), Flow.t()) :: {Node.t(), map()}
   def process(json, uuid_map, flow) do

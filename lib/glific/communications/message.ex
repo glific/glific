@@ -92,7 +92,7 @@ defmodule Glific.Communications.Message do
   end
 
   @doc """
-  Callback when message send succsully
+  Callback when message send successfully.
   """
   @spec handle_success_response(Tesla.Env.t(), Message.t()) :: {:ok, Message.t()}
   def handle_success_response(response, message) do
@@ -349,7 +349,7 @@ defmodule Glific.Communications.Message do
 
     self = self()
 
-    # We dont want to block the input pipeline, and we are unsure how long the consumer worker
+    # We don't want to block the input pipeline, and we are unsure how long the consumer worker
     # will take. So we run it as a separate task
     # We will also set a short timeout for both the genserver and the poolboy transaction
     Task.start(fn ->
@@ -360,7 +360,12 @@ defmodule Glific.Communications.Message do
             GenServer.call(pid, {message, process_state, self}, @timeout)
           catch
             e, r ->
-              error("poolboy genserver caught error", e, r, __STACKTRACE__)
+              error(
+                "Poolboy genserver caught error while processing the message for flow.",
+                e,
+                r,
+                __STACKTRACE__
+              )
           end
         end
       )
@@ -371,7 +376,7 @@ defmodule Glific.Communications.Message do
   defp process_errors(message, _errors, 1002) do
     # Issue #2047 - Number does not exist in WhatsApp
     # Lets disable this contact and make it inactive
-    # This is relatively common, so we dont send an email or log this error
+    # This is relatively common, so we don't send an email or log this error
     Contacts.number_does_not_exist(message.contact_id)
   end
 

@@ -74,7 +74,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     # basically links to the message which the user
     # replied to
     field :context_id, :string
-    field :flow_broadcast_id, :string
+    field :message_broadcast_id, :string
 
     field :context_message, :message do
       resolve(dataloader(Repo, use_parent: true))
@@ -111,7 +111,7 @@ defmodule GlificWeb.Schema.MessageTypes do
 
   @desc "Filtering options for messages"
   input_object :message_filter do
-    @desc "Match the namebody"
+    @desc "Match the name body"
     field :body, :string
 
     @desc "Match the sender"
@@ -134,6 +134,12 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     @desc "Match the tags excluded"
     field :tags_excluded, list_of(:id)
+
+    @desc "a static date range input field which will apply on updated at column."
+    field :date_range, :date_range_input
+
+    @desc "Match the flow id"
+    field :flow_id, :id
   end
 
   input_object :message_input do

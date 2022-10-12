@@ -53,6 +53,12 @@ defmodule GlificWeb.Schema.OrganizationTest do
   )
 
   test "organizations field returns list of organizations", %{user: user} do
+    {:ok, user} =
+      Glific.Users.update_user(user, %{
+        roles: ["glific_admin"],
+        organization_id: user.organization_id
+      })
+
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
 
@@ -68,6 +74,12 @@ defmodule GlificWeb.Schema.OrganizationTest do
   end
 
   test "count returns the number of organizations", %{user: user} do
+    {:ok, user} =
+      Glific.Users.update_user(user, %{
+        roles: ["glific_admin"],
+        organization_id: user.organization_id
+      })
+
     {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countOrganizations"]) == 1
 
@@ -196,6 +208,12 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
   test "update an organization status", %{user: user} do
     organization = Fixtures.organization_fixture()
+
+    {:ok, user} =
+      Glific.Users.update_user(user, %{
+        roles: ["glific_admin"],
+        organization_id: user.organization_id
+      })
 
     result =
       auth_query_gql_by(:update_status, user,

@@ -7,10 +7,14 @@ alias Glific.{
   Flows.Flow,
   Flows.FlowContext,
   Contacts,
+  Groups,
   Contacts.Contact,
-  Profiles.Profile
+  Profiles.Profile,
+  Providers.Gupshup.PartnerAPI
 }
 
 import Ecto.Query
 
 Glific.Repo.put_process_state(1)
+
+org_id = organization_id = 1

@@ -212,16 +212,18 @@ defmodule Glific do
   So this is a generic function which will convert the string to atom and throws an error in case of invalid key
   """
 
-  @spec safe_string_to_atom(String.t() | atom()) :: atom()
-  def safe_string_to_atom(value) when is_atom(value), do: value
+  @spec safe_string_to_atom(String.t() | atom(), atom()) :: atom()
+  def safe_string_to_atom(value, default \\ :invalid_atom)
 
-  def safe_string_to_atom(value) do
+  def safe_string_to_atom(value, _default) when is_atom(value), do: value
+
+  def safe_string_to_atom(value, default) do
     String.to_existing_atom(value)
   rescue
     ArgumentError ->
       error = "#{value} can not be converted to atom"
       Appsignal.send_error(:error, error, __STACKTRACE__)
-      :invalid_atom
+      default
   end
 
   @doc """

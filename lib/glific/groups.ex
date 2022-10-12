@@ -6,7 +6,13 @@ defmodule Glific.Groups do
 
   alias __MODULE__
 
-  alias Glific.{Contacts.Contact, Repo, Users.User}
+  alias Glific.{
+    AccessControl,
+    AccessControl.GroupRole,
+    Contacts.Contact,
+    Repo,
+    Users.User
+  }
 
   alias Glific.Groups.{ContactGroup, Group, UserGroup}
 
@@ -53,6 +59,7 @@ defmodule Glific.Groups do
   def list_groups(args, skip_permission \\ false) do
     args
     |> Repo.list_filter_query(Group, &Repo.opts_with_label/2, &Repo.filter_with/2)
+    |> AccessControl.check_access(:group)
     |> Repo.add_permission(&Groups.add_permission/2, skip_permission)
     |> Repo.all()
   end
@@ -165,9 +172,26 @@ defmodule Glific.Groups do
   """
   @spec create_group(map()) :: {:ok, Group.t()} | {:error, Ecto.Changeset.t()}
   def create_group(attrs \\ %{}) do
-    %Group{}
-    |> Group.changeset(attrs)
-    |> Repo.insert()
+    with {:ok, group} <-
+           %Group{}
+           |> Group.changeset(attrs)
+           |> Repo.insert() do
+      if Map.has_key?(attrs, :add_role_ids),
+        do: update_group_roles(attrs, group),
+        else: {:ok, group}
+    end
+  end
+
+  @spec update_group_roles(map(), Group.t()) :: {:ok, Group.t()}
+  defp update_group_roles(attrs, group) do
+    %{access_controls: access_controls} =
+      attrs
+      |> Map.put(:group_id, group.id)
+      |> GroupRole.update_group_roles()
+
+    group
+    |> Map.put(:roles, access_controls)
+    |> then(&{:ok, &1})
   end
 
   @doc """
@@ -185,9 +209,14 @@ defmodule Glific.Groups do
   @spec update_group(Group.t(), map()) :: {:ok, Group.t()} | {:error, Ecto.Changeset.t()}
   def update_group(%Group{} = group, attrs) do
     if has_permission?(group.id) do
-      group
-      |> Group.changeset(attrs)
-      |> Repo.update()
+      with {:ok, updated_group} <-
+             group
+             |> Group.changeset(attrs)
+             |> Repo.update() do
+        if Map.has_key?(attrs, :add_role_ids),
+          do: update_group_roles(attrs, updated_group),
+          else: {:ok, updated_group}
+      end
     else
       raise "Permission denied"
     end
@@ -278,6 +307,20 @@ defmodule Glific.Groups do
       result,
       fn [name, count], result -> Map.put(result, name, count) end
     )
+  end
+
+  @doc """
+  This function will load id by label
+  """
+  @spec load_group_by_label(any) :: list
+  def load_group_by_label(group_label) do
+    group_label
+    |> Enum.reduce([], fn label, acc ->
+      case Repo.get_by(Group, %{label: label}) do
+        nil -> "Sorry, some collections mentioned in the sheet doesn't exit."
+        group -> [group | acc]
+      end
+    end)
   end
 
   @doc """

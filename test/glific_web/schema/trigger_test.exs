@@ -6,7 +6,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     Fixtures,
     Repo,
     Seeds.SeedsDev,
-    Triggers.Trigger
+    Triggers
   }
 
   setup do
@@ -112,10 +112,10 @@ defmodule GlificWeb.Schema.TriggerTest do
   end
 
   test "count_triggers/0 returns count of all trigger logs", attrs do
-    logs_count = Trigger.count_triggers(%{filter: attrs})
+    logs_count = Triggers.count_triggers(%{filter: attrs})
 
     Fixtures.trigger_fixture(attrs)
-    assert Trigger.count_triggers(%{filter: attrs}) == logs_count + 1
+    assert Triggers.count_triggers(%{filter: attrs}) == logs_count + 1
   end
 
   test "triggers id returns one triggers or nil", %{staff: user} = attrs do
@@ -156,14 +156,15 @@ defmodule GlificWeb.Schema.TriggerTest do
       auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
-            "days" => 1,
+            "days" => [],
             "flowId" => flow.id,
             "groupId" => group.id,
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
-            "isActive" => false,
-            "isRepeating" => false
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => "none"
           }
         }
       )
@@ -171,7 +172,9 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert {:ok, query_data} = result
 
     flow_name = get_in(query_data, [:data, "createTrigger", "trigger", "flow", "name"])
+    frequency = get_in(query_data, [:data, "createTrigger", "trigger", "frequency"])
     assert flow_name == flow.name
+    assert frequency == "none"
 
     ## we are ignoring the enddate's time
     assert get_in(query_data, [:data, "createTrigger", "trigger", "end_date"]) == end_date
@@ -186,6 +189,120 @@ defmodule GlificWeb.Schema.TriggerTest do
     time = DateTime.new!(d, t)
 
     assert time == start_at
+
+    ## Creating a monthly trigger with valid attrs should create a trigger
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "days" => [1, 2, 3, 4, 5],
+            "flowId" => flow.id,
+            "groupId" => group.id,
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => "monthly"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    flow_name = get_in(query_data, [:data, "createTrigger", "trigger", "flow", "name"])
+    group_label = get_in(query_data, [:data, "createTrigger", "trigger", "group", "label"])
+    frequency = get_in(query_data, [:data, "createTrigger", "trigger", "frequency"])
+
+    assert flow_name == "Help Workflow"
+    assert group_label == "Optin contacts"
+    assert frequency == "monthly"
+
+    ## Creating a monthly trigger without days should raise an error
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "flowId" => flow.id,
+            "groupId" => group.id,
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => "monthly"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "createTrigger", "errors", Access.at(0), "message"])
+    assert message =~ "Frequency: Cannot create Trigger with invalid days"
+
+    ## Creating a monthly trigger with invalid days should raise an error
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "days" => [1, 2, 3, 42, 51],
+            "flowId" => flow.id,
+            "groupId" => group.id,
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => "monthly"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "createTrigger", "errors", Access.at(0), "message"])
+    assert message =~ "Frequency: Cannot create Trigger with invalid days"
+
+    ## Creating a hourly trigger with invalid hours should raise an error
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "hours" => [1, 42, 51],
+            "flowId" => flow.id,
+            "groupId" => group.id,
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => "hourly"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "createTrigger", "errors", Access.at(0), "message"])
+    assert message =~ "Frequency: Cannot create Trigger with invalid hours"
+
+    ## Creating a weekly trigger with invalid hours should raise an error
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "days" => [6, 10],
+            "flowId" => flow.id,
+            "groupId" => group.id,
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => "weekly"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "createTrigger", "errors", Access.at(0), "message"])
+    assert message =~ "Frequency: Cannot create Trigger with invalid days"
   end
 
   test "create a trigger with time prior to current timestamp should raise an error",
@@ -208,8 +325,9 @@ defmodule GlificWeb.Schema.TriggerTest do
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
-            "isActive" => false,
-            "isRepeating" => false
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => "none"
           }
         }
       )
@@ -262,7 +380,7 @@ defmodule GlificWeb.Schema.TriggerTest do
       name: trigger.name
     }
 
-    {:ok, updated_trigger} = Trigger.update_trigger(trigger, update_attrs)
+    {:ok, updated_trigger} = Triggers.update_trigger(trigger, update_attrs)
     assert trigger.name == updated_trigger.name
     assert trigger.next_trigger_at == updated_trigger.next_trigger_at
   end

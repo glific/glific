@@ -10,7 +10,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   }
 
   @message_request_params %{
-    "app" => "GlifMock App",
+    "app" => "Glific Mock App",
     "timestamp" => 1_580_227_766_370,
     "version" => 2,
     "type" => "message",
@@ -42,6 +42,52 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     test "handler should return nil data", %{conn: conn} do
       conn = post(conn, "/gupshup", @message_request_params)
       assert json_response(conn, 200) == nil
+    end
+  end
+
+  describe "interactive" do
+    setup do
+      message_params = %{
+        "payload" => %{
+          "context" => %{"gsId" => nil, "id" => ""},
+          "id" => "9f149409-1afa-4aed-b44a-2e4595ef4239",
+          "payload" => %{"id" => "postbackText", "reply" => "👍 1", "title" => "👍"},
+          "sender" => %{"name" => "Glific Simulator One", "phone" => "9876543210_1"},
+          "type" => "button_reply"
+        },
+        "type" => "message"
+      }
+
+      %{message_params: message_params}
+    end
+
+    test "Incoming interactive message should be stored in the database",
+         %{conn: conn, message_params: message_params} do
+      conn = post(conn, "/gupshup", message_params)
+      assert conn.halted
+      bsp_message_id = get_in(message_params, ["payload", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:receiver, :sender, :media])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
+      assert message.sender.last_message_at != nil
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(message_params, ["payload", "sender", "phone"])
     end
   end
 
@@ -98,18 +144,18 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
                get_in(message_params, ["payload", "sender", "phone"])
     end
 
-    test "Incoming text for bloked contact will not be store in the database",
+    test "Incoming text for blocked contact will not be store in the database",
          %{conn: conn, message_params: message_params} do
       bsp_message_id = Ecto.UUID.generate()
 
-      [conatct | _tail] = Contacts.list_contacts(%{})
+      [contact | _tail] = Contacts.list_contacts(%{})
 
-      {:ok, conatct} = Contacts.update_contact(conatct, %{status: :blocked})
+      {:ok, contact} = Contacts.update_contact(contact, %{status: :blocked})
 
       message_params =
         message_params
         |> put_in(["payload", "id"], bsp_message_id)
-        |> put_in(["payload", "sender", "phone"], conatct.phone)
+        |> put_in(["payload", "sender", "phone"], contact.phone)
 
       conn = post(conn, "/gupshup", message_params)
       assert conn.halted

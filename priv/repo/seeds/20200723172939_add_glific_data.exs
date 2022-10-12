@@ -419,6 +419,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
             label: "App Name",
             default: nil,
             view_only: false
+          },
+          app_id: %{
+            type: :string,
+            label: "App ID",
+            default: "App ID",
+            view_only: true
           }
         }
       })
@@ -427,7 +433,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def providers(_count_organizations) do
-    {:ok, default} = Repo.fetch_by(Provider, %{name: "Gupshup"})
+    {:ok, default} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
     default
   end
 

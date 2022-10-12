@@ -17,7 +17,6 @@ defmodule Glific.Seeds.SeedsMigration do
     Partners,
     Partners.Organization,
     Partners.Saas,
-    Providers.Gupshup.ApiClient,
     Repo,
     Searches.SavedSearch,
     Seeds.SeedsDev,
@@ -26,7 +25,6 @@ defmodule Glific.Seeds.SeedsMigration do
     Settings,
     Settings.Language,
     Templates,
-    Templates.SessionTemplate,
     Users,
     Users.User
   }
@@ -36,7 +34,7 @@ defmodule Glific.Seeds.SeedsMigration do
 
   One function to rule them all. This function is invoked manually by a glific developer
   to add data from the DB. This seems the cleanest way to do such things. We use phases to
-  seperate different migrations
+  separate different migrations
   """
   @spec migrate_data(atom(), Organization.t() | nil) :: :ok
   def migrate_data(phase, organization \\ nil) do
@@ -77,7 +75,7 @@ defmodule Glific.Seeds.SeedsMigration do
   defp do_migrate_data(:user_default_language, _organizations), do: update_user_default_language()
 
   defp do_migrate_data(:submit_common_otp_template, organizations),
-    do: Enum.map(organizations, fn org -> submit_opt_template_for_org(org.id) end)
+    do: Enum.map(organizations, fn org -> submit_otp_template_for_org(org.id) end)
 
   defp do_migrate_data(:set_newcontact_flow_id, organizations),
     do: Enum.map(organizations, fn org -> set_newcontact_flow_id(org.id) end)
@@ -108,9 +106,9 @@ defmodule Glific.Seeds.SeedsMigration do
   end
 
   @doc false
-  @spec submit_opt_template_for_org(any) ::
+  @spec submit_otp_template_for_org(any) ::
           {:error, Ecto.Changeset.t()} | {:ok, Templates.SessionTemplate.t()}
-  def submit_opt_template_for_org(org_id) do
+  def submit_otp_template_for_org(org_id) do
     %{
       is_hsm: true,
       shortcode: "common_otp",
@@ -194,7 +192,7 @@ defmodule Glific.Seeds.SeedsMigration do
   @doc false
   @spec seed_simulators([Organization.t()], Language.t()) :: [Organization.t()]
   def seed_simulators(organizations \\ [], language) do
-    # for the insert's, lets precompute some values
+    # for the insert's, lets pre-compute some values
 
     for org <- organizations do
       create_simulators(org, language)
@@ -268,7 +266,7 @@ defmodule Glific.Seeds.SeedsMigration do
     name = "SaaS Admin"
 
     if !has_contact?(organization, name) do
-      # lets precompute common values
+      # lets pre compute common values
       utc_now = DateTime.utc_now()
 
       organization
@@ -364,9 +362,12 @@ defmodule Glific.Seeds.SeedsMigration do
   """
   @spec sync_hsm_templates(list) :: :ok
   def sync_hsm_templates(org_id_list) do
-    Enum.each(org_id_list, fn org_id ->
-      Repo.put_process_state(org_id)
-      Glific.Templates.sync_hsms_from_bsp(org_id)
+    org_id_list
+    |> Enum.each(fn org_id ->
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+        Glific.Templates.sync_hsms_from_bsp(org_id)
+      end)
     end)
 
     :ok
@@ -376,8 +377,15 @@ defmodule Glific.Seeds.SeedsMigration do
   Sync bigquery schema with local db changes.
   """
   @spec sync_schema_with_bigquery(list) :: :ok
-  def sync_schema_with_bigquery(org_id_list),
-    do: Enum.each(org_id_list, &BigQuery.sync_schema_with_bigquery(&1))
+  def sync_schema_with_bigquery(org_id_list) do
+    org_id_list
+    |> Enum.each(fn org_id ->
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+        BigQuery.sync_schema_with_bigquery(org_id)
+      end)
+    end)
+  end
 
   @doc """
   Reset message number for a list of organizations or for a org_id
@@ -502,33 +510,5 @@ defmodule Glific.Seeds.SeedsMigration do
     Glific.Users.User
     |> update([u], set: [language_id: ^en.id])
     |> Repo.update_all([], skip_organization_id: true)
-  end
-
-  @doc """
-    We need this functionality to cleanups all the Approved templates which are not active on Gupshup
-  """
-  @spec get_deleted_hsms(non_neg_integer()) :: tuple()
-  def get_deleted_hsms(org_id) do
-    ApiClient.get_templates(org_id)
-    |> case do
-      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
-        {:ok, response_data} = Jason.decode(body)
-        hsms = response_data["templates"]
-        uuid_list = Enum.map(hsms, fn hsm -> hsm["id"] end)
-
-        corrupted_list =
-          from(template in SessionTemplate)
-          |> where([c], c.organization_id == ^org_id)
-          |> where([c], c.uuid not in ^uuid_list)
-          |> where([c], c.is_hsm == true)
-          |> where([c], c.status in ["APPROVED", "SANDBOX_REQUESTED"])
-          |> select([c], c.id)
-          |> Repo.delete_all(skip_organization_id: true)
-
-        {:ok, Enum.count(corrupted_list), corrupted_list}
-
-      _ ->
-        {:error, 0, "Could not fecth the data for org: #{org_id}"}
-    end
   end
 end

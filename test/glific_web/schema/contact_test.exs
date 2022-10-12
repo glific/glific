@@ -15,6 +15,22 @@ defmodule GlificWeb.Schema.ContactTest do
   }
 
   setup do
+    Tesla.Mock.mock_global(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200
+        }
+
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    :ok
+  end
+
+  setup do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
@@ -219,20 +235,42 @@ defmodule GlificWeb.Schema.ContactTest do
     assert message =~ "has already been taken"
   end
 
+  test "User delete", %{manager: user} do
+    user = Map.put(user, :roles, [:Glific_admin])
+    test_name = "test"
+    test_phone = "test phone"
+    # Test success for deleting a created contact
+    data = "name,phone,language,opt_in,delete,\n#{test_name},#{test_phone},english,,1"
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{
+          "type" => "DATA",
+          "data" => data
+        }
+      )
+
+    assert {:ok, _} = result
+
+    count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
+    assert count == 0
+  end
+
   test "import contacts and test possible scenarios and errors", %{manager: user} do
     test_name = "test"
     test_phone = "test phone"
-    group_label = "Test Label"
-    data = "name,phone,language,opt_in\n#{test_name},#{test_phone},english,"
+    user = Map.put(user, :roles, [:glific_admin])
+
+    data =
+      "name,phone,language,opt_in,delete,collection\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0,collection"
 
     # Test success for creating a contact without opt-in
     result =
       auth_query_gql_by(:import_contacts, user,
         variables: %{
-          "id" => user.organization_id,
           "type" => "DATA",
-          "group_label" => group_label,
-          "data" => data
+          "data" => data,
+          "id" => user.organization_id
         }
       )
 
@@ -250,15 +288,16 @@ defmodule GlificWeb.Schema.ContactTest do
 
     test_name = "test2"
     test_phone = "919917443992"
-    data = "name,phone,language,opt_in\n#{test_name},#{test_phone},english,2021-03-09_12:34:25"
+
+    data =
+      "name,phone,language,opt_in,collection\n#{test_name},#{test_phone},english,2021-03-09_12:34:25,collection"
 
     result =
       auth_query_gql_by(:import_contacts, user,
         variables: %{
-          "id" => user.organization_id,
           "type" => "DATA",
-          "group_label" => group_label,
-          "data" => data
+          "data" => data,
+          "id" => user.organization_id
         }
       )
 
@@ -278,15 +317,14 @@ defmodule GlificWeb.Schema.ContactTest do
     test_phone = "test phone2"
 
     data =
-      "name,phone,language,opt_in,delete\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0"
+      "name,phone,language,opt_in,delete,collection\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0,collection"
 
     result =
       auth_query_gql_by(:import_contacts, user,
         variables: %{
-          "id" => user.organization_id,
           "type" => "DATA",
-          "group_label" => group_label,
-          "data" => data
+          "data" => data,
+          "id" => user.organization_id
         }
       )
 
@@ -294,24 +332,7 @@ defmodule GlificWeb.Schema.ContactTest do
     count = Contacts.count_contacts(%{filter: %{name: "#{test_name} updated"}})
     assert count == 1
 
-    # Test success for deleting a created contact
-    data = "name,phone,language,opt_in,delete\n#{test_name},#{test_phone},english,,1"
-
-    result =
-      auth_query_gql_by(:import_contacts, user,
-        variables: %{
-          "id" => user.organization_id,
-          "type" => "DATA",
-          "group_label" => group_label,
-          "data" => data
-        }
-      )
-
-    assert {:ok, _} = result
-    count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
-    assert count == 0
-
-    # Test success for uploading contact through url
+    # # Test success for uploading contact through url
     Tesla.Mock.mock(fn
       %{method: :post} ->
         %Tesla.Env{
@@ -321,7 +342,7 @@ defmodule GlificWeb.Schema.ContactTest do
       %{method: :get} ->
         %Tesla.Env{
           body:
-            "name,phone,Language,opt_in,delete\r\nuploaded_contact,9876543311,english,2021-03-09_12:34:25,",
+            "name,phone,Language,opt_in,delete,collection\r\nuploaded_contact,9876543311,english,2021-03-09_12:34:25,,collection",
           status: 200
         }
     end)
@@ -329,31 +350,29 @@ defmodule GlificWeb.Schema.ContactTest do
     result =
       auth_query_gql_by(:import_contacts, user,
         variables: %{
-          "id" => user.organization_id,
           "type" => "URL",
-          "group_label" => group_label,
-          "data" => "https://storage.cloud.google.com/test.csv"
+          "data" => "https://storage.cloud.google.com/test.csv",
+          "id" => user.organization_id
         }
       )
 
     assert {:ok, _} = result
     count = Contacts.count_contacts(%{filter: %{name: "uploaded_contact"}})
     assert count == 1
+  end
 
-    # Test success for uploading contact through filepath
-    Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 200
-        }
-    end)
+  test "Test success for uploading contact through filepath", %{manager: user} do
+    user = Map.put(user, :roles, [:glific_admin])
 
     file =
       System.tmp_dir!()
       |> Path.join("fixture.csv")
       |> File.open!([:write, :utf8])
 
-    [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09_12:34:25)]
+    [
+      ~w(name phone Language opt_in collection),
+      ~w(test 9989329297 english 2021-03-09_12:34:25 collection)
+    ]
     |> CSV.encode()
     |> Enum.each(&IO.write(file, &1))
 
@@ -362,16 +381,98 @@ defmodule GlificWeb.Schema.ContactTest do
     result =
       auth_query_gql_by(:import_contacts, user,
         variables: %{
-          "id" => user.organization_id,
           "type" => "FILE_PATH",
-          "group_label" => group_label,
-          "data" => file_name
+          "data" => file_name,
+          "id" => user.organization_id
         }
       )
 
     assert {:ok, _} = result
     count = Contacts.count_contacts(%{filter: %{name: "test"}})
-    assert count == 3
+    assert count == 1
+  end
+
+  test "test success for uploading contact for different csv", %{manager: user} do
+    user = Map.put(user, :roles, [:glific_admin])
+
+    file =
+      System.tmp_dir!()
+      |> Path.join("fixture.csv")
+      |> File.open!([:write, :utf8])
+
+    [
+      ~w(name phone language opt_in delete collection),
+      ~w(test 9989329297 english 2021-03-09_12:34:25 0 collection)
+    ]
+    |> CSV.encode()
+    |> Enum.each(&IO.write(file, &1))
+
+    file_name = System.tmp_dir!() |> Path.join("fixture.csv")
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{
+          "type" => "FILE_PATH",
+          "data" => file_name,
+          "id" => user.organization_id
+        }
+      )
+
+    assert {:ok, _} = result
+    count = Contacts.count_contacts(%{filter: %{name: "test"}})
+    assert count == 1
+  end
+
+  test "test failute when uploading contacts by admin user", %{manager: user} do
+    file =
+      System.tmp_dir!()
+      |> Path.join("fixture.csv")
+      |> File.open!([:write, :utf8])
+
+    [
+      ~w(name phone language opt_in delete collection),
+      ~w(test 9989329297 english 2021-03-09_12:34:25 0 collection)
+    ]
+    |> CSV.encode()
+    |> Enum.each(&IO.write(file, &1))
+
+    file_name = System.tmp_dir!() |> Path.join("fixture.csv")
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{
+          "type" => "FILE_PATH",
+          "data" => file_name,
+          "id" => user.organization_id
+        }
+      )
+
+    assert {:ok, _} = result
+    count = Contacts.count_contacts(%{filter: %{name: "test"}})
+    assert count == 0
+  end
+
+  test "test success for uploading contact for glific admin", %{manager: user} do
+    user = Map.put(user, :roles, [:glific_admin])
+
+    test_name = "test2"
+    test_phone = "test phone2"
+
+    data =
+      "name,phone,language,opt_in,delete,collection\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0,collection"
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{
+          "type" => "DATA",
+          "data" => data,
+          "id" => user.organization_id
+        }
+      )
+
+    assert {:ok, _} = result
+    count = Contacts.count_contacts(%{filter: %{name: "test"}})
+    assert count == 1
   end
 
   test "update a contact and test possible scenarios and errors", %{staff: user, manager: manager} do
@@ -684,7 +785,8 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "contacts history returns list of contacts history in asc order", %{staff: user} = attrs do
-    [contact | _tail] = Contacts.list_contacts(attrs)
+    profile = Fixtures.profile_fixture()
+    contact = Contacts.get_contact!(profile.contact_id)
     [flow | _tail] = Flows.list_flows(attrs)
     {:ok, _flow} = Flows.start_contact_flow(flow, contact)
 
@@ -699,6 +801,39 @@ defmodule GlificWeb.Schema.ContactTest do
     assert {:ok, query_data} = result
     contact_history = get_in(query_data, [:data, "contactHistory"])
     assert length(contact_history) > 0
+
+    result =
+      auth_query_gql_by(:contact_history_list, user,
+        variables: %{
+          "filter" => %{"profile_id" => profile.id}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    contact_history = get_in(query_data, [:data, "contactHistory"])
+    assert length(contact_history) > 0
+
+    result =
+      auth_query_gql_by(:contact_history_list, user,
+        variables: %{
+          "filter" => %{"event_label" => "Flow Started"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    contact_history = get_in(query_data, [:data, "contactHistory"])
+    assert length(contact_history) > 0
+
+    result =
+      auth_query_gql_by(:contact_history_list, user,
+        variables: %{
+          "opts" => %{"order" => "DESC"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    [contact_history | _] = get_in(query_data, [:data, "contactHistory"])
+    assert contact_history["eventLabel"] == "Flow Started"
   end
 
   test "count contacts history returns count of contacts history", %{staff: user} = attrs do
@@ -726,8 +861,6 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert count_from_db == count
-
-    # contact_history = get_in(query_data, [:data, "contactHistory"])
-    # assert length(contact_history) > 0
+    assert get_in(query_data, [:data, "countContactHistory"]) > 0
   end
 end

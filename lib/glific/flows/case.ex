@@ -43,7 +43,7 @@ defmodule Glific.Flows.Case do
   end
 
   @doc """
-  Process a json structure from floweditor to the Glific data types
+  Process a json structure from flow editor to the Glific data types
   """
   @spec process(map(), map(), any) :: {Case.t(), map()}
   def process(json, uuid_map, _object \\ nil) do
@@ -83,11 +83,38 @@ defmodule Glific.Flows.Case do
   @doc """
   Validate a case
   """
-  @spec validate(Case.t(), Keyword.t(), map()) :: Keyword.t()
-  def validate(_case, errors, _flow) do
-    errors
+  @spec validate(Case.t(), Keyword.t(), map(), boolean()) :: Keyword.t()
+  def validate(_case, errors, _flow, wait) when is_nil(wait), do: errors
+
+  def validate(%{arguments: arguments} = _case, errors, flow, _wait) when arguments != [] do
+    wait_for_response_words =
+      arguments
+      |> List.first()
+      |> String.split(", ")
+      |> Enum.reduce(MapSet.new(), &MapSet.put(&2, Glific.string_clean(&1)))
+      |> MapSet.delete(nil)
+
+    flow_keywords =
+      Glific.Flows.flow_keywords_map(flow.organization_id)["published"]
+      |> Map.keys()
+      |> Enum.reduce(MapSet.new(), &MapSet.put(&2, &1))
+
+    if MapSet.disjoint?(flow_keywords, wait_for_response_words) do
+      errors
+    else
+      used_flow_keywords = MapSet.intersection(flow_keywords, wait_for_response_words)
+
+      Enum.reduce(
+        used_flow_keywords,
+        errors,
+        &(&2 ++ [flowContext: "\"#{&1}\" has already been used as a keyword for a flow"])
+      )
+    end
   end
 
+  def validate(_case, errors, _flow, _wait), do: errors
+
+  @spec strip(any()) :: String.t()
   defp strip(msgs) when is_list(msgs),
     do: msgs |> hd() |> strip()
 
@@ -98,10 +125,6 @@ defmodule Glific.Flows.Case do
     do: msg |> String.trim() |> String.downcase()
 
   defp strip(_msg), do: ""
-
-  defp translated_arguments(context, flow_case) do
-    Localization.get_translated_case_arguments(context, flow_case)
-  end
 
   @text_types [:text, :quick_reply, :list]
 
@@ -129,16 +152,16 @@ defmodule Glific.Flows.Case do
   it just consumes one message at a time and executes it against a predefined function
   It also returns a boolean, rather than a tuple
   """
-  @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
+  @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean()
   def execute(flow_case, context, msg) do
-    translated_arguments = translated_arguments(context, flow_case)
+    translated_arguments = Localization.get_translated_case_arguments(context, flow_case)
 
     Map.put(flow_case, :arguments, translated_arguments)
     |> update_parsed_arguments(translated_arguments)
     |> do_execute(context, msg)
   end
 
-  @spec do_execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
+  @spec do_execute(Case.t(), FlowContext.t(), Message.t()) :: boolean()
   defp do_execute(%{type: "has_number_eq"} = c, _context, %{type: type} = msg)
        when type in @text_types,
        do: strip(c.arguments) == strip(msg)

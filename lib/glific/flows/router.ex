@@ -64,7 +64,7 @@ defmodule Glific.Flows.Router do
   end
 
   @doc """
-  Process a json structure from floweditor to the Glific data types
+  Process a json structure from flow editor to the Glific data types
   """
   @spec process(map(), map(), Node.t()) :: {Router.t(), map()}
   def process(json, uuid_map, node) do
@@ -156,7 +156,7 @@ defmodule Glific.Flows.Router do
       router.cases
       |> Enum.reduce(
         errors,
-        &Case.validate(&1, &2, flow)
+        &Case.validate(&1, &2, flow, router.wait)
       )
 
     if router.wait,
@@ -238,7 +238,7 @@ defmodule Glific.Flows.Router do
     Category.execute(category, context, rest)
   end
 
-  ## We are using this operand for split contats by groups
+  ## We are using this operand for splitting contacts by groups
   @spec split_by_expression(Router.t(), FlowContext.t()) :: {Message.t(), []}
   defp split_by_expression(%{operand: "@contact.groups"} = _router, context) do
     contact = Contacts.get_contact_field_map(context.contact_id)
@@ -329,7 +329,7 @@ defmodule Glific.Flows.Router do
           json =
             default_results
             |> Map.merge(msg.extra)
-            |> Map.put("interactive_content", msg.interactive_content)
+            |> Map.put("interactive", msg.interactive_content)
 
           %{key => json}
 
@@ -355,7 +355,7 @@ defmodule Glific.Flows.Router do
     FlowContext.update_results(context, results)
   end
 
-  ## Format operand and replcae @fields. to @contact.fields. so that system can parse it automatically.
+  ## Format operand and replace @fields. to @contact.fields. so that system can parse it automatically.
   ## for other router operand we are handling everything in a same way.
   @spec format_operand(String.t()) :: String.t()
   defp format_operand(operand) do

@@ -4,6 +4,8 @@ defmodule Glific.Flows do
   """
 
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
+
   require Logger
 
   alias Glific.{
@@ -249,9 +251,7 @@ defmodule Glific.Flows do
   @spec update_flow(Flow.t(), map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def update_flow(%Flow{} = flow, attrs) do
     # first delete the cached flow
-    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "draft"))
-    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "published"))
-    clean_cached_flow_keywords_map(flow.organization_id)
+    remove_flow_cache(flow)
 
     attrs =
       attrs
@@ -281,6 +281,7 @@ defmodule Glific.Flows do
   """
   @spec delete_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def delete_flow(%Flow{} = flow) do
+    remove_flow_cache(flow)
     Repo.delete(flow)
   end
 
@@ -380,7 +381,7 @@ defmodule Glific.Flows do
       |> Repo.insert()
 
     # Now also delete the caches for the draft status, so we can reload
-    # note that we dont bother reloading the cache, since we dont expect
+    # note that we don't bother reloading the cache, since we don't expect
     # draft simulator to run often, and drafts are being saved quite often
     Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "draft"))
 
@@ -406,7 +407,11 @@ defmodule Glific.Flows do
 
     if result == [],
       do: true,
-      else: raise(ArgumentError, message: "Missing required fields: #{result}")
+      else:
+        raise(ArgumentError,
+          message:
+            "Missing required fields: #{result} with node uuid: #{json["uuid"]} and type: #{json["type"]}"
+        )
   end
 
   @doc """
@@ -457,7 +462,7 @@ defmodule Glific.Flows do
     Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
 
     # We are setting the cache in the above statement with multiple keys
-    # hence we are asking cachex to just ignore this aspect. All the other
+    # hence we are asking Cachex to just ignore this aspect. All the other
     # requests will get the cache value sent above
     {:ignore, flow}
   end
@@ -493,7 +498,7 @@ defmodule Glific.Flows do
 
   @doc """
   Check if a flow has been activated since the time sent as a parameter
-  e.g. outofoffice will check if that flow was activated in the last 24 hours
+  e.g. outOfOffice will check if that flow was activated in the last 24 hours
   daily/weekly will check since start of day/week, etc
   """
   @spec flow_activated(non_neg_integer, non_neg_integer, DateTime.t()) :: boolean
@@ -540,7 +545,7 @@ defmodule Glific.Flows do
   @spec do_publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, any()}
   defp do_publish_flow(%Flow{} = flow) do
     last_version = get_last_version_and_update_old_revisions(flow)
-    ## if invalid flow then return the {:error, array} otherwise move forword
+    ## if invalid flow then return the {:error, array} otherwise move forward
     {:ok, latest_revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
 
     result =
@@ -604,8 +609,11 @@ defmodule Glific.Flows do
           {:ok, Flow.t()} | {:error, String.t()}
   def start_contact_flow(flow_id, %Contact{} = contact) when is_integer(flow_id) do
     case get_cached_flow(contact.organization_id, {:flow_id, flow_id, @status}) do
-      {:ok, flow} -> process_contact_flow([contact], flow, @status)
-      {:error, _error} -> {:error, "Flow not found"}
+      {:ok, flow} ->
+        process_contact_flow([contact], flow, @status)
+
+      {:error, _error} ->
+        {:error, ["Flow", dgettext("errors", "Flow not found")]}
     end
   end
 
@@ -614,8 +622,12 @@ defmodule Glific.Flows do
 
   @spec process_contact_flow(list(), Flow.t(), String.t()) :: {:ok, Flow.t()}
   defp process_contact_flow(contacts, flow, _status) do
-    Broadcast.broadcast_contacts(flow, contacts)
-    {:ok, flow}
+    if flow.is_active do
+      Broadcast.broadcast_contacts(flow, contacts)
+      {:ok, flow}
+    else
+      {:error, ["Flow", dgettext("errors", "Flow is not active")]}
+    end
   end
 
   @doc """
@@ -624,7 +636,8 @@ defmodule Glific.Flows do
   @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
   def start_group_flow(flow, group) do
     # the flow returned is the expanded version
-    flow = Broadcast.broadcast_group(flow, group)
+    {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id, @status})
+    Broadcast.broadcast_flow_to_group(flow, group)
     {:ok, flow}
   end
 
@@ -672,7 +685,7 @@ defmodule Glific.Flows do
 
   @doc """
   Create a map of keywords that map to flow ids for each
-  active organization. Also cache this value including the outoffice
+  active organization. Also cache this value including the outOfOffice
   shortcode
   """
   @spec flow_keywords_map(non_neg_integer) :: map()
@@ -796,7 +809,7 @@ defmodule Glific.Flows do
                create_flow(%{
                  name: flow_revision["definition"]["name"],
                  # we are reusing existing UUIDs against the spirit of UUIDs
-                 # however this allows us to support subflows
+                 # however this allows us to support sub flows
                  uuid: flow_revision["definition"]["uuid"],
                  keywords: flow_revision["keywords"],
                  organization_id: organization_id
@@ -887,7 +900,7 @@ defmodule Glific.Flows do
   end
 
   @doc """
-  Process subflows and check if there is more subflows in it.
+  Process sub flows and check if there is more sub flows in it.
   """
   @spec export_flow_details(String.t(), map()) :: map()
   def export_flow_details(flow_uuid, results) do
@@ -960,7 +973,7 @@ defmodule Glific.Flows do
   end
 
   @doc """
-    Extract all the subflows form the parent flow definition.
+    Extract all the sub flows form the parent flow definition.
   """
   @spec get_sub_flows(list()) :: list()
   def get_sub_flows(nodes),
@@ -976,7 +989,7 @@ defmodule Glific.Flows do
       end)
 
   ## Get latest flow definition to export. There is one more function with the same name in
-  ## Glific.Flows.flow but that gives us the definition without UI placesments.
+  ## Glific.Flows.flow but that gives us the definition without UI placements.
   @spec get_latest_definition(String.t()) :: map() | nil
   defp get_latest_definition(flow_uuid) do
     FlowRevision
@@ -998,7 +1011,15 @@ defmodule Glific.Flows do
   """
   @spec terminate_contact_flows?(non_neg_integer) :: :ok
   def terminate_contact_flows?(contact_id) do
-    FlowContext.mark_flows_complete(contact_id, false)
+    FlowContext.mark_flows_complete(contact_id, false, source: "terminate_contact_flows")
+    :ok
+  end
+
+  @spec remove_flow_cache(Flow.t()) :: :ok
+  defp remove_flow_cache(flow) do
+    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "draft"))
+    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "published"))
+    clean_cached_flow_keywords_map(flow.organization_id)
     :ok
   end
 end

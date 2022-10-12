@@ -46,8 +46,8 @@ defmodule Glific.Contacts.ContactsField do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  # Not sure why dialyzer is giving so many erros with type.
-  # Will come back on this and impove the specs.
+  # Not sure why dialyzer is giving so many errors with type.
+  # Will come back on this and improve the specs.
   @spec changeset(any(), map()) :: Ecto.Changeset.t()
   def changeset(contact_field, attrs) do
     contact_field

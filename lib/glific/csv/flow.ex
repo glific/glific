@@ -17,7 +17,7 @@ defmodule Glific.CSV.Flow do
   }
 
   @doc """
-  Given a menu + content structure, generate the flow for it that matches floweditor input
+  Given a menu + content structure, generate the flow for it that matches flow editor input
   """
   @spec gen_flow(Menu.t(), non_neg_integer, Keyword.t()) :: map()
   def gen_flow(root, organization_id, opts \\ []) do
@@ -305,7 +305,7 @@ defmodule Glific.CSV.Flow do
       [
         %{
           uuid: node.uuids.action,
-          attachmnents: [],
+          attachments: [],
           quick_replies: [],
           text: language_content(node.content["en"], node.menu_content.content, "en"),
           type: "send_msg"

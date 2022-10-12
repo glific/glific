@@ -9,9 +9,11 @@ defmodule Glific.Providers.Gupshup.Message do
   alias Glific.{
     Communications,
     Messages.Message,
-    Partners
+    Partners,
+    Repo
   }
 
+  import Ecto.Query, warn: false
   require Logger
 
   @doc false
@@ -127,17 +129,9 @@ defmodule Glific.Providers.Gupshup.Message do
     # lets ensure that we have a phone number
     # sometime the gupshup payload has a blank payload
     # or maybe a simulator or some test code
-    if is_nil(payload["sender"]["phone"]) ||
-         String.trim(payload["sender"]["phone"]) == "" do
+    if payload["sender"]["phone"] in [nil, ""] do
       error = "Phone number is blank, #{inspect(payload)}"
-      Logger.error(error)
-
-      stacktrace =
-        self()
-        |> Process.info(:current_stacktrace)
-        |> elem(1)
-
-      Appsignal.send_error(:error, error, stacktrace)
+      Glific.log_error(error)
       raise(RuntimeError, message: error)
     end
 
@@ -193,16 +187,51 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
+  @spec receive_billing_event(map()) :: {:ok, map()} | {:error, String.t()}
+  def receive_billing_event(params) do
+    references = get_in(params, ["payload", "references"])
+    deductions = get_in(params, ["payload", "deductions"])
+    bsp_message_id = references["gsId"] || references["id"]
+
+    message_id =
+      Repo.fetch_by(Message, %{
+        bsp_message_id: bsp_message_id
+      })
+      |> case do
+        {:ok, message} -> message.id
+        {:error, _error} -> nil
+      end
+
+    message_conversation = %{
+      deduction_type: deductions["type"],
+      is_billable: deductions["billable"],
+      conversation_id: references["conversationId"],
+      payload: params,
+      message_id: message_id
+    }
+
+    {:ok, message_conversation}
+  end
+
+  @doc false
+  @impl Glific.Providers.MessageBehaviour
   @spec receive_interactive(map()) :: map()
   def receive_interactive(params) do
     payload = params["payload"]
     message_payload = payload["payload"]
 
+    ## Gupshup does not send an option id back as a response.
+    ## They just send the postbackText back as the option id.
+    ## formatting that here will help us to keep that consistent.
+    ## We might remove this in the future when gupshup will start sending the option id.
+
+    interactive_content = message_payload |> Map.merge(%{"id" => message_payload["postbackText"]})
+
     %{
       bsp_message_id: payload["id"],
       context_id: context_id(payload),
       body: message_payload["title"],
-      interactive_content: message_payload,
+      interactive_content: interactive_content,
       sender: %{
         phone: payload["sender"]["phone"],
         name: payload["sender"]["name"]
