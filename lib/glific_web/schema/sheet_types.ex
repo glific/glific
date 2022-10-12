@@ -4,9 +4,7 @@ defmodule GlificWeb.Schema.SheetTypes do
   """
 
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
-  alias Glific.Repo
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -19,7 +17,7 @@ defmodule GlificWeb.Schema.SheetTypes do
     field :id, :id
     field :label, :string
     field :url, :string
-    field :data, :map
+    field :data, :json
     field :synced_at, :datetime
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -31,7 +29,7 @@ defmodule GlificWeb.Schema.SheetTypes do
   end
 
   object :sheet_queries do
-    field :trigger, :trigger_result do
+    field :sheet, :sheet_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Sheets.sheet/3)

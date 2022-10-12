@@ -19,9 +19,8 @@ defmodule GlificWeb.Resolvers.Sheets do
   @spec create_sheet(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_sheet(_, %{input: params}, _) do
-    with {:ok, trigger} <- Sheets.create_trigger(params) do
-      {:ok, %{trigger: trigger}}
+    with {:ok, sheet} <- Sheets.create_sheet(params) do
+      {:ok, %{sheet: sheet}}
     end
   end
-
 end
