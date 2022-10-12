@@ -1,6 +1,6 @@
 defmodule GlificWeb.Resolvers.Templates do
   @moduledoc """
-  Templates Resolver which sits between the GraphQL schema and Glific Templates Context API. This layer basically stiches together
+  Templates Resolver which sits between the GraphQL schema and Glific Templates Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
 
