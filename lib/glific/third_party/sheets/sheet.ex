@@ -14,17 +14,16 @@ defmodule Glific.Sheets.Sheet do
   @required_fields [
     :label,
     :url,
-    :data,
-    :synced_at,
     :organization_id
   ]
+
+  @optional_fields [:synced_at]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           label: String.t() | nil,
           url: String.t() | nil,
-          data: map() | nil,
           synced_at: :utc_datetime | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -35,7 +34,6 @@ defmodule Glific.Sheets.Sheet do
   schema "sheets" do
     field :label, :string
     field :url, :string
-    field :data, :map, default: %{}
     field :synced_at, :utc_datetime
 
     belongs_to :organization, Organization
@@ -49,7 +47,7 @@ defmodule Glific.Sheets.Sheet do
   @spec changeset(Sheet.t(), map()) :: Ecto.Changeset.t()
   def changeset(sheet, attrs) do
     sheet
-    |> cast(attrs, @required_fields)
+    |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:url, :organization_id])
   end
