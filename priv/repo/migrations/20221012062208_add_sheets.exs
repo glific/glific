@@ -16,8 +16,11 @@ defmodule Glific.Repo.Migrations.AddSheets do
         comment: "Time when the sheet was synced at"
 
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+
       timestamps(type: :utc_datetime)
     end
+
+    create unique_index(:sheets, [:label, :url, :organization_id])
   end
 
   defp create_sheets_data() do
@@ -26,7 +29,10 @@ defmodule Glific.Repo.Migrations.AddSheets do
       add :data, :map, default: %{}, comment: "Sheet's row level data saved from last sync"
       add :sheet_id, references(:sheets, on_delete: :delete_all), null: false
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+
       timestamps(type: :utc_datetime)
     end
+
+    create unique_index(:sheets_data, [:key, :sheet_id, :organization_id])
   end
 end

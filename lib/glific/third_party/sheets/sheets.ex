@@ -8,7 +8,6 @@ defmodule Glific.Sheets do
 
   alias Glific.{
     Repo,
-    Sheets.ApiClient,
     Sheets.Sheet,
     Sheets.SheetData
   }

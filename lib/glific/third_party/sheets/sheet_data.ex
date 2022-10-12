@@ -68,7 +68,7 @@ defmodule Glific.Sheets.SheetData do
         sheet_id: sheet_id,
         organization_id: attrs.organization_id
       }
-      |> create_sheet_data()
+      |> upsert_sheet_data()
     end)
   end
 
@@ -95,7 +95,18 @@ defmodule Glific.Sheets.SheetData do
   @spec create_sheet_data(map()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
   def create_sheet_data(attrs) do
     %SheetData{}
-    |> SheetData.changeset(attrs)
+    |> changeset(attrs)
     |> Repo.insert()
   end
+
+  def upsert_sheet_data(attrs) do
+    Repo.insert!(
+      change_sheet_data(%SheetData{}, attrs),
+      returning: true,
+      on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
+      conflict_target: [:key, :sheet_id, :organization_id]
+    )
+  end
+
+  def change_sheet_data(%SheetData{} = sheet_data, attrs \\ %{}), do: changeset(sheet_data, attrs)
 end

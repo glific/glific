@@ -49,6 +49,6 @@ defmodule Glific.Sheets.Sheet do
     sheet
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint([:url, :organization_id])
+    |> unique_constraint([:label, :url, :organization_id])
   end
 end
