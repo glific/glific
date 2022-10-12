@@ -8,6 +8,7 @@ defmodule Glific.Sheets do
 
   alias Glific.{
     Repo,
+    Sheets.ApiClient,
     Sheets.Sheet
   }
 
@@ -25,9 +26,27 @@ defmodule Glific.Sheets do
   """
   @spec create_sheet(map()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
   def create_sheet(attrs) do
+    attrs =
+      ApiClient.get_csv_content(url: attrs.url)
+      |> Enum.reduce(%{}, fn {_, row}, acc ->
+        Map.merge(acc, clean_row_values(row))
+      end)
+      |> then(&Map.merge(attrs, %{data: &1, synced_at: DateTime.utc_now()}))
+
     %Sheet{}
     |> Sheet.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @spec clean_row_values(map()) :: map()
+  defp clean_row_values(row) do
+    cleaned_row =
+      Enum.reduce(row, %{}, fn {key, value}, acc ->
+        key = key |> String.downcase() |> String.replace(" ", "_")
+        Map.put(acc, key, value)
+      end)
+
+    Map.put(%{}, row["Key"], cleaned_row)
   end
 
   @doc """
