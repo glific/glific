@@ -23,8 +23,8 @@ defmodule Glific.Groups.ContactGroup do
           group: Group.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          inserted_at: :utc_datetime_usec | nil,
-          updated_at: :utc_datetime_usec | nil
+          inserted_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil
         }
 
   schema "contacts_groups" do
