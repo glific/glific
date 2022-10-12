@@ -22,10 +22,10 @@ defmodule Glific.Contacts.Import do
   @spec cleanup_contact_data(map(), map(), String.t()) :: map()
   defp cleanup_contact_data(
          data,
-         %{user: user_role, organization_id: organization_id},
+         %{user: user, organization_id: organization_id},
          date_format
        ) do
-    if user_role == [:glific_admin] do
+    if user.roles == [:glific_admin] do
       %{
         name: data["name"],
         phone: data["phone"],
@@ -46,7 +46,7 @@ defmodule Glific.Contacts.Import do
         phone: data["phone"],
         collection: data["collection"],
         delete: data["delete"],
-        organization_id: organization_id,
+        organization_id: user.organization_id,
         contact_fields: Map.drop(data, ["phone", "group", "delete"])
       }
     end
@@ -141,21 +141,23 @@ defmodule Glific.Contacts.Import do
       )
       |> Enum.map(fn {:ok, result} -> result end)
 
-    errors = result |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
+    errors =
+      result
+      |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
+      |> Enum.map(fn %{error: error} -> error end)
 
     case errors do
       [] ->
         {:ok, %{message: "All contacts added"}}
 
       _ ->
-        {:error,
-         %{message: "All contacts could not be opted in due to some errors", details: errors}}
+        {:error, errors}
     end
   end
 
   @spec process_data(User.t(), map(), map()) :: Contact.t() | map()
-  defp process_data(user_role, %{delete: "1"} = contact, _contact_attrs) do
-    if user_role == [:glific_admin] do
+  defp process_data(user, %{delete: "1"} = contact, _contact_attrs) do
+    if user.roles == [:glific_admin] do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
         nil ->
           %{ok: "Contact does not exist"}
@@ -171,12 +173,12 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  defp process_data(user_role, contact_attrs, _attrs) do
-    if user_role == [:glific_admin] do
+  defp process_data(user, contact_attrs, _attrs) do
+    if user.roles == [:glific_admin] do
       {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
 
       create_group_and_contact_fields(contact_attrs, contact)
-      optin_contact(user_role, contact, contact_attrs)
+      optin_contact(user, contact, contact_attrs)
     else
       may_update_contact(contact_attrs)
     end
@@ -215,10 +217,10 @@ defmodule Glific.Contacts.Import do
   defp add_contact_to_groups(collection, contact) do
     collection
     |> Groups.load_group_by_label()
-    |> Enum.each(fn group_id ->
+    |> Enum.each(fn group ->
       Groups.create_contact_group(%{
         contact_id: contact.id,
-        group_id: group_id,
+        group_id: group.id,
         organization_id: contact.organization_id
       })
     end)
@@ -254,9 +256,9 @@ defmodule Glific.Contacts.Import do
 
   ## later we can have one more column to say that force optin
   @spec should_optin_contact?(User.t(), Contact.t(), map()) :: boolean()
-  defp should_optin_contact?(user_role, contact, attrs) do
+  defp should_optin_contact?(user, contact, attrs) do
     cond do
-      user_role != [:glific_admin] ->
+      user.roles != [:glific_admin] ->
         false
 
       attrs.optin_time == nil ->
