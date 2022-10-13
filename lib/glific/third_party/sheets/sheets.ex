@@ -28,7 +28,7 @@ defmodule Glific.Sheets do
   def create_sheet(attrs) do
     with {:ok, sheet} <-
            %Sheet{}
-           |> Sheet.changeset(Map.put_new(attrs, :synced_at, DateTime.utc_now()))
+           |> Sheet.changeset(Map.put_new(attrs, :last_synced_at, DateTime.utc_now()))
            |> Repo.insert() do
       SheetData.parse_sheet_data(attrs, sheet)
       {:ok, sheet}
@@ -51,7 +51,7 @@ defmodule Glific.Sheets do
   def update_sheet(%Sheet{} = sheet, attrs) do
     with {:ok, sheet} <-
            sheet
-           |> Sheet.changeset(Map.put_new(attrs, :synced_at, DateTime.utc_now()))
+           |> Sheet.changeset(Map.put_new(attrs, :last_synced_at, DateTime.utc_now()))
            |> Repo.update() do
       SheetData.parse_sheet_data(attrs, sheet)
       {:ok, sheet}
