@@ -122,7 +122,10 @@ defmodule Glific.Erase do
       message_to_delete = last_message_number - limit
 
       Repo.query!(
-        "delete from messages where organization_id = #{org_id} and contact_id = #{contact_id} and message_number < #{message_to_delete}"
+        "delete from messages where organization_id = #{org_id} and contact_id = #{contact_id} and message_number < #{message_to_delete}",
+        [],
+        timeout: 300_000,
+        skip_organization_id: true
       )
 
       SeedsMigration.fix_message_number_for_contact(contact_id)
