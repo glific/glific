@@ -485,6 +485,61 @@ defmodule Glific.Seeds.SeedsMigration do
     """
   end
 
+  @doc """
+  Reset message number for a list of organizations or for a org_id
+  """
+  @spec fix_message_number_for_contact(integer()) :: :ok
+  def fix_message_number_for_contact(contact_id) do
+    # set a large query timeout for this
+    [
+      fix_message_number_query_for_contact_id(contact_id),
+      set_last_message_number_for_contact_id(contact_id)
+    ]
+    |> Enum.each(&Repo.query!(&1, [], timeout: 10_000, skip_organization_id: true))
+
+    :ok
+  end
+
+  @spec fix_message_number_query_for_contact_id(integer()) :: String.t()
+  defp fix_message_number_query_for_contact_id(contact_id) do
+    """
+    UPDATE
+      messages m
+      SET
+        message_number = m2.row_num
+      FROM (
+        SELECT
+          id,
+          contact_id,
+          ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY inserted_at ASC) AS row_num
+        FROM
+          messages m2
+        WHERE
+          m2.contact_id = #{contact_id} and m2.sender_id != m2.receiver_id ) m2
+      WHERE
+        m.contact_id = #{contact_id} and m.sender_id != m.receiver_id and m.id = m2.id;
+    """
+  end
+
+  @spec set_last_message_number_for_contacts(integer()) :: String.t()
+  defp set_last_message_number_for_contact_id(contact_id) do
+    """
+    UPDATE
+      contacts c
+    SET
+      last_message_number = (
+        SELECT
+          max(message_number) as message_number
+        FROM
+          messages
+        WHERE
+          contact_id = c.id
+        )
+      WHERE
+      contact_id = #{contact_id};
+    """
+  end
+
   @spec bigquery_enabled_org_ids() :: list()
   defp bigquery_enabled_org_ids do
     Partners.Credential
