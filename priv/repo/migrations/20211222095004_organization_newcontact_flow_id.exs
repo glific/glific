@@ -9,7 +9,7 @@ defmodule Glific.Repo.Migrations.OrganizationNewcontactFlowId do
     alter table(:organizations) do
       add :newcontact_flow_id, references(:flows, on_delete: :nilify_all),
         null: true,
-        comment: "Flow which will trigger when newcontact joins the bot"
+        comment: "Flow which will trigger when new contact joins the bot"
     end
   end
 end

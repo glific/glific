@@ -49,11 +49,11 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
 
       add :flow_id, references(:flows, on_delete: :delete_all), null: false, comment: "Flow ID"
 
-      # We store flows with both id and uuid, since floweditor always refers to a flow by its uuid
+      # We store flows with both id and uuid, since flow editor always refers to a flow by its uuid
       add :flow_uuid, :uuid,
         null: false,
         comment:
-          "Unique ID of the flow; we store flows with both id and uuid, since floweditor always refers to a flow by its uuid "
+          "Unique ID of the flow; we store flows with both id and uuid, since flow editor always refers to a flow by its uuid "
 
       # which specific published version are we referring to. This allows us to narrow
       # down the questions
@@ -65,7 +65,7 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
-        comment: "Unique organisation ID"
+        comment: "Unique organization ID"
 
       timestamps(type: :utc_datetime)
     end
