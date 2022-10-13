@@ -116,11 +116,15 @@ defmodule Glific.Erase do
     limit = 200
 
     contact_query =
-      "select id, last_message_number from contacts where organization_id = #{org_id} and last_message_number > #{limit + 2}"
+      "select id from contacts where organization_id = #{org_id} and last_message_number > #{limit + 2}"
 
     Repo.query!(contact_query).rows
-    |> Enum.map(fn [contact_id, last_message_number] ->
+    |> Enum.map(fn [contact_id] ->
       SeedsMigration.fix_message_number_for_contact(contact_id)
+
+      [[last_message_number]] =
+        Glific.Repo.query!("select last_message_number from contacts where id = #{contact_id}").rows
+
       message_to_delete = last_message_number - limit
 
       delete_message_query =
@@ -130,8 +134,8 @@ defmodule Glific.Erase do
         "message cleanup started for #{contact_id} where message number #{message_to_delete}"
       )
 
-      if skip_delete == false do
-        Repo.query!(delete_message_query, [], timeout: 300_000, skip_organization_id: true)
+      if skip_delete == false && message_to_delete > 0 do
+        Repo.query!(delete_message_query, [], timeout: 400_000, skip_organization_id: true)
         SeedsMigration.fix_message_number_for_contact(contact_id)
       end
     end)
