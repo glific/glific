@@ -495,7 +495,7 @@ defmodule Glific.Seeds.SeedsMigration do
       fix_message_number_query_for_contact_id(contact_id),
       set_last_message_number_for_contact_id(contact_id)
     ]
-    |> Enum.each(&Repo.query!(&1, [], timeout: 10_000, skip_organization_id: true))
+    |> Enum.each(&Repo.query!(&1, [], timeout: 20_000, skip_organization_id: true))
 
     :ok
   end
