@@ -31,7 +31,7 @@ defmodule Glific.Repo.Migrations.V0_8_7_AlterGlificTables do
       # this is not a foreign key
       add :flow_context_id, :bigint,
         comment:
-          "Flow context that a contact is in with resperct to a flow; this is not a foreign key"
+          "Flow context that a contact is in with respect to a flow; this is not a foreign key"
     end
 
     drop index(:flow_results, [:contact_id, :flow_id, :flow_version])
