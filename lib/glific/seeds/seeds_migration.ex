@@ -486,7 +486,7 @@ defmodule Glific.Seeds.SeedsMigration do
   end
 
   @doc """
-  Reset message number for a list of organizations or for a org_id
+  Reset message number for a list of organizations or for a contact id
   """
   @spec fix_message_number_for_contact(integer()) :: :ok
   def fix_message_number_for_contact(contact_id) do
@@ -521,7 +521,7 @@ defmodule Glific.Seeds.SeedsMigration do
     """
   end
 
-  @spec set_last_message_number_for_contacts(integer()) :: String.t()
+  @spec set_last_message_number_for_contact_id(integer()) :: String.t()
   defp set_last_message_number_for_contact_id(contact_id) do
     """
     UPDATE
