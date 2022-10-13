@@ -838,6 +838,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
          )
          |> where(
            [tb],
+           ## Adding clause so that we don't pick the newly inserted rows.
            fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0
          )
 
