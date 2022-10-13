@@ -111,8 +111,8 @@ defmodule Glific.Erase do
   @doc """
   Keep latest 200 messages for a contact
   """
-  @spec clean_old_messages(non_neg_integer()) :: list
-  def clean_old_messages(org_id) do
+  @spec clean_old_messages(non_neg_integer(), boolean()) :: list
+  def clean_old_messages(org_id, skip_delete \\ false) do
     limit = 200
 
     contact_query =
@@ -127,9 +127,10 @@ defmodule Glific.Erase do
       delete_message_query =
         "delete from messages where organization_id = #{org_id} and contact_id = #{contact_id} and message_number < #{message_to_delete}"
 
-      Repo.query!(delete_message_query, [], timeout: 300_000, skip_organization_id: true)
-
-      SeedsMigration.fix_message_number_for_contact(contact_id)
+      if skip_delete != false do
+        Repo.query!(delete_message_query, [], timeout: 300_000, skip_organization_id: true)
+        SeedsMigration.fix_message_number_for_contact(contact_id)
+      end
     end)
   end
 end
