@@ -10,9 +10,9 @@ defmodule Glific.Sheets.SheetData do
 
   alias Glific.{
     Partners.Organization,
+    Repo,
     Sheets.ApiClient,
-    Sheets.Sheet,
-    Repo
+    Sheets.Sheet
   }
 
   @required_fields [
@@ -38,12 +38,12 @@ defmodule Glific.Sheets.SheetData do
         }
 
   schema "sheets_data" do
-    field :key, :string
-    field :data, :map, default: %{}
-    field :synced_at, :utc_datetime
+    field(:key, :string)
+    field(:data, :map, default: %{})
+    field(:synced_at, :utc_datetime)
 
-    belongs_to :sheet, Sheet
-    belongs_to :organization, Organization
+    belongs_to(:sheet, Sheet)
+    belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime_usec)
   end
@@ -118,6 +118,10 @@ defmodule Glific.Sheets.SheetData do
     |> Repo.insert()
   end
 
+  @doc """
+  Updates or Creates a SheetData based on the unique indexes in the table. If there is a match it returns the existing SheetData, else it creates a new one
+  """
+  @spec upsert_sheet_data(map()) :: {:ok, SheetData.t()}
   def upsert_sheet_data(attrs) do
     Repo.insert!(
       change_sheet_data(%SheetData{}, attrs),
@@ -127,5 +131,9 @@ defmodule Glific.Sheets.SheetData do
     )
   end
 
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking sheet_data changes.
+  """
+  @spec change_sheet_data(SheetData.t(), map()) :: Ecto.Changeset.t()
   def change_sheet_data(%SheetData{} = sheet_data, attrs \\ %{}), do: changeset(sheet_data, attrs)
 end
