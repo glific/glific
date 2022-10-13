@@ -13,7 +13,7 @@ defmodule Glific.Repo.Migrations.AddSheets do
 
       add :synced_at, :utc_datetime,
         default: fragment("NOW()"),
-        comment: "Time when the sheet was synced at"
+        comment: "Time when the sheet was last synced at"
 
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
 
@@ -27,6 +27,11 @@ defmodule Glific.Repo.Migrations.AddSheets do
     create table(:sheets_data) do
       add :key, :string, null: false, comment: "Row's Key of the referenced sheet"
       add :data, :map, default: %{}, comment: "Sheet's row level data saved from last sync"
+
+      add :synced_at, :utc_datetime,
+        default: fragment("NOW()"),
+        comment: "Time when the sheet data was last synced at"
+
       add :sheet_id, references(:sheets, on_delete: :delete_all), null: false
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
 

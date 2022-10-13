@@ -31,10 +31,10 @@ defmodule GlificWeb.Resolvers.Sheets do
   @doc false
   @spec update_sheet(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_sheet(_, %{id: id, label: label}, %{context: %{current_user: user}}) do
+  def update_sheet(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
     with {:ok, sheet} <-
            Repo.fetch_by(Sheet, %{id: id, organization_id: user.organization_id}),
-         {:ok, sheet} <- Sheets.update_sheet(sheet, %{label: label}) do
+         {:ok, sheet} <- Sheets.update_sheet(sheet, params) do
       {:ok, %{sheet: sheet}}
     end
   end
