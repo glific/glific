@@ -45,10 +45,15 @@ defmodule GlificWeb.Schema.SheetTypes do
 
     field :update_sheet, :sheet_result do
       arg(:id, non_null(:id))
-      arg(:input, non_null(:sheet_input))
+      arg(:label, non_null(:string))
       middleware(Authorize, :manager)
       resolve(&Resolvers.Sheets.update_sheet/3)
     end
 
+    field :delete_sheet, :sheet_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Sheets.delete_sheet/3)
+    end
   end
 end
