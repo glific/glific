@@ -4,6 +4,7 @@ defmodule Glific.Sheets.SheetData do
   """
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query
 
   alias __MODULE__
 
@@ -18,7 +19,8 @@ defmodule Glific.Sheets.SheetData do
     :key,
     :data,
     :sheet_id,
-    :organization_id
+    :organization_id,
+    :synced_at
   ]
 
   @type t() :: %__MODULE__{
@@ -26,6 +28,7 @@ defmodule Glific.Sheets.SheetData do
           id: non_neg_integer | nil,
           key: String.t() | nil,
           data: map() | nil,
+          synced_at: :utc_datetime | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           sheet_id: non_neg_integer | nil,
@@ -37,6 +40,7 @@ defmodule Glific.Sheets.SheetData do
   schema "sheets_data" do
     field :key, :string
     field :data, :map, default: %{}
+    field :synced_at, :utc_datetime
 
     belongs_to :sheet, Sheet
     belongs_to :organization, Organization
@@ -58,18 +62,22 @@ defmodule Glific.Sheets.SheetData do
   @doc """
   Parses a sheet
   """
-  @spec parse_sheet_data(map(), non_neg_integer()) :: :ok
-  def parse_sheet_data(attrs, sheet_id) do
+  @spec parse_sheet_data(map(), Sheet.t()) :: :ok
+  def parse_sheet_data(attrs, sheet) do
     ApiClient.get_csv_content(url: attrs.url)
     |> Enum.each(fn {_, row} ->
       %{
         key: row["Key"],
         data: clean_row_values(row),
-        sheet_id: sheet_id,
+        sheet_id: sheet.id,
+        synced_at: sheet.synced_at,
         organization_id: attrs.organization_id
       }
       |> upsert_sheet_data()
     end)
+
+    clean_unsynced_sheet_data(sheet)
+    :ok
   end
 
   @spec clean_row_values(map()) :: map()
@@ -78,6 +86,17 @@ defmodule Glific.Sheets.SheetData do
       key = key |> String.downcase() |> String.replace(" ", "_")
       Map.put(acc, key, value)
     end)
+  end
+
+  @spec clean_unsynced_sheet_data(Sheet.t()) :: {integer(), nil | [term()]}
+  defp clean_unsynced_sheet_data(sheet) do
+    Repo.delete_all(
+      from(sd in SheetData,
+        where:
+          sd.organization_id == ^sheet.organization_id and sd.sheet_id == ^sheet.id and
+            sd.synced_at != ^sheet.synced_at
+      )
+    )
   end
 
   @doc """
