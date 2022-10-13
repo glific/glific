@@ -4,14 +4,12 @@ defmodule Glific.Sheets.SheetData do
   """
   use Ecto.Schema
   import Ecto.Changeset
-  import Ecto.Query
 
   alias __MODULE__
 
   alias Glific.{
     Partners.Organization,
     Repo,
-    Sheets.ApiClient,
     Sheets.Sheet
   }
 
@@ -60,46 +58,6 @@ defmodule Glific.Sheets.SheetData do
   end
 
   @doc """
-  Parses a sheet
-  """
-  @spec parse_sheet_data(map(), Sheet.t()) :: :ok
-  def parse_sheet_data(attrs, sheet) do
-    ApiClient.get_csv_content(url: attrs.url)
-    |> Enum.each(fn {_, row} ->
-      %{
-        key: row["Key"],
-        row_data: clean_row_values(row),
-        sheet_id: sheet.id,
-        last_synced_at: sheet.last_synced_at,
-        organization_id: attrs.organization_id
-      }
-      |> upsert_sheet_data()
-    end)
-
-    clean_unsynced_sheet_data(sheet)
-    :ok
-  end
-
-  @spec clean_row_values(map()) :: map()
-  defp clean_row_values(row) do
-    Enum.reduce(row, %{}, fn {key, value}, acc ->
-      key = key |> String.downcase() |> String.replace(" ", "_")
-      Map.put(acc, key, value)
-    end)
-  end
-
-  @spec clean_unsynced_sheet_data(Sheet.t()) :: {integer(), nil | [term()]}
-  defp clean_unsynced_sheet_data(sheet) do
-    Repo.delete_all(
-      from(sd in SheetData,
-        where:
-          sd.organization_id == ^sheet.organization_id and sd.sheet_id == ^sheet.id and
-            sd.last_synced_at != ^sheet.last_synced_at
-      )
-    )
-  end
-
-  @doc """
   Creates a sheet
 
   ## Examples
@@ -119,16 +77,37 @@ defmodule Glific.Sheets.SheetData do
   end
 
   @doc """
+  Updates a sheet data
+
+  ## Examples
+
+      iex> update_sheet_data(sheet_data, %{field: new_value})
+      {:ok, %SheetData{}}
+
+      iex> update_sheet_data(sheet_data, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec update_sheet_data(SheetData.t(), map()) ::
+          {:ok, SheetData.t()} | {:error, Ecto.Changeset.t()}
+  def update_sheet_data(%SheetData{} = sheet_data, attrs) do
+    sheet_data
+    |> changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
   Updates or Creates a SheetData based on the unique indexes in the table. If there is a match it returns the existing SheetData, else it creates a new one
   """
   @spec upsert_sheet_data(map()) :: {:ok, SheetData.t()}
   def upsert_sheet_data(attrs) do
-    Repo.insert!(
-      change_sheet_data(%SheetData{}, attrs),
-      returning: true,
-      on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
-      conflict_target: [:key, :sheet_id, :organization_id]
-    )
+    case Repo.get_by(SheetData, %{key: attrs.key, organization_id: attrs.organization_id}) do
+      nil ->
+        create_sheet_data(attrs)
+
+      sheet_data ->
+        update_sheet_data(sheet_data, attrs)
+    end
   end
 
   @doc """
