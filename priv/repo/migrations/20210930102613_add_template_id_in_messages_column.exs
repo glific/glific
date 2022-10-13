@@ -12,7 +12,7 @@ defmodule Glific.Repo.Migrations.AddTemplateIdInMessagesColumn do
     alter table(:messages) do
       add(:interactive_template_id, references(:interactive_templates, on_delete: :nilify_all),
         null: true,
-        comment: "reference for the interative message template"
+        comment: "reference for the interactive message template"
       )
     end
 

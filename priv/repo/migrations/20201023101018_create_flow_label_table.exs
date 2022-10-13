@@ -3,7 +3,7 @@ defmodule Glific.Repo.Migrations.CreateFlowLabelTable do
 
   def change do
     flow_labels()
-    add_flow_lable_to_message()
+    add_flow_label_to_message()
   end
 
   @doc """
@@ -17,7 +17,7 @@ defmodule Glific.Repo.Migrations.CreateFlowLabelTable do
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
-        comment: "Unique organisation ID"
+        comment: "Unique organization ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -25,7 +25,7 @@ defmodule Glific.Repo.Migrations.CreateFlowLabelTable do
     create unique_index(:flow_labels, [:name, :organization_id])
   end
 
-  def add_flow_lable_to_message() do
+  def add_flow_label_to_message() do
     alter table(:messages) do
       # The body of the message
       add :flow_label, :string, null: true, comment: "Tagged flow label for the message"

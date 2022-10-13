@@ -18,7 +18,7 @@ defmodule Glific.Repo.Migrations.CreateMailLogTable do
       # foreign key to organization restricting scope of this table to this organization only
       add(:organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
-        comment: "Unique organisation ID"
+        comment: "Unique organization ID"
       )
 
       timestamps(type: :utc_datetime)
