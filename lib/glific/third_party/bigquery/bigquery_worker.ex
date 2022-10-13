@@ -164,15 +164,19 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   @spec insert_updated_records(binary, DateTime.t(), non_neg_integer) :: :ok
   defp insert_updated_records(table, table_last_updated_at, organization_id) do
-    table_last_updated_at = table_last_updated_at || DateTime.utc_now()
-    last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
+    if table in BigQuery.ignore_updates_for_table() do
+      :ok
+    else
+      table_last_updated_at = table_last_updated_at || DateTime.utc_now()
+      last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
 
-    queue_table_data(table, organization_id, %{
-      action: :update,
-      max_id: nil,
-      last_updated_at: last_updated_at,
-      table_last_updated_at: table_last_updated_at
-    })
+      queue_table_data(table, organization_id, %{
+        action: :update,
+        max_id: nil,
+        last_updated_at: last_updated_at,
+        table_last_updated_at: table_last_updated_at
+      })
+    end
   end
 
   @spec add_organization_id(Ecto.Query.t(), String.t(), non_neg_integer) :: Ecto.Query.t()
