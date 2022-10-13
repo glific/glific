@@ -84,7 +84,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
         null: false,
         comment: "The locale name of the language dialect, e.g. en, or hi"
 
-      # Is this language being currently used in the sysem
+      # Is this language being currently used in the system
       add :is_active, :boolean,
         default: true,
         comment: "Whether language currently in use within the system or not"
@@ -99,13 +99,13 @@ defmodule Glific.Repo.Migrations.GlificCore do
   All the organizations which are using this platform.
   """
   def organizations do
-    create table(:organizations, comment: "Organisations on the platform") do
-      add :name, :string, null: false, comment: "Organisation name"
-      add :shortcode, :string, null: false, comment: "Organisation shortcode"
+    create table(:organizations, comment: "Organizations on the platform") do
+      add :name, :string, null: false, comment: "Organization name"
+      add :shortcode, :string, null: false, comment: "Organization shortcode"
 
       add :email, :string,
         null: false,
-        comment: "Email provided by the organisation for registration"
+        comment: "Email provided by the organization for registration"
 
       add :provider_id, references(:providers, on_delete: :nothing, prefix: @global_schema),
         null: false
@@ -117,7 +117,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :provider_phone, :string,
         null: false,
         comment:
-          "Whatsapp Business API Phone - primary point of identification for the organisation"
+          "Whatsapp Business API Phone - primary point of identification for the organization"
 
       # add a provider limit field to limit rate of messages / minute
       add :provider_limit, :integer,
@@ -129,18 +129,18 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :default_language_id,
           references(:languages, on_delete: :restrict, prefix: @global_schema),
           null: false,
-          comment: "Default language for the organisation"
+          comment: "Default language for the organization"
 
       # choose active languages from the supported languages
       add :active_language_ids, {:array, :integer},
         default: [],
-        comment: "List of active languages used by the organisation from the supported languages"
+        comment: "List of active languages used by the organization from the supported languages"
 
       # contact id of organization that can send messages out. We cannot make this a foreign
       # key due to cyclic nature. Hence definied as just an id
       # it will be null on creation and added when we add an organization
       add :contact_id, :integer,
-        comment: "Contact ID of the organisation that can send messages out"
+        comment: "Contact ID of the organization that can send messages out"
 
       # jsonb object of out_of_office data which is a bit convoluted to represent as columns
       add :out_of_office, :jsonb, comment: "JSON object of the out of office information"
@@ -148,7 +148,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # organization services can be changed to inactive
       add :is_active, :boolean,
         default: true,
-        comment: "Whether an organisation's service is active or not"
+        comment: "Whether an organization's service is active or not"
 
       add :timezone, :string, comment: "Organization's operational timezone"
 
@@ -235,7 +235,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
   """
   def session_templates do
     create table(:session_templates) do
-      # The template uuid, primarly needed for flow editor
+      # The template uuid, primarily needed for flow editor
       add :uuid, :uuid,
         null: false,
         comment: "The template UUID, primarily needed for flow editor"
@@ -289,7 +289,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
-        comment: "Unique Organisation ID"
+        comment: "Unique Organization ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -302,7 +302,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
   @doc """
   Minimal set of information to store for a Contact to record its interaction
-  at a high level. Typically messaging apps dont have detailed information, and if
+  at a high level. Typically messaging apps don't have detailed information, and if
   they do, we'll redirect those requests to a future version of the CRMPlatform
   """
   def contacts do
@@ -368,7 +368,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
-        comment: "Unique organisation ID"
+        comment: "Unique organization ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -407,7 +407,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
   """
   def messages do
     create table(:messages, comment: "Record of all messages sent and/or received by the system") do
-      # Message uuid, primarly needed for flow editor
+      # Message uuid, primarily needed for flow editor
       add :uuid, :uuid,
         null: true,
         comment: "Uniquely generated message UUID, primarily needed for the flow editor"
@@ -485,7 +485,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
-        comment: "Unique Organisation ID"
+        comment: "Unique Organization ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -581,7 +581,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
-        comment: "Unique organisation ID"
+        comment: "Unique organization ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -609,7 +609,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
-        comment: "Unique organisation ID"
+        comment: "Unique organization ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -645,7 +645,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
-        comment: "Unique organisation ID"
+        comment: "Unique organization ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -720,7 +720,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
-        comment: "Unique organisation ID"
+        comment: "Unique organization ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -780,7 +780,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
   @doc """
   Keep track of the number of times we pass through either a node or an exit
-  to display to the staff via the floweditor interface.
+  to display to the staff via the flow editor interface.
   """
   def flow_counts do
     create table(:flow_counts) do
