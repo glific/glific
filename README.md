@@ -199,23 +199,15 @@ You cannot do much from the glific_backend unless you are an API developer. To s
 install [Glific Frontend](https://github.com/glific/glific-frontend/)
 
 ```bash
-git clone https://github.com/glific/glific_frontend
-cd glific_frontend
+git clone https://github.com/glific/glific-frontend
+cd glific-frontend
 ```
 
-open package.json and update start script
+open package.json
 
 ```bash
 nano package.json
 ```
-
-from
-
-    "start": "HTTPS=true SSL_CRT_FILE=../glific/priv/cert/glific.test+1.pem SSL_KEY_FILE=../glific/priv/cert/glific.test+1-key.pem react-scripts start"
-
-to
-
-    "start": "HTTPS=true SSL_CRT_FILE=../glific_backend/priv/cert/glific.test+1.pem SSL_KEY_FILE=../glific_backend/priv/cert/glific.test+1-key.pem react-scripts start"
 
 Copy config file
 
