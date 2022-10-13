@@ -536,7 +536,7 @@ defmodule Glific.Seeds.SeedsMigration do
           contact_id = c.id
         )
       WHERE
-      contact_id = #{contact_id};
+      id = #{contact_id};
     """
   end
 
