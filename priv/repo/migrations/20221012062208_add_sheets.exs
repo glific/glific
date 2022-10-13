@@ -11,7 +11,11 @@ defmodule Glific.Repo.Migrations.AddSheets do
       add :label, :string, null: false, comment: "Label of the sheet"
       add :url, :string, null: false, comment: "Sheet URL along with gid"
 
-      add :synced_at, :utc_datetime,
+      add :is_active, :boolean,
+        default: true,
+        comment: "Whether the sheet is currently used by organization or not"
+
+      add :last_synced_at, :utc_datetime,
         default: fragment("NOW()"),
         comment: "Time when the sheet was last synced at"
 
@@ -26,9 +30,9 @@ defmodule Glific.Repo.Migrations.AddSheets do
   defp create_sheets_data() do
     create table(:sheets_data) do
       add :key, :string, null: false, comment: "Row's Key of the referenced sheet"
-      add :data, :map, default: %{}, comment: "Sheet's row level data saved from last sync"
+      add :row_data, :map, default: %{}, comment: "Sheet's row level data saved from last sync"
 
-      add :synced_at, :utc_datetime,
+      add :last_synced_at, :utc_datetime,
         default: fragment("NOW()"),
         comment: "Time when the sheet data was last synced at"
 

@@ -17,14 +17,15 @@ defmodule Glific.Sheets.Sheet do
     :organization_id
   ]
 
-  @optional_fields [:synced_at]
+  @optional_fields [:last_synced_at, :is_active]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           label: String.t() | nil,
           url: String.t() | nil,
-          synced_at: :utc_datetime | nil,
+          is_active: boolean() | nil,
+          last_synced_at: :utc_datetime | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -34,7 +35,8 @@ defmodule Glific.Sheets.Sheet do
   schema "sheets" do
     field :label, :string
     field :url, :string
-    field :synced_at, :utc_datetime
+    field :is_active, :boolean, default: true
+    field :last_synced_at, :utc_datetime
 
     belongs_to :organization, Organization
 

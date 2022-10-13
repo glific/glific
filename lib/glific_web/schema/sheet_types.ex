@@ -17,8 +17,9 @@ defmodule GlificWeb.Schema.SheetTypes do
     field :id, :id
     field :label, :string
     field :url, :string
-    field :data, :json
-    field :synced_at, :datetime
+    field :row_data, :json
+    field :is_active, :boolean
+    field :last_synced_at, :datetime
     field :inserted_at, :datetime
     field :updated_at, :datetime
   end

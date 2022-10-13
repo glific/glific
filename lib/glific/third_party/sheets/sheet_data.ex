@@ -17,18 +17,18 @@ defmodule Glific.Sheets.SheetData do
 
   @required_fields [
     :key,
-    :data,
+    :row_data,
     :sheet_id,
     :organization_id,
-    :synced_at
+    :last_synced_at
   ]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           key: String.t() | nil,
-          data: map() | nil,
-          synced_at: :utc_datetime | nil,
+          row_data: map() | nil,
+          last_synced_at: :utc_datetime | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           sheet_id: non_neg_integer | nil,
@@ -39,8 +39,8 @@ defmodule Glific.Sheets.SheetData do
 
   schema "sheets_data" do
     field(:key, :string)
-    field(:data, :map, default: %{})
-    field(:synced_at, :utc_datetime)
+    field(:row_data, :map, default: %{})
+    field(:last_synced_at, :utc_datetime)
 
     belongs_to(:sheet, Sheet)
     belongs_to(:organization, Organization)
@@ -68,9 +68,9 @@ defmodule Glific.Sheets.SheetData do
     |> Enum.each(fn {_, row} ->
       %{
         key: row["Key"],
-        data: clean_row_values(row),
+        row_data: clean_row_values(row),
         sheet_id: sheet.id,
-        synced_at: sheet.synced_at,
+        last_synced_at: sheet.last_synced_at,
         organization_id: attrs.organization_id
       }
       |> upsert_sheet_data()
@@ -94,7 +94,7 @@ defmodule Glific.Sheets.SheetData do
       from(sd in SheetData,
         where:
           sd.organization_id == ^sheet.organization_id and sd.sheet_id == ^sheet.id and
-            sd.synced_at != ^sheet.synced_at
+            sd.last_synced_at != ^sheet.last_synced_at
       )
     )
   end
