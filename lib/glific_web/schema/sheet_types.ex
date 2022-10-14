@@ -27,11 +27,15 @@ defmodule GlificWeb.Schema.SheetTypes do
   input_object :sheet_filter do
     @desc "Match the label"
     field :label, :string
+
+    @desc "Match isActive flag"
+    field :is_active, :boolean
   end
 
   input_object :sheet_input do
     field :label, :string
     field :url, :string
+    field :is_active, :boolean
   end
 
   object :sheet_queries do

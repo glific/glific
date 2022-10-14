@@ -104,14 +104,27 @@ defmodule Glific.Sheets do
   """
   @spec list_sheets(map()) :: [Sheet.t()]
   def list_sheets(args),
-    do: Repo.list_filter(args, Sheet, &Repo.opts_with_label/2, &Repo.filter_with/2)
+    do: Repo.list_filter(args, Sheet, &Repo.opts_with_label/2, &filter_with/2)
 
   @doc """
   Return the count of sheets, using the same filter as list_sheets
   """
   @spec count_sheets(map()) :: integer
   def count_sheets(args),
-    do: Repo.count_filter(args, Sheet, &Repo.filter_with/2)
+    do: Repo.count_filter(args, Sheet, &filter_with/2)
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:is_active, is_active}, query ->
+        from q in query, where: q.is_active == ^is_active
+
+      _, query ->
+        query
+    end)
+  end
 
   @doc """
   Parses a sheet
