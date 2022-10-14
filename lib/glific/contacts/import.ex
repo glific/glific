@@ -124,7 +124,7 @@ defmodule Glific.Contacts.Import do
   end
 
   @spec handle_csv_for_admins(map(), map(), [{atom(), String.t()}]) :: tuple()
-  def handle_csv_for_admins(contact_attrs, data, opts) do
+  defp handle_csv_for_admins(contact_attrs, data, opts) do
     # this ensures the  org_id exists and is valid
     case Partners.organization(contact_attrs.organization_id) do
       %{} ->
