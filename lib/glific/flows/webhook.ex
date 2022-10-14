@@ -280,14 +280,14 @@ defmodule Glific.Flows.Webhook do
         {:ok, %Tesla.Env{status: status} = message} when status in 200..299 ->
           case Jason.decode(message.body) do
             {:ok, list_response} when is_list(list_response) ->
-              list_response = webhook_list_response_to_map(list_response)
+              list_response = format_response(list_response)
               updated_message = Map.put(message, :body, Jason.encode!(list_response))
               update_log(webhook_log_id, updated_message)
               list_response
 
             {:ok, json_response} ->
               update_log(webhook_log_id, message)
-              json_response
+              format_response(json_response)
 
             {:error, _error} ->
               update_log(webhook_log_id, "Could not decode message body: " <> message.body)
@@ -340,20 +340,20 @@ defmodule Glific.Flows.Webhook do
     :ok
   end
 
-  @spec webhook_list_response_to_map(any()) :: any()
-  defp webhook_list_response_to_map(response_json) when is_list(response_json) do
+  @spec format_response(any()) :: any()
+  defp format_response(response_json) when is_list(response_json) do
     Enum.with_index(response_json)
     |> Enum.map(fn {value, index} ->
-      {index, webhook_list_response_to_map(value)}
+      {index, format_response(value)}
     end)
     |> Enum.into(%{})
   end
 
-  defp webhook_list_response_to_map(response_json) when is_map(response_json) do
+  defp format_response(response_json) when is_map(response_json) do
     response_json
-    |> Enum.map(fn {key, value} -> {key, webhook_list_response_to_map(value)} end)
+    |> Enum.map(fn {key, value} -> {key, format_response(value)} end)
     |> Enum.into(%{})
   end
 
-  defp webhook_list_response_to_map(response_json), do: response_json
+  defp format_response(response_json), do: response_json
 end
