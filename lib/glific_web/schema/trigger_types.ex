@@ -63,7 +63,7 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :days, list_of(:integer)
     field :hours, list_of(:integer)
 
-    # the input widgets in the front end collect this seperately
+    # the input widgets in the front end collect this separately
     field :start_date, :date
     field :start_time, :time
 

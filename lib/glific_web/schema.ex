@@ -25,7 +25,6 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.MessageTypes)
   import_types(__MODULE__.MessageMediaTypes)
   import_types(__MODULE__.MessageTagTypes)
-
   import_types(__MODULE__.CredentialTypes)
   import_types(__MODULE__.ProviderTypes)
   import_types(__MODULE__.SessionTemplateTypes)
@@ -49,6 +48,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.InteractiveTemplateTypes)
   import_types(__MODULE__.FlowLabelTypes)
   import_types(__MODULE__.RoleTypes)
+  import_types(__MODULE__.SheetTypes)
 
   query do
     import_fields(:profile_queries)
@@ -102,6 +102,8 @@ defmodule GlificWeb.Schema do
     import_fields(:access_role_queries)
 
     import_fields(:contact_group_queries)
+
+    import_fields(:sheet_queries)
   end
 
   mutation do
@@ -160,6 +162,8 @@ defmodule GlificWeb.Schema do
     import_fields(:interactive_template_mutations)
 
     import_fields(:access_role_mutations)
+
+    import_fields(:sheet_mutations)
   end
 
   subscription do
