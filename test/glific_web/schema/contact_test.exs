@@ -8,6 +8,7 @@ defmodule GlificWeb.Schema.ContactTest do
     Fixtures,
     Flows,
     Messages.Message,
+    Partners,
     Profiles.Profile,
     Repo,
     Seeds.SeedsDev,
@@ -384,6 +385,38 @@ defmodule GlificWeb.Schema.ContactTest do
           "type" => "FILE_PATH",
           "data" => file_name,
           "id" => user.organization_id
+        }
+      )
+
+    assert {:ok, _} = result
+    count = Contacts.count_contacts(%{filter: %{name: "test"}})
+    assert count == 1
+  end
+
+  test "Test success for uploading contact through filepath organization_id is given", %{manager: user} do
+    user = Map.put(user, :roles, [:glific_admin])
+
+    file =
+      System.tmp_dir!()
+      |> Path.join("fixture.csv")
+      |> File.open!([:write, :utf8])
+
+    [
+      ~w(name phone Language opt_in collection),
+      ~w(test 9989329297 english 2021-03-09_12:34:25 collection)
+    ]
+    |> CSV.encode()
+    |> Enum.each(&IO.write(file, &1))
+
+    file_name = System.tmp_dir!() |> Path.join("fixture.csv")
+    [organization | _] = Partners.list_organizations()
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{
+          "type" => "FILE_PATH",
+          "data" => file_name,
+          "id" => organization.id
         }
       )
 

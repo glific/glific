@@ -46,7 +46,7 @@ defmodule Glific.Contacts.Import do
         phone: data["phone"],
         collection: data["collection"],
         delete: data["delete"],
-        organization_id: user.organization_id,
+        organization_id: organization_id,
         contact_fields: Map.drop(data, ["phone", "group", "delete"])
       }
     end
