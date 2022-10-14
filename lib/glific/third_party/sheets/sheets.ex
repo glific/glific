@@ -165,4 +165,57 @@ defmodule Glific.Sheets do
       )
     )
   end
+
+  @doc """
+  Creates a sheet
+
+  ## Examples
+
+      iex> create_sheet_data(%{field: value})
+      {:ok, %Sheet{}}
+
+      iex> create_sheet_data(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec create_sheet_data(map()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
+  def create_sheet_data(attrs) do
+    %SheetData{}
+    |> SheetData.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a sheet data
+
+  ## Examples
+
+      iex> update_sheet_data(sheet_data, %{field: new_value})
+      {:ok, %SheetData{}}
+
+      iex> update_sheet_data(sheet_data, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec update_sheet_data(SheetData.t(), map()) ::
+          {:ok, SheetData.t()} | {:error, Ecto.Changeset.t()}
+  def update_sheet_data(%SheetData{} = sheet_data, attrs) do
+    sheet_data
+    |> SheetData.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates or Creates a SheetData based on the unique indexes in the table. If there is a match it returns the existing SheetData, else it creates a new one
+  """
+  @spec upsert_sheet_data(map()) :: {:ok, SheetData.t()}
+  def upsert_sheet_data(attrs) do
+    case Repo.get_by(SheetData, %{key: attrs.key, organization_id: attrs.organization_id}) do
+      nil ->
+        create_sheet_data(attrs)
+
+      sheet_data ->
+        update_sheet_data(sheet_data, attrs)
+    end
+  end
 end
