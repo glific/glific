@@ -263,7 +263,7 @@ defmodule GlificWeb.Schema.ContactTest do
     user = Map.put(user, :roles, [:glific_admin])
 
     data =
-      "name,phone,language,opt_in,delete,collection\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0,collection"
+      "name,phone,language,opt_in,delete\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0"
 
     # Test success for creating a contact without opt-in
     result =
@@ -271,7 +271,8 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "DATA",
           "data" => data,
-          "id" => user.organization_id
+          "id" => user.organization_id,
+          "group_label" => "collection"
         }
       )
 
@@ -298,7 +299,8 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "DATA",
           "data" => data,
-          "id" => user.organization_id
+          "id" => user.organization_id,
+          "group_label" => "collection"
         }
       )
 
@@ -325,7 +327,8 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "DATA",
           "data" => data,
-          "id" => user.organization_id
+          "id" => user.organization_id,
+          "group_label" => "collection"
         }
       )
 
@@ -353,7 +356,8 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "URL",
           "data" => "https://storage.cloud.google.com/test.csv",
-          "id" => user.organization_id
+          "id" => user.organization_id,
+          "group_label" => "collection"
         }
       )
 
@@ -384,7 +388,8 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "FILE_PATH",
           "data" => file_name,
-          "id" => user.organization_id
+          "id" => user.organization_id,
+          "group_label" => "collection"
         }
       )
 
@@ -393,7 +398,9 @@ defmodule GlificWeb.Schema.ContactTest do
     assert count == 1
   end
 
-  test "Test success for uploading contact through filepath organization_id is given", %{manager: user} do
+  test "Test success for uploading contact through filepath organization_id is given", %{
+    manager: user
+  } do
     user = Map.put(user, :roles, [:glific_admin])
 
     file =
@@ -416,7 +423,8 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "FILE_PATH",
           "data" => file_name,
-          "id" => organization.id
+          "id" => organization.id,
+          "group_label" => "collection"
         }
       )
 
@@ -447,7 +455,8 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "FILE_PATH",
           "data" => file_name,
-          "id" => user.organization_id
+          "id" => user.organization_id,
+          "group_label" => "collection"
         }
       )
 
@@ -499,7 +508,8 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "DATA",
           "data" => data,
-          "id" => user.organization_id
+          "id" => user.organization_id,
+          "group_label" => "collection"
         }
       )
 

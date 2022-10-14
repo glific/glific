@@ -22,7 +22,7 @@ defmodule Glific.Contacts.Import do
   @spec cleanup_contact_data(map(), map(), String.t()) :: map()
   defp cleanup_contact_data(
          data,
-         %{user: user, organization_id: organization_id},
+         %{user: user, organization_id: organization_id} = contact_attrs,
          date_format
        ) do
     if user.roles == [:glific_admin] do
@@ -30,7 +30,7 @@ defmodule Glific.Contacts.Import do
         name: data["name"],
         phone: data["phone"],
         organization_id: organization_id,
-        collection: data["collection"],
+        collection: contact_attrs.collection,
         language_id: Enum.at(Settings.get_language_by_label_or_locale(data["language"]), 0).id,
         optin_time:
           if(data["opt_in"] != "",
@@ -96,26 +96,46 @@ defmodule Glific.Contacts.Import do
   The method takes in a csv file path and adds the contacts to the particular organization
   and group.
   """
-  @spec import_contacts(integer, map(), [{atom(), String.t()}]) :: tuple()
-  def import_contacts(organization_id, user, opts \\ []) do
+  @spec import_contacts(non_neg_integer(), map(), [{atom(), String.t()}]) :: tuple()
+  def import_contacts(
+        organization_id,
+        %{user: user, collection: collection} = _contact_attrs,
+        opts
+      ) do
     if length(opts) > 1 do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
 
     contact_data_as_stream = fetch_contact_data_as_string(opts)
+    contact_attrs = %{organization_id: organization_id, user: user, collection: collection}
 
+    handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
+  end
+
+  def import_contacts(organization_id, contact_attrs, opts) do
+    if length(opts) > 1 do
+      raise "Please specify only one of keyword arguments: file_path, url or data"
+    end
+
+    contact_data_as_stream = fetch_contact_data_as_string(opts)
+    contact_attrs = %{organization_id: organization_id, user: contact_attrs.user}
+
+    handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
+  end
+
+  @spec handle_csv_for_admins(map(), map(), [{atom(), String.t()}]) :: tuple()
+  def handle_csv_for_admins(contact_attrs, data, opts) do
     # this ensures the  org_id exists and is valid
-    case Partners.organization(organization_id) do
+    case Partners.organization(contact_attrs.organization_id) do
       %{} ->
-        params = %{organization_id: organization_id, user: user}
-        decode_csv_data(params, contact_data_as_stream, opts)
+        decode_csv_data(contact_attrs, data, opts)
 
       {:error, error} ->
         {:error,
          %{
            message: "All contacts could not be added",
            details:
-             "Could not fetch the organization with id #{organization_id}. Error -> #{error}"
+             "Could not fetch the organization with id #{contact_attrs.organization_id}. Error -> #{error}"
          }}
     end
   end
