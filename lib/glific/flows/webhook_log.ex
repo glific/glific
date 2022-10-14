@@ -90,7 +90,7 @@ defmodule Glific.Flows.WebhookLog do
 
   @doc """
   Returns the list of webhook_logs.
-  Since this is very basic and only listing funcatinality we added the status filter like this.
+  Since this is very basic and only listing functionality we added the status filter like this.
   In future we will put the status as virtual filed in the webhook logs itself.
   """
   @spec list_webhook_logs(map()) :: list()
@@ -112,7 +112,7 @@ defmodule Glific.Flows.WebhookLog do
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
-    # these filters are specfic to webhook logs only.
+    # these filters are specific to webhook logs only.
     # We might want to move them in the repo in the future.
     Enum.reduce(filter, query, fn
       {:url, url}, query ->
