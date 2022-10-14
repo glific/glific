@@ -83,11 +83,11 @@ defmodule GlificWeb.Resolvers.Contacts do
         %{context: %{current_user: user}}
       ) do
     organization_id =
-    if Map.has_key?(params, :id) do
-      Glific.parse_maybe_integer(params.id) |> elem(1)
-    else
-      nil
-    end
+      if Map.has_key?(params, :id) do
+        Glific.parse_maybe_integer(params.id) |> elem(1)
+      else
+        nil
+      end
 
     Import.import_contacts(organization_id, user, [{type, data}])
   end
