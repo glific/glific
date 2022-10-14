@@ -116,7 +116,7 @@ defmodule Glific.Erase do
     limit = 200
 
     contact_query =
-      "select id from contacts where organization_id = #{org_id} and last_message_number > #{limit + 2}"
+      "select id from contacts where organization_id = #{org_id} and last_message_number > #{limit + 2} order by last_message_number"
 
     Repo.query!(contact_query).rows
     |> Enum.map(fn [contact_id] ->
