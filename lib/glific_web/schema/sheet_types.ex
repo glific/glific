@@ -17,11 +17,16 @@ defmodule GlificWeb.Schema.SheetTypes do
     field :id, :id
     field :label, :string
     field :url, :string
-    field :row_data, :json
     field :is_active, :boolean
     field :last_synced_at, :datetime
     field :inserted_at, :datetime
     field :updated_at, :datetime
+  end
+
+  @desc "Filtering options for sheets"
+  input_object :sheet_filter do
+    @desc "Match the label"
+    field :label, :string
   end
 
   input_object :sheet_input do
@@ -34,6 +39,19 @@ defmodule GlificWeb.Schema.SheetTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Sheets.sheet/3)
+    end
+
+    field :sheets, list_of(:sheet) do
+      arg(:filter, :sheet_filter)
+      arg(:opts, :opts)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Sheets.sheets/3)
+    end
+
+    field :count_sheets, :integer do
+      arg(:filter, :sheet_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Sheets.count_sheets/3)
     end
   end
 

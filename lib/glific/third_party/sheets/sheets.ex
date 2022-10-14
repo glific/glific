@@ -94,6 +94,26 @@ defmodule Glific.Sheets do
   def get_sheet!(id), do: Repo.get!(Sheet, id)
 
   @doc """
+  Returns the list of sheets.
+
+  ## Examples
+
+      iex> list_sheets()
+      [%Sheet{}, ...]
+
+  """
+  @spec list_sheets(map()) :: [Sheet.t()]
+  def list_sheets(args),
+    do: Repo.list_filter(args, Sheet, &Repo.opts_with_label/2, &Repo.filter_with/2)
+
+  @doc """
+  Return the count of sheets, using the same filter as list_sheets
+  """
+  @spec count_sheets(map()) :: integer
+  def count_sheets(args),
+    do: Repo.count_filter(args, Sheet, &Repo.filter_with/2)
+
+  @doc """
   Parses a sheet
   """
   @spec parse_sheet_data(map(), Sheet.t()) :: :ok

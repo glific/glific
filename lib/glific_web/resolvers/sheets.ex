@@ -19,6 +19,23 @@ defmodule GlificWeb.Resolvers.Sheets do
          do: {:ok, %{sheet: sheet}}
   end
 
+  @doc """
+  Get the list of sheets filtered by args
+  """
+  @spec sheets(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, [any]}
+  def sheets(_, args, _) do
+    {:ok, Sheets.list_sheets(args)}
+  end
+
+  @doc """
+  Get the count of sheets filtered by args
+  """
+  @spec count_sheets(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_sheets(_, args, _) do
+    {:ok, Sheets.count_sheets(args)}
+  end
+
   @doc false
   @spec create_sheet(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
