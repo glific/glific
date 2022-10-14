@@ -140,7 +140,7 @@ defmodule Glific.Sheets do
         last_synced_at: sheet.last_synced_at,
         organization_id: attrs.organization_id
       }
-      |> SheetData.upsert_sheet_data()
+      |> upsert_sheet_data()
     end)
 
     clean_unsynced_sheet_data(sheet)
