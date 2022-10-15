@@ -21,8 +21,6 @@ defmodule Glific.Searches do
     Search.Full,
     Searches.SavedSearch,
     Searches.Search,
-    Tags.MessageTag,
-    Tags.Tag,
     Users.User
   }
 
