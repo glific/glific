@@ -390,13 +390,29 @@ defmodule Glific.Searches do
   @spec search_multi(String.t(), map()) :: Search.t()
   def search_multi(term, args) do
     Logger.info("Search Multi: term: '#{term}'")
-    contacts = get_filtered_contacts(term, args)
-    messages = get_filtered_messages_with_term(term, args)
-    labels = get_filtered_labeled_message(term, args)
+    org_id = Repo.get_organization_id()
 
     ## We are not showing tags on Glific frontend
     ## so we don't need to make extra query for multi search
     tags = []
+
+    search_item_tasks = [
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+        get_filtered_contacts(term, args)
+      end),
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+        get_filtered_messages_with_term(term, args)
+      end),
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+        get_filtered_labeled_message(term, args)
+      end)
+    ]
+
+    [contacts, messages, labels] = Task.await_many(search_item_tasks)
+
     Search.new(contacts, messages, tags, labels)
   end
 
