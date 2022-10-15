@@ -69,45 +69,6 @@ defmodule Glific.Erase do
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
   end
 
-  @doc """
-  Do the weekly DB cleaner tasks, typically in the middle of the night on sunday morning
-  """
-  @spec perform_weekly() :: any
-  def perform_weekly do
-    [
-      "VACUUM (FULL, ANALYZE) webhook_logs",
-      "VACUUM (FULL, ANALYZE) organizations",
-      "VACUUM (FULL, ANALYZE) messages_tags",
-      "VACUUM (FULL, ANALYZE) notifications",
-      "VACUUM (FULL, ANALYZE) flow_counts",
-      "VACUUM (FULL, ANALYZE) bigquery_jobs",
-      "VACUUM (FULL, ANALYZE) global.oban_producers",
-      "REINDEX TABLE global.oban_jobs",
-      "VACUUM (FULL, ANALYZE) contacts_groups",
-      "VACUUM (FULL, ANALYZE) flow_results",
-      "VACUUM (FULL, ANALYZE) contacts",
-      "VACUUM (ANALYZE) messages"
-    ]
-    |> Enum.each(
-      # need such a large timeout specifically to vacuum the messages
-      &Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true)
-    )
-  end
-
-  @doc """
-  Do the daily DB cleaner tasks
-  """
-  @spec perform_daily() :: any
-  def perform_daily do
-    [
-      "REINDEX TABLE global.oban_jobs"
-    ]
-    |> Enum.each(
-      # need such a large timeout specifically to vacuum the messages
-      &Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true)
-    )
-  end
-
   @limit 200
 
   @doc """
@@ -149,5 +110,44 @@ defmodule Glific.Erase do
     end
 
     :ok
+  end
+
+  @doc """
+  Do the weekly DB cleaner tasks, typically in the middle of the night on sunday morning
+  """
+  @spec perform_weekly() :: any
+  def perform_weekly do
+    [
+      "VACUUM (FULL, ANALYZE) webhook_logs",
+      "VACUUM (FULL, ANALYZE) organizations",
+      "VACUUM (FULL, ANALYZE) messages_tags",
+      "VACUUM (FULL, ANALYZE) notifications",
+      "VACUUM (FULL, ANALYZE) flow_counts",
+      "VACUUM (FULL, ANALYZE) bigquery_jobs",
+      "VACUUM (FULL, ANALYZE) global.oban_producers",
+      "REINDEX TABLE global.oban_jobs",
+      "VACUUM (FULL, ANALYZE) contacts_groups",
+      "VACUUM (FULL, ANALYZE) flow_results",
+      "VACUUM (FULL, ANALYZE) contacts",
+      "VACUUM (ANALYZE) messages"
+    ]
+    |> Enum.each(
+      # need such a large timeout specifically to vacuum the messages
+      &Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true)
+    )
+  end
+
+  @doc """
+  Do the daily DB cleaner tasks
+  """
+  @spec perform_daily() :: any
+  def perform_daily do
+    [
+      "REINDEX TABLE global.oban_jobs"
+    ]
+    |> Enum.each(
+      # need such a large timeout specifically to vacuum the messages
+      &Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true)
+    )
   end
 end
