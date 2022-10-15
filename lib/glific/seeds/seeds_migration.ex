@@ -364,7 +364,7 @@ defmodule Glific.Seeds.SeedsMigration do
   def sync_hsm_templates(org_id_list) do
     org_id_list
     |> Enum.each(fn org_id ->
-      Task.async(fn ->
+      Task.Supervisor.async_nolink(Glific.TaskSupervisor, fn ->
         Repo.put_process_state(org_id)
         Glific.Templates.sync_hsms_from_bsp(org_id)
       end)
@@ -380,7 +380,7 @@ defmodule Glific.Seeds.SeedsMigration do
   def sync_schema_with_bigquery(org_id_list) do
     org_id_list
     |> Enum.each(fn org_id ->
-      Task.async(fn ->
+      Task.Supervisor.async_nolink(Glific.TaskSupervisor, fn ->
         Repo.put_process_state(org_id)
         BigQuery.sync_schema_with_bigquery(org_id)
       end)
