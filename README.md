@@ -32,7 +32,7 @@ For Postgres, for the development server, we default to using postgres/postgres 
 We tested and developed against the following version:
 
 ```bash
-    - postgres : v13.*
+    - postgres : v13.x
 ```
 
 ### 2. Software dependency - Erlang / Elixir
