@@ -394,8 +394,8 @@ defmodule Glific.Searches do
     Logger.info("Search Multi: term: '#{term}'")
     contacts = get_filtered_contacts(term, args)
     messages = get_filtered_messages_with_term(term, args)
-    tags = get_filtered_tagged_message(term, args)
     labels = get_filtered_labeled_message(term, args)
+    tags = get_filtered_tagged_message(term, args)
     Search.new(contacts, messages, tags, labels)
   end
 
@@ -435,7 +435,7 @@ defmodule Glific.Searches do
   defp get_filtered_messages_with_term(term, args) do
     filtered_query(args)
     |> where([m: m], ilike(m.body, ^"%#{term}%"))
-    |> order_by([m: m], desc: m.inserted_at)
+    |> order_by([m: m], desc: m.message_number)
     |> Repo.all()
   end
 
@@ -443,7 +443,7 @@ defmodule Glific.Searches do
   defp get_filtered_labeled_message(term, args) do
     filtered_query(args)
     |> where([m: m], ilike(m.flow_label, ^"%#{term}%"))
-    |> order_by([m: m], desc: m.inserted_at)
+    |> order_by([m: m], desc: m.message_number)
     |> Repo.all()
   end
 
