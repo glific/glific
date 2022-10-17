@@ -60,23 +60,6 @@ defmodule Glific.Sheets do
   end
 
   @doc """
-  Sync a sheet by updating sheet data
-
-  ## Examples
-
-      iex> sync_sheet(sheet, %{field: new_value})
-      {:ok, %Sheet{}}
-
-      iex> sync_sheet(sheet, %{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  @spec sync_sheet(Sheet.t(), map()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
-  def sync_sheet(%Sheet{} = sheet, attrs) do
-    parse_sheet_data(attrs, sheet)
-  end
-
-  @doc """
   Deletes a sheet.
 
   ## Examples
