@@ -75,15 +75,25 @@ defmodule GlificWeb.Router do
     forward("/api", Absinthe.Plug, schema: GlificWeb.Schema)
   end
 
+  # BSP webhooks
   scope "/", GlificWeb do
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
     forward("/gupshup-enterprise", Providers.Gupshup.Enterprise.Plugs.Shunt)
   end
 
+  # """
+  # Third party webhook except BSPs. Ideally we should have merge the BSPs also in this scope.
+  # But since the BSP is a primary webhooks for this application We kept it separated.
+  # """
+
   scope "/webhook", GlificWeb do
     post("/stripe", StripeController, :stripe_webhook)
     get("/exotel/optin", ExotelController, :optin)
   end
+
+  # """
+  # All the flow editor routes which is used while designing the flow.
+  # """
 
   scope "/flow-editor", GlificWeb.Flows do
     pipe_through([:api, :api_protected])
