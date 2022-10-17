@@ -61,8 +61,13 @@ defmodule GlificWeb.Resolvers.Sheets do
           {:ok, any} | {:error, any}
   def sync_sheet(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, sheet} <-
-           Repo.fetch_by(Sheet, %{id: id, organization_id: user.organization_id}) do
-      Sheets.sync_sheet(sheet, %{url: sheet.url, organization_id: user.organization_id})
+           Repo.fetch_by(Sheet, %{id: id, organization_id: user.organization_id}),
+         {:ok, sheet} <-
+           Sheets.update_sheet(sheet, %{
+             url: sheet.url,
+             label: sheet.label,
+             organization_id: user.organization_id
+           }) do
       {:ok, %{sheet: sheet}}
     end
   end
