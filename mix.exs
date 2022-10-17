@@ -133,7 +133,7 @@ defmodule Glific.MixProject do
       {:fun_with_flags, "~> 1.9"},
       {:fun_with_flags_ui, "~> 0.8"},
       {:passwordless_auth, "~> 0.3.0"},
-      {:appsignal_phoenix, "~> 2.3"},
+      {:appsignal_phoenix, "~> 2.1"},
       {:poolboy, "~> 1.5"},
       {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git", branch: "dev"},
       {:cloak_ecto, "~> 1.2"},

@@ -39,6 +39,8 @@ defmodule GlificWeb do
 
       import Phoenix.LiveView.Helpers
 
+      import Phoenix.Component
+
       # Include shared imports and aliases for views
       unquote(view_helpers())
     end
@@ -68,6 +70,7 @@ defmodule GlificWeb do
       import Plug.Conn
       import Phoenix.Controller
       import Phoenix.LiveView.Router
+      import Phoenix.Component
     end
   end
 
