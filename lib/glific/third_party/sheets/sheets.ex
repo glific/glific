@@ -136,7 +136,7 @@ defmodule Glific.Sheets do
 
     Enum.reduce(filter, query, fn
       {:is_active, is_active}, query ->
-        from(q in query, where: q.is_active == ^is_active)
+        from q in query, where: q.is_active == ^is_active
 
       _, query ->
         query
