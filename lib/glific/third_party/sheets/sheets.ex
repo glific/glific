@@ -27,15 +27,14 @@ defmodule Glific.Sheets do
   """
   @spec create_sheet(map()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
   def create_sheet(attrs) do
-    last_synced_at = DateTime.utc_now()
+    {:ok, sheet} =
+      %Sheet{}
+      |> Sheet.changeset(attrs)
+      |> Repo.insert()
 
-    with {:ok, sheet} <-
-           %Sheet{}
-           |> Sheet.changeset(Map.put_new(attrs, :last_synced_at, last_synced_at))
-           |> Repo.insert() do
-      sync_sheet_data(sheet, last_synced_at)
-      {:ok, sheet}
-    end
+    sync_sheet_data(sheet)
+
+    {:ok, sheet}
   end
 
   @doc """
@@ -52,13 +51,15 @@ defmodule Glific.Sheets do
   """
   @spec update_sheet(Sheet.t(), map()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
   def update_sheet(%Sheet{} = sheet, attrs) do
-    with {:ok, sheet} <-
-           sheet
-           |> Sheet.changeset()
-           |> Repo.update() do
-      if Map.has_key?(attrs, :url), do: sync_sheet_data(sheet, DateTime.utc_now())
-      {:ok, sheet}
-    end
+    {:ok, sheet} =
+      sheet
+      |> Sheet.changeset(attrs)
+      |> Repo.update()
+
+    # incase we update the url. Let's resync the sheet data.
+    if Map.has_key?(attrs, :url), do: sync_sheet_data(sheet)
+
+    {:ok, sheet}
   end
 
   @doc """
@@ -132,20 +133,27 @@ defmodule Glific.Sheets do
   Sync a sheet
   """
   @spec sync_sheet_data(Sheet.t()) :: :ok
-  def sync_sheet_data(sheet, last_synced_at) do
+  def sync_sheet_data(sheet) do
+    last_synced_at = DateTime.utc_now()
+
     ApiClient.get_csv_content(url: sheet.url)
     |> Enum.each(fn {_, row} ->
       %{
+        ## we can also think in case we need fist column.
         key: row["Key"],
         row_data: clean_row_values(row),
         sheet_id: sheet.id,
-        last_synced_at: sheet.last_synced_at,
-        organization_id: sheet.organization_id
+        organization_id: sheet.organization_id,
+        last_synced_at: last_synced_at
       }
       |> upsert_sheet_data()
     end)
 
-    clean_unsynced_sheet_data(sheet)
+    remove_delete_raw_from_db(sheet, last_synced_at)
+
+    ## we can move this to top of the function also. We can change that later.
+    {:ok, _sheet} = update_sheet(sheet, %{last_synced_at: last_synced_at})
+
     :ok
   end
 
@@ -157,13 +165,15 @@ defmodule Glific.Sheets do
     end)
   end
 
-  @spec clean_unsynced_sheet_data(Sheet.t()) :: {integer(), nil | [term()]}
-  defp clean_unsynced_sheet_data(sheet) do
+  ## We are removing all the rows which are not refreshed in the last sync.
+  ## We are assuming that these rows have been deleted from the sheet also.
+  @spec remove_delete_raw_from_db(Sheet.t(), DateTime.t()) :: {integer(), nil | [term()]}
+  defp remove_delete_raw_from_db(sheet, last_synced_at) do
     Repo.delete_all(
       from(sd in SheetData,
         where:
           sd.organization_id == ^sheet.organization_id and sd.sheet_id == ^sheet.id and
-            sd.last_synced_at != ^sheet.last_synced_at
+            sd.last_synced_at != ^last_synced_at
       )
     )
   end

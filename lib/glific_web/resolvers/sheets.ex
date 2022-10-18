@@ -14,9 +14,8 @@ defmodule GlificWeb.Resolvers.Sheets do
   @spec sheet(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def sheet(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, sheet} <-
-           Repo.fetch_by(Sheet, %{id: id, organization_id: user.organization_id}),
-         do: {:ok, %{sheet: sheet}}
+    {:ok, sheet} = Repo.fetch_by(Sheet, %{id: id, organization_id: user.organization_id})
+    {:ok, %{sheet: sheet}}
   end
 
   @doc """
@@ -40,42 +39,33 @@ defmodule GlificWeb.Resolvers.Sheets do
   @spec create_sheet(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_sheet(_, %{input: params}, _) do
-    with {:ok, sheet} <- Sheets.create_sheet(params) do
-      {:ok, %{sheet: sheet}}
-    end
+    {:ok, sheet} = Sheets.create_sheet(params)
+    {:ok, %{sheet: sheet}}
   end
 
   @doc false
   @spec update_sheet(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_sheet(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
-    with {:ok, sheet} <-
-           Repo.fetch_by(Sheet, %{id: id, organization_id: user.organization_id}),
-         {:ok, sheet} <- Sheets.update_sheet(sheet, params) do
-      {:ok, %{sheet: sheet}}
-    end
+    {:ok, sheet} = Repo.fetch_by(Sheet, %{id: id, organization_id: user.organization_id})
+    {:ok, sheet} = Sheets.update_sheet(sheet, params)
+    {:ok, %{sheet: sheet}}
   end
 
   @doc false
   @spec sync_sheet(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def sync_sheet(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, sheet} <-
-           Repo.fetch_by(Sheet, %{id: id, organization_id: user.organization_id}),
-         last_synced_at <- DateTime.utc_now(),
-         {:ok, updated_sheet} <- Sheets.update_sheet(sheet, %{last_synced_at: last_synced_at}) do
-      Sheets.sync_sheet_data(updated_sheet, last_synced_at)
-
-      {:ok, %{sheet: updated_sheet}}
-    end
+    {:ok, sheet} = Repo.fetch_by(Sheet, %{id: id, organization_id: user.organization_id})
+    Sheets.sync_sheet_data(sheet)
+    {:ok, %{sheet: sheet}}
   end
 
   @doc false
   @spec delete_sheet(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_sheet(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, sheet} <- Repo.fetch_by(Sheet, %{id: id, organization_id: user.organization_id}) do
-      Sheets.delete_sheet(sheet)
-    end
+    {:ok, sheet} = Repo.fetch_by(Sheet, %{id: id, organization_id: user.organization_id})
+    Sheets.delete_sheet(sheet)
   end
 end
