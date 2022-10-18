@@ -27,11 +27,13 @@ defmodule Glific.Sheets do
   """
   @spec create_sheet(map()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
   def create_sheet(attrs) do
+    last_synced_at = DateTime.utc_now()
+
     with {:ok, sheet} <-
            %Sheet{}
-           |> Sheet.changeset(Map.put_new(attrs, :last_synced_at, DateTime.utc_now()))
+           |> Sheet.changeset(Map.put_new(attrs, :last_synced_at, last_synced_at))
            |> Repo.insert() do
-      parse_sheet_data(attrs, sheet)
+      sync_sheet_data(sheet, last_synced_at)
       {:ok, sheet}
     end
   end
@@ -52,9 +54,9 @@ defmodule Glific.Sheets do
   def update_sheet(%Sheet{} = sheet, attrs) do
     with {:ok, sheet} <-
            sheet
-           |> Sheet.changeset(Map.put_new(attrs, :last_synced_at, DateTime.utc_now()))
+           |> Sheet.changeset()
            |> Repo.update() do
-      parse_sheet_data(attrs, sheet)
+      if Map.has_key?(attrs, :url), do: sync_sheet_data(sheet, DateTime.utc_now())
       {:ok, sheet}
     end
   end
@@ -127,18 +129,18 @@ defmodule Glific.Sheets do
   end
 
   @doc """
-  Parses a sheet
+  Sync a sheet
   """
-  @spec parse_sheet_data(map(), Sheet.t()) :: :ok
-  def parse_sheet_data(attrs, sheet) do
-    ApiClient.get_csv_content(url: attrs.url)
+  @spec sync_sheet_data(Sheet.t()) :: :ok
+  def sync_sheet_data(sheet, last_synced_at) do
+    ApiClient.get_csv_content(url: sheet.url)
     |> Enum.each(fn {_, row} ->
       %{
         key: row["Key"],
         row_data: clean_row_values(row),
         sheet_id: sheet.id,
         last_synced_at: sheet.last_synced_at,
-        organization_id: attrs.organization_id
+        organization_id: sheet.organization_id
       }
       |> upsert_sheet_data()
     end)
