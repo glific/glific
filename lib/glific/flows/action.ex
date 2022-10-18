@@ -50,6 +50,7 @@ defmodule Glific.Flows.Action do
   @required_fields_classifier [:input, :result_name | @required_field_common]
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
+  @required_fields_sheet [:url, :row, :result_name | @required_field_common]
   @required_fields_group [:groups | @required_field_common]
   @required_fields_contact [:contacts, :text | @required_field_common]
   @required_fields_waittime [:delay]
@@ -167,9 +168,14 @@ defmodule Glific.Flows.Action do
   end
 
   @doc """
-  Process a json structure from floweditor to the Glific data types
+  Process a json structure from flow editor to the Glific data types
   """
   @spec process(map(), map(), Node.t()) :: {Action.t(), map()}
+  def process(%{"type" => "link_google_sheet"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_sheet)
+    process(json, uuid_map, node, %{url: json["url"], row: json["row"]})
+  end
+
   def process(%{"type" => "enter_flow"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_enter_flow)
 
@@ -497,7 +503,7 @@ defmodule Glific.Flows.Action do
     # sometimes action.field.name does not exist based on what the user
     # has entered in the flow. We should have a validation for this, but
     # lets prevent the error from happening
-    # if we dont recognize it, we just ignore it, and avoid an error being thrown
+    # if we don't recognize it, we just ignore it, and avoid an error being thrown
     # Issue #858
     if Map.get(action.field, :name) in ["", nil] do
       {:ok, context, messages}
@@ -523,7 +529,7 @@ defmodule Glific.Flows.Action do
       Glific.log_error("Repeated loop, hence finished the flow", false)
     else
       # check if we are looping with the same flow, if so reset
-      # and start from scratch, since we really dont want to have too deep a stack
+      # and start from scratch, since we really don't want to have too deep a stack
       maybe_reset_flows(context, flow_uuid)
 
       # if the action is part of a terminal node, then lets mark this context as
@@ -784,7 +790,7 @@ defmodule Glific.Flows.Action do
   @spec process_attachments(list()) :: map()
   defp process_attachments(nil), do: %{}
 
-  ## we will remvoe this once we have a fix it form the flow editor
+  ## we will remove this once we have a fix it form the flow editor
   defp process_attachments(attachment_list) do
     attachment_list
     |> Enum.reduce(%{}, fn attachment, acc -> do_process_attachment(attachment, acc) end)
