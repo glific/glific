@@ -17,8 +17,6 @@ defmodule Glific.Clients.DigitalGreen do
     Sheets.ApiClient
   }
 
-  alias Glific.Sheets.ApiClient
-
   @crp_id_key "dg_crp_ids"
 
   @geographies %{

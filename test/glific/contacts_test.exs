@@ -281,7 +281,9 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:glific_admin])
 
-      Import.import_contacts(organization.id, user, file_path: get_tmp_path())
+      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+        file_path: get_tmp_path()
+      )
 
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
@@ -292,12 +294,11 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:glific_admin])
 
-      data =
-        "name,phone,Language,opt_in,collection\ncontact_test,9989329297,english,2021-03-09_12:34:25,collection\n"
+      data = "name,phone,Language,opt_in\ncontact_test,9989329297,english,2021-03-09_12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, user, data: data)
+      Import.import_contacts(organization.id, %{user: user, collection: "collection"}, data: data)
       count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
 
       assert count == 1
@@ -316,14 +317,15 @@ defmodule Glific.ContactsTest do
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body:
-              "name,phone,Language,opt_in,collection\ntest,9989329297,english,2021-03-09_12:34:25,collection\n"
+            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09_12:34:25\n"
           }
       end)
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, user, url: "http://www.bar.com/foo.csv")
+      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+        url: "http://www.bar.com/foo.csv"
+      )
 
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
@@ -353,7 +355,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, user, file_path: get_tmp_path())
+      Import.import_contacts(organization.id, %{user: user}, file_path: get_tmp_path())
 
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
@@ -378,7 +380,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, user, data: data)
+      Import.import_contacts(organization.id, %{user: user}, data: data)
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
       assert count == 1
@@ -406,7 +408,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, user, url: "http://www.bar.com/foo.csv")
+      Import.import_contacts(organization.id, %{user: user}, url: "http://www.bar.com/foo.csv")
 
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
@@ -427,15 +429,17 @@ defmodule Glific.ContactsTest do
       user = Map.put(user, :roles, [:glific_admin])
 
       [
-        ~w(name phone Language opt_in delete collection),
-        ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1 collection)
+        ~w(name phone Language opt_in delete),
+        ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1)
       ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, user, file_path: get_tmp_path())
+      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+        file_path: get_tmp_path()
+      )
 
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
@@ -464,7 +468,8 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      {:error, message} = Import.import_contacts(organization.id, user, file_path: get_tmp_path())
+      {:error, message} =
+        Import.import_contacts(organization.id, %{user: user}, file_path: get_tmp_path())
 
       assert message == ["This user doesn't have enough permission"]
 
@@ -488,15 +493,17 @@ defmodule Glific.ContactsTest do
       Contacts.delete_contact(contact)
 
       [
-        ~w(name phone Language opt_in delete collection),
-        ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1 collection)
+        ~w(name phone Language opt_in delete),
+        ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1)
       ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, user, file_path: get_tmp_path())
+      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+        file_path: get_tmp_path()
+      )
 
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
@@ -520,8 +527,8 @@ defmodule Glific.ContactsTest do
       ]) do
         file = get_tmp_file()
 
-        [~w(name phone Language opt_in collection)]
-        |> Enum.concat([["updated", "9989329297", "english", "", "collection"]])
+        [~w(name phone Language opt_in)]
+        |> Enum.concat([["updated", "9989329297", "english", ""]])
         |> CSV.encode()
         |> Enum.each(&IO.write(file, &1))
 
@@ -530,7 +537,9 @@ defmodule Glific.ContactsTest do
         {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
         user = Map.put(user, :roles, [:glific_admin])
 
-        Import.import_contacts(organization.id, user, file_path: get_tmp_path())
+        Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+          file_path: get_tmp_path()
+        )
 
         count = Contacts.count_contacts(%{filter: %{phone: 9_989_329_297}})
 
@@ -559,7 +568,7 @@ defmodule Glific.ContactsTest do
 
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
-      assert {:error, _} = Import.import_contacts(999, user, file_path: get_tmp_path())
+      assert {:error, _} = Import.import_contacts(999, %{user: user}, file_path: get_tmp_path())
     end
 
     test "insert_or_update_contact_data/3 returns an error if insertion fails" do
@@ -574,7 +583,7 @@ defmodule Glific.ContactsTest do
 
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
-      {:error, message} = Import.import_contacts(1, user, file_path: get_tmp_path())
+      {:error, message} = Import.import_contacts(1, %{user: user}, file_path: get_tmp_path())
 
       assert ["New contacts were found in this file. Sorry those could not be added"] == message
     end

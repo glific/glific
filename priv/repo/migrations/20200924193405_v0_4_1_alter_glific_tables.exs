@@ -23,7 +23,7 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       add :shortcode, :string, comment: "Shortcode for the provider"
       add :group, :string
 
-      add :is_required, :boolean, default: false, comment: "Whether manadatory for initial setup"
+      add :is_required, :boolean, default: false, comment: "Whether mandatory for initial setup"
 
       # structure for keys
       add :keys, :jsonb,
@@ -49,7 +49,7 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
 
   defp credentials do
     create table(:credentials) do
-      # all the service keys which doesn't need ecryption
+      # all the service keys which doesn't need encryption
       add :keys, :jsonb, default: "{}"
 
       # we will keep these keys encrypted
@@ -93,7 +93,7 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
-        comment: "Unique organisation ID"
+        comment: "Unique organization ID"
 
       timestamps(type: :utc_datetime)
     end

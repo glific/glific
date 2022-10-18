@@ -83,7 +83,8 @@ defmodule Glific.Jobs.MinuteWorker do
               "hourly_tasks",
               "delete_tasks",
               "five_minute_tasks",
-              "update_hsms"
+              "update_hsms",
+              "weekly_tasks"
             ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
