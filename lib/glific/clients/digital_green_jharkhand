@@ -1,15 +1,7 @@
 defmodule Glific.Clients.DigitalGreen_Jharkhand do
-
   @moduledoc """
   Custom webhook implementation specific to DigitalGreen Jharkhand usecase
   """
-
- import Ecto.Query, warn: false
-
-  alias Glific.{
-    Contacts,
-    Flows.ContactField
-  }
 
   def webhook(_, _fields),
     do: %{}
