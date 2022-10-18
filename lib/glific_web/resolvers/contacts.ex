@@ -83,7 +83,6 @@ defmodule GlificWeb.Resolvers.Contacts do
         %{type: type, data: data, id: id, group_label: group_label} = _contact_attrs,
         %{context: %{current_user: user}}
       ) do
-
     organization_id = Glific.parse_maybe_integer(id) |> elem(1)
 
     Import.import_contacts(
