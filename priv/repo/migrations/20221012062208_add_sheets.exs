@@ -24,7 +24,7 @@ defmodule Glific.Repo.Migrations.AddSheets do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:sheets, [:label, :url, :organization_id])
+    create unique_index(:sheets, [:url, :organization_id])
   end
 
   defp create_sheets_data() do
