@@ -239,21 +239,17 @@ defmodule Glific.Sheets do
       organization_id: context.organization_id
     }
 
-    with loaded_sheet <- load_sheet_data(params) do
-      {
-        FlowContext.update_results(
-          context,
-          %{result_name => loaded_sheet}
-        ),
-        Messages.create_temp_message(context.organization_id, "Success")
-      }
+    with loaded_sheet <- load_sheet_data(params),
+         context <- FlowContext.update_results(context, %{result_name => loaded_sheet}) do
+      {context, Messages.create_temp_message(context.organization_id, "Success")}
     else
       _ ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
   end
 
-  def load_sheet_data(attrs) do
+  @spec load_sheet_data(map()) :: map()
+  defp load_sheet_data(attrs) do
     {:ok, sheet_data} =
       Repo.fetch_by(SheetData, %{
         sheet_id: attrs.sheet_id,
