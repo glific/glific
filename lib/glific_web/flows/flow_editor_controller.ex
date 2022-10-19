@@ -536,7 +536,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
             name: sheet.label,
             url: sheet.url,
             is_active: sheet.is_active,
-            last_synced_at: sheet.last_synced_at
+            last_synced_at: sheet.last_synced_at,
             created_on: sheet.inserted_at,
             modified_on: sheet.updated_at
           }
