@@ -147,6 +147,8 @@ defmodule GlificWeb.Router do
     get("/attachments-enabled", FlowEditorController, :attachments_enabled)
 
     post("/flow-attachment", FlowEditorController, :flow_attachment)
+
+    get("/sheets", FlowEditorController, :sheets)
   end
 
   if Mix.env() in [:dev, :test] do
