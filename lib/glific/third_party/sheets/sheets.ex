@@ -229,7 +229,7 @@ defmodule Glific.Sheets do
   @doc """
   Execute a sheet action
   """
-  @spec execute(Action.t(), FlowContext.t()) :: nil
+  @spec execute(Action.t() | any(), FlowContext.t()) :: {FlowContext.t(), Messages.Message.t()}
   def execute(action, context) do
     result_name = action.result_name
 
