@@ -7,6 +7,7 @@ defmodule Glific.Sheets do
   require Logger
 
   alias Glific.{
+    Flows.Action,
     Flows.FlowContext,
     Messages,
     Repo,
