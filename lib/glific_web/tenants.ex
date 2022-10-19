@@ -5,7 +5,7 @@ defmodule GlificWeb.Tenants do
   postgres row level security instead, and hence copying the code from there. The
   original copyright and license (MIT) belong to the contributors to Triplex.
 
-  The main objetive of it is to make a little bit easier to manage organizations
+  The main objective of it is to make a little bit easier to manage organizations
   through postgres db schemas or equivalents, executing queries and commands
   inside and outside the organization without much boilerplate code.
   """
