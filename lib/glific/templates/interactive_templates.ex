@@ -241,7 +241,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   def clean_template_title(interactive_content), do: interactive_content
 
   @doc """
-   Get translated interative template content
+   Get translated interactive template content
   """
   @spec translated_content(InteractiveTemplate.t(), non_neg_integer()) :: map() | nil
   def translated_content(interactive_template, language_id) do

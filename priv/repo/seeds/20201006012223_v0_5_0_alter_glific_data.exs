@@ -9,10 +9,10 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
   }
 
   def up(_repo, _opts) do
-    update_exisiting_providers()
+    update_existing_providers()
   end
 
-  defp update_exisiting_providers() do
+  defp update_existing_providers() do
     {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
     {:ok, dialogflow} = Repo.fetch_by(Provider, %{shortcode: "dialogflow"})

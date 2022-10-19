@@ -13,12 +13,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   }
 
   def up(_repo, _opts) do
-    update_exisiting_providers()
+    update_existing_providers()
 
     add_providers()
   end
 
-  defp update_exisiting_providers() do
+  defp update_existing_providers() do
     # add pseudo credentials for gupshup
     {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
