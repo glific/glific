@@ -527,18 +527,14 @@ defmodule GlificWeb.Flows.FlowEditorController do
   def sheets(conn, _params) do
     results =
       Sheets.list_sheets(%{
-        filter: %{organization_id: conn.assigns[:organization_id]}
+        filter: %{organization_id: conn.assigns[:organization_id], is_active: true}
       })
       |> Enum.reduce([], fn sheet, acc ->
         [
           %{
             id: sheet.id,
             name: sheet.label,
-            url: sheet.url,
-            is_active: sheet.is_active,
-            last_synced_at: sheet.last_synced_at,
-            created_on: sheet.inserted_at,
-            modified_on: sheet.updated_at
+            url: sheet.url
           }
           | acc
         ]
