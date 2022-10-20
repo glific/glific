@@ -1,4 +1,4 @@
-defmodule Glific.Clients.DigitalGreen_Jharkhand do
+defmodule Glific.Clients.DigitalGreenJharkhand do
   @moduledoc """
   Custom webhook implementation specific to DigitalGreen Jharkhand usecase
   """
