@@ -4,7 +4,6 @@ defmodule Glific.Clients.PehlayAkshar do
   """
 
   alias Glific.{
-    Messages,
     Partners,
     Partners.OrganizationData,
     Repo,
@@ -39,7 +38,8 @@ defmodule Glific.Clients.PehlayAkshar do
     })
     |> case do
       {:ok, organization_data} ->
-        Map.get(organization_data.json, today, %{}) |> Map.put("organization_id", org_id)
+        Map.get(organization_data.json, today, %{})
+        |> Map.put("organization_id", org_id)
 
       _ ->
         %{}
@@ -50,20 +50,21 @@ defmodule Glific.Clients.PehlayAkshar do
     raise "Unknown webhook"
   end
 
-  # @spec load_sheet(String.t(), String.t(), non_neg_integer()) :: :ok
-  def load_sheet(org_id) do
+  @spec load_sheet(non_neg_integer()) :: :ok
+  defp load_sheet(org_id) do
     ApiClient.get_csv_content(url: @sheets.content_sheet)
     |> Enum.reduce(%{}, fn {_, row}, acc ->
       Map.put(acc, row["date"], row)
     end)
     |> then(&Partners.maybe_insert_organization_data("content_sheet", &1, org_id))
+    :ok
   end
 
   @doc """
     get template for IEX
   """
-  @spec template(String.t(), String.t(), non_neg_integer()) :: binary
-  def template(template_label, media_url, organization_id) do
+  @spec template(String.t(), non_neg_integer()) :: binary
+  def template(template_label, organization_id) do
     %{
       uuid: fetch_template_uuid(template_label, organization_id),
       name: template_label,
