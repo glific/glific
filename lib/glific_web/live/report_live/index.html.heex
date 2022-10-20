@@ -1,0 +1,39 @@
+<h1>Listing Reports</h1>
+
+<%= if @live_action in [:new, :edit] do %>
+  <.modal return_to={Routes.report_index_path(@socket, :index)}>
+    <.live_component
+      module={GlificWeb.ReportLive.FormComponent}
+      id={@report.id || :new}
+      title={@page_title}
+      action={@live_action}
+      report={@report}
+      return_to={Routes.report_index_path(@socket, :index)}
+    />
+  </.modal>
+<% end %>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="reports">
+    <%= for report <- @reports do %>
+      <tr id={"report-#{report.id}"}>
+        <td><%= report.name %></td>
+
+        <td>
+          <span><%= live_redirect "Show", to: Routes.report_show_path(@socket, :show, report) %></span>
+          <span><%= live_patch "Edit", to: Routes.report_index_path(@socket, :edit, report) %></span>
+          <span><%= link "Delete", to: "#", phx_click: "delete", phx_value_id: report.id, data: [confirm: "Are you sure?"] %></span>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<span><%= live_patch "New Report", to: Routes.report_index_path(@socket, :new) %></span>
