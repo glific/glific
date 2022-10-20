@@ -57,6 +57,17 @@ defmodule GlificWeb.Resolvers.Sheets do
   end
 
   @doc false
+  @spec sync_sheet(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def sync_sheet(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, sheet} <-
+           Repo.fetch_by(Sheet, %{id: id, organization_id: user.organization_id}),
+         {:ok, synced_sheet} <- Sheets.sync_sheet_data(sheet) do
+      {:ok, %{sheet: synced_sheet}}
+    end
+  end
+
+  @doc false
   @spec delete_sheet(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_sheet(_, %{id: id}, %{context: %{current_user: user}}) do
