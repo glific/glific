@@ -44,7 +44,7 @@ defmodule Glific.Repo.Migrations.AddSheets do
     end
 
     create unique_index(:sheets_data, [:key, :sheet_id, :organization_id])
-    create index(:sheets, :organization_id)
-    create index(:sheets, :sheet_id)
+    create index(:sheets_data, :organization_id)
+    create index(:sheets_data, :sheet_id)
   end
 end
