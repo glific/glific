@@ -231,33 +231,17 @@ defmodule Glific.Sheets do
   """
   @spec execute(Action.t() | any(), FlowContext.t()) :: {FlowContext.t(), Messages.Message.t()}
   def execute(action, context) do
-    result_name = action.result_name
-
-    params = %{
-      sheet_id: action.sheet_id,
-      row: action.row,
-      result_name: result_name,
-      organization_id: context.organization_id
-    }
-
-    with loaded_sheet <- load_sheet_data(params),
-         context <- FlowContext.update_results(context, %{result_name => loaded_sheet}) do
+    with {:ok, loaded_sheet} <-
+           Repo.fetch_by(SheetData, %{
+             sheet_id: action.sheet_id,
+             key: action.row,
+             organization_id: context.organization_id
+           }),
+         context <- FlowContext.update_results(context, %{action.result_name => loaded_sheet}) do
       {context, Messages.create_temp_message(context.organization_id, "Success")}
     else
       _ ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
-  end
-
-  @spec load_sheet_data(map()) :: map()
-  defp load_sheet_data(attrs) do
-    {:ok, sheet_data} =
-      Repo.fetch_by(SheetData, %{
-        sheet_id: attrs.sheet_id,
-        key: attrs.row,
-        organization_id: attrs.organization_id
-      })
-
-    sheet_data.row_data
   end
 end
