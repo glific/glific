@@ -311,6 +311,83 @@ In case of errors, above functions return an error object like the below
 | -------------------------------------- | ------------------------ |
 | <a href="#sheetresult">SheetResult</a> | The updated sheet object |
 
+## Sync a Sheet
+
+```graphql
+mutation SyncSheet($syncSheetId: ID!) {
+  syncSheet(id: $syncSheetId) {
+    sheet {
+      id
+      isActive
+      label
+      lastSyncedAt
+      updatedAt
+      url
+      insertedAt
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "id": 3
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "syncSheet": {
+      "sheet": {
+        "id": "3",
+        "insertedAt": "2022-10-14T06:06:23.000000Z",
+        "isActive": true,
+        "label": "sheet3",
+        "lastSyncedAt": "2022-10-14T06:10:57Z",
+        "updatedAt": "2022-10-14T06:10:57.790150Z",
+        "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+      },
+      "errors": null
+    }
+  }
+}
+```
+
+In case of errors, above functions return an error object like the below
+
+```json
+{
+  "data": {
+    "syncSheet": {
+      "errors": [
+        {
+          "key": "Elixir.Glific.Sheets.Sheet",
+          "message": "Resource not found"
+        }
+      ],
+      "sheet": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>! | required |             |
+
+### Return Parameters
+
+| Type                                   | Description              |
+| -------------------------------------- | ------------------------ |
+| <a href="#sheetresult">SheetResult</a> | The updated sheet object |
+
 ## Delete a Sheet
 
 ```graphql
@@ -380,9 +457,6 @@ In case of errors, all the above functions return an error object like the below
 | Type                                   | Description              |
 | -------------------------------------- | ------------------------ |
 | <a href="#sheetresult">SheetResult</a> | An error object or empty |
-
-
-
 
 ## Sheet Objects
 
@@ -465,7 +539,6 @@ In case of errors, all the above functions return an error object like the below
 </tr>
 </tbody>
 </table>
-
 
 ### SheetInput
 
