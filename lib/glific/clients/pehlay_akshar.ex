@@ -4,10 +4,12 @@ defmodule Glific.Clients.PehlayAkshar do
   """
 
   alias Glific.{
+    Messages,
     Partners,
     Partners.OrganizationData,
     Repo,
-    Sheets.ApiClient
+    Sheets.ApiClient,
+    Templates.SessionTemplate
   }
 
   @sheets %{
@@ -27,7 +29,7 @@ defmodule Glific.Clients.PehlayAkshar do
     fields
   end
 
-  def webhook("send_daily_msg", fields) do
+  def webhook("fetch_advisory_content", fields) do
     today = Timex.format!(DateTime.utc_now(), "{D}/{M}/{YYYY}")
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
 
@@ -36,8 +38,11 @@ defmodule Glific.Clients.PehlayAkshar do
       key: "content_sheet"
     })
     |> case do
-      {:ok, organization_data} -> Map.get(organization_data.json, today, %{})
-      _ -> %{}
+      {:ok, organization_data} ->
+        Map.get(organization_data.json, today, %{}) |> Map.put("organization_id", org_id)
+
+      _ ->
+        %{}
     end
   end
 
@@ -49,8 +54,34 @@ defmodule Glific.Clients.PehlayAkshar do
   def load_sheet(org_id) do
     ApiClient.get_csv_content(url: @sheets.content_sheet)
     |> Enum.reduce(%{}, fn {_, row}, acc ->
-      Map.put(acc, row["Date"], row)
+      Map.put(acc, row["date"], row)
     end)
     |> then(&Partners.maybe_insert_organization_data("content_sheet", &1, org_id))
+  end
+
+  @doc """
+    get template for IEX
+  """
+  @spec template(String.t(), String.t(), non_neg_integer()) :: binary
+  def template(template_label, media_url, organization_id) do
+    %{
+      uuid: fetch_template_uuid(template_label, organization_id),
+      name: template_label,
+      variables: ["@contact.name"],
+      expression: nil
+    }
+    |> Jason.encode!()
+  end
+
+  defp fetch_template_uuid(template_label, organization_id) do
+    Repo.fetch_by(SessionTemplate, %{
+      shortcode: template_label,
+      is_hsm: true,
+      organization_id: organization_id
+    })
+    |> case do
+      {:ok, template} -> template.uuid
+      _ -> nil
+    end
   end
 end
