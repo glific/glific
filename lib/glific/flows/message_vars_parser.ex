@@ -34,7 +34,7 @@ defmodule Glific.Flows.MessageVarParser do
     |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
     |> String.replace(~r/@[\w]+[\.][\w]*/, &bound(&1, binding))
     |> parse_results(binding["results"])
-    |> parse_calendar(binding)
+    |> parse_calendar(binding["contact"]["organization_id"])
   end
 
   @spec bound(String.t(), map()) :: String.t()
@@ -103,7 +103,7 @@ defmodule Glific.Flows.MessageVarParser do
 
   defp stringify_keys(value), do: value
 
-  def parse_calendar(body, %{"contact" => %{"organization_id" => organization_id}} = _binding) do
+  def parse_calendar(body, organization_id) do
     {:ok, org_id} = Glific.parse_maybe_integer(organization_id)
 
     today =
