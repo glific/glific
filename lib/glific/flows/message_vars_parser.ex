@@ -1,14 +1,13 @@
 defmodule Glific.Flows.MessageVarParser do
+  @moduledoc """
+  substitute the contact fields and result sets in the messages
+  """
   require Logger
 
   alias Glific.{
     Partners,
     Repo
   }
-
-  @moduledoc """
-  substitute the contact fileds and result sets in the messages
-  """
 
   @doc """
   parse the message with variables
@@ -35,6 +34,7 @@ defmodule Glific.Flows.MessageVarParser do
     |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
     |> String.replace(~r/@[\w]+[\.][\w]*/, &bound(&1, binding))
     |> parse_results(binding["results"])
+    |> parse_calendar(binding)
   end
 
   @spec bound(String.t(), map()) :: String.t()
@@ -102,6 +102,17 @@ defmodule Glific.Flows.MessageVarParser do
   defp stringify_keys(list) when is_list(list), do: Enum.map(list, &stringify_keys(&1))
 
   defp stringify_keys(value), do: value
+
+  def parse_calendar(body, %{"contact" => %{"organization_id" => organization_id}} = _binding) do
+    {:ok, org_id} = Glific.parse_maybe_integer(organization_id)
+
+    today =
+      Partners.organization_timezone(org_id)
+      |> then(&DateTime.shift_zone!(DateTime.utc_now(), &1))
+      |> Timex.format!("{D}/{M}/{YYYY}")
+
+    do_parse_results(body, "@calendar.", %{"today" => %{"input" => today}})
+  end
 
   @doc """
   Interpolates the values from results into the message body.
