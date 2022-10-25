@@ -4,7 +4,8 @@ defmodule Glific.SheetsTest do
 
   alias Glific.{
     Fixtures,
-    Sheets
+    Sheets,
+    Sheets.Sheet
   }
 
   describe "sheets" do
@@ -21,23 +22,24 @@ defmodule Glific.SheetsTest do
       :ok
     end
 
-    # @valid_attrs %{
-    #   label: "some label",
-    #   url: "somelabel"
-    # }
+    @valid_attrs %{
+      label: "sample sheet",
+      # this is sample sheet url
+      url:
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+    }
+
     # @valid_more_attrs %{
     #   label: "some label",
     #   url: "somelabel"
     # }
-    # @update_attrs %{
-    #   label: "some label",
-    #   url: "somelabel",
-    #   is_active: false
-    # }
-    # @invalid_attrs %{
-    #   label: "some label",
-    #   url: "somelabel"
-    # }
+    @update_attrs %{
+      label: "updated sheet"
+    }
+    @invalid_attrs %{
+      label: "invalid sheet",
+      url: nil
+    }
 
     test "list_sheets/1 returns all sheets", attrs do
       sheet = Fixtures.sheet_fixture(attrs)
@@ -47,6 +49,45 @@ defmodule Glific.SheetsTest do
                fn s -> s.label == sheet.label end
              ) ==
                [sheet]
+    end
+
+    test "count_sheets/1 returns count of all sheets", attrs do
+      sheet_count = Sheets.count_sheets(%{filter: attrs})
+
+      Fixtures.sheet_fixture(attrs)
+      assert Sheets.count_sheets(%{filter: attrs}) == sheet_count + 1
+    end
+
+    test "get_sheet!/1 returns the sheet with given id", attrs do
+      sheet = Fixtures.sheet_fixture(attrs)
+      assert Sheets.get_sheet!(sheet.id) == sheet
+    end
+
+    test "create_sheet/1 with valid data creates a sheet", %{organization_id: organization_id} do
+      attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
+
+      assert {:ok, %Sheet{} = sheet} = Sheets.create_sheet(attrs)
+      assert sheet.label == "sample sheet"
+      assert sheet.url == @valid_attrs.url
+      assert sheet.is_active == true
+      assert sheet.organization_id == organization_id
+    end
+
+    test "create_sheet/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Sheets.create_sheet(@invalid_attrs)
+    end
+
+    test "update_sheet/2 with valid data updates the sheet", attrs do
+      sheet = Fixtures.sheet_fixture(attrs)
+      assert {:ok, %Sheet{} = sheet} = Sheets.update_sheet(sheet, @update_attrs)
+      assert sheet.is_active == true
+      assert sheet.label == "updated sheet"
+    end
+
+    test "update_sheet/2 with invalid data returns error changeset", attrs do
+      sheet = Fixtures.sheet_fixture(attrs)
+      assert {:error, %Ecto.Changeset{}} = Sheets.update_sheet(sheet, @invalid_attrs)
+      assert sheet == Sheets.get_sheet!(sheet.id)
     end
   end
 end
