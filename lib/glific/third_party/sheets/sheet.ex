@@ -40,7 +40,7 @@ defmodule Glific.Sheets.Sheet do
 
     belongs_to :organization, Organization
 
-    timestamps(type: :utc_datetime_usec)
+    timestamps(type: :utc_datetime)
   end
 
   @doc """
