@@ -23,17 +23,18 @@ defmodule Glific.Flows.MessageVarParser do
   def parse(input, binding) do
     parser_types = ["@global", "@calendar"]
 
-    bindings =
+    binding =
       Enum.reduce(parser_types, binding, fn key, acc ->
         if String.contains?(input, key), do: load_vars(acc, key), else: acc
       end)
+      |> stringify_keys()
 
     input
-    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, bindings))
-    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, bindings))
-    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, bindings))
-    |> String.replace(~r/@[\w]+[\.][\w]*/, &bound(&1, bindings))
-    |> parse_results(bindings["results"])
+    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
+    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
+    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
+    |> String.replace(~r/@[\w]+[\.][\w]*/, &bound(&1, binding))
+    |> parse_results(binding["results"])
   end
 
   @spec bound(String.t(), map()) :: String.t()
@@ -172,9 +173,7 @@ defmodule Glific.Flows.MessageVarParser do
       Repo.get_organization_id()
       |> Partners.get_global_field_map()
 
-    binding
-    |> Map.put("global", global_vars)
-    |> stringify_keys()
+    Map.put(binding, "global", global_vars)
   end
 
   defp load_vars(binding, "@calendar") do
@@ -188,7 +187,6 @@ defmodule Glific.Flows.MessageVarParser do
     }
 
     Map.put(binding, "calendar", calendar_vars)
-    |> stringify_keys()
   end
 
   defp load_vars(binding, _), do: binding
