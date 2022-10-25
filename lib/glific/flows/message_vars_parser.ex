@@ -30,10 +30,13 @@ defmodule Glific.Flows.MessageVarParser do
       |> stringify_keys()
 
     input
-    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
-    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
-    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
-    |> String.replace(~r/@[\w]+[\.][\w]*/, &bound(&1, binding))
+    |> String.replace(
+      ~r/@[\w\-]+[\.][\w\-]+[\.][\w\-]+[\.][\w\-]+[\.][\w\-]*/,
+      &bound(&1, binding)
+    )
+    |> String.replace(~r/@[\w\-]+[\.][\w\-]+[\.][\w\-]+[\.][\w\-]*/, &bound(&1, binding))
+    |> String.replace(~r/@[\w\-]+[\.][\w\-]+[\.][\w\-]*/, &bound(&1, binding))
+    |> String.replace(~r/@[\w\-]+[\.][\w\-]*/, &bound(&1, binding))
     |> parse_results(binding["results"])
   end
 
