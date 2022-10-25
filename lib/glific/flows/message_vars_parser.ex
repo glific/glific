@@ -177,11 +177,14 @@ defmodule Glific.Flows.MessageVarParser do
   end
 
   defp load_vars(binding, "@calendar") do
+    default_format = "{D}/{0M}/{YYYY}"
+    today = Timex.today()
+
     calendar_vars = %{
-      current_date: Timex.today() |> to_string(),
-      yesterday: Timex.shift(Timex.today(), days: -1) |> to_string(),
-      tomorrow: Timex.shift(Timex.today(), days: 1) |> to_string(),
-      current_day: Timex.today() |> Timex.weekday() |> Timex.day_name() |> String.downcase(),
+      current_date: today |> Timex.format!(default_format) |> to_string(),
+      yesterday: Timex.shift(today, days: -1) |> Timex.format!(default_format) |> to_string(),
+      tomorrow: Timex.shift(today, days: 1) |> Timex.format!(default_format) |> to_string(),
+      current_day: today |> Timex.weekday() |> Timex.day_name() |> String.downcase(),
       current_month: Timex.now().month |> Timex.month_name() |> String.downcase(),
       current_year: Timex.now().year
     }

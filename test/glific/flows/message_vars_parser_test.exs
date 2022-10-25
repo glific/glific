@@ -325,7 +325,8 @@ defmodule Glific.Flows.MessageVarParserTest do
   end
 
   test "message var parser will obey the calender events", _attrs do
-    current_date = Timex.today() |> to_string()
+    default_format = "{D}/{0M}/{YYYY}"
+    current_date = Timex.today() |> Timex.format!(default_format) |> to_string()
 
     assert "The date is #{current_date}" ==
              MessageVarParser.parse("The date is @calendar.current_date", %{
