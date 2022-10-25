@@ -84,5 +84,11 @@ defmodule Glific.SheetsTest do
       assert {:error, %Ecto.Changeset{}} = Sheets.update_sheet(sheet, @invalid_attrs)
       assert sheet == Sheets.get_sheet!(sheet.id)
     end
+
+    test "delete_sheet/1 deletes the sheet", attrs do
+      sheet = Fixtures.sheet_fixture(attrs)
+      assert {:ok, %Sheet{}} = Sheets.delete_sheet(sheet)
+      assert_raise Ecto.NoResultsError, fn -> Sheets.get_sheet!(sheet.id) end
+    end
   end
 end
