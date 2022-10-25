@@ -28,11 +28,6 @@ defmodule Glific.SheetsTest do
       url:
         "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
     }
-
-    # @valid_more_attrs %{
-    #   label: "some label",
-    #   url: "somelabel"
-    # }
     @update_attrs %{
       label: "updated sheet"
     }
