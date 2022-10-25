@@ -7,7 +7,7 @@ defmodule Glific.Flows.MessageVarParser do
   }
 
   @moduledoc """
-  substitute the contact fileds and result sets in the messages
+  substitute the contact fields and result sets in the messages
   """
 
   @doc """
@@ -21,20 +21,19 @@ defmodule Glific.Flows.MessageVarParser do
   def parse(input, binding) when is_map(binding) == false, do: input
 
   def parse(input, binding) do
-    binding =
-      binding
-      |> Map.put(
-        "global",
-        Partners.get_global_field_map(Repo.get_organization_id())
-      )
-      |> stringify_keys()
+    parser_types = ["@global", "@calendar"]
+
+    bindings =
+      Enum.reduce(parser_types, binding, fn key, acc ->
+        if String.contains?(input, key), do: load_vars(acc, key), else: acc
+      end)
 
     input
-    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
-    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
-    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
-    |> String.replace(~r/@[\w]+[\.][\w]*/, &bound(&1, binding))
-    |> parse_results(binding["results"])
+    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, bindings))
+    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, bindings))
+    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, bindings))
+    |> String.replace(~r/@[\w]+[\.][\w]*/, &bound(&1, bindings))
+    |> parse_results(bindings["results"])
   end
 
   @spec bound(String.t(), map()) :: String.t()
@@ -167,4 +166,30 @@ defmodule Glific.Flows.MessageVarParser do
     do: parse(value, bindings) |> parse_results(bindings["results"])
 
   def parse_map(value, _results), do: value
+
+  defp load_vars(binding, "@global") do
+    global_vars =
+      Repo.get_organization_id()
+      |> Partners.get_global_field_map()
+
+    binding
+    |> Map.put("global", global_vars)
+    |> stringify_keys()
+  end
+
+  defp load_vars(binding, "@calendar") do
+    calendar_vars = %{
+      current_date: Timex.today() |> to_string(),
+      yesterday: Timex.shift(Timex.today(), days: -1) |> to_string(),
+      tomorrow: Timex.shift(Timex.today(), days: 1) |> to_string(),
+      current_day: Timex.today() |> Timex.weekday() |> Timex.day_name() |> String.downcase(),
+      current_month: Timex.now().month |> Timex.month_name() |> String.downcase(),
+      current_year: Timex.now().year
+    }
+
+    Map.put(binding, "calendar", calendar_vars)
+    |> stringify_keys()
+  end
+
+  defp load_vars(binding, _), do: binding
 end
