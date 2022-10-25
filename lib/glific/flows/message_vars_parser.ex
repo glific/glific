@@ -66,10 +66,10 @@ defmodule Glific.Flows.MessageVarParser do
     if substitution == nil, do: "@#{var}", else: substitution
   end
 
-  # this is for the otherfileds like @contact.fields.name which is a map of (value)
+  # this is for the other fields like @contact.fields.name which is a map of (value)
   defp bound(substitution) when is_map(substitution) do
     # this is a hack to detect if it a calendar object, and if so, we get the
-    # string value. Might need a better solution. This is specificall for inserted_at
+    # string value. Might need a better solution. This is specifically for inserted_at
     # for now, but generalized so it can handle all datetime objects
     if Map.has_key?(substitution, :calendar),
       do: DateTime.to_string(substitution),

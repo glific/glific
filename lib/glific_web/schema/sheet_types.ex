@@ -73,6 +73,12 @@ defmodule GlificWeb.Schema.SheetTypes do
       resolve(&Resolvers.Sheets.update_sheet/3)
     end
 
+    field :sync_sheet, :sheet_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Sheets.sync_sheet/3)
+    end
+
     field :delete_sheet, :sheet_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :manager)
