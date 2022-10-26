@@ -1,0 +1,7 @@
+query sheets($filter: SheetFilter, $opts: Opts) {
+  sheets(filter: $filter, opts: $opts) {
+    id
+    label
+    url
+  }
+}

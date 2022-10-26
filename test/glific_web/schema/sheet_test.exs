@@ -9,8 +9,10 @@ defmodule GlificWeb.Schema.SheetTest do
   }
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/sheets/count.gql")
+  load_gql(:list, GlificWeb.Schema, "assets/gql/sheets/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/sheets/by_id.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/sheets/update.gql")
+  load_gql(:delete, GlificWeb.Schema, "assets/gql/sheets/delete.gql")
 
   setup do
     Tesla.Mock.mock(fn
@@ -34,6 +36,16 @@ defmodule GlificWeb.Schema.SheetTest do
       auth_query_gql_by(:count, user, variables: %{"filter" => %{"label" => "sample sheet"}})
 
     assert get_in(query_data, [:data, "countSheets"]) == 1
+  end
+
+  test "sheets field returns list of sheets", %{staff: user} = attrs do
+    Fixtures.sheet_fixture(attrs)
+    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
+    assert {:ok, query_data} = result
+    sheets = get_in(query_data, [:data, "sheets"])
+    assert length(sheets) > 0
+    [sheet | _] = sheets
+    assert get_in(sheet, ["label"]) == "sample sheet"
   end
 
   test "sheet id returns one sheet or nil", %{staff: user} = attrs do
@@ -69,5 +81,21 @@ defmodule GlificWeb.Schema.SheetTest do
 
     assert {:ok, query_data} = result
     assert "updated sheet" == get_in(query_data, [:data, "updateSheet", "sheet", "label"])
+  end
+
+  test "delete a sheet", %{manager: user} = attrs do
+    Fixtures.sheet_fixture(attrs)
+    label = "sample sheet"
+    {:ok, sheet} = Repo.fetch_by(Sheet, %{label: label, organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:delete, user, variables: %{"id" => sheet.id})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "deleteSheet", "errors"]) == nil
+
+    result = auth_query_gql_by(:delete, user, variables: %{"id" => sheet.id})
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "deleteSheet", "errors", Access.at(0), "message"])
+    assert message == "Resource not found"
   end
 end
