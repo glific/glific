@@ -123,6 +123,12 @@ defmodule Glific.Clients do
     webhook: Glific.Clients.KEF
   }
 
+  @pehlayaksharfoundation %{
+    id: 88,
+    name: "Pehlay Akshar Foundation",
+    webhook: Glific.Clients.PehlayAkshar
+  }
+
   @sunosunao %{
     id: 93,
     name: "Suno Sunao",
@@ -151,6 +157,7 @@ defmodule Glific.Clients do
     @bandhu[:id] => @bandhu,
     @digitalgreen_ryss[:id] => @digitalgreen_ryss,
     @kef[:id] => @kef,
+    @pehlayaksharfoundation[:id] => @pehlayaksharfoundation,
     @sunosunao[:id] => @sunosunao,
     @digitalgreen_jh[:id] => @digitalgreen_jh
   }

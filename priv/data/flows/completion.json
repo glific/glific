@@ -395,9 +395,15 @@
     },
 
     {
-      "key": "globals",
+      "key": "global",
       "help": "the global values of the organization. Connect with the team for this.",
-      "type": "globals"
+      "type": "global"
+    },
+
+    {
+      "key": "calendar",
+      "help": "the calendar values.",
+      "type": "calendar"
     }
   ],
   "root_no_session": [
@@ -422,9 +428,15 @@
       "type": "urns"
     },
     {
-      "key": "globals",
+      "key": "global",
       "help": "the global values",
-      "type": "globals"
+      "type": "global"
+    },
+
+    {
+      "key": "calendar",
+      "help": "the calendar values",
+      "type": "calendar"
     }
   ]
 }
