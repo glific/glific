@@ -1,14 +1,13 @@
 defmodule Glific.Flows.MessageVarParser do
+  @moduledoc """
+  substitute the contact fields and result sets in the messages
+  """
   require Logger
 
   alias Glific.{
     Partners,
     Repo
   }
-
-  @moduledoc """
-  substitute the contact fields and result sets in the messages
-  """
 
   @doc """
   parse the message with variables
