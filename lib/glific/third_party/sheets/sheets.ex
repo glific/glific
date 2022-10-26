@@ -7,6 +7,9 @@ defmodule Glific.Sheets do
   require Logger
 
   alias Glific.{
+    Flows.Action,
+    Flows.FlowContext,
+    Messages,
     Repo,
     Sheets.ApiClient,
     Sheets.Sheet,
@@ -220,6 +223,26 @@ defmodule Glific.Sheets do
 
       sheet_data ->
         update_sheet_data(sheet_data, attrs)
+    end
+  end
+
+  @doc """
+  Execute a sheet action
+  """
+  @spec execute(Action.t() | any(), FlowContext.t()) :: {FlowContext.t(), Messages.Message.t()}
+  def execute(action, context) do
+    with {:ok, loaded_sheet} <-
+           Repo.fetch_by(SheetData, %{
+             sheet_id: action.sheet_id,
+             key: action.row,
+             organization_id: context.organization_id
+           }),
+         context <-
+           FlowContext.update_results(context, %{action.result_name => loaded_sheet.row_data}) do
+      {context, Messages.create_temp_message(context.organization_id, "Success")}
+    else
+      _ ->
+        {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
   end
 end
