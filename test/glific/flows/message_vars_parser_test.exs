@@ -121,9 +121,9 @@ defmodule Glific.Flows.MessageVarParserTest do
     assert parsed_test == "hello Glific Contact, your age is 20 years."
 
     ## for contact groups
-    conatct_fields = Contacts.get_contact_field_map(contact.id)
-    assert MessageVarParser.parse("@contact.in_groups", %{"contact" => conatct_fields}) == "[]"
-    assert MessageVarParser.parse("@contact.groups", %{"contact" => conatct_fields}) == "[]"
+    contact_fields = Contacts.get_contact_field_map(contact.id)
+    assert MessageVarParser.parse("@contact.in_groups", %{"contact" => contact_fields}) == "[]"
+    assert MessageVarParser.parse("@contact.groups", %{"contact" => contact_fields}) == "[]"
     assert MessageVarParser.parse("Hello world", nil) == "Hello world"
     assert MessageVarParser.parse("Hello world", %{}) == "Hello world"
 
@@ -324,7 +324,17 @@ defmodule Glific.Flows.MessageVarParserTest do
     assert true = MessageVarParser.parse_map(action_body_map, fields) |> is_map()
   end
 
-  test "hypen also works in message var parser", _attrs do
+  test "message var parser will obey the calender events", _attrs do
+    default_format = "{D}/{0M}/{YYYY}"
+    current_date = Timex.today() |> Timex.format!(default_format) |> to_string()
+
+    assert "The date is #{current_date}" ==
+             MessageVarParser.parse("The date is @calendar.current_date", %{
+               "contact" => %{"name" => "Glific"}
+             })
+  end
+
+  test "hyphen (-) also works in message var parser", _attrs do
     fields = %{
       "contact" => %{
         settings: %{},
