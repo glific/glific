@@ -237,7 +237,8 @@ defmodule Glific.Sheets do
              key: action.row,
              organization_id: context.organization_id
            }),
-         context <- FlowContext.update_results(context, %{action.result_name => loaded_sheet}) do
+         context <-
+           FlowContext.update_results(context, %{action.result_name => loaded_sheet.row_data}) do
       {context, Messages.create_temp_message(context.organization_id, "Success")}
     else
       _ ->
