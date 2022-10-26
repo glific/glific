@@ -333,4 +333,35 @@ defmodule Glific.Flows.MessageVarParserTest do
                "contact" => %{"name" => "Glific"}
              })
   end
+
+  test "hyphen (-) also works in message var parser", _attrs do
+    fields = %{
+      "contact" => %{
+        settings: %{},
+        phone: "9876543210_1",
+        name: "Glific Simulator One",
+        fields: %{
+          :language => %{label: "English"},
+          "name" => %{
+            "inserted_at" => ~U[2022-10-20 08:15:23.468679Z],
+            "label" => "Name",
+            "type" => "string",
+            "value" => "Glific Simulator One"
+          },
+          "school-name" => %{
+            "inserted_at" => "2022-10-20T08:15:23.450900Z",
+            "label" => "School-name",
+            "type" => "string",
+            "value" => "abc"
+          }
+        }
+      }
+    }
+
+    str = "Your school name is: @contact.fields.school-name"
+    str_2 = "Your school type is: @contact.fields.school-name.type"
+
+    assert MessageVarParser.parse(str, fields) == "Your school name is: abc"
+    assert MessageVarParser.parse(str_2, fields) == "Your school type is: string"
+  end
 end
