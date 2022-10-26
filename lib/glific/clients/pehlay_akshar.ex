@@ -57,6 +57,7 @@ defmodule Glific.Clients.PehlayAkshar do
       Map.put(acc, row["date"], row)
     end)
     |> then(&Partners.maybe_insert_organization_data("content_sheet", &1, org_id))
+
     :ok
   end
 

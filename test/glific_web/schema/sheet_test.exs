@@ -4,8 +4,8 @@ defmodule GlificWeb.Schema.SheetTest do
 
   alias Glific.{
     Fixtures,
-    Sheets.Sheet,
-    Repo
+    Repo,
+    Sheets.Sheet
   }
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/sheets/count.gql")
