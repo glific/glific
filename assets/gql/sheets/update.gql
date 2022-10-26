@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateSheet($id: ID!, $input: SheetInput!) {
+  updateSheet(id: $id, input: $input) {
+    ...SheetFields
+
+    ...ErrorFields
+  }
+}

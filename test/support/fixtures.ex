@@ -1014,7 +1014,7 @@ defmodule Glific.Fixtures do
   @spec sheet_fixture(map()) :: Sheet.t()
   def sheet_fixture(attrs \\ %{}) do
     valid_attrs = %{
-      label: "sheet",
+      label: "sample sheet",
       url:
         "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
     }
