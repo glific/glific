@@ -206,7 +206,7 @@ defmodule Glific.Flows.FlowContext do
           }
         )
 
-    # lets reset the current context and return the resetted context
+    # lets reset the current context and return the reset context
     reset_one_context(context,
       is_killed: true,
       source: "reset_all_contexts",
@@ -401,7 +401,7 @@ defmodule Glific.Flows.FlowContext do
 
   @spec get_datetime(map()) :: DateTime.t()
   defp get_datetime(item) do
-    # sometime we get this from memory, and its not retrived from DB
+    # sometime we get this from memory, and its not retrieved from DB
     # in which case its already in a valid date format
     if is_binary(item["date"]) do
       {:ok, date, _} = DateTime.from_iso8601(item["date"])
@@ -538,7 +538,7 @@ defmodule Glific.Flows.FlowContext do
     }
 
   @doc """
-  Seed the context and set the wakeup time as needed
+  Seed the context and set the wake up time as needed
   """
   @spec seed_context(Flow.t(), Contact.t(), String.t(), Keyword.t()) ::
           {:ok, FlowContext.t()} | {:error, Ecto.Changeset.t()}
@@ -634,7 +634,7 @@ defmodule Glific.Flows.FlowContext do
     # need to fix this instead of assuming the highest id is the most
     # active context (or is that a wrong assumption). Maybe a context number? like
     # we do for other tables
-    # We should not wakeup those contexts which are waiting on time
+    # We should not wake up those contexts which are waiting on time
     query =
       from(fc in FlowContext,
         where:
@@ -651,7 +651,7 @@ defmodule Glific.Flows.FlowContext do
         do: query |> where([fc], fc.id == ^parent_id),
         else: query
 
-    # There are lot of test cases failing becuase of this change. Will come back to it end of this PR.
+    # There are lot of test cases failing because of this change. Will come back to it end of this PR.
     fc =
       query
       |> Repo.one()

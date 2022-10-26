@@ -19,7 +19,8 @@ defmodule Glific.Flows.Action do
     Messages,
     Messages.Message,
     Profiles,
-    Repo
+    Repo,
+    Sheets
   }
 
   alias Glific.Flows.{
@@ -50,6 +51,7 @@ defmodule Glific.Flows.Action do
   @required_fields_classifier [:input, :result_name | @required_field_common]
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
+  @required_fields_sheet [:sheet_id, :row, :result_name | @required_field_common]
   @required_fields_group [:groups | @required_field_common]
   @required_fields_contact [:contacts, :text | @required_field_common]
   @required_fields_waittime [:delay]
@@ -170,6 +172,16 @@ defmodule Glific.Flows.Action do
   Process a json structure from flow editor to the Glific data types
   """
   @spec process(map(), map(), Node.t()) :: {Action.t(), map()}
+  def process(%{"type" => "link_google_sheet"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_sheet)
+
+    process(json, uuid_map, node, %{
+      sheet_id: json["sheet_id"],
+      row: json["row"],
+      result_name: json["result_name"]
+    })
+  end
+
   def process(%{"type" => "enter_flow"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_enter_flow)
 
@@ -555,6 +567,12 @@ defmodule Glific.Flows.Action do
       # this clears any potential errors
       {:ok, context, []}
     end
+  end
+
+  def execute(%{type: "link_google_sheet"} = action, context, _messages) do
+    {context, message} = Sheets.execute(action, context)
+
+    {:ok, context, [message]}
   end
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
