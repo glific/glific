@@ -10,6 +10,7 @@ defmodule GlificWeb.Schema.SheetTest do
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/sheets/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/sheets/list.gql")
+  load_gql(:create, GlificWeb.Schema, "assets/gql/sheets/create.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/sheets/by_id.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/sheets/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/sheets/delete.gql")
@@ -46,6 +47,23 @@ defmodule GlificWeb.Schema.SheetTest do
     assert length(sheets) > 0
     [sheet | _] = sheets
     assert get_in(sheet, ["label"]) == "sample sheet"
+  end
+
+  test "create a sheet and test possible scenarios and errors", %{manager: user} do
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "new sheet",
+            "url" =>
+              "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    label = get_in(query_data, [:data, "createSheet", "sheet", "label"])
+    assert label == "new sheet"
   end
 
   test "sheet id returns one sheet or nil", %{staff: user} = attrs do
