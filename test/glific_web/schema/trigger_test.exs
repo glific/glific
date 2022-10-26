@@ -176,7 +176,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert flow_name == flow.name
     assert frequency == "none"
 
-    ## we are ignoring the enddate's time
+    ## we are ignoring the end date's time
     assert get_in(query_data, [:data, "createTrigger", "trigger", "end_date"]) == end_date
 
     ## start date should be converted into UTC

@@ -90,7 +90,7 @@ defmodule GlificWeb.Schema.ContactTest do
     [contact_a, contact_b | _] = contacts
 
     # sometime the contact we create from the user is sorted before our friend
-    # adelle, hence checking the first two contacts
+    # Adelle, hence checking the first two contacts
     assert get_in(contact_a, ["name"]) == "Adelle Cavin" or
              get_in(contact_b, ["name"]) == "Adelle Cavin"
   end
@@ -110,7 +110,7 @@ defmodule GlificWeb.Schema.ContactTest do
     contacts = get_in(query_data, [:data, "contacts"])
     assert length(contacts) == 3
 
-    # lets make sure we dont get Test as a contact
+    # lets make sure we don't get Test as a contact
     assert get_in(contacts, [Access.at(0), "name"]) != "Test"
     assert get_in(contacts, [Access.at(1), "name"]) != "Test"
     assert get_in(contacts, [Access.at(2), "name"]) != "Test"
@@ -118,7 +118,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
   test "count returns the number of contacts", %{staff: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
-    # we are adding 5 contacts, but we dont know intial state of DB, hence using >=
+    # we are adding 5 contacts, but we don't know initial state of DB, hence using >=
     assert get_in(query_data, [:data, "countContacts"]) >= 5
 
     {:ok, query_data} =
@@ -465,7 +465,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert count == 1
   end
 
-  test "test failute when uploading contacts by admin user", %{manager: user} do
+  test "test failure when uploading contacts by admin user", %{manager: user} do
     file =
       System.tmp_dir!()
       |> Path.join("fixture.csv")
@@ -620,7 +620,7 @@ defmodule GlificWeb.Schema.ContactTest do
     [contact_a, contact_b | _] = contacts
 
     # sometime the contact we create from the user is sorted before our friend
-    # adelle, hence checking the first two contacts
+    # Adelle, hence checking the first two contacts
     assert get_in(contact_a, ["name"]) == "Adelle Cavin" or
              get_in(contact_b, ["name"]) == "Adelle Cavin"
   end
