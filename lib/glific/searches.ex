@@ -430,6 +430,7 @@ defmodule Glific.Searches do
     |> Repo.add_permission(&Searches.add_permission/2)
     |> limit(^limit)
     |> offset(^offset)
+    |> order_by([c: c], desc: c.last_message_at)
   end
 
   # codebeat:disable[ABC]
@@ -443,6 +444,7 @@ defmodule Glific.Searches do
     |> where([c: c], ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%"))
     |> limit(^limit)
     |> offset(^offset)
+    |> order_by([c: c], desc: c.last_message_at)
     |> Repo.all()
   end
 

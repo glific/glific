@@ -36,6 +36,8 @@ defmodule Glific.Fixtures do
     Repo,
     Saas.ConsultingHour,
     Settings,
+    Sheets,
+    Sheets.Sheet,
     Tags,
     Templates,
     Templates.InteractiveTemplate,
@@ -983,10 +985,10 @@ defmodule Glific.Fixtures do
   end
 
   @doc """
-  Generate a message conversations.
+  Generate a message conversation.
   """
-  @spec message_conversations(map()) :: MessageConversation.t()
-  def message_conversations(attrs \\ %{}) do
+  @spec message_conversation_fixture(map()) :: MessageConversation.t()
+  def message_conversation_fixture(attrs \\ %{}) do
     message = message_fixture(attrs)
 
     valid_attrs = %{
@@ -1004,5 +1006,25 @@ defmodule Glific.Fixtures do
       |> MessageConversations.create_message_conversation()
 
     message_conversation
+  end
+
+  @doc """
+  Generate a sheet conversations.
+  """
+  @spec sheet_fixture(map()) :: Sheet.t()
+  def sheet_fixture(attrs \\ %{}) do
+    valid_attrs = %{
+      label: "sample sheet",
+      url:
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+    }
+
+    attrs = Map.merge(valid_attrs, attrs)
+
+    {:ok, sheet} =
+      attrs
+      |> Sheets.create_sheet()
+
+    sheet
   end
 end

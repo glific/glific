@@ -27,7 +27,7 @@ defmodule Glific.MessageConversationsTest do
     }
 
     test "get_message_conversation!/1 returns the message_conversation with given id" do
-      message_conversations = Fixtures.message_conversations()
+      message_conversations = Fixtures.message_conversation_fixture()
 
       assert MessageConversations.get_message_conversation!(message_conversations.id) ==
                message_conversations
@@ -61,7 +61,7 @@ defmodule Glific.MessageConversationsTest do
     test "update_message_conversation/2 with valid data updates the message_conversation", %{
       organization_id: organization_id
     } do
-      message_conversations = Fixtures.message_conversations()
+      message_conversations = Fixtures.message_conversation_fixture()
       attrs = Map.merge(@update_attrs, %{organization_id: organization_id})
 
       assert {:ok, %MessageConversation{} = message_conversations} =
@@ -73,7 +73,7 @@ defmodule Glific.MessageConversationsTest do
     end
 
     test "update_message_conversation/2 with invalid data returns error changeset" do
-      message_conversations = Fixtures.message_conversations()
+      message_conversations = Fixtures.message_conversation_fixture()
 
       assert {:error, %Ecto.Changeset{}} =
                MessageConversations.update_message_conversation(
@@ -86,7 +86,7 @@ defmodule Glific.MessageConversationsTest do
     end
 
     test "delete_message_conversation/1 deletes the message_conversation" do
-      message_conversations = Fixtures.message_conversations()
+      message_conversations = Fixtures.message_conversation_fixture()
 
       assert {:ok, %MessageConversation{}} =
                MessageConversations.delete_message_conversation(message_conversations)
