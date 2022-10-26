@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation deleteSheet($id: ID!) {
+  deleteSheet(id: $id) {
+    ...SheetFields
+
+    ...ErrorFields
+  }
+}
