@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query sheet($id: ID!) {
+  sheet(id: $id) {
+    ...SheetFields
+
+    ...ErrorFields
+  }
+}

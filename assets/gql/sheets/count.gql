@@ -1,0 +1,3 @@
+query count_sheets($filter: SheetFilter) {
+  countSheets(filter: $filter)
+}
