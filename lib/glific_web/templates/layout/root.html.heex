@@ -5,17 +5,16 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <%= csrf_meta_tag() %>
-    <%= live_title_tag assigns[:page_title] || "Hello", suffix: " · Glific" %>
+    <%= live_title_tag assigns[:page_title] || "Glific" %>
     <link phx-track-static rel="stylesheet" href={Routes.static_path(@conn, "/assets/app.css")}/>
     <script defer phx-track-static type="text/javascript" src={Routes.static_path(@conn, "/assets/app.js")}></script>
   </head>
   <body>
-    <header>
-      <section class="container">
-        <a href="https://glific.org/" class="phx-logo">
-          <img src={Routes.static_path(@conn, "/images/phoenix.png")} alt="Glific Logo"/>
+    <header class="p-6">
+        <a href="https://glific.org/" class="phx-logo  ">
+          <img src={Routes.static_path(@conn, "/images/app.svg")} alt="Glific Logo"/>
+          <h3 class="pt-2 text-3xl font-bold underline"> <%= assigns[:page_title] %> </h3>
         </a>
-      </section>
     </header>
     <%= @inner_content %>
   </body>

@@ -1,5 +1,9 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+
 /* This file is for your main application CSS */
-@import "./phoenix.css";
 
 /* Alerts and form errors used by phx.new */
 .alert {
@@ -86,4 +90,20 @@
   color: black;
   text-decoration: none;
   cursor: pointer;
+}
+
+.card {
+  @apply block m-12 p-6 max-w-sm bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
+}
+
+.card .title {
+  @apply text-2xl tracking-tight font-bold;
+}
+
+.card .description {
+  @apply pt-4 text-lg font-medium;
+}
+
+.card .description a {
+  @apply underline text-blue-600;
 }

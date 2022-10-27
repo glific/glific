@@ -122,9 +122,24 @@ config :waffle,
 config :esbuild,
   version: "0.14.0",
   default: [
-    args: ~w(js/app.js --bundle --target=es2016 --outdir=../priv/static/assets),
+    args: ~w(js/app.js
+    --bundle
+    --target=es2016
+    --outdir=../priv/static/assets
+    ),
     cd: Path.expand("../assets", __DIR__),
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
+  ]
+
+config :tailwind,
+  version: "3.2.1",
+  default: [
+    args: ~w(
+      --config=tailwind.config.js
+      --input=css/app.css
+      --output=../priv/static/assets/app.css
+    ),
+    cd: Path.expand("../assets", __DIR__)
   ]
 
 config :glific, Glific.Communications.Mailer, adapter: Swoosh.Adapters.AmazonSES
