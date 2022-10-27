@@ -63,6 +63,13 @@ defmodule Glific.Templates.InteractiveTemplate do
     interactive
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint([:label, :type, :organization_id])
+    |> unique_constraint([:label, :type, :organization_id],
+      name: :interactive_templates_label_language_id_organization_id_index
+    )
+    |> unique_constraint([:label, :language_id, :organisation_id],
+      name: :interactive_templates_label_type_organization_id_index
+    )
+    |> foreign_key_constraint(:language_id)
+    |> foreign_key_constraint(:organization_id)
   end
 end
