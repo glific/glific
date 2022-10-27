@@ -65,12 +65,14 @@ defmodule GlificWeb.Router do
   scope "/", GlificWeb do
     pipe_through([:browser])
 
-    live("/reports", ReportLive.Index, :index)
-    live("/reports/new", ReportLive.Index, :new)
-    live("/reports/:id/edit", ReportLive.Index, :edit)
+    live("/reports_old", ReportLive.Index, :index)
+    live("/reports_old/new", ReportLive.Index, :new)
+    live("/reports_old/:id/edit", ReportLive.Index, :edit)
 
-    live("/reports/:id", ReportLive.Show, :show)
-    live("/reports/:id/show/edit", ReportLive.Show, :edit)
+    live("/reports_old/:id", ReportLive.Show, :show)
+    live("/reports_old/:id/show/edit", ReportLive.Show, :edit)
+
+    live "/glific-dashboard", GlificDashboardLive
   end
 
   # Custom stack for Absinthe
