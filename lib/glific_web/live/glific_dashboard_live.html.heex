@@ -1,6 +1,28 @@
-<div>
+<div class="flex content-center justify-center flex-wrap">
     <a href="#" class="card">
-        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Contacts</h5>
-        <p class="font-normal text-gray-700 dark:text-gray-400">400</p>
+        <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">Total Conversations</h5>
+        <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400"><%= @conversation_count %></p>
     </a>
+
+    <a href="#" class="card">
+        <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">Currently Active flows</h5>
+        <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400"><%= @active_flow_count %></p>
+    </a>
+
+    <a href="#" class="card">
+        <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">Total valid Contacts</h5>
+        <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400"><%= @contact_count %></p>
+    </a>
+
+    <a href="#" class="card">
+        <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">Opted in Contacts</h5>
+        <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400"><%= @opted_in_contacts_count %></p>
+    </a>
+
+    <a href="#" class="card">
+        <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">Opted out contacts</h5>
+        <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400"><%= @opted_out_contacts_count %></p>
+    </a>
+
+
 </div>
