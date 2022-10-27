@@ -31,7 +31,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
 
   test "count returns the number of contact fields", %{staff: user} = attrs do
     {:ok, query_data} = auth_query_gql_by(:count, user)
-    inital_count = get_in(query_data, [:data, "countContactsFields"])
+    initial_count = get_in(query_data, [:data, "countContactsFields"])
 
     _contacts_field_1 =
       Fixtures.contacts_field_fixture(%{
@@ -41,7 +41,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
       })
 
     {:ok, query_data} = auth_query_gql_by(:count, user)
-    assert get_in(query_data, [:data, "countContactsFields"]) > inital_count
+    assert get_in(query_data, [:data, "countContactsFields"]) > initial_count
 
     # in case of no results it should return 0
     {:ok, query_data} =

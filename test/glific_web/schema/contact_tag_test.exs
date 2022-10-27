@@ -38,7 +38,7 @@ defmodule GlificWeb.Schema.ContactTagTest do
     assert contact_tag["tag"]["id"] |> String.to_integer() == tag.id
 
     # try creating the same contact tag entry twice
-    # upserts come into play here and we dont return an error
+    # upserts come into play here and we don't return an error
     result =
       auth_query_gql_by(:create, user,
         variables: %{"input" => %{"contact_id" => contact.id, "tag_id" => tag.id}}

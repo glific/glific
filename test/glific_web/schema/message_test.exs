@@ -161,7 +161,7 @@ defmodule GlificWeb.Schema.MessageTest do
     messages = get_in(query_data, [:data, "messages"])
     assert length(messages) == 3
 
-    # lets make sure we dont get Test as a message
+    # lets make sure we don't get Test as a message
     assert get_in(messages, [Access.at(0), "body"]) != "Test"
     assert get_in(messages, [Access.at(1), "body"]) != "Test"
     assert get_in(messages, [Access.at(2), "body"]) != "Test"
@@ -239,7 +239,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert {:ok, query_data} = result
     assert "Message body" = get_in(query_data, [:data, "createMessage", "message", "body"])
 
-    # create message without required atributes
+    # create message without required attributes
     result =
       auth_query_gql_by(:create, user,
         variables: %{

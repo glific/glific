@@ -38,7 +38,7 @@ defmodule GlificWeb.Schema.MessageTagTest do
     assert message_tag["tag"]["id"] |> String.to_integer() == tag.id
 
     # try creating the same message tag twice
-    # upserts come into play here and we dont return an error
+    # upserts come into play here and we don't return an error
     result =
       auth_query_gql_by(:create, user,
         variables: %{"input" => %{"message_id" => message.id, "tag_id" => tag.id}}

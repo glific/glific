@@ -61,7 +61,7 @@ defmodule GlificWeb.Schema.RoleTest do
     assert role_description == "new custom organization role"
     assert false == get_in(query_data, [:data, "createAccessRole", "accessRole", "isReserved"])
 
-    # create message without required atributes
+    # create message without required attributes
     result = auth_query_gql_by(:create, user, variables: %{"input" => %{}})
 
     assert {:ok, query_data} = result

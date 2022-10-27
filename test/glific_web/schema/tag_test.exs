@@ -103,7 +103,7 @@ defmodule GlificWeb.Schema.TagTest do
     tags = get_in(query_data, [:data, "tags"])
     assert length(tags) == 3
 
-    # lets make sure we dont get Activities as a tag
+    # lets make sure we don't get Activities as a tag
     assert get_in(tags, [Access.at(0), "label"]) != "Activities"
     assert get_in(tags, [Access.at(1), "label"]) != "Activities"
     assert get_in(tags, [Access.at(2), "label"]) != "Activities"

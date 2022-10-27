@@ -188,7 +188,7 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
 
-    # we are just asseting that we got back one contact and it has a valid id
+    # we are just asserting that we got back one contact and it has a valid id
     assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) != 0
 
     result =
@@ -419,7 +419,7 @@ defmodule GlificWeb.Schema.SearchTest do
     result = auth_query_gql_by(:search_count, user, variables: %{"id" => saved_search.id})
 
     assert {:ok, query_data} = result
-    # we dont know how many exist from the seed daya
+    # we don't know how many exist from the seed data
     assert get_in(query_data, [:data, "savedSearchCount"]) > 1
   end
 
@@ -798,12 +798,12 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
 
-    conatct_ids =
+    contact_ids =
       Enum.reduce(query_data[:data]["search"], [], fn row, acc ->
         acc ++ [row["contact"]["id"]]
       end)
 
-    assert "#{contact.id}" in conatct_ids
+    assert "#{contact.id}" in contact_ids
 
     result =
       auth_query_gql_by(:search, user,
@@ -822,12 +822,12 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
 
-    conatct_ids =
+    contact_ids =
       Enum.reduce(query_data[:data]["search"], [], fn row, acc ->
         acc ++ [row["contact"]["id"]]
       end)
 
-    assert "#{contact.id}" in conatct_ids
+    assert "#{contact.id}" in contact_ids
 
     result =
       auth_query_gql_by(:search, user,
@@ -845,12 +845,12 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
 
-    conatct_ids =
+    contact_ids =
       Enum.reduce(query_data[:data]["search"], [], fn row, acc ->
         acc ++ [row["contact"]["id"]]
       end)
 
-    assert "#{contact.id}" in conatct_ids
+    assert "#{contact.id}" in contact_ids
   end
 
   test "Search by term will return the search input", %{staff: user} do
