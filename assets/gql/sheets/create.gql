@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createSheet($input:SheetInput!) {
+  createSheet(input: $input) {
+    ...SheetFields
+
+    ...ErrorFields
+  }
+}

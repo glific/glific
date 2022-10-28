@@ -188,7 +188,7 @@ defmodule Glific.Clients do
   end
 
   @doc """
-  Programmatially block clients based on organization needs. Use case could be:
+  Programmatically block clients based on organization needs. Use case could be:
   Allow only numbers from India and US
   """
   @spec blocked?(String.t(), non_neg_integer) :: boolean

@@ -1,0 +1,15 @@
+fragment SheetFields on SheetResult {
+  sheet {
+    id
+    label
+    isActive
+    url
+  }
+}
+
+fragment ErrorFields on SheetResult {
+  errors {
+    key
+    message
+  }
+}
