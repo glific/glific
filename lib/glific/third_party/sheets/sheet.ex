@@ -52,7 +52,7 @@ defmodule Glific.Sheets.Sheet do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_url()
-    |> unique_constraint([:label, :url, :organization_id])
+    |> unique_constraint([:url, :organization_id])
   end
 
   @spec validate_url(Ecto.Changeset.t()) :: Ecto.Changeset.t()
