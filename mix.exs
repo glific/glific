@@ -139,7 +139,6 @@ defmodule Glific.MixProject do
       {:cloak_ecto, "~> 1.2"},
       {:google_api_big_query, "~> 0.47"},
       {:google_api_dialogflow, "~> 0.62"},
-      {:absinthe_graphql_ws, "~> 0.3"},
       {:google_api_sheets, "~> 0.29"},
       {:waffle, "~> 1.1"},
       {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
