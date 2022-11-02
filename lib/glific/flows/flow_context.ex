@@ -866,13 +866,20 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec parse_context_string(FlowContext.t(), String.t()) :: String.t()
   def parse_context_string(context, str) do
-    vars = %{
+    vars = get_vars_to_parse(context)
+    MessageVarParser.parse(str, vars)
+  end
+
+  @doc """
+    A single place to parse the variable in a string related to flows.
+  """
+  @spec parse_context_string(FlowContext.t()) :: map()
+  def get_vars_to_parse(context) do
+    %{
       "results" => context.results,
       "contact" => Contacts.get_contact_field_map(context.contact_id),
-      "flow" => %{name: context.flow.name, id: context.flow.id}
+      "flow" => %{name: context.flow.name, id: context.flow.id, uuid: context.flow.uuid}
     }
-
-    MessageVarParser.parse(str, vars)
   end
 
   @spec set_last_message(FlowContext.t()) :: FlowContext.t()

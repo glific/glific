@@ -6,7 +6,7 @@ defmodule Glific.Flows.Webhook do
   import GlificWeb.Gettext
   require Logger
 
-  alias Glific.{Contacts, Messages, Repo}
+  alias Glific.{Messages, Repo}
   alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
 
   use Oban.Worker,
@@ -132,11 +132,7 @@ defmodule Glific.Flows.Webhook do
       flow: %{name: context.flow.name, id: context.flow.id}
     }
 
-    fields = %{
-      "contact" => Contacts.get_contact_field_map(context.contact_id),
-      "results" => context.results,
-      "flow" => %{name: context.flow.name, id: context.flow.id}
-    }
+    fields = FlowContext.get_vars_to_parse(context)
 
     action_body_map =
       MessageVarParser.parse_map(action_body_map, fields)
@@ -184,11 +180,7 @@ defmodule Glific.Flows.Webhook do
   # THis function will create a dynamic headers
   @spec parse_header_and_url(Action.t(), FlowContext.t()) :: map()
   defp parse_header_and_url(action, context) do
-    fields = %{
-      "contact" => Contacts.get_contact_field_map(context.contact_id),
-      "results" => context.results,
-      "flow" => %{name: context.flow.name, id: context.flow.id}
-    }
+    fields = FlowContext.get_vars_to_parse(context)
 
     header = MessageVarParser.parse_map(action.headers, fields)
     url = MessageVarParser.parse(action.url, fields)
