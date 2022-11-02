@@ -15,12 +15,12 @@ defmodule GlificWeb.Endpoint do
     signing_salt: "nE0doVhV"
   ]
 
-  socket("/socket", GlificWeb.UserSocket,
-    websocket: [
-      path: "",
-      subprotocols: ["graphql-transport-ws"]
-    ]
-  )
+  # create pow_config for authentication
+  @pow_config otp_app: :glific
+
+  socket "/socket", GlificWeb.UserSocket,
+    websocket: [connect_info: [pow_config: @pow_config]],
+    longpoll: false
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
 

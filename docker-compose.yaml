@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:13
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+
+  erlang:
+    build: .
+    ports:
+      - "4000:4000"
+    env_file:
+      - config/.env.dev.txt
+
+volumes:
+  pgdata:
