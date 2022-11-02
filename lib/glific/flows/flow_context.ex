@@ -873,7 +873,7 @@ defmodule Glific.Flows.FlowContext do
   @doc """
     A single place to parse the variable in a string related to flows.
   """
-  @spec parse_context_string(FlowContext.t()) :: map()
+  @spec get_vars_to_parse(FlowContext.t()) :: map()
   def get_vars_to_parse(context) do
     %{
       "results" => context.results,
