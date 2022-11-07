@@ -119,7 +119,7 @@ defmodule Glific.Sheets do
 
     Enum.reduce(filter, query, fn
       {:is_active, is_active}, query ->
-        from q in query, where: q.is_active == ^is_active
+        from(q in query, where: q.is_active == ^is_active)
 
       _, query ->
         query
@@ -234,7 +234,7 @@ defmodule Glific.Sheets do
     with {:ok, loaded_sheet} <-
            Repo.fetch_by(SheetData, %{
              sheet_id: action.sheet_id,
-             key: action.row,
+             key: FlowContext.parse_context_string(context, action.row),
              organization_id: context.organization_id
            }),
          context <-
