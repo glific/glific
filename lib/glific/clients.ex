@@ -138,7 +138,7 @@ defmodule Glific.Clients do
   @digitalgreen_jh %{
     id: 105,
     name: "DigitalGreen Jharkhand",
-    webhook: Glific.Clients.DigitalGreen_Jharkhand
+    webhook: Glific.Clients.DigitalGreenJharkhand
   }
 
   @quest_afeqc %{
