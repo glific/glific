@@ -25,30 +25,34 @@ defmodule Glific.Contacts.Import do
          %{user: user, organization_id: organization_id} = contact_attrs,
          date_format
        ) do
+    results = %{
+      name: data["name"],
+      phone: data["phone"],
+      organization_id: organization_id,
+      language_id: Enum.at(Settings.get_language_by_label_or_locale(data["language"]), 0).id,
+      optin_time:
+        if(data["opt_in"] != "",
+          do: elem(Timex.parse(data["opt_in"], date_format), 1),
+          else: nil
+        )
+    }
+
     if user.roles == [:glific_admin] do
-      %{
-        name: data["name"],
-        phone: data["phone"],
-        organization_id: organization_id,
+      results
+      |> Map.merge(%{
+        delete: data["delete"],
         collection: contact_attrs.collection,
-        language_id: Enum.at(Settings.get_language_by_label_or_locale(data["language"]), 0).id,
-        optin_time:
-          if(data["opt_in"] != "",
-            do: elem(Timex.parse(data["opt_in"], date_format), 1),
-            else: nil
-          ),
-        delete: data["delete"],
-        contact_fields: Map.drop(data, ["phone", "language", "opt_in", "delete", "group"])
-      }
-    else
-      %{
-        name: data["name"],
-        phone: data["phone"],
-        collection: data["collection"],
-        delete: data["delete"],
-        organization_id: organization_id,
-        contact_fields: Map.drop(data, ["phone", "group", "delete"])
-      }
+        contact_fields: Map.drop(data, ["phone", "group", "language",  "delete", "opt_in"]),
+      })
+    end
+
+    if user.upload_contacts
+        results
+        |> Map.merge(%{
+          delete: data["delete"],
+          collection: data["collection"],
+          contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
+        })
     end
   end
 
@@ -177,7 +181,7 @@ defmodule Glific.Contacts.Import do
 
   @spec process_data(User.t(), map(), map()) :: Contact.t() | map()
   defp process_data(user, %{delete: "1"} = contact, _contact_attrs) do
-    if user.roles == [:glific_admin] do
+    if user.roles == [:glific_admin] ||  user.upload_contacts do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
         nil ->
           %{ok: "Contact does not exist"}
@@ -194,7 +198,7 @@ defmodule Glific.Contacts.Import do
   end
 
   defp process_data(user, contact_attrs, _attrs) do
-    if user.roles == [:glific_admin] do
+    if user.roles == [:glific_admin] || user.upload_contacts do
       {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
 
       create_group_and_contact_fields(contact_attrs, contact)
@@ -284,10 +288,7 @@ defmodule Glific.Contacts.Import do
       contact.optout_time != nil ->
         false
 
-      user.roles == [:glific_admin] ->
-        true
-
-      user.upload_contacts == true ->
+      user.roles == [:glific_admin] || user.upload_contacts  ->
         true
 
       true ->
