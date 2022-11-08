@@ -278,17 +278,20 @@ defmodule Glific.Contacts.Import do
   @spec should_optin_contact?(User.t(), Contact.t(), map()) :: boolean()
   defp should_optin_contact?(user, contact, attrs) do
     cond do
-      user.roles != [:glific_admin] ->
-        false
-
       attrs.optin_time == nil ->
         false
 
       contact.optout_time != nil ->
         false
 
-      true ->
+      user.roles == [:glific_admin] ->
         true
+
+      user.upload_contacts == true ->
+        true
+
+      true ->
+        false
     end
   end
 
