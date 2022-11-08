@@ -42,17 +42,17 @@ defmodule Glific.Contacts.Import do
       |> Map.merge(%{
         delete: data["delete"],
         collection: contact_attrs.collection,
-        contact_fields: Map.drop(data, ["phone", "group", "language",  "delete", "opt_in"]),
+        contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
       })
     end
 
-    if user.upload_contacts
-        results
-        |> Map.merge(%{
-          delete: data["delete"],
-          collection: data["collection"],
-          contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
-        })
+    if user.upload_contacts do
+      results
+      |> Map.merge(%{
+        delete: data["delete"],
+        collection: data["collection"],
+        contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
+      })
     end
   end
 
@@ -181,7 +181,7 @@ defmodule Glific.Contacts.Import do
 
   @spec process_data(User.t(), map(), map()) :: Contact.t() | map()
   defp process_data(user, %{delete: "1"} = contact, _contact_attrs) do
-    if user.roles == [:glific_admin] ||  user.upload_contacts do
+    if user.roles == [:glific_admin] || user.upload_contacts do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
         nil ->
           %{ok: "Contact does not exist"}
@@ -288,7 +288,7 @@ defmodule Glific.Contacts.Import do
       contact.optout_time != nil ->
         false
 
-      user.roles == [:glific_admin] || user.upload_contacts  ->
+      user.roles == [:glific_admin] || user.upload_contacts ->
         true
 
       true ->
