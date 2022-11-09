@@ -332,6 +332,38 @@ defmodule Glific.ContactsTest do
       assert count == 1
     end
 
+    test "import_contact/3 can creates the contact in the db if upload contacts is enabled" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+
+      user =
+        user
+        |> Map.put(:roles, [:staff])
+        |> Map.put(:upload_contacts, true)
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09_12:34:25\n"
+          }
+      end)
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+        url: "http://www.bar.com/foo.csv"
+      )
+
+      count = Contacts.count_contacts(%{filter: %{name: "test"}})
+
+      assert count == 1
+    end
+
     test "import_contact/3 with valid data from file updates existing contacts in the database",
          attrs do
       Tesla.Mock.mock(fn
