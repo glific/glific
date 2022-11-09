@@ -25,9 +25,10 @@ if Code.ensure_loaded?(Faker) do
 
     defp create_contact_entry(organization) do
       phone = EnUs.phone()
+      name = Person.name()
 
       %{
-        name: Person.name(),
+        name: name,
         phone: phone,
         bsp_status: "session_and_hsm",
         optin_time: DateTime.truncate(DateTime.utc_now(), :second),
@@ -40,12 +41,36 @@ if Code.ensure_loaded?(Faker) do
         last_message_at: DateTime.utc_now() |> DateTime.truncate(:second),
         last_communication_at: DateTime.utc_now() |> DateTime.truncate(:second),
         inserted_at: DateTime.utc_now(),
-        updated_at: DateTime.utc_now()
+        updated_at: DateTime.utc_now(),
+        fields: create_contact_fields(name)
       }
     end
 
     defp create_contact_entries(contacts_count, organization) do
       Enum.map(1..contacts_count, fn _ -> create_contact_entry(organization) end)
+    end
+
+    defp create_contact_fields(name) do
+      %{
+        "name" => %{
+          "type" => "string",
+          "label" => "name",
+          "value" => name,
+          "inserted_at" => DateTime.utc_now()
+        },
+        "age" => %{
+          "type" => "string",
+          "label" => "age",
+          "value" => Enum.random(20..70),
+          "inserted_at" => DateTime.utc_now()
+        },
+        "gender" => %{
+          "type" => "string",
+          "label" => "gender",
+          "value" => Enum.random(["Male", "Female"]),
+          "inserted_at" => DateTime.utc_now()
+        }
+      }
     end
 
     defp create_message(1), do: Shakespeare.as_you_like_it()
