@@ -4,14 +4,17 @@ defmodule Glific.Clients.Tap do
   """
 
   import Ecto.Query, warn: false
+  require Logger
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Flows.ContactField,
     Groups.ContactGroup,
     Groups.Group,
     Partners,
     Partners.OrganizationData,
+    Profiles.Profile,
     Repo,
     Sheets.ApiClient,
     Templates.SessionTemplate
@@ -538,6 +541,130 @@ defmodule Glific.Clients.Tap do
 
       fields = Map.merge(fields, contact_name)
       Glific.Profiles.update_profile(profile, %{fields: fields})
+    end)
+  end
+
+  def create_contact_profiles(url) do
+    ApiClient.get_csv_content(url: url)
+    |> Enum.reduce([], fn {_, row}, acc ->
+      row = clean_row_values(row)
+      contact_id = row["Contact ID"] |> Glific.parse_maybe_integer!()
+      name = row["Name"]
+      course = row["course"]
+
+      fields = %{
+        "contact_name" => %{
+          "inserted_at" => "2022-08-03T13:43:21.134329Z",
+          "value" => name,
+          "type" => "string",
+          "label" => "contact name"
+        },
+        "name" => %{
+          "inserted_at" => "2022-08-03T13:43:21.134329Z",
+          "value" => name,
+          "type" => "string",
+          "label" => "Name"
+        },
+        "course" => %{
+          "inserted_at" => "2022-08-03T13:43:21.134329Z",
+          "value" => course,
+          "type" => "string",
+          "label" => "course"
+        }
+      }
+
+      acc ++
+        [
+          %{
+            name: name,
+            contact_id: contact_id,
+            organization_id: 12,
+            language_id: 1,
+            type: "student",
+            fields: fields
+          }
+        ]
+    end)
+    |> Enum.each(fn profile_data ->
+      with {:error, _} <-
+             Repo.fetch_by(Profile, %{
+               contact_id: profile_data.contact_id,
+               name: profile_data.name
+             }),
+           {:ok, profile} <-
+             Glific.Profiles.create_profile(profile_data) do
+        profile.contact_id
+        |> Contacts.get_contact!()
+        |> Contacts.update_contact(%{active_profile_id: profile.id, fields: profile.fields})
+      else
+        error -> Logger.info("Error: data: #{inspect(profile_data)} error: #{inspect(error)}")
+      end
+    end)
+  end
+
+  def update_profile_course(url) do
+    ApiClient.get_csv_content(url: url)
+    |> Enum.reduce([], fn {_, row}, acc ->
+      row = clean_row_values(row)
+      contact_id = row["Contact ID"] |> Glific.parse_maybe_integer!()
+      name = row["Name"]
+      course = row["course"]
+
+      fields = %{
+        "contact_name" => %{
+          "inserted_at" => "2022-08-03T13:43:21.134329Z",
+          "value" => name,
+          "type" => "string",
+          "label" => "contact name"
+        },
+        "name" => %{
+          "inserted_at" => "2022-08-03T13:43:21.134329Z",
+          "value" => name,
+          "type" => "string",
+          "label" => "Name"
+        },
+        "course" => %{
+          "inserted_at" => "2022-08-03T13:43:21.134329Z",
+          "value" => course,
+          "type" => "string",
+          "label" => "course"
+        }
+      }
+
+      acc ++
+        [
+          %{
+            name: name,
+            contact_id: contact_id,
+            language_id: 1,
+            type: "student",
+            fields: fields
+          }
+        ]
+    end)
+    |> Enum.each(fn profile_data ->
+      Repo.fetch_by(Profile, %{
+        name: profile_data.name,
+        contact_id: profile_data.contact_id,
+        organization_id: 12
+      })
+      |> case do
+        {:ok, profile} ->
+          {:ok, updated_profile} =
+            Glific.Profiles.update_profile(profile, %{
+              fields: Map.merge(profile.fields, profile_data.fields)
+            })
+
+          profile.contact_id
+          |> Contacts.get_contact!()
+          |> Contacts.update_contact(%{
+            active_profile_id: profile.id,
+            fields: updated_profile.fields
+          })
+
+        error ->
+          Logger.error("not found: #{inspect(profile_data)} #{inspect(error)} ")
+      end
     end)
   end
 end
