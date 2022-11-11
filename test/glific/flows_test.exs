@@ -353,7 +353,7 @@ defmodule Glific.FLowsTest do
       first_action = hd(hd(flow.nodes).actions)
 
       assert {:ok, _message} =
-               Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact.id})
+               Repo.fetch_by(Message, %{uuid: first_action.node_uuid, contact_id: contact.id})
     end
 
     test "start_contact_flow/2 if flow is not available", attrs do
@@ -428,10 +428,10 @@ defmodule Glific.FLowsTest do
       first_action = hd(hd(flow.nodes).actions)
 
       assert {:ok, _message} =
-               Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact.id})
+               Repo.fetch_by(Message, %{uuid: first_action.node_uuid, contact_id: contact.id})
 
       assert {:ok, _message} =
-               Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact2.id})
+               Repo.fetch_by(Message, %{uuid: first_action.node_uuid, contact_id: contact2.id})
 
       Broadcast.execute_broadcasts(attrs.organization_id)
 
