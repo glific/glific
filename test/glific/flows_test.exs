@@ -422,7 +422,7 @@ defmodule Glific.FLowsTest do
       assert message_broadcast.completed_at == nil
 
       # lets sleep for 3 seconds, to ensure that messages have been delivered
-      Broadcast.execute_group_broadcasts(attrs.organization_id)
+      Broadcast.execute_broadcasts(attrs.organization_id)
       Process.sleep(3_000)
 
       first_action = hd(hd(flow.nodes).actions)
@@ -433,7 +433,7 @@ defmodule Glific.FLowsTest do
       assert {:ok, _message} =
                Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact2.id})
 
-      Broadcast.execute_group_broadcasts(attrs.organization_id)
+      Broadcast.execute_broadcasts(attrs.organization_id)
 
       assert {:ok, message_broadcast} =
                Repo.fetch_by(MessageBroadcast, %{

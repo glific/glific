@@ -28,7 +28,7 @@ defmodule Glific.Flows.BroadcastWorker do
         args: %{"organization_id" => organization_id}
       }) do
     Repo.put_process_state(organization_id)
-    Broadcast.execute_group_broadcasts(organization_id)
+    Broadcast.execute_broadcasts(organization_id)
     :ok
   end
 end

@@ -494,7 +494,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert message_broadcast.completed_at == nil
 
     # lets sleep for 3 seconds, to ensure that messages have been delivered
-    Broadcast.execute_group_broadcasts(attrs.organization_id)
+    Broadcast.execute_broadcasts(attrs.organization_id)
     Process.sleep(3_000)
 
     result =
