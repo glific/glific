@@ -73,10 +73,10 @@ defmodule Glific.Flows.Broadcast do
   @doc """
   The one simple public interface to execute a group broadcast for an organization
   """
-  @spec execute_group_broadcasts(any) :: :ok
-  def execute_group_broadcasts(org_id) do
+  @spec execute_broadcasts(any) :: :ok
+  def execute_broadcasts(org_id) do
     # mark all the broadcast as completed if there is no unprocessed contact.
-    mark_message_broadcast_completed(org_id)
+    mark_broadcast_completed(org_id)
 
     unprocessed_group_broadcast(org_id)
     |> process_broadcast_group()
@@ -138,8 +138,8 @@ defmodule Glific.Flows.Broadcast do
   @doc """
   Mark all the processed  flow broadcast as completed
   """
-  @spec mark_message_broadcast_completed(non_neg_integer()) :: :ok
-  def mark_message_broadcast_completed(org_id) do
+  @spec mark_broadcast_completed(non_neg_integer()) :: :ok
+  def mark_broadcast_completed(org_id) do
     from(fb in MessageBroadcast,
       as: :message_broadcast,
       where: fb.organization_id == ^org_id,
@@ -218,10 +218,6 @@ defmodule Glific.Flows.Broadcast do
     |> join(:inner, [c], fbc in MessageBroadcastContact,
       as: :fbc,
       on: fbc.contact_id == c.id and fbc.message_broadcast_id == ^message_broadcast.id
-    )
-    |> where(
-      [c, _fbc],
-      c.status not in [:blocked, :invalid] and is_nil(c.optout_time)
     )
     |> where([_c, fbc], is_nil(fbc.processed_at))
   end
