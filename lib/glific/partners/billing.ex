@@ -268,7 +268,7 @@ defmodule Glific.Partners.Billing do
       customer: billing.stripe_customer_id,
       # Temporary for existing customers.
       billing_cycle_anchor: anchor_timestamp,
-      prorate: false,
+      proration_behavior: "create_prorations",
       items: [
         %{
           price: prices["users"]
@@ -655,7 +655,7 @@ defmodule Glific.Partners.Billing do
 
       make_stripe_request("subscription_items", :post, %{
         subscription: subscription.id,
-        prorate: true,
+        proration_behavior: "create_prorations",
         proration_date: proration_date,
         price: stripe_ids()["monthly"],
         quantity: 1
