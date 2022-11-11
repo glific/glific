@@ -263,7 +263,7 @@ defmodule GlificWeb.Schema.ContactTest do
     user = Map.put(user, :roles, [:glific_admin])
 
     data =
-      "name,phone,language,opt_in,delete\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0"
+      "name,phone,language,opt_in,delete\n#{test_name} updated,#{test_phone},english,2021-03-09 12:34:25,0"
 
     # Test success for creating a contact without opt-in
     result =
@@ -292,7 +292,7 @@ defmodule GlificWeb.Schema.ContactTest do
     test_phone = "919917443992"
 
     data =
-      "name,phone,language,opt_in,collection\n#{test_name},#{test_phone},english,2021-03-09_12:34:25,collection"
+      "name,phone,language,opt_in,collection\n#{test_name},#{test_phone},english,2021-03-09 12:34:25,collection"
 
     result =
       auth_query_gql_by(:import_contacts, user,
@@ -320,7 +320,7 @@ defmodule GlificWeb.Schema.ContactTest do
     test_phone = "test phone2"
 
     data =
-      "name,phone,language,opt_in,delete,collection\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0,collection"
+      "name,phone,language,opt_in,delete,collection\n#{test_name} updated,#{test_phone},english,2021-03-09 12:34:25,0,collection"
 
     result =
       auth_query_gql_by(:import_contacts, user,
@@ -346,7 +346,7 @@ defmodule GlificWeb.Schema.ContactTest do
       %{method: :get} ->
         %Tesla.Env{
           body:
-            "name,phone,Language,opt_in,delete,collection\r\nuploaded_contact,9876543311,english,2021-03-09_12:34:25,,collection",
+            "name,phone,Language,opt_in,delete,collection\r\nuploaded_contact,9876543311,english,2021-03-09 12:34:25,,collection",
           status: 200
         }
     end)
@@ -376,7 +376,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     [
       ~w(name phone Language opt_in collection),
-      ~w(test 9989329297 english 2021-03-09_12:34:25 collection)
+      ["test", "9989329297", "english", "2021-03-09 12:34:25", "collection"]
     ]
     |> CSV.encode()
     |> Enum.each(&IO.write(file, &1))
@@ -410,7 +410,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     [
       ~w(name phone Language opt_in collection),
-      ~w(test 9989329297 english 2021-03-09_12:34:25 collection)
+      ["test", "9989329297", "english", "2021-03-09 12:34:25", "collection"]
     ]
     |> CSV.encode()
     |> Enum.each(&IO.write(file, &1))
@@ -443,7 +443,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     [
       ~w(name phone language opt_in delete collection),
-      ~w(test 9989329297 english 2021-03-09_12:34:25 0 collection)
+      ["test", "9989329297", "english", "2021-03-09 12:34:25", "0", "collection"]
     ]
     |> CSV.encode()
     |> Enum.each(&IO.write(file, &1))
@@ -473,7 +473,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     [
       ~w(name phone language opt_in delete collection),
-      ~w(test 9989329297 english 2021-03-09_12:34:25 0 collection)
+      ["test", "9989329297", "english", "2021-03-09 12:34:25", "0", "collection"]
     ]
     |> CSV.encode()
     |> Enum.each(&IO.write(file, &1))
@@ -501,7 +501,7 @@ defmodule GlificWeb.Schema.ContactTest do
     test_phone = "test phone2"
 
     data =
-      "name,phone,language,opt_in,delete,collection\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0,collection"
+      "name,phone,language,opt_in,delete,collection\n#{test_name} updated,#{test_phone},english,2021-03-09 12:34:25,0,collection"
 
     result =
       auth_query_gql_by(:import_contacts, user,

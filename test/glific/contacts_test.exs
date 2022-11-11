@@ -145,6 +145,8 @@ defmodule Glific.ContactsTest do
       fields: %{}
     }
 
+    @optin_date "2021-03-09 12:34:25"
+
     def contact_fixture(attrs) do
       {:ok, contact} =
         attrs
@@ -272,7 +274,7 @@ defmodule Glific.ContactsTest do
 
       [
         ~w(name phone Language opt_in collection),
-        ~w(test 9989329297 english 2021-03-09_12:34:25 collection)
+        ["test", "9989329297", "english", @optin_date, "collection"]
       ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
@@ -294,7 +296,7 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:glific_admin])
 
-      data = "name,phone,Language,opt_in\ncontact_test,9989329297,english,2021-03-09_12:34:25\n"
+      data = "name,phone,Language,opt_in\ncontact_test,9989329297,english,2021-03-09 12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
 
@@ -317,7 +319,7 @@ defmodule Glific.ContactsTest do
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09_12:34:25\n"
+            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09 12:34:25\n"
           }
       end)
 
@@ -349,7 +351,7 @@ defmodule Glific.ContactsTest do
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09_12:34:25\n"
+            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09 12:34:25\n"
           }
       end)
 
@@ -380,7 +382,7 @@ defmodule Glific.ContactsTest do
 
       [
         ~w(name phone Language opt_in collection),
-        ~w(updated #{contact.phone} english 2021-03-09_12:34:25 collection)
+        ["updated", "#{contact.phone}", "english", @optin_date, "collection"]
       ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
@@ -408,7 +410,7 @@ defmodule Glific.ContactsTest do
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
 
       data =
-        "name,phone,Language,opt_in,collection\nupdated,#{contact.phone},english,2021-03-09_12:34:25,collection\n"
+        "name,phone,Language,opt_in,collection\nupdated,#{contact.phone},english,2021-03-09 12:34:25,collection\n"
 
       [organization | _] = Partners.list_organizations()
 
@@ -432,7 +434,7 @@ defmodule Glific.ContactsTest do
           %Tesla.Env{
             status: 200,
             body:
-              "name,phone,Language,opt_in,collection\nupdated,#{contact.phone},english,2021-03-09_12:34:25,collection\n"
+              "name,phone,Language,opt_in,collection\nupdated,#{contact.phone},english,2021-03-09 12:34:25,collection\n"
           }
       end)
 
@@ -462,7 +464,7 @@ defmodule Glific.ContactsTest do
 
       [
         ~w(name phone Language opt_in delete),
-        ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1)
+        ["updated", "#{contact.phone}", "english", @optin_date, 1]
       ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
@@ -493,7 +495,7 @@ defmodule Glific.ContactsTest do
 
       [
         ~w(name phone Language opt_in delete collection),
-        ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1 collection)
+        ["updated", "#{contact.phone}", "english", @optin_date, 1, "collection"]
       ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
@@ -526,7 +528,7 @@ defmodule Glific.ContactsTest do
 
       [
         ~w(name phone Language opt_in delete),
-        ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1)
+        ["updated", "#{contact.phone}", "english", @optin_date, 1]
       ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
@@ -594,7 +596,7 @@ defmodule Glific.ContactsTest do
 
       file = get_tmp_file()
 
-      [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09_12:34:25)]
+      [~w(name phone Language opt_in), ["test", "9989329297", "english", @optin_date]]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
@@ -608,7 +610,7 @@ defmodule Glific.ContactsTest do
 
       [
         ~w(name phone Language opt_in),
-        ~w(test phone english 2021-03-09_12:34:25)
+        ["test", "phone", "english", @optin_date]
       ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
