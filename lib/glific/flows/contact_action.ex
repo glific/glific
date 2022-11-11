@@ -132,11 +132,7 @@ defmodule Glific.Flows.ContactAction do
     # so we have to fetch the latest contact fields
     {
       context.contact_id,
-      %{
-        "contact" => Contacts.get_contact_field_map(context.contact_id),
-        "results" => context.results,
-        "flow" => %{name: context.flow.name, id: context.flow.id}
-      }
+      FlowContext.get_vars_to_parse(context)
     }
   end
 

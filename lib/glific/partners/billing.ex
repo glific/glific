@@ -141,7 +141,7 @@ defmodule Glific.Partners.Billing do
   def get_billing(clauses), do: Repo.get_by(Billing, clauses, skip_organization_id: true)
 
   @doc """
-  Upate the billing record
+  Update the billing record
   """
   @spec update_billing(Billing.t(), map()) ::
           {:ok, Billing.t()} | {:error, Ecto.Changeset.t()}
@@ -152,7 +152,7 @@ defmodule Glific.Partners.Billing do
   end
 
   @doc """
-  Upate the stripe customer details record
+  Update the stripe customer details record
   """
   @spec update_stripe_customer(Billing.t(), map()) ::
           {:ok, Billing.t()} | {:error, Stripe.Error.t()}
@@ -219,7 +219,7 @@ defmodule Glific.Partners.Billing do
   defp format_errors([]), do: :ok
   defp format_errors(list), do: {:error, Enum.join(list, ", ")}
 
-  # We dont know what to do with billing currency as yet, but we'll figure it out soon
+  # We don't know what to do with billing currency as yet, but we'll figure it out soon
   # In Stripe, one contact can only have one currency
   @spec check_required(map()) :: :ok | {:error, String.t()}
   defp check_required(attrs) do
@@ -268,7 +268,7 @@ defmodule Glific.Partners.Billing do
       customer: billing.stripe_customer_id,
       # Temporary for existing customers.
       billing_cycle_anchor: anchor_timestamp,
-      prorate: false,
+      proration_behavior: "create_prorations",
       items: [
         %{
           price: prices["users"]
@@ -345,7 +345,7 @@ defmodule Glific.Partners.Billing do
 
   @doc """
   Once the organization has entered a new payment card we create a subscription for it.
-  We'll do updating the card in a seperate function
+  We'll do updating the card in a separate function
   """
   @spec create_subscription(Organization.t(), map()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
@@ -369,7 +369,7 @@ defmodule Glific.Partners.Billing do
 
   @spec setup(Billing.t(), Organization.t(), map()) :: Billing.t()
   defp setup(billing, organization, params) do
-    ## let's create an invocie items. We are not attaching this to the invoice
+    ## let's create an invoice items. We are not attaching this to the invoice
     ## so it will be attached automatically to the next invoice create.
 
     {:ok, invoice_item} =
@@ -591,7 +591,7 @@ defmodule Glific.Partners.Billing do
     end
   end
 
-  # function to check if the subscription requires another authentcation i.e 3D
+  # function to check if the subscription requires another authentication i.e 3D
   @spec subscription_requires_auth?(Stripe.Subscription.t()) :: boolean()
   defp subscription_requires_auth?(%{pending_setup_intent: pending_setup_intent})
        when is_map(pending_setup_intent),
@@ -655,7 +655,7 @@ defmodule Glific.Partners.Billing do
 
       make_stripe_request("subscription_items", :post, %{
         subscription: subscription.id,
-        prorate: true,
+        proration_behavior: "create_prorations",
         proration_date: proration_date,
         price: stripe_ids()["monthly"],
         quantity: 1
@@ -709,7 +709,7 @@ defmodule Glific.Partners.Billing do
   defp update_period_usage(billing, end_date) do
     start_date =
       if is_nil(billing.stripe_last_usage_recorded),
-        # if we dont have last_usage, set it to start of the week as we update it on weekly basis
+        # if we don't have last_usage, set it to start of the week as we update it on weekly basis
         do: Timex.beginning_of_week(end_date),
         # We know the last time recorded usage, we bump the date
         # to the next day for this period

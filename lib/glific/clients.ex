@@ -138,7 +138,25 @@ defmodule Glific.Clients do
   @digitalgreen_jh %{
     id: 105,
     name: "DigitalGreen Jharkhand",
-    webhook: Glific.Clients.DigitalGreen_Jharkhand
+    webhook: Glific.Clients.DigitalGreenJharkhand
+  }
+
+  @quest_afeqc %{
+    id: 106,
+    name: "Quest Alliance AFEQC",
+    webhook: Glific.Clients.QuestAlliance
+  }
+
+  @quest_tcec %{
+    id: 47,
+    name: "Quest Alliance TCEC",
+    webhook: Glific.Clients.QuestAlliance
+  }
+
+  @quest_alliance %{
+    id: 30,
+    name: "Quest Alliance",
+    webhook: Glific.Clients.QuestAlliance
   }
 
   ## we should move this also to databases.
@@ -159,7 +177,10 @@ defmodule Glific.Clients do
     @kef[:id] => @kef,
     @pehlayaksharfoundation[:id] => @pehlayaksharfoundation,
     @sunosunao[:id] => @sunosunao,
-    @digitalgreen_jh[:id] => @digitalgreen_jh
+    @digitalgreen_jh[:id] => @digitalgreen_jh,
+    @quest_afeqc[:id] => @quest_afeqc,
+    @quest_tcec[:id] => @quest_tcec,
+    @quest_alliance[:id] => @quest_alliance
   }
 
   @spec env(atom() | nil) :: atom()
