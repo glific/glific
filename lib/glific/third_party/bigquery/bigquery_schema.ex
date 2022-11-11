@@ -248,7 +248,8 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "Uniquely generated message UUID, primarily needed for the flow editor",
+        description:
+          "Uniquely generated message UUID, in case of flow it's id of that particular node which have the message.",
         name: "uuid",
         type: "STRING",
         mode: "NULLABLE"
