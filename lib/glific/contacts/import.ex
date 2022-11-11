@@ -34,7 +34,7 @@ defmodule Glific.Contacts.Import do
       delete: data["delete"],
       contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"]),
       optin_time:
-        if(data["opt_in"] != "",
+        if(data["opt_in"] not in ["", nil],
           do: elem(Timex.parse(data["opt_in"], date_format), 1),
           else: nil
         )
@@ -149,14 +149,12 @@ defmodule Glific.Contacts.Import do
   @spec decode_csv_data(map(), map(), [{atom(), String.t()}]) :: tuple()
   defp decode_csv_data(params, data, opts) do
     %{organization_id: organization_id, user: user} = params
-    {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D}_{h24}:{m}:{s}")
+    {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
 
     result =
       data
       |> CSV.decode(headers: true, strip_fields: true)
-      |> Stream.map(fn {_, data} ->
-        cleanup_contact_data(data, params, date_format)
-      end)
+      |> Stream.map(fn {_, data} -> cleanup_contact_data(data, params, date_format) end)
       |> Task.async_stream(
         fn contact ->
           process_data(user, contact, %{
