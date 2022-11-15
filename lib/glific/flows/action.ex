@@ -274,7 +274,7 @@ defmodule Glific.Flows.Action do
 
     process(json, uuid_map, node, %{
       interactive_template_id: json["id"],
-      labels: json["labels"],
+      labels: process_labels(json["labels"]),
       params: json["params"] || [],
       params_count: json["paramsCount"] || "0",
       attachment_url: json["attachment_url"],
