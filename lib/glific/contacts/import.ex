@@ -34,9 +34,9 @@ defmodule Glific.Contacts.Import do
       delete: data["delete"],
       contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"]),
       optin_time:
-        if(data["opt_in"] not in ["", nil],
-          do: elem(Timex.parse(data["opt_in"], date_format), 1),
-          else: nil
+        if(data["opt_in"] in ["", nil],
+          do: nil,
+          else: elem(Timex.parse(data["opt_in"], date_format), 1)
         )
     }
 
