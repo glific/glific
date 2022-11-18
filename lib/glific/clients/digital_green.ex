@@ -464,6 +464,9 @@ defmodule Glific.Clients.DigitalGreen do
     |> Jason.encode!()
   end
 
+  @doc """
+    Get weather report message
+  """
   @spec get_report_msg(map(), non_neg_integer()) :: String.t()
   def get_report_msg(weather_report, organization_id) do
     timelines = weather_report["data"]["timelines"]["0"]
@@ -487,6 +490,12 @@ defmodule Glific.Clients.DigitalGreen do
     weather_code = Integer.to_string(interval["values"]["weatherCodeFullDay"])
     weather = get_in(organization_data.json, [weather_code])
 
-    "\n *తేదీ:* #{start_time} \n *గరిష్ట ఉష్ణోగ్రత:* #{interval["values"]["temperatureMax"]} °C \n *కనిష్ట ఉష్ణోగ్రత:* #{interval["values"]["temperatureMin"]} °C \n *వాతావరణ పరిస్థితి:* #{weather} \n "
+    """
+    \n *తేదీ:* #{start_time}
+    \n *గరిష్ట ఉష్ణోగ్రత:* #{interval["values"]["temperatureMax"]} °C
+    \n *కనిష్ట ఉష్ణోగ్రత:* #{interval["values"]["temperatureMin"]} °C
+    \n *వాతావరణ పరిస్థితి:* #{weather}
+    \n
+    """
   end
 end
