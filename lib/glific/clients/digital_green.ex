@@ -361,6 +361,7 @@ defmodule Glific.Clients.DigitalGreen do
     %{status: "successfull"}
   end
 
+  @spec validate_crp_id(non_neg_integer(), non_neg_integer()) :: map()
   defp validate_crp_id(org_id, crp_id) do
     crp_id = Glific.string_clean(crp_id)
 
@@ -375,6 +376,8 @@ defmodule Glific.Clients.DigitalGreen do
     }
   end
 
+  @spec load_geographies(non_neg_integer(), map()) ::
+          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
   defp load_geographies(org_id, geographies_config) do
     ApiClient.get_csv_content(url: geographies_config["sheet_link"])
     |> Enum.reduce(%{}, fn {_, row}, acc ->
@@ -417,6 +420,7 @@ defmodule Glific.Clients.DigitalGreen do
     :ok
   end
 
+  @spec get_language(non_neg_integer()) :: String.t()
   defp get_language(contact_id) do
     contact_id = Glific.parse_maybe_integer!(contact_id)
 
@@ -470,8 +474,8 @@ defmodule Glific.Clients.DigitalGreen do
     end)
   end
 
-  @spec parse_report(nil | maybe_improper_list | map, non_neg_integer()) :: <<_::64, _::_*8>>
-  def parse_report(interval, organization_id) do
+  @spec parse_report(nil | maybe_improper_list | map, non_neg_integer()) :: String.t()
+  defp parse_report(interval, organization_id) do
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{
         organization_id: organization_id,
@@ -481,7 +485,7 @@ defmodule Glific.Clients.DigitalGreen do
     {:ok, time, _days} = DateTime.from_iso8601(interval["startTime"])
     start_time = time |> Timex.format!("{0D}/{0M}/{YYYY}")
     weather_code = Integer.to_string(interval["values"]["weatherCodeFullDay"])
-    weather = Map.get(organization_data.json, weather_code)
+    weather = get_in(organization_data.json, [weather_code])
 
     "\n *తేదీ:* #{start_time} \n *గరిష్ట ఉష్ణోగ్రత:* #{interval["values"]["temperatureMax"]} °C \n *కనిష్ట ఉష్ణోగ్రత:* #{interval["values"]["temperatureMin"]} °C \n *వాతావరణ పరిస్థితి:* #{weather} \n "
   end
