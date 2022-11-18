@@ -273,7 +273,7 @@ defmodule Glific.Clients.DigitalGreen do
         )
   end
 
-  @spec get_geographies_data(non_neg_integer(), map()) :: map()
+  @spec get_geographies_data(integer(), map()) :: map()
   defp get_geographies_data(org_id, geographies_config) do
     {:ok, org_data} =
       Repo.fetch_by(OrganizationData, %{
@@ -361,7 +361,7 @@ defmodule Glific.Clients.DigitalGreen do
     %{status: "successfull"}
   end
 
-  @spec validate_crp_id(non_neg_integer(), non_neg_integer()) :: map()
+  @spec validate_crp_id(integer(), nil | integer()) :: map()
   defp validate_crp_id(org_id, crp_id) do
     crp_id = Glific.string_clean(crp_id)
 
@@ -420,7 +420,7 @@ defmodule Glific.Clients.DigitalGreen do
     :ok
   end
 
-  @spec get_language(non_neg_integer()) :: String.t()
+  @spec get_language(non_neg_integer()) :: map()
   defp get_language(contact_id) do
     contact_id = Glific.parse_maybe_integer!(contact_id)
 
