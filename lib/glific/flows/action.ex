@@ -769,7 +769,7 @@ defmodule Glific.Flows.Action do
     message = Repo.get(Message, last_message.id)
 
     new_labels =
-      if(message.flow_label in [nil, ""]) do
+      if message.flow_label in [nil, ""] do
         flow_label
       else
         message.flow_label <> ", " <> flow_label
