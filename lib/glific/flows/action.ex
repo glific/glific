@@ -768,12 +768,9 @@ defmodule Glific.Flows.Action do
     # hence we check for the existence of one in these functions
     message = Repo.get(Message, last_message.id)
 
-    new_labels =
-      if(message.flow_label in [nil, ""]) do
-        flow_label
-      else
-        message.flow_label <> ", " <> flow_label
-      end
+    new_labels = if(message.flow_label in [nil, ""]),
+      do: flow_label,
+      else: message.flow_label <> ", " <> flow_label
 
     {:ok, _} =
       Repo.get(Message, last_message.id)
