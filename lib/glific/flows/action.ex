@@ -766,9 +766,18 @@ defmodule Glific.Flows.Action do
     # when we send a fake temp message (like No Response)
     # or when a flow is resumed, there is no last_message
     # hence we check for the existence of one in these functions
+    message = Repo.get(Message, last_message.id)
+
+    new_labels =
+      if message.flow_label in [nil, ""] do
+        flow_label
+      else
+        message.flow_label <> ", " <> flow_label
+      end
+
     {:ok, _} =
       Repo.get(Message, last_message.id)
-      |> Message.changeset(%{flow_label: flow_label})
+      |> Message.changeset(%{flow_label: new_labels})
       |> Repo.update()
 
     nil
