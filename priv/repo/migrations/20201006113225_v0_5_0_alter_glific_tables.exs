@@ -5,7 +5,7 @@ defmodule Glific.Repo.Migrations.V0_5_0_AlterGlificTables do
   v0.5.0 Alter Glific tables
   """
 
-  @global_schema Application.fetch_env!(:glific, :global_schema)
+  @global_schema Application.compile_env!(:glific, :global_schema)
 
   def change do
     credentials()
