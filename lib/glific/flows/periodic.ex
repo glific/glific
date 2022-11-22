@@ -93,18 +93,18 @@ defmodule Glific.Flows.Periodic do
     org = Glific.Partners.organization(state[:organization_id])
     flow_config = org.out_of_office
 
-    if(!is_nil(flow_id)) do
-    end
+    cond do
+      is_nil(flow_id) ->
+        {state, false}
 
-    ## disable extra check if it's not able for organization.
-    if !is_nil(flow_id) and !Flows.flow_activated(flow_id, message.contact_id, since) do
-      {:ok, flow} =
-        Flows.get_cached_flow(message.organization_id, {:flow_id, flow_id, @final_phrase})
+      flow_config["run_each_time"] ->
+        init_common_flow(state, flow_id, message)
 
-      FlowContext.init_context(flow, message.contact, @final_phrase)
-      {state, true}
-    else
-      {state, false}
+      !Flows.flow_activated(flow_id, message.contact_id, since) ->
+        init_common_flow(state, flow_id, message)
+
+      true ->
+        {state, false}
     end
   end
 
@@ -140,4 +140,12 @@ defmodule Glific.Flows.Periodic do
 
   defp periodic_flow(state, period, message, since),
     do: common_flow(state, period, message, since)
+
+  defp init_common_flow(state, flow_id, message) do
+    {:ok, flow} =
+      Flows.get_cached_flow(message.organization_id, {:flow_id, flow_id, @final_phrase})
+
+    FlowContext.init_context(flow, message.contact, @final_phrase)
+    {state, true}
+  end
 end
