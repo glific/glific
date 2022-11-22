@@ -9,7 +9,7 @@ defmodule Glific.Flows.Periodic do
 
   All these flows are shortcode driven for now.
 
-  At some point, we will make this fleixible and let the NGO define the periodic interval
+  At some point, we will make this flexible and let the NGO define the periodic interval
   """
   use Publicist
 
@@ -88,18 +88,23 @@ defmodule Glific.Flows.Periodic do
   @final_phrase "published"
 
   @spec common_flow(map(), String.t(), Message.t(), DateTime.t()) :: {map(), boolean}
-  defp common_flow(state, period, message, since) do
-    flow_id = get_in(state, [:flows, "published", period])
+  defp common_flow(state, flow_name, message, since) do
+    flow_id = get_in(state, [:flows, "published", flow_name])
+    org = Glific.Partners.organization(state[:organization_id])
+    flow_config = org.out_of_office
 
-    if !is_nil(flow_id) and
-         !Flows.flow_activated(flow_id, message.contact_id, since) do
-      {:ok, flow} =
-        Flows.get_cached_flow(message.organization_id, {:flow_id, flow_id, @final_phrase})
+    cond do
+      is_nil(flow_id) ->
+        {state, false}
 
-      FlowContext.init_context(flow, message.contact, @final_phrase)
-      {state, true}
-    else
-      {state, false}
+      not is_nil(flow_config) && flow_config.run_each_time == true ->
+        init_common_flow(state, flow_id, message)
+
+      !Flows.flow_activated(flow_id, message.contact_id, since) ->
+        init_common_flow(state, flow_id, message)
+
+      true ->
+        {state, false}
     end
   end
 
@@ -135,4 +140,12 @@ defmodule Glific.Flows.Periodic do
 
   defp periodic_flow(state, period, message, since),
     do: common_flow(state, period, message, since)
+
+  defp init_common_flow(state, flow_id, message) do
+    {:ok, flow} =
+      Flows.get_cached_flow(message.organization_id, {:flow_id, flow_id, @final_phrase})
+
+    FlowContext.init_context(flow, message.contact, @final_phrase)
+    {state, true}
+  end
 end
