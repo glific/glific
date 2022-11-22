@@ -97,7 +97,7 @@ defmodule Glific.Flows.Periodic do
       is_nil(flow_id) ->
         {state, false}
 
-      flow_config["run_each_time"] ->
+      not is_nil(flow_config) && flow_config.run_each_time == true ->
         init_common_flow(state, flow_id, message)
 
       !Flows.flow_activated(flow_id, message.contact_id, since) ->
