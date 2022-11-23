@@ -177,8 +177,6 @@ defmodule Glific.Flows.Case do
     if Enum.all?([low, high, body], &(&1 != :error)) do
       [low, high, body] = Enum.map([low, high, body], &elem(&1, 1))
 
-      IO.inspect([low, high, body])
-
       body >= low && body <= high
     else
       false
