@@ -145,7 +145,8 @@ defmodule Glific.Flows.Periodic do
     {:ok, flow} =
       Flows.get_cached_flow(message.organization_id, {:flow_id, flow_id, @final_phrase})
 
-    FlowContext.init_context(flow, message.contact, @final_phrase)
+    opts = Keyword.put(Keyword.new(), :flow_keyword, message.body)
+    FlowContext.init_context(flow, message.contact, @final_phrase, opts)
     {state, true}
   end
 end
