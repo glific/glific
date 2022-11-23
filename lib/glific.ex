@@ -47,6 +47,36 @@ defmodule Glific do
   end
 
   @doc """
+  Wrapper to return :ok/:error when parsing strings to potential integers
+  """
+  @spec parse_maybe_number(String.t() | integer) :: {:ok, integer} | {:ok, nil} | :error
+  def parse_maybe_number(nil),
+    do: {:ok, nil}
+
+  def parse_maybe_number(value) when is_integer(value),
+    do: {:ok, value}
+
+  def parse_maybe_number(value) when is_float(value),
+    do: {:ok, value}
+
+  def parse_maybe_number(value) do
+    case Integer.parse(value) do
+      :error ->
+        :error
+
+      {n, ""} ->
+        {:ok, n}
+
+      _ ->
+        Float.parse(value)
+        |> case do
+          {n, ""} -> {:ok, n}
+          _ -> :error
+        end
+    end
+  end
+
+  @doc """
   Validates inputted shortcode, if shortcode is invalid it returns message that the shortcode is invalid
   along with the valid shortcode.
   """
