@@ -159,7 +159,7 @@ defmodule Glific.Clients do
     webhook: Glific.Clients.QuestAlliance
   }
 
-  @oflb %{
+  @oblf %{
     id: 109,
     name: "OBLF",
     webhook: Glific.Clients.Oblf
@@ -187,7 +187,7 @@ defmodule Glific.Clients do
     @quest_afeqc[:id] => @quest_afeqc,
     @quest_tcec[:id] => @quest_tcec,
     @quest_alliance[:id] => @quest_alliance,
-    @oflb[:id] => @oflb
+    @oblf[:id] => @oblf
   }
 
   @spec env(atom() | nil) :: atom()
