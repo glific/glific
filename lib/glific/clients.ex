@@ -159,6 +159,12 @@ defmodule Glific.Clients do
     webhook: Glific.Clients.QuestAlliance
   }
 
+  @oflb %{
+    id: 109,
+    name: "OBLF",
+    webhook: Glific.Clients.Oblf
+  }
+
   ## we should move this also to databases.
   @plugins %{
     @sol[:id] => @sol,
@@ -180,7 +186,8 @@ defmodule Glific.Clients do
     @digitalgreen_jh[:id] => @digitalgreen_jh,
     @quest_afeqc[:id] => @quest_afeqc,
     @quest_tcec[:id] => @quest_tcec,
-    @quest_alliance[:id] => @quest_alliance
+    @quest_alliance[:id] => @quest_alliance,
+    @oflb[:id] => @oflb,
   }
 
   @spec env(atom() | nil) :: atom()
