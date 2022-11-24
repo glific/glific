@@ -187,7 +187,7 @@ defmodule Glific.Clients do
     @quest_afeqc[:id] => @quest_afeqc,
     @quest_tcec[:id] => @quest_tcec,
     @quest_alliance[:id] => @quest_alliance,
-    @oflb[:id] => @oflb,
+    @oflb[:id] => @oflb
   }
 
   @spec env(atom() | nil) :: atom()
