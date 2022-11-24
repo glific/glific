@@ -215,7 +215,7 @@ defmodule Glific.BigQuery do
   end
 
   @spec handle_sync_errors(map(), non_neg_integer, map()) :: {:ok, any()}
-  defp handle_sync_errors(response, organization_id, attrs) do
+  defp handle_sync_errors(response, organization_id, attrs) when is_map(response) do
     Jason.decode(response.body)
     |> case do
       {:ok, data} ->
@@ -238,6 +238,10 @@ defmodule Glific.BigQuery do
       _ ->
         raise("Error while sync data with bigquery. #{inspect(response)}")
     end
+  end
+
+  defp handle_sync_errors(response, _organization_id, _attrs) do
+    raise("Error while sync data with bigquery. #{inspect(response)}")
   end
 
   ## Creating a view with un nested fields from contacts
