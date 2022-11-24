@@ -1,7 +1,7 @@
 defmodule Glific.Repo.Migrations.CreateProfiles do
   use Ecto.Migration
 
-  @global_schema Application.fetch_env!(:glific, :global_schema)
+  @global_schema Application.compile_env!(:glific, :global_schema)
 
   def change do
     create table(:profiles) do

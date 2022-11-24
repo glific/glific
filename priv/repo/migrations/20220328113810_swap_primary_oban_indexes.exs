@@ -4,7 +4,7 @@ defmodule Glific.Repo.Migrations.SwapPrimaryObanIndexes do
   @disable_ddl_transaction true
   @disable_migration_lock true
 
-  @global_schema Application.fetch_env!(:glific, :global_schema)
+  @global_schema Application.compile_env!(:glific, :global_schema)
 
   def change do
     create_if_not_exists index(

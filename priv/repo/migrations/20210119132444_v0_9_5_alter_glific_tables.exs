@@ -5,7 +5,7 @@ defmodule Glific.Repo.Migrations.V0_9_5_AlterGlificTables do
 
   use Ecto.Migration
 
-  @global_schema Application.fetch_env!(:glific, :global_schema)
+  @global_schema Application.compile_env!(:glific, :global_schema)
 
   def change do
     tags()
