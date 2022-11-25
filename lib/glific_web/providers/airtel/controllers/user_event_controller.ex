@@ -1,4 +1,4 @@
-defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
+defmodule GlificWeb.Providers.Airtel.Controllers.UserEventController do
   @moduledoc """
   Dedicated controller to handle different types of user events requests like optin an optout form
   """

@@ -1,4 +1,4 @@
-defmodule GlificWeb.Providers.Gupshup.Router do
+defmodule GlificWeb.Providers.Airtel.Router do
   @moduledoc """
   A Gupshup router which will redirect all the gupsup incoming request to there controller actions.
   """

@@ -1,4 +1,4 @@
-defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
+defmodule GlificWeb.Providers.Airtel.Plugs.Shunt do
   @moduledoc """
   A Gupshup shunt which will redirect all the incoming requests to the gupshup router based on there event type.
   """

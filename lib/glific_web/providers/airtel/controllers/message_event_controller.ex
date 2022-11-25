@@ -1,4 +1,4 @@
-defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
+defmodule GlificWeb.Providers.Airtel.Controllers.MessageEventController do
   @moduledoc """
   Dedicated controller to handle all the message status requests like read, delivered etc..
   """
