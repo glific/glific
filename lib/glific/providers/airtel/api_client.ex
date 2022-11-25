@@ -1,12 +1,12 @@
-defmodule Glific.Providers.Airtel.ApiClient do
+defmodule Glific.Providers.Gupshup.ApiClient do
   @moduledoc """
-  Https API client to interact with Airtel
+  Https API client to interact with Gupshup
   """
   alias Glific.Partners
   alias Plug.Conn.Query
   import GlificWeb.Gettext
 
-  @airtel_url "https://api.airtel.io/sm/api/v1"
+  @gupshup_url "https://api.gupshup.io/sm/api/v1"
 
   use Tesla
   # you can add , log_level: :debug to the below if you want debugging info
@@ -19,14 +19,14 @@ defmodule Glific.Providers.Airtel.ApiClient do
   @doc """
   Making Tesla get call and adding api key in header
   """
-  @spec airtel_get(String.t(), String.t()) :: Tesla.Env.result()
-  def airtel_get(url, api_key), do: get(url, headers: [{"apikey", api_key}])
+  @spec gupshup_get(String.t(), String.t()) :: Tesla.Env.result()
+  def gupshup_get(url, api_key), do: get(url, headers: [{"apikey", api_key}])
 
   @doc """
   Making Tesla post call and adding api key in header
   """
-  @spec airtel_post(String.t(), any(), String.t()) :: Tesla.Env.result()
-  def airtel_post(url, payload, api_key), do: post(url, payload, headers: [{"apikey", api_key}])
+  @spec gupshup_post(String.t(), any(), String.t()) :: Tesla.Env.result()
+  def gupshup_post(url, payload, api_key), do: post(url, payload, headers: [{"apikey", api_key}])
 
   @spec get_credentials(non_neg_integer()) :: {:error, String.t()} | {:ok, map()}
   defp get_credentials(org_id) do
@@ -56,8 +56,8 @@ defmodule Glific.Providers.Airtel.ApiClient do
   @spec get_templates(non_neg_integer()) :: Tesla.Env.result() | {:error, String.t()}
   def get_templates(org_id) do
     with {:ok, credentials} <- get_credentials(org_id) do
-      template_url = @airtel_url <> "/template/list/" <> credentials.app_name
-      airtel_get(template_url, credentials.api_key)
+      template_url = @gupshup_url <> "/template/list/" <> credentials.app_name
+      gupshup_get(template_url, credentials.api_key)
     end
   end
 
@@ -68,7 +68,7 @@ defmodule Glific.Providers.Airtel.ApiClient do
           Tesla.Env.result() | {:error, any()}
   def submit_template_for_approval(org_id, payload) do
     with {:ok, credentials} <- get_credentials(org_id) do
-      template_url = @airtel_url <> "/template/add/" <> credentials.app_name
+      template_url = @gupshup_url <> "/template/add/" <> credentials.app_name
       opts = [headers: [{"apikey", credentials.api_key}], opts: [adapter: [recv_timeout: 10_000]]]
       # Adding a delay of 30 seconds when applying for template
       post(template_url, payload, opts)
@@ -81,8 +81,8 @@ defmodule Glific.Providers.Airtel.ApiClient do
   @spec send_template(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
   def send_template(org_id, payload) do
     with {:ok, credentials} <- get_credentials(org_id) do
-      template_url = @airtel_url <> "/template/msg"
-      airtel_post(template_url, payload, credentials.api_key)
+      template_url = @gupshup_url <> "/template/msg"
+      gupshup_post(template_url, payload, credentials.api_key)
     end
   end
 
@@ -92,8 +92,8 @@ defmodule Glific.Providers.Airtel.ApiClient do
   @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result() | any()
   def send_message(org_id, payload) do
     with {:ok, credentials} <- get_credentials(org_id) do
-      url = @airtel_url <> "/msg"
-      airtel_post(url, payload, credentials.api_key)
+      url = @gupshup_url <> "/msg"
+      gupshup_post(url, payload, credentials.api_key)
     end
   end
 
@@ -105,8 +105,8 @@ defmodule Glific.Providers.Airtel.ApiClient do
     get_credentials(org_id)
 
     with {:ok, credentials} <- get_credentials(org_id) do
-      url = @airtel_url <> "/app/opt/in/" <> credentials.app_name
-      airtel_post(url, payload, credentials.api_key)
+      url = @gupshup_url <> "/app/opt/in/" <> credentials.app_name
+      gupshup_post(url, payload, credentials.api_key)
     end
   end
 
@@ -120,11 +120,11 @@ defmodule Glific.Providers.Airtel.ApiClient do
   end
 
   @doc """
-  Build the Airtel user list url
+  Build the Gupshup user list url
   """
   @spec users_get(String.t(), String.t()) :: Tesla.Env.result() | {:error, String.t()}
   def users_get(api_key, app_name) do
-    url = @airtel_url <> "/users/" <> app_name
-    airtel_get(url, api_key)
+    url = @gupshup_url <> "/users/" <> app_name
+    gupshup_get(url, api_key)
   end
 end
