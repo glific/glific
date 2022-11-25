@@ -1,4 +1,4 @@
-defmodule Glific.Providers.Gupshup.ApiClient do
+defmodule Glific.Providers.Airtel.AirtelAPI do
   @moduledoc """
   Https API client to interact with Gupshup
   """

@@ -12,7 +12,7 @@ defmodule Glific.Providers.AirtelContacts do
     Contacts.Contact,
     Partners,
     Partners.Organization,
-    Providers.Airtel.ApiClient
+    Providers.Airtel.AirtelAPI
   }
 
   @behaviour Glific.Providers.ContactBehaviour
@@ -26,7 +26,7 @@ defmodule Glific.Providers.AirtelContacts do
   @spec optin_contact(map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, list()}
   def optin_contact(%{organization_id: organization_id} = attrs) do
-    ApiClient.optin_contact(organization_id, %{user: attrs.phone})
+    AirtelAPI.optin_contact(organization_id, %{user: attrs.phone})
     |> case do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
         Contacts.contact_opted_in(
@@ -73,7 +73,7 @@ defmodule Glific.Providers.AirtelContacts do
     organization = Partners.organization(attrs.organization_id)
 
     result =
-      ApiClient.fetch_opted_in_contacts(attrs.organization_id)
+      AirtelAPI.fetch_opted_in_contacts(attrs.organization_id)
       |> validate_opted_in_contacts()
 
     case result do
