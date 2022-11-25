@@ -8,7 +8,8 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
     Partners,
     Repo,
     Settings.Language,
-    Templates
+    Templates,
+    Templates.SessionTemplate
   }
 
   @template_status %{

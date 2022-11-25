@@ -17,7 +17,6 @@ defmodule Glific.Providers.Airtel.Message do
   require Logger
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec send_text(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_text(message, attrs \\ %{}) do
@@ -27,7 +26,6 @@ defmodule Glific.Providers.Airtel.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec send_image(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_image(message, attrs \\ %{}) do
@@ -45,7 +43,6 @@ defmodule Glific.Providers.Airtel.Message do
 
   @doc false
 
-  @impl Glific.Providers.MessageBehaviour
   @spec send_audio(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_audio(message, attrs \\ %{}) do
     message_media = message.media
@@ -58,7 +55,6 @@ defmodule Glific.Providers.Airtel.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec send_video(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_video(message, attrs \\ %{}) do
@@ -74,7 +70,6 @@ defmodule Glific.Providers.Airtel.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec send_document(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_document(message, attrs \\ %{}) do
@@ -89,7 +84,6 @@ defmodule Glific.Providers.Airtel.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec send_sticker(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_sticker(message, attrs \\ %{}) do
     message_media = message.media
@@ -102,7 +96,6 @@ defmodule Glific.Providers.Airtel.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec send_interactive(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_interactive(message, attrs \\ %{}) do
     message.interactive_content
@@ -120,7 +113,6 @@ defmodule Glific.Providers.Airtel.Message do
     do: get_in(payload, ["context", "gsId"]) || get_in(payload, ["context", "id"])
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec receive_text(payload :: map()) :: map()
   def receive_text(params) do
     payload = params["payload"]
@@ -147,7 +139,6 @@ defmodule Glific.Providers.Airtel.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec receive_media(map()) :: map()
   def receive_media(params) do
     payload = params["payload"]
@@ -167,7 +158,6 @@ defmodule Glific.Providers.Airtel.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec receive_location(map()) :: map()
   def receive_location(params) do
     payload = params["payload"]
@@ -186,7 +176,6 @@ defmodule Glific.Providers.Airtel.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec receive_billing_event(map()) :: {:ok, map()} | {:error, String.t()}
   def receive_billing_event(params) do
     references = get_in(params, ["payload", "references"])
@@ -214,7 +203,6 @@ defmodule Glific.Providers.Airtel.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec receive_interactive(map()) :: map()
   def receive_interactive(params) do
     payload = params["payload"]

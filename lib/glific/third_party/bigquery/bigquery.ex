@@ -214,7 +214,7 @@ defmodule Glific.BigQuery do
     :ok
   end
 
-  @spec handle_sync_errors(map(), non_neg_integer, map()) :: {:ok, any()}
+  @spec handle_sync_errors(map(), non_neg_integer, map()) :: any()
   defp handle_sync_errors(response, organization_id, attrs) when is_map(response) do
     Jason.decode(response.body)
     |> case do
