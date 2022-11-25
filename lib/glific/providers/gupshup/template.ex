@@ -3,6 +3,8 @@ defmodule Glific.Providers.Gupshup.Template do
   Module for handling template operations specific to Gupshup
   """
 
+  @behaviour Glific.Providers.TemplateBehaviour
+
   alias Glific.{
     Messages.MessageMedia,
     Partners,
@@ -47,6 +49,14 @@ defmodule Glific.Providers.Gupshup.Template do
       other_response ->
         other_response
     end
+  end
+
+  @doc """
+  Import pre approved templates when BSP is GupshupEnterprise
+  """
+  @spec import_templates(non_neg_integer(), String.t()) :: {:ok, any}
+  def import_templates(_organization_id, _data) do
+    {:ok, %{message: "Feature not available"}}
   end
 
   @doc """

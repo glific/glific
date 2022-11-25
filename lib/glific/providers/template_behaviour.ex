@@ -4,7 +4,7 @@ defmodule Glific.Providers.TemplateBehaviour do
   """
 
   @callback submit_for_approval(attrs :: map()) ::
-              {:ok, Glific.Templates.SessionTemplate.t()} | {:error, String.t()}
+              {:ok, Glific.Templates.SessionTemplate.t()} | {:error, any()}
 
   @callback delete(org_id :: non_neg_integer(), attrs :: map()) ::
               {:ok, any()} | {:error, any()}
