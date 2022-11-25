@@ -75,11 +75,11 @@ defmodule Glific.Providers.Gupshup.Template do
   Updating HSM templates for an organization
   """
   @spec update_hsm_templates(non_neg_integer()) :: :ok | {:error, String.t()}
-  def update_hsm_templates(organization_id) do
-    organization = Partners.organization(organization_id)
+  def update_hsm_templates(org_id) do
+    organization = Partners.organization(org_id)
 
     with {:ok, response} <-
-           ApiClient.get_templates(organization_id),
+           ApiClient.get_templates(org_id),
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
       response_data["templates"]

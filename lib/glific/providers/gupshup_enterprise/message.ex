@@ -3,6 +3,8 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   Message API layer between application and Gupshup
   """
 
+  @behaviour Glific.Providers.MessageBehaviour
+
   alias Glific.{
     Communications,
     Messages.Message
@@ -82,6 +84,18 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
       interactive_type: message.type,
       media_url: get_in(attrs, [:interactive_content, "content", "url"]),
       interactive_media_type: interactive_media_type
+    }
+    |> send_message(message, attrs)
+  end
+
+  @doc false
+  @spec send_sticker(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_sticker(message, attrs \\ %{}) do
+    message_media = message.media
+
+    %{
+      type: :sticker,
+      url: message_media.url
     }
     |> send_message(message, attrs)
   end
@@ -258,6 +272,16 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
       }
     }
   end
+
+  @doc false
+  @spec receive_billing_event(map()) :: {:ok, map()} | {:error, String.t()}
+  def receive_billing_event(_params) do
+    {:ok, %{}}
+  end
+
+  @doc false
+  @spec receive_interactive(map()) :: map()
+  def receive_interactive(_params), do: %{}
 
   @spec to_minimal_map(map()) :: map()
   defp to_minimal_map(attrs) do
