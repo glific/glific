@@ -1,14 +1,14 @@
 defmodule GlificWeb.Providers.Airtel.Router do
   @moduledoc """
-  A Gupshup router which will redirect all the gupsup incoming request to there controller actions.
+  A Airtel router which will redirect all the airtel incoming request to there controller actions.
   """
 
   use GlificWeb, :router
 
-  alias GlificWeb.Providers.Gupshup.Controllers
+  alias GlificWeb.Providers.Airtel.Controllers
 
   @doc """
-  Need to match the following type specs from the gupshup documentation
+  Need to match the following type specs from the airtel documentation
   # type
   user-event
     # payload.type
@@ -33,7 +33,7 @@ defmodule GlificWeb.Providers.Airtel.Router do
     contact
     location
   """
-  scope "/gupshup", Controllers do
+  scope "/airtel", Controllers do
     scope "/user-event" do
       post("/opted-in", UserEventController, :opted_in)
       post("/opted-out", UserEventController, :opted_out)

@@ -3,6 +3,7 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
   Module for handling template operations specific to Gupshup
   """
 
+  @behaviour Glific.Providers.TemplateBehaviour
   alias Glific.{
     Partners,
     Repo,
@@ -14,6 +15,12 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
     "ENABLED" => "APPROVED",
     "REJECTED" => "REJECTED"
   }
+
+  @doc """
+  Submitting HSM template for approval
+  """
+  @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, any()}
+  def submit_for_approval(_attrs), do: {:error, "Feature not available"}
 
   @doc """
   Import pre approved templates when BSP is GupshupEnterprise
