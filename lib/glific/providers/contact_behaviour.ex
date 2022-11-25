@@ -8,6 +8,5 @@ defmodule Glific.Providers.ContactBehaviour do
   @callback optin_contact(attrs :: map()) ::
               {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, list()}
 
-  @callback fetch_opted_in_contacts(attrs :: map()) ::
-              :ok | {:error, String.t()}
+  @callback fetch_opted_in_contacts(attrs :: map()) :: :ok | {:error, String.t()}
 end
