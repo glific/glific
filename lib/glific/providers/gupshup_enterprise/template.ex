@@ -20,7 +20,8 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
   Submitting HSM template for approval
   """
   @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, any()}
-  def submit_for_approval(_attrs), do: {:error, "Feature not available"}
+  def submit_for_approval(attrs),
+    do: {:ok, Templates.get_session_template!(attrs.id)}
 
   @doc """
   Import pre approved templates when BSP is GupshupEnterprise
