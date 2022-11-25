@@ -1,4 +1,4 @@
-defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
+defmodule GlificWeb.Providers.Airtel.Controllers.MessageEventController do
   @moduledoc """
   Dedicated controller to handle all the message status requests like read, delivered etc..
   """
@@ -15,21 +15,21 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
   end
 
   @doc """
-  Message status when the message has been sent to gupshup
+  Message status when the message has been sent to airtel
   """
   @spec enqueued(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def enqueued(conn, params),
     do: update_status(conn, params, :enqueued)
 
   @doc """
-  Message status when gupshup could not send the message to whats app
+  Message status when airtel could not send the message to whats app
   """
   @spec failed(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def failed(conn, params),
     do: update_status(conn, params, :error)
 
   @doc """
-  Message has been sent to whats app via Gupshup
+  Message has been sent to whats app via Airtel
   """
   @spec sent(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def sent(conn, params),
