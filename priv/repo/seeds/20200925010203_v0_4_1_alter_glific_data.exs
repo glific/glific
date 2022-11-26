@@ -133,7 +133,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     add_google_asr()
 
     add_airtel()
-
   end
 
   defp add_dialogflow do
@@ -405,14 +404,15 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             provider_id: airtel.id,
             keys: %{
               url: "https://www.airtel.in/business/b2b/airtel-iq/dashboard",
-              api_end_point: "https://iqwhatsapp.airtel.in/gateway/airtel-xchange/whatsapp-manager",
+              api_end_point:
+                "https://iqwhatsapp.airtel.in/gateway/airtel-xchange/whatsapp-manager",
               handler: "Glific.Providers.Airtel.Message",
               worker: "Glific.Providers.Airtel.Worker",
               bsp_limit: 40
             },
             secrets: %{
               username: "airtel iq user name",
-              secret: "airtel iq secrets",
+              secret: "airtel iq secrets"
             },
             is_active: false
           })

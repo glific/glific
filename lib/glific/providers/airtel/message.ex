@@ -65,7 +65,6 @@ defmodule Glific.Providers.Airtel.Message do
       url: message_media.source_url,
       caption: caption(message_media.caption)
     }
-    |> check_size()
     |> send_message(message, attrs)
   end
 
@@ -227,31 +226,31 @@ defmodule Glific.Providers.Airtel.Message do
     }
   end
 
-  @doc false
-  @spec format_sender(Message.t()) :: map()
-  defp format_sender(message) do
-    organization = Partners.organization(message.organization_id)
+  # @doc false
+  # @spec format_sender(Message.t()) :: map()
+  # defp format_sender(message) do
+  #   organization = Partners.organization(message.organization_id)
 
-    %{
-      "source" => message.sender.phone,
-      "src.name" => organization.services["bsp"].secrets["app_name"]
-    }
-  end
+  #   %{
+  #     "source" => message.sender.phone,
+  #     "src.name" => organization.services["bsp"].secrets["app_name"]
+  #   }
+  # end
 
-  @max_size 4096
-  @doc false
-  @spec check_size(map()) :: map()
-  defp check_size(%{text: text} = attrs) do
-    if String.length(text) < @max_size,
-      do: attrs,
-      else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
-  end
+  # @max_size 4096
+  # @doc false
+  # @spec check_size(map()) :: map()
+  # defp check_size(%{text: text} = attrs) do
+  #   if String.length(text) < @max_size,
+  #     do: attrs,
+  #     else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
+  # end
 
-  defp check_size(%{caption: caption} = attrs) do
-    if String.length(caption) < @max_size,
-      do: attrs,
-      else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
-  end
+  # defp check_size(%{caption: caption} = attrs) do
+  #   if String.length(caption) < @max_size,
+  #     do: attrs,
+  #     else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
+  # end
 
   @doc false
   @spec send_message(map(), Message.t(), map()) ::
@@ -259,7 +258,6 @@ defmodule Glific.Providers.Airtel.Message do
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
   defp send_message(payload, message, attrs) do
-
     # this is common across all messages
     request_body =
       payload

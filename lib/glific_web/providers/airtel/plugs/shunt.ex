@@ -76,7 +76,6 @@ defmodule GlificWeb.Providers.Airtel.Plugs.Shunt do
   def call(conn, opts) do
     conn
     |> change_path_info(["airtel", "unknown", "unknown"])
-    |> IO.inspect()
     |> Router.call(opts)
   end
 
