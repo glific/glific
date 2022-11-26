@@ -58,9 +58,17 @@ defmodule GlificWeb.Providers.Airtel.Plugs.Shunt do
   end
 
   @doc false
-  def call(%Conn{params: %{"type" => type}} = conn, opts) do
+  def call(%Conn{params: %{"message" => %{"type" => type}}} = conn, opts) do
+    organization = build_context(conn)
+
+    path =
+      ["airtel"] ++
+        if Glific.safe_string_to_atom(organization.status) == :active,
+          do: ["message", type],
+          else: ["not_active_or_approved"]
+
     conn
-    |> change_path_info(["airtel", type, "unknown"])
+    |> change_path_info(path)
     |> Router.call(opts)
   end
 
@@ -68,6 +76,7 @@ defmodule GlificWeb.Providers.Airtel.Plugs.Shunt do
   def call(conn, opts) do
     conn
     |> change_path_info(["airtel", "unknown", "unknown"])
+    |> IO.inspect()
     |> Router.call(opts)
   end
 

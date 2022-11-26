@@ -34,6 +34,7 @@ oban_queues = [
   dialogflow: 5,
   gcs: 5,
   gupshup: 10,
+  airtel: 10,
   webhook: 10,
   broadcast: 5
 ]

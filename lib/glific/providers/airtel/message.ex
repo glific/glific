@@ -20,8 +20,7 @@ defmodule Glific.Providers.Airtel.Message do
   @spec send_text(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_text(message, attrs \\ %{}) do
-    %{type: :text, text: message.body, isHSM: message.is_hsm}
-    |> check_size()
+    %{type: :text, message: %{:text => message.body}}
     |> send_message(message, attrs)
   end
 
@@ -33,11 +32,12 @@ defmodule Glific.Providers.Airtel.Message do
 
     %{
       type: :image,
-      originalUrl: message_media.source_url,
-      previewUrl: message_media.url,
-      caption: caption(message_media.caption)
+      mediaAttachment: %{
+        type: "IMAGE",
+        url: message_media.source_url,
+        caption: caption(message_media.caption)
+      }
     }
-    |> check_size()
     |> send_message(message, attrs)
   end
 
@@ -98,8 +98,18 @@ defmodule Glific.Providers.Airtel.Message do
   @doc false
   @spec send_interactive(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_interactive(message, attrs \\ %{}) do
-    message.interactive_content
-    |> Map.merge(%{type: message.type})
+    content = message.interactive_content
+
+    buttons =
+      Enum.map(content["options"], fn x ->
+        %{"title" => x["title"], "tag" => x["title"]}
+      end)
+
+    %{
+      message: %{text: content["content"]["text"]},
+      buttons: buttons
+    }
+    |> Map.put(:type, content["type"])
     |> send_message(message, attrs)
   end
 
@@ -115,25 +125,15 @@ defmodule Glific.Providers.Airtel.Message do
   @doc false
   @spec receive_text(payload :: map()) :: map()
   def receive_text(params) do
-    payload = params["payload"]
-    message_payload = payload["payload"]
-
-    # lets ensure that we have a phone number
-    # sometime the airtel payload has a blank payload
-    # or maybe a simulator or some test code
-    if payload["sender"]["phone"] in [nil, ""] do
-      error = "Phone number is blank, #{inspect(payload)}"
-      Glific.log_error(error)
-      raise(RuntimeError, message: error)
-    end
+    text = get_in(params, ["message", "text"])
 
     %{
-      bsp_message_id: payload["id"],
-      context_id: context_id(payload),
-      body: message_payload["text"],
+      bsp_message_id: params["sessionId"],
+      body: text["body"],
       sender: %{
-        phone: payload["sender"]["phone"],
-        name: payload["sender"]["name"]
+        phone: params["from"],
+        # we need name here as we are checking in afterwards but we don't receive in payload
+        name: ""
       }
     }
   end
@@ -259,17 +259,13 @@ defmodule Glific.Providers.Airtel.Message do
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
   defp send_message(payload, message, attrs) do
-    request_body =
-      %{"channel" => @channel}
-      |> Map.merge(format_sender(message))
-      |> Map.put(:destination, message.receiver.phone)
-      |> Map.put("message", Jason.encode!(payload))
 
-    ## airtel does not allow null in the caption.
-    attrs =
-      if Map.has_key?(attrs, :caption) and is_nil(attrs[:caption]),
-        do: Map.put(attrs, :caption, ""),
-        else: attrs
+    # this is common across all messages
+    request_body =
+      payload
+      |> Map.put(:sessionId, message.uuid)
+      |> Map.put(:to, message.receiver.phone)
+      |> Map.put(:from, message.sender.phone)
 
     create_oban_job(message, request_body, attrs)
   end
