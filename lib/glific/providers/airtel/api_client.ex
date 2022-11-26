@@ -100,6 +100,7 @@ defmodule Glific.Providers.Airtel.ApiClient do
     case type do
       "text" -> @airtel_url <> "/v1/session/send/text"
       "quick_reply" -> @airtel_url <> "/v1/session/send/interactive/buttons"
+      "list" -> @airtel_url <> "/v1/session/send/interactive/list"
       "image" -> @airtel_url <> "/v1/session/send/media"
       _ -> @airtel_url <> "/v1/session/send/media"
     end

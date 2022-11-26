@@ -24,40 +24,6 @@ defmodule GlificWeb.Providers.Airtel.Plugs.Shunt do
   end
 
   @doc false
-  @spec call(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
-  def call(%Conn{params: %{"type" => type, "payload" => %{"type" => payload_type}}} = conn, opts) do
-    organization = build_context(conn)
-
-    path =
-      ["airtel"] ++
-        if Glific.safe_string_to_atom(organization.status) == :active,
-          do: [type, payload_type],
-          else: ["not_active_or_approved"]
-
-    conn
-    |> change_path_info(path)
-    |> Router.call(opts)
-  end
-
-  @doc false
-  def call(
-        %Conn{params: %{"type" => type, "payload" => %{"deductions" => _deductions}}} = conn,
-        opts
-      ) do
-    organization = build_context(conn)
-
-    path =
-      ["airtel"] ++
-        if Glific.safe_string_to_atom(organization.status) == :active,
-          do: [type, "conversations"],
-          else: ["not_active_or_approved"]
-
-    conn
-    |> change_path_info(path)
-    |> Router.call(opts)
-  end
-
-  @doc false
   def call(%Conn{params: %{"message" => %{"type" => type}}} = conn, opts) do
     organization = build_context(conn)
 

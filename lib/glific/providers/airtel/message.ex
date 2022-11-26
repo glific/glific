@@ -3,14 +3,9 @@ defmodule Glific.Providers.Airtel.Message do
   Message API layer between application and Airtel
   """
 
-  @channel "whatsapp"
-  @behaviour Glific.Providers.MessageBehaviour
-
   alias Glific.{
     Communications,
-    Messages.Message,
-    Partners,
-    Repo
+    Messages.Message
   }
 
   import Ecto.Query, warn: false
@@ -95,10 +90,32 @@ defmodule Glific.Providers.Airtel.Message do
   end
 
   @doc false
-  @spec send_interactive(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_interactive(message, attrs \\ %{}) do
-    content = message.interactive_content
+  @spec add_attachment(map(), map(), atom()) :: map()
+  defp add_attachment(interactive, attachemnt, :quick_reply) do
+    case attachemnt["content"]["type"] do
+      "image" ->
+        media_attachment = %{
+          type: "IMAGE",
+          url: attachemnt["content"]["url"]
+        }
 
+        interactive
+        |> Map.put(
+          "mediaAttachment",
+          media_attachment
+        )
+
+      _ ->
+        interactive
+    end
+  end
+
+  defp add_attachment(interactive, _attachemnt, :list) do
+    interactive
+  end
+
+  @spec parse_interactive_message(map(), atom()) :: map()
+  defp parse_interactive_message(content, :quick_reply) do
     buttons =
       Enum.map(content["options"], fn x ->
         %{"title" => x["title"], "tag" => x["title"]}
@@ -108,7 +125,37 @@ defmodule Glific.Providers.Airtel.Message do
       message: %{text: content["content"]["text"]},
       buttons: buttons
     }
+  end
+
+  defp parse_interactive_message(content, :list) do
+    list_options =
+      content["items"]
+      |> Enum.at(0)
+
+    options =
+      Enum.map(list_options["options"], fn option ->
+        %{
+          tag: option["title"],
+          title: option["title"],
+          description: option["description"]
+        }
+      end)
+
+    heading = content["globalButtons"] |> Enum.at(0)
+
+    %{message: %{text: content["body"]}, list: %{heading: heading["title"], options: options}}
+  end
+
+  @doc false
+  @spec send_interactive(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_interactive(message, attrs \\ %{}) do
+    interactive_content = parse_interactive_message(message.interactive_content, message.type)
+
+    content = message.interactive_content
+
+    interactive_content
     |> Map.put(:type, content["type"])
+    |> add_attachment(content, message.type)
     |> send_message(message, attrs)
   end
 
@@ -137,69 +184,69 @@ defmodule Glific.Providers.Airtel.Message do
     }
   end
 
-  @doc false
-  @spec receive_media(map()) :: map()
-  def receive_media(params) do
-    payload = params["payload"]
-    message_payload = payload["payload"]
+  # @doc false
+  # @spec receive_media(map()) :: map()
+  # def receive_media(params) do
+  #   payload = params["payload"]
+  #   message_payload = payload["payload"]
 
-    %{
-      bsp_message_id: payload["id"],
-      context_id: context_id(payload),
-      caption: message_payload["caption"],
-      url: message_payload["url"],
-      source_url: message_payload["url"],
-      sender: %{
-        phone: payload["sender"]["phone"],
-        name: payload["sender"]["name"]
-      }
-    }
-  end
+  #   %{
+  #     bsp_message_id: payload["id"],
+  #     context_id: context_id(payload),
+  #     caption: message_payload["caption"],
+  #     url: message_payload["url"],
+  #     source_url: message_payload["url"],
+  #     sender: %{
+  #       phone: payload["sender"]["phone"],
+  #       name: payload["sender"]["name"]
+  #     }
+  #   }
+  # end
 
-  @doc false
-  @spec receive_location(map()) :: map()
-  def receive_location(params) do
-    payload = params["payload"]
-    message_payload = payload["payload"]
+  # @doc false
+  # @spec receive_location(map()) :: map()
+  # def receive_location(params) do
+  #   payload = params["payload"]
+  #   message_payload = payload["payload"]
 
-    %{
-      bsp_message_id: payload["id"],
-      context_id: context_id(payload),
-      longitude: message_payload["longitude"],
-      latitude: message_payload["latitude"],
-      sender: %{
-        phone: payload["sender"]["phone"],
-        name: payload["sender"]["name"]
-      }
-    }
-  end
+  #   %{
+  #     bsp_message_id: payload["id"],
+  #     context_id: context_id(payload),
+  #     longitude: message_payload["longitude"],
+  #     latitude: message_payload["latitude"],
+  #     sender: %{
+  #       phone: payload["sender"]["phone"],
+  #       name: payload["sender"]["name"]
+  #     }
+  #   }
+  # end
 
-  @doc false
-  @spec receive_billing_event(map()) :: {:ok, map()} | {:error, String.t()}
-  def receive_billing_event(params) do
-    references = get_in(params, ["payload", "references"])
-    deductions = get_in(params, ["payload", "deductions"])
-    bsp_message_id = references["gsId"] || references["id"]
+  # @doc false
+  # @spec receive_billing_event(map()) :: {:ok, map()} | {:error, String.t()}
+  # def receive_billing_event(params) do
+  #   references = get_in(params, ["payload", "references"])
+  #   deductions = get_in(params, ["payload", "deductions"])
+  #   bsp_message_id = references["gsId"] || references["id"]
 
-    message_id =
-      Repo.fetch_by(Message, %{
-        bsp_message_id: bsp_message_id
-      })
-      |> case do
-        {:ok, message} -> message.id
-        {:error, _error} -> nil
-      end
+  #   message_id =
+  #     Repo.fetch_by(Message, %{
+  #       bsp_message_id: bsp_message_id
+  #     })
+  #     |> case do
+  #       {:ok, message} -> message.id
+  #       {:error, _error} -> nil
+  #     end
 
-    message_conversation = %{
-      deduction_type: deductions["type"],
-      is_billable: deductions["billable"],
-      conversation_id: references["conversationId"],
-      payload: params,
-      message_id: message_id
-    }
+  #   message_conversation = %{
+  #     deduction_type: deductions["type"],
+  #     is_billable: deductions["billable"],
+  #     conversation_id: references["conversationId"],
+  #     payload: params,
+  #     message_id: message_id
+  #   }
 
-    {:ok, message_conversation}
-  end
+  #   {:ok, message_conversation}
+  # end
 
   @doc false
   @spec receive_interactive(map()) :: map()
@@ -255,7 +302,7 @@ defmodule Glific.Providers.Airtel.Message do
   @doc false
   @spec send_message(map(), Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
-  defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
+  # defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
   defp send_message(payload, message, attrs) do
     # this is common across all messages

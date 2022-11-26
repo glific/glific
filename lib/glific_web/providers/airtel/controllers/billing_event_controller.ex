@@ -5,10 +5,10 @@ defmodule GlificWeb.Providers.Airtel.Controllers.BillingEventController do
 
   use GlificWeb, :controller
 
-  alias Glific.{
-    MessageConversations,
-    Providers.Airtel
-  }
+  # alias Glific.{
+  #   MessageConversations,
+  #   Providers.Airtel
+  # }
 
   @doc """
   Default handle for all billing event callbacks
@@ -18,23 +18,23 @@ defmodule GlificWeb.Providers.Airtel.Controllers.BillingEventController do
     json(conn, nil)
   end
 
-  @doc """
-  Message status when the message has been sent to Airtel
-  """
-  @spec conversations(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def conversations(conn, params), do: handle_billing_event(conn, params)
+  # @doc """
+  # Message status when the message has been sent to Airtel
+  # """
+  # @spec conversations(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  # def conversations(conn, params), do: handle_billing_event(conn, params)
 
-  @doc """
-  Callback for billing event
-  """
-  @spec handle_billing_event(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def handle_billing_event(conn, params) do
-    with {:ok, message_conversation} <- Airtel.Message.receive_billing_event(params) do
-      message_conversation
-      |> Map.put(:organization_id, conn.assigns[:organization_id])
-      |> MessageConversations.create_message_conversation()
-    end
+  # @doc """
+  # Callback for billing event
+  # """
+  # @spec handle_billing_event(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  # def handle_billing_event(conn, params) do
+  #   with {:ok, message_conversation} <- Airtel.Message.receive_billing_event(params) do
+  #     message_conversation
+  #     |> Map.put(:organization_id, conn.assigns[:organization_id])
+  #     |> MessageConversations.create_message_conversation()
+  #   end
 
-    handler(conn, params)
-  end
+  #   handler(conn, params)
+  # end
 end

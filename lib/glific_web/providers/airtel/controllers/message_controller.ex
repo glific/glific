@@ -31,47 +31,47 @@ defmodule GlificWeb.Providers.Airtel.Controllers.MessageController do
     handler(conn, params, "text handler")
   end
 
-  @doc """
-  Callback for airtel image type
-  """
-  @spec image(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def image(conn, params), do: media(conn, params, :image)
+  # @doc """
+  # Callback for airtel image type
+  # """
+  # @spec image(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  # def image(conn, params), do: media(conn, params, :image)
 
-  @doc """
-  Callback for airtel file type
-  """
-  @spec file(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def file(conn, params), do: media(conn, params, :document)
+  # @doc """
+  # Callback for airtel file type
+  # """
+  # @spec file(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  # def file(conn, params), do: media(conn, params, :document)
 
-  @doc """
-  Callback for airtel audio type
-  """
-  @spec audio(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def audio(conn, params), do: media(conn, params, :audio)
+  # @doc """
+  # Callback for airtel audio type
+  # """
+  # @spec audio(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  # def audio(conn, params), do: media(conn, params, :audio)
 
-  @doc """
-  Callback for airtel video type
-  """
-  @spec video(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def video(conn, params), do: media(conn, params, :video)
+  # @doc """
+  # Callback for airtel video type
+  # """
+  # @spec video(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  # def video(conn, params), do: media(conn, params, :video)
 
-  @doc """
-  Callback for airtel sticker image
-  """
-  @spec sticker(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def sticker(conn, params), do: media(conn, params, :sticker)
+  # @doc """
+  # Callback for airtel sticker image
+  # """
+  # @spec sticker(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  # def sticker(conn, params), do: media(conn, params, :sticker)
 
-  @doc false
-  # Handle Airtel media message and convert them into Glific Message struct
-  @spec media(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
-  defp media(conn, params, type) do
-    params
-    |> Airtel.Message.receive_media()
-    |> Map.put(:organization_id, conn.assigns[:organization_id])
-    |> Communications.Message.receive_message(type)
+  # @doc false
+  # # Handle Airtel media message and convert them into Glific Message struct
+  # @spec media(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
+  # defp media(conn, params, type) do
+  #   params
+  #   |> Airtel.Message.receive_media()
+  #   |> Map.put(:organization_id, conn.assigns[:organization_id])
+  #   |> Communications.Message.receive_message(type)
 
-    handler(conn, params, "media handler")
-  end
+  #   handler(conn, params, "media handler")
+  # end
 
   @doc """
   Callback for interactive quick reply type
@@ -97,15 +97,15 @@ defmodule GlificWeb.Providers.Airtel.Controllers.MessageController do
     handler(conn, params, "interactive handler")
   end
 
-  @doc false
-  # Handle Airtel location message and convert them into Glific Message struct
-  @spec location(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def location(conn, params) do
-    params
-    |> Airtel.Message.receive_location()
-    |> Map.put(:organization_id, conn.assigns[:organization_id])
-    |> Communications.Message.receive_message(:location)
+  # @doc false
+  # # Handle Airtel location message and convert them into Glific Message struct
+  # @spec location(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  # def location(conn, params) do
+  #   params
+  #   |> Airtel.Message.receive_location()
+  #   |> Map.put(:organization_id, conn.assigns[:organization_id])
+  #   |> Communications.Message.receive_message(:location)
 
-    handler(conn, params, "location handler")
-  end
+  #   handler(conn, params, "location handler")
+  # end
 end
