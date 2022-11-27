@@ -9,7 +9,6 @@ defmodule Glific.Clients.Oblf do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("get_question_buttons", fields) do
-
     buttons =
       fields["daily_question"]
       |> String.split("|")

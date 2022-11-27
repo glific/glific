@@ -5,12 +5,12 @@ defmodule Glific.Providers.GupshupEnterpriseContacts do
 
   use Publicist
 
+  @behaviour Glific.Providers.ContactBehaviour
+
   alias Glific.{
     Contacts,
     Providers.Gupshup.Enterprise.ApiClient
   }
-
-  @behaviour Glific.Providers.ContactBehaviour
 
   @doc """
     Update a contact phone as opted in
@@ -34,4 +34,11 @@ defmodule Glific.Providers.GupshupEnterpriseContacts do
         {:error, ["gupshup_enterprise", "couldn't connect"]}
     end
   end
+
+  @doc """
+  Fetch opted in contacts data from providers server
+  """
+  @impl Glific.Providers.ContactBehaviour
+  @spec fetch_opted_in_contacts(map()) :: :ok | {:error, String.t()}
+  def fetch_opted_in_contacts(_attrs), do: :ok
 end
