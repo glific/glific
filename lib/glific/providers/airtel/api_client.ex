@@ -36,6 +36,9 @@ defmodule Glific.Providers.Airtel.ApiClient do
         ]
       )
 
+  @doc """
+  get auth credentials from header
+  """
   @spec get_credentials(non_neg_integer()) :: {:error, String.t()} | {:ok, map()}
   def get_credentials(org_id) do
     organization = Partners.organization(org_id)

@@ -24,6 +24,7 @@ defmodule GlificWeb.Providers.Airtel.Plugs.Shunt do
   end
 
   @doc false
+  @spec call(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
   def call(%Conn{params: %{"message" => %{"type" => type}}} = conn, opts) do
     organization = build_context(conn)
 

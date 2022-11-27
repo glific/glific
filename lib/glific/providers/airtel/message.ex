@@ -110,9 +110,7 @@ defmodule Glific.Providers.Airtel.Message do
     end
   end
 
-  defp add_attachment(interactive, _attachemnt, :list) do
-    interactive
-  end
+  defp add_attachment(interactive, _attachemnt, :list), do: interactive
 
   @spec parse_interactive_message(map(), atom()) :: map()
   defp parse_interactive_message(content, :quick_reply) do
@@ -178,7 +176,7 @@ defmodule Glific.Providers.Airtel.Message do
       body: text["body"],
       sender: %{
         phone: params["from"],
-        # we need name here as we are checking in afterwards but we don't receive in payload
+        # we need name here as we are checking it afterwards but we don't receive in payload
         name: ""
       }
     }
