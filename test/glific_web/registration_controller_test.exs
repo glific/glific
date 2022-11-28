@@ -20,6 +20,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
+    Fixtures.set_bsp_partner_tokens()
     Fixtures.otp_hsm_fixture()
     :ok
   end
@@ -150,7 +151,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "send otp to invalid contact", %{conn: conn} do
-      phone = "invalid contact"
+      phone = nil
       invalid_params = %{"user" => %{"phone" => phone}}
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
@@ -170,7 +171,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert get_in(json, ["error", "message"]) == "Cannot send the otp to #{phone}"
     end
 
-    test "send otp to optout contact will return an error", %{conn: conn} do
+    test "send otp to optout contact will optin the contact again", %{conn: conn} do
       receiver = Fixtures.contact_fixture()
 
       Contacts.contact_opted_out(receiver.phone, receiver.organization_id, DateTime.utc_now())
@@ -178,10 +179,9 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
 
-      assert json = json_response(conn, 400)
+      assert json = json_response(conn, 200)
 
-      assert get_in(json, ["error", "message"]) ==
-               "Cannot send the otp to #{receiver.phone}"
+      assert get_in(json, ["error", "message"]) == nil
     end
 
     test "send otp with registration 'false' flag to existing user should succeed", %{conn: conn} do

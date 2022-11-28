@@ -560,6 +560,7 @@ defmodule Glific.Fixtures do
           body:
             Jason.encode!(%{
               "status" => "success",
+              "token" => "new_partner_token",
               "template" => %{
                 "elementName" => "common_otp",
                 "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
@@ -1026,5 +1027,16 @@ defmodule Glific.Fixtures do
       |> Sheets.create_sheet()
 
     sheet
+  end
+
+  @doc """
+  Setup cache for partner token So that
+  We don't need to mock the API calls
+  """
+  @spec set_bsp_partner_tokens(non_neg_integer()) :: :ok
+  def set_bsp_partner_tokens(org_id \\ 1) do
+    Glific.Caches.set(org_id, "partner_app_token", "Some_random_token", ttl: :timer.hours(22))
+    Glific.Caches.set(org_id, "partner_token", "Some_random_token", ttl: :timer.hours(22))
+    :ok
   end
 end
