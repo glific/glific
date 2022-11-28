@@ -109,10 +109,10 @@ defmodule GlificWeb.API.V1.RegistrationController do
              tag_id: tag.id,
              organization_id: user.organization_id
            }),
-         do: {:ok, "Staff tag added to the user contatct"}
+         do: {:ok, "Staff tag added to the user contact"}
   end
 
-  # we need to give user permissions here so we can retrive and send messages
+  # we need to give user permissions here so we can retrieve and send messages
   # in some cases
   defp build_context(organization_id) do
     organization = Partners.organization(organization_id)
