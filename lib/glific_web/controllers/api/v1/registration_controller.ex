@@ -109,10 +109,10 @@ defmodule GlificWeb.API.V1.RegistrationController do
              tag_id: tag.id,
              organization_id: user.organization_id
            }),
-         do: {:ok, "Staff tag added to the user contatct"}
+         do: {:ok, "Staff tag added to the user contact"}
   end
 
-  # we need to give user permissions here so we can retrive and send messages
+  # we need to give user permissions here so we can retrieve and send messages
   # in some cases
   defp build_context(organization_id) do
     organization = Partners.organization(organization_id)
@@ -127,7 +127,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
     registration = user_params["user"]["registration"]
 
-    with {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
+    with {:ok, _contact} <- optin_contact(organization_id, phone),
+         {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
          true <- send_otp_allowed?(organization_id, phone, registration),
          {:ok, _otp} <- create_and_send_verification_code(contact) do
       json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
@@ -222,5 +223,15 @@ defmodule GlificWeb.API.V1.RegistrationController do
       {:error, _error} ->
         {:error, []}
     end
+  end
+
+  @spec optin_contact(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, []}
+  defp optin_contact(organization_id, phone) do
+    %{
+      phone: phone,
+      organization_id: organization_id,
+      method: "registration"
+    }
+    |> Contacts.optin_contact()
   end
 end
