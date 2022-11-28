@@ -56,6 +56,7 @@ defmodule Glific.Flows.Action do
   @required_fields_contact [:contacts, :text | @required_field_common]
   @required_fields_waittime [:delay]
   @required_fields_interactive_template [:name | @required_field_common]
+  @required_fields_set_results [:name, :category, :value | @required_field_common]
 
   @wait_for ["wait_for_time", "wait_for_result"]
 
@@ -98,7 +99,8 @@ defmodule Glific.Flows.Action do
           params_count: String.t() | nil,
           params: list() | nil,
           attachment_type: String.t() | nil,
-          attachment_url: String.t() | nil
+          attachment_url: String.t() | nil,
+          category: String.t() | nil
         }
 
   embedded_schema do
@@ -106,6 +108,7 @@ defmodule Glific.Flows.Action do
     field(:name, :string)
     field(:text, :string)
     field(:value, :string)
+    field(:category, :string)
     field(:input, :string)
 
     # various fields for webhooks
@@ -291,6 +294,16 @@ defmodule Glific.Flows.Action do
     else
       process(json, uuid_map, node, %{groups: json["groups"]})
     end
+  end
+
+  def process(%{"type" => "set_run_result"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_results)
+
+    process(json, uuid_map, node, %{
+      value: json["value"],
+      category: json["category"],
+      name: json["name"]
+    })
   end
 
   @default_wait_time -1
@@ -714,6 +727,19 @@ defmodule Glific.Flows.Action do
 
       Groups.delete_contact_groups_by_ids(context.contact_id, groups_ids)
     end
+
+    {:ok, context, messages}
+  end
+
+  def execute(%{type: "set_run_result"} = action, context, messages) do
+    results = %{
+      "input" => action.value,
+      "value" => action.value,
+      "category" => action.category,
+      "inserted_at" => DateTime.utc_now()
+    }
+
+    context = FlowContext.update_results(context, %{action.name => results})
 
     {:ok, context, messages}
   end
