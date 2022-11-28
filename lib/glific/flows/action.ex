@@ -739,9 +739,9 @@ defmodule Glific.Flows.Action do
       "inserted_at" => DateTime.utc_now()
     }
 
-    context = FlowContext.update_results(context, %{action.name => results})
+    updated_context = FlowContext.update_results(context, %{action.name => results})
 
-    {:ok, context, messages}
+    {:ok, updated_context, messages}
   end
 
   def execute(%{type: type} = _action, context, [msg])
