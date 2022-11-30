@@ -60,6 +60,7 @@ defmodule Glific.Processor.ConsumerFlow do
   @delay_time 0
   @draft_phrase "draft"
   @final_phrase "published"
+  @optin_flow_keyword "optin"
 
   @doc """
   In case contact is not in optin flow let's move ahead with the regular processing.
@@ -74,7 +75,7 @@ defmodule Glific.Processor.ConsumerFlow do
              {:flow_uuid, context.flow_uuid, context.status}
            ),
          true <- flow.ignore_keywords do
-      continue_the_current_context(context, message, body, state)
+      continue_current_context(context, message, body, state)
     else
       _ ->
         cond do
@@ -93,6 +94,7 @@ defmodule Glific.Processor.ConsumerFlow do
             opts = [status: @draft_phrase, flow_params: flow_params]
             start_new_flow(message, message.body, state, opts)
 
+          # making sure that user is not in any flow.
           is_nil(context) && match_with_regex?(state.regx_flow, message) ->
             flow_id = Glific.parse_maybe_integer!(state.regx_flow.flow_id)
             flow_params = {:flow_id, flow_id, @final_phrase}
@@ -103,22 +105,9 @@ defmodule Glific.Processor.ConsumerFlow do
             {message, state}
 
           true ->
-            continue_the_current_context(context, message, body, state)
+            continue_current_context(context, message, body, state)
         end
     end
-  end
-
-  @spec is_draft_keyword?(map(), String.t()) :: boolean()
-  defp is_draft_keyword?(_state, nil), do: false
-
-  defp is_draft_keyword?(state, body) do
-    if String.starts_with?(body, @draft_phrase) and
-         Map.has_key?(
-           state.flow_keywords["draft"],
-           String.replace_leading(body, @draft_phrase, "")
-         ),
-       do: true,
-       else: false
   end
 
   @doc """
@@ -145,23 +134,14 @@ defmodule Glific.Processor.ConsumerFlow do
   end
 
   @doc false
-  @spec continue_the_current_context(
+  @spec continue_current_context(
           FlowContext.t() | nil,
           atom() | Message.t(),
           String.t(),
           map()
         ) ::
           {Message.t(), map()}
-  def continue_the_current_context(nil = _context, message, _body, state) do
-    # We are here it means user is not in any flow
-    # and current messages is not a flow keyword
-    # lets do the periodic flow routine and send those out
-    # in a priority order
-    state = Periodic.run_flows(state, message)
-    {message, state}
-  end
-
-  def continue_the_current_context(context, message, _body, state) do
+  def continue_current_context(context, message, _body, state) do
     {:ok, flow} =
       Flows.get_cached_flow(
         message.organization_id,
@@ -195,7 +175,18 @@ defmodule Glific.Processor.ConsumerFlow do
     {message, state}
   end
 
-  @optin_flow_keyword "optin"
+  @spec is_draft_keyword?(map(), String.t()) :: boolean()
+  defp is_draft_keyword?(_state, nil), do: false
+
+  defp is_draft_keyword?(state, body) do
+    if String.starts_with?(body, @draft_phrase) and
+         Map.has_key?(
+           state.flow_keywords["draft"],
+           String.replace_leading(body, @draft_phrase, "")
+         ),
+       do: true,
+       else: false
+  end
 
   ## check if contact is not in the optin flow and has optout time
   @spec start_optin_flow?(Contact.t(), FlowContext.t() | nil, String.t()) :: boolean()
