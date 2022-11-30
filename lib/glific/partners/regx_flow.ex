@@ -13,17 +13,20 @@ defmodule Glific.Partners.OrganizationSettings.RegxFlow do
 
   @required_fields [
     :flow_id,
-    :regx
+    :regx,
+    :regx_opt
   ]
 
   @type t() :: %__MODULE__{
           flow_id: non_neg_integer | nil,
-          regx: String.t() | nil
+          regx: String.t() | nil,
+          regx_opt: String.t() | nil
         }
 
   @primary_key false
   embedded_schema do
     field :regx, :string
+    field :regx_opt, :string
     belongs_to :flow, Flow
   end
 
