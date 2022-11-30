@@ -69,7 +69,7 @@ defmodule Glific.Processor.ConsumerFlow do
           {Message.t(), map()}
   def move_forward({message, state}, body, context, opts) do
     cond do
-      should_continue_the_context?(context) ->
+      continue_the_context?(context) ->
         continue_current_context(context, message, body, state)
 
       start_new_contact_flow?(state) ->
@@ -238,11 +238,8 @@ defmodule Glific.Processor.ConsumerFlow do
 
   defp match_with_regex?(_, _), do: false
 
-  defp should_continue_the_context?(context) do
-    cond do
-      is_nil(context) -> false
-      context.flow.ignore_keywords -> true
-      true -> false
-    end
-  end
+  @spec continue_the_context?(FlowContext.t()) :: boolean()
+  defp continue_the_context?(nil), do: false
+
+  defp continue_the_context?(context), do: context.flow.ignore_keywords
 end
