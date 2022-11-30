@@ -88,12 +88,12 @@ defmodule Glific.Processor.ConsumerFlow do
         start_new_flow(message, message.body, state, opts)
 
       # making sure that user is not in any flow.
-      is_nil(context) && match_with_regex?(state.regx_flow, message) ->
+      is_context_nil?(context) && match_with_regex?(state.regx_flow, message.body) ->
         flow_id = Glific.parse_maybe_integer!(state.regx_flow.flow_id)
         flow_params = {:flow_id, flow_id, @final_phrase}
         start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
 
-      is_nil(context) ->
+      is_context_nil?(context) ->
         state = Periodic.run_flows(state, message)
         {message, state}
 
@@ -227,11 +227,13 @@ defmodule Glific.Processor.ConsumerFlow do
     Map.has_key?(state.flow_keywords["published"], body)
   end
 
-  @spec match_with_regex?(map(), Message.t()) :: boolean()
-  defp match_with_regex?(regx_flow, message) when is_map(regx_flow) == true do
+  @spec match_with_regex?(map(), String.t()) :: boolean()
+  defp match_with_regex?(nil, _), do: false
+
+  defp match_with_regex?(regx_flow, body) when is_map(regx_flow) == true do
     Regex.compile(regx_flow.regx, regx_flow.regx_opt)
     |> case do
-      {:ok, rgx} -> String.match?(message.body, rgx)
+      {:ok, rgx} -> String.match?(body, rgx)
       _ -> false
     end
   end
@@ -239,7 +241,17 @@ defmodule Glific.Processor.ConsumerFlow do
   defp match_with_regex?(_, _), do: false
 
   @spec continue_the_context?(FlowContext.t()) :: boolean()
-  defp continue_the_context?(nil), do: false
+  defp continue_the_context?(context) do
+    cond do
+      is_nil(context) -> false
+      context.flow.ignore_keywords -> true
+      true -> false
+    end
+  end
 
-  defp continue_the_context?(context), do: context.flow.ignore_keywords
+  @spec is_context_nil?(FlowContext.t()) :: boolean()
+  defp is_context_nil?(context) do
+    ## not sure why this is giving dialyzer error. Ignoring for now
+    is_nil(context)
+  end
 end
