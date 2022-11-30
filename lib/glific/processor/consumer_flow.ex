@@ -68,45 +68,37 @@ defmodule Glific.Processor.ConsumerFlow do
   @spec move_forward({Message.t(), map()}, String.t(), FlowContext.t(), Keyword.t()) ::
           {Message.t(), map()}
   def move_forward({message, state}, body, context, opts) do
-    with false <- is_nil(context),
-         {:ok, flow} <-
-           Flows.get_cached_flow(
-             message.organization_id,
-             {:flow_uuid, context.flow_uuid, context.status}
-           ),
-         true <- flow.ignore_keywords do
-      continue_current_context(context, message, body, state)
-    else
-      _ ->
-        cond do
-          start_new_contact_flow?(state) ->
-            flow_id = state.flow_keywords["org_default_new_contact"]
-            flow_params = {:flow_id, flow_id, @final_phrase}
-            start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
+    cond do
+      should_continue_the_context?(context) ->
+        continue_current_context(context, message, body, state)
 
-          is_flow_keyword?(state, body) ->
-            flow_params = {:flow_keyword, body, @final_phrase}
-            start_new_flow(message, body, state, flow_params: flow_params)
+      start_new_contact_flow?(state) ->
+        flow_id = state.flow_keywords["org_default_new_contact"]
+        flow_params = {:flow_id, flow_id, @final_phrase}
+        start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
 
-          Keyword.get(opts, :is_draft, false) ->
-            body = String.replace_leading(body, @draft_phrase <> ":", "")
-            flow_params = {:flow_keyword, body, @draft_phrase}
-            opts = [status: @draft_phrase, flow_params: flow_params]
-            start_new_flow(message, message.body, state, opts)
+      is_flow_keyword?(state, body) ->
+        flow_params = {:flow_keyword, body, @final_phrase}
+        start_new_flow(message, body, state, flow_params: flow_params)
 
-          # making sure that user is not in any flow.
-          is_nil(context) && match_with_regex?(state.regx_flow, message) ->
-            flow_id = Glific.parse_maybe_integer!(state.regx_flow.flow_id)
-            flow_params = {:flow_id, flow_id, @final_phrase}
-            start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
+      Keyword.get(opts, :is_draft, false) ->
+        body = String.replace_leading(body, @draft_phrase <> ":", "")
+        flow_params = {:flow_keyword, body, @draft_phrase}
+        opts = [status: @draft_phrase, flow_params: flow_params]
+        start_new_flow(message, message.body, state, opts)
 
-          is_nil(context) ->
-            state = Periodic.run_flows(state, message)
-            {message, state}
+      # making sure that user is not in any flow.
+      is_nil(context) && match_with_regex?(state.regx_flow, message) ->
+        flow_id = Glific.parse_maybe_integer!(state.regx_flow.flow_id)
+        flow_params = {:flow_id, flow_id, @final_phrase}
+        start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
 
-          true ->
-            continue_current_context(context, message, body, state)
-        end
+      is_nil(context) ->
+        state = Periodic.run_flows(state, message)
+        {message, state}
+
+      true ->
+        continue_current_context(context, message, body, state)
     end
   end
 
@@ -245,4 +237,12 @@ defmodule Glific.Processor.ConsumerFlow do
   end
 
   defp match_with_regex?(_, _), do: false
+
+  defp should_continue_the_context?(context) do
+    cond do
+      is_nil(context) -> false
+      context.flow.ignore_keywords -> true
+      true -> false
+    end
+  end
 end
