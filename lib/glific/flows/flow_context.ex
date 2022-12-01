@@ -657,7 +657,7 @@ defmodule Glific.Flows.FlowContext do
       |> Repo.one()
       |> Repo.preload([:contact, :flow])
 
-    # if this context is waiting on time, we skip it
+    # if this is a background flow we skip it
     if fc && fc.is_background_flow,
       do: nil,
       else: fc
