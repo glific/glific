@@ -605,25 +605,29 @@ defmodule Glific.Flows do
   @doc """
   Start flow for a contact and cache the result
   """
-  @spec start_contact_flow(Flow.t() | integer, Contact.t()) ::
+  @spec start_contact_flow(Flow.t() | integer, Contact.t(), map()) ::
           {:ok, Flow.t()} | {:error, String.t()}
-  def start_contact_flow(flow_id, %Contact{} = contact) when is_integer(flow_id) do
+
+  def start_contact_flow(f, c, default_results \\ %{})
+
+  def start_contact_flow(flow_id, %Contact{} = contact, default_results)
+      when is_integer(flow_id) do
     case get_cached_flow(contact.organization_id, {:flow_id, flow_id, @status}) do
       {:ok, flow} ->
-        process_contact_flow([contact], flow, @status)
+        process_contact_flow([contact], flow, default_results)
 
       {:error, _error} ->
         {:error, ["Flow", dgettext("errors", "Flow not found")]}
     end
   end
 
-  def start_contact_flow(%Flow{} = flow, %Contact{} = contact),
-    do: start_contact_flow(flow.id, contact)
+  def start_contact_flow(%Flow{} = flow, %Contact{} = contact, default_results),
+    do: start_contact_flow(flow.id, contact, default_results)
 
-  @spec process_contact_flow(list(), Flow.t(), String.t()) :: {:ok, Flow.t()}
-  defp process_contact_flow(contacts, flow, _status) do
+  @spec process_contact_flow(list(), Flow.t(), map()) :: {:ok, Flow.t()}
+  defp process_contact_flow(contacts, flow, default_results) do
     if flow.is_active do
-      Broadcast.broadcast_contacts(flow, contacts)
+      Broadcast.broadcast_contacts(flow, contacts, default_results)
       {:ok, flow}
     else
       {:error, ["Flow", dgettext("errors", "Flow is not active")]}
@@ -633,11 +637,11 @@ defmodule Glific.Flows do
   @doc """
   Start flow for contacts of a group
   """
-  @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
-  def start_group_flow(flow, group) do
+  @spec start_group_flow(Flow.t(), Group.t(), map()) :: {:ok, Flow.t()}
+  def start_group_flow(flow, group, default_results \\ %{}) do
     # the flow returned is the expanded version
     {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id, @status})
-    Broadcast.broadcast_flow_to_group(flow, group)
+    Broadcast.broadcast_flow_to_group(flow, group, default_results)
     {:ok, flow}
   end
 

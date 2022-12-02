@@ -398,6 +398,7 @@ defmodule Glific.FLowsTest do
       group = Fixtures.group_fixture()
       contact = Fixtures.contact_fixture()
       contact2 = Fixtures.contact_fixture()
+      default_results = %{key: "value"}
 
       Groups.create_contact_group(%{
         group_id: group.id,
@@ -411,7 +412,7 @@ defmodule Glific.FLowsTest do
         organization_id: attrs.organization_id
       })
 
-      {:ok, flow} = Flows.start_group_flow(flow, group)
+      {:ok, flow} = Flows.start_group_flow(flow, group, default_results)
 
       assert {:ok, message_broadcast} =
                Repo.fetch_by(MessageBroadcast, %{
@@ -442,6 +443,9 @@ defmodule Glific.FLowsTest do
                })
 
       assert message_broadcast.completed_at != nil
+
+      broadcast_results = message_broadcast.default_results
+      assert broadcast_results["key"] == default_results.key
     end
 
     test "copy_flow/2 with valid data makes a copy of flow" do
