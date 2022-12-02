@@ -25,7 +25,7 @@ defmodule Glific.Flows.MessageBroadcast do
     :flow_id,
     :completed_at,
     :type,
-    :message_params
+    :message_params,
     :default_results
   ]
 

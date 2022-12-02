@@ -528,15 +528,20 @@ defmodule Glific.Flows.FlowContext do
   @spec default_results(Keyword.t()) :: map()
   defp default_results(opts) do
     flow_keyword = Keyword.get(opts, :flow_keyword, "")
+    initial_results = Keyword.get(opts, :default_results, %{}) || %{}
 
-    %{
-      "flow_keyword" => %{
-        "input" => Glific.string_clean(flow_keyword),
-        "category" => flow_keyword,
-        "inserted_at" => DateTime.utc_now()
+    if flow_keyword in [nil, ""] do
+      initial_results
+    else
+      %{
+        "flow_keyword" => %{
+          "input" => Glific.string_clean(flow_keyword),
+          "category" => flow_keyword,
+          "inserted_at" => DateTime.utc_now()
+        }
       }
-    }
-    |> Map.merge(Keyword.get(opts, :default_results, %{}))
+      |> Map.merge(initial_results)
+    end
   end
 
   @doc """
@@ -558,23 +563,29 @@ defmodule Glific.Flows.FlowContext do
 
     node = flow.start_node
 
-    create_flow_context(%{
-      contact_id: contact.id,
-      parent_id: parent_id,
-      message_broadcast_id: message_broadcast_id,
-      node_uuid: node.uuid,
-      flow_uuid: flow.uuid,
-      status: status,
-      node: node,
-      results: initial_results,
-      flow_id: flow.id,
-      flow: flow,
-      organization_id: flow.organization_id,
-      uuid_map: flow.uuid_map,
-      delay: delay,
-      uuids_seen: uuids_seen,
-      wakeup_at: wakeup_at
-    })
+    {:ok, context} =
+      create_flow_context(%{
+        contact_id: contact.id,
+        parent_id: parent_id,
+        message_broadcast_id: message_broadcast_id,
+        node_uuid: node.uuid,
+        flow_uuid: flow.uuid,
+        status: status,
+        node: node,
+        flow_id: flow.id,
+        flow: flow,
+        organization_id: flow.organization_id,
+        uuid_map: flow.uuid_map,
+        delay: delay,
+        uuids_seen: uuids_seen,
+        wakeup_at: wakeup_at
+      })
+
+    if initial_results not in [nil, %{}] do
+      update_results(context, initial_results)
+    end
+
+    {:ok, context}
   end
 
   @doc """
