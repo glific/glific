@@ -82,7 +82,7 @@ defmodule Glific.Processor.ConsumerFlow do
         start_new_flow(message, body, state, flow_params: flow_params)
 
       Keyword.get(opts, :is_draft, false) ->
-        body = String.replace_leading(body, @draft_phrase <> ":", "")
+        body = String.replace_leading(message.body, @draft_phrase <> ":", "")
         flow_params = {:flow_keyword, body, @draft_phrase}
         opts = [status: @draft_phrase, flow_params: flow_params]
         start_new_flow(message, message.body, state, opts)

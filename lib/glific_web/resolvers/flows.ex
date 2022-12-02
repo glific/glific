@@ -144,13 +144,13 @@ defmodule GlificWeb.Resolvers.Flows do
           }
         ) ::
           {:ok, any} | {:error, any}
-  def start_contact_flow(_, %{flow_id: flow_id, contact_id: contact_id}, %{
+  def start_contact_flow(_, %{flow_id: flow_id, contact_id: contact_id} = params, %{
         context: %{current_user: user}
       }) do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
          {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
-         {:ok, _flow} <- Flows.start_contact_flow(flow_id, contact) do
+         {:ok, _flow} <- Flows.start_contact_flow(flow_id, contact, params[:default_results]) do
       {:ok, %{success: true}}
     end
   end
@@ -205,13 +205,13 @@ defmodule GlificWeb.Resolvers.Flows do
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def start_group_flow(_, %{flow_id: flow_id, group_id: group_id}, %{
+  def start_group_flow(_, %{flow_id: flow_id, group_id: group_id} = params, %{
         context: %{current_user: user}
       }) do
     with {:ok, flow} <- Flows.fetch_flow(flow_id),
          {:ok, group} <-
            Repo.fetch_by(Group, %{id: group_id, organization_id: user.organization_id}),
-         {:ok, _flow} <- Flows.start_group_flow(flow, group) do
+         {:ok, _flow} <- Flows.start_group_flow(flow, group, params[:default_results]) do
       {:ok, %{success: true}}
     end
   end

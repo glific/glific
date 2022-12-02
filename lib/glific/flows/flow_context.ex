@@ -525,17 +525,19 @@ defmodule Glific.Flows.FlowContext do
   end
 
   ## If flow starts with a keyword then add the keyword to the context results
-  @spec default_results(String.t() | nil) :: map()
-  defp default_results(nil), do: %{}
+  @spec default_results(Keyword.t()) :: map()
+  defp default_results(opts) do
+    flow_keyword = Keyword.get(opts, :flow_keyword, "")
 
-  defp default_results(flow_keyword),
-    do: %{
+    %{
       "flow_keyword" => %{
         "input" => Glific.string_clean(flow_keyword),
         "category" => flow_keyword,
         "inserted_at" => DateTime.utc_now()
       }
     }
+    |> Map.merge(Keyword.get(opts, :default_results, %{}))
+  end
 
   @doc """
   Seed the context and set the wake up time as needed
@@ -548,7 +550,7 @@ defmodule Glific.Flows.FlowContext do
     delay = Keyword.get(opts, :delay, 0)
     uuids_seen = Keyword.get(opts, :uuids_seen, %{})
     wakeup_at = Keyword.get(opts, :wakeup_at)
-    results = Keyword.get(opts, :results, default_results(Keyword.get(opts, :flow_keyword)))
+    initial_results = Keyword.get(opts, :results, default_results(opts))
 
     Logger.info(
       "Seeding flow: id: '#{flow.id}', parent_id: '#{parent_id}', contact_id: '#{contact.id}'"
@@ -564,7 +566,7 @@ defmodule Glific.Flows.FlowContext do
       flow_uuid: flow.uuid,
       status: status,
       node: node,
-      results: results,
+      results: initial_results,
       flow_id: flow.id,
       flow: flow,
       organization_id: flow.organization_id,

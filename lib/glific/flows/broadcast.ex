@@ -26,9 +26,9 @@ defmodule Glific.Flows.Broadcast do
   @doc """
   The one simple public interface to broadcast a group
   """
-  @spec broadcast_flow_to_group(Flow.t(), Group.t()) ::
+  @spec broadcast_flow_to_group(Flow.t(), Group.t(), map()) ::
           {:ok, MessageBroadcast.t()} | {:error, String.t()}
-  def broadcast_flow_to_group(flow, group) do
+  def broadcast_flow_to_group(flow, group, default_results \\ %{}) do
     # lets set up the state and then call our helper friend to split group into smaller chunks
     # of contacts
     {:ok, flow} = Flows.get_cached_flow(group.organization_id, {:flow_id, flow.id, @status})
@@ -47,7 +47,8 @@ defmodule Glific.Flows.Broadcast do
       user_id: Repo.get_current_user().id,
       organization_id: group.organization_id,
       flow_id: flow.id,
-      type: "flow"
+      type: "flow",
+      default_results: default_results
     }
     |> init_msg_broadcast(group_message)
   end
@@ -57,7 +58,7 @@ defmodule Glific.Flows.Broadcast do
   """
   @spec broadcast_message_to_group(Messages.Message.t(), Group.t(), map()) ::
           {:ok, MessageBroadcast.t()} | {:error, String.t()}
-  def broadcast_message_to_group(group_message, group, message_params) do
+  def broadcast_message_to_group(group_message, group, message_params, default_results \\ %{}) do
     %{
       group_id: group.id,
       message_id: group_message.id,
@@ -65,7 +66,8 @@ defmodule Glific.Flows.Broadcast do
       user_id: Repo.get_current_user().id,
       organization_id: group.organization_id,
       message_params: message_params,
-      type: "message"
+      type: "message",
+      default_results: default_results
     }
     |> init_msg_broadcast(group_message)
   end
@@ -85,13 +87,22 @@ defmodule Glific.Flows.Broadcast do
   @doc """
   We are using this function from the flows.
   """
-  @spec broadcast_contacts(atom | %{:organization_id => non_neg_integer, optional(any) => any}, [
-          Glific.Contacts.Contact.t()
-        ]) :: :ok
-  def broadcast_contacts(flow, contacts) do
+  @spec broadcast_contacts(
+          atom | %{:organization_id => non_neg_integer, optional(any) => any},
+          [
+            Glific.Contacts.Contact.t()
+          ],
+          map()
+        ) :: :ok
+  def broadcast_contacts(flow, contacts, default_results \\ %{}) do
     Repo.put_process_state(flow.organization_id)
-    opts = opts(flow.organization_id)
-    broadcast_for_contacts(%{flow: flow, type: :flow}, contacts, opts)
+    opts = opts(flow.organization_id) |> Keyword.put(:default_results, default_results)
+
+    broadcast_for_contacts(
+      %{flow: flow, type: :flow},
+      contacts,
+      opts
+    )
   end
 
   @doc """
@@ -121,7 +132,13 @@ defmodule Glific.Flows.Broadcast do
 
   def process_broadcast_group(message_broadcast) do
     Repo.put_process_state(message_broadcast.organization_id)
-    opts = [message_broadcast_id: message_broadcast.id] ++ opts(message_broadcast.organization_id)
+
+    opts =
+      [
+        message_broadcast_id: message_broadcast.id,
+        default_results: message_broadcast.default_results
+      ] ++ opts(message_broadcast.organization_id)
+
     contacts = unprocessed_contacts(message_broadcast)
 
     {:ok, flow} =
@@ -233,7 +250,8 @@ defmodule Glific.Flows.Broadcast do
     |> Enum.each(fn {chunk_list, delay_offset} ->
       task_opts = [
         {:delay, opts[:delay] + delay_offset},
-        {:message_broadcast_id, opts[:message_broadcast_id]}
+        {:message_broadcast_id, opts[:message_broadcast_id]},
+        {:default_results, opts[:default_results]}
       ]
 
       if attrs.type == :flow,
