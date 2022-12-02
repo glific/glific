@@ -56,7 +56,7 @@ defmodule Glific.Flows.Broadcast do
   @doc """
   The one simple public interface to broadcast a group
   """
-  @spec broadcast_message_to_group(Messages.Message.t(), Group.t(), map()) ::
+  @spec broadcast_message_to_group(Messages.Message.t(), Group.t(), map(), map()) ::
           {:ok, MessageBroadcast.t()} | {:error, String.t()}
   def broadcast_message_to_group(group_message, group, message_params, default_results \\ %{}) do
     %{

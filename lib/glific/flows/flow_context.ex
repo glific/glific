@@ -582,7 +582,9 @@ defmodule Glific.Flows.FlowContext do
       })
 
     if initial_results not in [nil, %{}] do
-      update_results(context, initial_results)
+      context
+      |> Repo.preload([:flow, :contact])
+      |> update_results(initial_results)
     end
 
     {:ok, context}
