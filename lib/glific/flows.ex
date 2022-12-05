@@ -18,7 +18,8 @@ defmodule Glific.Flows do
     Groups.Group,
     Partners,
     Repo,
-    Templates.SessionTemplate
+    Templates.InteractiveTemplate,
+    Templates.SessionTemplate,
   }
 
   alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
@@ -899,7 +900,7 @@ defmodule Glific.Flows do
 
     export_flow_details(
       flow.uuid,
-      %{"flows" => [], "contact_field" => [], "collections" => []}
+      %{"flows" => [], "contact_field" => [], "collections" => [], "interactive_templates" => []}
     )
   end
 
@@ -932,6 +933,10 @@ defmodule Glific.Flows do
         |> Map.put(
           "collections",
           results["collections"] ++ export_collections(definition)
+        )
+        |> Map.put(
+          "interactive_templates",
+          results["interactive_templates"] ++ export_interactive_templates(definition)
         )
 
       ## here we can export more details like fields, triggers, groups and all.
@@ -974,6 +979,36 @@ defmodule Glific.Flows do
   defp do_export_contact_fields(%{"actions" => actions}) do
     action = actions |> hd
     if action["type"] == "set_contact_field", do: [action["field"]["key"]], else: []
+  end
+
+  @spec export_interactive_templates(map()) :: list()
+  defp export_interactive_templates(definition) do
+    definition
+    |> Map.get("nodes", [])
+    |> Enum.reduce([], &(&2 ++ do_export_interactive_templates(&1)))
+    |> fetch_interactive_templates_from_db()
+  end
+
+  @spec do_export_interactive_templates(map()) :: list()
+  defp do_export_interactive_templates(%{"actions" => actions}) when actions == [], do: []
+
+  defp do_export_interactive_templates(%{"actions" => actions}) do
+    action = actions |> hd
+    if action["type"] == "send_interactive_msg", do: [action["name"]], else: []
+  end
+
+  defp fetch_interactive_templates_from_db(interactive_templates) do
+    InteractiveTemplate
+    |> where([it], it.label in ^interactive_templates)
+    |> select([it], %{
+      label: it.label,
+      type: it.type,
+      interactive_content: it.interactive_content,
+      translations: it.translations,
+      language_id: it.language_id,
+      send_with_title: it.send_with_title
+    })
+    |> Repo.all
   end
 
   @doc """
