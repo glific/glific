@@ -841,7 +841,7 @@ defmodule Glific.Flows do
   end
 
   @spec clean_flow_definition(map(), list()) :: map()
-  def clean_flow_definition(definition, interactive_template_list) do
+  defp clean_flow_definition(definition, interactive_template_list) do
     nodes =
       definition
       |> Map.get("nodes", [])
