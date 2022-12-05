@@ -809,6 +809,8 @@ defmodule Glific.Flows do
   """
   @spec import_flow(map(), non_neg_integer()) :: boolean()
   def import_flow(import_flow, organization_id) do
+    interactive_template_list = import_interactive_templates(import_flow, organization_id)
+
     import_flow_list =
       Enum.map(import_flow["flows"], fn flow_revision ->
         with {:ok, flow} <-
@@ -822,13 +824,13 @@ defmodule Glific.Flows do
                }),
              {:ok, _flow_revision} <-
                FlowRevision.create_flow_revision(%{
-                 definition: clean_flow_with_hsm_template(flow_revision["definition"]),
+                 definition:
+                   clean_flow_definition(flow_revision["definition"], interactive_template_list),
                  flow_id: flow.id,
                  organization_id: flow.organization_id
                }) do
           import_contact_field(import_flow, organization_id)
           import_groups(import_flow, organization_id)
-          import_interactive_templates(import_flow, organization_id)
           true
         else
           _ -> false
@@ -838,25 +840,44 @@ defmodule Glific.Flows do
     !Enum.member?(import_flow_list, false)
   end
 
-  @spec clean_flow_with_hsm_template(map()) :: map()
-  defp clean_flow_with_hsm_template(definition) do
+  @spec clean_flow_definition(map(), list()) :: map()
+  def clean_flow_definition(definition, interactive_template_list) do
     # checking if the imported template is present in database
+    # Glific.Flows.clean_flow_definition(definition, interactive_template_list)
     template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
 
     nodes =
       definition
       |> Map.get("nodes", [])
-      |> Enum.reduce([], &(&2 ++ do_clean_flow_with_hsm_template(&1, template_uuid_list)))
+      |> Enum.reduce([], &(&2 ++ clean_hsm_template_node(&1, template_uuid_list)))
+      |> Enum.reduce([], &(&2 ++ clean_interactive_template_node(&1, interactive_template_list)))
 
     put_in(definition, ["nodes"], nodes)
   end
 
-  @spec do_clean_flow_with_hsm_template(map(), list()) :: list()
-  defp do_clean_flow_with_hsm_template(%{"actions" => actions} = node, _template_uuid_list)
+  @spec clean_interactive_template_node(map(), list()) :: list()
+  defp clean_interactive_template_node(%{"actions" => actions} = node, _interactive_template_list)
        when actions == [],
        do: [node]
 
-  defp do_clean_flow_with_hsm_template(%{"actions" => actions} = node, template_uuid_list) do
+  defp clean_interactive_template_node(%{"actions" => actions} = node, interactive_template_list) do
+    action = actions |> hd
+
+    {id, _interactive_template_label} =
+      Enum.find(interactive_template_list, fn {_id, interactive_template_label} ->
+        interactive_template_label == action["name"]
+      end)
+
+    node = put_in(node, ["actions"], [Map.put(action, "id", id)])
+    [node]
+  end
+
+  @spec clean_hsm_template_node(map(), list()) :: list()
+  defp clean_hsm_template_node(%{"actions" => actions} = node, _template_uuid_list)
+       when actions == [],
+       do: [node]
+
+  defp clean_hsm_template_node(%{"actions" => actions} = node, template_uuid_list) do
     action = actions |> hd
     template_uuid = get_in(action, ["templating", "template", "uuid"])
 
@@ -894,16 +915,19 @@ defmodule Glific.Flows do
 
   defp import_interactive_templates(import_flow, organization_id) do
     import_flow["interactive_templates"]
-    |> Enum.each(fn interactive_template ->
+    |> Enum.reduce([], fn interactive_template, acc ->
       Repo.fetch_by(InteractiveTemplate, %{label: interactive_template["label"]})
       |> case do
-        {:ok, _} ->
-          :ok
+        {:ok, db_interactive_template} ->
+          acc ++ [{db_interactive_template.id, db_interactive_template.label}]
 
         _ ->
-          InteractiveTemplates.create_interactive_template(
-            Map.put(interactive_template, "organization_id", organization_id)
-          )
+          {:ok, interactive_template} =
+            InteractiveTemplates.create_interactive_template(
+              Map.put(interactive_template, "organization_id", organization_id)
+            )
+
+          acc ++ [{interactive_template.id, interactive_template.label}]
       end
     end)
   end
