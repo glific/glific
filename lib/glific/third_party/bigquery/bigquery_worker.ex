@@ -46,7 +46,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Users.User
   }
 
-  @per_min_limit 500
+  @per_min_limit 100
 
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
