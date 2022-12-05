@@ -19,7 +19,8 @@ defmodule Glific.Flows do
     Partners,
     Repo,
     Templates.InteractiveTemplate,
-    Templates.SessionTemplate,
+    Templates.InteractiveTemplates,
+    Templates.SessionTemplate
   }
 
   alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
@@ -827,7 +828,7 @@ defmodule Glific.Flows do
                }) do
           import_contact_field(import_flow, organization_id)
           import_groups(import_flow, organization_id)
-
+          import_interactive_templates(import_flow, organization_id)
           true
         else
           _ -> false
@@ -888,6 +889,22 @@ defmodule Glific.Flows do
     import_flow["collections"]
     |> Enum.each(fn collection ->
       Groups.get_or_create_group_by_label(collection, organization_id)
+    end)
+  end
+
+  defp import_interactive_templates(import_flow, organization_id) do
+    import_flow["interactive_templates"]
+    |> Enum.each(fn interactive_template ->
+      Repo.fetch_by(InteractiveTemplate, %{label: interactive_template["label"]})
+      |> case do
+        {:ok, _} ->
+          :ok
+
+        _ ->
+          InteractiveTemplates.create_interactive_template(
+            Map.put(interactive_template, "organization_id", organization_id)
+          )
+      end
     end)
   end
 
@@ -1008,7 +1025,7 @@ defmodule Glific.Flows do
       language_id: it.language_id,
       send_with_title: it.send_with_title
     })
-    |> Repo.all
+    |> Repo.all()
   end
 
   @doc """
