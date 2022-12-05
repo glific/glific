@@ -843,7 +843,6 @@ defmodule Glific.Flows do
   @spec clean_flow_definition(map(), list()) :: map()
   def clean_flow_definition(definition, interactive_template_list) do
     # checking if the imported template is present in database
-    # Glific.Flows.clean_flow_definition(definition, interactive_template_list)
     template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
 
     nodes =
