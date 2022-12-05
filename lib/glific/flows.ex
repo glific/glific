@@ -842,54 +842,48 @@ defmodule Glific.Flows do
 
   @spec clean_flow_definition(map(), list()) :: map()
   def clean_flow_definition(definition, interactive_template_list) do
-    # checking if the imported template is present in database
-    template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
-
     nodes =
       definition
       |> Map.get("nodes", [])
-      |> Enum.reduce([], &(&2 ++ clean_hsm_template_node(&1, template_uuid_list)))
-      |> Enum.reduce([], &(&2 ++ clean_interactive_template_node(&1, interactive_template_list)))
+      |> Enum.reduce([], &(&2 ++ clean_template_node(&1, interactive_template_list)))
 
     put_in(definition, ["nodes"], nodes)
   end
 
-  @spec clean_interactive_template_node(map(), list()) :: list()
-  defp clean_interactive_template_node(%{"actions" => actions} = node, _interactive_template_list)
+  @spec clean_template_node(map(), list()) :: list()
+  defp clean_template_node(%{"actions" => actions} = node, _interactive_template_list)
        when actions == [],
        do: [node]
 
-  defp clean_interactive_template_node(%{"actions" => actions} = node, interactive_template_list) do
-    action = actions |> hd
-
-    {id, _interactive_template_label} =
-      Enum.find(interactive_template_list, fn {_id, interactive_template_label} ->
-        interactive_template_label == action["name"]
-      end)
-
-    node = put_in(node, ["actions"], [Map.put(action, "id", id)])
-    [node]
-  end
-
-  @spec clean_hsm_template_node(map(), list()) :: list()
-  defp clean_hsm_template_node(%{"actions" => actions} = node, _template_uuid_list)
-       when actions == [],
-       do: [node]
-
-  defp clean_hsm_template_node(%{"actions" => actions} = node, template_uuid_list) do
+  defp clean_template_node(%{"actions" => actions} = node, interactive_template_list) do
     action = actions |> hd
     template_uuid = get_in(action, ["templating", "template", "uuid"])
 
-    with "send_msg" <- action["type"],
-         true <- Map.has_key?(action, "templating"),
-         false <- template_uuid in template_uuid_list do
-      # update the node if template uuid in the node is not present in DB
-      action = action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
+    cond do
+      action["type"] == "send_msg" ->
+        # checking if the imported template is present in database
+        template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
 
-      node = put_in(node, ["actions"], [action])
-      [node]
-    else
-      _ -> [node]
+        with true <- Map.has_key?(action, "templating"),
+             false <- template_uuid in template_uuid_list do
+          # update the node if template uuid in the node is not present in DB
+          action =
+            action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
+
+          node = put_in(node, ["actions"], [action])
+          [node]
+        else
+          _ -> [node]
+        end
+
+      action["type"] == "send_interactive_msg" ->
+        {id, _interactive_template_label} =
+          Enum.find(interactive_template_list, fn {_id, interactive_template_label} ->
+            interactive_template_label == action["name"]
+          end)
+
+        node = put_in(node, ["actions"], [Map.put(action, "id", id)])
+        [node]
     end
   end
 
