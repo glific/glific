@@ -217,7 +217,11 @@ defmodule Glific.Sheets do
   """
   @spec upsert_sheet_data(map()) :: {:ok, SheetData.t()}
   def upsert_sheet_data(attrs) do
-    case Repo.get_by(SheetData, %{key: attrs.key, organization_id: attrs.organization_id}) do
+    case Repo.get_by(SheetData, %{
+           key: attrs.key,
+           organization_id: attrs.organization_id,
+           sheet_id: attrs.sheet_id
+         }) do
       nil ->
         create_sheet_data(attrs)
 
