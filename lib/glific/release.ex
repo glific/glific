@@ -32,6 +32,7 @@ defmodule Glific.Release do
   # Get active repo context
   @spec repos() :: any()
   defp repos do
+    Application.load(@app)
     Application.fetch_env!(@app, :ecto_repos)
   end
 end
