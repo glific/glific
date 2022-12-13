@@ -1,3 +1,0 @@
-query countInteractiveTemplates($filter: InteractiveTemplateFilter) {
-  countInteractiveTemplates(filter: $filter)
-}

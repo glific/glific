@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-mutation createMessageTag($input:MessageTagInput!) {
-  createMessageTag(input: $input) {
-    ...MessageTagFields
-
-    ...ErrorFields
-  }
-}

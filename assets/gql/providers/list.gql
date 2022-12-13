@@ -1,5 +1,0 @@
-query providers($filter: ProviderFilter) {
-  providers (filter: $filter) {
-    name
-  }
-}

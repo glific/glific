@@ -1,3 +1,0 @@
-query broadcastStats($flowBroadcastId: ID!) {
-  broadcastStats(flowBroadcastId: $flowBroadcastId)
-}

@@ -1,3 +1,0 @@
-query savedSearchCount($id: ID!, $term: String) {
-  savedSearchCount(id: $id, term: $term)
-}

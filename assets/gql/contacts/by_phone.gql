@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-query contactByPhone($phone: String!) {
-  contactByPhone(phone: $phone) {
-    ...ContactFields
-
-    ...ErrorFields
-  }
-}

@@ -1,7 +1,0 @@
-query messagesMedia ($opts: Opts) {
-  messagesMedia (opts: $opts) {
-    id
-    sourceUrl
-    caption
-  }
-}

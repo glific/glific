@@ -1,3 +1,0 @@
-query count_languages {
-  countLanguages
-}

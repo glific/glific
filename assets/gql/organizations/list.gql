@@ -1,6 +1,0 @@
-query organizations($filter: OrganizationFilter) {
-  organizations(filter: $filter) {
-    name
-    email
-  }
-}

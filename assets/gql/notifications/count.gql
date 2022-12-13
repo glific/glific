@@ -1,3 +1,0 @@
-query count_notifications($filter: NotificationFilter) {
-  countNotifications(filter: $filter)
-}

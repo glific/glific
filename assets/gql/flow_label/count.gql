@@ -1,3 +1,0 @@
-query countFlowLabels($filter: FlowLabelFilter) {
-  countFlowLabels(filter: $filter)
-}

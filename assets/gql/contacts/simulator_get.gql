@@ -1,6 +1,0 @@
-query simulatorGet {
-  simulatorGet {
-    id
-    name
-  }
-}

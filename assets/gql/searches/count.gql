@@ -1,3 +1,0 @@
-query count_saved_searches($filter: SavedSearchFilter) {
-  countSavedSearches(filter: $filter)
-}

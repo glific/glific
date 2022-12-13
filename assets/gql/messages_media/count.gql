@@ -1,3 +1,0 @@
-query count_messages_media {
-  countMessagesMedia
-}

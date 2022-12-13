@@ -1,3 +1,0 @@
-query count_messages($filter: MessageFilter) {
-  countMessages(filter: $filter)
-}

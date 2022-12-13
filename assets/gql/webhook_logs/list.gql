@@ -1,9 +1,0 @@
-query webhookLogs($filter: WebhookLogFilter, $opts: Opts) {
-  webhookLogs(filter: $filter, opts: $opts) {
-    id
-    url
-    method
-    statusCode
-    insertedAt
-  }
-}

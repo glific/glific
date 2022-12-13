@@ -1,9 +1,0 @@
-query groups($filter: GroupFilter, $opts: Opts) {
-  groups(filter: $filter, opts: $opts) {
-    id
-    label
-    is_restricted
-    contacts_count
-    users_count
-  }
-}

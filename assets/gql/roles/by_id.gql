@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-query accessRole($id: ID!) {
-  accessRole(id: $id) {
-    ...AccessRoleFields
-
-    ...ErrorFields
-  }
-}

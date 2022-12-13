@@ -1,3 +1,0 @@
-query count_groups($filter: GroupFilter) {
-  countGroups(filter: $filter)
-}

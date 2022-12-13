@@ -1,3 +1,0 @@
-fragment ImportErrors on ImportResult {
-  status
-}

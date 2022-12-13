@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-query profile($id: ID!) {
-  profile(id: $id) {
-    ...ProfileFields
-
-    ...ErrorFields
-  }
-}

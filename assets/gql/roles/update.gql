@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-mutation updateAccessRole($id: ID!, $input: AccessRoleInput!) {
-  updateAccessRole(id: $id, input: $input) {
-    ...AccessRoleFields
-
-    ...ErrorFields
-  }
-}

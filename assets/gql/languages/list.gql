@@ -1,9 +1,0 @@
-query languages {
-  languages {
-  label
-  label_locale
-  locale
-  is_active
-  localized
-  }
-}

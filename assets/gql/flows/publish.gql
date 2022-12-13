@@ -1,9 +1,0 @@
-mutation publishFlow($uuid: UUID4!) {
-  publishFlow(uuid: $uuid) {
-    success
-    errors {
-      key
-      message
-    }
-  }
-}

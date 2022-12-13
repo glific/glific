@@ -1,3 +1,0 @@
-query count_billings($filter: BillingFilter) {
-  countBillings(filter: $filter)
-}

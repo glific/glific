@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-mutation deleteInteractiveTemplate($id: ID!) {
-  deleteInteractiveTemplate(id: $id) {
-    ...InteractiveTemplateFields
-
-    ...ErrorFields
-  }
-}

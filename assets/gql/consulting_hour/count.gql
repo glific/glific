@@ -1,3 +1,0 @@
-query count_consulting_hours($filter: ConsultingHourFilter) {
-  countConsultingHours(filter: $filter)
-}

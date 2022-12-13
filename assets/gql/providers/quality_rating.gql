@@ -1,7 +1,0 @@
-query qualityRating {
-  qualityRating {
-    current_limit
-    previous_limit
-    event
-  }
-}

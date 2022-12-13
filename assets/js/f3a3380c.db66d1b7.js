@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocusaurus=self.webpackChunkdocusaurus||[]).push([[2753],{9809:a=>{a.exports=JSON.parse('{"label":"facebook","permalink":"/glific/blog/tags/facebook","allTagsPath":"/glific/blog/tags","count":1}')}}]);

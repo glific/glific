@@ -1,3 +1,0 @@
-query fetchConsultingHours($filter: FetchConsultingHours) {
-  fetchConsultingHours(filter: $filter)
-}

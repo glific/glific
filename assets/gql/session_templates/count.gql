@@ -1,3 +1,0 @@
-query count_session_templates($filter: SessionTemplateFilter) {
-  countSessionTemplates(filter: $filter)
-}

@@ -1,5 +1,0 @@
-query languages {
-  languages {
-    label
-  }
-}

@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-query messageMedia($id: ID!) {
-  messageMedia(id: $id) {
-    ...MessageMediaFields
-
-    ...ErrorFields
-  }
-}

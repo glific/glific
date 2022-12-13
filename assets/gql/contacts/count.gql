@@ -1,3 +1,0 @@
-query count_contacts($filter: ContactFilter) {
-  countContacts(filter: $filter)
-}
