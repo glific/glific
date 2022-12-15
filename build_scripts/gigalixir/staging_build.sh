@@ -1,3 +1,5 @@
+#./build_scripts/staging_build.sh v0.11.x
+
 echo "Checking out to master"
 git checkout master
 
