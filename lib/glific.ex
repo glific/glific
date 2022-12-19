@@ -47,7 +47,37 @@ defmodule Glific do
   end
 
   @doc """
-  Validates inputed shortcode, if shortcode is invalid it returns message that the shortcode is invalid
+  Wrapper to return :ok/:error when parsing strings to potential integers
+  """
+  @spec parse_maybe_number(String.t() | integer) :: {:ok, integer} | {:ok, nil} | :error
+  def parse_maybe_number(nil),
+    do: {:ok, nil}
+
+  def parse_maybe_number(value) when is_integer(value),
+    do: {:ok, value}
+
+  def parse_maybe_number(value) when is_float(value),
+    do: {:ok, value}
+
+  def parse_maybe_number(value) do
+    case Integer.parse(value) do
+      :error ->
+        :error
+
+      {n, ""} ->
+        {:ok, n}
+
+      _ ->
+        Float.parse(value)
+        |> case do
+          {n, ""} -> {:ok, n}
+          _ -> :error
+        end
+    end
+  end
+
+  @doc """
+  Validates inputted shortcode, if shortcode is invalid it returns message that the shortcode is invalid
   along with the valid shortcode.
   """
   @spec(
@@ -239,18 +269,18 @@ defmodule Glific do
   end
 
   @doc """
-  Given a string seperated by spaces, commas, or semi-colons, create a set of individual
+  Given a string separated by spaces, commas, or semi-colons, create a set of individual
   elements in the string
   """
   @spec make_set(String.t(), list()) :: MapSet.t()
-  def make_set(str, seperators \\ [",", ";"]) do
+  def make_set(str, separators \\ [",", ";"]) do
     str
     # string downcase for making it case-insensitive
     |> String.downcase()
     # First ALWAYS split by white space
     |> String.split()
-    # then split by seperators
-    |> Enum.flat_map(fn x -> String.split(x, seperators, trim: true) end)
+    # then split by separators
+    |> Enum.flat_map(fn x -> String.split(x, separators, trim: true) end)
     # finally create a mapset for easy fast checks
     |> MapSet.new()
   end

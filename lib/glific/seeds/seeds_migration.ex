@@ -364,7 +364,7 @@ defmodule Glific.Seeds.SeedsMigration do
   def sync_hsm_templates(org_id_list) do
     org_id_list
     |> Enum.each(fn org_id ->
-      Task.async(fn ->
+      Task.Supervisor.async_nolink(Glific.TaskSupervisor, fn ->
         Repo.put_process_state(org_id)
         Glific.Templates.sync_hsms_from_bsp(org_id)
       end)
@@ -380,7 +380,7 @@ defmodule Glific.Seeds.SeedsMigration do
   def sync_schema_with_bigquery(org_id_list) do
     org_id_list
     |> Enum.each(fn org_id ->
-      Task.async(fn ->
+      Task.Supervisor.async_nolink(Glific.TaskSupervisor, fn ->
         Repo.put_process_state(org_id)
         BigQuery.sync_schema_with_bigquery(org_id)
       end)
@@ -482,6 +482,61 @@ defmodule Glific.Seeds.SeedsMigration do
           group_id = g.id and messages.receiver_id = messages.sender_id)
       WHERE
         organization_id = #{org_id};
+    """
+  end
+
+  @doc """
+  Reset message number for a list of organizations or for a contact id
+  """
+  @spec fix_message_number_for_contact(integer()) :: :ok
+  def fix_message_number_for_contact(contact_id) do
+    # set a large query timeout for this
+    [
+      fix_message_number_query_for_contact_id(contact_id),
+      set_last_message_number_for_contact_id(contact_id)
+    ]
+    |> Enum.each(&Repo.query!(&1, [], timeout: 20_000, skip_organization_id: true))
+
+    :ok
+  end
+
+  @spec fix_message_number_query_for_contact_id(integer()) :: String.t()
+  defp fix_message_number_query_for_contact_id(contact_id) do
+    """
+    UPDATE
+      messages m
+      SET
+        message_number = m2.row_num
+      FROM (
+        SELECT
+          id,
+          contact_id,
+          ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY inserted_at ASC) AS row_num
+        FROM
+          messages m2
+        WHERE
+          m2.contact_id = #{contact_id} and m2.sender_id != m2.receiver_id ) m2
+      WHERE
+        m.contact_id = #{contact_id} and m.sender_id != m.receiver_id and m.id = m2.id;
+    """
+  end
+
+  @spec set_last_message_number_for_contact_id(integer()) :: String.t()
+  defp set_last_message_number_for_contact_id(contact_id) do
+    """
+    UPDATE
+      contacts c
+    SET
+      last_message_number = (
+        SELECT
+          max(message_number) as message_number
+        FROM
+          messages
+        WHERE
+          contact_id = c.id
+        )
+      WHERE
+      id = #{contact_id};
     """
   end
 

@@ -157,6 +157,20 @@ defmodule Glific.Clients.Tap do
     fields
   end
 
+  def webhook("save_school_name", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+    school_name = fields["school_name"] || ""
+
+    key = "school_" <> Glific.string_clean(school_name)
+
+    info = %{name: school_name, generated_by: contact_id}
+
+    Partners.maybe_insert_organization_data(key, info, org_id)
+
+    fields
+  end
+
   def webhook(_, fields), do: fields
 
   @spec load_activities(non_neg_integer()) :: :ok

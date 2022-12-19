@@ -3,6 +3,8 @@ defmodule Glific.Providers.Gupshup.Template do
   Module for handling template operations specific to Gupshup
   """
 
+  @behaviour Glific.Providers.TemplateBehaviour
+
   alias Glific.{
     Messages.MessageMedia,
     Partners,
@@ -50,6 +52,14 @@ defmodule Glific.Providers.Gupshup.Template do
   end
 
   @doc """
+  Import pre approved templates when BSP is GupshupEnterprise
+  """
+  @spec import_templates(non_neg_integer(), String.t()) :: {:ok, any}
+  def import_templates(_organization_id, _data) do
+    {:ok, %{message: "Feature not available"}}
+  end
+
+  @doc """
   Delete template from the gupshup
   """
   @spec delete(non_neg_integer(), map()) :: {:ok, any()} | {:error, any()}
@@ -75,11 +85,11 @@ defmodule Glific.Providers.Gupshup.Template do
   Updating HSM templates for an organization
   """
   @spec update_hsm_templates(non_neg_integer()) :: :ok | {:error, String.t()}
-  def update_hsm_templates(organization_id) do
-    organization = Partners.organization(organization_id)
+  def update_hsm_templates(org_id) do
+    organization = Partners.organization(org_id)
 
     with {:ok, response} <-
-           ApiClient.get_templates(organization_id),
+           ApiClient.get_templates(org_id),
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
       response_data["templates"]

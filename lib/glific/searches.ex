@@ -21,8 +21,6 @@ defmodule Glific.Searches do
     Search.Full,
     Searches.SavedSearch,
     Searches.Search,
-    Tags.MessageTag,
-    Tags.Tag,
     Users.User
   }
 
@@ -52,7 +50,7 @@ defmodule Glific.Searches do
 
     Enum.reduce(filter, query, fn
       {:is_reserved, is_reserved}, query ->
-        from q in query, where: q.is_reserved == ^is_reserved
+        from(q in query, where: q.is_reserved == ^is_reserved)
 
       _, query ->
         query
@@ -156,7 +154,7 @@ defmodule Glific.Searches do
 
   defp filter_active_contacts_of_organization(contact_ids)
        when is_list(contact_ids) do
-    query = from c in Contact, as: :c
+    query = from(c in Contact, as: :c)
 
     query
     |> where([c], c.id in ^contact_ids)
@@ -167,7 +165,7 @@ defmodule Glific.Searches do
 
   @spec status_query(map()) :: Ecto.Query.t()
   defp status_query(opts) do
-    query = from c in Contact, as: :c
+    query = from(c in Contact, as: :c)
 
     query
     |> where([c], c.status != :blocked)
@@ -244,7 +242,7 @@ defmodule Glific.Searches do
 
   @spec basic_query(map()) :: Ecto.Query.t()
   defp basic_query(args) do
-    query = from c in Contact, as: :c
+    query = from(c in Contact, as: :c)
 
     query
     |> add_message_clause(args)
@@ -392,10 +390,29 @@ defmodule Glific.Searches do
   @spec search_multi(String.t(), map()) :: Search.t()
   def search_multi(term, args) do
     Logger.info("Search Multi: term: '#{term}'")
-    contacts = get_filtered_contacts(term, args)
-    messages = get_filtered_messages_with_term(term, args)
-    tags = get_filtered_tagged_message(term, args)
-    labels = get_filtered_labeled_message(term, args)
+    org_id = Repo.get_organization_id()
+
+    ## We are not showing tags on Glific frontend
+    ## so we don't need to make extra query for multi search
+    tags = []
+
+    search_item_tasks = [
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+        get_filtered_contacts(term, args)
+      end),
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+        get_filtered_messages_with_term(term, args)
+      end),
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+        get_filtered_labeled_message(term, args)
+      end)
+    ]
+
+    [contacts, messages, labels] = Task.await_many(search_item_tasks)
+
     Search.new(contacts, messages, tags, labels)
   end
 
@@ -405,7 +422,7 @@ defmodule Glific.Searches do
     # always cap out limit to 250, in case frontend sends too many
     limit = min(limit, 250)
 
-    query = from m in Message, as: :m
+    query = from(m in Message, as: :m)
 
     query
     |> join(:left, [m: m], c in Contact, as: :c, on: m.contact_id == c.id)
@@ -413,6 +430,7 @@ defmodule Glific.Searches do
     |> Repo.add_permission(&Searches.add_permission/2)
     |> limit(^limit)
     |> offset(^offset)
+    |> order_by([c: c], desc: c.last_message_at)
   end
 
   # codebeat:disable[ABC]
@@ -426,6 +444,7 @@ defmodule Glific.Searches do
     |> where([c: c], ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%"))
     |> limit(^limit)
     |> offset(^offset)
+    |> order_by([c: c], desc: c.last_message_at)
     |> Repo.all()
   end
 
@@ -435,7 +454,7 @@ defmodule Glific.Searches do
   defp get_filtered_messages_with_term(term, args) do
     filtered_query(args)
     |> where([m: m], ilike(m.body, ^"%#{term}%"))
-    |> order_by([m: m], desc: m.inserted_at)
+    |> order_by([m: m], desc: m.message_number)
     |> Repo.all()
   end
 
@@ -443,17 +462,7 @@ defmodule Glific.Searches do
   defp get_filtered_labeled_message(term, args) do
     filtered_query(args)
     |> where([m: m], ilike(m.flow_label, ^"%#{term}%"))
-    |> order_by([m: m], desc: m.inserted_at)
-    |> Repo.all()
-  end
-
-  # codebeat:disable[ABC]
-  @spec get_filtered_tagged_message(String.t(), map()) :: list()
-  defp get_filtered_tagged_message(term, args) do
-    filtered_query(args)
-    |> join(:left, [m: m], mt in MessageTag, as: :mt, on: m.id == mt.message_id)
-    |> join(:left, [mt: mt], t in Tag, as: :t, on: t.id == mt.tag_id)
-    |> where([t: t], ilike(t.label, ^"%#{term}%") or ilike(t.shortcode, ^"%#{term}%"))
+    |> order_by([m: m], desc: m.message_number)
     |> Repo.all()
   end
 

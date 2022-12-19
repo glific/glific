@@ -248,7 +248,8 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "Uniquely generated message UUID, primarily needed for the flow editor",
+        description:
+          "Uniquely generated message UUID, in case of flow it's id of that particular node which have the message.",
         name: "uuid",
         type: "STRING",
         mode: "NULLABLE"
@@ -452,6 +453,18 @@ defmodule Glific.BigQuery.Schema do
         description: "ID of the profile table reference to the profile table",
         name: "profile_id",
         type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of group reference to the group table",
+        name: "group_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "label of the group referenced to in group table",
+        name: "group_name",
+        type: "STRING",
         mode: "NULLABLE"
       }
     ]

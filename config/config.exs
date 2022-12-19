@@ -34,6 +34,7 @@ oban_queues = [
   dialogflow: 5,
   gcs: 5,
   gupshup: 10,
+  airtel: 10,
   webhook: 10,
   broadcast: 5
 ]
@@ -62,8 +63,7 @@ oban_plugins = [
   {Oban.Plugins.Cron, crontab: oban_crontab},
   Oban.Pro.Plugins.DynamicLifeline,
   Oban.Web.Plugins.Stats,
-  Oban.Plugins.Gossip,
-  Oban.Plugins.Reindexer
+  Oban.Plugins.Gossip
 ]
 
 config :glific, Oban,

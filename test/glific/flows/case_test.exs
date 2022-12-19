@@ -206,7 +206,7 @@ defmodule Glific.Flows.CaseTest do
 
     assert wrap_execute(c, nil, "1") == true
     assert wrap_execute(c, nil, "2@") == false
-    assert wrap_execute(c, nil, "2.5") == false
+    assert wrap_execute(c, nil, "2.5") == true
     assert wrap_execute(c, nil, "second") == false
     assert wrap_execute(c, nil, "4") == true
     assert wrap_execute(c, nil, "") == false

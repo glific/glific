@@ -19,7 +19,7 @@ defmodule Glific.Clients do
     gcs_file_name: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
-    webhook: Glific.Clients.ReapBenefit,
+    webhook: Glific.Clients.Tap,
     daily_tasks: Glific.Clients.DigitalGreen,
     trigger_condition: Glific.Clients.ArogyaWorld
   }
@@ -123,10 +123,46 @@ defmodule Glific.Clients do
     webhook: Glific.Clients.KEF
   }
 
+  @pehlayaksharfoundation %{
+    id: 88,
+    name: "Pehlay Akshar Foundation",
+    webhook: Glific.Clients.PehlayAkshar
+  }
+
   @sunosunao %{
     id: 93,
     name: "Suno Sunao",
     webhook: Glific.Clients.SunoSunao
+  }
+
+  @digitalgreen_jh %{
+    id: 105,
+    name: "DigitalGreen Jharkhand",
+    webhook: Glific.Clients.DigitalGreenJharkhand
+  }
+
+  @quest_afeqc %{
+    id: 106,
+    name: "Quest Alliance AFEQC",
+    webhook: Glific.Clients.QuestAlliance
+  }
+
+  @quest_tcec %{
+    id: 47,
+    name: "Quest Alliance TCEC",
+    webhook: Glific.Clients.QuestAlliance
+  }
+
+  @quest_alliance %{
+    id: 30,
+    name: "Quest Alliance",
+    webhook: Glific.Clients.QuestAlliance
+  }
+
+  @oblf %{
+    id: 109,
+    name: "OBLF",
+    webhook: Glific.Clients.Oblf
   }
 
   ## we should move this also to databases.
@@ -145,7 +181,13 @@ defmodule Glific.Clients do
     @bandhu[:id] => @bandhu,
     @digitalgreen_ryss[:id] => @digitalgreen_ryss,
     @kef[:id] => @kef,
-    @sunosunao[:id] => @sunosunao
+    @pehlayaksharfoundation[:id] => @pehlayaksharfoundation,
+    @sunosunao[:id] => @sunosunao,
+    @digitalgreen_jh[:id] => @digitalgreen_jh,
+    @quest_afeqc[:id] => @quest_afeqc,
+    @quest_tcec[:id] => @quest_tcec,
+    @quest_alliance[:id] => @quest_alliance,
+    @oblf[:id] => @oblf
   }
 
   @spec env(atom() | nil) :: atom()
@@ -174,7 +216,7 @@ defmodule Glific.Clients do
   end
 
   @doc """
-  Programmatially block clients based on organization needs. Use case could be:
+  Programmatically block clients based on organization needs. Use case could be:
   Allow only numbers from India and US
   """
   @spec blocked?(String.t(), non_neg_integer) :: boolean

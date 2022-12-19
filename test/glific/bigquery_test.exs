@@ -261,16 +261,6 @@ defmodule Glific.BigQueryTest do
              )
   end
 
-  test "handle_sync_errors/2 should raise error", attrs do
-    assert_raise ArgumentError, fn ->
-      BigQuery.handle_sync_errors(
-        {:error, "error"},
-        attrs.organization_id,
-        attrs
-      )
-    end
-  end
-
   test "handle_sync_errors/2 return ok atom when status is not ALREADY_EXISTS", attrs do
     error = %{
       "error" => %{

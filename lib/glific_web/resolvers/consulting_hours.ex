@@ -1,6 +1,6 @@
 defmodule GlificWeb.Resolvers.ConsultingHours do
   @moduledoc """
-  Consulting Hours Resolver which sits between the GraphQL schema and Glific Consulting Hour Context API. This layer basically stiches together
+  Consulting Hours Resolver which sits between the GraphQL schema and Glific Consulting Hour Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
 

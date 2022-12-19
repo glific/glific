@@ -1,6 +1,6 @@
 defmodule GlificWeb.Resolvers.WebhookLogs do
   @moduledoc """
-  WebhookLog Resolver which sits between the GraphQL schema and Glific WebhookLog Context API. This layer basically stiches together
+  WebhookLog Resolver which sits between the GraphQL schema and Glific WebhookLog Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
 

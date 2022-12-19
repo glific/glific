@@ -60,6 +60,20 @@ defmodule Glific.BigQuery do
   end
 
   @doc """
+  Ignore the tables for updates operations
+  """
+  @spec ignore_updates_for_table() :: list()
+  def ignore_updates_for_table do
+    [
+      "message_conversations",
+      "contact_histories",
+      "flows",
+      "stats",
+      "stats_all"
+    ]
+  end
+
+  @doc """
   Creating a dataset with messages and contacts as tables
   """
   @spec sync_schema_with_bigquery(non_neg_integer) :: {:ok, any} | {:error, any}

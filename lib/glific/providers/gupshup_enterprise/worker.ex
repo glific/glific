@@ -1,6 +1,6 @@
 defmodule Glific.Providers.Gupshup.Enterprise.Worker do
   @moduledoc """
-  A worker to handle send message processes
+  A worker to handle send message processes.
   """
 
   use Oban.Worker,

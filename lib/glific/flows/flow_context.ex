@@ -206,7 +206,7 @@ defmodule Glific.Flows.FlowContext do
           }
         )
 
-    # lets reset the current context and return the resetted context
+    # lets reset the current context and return the reset context
     reset_one_context(context,
       is_killed: true,
       source: "reset_all_contexts",
@@ -401,7 +401,7 @@ defmodule Glific.Flows.FlowContext do
 
   @spec get_datetime(map()) :: DateTime.t()
   defp get_datetime(item) do
-    # sometime we get this from memory, and its not retrived from DB
+    # sometime we get this from memory, and its not retrieved from DB
     # in which case its already in a valid date format
     if is_binary(item["date"]) do
       {:ok, date, _} = DateTime.from_iso8601(item["date"])
@@ -525,20 +525,27 @@ defmodule Glific.Flows.FlowContext do
   end
 
   ## If flow starts with a keyword then add the keyword to the context results
-  @spec default_results(String.t() | nil) :: map()
-  defp default_results(nil), do: %{}
+  @spec default_results(Keyword.t()) :: map()
+  defp default_results(opts) do
+    flow_keyword = Keyword.get(opts, :flow_keyword, "")
+    initial_results = Keyword.get(opts, :default_results, %{}) || %{}
 
-  defp default_results(flow_keyword),
-    do: %{
-      "flow_keyword" => %{
-        "input" => Glific.string_clean(flow_keyword),
-        "category" => flow_keyword,
-        "inserted_at" => DateTime.utc_now()
+    if flow_keyword in [nil, ""] do
+      initial_results
+    else
+      %{
+        "flow_keyword" => %{
+          "input" => Glific.string_clean(flow_keyword),
+          "category" => flow_keyword,
+          "inserted_at" => DateTime.utc_now()
+        }
       }
-    }
+      |> Map.merge(initial_results)
+    end
+  end
 
   @doc """
-  Seed the context and set the wakeup time as needed
+  Seed the context and set the wake up time as needed
   """
   @spec seed_context(Flow.t(), Contact.t(), String.t(), Keyword.t()) ::
           {:ok, FlowContext.t()} | {:error, Ecto.Changeset.t()}
@@ -548,7 +555,7 @@ defmodule Glific.Flows.FlowContext do
     delay = Keyword.get(opts, :delay, 0)
     uuids_seen = Keyword.get(opts, :uuids_seen, %{})
     wakeup_at = Keyword.get(opts, :wakeup_at)
-    results = Keyword.get(opts, :results, default_results(Keyword.get(opts, :flow_keyword)))
+    initial_results = Keyword.get(opts, :results, default_results(opts))
 
     Logger.info(
       "Seeding flow: id: '#{flow.id}', parent_id: '#{parent_id}', contact_id: '#{contact.id}'"
@@ -556,23 +563,34 @@ defmodule Glific.Flows.FlowContext do
 
     node = flow.start_node
 
-    create_flow_context(%{
-      contact_id: contact.id,
-      parent_id: parent_id,
-      message_broadcast_id: message_broadcast_id,
-      node_uuid: node.uuid,
-      flow_uuid: flow.uuid,
-      status: status,
-      node: node,
-      results: results,
-      flow_id: flow.id,
-      flow: flow,
-      organization_id: flow.organization_id,
-      uuid_map: flow.uuid_map,
-      delay: delay,
-      uuids_seen: uuids_seen,
-      wakeup_at: wakeup_at
-    })
+    {:ok, context} =
+      create_flow_context(%{
+        contact_id: contact.id,
+        parent_id: parent_id,
+        message_broadcast_id: message_broadcast_id,
+        node_uuid: node.uuid,
+        flow_uuid: flow.uuid,
+        status: status,
+        node: node,
+        flow_id: flow.id,
+        flow: flow,
+        organization_id: flow.organization_id,
+        uuid_map: flow.uuid_map,
+        delay: delay,
+        uuids_seen: uuids_seen,
+        wakeup_at: wakeup_at
+      })
+
+    context =
+      if initial_results in [nil, %{}] do
+        context
+      else
+        context
+        |> Repo.preload([:flow, :contact])
+        |> update_results(initial_results)
+      end
+
+    {:ok, context}
   end
 
   @doc """
@@ -634,7 +652,7 @@ defmodule Glific.Flows.FlowContext do
     # need to fix this instead of assuming the highest id is the most
     # active context (or is that a wrong assumption). Maybe a context number? like
     # we do for other tables
-    # We should not wakeup those contexts which are waiting on time
+    # We should not wake up those contexts which are waiting on time
     query =
       from(fc in FlowContext,
         where:
@@ -651,13 +669,13 @@ defmodule Glific.Flows.FlowContext do
         do: query |> where([fc], fc.id == ^parent_id),
         else: query
 
-    # There are lot of test cases failing becuase of this change. Will come back to it end of this PR.
+    # There are lot of test cases failing because of this change. Will come back to it end of this PR.
     fc =
       query
       |> Repo.one()
       |> Repo.preload([:contact, :flow])
 
-    # if this context is waiting on time, we skip it
+    # if this is a background flow we skip it
     if fc && fc.is_background_flow,
       do: nil,
       else: fc
@@ -866,13 +884,20 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec parse_context_string(FlowContext.t(), String.t()) :: String.t()
   def parse_context_string(context, str) do
-    vars = %{
+    vars = get_vars_to_parse(context)
+    MessageVarParser.parse(str, vars)
+  end
+
+  @doc """
+    A single place to parse the variable in a string related to flows.
+  """
+  @spec get_vars_to_parse(FlowContext.t()) :: map()
+  def get_vars_to_parse(context) do
+    %{
       "results" => context.results,
       "contact" => Contacts.get_contact_field_map(context.contact_id),
-      "flow" => %{name: context.flow.name, id: context.flow.id}
+      "flow" => %{name: context.flow.name, id: context.flow.id, uuid: context.flow.uuid}
     }
-
-    MessageVarParser.parse(str, vars)
   end
 
   @spec set_last_message(FlowContext.t()) :: FlowContext.t()

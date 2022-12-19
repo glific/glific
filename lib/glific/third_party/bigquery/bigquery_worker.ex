@@ -164,15 +164,19 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   @spec insert_updated_records(binary, DateTime.t(), non_neg_integer) :: :ok
   defp insert_updated_records(table, table_last_updated_at, organization_id) do
-    table_last_updated_at = table_last_updated_at || DateTime.utc_now()
-    last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
+    if table in BigQuery.ignore_updates_for_table() do
+      :ok
+    else
+      table_last_updated_at = table_last_updated_at || DateTime.utc_now()
+      last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
 
-    queue_table_data(table, organization_id, %{
-      action: :update,
-      max_id: nil,
-      last_updated_at: last_updated_at,
-      table_last_updated_at: table_last_updated_at
-    })
+      queue_table_data(table, organization_id, %{
+        action: :update,
+        max_id: nil,
+        last_updated_at: last_updated_at,
+        table_last_updated_at: table_last_updated_at
+      })
+    end
   end
 
   @spec add_organization_id(Ecto.Query.t(), String.t(), non_neg_integer) :: Ecto.Query.t()
@@ -728,7 +732,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
         latitude: if(!is_nil(row.location), do: row.location.latitude),
         errors: BigQuery.format_json(row.errors),
         message_broadcast_id: row.message_broadcast_id,
-        bsp_status: row.bsp_status
+        bsp_status: row.bsp_status,
+        group_id: row.group_id,
+        group_name: if(!is_nil(row.group), do: row.group.label)
       }
       |> Map.merge(message_media_info(row.media))
       |> Map.merge(message_template_info(row))
@@ -832,6 +838,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
          )
          |> where(
            [tb],
+           ## Adding clause so that we don't pick the newly inserted rows.
            fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0
          )
 
@@ -853,7 +860,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :media,
         :flow_object,
         :location,
-        :template
+        :template,
+        :group
       ])
 
   defp get_query("message_conversations", organization_id, attrs),

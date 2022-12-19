@@ -13,12 +13,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   }
 
   def up(_repo, _opts) do
-    update_exisiting_providers()
+    update_existing_providers()
 
     add_providers()
   end
 
-  defp update_exisiting_providers() do
+  defp update_existing_providers() do
     # add pseudo credentials for gupshup
     {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
@@ -131,6 +131,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     add_gupshup_enterprise()
 
     add_google_asr()
+
+    add_airtel()
   end
 
   defp add_dialogflow do
@@ -378,6 +380,39 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               hsm_password: "HSM account password",
               two_way_user_id: "Two-Way account user id",
               two_way_password: "Two-Way account password"
+            },
+            is_active: false
+          })
+    end)
+  end
+
+  defp add_airtel() do
+    {:ok, airtel} = Repo.fetch_by(Provider, %{shortcode: "airtel_iq"})
+
+    Partners.active_organizations([])
+    |> Enum.each(fn {org_id, _name} ->
+      Glific.Repo.put_organization_id(org_id)
+
+      query =
+        from c in Credential,
+          where: c.organization_id == ^org_id and c.provider_id == ^airtel.id
+
+      if !Repo.exists?(query),
+        do:
+          Repo.insert!(%Credential{
+            organization_id: org_id,
+            provider_id: airtel.id,
+            keys: %{
+              url: "https://www.airtel.in/business/b2b/airtel-iq/dashboard",
+              api_end_point:
+                "https://iqwhatsapp.airtel.in/gateway/airtel-xchange/whatsapp-manager",
+              handler: "Glific.Providers.Airtel.Message",
+              worker: "Glific.Providers.Airtel.Worker",
+              bsp_limit: 40
+            },
+            secrets: %{
+              username: "airtel iq user name",
+              secret: "airtel iq secrets"
             },
             is_active: false
           })
