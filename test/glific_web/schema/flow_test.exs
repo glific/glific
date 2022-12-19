@@ -13,7 +13,8 @@ defmodule GlificWeb.Schema.FlowTest do
     Groups,
     Repo,
     Seeds.SeedsDev,
-    State
+    State,
+    Templates.InteractiveTemplates
   }
 
   setup do
@@ -217,12 +218,23 @@ defmodule GlificWeb.Schema.FlowTest do
     Groups.list_groups(%{})
     |> Enum.each(fn group -> Groups.delete_group(group) end)
 
+    # Deleting all existing interactive templates as importing New Contact Flow creates interactive templates
+    InteractiveTemplates.list_interactives(%{})
+    |> Enum.each(fn interactive_template ->
+      InteractiveTemplates.delete_interactive_template(interactive_template)
+    end)
+
     import_flow = data |> Jason.encode!()
     result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
     assert {:ok, query_data} = result
     assert true = get_in(query_data, [:data, "importFlow", "success"])
     [group | _] = Groups.list_groups(%{filter: %{label: "Optin contacts"}})
     assert group.label == "Optin contacts"
+
+    [interactive_template | _] =
+      InteractiveTemplates.list_interactives(%{filter: %{label: "Optin template"}})
+
+    assert interactive_template.label == "Optin template"
   end
 
   test "create a flow and test possible scenarios and errors", %{manager: user} do
