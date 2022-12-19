@@ -1,2 +1,0 @@
-web: if [ -x "$(command -v mix)" ]; then elixir --name $MY_NODE_NAME --cookie $MY_COOKIE -S mix phoenix.server; else /app/bin/$GIGALIXIR_APP_NAME $GIGALIXIR_COMMAND; fi
-web: /app/bin/$GIGALIXIR_APP_NAME eval "Glific.Release.migrate" && /app/bin/$GIGALIXIR_APP_NAME $GIGALIXIR_COMMAND
