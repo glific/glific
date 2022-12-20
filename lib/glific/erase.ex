@@ -10,41 +10,33 @@ defmodule Glific.Erase do
 
   require Logger
 
-  @period "month"
-
+  @tables [
+    "notifications",
+    "webhook_logs",
+    "flow_contexts",
+    "messages_conversations",
+    "contact_histories"
+  ]
   @doc """
   This is called from the cron job on a regular schedule and cleans database periodically
   """
   @spec perform_periodic() :: any
   def perform_periodic do
-    clean_notifications()
-    clean_webhook_logs()
+    clean_periodic()
     clean_flow_revision()
-    clean_flow_contexts()
-    clean_contact_histories()
-    clean_message_conversations()
   end
 
-  # Deleting notification older than a month
-  @spec clean_notifications() :: {integer(), nil | [term()]}
-  defp clean_notifications do
-    Repo.delete_all(
-      from(n in "notifications",
-        where: n.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
-      ),
-      skip_organization_id: true
-    )
-  end
-
-  # Deleting webhook logs older than a month
-  @spec clean_webhook_logs() :: {integer(), nil | [term()]}
-  defp clean_webhook_logs do
-    Repo.delete_all(
-      from(w in "webhook_logs",
-        where: w.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
-      ),
-      skip_organization_id: true
-    )
+  # Deleting rows older than a month from tables periodically
+  @spec clean_periodic() :: any
+  defp clean_periodic do
+    Enum.each(@tables, fn table ->
+      Repo.delete_all(
+        from(fc in table,
+          where: fc.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", "month")
+        ),
+        skip_organization_id: true
+      )
+    end)
   end
 
   # Deleting flow_revision older than a month
@@ -70,33 +62,6 @@ defmodule Glific.Erase do
     NOT IN( SELECT fr2.id FROM flow_revisions fr2 WHERE fr2.flow_id = fr1.flow_id  and fr2.status = 'archived' ORDER BY fr2.id DESC LIMIT 10);
     """
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
-  end
-
-  defp clean_flow_contexts do
-    Repo.delete_all(
-      from(fc in "flow_contexts",
-        where: fc.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
-      ),
-      skip_organization_id: true
-    )
-  end
-
-  defp clean_contact_histories do
-    Repo.delete_all(
-      from(fc in "contact_histories",
-        where: fc.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
-      ),
-      skip_organization_id: true
-    )
-  end
-
-  defp clean_message_conversations do
-    Repo.delete_all(
-      from(mc in "messages_conversations",
-        where: mc.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
-      ),
-      skip_organization_id: true
-    )
   end
 
   @limit 200
