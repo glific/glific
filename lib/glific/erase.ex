@@ -20,6 +20,9 @@ defmodule Glific.Erase do
     clean_notifications()
     clean_webhook_logs()
     clean_flow_revision()
+    clean_flow_contexts()
+    clean_contact_histories()
+    clean_message_conversations()
   end
 
   # Deleting notification older than a month
@@ -67,6 +70,33 @@ defmodule Glific.Erase do
     NOT IN( SELECT fr2.id FROM flow_revisions fr2 WHERE fr2.flow_id = fr1.flow_id  and fr2.status = 'archived' ORDER BY fr2.id DESC LIMIT 10);
     """
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
+  end
+
+  defp clean_flow_contexts do
+    Repo.delete_all(
+      from(fc in "flow_contexts",
+        where: fc.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
+      ),
+      skip_organization_id: true
+    )
+  end
+
+  defp clean_contact_histories do
+    Repo.delete_all(
+      from(fc in "contact_histories",
+        where: fc.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
+      ),
+      skip_organization_id: true
+    )
+  end
+
+  defp clean_message_conversations do
+    Repo.delete_all(
+      from(mc in "messages_conversations",
+        where: mc.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
+      ),
+      skip_organization_id: true
+    )
   end
 
   @limit 200
