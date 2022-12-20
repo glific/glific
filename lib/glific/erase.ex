@@ -4,9 +4,10 @@ defmodule Glific.Erase do
   """
   import Ecto.Query
 
-  alias Glific.Repo
-
-  alias Glific.Seeds.SeedsMigration
+  alias Glific.{
+    Repo,
+    Seeds.SeedsMigration
+  }
 
   require Logger
 
