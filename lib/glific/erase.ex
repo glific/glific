@@ -15,8 +15,7 @@ defmodule Glific.Erase do
     "notifications",
     "webhook_logs",
     "flow_contexts",
-    "messages_conversations",
-    "contact_histories"
+    "messages_conversations"
   ]
   @doc """
   This is called from the cron job on a regular schedule and cleans database periodically
@@ -24,6 +23,7 @@ defmodule Glific.Erase do
   @spec perform_periodic() :: any
   def perform_periodic do
     clean_periodic()
+    clean_contact_histories()
     clean_flow_revision()
   end
 
@@ -38,6 +38,23 @@ defmodule Glific.Erase do
         skip_organization_id: true
       )
     end)
+  end
+
+  # Keep latest 25 contact_history for a contact
+  @spec clean_contact_histories() :: any
+  defp clean_contact_histories do
+    """
+    WITH top_25_contact_histories_per_contact AS (
+    SELECT t.*, ROW_NUMBER() OVER (PARTITION BY contact_id
+                                 ORDER BY updated_at DESC) rn
+    FROM contact_histories t
+    )
+    DELETE FROM contact_histories WHERE id NOT IN (
+    SELECT id
+    FROM top_25_contact_histories_per_contact
+    WHERE rn <= 25)
+    """
+    |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
   end
 
   # Deleting flow_revision older than a month
