@@ -563,7 +563,7 @@ defmodule Glific.BigQuery do
         Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
 
         Logger.info(
-          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}"
+          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, max_id: #{max_id}, res: #{inspect(res)}"
         )
 
       last_updated_at not in [nil, 0] ->
