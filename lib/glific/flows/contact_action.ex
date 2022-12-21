@@ -373,7 +373,7 @@ defmodule Glific.Flows.ContactAction do
 
     if is_nil(url) do
       FlowContext.notification(context, "Could not send message to contact: Empty media URL")
-      {:text, nil}
+      {type, nil}
     else
       {:ok, message_media} =
         %{
