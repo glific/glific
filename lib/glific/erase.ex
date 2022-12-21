@@ -45,14 +45,14 @@ defmodule Glific.Erase do
   defp clean_contact_histories do
     """
     WITH top_25_contact_histories_per_contact AS (
-    SELECT t.*, ROW_NUMBER() OVER (PARTITION BY contact_id
-                                 ORDER BY updated_at DESC) rn
+    SELECT t.*, ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY updated_at DESC) rn
     FROM contact_histories t
     )
     DELETE FROM contact_histories WHERE id NOT IN (
-    SELECT id
-    FROM top_25_contact_histories_per_contact
-    WHERE rn <= 25)
+      SELECT id
+      FROM top_25_contact_histories_per_contact
+      WHERE rn <= 25
+    )
     """
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
   end
