@@ -779,7 +779,7 @@ defmodule Glific.Partners do
       |> Glific.log_error()
   end
 
-  @active_minutes 60
+  @active_minutes 360
 
   @doc """
   Get the organizations which had a message transaction in the last minutes
