@@ -344,12 +344,13 @@ defmodule Glific.Partners.Billing do
   end
 
   @doc """
+  Create a monthly subscription.
   Once the organization has entered a new payment card we create a subscription for it.
   We'll do updating the card in a separate function
   """
-  @spec create_subscription(Organization.t(), map()) ::
+  @spec create_monthly_subscription(Organization.t(), map()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
-  def create_subscription(organization, params) do
+  def create_monthly_subscription(organization, params) do
     stripe_payment_method_id = params.stripe_payment_method_id
     # get the billing record
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
@@ -364,6 +365,30 @@ defmodule Glific.Partners.Billing do
       {:error, error} ->
         Logger.info("Error while updating the card. #{inspect(error)}")
         {:error, error.message}
+    end
+  end
+
+   @doc """
+  Create a quarterly subscription.
+  """
+  @spec create_quarterly_subscription(Organization.t()) ::
+          {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
+  def create_quarterly_subscription(_organization) do
+    {:pending, %{}}
+  end
+
+  @doc """
+  create subscription on the basis of billing period
+  """
+  @spec create_subscription(Organization.t(), map()) ::
+          {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
+  def create_subscription(organization, params) do
+    params.billing_period
+    |> case do
+      "MONTHLY" -> create_monthly_subscription(organization, params)
+      "QUARTERLY" -> create_quarterly_subscription(organization)
+      "MANUAL" -> {:pending, %{} }
+      _ -> {:error, "invalid billing period"}
     end
   end
 
@@ -847,6 +872,18 @@ defmodule Glific.Partners.Billing do
       _ ->
         {:error, "Invalid Stripe Key"}
     end
+  end
+
+  @doc """
+  List of available billing period
+  """
+  @spec list_billing_period() :: [String.t()]
+  def list_billing_period do
+    [
+      "MONTHLY",
+      "QUARTERLY",
+      "MANUAL"
+    ]
   end
 
   # events that we need to handle, delete comment once handled :)

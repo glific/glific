@@ -5,6 +5,7 @@ defmodule GlificWeb.Schema.BillingTypes do
 
   use Absinthe.Schema.Notation
 
+  alias Glific.Partners.Billing
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -118,6 +119,14 @@ defmodule GlificWeb.Schema.BillingTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.delete_billing/3)
+    end
+
+    field :list_billing_period, list_of(:string) do
+      middleware(Authorize, :manager)
+
+      resolve(fn _, _, _ ->
+        {:ok, Billing.list_billing_period()}
+      end)
     end
   end
 end
