@@ -60,14 +60,16 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&BroadcastWorker.execute/1, nil, [])
 
       "bigquery" ->
-        Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil, services["bigquery"], true)
+        Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil, services["bigquery"],
+          only_recent: true
+        )
 
       "gcs" ->
         Partners.perform_all(
           &GcsWorker.perform_periodic/1,
           nil,
           services["google_cloud_storage"],
-          true
+          only_recent: true
         )
 
       "stats" ->
@@ -106,8 +108,14 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "hourly_tasks" ->
         Partners.unsuspend_organizations()
-        Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
-        Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"], true)
+
+        Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], only_recent: true)
+
+        Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"],
+          only_recent: true,
+          async: true
+        )
+
         Partners.perform_all(&Glific.Clients.hourly_tasks/1, nil, [])
 
       "five_minute_tasks" ->
