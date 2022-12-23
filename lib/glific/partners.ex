@@ -797,7 +797,8 @@ defmodule Glific.Partners do
     )
   end
 
-  defp perform_handler(handler, handler_args, org_id, org_name, async \\ false) do
+  @spec perform_handler((... -> nil), map() | nil, non_neg_integer(), String.t() | nil) :: any
+  defp perform_handler(handler, handler_args, org_id, org_name) do
     Repo.put_process_state(org_id)
 
     if is_nil(handler_args) do
