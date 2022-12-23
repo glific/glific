@@ -9,10 +9,10 @@ defmodule Glific.Clients.ReapBenefit do
     Flows.Flow,
     Repo
   }
-
-  @frappe_open_civic_api_url "http://frappe.solveninja.org/api/resource/"
-  @frappe_open_civic_location_api "http://frappe.solveninja.org/api/method/open_civic_backend.api.location.new"
-
+  
+  @frappe_open_civic_api_url "https://solveninja.org/api/resource/"
+  @frappe_open_civic_location_api "https://solveninja.org/api/method/open_civic_backend.api.location.new"
+ 
   @doc """
   In the case of RB we retrive the flow name of the object (id any)
   and set that as the directory name
@@ -47,8 +47,10 @@ defmodule Glific.Clients.ReapBenefit do
 
     Tesla.get(url, headers: header)
     |> case do
-      {:ok, %Tesla.Env{status: 200, body: _body}} ->
-        %{is_valid: true, response: "Logged In"}
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        Jason.decode!(body)
+        |> to_minimal_map("User")
+        |> Map.merge(%{is_valid: true})
 
       {:ok, %Tesla.Env{status: 404, body: body}} ->
         error_msg = Jason.decode!(body)
@@ -68,7 +70,8 @@ defmodule Glific.Clients.ReapBenefit do
         "email" => fields["contact"]["phone"] <> "@solveninja.org ",
         "first_name" => fields["contact"]["name"],
         "mobile_no" => fields["contact"]["phone"],
-        "username" => fields["contact"]["name"]
+        "username" => fields["contact"]["name"],
+        "location" => fields["contact"]["Administrative_area_level_2"]
       }
       |> Jason.encode!()
 

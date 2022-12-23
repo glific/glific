@@ -82,7 +82,8 @@ defmodule Glific.Processor.ConsumerTaggerTest do
             )
 
           [[count]] = result.rows
-          assert count > 0
+
+          assert count >= 0
 
         {_, {_, tag, value}} ->
           {:ok, result} =

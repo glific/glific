@@ -148,6 +148,31 @@ defmodule Glific.MessagesTest do
                  opts: %{order: :asc},
                  filter: Map.merge(attrs, %{bsp_status: message.bsp_status})
                })
+
+      from_date = message.inserted_at |> DateTime.to_date()
+
+      assert [message] ==
+               Messages.list_messages(%{
+                 opts: %{order: :asc},
+                 filter: Map.merge(attrs, %{date_range: %{from: from_date}})
+               })
+
+      to_date = message.inserted_at |> DateTime.to_date() |> Date.add(2)
+
+      assert [message] ==
+               Messages.list_messages(%{
+                 opts: %{order: :asc},
+                 filter: Map.merge(attrs, %{date_range: %{to: to_date}})
+               })
+
+      assert [message] ==
+               Messages.list_messages(%{
+                 opts: %{order: :asc},
+                 filter:
+                   Map.merge(attrs, %{
+                     date_range: %{from: from_date, to: to_date, column: "updated_at"}
+                   })
+               })
     end
 
     test "count_messages/1 returns count of all messages", attrs do
@@ -187,6 +212,31 @@ defmodule Glific.MessagesTest do
       assert [] == Messages.list_messages(%{filter: %{either: "ABC", organization_id: oid}})
       assert [] == Messages.list_messages(%{filter: %{sender: "ABC", organization_id: oid}})
       assert [] == Messages.list_messages(%{filter: %{receiver: "ABC", organization_id: oid}})
+    end
+
+    test "list_messages/1 with flow_id filters", attrs do
+      {:ok, sender} = Contacts.create_contact(Map.merge(attrs, @sender_attrs))
+      {:ok, receiver} = Contacts.create_contact(Map.merge(attrs, @receiver_attrs))
+      flow = Fixtures.flow_fixture(attrs)
+
+      {:ok, message} =
+        @valid_attrs
+        |> Map.merge(%{
+          sender_id: sender.id,
+          receiver_id: receiver.id,
+          organization_id: sender.organization_id,
+          flow_id: flow.id
+        })
+        |> Messages.create_message()
+
+      # we do this to get the session_uuid which is computed by a trigger
+      message = Messages.get_message!(message.id)
+
+      assert [message] ==
+               Messages.list_messages(%{filter: Map.merge(attrs, %{flow_id: flow.id})})
+
+      assert [] ==
+               Messages.list_messages(%{filter: Map.merge(attrs, %{flow_id: 999_999})})
     end
 
     test "list_messages/1 with tags included filters",
@@ -1061,6 +1111,69 @@ defmodule Glific.MessagesTest do
 
       assert message.body ==
                " अब आप नीचे दिए विकल्पों में से एक का चयन करके param1 के साथ समाप्त होने वाले खाते के लिए अपना खाता शेष या मिनी स्टेटमेंट देख सकते हैं। | [अकाउंट बैलेंस देखें] | [देखें मिनी स्टेटमेंट]"
+
+      assert message.flow == :outbound
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
+      assert message.sent_at != nil
+    end
+
+    test "Params are formatted based on whatsApp rules",
+         %{organization_id: organization_id, global_schema: global_schema} = attrs do
+      SeedsDev.seed_session_templates()
+      contact = Fixtures.contact_fixture(attrs)
+      shortcode = "account_balance"
+
+      {:ok, hsm_template} =
+        Repo.fetch_by(
+          SessionTemplate,
+          %{shortcode: shortcode, organization_id: organization_id}
+        )
+
+      parameters = ["param          1\n"]
+
+      # send hsm with buttons should send button template
+      {:ok, message} =
+        %{
+          template_id: hsm_template.id,
+          receiver_id: contact.id,
+          parameters: parameters
+        }
+        |> Messages.create_and_send_hsm_message()
+
+      assert_enqueued(worker: Worker, prefix: global_schema)
+      Oban.drain_queue(queue: :gupshup)
+
+      message = Messages.get_message!(message.id)
+      assert message.is_hsm == true
+
+      assert message.body ==
+               "You can now view your Account Balance or Mini statement for Account ending with param 1 simply by selecting one of the options below.| [View Account Balance] | [View Mini Statement] "
+
+      assert message.flow == :outbound
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
+      assert message.sent_at != nil
+
+      # send hsm with buttons should send translated button template
+      Contacts.update_contact(contact, %{language_id: 2})
+
+      {:ok, message} =
+        %{
+          template_id: hsm_template.id,
+          receiver_id: contact.id,
+          parameters: parameters
+        }
+        |> Messages.create_and_send_hsm_message()
+
+      assert_enqueued(worker: Worker, prefix: global_schema)
+      Oban.drain_queue(queue: :gupshup)
+
+      message = Messages.get_message!(message.id)
+      assert message.is_hsm == true
+
+      assert message.body ==
+               " अब आप नीचे दिए विकल्पों में से एक का चयन करके param 1 के साथ समाप्त होने वाले खाते के लिए अपना खाता शेष या मिनी स्टेटमेंट देख सकते हैं। | [अकाउंट बैलेंस देखें] | [देखें मिनी स्टेटमेंट]"
 
       assert message.flow == :outbound
       assert message.bsp_message_id != nil

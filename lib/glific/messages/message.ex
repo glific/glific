@@ -9,7 +9,7 @@ defmodule Glific.Messages.Message do
     Contacts.Contact,
     Contacts.Location,
     Flows.Flow,
-    Flows.FlowBroadcast,
+    Flows.MessageBroadcast,
     Groups.Group,
     Messages.MessageMedia,
     Partners.Organization,
@@ -64,8 +64,8 @@ defmodule Glific.Messages.Message do
           context_message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
           profile_id: non_neg_integer | nil,
           profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
-          flow_broadcast_id: non_neg_integer | nil,
-          flow_broadcast: FlowBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
+          message_broadcast_id: non_neg_integer | nil,
+          message_broadcast: MessageBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
           session_uuid: Ecto.UUID.t() | nil,
@@ -93,7 +93,7 @@ defmodule Glific.Messages.Message do
     :bsp_message_id,
     :context_id,
     :context_message_id,
-    :flow_broadcast_id,
+    :message_broadcast_id,
     :errors,
     :media_id,
     :group_id,
@@ -124,11 +124,11 @@ defmodule Glific.Messages.Message do
 
     # should we publish this message. When we are sending to a group, it could be to a large
     # number of contacts which will overwhelm the frontend. Hence we suppress the subscription
-    # when sendign to a group
+    # when sending to a group
     field(:publish?, :boolean, default: true, virtual: true)
 
     # adding an extra virtual field so we can hang dynamic data to pass during processing of
-    # agents and flows. Specifically used for now during dialogflow
+    # agents and flows. Specifically used for now during Dialogflow
     field(:extra, :map, default: %{intent: nil}, virtual: true)
 
     field(:is_hsm, :boolean, default: false)
@@ -140,7 +140,7 @@ defmodule Glific.Messages.Message do
     belongs_to(:context_message, Message, foreign_key: :context_message_id)
 
     # the originating group message which kicked off this flow if any
-    belongs_to(:flow_broadcast, FlowBroadcast, foreign_key: :flow_broadcast_id)
+    belongs_to(:message_broadcast, MessageBroadcast, foreign_key: :message_broadcast_id)
 
     field(:errors, :map, default: %{})
     field(:send_at, :utc_datetime)

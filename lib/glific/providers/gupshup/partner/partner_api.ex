@@ -49,8 +49,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   Fetches Partner token and App Access token to get tier information
   for an organization with input app id
   """
-  @spec get_quality_rating(non_neg_integer(), String.t()) :: {:error, any} | {:ok, map()}
-  def get_quality_rating(org_id, _phone \\ "") do
+  @spec get_quality_rating(non_neg_integer()) :: {:error, any} | {:ok, map()}
+  def get_quality_rating(org_id) do
     (app_url(org_id) <> "/ratings")
     |> get_request(org_id: org_id)
     |> case do
@@ -92,7 +92,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-  Remove hsm template from the waba.
+  Remove hsm template from the WABA.
   """
   @spec delete_hsm_template(non_neg_integer, binary) :: tuple()
   def delete_hsm_template(org_id, element_name) do
@@ -101,6 +101,26 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     |> case do
       {:ok, %{"status" => "success"} = res} ->
         {:ok, res}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @doc """
+  Remove hsm template from the WABA.
+  """
+  @spec apply_for_template(non_neg_integer(), map) :: tuple()
+  def apply_for_template(org_id, payload) do
+    payload = Map.put(payload, "appId", app_id!(org_id))
+
+    (app_url(org_id) <> "/templates")
+    |> post_request(payload,
+      org_id: org_id
+    )
+    |> case do
+      {:ok, response} ->
+        {:ok, response}
 
       {:error, error} ->
         {:error, error}
@@ -124,6 +144,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   defp fetch_partner_token do
     url = @partner_url <> "/login"
     credentials = Saas.isv_credentials()
+
     request_params = %{"email" => credentials["email"], "password" => credentials["password"]}
 
     post(url, request_params, headers: [])
@@ -176,10 +197,20 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   defp headers(:partner_token, _opts) do
-    {:ok, %{partner_token: partner_token}} = get_partner_token()
-    [{"token", partner_token}, {"Authorization", partner_token}]
+    get_partner_token()
+    |> case do
+      {:ok, %{partner_token: partner_token}} ->
+        [
+          {"token", partner_token},
+          {"Authorization", partner_token}
+        ]
+
+      _ ->
+        []
+    end
   end
 
+  @spec post_request(String.t(), map(), Keyword.t()) :: tuple()
   defp post_request(url, data, opts) do
     req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
@@ -193,6 +224,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @spec get_request(String.t(), Keyword.t()) :: tuple()
   defp get_request(url, opts) do
     req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
@@ -206,6 +238,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @spec delete_request(String.t(), Keyword.t()) :: tuple()
   defp delete_request(url, opts) do
     req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 

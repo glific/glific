@@ -1,14 +1,13 @@
 defmodule Glific.Flows.MessageVarParser do
+  @moduledoc """
+  substitute the contact fields and result sets in the messages
+  """
   require Logger
 
   alias Glific.{
     Partners,
     Repo
   }
-
-  @moduledoc """
-  substitute the contact fileds and result sets in the messages
-  """
 
   @doc """
   parse the message with variables
@@ -21,19 +20,22 @@ defmodule Glific.Flows.MessageVarParser do
   def parse(input, binding) when is_map(binding) == false, do: input
 
   def parse(input, binding) do
+    parser_types = ["@global", "@calendar"]
+
     binding =
-      binding
-      |> Map.put(
-        "global",
-        Partners.get_global_field_map(Repo.get_organization_id())
-      )
+      Enum.reduce(parser_types, binding, fn key, acc ->
+        if String.contains?(input, key), do: load_vars(acc, key), else: acc
+      end)
       |> stringify_keys()
 
     input
-    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
-    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
-    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
-    |> String.replace(~r/@[\w]+[\.][\w]*/, &bound(&1, binding))
+    |> String.replace(
+      ~r/@[\w\-]+[\.][\w\-]+[\.][\w\-]+[\.][\w\-]+[\.][\w\-]*/,
+      &bound(&1, binding)
+    )
+    |> String.replace(~r/@[\w\-]+[\.][\w\-]+[\.][\w\-]+[\.][\w\-]*/, &bound(&1, binding))
+    |> String.replace(~r/@[\w\-]+[\.][\w\-]+[\.][\w\-]*/, &bound(&1, binding))
+    |> String.replace(~r/@[\w\-]+[\.][\w\-]*/, &bound(&1, binding))
     |> parse_results(binding["results"])
   end
 
@@ -66,10 +68,10 @@ defmodule Glific.Flows.MessageVarParser do
     if substitution == nil, do: "@#{var}", else: substitution
   end
 
-  # this is for the otherfileds like @contact.fields.name which is a map of (value)
+  # this is for the other fields like @contact.fields.name which is a map of (value)
   defp bound(substitution) when is_map(substitution) do
     # this is a hack to detect if it a calendar object, and if so, we get the
-    # string value. Might need a better solution. This is specificall for inserted_at
+    # string value. Might need a better solution. This is specifically for inserted_at
     # for now, but generalized so it can handle all datetime objects
     if Map.has_key?(substitution, :calendar),
       do: DateTime.to_string(substitution),
@@ -167,4 +169,30 @@ defmodule Glific.Flows.MessageVarParser do
     do: parse(value, bindings) |> parse_results(bindings["results"])
 
   def parse_map(value, _results), do: value
+
+  defp load_vars(binding, "@global") do
+    global_vars =
+      Repo.get_organization_id()
+      |> Partners.get_global_field_map()
+
+    Map.put(binding, "global", global_vars)
+  end
+
+  defp load_vars(binding, "@calendar") do
+    default_format = "{D}/{0M}/{YYYY}"
+    today = Timex.today()
+
+    calendar_vars = %{
+      current_date: today |> Timex.format!(default_format) |> to_string(),
+      yesterday: Timex.shift(today, days: -1) |> Timex.format!(default_format) |> to_string(),
+      tomorrow: Timex.shift(today, days: 1) |> Timex.format!(default_format) |> to_string(),
+      current_day: today |> Timex.weekday() |> Timex.day_name() |> String.downcase(),
+      current_month: Timex.now().month |> Timex.month_name() |> String.downcase(),
+      current_year: Timex.now().year
+    }
+
+    Map.put(binding, "calendar", calendar_vars)
+  end
+
+  defp load_vars(binding, _), do: binding
 end

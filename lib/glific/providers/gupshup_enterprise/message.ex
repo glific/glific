@@ -3,6 +3,8 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   Message API layer between application and Gupshup
   """
 
+  @behaviour Glific.Providers.MessageBehaviour
+
   alias Glific.{
     Communications,
     Messages.Message
@@ -72,10 +74,28 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   def send_interactive(message, attrs) do
     interactive_content = parse_interactive_message(attrs.interactive_content, message.type)
 
+    interactive_media_type =
+      get_in(attrs, [:interactive_content, "content", "type"])
+      |> then(&if &1 == "file", do: "document", else: &1)
+
     %{
       interactive_content: interactive_content,
-      msg: message.body,
-      interactive_type: message.type
+      msg: get_in(attrs, [:interactive_content, "content", "text"]) || message.body,
+      interactive_type: message.type,
+      media_url: get_in(attrs, [:interactive_content, "content", "url"]),
+      interactive_media_type: interactive_media_type
+    }
+    |> send_message(message, attrs)
+  end
+
+  @doc false
+  @spec send_sticker(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_sticker(message, attrs \\ %{}) do
+    message_media = message.media
+
+    %{
+      type: :sticker,
+      url: message_media.url
     }
     |> send_message(message, attrs)
   end
@@ -149,6 +169,16 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   @spec send_message(map(), Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
+
+  defp send_message(payload, message, %{has_buttons: true, parsed_body: parsed_body} = attrs) do
+    encoded_message =
+      payload
+      |> Map.put(:msg, parsed_body)
+      |> Jason.encode!()
+
+    %{"send_to" => message.receiver.phone, "message" => encoded_message}
+    |> then(&create_oban_job(message, &1, attrs))
+  end
 
   defp send_message(payload, message, attrs) do
     ## gupshup does not allow null in the caption.
@@ -242,6 +272,16 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
       }
     }
   end
+
+  @doc false
+  @spec receive_billing_event(map()) :: {:ok, map()} | {:error, String.t()}
+  def receive_billing_event(_params) do
+    {:ok, %{}}
+  end
+
+  @doc false
+  @spec receive_interactive(map()) :: map()
+  def receive_interactive(_params), do: %{}
 
   @spec to_minimal_map(map()) :: map()
   defp to_minimal_map(attrs) do

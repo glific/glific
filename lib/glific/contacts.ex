@@ -20,16 +20,15 @@ defmodule Glific.Contacts do
     Groups.ContactGroup,
     Groups.UserGroup,
     Partners,
+    Partners.Provider,
     Profiles,
-    Providers.GupshupContacts,
-    Providers.GupshupEnterpriseContacts,
     Repo,
     Tags.ContactTag,
     Users.User
   }
 
   @doc """
-  Add permissioning specific to groups, in this case we want to restrict the visibility of
+  Add permission specific to groups, in this case we want to restrict the visibility of
   groups that the user can see
   """
   @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
@@ -109,7 +108,7 @@ defmodule Glific.Contacts do
 
       # We need distinct query expression with join,
       # in case if filter requires contacts added to multiple groups
-      # Using subquery instead of join, so that distict query expression can be avoided
+      # Using subquery instead of join, so that distinct query expression can be avoided
       # We can come back and decide, which one is more expensive in this scenario.
       {:include_groups, group_ids}, query ->
         sub_query =
@@ -190,7 +189,7 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Gets a single contact by phone nunmber.
+  Gets a single contact by phone number.
 
   Raises `Ecto.NoResultsError` if the Contact does not exist.
 
@@ -258,7 +257,7 @@ defmodule Glific.Contacts do
     if has_permission?(contact.id) do
       if is_simulator_block?(contact, attrs) do
         # just treat it as if we blocked the simulator
-        # but in reality, we dont block the simulator
+        # but in reality, we don't block the simulator
         {:ok, contact}
       else
         contact
@@ -392,20 +391,30 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  This function will be use just by ngo user where they can only update the contacts.
+  """
+
+  @spec maybe_update_contact(map()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, any}
+  def maybe_update_contact(sender) do
+    case Repo.get_by(Contact, %{phone: sender.phone}) do
+      nil ->
+        {:error, "New contacts were found in this file. Sorry those could not be added"}
+
+      contact ->
+        update_contact(contact, sender)
+    end
+  end
+
+  @doc """
   Check if this contact id is a new contact.
-  In general, we should always retrive as little as possible from the DB
+  We set the last message number in the contact.
+  So if this is a first message then we can assume that this is a new contact.
   """
   @spec is_new_contact(integer()) :: boolean()
   def is_new_contact(contact_id) do
-    case Glific.Messages.Message
-         |> where([m], m.contact_id == ^contact_id)
-         |> where([m], m.flow == "outbound")
-         |> select([m], m.id)
-         |> limit(1)
-         |> Repo.all() do
-      [] -> true
-      _ -> false
-    end
+    contact = get_contact!(contact_id)
+    contact.last_message_number <= 1
   end
 
   @doc """
@@ -520,7 +529,7 @@ defmodule Glific.Contacts do
 
   @doc """
   Opt out a contact if the provider returns an error code about Number not
-  exisiting or not on whatsapp
+  existing or not on whatsapp
   """
   @spec number_does_not_exist(non_neg_integer(), String.t()) :: any()
   def number_does_not_exist(contact_id, method \\ "Number does not exist") do
@@ -592,7 +601,7 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Check if we can send a session message to the contact with some extra perameters
+  Check if we can send a session message to the contact with some extra parameters
   Specifically designed for when we are trying to optin an opted out contact
   """
   @spec can_send_message_to?(Contact.t(), boolean(), map()) :: {:ok | :error, String.t() | nil}
@@ -727,13 +736,8 @@ defmodule Glific.Contacts do
   @spec optin_contact(map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def optin_contact(%{organization_id: organization_id} = attrs) do
-    organization = Partners.organization(organization_id)
-
-    case organization.bsp.shortcode do
-      "gupshup" -> GupshupContacts.optin_contact(attrs)
-      "gupshup_enterprise" -> GupshupEnterpriseContacts.optin_contact(attrs)
-      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
-    end
+    bsp_module = Provider.bsp_module(organization_id, :contact)
+    bsp_module.optin_contact(attrs)
   end
 
   @doc """
@@ -876,7 +880,7 @@ defmodule Glific.Contacts do
   def is_simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
 
   @doc """
-  create new contact histroy record.
+  create new contact history record.
   """
   @spec capture_history(Contact.t() | non_neg_integer(), atom(), map()) ::
           {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()}
@@ -887,7 +891,7 @@ defmodule Glific.Contacts do
       |> capture_history(event_type, attrs)
 
   def capture_history(%Contact{} = contact, event_type, attrs) do
-    ## I will add the telemetery evenets here.
+    ## I will add the telemetry events here.
     attrs =
       Map.merge(
         %{
@@ -932,7 +936,7 @@ defmodule Glific.Contacts do
   @spec filter_history_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_history_with(query, filter) do
     query = Repo.filter_with(query, filter)
-    # these filters are specfic to webhook logs only.
+    # these filters are specific to webhook logs only.
     # We might want to move them in the repo in the future.
     Enum.reduce(filter, query, fn
       {:contact_id, contact_id}, query ->

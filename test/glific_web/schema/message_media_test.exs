@@ -61,7 +61,7 @@ defmodule GlificWeb.Schema.MessageMediaTest do
     messages_media = get_in(query_data, [:data, "messagesMedia"])
     assert length(messages_media) == 3
 
-    # lets make sure we dont get Test as a message media caption
+    # lets make sure we don't get Test as a message media caption
     assert get_in(messages_media, [Access.at(0), "caption"]) != "Test"
   end
 
@@ -119,7 +119,7 @@ defmodule GlificWeb.Schema.MessageMediaTest do
     assert "My caption" =
              get_in(query_data, [:data, "createMessageMedia", "messageMedia", "caption"])
 
-    # create message without required atributes
+    # create message without required attributes
     result =
       auth_query_gql_by(:create, user,
         variables: %{

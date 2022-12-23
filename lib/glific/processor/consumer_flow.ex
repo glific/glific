@@ -12,7 +12,8 @@ defmodule Glific.Processor.ConsumerFlow do
     Flows.FlowContext,
     Flows.Periodic,
     Messages,
-    Messages.Message
+    Messages.Message,
+    Partners
   }
 
   @doc """
@@ -20,7 +21,12 @@ defmodule Glific.Processor.ConsumerFlow do
   to process messages
   """
   @spec load_state(non_neg_integer) :: map()
-  def load_state(organization_id), do: %{flow_keywords: Flows.flow_keywords_map(organization_id)}
+  def load_state(organization_id) do
+    %{
+      flow_keywords: Flows.flow_keywords_map(organization_id),
+      regx_flow: Partners.organization(organization_id).regx_flow
+    }
+  end
 
   @doc false
   @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
@@ -30,7 +36,14 @@ defmodule Glific.Processor.ConsumerFlow do
     is_draft = is_draft_keyword?(state, body)
 
     if is_draft,
-      do: FlowContext.mark_flows_complete(message.contact_id, false)
+      do:
+        FlowContext.mark_flows_complete(message.contact_id, false,
+          source: "process_message",
+          event_meta: %{
+            is_draft: is_draft,
+            body: body
+          }
+        )
 
     context = FlowContext.active_context(message.contact_id)
 
@@ -45,87 +58,61 @@ defmodule Glific.Processor.ConsumerFlow do
 
   # Setting this to 0 since we are pushing out our own optin flow
   @delay_time 0
+  @draft_phrase "draft"
+  @final_phrase "published"
+  @optin_flow_keyword "optin"
 
   @doc """
-  In case contact is not in optin flow let's move ahead with the regualr processing.
+  In case contact is not in optin flow let's move ahead with the regular processing.
   """
   @spec move_forward({Message.t(), map()}, String.t(), FlowContext.t(), Keyword.t()) ::
           {Message.t(), map()}
   def move_forward({message, state}, body, context, opts) do
-    with false <- is_nil(context),
-         {:ok, flow} <-
-           Flows.get_cached_flow(
-             message.organization_id,
-             {:flow_uuid, context.flow_uuid, context.status}
-           ),
-         true <- flow.ignore_keywords do
-      check_contexts(context, message, body, state)
-    else
-      _ ->
-        cond do
-          Map.get(state, :newcontact, false) &&
-              !is_nil(state.flow_keywords["org_default_new_contact"]) ->
-            # delay new contact flows by 2 minutes to allow user to deal with signon link
-            flow_id = state.flow_keywords["org_default_new_contact"]
+    cond do
+      continue_the_context?(context) ->
+        continue_current_context(context, message, body, state)
 
-            check_flows(message, body, state,
-              is_newcontact: true,
-              flow_id: flow_id,
-              delay: @delay_time
-            )
+      start_new_contact_flow?(state) ->
+        flow_id = state.flow_keywords["org_default_new_contact"]
+        flow_params = {:flow_id, flow_id, @final_phrase}
+        start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
 
-          Map.has_key?(state.flow_keywords["published"], body) ->
-            check_flows(message, body, state)
+      is_flow_keyword?(state, body) ->
+        flow_params = {:flow_keyword, body, @final_phrase}
+        start_new_flow(message, body, state, flow_params: flow_params)
 
-          Keyword.get(opts, :is_draft, false) ->
-            check_flows(message, message.body, state, is_draft: true)
+      Keyword.get(opts, :is_draft, false) ->
+        body = String.replace_leading(message.body, @draft_phrase <> ":", "")
+        flow_params = {:flow_keyword, body, @draft_phrase}
+        opts = [status: @draft_phrase, flow_params: flow_params]
+        start_new_flow(message, message.body, state, opts)
 
-          true ->
-            check_contexts(context, message, body, state)
-        end
+      # making sure that user is not in any flow.
+      is_context_nil?(context) && match_with_regex?(state.regx_flow, message.body) ->
+        flow_id = Glific.parse_maybe_integer!(state.regx_flow.flow_id)
+        flow_params = {:flow_id, flow_id, @final_phrase}
+        start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
+
+      is_context_nil?(context) ->
+        state = Periodic.run_flows(state, message)
+        {message, state}
+
+      true ->
+        continue_current_context(context, message, body, state)
     end
-  end
-
-  @draft_phrase "draft"
-  @final_phrase "published"
-
-  @spec is_draft_keyword?(map(), String.t()) :: boolean()
-  defp is_draft_keyword?(_state, nil), do: false
-
-  defp is_draft_keyword?(state, body) do
-    if String.starts_with?(body, @draft_phrase) and
-         Map.has_key?(
-           state.flow_keywords["draft"],
-           String.replace_leading(body, @draft_phrase, "")
-         ),
-       do: true,
-       else: false
   end
 
   @doc """
   Start a flow or reactivate a flow if needed. This will be linked to the entire
   trigger mechanism once we have that under control.
   """
-  @spec check_flows(atom() | Message.t(), String.t(), map(), Keyword.t()) :: {Message.t(), map()}
-  def check_flows(message, body, state, opts \\ []) do
-    is_draft = Keyword.get(opts, :is_draft, false)
-    is_newcontact = Keyword.get(opts, :is_newcontact, false)
-    flow_id = Keyword.get(opts, :flow_id, nil)
+  @spec start_new_flow(atom() | Message.t(), String.t(), map(), Keyword.t()) ::
+          {Message.t(), map()}
+  def start_new_flow(message, _body, state, opts \\ []) do
+    flow_params = Keyword.get(opts, :flow_params, nil)
+    status = Keyword.get(opts, :status, @final_phrase)
 
-    {status, body} =
-      if is_draft do
-        # lets complete all existing flows for this contact
-        {@draft_phrase, String.replace_leading(body, @draft_phrase <> ":", "")}
-      else
-        {@final_phrase, body}
-      end
-
-    get_cached_flow(
-      is_newcontact,
-      message.organization_id,
-      {:flow_keyword, body, status},
-      flow_id
-    )
+    Flows.get_cached_flow(message.organization_id, flow_params)
     |> case do
       {:ok, flow} ->
         opts = Keyword.put(opts, :flow_keyword, message.body)
@@ -138,27 +125,15 @@ defmodule Glific.Processor.ConsumerFlow do
     {message, state}
   end
 
-  # fetches cached flow based on flow_id when contact is new contact
-  # or fetches based on flow keyword when newcontact flow is not set
-  @spec get_cached_flow(boolean(), non_neg_integer(), tuple(), non_neg_integer()) ::
-          {atom, any} | {atom(), String.t()}
-  defp get_cached_flow(false, organization_id, params, _flow_id),
-    do: Flows.get_cached_flow(organization_id, params)
-
-  defp get_cached_flow(true, organization_id, _params, flow_id),
-    do: Flows.get_cached_flow(organization_id, {:flow_id, flow_id, @final_phrase})
-
   @doc false
-  @spec check_contexts(FlowContext.t() | nil, atom() | Message.t(), String.t(), map()) ::
+  @spec continue_current_context(
+          FlowContext.t() | nil,
+          atom() | Message.t(),
+          String.t(),
+          map()
+        ) ::
           {Message.t(), map()}
-  def check_contexts(nil = _context, message, _body, state) do
-    # lets do the periodic flow routine and send those out
-    # in a priority order
-    state = Periodic.run_flows(state, message)
-    {message, state}
-  end
-
-  def check_contexts(context, message, _body, state) do
+  def continue_current_context(context, message, _body, state) do
     {:ok, flow} =
       Flows.get_cached_flow(
         message.organization_id,
@@ -192,7 +167,18 @@ defmodule Glific.Processor.ConsumerFlow do
     {message, state}
   end
 
-  @optin_flow_keyword "optin"
+  @spec is_draft_keyword?(map(), String.t()) :: boolean()
+  defp is_draft_keyword?(_state, nil), do: false
+
+  defp is_draft_keyword?(state, body) do
+    if String.starts_with?(body, @draft_phrase) and
+         Map.has_key?(
+           state.flow_keywords["draft"],
+           String.replace_leading(body, @draft_phrase, "")
+         ),
+       do: true,
+       else: false
+  end
 
   ## check if contact is not in the optin flow and has optout time
   @spec start_optin_flow?(Contact.t(), FlowContext.t() | nil, String.t()) :: boolean()
@@ -209,7 +195,12 @@ defmodule Glific.Processor.ConsumerFlow do
   @spec start_optin_flow(Message.t(), map()) :: {Message.t(), map()}
   defp start_optin_flow(message, state) do
     ## remove all the previous flow context
-    FlowContext.mark_flows_complete(message.contact_id, false)
+    FlowContext.mark_flows_complete(message.contact_id, false,
+      source: "start_optin_flow",
+      event_meta: %{
+        message_id: message.id
+      }
+    )
 
     Flows.get_cached_flow(
       message.organization_id,
@@ -224,5 +215,43 @@ defmodule Glific.Processor.ConsumerFlow do
     end
 
     {message, state}
+  end
+
+  @spec start_new_contact_flow?(map()) :: boolean()
+  defp start_new_contact_flow?(state) do
+    Map.get(state, :newcontact, false) && !is_nil(state.flow_keywords["org_default_new_contact"])
+  end
+
+  @spec is_flow_keyword?(map(), String.t()) :: boolean()
+  defp is_flow_keyword?(state, body) do
+    Map.has_key?(state.flow_keywords["published"], body)
+  end
+
+  @spec match_with_regex?(map(), String.t()) :: boolean()
+  defp match_with_regex?(nil, _), do: false
+
+  defp match_with_regex?(regx_flow, body) when is_map(regx_flow) == true do
+    Regex.compile(regx_flow.regx, regx_flow.regx_opt)
+    |> case do
+      {:ok, rgx} -> String.match?(body, rgx)
+      _ -> false
+    end
+  end
+
+  defp match_with_regex?(_, _), do: false
+
+  @spec continue_the_context?(FlowContext.t()) :: boolean()
+  defp continue_the_context?(context) do
+    cond do
+      is_nil(context) -> false
+      context.flow.ignore_keywords -> true
+      true -> false
+    end
+  end
+
+  @spec is_context_nil?(FlowContext.t()) :: boolean()
+  defp is_context_nil?(context) do
+    ## not sure why this is giving dialyzer error. Ignoring for now
+    is_nil(context)
   end
 end

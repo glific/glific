@@ -5,6 +5,8 @@ defmodule Glific.Providers.GupshupContacts do
 
   use Publicist
 
+  @behaviour Glific.Providers.ContactBehaviour
+
   import GlificWeb.Gettext
 
   alias Glific.{
@@ -15,13 +17,11 @@ defmodule Glific.Providers.GupshupContacts do
     Providers.Gupshup.ApiClient
   }
 
-  @behaviour Glific.Providers.ContactBehaviour
   @days_shift -14
 
   @doc """
     Update a contact phone as opted in
   """
-  @impl Glific.Providers.ContactBehaviour
 
   @spec optin_contact(map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, list()}
@@ -38,30 +38,6 @@ defmodule Glific.Providers.GupshupContacts do
 
       _ ->
         {:error, ["gupshup", "couldn't connect"]}
-    end
-  end
-
-  @doc """
-  Perform the gupshup API call and parse the results for downstream functions
-  """
-  @spec validate_opted_in_contacts(Tesla.Env.result()) :: {:ok, list()} | {:error, String.t()}
-  def validate_opted_in_contacts(result) do
-    case result do
-      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
-        {:ok, response_data} = Jason.decode(body)
-
-        if response_data["status"] == "error" do
-          {:error, dgettext("errors", "Message: %{message}", message: response_data["message"])}
-        else
-          users = response_data["users"]
-          {:ok, users}
-        end
-
-      {:ok, %Tesla.Env{status: status}} when status in 400..499 ->
-        {:error, dgettext("errors", "Invalid BSP API key")}
-
-      {:error, %Tesla.Error{reason: reason}} ->
-        {:error, dgettext("errors", "Reason: %{reason}", reason: reason)}
     end
   end
 
@@ -83,6 +59,31 @@ defmodule Glific.Providers.GupshupContacts do
 
       error ->
         error
+    end
+  end
+
+  @doc """
+  Perform the gupshup API call and parse the results for downstream functions.
+  We need to think about if we want to add him to behaviour
+  """
+  @spec validate_opted_in_contacts(Tesla.Env.result()) :: {:ok, list()} | {:error, String.t()}
+  def validate_opted_in_contacts(result) do
+    case result do
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+        {:ok, response_data} = Jason.decode(body)
+
+        if response_data["status"] == "error" do
+          {:error, dgettext("errors", "Message: %{message}", message: response_data["message"])}
+        else
+          users = response_data["users"]
+          {:ok, users}
+        end
+
+      {:ok, %Tesla.Env{status: status}} when status in 400..499 ->
+        {:error, dgettext("errors", "Invalid BSP API key")}
+
+      {:error, %Tesla.Error{reason: reason}} ->
+        {:error, dgettext("errors", "Reason: %{reason}", reason: reason)}
     end
   end
 

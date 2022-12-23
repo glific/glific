@@ -103,6 +103,9 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
 
     @desc "Match the reserved flag"
     field :is_reserved, :boolean
+
+    @desc "a static date range input field which will apply on updated at column."
+    field :date_range, :date_range_input
   end
 
   input_object :session_template_input do

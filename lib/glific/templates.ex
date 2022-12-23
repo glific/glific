@@ -215,7 +215,7 @@ defmodule Glific.Templates do
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def delete_session_template(%SessionTemplate{} = session_template) do
     if session_template.is_hsm do
-      Task.async(fn ->
+      Task.Supervisor.async_nolink(Glific.TaskSupervisor, fn ->
         org_id = session_template.organization_id
         bsp_module = Provider.bsp_module(org_id, :template)
         bsp_module.delete(org_id, Map.from_struct(session_template))
@@ -266,7 +266,13 @@ defmodule Glific.Templates do
 
   def sync_hsms_from_bsp(organization_id) do
     bsp_module = Provider.bsp_module(organization_id, :template)
-    bsp_module.update_hsm_templates(organization_id)
+    res = bsp_module.update_hsm_templates(organization_id)
+
+    Logger.info(
+      "Templates has been sync for org id: #{organization_id} with response: #{inspect(res)}"
+    )
+
+    res
   end
 
   @doc false

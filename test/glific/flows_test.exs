@@ -6,9 +6,9 @@ defmodule Glific.FLowsTest do
     Flows,
     Flows.Broadcast,
     Flows.Flow,
-    Flows.FlowBroadcast,
     Flows.FlowContext,
     Flows.FlowRevision,
+    Flows.MessageBroadcast,
     Groups,
     Messages,
     Messages.Message,
@@ -271,7 +271,7 @@ defmodule Glific.FLowsTest do
       assert_raise ArgumentError, fn -> Flows.check_required_fields(definition, [:name]) end
     end
 
-    test "get_cached_flow/2 save the flow to cache returns a touple and flow",
+    test "get_cached_flow/2 save the flow to cache returns a tuple and flow",
          %{organization_id: organization_id} = attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
 
@@ -279,14 +279,6 @@ defmodule Glific.FLowsTest do
         Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
 
       assert loaded_flow.nodes != nil
-
-      # Next time Flow will be picked from cache
-      Flows.delete_flow(flow)
-
-      {:ok, loaded_flow_2} =
-        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
-
-      assert loaded_flow_2 == loaded_flow
     end
 
     test "update_cached_flow/1 will remove the keys and update the flows" do
@@ -350,23 +342,37 @@ defmodule Glific.FLowsTest do
       assert loaded_flow.definition == new_definition
     end
 
-    test "start_cotntact_flow/2 will setup the flow for a contact", attrs do
+    test "start_contact_flow/2 will setup the flow for a contact", attrs do
+      [flow | _tail] = Flows.list_flows(%{filter: attrs})
+      # Refreshing the cache which might be updated in other test cases.
+      assert {:ok, %Flow{} = flow} = Flows.update_flow(flow, %{is_active: true})
+      contact = Fixtures.contact_fixture(attrs)
+
+      {:ok, flow} = Flows.start_contact_flow(flow, contact)
+
+      first_action = hd(hd(flow.nodes).actions)
+
+      assert {:ok, _message} =
+               Repo.fetch_by(Message, %{uuid: first_action.node_uuid, contact_id: contact.id})
+    end
+
+    test "start_contact_flow/2 if flow is not available", attrs do
+      contact = Fixtures.contact_fixture(attrs)
+
+      {:error, error} = Flows.start_contact_flow(9999, contact)
+
+      assert get_in(error, [Access.at(1)]) == "Flow not found"
+    end
+
+    test "start_contact_flow/2 if flow is not active", attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
 
       contact = Fixtures.contact_fixture(attrs)
 
-      {:ok, flow} = Flows.start_contact_flow(flow, contact)
-      first_action = hd(hd(flow.nodes).actions)
+      assert {:ok, %Flow{} = flow} = Flows.update_flow(flow, %{is_active: false})
 
-      assert {:ok, _message} =
-               Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact.id})
-    end
-
-    test "start_contact_flow/2 if flow is not avialable", attrs do
-      contact = Fixtures.contact_fixture(attrs)
-
-      {:error, error} = Flows.start_contact_flow(9999, contact)
-      assert error == "Flow not found"
+      {:error, error} = Flows.start_contact_flow(flow.id, contact)
+      assert get_in(error, [Access.at(1)]) == "Flow is not active"
     end
 
     test "start_contact_flow/2 will setup the template flow for a contact", attrs do
@@ -392,6 +398,7 @@ defmodule Glific.FLowsTest do
       group = Fixtures.group_fixture()
       contact = Fixtures.contact_fixture()
       contact2 = Fixtures.contact_fixture()
+      default_results = %{key: "value"}
 
       Groups.create_contact_group(%{
         group_id: group.id,
@@ -405,37 +412,40 @@ defmodule Glific.FLowsTest do
         organization_id: attrs.organization_id
       })
 
-      {:ok, flow} = Flows.start_group_flow(flow, group)
+      {:ok, flow} = Flows.start_group_flow(flow, group, default_results)
 
-      assert {:ok, flow_broadcast} =
-               Repo.fetch_by(FlowBroadcast, %{
+      assert {:ok, message_broadcast} =
+               Repo.fetch_by(MessageBroadcast, %{
                  group_id: group.id,
                  flow_id: flow.id
                })
 
-      assert flow_broadcast.completed_at == nil
+      assert message_broadcast.completed_at == nil
 
       # lets sleep for 3 seconds, to ensure that messages have been delivered
-      Broadcast.execute_group_broadcasts(attrs.organization_id)
+      Broadcast.execute_broadcasts(attrs.organization_id)
       Process.sleep(3_000)
 
       first_action = hd(hd(flow.nodes).actions)
 
       assert {:ok, _message} =
-               Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact.id})
+               Repo.fetch_by(Message, %{uuid: first_action.node_uuid, contact_id: contact.id})
 
       assert {:ok, _message} =
-               Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact2.id})
+               Repo.fetch_by(Message, %{uuid: first_action.node_uuid, contact_id: contact2.id})
 
-      Broadcast.execute_group_broadcasts(attrs.organization_id)
+      Broadcast.execute_broadcasts(attrs.organization_id)
 
-      assert {:ok, flow_broadcast} =
-               Repo.fetch_by(FlowBroadcast, %{
+      assert {:ok, message_broadcast} =
+               Repo.fetch_by(MessageBroadcast, %{
                  group_id: group.id,
                  flow_id: flow.id
                })
 
-      assert flow_broadcast.completed_at != nil
+      assert message_broadcast.completed_at != nil
+
+      broadcast_results = message_broadcast.default_results
+      assert broadcast_results["key"] == default_results.key
     end
 
     test "copy_flow/2 with valid data makes a copy of flow" do
@@ -484,7 +494,8 @@ defmodule Glific.FLowsTest do
       "Could not find Group:",
       "The next message after a long wait for time should be an HSM template",
       "Could not find Sub Flow:",
-      "Could not parse"
+      "Could not parse",
+      "\"newcontact\" has already been used as a keyword for a flow"
     ]
 
     Enum.any?(errors, &String.contains?(str, &1))

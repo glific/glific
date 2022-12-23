@@ -293,6 +293,7 @@ defmodule Glific.TemplatesTest do
             body:
               Jason.encode!(%{
                 "status" => "success",
+                "token" => "new_partner_token",
                 "template" => %{
                   "category" => "ACCOUNT_UPDATE",
                   "createdOn" => 1_595_904_220_495,
@@ -422,7 +423,7 @@ defmodule Glific.TemplatesTest do
             body:
               Jason.encode!(%{
                 "status" => "error",
-                "message" => "Template Not Supported On Gupshup Platform"
+                "message" => "Something went wrong"
               })
           }
       end)
@@ -440,11 +441,8 @@ defmodule Glific.TemplatesTest do
         organization_id: attrs.organization_id
       }
 
-      assert {:error,
-              [
-                "BSP response status: 400",
-                "Template Not Supported On Gupshup Platform"
-              ]} = Templates.create_session_template(attrs)
+      assert {:error, ["BSP", "couldn't submit for approval"]} =
+               Templates.create_session_template(attrs)
     end
 
     test "update_session_template/2 with valid data updates the session_template", attrs do
@@ -1013,7 +1011,7 @@ defmodule Glific.TemplatesTest do
 
     test "import_templates/1 should import templates", attrs do
       data =
-        "Template Id,Template Name,Body,Type,Quality Rating,Language,Status,Created On\r\n6122571,2meq_payment_link,	Your OTP for {{1}} is {{2}}. This is valid for {{3}}.,TEXT,Unknown,English,Enabled,2021-07-16\n6122572,meq_payment_link2,You are one step away! Please click the link below to make your payment for the Future Perfect program.,TEXT,Unknown,English,Rejected,2021-07-16"
+        "\"TEMPLATEID\",\"NAME\",\"CATEGORY\",\"LANGUAGE\",\"TYPE\",\"HEADER\",\"BODY\",\"FOOTER\",\"BUTTONTYPE\",\"NOOFBUTTONS\",\"BUTTON1\",\"BUTTON2\",\"BUTTON3\",\"QUALITYRATING\",\"REJECTIONREASON\",\"STATUS\",\"CREATEDON\"\n\"6356300\",\"beforedemo\",\"ALERT_UPDATE\",\"en\",\"TEXT\",\"\",\"Hi{{1}},Your demo is about to start in 15 min. We are excited to see you there.🤩\nPlease join 5 min before time.\nClick on this link to attend the session. {{2}}\nIn case you face any issues, please call on +918047190520\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-03-17\"\n\"6516247\",\"new_feature\",\"TRANSACTIONAL\",\"en\",\"TEXT\",\"\",\"are you excited for upcoming features?\",\"\",\"CALL_TO_ACTION\",\"2\",\"{\"\"type\"\":\"\"PHONE_NUMBER\"\",\"\"phone_number\"\":\"\"+918979120220\"\",\"\"text\"\":\"\"call here\"\"}\",\"{\"\"type\"\":\"\"URL\"\",\"\"urlType\"\":\"\"STATIC\"\",\"\"url\"\":\"\"https://coloredcow.com/blogs/\"\",\"\"text\"\":\"\"visit here\"\"}\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-09-28\"\n\"6379777\",\"Gender\",\"ACCOUNT_UPDATE\",\"en\",\"TEXT\",\"\",\"Please share your gender\",\"\",\"QUICK_REPLY\",\"3\",\"{\"\"type\"\":\"\"QUICK_REPLY\"\",\"\"text\"\":\"\"Male\"\"}\",\"{\"\"type\"\":\"\"QUICK_REPLY\"\",\"\"text\"\":\"\"Female\"\"}\",\"{\"\"type\"\":\"\"QUICK_REPLY\"\",\"\"text\"\":\"\"Other\"\"}\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-03-22\"\n\"6122571\",\"2meq_payment_link\",\"ACCOUNT_UPDATE\",\"en\",\"TEXT\",\"\",\"Your OTP for {{1}} is {{2}}. This is valid for {{3}}.\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-03-10\"\n\"6122572\",\"meq_payment_link2\",\"ACCOUNT_UPDATE\",\"en\",\"TEXT\",\"\",\"You are one step away! Please click the link below to make your payment for the Future Perfect program.\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"REJECTED\",\"2022-04-05\""
 
       Template.import_templates(attrs.organization_id, data)
 
@@ -1036,6 +1034,52 @@ defmodule Glific.TemplatesTest do
 
       assert imported_template2.example ==
                "You are one step away! Please click the link below to make your payment for the Future Perfect program."
+
+      assert {:ok, %SessionTemplate{} = imported_template3} =
+               Repo.fetch_by(SessionTemplate, %{bsp_id: "6379777"})
+
+      assert imported_template3.status == "APPROVED"
+      assert imported_template3.shortcode == "Gender"
+      assert imported_template3.has_buttons == true
+      assert imported_template3.button_type == :quick_reply
+      assert imported_template3.body == "Please share your gender"
+
+      assert imported_template3.buttons == [
+               %{"text" => "Male ", "type" => "QUICK_REPLY"},
+               %{"text" => "Female ", "type" => "QUICK_REPLY"},
+               %{"text" => "Other ", "type" => "QUICK_REPLY"}
+             ]
+
+      assert {:ok, %SessionTemplate{} = imported_template4} =
+               Repo.fetch_by(SessionTemplate, %{bsp_id: "6516247"})
+
+      assert imported_template4.status == "APPROVED"
+      assert imported_template4.shortcode == "new_feature"
+      assert imported_template4.has_buttons == true
+      assert imported_template4.button_type == :call_to_action
+      assert imported_template4.body == "are you excited for upcoming features?"
+
+      assert imported_template4.buttons == [
+               %{
+                 "text" => "call here",
+                 "type" => "PHONE_NUMBER",
+                 "phone_number" => "+918979120220 "
+               },
+               %{
+                 "text" => "visit here",
+                 "type" => "URL",
+                 "url" => "https://coloredcow.com/blogs/ "
+               }
+             ]
+
+      assert {:ok, %SessionTemplate{} = imported_template5} =
+               Repo.fetch_by(SessionTemplate, %{bsp_id: "6356300"})
+
+      assert imported_template5.status == "APPROVED"
+      assert imported_template5.shortcode == "beforedemo"
+
+      assert imported_template5.body ==
+               "Hi{{1}},Your demo is about to start in 15 min. We are excited to see you there.🤩\r\nPlease join 5 min before time.\r\nClick on this link to attend the session. {{2}}\r\nIn case you face any issues, please call on +918047190520"
     end
 
     test "update_hsms/1 should update multiple templates same shortcode as translation", attrs do

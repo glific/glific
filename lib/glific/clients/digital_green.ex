@@ -17,8 +17,6 @@ defmodule Glific.Clients.DigitalGreen do
     Sheets.ApiClient
   }
 
-  alias Glific.Sheets.ApiClient
-
   @crp_id_key "dg_crp_ids"
 
   @geographies %{
@@ -173,6 +171,35 @@ defmodule Glific.Clients.DigitalGreen do
       else: %{is_valid: false}
   end
 
+  def webhook("push_crop_calendar_message", fields) do
+    crop_age = fields["crop_age"]
+
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: fields["organization_id"],
+        key: fields["crop"]
+      })
+
+    template_uuid = get_in(organization_data.json, [crop_age, "template_uuid"])
+    variables = get_in(organization_data.json, [crop_age, "variables"])
+    crop_stage = get_in(organization_data.json, [crop_age, "crop_stage"])
+    media_url = get_in(organization_data.json, [crop_age, "media_url"])
+    crop_stage_eng = get_in(organization_data.json, [crop_age, "crop_stage_eng"])
+
+    if template_uuid,
+      do: %{
+        is_valid: true,
+        template_uuid: template_uuid,
+        crop_stage: crop_stage,
+        variables: Jason.encode!(variables),
+        media_url: media_url,
+        crop_age: crop_age,
+        crop_stage_eng: crop_stage_eng,
+        organization_id: fields["organization_id"]
+      },
+      else: %{is_valid: false}
+  end
+
   def webhook("set_reminders", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact"]["id"])
 
@@ -183,6 +210,11 @@ defmodule Glific.Clients.DigitalGreen do
            }) do
       set_contact_reminder(contact.last_message_at)
     end
+  end
+
+  def webhook("parse_weather_report", fields) do
+    weather_report = fields["results"]["weather_report"]
+    %{report_msg: get_report_msg(weather_report, fields["organization_id"])}
   end
 
   def webhook(_, _fields),
@@ -241,7 +273,7 @@ defmodule Glific.Clients.DigitalGreen do
         )
   end
 
-  @spec get_geographies_data(non_neg_integer(), map()) :: map()
+  @spec get_geographies_data(integer(), map()) :: map()
   defp get_geographies_data(org_id, geographies_config) do
     {:ok, org_data} =
       Repo.fetch_by(OrganizationData, %{
@@ -329,6 +361,7 @@ defmodule Glific.Clients.DigitalGreen do
     %{status: "successfull"}
   end
 
+  @spec validate_crp_id(integer(), nil | integer()) :: map()
   defp validate_crp_id(org_id, crp_id) do
     crp_id = Glific.string_clean(crp_id)
 
@@ -343,6 +376,8 @@ defmodule Glific.Clients.DigitalGreen do
     }
   end
 
+  @spec load_geographies(non_neg_integer(), map()) ::
+          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
   defp load_geographies(org_id, geographies_config) do
     ApiClient.get_csv_content(url: geographies_config["sheet_link"])
     |> Enum.reduce(%{}, fn {_, row}, acc ->
@@ -385,6 +420,7 @@ defmodule Glific.Clients.DigitalGreen do
     :ok
   end
 
+  @spec get_language(non_neg_integer()) :: map()
   defp get_language(contact_id) do
     contact_id = Glific.parse_maybe_integer!(contact_id)
 
@@ -397,7 +433,7 @@ defmodule Glific.Clients.DigitalGreen do
   end
 
   @doc """
-    get template for IEX
+   Send template from expression
   """
   @spec send_template(String.t(), list()) :: binary
   def send_template(uuid, variables) do
@@ -407,5 +443,59 @@ defmodule Glific.Clients.DigitalGreen do
       expression: nil
     }
     |> Jason.encode!()
+  end
+
+  @doc """
+    Send media template from expression
+  """
+  @spec send_media_template(String.t(), String.t(), non_neg_integer()) :: String.t()
+  def send_media_template(uuid, day, organization_id) do
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: organization_id,
+        key: "dg_tel_crop_calendar"
+      })
+
+    %{
+      uuid: uuid,
+      variables: get_in(organization_data.json, [day, "variables"]),
+      expression: nil
+    }
+    |> Jason.encode!()
+  end
+
+  @doc """
+    Get weather report message
+  """
+  @spec get_report_msg(map(), non_neg_integer()) :: String.t()
+  def get_report_msg(weather_report, organization_id) do
+    timelines = weather_report["data"]["timelines"]["0"]
+    intervals = timelines["intervals"]
+
+    Enum.reduce(intervals, "", fn interval, acc ->
+      acc <> parse_report(elem(interval, 1), organization_id)
+    end)
+  end
+
+  @spec parse_report(nil | maybe_improper_list | map, non_neg_integer()) :: String.t()
+  defp parse_report(interval, organization_id) do
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: organization_id,
+        key: "weather_code"
+      })
+
+    {:ok, time, _days} = DateTime.from_iso8601(interval["startTime"])
+    start_time = time |> Timex.format!("{0D}/{0M}/{YYYY}")
+    weather_code = Integer.to_string(interval["values"]["weatherCodeFullDay"])
+    weather = get_in(organization_data.json, [weather_code])
+
+    """
+    \n *తేదీ:* #{start_time}
+    \n *గరిష్ట ఉష్ణోగ్రత:* #{interval["values"]["temperatureMax"]} °C
+    \n *కనిష్ట ఉష్ణోగ్రత:* #{interval["values"]["temperatureMin"]} °C
+    \n *వాతావరణ పరిస్థితి:* #{weather}
+    \n
+    """
   end
 end

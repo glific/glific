@@ -12,7 +12,7 @@
 
 ## Pre-requisites
 
-There is level of understanding middle to advanced level. It is assumed that you know how to use a terminal, install things and have git; for the backend, and for the frontend use install npm / yarn and react.
+There is level of understanding middle to advanced level. It is assumed that you know how to use a terminal, install things and have git; for the backend, and for the frontend use install yarn and react.
 
 1. Software dependency - Postgres server
 2. Software dependency - Erlang / Elixir
@@ -64,12 +64,12 @@ DO NOT run mix deps.get until the next steps are completed.
 
 You will need to do the following:
 
-- a. Create a [Gupshup Account](https://www.gupshup.io/developer/home)
-- b. Create an app and select [Access API](https://www.gupshup.io/whatsapp/create-app/access-api)
-- c. You can name it `NewNameHere` "GlificTest <-- Bot Name is already in use, then use anotherone"
-- d. Edit `glific_backend/config/dev.secret.exs`
-- e. Find your API Key, check top left corner or inside the curl sample message
-- f. Enter your APP name
+ a. Create a [Gupshup Account](https://www.gupshup.io/developer/home)
+ b. Create an app and select [Access API](https://www.gupshup.io/whatsapp/create-app/access-api)
+ c. You can name it `NewNameHere` "GlificTest <-- Bot Name is already in use, then use anotherone"
+ d. Edit `glific_backend/config/dev.secret.exs`
+ e. Find your API Key, check top left corner or inside the curl sample message
+ f. Enter your APP name
 
 ### 5. External service - Oban Pro
 
@@ -142,24 +142,24 @@ Go to glific_backend folder in the terminal console.
 
 ```bash
       ❯ ls -1
-      glific.test+6-key.pem
-      glific.test+6.pem
-      glific.test+7-key.pem
-      glific.test+7.pem
-      ❯ cp glific.test+6-key.pem glific.test+1-key.pem
-      ❯ cp glific.test+6.pem glific.test+1.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
+      ❯ cp glific.test+*-key.pem glific.test+1-key.pem
+      ❯ cp glific.test+*.pem glific.test+1.pem
 ```
 
       And check again
 
 ```bash
       ❯ ls -1
-      glific.test+1-key.pem
-      glific.test+1.pem
-      glific.test+6-key.pem
-      glific.test+6.pem
-      glific.test+7-key.pem
-      glific.test+7.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
 ```
 
 - h. Check port 4001 `sudo lsof -n -i:4001 | grep LISTEN` should return nothing.
@@ -199,23 +199,15 @@ You cannot do much from the glific_backend unless you are an API developer. To s
 install [Glific Frontend](https://github.com/glific/glific-frontend/)
 
 ```bash
-git clone https://github.com/glific/glific_frontend
-cd glific_frontend
+git clone https://github.com/glific/glific-frontend
+cd glific-frontend
 ```
 
-open package.json and update start script
+open package.json
 
 ```bash
 nano package.json
 ```
-
-from
-
-    "start": "HTTPS=true SSL_CRT_FILE=../glific/priv/cert/glific.test+1.pem SSL_KEY_FILE=../glific/priv/cert/glific.test+1-key.pem react-scripts start"
-
-to
-
-    "start": "HTTPS=true SSL_CRT_FILE=../glific_backend/priv/cert/glific.test+1.pem SSL_KEY_FILE=../glific_backend/priv/cert/glific.test+1-key.pem react-scripts start"
 
 Copy config file
 
@@ -319,16 +311,16 @@ For v0.x releases, we will be resetting the DB and not saving existing state. Ru
 to update your codebase from the glific repository.
 
 - Ensure you are in the top level directory of the glific api code.
-- Get the latest code from master: `git switch master; git pull`
+- Get the latest code from master: `git switch master && git pull`
 - Ensure you have not modified any files in this directory, by running: `git status`
 - Run the setup command: `mix setup`
 
 ## Documentation
 
+- [User Guide](https://docs.glific.com)
 - [Postman API docs](https://api.glific.com/)
 - [GraphQL API docs](https://glific.github.io/slate/)
 - [Code Documentation](https://glific.github.io/glific/doc/readme.html#documentation)
-- [User Guide](https://docs.glific.com)
 - [Recipes](https://github.com/glific/recipes) - Code smaples for some common use cases in glific.
 
 ## Learn more
@@ -344,3 +336,13 @@ to update your codebase from the glific repository.
 ## Chat with us
 
 - [Chat on Discord](https://discord.gg/me6NCMu)
+
+## Funders
+
+Thanks to our generous funders over the past few years who have funded this project:
+
+- [Project Tech4Dev](https://chintugudiya.org/tech4dev/)
+- [The Agency Fund](https://agency.fund/)
+- [Cisco](https://www.cisco.com/c/en/us/about/csr.html)
+- [Omidyar Network India](https://www.omidyarnetwork.in)
+- [FOSS United](https://fossunited.org/)

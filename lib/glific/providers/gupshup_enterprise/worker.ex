@@ -1,6 +1,6 @@
 defmodule Glific.Providers.Gupshup.Enterprise.Worker do
   @moduledoc """
-  A worker to handle send message processes
+  A worker to handle send message processes.
   """
 
   use Oban.Worker,
@@ -59,9 +59,27 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
 
   @spec process_gupshup(non_neg_integer(), map(), Message.t(), map()) ::
           {:ok, Message.t()} | {:error, String.t()}
-  defp process_gupshup(org_id, payload, %{"is_hsm" => true, "body" => body} = message, attrs) do
+  defp process_gupshup(
+         org_id,
+         payload,
+         %{"is_hsm" => true} = message,
+         %{"template_type" => template_type} = attrs
+       )
+       when template_type in ["image", "video", "document"] do
+    attrs =
+      Jason.decode!(payload["message"])
+      |> Map.put("send_to", payload["send_to"])
+      |> Map.put("has_buttons", attrs["has_buttons"])
+
+    ApiClient.send_media_template(org_id, attrs)
+    |> ResponseHandler.handle_response(message)
+  end
+
+  defp process_gupshup(org_id, payload, %{"is_hsm" => true} = message, attrs) do
+    body = Jason.decode!(payload["message"])
+
     ApiClient.send_template(org_id, %{
-      "msg" => body,
+      "msg" => body["msg"],
       "send_to" => payload["send_to"],
       "has_buttons" => attrs["has_buttons"]
     })

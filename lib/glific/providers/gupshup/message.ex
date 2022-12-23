@@ -3,7 +3,6 @@ defmodule Glific.Providers.Gupshup.Message do
   Message API layer between application and Gupshup
   """
 
-  @channel "whatsapp"
   @behaviour Glific.Providers.MessageBehaviour
 
   alias Glific.{
@@ -13,10 +12,12 @@ defmodule Glific.Providers.Gupshup.Message do
     Repo
   }
 
+  import Ecto.Query, warn: false
   require Logger
 
+  @channel "whatsapp"
+
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec send_text(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_text(message, attrs \\ %{}) do
@@ -26,7 +27,6 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec send_image(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_image(message, attrs \\ %{}) do
@@ -44,7 +44,6 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
 
-  @impl Glific.Providers.MessageBehaviour
   @spec send_audio(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_audio(message, attrs \\ %{}) do
     message_media = message.media
@@ -57,7 +56,6 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec send_video(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_video(message, attrs \\ %{}) do
@@ -73,7 +71,6 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec send_document(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_document(message, attrs \\ %{}) do
@@ -88,7 +85,6 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec send_sticker(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_sticker(message, attrs \\ %{}) do
     message_media = message.media
@@ -101,7 +97,6 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec send_interactive(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_interactive(message, attrs \\ %{}) do
     message.interactive_content
@@ -119,7 +114,6 @@ defmodule Glific.Providers.Gupshup.Message do
     do: get_in(payload, ["context", "gsId"]) || get_in(payload, ["context", "id"])
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec receive_text(payload :: map()) :: map()
   def receive_text(params) do
     payload = params["payload"]
@@ -146,7 +140,6 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec receive_media(map()) :: map()
   def receive_media(params) do
     payload = params["payload"]
@@ -166,7 +159,6 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec receive_location(map()) :: map()
   def receive_location(params) do
     payload = params["payload"]
@@ -185,37 +177,33 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec receive_billing_event(map()) :: {:ok, map()} | {:error, String.t()}
   def receive_billing_event(params) do
     references = get_in(params, ["payload", "references"])
     deductions = get_in(params, ["payload", "deductions"])
     bsp_message_id = references["gsId"] || references["id"]
-    phone = references["destination"]
 
-    Repo.fetch_by(Message, %{
-      bsp_message_id: bsp_message_id
-    })
-    |> case do
-      {:ok, message} ->
-        message_conversation = %{
-          deduction_type: deductions["type"],
-          is_billable: deductions["billable"],
-          conversation_id: references["conversationId"],
-          payload: params,
-          message_id: message.id
-        }
+    message_id =
+      Repo.fetch_by(Message, %{
+        bsp_message_id: bsp_message_id
+      })
+      |> case do
+        {:ok, message} -> message.id
+        {:error, _error} -> nil
+      end
 
-        {:ok, message_conversation}
+    message_conversation = %{
+      deduction_type: deductions["type"],
+      is_billable: deductions["billable"],
+      conversation_id: references["conversationId"],
+      payload: params,
+      message_id: message_id
+    }
 
-      _ ->
-        error = "Could not find message with id: #{bsp_message_id} and phone #{phone}"
-        Glific.log_error(error, false)
-    end
+    {:ok, message_conversation}
   end
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec receive_interactive(map()) :: map()
   def receive_interactive(params) do
     payload = params["payload"]

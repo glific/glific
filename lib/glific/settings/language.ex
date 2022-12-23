@@ -38,7 +38,7 @@ defmodule Glific.Settings.Language do
   end
 
   @doc """
-  Standard changeset pattern we use for all datat types
+  Standard changeset pattern we use for all data types
   """
   @spec changeset(Language.t(), map()) :: Ecto.Changeset.t()
   def changeset(language, attrs) do

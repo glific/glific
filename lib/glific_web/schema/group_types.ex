@@ -35,7 +35,7 @@ defmodule GlificWeb.Schema.GroupTypes do
     end
 
     # number of contacts in the group
-    # this is an expensive operation we can come back and optimise it later
+    # this is an expensive operation we can come back and optimize it later
     field :contacts_count, :integer do
       resolve(fn group, resolution, context ->
         Resolvers.Groups.contacts_count(resolution, %{id: group.id}, context)
@@ -43,7 +43,7 @@ defmodule GlificWeb.Schema.GroupTypes do
     end
 
     # number of users in the group
-    # this is an expensive operation we can come back and optimise it later
+    # this is an expensive operation we can come back and optimize it later
     field :users_count, :integer do
       resolve(fn group, resolution, context ->
         Resolvers.Groups.users_count(resolution, %{id: group.id}, context)

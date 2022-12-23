@@ -3,7 +3,7 @@
     {
       "name": "flow",
       "key_source": "flow",
-      "property_template": [
+      "properties": [
         {
           "key": "__default__",
           "help": "the name",
@@ -17,6 +17,57 @@
         {
           "key": "name",
           "help": "the name of the flow",
+          "type": "text"
+        },
+
+        {
+          "key": "uuid",
+          "help": "the uuid of the flow",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "name": "calendar",
+      "key_source": "calendar",
+      "properties": [
+        {
+          "key": "__default__",
+          "help": "the name",
+          "type": "current_date"
+        },
+        {
+          "key": "current_date",
+          "help": "the numeric ID of the flow",
+          "type": "text"
+        },
+        {
+          "key": "yesterday",
+          "help": "the name of the flow",
+          "type": "text"
+        },
+
+        {
+          "key": "tomorrow",
+          "help": "the uuid of the flow",
+          "type": "text"
+        },
+
+        {
+          "key": "current_day",
+          "help": "name of the day",
+          "type": "text"
+        },
+
+        {
+          "key": "current_month",
+          "help": "name of the month",
+          "type": "text"
+        },
+
+        {
+          "key": "current_year",
+          "help": "year",
           "type": "text"
         }
       ]
@@ -395,9 +446,15 @@
     },
 
     {
-      "key": "globals",
+      "key": "global",
       "help": "the global values of the organization. Connect with the team for this.",
-      "type": "globals"
+      "type": "global"
+    },
+
+    {
+      "key": "calendar",
+      "help": "the calendar values.",
+      "type": "calendar"
     }
   ],
   "root_no_session": [
@@ -422,9 +479,15 @@
       "type": "urns"
     },
     {
-      "key": "globals",
+      "key": "global",
       "help": "the global values",
-      "type": "globals"
+      "type": "global"
+    },
+
+    {
+      "key": "calendar",
+      "help": "the calendar values",
+      "type": "calendar"
     }
   ]
 }

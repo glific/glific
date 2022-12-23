@@ -8,7 +8,6 @@ defmodule Glific.ContactsTest do
     Contacts,
     Contacts.Contact,
     Contacts.Import,
-    Groups,
     Partners,
     Partners.Organization,
     Partners.Saas,
@@ -17,6 +16,22 @@ defmodule Glific.ContactsTest do
     Settings.Language,
     Users
   }
+
+  setup do
+    Tesla.Mock.mock_global(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200
+        }
+
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    :ok
+  end
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -130,6 +145,8 @@ defmodule Glific.ContactsTest do
       fields: %{}
     }
 
+    @optin_date "2021-03-09 12:34:25"
+
     def contact_fixture(attrs) do
       {:ok, contact} =
         attrs
@@ -214,53 +231,85 @@ defmodule Glific.ContactsTest do
 
     test "import_contact/3 raises an exception if more than one keyword argument provided" do
       assert_raise RuntimeError, fn ->
-        Import.import_contacts(999, "foo", file_path: "file_path", url: "")
+        Import.import_contacts(999, "admin",
+          file_path: "file_path",
+          url: ""
+        )
       end
     end
 
-    test "import_contact/3 with valid data from file inserts new contacts in the database" do
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 200
-          }
-      end)
+    test "maybe_update_contact/1  with valid data updates the contact",
+         %{organization_id: _organization_id} = attrs do
+      contact = contact_fixture(attrs)
 
+      update_attrs = %{
+        name: "some updated name",
+        optin_time: ~U[2011-05-18 15:01:01Z],
+        optin_status: true,
+        optout_time: nil,
+        phone: contact.phone,
+        status: :invalid,
+        bsp_status: :hsm,
+        fields: %{}
+      }
+
+      assert {:ok, %Contact{} = contact} = Contacts.maybe_update_contact(update_attrs)
+      assert contact.name == "some updated name"
+      assert contact.optin_time == ~U[2011-05-18 15:01:01Z]
+      assert contact.optout_time == nil
+      assert contact.status == :invalid
+      assert contact.bsp_status == :hsm
+    end
+
+    test "mabe_update_contact/1 with invalid phone number which is not in DB",
+         %{organization_id: _organization_id} = attrs do
+      contact_fixture(attrs)
+
+      {:error, error} = Contacts.maybe_update_contact(@update_attrs)
+      assert error == "New contacts were found in this file. Sorry those could not be added"
+    end
+
+    test "import_contact/3 with valid data from file inserts new contacts in the database" do
       file = get_tmp_file()
 
-      [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09_12:34:25)]
+      [
+        ~w(name phone Language opt_in collection),
+        ["test", "9989329297", "english", @optin_date, "collection"]
+      ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
       [organization | _] = Partners.list_organizations()
-      [group | _] = Groups.list_groups(%{filter: %{}})
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:glific_admin])
 
-      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
+      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+        file_path: get_tmp_path()
+      )
+
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
       assert count == 1
     end
 
     test "import_contact/3 with valid data from string inserts new contacts in the database" do
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 200
-          }
-      end)
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:glific_admin])
 
-      data = "name,phone,Language,opt_in\ncontact_test,9989329297,english,2021-03-09_12:34:25\n"
+      data = "name,phone,Language,opt_in\ncontact_test,9989329297,english,2021-03-09 12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
-      [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, data: data)
+      Import.import_contacts(organization.id, %{user: user, collection: "collection"}, data: data)
       count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
 
       assert count == 1
     end
 
     test "import_contact/3 with valid data from URL inserts new contacts in the database" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:glific_admin])
+
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -270,14 +319,48 @@ defmodule Glific.ContactsTest do
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09_12:34:25\n"
+            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09 12:34:25\n"
           }
       end)
 
       [organization | _] = Partners.list_organizations()
-      [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, url: "http://www.bar.com/foo.csv")
+      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+        url: "http://www.bar.com/foo.csv"
+      )
+
+      count = Contacts.count_contacts(%{filter: %{name: "test"}})
+
+      assert count == 1
+    end
+
+    test "import_contact/3 can creates the contact in the db if upload contacts is enabled" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+
+      user =
+        user
+        |> Map.put(:roles, [:staff])
+        |> Map.put(:upload_contacts, true)
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09 12:34:25\n"
+          }
+      end)
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+        url: "http://www.bar.com/foo.csv"
+      )
+
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
       assert count == 1
@@ -292,17 +375,22 @@ defmodule Glific.ContactsTest do
           }
       end)
 
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+
       file = get_tmp_file()
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
 
-      [~w(name phone Language opt_in), ~w(updated #{contact.phone} english 2021-03-09_12:34:25)]
+      [
+        ~w(name phone Language opt_in collection),
+        ["updated", "#{contact.phone}", "english", @optin_date, "collection"]
+      ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
       [organization | _] = Partners.list_organizations()
-      [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
+      Import.import_contacts(organization.id, %{user: user}, file_path: get_tmp_path())
+
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
       assert count == 1
@@ -317,13 +405,16 @@ defmodule Glific.ContactsTest do
           }
       end)
 
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
-      data = "name,phone,Language,opt_in\nupdated,#{contact.phone},english,2021-03-09_12:34:25\n"
+
+      data =
+        "name,phone,Language,opt_in,collection\nupdated,#{contact.phone},english,2021-03-09 12:34:25,collection\n"
 
       [organization | _] = Partners.list_organizations()
-      [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, data: data)
+      Import.import_contacts(organization.id, %{user: user}, data: data)
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
       assert count == 1
@@ -343,14 +434,16 @@ defmodule Glific.ContactsTest do
           %Tesla.Env{
             status: 200,
             body:
-              "name,phone,Language,opt_in\nupdated,#{contact.phone},english,2021-03-09_12:34:25\n"
+              "name,phone,Language,opt_in,collection\nupdated,#{contact.phone},english,2021-03-09 12:34:25,collection\n"
           }
       end)
 
-      [organization | _] = Partners.list_organizations()
-      [group | _] = Groups.list_groups(%{filter: %{}})
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
-      Import.import_contacts(organization.id, group.label, url: "http://www.bar.com/foo.csv")
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(organization.id, %{user: user}, url: "http://www.bar.com/foo.csv")
+
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
       assert count == 1
@@ -366,24 +459,29 @@ defmodule Glific.ContactsTest do
 
       file = get_tmp_file()
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:glific_admin])
 
       [
         ~w(name phone Language opt_in delete),
-        ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1)
+        ["updated", "#{contact.phone}", "english", @optin_date, 1]
       ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
       [organization | _] = Partners.list_organizations()
-      [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
+      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+        file_path: get_tmp_path()
+      )
+
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
       assert count == 0
     end
 
-    test "import_contact/3 ignores delete if the contact allready deleted", attrs do
+    test "import_contact/3 deletes contacts when delete=1 column is present and if permission is not given",
+         attrs do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -393,19 +491,54 @@ defmodule Glific.ContactsTest do
 
       file = get_tmp_file()
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
-      Contacts.delete_contact(contact)
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
       [
-        ~w(name phone Language opt_in delete),
-        ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1)
+        ~w(name phone Language opt_in delete collection),
+        ["updated", "#{contact.phone}", "english", @optin_date, 1, "collection"]
       ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
       [organization | _] = Partners.list_organizations()
-      [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
+      {:error, message} =
+        Import.import_contacts(organization.id, %{user: user}, file_path: get_tmp_path())
+
+      assert message == ["This user doesn't have enough permission"]
+
+      count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
+
+      assert count == 1
+    end
+
+    test "import_contact/3 ignores delete if the contact already deleted", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
+
+      file = get_tmp_file()
+      {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:glific_admin])
+      Contacts.delete_contact(contact)
+
+      [
+        ~w(name phone Language opt_in delete),
+        ["updated", "#{contact.phone}", "english", @optin_date, 1]
+      ]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+        file_path: get_tmp_path()
+      )
+
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
       assert count == 0
@@ -434,9 +567,14 @@ defmodule Glific.ContactsTest do
         |> Enum.each(&IO.write(file, &1))
 
         [organization | _] = Partners.list_organizations()
-        [group | _] = Groups.list_groups(%{filter: %{}})
 
-        Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
+        {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+        user = Map.put(user, :roles, [:glific_admin])
+
+        Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+          file_path: get_tmp_path()
+        )
+
         count = Contacts.count_contacts(%{filter: %{phone: 9_989_329_297}})
 
         [contact | _tail] = Contacts.list_contacts(%{filter: %{phone: 9_989_329_297}})
@@ -458,35 +596,30 @@ defmodule Glific.ContactsTest do
 
       file = get_tmp_file()
 
-      [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09_12:34:25)]
+      [~w(name phone Language opt_in), ["test", "9989329297", "english", @optin_date]]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
-      [group | _] = Groups.list_groups(%{filter: %{}})
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
-      assert {:error, _} = Import.import_contacts(999, group.label, file_path: get_tmp_path())
+      assert {:error, _} = Import.import_contacts(999, %{user: user}, file_path: get_tmp_path())
     end
 
     test "insert_or_update_contact_data/3 returns an error if insertion fails" do
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 404
-          }
-      end)
-
-      [group | _] = Groups.list_groups(%{filter: %{}})
-
       file = get_tmp_file()
 
-      [~w(name phone Language opt_in), ~w(test phone english 2021-03-09_12:34:25)]
+      [
+        ~w(name phone Language opt_in),
+        ["test", "phone", "english", @optin_date]
+      ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
-      {:error, %{message: message, details: _}} =
-        Import.import_contacts(1, group.label, file_path: get_tmp_path())
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
-      assert "All contacts could not be opted in due to some errors" == message
+      {:error, message} = Import.import_contacts(1, %{user: user}, file_path: get_tmp_path())
+
+      assert ["New contacts were found in this file. Sorry those could not be added"] == message
     end
 
     test "update_contact/2 with valid data updates the contact",

@@ -11,7 +11,7 @@ defmodule GlificWeb.TenantsTest do
       assert true = Tenants.reserved_organization?("pg_reserved")
     end
 
-    test "organization_handler/1 returns organization id for the currect shortcode" do
+    test "organization_handler/1 returns organization id for the correct shortcode" do
       shortcode = "org_shortcode"
 
       organization = Fixtures.organization_fixture(%{shortcode: shortcode, status: :active})

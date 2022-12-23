@@ -72,7 +72,7 @@ defmodule Glific.Mails.MailLog do
 
   @doc """
   Returns the list of mail logs.
-  Since this is very basic and only listing funcatinality we added the status filter like this.
+  Since this is very basic and only listing functionality we added the status filter like this.
   In future we will put the status as virtual filed in the mail logs itself.
   """
   @spec list_mail_logs(map()) :: list()

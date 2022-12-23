@@ -310,6 +310,20 @@ defmodule Glific.Groups do
   end
 
   @doc """
+  This function will load id by label
+  """
+  @spec load_group_by_label(any) :: list
+  def load_group_by_label(group_label) do
+    group_label
+    |> Enum.reduce([], fn label, acc ->
+      case Repo.get_by(Group, %{label: label}) do
+        nil -> "Sorry, some collections mentioned in the sheet doesn't exit."
+        group -> [group | acc]
+      end
+    end)
+  end
+
+  @doc """
   Get the contacts ids for a specific group that have not opted out
   """
   @spec contact_ids(non_neg_integer) :: list(non_neg_integer)

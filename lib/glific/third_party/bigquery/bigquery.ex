@@ -15,6 +15,8 @@ defmodule Glific.BigQuery do
     Flows.FlowCount,
     Flows.FlowResult,
     Flows.FlowRevision,
+    Flows.MessageBroadcast,
+    Flows.MessageBroadcastContact,
     Jobs,
     Messages.Message,
     Messages.MessageConversation,
@@ -45,9 +47,12 @@ defmodule Glific.BigQuery do
     "flow_contexts" => :flow_context_schema,
     "profiles" => :profile_schema,
     "contact_histories" => :contact_history_schema,
-    "message_conversations" => :message_conversation_schema
+    "message_conversations" => :message_conversation_schema,
+    "message_broadcasts" => :message_broadcasts_schema,
+    "message_broadcast_contacts" => :message_broadcast_contacts_schema
   }
 
+  @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
   defp bigquery_tables(organization_id) do
     if organization_id == Saas.organization_id(),
       do: Map.put(@bigquery_tables, "stats_all", :stats_all_schema),
@@ -55,34 +60,43 @@ defmodule Glific.BigQuery do
   end
 
   @doc """
+  Ignore the tables for updates operations
+  """
+  @spec ignore_updates_for_table() :: list()
+  def ignore_updates_for_table do
+    [
+      "message_conversations",
+      "contact_histories",
+      "flows",
+      "stats",
+      "stats_all"
+    ]
+  end
+
+  @doc """
   Creating a dataset with messages and contacts as tables
   """
   @spec sync_schema_with_bigquery(non_neg_integer) :: {:ok, any} | {:error, any}
   def sync_schema_with_bigquery(organization_id) do
-    fetch_bigquery_credentials(organization_id)
-    |> case do
-      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
-        case create_dataset(conn, project_id, dataset_id) do
-          {:ok, _} ->
-            do_refresh_the_schema(organization_id, %{
-              conn: conn,
-              dataset_id: dataset_id,
-              project_id: project_id
-            })
+    with {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} <-
+           fetch_bigquery_credentials(organization_id) do
+      case create_dataset(conn, project_id, dataset_id) do
+        {:ok, _} ->
+          do_refresh_the_schema(organization_id, %{
+            conn: conn,
+            dataset_id: dataset_id,
+            project_id: project_id
+          })
 
-          {:error, response} ->
-            handle_sync_errors(response, organization_id, %{
-              conn: conn,
-              dataset_id: dataset_id,
-              project_id: project_id
-            })
-        end
+          {:ok, "Refreshing Bigquery Schema"}
 
-      {:error, error} ->
-        {:error, error}
-
-      _ ->
-        {:ok, "bigquery is not active"}
+        {:error, response} ->
+          handle_sync_errors(response, organization_id, %{
+            conn: conn,
+            dataset_id: dataset_id,
+            project_id: project_id
+          })
+      end
     end
   end
 
@@ -95,7 +109,7 @@ defmodule Glific.BigQuery do
     organization.services["bigquery"]
     |> case do
       nil ->
-        nil
+        {:ok, "BigQuery is not active"}
 
       credentials ->
         decode_bigquery_credential(credentials, org_contact, organization_id)
@@ -117,14 +131,14 @@ defmodule Glific.BigQuery do
         token = Partners.get_goth_token(organization_id, "bigquery")
 
         if is_nil(token) do
-          token
+          {:error, "Error fetching token with Service Account JSON"}
         else
           conn = Connection.new(token.token)
           {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
         end
 
-      {:error, error} ->
-        {:error, error}
+      {:error, _error} ->
+        {:error, "Invalid Service Account JSON"}
     end
   end
 
@@ -140,10 +154,11 @@ defmodule Glific.BigQuery do
     "flow_contexts" => Flows.FlowContext,
     "profiles" => Profile,
     "contact_histories" => ContactHistory,
-    "message_conversations" => MessageConversation
+    "message_conversations" => MessageConversation,
+    "message_broadcasts" => MessageBroadcast,
+    "message_broadcast_contacts" => MessageBroadcastContact
   }
 
-  # @spec get_table_struct(String.t()) :: Message.t() | Contact.t() | FlowResult.t() | FlowRevision.t()
   @doc false
   @spec get_table_struct(String.t()) :: atom()
   def get_table_struct(table_name),
@@ -206,19 +221,19 @@ defmodule Glific.BigQuery do
       {:ok, data} ->
         error = data["error"]
 
-        if error["status"] == "ALREADY_EXISTS" do
-          do_refresh_the_schema(organization_id, attrs)
+        case error["status"] do
+          "ALREADY_EXISTS" ->
+            do_refresh_the_schema(organization_id, attrs)
+            {:ok, "Refreshing Bigquery Schema"}
+
+          "PERMISSION_DENIED" ->
+            {:error,
+             "Account does not have sufficient permissions to create dataset to BigQuery."}
+
+          _ ->
+            {:error,
+             "Account deactivated with error code #{error["code"]} status #{error["status"]}"}
         end
-
-        if error["status"] == "PERMISSION_DENIED",
-          do:
-            Partners.disable_credential(
-              organization_id,
-              "bigquery",
-              "Account does not have sufficient permissions to create data set to BigQuery."
-            )
-
-        {:ok, data}
 
       _ ->
         raise("Error while sync data with bigquery. #{inspect(response)}")
@@ -491,7 +506,7 @@ defmodule Glific.BigQuery do
     last_updated_at = Keyword.get(attrs, :last_updated_at)
 
     Logger.info(
-      "insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
+      "Insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
     )
 
     fetch_bigquery_credentials(organization_id)
@@ -520,7 +535,7 @@ defmodule Glific.BigQuery do
     table = Keyword.get(opts, :table)
 
     Logger.info(
-      "inserting data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
+      "Inserting data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
     )
 
     Tabledata.bigquery_tabledata_insert_all(
@@ -548,7 +563,7 @@ defmodule Glific.BigQuery do
         Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
 
         Logger.info(
-          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}"
+          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, max_id: #{max_id}, res: #{inspect(res)}"
         )
 
       last_updated_at not in [nil, 0] ->
@@ -618,7 +633,7 @@ defmodule Glific.BigQuery do
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = credentials} ->
         Logger.info(
-          "remove duplicates for  #{table} table on bigquery, org_id: #{organization_id}"
+          "Remove duplicates on bigquery for org_id: #{organization_id} table:#{table}"
         )
 
         sql = generate_duplicate_removal_query(table, credentials, organization_id)
@@ -656,7 +671,7 @@ defmodule Glific.BigQuery do
   defp handle_duplicate_removal_job_error({:ok, _response}, table, _credentials, organization_id),
     do:
       Logger.info(
-        "duplicate entries have been removed from #{table} on bigquery for org_id: #{organization_id}"
+        "Duplicate entries have been removed for org_id: #{organization_id} from #{table} on bigquery "
       )
 
   ## Since we don't care about the delete query results, let's skip notifying this to AppSignal.

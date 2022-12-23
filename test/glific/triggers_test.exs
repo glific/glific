@@ -139,7 +139,8 @@ defmodule Glific.TriggersTest do
         is_repeating: false,
         organization_id: 1,
         start_date: Timex.shift(Date.utc_today(), days: -1),
-        start_time: Time.utc_now()
+        start_time: Time.utc_now(),
+        frequency: ["none"]
       }
 
       assert {:error, %Ecto.Changeset{}} = Triggers.create_trigger(arc)

@@ -41,7 +41,7 @@ defmodule Glific.Stats do
 
   @doc """
   Returns the list of stats.
-  Since this is very basic and only listing funcatinality we added the status filter like this.
+  Since this is very basic and only listing functionality we added the status filter like this.
   In future we will put the status as virtual filed in the stats itself.
   """
   @spec list_stats(map()) :: list()
@@ -90,7 +90,7 @@ defmodule Glific.Stats do
       do: nil,
       else: do_generate_stats(org_id_list, opts)
 
-    # Lets force push this to the BQ SaaS monitoring storage everytime we generate
+    # Lets force push this to the BQ SaaS monitoring storage every time we generate
     # stats so, we get it soon
     BigQueryWorker.perform_periodic(Saas.organization_id())
   end
@@ -300,7 +300,7 @@ defmodule Glific.Stats do
 
     Repo.insert_all(Stat, rows)
 
-    # Lets force push this to the BQ SaaS monitoring storage everytime we generate
+    # Lets force push this to the BQ SaaS monitoring storage every time we generate
     # stats so, we get it soon
     BigQueryWorker.perform_periodic(Saas.organization_id())
 
@@ -350,7 +350,7 @@ defmodule Glific.Stats do
     optin = time_query |> where([c], not is_nil(c.optin_time))
     optout = time_query |> where([c], not is_nil(c.optout_time))
 
-    # dont generate summary contact stats for hourly snapshots
+    # don't generate summary contact stats for hourly snapshots
     if(period == :hour, do: stats, else: make_result(stats, query, period_date, :contacts))
     |> make_result(time_query, period_date, :active)
     |> make_result(optin, period_date, :optin)

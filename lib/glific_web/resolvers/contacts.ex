@@ -1,7 +1,7 @@
 defmodule GlificWeb.Resolvers.Contacts do
   @moduledoc """
   Contact Resolver which sits between the GraphQL schema and Glific Contact Context API.
-  This layer basically stiches together one or more calls to resolve the incoming queries.
+  This layer basically stitches together one or more calls to resolve the incoming queries.
   """
   import GlificWeb.Gettext
 
@@ -68,7 +68,6 @@ defmodule GlificWeb.Resolvers.Contacts do
   @spec import_contacts(
           Absinthe.Resolution.t(),
           %{
-            group_label: String.t(),
             data: String.t(),
             id: integer,
             type: :data | :file_path | :url
@@ -78,10 +77,27 @@ defmodule GlificWeb.Resolvers.Contacts do
           }
         ) ::
           {:ok, any} | {:error, any}
-  def import_contacts(_, %{id: id, type: type, group_label: group_label, data: data}, _) do
-    Glific.parse_maybe_integer(id)
-    |> elem(1)
-    |> Import.import_contacts(group_label, [{type, data}])
+
+  def import_contacts(
+        _,
+        %{type: type, data: data, id: id, group_label: group_label} = _contact_attrs,
+        %{context: %{current_user: user}}
+      ) do
+    organization_id = Glific.parse_maybe_integer(id) |> elem(1)
+
+    Import.import_contacts(
+      organization_id,
+      %{user: user, collection: group_label},
+      [{type, data}]
+    )
+  end
+
+  def import_contacts(
+        _,
+        params,
+        %{context: %{current_user: user}}
+      ) do
+    Import.import_contacts(user.organization_id, %{user: user}, [{params.type, params.data}])
   end
 
   @doc false

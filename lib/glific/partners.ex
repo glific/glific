@@ -49,7 +49,7 @@ defmodule Glific.Partners do
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
     |> Enum.reject(fn provider ->
-      Enum.member?(["goth", "chatbase"], provider.shortcode)
+      Enum.member?(["goth"], provider.shortcode)
     end)
   end
 
@@ -416,7 +416,7 @@ defmodule Glific.Partners do
       {:error, dgettext("errors", "No active BSP available")}
     else
       case organization.bsp.shortcode do
-        "gupshup" -> PartnerAPI.get_quality_rating(organization_id, organization.contact.phone)
+        "gupshup" -> PartnerAPI.get_quality_rating(organization_id)
         _ -> {:error, dgettext("errors", "Invalid BSP provider")}
       end
     end
@@ -579,7 +579,7 @@ defmodule Glific.Partners do
       FunWithFlags.enabled?(:flow_uuid_display, for: %{organization_id: id}) ->
         true
 
-      # the below 2 conds are just for testing and prototyping purposes
+      # the below 2 conditions are just for testing and prototyping purposes
       # we'll get rid of them when we start using this actively
       Application.get_env(:glific, :environment) == :prod && id == 2 ->
         true
@@ -743,7 +743,7 @@ defmodule Glific.Partners do
   The handler is expected to take the organization id as its first argument. The second argument
   is expected to be a map of arguments passed in by the cron job, and can be ignored if not used
 
-  The list is a restricted list of organizations, so we dont repeatedly do work. The convention is as
+  The list is a restricted list of organizations, so we don't repeatedly do work. The convention is as
   follows:
 
   list == nil - the action should not be performed for any organization
@@ -779,7 +779,7 @@ defmodule Glific.Partners do
       |> Glific.log_error()
   end
 
-  @active_minutes 60
+  @active_minutes 360
 
   @doc """
   Get the organizations which had a message transaction in the last minutes
@@ -844,22 +844,13 @@ defmodule Glific.Partners do
 
   # Ensures we have all the keys required in the credential to call Gupshup
   @spec valid_bsp?(Credential.t()) :: boolean()
-  defp valid_bsp?(credential)
-       when credential.provider.shortcode in ["gupshup_enterprise", "gupshup"] do
-    case credential.provider.shortcode do
-      "gupshup" ->
-        credential.provider.group == "bsp" &&
-          non_nil_string(credential.keys["api_end_point"]) &&
-          validate_secrets?(credential.secrets, "gupshup")
+  defp valid_bsp?(credential) do
+    bsp = credential.provider.shortcode
 
-      "gupshup_enterprise" ->
-        credential.provider.group == "bsp" &&
-          non_nil_string(credential.keys["api_end_point"]) &&
-          validate_secrets?(credential.secrets, "gupshup_enterprise")
-    end
+    credential.provider.group == "bsp" &&
+      non_nil_string(credential.keys["api_end_point"]) &&
+      validate_secrets?(credential.secrets, bsp)
   end
-
-  defp valid_bsp?(_credential), do: false
 
   @spec validate_secrets?(map(), String.t()) :: boolean()
   defp validate_secrets?(secrets, "gupshup"),
@@ -903,12 +894,20 @@ defmodule Glific.Partners do
   @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
           {:ok, any} | {:error, any}
   defp credential_update_callback(organization, credential, "bigquery") do
+    Caches.remove(organization.id, [{:provider_token, "bigquery"}])
+
     case BigQuery.sync_schema_with_bigquery(organization.id) do
       {:ok, _callback} ->
         {:ok, credential}
 
-      {:error, _error} ->
-        {:error, "Invalid Credentials"}
+      {:error, error} ->
+        Partners.disable_credential(
+          organization.id,
+          "bigquery",
+          error
+        )
+
+        {:error, error}
     end
   end
 
@@ -980,7 +979,7 @@ defmodule Glific.Partners do
   """
   @spec get_goth_token(non_neg_integer, String.t()) :: nil | Goth.Token.t()
   def get_goth_token(organization_id, provider_shortcode) do
-    key = {:provider_shortcode, provider_shortcode}
+    key = {:provider_token, provider_shortcode}
     organization = organization(organization_id)
 
     if is_nil(organization.services[provider_shortcode]) do
@@ -992,6 +991,10 @@ defmodule Glific.Partners do
           res
 
         _ ->
+          Logger.error(
+            "Could not fetch token for service #{provider_shortcode} for org id: #{organization_id}"
+          )
+
           nil
       end
     end
@@ -999,7 +1002,7 @@ defmodule Glific.Partners do
 
   @spec load_goth_token(tuple()) :: tuple()
   defp load_goth_token(cache_key) do
-    {organization_id, {:provider_shortcode, provider_shortcode}} = cache_key
+    {organization_id, {:provider_token, provider_shortcode}} = cache_key
 
     organization = organization(organization_id)
     credentials = organization.services[provider_shortcode] |> config()
@@ -1011,7 +1014,7 @@ defmodule Glific.Partners do
       |> case do
         {:ok, token} ->
           opts = [ttl: :timer.seconds(token.expires - System.system_time(:second) - 60)]
-          Caches.set(organization_id, {:provider_shortcode, provider_shortcode}, token, opts)
+          Caches.set(organization_id, {:provider_token, provider_shortcode}, token, opts)
           {:ignore, token}
 
         {:error, error} ->
@@ -1218,29 +1221,28 @@ defmodule Glific.Partners do
   Set BSP APP id whenever we update the bsp credentials.
   """
   @spec set_bsp_app_id(Organization.t(), String.t()) :: any()
-  def set_bsp_app_id(org, shortcode) do
+  def set_bsp_app_id(org, "gupshup" = shortcode) do
     # restricting this function  for BSP only
     {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: shortcode, group: "bsp"})
 
     {:ok, bsp_cred} =
       Repo.fetch_by(Credential, %{provider_id: provider.id, organization_id: org.id})
 
-    ## We need to make this dynamic
-    if shortcode == "gupshup" do
-      app_details = PartnerAPI.fetch_app_details(org.id)
-      app_id = if is_map(app_details), do: app_details["id"], else: "NA"
+    app_details = PartnerAPI.fetch_app_details(org.id)
+    app_id = if is_map(app_details), do: app_details["id"], else: "NA"
 
-      updated_secrets = Map.put(bsp_cred.secrets, "app_id", app_id)
-      attrs = %{secrets: updated_secrets, organization_id: org.id}
+    updated_secrets = Map.put(bsp_cred.secrets, "app_id", app_id)
+    attrs = %{secrets: updated_secrets, organization_id: org.id}
 
-      {:ok, _credential} =
-        bsp_cred
-        |> Credential.changeset(attrs)
-        |> Repo.update()
-    end
+    {:ok, _credential} =
+      bsp_cred
+      |> Credential.changeset(attrs)
+      |> Repo.update()
 
     remove_organization_cache(org.id, org.shortcode)
   end
+
+  def set_bsp_app_id(org, _shortcode), do: org
 
   @doc """
   Get a List for org data
@@ -1259,7 +1261,7 @@ defmodule Glific.Partners do
           Ecto.Queryable.t()
   defp filter_organization_data_with(query, filter) do
     query = Repo.filter_with(query, filter)
-    # these filters are specfic to webhook logs only.
+    # these filters are specific to webhook logs only.
     # We might want to move them in the repo in the future.
     Enum.reduce(filter, query, fn
       {:key, key}, query ->

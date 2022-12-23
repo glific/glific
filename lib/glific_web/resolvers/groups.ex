@@ -1,6 +1,6 @@
 defmodule GlificWeb.Resolvers.Groups do
   @moduledoc """
-  Group Resolver which sits between the GraphQL schema and Glific Group Context API. This layer basically stiches together
+  Group Resolver which sits between the GraphQL schema and Glific Group Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
   import GlificWeb.Gettext
@@ -34,6 +34,15 @@ defmodule GlificWeb.Resolvers.Groups do
   @spec groups(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [Group]}
   def groups(_, args, _) do
     {:ok, Groups.list_groups(args)}
+  end
+
+  @doc """
+  Get the list of contact_groups filtered by args
+  """
+  @spec contact_groups(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def contact_groups(_, args, _) do
+    {:ok, Groups.ContactGroups.list_contact_groups(args)}
   end
 
   @doc """

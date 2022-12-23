@@ -4,6 +4,8 @@ defmodule Glific.Flows do
   """
 
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
+
   require Logger
 
   alias Glific.{
@@ -16,6 +18,8 @@ defmodule Glific.Flows do
     Groups.Group,
     Partners,
     Repo,
+    Templates.InteractiveTemplate,
+    Templates.InteractiveTemplates,
     Templates.SessionTemplate
   }
 
@@ -249,9 +253,7 @@ defmodule Glific.Flows do
   @spec update_flow(Flow.t(), map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def update_flow(%Flow{} = flow, attrs) do
     # first delete the cached flow
-    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "draft"))
-    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "published"))
-    clean_cached_flow_keywords_map(flow.organization_id)
+    remove_flow_cache(flow)
 
     attrs =
       attrs
@@ -281,6 +283,7 @@ defmodule Glific.Flows do
   """
   @spec delete_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def delete_flow(%Flow{} = flow) do
+    remove_flow_cache(flow)
     Repo.delete(flow)
   end
 
@@ -380,7 +383,7 @@ defmodule Glific.Flows do
       |> Repo.insert()
 
     # Now also delete the caches for the draft status, so we can reload
-    # note that we dont bother reloading the cache, since we dont expect
+    # note that we don't bother reloading the cache, since we don't expect
     # draft simulator to run often, and drafts are being saved quite often
     Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "draft"))
 
@@ -406,7 +409,11 @@ defmodule Glific.Flows do
 
     if result == [],
       do: true,
-      else: raise(ArgumentError, message: "Missing required fields: #{result}")
+      else:
+        raise(ArgumentError,
+          message:
+            "Missing required fields: #{result} with node uuid: #{json["uuid"]} and type: #{json["type"]}"
+        )
   end
 
   @doc """
@@ -457,7 +464,7 @@ defmodule Glific.Flows do
     Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
 
     # We are setting the cache in the above statement with multiple keys
-    # hence we are asking cachex to just ignore this aspect. All the other
+    # hence we are asking Cachex to just ignore this aspect. All the other
     # requests will get the cache value sent above
     {:ignore, flow}
   end
@@ -493,7 +500,7 @@ defmodule Glific.Flows do
 
   @doc """
   Check if a flow has been activated since the time sent as a parameter
-  e.g. outofoffice will check if that flow was activated in the last 24 hours
+  e.g. outOfOffice will check if that flow was activated in the last 24 hours
   daily/weekly will check since start of day/week, etc
   """
   @spec flow_activated(non_neg_integer, non_neg_integer, DateTime.t()) :: boolean
@@ -540,7 +547,7 @@ defmodule Glific.Flows do
   @spec do_publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, any()}
   defp do_publish_flow(%Flow{} = flow) do
     last_version = get_last_version_and_update_old_revisions(flow)
-    ## if invalid flow then return the {:error, array} otherwise move forword
+    ## if invalid flow then return the {:error, array} otherwise move forward
     {:ok, latest_revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
 
     result =
@@ -600,31 +607,43 @@ defmodule Glific.Flows do
   @doc """
   Start flow for a contact and cache the result
   """
-  @spec start_contact_flow(Flow.t() | integer, Contact.t()) ::
+  @spec start_contact_flow(Flow.t() | integer, Contact.t(), map()) ::
           {:ok, Flow.t()} | {:error, String.t()}
-  def start_contact_flow(flow_id, %Contact{} = contact) when is_integer(flow_id) do
+
+  def start_contact_flow(f, c, default_results \\ %{})
+
+  def start_contact_flow(flow_id, %Contact{} = contact, default_results)
+      when is_integer(flow_id) do
     case get_cached_flow(contact.organization_id, {:flow_id, flow_id, @status}) do
-      {:ok, flow} -> process_contact_flow([contact], flow, @status)
-      {:error, _error} -> {:error, "Flow not found"}
+      {:ok, flow} ->
+        process_contact_flow([contact], flow, default_results)
+
+      {:error, _error} ->
+        {:error, ["Flow", dgettext("errors", "Flow not found")]}
     end
   end
 
-  def start_contact_flow(%Flow{} = flow, %Contact{} = contact),
-    do: start_contact_flow(flow.id, contact)
+  def start_contact_flow(%Flow{} = flow, %Contact{} = contact, default_results),
+    do: start_contact_flow(flow.id, contact, default_results)
 
-  @spec process_contact_flow(list(), Flow.t(), String.t()) :: {:ok, Flow.t()}
-  defp process_contact_flow(contacts, flow, _status) do
-    Broadcast.broadcast_contacts(flow, contacts)
-    {:ok, flow}
+  @spec process_contact_flow(list(), Flow.t(), map()) :: {:ok, Flow.t()}
+  defp process_contact_flow(contacts, flow, default_results) do
+    if flow.is_active do
+      Broadcast.broadcast_contacts(flow, contacts, default_results)
+      {:ok, flow}
+    else
+      {:error, ["Flow", dgettext("errors", "Flow is not active")]}
+    end
   end
 
   @doc """
   Start flow for contacts of a group
   """
-  @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
-  def start_group_flow(flow, group) do
+  @spec start_group_flow(Flow.t(), Group.t(), map()) :: {:ok, Flow.t()}
+  def start_group_flow(flow, group, default_results \\ %{}) do
     # the flow returned is the expanded version
-    flow = Broadcast.broadcast_group(flow, group)
+    {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id, @status})
+    Broadcast.broadcast_flow_to_group(flow, group, default_results)
     {:ok, flow}
   end
 
@@ -672,7 +691,7 @@ defmodule Glific.Flows do
 
   @doc """
   Create a map of keywords that map to flow ids for each
-  active organization. Also cache this value including the outoffice
+  active organization. Also cache this value including the outOfOffice
   shortcode
   """
   @spec flow_keywords_map(non_neg_integer) :: map()
@@ -790,26 +809,28 @@ defmodule Glific.Flows do
   """
   @spec import_flow(map(), non_neg_integer()) :: boolean()
   def import_flow(import_flow, organization_id) do
+    interactive_template_list = import_interactive_templates(import_flow, organization_id)
+
     import_flow_list =
       Enum.map(import_flow["flows"], fn flow_revision ->
         with {:ok, flow} <-
                create_flow(%{
                  name: flow_revision["definition"]["name"],
                  # we are reusing existing UUIDs against the spirit of UUIDs
-                 # however this allows us to support subflows
+                 # however this allows us to support sub flows
                  uuid: flow_revision["definition"]["uuid"],
                  keywords: flow_revision["keywords"],
                  organization_id: organization_id
                }),
              {:ok, _flow_revision} <-
                FlowRevision.create_flow_revision(%{
-                 definition: clean_flow_with_hsm_template(flow_revision["definition"]),
+                 definition:
+                   clean_flow_definition(flow_revision["definition"], interactive_template_list),
                  flow_id: flow.id,
                  organization_id: flow.organization_id
                }) do
           import_contact_field(import_flow, organization_id)
           import_groups(import_flow, organization_id)
-
           true
         else
           _ -> false
@@ -819,38 +840,53 @@ defmodule Glific.Flows do
     !Enum.member?(import_flow_list, false)
   end
 
-  @spec clean_flow_with_hsm_template(map()) :: map()
-  defp clean_flow_with_hsm_template(definition) do
-    # checking if the imported template is present in database
-    template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
-
+  @spec clean_flow_definition(map(), list()) :: map()
+  defp clean_flow_definition(definition, interactive_template_list) do
     nodes =
       definition
       |> Map.get("nodes", [])
-      |> Enum.reduce([], &(&2 ++ do_clean_flow_with_hsm_template(&1, template_uuid_list)))
+      |> Enum.reduce([], &(&2 ++ clean_template_node(&1, interactive_template_list)))
 
     put_in(definition, ["nodes"], nodes)
   end
 
-  @spec do_clean_flow_with_hsm_template(map(), list()) :: list()
-  defp do_clean_flow_with_hsm_template(%{"actions" => actions} = node, _template_uuid_list)
+  @spec clean_template_node(map(), list()) :: list()
+  defp clean_template_node(%{"actions" => actions} = node, _interactive_template_list)
        when actions == [],
        do: [node]
 
-  defp do_clean_flow_with_hsm_template(%{"actions" => actions} = node, template_uuid_list) do
+  defp clean_template_node(%{"actions" => actions} = node, interactive_template_list) do
     action = actions |> hd
     template_uuid = get_in(action, ["templating", "template", "uuid"])
 
-    with "send_msg" <- action["type"],
-         true <- Map.has_key?(action, "templating"),
-         false <- template_uuid in template_uuid_list do
-      # update the node if template uuid in the node is not present in DB
-      action = action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
+    cond do
+      action["type"] == "send_msg" ->
+        # checking if the imported template is present in database
+        template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
 
-      node = put_in(node, ["actions"], [action])
-      [node]
-    else
-      _ -> [node]
+        with true <- Map.has_key?(action, "templating"),
+             false <- template_uuid in template_uuid_list do
+          # update the node if template uuid in the node is not present in DB
+          action =
+            action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
+
+          node = put_in(node, ["actions"], [action])
+          [node]
+        else
+          _ -> [node]
+        end
+
+      action["type"] == "send_interactive_msg" ->
+        {id, _interactive_template_label} =
+          Enum.find(interactive_template_list, fn {_id, interactive_template_label} ->
+            interactive_template_label == action["name"]
+          end)
+
+        node = put_in(node, ["actions"], [Map.put(action, "id", id)])
+        [node]
+
+      true ->
+        [node]
     end
   end
 
@@ -873,6 +909,25 @@ defmodule Glific.Flows do
     end)
   end
 
+  defp import_interactive_templates(import_flow, organization_id) do
+    import_flow["interactive_templates"]
+    |> Enum.reduce([], fn interactive_template, acc ->
+      Repo.fetch_by(InteractiveTemplate, %{label: interactive_template["label"]})
+      |> case do
+        {:ok, db_interactive_template} ->
+          acc ++ [{db_interactive_template.id, db_interactive_template.label}]
+
+        _ ->
+          {:ok, interactive_template} =
+            InteractiveTemplates.create_interactive_template(
+              Map.put(interactive_template, "organization_id", organization_id)
+            )
+
+          acc ++ [{interactive_template.id, interactive_template.label}]
+      end
+    end)
+  end
+
   @doc """
   Generate a json map with all the flows related fields.
   """
@@ -882,12 +937,12 @@ defmodule Glific.Flows do
 
     export_flow_details(
       flow.uuid,
-      %{"flows" => [], "contact_field" => [], "collections" => []}
+      %{"flows" => [], "contact_field" => [], "collections" => [], "interactive_templates" => []}
     )
   end
 
   @doc """
-  Process subflows and check if there is more subflows in it.
+  Process sub flows and check if there is more sub flows in it.
   """
   @spec export_flow_details(String.t(), map()) :: map()
   def export_flow_details(flow_uuid, results) do
@@ -915,6 +970,10 @@ defmodule Glific.Flows do
         |> Map.put(
           "collections",
           results["collections"] ++ export_collections(definition)
+        )
+        |> Map.put(
+          "interactive_templates",
+          results["interactive_templates"] ++ export_interactive_templates(definition)
         )
 
       ## here we can export more details like fields, triggers, groups and all.
@@ -959,8 +1018,38 @@ defmodule Glific.Flows do
     if action["type"] == "set_contact_field", do: [action["field"]["key"]], else: []
   end
 
+  @spec export_interactive_templates(map()) :: list()
+  defp export_interactive_templates(definition) do
+    definition
+    |> Map.get("nodes", [])
+    |> Enum.reduce([], &(&2 ++ do_export_interactive_templates(&1)))
+    |> fetch_interactive_templates_from_db()
+  end
+
+  @spec do_export_interactive_templates(map()) :: list()
+  defp do_export_interactive_templates(%{"actions" => actions}) when actions == [], do: []
+
+  defp do_export_interactive_templates(%{"actions" => actions}) do
+    action = actions |> hd
+    if action["type"] == "send_interactive_msg", do: [action["id"]], else: []
+  end
+
+  defp fetch_interactive_templates_from_db(ids) do
+    InteractiveTemplate
+    |> where([it], it.id in ^ids)
+    |> select([it], %{
+      label: it.label,
+      type: it.type,
+      interactive_content: it.interactive_content,
+      translations: it.translations,
+      language_id: it.language_id,
+      send_with_title: it.send_with_title
+    })
+    |> Repo.all()
+  end
+
   @doc """
-    Extract all the subflows form the parent flow definition.
+    Extract all the sub flows form the parent flow definition.
   """
   @spec get_sub_flows(list()) :: list()
   def get_sub_flows(nodes),
@@ -976,7 +1065,7 @@ defmodule Glific.Flows do
       end)
 
   ## Get latest flow definition to export. There is one more function with the same name in
-  ## Glific.Flows.flow but that gives us the definition without UI placesments.
+  ## Glific.Flows.flow but that gives us the definition without UI placements.
   @spec get_latest_definition(String.t()) :: map() | nil
   defp get_latest_definition(flow_uuid) do
     FlowRevision
@@ -998,7 +1087,15 @@ defmodule Glific.Flows do
   """
   @spec terminate_contact_flows?(non_neg_integer) :: :ok
   def terminate_contact_flows?(contact_id) do
-    FlowContext.mark_flows_complete(contact_id, false)
+    FlowContext.mark_flows_complete(contact_id, false, source: "terminate_contact_flows")
+    :ok
+  end
+
+  @spec remove_flow_cache(Flow.t()) :: :ok
+  defp remove_flow_cache(flow) do
+    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "draft"))
+    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "published"))
+    clean_cached_flow_keywords_map(flow.organization_id)
     :ok
   end
 end

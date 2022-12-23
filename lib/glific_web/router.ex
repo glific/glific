@@ -6,57 +6,47 @@ defmodule GlificWeb.Router do
   @dialyzer {:nowarn_function, __checks__: 0}
   use Appsignal.Plug
 
+  use GlificWeb.InjectOban
+
   pipeline :browser do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_live_flash
-    plug :put_root_layout, {GlificWeb.LayoutView, :root}
-    plug :protect_from_forgery
-    plug :put_secure_browser_headers
-    plug Pow.Plug.Session, otp_app: :glific
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+    plug(:fetch_live_flash)
+    plug(:put_root_layout, {GlificWeb.LayoutView, :root})
+    plug(:protect_from_forgery)
+    plug(:put_secure_browser_headers)
+    plug(Pow.Plug.Session, otp_app: :glific)
   end
 
   scope path: "/feature-flags" do
     # ensure that this is protected once we have authentication in place
-    pipe_through [:browser, :auth]
-    forward "/", FunWithFlags.UI.Router, namespace: "feature-flags"
+    pipe_through([:browser, :auth])
+    forward("/", FunWithFlags.UI.Router, namespace: "feature-flags")
   end
 
   pipeline :api do
-    plug :accepts, ["json"]
-    plug GlificWeb.APIAuthPlug, otp_app: :glific
-    plug GlificWeb.RateLimitPlug
+    plug(:accepts, ["json"])
+    plug(GlificWeb.APIAuthPlug, otp_app: :glific)
+    plug(GlificWeb.RateLimitPlug)
     # plug :debug_response
   end
 
   pipeline :api_protected do
-    plug Pow.Plug.RequireAuthenticated, error_handler: GlificWeb.APIAuthErrorHandler
-    plug GlificWeb.ContextPlug
+    plug(Pow.Plug.RequireAuthenticated, error_handler: GlificWeb.APIAuthErrorHandler)
+    plug(GlificWeb.ContextPlug)
   end
 
-  pipeline :auth_protected do
-    plug :auth
-  end
-
+  # Glific Authentication routes
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
-    pipe_through :api
+    pipe_through(:api)
 
-    resources "/registration", RegistrationController, singleton: true, only: [:create]
-    post "/registration/send-otp", RegistrationController, :send_otp
-    post "/registration/reset-password", RegistrationController, :reset_password
-    resources "/session", SessionController, singleton: true, only: [:create, :delete]
-    post "/session/renew", SessionController, :renew
-
-    post "/onboard/setup", OnboardController, :setup
+    resources("/registration", RegistrationController, singleton: true, only: [:create])
+    post("/registration/send-otp", RegistrationController, :send_otp)
+    post("/registration/reset-password", RegistrationController, :reset_password)
+    resources("/session", SessionController, singleton: true, only: [:create, :delete])
+    post("/session/renew", SessionController, :renew)
+    post("/onboard/setup", OnboardController, :setup)
   end
-
-  scope "/", GlificWeb do
-    pipe_through [:browser]
-
-    live "/liveview", StatsLive
-  end
-
-  use GlificWeb.InjectOban
 
   # Enables LiveDashboard only for development
   #
@@ -68,106 +58,111 @@ defmodule GlificWeb.Router do
   import Phoenix.LiveDashboard.Router
 
   scope "/" do
-    pipe_through [:browser, :auth]
-    live_dashboard "/dashboard", metrics: GlificWeb.Telemetry, ecto_repos: [Glific.Repo]
+    pipe_through([:browser, :auth])
+    live_dashboard("/dashboard", metrics: GlificWeb.Telemetry, ecto_repos: [Glific.Repo])
+  end
+
+  scope "/", GlificWeb do
+    pipe_through([:browser])
+
+    live("/liveview", StatsLive)
   end
 
   # Custom stack for Absinthe
   scope "/" do
-    pipe_through [:api, :api_protected]
+    pipe_through([:api, :api_protected])
 
-    forward "/api", Absinthe.Plug, schema: GlificWeb.Schema
+    forward("/api", Absinthe.Plug, schema: GlificWeb.Schema)
+  end
+
+  # BSP webhooks
+  scope "/", GlificWeb do
+    forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
+    forward("/airtel", Providers.Airtel.Plugs.Shunt)
+    forward("/gupshup-enterprise", Providers.Gupshup.Enterprise.Plugs.Shunt)
+  end
+
+  # """
+  # Third party webhook except BSPs. Ideally we should have merge the BSPs also in this scope.
+  # But since the BSP is a primary webhooks for this application We kept it separated.
+  # """
+
+  scope "/webhook", GlificWeb do
+    post("/stripe", StripeController, :stripe_webhook)
+    get("/exotel/optin", ExotelController, :optin)
+  end
+
+  # """
+  # All the flow editor routes which is used while designing the flow.
+  # """
+
+  scope "/flow-editor", GlificWeb.Flows do
+    pipe_through([:api, :api_protected])
+
+    get("/groups", FlowEditorController, :groups)
+    post("/groups", FlowEditorController, :groups_post)
+
+    get("/labels", FlowEditorController, :labels)
+    post("/labels", FlowEditorController, :labels_post)
+
+    get("/channels", FlowEditorController, :channels)
+
+    get("/classifiers", FlowEditorController, :classifiers)
+
+    get("/ticketers", FlowEditorController, :ticketers)
+
+    get("/resthooks", FlowEditorController, :resthooks)
+
+    get("/templates", FlowEditorController, :templates)
+
+    get("/interactive-templates", FlowEditorController, :interactive_templates)
+
+    get("/interactive-templates/*vars", FlowEditorController, :interactive_template)
+
+    get("/languages", FlowEditorController, :languages)
+
+    get("/environment", FlowEditorController, :environment)
+
+    get("/recipients", FlowEditorController, :recipients)
+
+    get("/activity", FlowEditorController, :activity)
+
+    get("/flows/*vars", FlowEditorController, :flows)
+
+    get("/revisions/*vars", FlowEditorController, :revisions)
+
+    get("/recents/*vars", FlowEditorController, :recents)
+
+    post("/revisions/*vars", FlowEditorController, :save_revisions)
+
+    get("/globals", FlowEditorController, :globals)
+
+    get("/fields", FlowEditorController, :fields)
+
+    post("/fields", FlowEditorController, :fields_post)
+
+    get("/completion", FlowEditorController, :completion)
+
+    get("/validate-media", FlowEditorController, :validate_media)
+
+    get("/attachments-enabled", FlowEditorController, :attachments_enabled)
+
+    post("/flow-attachment", FlowEditorController, :flow_attachment)
+
+    get("/sheets", FlowEditorController, :sheets)
   end
 
   if Mix.env() in [:dev, :test] do
     scope "/" do
-      pipe_through [:api, :api_protected]
+      pipe_through([:api, :api_protected])
 
-      forward "/graphiql",
-              Absinthe.Plug.GraphiQL,
-              schema: GlificWeb.Schema,
-              interface: :playground
+      forward(
+        "/graphiql",
+        Absinthe.Plug.GraphiQL,
+        schema: GlificWeb.Schema,
+        interface: :playground
+      )
     end
-  end
-
-  # pipeline :gupshup do
-  #   plug APIacFilterIPWhitelist,
-  #     whitelist: [
-  #       # Whitelisting IP of localhost
-  #       "127.0.0.0/8",
-  #       # Whitelisting IP of Gigalixir
-  #       "35.226.132.161/32",
-  #       # Whitelisting IP of Gupshup
-  #       "34.202.224.208/1",
-  #       "52.66.99.126/1"
-  #     ]
-  # end
-
-  scope "/", GlificWeb do
-    # pipe_through :gupshup
-    forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
-    forward("/gupshup-enterprise", Providers.Gupshup.Enterprise.Plugs.Shunt)
-  end
-
-  scope "/webhook", GlificWeb do
-    post "/stripe", StripeController, :stripe_webhook
-    # we need to remove this. This was a experimental code
-    post "/stir/survey", Flows.WebhookController, :stir_survey
-    get "/exotel/optin", ExotelController, :optin
-  end
-
-  scope "/flow-editor", GlificWeb.Flows do
-    pipe_through [:api, :api_protected]
-
-    get "/groups", FlowEditorController, :groups
-    post "/groups", FlowEditorController, :groups_post
-
-    get "/labels", FlowEditorController, :labels
-    post "/labels", FlowEditorController, :labels_post
-
-    get "/channels", FlowEditorController, :channels
-
-    get "/classifiers", FlowEditorController, :classifiers
-
-    get "/ticketers", FlowEditorController, :ticketers
-
-    get "/resthooks", FlowEditorController, :resthooks
-
-    get "/templates", FlowEditorController, :templates
-
-    get "/interactive-templates", FlowEditorController, :interactive_templates
-
-    get "/interactive-templates/*vars", FlowEditorController, :interactive_template
-
-    get "/languages", FlowEditorController, :languages
-
-    get "/environment", FlowEditorController, :environment
-
-    get "/recipients", FlowEditorController, :recipients
-
-    get "/activity", FlowEditorController, :activity
-
-    get "/flows/*vars", FlowEditorController, :flows
-
-    get "/revisions/*vars", FlowEditorController, :revisions
-
-    get "/recents/*vars", FlowEditorController, :recents
-
-    post "/revisions/*vars", FlowEditorController, :save_revisions
-
-    get "/globals", FlowEditorController, :globals
-
-    get "/fields", FlowEditorController, :fields
-
-    post "/fields", FlowEditorController, :fields_post
-
-    get "/completion", FlowEditorController, :completion
-
-    get "/validate-media", FlowEditorController, :validate_media
-
-    get "/attachments-enabled", FlowEditorController, :attachments_enabled
-
-    post "/flow-attachment", FlowEditorController, :flow_attachment
   end
 
   # implement basic authentication for live dashboard and oban pro

@@ -91,7 +91,7 @@ defmodule Glific.Flows.Flow do
     field :respond_other, :boolean, default: false
     field :respond_no_response, :boolean, default: false
 
-    # we use this to store the latest definition and versionfrom flow_revisions for this flow
+    # we use this to store the latest definition and version from flow_revisions for this flow
     field :definition, :map, virtual: true
 
     # this is the version of the flow revision
@@ -192,7 +192,7 @@ defmodule Glific.Flows.Flow do
       end)
 
   @doc """
-  Process a json structure from floweditor to the Glific data types. While we are doing
+  Process a json structure from flow editor to the Glific data types. While we are doing
   this we also fix the map, if the variables to resolve Other/No Response is true
   """
   @spec process(map(), Flow.t(), Ecto.UUID.t()) :: Flow.t()
@@ -232,7 +232,7 @@ defmodule Glific.Flows.Flow do
     )
   end
 
-  # in some cases floweditor wraps the json under a "definition" key
+  # in some cases flow editor wraps the json under a "definition" key
   @spec clean_definition(map()) :: map()
   defp clean_definition(json),
     do:
@@ -252,13 +252,13 @@ defmodule Glific.Flows.Flow do
         select: fr.definition
 
     Repo.one(query)
-    # lets get rid of stuff we don't use, specfically the definition and
+    # lets get rid of stuff we don't use, specifically the definition and
     # UI layout of the flow
     |> clean_definition()
   end
 
   @doc """
-  Create a subflow of an existing flow
+  Create a sub flow of an existing flow
   """
   @spec start_sub_flow(FlowContext.t(), Ecto.UUID.t(), non_neg_integer) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
@@ -306,6 +306,7 @@ defmodule Glific.Flows.Flow do
           name: f.name,
           uuid: f.uuid,
           is_background: f.is_background,
+          is_active: f.is_active,
           keywords: f.keywords,
           ignore_keywords: f.ignore_keywords,
           respond_other: f.respond_other,
@@ -369,13 +370,15 @@ defmodule Glific.Flows.Flow do
     if flow.definition["nodes"] == [] do
       [Flow: "Flow is empty"]
     else
+      all_nodes = flow_objects(flow, :node)
+
       flow.nodes
       |> Enum.reduce(
         [],
         &Node.validate(&1, &2, flow)
       )
-      |> dangling_nodes(flow)
-      |> missing_flow_context_nodes(flow)
+      |> dangling_nodes(flow, all_nodes)
+      |> missing_flow_context_nodes(flow, all_nodes)
     end
   end
 
@@ -387,9 +390,8 @@ defmodule Glific.Flows.Flow do
     |> MapSet.new()
   end
 
-  @spec dangling_nodes(Keyword.t(), map()) :: Keyword.t()
-  defp dangling_nodes(errors, flow) do
-    all_nodes = flow_objects(flow, :node)
+  @spec dangling_nodes(Keyword.t(), map(), MapSet.t()) :: Keyword.t()
+  defp dangling_nodes(errors, flow, all_nodes) do
     all_exits = flow_objects(flow, :exit)
 
     # the first node is always reachable
@@ -411,10 +413,8 @@ defmodule Glific.Flows.Flow do
       else: [dangling: "Your flow has dangling nodes"] ++ errors
   end
 
-  @spec missing_flow_context_nodes(Keyword.t(), map()) :: Keyword.t()
-  defp missing_flow_context_nodes(errors, flow) do
-    all_nodes = flow_objects(flow, :node)
-
+  @spec missing_flow_context_nodes(Keyword.t(), map(), MapSet.t()) :: Keyword.t()
+  defp missing_flow_context_nodes(errors, flow, all_nodes) do
     flow_context_nodes =
       FlowContext
       |> where([fc], fc.flow_id == ^flow.id and is_nil(fc.completed_at))

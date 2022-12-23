@@ -4,40 +4,57 @@ defmodule Glific.Erase do
   """
   import Ecto.Query
 
-  alias Glific.Repo
+  alias Glific.{
+    Repo,
+    Seeds.SeedsMigration
+  }
 
-  @period "month"
+  require Logger
 
+  @tables [
+    "notifications",
+    "webhook_logs",
+    "flow_contexts",
+    "messages_conversations"
+  ]
   @doc """
   This is called from the cron job on a regular schedule and cleans database periodically
   """
   @spec perform_periodic() :: any
   def perform_periodic do
-    clean_notifications()
-    clean_webhook_logs()
+    clean_periodic()
+    clean_contact_histories()
     clean_flow_revision()
   end
 
-  # Deleting notification older than a month
-  @spec clean_notifications() :: {integer(), nil | [term()]}
-  defp clean_notifications do
-    Repo.delete_all(
-      from(n in "notifications",
-        where: n.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
-      ),
-      skip_organization_id: true
-    )
+  # Deleting rows older than a month from tables periodically
+  @spec clean_periodic() :: any
+  defp clean_periodic do
+    Enum.each(@tables, fn table ->
+      Repo.delete_all(
+        from(fc in table,
+          where: fc.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", "month")
+        ),
+        skip_organization_id: true
+      )
+    end)
   end
 
-  # Deleting webhook logs older than a month
-  @spec clean_webhook_logs() :: {integer(), nil | [term()]}
-  defp clean_webhook_logs do
-    Repo.delete_all(
-      from(w in "webhook_logs",
-        where: w.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
-      ),
-      skip_organization_id: true
+  # Keep latest 25 contact_history for a contact
+  @spec clean_contact_histories() :: any
+  defp clean_contact_histories do
+    """
+    WITH top_25_contact_histories_per_contact AS (
+    SELECT t.*, ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY updated_at DESC) rn
+    FROM contact_histories t
     )
+    DELETE FROM contact_histories WHERE id NOT IN (
+      SELECT id
+      FROM top_25_contact_histories_per_contact
+      WHERE rn <= 25
+    )
+    """
+    |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
   end
 
   # Deleting flow_revision older than a month
@@ -65,6 +82,49 @@ defmodule Glific.Erase do
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
   end
 
+  @limit 200
+
+  @doc """
+  Keep latest 200 messages for a contact
+  """
+  @spec clean_old_messages(non_neg_integer(), boolean()) :: list
+  def clean_old_messages(org_id, skip_delete \\ false) do
+    contact_query =
+      "select id from contacts where organization_id = #{org_id} and last_message_number > #{@limit + 2} order by last_message_number"
+
+    Repo.query!(contact_query).rows
+    |> Enum.map(fn [contact_id] ->
+      clean_old_message_for_contact(contact_id, org_id, skip_delete)
+    end)
+  end
+
+  @doc """
+  Keep latest 200 messages for a contact
+  """
+  @spec clean_old_message_for_contact(non_neg_integer(), non_neg_integer(), boolean()) :: :ok
+  def clean_old_message_for_contact(contact_id, org_id, skip_delete \\ false) do
+    SeedsMigration.fix_message_number_for_contact(contact_id)
+
+    [[last_message_number]] =
+      Glific.Repo.query!("select last_message_number from contacts where id = #{contact_id}").rows
+
+    message_to_delete = last_message_number - @limit
+
+    delete_message_query =
+      "delete from messages where organization_id = #{org_id} and contact_id = #{contact_id} and message_number < #{message_to_delete}"
+
+    Logger.info(
+      "message cleanup started for #{contact_id} where message number #{message_to_delete}"
+    )
+
+    if skip_delete == false && message_to_delete > 0 do
+      Repo.query!(delete_message_query, [], timeout: 400_000, skip_organization_id: true)
+      SeedsMigration.fix_message_number_for_contact(contact_id)
+    end
+
+    :ok
+  end
+
   @doc """
   Do the weekly DB cleaner tasks, typically in the middle of the night on sunday morning
   """
@@ -83,6 +143,20 @@ defmodule Glific.Erase do
       "VACUUM (FULL, ANALYZE) flow_results",
       "VACUUM (FULL, ANALYZE) contacts",
       "VACUUM (ANALYZE) messages"
+    ]
+    |> Enum.each(
+      # need such a large timeout specifically to vacuum the messages
+      &Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true)
+    )
+  end
+
+  @doc """
+  Do the daily DB cleaner tasks
+  """
+  @spec perform_daily() :: any
+  def perform_daily do
+    [
+      "REINDEX TABLE global.oban_jobs"
     ]
     |> Enum.each(
       # need such a large timeout specifically to vacuum the messages

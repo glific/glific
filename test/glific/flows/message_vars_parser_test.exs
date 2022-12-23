@@ -121,9 +121,9 @@ defmodule Glific.Flows.MessageVarParserTest do
     assert parsed_test == "hello Glific Contact, your age is 20 years."
 
     ## for contact groups
-    conatct_fields = Contacts.get_contact_field_map(contact.id)
-    assert MessageVarParser.parse("@contact.in_groups", %{"contact" => conatct_fields}) == "[]"
-    assert MessageVarParser.parse("@contact.groups", %{"contact" => conatct_fields}) == "[]"
+    contact_fields = Contacts.get_contact_field_map(contact.id)
+    assert MessageVarParser.parse("@contact.in_groups", %{"contact" => contact_fields}) == "[]"
+    assert MessageVarParser.parse("@contact.groups", %{"contact" => contact_fields}) == "[]"
     assert MessageVarParser.parse("Hello world", nil) == "Hello world"
     assert MessageVarParser.parse("Hello world", %{}) == "Hello world"
 
@@ -322,5 +322,46 @@ defmodule Glific.Flows.MessageVarParserTest do
     }
 
     assert true = MessageVarParser.parse_map(action_body_map, fields) |> is_map()
+  end
+
+  test "message var parser will obey the calender events", _attrs do
+    default_format = "{D}/{0M}/{YYYY}"
+    current_date = Timex.today() |> Timex.format!(default_format) |> to_string()
+
+    assert "The date is #{current_date}" ==
+             MessageVarParser.parse("The date is @calendar.current_date", %{
+               "contact" => %{"name" => "Glific"}
+             })
+  end
+
+  test "hyphen (-) also works in message var parser", _attrs do
+    fields = %{
+      "contact" => %{
+        settings: %{},
+        phone: "9876543210_1",
+        name: "Glific Simulator One",
+        fields: %{
+          :language => %{label: "English"},
+          "name" => %{
+            "inserted_at" => ~U[2022-10-20 08:15:23.468679Z],
+            "label" => "Name",
+            "type" => "string",
+            "value" => "Glific Simulator One"
+          },
+          "school-name" => %{
+            "inserted_at" => "2022-10-20T08:15:23.450900Z",
+            "label" => "School-name",
+            "type" => "string",
+            "value" => "abc"
+          }
+        }
+      }
+    }
+
+    str = "Your school name is: @contact.fields.school-name"
+    str_2 = "Your school type is: @contact.fields.school-name.type"
+
+    assert MessageVarParser.parse(str, fields) == "Your school name is: abc"
+    assert MessageVarParser.parse(str_2, fields) == "Your school type is: string"
   end
 end

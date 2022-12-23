@@ -19,7 +19,8 @@ defmodule Glific.Flows.Action do
     Messages,
     Messages.Message,
     Profiles,
-    Repo
+    Repo,
+    Sheets
   }
 
   alias Glific.Flows.{
@@ -50,10 +51,12 @@ defmodule Glific.Flows.Action do
   @required_fields_classifier [:input, :result_name | @required_field_common]
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
+  @required_fields_sheet [:sheet_id, :row, :result_name | @required_field_common]
   @required_fields_group [:groups | @required_field_common]
   @required_fields_contact [:contacts, :text | @required_field_common]
   @required_fields_waittime [:delay]
   @required_fields_interactive_template [:name | @required_field_common]
+  @required_fields_set_results [:name, :category, :value | @required_field_common]
 
   @wait_for ["wait_for_time", "wait_for_result"]
 
@@ -96,7 +99,8 @@ defmodule Glific.Flows.Action do
           params_count: String.t() | nil,
           params: list() | nil,
           attachment_type: String.t() | nil,
-          attachment_url: String.t() | nil
+          attachment_url: String.t() | nil,
+          category: String.t() | nil
         }
 
   embedded_schema do
@@ -104,6 +108,7 @@ defmodule Glific.Flows.Action do
     field(:name, :string)
     field(:text, :string)
     field(:value, :string)
+    field(:category, :string)
     field(:input, :string)
 
     # various fields for webhooks
@@ -167,9 +172,19 @@ defmodule Glific.Flows.Action do
   end
 
   @doc """
-  Process a json structure from floweditor to the Glific data types
+  Process a json structure from flow editor to the Glific data types
   """
   @spec process(map(), map(), Node.t()) :: {Action.t(), map()}
+  def process(%{"type" => "link_google_sheet"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_sheet)
+
+    process(json, uuid_map, node, %{
+      sheet_id: json["sheet_id"],
+      row: json["row"],
+      result_name: json["result_name"]
+    })
+  end
+
   def process(%{"type" => "enter_flow"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_enter_flow)
 
@@ -235,7 +250,7 @@ defmodule Glific.Flows.Action do
 
   def process(%{"type" => "add_input_labels"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_label)
-    process(json, uuid_map, node, %{labels: process_lebels(json["labels"])})
+    process(json, uuid_map, node, %{labels: process_labels(json["labels"])})
   end
 
   def process(%{"type" => "add_contact_groups"} = json, uuid_map, node) do
@@ -262,7 +277,7 @@ defmodule Glific.Flows.Action do
 
     process(json, uuid_map, node, %{
       interactive_template_id: json["id"],
-      labels: json["labels"],
+      labels: process_labels(json["labels"]),
       params: json["params"] || [],
       params_count: json["paramsCount"] || "0",
       attachment_url: json["attachment_url"],
@@ -279,6 +294,16 @@ defmodule Glific.Flows.Action do
     else
       process(json, uuid_map, node, %{groups: json["groups"]})
     end
+  end
+
+  def process(%{"type" => "set_run_result"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_results)
+
+    process(json, uuid_map, node, %{
+      value: json["value"],
+      category: json["category"],
+      name: json["name"]
+    })
   end
 
   @default_wait_time -1
@@ -316,7 +341,7 @@ defmodule Glific.Flows.Action do
     attrs = %{
       name: json["name"],
       text: json["text"],
-      labels: process_lebels(json["labels"]),
+      labels: process_labels(json["labels"]),
       quick_replies: json["quick_replies"],
       attachments: process_attachments(json["attachments"])
     }
@@ -429,8 +454,8 @@ defmodule Glific.Flows.Action do
   end
 
   ## Label formatter so that we can apply the dynamic label to the message
-  @spec process_lebels(list() | nil) :: list() | nil
-  defp process_lebels(labels) when is_list(labels) do
+  @spec process_labels(list() | nil) :: list() | nil
+  defp process_labels(labels) when is_list(labels) do
     Enum.map(
       labels,
       fn label ->
@@ -441,7 +466,7 @@ defmodule Glific.Flows.Action do
     )
   end
 
-  defp process_lebels(labels), do: labels
+  defp process_labels(labels), do: labels
 
   @doc """
   Execute a action, given a message stream.
@@ -497,7 +522,7 @@ defmodule Glific.Flows.Action do
     # sometimes action.field.name does not exist based on what the user
     # has entered in the flow. We should have a validation for this, but
     # lets prevent the error from happening
-    # if we dont recognize it, we just ignore it, and avoid an error being thrown
+    # if we don't recognize it, we just ignore it, and avoid an error being thrown
     # Issue #858
     if Map.get(action.field, :name) in ["", nil] do
       {:ok, context, messages}
@@ -523,7 +548,7 @@ defmodule Glific.Flows.Action do
       Glific.log_error("Repeated loop, hence finished the flow", false)
     else
       # check if we are looping with the same flow, if so reset
-      # and start from scratch, since we really dont want to have too deep a stack
+      # and start from scratch, since we really don't want to have too deep a stack
       maybe_reset_flows(context, flow_uuid)
 
       # if the action is part of a terminal node, then lets mark this context as
@@ -532,7 +557,15 @@ defmodule Glific.Flows.Action do
 
       {context, parent_id} =
         if node.is_terminal == true,
-          do: {FlowContext.reset_one_context(context), context.parent_id},
+          do:
+            {FlowContext.reset_one_context(context,
+               source: "enter_flow",
+               event_meta: %{
+                 "action" => "#{inspect(action)}",
+                 "current_flow_uuid" => context.flow_uuid,
+                 "new_flow" => flow_uuid
+               }
+             ), context.parent_id},
           else: {context, context.id}
 
       # we start off a new context here and don't really modify the current context
@@ -547,6 +580,12 @@ defmodule Glific.Flows.Action do
       # this clears any potential errors
       {:ok, context, []}
     end
+  end
+
+  def execute(%{type: "link_google_sheet"} = action, context, _messages) do
+    {context, message} = Sheets.execute(action, context)
+
+    {:ok, context, [message]}
   end
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
@@ -692,6 +731,19 @@ defmodule Glific.Flows.Action do
     {:ok, context, messages}
   end
 
+  def execute(%{type: "set_run_result"} = action, context, messages) do
+    results = %{
+      "input" => action.value,
+      "value" => action.value,
+      "category" => action.category,
+      "inserted_at" => DateTime.utc_now()
+    }
+
+    updated_context = FlowContext.update_results(context, %{action.name => results})
+
+    {:ok, updated_context, messages}
+  end
+
   def execute(%{type: type} = _action, context, [msg])
       when type in @wait_for do
     if msg.body != "No Response" do
@@ -740,9 +792,18 @@ defmodule Glific.Flows.Action do
     # when we send a fake temp message (like No Response)
     # or when a flow is resumed, there is no last_message
     # hence we check for the existence of one in these functions
+    message = Repo.get(Message, last_message.id)
+
+    new_labels =
+      if message.flow_label in [nil, ""] do
+        flow_label
+      else
+        message.flow_label <> ", " <> flow_label
+      end
+
     {:ok, _} =
       Repo.get(Message, last_message.id)
-      |> Message.changeset(%{flow_label: flow_label})
+      |> Message.changeset(%{flow_label: new_labels})
       |> Repo.update()
 
     nil
@@ -776,7 +837,7 @@ defmodule Glific.Flows.Action do
   @spec process_attachments(list()) :: map()
   defp process_attachments(nil), do: %{}
 
-  ## we will remvoe this once we have a fix it form the flow editor
+  ## we will remove this once we have a fix it form the flow editor
   defp process_attachments(attachment_list) do
     attachment_list
     |> Enum.reduce(%{}, fn attachment, acc -> do_process_attachment(attachment, acc) end)
