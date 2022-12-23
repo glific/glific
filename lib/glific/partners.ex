@@ -763,11 +763,13 @@ defmodule Glific.Partners do
     |> active_organizations()
     |> recent_organizations(only_recent)
     |> Enum.each(fn {id, %{name: name}} ->
-      Repo.put_process_state(id)
-
-      if is_nil(handler_args),
-        do: handler.(id),
-        else: handler.(id, Map.put(handler_args, :organization_name, name))
+      if async == false do
+        perform_handler(handler, handler_args, id, name)
+      else
+        Task.Supervisor.async_nolink(Glific.TaskSupervisor, fn ->
+          perform_handler(handler, handler_args, id, name)
+        end)
+      end
     end)
   rescue
     # If we fail, we need to mark the organization as failed
@@ -793,6 +795,16 @@ defmodule Glific.Partners do
         Timex.diff(DateTime.utc_now(), last_communication_at, :minutes) < @active_minutes
       end
     )
+  end
+
+  defp perform_handler(handler, handler_args, org_id, org_name, async \\ false) do
+    Repo.put_process_state(org_id)
+
+    if is_nil(handler_args) do
+      handler.(org_id)
+    else
+      handler.(org_id, Map.put(handler_args, :organization_name, org_name))
+    end
   end
 
   @doc """
