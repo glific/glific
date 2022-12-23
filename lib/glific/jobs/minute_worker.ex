@@ -108,10 +108,12 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "hourly_tasks" ->
         Partners.unsuspend_organizations()
+
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], only_recent: true)
 
         Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"],
-          only_recent: true
+          only_recent: true,
+          async: true
         )
 
         Partners.perform_all(&Glific.Clients.hourly_tasks/1, nil, [])
