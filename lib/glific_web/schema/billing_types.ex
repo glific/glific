@@ -98,6 +98,7 @@ defmodule GlificWeb.Schema.BillingTypes do
     field :create_billing_subscription, :subscription_result do
       arg(:stripe_payment_method_id, non_null(:string))
       arg(:coupon_code, :string)
+      arg(:billing_period, :string)
       middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.create_subscription/3)
     end

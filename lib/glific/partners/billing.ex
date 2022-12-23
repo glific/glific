@@ -52,7 +52,8 @@ defmodule Glific.Partners.Billing do
     :is_delinquent,
     :is_active,
     :deduct_tds,
-    :tds_amount
+    :tds_amount,
+    :billing_period,
   ]
 
   @type t() :: %__MODULE__{
@@ -73,6 +74,7 @@ defmodule Glific.Partners.Billing do
           is_active: boolean() | true,
           deduct_tds: boolean() | false,
           tds_amount: float() | nil,
+          billing_period: String.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -97,8 +99,8 @@ defmodule Glific.Partners.Billing do
     field :is_active, :boolean, default: true
 
     field :deduct_tds, :boolean, default: false
-
     field :tds_amount, :float
+    field :billing_period, :string
 
     belongs_to :organization, Organization
 
