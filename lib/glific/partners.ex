@@ -759,18 +759,20 @@ defmodule Glific.Partners do
     only_recent = Keyword.get(opts, :only_recent, false)
     async = Keyword.get(opts, :async, false)
     # We need to do this for all the active organizations
-    list
-    |> active_organizations()
-    |> recent_organizations(only_recent)
-    |> Enum.each(fn {id, %{name: name}} ->
-      if async == false do
+    recent_orgs =
+      list
+      |> active_organizations()
+      |> recent_organizations(only_recent)
+
+    if async == false do
+      Enum.each(recent_orgs, fn {id, %{name: name}} ->
         perform_handler(handler, handler_args, id, name)
-      else
-        Task.Supervisor.async_nolink(Glific.TaskSupervisor, fn ->
-          perform_handler(handler, handler_args, id, name)
-        end)
-      end
-    end)
+      end)
+    else
+      Task.async_stream(recent_orgs, fn {id, %{name: name}} ->
+        perform_handler(handler, handler_args, id, name)
+      end)
+    end
   rescue
     # If we fail, we need to mark the organization as failed
     # and log the error
