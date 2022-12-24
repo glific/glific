@@ -57,13 +57,15 @@ defmodule Glific.BigQuery.BigQueryWorker do
     organization = Partners.organization(organization_id)
     credential = organization.services["bigquery"]
 
-    Logger.info("Starting bigquery process for org: #{organization_id}")
-
     if credential do
       Logger.info("Found bigquery credentials for org_id: #{organization_id}")
 
-      Jobs.get_bigquery_jobs(organization_id)
-      |> Enum.each(&insert_for_table(&1, organization_id))
+      Task.Supervisor.async_nolink(Glific.TaskSupervisor, fn ->
+        Repo.put_process_state(organization_id)
+
+        Jobs.get_bigquery_jobs(organization_id)
+        |> Enum.each(&insert_for_table(&1, organization_id))
+      end)
     end
 
     :ok
