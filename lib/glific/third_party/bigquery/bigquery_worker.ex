@@ -57,6 +57,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
     organization = Partners.organization(organization_id)
     credential = organization.services["bigquery"]
 
+    Logger.info("Starting bigquery process for org: #{organization_id}")
+
     if credential do
       Logger.info("Found bigquery credentials for org_id: #{organization_id}")
 
