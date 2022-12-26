@@ -131,12 +131,15 @@ defmodule Glific.Sheets do
   """
   @spec sync_sheet_data(Sheet.t()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
   def sync_sheet_data(sheet) do
-    last_synced_at = DateTime.utc_now()
+    [sheet_url, gid] = String.split(sheet.url, "edit")
 
-    ApiClient.get_csv_content(url: sheet.url)
+    last_synced_at = DateTime.utc_now()
+    export_url = sheet_url <> "export?format=csv&&" <> gid
+
+    ApiClient.get_csv_content(url: export_url)
     |> Enum.each(fn {_, row} ->
       %{
-        ## we can also think in case we need fist column.
+        ## we can also think in case we need first column.
         key: row["Key"],
         row_data: clean_row_values(row),
         sheet_id: sheet.id,
