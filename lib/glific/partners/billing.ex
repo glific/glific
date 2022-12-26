@@ -412,7 +412,6 @@ defmodule Glific.Partners.Billing do
   @spec create_quarterly_subscription(Organization.t(), map()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
   def create_quarterly_subscription(organization, billing) do
-    # get the billing record
     opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
 
     billing
@@ -688,16 +687,6 @@ defmodule Glific.Partners.Billing do
 
       true ->
         %{stripe_subscription_status: "pending"}
-    end
-  end
-
-  # return a map which adds the billing period
-  @spec billing_period(map()) :: map()
-  defp billing_period(billing) do
-    if(Map.has_key?(billing, :billing_period)) do
-      %{billing_period: billing.billing_period}
-    else
-      %{}
     end
   end
 
