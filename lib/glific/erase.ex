@@ -17,8 +17,7 @@ defmodule Glific.Erase do
   @spec perform_weekly() :: any
   def perform_weekly do
     refresh_tables()
-    remove_old_records()
-    clean_flow_revision()
+    clean_old_records()
   end
 
   @doc """
@@ -35,8 +34,17 @@ defmodule Glific.Erase do
     )
   end
 
+  @doc """
+  Clean old records for table like notification and logs
+  """
+  @spec clean_old_records() :: any
+  def clean_old_records do
+    remove_old_records()
+    clean_flow_revision()
+  end
+
   @spec refresh_tables() :: any
-  defp refresh_tables() do
+  defp refresh_tables do
     [
       "REINDEX TABLE global.oban_jobs",
       "VACUUM (FULL, ANALYZE) webhook_logs",
@@ -80,7 +88,9 @@ defmodule Glific.Erase do
     end)
   end
 
-  # Keep latest 25 contact_history for a contact
+  @doc """
+  Keep latest 25 contact_history for a contact
+  """
   @spec clean_contact_histories() :: any
   def clean_contact_histories do
     """
