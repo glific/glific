@@ -136,6 +136,10 @@ defmodule Glific.Sheets do
     last_synced_at = DateTime.utc_now()
     export_url = sheet_url <> "export?format=csv&&" <> gid
 
+    SheetData
+    |> where([sd], sd.sheet_id == ^sheet.id)
+    |> Repo.delete_all()
+
     ApiClient.get_csv_content(url: export_url)
     |> Enum.each(fn {_, row} ->
       %{
@@ -146,7 +150,7 @@ defmodule Glific.Sheets do
         organization_id: sheet.organization_id,
         last_synced_at: last_synced_at
       }
-      |> upsert_sheet_data()
+      |> create_sheet_data()
     end)
 
     remove_stale_sheet_data(sheet, last_synced_at)
@@ -213,24 +217,6 @@ defmodule Glific.Sheets do
     sheet_data
     |> SheetData.changeset(attrs)
     |> Repo.update()
-  end
-
-  @doc """
-  Updates or Creates a SheetData based on the unique indexes in the table. If there is a match it returns the existing SheetData, else it creates a new one
-  """
-  @spec upsert_sheet_data(map()) :: {:ok, SheetData.t()}
-  def upsert_sheet_data(attrs) do
-    case Repo.get_by(SheetData, %{
-           key: attrs.key,
-           organization_id: attrs.organization_id,
-           sheet_id: attrs.sheet_id
-         }) do
-      nil ->
-        create_sheet_data(attrs)
-
-      sheet_data ->
-        update_sheet_data(sheet_data, attrs)
-    end
   end
 
   @doc """
