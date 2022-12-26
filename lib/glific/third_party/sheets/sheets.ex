@@ -28,13 +28,27 @@ defmodule Glific.Sheets do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_sheet(map()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_sheet(map()) :: {:ok, Sheet.t()} | {:error, any()}
   def create_sheet(attrs) do
-    with {:ok, sheet} <-
+    with {:ok, true} <- validate_sheet(attrs.url),
+         {:ok, sheet} <-
            %Sheet{}
            |> Sheet.changeset(attrs)
            |> Repo.insert() do
       sync_sheet_data(sheet)
+    end
+  end
+
+  @spec validate_sheet(String.t()) :: {:ok, true} | {:error, String.t()}
+  defp validate_sheet(url) do
+    Tesla.get(url)
+    |> case do
+      {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
+        {:ok, true}
+
+      _ ->
+        {:error,
+         "Please double-check the URL and make sure the sharing access for the sheet is at least set to 'Anyone with the link' can view."}
     end
   end
 
