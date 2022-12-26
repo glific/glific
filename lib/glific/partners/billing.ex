@@ -53,7 +53,7 @@ defmodule Glific.Partners.Billing do
     :is_active,
     :deduct_tds,
     :tds_amount,
-    :billing_period,
+    :billing_period
   ]
 
   @type t() :: %__MODULE__{
@@ -254,8 +254,36 @@ defmodule Glific.Partners.Billing do
   def tax_rates,
     do: Saas.tax_rates()
 
-  @spec subscription_params(Billing.t(), Organization.t()) :: map()
-  defp subscription_params(billing, organization) do
+  @spec quarterly_subscription_params(Billing.t(), Organization.t()) :: map()
+  defp quarterly_subscription_params(billing, organization) do
+    # Temporary to make sure that the subscription starts from the beginning of next month
+    anchor_timestamp =
+      DateTime.utc_now()
+      |> Timex.end_of_quarter()
+      |> Timex.shift(days: 1)
+      |> Timex.beginning_of_day()
+      |> DateTime.to_unix()
+
+    prices = stripe_ids()["quarterly"]
+
+    %{
+      customer: billing.stripe_customer_id,
+      billing_cycle_anchor: anchor_timestamp,
+      items: [
+        %{
+          price: prices["quarterly"]
+        }
+      ],
+      metadata: %{
+        "id" => Integer.to_string(billing.organization_id),
+        "name" => organization.name
+      },
+      default_tax_rates: tax_rates()
+    }
+  end
+
+  @spec monthly_subscription_params(Billing.t(), Organization.t()) :: map()
+  defp monthly_subscription_params(billing, organization) do
     # Temporary to make sure that the subscription starts from the beginning of next month
     anchor_timestamp =
       DateTime.utc_now()
@@ -370,13 +398,26 @@ defmodule Glific.Partners.Billing do
     end
   end
 
-   @doc """
+  @doc """
   Create a quarterly subscription.
   """
   @spec create_quarterly_subscription(Organization.t()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
-  def create_quarterly_subscription(_organization) do
-    {:pending, %{}}
+  def create_quarterly_subscription(organization) do
+    # get the billing record
+    opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
+    billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
+
+    billing
+    |> quarterly_subscription_params(organization)
+    |> Subscription.create(opts)
+    |> case do
+      {:ok, subscription} ->
+        update_subscription_details(subscription, organization.id, billing)
+
+      {:error, stripe_error} ->
+        {:error, inspect(stripe_error)}
+    end
   end
 
   @doc """
@@ -389,8 +430,10 @@ defmodule Glific.Partners.Billing do
     |> case do
       "MONTHLY" -> create_monthly_subscription(organization, params)
       "QUARTERLY" -> create_quarterly_subscription(organization)
-      "MANUAL" -> {:pending, %{} }
-      _ -> {:error, "invalid billing period"}
+      "MANUAL" -> {:ok, %{}}
+      # Setting the default as monthly for now so it doesnt need any change for frontend.
+      # Will remove this once frontend changes are implemented
+      _ -> create_monthly_subscription(organization, params)
     end
   end
 
@@ -487,7 +530,7 @@ defmodule Glific.Partners.Billing do
     opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
 
     billing
-    |> subscription_params(organization)
+    |> monthly_subscription_params(organization)
     |> Subscription.create(opts)
     |> case do
       # subscription is active, we need to update the same information via the

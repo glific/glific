@@ -202,13 +202,19 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   defp default_ids(),
     do: [
-      product: "prod_JG5ns5s9yPRiOq",
-      setup: "price_1IdZeIEMShkCsLFn5OdWiuC4",
-      monthly: "price_1IdZbfEMShkCsLFn8TF0NLPO",
-      users: "price_1IdZehEMShkCsLFnyYhuDu6p",
-      messages: "price_1IdZdTEMShkCsLFnPAf9zzym",
-      consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk",
-      inactive: "price_1ImvA9EMShkCsLFnTtiXOslM"
+      setup: "price_1IlrYwEMShkCsLFnxKbdGV79",
+      monthly: %{
+        users: "price_1IgS8WEMShkCsLFna3Ch4jDX",
+        monthly: "price_1IgS7dEMShkCsLFnvIpyy5mL",
+        product: "prod_JIfkkY66gCuRO5",
+        inactive: "price_1IpCmPEMShkCsLFniiWPQCQh",
+        messages: "price_1J5P7aEMShkCsLFn2qOqLkJm",
+        consulting_hours: "price_1J5P56EMShkCsLFnMC6MAb09"
+      },
+      quarterly: %{
+        product: "prod_N11hy4EQ5YbJNd",
+        quarterly: "price_1MGzdvEMShkCsLFninxSY6iZ"
+      }
     ]
 
   def gtags(organization, en) do
