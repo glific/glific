@@ -432,7 +432,7 @@ defmodule Glific.Partners.Billing do
   @spec create_period_based_subscription(Organization.t(), map(), map()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
   def create_period_based_subscription(organization, billing, params) do
-    params.billing_period
+    params["billing_period"]
     |> case do
       "MONTHLY" ->
         create_monthly_subscription(organization, billing, params)
@@ -475,7 +475,7 @@ defmodule Glific.Partners.Billing do
       Stripe.Invoiceitem.create(%{
         customer: billing.stripe_customer_id,
         currency: billing.currency,
-        price: monthly_stripe_ids()["setup"],
+        price: Saas.stripe_ids()["setup"],
         tax_rates: tax_rates(),
         metadata: %{
           "id" => Integer.to_string(organization.id),
