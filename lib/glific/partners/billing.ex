@@ -439,9 +439,15 @@ defmodule Glific.Partners.Billing do
     |> case do
       "MONTHLY" ->
         create_monthly_subscription(organization, billing, params)
+        |> case do
+          {:ok, _} -> update_billing(billing, %{billing_period: params.billing_period})
+        end
 
       "QUARTERLY" ->
         create_quarterly_subscription(organization, billing)
+        |> case do
+          {:ok, _} -> update_billing(billing, %{billing_period: params.billing_period})
+        end
 
       "MANUAL" ->
         update_billing(billing, %{billing_period: params.billing_period})
@@ -729,9 +735,6 @@ defmodule Glific.Partners.Billing do
       |> Map.merge(subscription |> subscription_dates())
       |> Map.merge(subscription |> subscription_items())
       |> Map.merge(subscription |> subscription_status())
-      |> Map.merge(billing |> billing_period())
-
-    IO.inspect(params)
 
     update_billing(billing, params)
     {:ok, subscription}

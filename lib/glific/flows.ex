@@ -858,6 +858,7 @@ defmodule Glific.Flows do
   defp clean_template_node(%{"actions" => actions} = node, interactive_template_list) do
     action = actions |> hd
     template_uuid = get_in(action, ["templating", "template", "uuid"])
+
     cond do
       action["type"] == "send_msg" ->
         # checking if the imported template is present in database
