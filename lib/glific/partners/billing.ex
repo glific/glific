@@ -430,32 +430,40 @@ defmodule Glific.Partners.Billing do
   @doc """
   create subscription on the basis of billing period
   """
-  @spec create_subscription(Organization.t(), map()) ::
+  @spec create_period_based_subscription(Organization.t(), map(), map()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
-  def create_subscription(organization, params) do
-    billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
-
+  def create_period_based_subscription(organization, billing, params) do
     params.billing_period
     |> case do
       "MONTHLY" ->
         create_monthly_subscription(organization, billing, params)
-        |> case do
-          {:ok, _} -> update_billing(billing, %{billing_period: params.billing_period})
-        end
 
       "QUARTERLY" ->
         create_quarterly_subscription(organization, billing)
-        |> case do
-          {:ok, _} -> update_billing(billing, %{billing_period: params.billing_period})
-        end
 
       "MANUAL" ->
-        update_billing(billing, %{billing_period: params.billing_period})
+        {:ok, billing}
 
       # Setting the default as monthly for now so it doesnt need any change for frontend.
       # Will remove this once frontend changes are implemented
       _ ->
         create_monthly_subscription(organization, billing, params)
+    end
+  end
+
+  @doc """
+  create subscription on the basis of billing period
+  """
+  @spec create_subscription(Organization.t(), map()) ::
+          {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
+  def create_subscription(organization, params) do
+    billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
+
+    subscription = create_period_based_subscription(organization, billing, params)
+
+    case subscription do
+      {:ok, _} -> update_billing(billing, %{billing_period: params.billing_period})
+      _ -> subscription
     end
   end
 
