@@ -51,24 +51,6 @@ defmodule Glific.Sheets.Sheet do
     sheet
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_url()
     |> unique_constraint([:url, :organization_id])
   end
-
-  @spec validate_url(Ecto.Changeset.t()) :: Ecto.Changeset.t()
-  defp validate_url(%{changes: changes} = changeset) when not is_nil(changes.url) do
-    url = changeset.changes[:url]
-
-    if Glific.URI.cast(url) == :ok && String.contains?(url, "output=csv") do
-      changeset
-    else
-      add_error(
-        changeset,
-        :url,
-        "Sheet URL is invalid"
-      )
-    end
-  end
-
-  defp validate_url(changeset), do: changeset
 end
