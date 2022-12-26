@@ -506,7 +506,7 @@ defmodule Glific.BigQuery do
     last_updated_at = Keyword.get(attrs, :last_updated_at)
 
     Logger.info(
-      "insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
+      "Insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
     )
 
     fetch_bigquery_credentials(organization_id)
@@ -535,7 +535,7 @@ defmodule Glific.BigQuery do
     table = Keyword.get(opts, :table)
 
     Logger.info(
-      "inserting data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
+      "Inserting data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
     )
 
     Tabledata.bigquery_tabledata_insert_all(
@@ -563,7 +563,7 @@ defmodule Glific.BigQuery do
         Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
 
         Logger.info(
-          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}"
+          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, max_id: #{max_id}, res: #{inspect(res)}"
         )
 
       last_updated_at not in [nil, 0] ->
@@ -633,7 +633,7 @@ defmodule Glific.BigQuery do
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = credentials} ->
         Logger.info(
-          "remove duplicates for  #{table} table on bigquery, org_id: #{organization_id}"
+          "Remove duplicates on bigquery for org_id: #{organization_id} table:#{table}"
         )
 
         sql = generate_duplicate_removal_query(table, credentials, organization_id)
@@ -671,7 +671,7 @@ defmodule Glific.BigQuery do
   defp handle_duplicate_removal_job_error({:ok, _response}, table, _credentials, organization_id),
     do:
       Logger.info(
-        "duplicate entries have been removed from #{table} on bigquery for org_id: #{organization_id}"
+        "Duplicate entries have been removed for org_id: #{organization_id} from #{table} on bigquery "
       )
 
   ## Since we don't care about the delete query results, let's skip notifying this to AppSignal.

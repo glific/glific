@@ -371,18 +371,23 @@ defmodule Glific.Flows.ContactAction do
 
     {_cid, message_vars} = resolve_cid(context, cid)
 
-    {:ok, message_media} =
-      %{
-        type: type,
-        url: url,
-        source_url: url,
-        thumbnail: url,
-        caption: MessageVarParser.parse(caption, message_vars),
-        organization_id: context.organization_id
-      }
-      |> Messages.create_message_media()
+    if is_nil(url) do
+      FlowContext.notification(context, "Could not send message to contact: Empty media URL")
+      {type, nil}
+    else
+      {:ok, message_media} =
+        %{
+          type: type,
+          url: url,
+          source_url: url,
+          thumbnail: url,
+          caption: MessageVarParser.parse(caption, message_vars),
+          organization_id: context.organization_id
+        }
+        |> Messages.create_message_media()
 
-    {type, message_media.id}
+      {type, message_media.id}
+    end
   end
 
   @spec handle_attachment_expression(FlowContext.t(), String.t(), String.t()) :: tuple()
