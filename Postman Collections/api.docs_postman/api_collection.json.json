@@ -6521,7 +6521,7 @@
 							"mode": "graphql",
 							"graphql": {
 								"query": "mutation createSheet($input:SheetInput!) {\n  createSheet(input: $input) {\n    sheet {\n      id\n      insertedAt\n      isActive\n      label\n      lastSyncedAt\n      updatedAt\n      url\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-								"variables": "{\n  \"input\": {\n    \"isActive\": true,\n    \"label\": \"Sample Google sheet\",\n    \"url\": \"https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv\"\n  }\n}"
+								"variables": "{\n  \"input\": {\n    \"isActive\": true,\n    \"label\": \"Sample Google sheet\",\n    \"url\": \"https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0\"\n  }\n}"
 							},
 							"options": {
 								"graphql": {}

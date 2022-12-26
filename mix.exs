@@ -97,6 +97,7 @@ defmodule Glific.MixProject do
       {:floki, ">= 0.27.0", only: @test_envs},
       {:gettext, "~> 0.20"},
       {:decimal, "~> 2.0"},
+      {:cowboy, "~> 2.1"},
       {:jason, "~> 1.4"},
       {:plug_cowboy, "~> 2.0"},
       {:ecto_enum, "~> 1.4"},
