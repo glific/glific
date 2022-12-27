@@ -95,11 +95,15 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   @spec init_insert_job(BigQuery.BigQueryJob.t() | nil, non_neg_integer) :: any()
   defp init_insert_job(bq_job, org_id) do
-    __MODULE__.new(%{
-      table: bq_job.table,
-      organization_id: org_id
-    })
-    |> Oban.insert()
+    [:insert, :update]
+    |> Enum.each(fn action ->
+      __MODULE__.new(%{
+        table: bq_job.table,
+        organization_id: org_id,
+        action: action
+      })
+      |> Oban.insert()
+    end)
   end
 
   defp init_removal_job(table, org_id) do
@@ -131,11 +135,15 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
-  def perform(%Oban.Job{args: %{"table" => table, "organization_id" => organization_id}} = _job) do
+  def perform(
+        %Oban.Job{
+          args: %{"table" => table, "organization_id" => organization_id, "action" => action}
+        } = _job
+      ) do
     Repo.put_process_state(organization_id)
 
     Jobs.get_bigquery_job(organization_id, table)
-    |> insert_for_table(organization_id)
+    |> insert_for_table(organization_id, action)
   end
 
   @spec format_date_with_millisecond(DateTime.t(), non_neg_integer()) :: String.t()
@@ -183,15 +191,20 @@ defmodule Glific.BigQuery.BigQueryWorker do
       else: max_last_update
   end
 
-  @spec insert_for_table(BigQuery.BigQueryJob.t() | nil, non_neg_integer) :: :ok | nil
-  defp insert_for_table(nil, _), do: nil
+  @spec insert_for_table(BigQuery.BigQueryJob.t() | nil, non_neg_integer, String.t()) :: :ok | nil
+  defp insert_for_table(nil, _, _), do: nil
 
   defp insert_for_table(
          %{table: table, table_id: table_id, last_updated_at: table_last_updated_at} = _job,
-         organization_id
+         organization_id,
+         action
        ) do
-    insert_new_records(table, table_id, organization_id)
-    insert_updated_records(table, table_last_updated_at, organization_id)
+    if action == "update" do
+      insert_updated_records(table, table_last_updated_at, organization_id)
+    else
+      insert_new_records(table, table_id, organization_id)
+    end
+
     :ok
   end
 
