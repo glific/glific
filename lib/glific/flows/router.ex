@@ -74,7 +74,7 @@ defmodule Glific.Flows.Router do
       node: node,
       node_uuid: node.uuid,
       type: json["type"],
-      operand: format_operand(json["operand"]),
+      operand: json["operand"] || "",
       result_name: json["result_name"]
     }
 
