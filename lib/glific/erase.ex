@@ -139,6 +139,8 @@ defmodule Glific.Erase do
   """
   @spec clean_messages(non_neg_integer(), boolean()) :: list
   def clean_messages(org_id, skip_delete \\ false) do
+    Repo.put_process_state(org_id)
+
     contact_query =
       "select id from contacts where organization_id = #{org_id} and last_message_number > #{@limit + 2} order by last_message_number"
 
