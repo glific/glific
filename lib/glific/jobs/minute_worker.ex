@@ -9,6 +9,7 @@ defmodule Glific.Jobs.MinuteWorker do
 
   alias Glific.{
     BigQuery.BigQueryWorker,
+    BigQuery.BigQueryWorkerV2,
     Contacts,
     Erase,
     Flags,
@@ -60,7 +61,7 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&BroadcastWorker.execute/1, nil, [])
 
       "bigquery" ->
-        Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil, services["bigquery"],
+        Partners.perform_all(&BigQueryWorkerV2.perform_periodic/1, nil, services["bigquery"],
           only_recent: true
         )
 
