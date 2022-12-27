@@ -1017,7 +1017,7 @@ defmodule Glific.Fixtures do
     valid_attrs = %{
       label: "sample sheet",
       url:
-        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+        "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
     }
 
     attrs = Map.merge(valid_attrs, attrs)
