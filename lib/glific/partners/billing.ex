@@ -450,6 +450,15 @@ defmodule Glific.Partners.Billing do
     end
   end
 
+  @spec add_billing_period(map(), map()) :: {:error, Ecto.Changeset.t()} | {:ok, any()}
+  defp add_billing_period(billing, %{billing_period: billing_period}) do
+    update_billing(billing, %{billing_period: billing_period})
+  end
+
+  defp add_billing_period(billing, _) do
+    update_billing(billing, %{billing_period: "MONTHLY"})
+  end
+
   @doc """
   create subscription on the basis of billing period
   """
@@ -461,7 +470,7 @@ defmodule Glific.Partners.Billing do
     subscription = create_period_based_subscription(organization, billing, params)
 
     case subscription do
-      {:ok, _} -> update_billing(billing, %{billing_period: params.billing_period})
+      {:ok, _} -> add_billing_period(billing, params)
       _ -> subscription
     end
   end
@@ -749,6 +758,7 @@ defmodule Glific.Partners.Billing do
     ## data.
 
     with billing <- get_billing(%{organization_id: org_id}),
+         "MONTHLY" <- billing.billing_period,
          false <-
            billing.stripe_subscription_items |> Map.has_key?(monthly_stripe_ids()["monthly"]) do
       proration_date = DateTime.utc_now() |> DateTime.to_unix()

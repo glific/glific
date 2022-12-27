@@ -95,7 +95,7 @@ defmodule Glific.BillingTest do
                    stripe_payment_method_id: stripe_payment_method_id
                  })
 
-        assert subscription == %{status: :active}
+        assert subscription.is_active == true
       end
     end
 
