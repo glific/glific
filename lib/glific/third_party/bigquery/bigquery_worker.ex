@@ -859,8 +859,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     BigQuery.make_insert_query(data, table, organization_id,
       max_id: max_id,
-      last_updated_at:
-        if(!is_nil(last_updated_at), do: Timex.parse!(last_updated_at, "{RFC3339z}")),
+      last_updated_at: if(!is_nil(last_updated_at), do: last_updated_at),
       else: nil
     )
 
