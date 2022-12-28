@@ -202,14 +202,14 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   defp default_ids(),
     do: [
-      setup: "price_1IlrYwEMShkCsLFnxKbdGV79",
+      setup: "price_1IdZeIEMShkCsLFn5OdWiuC4",
       monthly: %{
-        users: "price_1IgS8WEMShkCsLFna3Ch4jDX",
-        monthly: "price_1IgS7dEMShkCsLFnvIpyy5mL",
-        product: "prod_JIfkkY66gCuRO5",
-        inactive: "price_1IpCmPEMShkCsLFniiWPQCQh",
-        messages: "price_1J5P7aEMShkCsLFn2qOqLkJm",
-        consulting_hours: "price_1J5P56EMShkCsLFnMC6MAb09"
+        users: "price_1IdZehEMShkCsLFnyYhuDu6p",
+        monthly: "price_1IdZbfEMShkCsLFn8TF0NLPO",
+        product: "prod_JG5ns5s9yPRiOq",
+        inactive: "price_1ImvA9EMShkCsLFnTtiXOslM",
+        messages: "price_1IdZdTEMShkCsLFnPAf9zzym",
+        consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk",
       },
       quarterly: %{
         product: "prod_N11hy4EQ5YbJNd",
