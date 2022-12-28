@@ -58,12 +58,19 @@ config :glific,
 
 config :glific,
   stripe_ids: [
-    product: "random_prod_JG5ns5",
-    setup: "random_price_1IfMxsEMShkCs",
-    monthly: "random_price_1IfMurEMShkC",
-    users: "random_price_1IfNdDEMShk",
-    messages: "random_price_1IfNf2EMSh",
-    consulting_hours: "random_price_1IfNe9EMShk"
+    setup: "random_price_1IlrYwEMShkCsLFnxKbdGV79",
+    monthly: %{
+      product: "random_prod_JG5ns5",
+      inactive: "random_price_1IfMxsEMShkCs",
+      monthly: "random_price_1IfMurEMShkC",
+      users: "random_price_1IfNdDEMShk",
+      messages: "random_price_1IfNf2EMSh",
+      consulting_hours: "random_price_1IfNe9EMShk"
+    },
+    quarterly: %{
+      product: "random_prod_N11hy4EQ5YbJNd",
+      quarterly: "random_price_1MGzdvEMShkCsLFninxSY6iZ"
+    }
   ]
 
 config :glific, Glific.Communications.Mailer, adapter: Swoosh.Adapters.Test

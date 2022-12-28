@@ -163,9 +163,9 @@ defmodule Glific.BillingTest do
         stripe_subscription_items: %{
           price_1IgS7dEMShkCsLFnvIpyy5mL: "test_monthly_id",
           price_1IgS5DEMShkCsLFne4pOqxqB: "si_test_subscription_id",
-          price_1IdZe5EMShkCsLFncGatvTCk: "si_test_consulting_id",
-          price_1IdZdTEMShkCsLFnPAf9zzym: "si_test_message_id",
-          price_1IdZehEMShkCsLFnyYhuDu6p: "si_test_user_id"
+          price_1J5P56EMShkCsLFnMC6MAb09: "si_test_consulting_id",
+          price_1J5P7aEMShkCsLFn2qOqLkJm: "si_test_message_id",
+          price_1IgS8WEMShkCsLFna3Ch4jDX: "si_test_user_id"
         }
       })
       |> Fixtures.billing_fixture()
