@@ -184,4 +184,18 @@ defmodule Glific.BillingTest do
       end
     end
   end
+
+  test "create_subscription/1 with quarterly billing period should create subscription", %{
+    organization_id: organization_id
+  } do
+    use_cassette "create_subscription" do
+      assert {:ok, subscription} =
+               Partners.get_organization!(organization_id)
+               |> Billing.create_subscription(%{
+                 billing_period: "QUARTERLY"
+               })
+
+      assert subscription.billing_period == "QUARTERLY"
+    end
+  end
 end

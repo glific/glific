@@ -432,21 +432,22 @@ defmodule Glific.Partners.Billing do
   @spec create_period_based_subscription(Organization.t(), map(), map()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
   def create_period_based_subscription(organization, billing, params) do
-    params["billing_period"]
-    |> case do
-      "MONTHLY" ->
-        create_monthly_subscription(organization, billing, params)
+    if params |> Map.has_key?(:billing_period) do
+      params.billing_period
+      |> case do
+        "MONTHLY" ->
+          create_monthly_subscription(organization, billing, params)
 
-      "QUARTERLY" ->
-        create_quarterly_subscription(organization, billing)
+        "QUARTERLY" ->
+          create_quarterly_subscription(organization, billing)
 
-      "MANUAL" ->
-        {:ok, billing}
-
+        _ ->
+          {:ok, billing}
+      end
+    else
       # Setting the default as monthly for now so it doesnt need any change for frontend.
       # Will remove this once frontend changes are implemented
-      _ ->
-        create_monthly_subscription(organization, billing, params)
+      create_monthly_subscription(organization, billing, params)
     end
   end
 
@@ -456,6 +457,7 @@ defmodule Glific.Partners.Billing do
   end
 
   defp add_billing_period(billing, _) do
+    # setting default as monthly for now.
     update_billing(billing, %{billing_period: "MONTHLY"})
   end
 
