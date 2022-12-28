@@ -209,7 +209,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         product: "prod_JG5ns5s9yPRiOq",
         inactive: "price_1ImvA9EMShkCsLFnTtiXOslM",
         messages: "price_1IdZdTEMShkCsLFnPAf9zzym",
-        consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk",
+        consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk"
       },
       quarterly: %{
         product: "prod_N11hy4EQ5YbJNd",

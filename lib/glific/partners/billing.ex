@@ -630,6 +630,9 @@ defmodule Glific.Partners.Billing do
       }
     }
 
+    IO.inspect(monthly_stripe_ids())
+    IO.inspect(billing)
+
     SubscriptionItem.delete(
       billing.stripe_subscription_items[monthly_stripe_ids()["monthly"]],
       %{},
@@ -840,7 +843,7 @@ defmodule Glific.Partners.Billing do
     Repo.put_process_state(organization_id)
 
     billing = Repo.get_by!(Billing, %{organization_id: organization_id, is_active: true})
-    subscription_items = billing.stripe_subscription_items |> IO.inspect()
+    subscription_items = billing.stripe_subscription_items
 
     # formatting dates
     dates = format_dates(start_date, end_date)
