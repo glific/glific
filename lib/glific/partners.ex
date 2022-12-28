@@ -750,26 +750,19 @@ defmodule Glific.Partners do
   list == [] (empty list) - the action should be performed for all organizations
   list == [ values ] - the actions should be performed only for organizations in the values list
   """
-  @spec perform_all((... -> nil), map() | nil, list() | [] | nil, boolean) :: any
-  def perform_all(handler, handler_args, list, only_recent \\ false)
+  @spec perform_all((... -> nil), map() | nil, list() | [] | nil, Keyword.t()) :: any
+  def perform_all(handler, handler_args, list, opts \\ [])
 
-  def perform_all(_handler, _handler_args, nil, _only_recent), do: nil
+  def perform_all(_handler, _handler_args, nil, _opts), do: nil
 
-  def perform_all(handler, handler_args, list, only_recent) do
+  def perform_all(handler, handler_args, list, opts) do
+    only_recent = Keyword.get(opts, :only_recent, false)
     # We need to do this for all the active organizations
     list
     |> active_organizations()
     |> recent_organizations(only_recent)
     |> Enum.each(fn {id, %{name: name}} ->
-      Repo.put_process_state(id)
-
-      if is_nil(handler_args),
-        do: handler.(id),
-        else:
-          handler.(
-            id,
-            Map.put(handler_args, :organization_name, name)
-          )
+      perform_handler(handler, handler_args, id, name)
     end)
   rescue
     # If we fail, we need to mark the organization as failed
@@ -779,7 +772,7 @@ defmodule Glific.Partners do
       |> Glific.log_error()
   end
 
-  @active_minutes 60
+  @active_minutes 120
 
   @doc """
   Get the organizations which had a message transaction in the last minutes
@@ -795,6 +788,19 @@ defmodule Glific.Partners do
         Timex.diff(DateTime.utc_now(), last_communication_at, :minutes) < @active_minutes
       end
     )
+  end
+
+  @spec perform_handler((... -> nil), map() | nil, non_neg_integer(), String.t() | nil) :: any
+  defp perform_handler(handler, handler_args, org_id, org_name) do
+    Repo.put_process_state(org_id)
+
+    Logger.info("Starting processes for org id: #{org_id}")
+
+    if is_nil(handler_args) do
+      handler.(org_id)
+    else
+      handler.(org_id, Map.put(handler_args, :organization_name, org_name))
+    end
   end
 
   @doc """

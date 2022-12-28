@@ -1031,12 +1031,12 @@ defmodule Glific.Flows do
 
   defp do_export_interactive_templates(%{"actions" => actions}) do
     action = actions |> hd
-    if action["type"] == "send_interactive_msg", do: [action["name"]], else: []
+    if action["type"] == "send_interactive_msg", do: [action["id"]], else: []
   end
 
-  defp fetch_interactive_templates_from_db(interactive_templates) do
+  defp fetch_interactive_templates_from_db(ids) do
     InteractiveTemplate
-    |> where([it], it.label in ^interactive_templates)
+    |> where([it], it.id in ^ids)
     |> select([it], %{
       label: it.label,
       type: it.type,

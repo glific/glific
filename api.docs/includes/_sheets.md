@@ -40,7 +40,7 @@ query Sheets($filter: SheetFilter, $opts: Opts) {
         "label": "sheet1",
         "lastSyncedAt": "2022-10-14T05:37:32Z",
         "updatedAt": "2022-10-14T05:37:33.000000Z",
-        "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
       },
       {
         "id": "2",
@@ -49,7 +49,7 @@ query Sheets($filter: SheetFilter, $opts: Opts) {
         "label": "sheet2",
         "lastSyncedAt": "2022-10-14T05:42:19Z",
         "updatedAt": "2022-10-14T05:42:19.000000Z",
-        "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
       }
     ]
   }
@@ -111,7 +111,7 @@ query Sheet($sheetId: ID!) {
         "label": "sheet1",
         "lastSyncedAt": "2022-10-14T05:37:32Z",
         "updatedAt": "2022-10-14T05:37:33.000000Z",
-        "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
       }
     }
   }
@@ -173,7 +173,7 @@ mutation ($input: SheetInput!) {
 {
   "input": {
     "label": "sheet1",
-    "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+    "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
   }
 }
 ```
@@ -191,7 +191,7 @@ mutation ($input: SheetInput!) {
         "label": "sheet1",
         "lastSyncedAt": "2022-10-14T06:06:23Z",
         "updatedAt": "2022-10-14T06:06:23.141322Z",
-        "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
       },
       "errors": null
     }
@@ -254,7 +254,7 @@ mutation UpdateSheet($id: ID!, $input: SheetInput!) {
   "id": 3,
   "input": {
     "label": "sheet3",
-    "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+    "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
   }
 }
 ```
@@ -273,7 +273,7 @@ mutation UpdateSheet($id: ID!, $input: SheetInput!) {
         "label": "sheet3",
         "lastSyncedAt": "2022-10-14T06:10:57Z",
         "updatedAt": "2022-10-14T06:10:57.790150Z",
-        "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
       }
     }
   }
@@ -350,7 +350,7 @@ mutation SyncSheet($syncSheetId: ID!) {
         "label": "sheet3",
         "lastSyncedAt": "2022-10-14T06:10:57Z",
         "updatedAt": "2022-10-14T06:10:57.790150Z",
-        "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
       },
       "errors": null
     }

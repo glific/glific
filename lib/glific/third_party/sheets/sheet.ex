@@ -59,7 +59,8 @@ defmodule Glific.Sheets.Sheet do
   defp validate_url(%{changes: changes} = changeset) when not is_nil(changes.url) do
     url = changeset.changes[:url]
 
-    if Glific.URI.cast(url) == :ok && String.contains?(url, "output=csv") do
+    if Glific.URI.cast(url) == :ok &&
+         String.contains?(url, "https://docs.google.com/spreadsheets/") do
       changeset
     else
       add_error(
