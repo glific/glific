@@ -161,6 +161,12 @@ defmodule Glific.Clients.Tap do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
     school_name = fields["school_name"] || ""
+    formatted_school_name = String.split(school_name, " ")
+
+    school_short_form =
+      Enum.reduce(formatted_school_name, "", fn val, acc ->
+        acc <> String.first(String.capitalize(val))
+      end)
 
     key = "school_" <> Glific.string_clean(school_name)
 
@@ -168,7 +174,30 @@ defmodule Glific.Clients.Tap do
 
     Partners.maybe_insert_organization_data(key, info, org_id)
 
-    fields
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: fields["organization_id"],
+        key: key
+      })
+
+    modified_school_id_key = school_short_form <> "_" <> to_string(organization_data.id)
+
+    {:ok, data} = Partners.maybe_insert_organization_data(key, info, org_id)
+
+    data
+    |> OrganizationData.changeset(%{
+      key: modified_school_id_key,
+      school_short_form: modified_school_id_key
+    })
+    |> Repo.update()
+
+    waba_link =
+      "https://api.whatsapp.com/send?phone=918454812392&text=tapschool_" <> modified_school_id_key
+
+    %{
+      is_valid: true,
+      waba_link: waba_link
+    }
   end
 
   def webhook(_, fields), do: fields
