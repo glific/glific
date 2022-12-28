@@ -630,9 +630,6 @@ defmodule Glific.Partners.Billing do
       }
     }
 
-    IO.inspect(monthly_stripe_ids())
-    IO.inspect(billing)
-
     SubscriptionItem.delete(
       billing.stripe_subscription_items[monthly_stripe_ids()["monthly"]],
       %{},
