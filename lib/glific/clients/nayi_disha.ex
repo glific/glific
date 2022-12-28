@@ -59,11 +59,11 @@ defmodule Glific.Clients.NayiDisha do
 
   defp get_attachment(_locale, _training_day), do: "non_poster_day"
 
-  defp do_get_attachment("en", training_day),
-    do: Map.get(@day_wise_eng_posters, training_day, "non_poster_day")
-
   defp do_get_attachment("hi", training_day),
     do: Map.get(@day_wise_hin_posters, training_day, "non_poster_day")
+
+  defp do_get_attachment(_locale, training_day),
+    do: Map.get(@day_wise_eng_posters, training_day, "non_poster_day")
 
   @doc """
     get template for IEX

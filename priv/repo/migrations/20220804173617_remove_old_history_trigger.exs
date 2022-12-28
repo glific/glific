@@ -9,7 +9,7 @@ defmodule Glific.Repo.Migrations.RemoveOldHistoryTrigger do
            from contact_histories where id <> NEW.id and contact_id = NEW.contact_id
          )
          delete from contact_histories
-         where id in (select id  from ranked where rn >= 100);
+         where id in (select id  from ranked where rn >= 25);
 
          RETURN NEW;
       END;

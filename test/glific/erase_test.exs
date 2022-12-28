@@ -22,7 +22,7 @@ defmodule Glific.EraseTest do
     )
 
     logs_count = WebhookLog.count_webhook_logs(%{filter: attrs})
-    Erase.perform_periodic()
+    Erase.clean_old_records()
     assert WebhookLog.count_webhook_logs(%{filter: attrs}) == logs_count - 1
   end
 
@@ -37,7 +37,7 @@ defmodule Glific.EraseTest do
     )
 
     notification_count = Notifications.count_notifications(%{filter: attrs})
-    Erase.perform_periodic()
+    Erase.clean_old_records()
     assert Notifications.count_notifications(%{filter: attrs}) == notification_count - 1
   end
 
@@ -54,7 +54,7 @@ defmodule Glific.EraseTest do
     end)
 
     flow_revision_count = Repo.count_filter(%{}, FlowRevision, &Repo.filter_with/2)
-    Erase.perform_periodic()
+    Erase.clean_old_records()
     assert Repo.count_filter(%{}, FlowRevision, &Repo.filter_with/2) == flow_revision_count - 6
   end
 end

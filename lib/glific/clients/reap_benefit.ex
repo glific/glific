@@ -10,11 +10,11 @@ defmodule Glific.Clients.ReapBenefit do
     Repo
   }
 
-  @frappe_open_civic_api_url "http://frappe.solveninja.org/api/resource/"
-  @frappe_open_civic_location_api "http://frappe.solveninja.org/api/method/open_civic_backend.api.location.new"
+  @frappe_open_civic_api_url "https://solveninja.org/api/resource/"
+  @frappe_open_civic_location_api "https://solveninja.org/api/method/open_civic_backend.api.location.new"
 
   @doc """
-  In the case of RB we retrive the flow name of the object (id any)
+  In the case of RB we retrieve the flow name of the object (id any)
   and set that as the directory name
   """
   @spec gcs_file_name(map()) :: String.t()
