@@ -145,10 +145,10 @@ defmodule Glific.Sheets do
   """
   @spec sync_sheet_data(Sheet.t()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
   def sync_sheet_data(sheet) do
-    [sheet_url, gid] = String.split(sheet.url, "edit")
+    [sheet_url, gid] = String.split(sheet.url, ["edit", "view", "comment"])
 
     last_synced_at = DateTime.utc_now()
-    export_url = sheet_url <> "export?format=csv&&" <> gid
+    export_url = sheet_url <> "export?format=csv&&" <> String.replace(gid, "#", "")
 
     SheetData
     |> where([sd], sd.sheet_id == ^sheet.id)
