@@ -95,7 +95,7 @@ defmodule Glific.BillingTest do
                    stripe_payment_method_id: stripe_payment_method_id
                  })
 
-        assert subscription == %{status: :active}
+        assert subscription.is_active == true
       end
     end
 
@@ -161,7 +161,7 @@ defmodule Glific.BillingTest do
       Map.merge(@valid_attrs, %{
         organization_id: organization_id,
         stripe_subscription_items: %{
-          price_1IgS7dEMShkCsLFnvIpyy5mL: "test_monthly_id",
+          price_1IdZbfEMShkCsLFn8TF0NLPO: "test_monthly_id",
           price_1IgS5DEMShkCsLFne4pOqxqB: "si_test_subscription_id",
           price_1IdZe5EMShkCsLFncGatvTCk: "si_test_consulting_id",
           price_1IdZdTEMShkCsLFnPAf9zzym: "si_test_message_id",
@@ -183,5 +183,41 @@ defmodule Glific.BillingTest do
         assert false == is_nil(billing.stripe_last_usage_recorded)
       end
     end
+  end
+
+  test "create_subscription/1 with quarterly billing period should create subscription", %{
+    organization_id: organization_id
+  } do
+    use_cassette "create_subscription" do
+      assert {:ok, subscription} =
+               Partners.get_organization!(organization_id)
+               |> Billing.create_subscription(%{
+                 billing_period: "QUARTERLY"
+               })
+
+      assert subscription.billing_period == "QUARTERLY"
+    end
+  end
+
+  test "create_subscription/1 with manual billing ", %{
+    organization_id: organization_id
+  } do
+    assert {:ok, subscription} =
+             Partners.get_organization!(organization_id)
+             |> Billing.create_subscription(%{
+               billing_period: "MANUAL"
+             })
+
+    assert subscription.billing_period == "MANUAL"
+  end
+
+  test "list_billing_period/0 should return the correct billing periods" do
+    period = Billing.list_billing_period()
+
+    assert period == [
+             "MONTHLY",
+             "QUARTERLY",
+             "MANUAL"
+           ]
   end
 end
