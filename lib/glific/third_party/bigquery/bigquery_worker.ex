@@ -165,7 +165,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> add_organization_id(table_name, organization_id)
       |> order_by([m], asc: m.id)
       |> limit(@per_min_limit)
-      |> Repo.aggregate(:max, :id, skip_organization_id: true)
+      |> Repo.aggregate(:max, :id)
 
     if is_nil(max_id),
       do: table_id,
@@ -184,7 +184,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> add_organization_id(table_name, organization_id)
       |> order_by([m], asc: m.id)
       |> limit(@per_min_limit)
-      |> Repo.aggregate(:max, :updated_at, skip_organization_id: true, timeout: 15_000)
+      |> Repo.aggregate(:max, :updated_at, timeout: 40_000)
 
     if is_nil(max_last_update),
       do: table_last_updated_at,
