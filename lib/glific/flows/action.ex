@@ -732,9 +732,11 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "set_run_result"} = action, context, messages) do
+    value = ContactField.parse_contact_field_value(context, action.value)
+
     results = %{
-      "input" => action.value,
-      "value" => action.value,
+      "input" => value,
+      "value" => value,
       "category" => action.category,
       "inserted_at" => DateTime.utc_now()
     }
