@@ -198,4 +198,26 @@ defmodule Glific.BillingTest do
       assert subscription.billing_period == "QUARTERLY"
     end
   end
+
+  test "create_subscription/1 with manual billing ", %{
+    organization_id: organization_id
+  } do
+    assert {:ok, subscription} =
+             Partners.get_organization!(organization_id)
+             |> Billing.create_subscription(%{
+               billing_period: "MANUAL"
+             })
+
+    assert subscription.billing_period == "MANUAL"
+  end
+
+  test "list_billing_period/0 should return the correct billing periods" do
+    period = Billing.list_billing_period()
+
+    assert period == [
+             "MONTHLY",
+             "QUARTERLY",
+             "MANUAL"
+           ]
+  end
 end
