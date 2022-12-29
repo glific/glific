@@ -170,29 +170,16 @@ defmodule Glific.Clients.Tap do
 
     key = "school_" <> Glific.string_clean(school_name)
 
-    info = %{name: school_name, generated_by: contact_id}
-
-    Partners.maybe_insert_organization_data(key, info, org_id)
-
-    {:ok, organization_data} =
-      Repo.fetch_by(OrganizationData, %{
-        organization_id: fields["organization_id"],
-        key: key
-      })
-
-    modified_school_id_key = school_short_form <> "_" <> to_string(organization_data.id)
+    info = %{name: school_name, generated_by: contact_id, school_short_form: school_short_form}
 
     {:ok, data} = Partners.maybe_insert_organization_data(key, info, org_id)
+    new_key = school_short_form <> to_string(data.id)
 
     data
-    |> OrganizationData.changeset(%{
-      key: modified_school_id_key,
-      school_short_form: modified_school_id_key
-    })
-    |> Repo.update()
+    |> Ecto.Changeset.cast(%{key: new_key}, [:key])
+    |> Repo.update!()
 
-    waba_link =
-      "https://api.whatsapp.com/send?phone=918454812392&text=tapschool_" <> modified_school_id_key
+    waba_link = "https://api.whatsapp.com/send?phone=918454812392&text=tapschool_" <> new_key
 
     %{
       is_valid: true,
