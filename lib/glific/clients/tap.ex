@@ -161,14 +161,30 @@ defmodule Glific.Clients.Tap do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
     school_name = fields["school_name"] || ""
+    formatted_school_name = String.split(school_name, " ")
+
+    school_short_form =
+      Enum.reduce(formatted_school_name, "", fn val, acc ->
+        acc <> String.first(String.capitalize(val))
+      end)
 
     key = "school_" <> Glific.string_clean(school_name)
 
-    info = %{name: school_name, generated_by: contact_id}
+    info = %{name: school_name, generated_by: contact_id, school_short_form: school_short_form}
 
-    Partners.maybe_insert_organization_data(key, info, org_id)
+    {:ok, data} = Partners.maybe_insert_organization_data(key, info, org_id)
+    new_key = school_short_form <> to_string(data.id)
 
-    fields
+    data
+    |> Ecto.Changeset.cast(%{key: new_key}, [:key])
+    |> Repo.update!()
+
+    waba_link = "https://api.whatsapp.com/send?phone=918454812392&text=tapschool_" <> new_key
+
+    %{
+      is_valid: true,
+      waba_link: waba_link
+    }
   end
 
   def webhook(_, fields), do: fields
