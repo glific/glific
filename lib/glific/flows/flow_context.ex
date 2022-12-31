@@ -503,9 +503,14 @@ defmodule Glific.Flows.FlowContext do
     |> where([fc], fc.is_background_flow == false)
     |> Repo.update_all(set: [completed_at: now, updated_at: now, is_killed: true])
 
+    event_label =
+      if is_nil(after_insert_date),
+        do: "Last Active flow is killed as new flow is started",
+        else: "Mark all the flow as completed."
+
     {:ok, _} =
       Contacts.capture_history(contact_id, :contact_flow_ended_all, %{
-        event_label: "Mark all the flow as completed.",
+        event_label: event_label,
         event_meta:
           %{
             "after_insert_date" => after_insert_date,
