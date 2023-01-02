@@ -164,9 +164,13 @@ defmodule Glific.Clients.Tap do
     formatted_school_name = String.split(school_name, " ")
 
     school_short_form =
-      Enum.reduce(formatted_school_name, "", fn val, acc ->
-        acc <> String.first(String.capitalize(val))
-      end)
+      if length(formatted_school_name) > 1 do
+        Enum.reduce(formatted_school_name, "", fn val, acc ->
+          acc <> String.first(String.capitalize(val))
+        end)
+      else
+        hd(formatted_school_name)
+      end
 
     key = "school_" <> Glific.string_clean(school_name)
 
@@ -183,7 +187,9 @@ defmodule Glific.Clients.Tap do
 
     %{
       is_valid: true,
-      waba_link: waba_link
+      waba_link: waba_link,
+      school_key: new_key,
+      formatted_key: "tapschool:" <> new_key
     }
   end
 
@@ -204,7 +210,8 @@ defmodule Glific.Clients.Tap do
         Map.merge(
           %{
             "is_valid" => true,
-            "message" => "School found"
+            "message" => "School found",
+            "key" => key
           },
           data.json
         )
@@ -212,6 +219,7 @@ defmodule Glific.Clients.Tap do
       _ ->
         %{
           "is_valid" => false,
+          "key" => key,
           "message" => "School not found."
         }
     end
