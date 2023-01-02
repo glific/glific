@@ -173,18 +173,48 @@ defmodule Glific.Clients.Tap do
     info = %{name: school_name, generated_by: contact_id, school_short_form: school_short_form}
 
     {:ok, data} = Partners.maybe_insert_organization_data(key, info, org_id)
-    new_key = school_short_form <> to_string(data.id)
+    new_key = Glific.string_clean(school_short_form) <> to_string(data.id)
 
     data
     |> Ecto.Changeset.cast(%{key: new_key}, [:key])
     |> Repo.update!()
 
-    waba_link = "https://api.whatsapp.com/send?phone=918454812392&text=tapschool_" <> new_key
+    waba_link = "https://api.whatsapp.com/send?phone=918454812392&text=tapschool:" <> new_key
 
     %{
       is_valid: true,
       waba_link: waba_link
     }
+  end
+
+  def webhook("get_school_name", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+
+    key =
+      fields["school_name"]
+      |> String.replace("tapschool:", "")
+      |> Glific.string_clean()
+
+    Repo.fetch_by(OrganizationData, %{
+      organization_id: org_id,
+      key: key
+    })
+    |> case do
+      {:ok, data} ->
+        Map.merge(
+          %{
+            "is_valid" => true,
+            "message" => "School found"
+          },
+          data.json
+        )
+
+      _ ->
+        %{
+          "is_valid" => false,
+          "message" => "School not found."
+        }
+    end
   end
 
   def webhook(_, fields), do: fields
