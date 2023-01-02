@@ -118,7 +118,7 @@ defmodule Glific.Flows.FlowContext do
     belongs_to(:flow, Flow)
     belongs_to(:organization, Organization)
     belongs_to(:parent, FlowContext, foreign_key: :parent_id)
-    belongs_to :profile, Profile
+    belongs_to(:profile, Profile)
     # the originating group message which kicked off this flow if any
     belongs_to(:message_broadcast, MessageBroadcast)
 
@@ -225,7 +225,7 @@ defmodule Glific.Flows.FlowContext do
     is_killed = Keyword.get(opts, :is_killed, false)
 
     {:ok, context} =
-      FlowContext.update_flow_context(
+      update_flow_context(
         context,
         %{
           completed_at: DateTime.utc_now(),
@@ -248,7 +248,7 @@ defmodule Glific.Flows.FlowContext do
 
     {:ok, _} =
       Contacts.capture_history(context.contact, :contact_flow_ended, %{
-        event_label: "Flow Ended",
+        event_label: "Flow Completed",
         event_meta:
           %{
             "context_id" => context.id,
