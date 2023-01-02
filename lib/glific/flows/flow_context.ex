@@ -492,6 +492,7 @@ defmodule Glific.Flows.FlowContext do
 
   def mark_flows_complete(contact_id, false, opts) do
     after_insert_date = Keyword.get(opts, :after_insert_date, nil)
+    source = Keyword.get(opts, :source, "")
 
     now = DateTime.utc_now()
 
@@ -504,9 +505,16 @@ defmodule Glific.Flows.FlowContext do
     |> Repo.update_all(set: [completed_at: now, updated_at: now, is_killed: true])
 
     event_label =
-      if is_nil(after_insert_date),
-        do: "Last Active flow is killed as new flow is started",
-        else: "Mark all the flow as completed."
+      cond do
+        source == "terminate_contact_flows" ->
+          "Last Active flow is terminated"
+
+        is_nil(after_insert_date) == true ->
+          "Last Active flow is killed as new flow is started"
+
+        true ->
+          "Mark all the flow as completed."
+      end
 
     {:ok, _} =
       Contacts.capture_history(contact_id, :contact_flow_ended_all, %{
