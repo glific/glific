@@ -223,6 +223,9 @@ defmodule Glific.Flows.FlowContext do
   @spec reset_one_context(FlowContext.t(), Keyword.t()) :: FlowContext.t()
   def reset_one_context(context, opts \\ []) do
     is_killed = Keyword.get(opts, :is_killed, false)
+    message = get_in(opts, [:event_meta, :message])
+    parent_id = get_in(opts, [:event_meta, :parent_id])
+    source = Keyword.get(opts, :source, "")
 
     {:ok, context} =
       update_flow_context(
@@ -246,17 +249,29 @@ defmodule Glific.Flows.FlowContext do
 
     context = Repo.preload(context, [:flow, :contact])
 
+    event_label =
+      cond do
+        !is_nil(message) && source == "reset_all_contexts" ->
+          "Flow terminated abruptly"
+
+        !is_nil(parent_id) ->
+          "Child Flow Completed"
+
+        true ->
+          "Flow Completed"
+      end
+
     {:ok, _} =
       Contacts.capture_history(context.contact, :contact_flow_ended, %{
-        event_label: "Flow Completed",
+        event_label: event_label,
         event_meta:
           %{
-            "context_id" => context.id,
-            "source" => Keyword.get(opts, :source, ""),
-            "flow" => %{
-              "id" => context.flow.id,
-              "name" => context.flow.name,
-              "uuid" => context.flow.uuid
+            context_id: context.id,
+            source: Keyword.get(opts, :source, ""),
+            flow: %{
+              id: context.flow.id,
+              name: context.flow.name,
+              uuid: context.flow.uuid
             }
           }
           |> Map.merge(Keyword.get(opts, :event_meta, %{}))
@@ -280,7 +295,7 @@ defmodule Glific.Flows.FlowContext do
       reset_one_context(context,
         source: "reset_context",
         event_meta: %{
-          "parent_id" => context.parent_id
+          parent_id: context.parent_id
         }
       )
 
@@ -509,8 +524,11 @@ defmodule Glific.Flows.FlowContext do
         source == "terminate_contact_flows" ->
           "Last Active flow is terminated"
 
-        is_nil(after_insert_date) == true ->
-          "Last Active flow is killed as new flow is started"
+        is_nil(after_insert_date) && source == "init_context" ->
+          "Last Active flow is killed as new flow has started"
+
+        source == "wakeup_one" ->
+          "Flow waked up, marking all other flows as completed"
 
         true ->
           "Mark all the flow as completed."
@@ -521,8 +539,8 @@ defmodule Glific.Flows.FlowContext do
         event_label: event_label,
         event_meta:
           %{
-            "after_insert_date" => after_insert_date,
-            "source" => Keyword.get(opts, :source, "")
+            after_insert_date: after_insert_date,
+            source: Keyword.get(opts, :source, "")
           }
           |> Map.merge(Keyword.get(opts, :event_meta, %{}))
       })
@@ -782,6 +800,7 @@ defmodule Glific.Flows.FlowContext do
       source: "wakeup_one",
       event_meta: %{
         context_id: context.id,
+        flow_id: context.flow_id,
         message: "#{inspect(message)}"
       }
     )
