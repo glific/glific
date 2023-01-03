@@ -1014,6 +1014,42 @@ defmodule Glific.Fixtures do
   """
   @spec sheet_fixture(map()) :: Sheet.t()
   def sheet_fixture(attrs \\ %{}) do
+    Tesla.Mock.mock(fn
+      %{
+        method: :get,
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
+      } ->
+        %Tesla.Env{
+          status: 200
+        }
+
+      %{
+        method: :get,
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/export?format=csv&&gid=0"
+      } ->
+        %Tesla.Env{
+          body:
+            "Key,Day,Message English,Video link,Message Hindi\r\n7/11/2022,1,Hi welcome to Glific. ,http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4,Glific में आपका स्वागत है।\r\n8/11/2022,2,Do you want to explore various programs that we have?,http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4,क्या आप हमारे पास मौजूद विभिन्न कार्यक्रमों का पता लगाना चाहते हैं?\r\n9/11/2022,3,Click on this link to know more about Glific,,Glific के बारे में अधिक जानने के लिए इस लिंक पर क्लिक करें\r\n10/11/2022,4,Please share your usecase,,कृपया अपना उपयोगकेस साझा करें",
+          status: 200
+        }
+
+      %{
+        method: :get,
+        url:
+          "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4"
+      } ->
+        %Tesla.Env{
+          headers: [
+            {"content-type", "video/mp4"},
+            {"content-length", "3209581"}
+          ],
+          method: :get,
+          status: 200
+        }
+    end)
+
     valid_attrs = %{
       label: "sample sheet",
       url:
