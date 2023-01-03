@@ -164,27 +164,65 @@ defmodule Glific.Clients.Tap do
     formatted_school_name = String.split(school_name, " ")
 
     school_short_form =
-      Enum.reduce(formatted_school_name, "", fn val, acc ->
-        acc <> String.first(String.capitalize(val))
-      end)
+      if length(formatted_school_name) > 1 do
+        Enum.reduce(formatted_school_name, "", fn val, acc ->
+          acc <> String.first(String.capitalize(val))
+        end)
+      else
+        hd(formatted_school_name)
+      end
 
     key = "school_" <> Glific.string_clean(school_name)
 
     info = %{name: school_name, generated_by: contact_id, school_short_form: school_short_form}
 
     {:ok, data} = Partners.maybe_insert_organization_data(key, info, org_id)
-    new_key = school_short_form <> to_string(data.id)
+    new_key = Glific.string_clean(school_short_form) <> to_string(data.id)
 
     data
     |> Ecto.Changeset.cast(%{key: new_key}, [:key])
     |> Repo.update!()
 
-    waba_link = "https://api.whatsapp.com/send?phone=918454812392&text=tapschool_" <> new_key
+    waba_link = "https://api.whatsapp.com/send?phone=918454812392&text=tapschool:" <> new_key
 
     %{
       is_valid: true,
-      waba_link: waba_link
+      waba_link: waba_link,
+      school_key: new_key,
+      formatted_key: "tapschool:" <> new_key
     }
+  end
+
+  def webhook("get_school_name", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+
+    key =
+      fields["school_name"]
+      |> String.replace("tapschool:", "")
+      |> Glific.string_clean()
+
+    Repo.fetch_by(OrganizationData, %{
+      organization_id: org_id,
+      key: key
+    })
+    |> case do
+      {:ok, data} ->
+        Map.merge(
+          %{
+            "is_valid" => true,
+            "message" => "School found",
+            "key" => key
+          },
+          data.json
+        )
+
+      _ ->
+        %{
+          "is_valid" => false,
+          "key" => key,
+          "message" => "School not found."
+        }
+    end
   end
 
   def webhook(_, fields), do: fields
