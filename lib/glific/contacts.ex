@@ -292,12 +292,16 @@ defmodule Glific.Contacts do
   """
   @spec delete_contact(Contact.t()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def delete_contact(%Contact{} = contact) do
+    IO.inspect(contact)
     cond do
       has_permission?(contact.id) == false ->
         raise("Permission denied")
 
       is_org_root_contact?(contact) == true ->
         {:error, "Sorry, this is your chatbot number and hence cannot be deleted."}
+
+      is_simulator?(contact) == true ->
+        {:error, "Sorry, this is simulator number and hence cannot be deleted."}
 
       true ->
         Repo.delete(contact)
@@ -311,6 +315,12 @@ defmodule Glific.Contacts do
   def is_org_root_contact?(contact) do
     Partners.organization(contact.organization_id).contact_id == contact.id
   end
+
+  @doc """
+  Checks if the contact is simulator
+  """
+  @spec is_simulator?(Contact.t()) :: boolean()
+  def is_simulator?(contact) do: String.starts_with?(contact.phone, "9876543210")
 
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking contact changes.
