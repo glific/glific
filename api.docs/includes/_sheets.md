@@ -199,7 +199,60 @@ mutation ($input: SheetInput!) {
 }
 ```
 
-In case of errors, above functions return an error object like the below
+In case of sheet data error when media file exceeds WABA limit it will populate warning field
+
+```graphql
+
+mutation ($input: SheetInput!) {
+  createSheet(input: $input) {
+    sheet {
+      insertedAt
+      id
+      isActive
+      label
+      lastSyncedAt
+      updatedAt
+      url
+      warnings
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "input": {
+    "label": "sheet1",
+    "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "createSheet": {
+      "sheet": {
+        "id": "3",
+        "insertedAt": "2022-10-14T06:06:23.141322Z",
+        "isActive": true,
+        "label": "sheet1",
+        "lastSyncedAt": "2022-10-14T06:06:23Z",
+        "updatedAt": "2022-10-14T06:06:23.141322Z",
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        "warnings": "{\"https://storage.googleapis.com/cc-tides/DSs2e3.mp4\":\"Size is too big for the video. Maximum size limit is 16384KB\"}"
+      },
+      "errors": null
+    }
+  }
+}
+```
+
+In case of error while creating a new sheet, above functions return an error object like the below
 
 ```json
 {

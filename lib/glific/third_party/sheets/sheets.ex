@@ -154,31 +154,63 @@ defmodule Glific.Sheets do
     |> where([sd], sd.sheet_id == ^sheet.id)
     |> Repo.delete_all()
 
-    ApiClient.get_csv_content(url: export_url)
-    |> Enum.each(fn {_, row} ->
-      %{
-        ## we can also think in case we need first column.
-        key: row["Key"],
-        row_data: clean_row_values(row),
-        sheet_id: sheet.id,
-        organization_id: sheet.organization_id,
-        last_synced_at: last_synced_at
-      }
-      |> create_sheet_data()
-    end)
+    media_warnings =
+      ApiClient.get_csv_content(url: export_url)
+      |> Enum.reduce(%{}, fn {_, row}, acc ->
+        parsed_rows = parse_row_values(row)
+
+        %{
+          ## we can also think in case we need first column.
+          key: row["Key"],
+          row_data: parsed_rows.values,
+          sheet_id: sheet.id,
+          organization_id: sheet.organization_id,
+          last_synced_at: last_synced_at
+        }
+        |> create_sheet_data()
+
+        Map.merge(acc, parsed_rows.errors)
+      end)
 
     remove_stale_sheet_data(sheet, last_synced_at)
 
     ## we can move this to top of the function also. We can change that later.
     update_sheet(sheet, %{last_synced_at: last_synced_at})
+    |> append_warnings(media_warnings)
   end
 
-  @spec clean_row_values(map()) :: map()
-  defp clean_row_values(row) do
-    Enum.reduce(row, %{}, fn {key, value}, acc ->
-      key = key |> String.downcase() |> String.replace(" ", "_")
-      Map.put(acc, key, value)
-    end)
+  defp append_warnings({:error, _error} = sheet, _media_warnings), do: sheet
+
+  defp append_warnings({:ok, updated_sheet} = _sheet, media_warnings) do
+    updated_sheet
+    |> Map.put(:warnings, media_warnings)
+    |> then(&{:ok, &1})
+  end
+
+  @spec parse_row_values(map()) :: map()
+  defp parse_row_values(row) do
+    clean_row_values =
+      Enum.reduce(row, %{}, fn {key, value}, acc ->
+        key = key |> String.downcase() |> String.replace(" ", "_")
+        Map.put(acc, key, value)
+      end)
+
+    errors =
+      clean_row_values
+      |> Enum.reduce(%{}, fn {_key, value}, acc ->
+        {media_type, _media} = Messages.get_media_type_from_url(value, log_error: false)
+
+        with true <- media_type != :text,
+             %{is_valid: is_valid, message: message} <-
+               Glific.Messages.validate_media(value, Atom.to_string(media_type)),
+             false <- is_valid do
+          Map.put(acc, value, message)
+        else
+          _ -> acc
+        end
+      end)
+
+    %{values: clean_row_values, errors: errors}
   end
 
   ## We are removing all the rows which are not refreshed in the last sync.
