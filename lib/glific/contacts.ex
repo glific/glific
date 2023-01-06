@@ -292,7 +292,6 @@ defmodule Glific.Contacts do
   """
   @spec delete_contact(Contact.t()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def delete_contact(%Contact{} = contact) do
-    IO.inspect(contact)
     cond do
       has_permission?(contact.id) == false ->
         raise("Permission denied")
@@ -320,7 +319,7 @@ defmodule Glific.Contacts do
   Checks if the contact is simulator
   """
   @spec is_simulator?(Contact.t()) :: boolean()
-  def is_simulator?(contact) do: String.starts_with?(contact.phone, "9876543210")
+  def is_simulator?(contact), do: String.starts_with?(contact.phone, "9876543210")
 
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking contact changes.
