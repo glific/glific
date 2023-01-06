@@ -37,6 +37,7 @@ defmodule Glific.Sheets.Sheet do
     field :url, :string
     field :is_active, :boolean, default: true
     field :last_synced_at, :utc_datetime
+    field :warnings, :map, default: %{}, virtual: true
 
     belongs_to :organization, Organization
 

@@ -1258,8 +1258,10 @@ defmodule Glific.Messages do
   @doc """
     Get Media type from a url. We will primary use it for when we receive the url from EEX call.
   """
-  @spec get_media_type_from_url(String.t()) :: tuple()
-  def get_media_type_from_url(url) do
+  @spec get_media_type_from_url(String.t(), Keyword.t()) :: tuple()
+  def get_media_type_from_url(url, opts \\ []) do
+    log_error = Keyword.get(opts, :log_error, true)
+
     extension =
       url
       |> Path.extname()
@@ -1282,7 +1284,7 @@ defmodule Glific.Messages do
         {type, url}
 
       _ ->
-        Logger.info("Could not find media type for extension: #{extension}")
+        if log_error, do: Logger.info("Could not find media type for extension: #{extension}")
         {:text, nil}
     end
   end
