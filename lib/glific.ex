@@ -11,6 +11,8 @@ defmodule Glific do
   For now we'll keep some commonly used functions here, until we need
   a new file
   """
+  @captcha_verify_url "https://www.google.com/recaptcha/api/siteverify"
+  @captcha_score_threshold 0.5
 
   require Logger
 
@@ -18,6 +20,8 @@ defmodule Glific do
     Partners,
     Repo
   }
+
+  alias Tesla.Multipart
 
   @doc """
   Wrapper to return :ok/:error when parsing strings to potential integers
@@ -331,5 +335,38 @@ defmodule Glific do
     end
 
     {:error, error}
+  end
+
+  @doc """
+  Verifying Google Captcha
+  """
+  @spec verify_google_captcha(String.t()) :: {:ok, String.t()} | {:error, any()}
+  def verify_google_captcha(token) do
+    create_request(token)
+    |> then(&Tesla.post(@captcha_verify_url, &1))
+    |> handle_response()
+  end
+
+  @spec create_request(String.t()) :: Tesla.Multipart.t()
+  defp create_request(token) do
+    Multipart.new()
+    |> Multipart.add_field("secret", Application.get_env(:glific, :google_captcha_secret_key))
+    |> Multipart.add_field("response", token)
+  end
+
+  @spec handle_response(tuple()) :: tuple()
+  defp handle_response(response) do
+    response
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        response_body = Jason.decode!(body)
+
+        if response_body["success"] && response_body["score"] > @captcha_score_threshold,
+          do: {:ok, "success"},
+          else: {:error, "failed"}
+
+      {_status, response} ->
+        {:error, "invalid response #{inspect(response)}"}
+    end
   end
 end

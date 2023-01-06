@@ -4,15 +4,12 @@ defmodule GlificWeb.API.V1.RegistrationController do
   """
   @dialyzer {:no_return, reset_password: 2}
   @dialyzer {:no_return, reset_user_password: 2}
-  @captcha_verify_url "https://www.google.com/recaptcha/api/siteverify"
-  @captcha_score_threshold 0.5
 
   use GlificWeb, :controller
 
   alias Ecto.Changeset
   alias PasswordlessAuth
   alias Plug.Conn
-  alias Tesla.Multipart
 
   alias GlificWeb.{
     APIAuthPlug,
@@ -130,7 +127,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
     registration = user_params["user"]["registration"]
 
-    with {:ok, "success"} <- verify_google_captcha(token),
+    with {:ok, "success"} <- Glific.verify_google_captcha(token),
          {:ok, _contact} <- optin_contact(organization_id, phone),
          {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
          true <- send_otp_allowed?(organization_id, phone, registration),
@@ -141,36 +138,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
         conn
         |> put_status(400)
         |> json(%{error: %{status: 400, message: "Cannot send the otp to #{phone}"}})
-    end
-  end
-
-  @spec verify_google_captcha(String.t()) :: {:ok, String.t()} | {:error, any()}
-  defp verify_google_captcha(token) do
-    create_request(token)
-    |> then(&Tesla.post(@captcha_verify_url, &1))
-    |> handle_response()
-  end
-
-  @spec create_request(String.t()) :: Tesla.Multipart.t()
-  defp create_request(token) do
-    Multipart.new()
-    |> Multipart.add_field("secret", Application.get_env(:glific, :google_captcha_secret_key))
-    |> Multipart.add_field("response", token)
-  end
-
-  @spec handle_response(tuple()) :: tuple()
-  defp handle_response(response) do
-    response
-    |> case do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        response_body = Jason.decode!(body)
-
-        if response_body["success"] && response_body["score"] > @captcha_score_threshold,
-          do: {:ok, "success"},
-          else: {:error, "failed"}
-
-      {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
     end
   end
 

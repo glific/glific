@@ -11,6 +11,15 @@ defmodule GlificWeb.API.V1.OnboardController do
 
   @doc false
   @spec setup(Conn.t(), map()) :: Conn.t()
-  def setup(conn, params),
-    do: json(conn, Onboard.setup(params))
+  def setup(conn, %{"token" => token} = params) do
+    case Glific.verify_google_captcha(token) do
+      {:ok, "success"} ->
+        json(conn, Onboard.setup(params))
+
+      {:error, _error} ->
+        conn
+        |> put_status(400)
+        |> json(%{error: %{status: 400, message: "Error while setting up NGO"}})
+    end
+  end
 end
