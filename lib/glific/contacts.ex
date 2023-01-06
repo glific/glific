@@ -299,6 +299,9 @@ defmodule Glific.Contacts do
       is_org_root_contact?(contact) == true ->
         {:error, "Sorry, this is your chatbot number and hence cannot be deleted."}
 
+      is_simulator_contact?(contact.phone) == true ->
+        {:error, "Sorry, this is simulator number and hence cannot be deleted."}
+
       true ->
         Repo.delete(contact)
     end
