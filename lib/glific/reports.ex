@@ -7,7 +7,7 @@ defmodule Glific.Reports do
   # alias Glific.Repo
 
   def get_kpi(_kpi) do
-    Enum.random(1..1000)
+    Enum.random(100..1000)
   end
 
   def kpi_list() do
