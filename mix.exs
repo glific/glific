@@ -155,7 +155,8 @@ defmodule Glific.MixProject do
       {:exvcr, "~> 0.13", only: @test_envs},
       {:dotenvy, "~> 0.1"},
       {:phoenix_swoosh, "~> 1.0"},
-      {:gen_smtp, "~> 1.1"}
+      {:gen_smtp, "~> 1.1"},
+      {:tailwind, "~> 0.1", runtime: Mix.env() == :dev}
     ]
   end
 
@@ -193,7 +194,7 @@ defmodule Glific.MixProject do
         "test"
       ],
       test: ["ecto.create --quiet", "ecto.migrate", "test"],
-      "assets.deploy": ["esbuild default --minify", "phx.digest"]
+      "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
     ]
   end
 end

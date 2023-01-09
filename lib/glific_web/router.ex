@@ -65,7 +65,7 @@ defmodule GlificWeb.Router do
   scope "/", GlificWeb do
     pipe_through([:browser])
 
-    live("/liveview", StatsLive)
+    live("/stats", StatsLive)
   end
 
   # Custom stack for Absinthe

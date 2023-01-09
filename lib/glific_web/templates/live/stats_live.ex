@@ -4,22 +4,32 @@ defmodule GlificWeb.StatsLive do
   """
   use GlificWeb, :live_view
 
-  @doc """
-  Receives the socket.assigns and is responsible for returning rendered content
-  """
-  @spec render(Plug.Conn.t()) :: Phoenix.LiveView.Rendered.t()
-  def render(assigns) do
-    ~H"""
-    <h1> Current temperature: <%= @temperature %> </h1>
-    """
+  alias Glific.Reports
+
+  def mount(_params, _session, socket) do
+    if(connected?(socket)) do
+      :timer.send_interval(1000, self(), :refresh)
+    end
+
+    socket = assign_stats(socket, :init)
+    {:ok, socket}
   end
 
-  @doc """
-  Wires up socket assigns necessary for rendering the view
-  """
-  @spec mount(map(), map(), Phoenix.LiveView.Socket.t()) :: {:ok, Phoenix.LiveView.Socket.t()}
-  def mount(_params, _session, socket) do
-    # temperature = Thermostat.get_user_reading(user_id)
-    {:ok, assign(socket, :temperature, 10)}
+  def handle_info(:refresh, socket) do
+    {:noreply, assign_stats(socket, :call)}
+  end
+
+  def handle_info({:get_stats, kpi}, socket) do
+    {:noreply, assign(socket, kpi, Reports.get_kpi(kpi))}
+  end
+
+  defp assign_stats(socket, :init) do
+    stats = Enum.map(Reports.kpi_list(), &{&1, "loading.."})
+    assign(socket, Keyword.merge(stats, page_title: "Glific Dashboard"))
+  end
+
+  defp assign_stats(socket, :call) do
+    Enum.map(Reports.kpi_list(), &send(self(), {:get_stats, &1}))
+    socket
   end
 end
