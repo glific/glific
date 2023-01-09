@@ -158,7 +158,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       )
 
       valid_params = %{
-        "user" => %{"phone" => receiver.phone, "registration" => true, "token" => "some_token"}
+        "user" => %{"phone" => receiver.phone, "registration" => "true", "token" => "some_token"}
       }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
@@ -171,7 +171,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       phone = nil
 
       invalid_params = %{
-        "user" => %{"phone" => phone, "registration" => true, "token" => "some_token"}
+        "user" => %{"phone" => phone, "registration" => "true", "token" => "some_token"}
       }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
@@ -185,7 +185,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       phone = user.phone
 
       invalid_params = %{
-        "user" => %{"phone" => phone, "registration" => true, "token" => "some_token"}
+        "user" => %{"phone" => phone, "registration" => "true", "token" => "some_token"}
       }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
@@ -200,7 +200,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       Contacts.contact_opted_out(receiver.phone, receiver.organization_id, DateTime.utc_now())
 
       invalid_params = %{
-        "user" => %{"phone" => receiver.phone, "registration" => true, "token" => "some_token"}
+        "user" => %{"phone" => receiver.phone, "registration" => "true", "token" => "some_token"}
       }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))

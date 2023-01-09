@@ -119,15 +119,18 @@ defmodule GlificWeb.API.V1.RegistrationController do
     Repo.put_current_user(organization.root_user)
   end
 
-  @doc false
+  @doc """
+  verifying google captcha only when token is passed
+  """
   @spec send_otp(Conn.t(), map()) :: Conn.t()
   def send_otp(
         conn,
-        %{"user" => %{"token" => token, "registration" => "true", "phone" => phone}} = _user_params
+        %{"user" => %{"token" => token, "registration" => "true", "phone" => phone}} =
+          _user_params
       ) do
     case Glific.verify_google_captcha(token) do
       {:ok, "success"} ->
-        send_otp(conn, %{"user" => %{"phone" => phone}})
+        send_otp(conn, %{"user" => %{"phone" => phone, "registration" => "true"}})
 
       {:error, _error} ->
         send_otp_error(conn, phone)
