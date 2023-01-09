@@ -37,6 +37,7 @@ defmodule Glific.Sheets.Sheet do
     field :url, :string
     field :is_active, :boolean, default: true
     field :last_synced_at, :utc_datetime
+    field :warnings, :map, default: %{}, virtual: true
 
     belongs_to :organization, Organization
 
@@ -59,7 +60,8 @@ defmodule Glific.Sheets.Sheet do
   defp validate_url(%{changes: changes} = changeset) when not is_nil(changes.url) do
     url = changeset.changes[:url]
 
-    if Glific.URI.cast(url) == :ok && String.contains?(url, "output=csv") do
+    if Glific.URI.cast(url) == :ok &&
+         String.contains?(url, "https://docs.google.com/spreadsheets/") do
       changeset
     else
       add_error(

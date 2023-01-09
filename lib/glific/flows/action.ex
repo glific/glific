@@ -56,6 +56,7 @@ defmodule Glific.Flows.Action do
   @required_fields_contact [:contacts, :text | @required_field_common]
   @required_fields_waittime [:delay]
   @required_fields_interactive_template [:name | @required_field_common]
+  @required_fields_set_results [:name, :category, :value | @required_field_common]
 
   @wait_for ["wait_for_time", "wait_for_result"]
 
@@ -98,7 +99,8 @@ defmodule Glific.Flows.Action do
           params_count: String.t() | nil,
           params: list() | nil,
           attachment_type: String.t() | nil,
-          attachment_url: String.t() | nil
+          attachment_url: String.t() | nil,
+          category: String.t() | nil
         }
 
   embedded_schema do
@@ -106,6 +108,7 @@ defmodule Glific.Flows.Action do
     field(:name, :string)
     field(:text, :string)
     field(:value, :string)
+    field(:category, :string)
     field(:input, :string)
 
     # various fields for webhooks
@@ -274,7 +277,7 @@ defmodule Glific.Flows.Action do
 
     process(json, uuid_map, node, %{
       interactive_template_id: json["id"],
-      labels: json["labels"],
+      labels: process_labels(json["labels"]),
       params: json["params"] || [],
       params_count: json["paramsCount"] || "0",
       attachment_url: json["attachment_url"],
@@ -291,6 +294,16 @@ defmodule Glific.Flows.Action do
     else
       process(json, uuid_map, node, %{groups: json["groups"]})
     end
+  end
+
+  def process(%{"type" => "set_run_result"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_results)
+
+    process(json, uuid_map, node, %{
+      value: json["value"],
+      category: json["category"],
+      name: json["name"]
+    })
   end
 
   @default_wait_time -1
@@ -718,6 +731,21 @@ defmodule Glific.Flows.Action do
     {:ok, context, messages}
   end
 
+  def execute(%{type: "set_run_result"} = action, context, messages) do
+    value = FlowContext.parse_context_string(context, action.value)
+
+    results = %{
+      "input" => value,
+      "value" => value,
+      "category" => action.category,
+      "inserted_at" => DateTime.utc_now()
+    }
+
+    updated_context = FlowContext.update_results(context, %{action.name => results})
+
+    {:ok, updated_context, messages}
+  end
+
   def execute(%{type: type} = _action, context, [msg])
       when type in @wait_for do
     if msg.body != "No Response" do
@@ -766,9 +794,18 @@ defmodule Glific.Flows.Action do
     # when we send a fake temp message (like No Response)
     # or when a flow is resumed, there is no last_message
     # hence we check for the existence of one in these functions
+    message = Repo.get(Message, last_message.id)
+
+    new_labels =
+      if message.flow_label in [nil, ""] do
+        flow_label
+      else
+        message.flow_label <> ", " <> flow_label
+      end
+
     {:ok, _} =
       Repo.get(Message, last_message.id)
-      |> Message.changeset(%{flow_label: flow_label})
+      |> Message.changeset(%{flow_label: new_labels})
       |> Repo.update()
 
     nil

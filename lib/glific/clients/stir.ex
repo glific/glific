@@ -1356,7 +1356,7 @@ defmodule Glific.Clients.Stir do
   @doc false
   @spec blocked?(String.t()) :: boolean
   def blocked?(phone) do
-    pattern = :binary.compile_pattern(["91", "1", "44", "256"])
+    pattern = ["91", "1", "44", "256"]
 
     if String.starts_with?(phone, pattern),
       do: false,

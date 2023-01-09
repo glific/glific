@@ -23,7 +23,7 @@ jobs:
       # setup the python
       - uses: actions/setup-python@v2
         with:
-          python-version: '3.8.1'
+          python-version: '3.9'
               
       # configure the gigalixir-actions with our credentials and app name
       - uses: mhanberg/gigalixir-action@v0.4.3

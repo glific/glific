@@ -118,7 +118,7 @@ defmodule Glific.Flows.FlowContext do
     belongs_to(:flow, Flow)
     belongs_to(:organization, Organization)
     belongs_to(:parent, FlowContext, foreign_key: :parent_id)
-    belongs_to :profile, Profile
+    belongs_to(:profile, Profile)
     # the originating group message which kicked off this flow if any
     belongs_to(:message_broadcast, MessageBroadcast)
 
@@ -223,9 +223,12 @@ defmodule Glific.Flows.FlowContext do
   @spec reset_one_context(FlowContext.t(), Keyword.t()) :: FlowContext.t()
   def reset_one_context(context, opts \\ []) do
     is_killed = Keyword.get(opts, :is_killed, false)
+    message = get_in(opts, [:event_meta, :message])
+    parent_id = get_in(opts, [:event_meta, :parent_id])
+    source = Keyword.get(opts, :source, "")
 
     {:ok, context} =
-      FlowContext.update_flow_context(
+      update_flow_context(
         context,
         %{
           completed_at: DateTime.utc_now(),
@@ -246,17 +249,29 @@ defmodule Glific.Flows.FlowContext do
 
     context = Repo.preload(context, [:flow, :contact])
 
+    event_label =
+      cond do
+        !is_nil(message) && source == "reset_all_contexts" ->
+          "Flow terminated abruptly"
+
+        !is_nil(parent_id) ->
+          "Child Flow Completed"
+
+        true ->
+          "Flow Completed"
+      end
+
     {:ok, _} =
       Contacts.capture_history(context.contact, :contact_flow_ended, %{
-        event_label: "Flow Ended",
+        event_label: event_label,
         event_meta:
           %{
-            "context_id" => context.id,
-            "source" => Keyword.get(opts, :source, ""),
-            "flow" => %{
-              "id" => context.flow.id,
-              "name" => context.flow.name,
-              "uuid" => context.flow.uuid
+            context_id: context.id,
+            source: Keyword.get(opts, :source, ""),
+            flow: %{
+              id: context.flow.id,
+              name: context.flow.name,
+              uuid: context.flow.uuid
             }
           }
           |> Map.merge(Keyword.get(opts, :event_meta, %{}))
@@ -280,7 +295,7 @@ defmodule Glific.Flows.FlowContext do
       reset_one_context(context,
         source: "reset_context",
         event_meta: %{
-          "parent_id" => context.parent_id
+          parent_id: context.parent_id
         }
       )
 
@@ -492,6 +507,7 @@ defmodule Glific.Flows.FlowContext do
 
   def mark_flows_complete(contact_id, false, opts) do
     after_insert_date = Keyword.get(opts, :after_insert_date, nil)
+    source = Keyword.get(opts, :source, "")
 
     now = DateTime.utc_now()
 
@@ -503,13 +519,28 @@ defmodule Glific.Flows.FlowContext do
     |> where([fc], fc.is_background_flow == false)
     |> Repo.update_all(set: [completed_at: now, updated_at: now, is_killed: true])
 
+    event_label =
+      cond do
+        source == "terminate_contact_flows" ->
+          "Last Active flow is terminated"
+
+        is_nil(after_insert_date) && source == "init_context" ->
+          "Last Active flow is killed as new flow has started"
+
+        source == "wakeup_one" ->
+          "Flow waked up, marking all other flows as completed"
+
+        true ->
+          "Mark all the flow as completed."
+      end
+
     {:ok, _} =
       Contacts.capture_history(contact_id, :contact_flow_ended_all, %{
-        event_label: "Mark all the flow as completed.",
+        event_label: event_label,
         event_meta:
           %{
-            "after_insert_date" => after_insert_date,
-            "source" => Keyword.get(opts, :source, "")
+            after_insert_date: after_insert_date,
+            source: Keyword.get(opts, :source, "")
           }
           |> Map.merge(Keyword.get(opts, :event_meta, %{}))
       })
@@ -525,17 +556,24 @@ defmodule Glific.Flows.FlowContext do
   end
 
   ## If flow starts with a keyword then add the keyword to the context results
-  @spec default_results(String.t() | nil) :: map()
-  defp default_results(nil), do: %{}
+  @spec default_results(Keyword.t()) :: map()
+  defp default_results(opts) do
+    flow_keyword = Keyword.get(opts, :flow_keyword, "")
+    initial_results = Keyword.get(opts, :default_results, %{}) || %{}
 
-  defp default_results(flow_keyword),
-    do: %{
-      "flow_keyword" => %{
-        "input" => Glific.string_clean(flow_keyword),
-        "category" => flow_keyword,
-        "inserted_at" => DateTime.utc_now()
+    if flow_keyword in [nil, ""] do
+      initial_results
+    else
+      %{
+        "flow_keyword" => %{
+          "input" => Glific.string_clean(flow_keyword),
+          "category" => flow_keyword,
+          "inserted_at" => DateTime.utc_now()
+        }
       }
-    }
+      |> Map.merge(initial_results)
+    end
+  end
 
   @doc """
   Seed the context and set the wake up time as needed
@@ -548,7 +586,7 @@ defmodule Glific.Flows.FlowContext do
     delay = Keyword.get(opts, :delay, 0)
     uuids_seen = Keyword.get(opts, :uuids_seen, %{})
     wakeup_at = Keyword.get(opts, :wakeup_at)
-    results = Keyword.get(opts, :results, default_results(Keyword.get(opts, :flow_keyword)))
+    initial_results = Keyword.get(opts, :results, default_results(opts))
 
     Logger.info(
       "Seeding flow: id: '#{flow.id}', parent_id: '#{parent_id}', contact_id: '#{contact.id}'"
@@ -556,23 +594,34 @@ defmodule Glific.Flows.FlowContext do
 
     node = flow.start_node
 
-    create_flow_context(%{
-      contact_id: contact.id,
-      parent_id: parent_id,
-      message_broadcast_id: message_broadcast_id,
-      node_uuid: node.uuid,
-      flow_uuid: flow.uuid,
-      status: status,
-      node: node,
-      results: results,
-      flow_id: flow.id,
-      flow: flow,
-      organization_id: flow.organization_id,
-      uuid_map: flow.uuid_map,
-      delay: delay,
-      uuids_seen: uuids_seen,
-      wakeup_at: wakeup_at
-    })
+    {:ok, context} =
+      create_flow_context(%{
+        contact_id: contact.id,
+        parent_id: parent_id,
+        message_broadcast_id: message_broadcast_id,
+        node_uuid: node.uuid,
+        flow_uuid: flow.uuid,
+        status: status,
+        node: node,
+        flow_id: flow.id,
+        flow: flow,
+        organization_id: flow.organization_id,
+        uuid_map: flow.uuid_map,
+        delay: delay,
+        uuids_seen: uuids_seen,
+        wakeup_at: wakeup_at
+      })
+
+    context =
+      if initial_results in [nil, %{}] do
+        context
+      else
+        context
+        |> Repo.preload([:flow, :contact])
+        |> update_results(initial_results)
+      end
+
+    {:ok, context}
   end
 
   @doc """
@@ -657,7 +706,7 @@ defmodule Glific.Flows.FlowContext do
       |> Repo.one()
       |> Repo.preload([:contact, :flow])
 
-    # if this context is waiting on time, we skip it
+    # if this is a background flow we skip it
     if fc && fc.is_background_flow,
       do: nil,
       else: fc
@@ -751,6 +800,7 @@ defmodule Glific.Flows.FlowContext do
       source: "wakeup_one",
       event_meta: %{
         context_id: context.id,
+        flow_id: context.flow_id,
         message: "#{inspect(message)}"
       }
     )

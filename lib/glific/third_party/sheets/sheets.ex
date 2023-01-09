@@ -28,13 +28,27 @@ defmodule Glific.Sheets do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_sheet(map()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_sheet(map()) :: {:ok, Sheet.t()} | {:error, any()}
   def create_sheet(attrs) do
-    with {:ok, sheet} <-
+    with {:ok, true} <- validate_sheet(attrs.url),
+         {:ok, sheet} <-
            %Sheet{}
            |> Sheet.changeset(attrs)
            |> Repo.insert() do
       sync_sheet_data(sheet)
+    end
+  end
+
+  @spec validate_sheet(String.t()) :: {:ok, true} | {:error, String.t()}
+  defp validate_sheet(url) do
+    Tesla.get(url)
+    |> case do
+      {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
+        {:ok, true}
+
+      _ ->
+        {:error,
+         "Please double-check the URL and make sure the sharing access for the sheet is at least set to 'Anyone with the link' can view."}
     end
   end
 
@@ -131,33 +145,72 @@ defmodule Glific.Sheets do
   """
   @spec sync_sheet_data(Sheet.t()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
   def sync_sheet_data(sheet) do
-    last_synced_at = DateTime.utc_now()
+    [sheet_url, gid] = String.split(sheet.url, ["edit", "view", "comment"])
 
-    ApiClient.get_csv_content(url: sheet.url)
-    |> Enum.each(fn {_, row} ->
-      %{
-        ## we can also think in case we need fist column.
-        key: row["Key"],
-        row_data: clean_row_values(row),
-        sheet_id: sheet.id,
-        organization_id: sheet.organization_id,
-        last_synced_at: last_synced_at
-      }
-      |> upsert_sheet_data()
-    end)
+    last_synced_at = DateTime.utc_now()
+    export_url = sheet_url <> "export?format=csv&&" <> String.replace(gid, "#", "")
+
+    SheetData
+    |> where([sd], sd.sheet_id == ^sheet.id)
+    |> Repo.delete_all()
+
+    media_warnings =
+      ApiClient.get_csv_content(url: export_url)
+      |> Enum.reduce(%{}, fn {_, row}, acc ->
+        parsed_rows = parse_row_values(row)
+
+        %{
+          ## we can also think in case we need first column.
+          key: row["Key"],
+          row_data: parsed_rows.values,
+          sheet_id: sheet.id,
+          organization_id: sheet.organization_id,
+          last_synced_at: last_synced_at
+        }
+        |> create_sheet_data()
+
+        Map.merge(acc, parsed_rows.errors)
+      end)
 
     remove_stale_sheet_data(sheet, last_synced_at)
 
     ## we can move this to top of the function also. We can change that later.
     update_sheet(sheet, %{last_synced_at: last_synced_at})
+    |> append_warnings(media_warnings)
   end
 
-  @spec clean_row_values(map()) :: map()
-  defp clean_row_values(row) do
-    Enum.reduce(row, %{}, fn {key, value}, acc ->
-      key = key |> String.downcase() |> String.replace(" ", "_")
-      Map.put(acc, key, value)
-    end)
+  defp append_warnings({:error, _error} = sheet, _media_warnings), do: sheet
+
+  defp append_warnings({:ok, updated_sheet} = _sheet, media_warnings) do
+    updated_sheet
+    |> Map.put(:warnings, media_warnings)
+    |> then(&{:ok, &1})
+  end
+
+  @spec parse_row_values(map()) :: map()
+  defp parse_row_values(row) do
+    clean_row_values =
+      Enum.reduce(row, %{}, fn {key, value}, acc ->
+        key = key |> String.downcase() |> String.replace(" ", "_")
+        Map.put(acc, key, value)
+      end)
+
+    errors =
+      clean_row_values
+      |> Enum.reduce(%{}, fn {_key, value}, acc ->
+        {media_type, _media} = Messages.get_media_type_from_url(value, log_error: false)
+
+        with true <- media_type != :text,
+             %{is_valid: is_valid, message: message} <-
+               Glific.Messages.validate_media(value, Atom.to_string(media_type)),
+             false <- is_valid do
+          Map.put(acc, value, message)
+        else
+          _ -> acc
+        end
+      end)
+
+    %{values: clean_row_values, errors: errors}
   end
 
   ## We are removing all the rows which are not refreshed in the last sync.
@@ -210,20 +263,6 @@ defmodule Glific.Sheets do
     sheet_data
     |> SheetData.changeset(attrs)
     |> Repo.update()
-  end
-
-  @doc """
-  Updates or Creates a SheetData based on the unique indexes in the table. If there is a match it returns the existing SheetData, else it creates a new one
-  """
-  @spec upsert_sheet_data(map()) :: {:ok, SheetData.t()}
-  def upsert_sheet_data(attrs) do
-    case Repo.get_by(SheetData, %{key: attrs.key, organization_id: attrs.organization_id}) do
-      nil ->
-        create_sheet_data(attrs)
-
-      sheet_data ->
-        update_sheet_data(sheet_data, attrs)
-    end
   end
 
   @doc """

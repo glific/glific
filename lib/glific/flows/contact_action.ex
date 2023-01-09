@@ -93,7 +93,7 @@ defmodule Glific.Flows.ContactAction do
     with {false, context} <- has_loops?(context, body, messages) do
       attrs = %{
         body: body,
-        uuid: action.uuid,
+        uuid: action.node_uuid,
         type: interactive_content["type"],
         receiver_id: cid,
         flow_label: action.labels,
@@ -252,7 +252,7 @@ defmodule Glific.Flows.ContactAction do
 
     attrs = %{
       receiver_id: cid,
-      uuid: action.uuid,
+      uuid: action.node_uuid,
       flow_id: context.flow_id,
       message_broadcast_id: context.message_broadcast_id,
       is_hsm: true,
@@ -318,7 +318,7 @@ defmodule Glific.Flows.ContactAction do
     {type, media_id} = get_media_from_attachment(attachments, text, context, cid)
 
     attrs = %{
-      uuid: action.uuid,
+      uuid: action.node_uuid,
       body: body,
       type: type,
       media_id: media_id,
@@ -371,18 +371,23 @@ defmodule Glific.Flows.ContactAction do
 
     {_cid, message_vars} = resolve_cid(context, cid)
 
-    {:ok, message_media} =
-      %{
-        type: type,
-        url: url,
-        source_url: url,
-        thumbnail: url,
-        caption: MessageVarParser.parse(caption, message_vars),
-        organization_id: context.organization_id
-      }
-      |> Messages.create_message_media()
+    if is_nil(url) do
+      FlowContext.notification(context, "Could not send message to contact: Empty media URL")
+      {type, nil}
+    else
+      {:ok, message_media} =
+        %{
+          type: type,
+          url: url,
+          source_url: url,
+          thumbnail: url,
+          caption: MessageVarParser.parse(caption, message_vars),
+          organization_id: context.organization_id
+        }
+        |> Messages.create_message_media()
 
-    {type, message_media.id}
+      {type, message_media.id}
+    end
   end
 
   @spec handle_attachment_expression(FlowContext.t(), String.t(), String.t()) :: tuple()

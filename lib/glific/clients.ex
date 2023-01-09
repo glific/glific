@@ -19,7 +19,7 @@ defmodule Glific.Clients do
     gcs_file_name: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
-    webhook: Glific.Clients.ReapBenefit,
+    webhook: Glific.Clients.Tap,
     daily_tasks: Glific.Clients.DigitalGreen,
     trigger_condition: Glific.Clients.ArogyaWorld
   }
@@ -159,6 +159,12 @@ defmodule Glific.Clients do
     webhook: Glific.Clients.QuestAlliance
   }
 
+  @oblf %{
+    id: 109,
+    name: "OBLF",
+    webhook: Glific.Clients.Oblf
+  }
+
   ## we should move this also to databases.
   @plugins %{
     @sol[:id] => @sol,
@@ -180,7 +186,8 @@ defmodule Glific.Clients do
     @digitalgreen_jh[:id] => @digitalgreen_jh,
     @quest_afeqc[:id] => @quest_afeqc,
     @quest_tcec[:id] => @quest_tcec,
-    @quest_alliance[:id] => @quest_alliance
+    @quest_alliance[:id] => @quest_alliance,
+    @oblf[:id] => @oblf
   }
 
   @spec env(atom() | nil) :: atom()
