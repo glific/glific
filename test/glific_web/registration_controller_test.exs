@@ -157,7 +157,9 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         DateTime.utc_now()
       )
 
-      valid_params = %{"user" => %{"phone" => receiver.phone, "token" => "some_token"}}
+      valid_params = %{
+        "user" => %{"phone" => receiver.phone, "registration" => true, "token" => "some_token"}
+      }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
 
@@ -167,7 +169,10 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
     test "send otp to invalid contact", %{conn: conn} do
       phone = nil
-      invalid_params = %{"user" => %{"phone" => phone, "token" => "some_token"}}
+
+      invalid_params = %{
+        "user" => %{"phone" => phone, "registration" => true, "token" => "some_token"}
+      }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
 
@@ -178,7 +183,10 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     test "send otp to existing user will return an error", %{conn: conn} do
       [user | _] = Users.list_users(%{filter: %{organization_id: conn.assigns[:organization_id]}})
       phone = user.phone
-      invalid_params = %{"user" => %{"phone" => phone, "token" => "some_token"}}
+
+      invalid_params = %{
+        "user" => %{"phone" => phone, "registration" => true, "token" => "some_token"}
+      }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
 
@@ -190,7 +198,10 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       receiver = Fixtures.contact_fixture()
 
       Contacts.contact_opted_out(receiver.phone, receiver.organization_id, DateTime.utc_now())
-      invalid_params = %{"user" => %{"phone" => receiver.phone, "token" => "some_token"}}
+
+      invalid_params = %{
+        "user" => %{"phone" => receiver.phone, "registration" => true, "token" => "some_token"}
+      }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
 
@@ -221,7 +232,11 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         |> Users.create_user()
 
       valid_params = %{
-        "user" => %{"phone" => user.phone, "registration" => "false", "token" => "some_token"}
+        "user" => %{
+          "phone" => user.phone,
+          "registration" => "false",
+          "token" => "some_token"
+        }
       }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
