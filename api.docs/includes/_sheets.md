@@ -40,7 +40,7 @@ query Sheets($filter: SheetFilter, $opts: Opts) {
         "label": "sheet1",
         "lastSyncedAt": "2022-10-14T05:37:32Z",
         "updatedAt": "2022-10-14T05:37:33.000000Z",
-        "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
       },
       {
         "id": "2",
@@ -49,7 +49,7 @@ query Sheets($filter: SheetFilter, $opts: Opts) {
         "label": "sheet2",
         "lastSyncedAt": "2022-10-14T05:42:19Z",
         "updatedAt": "2022-10-14T05:42:19.000000Z",
-        "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
       }
     ]
   }
@@ -111,7 +111,7 @@ query Sheet($sheetId: ID!) {
         "label": "sheet1",
         "lastSyncedAt": "2022-10-14T05:37:32Z",
         "updatedAt": "2022-10-14T05:37:33.000000Z",
-        "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
       }
     }
   }
@@ -173,7 +173,7 @@ mutation ($input: SheetInput!) {
 {
   "input": {
     "label": "sheet1",
-    "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+    "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
   }
 }
 ```
@@ -191,7 +191,7 @@ mutation ($input: SheetInput!) {
         "label": "sheet1",
         "lastSyncedAt": "2022-10-14T06:06:23Z",
         "updatedAt": "2022-10-14T06:06:23.141322Z",
-        "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
       },
       "errors": null
     }
@@ -199,7 +199,60 @@ mutation ($input: SheetInput!) {
 }
 ```
 
-In case of errors, above functions return an error object like the below
+In case of sheet data error when media file exceeds WABA limit it will populate warning field
+
+```graphql
+
+mutation ($input: SheetInput!) {
+  createSheet(input: $input) {
+    sheet {
+      insertedAt
+      id
+      isActive
+      label
+      lastSyncedAt
+      updatedAt
+      url
+      warnings
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "input": {
+    "label": "sheet1",
+    "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "createSheet": {
+      "sheet": {
+        "id": "3",
+        "insertedAt": "2022-10-14T06:06:23.141322Z",
+        "isActive": true,
+        "label": "sheet1",
+        "lastSyncedAt": "2022-10-14T06:06:23Z",
+        "updatedAt": "2022-10-14T06:06:23.141322Z",
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        "warnings": "{\"https://storage.googleapis.com/cc-tides/DSs2e3.mp4\":\"Size is too big for the video. Maximum size limit is 16384KB\"}"
+      },
+      "errors": null
+    }
+  }
+}
+```
+
+In case of error while creating a new sheet, above functions return an error object like the below
 
 ```json
 {
@@ -254,7 +307,7 @@ mutation UpdateSheet($id: ID!, $input: SheetInput!) {
   "id": 3,
   "input": {
     "label": "sheet3",
-    "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+    "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
   }
 }
 ```
@@ -273,7 +326,7 @@ mutation UpdateSheet($id: ID!, $input: SheetInput!) {
         "label": "sheet3",
         "lastSyncedAt": "2022-10-14T06:10:57Z",
         "updatedAt": "2022-10-14T06:10:57.790150Z",
-        "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
       }
     }
   }
@@ -350,7 +403,7 @@ mutation SyncSheet($syncSheetId: ID!) {
         "label": "sheet3",
         "lastSyncedAt": "2022-10-14T06:10:57Z",
         "updatedAt": "2022-10-14T06:10:57.790150Z",
-        "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6L9eu5zCfiCQiULhy_yrw7VYDoMDnb8pNi3E4l226iH865Z8Nv-6XWaZ-CStITlT3EmiCZ_RnHzof/pub?gid=0&single=true&output=csv"
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
       },
       "errors": null
     }

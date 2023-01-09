@@ -228,7 +228,7 @@ defmodule Glific.Processor.ConsumerFlow do
   end
 
   @spec match_with_regex?(map(), String.t()) :: boolean()
-  defp match_with_regex?(nil, _), do: false
+  defp match_with_regex?(regx_flow, body) when nil in [regx_flow, body], do: false
 
   defp match_with_regex?(regx_flow, body) when is_map(regx_flow) == true do
     Regex.compile(regx_flow.regx, regx_flow.regx_opt)
@@ -249,7 +249,7 @@ defmodule Glific.Processor.ConsumerFlow do
     end
   end
 
-  @spec is_context_nil?(FlowContext.t()) :: boolean()
+  @spec is_context_nil?(FlowContext.t() | nil) :: boolean()
   defp is_context_nil?(context) do
     ## not sure why this is giving dialyzer error. Ignoring for now
     is_nil(context)
