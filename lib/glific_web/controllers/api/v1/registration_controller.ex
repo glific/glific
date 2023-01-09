@@ -123,7 +123,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @spec send_otp(Conn.t(), map()) :: Conn.t()
   def send_otp(
         conn,
-        %{"user" => %{"token" => token, "registration" => true, "phone" => phone}} = _user_params
+        %{"user" => %{"token" => token, "registration" => "true", "phone" => phone}} = _user_params
       ) do
     case Glific.verify_google_captcha(token) do
       {:ok, "success"} ->
