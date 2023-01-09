@@ -223,7 +223,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
-  @spec insert_updated_records(binary, DateTime.t(), non_neg_integer) :: :ok
+  @spec insert_updated_records(binary, DateTime.t() | nil, non_neg_integer) :: :ok
   defp insert_updated_records(table, table_last_updated_at, organization_id) do
     if table in BigQuery.ignore_updates_for_table() do
       :ok

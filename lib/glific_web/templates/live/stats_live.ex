@@ -7,7 +7,8 @@ defmodule GlificWeb.StatsLive do
   alias Glific.Reports
 
   @doc false
-  @spec mount(any(), any(), any()) :: tuple()
+  @spec mount(any(), any(), any()) ::
+          {:ok, Phoenix.LiveView.Socket.t()} | {:ok, Phoenix.LiveView.Socket.t(), Keyword.t()}
   def mount(_params, _session, socket) do
     if connected?(socket) do
       :timer.send_interval(1000, self(), :refresh)
@@ -18,7 +19,7 @@ defmodule GlificWeb.StatsLive do
   end
 
   @doc false
-  @spec handle_info(any(), any()) :: tuple()
+  @spec handle_info(any(), any()) :: {:noreply, Phoenix.LiveView.Socket.t()}
   def handle_info(:refresh, socket) do
     {:noreply, assign_stats(socket, :call)}
   end
