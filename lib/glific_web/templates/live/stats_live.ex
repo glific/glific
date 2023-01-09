@@ -6,8 +6,10 @@ defmodule GlificWeb.StatsLive do
 
   alias Glific.Reports
 
+  @doc false
+  @spec mount(any(), any(), any()) :: tuple()
   def mount(_params, _session, socket) do
-    if(connected?(socket)) do
+    if connected?(socket) do
       :timer.send_interval(1000, self(), :refresh)
     end
 
@@ -15,6 +17,8 @@ defmodule GlificWeb.StatsLive do
     {:ok, socket}
   end
 
+  @doc false
+  @spec handle_info(any(), any()) :: tuple()
   def handle_info(:refresh, socket) do
     {:noreply, assign_stats(socket, :call)}
   end
@@ -29,7 +33,7 @@ defmodule GlificWeb.StatsLive do
   end
 
   defp assign_stats(socket, :call) do
-    Enum.map(Reports.kpi_list(), &send(self(), {:get_stats, &1}))
+    Enum.each(Reports.kpi_list(), &send(self(), {:get_stats, &1}))
     socket
   end
 end
