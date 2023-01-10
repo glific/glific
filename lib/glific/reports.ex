@@ -31,7 +31,7 @@ defmodule Glific.Reports do
   @doc """
   Returns last 7 days kpi data map with keys as date and value as count
   """
-  @spec get_kpi_data(atom()) :: list()
+  @spec get_kpi_data(atom()) :: map()
   def get_kpi_data(:contacts) do
     get_kpi_date_keys()
     |> get_kpi_data_stats(:contacts)
