@@ -26,7 +26,7 @@ defmodule Glific.Reports do
   end
 
   @doc """
-  Returns last 7 days kpi data map with keys as date and value as count
+  Returns last 7 days kpi data map with keys as date AND value as count
 
     ## Examples
 
@@ -41,28 +41,64 @@ defmodule Glific.Reports do
         "10-01-2023" => 10
       }
     iex> Glific.Reports.get_kpi_data(1, "messages_conversations")
+    iex> Glific.Reports.get_kpi_data(1, "optin")
+    iex> Glific.Reports.get_kpi_data(1, "optout")
   """
   @spec get_kpi_data(non_neg_integer(), String.t()) :: map()
   def get_kpi_data(org_id, table) do
-    {today, last_day, date_map} = get_preset_dates()
+    presets = get_preset_dates()
 
     query_data =
-      """
-      SELECT
-      date_trunc('day', inserted_at) as date,
-      COUNT(id) as count
-      FROM #{table}
-      WHERE  inserted_at > '#{last_day}' and inserted_at <= '#{today}' and organization_id = #{org_id}
-      GROUP BY date
-      """
+      get_kpi_query(presets, table, org_id)
       |> Repo.query!([])
 
-    Enum.reduce(query_data.rows, date_map, fn [date, count], acc ->
+    Enum.reduce(query_data.rows, presets.date_map, fn [date, count], acc ->
       Map.put(acc, Timex.format!(date, "{0D}-{0M}-{YYYY}"), count)
     end)
   end
 
-  @spec get_preset_dates(DateTime.t()) :: tuple()
+  defp get_kpi_query(presets, "optin", org_id) do
+    """
+    SELECT date_trunc('day', optin_time) as optin_date,
+    COUNT(id) as count
+    FROM contacts
+    WHERE
+      inserted_at > '#{presets.last_day}'
+      AND inserted_at <= '#{presets.today}'
+      AND organization_id = #{org_id}
+      AND optin_time IS NOT NULL
+    GROUP BY optin_date
+    """
+  end
+
+  defp get_kpi_query(presets, "optout", org_id) do
+    """
+    SELECT date_trunc('day', optout_time) as optout_date,
+    COUNT(id) as count
+    FROM contacts
+    WHERE
+      inserted_at > '#{presets.last_day}'
+      AND inserted_at <= '#{presets.today}'
+      AND organization_id = #{org_id}
+      AND optout_time IS NOT NULL
+    GROUP BY optout_date
+    """
+  end
+
+  defp get_kpi_query(presets, table, org_id) do
+    """
+    SELECT date_trunc('day', inserted_at) as date,
+    COUNT(id) as count
+    FROM #{table}
+    WHERE
+      inserted_at > '#{presets.last_day}'
+      AND inserted_at <= '#{presets.today}'
+      AND organization_id = #{org_id}
+    GROUP BY date
+    """
+  end
+
+  @spec get_preset_dates(DateTime.t()) :: map()
   defp get_preset_dates(time \\ DateTime.utc_now()) do
     today = shifted_time(time, 1) |> Timex.format!("{YYYY}-{0M}-{0D}")
 
@@ -76,7 +112,7 @@ defmodule Glific.Reports do
         |> then(&Map.put(acc, &1, 0))
       end)
 
-    {today, last_day, date_map}
+    %{today: today, last_day: last_day, date_map: date_map}
   end
 
   @spec shifted_time(DateTime.t(), integer()) :: DateTime.t()
