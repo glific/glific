@@ -43,8 +43,25 @@ defmodule Glific.Reports do
     iex> Glific.Reports.get_kpi_data(1, "messages_conversations")
     iex> Glific.Reports.get_kpi_data(1, "optin")
     iex> Glific.Reports.get_kpi_data(1, "optout")
+    iex> Glific.Reports.get_kpi_data(1, "contact_type")
   """
   @spec get_kpi_data(non_neg_integer(), String.t()) :: map()
+  def get_kpi_data(org_id, "contact_type") do
+    query_data =
+      """
+      SELECT status,
+      COUNT(id) as count
+      FROM contacts
+      WHERE organization_id = #{org_id}
+      GROUP BY status
+      """
+      |> Repo.query!([])
+
+    Enum.reduce(query_data.rows, %{}, fn [status, count], acc ->
+      Map.put(acc, status, count)
+    end)
+  end
+
   def get_kpi_data(org_id, table) do
     presets = get_preset_dates()
 
