@@ -43,15 +43,15 @@ defmodule Glific.Reports do
     iex> Glific.Reports.get_kpi_data(1, "messages_conversations")
   """
   @spec get_kpi_data(non_neg_integer(), String.t()) :: map()
-  def get_kpi_data(org_id, kpi) do
-    {today, last_day, date_map} = get_query_date()
+  def get_kpi_data(org_id, table) do
+    {today, last_day, date_map} = get_preset_dates()
 
     query_data =
       """
       SELECT
       date_trunc('day', inserted_at) as date,
       COUNT(id) as count
-      FROM #{kpi}
+      FROM #{table}
       WHERE  inserted_at > '#{last_day}' and inserted_at <= '#{today}' and organization_id = #{org_id}
       GROUP BY date
       """
@@ -62,8 +62,8 @@ defmodule Glific.Reports do
     end)
   end
 
-  @spec get_query_date(DateTime.t()) :: tuple()
-  defp get_query_date(time \\ DateTime.utc_now()) do
+  @spec get_preset_dates(DateTime.t()) :: tuple()
+  defp get_preset_dates(time \\ DateTime.utc_now()) do
     today = shifted_time(time, 1) |> Timex.format!("{YYYY}-{0M}-{0D}")
 
     last_day = shifted_time(time, -6) |> Timex.format!("{YYYY}-{0M}-{0D}")
