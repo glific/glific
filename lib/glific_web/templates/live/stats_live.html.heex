@@ -1,8 +1,20 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-<div class="flex content-center justify-center" id="first_chart" phx-update="ignore">
-    <canvas class="card" id="myChart" phx-hook="chart"></canvas>
-    <canvas class="card" id="myChart2" phx-hook="chart"></canvas>
+
+<div class="flex content-center justify-center" id="date-filters" phx-update="ignore">
+    <input id="start_date" phx-hook="dateInput"  class="mr-3 flatpickr flatpickr-input active" type="text" placeholder="Select Start Date.." readonly="readonly">
+
+    <input id="end_date" phx-hook="dateInput"  class="flatpickr flatpickr-input active" type="text" placeholder="Select End Date.." readonly="readonly">
+</div>
+
+
+<div>
+    <div class="flex content-center justify-center" id="charts" phx-update="ignore">
+        <canvas class="card" id="myChart" phx-hook="chart" data-label="Contacts"></canvas>
+        <canvas class="card" id="myChart2" phx-hook="chart" data-label="Conversations"></canvas>
+    </div>
 </div>
 
 <div class="flex content-center justify-center flex-wrap">

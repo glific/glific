@@ -11,10 +11,10 @@
   </head>
   <body>
     <header class="p-6">
-        <a href="https://glific.org/" class="phx-logo  ">
-          <img src={Routes.static_path(@conn, "/images/app.svg")} alt="Glific Logo"/>
+        <div href="https://glific.org/" class="phx-logo  ">
+          <img src="https://glific.org/wp-content/uploads/2020/10/Logo-2-Copy.svg" alt="Glific Logo"/>
           <h3 class="pt-2 text-3xl font-bold underline"> <%= assigns[:page_title] %> </h3>
-        </a>
+        </div>
     </header>
     <%= @inner_content %>
   </body>

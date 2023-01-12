@@ -11,7 +11,7 @@ defmodule GlificWeb.StatsLive do
           {:ok, Phoenix.LiveView.Socket.t()} | {:ok, Phoenix.LiveView.Socket.t(), Keyword.t()}
   def mount(_params, _session, socket) do
     if connected?(socket) do
-      :timer.send_interval(1000, self(), :refresh)
+      :timer.send_interval(3000, self(), :refresh)
     end
 
     socket = assign_stats(socket, :init)
