@@ -8,9 +8,14 @@ defmodule Glific.Reports do
   alias Glific.Repo
 
   @doc false
-  @spec get_kpi(String.t()) :: integer()
-  def get_kpi(_kpi) do
-    Enum.random(100..1000)
+  @spec get_kpi(atom()) :: integer()
+  def get_kpi(kpi) do
+    [[count]] =
+      get_count_query(1, kpi)
+      |> Repo.query!([])
+      |> then(& &1.rows)
+
+    count
   end
 
   @doc false
@@ -19,11 +24,34 @@ defmodule Glific.Reports do
     [
       :conversation_count,
       :active_flow_count,
-      :contact_count,
+      :valid_contact_count,
+      :invalid_contact_count,
       :opted_in_contacts_count,
       :opted_out_contacts_count
     ]
   end
+
+  defp get_count_query(org_id, :conversation_count),
+    do:
+      "SELECT COUNT(id) FROM messages_conversations WHERE organization_id = #{org_id} and inserted_at >= date_trunc('month', CURRENT_DATE)"
+
+  defp get_count_query(org_id, :active_flow_count),
+    do:
+      "SELECT COUNT(id) FROM flow_contexts WHERE organization_id = #{org_id} and completed_at IS NULL"
+
+  defp get_count_query(org_id, :valid_contact_count),
+    do: "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and status = 'valid'"
+
+  defp get_count_query(org_id, :invalid_contact_count),
+    do: "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and status = 'invalid'"
+
+  defp get_count_query(org_id, :opted_in_contacts_count),
+    do:
+      "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optin_time IS NOT NULL"
+
+  defp get_count_query(org_id, :opted_out_contacts_count),
+    do:
+      "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NOT NULL"
 
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
@@ -46,24 +74,8 @@ defmodule Glific.Reports do
     iex> Glific.Reports.get_kpi_data(1, "contact_type")
   """
   @spec get_kpi_data(non_neg_integer(), String.t()) :: map()
-  def get_kpi_data(org_id, "contact_type") do
-    query_data =
-      """
-      SELECT status,
-      COUNT(id) as count
-      FROM contacts
-      WHERE organization_id = #{org_id}
-      GROUP BY status
-      """
-      |> Repo.query!([])
-
-    Enum.reduce(query_data.rows, %{}, fn [status, count], acc ->
-      Map.put(acc, status, count)
-    end)
-  end
-
   def get_kpi_data(org_id, table) do
-    presets = get_preset_dates()
+    presets = get_date_preset()
 
     query_data =
       get_kpi_query(presets, table, org_id)
@@ -72,34 +84,6 @@ defmodule Glific.Reports do
     Enum.reduce(query_data.rows, presets.date_map, fn [date, count], acc ->
       Map.put(acc, Timex.format!(date, "{0D}-{0M}-{YYYY}"), count)
     end)
-  end
-
-  defp get_kpi_query(presets, "optin", org_id) do
-    """
-    SELECT date_trunc('day', optin_time) as optin_date,
-    COUNT(id) as count
-    FROM contacts
-    WHERE
-      inserted_at > '#{presets.last_day}'
-      AND inserted_at <= '#{presets.today}'
-      AND organization_id = #{org_id}
-      AND optin_time IS NOT NULL
-    GROUP BY optin_date
-    """
-  end
-
-  defp get_kpi_query(presets, "optout", org_id) do
-    """
-    SELECT date_trunc('day', optout_time) as optout_date,
-    COUNT(id) as count
-    FROM contacts
-    WHERE
-      inserted_at > '#{presets.last_day}'
-      AND inserted_at <= '#{presets.today}'
-      AND organization_id = #{org_id}
-      AND optout_time IS NOT NULL
-    GROUP BY optout_date
-    """
   end
 
   defp get_kpi_query(presets, table, org_id) do
@@ -115,8 +99,8 @@ defmodule Glific.Reports do
     """
   end
 
-  @spec get_preset_dates(DateTime.t()) :: map()
-  defp get_preset_dates(time \\ DateTime.utc_now()) do
+  @spec get_date_preset(DateTime.t()) :: map()
+  defp get_date_preset(time \\ DateTime.utc_now()) do
     today = shifted_time(time, 1) |> Timex.format!("{YYYY}-{0M}-{0D}")
 
     last_day = shifted_time(time, -6) |> Timex.format!("{YYYY}-{0M}-{0D}")

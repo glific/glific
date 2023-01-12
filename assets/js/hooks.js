@@ -14,9 +14,9 @@ Hooks.chart = {
         datasets: [
           {
             label: label,
-            backgroundColor: "rgb(255, 99, 132)",
+            backgroundColor: "rgb(17, 150, 86)",
             borderColor: "rgb(255, 99, 132)",
-            // data is the trend in last 7 day
+            // data is the data trend in last 7 day
             data: data,
           },
         ],
