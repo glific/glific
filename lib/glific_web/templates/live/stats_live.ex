@@ -38,11 +38,15 @@ defmodule GlificWeb.StatsLive do
     socket
   end
 
+  @doc false
+  @spec fetch_data(atom()) :: list()
   def fetch_data(table_name) do
     Reports.get_kpi_data(1, table_name)
     |> Map.values()
   end
 
+  @doc false
+  @spec fetch_date_labels(atom()) :: list()
   def fetch_date_labels(table_name) do
     Reports.get_kpi_data(1, table_name)
     |> Map.keys()
