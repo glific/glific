@@ -9,21 +9,15 @@ Hooks.chart = {
       type: "bar",
       // The data for our dataset
       data: {
-        labels: [
-          "06-01-23",
-          "07-01-23",
-          "08-01-23",
-          "09-01-23",
-          "10-01-23",
-          "11-01-23",
-          "12-01-23",
-        ],
+        // date_labels are the default last 7 day dates
+        labels: date_labels,
         datasets: [
           {
             label: label,
             backgroundColor: "rgb(255, 99, 132)",
             borderColor: "rgb(255, 99, 132)",
-            data: [0, 10, 5, 2, 20, 30, 45],
+            // data is the trend in last 7 day
+            data: data,
           },
         ],
       },

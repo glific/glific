@@ -37,4 +37,14 @@ defmodule GlificWeb.StatsLive do
     Enum.each(Reports.kpi_list(), &send(self(), {:get_stats, &1}))
     socket
   end
+
+  def fetch_data(table_name) do
+    Reports.get_kpi_data(1, table_name)
+    |> Map.values()
+  end
+
+  def fetch_date_labels(table_name) do
+    Reports.get_kpi_data(1, table_name)
+    |> Map.keys()
+  end
 end

@@ -2,6 +2,10 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
+<script type="text/javascript">
+  window.data = <%= raw(Jason.encode!(fetch_data("contacts"))) %>
+  window.date_labels = <%= raw(Jason.encode!(fetch_date_labels("contacts"))) %>
+</script>
 
 <div class="flex content-center justify-center" id="date-filters" phx-update="ignore">
     <input id="start_date" phx-hook="dateInput"  class="mr-3 flatpickr flatpickr-input active" type="text" placeholder="Select Start Date.." readonly="readonly">
