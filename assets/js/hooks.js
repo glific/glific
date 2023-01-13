@@ -4,7 +4,6 @@ Hooks.chart = {
   mounted() {
     var ctx = this.el.getContext("2d");
     let label = this.el.dataset.label;
-    console.log(this.el.dataset.chartData);
     let chartData = JSON.parse(this.el.dataset.chartData);
     var chart = new Chart(ctx, {
       // The type of chart we want to create
