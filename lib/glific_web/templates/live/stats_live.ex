@@ -28,6 +28,7 @@ defmodule GlificWeb.StatsLive do
     {:noreply, assign(socket, kpi, Reports.get_kpi(kpi))}
   end
 
+  @spec assign_stats(Phoenix.LiveView.Socket.t(), atom()) :: Phoenix.LiveView.Socket.t()
   defp assign_stats(socket, :init) do
     stats = Enum.map(Reports.kpi_list(), &{&1, "loading.."})
 
@@ -40,7 +41,9 @@ defmodule GlificWeb.StatsLive do
     assign(socket, get_chart_data())
   end
 
-  def get_chart_data() do
+  @doc false
+  @spec get_chart_data :: list()
+  def get_chart_data do
     [
       contact_chart_data: %{
         data: fetch_data("contacts"),
@@ -53,11 +56,13 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
+  @spec fetch_data(String.t()) :: list()
   defp fetch_data(table_name) do
     Reports.get_kpi_data(1, table_name)
     |> Map.values()
   end
 
+  @spec fetch_date_labels(String.t()) :: list()
   defp fetch_date_labels(table_name) do
     Reports.get_kpi_data(1, table_name)
     |> Map.keys()
