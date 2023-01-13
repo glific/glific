@@ -2,11 +2,6 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-<script type="text/javascript">
-  window.data = <%= raw(Jason.encode!(fetch_data("contacts"))) %>
-  window.date_labels = <%= raw(Jason.encode!(fetch_date_labels("contacts"))) %>
-</script>
-
 <div class="flex content-center justify-center" id="date-filters" phx-update="ignore">
     <input id="start_date" phx-hook="dateInput"  class="mr-3 flatpickr flatpickr-input active" type="text" placeholder="Select Start Date.." readonly="readonly">
 
@@ -16,8 +11,10 @@
 
 <div>
     <div class="flex content-center justify-center" id="charts" phx-update="ignore">
-        <canvas class="card" id="contacts_chart" phx-hook="chart" data-label="Contacts"></canvas>
-        <canvas class="card" id="conversation_chart" phx-hook="chart" data-label="Conversations"></canvas>
+        <canvas  class="card"  id="contacts_chart"  phx-hook="chart"  data-label="Contacts" 
+        data-chart-data= {Jason.encode!(@contact_chart_data)} >
+        </canvas>
+        <canvas class="card" id="conversation_chart" phx-hook="chart" data-label="Conversations" data-chart-data= {Jason.encode!(@conversation_chart_data)} ></canvas>
     </div>
 </div>
 

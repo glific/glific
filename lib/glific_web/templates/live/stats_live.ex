@@ -30,24 +30,35 @@ defmodule GlificWeb.StatsLive do
 
   defp assign_stats(socket, :init) do
     stats = Enum.map(Reports.kpi_list(), &{&1, "loading.."})
+
     assign(socket, Keyword.merge(stats, page_title: "Glific Dashboard"))
+    |> assign(get_chart_data())
   end
 
   defp assign_stats(socket, :call) do
     Enum.each(Reports.kpi_list(), &send(self(), {:get_stats, &1}))
-    socket
+    assign(socket, get_chart_data())
   end
 
-  @doc false
-  @spec fetch_data(atom()) :: list()
-  def fetch_data(table_name) do
+  def get_chart_data() do
+    [
+      contact_chart_data: %{
+        data: fetch_data("contacts"),
+        labels: fetch_date_labels("contacts")
+      },
+      conversation_chart_data: %{
+        data: fetch_data("messages_conversations"),
+        labels: fetch_date_labels("messages_conversations")
+      }
+    ]
+  end
+
+  defp fetch_data(table_name) do
     Reports.get_kpi_data(1, table_name)
     |> Map.values()
   end
 
-  @doc false
-  @spec fetch_date_labels(atom()) :: list()
-  def fetch_date_labels(table_name) do
+  defp fetch_date_labels(table_name) do
     Reports.get_kpi_data(1, table_name)
     |> Map.keys()
   end

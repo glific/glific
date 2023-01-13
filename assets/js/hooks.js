@@ -4,20 +4,22 @@ Hooks.chart = {
   mounted() {
     var ctx = this.el.getContext("2d");
     let label = this.el.dataset.label;
+    console.log(this.el.dataset.chartData);
+    let chartData = JSON.parse(this.el.dataset.chartData);
     var chart = new Chart(ctx, {
       // The type of chart we want to create
       type: "bar",
       // The data for our dataset
       data: {
         // date_labels are the default last 7 day dates
-        labels: date_labels,
+        labels: chartData.labels,
         datasets: [
           {
             label: label,
             backgroundColor: "rgb(17, 150, 86)",
             borderColor: "rgb(255, 99, 132)",
             // data is the data trend in last 7 day
-            data: data,
+            data: chartData.data,
           },
         ],
       },
