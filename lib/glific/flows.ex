@@ -105,11 +105,12 @@ defmodule Glific.Flows do
 
     Enum.reduce(filter, query, fn
       {:keyword, keyword}, query ->
-        from f in query,
+        from(f in query,
           where: ^keyword in f.keywords
+        )
 
       {:uuid, uuid}, query ->
-        from q in query, where: q.uuid == ^uuid
+        from(q in query, where: q.uuid == ^uuid)
 
       {:status, status}, query ->
         query
@@ -123,13 +124,13 @@ defmodule Glific.Flows do
         )
 
       {:is_active, is_active}, query ->
-        from q in query, where: q.is_active == ^is_active
+        from(q in query, where: q.is_active == ^is_active)
 
       {:is_background, is_background}, query ->
-        from q in query, where: q.is_background == ^is_background
+        from(q in query, where: q.is_background == ^is_background)
 
       {:is_pinned, is_pinned}, query ->
-        from q in query, where: q.is_pinned == ^is_pinned
+        from(q in query, where: q.is_pinned == ^is_pinned)
 
       {:name_or_keyword, name_or_keyword}, query ->
         query
@@ -877,12 +878,13 @@ defmodule Glific.Flows do
         end
 
       action["type"] == "send_interactive_msg" ->
-        {id, _interactive_template_label} =
-          Enum.find(interactive_template_list, fn {_id, interactive_template_label} ->
-            interactive_template_label == action["name"]
+        {_source_id, template_id, _interactive_template_label} =
+          Enum.find(interactive_template_list, fn {source_id, _template_id,
+                                                   _interactive_template_label} ->
+            source_id == Integer.to_string(action["id"])
           end)
 
-        node = put_in(node, ["actions"], [Map.put(action, "id", id)])
+        node = put_in(node, ["actions"], [Map.put(action, "id", template_id)])
         [node]
 
       true ->
@@ -915,15 +917,24 @@ defmodule Glific.Flows do
       Repo.fetch_by(InteractiveTemplate, %{label: interactive_template["label"]})
       |> case do
         {:ok, db_interactive_template} ->
-          acc ++ [{db_interactive_template.id, db_interactive_template.label}]
+          acc ++
+            [
+              {interactive_template["source_id"], db_interactive_template.id,
+               db_interactive_template.label}
+            ]
 
         _ ->
-          {:ok, interactive_template} =
-            InteractiveTemplates.create_interactive_template(
-              Map.put(interactive_template, "organization_id", organization_id)
-            )
+          {:ok, new_interactive_template} =
+            interactive_template
+            |> Map.delete("source_id")
+            |> Map.put("organization_id", organization_id)
+            |> InteractiveTemplates.create_interactive_template()
 
-          acc ++ [{interactive_template.id, interactive_template.label}]
+          acc ++
+            [
+              {interactive_template["source_id"], new_interactive_template.id,
+               new_interactive_template.label}
+            ]
       end
     end)
   end
@@ -1038,6 +1049,7 @@ defmodule Glific.Flows do
     InteractiveTemplate
     |> where([it], it.id in ^ids)
     |> select([it], %{
+      source_id: it.id,
       label: it.label,
       type: it.type,
       interactive_content: it.interactive_content,
