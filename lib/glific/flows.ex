@@ -878,8 +878,7 @@ defmodule Glific.Flows do
         end
 
       action["type"] == "send_interactive_msg" ->
-        action_id =
-          if is_bitstring(action["id"]), do: String.to_integer(action["id"]), else: action["id"]
+        {:ok, action_id} = Glific.parse_maybe_integer(action["id"])
 
         {_source_id, template_id, _interactive_template_label} =
           Enum.find(interactive_template_list, fn {source_id, _template_id,
