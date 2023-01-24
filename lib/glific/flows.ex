@@ -881,7 +881,12 @@ defmodule Glific.Flows do
         {_source_id, template_id, _interactive_template_label} =
           Enum.find(interactive_template_list, fn {source_id, _template_id,
                                                    _interactive_template_label} ->
-            source_id == Integer.to_string(action["id"])
+            action_id =
+              if is_bitstring(action["id"]),
+                do: action["id"],
+                else: Integer.to_string(action["id"])
+
+            source_id == action_id
           end)
 
         node = put_in(node, ["actions"], [Map.put(action, "id", template_id)])
@@ -914,13 +919,17 @@ defmodule Glific.Flows do
   defp import_interactive_templates(import_flow, organization_id) do
     import_flow["interactive_templates"]
     |> Enum.reduce([], fn interactive_template, acc ->
+      source_id =
+        if is_bitstring(interactive_template["source_id"]),
+          do: interactive_template["source_id"],
+          else: Integer.to_string(interactive_template["source_id"])
+
       Repo.fetch_by(InteractiveTemplate, %{label: interactive_template["label"]})
       |> case do
         {:ok, db_interactive_template} ->
           acc ++
             [
-              {interactive_template["source_id"], db_interactive_template.id,
-               db_interactive_template.label}
+              {source_id, db_interactive_template.id, db_interactive_template.label}
             ]
 
         _ ->
@@ -932,8 +941,7 @@ defmodule Glific.Flows do
 
           acc ++
             [
-              {interactive_template["source_id"], new_interactive_template.id,
-               new_interactive_template.label}
+              {source_id, new_interactive_template.id, new_interactive_template.label}
             ]
       end
     end)
