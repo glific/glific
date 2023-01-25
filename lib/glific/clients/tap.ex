@@ -326,6 +326,14 @@ defmodule Glific.Clients.Tap do
             attachment_url: question_data["attachmentenglish"]
           }
 
+        "Marathi" ->
+          %{
+            valid_answers: question_data["validresponsesmarathi"],
+            correct_response: question_data["answermarathi"],
+            question: question_data["questionmessagemarathi"],
+            attachment_url: question_data["attachmentenglish"]
+          }
+
         _ ->
           %{}
       end
