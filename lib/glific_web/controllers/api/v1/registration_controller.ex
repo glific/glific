@@ -132,8 +132,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
       {:ok, "success"} ->
         send_otp(conn, %{"user" => %{"phone" => phone, "registration" => "true"}})
 
-      {:error, _error} ->
-        send_otp_error(conn, phone)
+      {:error, error} ->
+        send_otp_error(conn, error)
     end
   end
 
@@ -151,16 +151,16 @@ defmodule GlificWeb.API.V1.RegistrationController do
       json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
     else
       _ ->
-        send_otp_error(conn, phone)
+        send_otp_error(conn, "Cannot send the otp to #{phone}")
     end
   end
 
   @doc false
   @spec send_otp_error(Conn.t(), String.t()) :: Conn.t()
-  defp send_otp_error(conn, phone) do
+  defp send_otp_error(conn, msg) do
     conn
     |> put_status(400)
-    |> json(%{error: %{status: 400, message: "Cannot send the otp to #{phone}"}})
+    |> json(%{error: %{status: 400, message: msg}})
   end
 
   @doc """

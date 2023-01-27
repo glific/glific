@@ -17,11 +17,9 @@ defmodule GlificWeb.API.V1.OnboardController do
         json(conn, Onboard.setup(params))
 
       {:error, error} ->
-        Logger.info("Google Captcha not verified: #{error}")
-
         conn
         |> put_status(400)
-        |> json(%{error: %{status: 400, message: "Error while setting up NGO"}})
+        |> json(%{error: %{status: 400, message: error}})
     end
   end
 end

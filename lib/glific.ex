@@ -361,11 +361,20 @@ defmodule Glific do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         response_body = Jason.decode!(body)
 
-        if response_body["success"] && response_body["score"] > @captcha_score_threshold,
-          do: {:ok, "success"},
-          else: {:error, "failed"}
+        if response_body["success"] && response_body["score"] > @captcha_score_threshold do
+          {:ok, "success"}
+        else
+          captcha_error =
+            response_body
+            |> Map.get("error-codes", "Token verification failed")
+            |> List.first()
+
+          Logger.info("Failed to verify Google Captcha: #{captcha_error}")
+          {:error, "Failed to verify Google Captcha: #{captcha_error}"}
+        end
 
       {_status, response} ->
+        Logger.info("Invalid response verifying Google Captcha: #{response}")
         {:error, "invalid response #{inspect(response)}"}
     end
   end
