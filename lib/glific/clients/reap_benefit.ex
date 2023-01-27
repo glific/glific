@@ -66,9 +66,9 @@ defmodule Glific.Clients.ReapBenefit do
     header = get_header(token)
     name = ''
     if fields["contact"]["preferred_name"] in [nil,""] do
-      name = trim(fields["contact"]["name"])
+      name = String.trim(fields["contact"]["name"])
     else
-      name = trim(fields["contact"]["preferred_name"])
+      name = String.trim(fields["contact"]["preferred_name"])
     end
     name = name |> String.split |> Enum.join("")
     body =
