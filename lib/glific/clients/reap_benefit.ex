@@ -64,14 +64,20 @@ defmodule Glific.Clients.ReapBenefit do
   def webhook("frappe_create_new_user", fields) do
     token = fields["token"]
     header = get_header(token)
-
+    name = ''
+    if fields["contact"]["preferred_name"] in [nill,""] do
+      name = trim(fields["contact"]["name"])
+    else
+      name = trim(fields["contact"]["preferred_name"])
+    end
+    name = name |> String.split |> Enum.join("")
     body =
       %{
         "email" => fields["contact"]["phone"] <> "@solveninja.org ",
-        "first_name" => fields["contact"]["name"],
+        "first_name" => name,
         "mobile_no" => fields["contact"]["phone"],
-        "username" => fields["contact"]["name"],
-        "location" => fields["contact"]["Administrative_area_level_2"]
+        "username" => name,
+        "location" => fields["contact"]["Administrative_area_level_3"]
       }
       |> Jason.encode!()
 
