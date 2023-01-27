@@ -65,7 +65,7 @@ defmodule Glific.Clients.ReapBenefit do
     token = fields["token"]
     header = get_header(token)
     name = ''
-    if fields["contact"]["preferred_name"] in [nill,""] do
+    if fields["contact"]["preferred_name"] in [nil,""] do
       name = trim(fields["contact"]["name"])
     else
       name = trim(fields["contact"]["preferred_name"])
