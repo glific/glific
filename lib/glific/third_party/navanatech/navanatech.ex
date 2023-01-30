@@ -1,20 +1,33 @@
 defmodule Glific.Navanatech do
   @moduledoc """
-  Glific Navanatech for all API calls to navatech
+  Glific Navanatech for all API calls to Navanatech
   """
 
   alias Glific.Partners
   alias Tesla.Multipart
 
-  ## params =  %{media_url: "https://storage.googleapis.com/cc-tides/uploads/20210721140700_C717_F0_M539582.mp3", case_id: "b9296e58-ebf5-462f-a83b-6753f604ad69", organization_id: 1}
-  ## params_text =  %{text: "ఎందుక", case_id: "501e75a0-3b12-46de-b785-5c1e897ab0f2", organization_id: 1}
-  # Glific.Navanatech.decode_message(params)
-  # Glific.Navanatech.decode_message(params_text)
-
   @doc """
   Decode a text or audio file
-  """
 
+  ## Examples
+
+    iex>  params = %{
+            media_url:
+              "https://storage.googleapis.com/cc-tides/uploads/20210721140700_C717_F0_M539582.mp3",
+            case_id: "b9296e58-ebf5-462f-a83b-6753f604ad69",
+            organization_id: 1
+          }
+
+    iex> params_text = %{
+            text: "ఎందుక",
+            case_id: "501e75a0-3b12-46de-b785-5c1e897ab0f2",
+            organization_id: 1
+          }
+
+    iex> Glific.Navanatech.decode_message(params)
+    iex> Glific.Navanatech.decode_message(params_text)
+
+  """
   @spec decode_message(map()) :: tuple()
   def decode_message(%{media_url: media_url, case_id: case_id, organization_id: org_id} = _attrs) do
     extension =

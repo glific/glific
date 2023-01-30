@@ -119,13 +119,30 @@ defmodule GlificWeb.API.V1.RegistrationController do
     Repo.put_current_user(organization.root_user)
   end
 
-  @doc false
+  @doc """
+  verifying google captcha only when token is passed
+  """
   @spec send_otp(Conn.t(), map()) :: Conn.t()
-  def send_otp(conn, %{"user" => %{"phone" => phone}} = user_params) do
+  def send_otp(
+        conn,
+        %{"user" => %{"token" => token, "registration" => "true", "phone" => phone}} =
+          _user_params
+      ) do
+    case Glific.verify_google_captcha(token) do
+      {:ok, "success"} ->
+        send_otp(conn, %{"user" => %{"phone" => phone, "registration" => "true"}})
+
+      {:error, error} ->
+        send_otp_error(conn, error)
+    end
+  end
+
+  def send_otp(
+        conn,
+        %{"user" => %{"phone" => phone, "registration" => registration}} = _user_params
+      ) do
     organization_id = conn.assigns[:organization_id]
     build_context(organization_id)
-
-    registration = user_params["user"]["registration"]
 
     with {:ok, _contact} <- optin_contact(organization_id, phone),
          {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
@@ -134,10 +151,16 @@ defmodule GlificWeb.API.V1.RegistrationController do
       json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
     else
       _ ->
-        conn
-        |> put_status(400)
-        |> json(%{error: %{status: 400, message: "Cannot send the otp to #{phone}"}})
+        send_otp_error(conn, "Cannot send the otp to #{phone}")
     end
+  end
+
+  @doc false
+  @spec send_otp_error(Conn.t(), String.t()) :: Conn.t()
+  defp send_otp_error(conn, msg) do
+    conn
+    |> put_status(400)
+    |> json(%{error: %{status: 400, message: msg}})
   end
 
   @doc """
