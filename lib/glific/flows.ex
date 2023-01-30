@@ -1043,8 +1043,10 @@ defmodule Glific.Flows do
   defp do_export_interactive_templates(%{"actions" => actions}) when actions == [], do: []
 
   defp do_export_interactive_templates(%{"actions" => actions}) do
-    action = actions |> hd
-    if action["type"] == "send_interactive_msg", do: [action["id"]], else: []
+    actions
+    |> Enum.reduce([], fn action, acc ->
+      if action["type"] == "send_interactive_msg", do: acc ++ [action["id"]], else: acc
+    end)
   end
 
   defp fetch_interactive_templates_from_db(ids) do
