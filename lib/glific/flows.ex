@@ -880,11 +880,7 @@ defmodule Glific.Flows do
         action["type"] == "send_interactive_msg" ->
           {:ok, action_id} = Glific.parse_maybe_integer(action["id"])
 
-          {_source_id, template_id, _interactive_template_label} =
-            Enum.find(interactive_template_list, fn {source_id, _template_id,
-                                                     _interactive_template_label} ->
-              source_id == action_id
-            end)
+          template_id = find_interactive_template(interactive_template_list, action_id)
 
           node = put_in(node, ["actions"], [Map.put(action, "id", template_id)])
           acc ++ [node]
@@ -893,6 +889,17 @@ defmodule Glific.Flows do
           acc ++ [node]
       end
     end)
+  end
+
+  @spec find_interactive_template(list(), integer | nil) :: String.t()
+  defp find_interactive_template(interactive_template_list, action_id) do
+    {_source_id, template_id, _interactive_template_label} =
+      Enum.find(interactive_template_list, fn {source_id, _template_id,
+                                               _interactive_template_label} ->
+        source_id == action_id
+      end)
+
+    template_id
   end
 
   defp import_contact_field(import_flow, organization_id) do
