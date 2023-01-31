@@ -174,8 +174,13 @@ defmodule Glific.Sheets do
 
     remove_stale_sheet_data(sheet, last_synced_at)
 
+    sheet_data_count =
+      SheetData
+      |> where([sd], sd.sheet_id == ^sheet.id)
+      |> Repo.aggregate(:count)
+
     ## we can move this to top of the function also. We can change that later.
-    update_sheet(sheet, %{last_synced_at: last_synced_at})
+    update_sheet(sheet, %{last_synced_at: last_synced_at, sheet_data_count: sheet_data_count})
     |> append_warnings(media_warnings)
   end
 
