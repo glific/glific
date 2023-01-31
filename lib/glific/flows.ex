@@ -846,52 +846,53 @@ defmodule Glific.Flows do
     nodes =
       definition
       |> Map.get("nodes", [])
-      |> Enum.reduce([], &(&2 ++ clean_template_node(&1, interactive_template_list)))
+      |> Enum.reduce([], &(&2 ++ process_node_actions(&1, interactive_template_list)))
 
     put_in(definition, ["nodes"], nodes)
   end
 
-  @spec clean_template_node(map(), list()) :: list()
-  defp clean_template_node(%{"actions" => actions} = node, _interactive_template_list)
+  @spec process_node_actions(map(), list()) :: list()
+  defp process_node_actions(%{"actions" => actions} = node, _interactive_template_list)
        when actions == [],
        do: [node]
 
-  defp clean_template_node(%{"actions" => actions} = node, interactive_template_list) do
-    action = actions |> hd
-    template_uuid = get_in(action, ["templating", "template", "uuid"])
+  defp process_node_actions(%{"actions" => actions} = node, interactive_template_list) do
+    Enum.reduce(actions, [], fn action, acc ->
+      template_uuid = get_in(action, ["templating", "template", "uuid"])
 
-    cond do
-      action["type"] == "send_msg" ->
-        # checking if the imported template is present in database
-        template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
+      cond do
+        action["type"] == "send_msg" ->
+          # checking if the imported template is present in database
+          template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
 
-        with true <- Map.has_key?(action, "templating"),
-             false <- template_uuid in template_uuid_list do
-          # update the node if template uuid in the node is not present in DB
-          action =
-            action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
+          with true <- Map.has_key?(action, "templating"),
+               false <- template_uuid in template_uuid_list do
+            # update the node if template uuid in the node is not present in DB
+            action =
+              action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
 
-          node = put_in(node, ["actions"], [action])
-          [node]
-        else
-          _ -> [node]
-        end
+            node = put_in(node, ["actions"], [action])
+            acc ++ [node]
+          else
+            _ -> acc ++ [node]
+          end
 
-      action["type"] == "send_interactive_msg" ->
-        {:ok, action_id} = Glific.parse_maybe_integer(action["id"])
+        action["type"] == "send_interactive_msg" ->
+          {:ok, action_id} = Glific.parse_maybe_integer(action["id"])
 
-        {_source_id, template_id, _interactive_template_label} =
-          Enum.find(interactive_template_list, fn {source_id, _template_id,
-                                                   _interactive_template_label} ->
-            source_id == action_id
-          end)
+          {_source_id, template_id, _interactive_template_label} =
+            Enum.find(interactive_template_list, fn {source_id, _template_id,
+                                                     _interactive_template_label} ->
+              source_id == action_id
+            end)
 
-        node = put_in(node, ["actions"], [Map.put(action, "id", template_id)])
-        [node]
+          node = put_in(node, ["actions"], [Map.put(action, "id", template_id)])
+          acc ++ [node]
 
-      true ->
-        [node]
-    end
+        true ->
+          acc ++ [node]
+      end
+    end)
   end
 
   defp import_contact_field(import_flow, organization_id) do
