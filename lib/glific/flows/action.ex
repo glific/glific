@@ -732,11 +732,14 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "set_run_result"} = action, context, messages) do
-    value = FlowContext.parse_context_string(context, action.value)
+    value =
+      context
+      |> FlowContext.parse_context_string(action.value)
+      |> Glific.execute_eex()
 
     results = %{
       "input" => value,
-      "value" => Glific.execute_eex(value),
+      "value" => value,
       "category" => action.category,
       "inserted_at" => DateTime.utc_now()
     }
