@@ -1,9 +1,9 @@
 {
   "info": {
-    "_postman_id": "477071b2-2c6a-4ced-b2f2-39fe474ab27f",
+    "_postman_id": "134930df-4ad6-482c-8b4a-e6d42216641d",
     "name": "Glific backend APis",
     "description": "Glific is purely APIs based. We try to create an API endpoint for all the features. Our frontend is just a user of Glific APIs.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
@@ -11,10 +11,6 @@
       "item": [
         {
           "name": "Login",
-          "id": "a0e5ca4b-f95f-49e9-b4ed-8236cb2e3399",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -33,16 +29,21 @@
               "mode": "raw",
               "raw": "{\n    \"user\": {\n        \"phone\": \"917834811114\",\n        \"password\": \"secret1234\"\n    }\n}"
             },
-            "url": "{{api_url}}/v1/session"
+            "url": {
+              "raw": "{{api_url}}/v1/session",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "v1",
+                "session"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Send an OTP request to verify a phone number",
-          "id": "43034474-488f-41de-b590-bed362df9e94",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -61,16 +62,21 @@
               "mode": "raw",
               "raw": "{\n    \"user\": {\n        \"phone\": \"917834811114\",\n        \"password\": \"secret1234\"\n    }\n}"
             },
-            "url": "{{api_url}}/v1/session"
+            "url": {
+              "raw": "{{api_url}}/v1/session",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "v1",
+                "session"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Send an OTP request to verify a phone number of existing user",
-          "id": "07ec6bc2-375d-4039-9370-8697f88b63b5",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -89,16 +95,21 @@
               "mode": "raw",
               "raw": "{\n    \"user\": {\n        \"phone\": \"917834811114\",\n        \"password\": \"secret1234\"\n    }\n}"
             },
-            "url": "{{api_url}}/v1/session"
+            "url": {
+              "raw": "{{api_url}}/v1/session",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "v1",
+                "session"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Create a new user",
-          "id": "66790bf4-f4c2-4f8f-a1cd-ec3bc4e2d240",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -117,16 +128,21 @@
               "mode": "raw",
               "raw": "{\n    \"user\": {\n        \"name\": \"Test User\",\n        \"phone\": \"911234554321\",\n        \"password\": \"secret1234\",\n        \"otp\": \"321721\"\n    }\n}"
             },
-            "url": "{{api_url}}/v1/registration"
+            "url": {
+              "raw": "{{api_url}}/v1/registration",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "v1",
+                "registration"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Create a new session for an existing user",
-          "id": "6efae35b-4e82-40b7-8339-72310dffedaa",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -145,16 +161,21 @@
               "mode": "raw",
               "raw": "{\n    \"user\": {\n        \"phone\": \"917834811114\",\n        \"password\": \"secret1234\"\n    }\n}"
             },
-            "url": "{{api_url}}/v1/session"
+            "url": {
+              "raw": "{{api_url}}/v1/session",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "v1",
+                "session"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Renew an existing session",
-          "id": "aeda5619-3c0c-487a-8e85-0d568a96409b",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -173,16 +194,22 @@
               "mode": "raw",
               "raw": "{\"data\":\n  {\n    \"data\": {\n          \"access_token\": \"AUTH_TOKEN\",\n          \"token_expiry_time\": \"2020-07-13T16:22:53.678465Z\",\n          \"renewal_token\": \"RENEW_TOKEN\"\n      }\n  }\n}"
             },
-            "url": "{{api_url}}/v1/session/renew"
+            "url": {
+              "raw": "{{api_url}}/v1/session/renew",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "v1",
+                "session",
+                "renew"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete an existing session",
-          "id": "e3bbc27a-6ec8-4c3c-b8e9-a2ef273102e0",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -201,16 +228,22 @@
               "mode": "raw",
               "raw": "{\"data\":\n  {\n    \"data\": {\n          \"access_token\": \"AUTH_TOKEN\",\n          \"token_expiry_time\": \"2020-07-13T16:22:53.678465Z\",\n          \"renewal_token\": \"RENEW_TOKEN\"\n      }\n  }\n}"
             },
-            "url": "{{api_url}}/v1/session/renew"
+            "url": {
+              "raw": "{{api_url}}/v1/session/renew",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "v1",
+                "session",
+                "renew"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Reset Password",
-          "id": "f4796f94-7479-40d1-b5d0-28208e55fbd3",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -229,22 +262,27 @@
               "mode": "raw",
               "raw": "{\n    \"user\": {\n        \"phone\": \"911234554321\",\n        \"password\": \"secret1234\",\n        \"otp\": \"321721\"\n    }\n}"
             },
-            "url": "{{api_url}}/v1/registration/reset-password"
+            "url": {
+              "raw": "{{api_url}}/v1/registration/reset-password",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "v1",
+                "registration",
+                "reset-password"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "0322ea88-1ec3-4c75-a6f6-c1e03811ab7a"
+      ]
     },
     {
       "name": "Contacts",
       "item": [
         {
           "name": "Get All Contacts",
-          "id": "03bf873f-147e-4f22-925c-83a5a0fa24d7",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -263,19 +301,20 @@
               "mode": "graphql",
               "graphql": {
                 "query": "query contacts($filter: ContactFilter, $opts: Opts) {\n  contacts(filter: $filter, opts:$opts) {\n    id\n    name\n    optinTime\n    optoutTime\n    optinMethod\n    optoutMethod\n    phone\n    maskedPhone\n    bspStatus\n    status\n    tags {\n      id\n      label\n    }\n    groups {\n      id\n      label\n    }\n  }\n}",
-                "variables": "{\n  \"filter\": {\n    \"name\": \"Default Receiver\"\n  },\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+                "variables": "{\n  \"filter\": {\n    \"name\": \"Default Receiver\"\n  },\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0,\n    \"orderWith\": \"name\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Other filters on Contacts",
-          "id": "dc050593-34ff-4116-8c11-d88942b517bd",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -297,16 +336,17 @@
                 "variables": "{\n  \"filter\": {\n    \"includeGroups\": [\n      1,\n      2\n    ],\n    \"includeTags\": [\n      1\n    ]\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get a specific Contact by ID",
-          "id": "6a285d22-543c-452e-a95a-e118056639ef",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -328,16 +368,17 @@
                 "variables": "{\n  \"id\": 5\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get a specific Contact by phone",
-          "id": "42a066cd-f2ae-41c9-a011-112721b8ad55",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -359,16 +400,17 @@
                 "variables": "{\n  \"phone\": \"919876543210\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get All Blocked Contacts",
-          "id": "736bcdab-9fc1-4392-80b6-985f3869d53c",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -390,16 +432,17 @@
                 "variables": "{\n  \"filter\": {\n    \"status\": \"BLOCKED\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Count all Contacts",
-          "id": "c1156d88-09c5-4396-a7e2-b9b1280a3147",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -421,16 +464,17 @@
                 "variables": "{\n  \"filter\": {\n    \"status\": \"VALID\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Create a Contacts",
-          "id": "4ee9a7db-7041-4904-8a10-cda88af8b780",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -452,16 +496,17 @@
                 "variables": "{\n  \"input\": {\n    \"name\": \"This is a new contact for this example\",\n    \"phone\": \"9876543232\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update a Contacts",
-          "id": "ccedda48-592d-403f-b4ce-ee4817c5952a",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -483,16 +528,17 @@
                 "variables": "{\n  \"id\": \"5\",\n  \"input\": {\n    \"name\": \"This is a updated contact for this example\",\n    \"fields\": \"{\\\"name\\\":{\\\"value\\\":\\\"Vikrant Wadekar\\\",\\\"type\\\":\\\"string\\\",\\\"inserted_at\\\":\\\"2020-08-29T05:35:38.298593Z\\\"},\\\"age_group\\\":{\\\"value\\\":\\\"19 or above\\\",\\\"type\\\":\\\"string\\\",\\\"inserted_at\\\":\\\"2020-08-29T05:35:46.623892Z\\\"}}\",\n    \"languageId\": 2\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Block a Contacts",
-          "id": "d6492ffa-24da-4f8e-9cb8-cadea99d8373",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -514,16 +560,17 @@
                 "variables": "{\n  \"id\": \"5\",\n  \"input\": {\n    \"status\": \"BLOCKED\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "UnBlock a Contact",
-          "id": "62ccf1d6-2b4f-439e-a28e-8cc8f20d550c",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -545,16 +592,17 @@
                 "variables": "{\n  \"id\": \"5\",\n  \"input\": {\n    \"status\": \"VALID\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete a Contact",
-          "id": "8d6d75d7-1a50-470a-892f-1f32c6d4ea14",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -576,16 +624,17 @@
                 "variables": "{\n  \"id\": \"26\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get Contact's Location",
-          "id": "41109b78-828b-4bf0-8920-6f5cdbeeb6c9",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -607,16 +656,17 @@
                 "variables": "{\n  \"id\": \"1975\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Optin a Contact",
-          "id": "8710d024-1854-40fe-bc5c-89b676a9145e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -638,16 +688,17 @@
                 "variables": "{\n  \"phone\": \"917834811119\",\n  \"name\": \"contact name\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get a Simulator Contact",
-          "id": "6e2ea142-9ec0-4e4c-a08a-cc49453a18bd",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -669,16 +720,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Release a Simulator Contact",
-          "id": "8d54e9e6-6b4b-4deb-a51b-1827acb24831",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -700,16 +752,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get All Contact History",
-          "id": "ca12d85d-7749-4d73-b174-2c59ffe6c5a1",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -731,16 +784,17 @@
                 "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"contactId\": 1\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Count All Contact History",
-          "id": "703fc04b-d455-4a9d-92e3-7d16197384bd",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -762,27 +816,33 @@
                 "variables": "{\n  \"filter\": {\n    \"contact_id\": 1\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
       ],
-      "id": "1d3dd745-1f61-4ca0-83ba-2b264b65b14b",
       "event": [
         {
           "listen": "prerequest",
           "script": {
             "type": "text/javascript",
-            "exec": [""],
-            "id": "8dcc0bbf-c700-4497-83cb-09dc8accdf91"
+            "exec": [
+              ""
+            ]
           }
         },
         {
           "listen": "test",
           "script": {
             "type": "text/javascript",
-            "exec": [""],
-            "id": "2948ef18-adad-4999-bf9c-f7a4c333d60b"
+            "exec": [
+              ""
+            ]
           }
         }
       ]
@@ -792,10 +852,6 @@
       "item": [
         {
           "name": "Create Contact Tag",
-          "id": "f080b302-ff9a-474d-9139-3270d2a7e6a6",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -817,16 +873,17 @@
                 "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"tagId\": 20\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update a Contact with tags to be added and tags to be deleted",
-          "id": "346de0cf-485d-4b61-af65-157cf4d1adf4",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -848,16 +905,17 @@
                 "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"addTagIds\": [3, 6],\n    \"deleteTagIds\": [7, 8]\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Subscription for Create Contact Tag",
-          "id": "0e3e8602-4dc4-4ead-a2da-55fea6434ba2",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -879,16 +937,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Subscription for Delete Contact Tag",
-          "id": "c542d09b-1f63-4d40-9df2-d0cc1c3c1018",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -910,22 +969,22 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "d573b4d6-4942-4699-87f2-ff2eac827f68"
+      ]
     },
     {
       "name": "Contact Group",
       "item": [
         {
           "name": "Create Contact Group",
-          "id": "21fb7b58-c000-4c46-8812-086a93db8bb6",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -947,16 +1006,17 @@
                 "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"groupId\": 1\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update a Group with contacts to be added and contacts to be deleted",
-          "id": "5f3933e4-d6aa-4350-b8da-6b8521f62ef4",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -978,16 +1038,17 @@
                 "variables": "{\n  \"input\": {\n    \"groupId\": 2,\n    \"addContactIds\": [1, 2],\n    \"deleteContactIds\": [3, 8]\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update groups to be added and groups to be deleted to a Contact",
-          "id": "29b90660-8fba-4a3e-9b36-8ee9f7b42eb0",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1009,22 +1070,22 @@
                 "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"addGroupIds\": [1],\n    \"deleteGroupIds\": [2, 3]\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "fa680840-51d4-4492-b3dd-b8335a49943a"
+      ]
     },
     {
       "name": "Flows",
       "item": [
         {
           "name": "Get All Flows",
-          "id": "ad1a8dcf-9760-4a50-a09c-832f9e7f3796",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1046,16 +1107,17 @@
                 "variables": "{\n  \"opts\": {\n    \"limit\": 2,\n    \"offset\": 0,\n    \"order\": \"ASC\"\n  },\n  \"filter\": {\n    \"name\": \"Workflow\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get a specific Flow by ID",
-          "id": "595d2e8c-092d-4b4a-8c03-aa97162ac046",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1077,16 +1139,17 @@
                 "variables": "{\n  \"id\": 1\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Count all Flows",
-          "id": "60fb2422-9816-4af4-9ab5-cdc92ed102f1",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1108,16 +1171,17 @@
                 "variables": "{\n  \"id\": 1\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Create a Flow",
-          "id": "55ae3bf2-cf23-4a17-bd6d-2a1a617e5cd9",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1139,16 +1203,17 @@
                 "variables": "{\n  \"input\": {\n    \"keywords\": [\n      \"tests\",\n      \"testing\"\n    ],\n    \"name\": \"test workflow\",\n    \"isActive\": true\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update a Flow",
-          "id": "9d3bde0f-229f-45d0-b526-36d9c3499d90",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1170,16 +1235,17 @@
                 "variables": "{\n  \"id\": \"1975\",\n  \"input\": {\n    \"name\": \"updated name\",\n    \"keywords\": [\"testing\"]\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete a Flow",
-          "id": "7061e0b4-9850-4826-b9b6-d17eec4dca71",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1201,16 +1267,17 @@
                 "variables": "{\n  \"id\": \"1975\",\n  \"input\": {\n    \"name\": \"updated name\",\n    \"keywords\": [\"testing\"]\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Publish a Flow",
-          "id": "3f3b4435-a4ee-4a00-a0b4-2e6280dc95cf",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1232,16 +1299,17 @@
                 "variables": "{\n  \"uuid\": \"3fa22108-f464-41e5-81d9-d8a298854429\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Start flow for a contact",
-          "id": "f1580ca4-fd6c-469d-96a4-32b89975b0cd",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1263,16 +1331,17 @@
                 "variables": "{\n  \"flowId\": \"1\",\n  \"contactId\": \"2\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Resume flow for a contact",
-          "id": "4233a602-ee0c-48ce-bf12-4d3deec2b392",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1294,16 +1363,17 @@
                 "variables": "{\n  \"flowId\": \"1\",\n  \"contactId\": \"2\"\n  \"result\": {\"one\": 1, \"two\": 2, \"three\": 3}\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Start flow for a group contacts",
-          "id": "8078a272-3a7b-4d0c-aba8-4d061c221384",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1325,16 +1395,17 @@
                 "variables": "{\n  \"flowId\": \"1\",\n  \"groupId\": \"1\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Copy a Flow",
-          "id": "afc8c74e-cf81-4611-8a44-2c4530d82be9",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1356,16 +1427,17 @@
                 "variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"name\": \"new name\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Import a Flow",
-          "id": "2512c4d9-0695-48ba-9b7a-856445ece726",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1387,16 +1459,17 @@
                 "variables": "{\n  \"input\": {\n    \"{\\\"flows\\\":[{\\\"keywords\\\":[\\\"hello\\\"],\\\"definition\\\":{\\\"vars\\\":[\\\"a941004f-adc8-43f2-b819-68eec8d1e912\\\"],\\\"uuid\\\":\\\"a941004f-adc8-43f2-b819-68eec8d1e912\\\",\\\"type\\\":\\\"messaging\\\",\\\"spec_version\\\":\\\"13.1.0\\\",\\\"revision\\\":1,\\\"nodes\\\":[{\\\"uuid\\\":\\\"59c67035-59ab-47fa-a1fd-a50978aa78c5\\\",\\\"exits\\\":[{\\\"uuid\\\":\\\"49d2775d-a658-4c74-be10-b7d605b4ea6f\\\",\\\"destination_uuid\\\":null}],\\\"actions\\\":[{\\\"uuid\\\":\\\"4d4dc0f1-9056-4bf1-a58e-df26b861088e\\\",\\\"type\\\":\\\"send_msg\\\",\\\"text\\\":\\\"hehlo\\\",\\\"quick_replies\\\":[],\\\"attachments\\\":[]}]}],\\\"name\\\":\\\"hello\\\",\\\"localization\\\":{},\\\"language\\\":\\\"base\\\",\\\"expire_after_minutes\\\":10080,\\\"_ui\\\":{\\\"nodes\\\":{\\\"59c67035-59ab-47fa-a1fd-a50978aa78c5\\\":{\\\"type\\\":\\\"execute_actions\\\",\\\"position\\\":{\\\"top\\\":0,\\\"left\\\":0}}}}}}],\\\"contact_field\\\":[],\\\"collections\\\":[]}\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Export a Flow",
-          "id": "4d0ccc1f-aabc-4d5f-a9ba-1f6997dece7e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1418,16 +1491,17 @@
                 "variables": "{\n  \"id\": 10\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get a flow",
-          "id": "f414a30d-ed05-4ed7-9d26-ccb29d674b19",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1449,16 +1523,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Release a flow contact",
-          "id": "e957cf66-aebe-4077-9f72-2d6926b9d9fe",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1480,16 +1555,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Terminate flows for a contact",
-          "id": "b5519f3e-8fa6-4186-b1ba-12cea9763e6f",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1511,16 +1587,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Reset flow counts for a specific flow",
-          "id": "3b34f4ac-3c92-4fae-98b0-dfb86aa97f82",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1542,22 +1619,22 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "9a308ab0-deb9-49d5-a671-ac5c546c99f0"
+      ]
     },
     {
       "name": "Groups",
       "item": [
         {
           "name": "Get All Groups",
-          "id": "3b9e2784-4dc2-4615-b5f6-058126ef44d2",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1579,16 +1656,17 @@
                 "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"label\": \"Group\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get All Organization Groups",
-          "id": "25793ec8-3967-4c91-8aed-b6243ab583c4",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1610,16 +1688,17 @@
                 "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"label\": \"Group\"\n  },\n  \"id\": \"1\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get a Group by ID",
-          "id": "88d3b017-ece1-48d5-9b4c-5973900fefb9",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1641,16 +1720,17 @@
                 "variables": "{\n    \"id\": 1\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get Group Information for a Group by ID",
-          "id": "2c32a078-fa18-4726-a767-7931bd77924e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1672,16 +1752,17 @@
                 "variables": "{\n  \"id\": \"2\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Create Group",
-          "id": "9202d5eb-ed24-453f-83ee-c92444143764",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1703,16 +1784,17 @@
                 "variables": "{\n  \"input\": {\n    \"label\": \"My First Group\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update a Group",
-          "id": "0dca76e5-2a52-46c9-ae50-5ed18ee67ced",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1734,16 +1816,17 @@
                 "variables": "{\n  \"id\": 2,\n    \"input\": {\n    \"label\": \"My First Updated non-Restricted Group\",\n    \"isRestricted\": false\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete a Group",
-          "id": "98157fcc-f1b7-4bb3-b761-7878211122b1",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1765,22 +1848,22 @@
                 "variables": "{\n  \"id\": 2\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "7dfa9644-ed03-46b6-b805-786ff1d6e40a"
+      ]
     },
     {
       "name": "Glific Contact Import",
       "item": [
         {
           "name": "Import Contacts API",
-          "id": "227919cd-8a5e-45df-92f0-e913988af43c",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1802,22 +1885,22 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "d8dae722-dc96-4aff-b809-ba13981c44f7"
+      ]
     },
     {
       "name": "Languages",
       "item": [
         {
           "name": "Get All Languages",
-          "id": "9bf3a6e8-cd68-4728-b373-05c91d13e6ab",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1839,16 +1922,17 @@
                 "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get a specific language by ID",
-          "id": "084a324b-16e7-4656-83fb-b945afce3721",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1870,16 +1954,17 @@
                 "variables": "{\n  \"id\": 2\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Count all Languages",
-          "id": "50207e95-de35-4d81-9e28-457cdaf80db7",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1901,16 +1986,17 @@
                 "variables": "{\n  \"id\": 2\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update a Language",
-          "id": "12db32f4-2545-41ae-b3a3-a0b63777e04d",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1932,16 +2018,17 @@
                 "variables": "{\n  \"id\": 2\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete a Language",
-          "id": "0bc36c3f-3459-4eb2-a135-dccd9e4194b6",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -1963,22 +2050,22 @@
                 "variables": "{\n  \"id\": 2\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "b5de2437-9d9f-44a1-aa40-a55c73b54fe9"
+      ]
     },
     {
       "name": "Message Group",
       "item": [
         {
           "name": "Create Message Group",
-          "id": "62e18760-7de2-4e1c-9f7b-9a017a065c0e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2000,16 +2087,17 @@
                 "variables": "{\n  \"input\": {\n    \"messageId\": 2,\n    \"groupId\": 1\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete a MessageGroup",
-          "id": "f0d0556a-6e65-410d-9729-6a66267857e0",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2031,12 +2119,16 @@
                 "variables": "{\n  \"id\": 1\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "de9fb2c4-c20f-48c3-908e-60d1f98b7ab1"
+      ]
     },
     {
       "name": "Message Media",
@@ -2046,10 +2138,6 @@
           "item": [
             {
               "name": "Upload a file",
-              "id": "7999e373-2cf7-44c3-9145-7862626c230b",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
               "request": {
                 "method": "POST",
                 "header": [
@@ -2071,16 +2159,17 @@
                     "variables": ""
                   }
                 },
-                "url": "{{api_url}}"
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": [
+                    "{{api_url}}"
+                  ]
+                }
               },
               "response": []
             },
             {
               "name": "Upload a buffer",
-              "id": "88dec84b-edfe-461f-866c-1f3a2f0d4333",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
               "request": {
                 "method": "POST",
                 "header": [
@@ -2102,19 +2191,19 @@
                     "variables": "{\n  \"input\": {\n    \"media\": \"W29iamVjdCBCbG9iXQ==\",\n    \"extension\": \"wav\"\n  }\n}"
                   }
                 },
-                "url": "{{api_url}}"
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": [
+                    "{{api_url}}"
+                  ]
+                }
               },
               "response": []
             }
-          ],
-          "id": "9c799832-9559-4f73-b4c8-2bc1a3901312"
+          ]
         },
         {
           "name": "Get all message media",
-          "id": "7c044350-3131-40f6-ba57-a2e72ddf4a48",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2136,16 +2225,17 @@
                 "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get a specific Message Media by ID",
-          "id": "5ef69164-0846-48b0-8b05-4df65f9c6e8e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2167,16 +2257,17 @@
                 "variables": "{\n  \"id\": 2\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Count all Message Media",
-          "id": "920e00c9-9eaf-41af-98b4-f4cda617ab57",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2198,16 +2289,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Validate a Media URL and type",
-          "id": "bc0a6357-af4f-4445-a451-93cd0357d70b",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2229,16 +2321,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Create a Message Media",
-          "id": "31986f1d-029e-44cf-9604-13b839f9f53f",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2260,16 +2353,17 @@
                 "variables": "{\n  \"input\": {\n    \"url\": \"http://robohash.org/set_set3/bgset_bg1/ClrvA\",\n    \"source_url\": \"http://robohash.org/set_set3/bgset_bg1/ClrvA\",\n    \"caption\": \"This is a caption\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update a Message Media",
-          "id": "fa22d0db-454c-4fcf-ad1b-2ab50c5693ef",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2291,16 +2385,17 @@
                 "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"url\": \"http://robohash.org/set_set1/bgset_bg1/b7FBMrsOQbn8EJ\",\n    \"caption\": \"This is a caption\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete a Message Media",
-          "id": "c10495bd-cfdd-43e3-9e07-3b6d3854b780",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2322,22 +2417,22 @@
                 "variables": "{\n  \"id\": \"26\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "6a893218-c9d7-4c9c-9599-73373016590b"
+      ]
     },
     {
       "name": "Messages",
       "item": [
         {
           "name": "Get All Messages",
-          "id": "8ad1a94a-ad5f-4394-875e-132a2d882b74",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2359,16 +2454,17 @@
                 "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"body\": \"Hello\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get a specific Message by ID",
-          "id": "1ac310ce-b04e-4353-b28c-1220349536c5",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2390,16 +2486,17 @@
                 "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"body\": \"Hello\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Count all Messages",
-          "id": "af81ebcc-30ed-445b-8af8-f057eadf1312",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2421,16 +2518,17 @@
                 "variables": "{\n  \"filter\": {\n    \"body\": \"hello\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Create a Message",
-          "id": "ce54a56d-e2ea-4eb2-85ec-af7cfc133a23",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2452,16 +2550,17 @@
                 "variables": "{\n  \"filter\": {\n    \"body\": \"hello\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update a Message",
-          "id": "3a01502c-89bc-4e02-b181-18139bc46032",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2483,16 +2582,17 @@
                 "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"body\": \"It is the east, and Juliet is the sun.\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete a Message",
-          "id": "f7ea854a-9a4d-4fba-90c3-fb875862e268",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2514,16 +2614,17 @@
                 "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"body\": \"It is the east, and Juliet is the sun.\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete a Messages of a contact",
-          "id": "95c0a4dc-26ef-4358-bf96-a9f49e71681d",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2545,16 +2646,17 @@
                 "variables": "{\n  \"contactId\": \"26\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Create and send Message",
-          "id": "5c6faef3-dedf-4d75-a51e-7206e6240d8c",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2576,16 +2678,17 @@
                 "variables": "{\n  \"input\": {\n    \"body\": \"Test message\",\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1,\n    \"receiverId\": 2\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Create and send SessionTemplate",
-          "id": "e27c1545-495d-4a2f-bb37-cd85e3dd86fa",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2607,16 +2710,17 @@
                 "variables": "{\n  \"input\": {\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1,\n    \"receiverId\": 11,\n    \"isHsm\": true,\n    \"params\": [\"Fifty\", \"Next Week\"],\n    \"templateId\": 32\n\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Create and send Scheduled Message",
-          "id": "8554c4de-7fb4-41c8-aa27-cbf378ba0c91",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2638,16 +2742,17 @@
                 "variables": "{\n  \"input\": {\n    \"body\": \"This message should reach at 21:00 (India)\",\n    \"flow\": \"OUTBOUND\",\n    \"receiverId\": 7,\n    \"sendAt\": \"2020-07-10T03:30:00Z\",\n    \"senderId\": 1,\n    \"type\": \"TEXT\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Create and send Session Message to contacts of a collection",
-          "id": "598e0b75-4d91-4c25-8169-ae50934ddcc7",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2669,16 +2774,17 @@
                 "variables": "{\n  \"input\": {\n    \"body\": \"Test message\",\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1\n  },\n  \"groupId\": 1\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Send HSM Message",
-          "id": "aec66242-56d8-42b3-9374-c0994e1dad20",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2700,16 +2806,17 @@
                 "variables": "{\n  \"templateId\": 34,\n  \"receiverId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Send HSM Message to contacts of a collection",
-          "id": "25cd8dc6-1932-4ad3-ae02-1889aa1b45f3",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2731,16 +2838,17 @@
                 "variables": "{\n  \"templateId\": 34,\n  \"groupId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Send Media HSM Message",
-          "id": "a795c676-3303-459d-a2fc-7716da30ec4e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2762,16 +2870,17 @@
                 "variables": "{\n  \"templateId\": 34,\n  \"mediaId\": 3,\n  \"receiverId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Subscription for Sent Message",
-          "id": "969dce1a-746f-44e2-a942-d1737aaebe40",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2793,16 +2902,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Subscription for Update Message Status",
-          "id": "c5126c74-50d1-4a68-ad2c-96d29d3969f7",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2824,16 +2934,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Subscription for Sent Group Message",
-          "id": "6ee9f6fa-c64d-42fb-9a90-b690ffa0955b",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2855,16 +2966,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Subscription for Cleared Message",
-          "id": "363318b9-af9b-42c7-8d89-2781ea5f7f42",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2886,16 +2998,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Subscription for Received Message",
-          "id": "bc677e6e-b358-43f6-83c2-84bc0d40114f",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2917,22 +3030,22 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "bf155ea3-c86e-4838-aaf7-cd41b7b84e8a"
+      ]
     },
     {
       "name": "Messages Tags",
       "item": [
         {
           "name": "Create Contact Tag",
-          "id": "658b1687-52ca-4952-9a93-a043ef363a70",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2954,16 +3067,17 @@
                 "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"tagId\": 20\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update a Contact with tags to be added and tags to be deleted",
-          "id": "f53c3b33-0b94-41a1-a9c1-33f5aa5df1ce",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -2985,16 +3099,17 @@
                 "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"addTagIds\": [3, 6],\n    \"deleteTagIds\": [7, 8]\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Subscription for Create Contact Tag",
-          "id": "dd56e36b-be9d-4a89-b44b-b585eec7e7e6",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3016,16 +3131,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Subscription for Delete Contact Tag",
-          "id": "64296ec9-ebf3-48c1-b2a7-59109d9b2b7f",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3047,22 +3163,22 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "b1b4c298-7f2e-4af2-804b-a4131be7559c"
+      ]
     },
     {
       "name": "Organizations",
       "item": [
         {
           "name": "Get All Organizations",
-          "id": "175f7942-4729-4537-a9fd-34c34b25f530",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3084,16 +3200,17 @@
                 "variables": "{\n  \"opts\": {\n    \"limit\": 10,\n    \"offset\": 1,\n    \"order\": \"ASC\"\n  },\n  \"filter\": {\n    \"defaultLanguage\": \"Hindi\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get a specific Organization by ID",
-          "id": "1386de3e-eb3c-4786-be4c-6d134ae9beb7",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3115,16 +3232,17 @@
                 "variables": "{\n  \"id\": 2\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get Organization Services",
-          "id": "e65719ee-4eb3-402b-89a5-22abdc97f7b3",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3146,16 +3264,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Count all Organizations",
-          "id": "cc83d2dd-27e8-44fb-928e-340811219789",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3177,16 +3296,17 @@
                 "variables": "{\n  \"filter\": {\n    \"language\": \"Hindi\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Create an Organization",
-          "id": "e22d4593-3f8b-4a54-8a28-1ceacd5defa8",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3208,16 +3328,17 @@
                 "variables": "{\n  \"input\": {\n    \"shortcode\": \"new_organization\",\n    \"name\": \"new organization\",\n    \"contactId\": 1,\n    \"email\": \"test@test.com\",\n    \"bspId\": 1,\n    \"defaultLanguageId\": 1,\n    \"activeLanguageIds\": [1]\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update an Organization",
-          "id": "c9d1a919-8de8-4b95-a0d6-b11f5d4a724b",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3239,16 +3360,17 @@
                 "variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"name\": \"updated organization display name\",\n    \"sessionLimit\": 180,\n    \"outOfOffice\": {\n      \"enabled\": true,\n      \"enabledDays\": [\n        {\n          \"enabled\": true,\n          \"id\": 1\n        },\n        {\n          \"enabled\": true,\n          \"id\": 2\n        },\n        {\n          \"enabled\": true,\n          \"id\": 3\n        },\n        {\n          \"enabled\": true,\n          \"id\": 4\n        },\n        {\n          \"enabled\": true,\n          \"id\": 5\n        },\n        {\n          \"enabled\": false,\n          \"id\": 6\n        },\n        {\n          \"enabled\": false,\n          \"id\": 7\n        }\n      ],\n      \"endTime\": \"T19:00:00\",\n      \"flowId\": 1,\n      \"defaultFlowId\": 1,\n      \"startTime\": \"T09:00:00\"\n    }\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete an Organization",
-          "id": "d96f25ab-eb87-41e5-8d65-6ddd318296a3",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3270,16 +3392,17 @@
                 "variables": "{\n  \"id\": \"3\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Check for attachment support for the given user",
-          "id": "b7b89ead-81fb-4da9-ba76-0b4b15c0dae1",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3301,16 +3424,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get List of Timezones",
-          "id": "82b85c59-6eec-408a-8753-3130502ba903",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3332,16 +3456,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get List of Organization Status",
-          "id": "199ea12d-4cc3-4569-b4eb-64ca40eeb8e1",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3363,16 +3488,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Subscription for Wallet Balance",
-          "id": "21a11ab3-da50-4674-99bc-c9d7c784255e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3394,16 +3520,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Subscription for Collection Count",
-          "id": "7245c893-a20a-40e3-8c05-6d014bc34ec5",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3425,16 +3552,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Subscription for Simulator release",
-          "id": "72cf257a-ba03-4543-b911-ba402d4df07d",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3456,16 +3584,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Subscription for Simulator release Copy",
-          "id": "5ee90874-7669-4766-98b0-0bba41d07020",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3487,16 +3616,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Setup new organization",
-          "id": "6330aca6-8aaa-4d40-94a6-39babf863e48",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [],
@@ -3509,22 +3639,32 @@
                 }
               }
             },
-            "url": "https://api.glific.test:4001/api/v1/onboard/setup"
+            "url": {
+              "raw": "https://api.glific.test:4001/api/v1/onboard/setup",
+              "protocol": "https",
+              "host": [
+                "api",
+                "glific",
+                "test"
+              ],
+              "port": "4001",
+              "path": [
+                "api",
+                "v1",
+                "onboard",
+                "setup"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "eb583ec8-0ef3-471f-9037-62c42eed0f2d"
+      ]
     },
     {
       "name": "Providers",
       "item": [
         {
           "name": "Get All Providers",
-          "id": "5e669af3-a689-427c-9256-679337f87822",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3546,16 +3686,17 @@
                 "variables": "{\n  \"opts\": {\n    \"limit\": 10,\n    \"offset\": 1,\n    \"order\": \"ASC\"\n  },\n  \"filter\": {\n    \"name\": \"Default\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get a specific Provider by ID",
-          "id": "52ee9ccd-a1ef-410c-8c17-09041a9a0da4",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3577,16 +3718,17 @@
                 "variables": "{\n  \"id\": 2\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Count all Providers",
-          "id": "b051f533-cba8-4a67-a95e-50dec11e0aa4",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3608,16 +3750,17 @@
                 "variables": "{\n  \"filter\": {\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get BSP balance for an organization",
-          "id": "f2201a4d-bad6-489e-abb2-8bff036d257e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3639,16 +3782,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Create a Provider",
-          "id": "e1ac99f7-dc93-4f6c-aac5-60d24e8375ca",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3670,16 +3814,17 @@
                 "variables": "{\n  \"input\": {\n    \"name\": \"new_provider\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update a Provider",
-          "id": "2e55030f-c31e-4c35-b98c-89abf36c2d06",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3701,16 +3846,17 @@
                 "variables": "\n{\n  \"id\": \"1\",\n  \"input\": {\n    \"name\": \"Updated Provider\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete a Provider",
-          "id": "cfd81872-e83d-40f8-be66-da8641a4c84e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3732,22 +3878,22 @@
                 "variables": "{\n  \"id\": \"3\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "f2fc40bf-84de-4b84-9d01-53dfd78e2566"
+      ]
     },
     {
       "name": "Search",
       "item": [
         {
           "name": "Search Contacts and Conversations",
-          "id": "6f69ab6f-126b-47df-b2f8-0f0706ba190d",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3766,19 +3912,20 @@
               "mode": "graphql",
               "graphql": {
                 "query": "query search(  $saveSearchInput: SaveSearchInput,\n  $searchFilter: SearchFilter!, $contactOpts: Opts!, $messageOpts: Opts!) {\n\n  search(filter: $searchFilter, saveSearchInput: $saveSearchInput, contactOpts: $contactOpts, messageOpts: $messageOpts) {\n\n    messages {\n      id,\n      body,\n      tags{\n        label\n      }\n    }\n\n    contact {\n      name\n    }\n  }\n}",
-                "variables": "{\n  \"saveSearchInput\": {\n      \"label\": \"Save with this name\",\n      \"shortcode\": \"SaveName\"\n  },\n\n  \"searchFilter\": {\n    \"includeTags\": [\"17\"],\n    \"includeGroups\": [\"1\"],\n    \"includeUsers\": [\"1\"],\n    \"term\": \"def\",\n    \"dateRange\": {\n      \"to\": \"2020-08-10\",\n      \"from\": \"2020-08-12\"\n    }\n  },\n  \"messageOpts\": {\n    \"limit\": 3,\n    \"order\": \"ASC\"\n  },\n  \"contactOpts\": {\n    \"order\": \"DESC\",\n    \"limit\": 1\n  }\n}"
+                "variables": "{\n  \"saveSearchInput\": {\n      \"label\": \"Save with this name\",\n      \"shortcode\": \"SaveName\"\n  },\n  \"saveSearch\": \"boolean\",\n  \"searchFilter\": {\n    \"includeTags\": [\"17\"],\n    \"includeLabels\": [\"17\"],\n    \"includeGroups\": [\"1\"],\n    \"includeUsers\": [\"1\"],\n    \"groupLabel\": \"string\",\n    \"id\": \"number\",\n    \"ids\": [],\n    \"savedSearchId\": \"ID\",\n    \"searchGroup\": \"boolean\",\n    \"status\": \"string\",\n    \"term\": \"def\",\n    \"dateRange\": {\n      \"to\": \"2020-08-10\",\n      \"from\": \"2020-08-12\"\n    }\n  },\n  \"messageOpts\": {\n    \"limit\": 3,\n    \"order\": \"ASC\"\n  },\n  \"contactOpts\": {\n    \"order\": \"DESC\",\n    \"limit\": 1,\n    \"offset\": 0,\n    \"orderWith\": \"name\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Search for a multiple section based on term",
-          "id": "012d399b-4ac7-4253-b3d4-14958551938b",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3800,16 +3947,17 @@
                 "variables": "{\n  \"searchFilter\": {\n    \"term\": \"def\"\n  },\n  \"messageOpts\": {\n    \"limit\": 3,\n    \"order\": \"ASC\"\n  },\n  \"contactOpts\": {\n    \"order\": \"DESC\",\n    \"limit\": 1\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Saved Search Execution",
-          "id": "fda8bde8-e5cd-4c53-b93e-f924b37037c7",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3831,16 +3979,17 @@
                 "variables": "{\n  \"searchFilter\": {\n    \"savedSearchID\": \"17\",\n    \"term\": \"def\"\n  },\n  \"messageOpts\": {\n    \"limit\": 3,\n    \"order\": \"ASC\"\n  },\n  \"contactOpts\": {\n    \"order\": \"DESC\",\n    \"limit\": 1\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Saved Search Count",
-          "id": "70492e6a-62c0-4501-9af9-2b52fe74cead",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -3862,12 +4011,16 @@
                 "variables": "{\n  \"id\": 4\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "d1732cd4-8a29-43e6-867d-0a5fdf118167"
+      ]
     },
     {
       "name": "Saved Searches",
@@ -3877,10 +4030,6 @@
           "item": [
             {
               "name": "Get All Session Templates",
-              "id": "92ef68fb-5613-4d31-9141-04c3cfde52f5",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
               "request": {
                 "method": "POST",
                 "header": [
@@ -3902,16 +4051,17 @@
                     "variables": "{\n  \"filter\": {\n    \"body\": \"template\",\n    \"term\": \"label\"\n  },\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
                   }
                 },
-                "url": "{{api_url}}"
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": [
+                    "{{api_url}}"
+                  ]
+                }
               },
               "response": []
             },
             {
               "name": "Get a specific SessionTemplate by ID",
-              "id": "207c4502-72cb-41f8-a2ef-cf1b74921ff0",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
               "request": {
                 "method": "POST",
                 "header": [
@@ -3933,16 +4083,17 @@
                     "variables": "{\n  \"id\": 1\n}"
                   }
                 },
-                "url": "{{api_url}}"
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": [
+                    "{{api_url}}"
+                  ]
+                }
               },
               "response": []
             },
             {
               "name": "Count all Session Templates",
-              "id": "dce652ba-6850-473b-9458-76f3640903ea",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
               "request": {
                 "method": "POST",
                 "header": [
@@ -3964,16 +4115,17 @@
                     "variables": "{\n  \"filter\":  {\n    \"language\": \"Hindi\"\n  }\n}"
                   }
                 },
-                "url": "{{api_url}}"
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": [
+                    "{{api_url}}"
+                  ]
+                }
               },
               "response": []
             },
             {
               "name": "Get List of Whatsapp HSM categories",
-              "id": "cd7a529f-2dcf-4fca-817e-ffed85ae7a36",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
               "request": {
                 "method": "POST",
                 "header": [
@@ -3995,16 +4147,17 @@
                     "variables": ""
                   }
                 },
-                "url": "{{api_url}}"
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": [
+                    "{{api_url}}"
+                  ]
+                }
               },
               "response": []
             },
             {
               "name": "Create a Session Template",
-              "id": "063c0877-8b46-4b52-8e70-4d8783784108",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
               "request": {
                 "method": "POST",
                 "header": [
@@ -4026,16 +4179,17 @@
                     "variables": "{\n  \"input\": {\n    \"body\": \"Test template\",\n    \"label\": \"Test label\",\n    \"languageId\": 1,\n    \"translations\": \"{\\\"2\\\":{\\\"number_parameters\\\":0,\\\"language_id\\\":2,\\\"body\\\":\\\"पूर्व उपस्थित नमूना\\\"}}\",\n    \"type\": \"TEXT\"\n  }\n}"
                   }
                 },
-                "url": "{{api_url}}"
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": [
+                    "{{api_url}}"
+                  ]
+                }
               },
               "response": []
             },
             {
               "name": "Update a SessionTemplate",
-              "id": "7601360a-f67b-4870-b1eb-180a1e15a5d4",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
               "request": {
                 "method": "POST",
                 "header": [
@@ -4057,16 +4211,17 @@
                     "variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"body\": \"Test template\"\n  }\n}"
                   }
                 },
-                "url": "{{api_url}}"
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": [
+                    "{{api_url}}"
+                  ]
+                }
               },
               "response": []
             },
             {
               "name": "Delete a SessionTemplate",
-              "id": "acb265fa-ae52-4038-b545-6c833e09a0a9",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
               "request": {
                 "method": "POST",
                 "header": [
@@ -4088,19 +4243,19 @@
                     "variables": "{\n  \"id\": \"3\"\n}"
                   }
                 },
-                "url": "{{api_url}}"
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": [
+                    "{{api_url}}"
+                  ]
+                }
               },
               "response": []
             }
-          ],
-          "id": "0fd84bd3-cd7a-4921-be64-393f78847a65"
+          ]
         },
         {
           "name": "Get All Saved Searches",
-          "id": "900c2099-3ef2-4c80-840b-f8fd6e298727",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4122,16 +4277,17 @@
                 "variables": "{\n  \"filter\": {\n    \"label\": \"conv\"\n  },\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"offset\": 0,\n    \"limit\": 1\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Count all Saved Searches",
-          "id": "c611c3f5-2e0a-4424-a29b-fb27211edddc",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4153,16 +4309,17 @@
                 "variables": "{\n  \"filter\": {\n    \"label\": \"Conversations read but not replied\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get a specific Saved Search by ID",
-          "id": "f397975c-7b93-4224-9f34-cacb8cd622b6",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4184,16 +4341,17 @@
                 "variables": "{\n  \"id\": 2\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get a Collection Count Stats for organization",
-          "id": "6db0e56a-5969-4a49-a250-0843eb1700ce",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4215,16 +4373,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Save a Search",
-          "id": "6f10e6eb-600b-40bf-a13b-2136e5190835",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4246,16 +4405,17 @@
                 "variables": "{\n  \"input\": {\n    \"label\": \"This is a saved search\",\n    \"shortcode\": \"Save Search\",\n    \"args\": \"{'term': 'Save this search'}\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update a Saved Search",
-          "id": "26100e92-51bf-41ad-9a9f-f72cfca9a9f8",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4277,16 +4437,17 @@
                 "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"label\": \"This is a updated saved search\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete a SavedSearch",
-          "id": "d3e37a7b-0c2e-4709-9450-3e60289d66b9",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4308,22 +4469,22 @@
                 "variables": "{\n  \"id\": \"26\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "5b65be1c-95ec-49a8-af74-1e4affba73f3"
+      ]
     },
     {
       "name": "SaaS",
       "item": [
         {
           "name": "Create an organization, organization contact and BSP credentials",
-          "id": "e23158e3-3e71-42f1-962c-9b65506230af",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4345,16 +4506,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update Organization Status IsActive or IsApproved",
-          "id": "adb26a39-2865-4bb1-953e-20551ef4df54",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4376,16 +4538,17 @@
                 "variables": "{\n  \"isActive\": true,\n  \"isApproved\": true,\n  \"updateOrganizationId\": 1\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete Organization with status as inactive",
-          "id": "4b6998b5-3856-4452-bf8b-e61ecc69eac8",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4407,16 +4570,17 @@
                 "variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"isConfirmed\": true,\n    \"deleteOrganizationId\": 1\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Reset selected tables from Organization",
-          "id": "e05cfa8e-b5c7-4c51-945b-61260541b7e4",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4438,22 +4602,22 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "7ff8570a-9dce-46c5-b9a4-185c0df3f126"
+      ]
     },
     {
       "name": "Tags",
       "item": [
         {
           "name": "Get All Tags",
-          "id": "86a14260-bdd6-426d-848f-2a5b24dee7e5",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4475,16 +4639,17 @@
                 "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"languageId\": 1\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get a specific Tag by ID",
-          "id": "1b707a2d-dc11-4b5c-8edc-7dce72d74c3e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4506,16 +4671,17 @@
                 "variables": "{\n  \"id\": 2\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Count all Tags",
-          "id": "7e46e462-476e-4bcd-bd75-d7a4427ab754",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4537,16 +4703,17 @@
                 "variables": "{\n  \"filter\": {\n    \"languageId\": 2\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Create a Tag",
-          "id": "c3c11dc5-f6ce-47e9-b545-2bf4f8f5dc5f",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4568,16 +4735,17 @@
                 "variables": "{\n  \"input\": {\n    \"label\": \"This is a new tag for this example\",\n    \"shortcode\": \"new-tag\",\n    \"description\": \"This is a cool description\",\n    \"languageId\": \"1\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update a Tag",
-          "id": "ce52c21c-e526-4f2a-899b-d2aecfe8a288",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4599,16 +4767,17 @@
                 "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"label\": \"This is a update tag for this example\",\n    \"description\": \"This is a updated cool description\",\n    \"languageId\": \"2\"\n  }\n}\n"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete a Tag",
-          "id": "959b412e-167a-4735-9de3-f8ffd5c5b1a1",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4630,16 +4799,17 @@
                 "variables": "{\n  \"id\": \"3\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Remove unread status from contact",
-          "id": "6f3d9416-ca20-4956-90d0-a9ed3ade663a",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4661,22 +4831,22 @@
                 "variables": "{\n  \"contactId\": \"26\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "3ab9c1fd-db0f-4fc3-9336-b1a345168579"
+      ]
     },
     {
       "name": "Users",
       "item": [
         {
           "name": "Get All Roles",
-          "id": "0663113e-5549-4a82-9eaf-dc9b4e1f3166",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4698,16 +4868,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get All Users",
-          "id": "ccaa4995-6264-4341-b330-8eaac9f9433a",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4729,16 +4900,17 @@
                 "variables": "{\n  \"filter\": {\n    \"name\": \"Doe\"\n  },\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get a specific User by ID",
-          "id": "c0c33d4c-cd08-4b17-89d6-af49cae7b03c",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4760,16 +4932,17 @@
                 "variables": "{\n  \"id\": 2\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Get Current User",
-          "id": "17aad756-cc03-4530-a611-e755b450514f",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4791,16 +4964,17 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Count all Users",
-          "id": "588906fe-2e15-4308-95df-0fe1014e00f8",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4822,16 +4996,17 @@
                 "variables": "{\n  \"filter\": {\n    \"name\": \"John\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update a User",
-          "id": "1149300c-e435-4d97-8725-a443eefbd431",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4853,16 +5028,17 @@
                 "variables": "{\n  \"id\": \"2\",\n  \"input\": {\n    \"name\": \"Updated Name\",\n    \"roles\": [\n      \"admin\"\n    ],\n    \"groupIds\": [\n      1,\n      2\n    ]\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update Current User Details",
-          "id": "5edc1eb6-f1a7-4c2d-974d-5bb00f30614f",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4884,16 +5060,17 @@
                 "variables": "{\n  \"input\": {\n    \"name\": \"Updated Name\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update Current User Password",
-          "id": "d3ffef3c-bbfc-4382-b70b-f71a2c70bba4",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4915,16 +5092,17 @@
                 "variables": "{\n  \"input\": {\n    \"name\": \"Updated Name\",\n    \"otp\": \"340606\",\n    \"password\": \"new_password\"\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete a User",
-          "id": "1ce5fdc3-e45e-4d0f-8137-5bd4d8ec7f7e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4946,22 +5124,22 @@
                 "variables": "{\n  \"id\": \"2\"\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "8d552133-999f-4449-a1ec-d319dc5d9472"
+      ]
     },
     {
       "name": "User Group",
       "item": [
         {
           "name": "Create User Group",
-          "id": "0a5fbc8e-1c47-4dde-8580-02152b84c833",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -4983,16 +5161,17 @@
                 "variables": "{\n  \"input\": {\n    \"userId\": 2,\n    \"groupId\": 1\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update a Group with users to be added and users to be deleted",
-          "id": "ff48f511-95ee-45ad-a246-2db024d20623",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -5014,16 +5193,17 @@
                 "variables": "{\n  \"input\": {\n    \"groupId\": 2,\n    \"addUserIds\": [1, 2],\n    \"deleteUserIds\": [3, 8]\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update groups to be added and groups to be deleted to a User",
-          "id": "ec310b39-c404-43eb-bcd3-146203a81842",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -5045,16 +5225,17 @@
                 "variables": "{\n  \"input\": {\n    \"userId\": 2,\n    \"addGroupIds\": [1],\n    \"deleteGroupIds\": [2, 3]\n  }\n}"
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Subscription for Delete Contact Tag",
-          "id": "0fb1197b-9f66-434e-b5b1-6da7c0d28eaa",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "POST",
             "header": [
@@ -5076,12 +5257,16 @@
                 "variables": ""
               }
             },
-            "url": "{{api_url}}"
+            "url": {
+              "raw": "{{api_url}}",
+              "host": [
+                "{{api_url}}"
+              ]
+            }
           },
           "response": []
         }
-      ],
-      "id": "d91a50c8-b17d-4594-94e4-7438192d7c6a"
+      ]
     }
   ]
 }
