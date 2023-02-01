@@ -736,7 +736,7 @@ defmodule Glific.Flows.Action do
 
     results = %{
       "input" => value,
-      "value" => value,
+      "value" => Glific.execute_eex(value),
       "category" => action.category,
       "inserted_at" => DateTime.utc_now()
     }
