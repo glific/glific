@@ -256,7 +256,6 @@ defmodule Glific.GCS.GcsWorker do
 
   @doc """
   Public interface to upload a file provided by the org at local name to gcs as remote name
-  contentType
   """
   @spec upload_media(String.t(), String.t(), non_neg_integer) ::
           {:ok, map()} | {:error, String.t()}
