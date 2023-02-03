@@ -515,7 +515,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     res =
       GcsWorker.upload_media(media.path, remote_name, organization_id)
       |> case do
-        {:ok, media} -> %{url: media.public_link, content_type: media.content_type, error: nil}
+        {:ok, media} -> %{url: media.url, type: media.type, error: nil}
         {:error, error} -> %{url: nil, error: error}
       end
 

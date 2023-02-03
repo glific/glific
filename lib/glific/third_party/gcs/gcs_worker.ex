@@ -19,6 +19,7 @@ defmodule Glific.GCS.GcsWorker do
 
   alias Glific.{
     Jobs,
+    Messages,
     Messages.Message,
     Messages.MessageMedia,
     Partners,
@@ -264,7 +265,8 @@ defmodule Glific.GCS.GcsWorker do
     |> case do
       {:ok, response} ->
         File.rm(local)
-        {:ok, %{public_link: get_public_link(response), content_type: response.contentType}}
+        {type, _media} = Messages.get_media_type_from_url(response.selfLink)
+        {:ok, %{url: get_public_link(response), type: type}}
 
       {:error, error} ->
         error = handle_gcs_error(organization_id, error)
