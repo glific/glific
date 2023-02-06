@@ -20,6 +20,7 @@ defmodule GlificWeb.Schema.SheetTypes do
     field :is_active, :boolean
     field :last_synced_at, :datetime
     field :warnings, :json
+    field :sheet_data_count, :integer
     field :inserted_at, :datetime
     field :updated_at, :datetime
   end

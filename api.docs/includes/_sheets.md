@@ -84,6 +84,7 @@ query Sheet($sheetId: ID!) {
       lastSyncedAt
       updatedAt
       url
+      sheetDataCount
     }
     errors {
       key
@@ -111,7 +112,8 @@ query Sheet($sheetId: ID!) {
         "label": "sheet1",
         "lastSyncedAt": "2022-10-14T05:37:32Z",
         "updatedAt": "2022-10-14T05:37:33.000000Z",
-        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        "sheetDataCount": 4
       }
     }
   }
@@ -553,6 +555,11 @@ In case of errors, all the above functions return an error object like the below
 <tr>
 <td colspan="2" valign="top"><strong>lastSyncedAt</strong></td>
 <td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>sheetDataCount</strong></td>
+<td valign="top"><a href="#int">Int</a></td>
 <td></td>
 </tr>
 <tr>
