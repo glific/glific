@@ -14,4 +14,7 @@ defmodule Glific.Providers.TemplateBehaviour do
 
   @callback import_templates(org_id :: non_neg_integer(), data :: String.t()) ::
               :ok | {:ok, any}
+
+  @callback bulk_apply_templates(org_id :: non_neg_integer(), data :: String.t()) ::
+              :ok | {:ok, any}
 end

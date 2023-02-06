@@ -28,6 +28,14 @@ defmodule Glific.Providers.Airtel.Template do
   end
 
   @doc """
+  Bulk apply templates from CSV when BSP is Airtel
+  """
+  @spec bulk_apply_templates(non_neg_integer(), String.t()) :: {:ok, any}
+  def bulk_apply_templates(_organization_id, _data) do
+    {:ok, %{message: "Feature not available"}}
+  end
+
+  @doc """
   Delete template from the Airtel
   """
   @spec delete(non_neg_integer(), map()) :: {:ok, any()} | {:error, any()}

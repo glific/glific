@@ -21,6 +21,11 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :bulk_apply_templates_result do
+    field :status, :string
+    field :errors, list_of(:input_error)
+  end
+
   object :sync_hsm_templates do
     field :message, :string
     field :errors, list_of(:input_error)
@@ -201,6 +206,12 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       arg(:data, :string)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Templates.import_templates/3)
+    end
+
+    field :bulk_apply_templates, :bulk_apply_templates_result do
+      arg(:data, :string)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Templates.bulk_apply_templates/3)
     end
   end
 end
