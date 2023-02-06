@@ -103,6 +103,7 @@ defmodule Glific.Providers.Gupshup.Template do
     end
   end
 
+  @spec validate_dropdowns(map()) :: {:ok, map()} | {:error, String.t()}
   defp validate_dropdowns(template) do
     with true <- is_valid_language?(template["Language"]),
          true <- is_valid_category?(template["Category"]),
@@ -112,18 +113,22 @@ defmodule Glific.Providers.Gupshup.Template do
     end
   end
 
+  @spec is_valid_language?(String.t()) :: true | {:error, String.t()}
   defp is_valid_language?(language) when language in @languages, do: true
   defp is_valid_language?(_language), do: {:error, "Invalid Language"}
 
+  @spec is_valid_category?(String.t()) :: true | {:error, String.t()}
   defp is_valid_category?(category) when category in @categories, do: true
   defp is_valid_category?(_category), do: {:error, "Invalid Category"}
 
+  @spec is_valid_shortcode?(String.t()) :: true | {:error, String.t()}
   defp is_valid_shortcode?(shortcode) do
     if String.match?(shortcode, ~r/^[a-z0-9_]*$/),
       do: true,
       else: {:error, "Invalid Element Name"}
   end
 
+  @spec has_valid_buttons?(boolean(), map()) :: true | {:error, String.t()}
   defp has_valid_buttons?(false, _template), do: true
 
   defp has_valid_buttons?(true, template) do
@@ -152,6 +157,7 @@ defmodule Glific.Providers.Gupshup.Template do
 
   defp has_valid_buttons?(_has_buttons, _template), do: {:error, "Invalid Buttons"}
 
+  @spec is_empty?(String.t()) :: boolean()
   defp is_empty?(button) do
     button
     |> String.trim()
