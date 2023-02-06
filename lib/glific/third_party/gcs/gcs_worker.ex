@@ -19,6 +19,7 @@ defmodule Glific.GCS.GcsWorker do
 
   alias Glific.{
     Jobs,
+    Messages,
     Messages.Message,
     Messages.MessageMedia,
     Partners,
@@ -257,13 +258,15 @@ defmodule Glific.GCS.GcsWorker do
   @doc """
   Public interface to upload a file provided by the org at local name to gcs as remote name
   """
-  @spec upload_media(String.t(), String.t(), non_neg_integer) :: {:ok | :error, String.t()}
+  @spec upload_media(String.t(), String.t(), non_neg_integer) ::
+          {:ok, map()} | {:error, String.t()}
   def upload_media(local, remote, organization_id) do
     upload_file_on_gcs(local, remote, organization_id)
     |> case do
       {:ok, response} ->
         File.rm(local)
-        {:ok, get_public_link(response)}
+        {type, _media} = Messages.get_media_type_from_url(response.selfLink)
+        {:ok, %{url: get_public_link(response), type: type}}
 
       {:error, error} ->
         error = handle_gcs_error(organization_id, error)
