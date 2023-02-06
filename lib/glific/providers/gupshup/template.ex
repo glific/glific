@@ -87,11 +87,10 @@ defmodule Glific.Providers.Gupshup.Template do
     {:ok, stream} = StringIO.open(data)
     organization = Partners.organization(organization_id)
 
-    processed_templates =
-      stream
-      |> IO.binstream(:line)
-      |> CSV.decode(headers: true, strip_fields: true)
-      |> Enum.map(fn {_, data} -> process_templates(data) end)
+    stream
+    |> IO.binstream(:line)
+    |> CSV.decode(headers: true, strip_fields: true)
+    |> Enum.map(fn {_, data} -> process_templates(data) end)
 
     {:ok, %{message: "All templates have been applied"}}
   end
@@ -119,12 +118,37 @@ defmodule Glific.Providers.Gupshup.Template do
   defp has_valid_buttons?(false, _template), do: true
 
   defp has_valid_buttons?(true, template) do
-    with true <- template["Button Type"] in ["Call To Action", "Quick Replies"] do
-      template
+    case template["Button Type"] do
+      "Call To Action" ->
+        if template["CTA Button 1 Type"] in ["Phone Number", "URL"] &&
+             template["CTA Button 2 Type"] in ["Phone Number", "URL"] do
+          true
+        else
+          {:error, "Invalid Call To Action Button type"}
+        end
+
+      "Quick Replies" ->
+        if is_empty?(template["Quick Reply 1 Title"]) &&
+             is_empty?(template["Quick Reply 2 Title"]) &&
+             is_empty?(template["Quick Reply 3 Title"]) == true do
+          {:error, "Quick Reply Button Titles are empty"}
+        else
+          true
+        end
+
+      _ ->
+        {:error, "Invalid Button Type"}
     end
   end
 
   defp has_valid_buttons?(_has_buttons, _template), do: {:error, "Invalid Buttons"}
+
+  defp is_empty?(button) do
+    button
+    |> String.trim()
+    |> String.length()
+    |> then(&(&1 == 0))
+  end
 
   @doc """
   Delete template from the gupshup
