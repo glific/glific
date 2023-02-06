@@ -106,15 +106,24 @@ defmodule Glific.Providers.Gupshup.Template do
   defp validate_dropdowns(template) do
     with true <- is_valid_language?(template["Language"]),
          true <- is_valid_category?(template["Category"]),
-         true <- has_valid_buttons?(template["Has Buttons"], template) do
+         true <- has_valid_buttons?(template["Has Buttons"], template),
+         true <- is_valid_shortcode?(template["Element Name"]) do
       {:ok, template}
     end
   end
 
   defp is_valid_language?(language) when language in @languages, do: true
   defp is_valid_language?(_language), do: {:error, "Invalid Language"}
+
   defp is_valid_category?(category) when category in @categories, do: true
   defp is_valid_category?(_category), do: {:error, "Invalid Category"}
+
+  defp is_valid_shortcode?(shortcode) do
+    if String.match?(shortcode, ~r/^[a-z0-9_]*$/),
+      do: true,
+      else: {:error, "Invalid Element Name"}
+  end
+
   defp has_valid_buttons?(false, _template), do: true
 
   defp has_valid_buttons?(true, template) do
