@@ -52,7 +52,7 @@ defmodule Glific.Providers.Gupshup.Template do
   end
 
   @doc """
-  Import pre approved templates when BSP is GupshupEnterprise
+  Import pre approved templates when BSP is Gupshup
   """
   @spec import_templates(non_neg_integer(), String.t()) :: {:ok, any}
   def import_templates(_organization_id, _data) do
