@@ -4,6 +4,25 @@ defmodule Glific.Providers.Gupshup.Template do
   """
 
   @behaviour Glific.Providers.TemplateBehaviour
+  @languages [
+    "Tamil",
+    "Kannada",
+    "Malayalam",
+    "Telugu",
+    "Odia",
+    "Assamese",
+    "Gujarati",
+    "Bengali",
+    "Punjabi",
+    "Marathi",
+    "Urdu",
+    "Spanish",
+    "Hindi",
+    "English",
+    "Sign Language"
+  ]
+
+  @categories ["TRANSACTIONAL", "MARKETING", "OTP"]
 
   alias Glific.{
     Messages.MessageMedia,
@@ -12,6 +31,7 @@ defmodule Glific.Providers.Gupshup.Template do
     Providers.Gupshup.ApiClient,
     Providers.Gupshup.PartnerAPI,
     Repo,
+    Settings.Language,
     Templates,
     Templates.SessionTemplate
   }
@@ -63,9 +83,48 @@ defmodule Glific.Providers.Gupshup.Template do
   Bulk apply templates from CSV when BSP is Gupshup
   """
   @spec bulk_apply_templates(non_neg_integer(), String.t()) :: {:ok, any}
-  def bulk_apply_templates(_organization_id, _data) do
-    {:ok, %{message: "Feature not available"}}
+  def bulk_apply_templates(organization_id, data) do
+    {:ok, stream} = StringIO.open(data)
+    organization = Partners.organization(organization_id)
+
+    processed_templates =
+      stream
+      |> IO.binstream(:line)
+      |> CSV.decode(headers: true, strip_fields: true)
+      |> Enum.map(fn {_, data} -> process_templates(data) end)
+
+    {:ok, %{message: "All templates have been applied"}}
   end
+
+  @spec process_templates(map()) :: map()
+  defp process_templates(template) do
+    with {:ok, template} <- validate_dropdowns(template),
+         {:ok, language} <- Repo.fetch_by(Language, %{label_locale: template["Language"]}) do
+      template
+    end
+  end
+
+  defp validate_dropdowns(template) do
+    with true <- is_valid_language?(template["Language"]),
+         true <- is_valid_category?(template["Category"]),
+         true <- has_valid_buttons?(template["Has Buttons"], template) do
+      {:ok, template}
+    end
+  end
+
+  defp is_valid_language?(language) when language in @languages, do: true
+  defp is_valid_language?(_language), do: {:error, "Invalid Language"}
+  defp is_valid_category?(category) when category in @categories, do: true
+  defp is_valid_category?(_category), do: {:error, "Invalid Category"}
+  defp has_valid_buttons?(false, _template), do: true
+
+  defp has_valid_buttons?(true, template) do
+    with true <- template["Button Type"] in ["Call To Action", "Quick Replies"] do
+      template
+    end
+  end
+
+  defp has_valid_buttons?(_has_buttons, _template), do: {:error, "Invalid Buttons"}
 
   @doc """
   Delete template from the gupshup
