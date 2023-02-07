@@ -81,19 +81,37 @@ defmodule Glific.Providers.Gupshup.Template do
 
   @doc """
   Bulk apply templates from CSV when BSP is Gupshup
-  Glific.Providers.Gupshup.Template.bulk_apply_templates(1, data)
   """
   @spec bulk_apply_templates(non_neg_integer(), String.t()) :: {:ok, any}
   def bulk_apply_templates(organization_id, data) do
     {:ok, stream} = StringIO.open(data)
 
-    stream
-    |> IO.binstream(:line)
-    |> CSV.decode(headers: true, strip_fields: true)
-    |> Enum.map(fn {_, data} -> process_templates(organization_id, data) end)
+    processed_templates =
+      stream
+      |> IO.binstream(:line)
+      |> CSV.decode(headers: true, strip_fields: true)
+      |> Enum.map(fn {_, data} -> process_templates(organization_id, data) end)
+
+    processed_templates
+    |> filter_valid_templates()
     |> TemplateWorker.make_job(organization_id)
 
-    {:ok, %{message: "All templates have been applied"}}
+    message =
+      processed_templates
+      |> Enum.reduce(%{}, fn {title, value}, acc ->
+        if is_map(value) do
+          Map.put(acc, title, "Template has been applied successfully")
+        else
+          Map.put(acc, title, value)
+        end
+      end)
+
+    {:ok, %{message: message}}
+  end
+
+  defp filter_valid_templates(templates) do
+    templates
+    |> Enum.filter(fn {_title, template} -> is_map(template) end)
   end
 
   @spec process_templates(non_neg_integer(), map()) ::
