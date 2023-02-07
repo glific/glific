@@ -116,6 +116,7 @@ defmodule Glific.Providers.Gupshup.Template do
     end
   end
 
+  @spec check_media_template(map(), map(), non_neg_integer()) :: map()
   defp check_media_template(template, %{"Attachment Type" => type} = csv_template, org_id)
        when type in ["image", "video", "document"] do
     {:ok, message_media} =
@@ -129,7 +130,7 @@ defmodule Glific.Providers.Gupshup.Template do
     {media_type, _url} = Messages.get_media_type_from_url(csv_template["Attachment URL"])
 
     template
-    |> Map.put(:media_id, message_media.id)
+    |> Map.put(:message_media_id, message_media.id)
     |> Map.put(:type, media_type)
   end
 
