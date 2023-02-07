@@ -81,6 +81,7 @@ defmodule Glific.Providers.Gupshup.Template do
 
   @doc """
   Bulk apply templates from CSV when BSP is Gupshup
+  Glific.Providers.Gupshup.Template.bulk_apply_templates(1, data)
   """
   @spec bulk_apply_templates(non_neg_integer(), String.t()) :: {:ok, any}
   def bulk_apply_templates(organization_id, data) do
@@ -115,7 +116,8 @@ defmodule Glific.Providers.Gupshup.Template do
     end
   end
 
-  defp process_buttons(template, "FALSE", _csv_template), do: {template["Title"], template}
+  @spec process_buttons(map(), String.t(), map()) :: {String.t(), map()}
+  defp process_buttons(template, "FALSE", csv_template), do: {csv_template["Title"], template}
 
   defp process_buttons(template, "TRUE", csv_template) do
     case csv_template["Button Type"] do
@@ -135,7 +137,7 @@ defmodule Glific.Providers.Gupshup.Template do
         template
         |> Map.put(:buttons, buttons)
         |> Map.put(:button_type, :quick_reply)
-        |> then(&{template["Title"], &1})
+        |> then(&{csv_template["Title"], &1})
 
       "CALL_TO_ACTION" ->
         buttons =
@@ -156,17 +158,17 @@ defmodule Glific.Providers.Gupshup.Template do
         template
         |> Map.put(:buttons, buttons)
         |> Map.put(:button_type, :call_to_action)
-        |> then(&{template["Title"], &1})
+        |> then(&{csv_template["Title"], &1})
     end
   end
 
-  @spec validate_dropdowns(map()) :: {:ok, map()} | {:error, String.t()}
+  @spec validate_dropdowns(map()) :: {:ok, map()} | {String.t(), String.t()}
   defp validate_dropdowns(template) do
     with true <- is_valid_language?(template["Language"]),
          true <- is_valid_category?(template["Category"]),
          true <- has_valid_buttons?(template["Has Buttons"], template),
          true <- is_valid_shortcode?(template["Element Name"]) do
-      {template["Title"], template}
+      {:ok, template}
     else
       {_, error} ->
         {template["Title"], error}
