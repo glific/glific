@@ -22,9 +22,8 @@ defmodule Glific.Providers.Gupshup.Template do
     "Sign Language"
   ]
 
-  @categories ["TRANSACTIONAL", "MARKETING", "OTP"]
-
   alias Glific.{
+    Messages,
     Messages.MessageMedia,
     Partners,
     Partners.Organization,
@@ -112,8 +111,31 @@ defmodule Glific.Providers.Gupshup.Template do
         shortcode: template["Element Name"],
         translations: %{}
       }
+      |> check_media_template(template, org_id)
       |> process_buttons(template["Has Buttons"], template)
     end
+  end
+
+  defp check_media_template(template, %{"Attachment Type" => type} = csv_template, org_id)
+       when type in ["image", "video", "document"] do
+    {:ok, message_media} =
+      %{
+        url: csv_template["Attachment URL"],
+        source_url: csv_template["Attachment URL"],
+        organization_id: org_id
+      }
+      |> Messages.create_message_media()
+
+    {media_type, _url} = Messages.get_media_type_from_url(csv_template["Attachment URL"])
+
+    template
+    |> Map.put(:media_id, message_media.id)
+    |> Map.put(:type, media_type)
+  end
+
+  defp check_media_template(template, _type, _org_id) do
+    template
+    |> Map.put(:type, :text)
   end
 
   @spec process_buttons(map(), String.t(), map()) :: {String.t(), map()}
@@ -148,7 +170,7 @@ defmodule Glific.Providers.Gupshup.Template do
              csv_template["CTA Button 2 Value"]}
           ]
           |> Enum.map(fn {title, type, value} ->
-            if type == "PHONE_NUMBER" do
+            if type == "PHONE NUMBER" do
               %{"text" => title, "type" => type, "phone_number" => value}
             else
               %{"text" => title, "type" => type, "url" => value}
@@ -167,7 +189,8 @@ defmodule Glific.Providers.Gupshup.Template do
     with true <- is_valid_language?(template["Language"]),
          true <- is_valid_category?(template["Category"]),
          true <- has_valid_buttons?(template["Has Buttons"], template),
-         true <- is_valid_shortcode?(template["Element Name"]) do
+         true <- is_valid_shortcode?(template["Element Name"]),
+         true <- is_valid_media?(template["Attachment Type"], template["Attachment URL"]) do
       {:ok, template}
     else
       {_, error} ->
@@ -180,7 +203,9 @@ defmodule Glific.Providers.Gupshup.Template do
   defp is_valid_language?(_language), do: {:error, "Invalid Language"}
 
   @spec is_valid_category?(String.t()) :: true | {:error, String.t()}
-  defp is_valid_category?(category) when category in @categories, do: true
+  defp is_valid_category?(category) when category in ["TRANSACTIONAL", "MARKETING", "OTP"],
+    do: true
+
   defp is_valid_category?(_category), do: {:error, "Invalid Category"}
 
   @spec is_valid_shortcode?(String.t()) :: true | {:error, String.t()}
@@ -189,6 +214,16 @@ defmodule Glific.Providers.Gupshup.Template do
       do: true,
       else: {:error, "Invalid Element Name"}
   end
+
+  @spec is_valid_media?(String.t(), String.t()) :: true | {:error, String.t()}
+  defp is_valid_media?(type, url) when type in ["image", "video", "document"] do
+    %{is_valid: is_valid} = Messages.validate_media(url, type)
+    if is_valid, do: true, else: {:error, "Invalid Attachment URL"}
+  end
+
+  defp is_valid_media?(type, _url) when type == "", do: true
+
+  defp is_valid_media?(_type, _url), do: {:error, "Invalid Attachment Type"}
 
   @spec has_valid_buttons?(String.t(), map()) :: true | {:error, String.t()}
   defp has_valid_buttons?("FALSE", _template), do: true

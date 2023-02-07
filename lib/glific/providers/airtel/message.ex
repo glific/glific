@@ -91,12 +91,12 @@ defmodule Glific.Providers.Airtel.Message do
 
   @doc false
   @spec add_attachment(map(), map(), atom()) :: map()
-  defp add_attachment(interactive, attachemnt, :quick_reply) do
-    case attachemnt["content"]["type"] do
+  defp add_attachment(interactive, attachment, :quick_reply) do
+    case attachment["content"]["type"] do
       "image" ->
         media_attachment = %{
           type: "IMAGE",
-          url: attachemnt["content"]["url"]
+          url: attachment["content"]["url"]
         }
 
         interactive
@@ -110,7 +110,7 @@ defmodule Glific.Providers.Airtel.Message do
     end
   end
 
-  defp add_attachment(interactive, _attachemnt, :list), do: interactive
+  defp add_attachment(interactive, _attachment, :list), do: interactive
 
   @spec parse_interactive_message(map(), atom()) :: map()
   defp parse_interactive_message(content, :quick_reply) do
