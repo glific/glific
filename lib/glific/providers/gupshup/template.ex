@@ -94,7 +94,8 @@ defmodule Glific.Providers.Gupshup.Template do
     {:ok, %{message: "All templates have been applied"}}
   end
 
-  @spec process_templates(non_neg_integer(), map()) :: {:ok, map()}
+  @spec process_templates(non_neg_integer(), map()) ::
+          {String.t(), map()} | {String.t(), String.t()}
   defp process_templates(org_id, template) do
     with {:ok, template} <- validate_dropdowns(template),
          {:ok, language} <- Repo.fetch_by(Language, %{label_locale: template["Language"]}) do
@@ -114,7 +115,7 @@ defmodule Glific.Providers.Gupshup.Template do
     end
   end
 
-  defp process_buttons(template, "FALSE", _csv_template), do: template
+  defp process_buttons(template, "FALSE", _csv_template), do: {template["Title"], template}
 
   defp process_buttons(template, "TRUE", csv_template) do
     case csv_template["Button Type"] do
@@ -134,6 +135,7 @@ defmodule Glific.Providers.Gupshup.Template do
         template
         |> Map.put(:buttons, buttons)
         |> Map.put(:button_type, :quick_reply)
+        |> then(&{template["Title"], &1})
 
       "CALL_TO_ACTION" ->
         buttons =
@@ -154,6 +156,7 @@ defmodule Glific.Providers.Gupshup.Template do
         template
         |> Map.put(:buttons, buttons)
         |> Map.put(:button_type, :call_to_action)
+        |> then(&{template["Title"], &1})
     end
   end
 
@@ -163,7 +166,10 @@ defmodule Glific.Providers.Gupshup.Template do
          true <- is_valid_category?(template["Category"]),
          true <- has_valid_buttons?(template["Has Buttons"], template),
          true <- is_valid_shortcode?(template["Element Name"]) do
-      {:ok, template}
+      {template["Title"], template}
+    else
+      {_, error} ->
+        {template["Title"], error}
     end
   end
 
