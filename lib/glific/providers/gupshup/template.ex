@@ -32,7 +32,8 @@ defmodule Glific.Providers.Gupshup.Template do
     Repo,
     Settings.Language,
     Templates,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Templates.TemplateWorker
   }
 
   require Logger
@@ -90,6 +91,7 @@ defmodule Glific.Providers.Gupshup.Template do
     |> IO.binstream(:line)
     |> CSV.decode(headers: true, strip_fields: true)
     |> Enum.map(fn {_, data} -> process_templates(organization_id, data) end)
+    |> TemplateWorker.make_job(organization_id)
 
     {:ok, %{message: "All templates have been applied"}}
   end
