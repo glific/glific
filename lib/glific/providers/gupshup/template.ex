@@ -145,46 +145,48 @@ defmodule Glific.Providers.Gupshup.Template do
   defp process_buttons(template, "FALSE", csv_template), do: {csv_template["Title"], template}
 
   defp process_buttons(template, "TRUE", csv_template) do
-    case csv_template["Button Type"] do
-      "QUICK_REPLY" ->
-        buttons =
-          [
-            csv_template["Quick Reply 1 Title"],
-            csv_template["Quick Reply 2 Title"],
-            csv_template["Quick Reply 3 Title"]
-          ]
-          |> Enum.reduce([], fn quick_reply, acc ->
-            if quick_reply != "",
-              do: acc ++ [%{"text" => quick_reply, "type" => "QUICK_REPLY"}],
-              else: acc
-          end)
+    do_process_buttons(csv_template["Button Type"], csv_template, template)
+    |> then(&{csv_template["Title"], &1})
+  end
 
-        template
-        |> Map.put(:buttons, buttons)
-        |> Map.put(:button_type, :quick_reply)
-        |> then(&{csv_template["Title"], &1})
+  @spec do_process_buttons(String.t(), map(), map()) :: map()
+  defp do_process_buttons("QUICK_REPLY", csv_template, template) do
+    buttons =
+      [
+        csv_template["Quick Reply 1 Title"],
+        csv_template["Quick Reply 2 Title"],
+        csv_template["Quick Reply 3 Title"]
+      ]
+      |> Enum.reduce([], fn quick_reply, acc ->
+        if quick_reply != "",
+          do: acc ++ [%{"text" => quick_reply, "type" => "QUICK_REPLY"}],
+          else: acc
+      end)
 
-      "CALL_TO_ACTION" ->
-        buttons =
-          [
-            {csv_template["CTA Button 1 Title"], csv_template["CTA Button 1 Type"],
-             csv_template["CTA Button 1 Value"]},
-            {csv_template["CTA Button 2 Title"], csv_template["CTA Button 2 Type"],
-             csv_template["CTA Button 2 Value"]}
-          ]
-          |> Enum.map(fn {title, type, value} ->
-            if type == "PHONE NUMBER" do
-              %{"text" => title, "type" => type, "phone_number" => value}
-            else
-              %{"text" => title, "type" => type, "url" => value}
-            end
-          end)
+    template
+    |> Map.put(:buttons, buttons)
+    |> Map.put(:button_type, :quick_reply)
+  end
 
-        template
-        |> Map.put(:buttons, buttons)
-        |> Map.put(:button_type, :call_to_action)
-        |> then(&{csv_template["Title"], &1})
-    end
+  defp do_process_buttons("CALL_TO_ACTION", csv_template, template) do
+    buttons =
+      [
+        {csv_template["CTA Button 1 Title"], csv_template["CTA Button 1 Type"],
+         csv_template["CTA Button 1 Value"]},
+        {csv_template["CTA Button 2 Title"], csv_template["CTA Button 2 Type"],
+         csv_template["CTA Button 2 Value"]}
+      ]
+      |> Enum.map(fn {title, type, value} ->
+        if type == "PHONE NUMBER" do
+          %{"text" => title, "type" => type, "phone_number" => value}
+        else
+          %{"text" => title, "type" => type, "url" => value}
+        end
+      end)
+
+    template
+    |> Map.put(:buttons, buttons)
+    |> Map.put(:button_type, :call_to_action)
   end
 
   @spec validate_dropdowns(map()) :: {:ok, map()} | {String.t(), String.t()}
