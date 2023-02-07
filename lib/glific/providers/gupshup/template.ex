@@ -85,21 +85,75 @@ defmodule Glific.Providers.Gupshup.Template do
   @spec bulk_apply_templates(non_neg_integer(), String.t()) :: {:ok, any}
   def bulk_apply_templates(organization_id, data) do
     {:ok, stream} = StringIO.open(data)
-    organization = Partners.organization(organization_id)
 
     stream
     |> IO.binstream(:line)
     |> CSV.decode(headers: true, strip_fields: true)
-    |> Enum.map(fn {_, data} -> process_templates(data) end)
+    |> Enum.map(fn {_, data} -> process_templates(organization_id, data) end)
 
     {:ok, %{message: "All templates have been applied"}}
   end
 
-  @spec process_templates(map()) :: map()
-  defp process_templates(template) do
+  @spec process_templates(non_neg_integer(), map()) :: {:ok, map()}
+  defp process_templates(org_id, template) do
     with {:ok, template} <- validate_dropdowns(template),
          {:ok, language} <- Repo.fetch_by(Language, %{label_locale: template["Language"]}) do
-      template
+      %{
+        body: template["Message"],
+        category: template["Category"],
+        example: template["Sample Message"],
+        is_active: true,
+        is_hsm: true,
+        label: template["Title"],
+        language_id: language.id,
+        organization_id: org_id,
+        shortcode: template["Element Name"],
+        translations: %{}
+      }
+      |> process_buttons(template["Has Buttons"], template)
+    end
+  end
+
+  defp process_buttons(template, "FALSE", _csv_template), do: template
+
+  defp process_buttons(template, "TRUE", csv_template) do
+    case csv_template["Button Type"] do
+      "QUICK_REPLY" ->
+        buttons =
+          [
+            csv_template["Quick Reply 1 Title"],
+            csv_template["Quick Reply 2 Title"],
+            csv_template["Quick Reply 3 Title"]
+          ]
+          |> Enum.reduce([], fn quick_reply, acc ->
+            if quick_reply != "",
+              do: acc ++ [%{"text" => quick_reply, "type" => "QUICK_REPLY"}],
+              else: acc
+          end)
+
+        template
+        |> Map.put(:buttons, buttons)
+        |> Map.put(:button_type, :quick_reply)
+
+      "CALL_TO_ACTION" ->
+        buttons =
+          [
+            {csv_template["CTA Button 1 Title"], csv_template["CTA Button 1 Type"],
+             csv_template["CTA Button 1 Value"]},
+            {csv_template["CTA Button 2 Title"], csv_template["CTA Button 2 Type"],
+             csv_template["CTA Button 2 Value"]}
+          ]
+          |> Enum.map(fn {title, type, value} ->
+            if type == "PHONE_NUMBER" do
+              %{"text" => title, "type" => type, "phone_number" => value}
+            else
+              %{"text" => title, "type" => type, "url" => value}
+            end
+          end)
+
+        template
+        |> Map.put(:buttons, buttons)
+        |> Map.put(:button_type, :call_to_action)
     end
   end
 
@@ -128,12 +182,12 @@ defmodule Glific.Providers.Gupshup.Template do
       else: {:error, "Invalid Element Name"}
   end
 
-  @spec has_valid_buttons?(boolean(), map()) :: true | {:error, String.t()}
-  defp has_valid_buttons?(false, _template), do: true
+  @spec has_valid_buttons?(String.t(), map()) :: true | {:error, String.t()}
+  defp has_valid_buttons?("FALSE", _template), do: true
 
-  defp has_valid_buttons?(true, template) do
+  defp has_valid_buttons?("TRUE", template) do
     case template["Button Type"] do
-      "Call To Action" ->
+      "CALL_TO_ACTION" ->
         if template["CTA Button 1 Type"] in ["Phone Number", "URL"] &&
              template["CTA Button 2 Type"] in ["Phone Number", "URL"] do
           true
@@ -141,7 +195,7 @@ defmodule Glific.Providers.Gupshup.Template do
           {:error, "Invalid Call To Action Button type"}
         end
 
-      "Quick Replies" ->
+      "QUICK_REPLY" ->
         if is_empty?(template["Quick Reply 1 Title"]) &&
              is_empty?(template["Quick Reply 2 Title"]) &&
              is_empty?(template["Quick Reply 3 Title"]) == true do
