@@ -360,7 +360,7 @@ mutation RootMutationType($data: String!) {
   "data": {
     "bulkApplyTemplates": {
       "errors": null,
-      "message": "{\"Welcome Arogya\":\"Template has been applied successfully\",\"Signup Arogya\":\"Invalid Button Type\",\"Help Arogya\":\"Template has been applied successfully\",\"Activity\":\"Template has been applied successfully\"}"
+      "csv_rows": "Title,Status\r\nSignup Arogya,Invalid Button Type\r\nWelcome Arogya,Template has been applied successfully\r\nHelp Arogya,Template has been applied successfully\r\nActivity,Template has been applied successfully"
     }
   }
 }
