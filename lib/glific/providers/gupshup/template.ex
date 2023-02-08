@@ -103,17 +103,17 @@ defmodule Glific.Providers.Gupshup.Template do
     |> filter_valid_templates()
     |> TemplateWorker.make_job(organization_id)
 
-    message =
+    csv_rows =
       processed_templates
-      |> Enum.reduce(%{}, fn {title, value}, acc ->
+      |> Enum.reduce("Title,Status", fn {title, value}, acc ->
         if is_map(value) do
-          Map.put(acc, title, "Template has been applied successfully")
+          acc <> "\r\n#{title},Template has been applied successfully"
         else
-          Map.put(acc, title, value)
+          acc <> "\r\n#{title},#{value}"
         end
       end)
 
-    {:ok, %{message: message}}
+    {:ok, %{csv_rows: csv_rows}}
   end
 
   defp filter_valid_templates(templates) do
