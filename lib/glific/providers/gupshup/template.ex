@@ -217,7 +217,7 @@ defmodule Glific.Providers.Gupshup.Template do
          csv_template["CTA Button 2 Value"]}
       ]
       |> Enum.map(fn {title, type, value} ->
-        if type == "PHONE NUMBER" do
+        if type == "Phone Number" do
           %{"text" => title, "type" => type, "phone_number" => value}
         else
           %{"text" => title, "type" => type, "url" => value}
