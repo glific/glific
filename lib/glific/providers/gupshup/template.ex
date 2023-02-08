@@ -235,7 +235,8 @@ defmodule Glific.Providers.Gupshup.Template do
          true <- is_valid_category?(template["Category"]),
          true <- has_valid_buttons?(template["Has Buttons"], template),
          true <- is_valid_shortcode?(template["Element Name"]),
-         true <- is_valid_media?(template["Attachment Type"], template["Attachment URL"]) do
+         true <- is_valid_media?(template["Attachment Type"], template["Attachment URL"]),
+         true <- is_valid_message?(template["Message"], template["Sample Message"]) do
       {:ok, template}
     else
       {_, error} ->
@@ -269,6 +270,28 @@ defmodule Glific.Providers.Gupshup.Template do
   defp is_valid_media?(type, _url) when type == "", do: true
 
   defp is_valid_media?(_type, _url), do: {:error, "Invalid Attachment Type"}
+
+  @spec is_valid_message?(String.t(), String.t()) :: true | {:error, String.t()}
+  defp is_valid_message?(body, sample_msg) do
+    body =
+      body
+      |> String.replace("{{", "[")
+      |> String.replace("}}", "]")
+
+    sample_msg_variables =
+      Regex.scan(~r/\[([^\]]+)\]/, sample_msg) |> Enum.map(fn [_, value] -> value end)
+
+    parsed_body =
+      sample_msg_variables
+      |> Enum.zip(1..length(sample_msg_variables))
+      |> Enum.reduce(body, fn {value, index}, acc ->
+        String.replace(acc, "#{index}", value)
+      end)
+
+    if String.equivalent?(parsed_body, sample_msg),
+      do: true,
+      else: {:error, "Message and Sample Message does not match"}
+  end
 
   @spec has_valid_buttons?(String.t(), map()) :: true | {:error, String.t()}
   defp has_valid_buttons?("FALSE", _template), do: true
