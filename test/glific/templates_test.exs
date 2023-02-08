@@ -3,8 +3,8 @@ defmodule Glific.TemplatesTest do
 
   alias Glific.{
     Fixtures,
-    Providers.GupshupEnterprise.Template,
     Providers.Gupshup,
+    Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
     Settings,
     Templates,
