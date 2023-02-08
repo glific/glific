@@ -22,7 +22,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   end
 
   object :bulk_apply_templates_result do
-    field :message, :json
+    field :csv_rows, :string
     field :errors, list_of(:input_error)
   end
 
