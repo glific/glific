@@ -21,6 +21,7 @@ defmodule Glific.Providers.Gupshup.Template do
     "English",
     "Sign Language"
   ]
+  import Ecto.Query
 
   alias Glific.{
     Messages,
@@ -86,11 +87,17 @@ defmodule Glific.Providers.Gupshup.Template do
   def bulk_apply_templates(organization_id, data) do
     {:ok, stream} = StringIO.open(data)
 
+    db_templates =
+      SessionTemplate
+      |> where([st], st.organization_id == ^organization_id)
+      |> select([st], %{language_id: st.language_id, shortcode: st.shortcode})
+      |> Repo.all()
+
     processed_templates =
       stream
       |> IO.binstream(:line)
       |> CSV.decode(headers: true, strip_fields: true)
-      |> Enum.map(fn {_, data} -> process_templates(organization_id, data) end)
+      |> Enum.map(fn {_, data} -> process_templates(organization_id, data, db_templates) end)
 
     processed_templates
     |> filter_valid_templates()
@@ -114,11 +121,12 @@ defmodule Glific.Providers.Gupshup.Template do
     |> Enum.filter(fn {_title, template} -> is_map(template) end)
   end
 
-  @spec process_templates(non_neg_integer(), map()) ::
+  @spec process_templates(non_neg_integer(), map(), list()) ::
           {String.t(), map()} | {String.t(), String.t()}
-  defp process_templates(org_id, template) do
-    with {:ok, template} <- validate_dropdowns(template),
-         {:ok, language} <- Repo.fetch_by(Language, %{label_locale: template["Language"]}) do
+  defp process_templates(org_id, template, db_templates) do
+    with {:ok, _template} <- validate_dropdowns(template),
+         {:ok, language} <- Repo.fetch_by(Language, %{label_locale: template["Language"]}),
+         {:ok, _template} <- check_duplicate(template, db_templates, language.id) do
       %{
         body: template["Message"],
         category: template["Category"],
@@ -134,6 +142,20 @@ defmodule Glific.Providers.Gupshup.Template do
       |> check_media_template(template, org_id)
       |> process_buttons(template["Has Buttons"], template)
     end
+  end
+
+  @spec check_duplicate(map(), map(), non_neg_integer()) ::
+          {:ok, map()} | {String.t(), String.t()}
+  defp check_duplicate(template, db_templates, lang_id) do
+    db_templates
+    |> Enum.find(fn db_template ->
+      db_template.shortcode == template["Element Name"] && db_template.language_id == lang_id
+    end)
+    |> then(
+      &if is_nil(&1),
+        do: {:ok, template},
+        else: {template["Title"], "Template with same Element Name and language already exist"}
+    )
   end
 
   @spec check_media_template(map(), map(), non_neg_integer()) :: map()
