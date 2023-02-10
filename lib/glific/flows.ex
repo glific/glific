@@ -105,11 +105,12 @@ defmodule Glific.Flows do
 
     Enum.reduce(filter, query, fn
       {:keyword, keyword}, query ->
-        from f in query,
+        from(f in query,
           where: ^keyword in f.keywords
+        )
 
       {:uuid, uuid}, query ->
-        from q in query, where: q.uuid == ^uuid
+        from(q in query, where: q.uuid == ^uuid)
 
       {:status, status}, query ->
         query
@@ -123,13 +124,13 @@ defmodule Glific.Flows do
         )
 
       {:is_active, is_active}, query ->
-        from q in query, where: q.is_active == ^is_active
+        from(q in query, where: q.is_active == ^is_active)
 
       {:is_background, is_background}, query ->
-        from q in query, where: q.is_background == ^is_background
+        from(q in query, where: q.is_background == ^is_background)
 
       {:is_pinned, is_pinned}, query ->
-        from q in query, where: q.is_pinned == ^is_pinned
+        from(q in query, where: q.is_pinned == ^is_pinned)
 
       {:name_or_keyword, name_or_keyword}, query ->
         query
@@ -845,49 +846,60 @@ defmodule Glific.Flows do
     nodes =
       definition
       |> Map.get("nodes", [])
-      |> Enum.reduce([], &(&2 ++ clean_template_node(&1, interactive_template_list)))
+      |> Enum.reduce([], &(&2 ++ process_node_actions(&1, interactive_template_list)))
 
     put_in(definition, ["nodes"], nodes)
   end
 
-  @spec clean_template_node(map(), list()) :: list()
-  defp clean_template_node(%{"actions" => actions} = node, _interactive_template_list)
+  @spec process_node_actions(map(), list()) :: list()
+  defp process_node_actions(%{"actions" => actions} = node, _interactive_template_list)
        when actions == [],
        do: [node]
 
-  defp clean_template_node(%{"actions" => actions} = node, interactive_template_list) do
-    action = actions |> hd
-    template_uuid = get_in(action, ["templating", "template", "uuid"])
+  defp process_node_actions(%{"actions" => actions} = node, interactive_template_list) do
+    Enum.reduce(actions, [], fn action, acc ->
+      template_uuid = get_in(action, ["templating", "template", "uuid"])
 
-    cond do
-      action["type"] == "send_msg" ->
-        # checking if the imported template is present in database
-        template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
+      cond do
+        action["type"] == "send_msg" ->
+          # checking if the imported template is present in database
+          template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
 
-        with true <- Map.has_key?(action, "templating"),
-             false <- template_uuid in template_uuid_list do
-          # update the node if template uuid in the node is not present in DB
-          action =
-            action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
+          with true <- Map.has_key?(action, "templating"),
+               false <- template_uuid in template_uuid_list do
+            # update the node if template uuid in the node is not present in DB
+            action =
+              action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
 
-          node = put_in(node, ["actions"], [action])
-          [node]
-        else
-          _ -> [node]
-        end
+            node = put_in(node, ["actions"], [action])
+            acc ++ [node]
+          else
+            _ -> acc ++ [node]
+          end
 
-      action["type"] == "send_interactive_msg" ->
-        {id, _interactive_template_label} =
-          Enum.find(interactive_template_list, fn {_id, interactive_template_label} ->
-            interactive_template_label == action["name"]
-          end)
+        action["type"] == "send_interactive_msg" ->
+          {:ok, action_id} = Glific.parse_maybe_integer(action["id"])
 
-        node = put_in(node, ["actions"], [Map.put(action, "id", id)])
-        [node]
+          template_id = find_interactive_template(interactive_template_list, action_id)
 
-      true ->
-        [node]
-    end
+          node = put_in(node, ["actions"], [Map.put(action, "id", template_id)])
+          acc ++ [node]
+
+        true ->
+          acc ++ [node]
+      end
+    end)
+  end
+
+  @spec find_interactive_template(list(), integer | nil) :: String.t()
+  defp find_interactive_template(interactive_template_list, action_id) do
+    {_source_id, template_id, _interactive_template_label} =
+      Enum.find(interactive_template_list, fn {source_id, _template_id,
+                                               _interactive_template_label} ->
+        source_id == action_id
+      end)
+
+    template_id
   end
 
   defp import_contact_field(import_flow, organization_id) do
@@ -915,15 +927,24 @@ defmodule Glific.Flows do
       Repo.fetch_by(InteractiveTemplate, %{label: interactive_template["label"]})
       |> case do
         {:ok, db_interactive_template} ->
-          acc ++ [{db_interactive_template.id, db_interactive_template.label}]
+          acc ++
+            [
+              {interactive_template["source_id"], db_interactive_template.id,
+               db_interactive_template.label}
+            ]
 
         _ ->
-          {:ok, interactive_template} =
-            InteractiveTemplates.create_interactive_template(
-              Map.put(interactive_template, "organization_id", organization_id)
-            )
+          {:ok, new_interactive_template} =
+            interactive_template
+            |> Map.delete("source_id")
+            |> Map.put("organization_id", organization_id)
+            |> InteractiveTemplates.create_interactive_template()
 
-          acc ++ [{interactive_template.id, interactive_template.label}]
+          acc ++
+            [
+              {interactive_template["source_id"], new_interactive_template.id,
+               new_interactive_template.label}
+            ]
       end
     end)
   end
@@ -1030,14 +1051,17 @@ defmodule Glific.Flows do
   defp do_export_interactive_templates(%{"actions" => actions}) when actions == [], do: []
 
   defp do_export_interactive_templates(%{"actions" => actions}) do
-    action = actions |> hd
-    if action["type"] == "send_interactive_msg", do: [action["id"]], else: []
+    actions
+    |> Enum.reduce([], fn action, acc ->
+      if action["type"] == "send_interactive_msg", do: acc ++ [action["id"]], else: acc
+    end)
   end
 
   defp fetch_interactive_templates_from_db(ids) do
     InteractiveTemplate
     |> where([it], it.id in ^ids)
     |> select([it], %{
+      source_id: it.id,
       label: it.label,
       type: it.type,
       interactive_content: it.interactive_content,

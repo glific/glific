@@ -632,9 +632,7 @@ defmodule Glific.BigQuery do
     fetch_bigquery_credentials(organization_id)
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = credentials} ->
-        Logger.info(
-          "Remove duplicates on bigquery for org_id: #{organization_id} table:#{table}"
-        )
+        Logger.info("Remove duplicates on bigquery for org_id: #{organization_id} table:#{table}")
 
         sql = generate_duplicate_removal_query(table, credentials, organization_id)
 

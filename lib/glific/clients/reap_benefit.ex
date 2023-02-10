@@ -65,13 +65,20 @@ defmodule Glific.Clients.ReapBenefit do
     token = fields["token"]
     header = get_header(token)
 
+    name =
+      if fields["contact"]["preferred_name"] in [nil, ""],
+        do: String.trim(fields["contact"]["name"]),
+        else: String.trim(fields["contact"]["preferred_name"])
+
+    name = name |> String.split() |> Enum.join("")
+
     body =
       %{
         "email" => fields["contact"]["phone"] <> "@solveninja.org ",
-        "first_name" => fields["contact"]["name"],
+        "first_name" => name,
         "mobile_no" => fields["contact"]["phone"],
-        "username" => fields["contact"]["name"],
-        "location" => fields["contact"]["Administrative_area_level_2"]
+        "username" => name,
+        "location" => fields["contact"]["Administrative_area_level_3"]
       }
       |> Jason.encode!()
 
