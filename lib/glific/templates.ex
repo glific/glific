@@ -180,6 +180,14 @@ defmodule Glific.Templates do
   end
 
   @doc """
+  Bulk applying templates from CSV
+  """
+  @spec bulk_apply_templates(non_neg_integer(), String.t()) :: {:ok, any} | {:error, any}
+  def bulk_apply_templates(org_id, data) do
+    Provider.bsp_module(org_id, :template).bulk_apply_templates(org_id, data)
+  end
+
+  @doc """
   Updates a session_template.
 
   ## Examples

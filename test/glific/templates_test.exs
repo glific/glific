@@ -3,6 +3,7 @@ defmodule Glific.TemplatesTest do
 
   alias Glific.{
     Fixtures,
+    Providers.Gupshup,
     Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
     Settings,
@@ -590,6 +591,28 @@ defmodule Glific.TemplatesTest do
 
     test "ensure that creating session template with out language and/or org_id give an error" do
       assert {:error, %Ecto.Changeset{}} = Templates.create_session_template(@valid_attrs)
+    end
+
+    test "bulk_apply_templates/2 should bulk apply templates", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            headers: %{
+              "content-type" => "image",
+              "content-length" => "1232"
+            }
+          }
+      end)
+
+      data =
+        "Language,Title,Message,Sample Message,Element Name,Category,Attachment Type,Attachment URL,Has Buttons,Button Type,CTA Button 1 Type,CTA Button 1 Title,CTA Button 1 Value,CTA Button 2 Type,CTA Button 2 Title,CTA Button 2 Value,Quick Reply 1 Title,Quick Reply 2 Title,Quick Reply 3 Title\r\nEnglish,Signup Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",welcome_arogya,SEMI-TRANSACTIONAL,,,FALSE,,,,,,,,,,\r\nEnglish,Welcome Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",signup_arogya,TRANSACTIONAL,,,TRUE,QUICK_REPLY,,,,,,,Yes,No,\r\nMandarin,Help Arogya,\"Hi {{1}},Need help?\",\"Hi [Akhilesh],Need help?\",help_arogya,TRANSACTIONAL,,,TRUE,CALL_TO_ACTION,Phone Number,Call here,8979120220,URL,Visit Here,https://github.com/glific,,,\r\nEnglish,Activity,\"Hi {{1}},\nLook at this image.\",\"Hi [Akhilesh],\nLook at this image.\",activity,TRANSACTIONAL,image,https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg,FALSE,,,,,,,,,,\r\nEnglish,Signout Arogya,\"Hi {{1}},\nSorry to see you go\",\"Hi [Akhilesh],\nSorry to see you move out\",signout_arogya,TRANSACTIONAL,,,FALSE,,,,,,,,,,\r\nEnglish,Optin Arogya,\"Hi {{1}},\n Reply with yes to optin\",\"Hi [Akhilesh],\Reply with yes to optin\",optin_arogya,TRANSACTIONAL,,,TRUE,,,,,,,,,,\r\nEnglish,Help Arogya 2,\"Hi {{1}},Need help?\",\"Hi [Akhilesh],Need help?\",help_arogya_2,TRANSACTIONAL,,,TRUE,CALL_TO_ACTION,Phone Number,Call here,8979120220,URL,Visit Here,https://github.com/glific,,,\r\nEnglish,Signup Arogya 2,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",welcome_arogya,TRANSACTIONAL,,,FALSE,,,,,,,,,,\r\nEnglish,Welcome Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",signup_arogya_2,TRANSACTIONAL,,,TRUE,QUICK_REPLY,,,,,,,Yes,No,"
+
+      {:ok, %{csv_rows: csv_rows}} =
+        Gupshup.Template.bulk_apply_templates(attrs.organization_id, data)
+
+      assert csv_rows ==
+               "Title,Status\r\nSignup Arogya,Invalid Category\r\nWelcome Arogya,Template has been applied successfully\r\nHelp Arogya,Invalid Language\r\nActivity,Template has been applied successfully\r\nSignout Arogya,Message and Sample Message does not match\r\nOptin Arogya,Invalid Button Type\r\nHelp Arogya 2,Template has been applied successfully\r\nSignup Arogya 2,Template has been applied successfully\r\nWelcome Arogya,Template has been applied successfully"
     end
 
     test "update_hsms/1 should insert newly received HSM", attrs do
