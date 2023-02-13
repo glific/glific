@@ -163,7 +163,6 @@ defmodule Glific.Clients.Tap do
     school_name = fields["school_name"] || ""
     formatted_school_name = String.split(school_name, [" ", ","])
 
-
     school_short_form =
       if length(formatted_school_name) > 1 do
         Enum.reduce(formatted_school_name, "", fn val, acc ->
