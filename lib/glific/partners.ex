@@ -756,7 +756,6 @@ defmodule Glific.Partners do
   def perform_all(_handler, _handler_args, nil, _opts), do: nil
 
   def perform_all(handler, handler_args, list, opts) do
-    IO.inspect(binding())
     only_recent = Keyword.get(opts, :only_recent, false)
     # We need to do this for all the active organizations
     list
