@@ -7,6 +7,8 @@ defmodule Glific.Jobs.MinuteWorker do
     queue: :crontab,
     max_attempts: 3
 
+  require Logger
+
   alias Glific.{
     BigQuery.BigQueryWorker,
     Contacts,
@@ -31,7 +33,8 @@ defmodule Glific.Jobs.MinuteWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
-  def perform(%Oban.Job{args: %{"job" => _job}} = args) do
+  def perform(%Oban.Job{args: %{"job" => job, "inserted_at" => inserted_at}} = args) do
+    Logger.info("Performing job: #{job} inserted_at: #{inserted_at}")
     services = Partners.get_organization_services()
     perform(args, services)
   end

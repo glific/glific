@@ -42,6 +42,14 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
   end
 
   @doc """
+  Bulk apply templates from CSV when BSP is GupshupEnterprise
+  """
+  @spec bulk_apply_templates(non_neg_integer(), String.t()) :: {:ok, any}
+  def bulk_apply_templates(_organization_id, _data) do
+    {:ok, %{message: "Feature not available"}}
+  end
+
+  @doc """
   Updating HSM templates for an organization
   """
   @spec update_hsm_templates(non_neg_integer()) :: :ok | {:error, String.t()}

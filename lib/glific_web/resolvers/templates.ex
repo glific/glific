@@ -92,6 +92,15 @@ defmodule GlificWeb.Resolvers.Templates do
     do: Templates.import_templates(user.organization_id, data)
 
   @doc """
+  Bulk applying templates from CSV
+  """
+  @spec bulk_apply_templates(Absinthe.Resolution.t(), %{data: String.t()}, %{
+          context: map()
+        }) :: {:ok, any} | {:error, any}
+  def bulk_apply_templates(_, %{data: data}, %{context: %{current_user: user}}),
+    do: Templates.bulk_apply_templates(user.organization_id, data)
+
+  @doc """
   Sync hsm with bsp
   """
 
