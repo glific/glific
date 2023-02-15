@@ -33,8 +33,8 @@ defmodule Glific.Jobs.MinuteWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
-  def perform(%Oban.Job{args: %{"job" => job, "inserted_at" => inserted_at}} = args) do
-    Logger.info("Performing job: #{job} inserted_at: #{inserted_at}")
+  def perform(%Oban.Job{args: %{"job" => job}} = args) do
+    Logger.info("Performing job: #{inspect(job)}")
     services = Partners.get_organization_services()
     perform(args, services)
   end
