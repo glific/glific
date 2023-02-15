@@ -78,7 +78,7 @@ Glific depends 100% on job processing.
 Oban is **required** before running mix
 for Glific to operate.
 
-**For contributers:** 
+**For contributors:** 
 Please get in touch with the team on Discord and get a limited time key.
 
 **For production use:**
