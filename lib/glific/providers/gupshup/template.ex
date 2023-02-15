@@ -128,9 +128,9 @@ defmodule Glific.Providers.Gupshup.Template do
          {:ok, language} <- Repo.fetch_by(Language, %{label_locale: template["Language"]}),
          {:ok, _template} <- check_duplicate(template, db_templates, language.id) do
       %{
-        body: template["Message"],
+        body: String.replace(template["Message"], "\r\n", ""),
         category: template["Category"],
-        example: template["Sample Message"],
+        example: String.replace(template["Sample Message"], "\r\n", ""),
         is_active: true,
         is_hsm: true,
         label: template["Title"],
