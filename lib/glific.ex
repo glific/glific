@@ -390,7 +390,7 @@ defmodule Glific do
   def add_limit(%{opts: %{limit: limit}} = args) when limit > 50 do
     opts = Map.get(args, :opts, %{})
 
-    Map.put(args, :opts, Map.put_new(opts, :limit, 50))
+    Map.put(args, :opts, Map.put(opts, :limit, 50))
   end
 
   def add_limit(%{opts: %{limit: _limit}} = args), do: args
