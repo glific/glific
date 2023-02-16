@@ -108,10 +108,7 @@ defmodule Glific.Repo do
           (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t())
         ) :: Ecto.Queryable.t()
   def list_filter_query(args \\ %{}, object, opts_with_fn, filter_with_fn) do
-    opts = Map.get(args, :opts, %{})
-
     args
-    |> Map.put(:opts, Map.put_new(opts, :limit, 25))
     |> Enum.reduce(object, fn
       {:opts, opts}, query ->
         query |> add_opts(opts_with_fn, opts)
