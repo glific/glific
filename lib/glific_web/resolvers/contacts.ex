@@ -31,8 +31,6 @@ defmodule GlificWeb.Resolvers.Contacts do
   @spec contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [any]}
   def contacts(_, args, _) do
-    args = Glific.add_limit(args)
-
     {:ok, Contacts.list_contacts(args)}
   end
 

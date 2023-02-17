@@ -31,8 +31,6 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec messages(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def messages(_, args, _) do
-    args = Glific.add_limit(args)
-
     {:ok, Messages.list_messages(args)}
   end
 
@@ -176,8 +174,6 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec messages_media(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def messages_media(_, args, _) do
-    args = Glific.add_limit(args)
-
     {:ok, Messages.list_messages_media(args)}
   end
 

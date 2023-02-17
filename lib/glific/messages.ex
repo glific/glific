@@ -41,10 +41,12 @@ defmodule Glific.Messages do
 
   """
   @spec list_messages(map()) :: [Message.t()]
-  def list_messages(args),
-    do:
-      Repo.list_filter(args, Message, &Repo.opts_with_body/2, &filter_with/2)
-      |> Enum.map(&put_clean_body/1)
+  def list_messages(args) do
+    args
+    |> Glific.add_limit()
+    |> Repo.list_filter(Message, &Repo.opts_with_body/2, &filter_with/2)
+    |> Enum.map(&put_clean_body/1)
+  end
 
   @doc """
   Return the count of messages, using the same filter as list_messages
@@ -731,8 +733,11 @@ defmodule Glific.Messages do
 
   """
   @spec list_messages_media(map()) :: [MessageMedia.t()]
-  def list_messages_media(args \\ %{}),
-    do: Repo.list_filter(args, MessageMedia, &opts_media_with/2, &filter_media_with/2)
+  def list_messages_media(args \\ %{}) do
+    args
+    |> Glific.add_limit()
+    |> Repo.list_filter(MessageMedia, &opts_media_with/2, &filter_media_with/2)
+  end
 
   defp filter_media_with(query, _), do: query
 
