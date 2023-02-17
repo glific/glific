@@ -378,4 +378,24 @@ defmodule Glific do
         {:error, "invalid response #{inspect(response)}"}
     end
   end
+
+  @doc """
+  Adds a limit to restrict accessing data from big tables like messages, contacts
+  which slows DB and takes longer to complete request
+
+  Adding upper limit to 50 when limit is passed and is more than 50
+  Adding limit to 25 when limit is not passed in args
+  """
+  @spec add_limit(map) :: map()
+  def add_limit(%{opts: %{limit: limit}} = args) when limit > 50 do
+    opts = Map.get(args, :opts, %{})
+
+    Map.put(args, :opts, Map.put(opts, :limit, 50))
+  end
+
+  def add_limit(%{opts: %{limit: _limit}} = args), do: args
+
+  def add_limit(%{opts: opts} = args), do: Map.put(args, :opts, Map.put(opts, :limit, 25))
+
+  def add_limit(args), do: Map.put(args, :opts, Map.put(%{}, :limit, 25))
 end
