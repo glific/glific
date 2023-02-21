@@ -20,10 +20,18 @@ defmodule Glific.Providers.Airtel.Template do
     do: {:ok, Templates.get_session_template!(attrs.id)}
 
   @doc """
-  Import pre approved templates when BSP is GupshupEnterprise
+  Import pre approved templates when BSP is Airtel
   """
   @spec import_templates(non_neg_integer(), String.t()) :: {:ok, any}
   def import_templates(_organization_id, _data) do
+    {:ok, %{message: "Feature not available"}}
+  end
+
+  @doc """
+  Bulk apply templates from CSV when BSP is Airtel
+  """
+  @spec bulk_apply_templates(non_neg_integer(), String.t()) :: {:ok, any}
+  def bulk_apply_templates(_organization_id, _data) do
     {:ok, %{message: "Feature not available"}}
   end
 

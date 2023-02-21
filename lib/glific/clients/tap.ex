@@ -161,7 +161,7 @@ defmodule Glific.Clients.Tap do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
     school_name = fields["school_name"] || ""
-    formatted_school_name = String.split(school_name, " ")
+    formatted_school_name = String.split(school_name, [" ", ","])
 
     school_short_form =
       if length(formatted_school_name) > 1 do

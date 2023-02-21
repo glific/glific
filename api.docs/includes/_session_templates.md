@@ -217,11 +217,7 @@ query {
 ```json
 {
   "data": {
-    "whatsappHsmCategories": [
-      "TRANSACTIONAL",
-      "MARKETING",
-      "OTP"
-    ]
+    "whatsappHsmCategories": ["TRANSACTIONAL", "MARKETING", "OTP"]
   }
 }
 ```
@@ -299,8 +295,8 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
 ## Import Session Templates
 
 ```graphql
-mutation RootMutationType($data: String!, $importTemplatesId: ID!) {
-  importTemplates(data: $data, id: $importTemplatesId) {
+mutation RootMutationType($data: String!) {
+  importTemplates(data: $data) {
     errors {
       key
       message
@@ -338,6 +334,49 @@ mutation RootMutationType($data: String!, $importTemplatesId: ID!) {
 | Type                                                       | Description                           |
 | ---------------------------------------------------------- | ------------------------------------- |
 | <a href="#importTemplatesResult">importTemplatesResult</a> | The imported templates success status |
+
+## Bulk Apply Templates
+
+```graphql
+mutation RootMutationType($data: String!) {
+  bulkApplyTemplates(data: $data) {
+    errors {
+      key
+      message
+    }
+    status
+  }
+}
+
+{
+  "data": "Language,Title,Message,Sample Message,Element Name,Category,Attachment Type,Attachment URL,Has Buttons,Button Type,CTA Button 1 Type,CTA Button 1 Title,CTA Button 1 Value,CTA Button 2 Type,CTA Button 2 Title,CTA Button 2 Value,Quick Reply 1 Title,Quick Reply 2 Title,Quick Reply 3 Title\r\nEnglish,Signup Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",welcome_arogya,TRANSACTIONAL,,,TRUE,,,,,,,,,,\r\nEnglish,Welcome Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",signup_arogya,TRANSACTIONAL,,,TRUE,QUICK_REPLY,,,,,,,Yes,No,\r\nEnglish,Help Arogya,\"Hi {{1}},Need help?\",\"Hi [Akhilesh],Need help?\",help_arogya,TRANSACTIONAL,,,TRUE,CALL_TO_ACTION,Phone Number,Call here,8979120220,URL,Visit Here,https://github.com/glific,,,\r\nEnglish,Activity,\"Hi {{1}},\nLook at this image.\",\"Hi [Akhilesh],\nLook at this image.\",activity,TRANSACTIONAL,image,https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg,FALSE,,,,,,,,,,"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "bulkApplyTemplates": {
+      "errors": null,
+      "csv_rows": "Title,Status\r\nSignup Arogya,Invalid Button Type\r\nWelcome Arogya,Template has been applied successfully\r\nHelp Arogya,Template has been applied successfully\r\nActivity,Template has been applied successfully"
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                       | Default  | Description |
+| --------- | -------------------------- | -------- | ----------- |
+| input     | <a href="#string">Data</a> | required |             |
+
+### Return Parameters
+
+| Type                                                             | Description                         |
+| ---------------------------------------------------------------- | ----------------------------------- |
+| <a href="#bulkApplyTemplatesResult">bulkApplyTemplatesResult</a> | The bulk applied templates messsage |
 
 ## Update a SessionTemplate
 
