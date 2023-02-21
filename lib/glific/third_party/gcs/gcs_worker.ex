@@ -165,16 +165,19 @@ defmodule Glific.GCS.GcsWorker do
         :ok
 
       {:error, :timeout} ->
-        {:error,
-         """
-         GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}
-         """}
+        error =
+          "GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
+
+        Glific.log_error(error)
+
+        {:error, error}
 
       {:error, error} ->
-        {:discard,
-         """
-         GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}
-         """}
+        error =
+          "GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}"
+
+        Glific.log_error(error)
+        {:discard, error}
     end
   end
 
@@ -211,12 +214,18 @@ defmodule Glific.GCS.GcsWorker do
           )
         end
 
-        "Error while uploading file to GCS #{inspect(error)}"
+        error = "Error while uploading file to GCS #{inspect(error)}"
+        Glific.log_error(error)
+        error
 
       _ ->
-        error = "Error while uploading file to GCS #{inspect(error)}"
         {_, stacktrace} = Process.info(self(), :current_stacktrace)
-        Appsignal.send_error(:error, error, stacktrace)
+
+        error =
+          "Error while uploading file to GCS #{inspect(error)} stacktrace: #{inspect(stacktrace)}"
+
+        Glific.log_error(error)
+
         error
     end
   end
