@@ -63,6 +63,7 @@ defmodule Glific.Contacts do
   @spec list_contacts(map()) :: [Contact.t()]
   def list_contacts(args) do
     args
+    |> Glific.add_limit()
     |> Repo.list_filter_query(Contact, &Repo.opts_with_name/2, &filter_with/2)
     |> Repo.add_permission(&Contacts.add_permission/2)
     |> Repo.all()
