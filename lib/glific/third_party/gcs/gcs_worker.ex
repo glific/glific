@@ -70,7 +70,11 @@ defmodule Glific.GCS.GcsWorker do
 
     if !is_nil(max_id) and max_id > message_media_id do
       queue_urls(organization_id, message_media_id, max_id)
-      Logger.info("Updating GCS jobs with max id:  #{max_id} for org_id: #{organization_id}")
+
+      Logger.info(
+        "Updating GCS jobs with max id:  #{max_id} , min id: #{message_media_id} for org_id: #{organization_id}"
+      )
+
       Jobs.update_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
     end
 
