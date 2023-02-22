@@ -18,6 +18,7 @@ defmodule Glific.GCS.GcsWorker do
   alias Waffle.Storage.Google.CloudStorage
 
   alias Glific.{
+    BigQuery.BigQueryWorker,
     Jobs,
     Messages,
     Messages.Message,
@@ -295,9 +296,12 @@ defmodule Glific.GCS.GcsWorker do
       |> MessageMedia.changeset(%{gcs_url: gcs_url})
       |> Repo.update()
 
-    message_media.organization_id
-    |> Jobs.update_bigquery_job("messages", %{
-      last_updated_at: Timex.shift(Timex.now(), minutes: -2)
+    organization_id = message_media.organization_id
+
+    BigQueryWorker.queue_message_media_data([message_media], organization_id, %{
+      action: :update,
+      max_id: nil,
+      last_updated_at: Timex.now()
     })
 
     {:ok, message_media}
@@ -323,7 +327,7 @@ defmodule Glific.GCS.GcsWorker do
   def download_file_to_temp(url, path, org_id) do
     Logger.info("Downloading file: org_id: #{org_id}, url: #{url}")
 
-    Tesla.get(url)
+    Tesla.get(url, opts: [adapter: [recv_timeout: 10_000]])
     |> case do
       {:ok, %Tesla.Env{status: status, body: body} = _env} when status in 200..299 ->
         File.write!(path, body)

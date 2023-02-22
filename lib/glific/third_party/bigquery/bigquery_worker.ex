@@ -223,7 +223,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
-  @spec insert_updated_records(binary, DateTime.t(), non_neg_integer) :: :ok
+  @spec insert_updated_records(binary, DateTime.t() | nil, non_neg_integer) :: :ok
   defp insert_updated_records(table, table_last_updated_at, organization_id) do
     if table in BigQuery.ignore_updates_for_table() do
       :ok
@@ -626,28 +626,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     get_query("messages_media", organization_id, attrs)
     |> Repo.all()
-    |> Enum.reduce(
-      [],
-      fn row, acc ->
-        [
-          # We are sending nil, as setting is a record type and need to structure the data first(like field)
-          %{
-            id: row.id,
-            caption: row.caption,
-            url: row.url,
-            source_url: row.source_url,
-            gcs_url: row.gcs_url,
-            inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
-            updated_at: format_date_with_millisecond(row.updated_at, organization_id)
-          }
-          |> Map.merge(bq_fields(organization_id))
-          |> then(&%{json: &1})
-          | acc
-        ]
-      end
-    )
-    |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :messages_media, organization_id, attrs))
+    |> queue_message_media_data(organization_id, attrs)
 
     :ok
   end
@@ -763,6 +742,37 @@ defmodule Glific.BigQuery.BigQueryWorker do
       bq_uuid: Ecto.UUID.generate(),
       bq_inserted_at: format_date_with_millisecond(DateTime.utc_now(), org_id)
     }
+  end
+
+  @doc """
+  Moving this logic to a different function so that we can reuse it
+  for gcs worker also.
+  """
+  @spec queue_message_media_data(list(), non_neg_integer(), map()) :: :ok
+  def queue_message_media_data(media_list, organization_id, attrs) do
+    media_list
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          # We are sending nil, as setting is a record type and need to structure the data first(like field)
+          %{
+            id: row.id,
+            caption: row.caption,
+            url: row.url,
+            source_url: row.source_url,
+            gcs_url: row.gcs_url,
+            inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
+            updated_at: format_date_with_millisecond(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :messages_media, organization_id, attrs))
   end
 
   @spec get_message_row(atom | map(), non_neg_integer) :: map()
