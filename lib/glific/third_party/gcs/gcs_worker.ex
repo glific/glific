@@ -70,7 +70,11 @@ defmodule Glific.GCS.GcsWorker do
 
     if !is_nil(max_id) and max_id > message_media_id do
       queue_urls(organization_id, message_media_id, max_id)
-      Logger.info("Updating GCS jobs with max id:  #{max_id} for org_id: #{organization_id}")
+
+      Logger.info(
+        "Updating GCS jobs with max id:  #{max_id} , min id: #{message_media_id} for org_id: #{organization_id}"
+      )
+
       Jobs.update_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
     end
 
@@ -161,16 +165,19 @@ defmodule Glific.GCS.GcsWorker do
         :ok
 
       {:error, :timeout} ->
-        {:error,
-         """
-         GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}
-         """}
+        error =
+          "GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
+
+        Glific.log_error(error)
+
+        {:error, error}
 
       {:error, error} ->
-        {:discard,
-         """
-         GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}
-         """}
+        error =
+          "GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}"
+
+        Glific.log_error(error)
+        {:discard, error}
     end
   end
 
@@ -207,12 +214,18 @@ defmodule Glific.GCS.GcsWorker do
           )
         end
 
-        "Error while uploading file to GCS #{inspect(error)}"
+        error = "Error while uploading file to GCS #{inspect(error)}"
+        Glific.log_error(error)
+        error
 
       _ ->
-        error = "Error while uploading file to GCS #{inspect(error)}"
         {_, stacktrace} = Process.info(self(), :current_stacktrace)
-        Appsignal.send_error(:error, error, stacktrace)
+
+        error =
+          "Error while uploading file to GCS #{inspect(error)} stacktrace: #{inspect(stacktrace)}"
+
+        Glific.log_error(error)
+
         error
     end
   end
