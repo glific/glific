@@ -73,7 +73,7 @@ defmodule Glific.GCS.GcsWorker do
       queue_urls(organization_id, message_media_id, max_id)
 
       Logger.info(
-        "Updating GCS jobs with max id:  #{max_id} , min id: #{message_media_id} for org_id: #{organization_id}"
+        "GCSWORKER: Updating GCS jobs with max id:  #{max_id} , min id: #{message_media_id} for org_id: #{organization_id}"
       )
 
       Jobs.update_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
@@ -117,7 +117,7 @@ defmodule Glific.GCS.GcsWorker do
       organization_id: organization_id
     }
 
-    Logger.info("Making media for media id: #{id}")
+    Logger.info("GCSWORKER: Making media for media id: #{id}")
   end
 
   @spec make_job(map()) :: :ok
@@ -146,7 +146,7 @@ defmodule Glific.GCS.GcsWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:discard, String.t()}
   def perform(%Oban.Job{args: %{"media" => media}}) do
-    Logger.info("Performing gcs media for media id: #{media["id"]}")
+    Logger.info("GCSWORKER: Performing gcs media for media id: #{media["id"]}")
 
     Repo.put_process_state(media["organization_id"])
 
@@ -163,7 +163,7 @@ defmodule Glific.GCS.GcsWorker do
       |> Map.put("remote_name", remote_name)
       |> Map.put("local_name", local_name)
 
-    Logger.info("Performing gcs media with details for media id: #{inspect(media)}")
+    Logger.info("GCSWORKER: Performing gcs media with details for media id: #{inspect(media)}")
 
     download_file_to_temp(media["url"], local_name, media["organization_id"])
     |> case do
@@ -173,7 +173,7 @@ defmodule Glific.GCS.GcsWorker do
 
       {:error, :timeout} ->
         error =
-          "GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
+          "GCSWORKER: GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
 
         Glific.log_error(error)
 
@@ -181,7 +181,7 @@ defmodule Glific.GCS.GcsWorker do
 
       {:error, error} ->
         error =
-          "GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}"
+          "GCSWORKER: GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}"
 
         Glific.log_error(error)
         {:discard, error}
@@ -221,7 +221,7 @@ defmodule Glific.GCS.GcsWorker do
           )
         end
 
-        error = "Error while uploading file to GCS #{inspect(error)}"
+        error = "GCSWORKER: Error while uploading file to GCS #{inspect(error)}"
         Glific.log_error(error)
         error
 
@@ -229,7 +229,7 @@ defmodule Glific.GCS.GcsWorker do
         {_, stacktrace} = Process.info(self(), :current_stacktrace)
 
         error =
-          "Error while uploading file to GCS #{inspect(error)} stacktrace: #{inspect(stacktrace)}"
+          "GCSWORKER: Error while uploading file to GCS #{inspect(error)} stacktrace: #{inspect(stacktrace)}"
 
         Glific.log_error(error)
 
@@ -253,7 +253,7 @@ defmodule Glific.GCS.GcsWorker do
   @spec upload_file_on_gcs(String.t(), String.t(), non_neg_integer) ::
           {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()} | {:error, map()}
   defp upload_file_on_gcs(local, remote, organization_id) do
-    Logger.info("Uploading to GCS, org_id: #{organization_id}, file_name: #{remote}")
+    Logger.info("GCSWORKER: Uploading to GCS, org_id: #{organization_id}, file_name: #{remote}")
 
     CloudStorage.put(
       Glific.Media,
@@ -331,7 +331,7 @@ defmodule Glific.GCS.GcsWorker do
   @spec download_file_to_temp(String.t(), String.t(), non_neg_integer) ::
           {:ok, String.t()} | {:error, any()}
   def download_file_to_temp(url, path, org_id) do
-    Logger.info("Downloading file: org_id: #{org_id}, url: #{url}")
+    Logger.info("GCSWORKER: Downloading file: org_id: #{org_id}, url: #{url}")
 
     Tesla.get(url, opts: [adapter: [recv_timeout: 10_000]])
     |> case do
