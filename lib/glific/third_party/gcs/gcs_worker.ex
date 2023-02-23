@@ -116,6 +116,8 @@ defmodule Glific.GCS.GcsWorker do
       flow_id: if(is_nil(flow_id), do: 0, else: flow_id),
       organization_id: organization_id
     }
+
+    Logger.info("Making media for media id: #{id}")
   end
 
   @spec make_job(map()) :: :ok
@@ -144,6 +146,8 @@ defmodule Glific.GCS.GcsWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:discard, String.t()}
   def perform(%Oban.Job{args: %{"media" => media}}) do
+    Logger.info("Performing gcs media for media id: #{media["id"]}")
+
     Repo.put_process_state(media["organization_id"])
 
     # We will download the file from internet and then upload it to gsc and then remove it.
@@ -158,6 +162,8 @@ defmodule Glific.GCS.GcsWorker do
       media
       |> Map.put("remote_name", remote_name)
       |> Map.put("local_name", local_name)
+
+    Logger.info("Performing gcs media with details for media id: #{inspect(media)}")
 
     download_file_to_temp(media["url"], local_name, media["organization_id"])
     |> case do
