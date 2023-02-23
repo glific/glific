@@ -108,6 +108,8 @@ defmodule Glific.GCS.GcsWorker do
   defp make_media(row, organization_id) do
     [id, url, type, contact_id, flow_id] = row
 
+    Logger.info("GCSWORKER: Making media for media id: #{id}")
+
     %{
       url: url,
       id: id,
@@ -116,8 +118,6 @@ defmodule Glific.GCS.GcsWorker do
       flow_id: if(is_nil(flow_id), do: 0, else: flow_id),
       organization_id: organization_id
     }
-
-    Logger.info("GCSWORKER: Making media for media id: #{id}")
   end
 
   @spec make_job(map()) :: :ok
@@ -175,7 +175,7 @@ defmodule Glific.GCS.GcsWorker do
         error =
           "GCSWORKER: GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
 
-        Glific.log_error(error)
+        Logger.info(error)
 
         {:error, error}
 
@@ -183,7 +183,8 @@ defmodule Glific.GCS.GcsWorker do
         error =
           "GCSWORKER: GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}"
 
-        Glific.log_error(error)
+        Logger.info(error)
+
         {:discard, error}
     end
   end
@@ -222,7 +223,8 @@ defmodule Glific.GCS.GcsWorker do
         end
 
         error = "GCSWORKER: Error while uploading file to GCS #{inspect(error)}"
-        Glific.log_error(error)
+        Logger.info(error)
+
         error
 
       _ ->
@@ -231,7 +233,7 @@ defmodule Glific.GCS.GcsWorker do
         error =
           "GCSWORKER: Error while uploading file to GCS #{inspect(error)} stacktrace: #{inspect(stacktrace)}"
 
-        Glific.log_error(error)
+        Logger.info(error)
 
         error
     end
