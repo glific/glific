@@ -70,20 +70,22 @@ defmodule Glific.GCS.GcsWorker do
     max_id = if is_list(data), do: List.last(data), else: message_media_id
 
     if !is_nil(max_id) and max_id > message_media_id do
-      queue_urls(organization_id, message_media_id, max_id)
-
       Logger.info(
         "GCSWORKER: Updating GCS jobs with max id:  #{max_id} , min id: #{message_media_id} for org_id: #{organization_id}"
       )
 
+      queue_urls(organization_id, message_media_id, max_id)
       Jobs.update_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
     end
 
     :ok
   end
 
+  @doc """
+    Queue urls for gcs jobs.
+  """
   @spec queue_urls(non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
-  defp queue_urls(organization_id, min_id, max_id) do
+  def queue_urls(organization_id, min_id, max_id) do
     query =
       MessageMedia
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
