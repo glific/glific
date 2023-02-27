@@ -689,9 +689,8 @@ defmodule GlificWeb.Schema.SearchTest do
           "filter" => %{
             "term" => "",
             "dateRange" => %{
-              "from" =>
-                DateTime.utc_now() |> DateTime.to_date() |> Date.add(-2) |> Date.to_string(),
-              "to" => DateTime.utc_now() |> DateTime.to_date() |> Date.to_string()
+              "from" => DateTime.utc_now() |> DateTime.add(-2, :hour) |> DateTime.to_string(),
+              "to" => DateTime.utc_now() |> DateTime.to_string()
             }
           },
           "contactOpts" => %{"limit" => contact_count},
@@ -716,8 +715,13 @@ defmodule GlificWeb.Schema.SearchTest do
             "term" => "",
             "dateRange" => %{
               "from" =>
-                DateTime.utc_now() |> DateTime.to_date() |> Date.add(-2) |> Date.to_string(),
-              "to" => DateTime.utc_now() |> DateTime.to_date() |> Date.add(-1) |> Date.to_string()
+                DateTime.utc_now()
+                |> DateTime.add(-2, :day)
+                |> DateTime.to_string(),
+              "to" =>
+                DateTime.utc_now()
+                |> DateTime.add(-1, :day)
+                |> DateTime.to_string()
             }
           },
           "contactOpts" => %{"limit" => contact_count},
@@ -811,8 +815,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "filter" => %{
             "term" => "",
             "dateRange" => %{
-              "from" =>
-                DateTime.utc_now() |> DateTime.to_date() |> Date.add(-2) |> Date.to_string()
+              "from" => DateTime.utc_now() |> DateTime.add(-2, :hour) |> DateTime.to_string()
             }
           },
           "contactOpts" => %{"limit" => contact_count},
@@ -835,7 +838,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "filter" => %{
             "term" => "",
             "dateRange" => %{
-              "to" => DateTime.utc_now() |> DateTime.to_date() |> Date.to_string()
+              "to" => DateTime.utc_now() |> DateTime.to_string()
             }
           },
           "contactOpts" => %{"limit" => contact_count},

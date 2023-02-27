@@ -35,10 +35,10 @@ defmodule GlificWeb.Schema.GenericTypes do
 
   input_object :date_range_input do
     @desc "Start date for the filter"
-    field :from, :date
+    field :from, :datetime
 
     @desc "End date for the filter"
-    field :to, :date
+    field :to, :datetime
 
     @desc """
       column name where we apply the date range. Default is inserted_at.
@@ -91,7 +91,7 @@ defmodule GlificWeb.Schema.GenericTypes do
     :error
   end
 
-  # Enable Ecto UUID scalar for grapql
+  # Enable Ecto UUID scalar for graphql
 
   scalar :uuid4, name: "UUID4" do
     description("""
@@ -123,7 +123,7 @@ defmodule GlificWeb.Schema.GenericTypes do
   # We will move this logic somewhere else in the future because it's not generic
   scalar :role_label, name: "RoleLabel" do
     description("""
-    Convert a string/atom to lable (camel case)
+    Convert a string/atom to label (camel case)
     """)
 
     serialize(&encode_label/1)
