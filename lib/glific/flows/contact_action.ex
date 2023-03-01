@@ -45,6 +45,39 @@ defmodule Glific.Flows.ContactAction do
   end
 
   @doc """
+  Start session for a list of contacts
+  """
+  # This will be extended when adding support to create new contact
+  @spec start_session(FlowContext.t(), Action.t(), [Message.t()]) :: {:ok, map(), any()}
+  def start_session(_context, %{create_contact: true} = _action, _messages) do
+    {:error, "Create New contact functionality is not supported yet"}
+  end
+
+  def start_session(context, action, messages) do
+    {:ok, flow} =
+      Repo.fetch_by(Glific.Flows.Flow, %{
+        uuid: action.flow["uuid"],
+        organization_id: context.organization_id
+      })
+
+    {:ok, flow_id} = Glific.parse_maybe_integer(flow.id)
+
+    action.contacts
+    |> Enum.reduce(
+      {:ok, context, messages},
+      fn contact, {_, _, _} ->
+        {:ok, contact} =
+          Repo.fetch_by(Glific.Contacts.Contact, %{
+            id: contact["uuid"],
+            organization_id: context.organization_id
+          })
+
+        Flows.start_contact_flow(flow_id, contact, %{})
+      end
+    )
+  end
+
+  @doc """
   Send interactive messages
   """
   @spec send_interactive_message(FlowContext.t(), Action.t(), [Message.t()]) ::

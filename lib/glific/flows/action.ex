@@ -52,6 +52,7 @@ defmodule Glific.Flows.Action do
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
   @required_fields_sheet [:sheet_id, :row, :result_name | @required_field_common]
+  @required_fields_start_session [:contacts, :create_contact, :flow | @required_field_common]
   @required_fields_group [:groups | @required_field_common]
   @required_fields_contact [:contacts, :text | @required_field_common]
   @required_fields_waittime [:delay]
@@ -182,6 +183,16 @@ defmodule Glific.Flows.Action do
       sheet_id: json["sheet_id"],
       row: json["row"],
       result_name: json["result_name"]
+    })
+  end
+
+  def process(%{"type" => "start_session"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_start_session)
+
+    process(json, uuid_map, node, %{
+      contacts: json["contacts"],
+      create_contact: json["create_contact"],
+      flow: json["flow"]
     })
   end
 
@@ -486,6 +497,11 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "send_broadcast"} = action, context, messages) do
     ContactAction.send_broadcast(context, action, messages)
+  end
+
+  def execute(%{type: "start_session"} = action, context, messages) do
+    ContactAction.start_session(context, action, messages)
+    {:ok, context, messages}
   end
 
   def execute(%{type: "set_contact_language"} = action, context, messages) do
