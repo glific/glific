@@ -35,17 +35,17 @@ defmodule Glific.Flows.Node do
         }
 
   embedded_schema do
-    field :uuid, Ecto.UUID
-    field :flow_id, :integer
-    field :flow_uuid, Ecto.UUID
+    field(:uuid, Ecto.UUID)
+    field(:flow_id, :integer)
+    field(:flow_uuid, Ecto.UUID)
 
-    field :is_terminal, :boolean, default: false
+    field(:is_terminal, :boolean, default: false)
 
-    embeds_one :flow, Flow
+    embeds_one(:flow, Flow)
 
-    embeds_many :actions, Action
-    embeds_many :exits, Exit
-    embeds_one :router, Router
+    embeds_many(:actions, Action)
+    embeds_many(:exits, Exit)
+    embeds_one(:router, Router)
   end
 
   @doc """
@@ -254,6 +254,7 @@ defmodule Glific.Flows.Node do
   @spec execute(atom() | Node.t(), atom() | FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(node, context, messages) do
+    IO.inspect("debug 0: New node execution starts. with id : #{node.uuid}")
     # if node has an action, execute the first action
     :telemetry.execute(
       [:glific, :flow, :node],
@@ -269,23 +270,28 @@ defmodule Glific.Flows.Node do
     cond do
       # check if we are looping forever, if so abort early
       check_infinite_loop(node, context) ->
+        IO.inspect("debug 1: check_infinite_loop")
         infinite_loop(context, node.uuid)
 
       # we special case wait for time, since it has a router, which basically
       # is an empty shell and just exits along the normal path
       !Enum.empty?(node.actions) && hd(node.actions).type in @wait_for ->
+        IO.inspect("debug 2: execute_node_actions")
         execute_node_actions(node, context, messages)
 
       # if both are non-empty, it means that we have either a
       #   * sub-flow option
       #   * calling a web hook
       !Enum.empty?(node.actions) && !is_nil(node.router) ->
+        IO.inspect("debug 3: execute_node_router")
         execute_node_router(node, context, messages)
 
       !Enum.empty?(node.actions) ->
+        IO.inspect("debug 4: execute_node_actions")
         execute_node_actions(node, context, messages)
 
       !is_nil(node.router) ->
+        IO.inspect("debug 5: Router.execute")
         Router.execute(node.router, context, messages)
 
       true ->
@@ -302,8 +308,10 @@ defmodule Glific.Flows.Node do
 
     if messages != [] and
          hd(messages).clean_body in ["completed", "expired", "success", "failure"] do
+      IO.inspect("debug 1: Handling route with webhook response")
       Router.execute(node.router, context, messages)
     else
+      IO.inspect("debug 2: Executing the action #{action.type}")
       Action.execute(action, context, messages)
     end
   end

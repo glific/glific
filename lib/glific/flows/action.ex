@@ -592,6 +592,7 @@ defmodule Glific.Flows.Action do
     # just call the webhook, and ask the caller to wait
     # we are processing the webhook using Oban and this happens asynchronously
     Webhook.execute(action, context)
+    IO.inspect("Webhook oban started")
     # webhooks don't consume a message, so we send it forward
     {:wait, context, messages}
   end

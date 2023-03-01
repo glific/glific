@@ -12,7 +12,8 @@ defmodule Glific.Flows.Webhook do
   use Oban.Worker,
     queue: :webhook,
     max_attempts: 2,
-    priority: 0
+    priority: 1,
+    unique: [period: 5, fields: [:args, :worker], keys: [:context_id, :url]]
 
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
@@ -172,6 +173,7 @@ defmodule Glific.Flows.Webhook do
 
       {map, body} ->
         do_oban(action, context, {map, body})
+        |> IO.inspect()
     end
 
     nil
@@ -204,6 +206,8 @@ defmodule Glific.Flows.Webhook do
         body: body,
         headers: headers,
         webhook_log_id: webhook_log.id,
+        # for jon uniqueness,
+        context_id: context.id,
         context: %{id: context.id, delay: context.delay},
         organization_id: context.organization_id
       })
@@ -328,6 +332,7 @@ defmodule Glific.Flows.Webhook do
         }
       end
 
+    IO.inspect("Waking up the flow")
     FlowContext.wakeup_one(context, message)
     :ok
   end
