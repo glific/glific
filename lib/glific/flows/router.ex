@@ -196,6 +196,9 @@ defmodule Glific.Flows.Router do
   def execute(nil, context, messages),
     do: {:ok, context, messages}
 
+  ## Check if there is no messages and wait for
+  ## user message to process further.
+
   def execute(%{wait: wait} = _router, context, []) when wait != nil,
     do: Wait.execute(wait, context, [])
 
@@ -237,6 +240,7 @@ defmodule Glific.Flows.Router do
         else: FlowContext.update_recent(context, msg, :recent_inbound)
 
     {category_uuid, is_checkbox} = find_category(router, context, msg)
+
     execute_category(router, context, {msg, rest}, {category_uuid, is_checkbox})
   end
 
