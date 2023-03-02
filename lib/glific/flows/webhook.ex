@@ -217,8 +217,6 @@ defmodule Glific.Flows.Webhook do
 
         Glific.log_error(error, false)
 
-        IO.inspect(error)
-
         {:ok, response}
 
       {:ok, response} ->
@@ -352,7 +350,6 @@ defmodule Glific.Flows.Webhook do
         }
       end
 
-    IO.inspect("Waking up the flow")
     FlowContext.wakeup_one(context, message)
     :ok
   end

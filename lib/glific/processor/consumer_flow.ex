@@ -144,8 +144,6 @@ defmodule Glific.Processor.ConsumerFlow do
       message
       |> Messages.update_message(%{flow_id: context.flow_id})
 
-    IO.inspect("Message received: #{message.body} ")
-
     context
     |> Map.merge(%{last_message: message})
     |> FlowContext.load_context(flow)

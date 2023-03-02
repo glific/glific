@@ -63,7 +63,6 @@ defmodule Glific.Flows.Wait do
     do: {:ok, context, []}
 
   def execute(wait, context, _messages) do
-    IO.inspect("wait execute inside")
     wait_seconds = get_wait_timeout(wait, context)
 
     if wait_seconds > 0 do

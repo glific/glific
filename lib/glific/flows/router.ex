@@ -234,16 +234,12 @@ defmodule Glific.Flows.Router do
         {msg, rest}
       end
 
-    IO.inspect("Router execute via switch #{msg.body}")
-
     context =
       if msg.body in @reserved_messages or is_nil(msg.id),
         do: context,
         else: FlowContext.update_recent(context, msg, :recent_inbound)
 
     {category_uuid, is_checkbox} = find_category(router, context, msg)
-
-    IO.inspect("Found category: #{category_uuid} ")
 
     execute_category(router, context, {msg, rest}, {category_uuid, is_checkbox})
   end
@@ -259,7 +255,6 @@ defmodule Glific.Flows.Router do
         ) ::
           {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   defp execute_category(_router, context, {msg, _rest}, {nil, _is_checkbox}) do
-    IO.inspect("Could not found category. ")
     # lets reset the context tree
     FlowContext.reset_all_contexts(context, "Could not find category for: #{msg.body}")
 
@@ -331,18 +326,12 @@ defmodule Glific.Flows.Router do
 
   defp find_category(router, context, msg) do
     # go thru the cases and find the first one that succeeds
-    IO.inspect("Router")
-    IO.inspect(router)
-
     c =
       Enum.find(
         router.cases,
         nil,
         fn c -> Case.execute(c, context, msg) end
       )
-
-    IO.inspect("router.default_category_uuid")
-    IO.inspect(router.default_category_uuid)
 
     if is_nil(c),
       do: {router.default_category_uuid, false},
