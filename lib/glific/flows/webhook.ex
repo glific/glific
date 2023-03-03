@@ -13,7 +13,12 @@ defmodule Glific.Flows.Webhook do
     queue: :webhook,
     max_attempts: 2,
     priority: 1,
-    unique: [period: 5, fields: [:args, :worker], keys: [:context_id, :url]]
+    unique: [
+      period: 10,
+      fields: [:args, :worker],
+      keys: [:context_id, :url],
+      states: [:available, :scheduled, :executing]
+    ]
 
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
