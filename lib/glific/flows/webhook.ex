@@ -14,7 +14,7 @@ defmodule Glific.Flows.Webhook do
     max_attempts: 2,
     priority: 1,
     unique: [
-      period: 10,
+      period: 60,
       fields: [:args, :worker],
       keys: [:context_id, :url],
       states: [:available, :scheduled, :executing]
