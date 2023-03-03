@@ -499,9 +499,61 @@ defmodule Glific.Flows.Action do
     ContactAction.send_broadcast(context, action, messages)
   end
 
-  def execute(%{type: "start_session"} = action, context, messages) do
-    ContactAction.start_session(context, action, messages)
-    {:ok, context, messages}
+  def execute(%{type: "start_session"} = action, context, _messages) do
+    flow_uuid = action.flow["uuid"]
+
+    # check if we've seen this flow in this execution
+    if Map.has_key?(context.uuids_seen, flow_uuid) do
+      Glific.log_error("Repeated loop, hence finished the flow", false)
+    else
+      # check if we are looping with the same flow, if so reset
+      # and start from scratch, since we really don't want to have too deep a stack
+      maybe_reset_flows(context, flow_uuid)
+
+      # if the action is part of a terminal node, then lets mark this context as
+      # complete, and use the parent context
+      {:node, node} = context.uuid_map[action.node_uuid]
+
+      {context, parent_id} =
+        if node.is_terminal == true,
+          do:
+            {FlowContext.reset_one_context(context,
+               source: "enter_flow",
+               event_meta: %{
+                 "action" => "#{inspect(action)}",
+                 "current_flow_uuid" => context.flow_uuid,
+                 "new_flow" => flow_uuid
+               }
+             ), context.parent_id},
+          else: {context, context.id}
+
+      # we start off a new context here and don't really modify the current context
+      # hence ignoring the return value of start_sub_flow
+      # for now, we'll just delay by at least min_delay second
+
+      context = Map.update!(context, :uuids_seen, &Map.put(&1, flow_uuid, 1))
+
+      action.contacts
+      |> Enum.reduce(
+        {:ok, context, _messages},
+        fn contact, {_, _, _} ->
+          {:ok, contact} =
+            Repo.fetch_by(Glific.Contacts.Contact, %{
+              id: contact["uuid"],
+              organization_id: context.organization_id
+            })
+
+          context
+          |> Map.put(:contact, contact)
+          |> Map.put(:contact_id, contact.id)
+          |> Flow.start_sub_flow(flow_uuid, parent_id)
+        end
+      )
+
+      # We null the messages here, since we are going into a different flow
+      # this clears any potential errors
+      {:ok, context, []}
+    end
   end
 
   def execute(%{type: "set_contact_language"} = action, context, messages) do
