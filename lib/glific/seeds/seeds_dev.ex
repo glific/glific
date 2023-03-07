@@ -879,7 +879,10 @@ if Code.ensure_loaded?(Faker) do
         survey: "8333fce2-63d3-4849-bfd9-3543eb8b0430",
         help: "3fa22108-f464-41e5-81d9-d8a298854429",
         intent: "56c4d7c4-4884-45e2-b4f9-82ddc4553519",
-        interactive: "b87dafcf-a316-4da6-b1f4-2714a199aab7"
+        interactive: "b87dafcf-a316-4da6-b1f4-2714a199aab7",
+        multiple_profile: "3c50b79a-0420-4ced-bcd7-f37e0577cca6",
+        multiple_profile_creation: "15666d20-7ba9-4698-adf1-50e91cee2b6b",
+        ab_test: "5f3fd8c6-2ec3-4945-8e7c-314db8c04c31"
       }
 
       data = [
@@ -888,7 +891,12 @@ if Code.ensure_loaded?(Faker) do
          "out_of_office.json"},
         {"Survey Workflow", ["survey"], uuid_map.survey, false, "survey.json"},
         {"Intent", ["intent"], uuid_map.intent, false, "intent.json"},
-        {"Interactive", ["interactive"], uuid_map.interactive, false, "interactive.json"}
+        {"Interactive", ["interactive"], uuid_map.interactive, false, "interactive.json"},
+        {"Multiple profiles", ["multiple"], uuid_map.multiple_profile, false,
+        "multiple_profile.json"},
+        {"Multiple Profile creation flow", ["profilecreation"],
+        uuid_map.multiple_profile_creation, false, "multiple_profile_creation.json"},
+        {"AB Test Workflow", ["abtest"], uuid_map.ab_test, false, "ab_test.json"}
       ]
 
       SeedsFlows.add_flow(organization, data, uuid_map)

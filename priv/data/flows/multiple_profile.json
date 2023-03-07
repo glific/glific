@@ -1,0 +1,558 @@
+{
+  "_ui": {
+    "nodes": {
+      "125a08d4-6b8e-4cef-8eb5-d7ba7bef6821": {
+        "type": "execute_actions",
+        "position": { "top": 880, "left": 820 }
+      },
+      "192ebce1-2554-4c50-9a13-1bdcfc66d0c1": {
+        "type": "execute_actions",
+        "position": { "top": 1160, "left": 1420 }
+      },
+      "3394c76d-fc1e-4abe-9ccb-4c1a32838335": {
+        "type": "execute_actions",
+        "position": { "top": 0, "left": 40 }
+      },
+      "3b78b34d-b0da-4370-b918-deac775a156b": {
+        "type": "execute_actions",
+        "position": { "top": 1240, "left": 1080 }
+      },
+      "424707a6-f2fc-436c-8b81-0b47fa55de72": {
+        "type": "wait_for_response",
+        "config": { "cases": {} },
+        "position": { "top": 340, "left": 20 }
+      },
+      "50b86530-2429-4385-b7b6-b9d4c62478dd": {
+        "type": "execute_actions",
+        "position": { "top": 680, "left": 420 }
+      },
+      "5465df8f-510d-4a51-9c2e-c8b00e3aab10": {
+        "type": "execute_actions",
+        "position": { "top": 1460, "left": 1040 }
+      },
+      "6284f764-413b-45c6-b068-5895c2ea2bc8": {
+        "type": "execute_actions",
+        "position": { "top": 1000, "left": 80 }
+      },
+      "7ff52074-a6ad-4234-bac9-27811123af31": {
+        "type": "wait_for_response",
+        "config": { "cases": {} },
+        "position": { "top": 1020, "left": 1060 }
+      },
+      "87283ebe-e480-4051-a303-8b9e4fbff626": {
+        "type": "execute_actions",
+        "position": { "top": 20, "left": 720 }
+      },
+      "9dc7ab80-59ba-4db8-915b-bf6ee9efae41": {
+        "type": "set_contact_profile",
+        "config": {},
+        "position": { "top": 1200, "left": 700 }
+      },
+      "adc282fa-3804-4e92-a5f7-edd3adf873e0": {
+        "type": "execute_actions",
+        "position": { "top": 1440, "left": 620 }
+      },
+      "b6dd6b9f-57b6-4100-94dd-2f5d402a946e": {
+        "type": "wait_for_response",
+        "config": { "cases": {} },
+        "position": { "top": 980, "left": 500 }
+      },
+      "bf1b3383-f121-4e5a-9684-f42a03457920": {
+        "type": "split_by_subflow",
+        "config": {},
+        "position": { "top": 700, "left": 0 }
+      },
+      "cb063147-2642-4376-888f-f05945f03727": {
+        "type": "execute_actions",
+        "position": { "top": 580, "left": 1060 }
+      }
+    },
+    "stickies": {
+      "2ae7168a-15e9-4637-8277-425eb3546404": {
+        "body": "Multiple profiles are used in the cases where one whatsapp number/bot is to be shared between multiple users. One can create a new profile under a whatsapp number, select/ switch profiles using this feature.\n\nData of both users can be tracked & checked on dashboard.",
+        "color": "yellow",
+        "title": "Why Multiple profiles",
+        "position": { "top": 0, "left": 460 }
+      },
+      "db88d488-279a-4016-b98d-66a9be7b41fc": {
+        "body": "In this flow, we have created a scenario in which a user is creating multiple profiles using \"Create new profile\" button. We have saved only 1 data point of the user in this scenario i.e their role(Parent or student). One can collect as many data points as needed (eg-age, grade etc) during profile creation and update contact accordingly.\n\nOnce the profiles are created, user can select profile/switch user (based on who is using the bot currently) and continue with the rest of the flow.\n\nKeyword to try this flow on your phone is \"multiple\"",
+        "color": "yellow",
+        "title": "What is added in this flow?",
+        "position": { "top": 0, "left": 1020, "right": null, "bottom": null }
+      }
+    }
+  },
+  "name": "Multiple profiles",
+  "type": "messaging",
+  "uuid": "3c50b79a-0420-4ced-bcd7-f37e0577cca6",
+  "vars": ["3c50b79a-0420-4ced-bcd7-f37e0577cca6"],
+  "nodes": [
+    {
+      "uuid": "3394c76d-fc1e-4abe-9ccb-4c1a32838335",
+      "exits": [
+        {
+          "uuid": "d9c49385-3c15-49cf-936b-04d70ab3c272",
+          "destination_uuid": "424707a6-f2fc-436c-8b81-0b47fa55de72"
+        }
+      ],
+      "actions": [
+        {
+          "id": 8,
+          "name": "Multiple profile selection 1",
+          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Multiple profile selection 1\",\"text\":\"Hello!😁 Welcome to Glific chatbot!\\nWhat do you want to do today?\",\"type\":\"text\"},\"options\":[{\"title\":\"Create new profile\",\"type\":\"text\"},{\"title\":\"Select Profile\",\"type\":\"text\"},{\"title\":\"Start new activity\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+          "type": "send_interactive_msg",
+          "uuid": "2e422e2d-f1e1-4214-88cb-c315e4e53d91",
+          "labels": [],
+          "attachment_url": "",
+          "attachment_type": ""
+        }
+      ]
+    },
+    {
+      "uuid": "87283ebe-e480-4051-a303-8b9e4fbff626",
+      "exits": [
+        {
+          "uuid": "da2c825a-4591-492b-8e79-ce7be1f779f0",
+          "destination_uuid": "3394c76d-fc1e-4abe-9ccb-4c1a32838335"
+        }
+      ],
+      "actions": [
+        {
+          "text": "Please select one of the below options only👇🏼",
+          "type": "send_msg",
+          "uuid": "50cd99e5-5b02-4eea-9f8a-fd254c5301a0",
+          "labels": [],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "424707a6-f2fc-436c-8b81-0b47fa55de72",
+      "exits": [
+        {
+          "uuid": "9b8dc5c3-c9a2-4f54-a812-b23dccdcde7d",
+          "destination_uuid": "bf1b3383-f121-4e5a-9684-f42a03457920"
+        },
+        {
+          "uuid": "fa1810b2-5a6e-4969-b49b-e1b770057dc1",
+          "destination_uuid": "50b86530-2429-4385-b7b6-b9d4c62478dd"
+        },
+        {
+          "uuid": "0d91dff1-08b6-4d2e-92ab-28c126b28dad",
+          "destination_uuid": "cb063147-2642-4376-888f-f05945f03727"
+        },
+        {
+          "uuid": "29c8a5ab-04da-429e-8afc-00eeadf476cd",
+          "destination_uuid": "87283ebe-e480-4051-a303-8b9e4fbff626"
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "wait": { "type": "msg" },
+        "cases": [
+          {
+            "type": "has_phrase",
+            "uuid": "a3c9e4d3-7c47-4b7b-a25e-d5c3d718cab4",
+            "arguments": ["Create new profile"],
+            "category_uuid": "f60faba7-e827-4a38-ac31-bf86f46f99dc"
+          },
+          {
+            "type": "has_phrase",
+            "uuid": "8a90e6e9-8463-4499-bb21-f0a0a009d87a",
+            "arguments": ["Select Profile"],
+            "category_uuid": "5a274e04-adad-4ea6-a607-d8cd593b844b"
+          },
+          {
+            "type": "has_phrase",
+            "uuid": "c7dc4df8-1d4c-43b2-a423-fffa4207fc3e",
+            "arguments": ["Start new activity"],
+            "category_uuid": "66b231e1-147f-41aa-9552-135a9d525157"
+          }
+        ],
+        "operand": "@input.text",
+        "categories": [
+          {
+            "name": "Create new profile",
+            "uuid": "f60faba7-e827-4a38-ac31-bf86f46f99dc",
+            "exit_uuid": "9b8dc5c3-c9a2-4f54-a812-b23dccdcde7d"
+          },
+          {
+            "name": "Select Profile",
+            "uuid": "5a274e04-adad-4ea6-a607-d8cd593b844b",
+            "exit_uuid": "fa1810b2-5a6e-4969-b49b-e1b770057dc1"
+          },
+          {
+            "name": "Start new activity",
+            "uuid": "66b231e1-147f-41aa-9552-135a9d525157",
+            "exit_uuid": "0d91dff1-08b6-4d2e-92ab-28c126b28dad"
+          },
+          {
+            "name": "Other",
+            "uuid": "c971c76f-74d7-401c-ada1-7e4a6265f9af",
+            "exit_uuid": "29c8a5ab-04da-429e-8afc-00eeadf476cd"
+          }
+        ],
+        "result_name": "response",
+        "default_category_uuid": "c971c76f-74d7-401c-ada1-7e4a6265f9af"
+      },
+      "actions": []
+    },
+    {
+      "uuid": "cb063147-2642-4376-888f-f05945f03727",
+      "exits": [
+        {
+          "uuid": "f6077c85-269d-4360-a1e9-88654f54de2c",
+          "destination_uuid": "7ff52074-a6ad-4234-bac9-27811123af31"
+        }
+      ],
+      "actions": [
+        {
+          "id": 9,
+          "name": "Profile_confirmation_2",
+          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Profile_confirmation_2\",\"text\":\"Great! Before starting an activity, Kindly confirm who is using the phone now :)\\n\\n*Name:* @contact.fields.name\\n*Role:* @contact.fields.role\",\"type\":\"text\"},\"options\":[{\"title\":\"Switch user\",\"type\":\"text\"},{\"title\":\"Continue\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+          "type": "send_interactive_msg",
+          "uuid": "a7b36eb0-b167-41af-8f32-41e0424bb797",
+          "labels": [],
+          "attachment_url": "",
+          "attachment_type": ""
+        }
+      ]
+    },
+    {
+      "uuid": "50b86530-2429-4385-b7b6-b9d4c62478dd",
+      "exits": [
+        {
+          "uuid": "e1c1cece-0d6a-4014-b228-2f5e579d3583",
+          "destination_uuid": "b6dd6b9f-57b6-4100-94dd-2f5d402a946e"
+        }
+      ],
+      "actions": [
+        {
+          "text": "Send the *number* for the profile you want to select👇🏼\n\n@contact.list_profiles",
+          "type": "send_msg",
+          "uuid": "b0af7e88-81a9-43db-bedf-a9da5eba6a75",
+          "labels": [],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "bf1b3383-f121-4e5a-9684-f42a03457920",
+      "exits": [
+        {
+          "uuid": "d7eabfaf-b4a0-4ad5-8c22-731baedd267a",
+          "destination_uuid": "6284f764-413b-45c6-b068-5895c2ea2bc8"
+        },
+        {
+          "uuid": "4d5af1af-4b8c-4d89-bea4-85f550c3922c",
+          "destination_uuid": null
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "cases": [
+          {
+            "type": "has_only_text",
+            "uuid": "bb3b6010-4376-4105-9524-54723b30fafb",
+            "arguments": ["completed"],
+            "category_uuid": "b48f3b47-f66a-44d2-8583-56c8efca7606"
+          },
+          {
+            "type": "has_only_text",
+            "uuid": "527eaa8a-24f1-465c-8452-a964c99e1928",
+            "arguments": ["expired"],
+            "category_uuid": "66c4c621-f246-4214-9b94-a9a008b5681f"
+          }
+        ],
+        "operand": "@child.status",
+        "categories": [
+          {
+            "name": "Complete",
+            "uuid": "b48f3b47-f66a-44d2-8583-56c8efca7606",
+            "exit_uuid": "d7eabfaf-b4a0-4ad5-8c22-731baedd267a"
+          },
+          {
+            "name": "Expired",
+            "uuid": "66c4c621-f246-4214-9b94-a9a008b5681f",
+            "exit_uuid": "4d5af1af-4b8c-4d89-bea4-85f550c3922c"
+          }
+        ],
+        "default_category_uuid": "66c4c621-f246-4214-9b94-a9a008b5681f"
+      },
+      "actions": [
+        {
+          "flow": {
+            "name": "Multiple Profile creation flow",
+            "uuid": "15666d20-7ba9-4698-adf1-50e91cee2b6b"
+          },
+          "type": "enter_flow",
+          "uuid": "928ef4cf-da45-46e1-bf6d-5d49bc644aac"
+        }
+      ]
+    },
+    {
+      "uuid": "125a08d4-6b8e-4cef-8eb5-d7ba7bef6821",
+      "exits": [
+        {
+          "uuid": "f42f6728-59d9-44b8-a758-9193e80659ab",
+          "destination_uuid": "50b86530-2429-4385-b7b6-b9d4c62478dd"
+        }
+      ],
+      "actions": [
+        {
+          "text": "You have to send only the *number*, to select the profile\n",
+          "type": "send_msg",
+          "uuid": "d56ad3b3-a71e-4462-98e7-6db3c9986c37",
+          "labels": [],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "b6dd6b9f-57b6-4100-94dd-2f5d402a946e",
+      "exits": [
+        {
+          "uuid": "4b397aa8-1ba4-4974-ac9f-3b94c2f9eed4",
+          "destination_uuid": "9dc7ab80-59ba-4db8-915b-bf6ee9efae41"
+        },
+        {
+          "uuid": "56c06ac2-e886-44f9-b85e-263e46086a31",
+          "destination_uuid": "125a08d4-6b8e-4cef-8eb5-d7ba7bef6821"
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "wait": { "type": "msg" },
+        "cases": [
+          {
+            "type": "has_number",
+            "uuid": "9fdd1030-c3b8-451b-abc8-3724a1e85539",
+            "arguments": [],
+            "category_uuid": "feb9dc17-e754-4b0f-a10a-71cdb7169ef7"
+          }
+        ],
+        "operand": "@input.text",
+        "categories": [
+          {
+            "name": "Has Number",
+            "uuid": "feb9dc17-e754-4b0f-a10a-71cdb7169ef7",
+            "exit_uuid": "4b397aa8-1ba4-4974-ac9f-3b94c2f9eed4"
+          },
+          {
+            "name": "Other",
+            "uuid": "2b917e1b-5a40-4b5c-9b36-c95c844d4295",
+            "exit_uuid": "56c06ac2-e886-44f9-b85e-263e46086a31"
+          }
+        ],
+        "result_name": "profile_index",
+        "default_category_uuid": "2b917e1b-5a40-4b5c-9b36-c95c844d4295"
+      },
+      "actions": []
+    },
+    {
+      "uuid": "6284f764-413b-45c6-b068-5895c2ea2bc8",
+      "exits": [
+        {
+          "uuid": "b6abb3bd-b79f-44aa-b054-457dc6f4e260",
+          "destination_uuid": "3394c76d-fc1e-4abe-9ccb-4c1a32838335"
+        }
+      ],
+      "actions": [
+        {
+          "text": "Congratulation! Your profile has been created!😁",
+          "type": "send_msg",
+          "uuid": "b240c26c-3e09-45f1-85bb-08cf5d865769",
+          "labels": [],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "7ff52074-a6ad-4234-bac9-27811123af31",
+      "exits": [
+        {
+          "uuid": "c90ee663-2b79-4329-a250-c3bf39f7f3ab",
+          "destination_uuid": "50b86530-2429-4385-b7b6-b9d4c62478dd"
+        },
+        {
+          "uuid": "1f1d2c03-3a62-4cea-bccd-9c9a41a6f504",
+          "destination_uuid": "3b78b34d-b0da-4370-b918-deac775a156b"
+        },
+        {
+          "uuid": "608d2bff-366e-4bfe-bb92-13fad9b09f6f",
+          "destination_uuid": "192ebce1-2554-4c50-9a13-1bdcfc66d0c1"
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "wait": { "type": "msg" },
+        "cases": [
+          {
+            "type": "has_phrase",
+            "uuid": "a2b15337-83eb-4a1c-9f4d-394937bb7c7d",
+            "arguments": ["Switch user"],
+            "category_uuid": "8d746f1d-b05f-4af8-b700-be69d6c5dc70"
+          },
+          {
+            "type": "has_phrase",
+            "uuid": "79429315-36a2-410b-9693-6222c494c769",
+            "arguments": ["Continue"],
+            "category_uuid": "f423dd28-f4df-4b89-80e9-ed713dd837e8"
+          }
+        ],
+        "operand": "@input.text",
+        "categories": [
+          {
+            "name": "Switch user",
+            "uuid": "8d746f1d-b05f-4af8-b700-be69d6c5dc70",
+            "exit_uuid": "c90ee663-2b79-4329-a250-c3bf39f7f3ab"
+          },
+          {
+            "name": "Continue",
+            "uuid": "f423dd28-f4df-4b89-80e9-ed713dd837e8",
+            "exit_uuid": "1f1d2c03-3a62-4cea-bccd-9c9a41a6f504"
+          },
+          {
+            "name": "Other",
+            "uuid": "650c3674-a06d-4bd3-8d55-f319a89266d1",
+            "exit_uuid": "608d2bff-366e-4bfe-bb92-13fad9b09f6f"
+          }
+        ],
+        "result_name": "result_3",
+        "default_category_uuid": "650c3674-a06d-4bd3-8d55-f319a89266d1"
+      },
+      "actions": []
+    },
+    {
+      "uuid": "192ebce1-2554-4c50-9a13-1bdcfc66d0c1",
+      "exits": [
+        {
+          "uuid": "cf79fd2f-7e4f-4d49-a62a-d947407c0737",
+          "destination_uuid": "cb063147-2642-4376-888f-f05945f03727"
+        }
+      ],
+      "actions": [
+        {
+          "text": "Please select one of the below options only👇🏼",
+          "type": "send_msg",
+          "uuid": "59f59e22-0f80-4389-868c-60ba4e5b2dc4",
+          "labels": [],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "9dc7ab80-59ba-4db8-915b-bf6ee9efae41",
+      "exits": [
+        {
+          "uuid": "c4f012c5-0700-4e65-bd51-f5eff923be3f",
+          "destination_uuid": "adc282fa-3804-4e92-a5f7-edd3adf873e0"
+        },
+        {
+          "uuid": "35b0dd1d-3f55-406c-9981-1d5d8394641b",
+          "destination_uuid": "5465df8f-510d-4a51-9c2e-c8b00e3aab10"
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "cases": [
+          {
+            "type": "has_only_text",
+            "uuid": "b88fef2f-7411-4c2a-9d17-986e6b326c91",
+            "arguments": ["Success"],
+            "category_uuid": "1577d108-45c3-4ed9-a6d5-d76d8a11929e"
+          }
+        ],
+        "operand": "@results.@results.profile_index.category",
+        "categories": [
+          {
+            "name": "Success",
+            "uuid": "1577d108-45c3-4ed9-a6d5-d76d8a11929e",
+            "exit_uuid": "c4f012c5-0700-4e65-bd51-f5eff923be3f"
+          },
+          {
+            "name": "Failure",
+            "uuid": "8ae5de5c-9340-4146-9e52-6022a14b9958",
+            "exit_uuid": "35b0dd1d-3f55-406c-9981-1d5d8394641b"
+          }
+        ],
+        "default_category_uuid": "8ae5de5c-9340-4146-9e52-6022a14b9958"
+      },
+      "actions": [
+        {
+          "type": "set_contact_profile",
+          "uuid": "021e77d9-4f1a-4305-978c-a91098ecdf0f",
+          "value": "@results.profile_index",
+          "result_name": "@results.profile_index",
+          "profile_type": "Switch Profile"
+        }
+      ]
+    },
+    {
+      "uuid": "3b78b34d-b0da-4370-b918-deac775a156b",
+      "exits": [
+        {
+          "uuid": "8a288f1e-f978-4945-ac02-9eb4084cf56b",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "text": "Here is your Activity-\n\n<Today's Activity included>",
+          "type": "send_msg",
+          "uuid": "648b3335-4a3b-41fd-950b-1e1ac0ced490",
+          "labels": [],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "adc282fa-3804-4e92-a5f7-edd3adf873e0",
+      "exits": [
+        {
+          "uuid": "9e39ea18-6d2c-465b-9e31-5b7479838374",
+          "destination_uuid": "3394c76d-fc1e-4abe-9ccb-4c1a32838335"
+        }
+      ],
+      "actions": [
+        {
+          "text": "Profile has been switched.\nCurrent profile is of @contact.fields.name",
+          "type": "send_msg",
+          "uuid": "64941328-395f-4ab9-880a-00fa84a1711b",
+          "labels": [],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "5465df8f-510d-4a51-9c2e-c8b00e3aab10",
+      "exits": [
+        {
+          "uuid": "2ee6d774-a64f-4ea4-8d95-144861db55be",
+          "destination_uuid": "50b86530-2429-4385-b7b6-b9d4c62478dd"
+        }
+      ],
+      "actions": [
+        {
+          "text": "Sorry, there was some issue in choosing profile.\nPlease try again👇🏼",
+          "type": "send_msg",
+          "uuid": "0c04228a-af90-45f5-a2ac-ebc2d2a21c30",
+          "labels": [],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    }
+  ],
+  "language": "base",
+  "localization": {},
+  "spec_version": "13.2.0",
+  "expire_after_minutes": 10080
+}
