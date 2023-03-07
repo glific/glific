@@ -447,6 +447,12 @@ if Code.ensure_loaded?(Faker) do
         is_restricted: true,
         organization_id: organization.id
       })
+
+      Repo.insert!(%Group{
+        label: "STARTED_AB",
+        is_restricted: false,
+        organization_id: organization.id
+      })
     end
 
     defp add_to_group(contacts, group, organization, size) do
@@ -892,9 +898,9 @@ if Code.ensure_loaded?(Faker) do
         {"Survey Workflow", ["survey"], uuid_map.survey, false, "survey.json"},
         {"Intent", ["intent"], uuid_map.intent, false, "intent.json"},
         {"Interactive", ["interactive"], uuid_map.interactive, false, "interactive.json"},
-        {"Multiple profiles", ["multiple"], uuid_map.multiple_profile, false,
+        {"Multiple Profiles", ["multiple"], uuid_map.multiple_profile, false,
          "multiple_profile.json"},
-        {"Multiple Profile creation flow", ["profilecreation"],
+        {"Multiple Profile Creation Flow", ["profilecreation"],
          uuid_map.multiple_profile_creation, false, "multiple_profile_creation.json"},
         {"AB Test Workflow", ["abtest"], uuid_map.ab_test, false, "ab_test.json"}
       ]

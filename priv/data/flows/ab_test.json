@@ -348,7 +348,7 @@
       ],
       "actions": [
         {
-          "id": 12,
+          "id": 9,
           "name": "Want to know more about Glific?",
           "text": "{\"content\":{\"caption\":\"\",\"header\":\"Want to know more about Glific?\",\"text\":\"Would you like to learn more about Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"👍 Yes\",\"type\":\"text\"},{\"title\":\"👎 No\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
           "type": "send_interactive_msg",
@@ -369,9 +369,9 @@
       ],
       "actions": [
         {
-          "id": 12,
-          "name": "Want to know more about glific?",
-          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Want to know more about glific?\",\"text\":\"Would you like to learn more about Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"👍 Yes\",\"type\":\"text\"},{\"title\":\"👎 No\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+          "id": 9,
+          "name": "Want to know more about Glific?",
+          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Want to know more about Glific?\",\"text\":\"Would you like to learn more about Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"👍 Yes\",\"type\":\"text\"},{\"title\":\"👎 No\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
           "type": "send_interactive_msg",
           "uuid": "c45e68dd-0cc1-4cd5-b880-4d4de9f12b91",
           "labels": [],
@@ -390,9 +390,9 @@
       ],
       "actions": [
         {
-          "id": 12,
-          "name": "Want to know more about glific?",
-          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Want to know more about glific?\",\"text\":\"Would you like to learn more about Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"👍 Yes\",\"type\":\"text\"},{\"title\":\"👎 No\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+          "id": 9,
+          "name": "Want to know more about Glific?",
+          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Want to know more about Glific?\",\"text\":\"Would you like to learn more about Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"👍 Yes\",\"type\":\"text\"},{\"title\":\"👎 No\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
           "type": "send_interactive_msg",
           "uuid": "29a2b3c3-e6ad-446e-be1d-8b32925dd7b3",
           "labels": [],
