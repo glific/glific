@@ -98,8 +98,8 @@
       "actions": [
         {
           "id": 8,
-          "name": "Multiple profile selection 1",
-          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Multiple profile selection 1\",\"text\":\"Hello!😁 Welcome to Glific chatbot!\\nWhat do you want to do today?\",\"type\":\"text\"},\"options\":[{\"title\":\"Create new profile\",\"type\":\"text\"},{\"title\":\"Select Profile\",\"type\":\"text\"},{\"title\":\"Start new activity\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+          "name": "Profile Selection",
+          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Profile Selection\",\"text\":\"Hello!😁 Welcome to Glific chatbot!\\nWhat do you want to do today?\",\"type\":\"text\"},\"options\":[{\"title\":\"Create new profile\",\"type\":\"text\"},{\"title\":\"Select Profile\",\"type\":\"text\"},{\"title\":\"Start new activity\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
           "type": "send_interactive_msg",
           "uuid": "2e422e2d-f1e1-4214-88cb-c315e4e53d91",
           "labels": [],
@@ -209,8 +209,8 @@
       "actions": [
         {
           "id": 9,
-          "name": "Profile_confirmation_2",
-          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Profile_confirmation_2\",\"text\":\"Great! Before starting an activity, Kindly confirm who is using the phone now :)\\n\\n*Name:* @contact.fields.name\\n*Role:* @contact.fields.role\",\"type\":\"text\"},\"options\":[{\"title\":\"Switch user\",\"type\":\"text\"},{\"title\":\"Continue\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+          "name": "Profile Confirmation",
+          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Profile Confirmation\",\"text\":\"Great! Before starting an activity, Kindly confirm who is using the phone now :)\\n\\n*Name:* @contact.fields.name\\n*Role:* @contact.fields.role\",\"type\":\"text\"},\"options\":[{\"title\":\"Switch user\",\"type\":\"text\"},{\"title\":\"Continue\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
           "type": "send_interactive_msg",
           "uuid": "a7b36eb0-b167-41af-8f32-41e0424bb797",
           "labels": [],

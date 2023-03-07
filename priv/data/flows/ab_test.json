@@ -349,8 +349,8 @@
       "actions": [
         {
           "id": 12,
-          "name": "Want to know more about glific?",
-          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Want to know more about glific?\",\"text\":\"Would you like to learn more about Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"👍 Yes\",\"type\":\"text\"},{\"title\":\"👎 No\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+          "name": "Want to know more about Glific?",
+          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Want to know more about Glific?\",\"text\":\"Would you like to learn more about Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"👍 Yes\",\"type\":\"text\"},{\"title\":\"👎 No\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
           "type": "send_interactive_msg",
           "uuid": "31b0e8da-dc15-4fd6-844c-68a37344f6ed",
           "labels": [],

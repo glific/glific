@@ -161,8 +161,8 @@
       "actions": [
         {
           "id": 11,
-          "name": "Details_confirmation",
-          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Details_confirmation\",\"text\":\"Please *confirm* if the below details are correct\\n\\n*Name:* @results.name\\n*Profile of:* @results.role\",\"type\":\"text\"},\"options\":[{\"title\":\"Correct\",\"type\":\"text\"},{\"title\":\"Re-enter details\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+          "name": "Details Confirmation",
+          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Details Confirmation\",\"text\":\"Please *confirm* if the below details are correct\\n\\n*Name:* @results.name\\n*Profile of:* @results.role\",\"type\":\"text\"},\"options\":[{\"title\":\"Correct\",\"type\":\"text\"},{\"title\":\"Re-enter details\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
           "type": "send_interactive_msg",
           "uuid": "b960257e-8ade-46fa-95d7-b561d424c097",
           "labels": [],
