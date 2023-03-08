@@ -1254,57 +1254,6 @@ if Code.ensure_loaded?(Faker) do
             %{"type" => "text", "title" => "Second"},
             %{"type" => "text", "title" => "Third"}
           ]
-        },
-        %{
-          "type" => "list",
-          "title" => "Interactive list",
-          "body" => "Glific",
-          "globalButtons" => [%{"type" => "text", "title" => "button text"}],
-          "items" => [
-            %{
-              "title" => "Glific Features",
-              "subtitle" => "first Subtitle",
-              "options" => [
-                %{
-                  "type" => "text",
-                  "title" => "Custom Flows",
-                  "description" => "Flow Editor for creating flows"
-                },
-                %{
-                  "type" => "text",
-                  "title" => "Analytic Reports",
-                  "description" => "DataStudio for report generation"
-                },
-                %{
-                  "type" => "text",
-                  "title" => "ML/AI",
-                  "description" => "Dialogflow for AI/ML"
-                }
-              ]
-            },
-            %{
-              "title" => "Glific Usecases",
-              "subtitle" => "some usecases of Glific",
-              "options" => [
-                %{
-                  "type" => "text",
-                  "title" => "Educational programs",
-                  "description" => "Sharing education content with school student"
-                }
-              ]
-            },
-            %{
-              "title" => "Onboarded NGOs",
-              "subtitle" => "List of NGOs onboarded",
-              "options" => [
-                %{
-                  "type" => "text",
-                  "title" => "SOL",
-                  "description" => "Slam Out Loud is a non-profit with a vision to change lives."
-                }
-              ]
-            }
-          ]
         }
       ]
       |> Enum.each(fn interactive_content ->
@@ -1358,6 +1307,69 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization.id,
         language_id: en.id,
         translations: translation
+      })
+
+      interactive_content = %{
+        "type" => "list",
+        "title" => "Interactive list",
+        "body" => "Glific",
+        "globalButtons" => [%{"type" => "text", "title" => "button text"}],
+        "items" => [
+          %{
+            "title" => "Glific Features",
+            "subtitle" => "first Subtitle",
+            "options" => [
+              %{
+                "type" => "text",
+                "title" => "Custom Flows",
+                "description" => "Flow Editor for creating flows"
+              },
+              %{
+                "type" => "text",
+                "title" => "Analytic Reports",
+                "description" => "DataStudio for report generation"
+              },
+              %{
+                "type" => "text",
+                "title" => "ML/AI",
+                "description" => "Dialogflow for AI/ML"
+              }
+            ]
+          },
+          %{
+            "title" => "Glific Usecases",
+            "subtitle" => "some usecases of Glific",
+            "options" => [
+              %{
+                "type" => "text",
+                "title" => "Educational programs",
+                "description" => "Sharing education content with school student"
+              }
+            ]
+          },
+          %{
+            "title" => "Onboarded NGOs",
+            "subtitle" => "List of NGOs onboarded",
+            "options" => [
+              %{
+                "type" => "text",
+                "title" => "SOL",
+                "description" => "Slam Out Loud is a non-profit with a vision to change lives."
+              }
+            ]
+          }
+        ]
+      }
+
+      Repo.insert!(%InteractiveTemplate{
+        label: get_in(interactive_content, ["title"]),
+        type: :list,
+        interactive_content: interactive_content,
+        organization_id: organization.id,
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content
+        }
       })
     end
 
