@@ -447,12 +447,6 @@ if Code.ensure_loaded?(Faker) do
         is_restricted: true,
         organization_id: organization.id
       })
-
-      Repo.insert!(%Group{
-        label: "STARTED_AB",
-        is_restricted: false,
-        organization_id: organization.id
-      })
     end
 
     defp add_to_group(contacts, group, organization, size) do
@@ -885,10 +879,7 @@ if Code.ensure_loaded?(Faker) do
         survey: "8333fce2-63d3-4849-bfd9-3543eb8b0430",
         help: "3fa22108-f464-41e5-81d9-d8a298854429",
         intent: "56c4d7c4-4884-45e2-b4f9-82ddc4553519",
-        interactive: "b87dafcf-a316-4da6-b1f4-2714a199aab7",
-        multiple_profile: "3c50b79a-0420-4ced-bcd7-f37e0577cca6",
-        multiple_profile_creation: "15666d20-7ba9-4698-adf1-50e91cee2b6b",
-        ab_test: "5f3fd8c6-2ec3-4945-8e7c-314db8c04c31"
+        interactive: "b87dafcf-a316-4da6-b1f4-2714a199aab7"
       }
 
       data = [
@@ -897,12 +888,7 @@ if Code.ensure_loaded?(Faker) do
          "out_of_office.json"},
         {"Survey Workflow", ["survey"], uuid_map.survey, false, "survey.json"},
         {"Intent", ["intent"], uuid_map.intent, false, "intent.json"},
-        {"Interactive", ["interactive"], uuid_map.interactive, false, "interactive.json"},
-        {"Multiple Profiles", ["multiple"], uuid_map.multiple_profile, false,
-         "multiple_profile.json"},
-        {"Multiple Profile Creation Flow", ["profilecreation"],
-         uuid_map.multiple_profile_creation, false, "multiple_profile_creation.json"},
-        {"AB Test Workflow", ["abtest"], uuid_map.ab_test, false, "ab_test.json"}
+        {"Interactive", ["interactive"], uuid_map.interactive, false, "interactive.json"}
       ]
 
       SeedsFlows.add_flow(organization, data, uuid_map)
@@ -1290,128 +1276,6 @@ if Code.ensure_loaded?(Faker) do
           %{"type" => "text", "title" => "First"},
           %{"type" => "text", "title" => "Second"},
           %{"type" => "text", "title" => "Third"}
-        ]
-      }
-
-      Repo.insert!(%InteractiveTemplate{
-        label: get_in(interactive_content, ["content", "header"]),
-        type: :quick_reply,
-        interactive_content: interactive_content,
-        organization_id: organization.id,
-        language_id: en.id,
-        translations: %{
-          "1" => interactive_content
-        }
-      })
-
-      interactive_content = %{
-        "type" => "quick_reply",
-        "content" => %{
-          "text" => "Hello!😁 \nTell me- What do you want to do today?",
-          "type" => "text",
-          "header" => "Profile Selection"
-        },
-        "options" => [
-          %{"type" => "text", "title" => "Create New Profile"},
-          %{"type" => "text", "title" => "Select Profile"},
-          %{"type" => "text", "title" => "Start New Activity"}
-        ]
-      }
-
-      Repo.insert!(%InteractiveTemplate{
-        label: get_in(interactive_content, ["content", "header"]),
-        type: :quick_reply,
-        interactive_content: interactive_content,
-        organization_id: organization.id,
-        language_id: en.id,
-        translations: %{
-          "1" => interactive_content
-        }
-      })
-
-      interactive_content = %{
-        "type" => "quick_reply",
-        "content" => %{
-          "text" =>
-            "Great! Before starting an activity, Kindly confirm who is using the phone now :)\n\n*Name:* @contact.fields.name\n*Role:* @contact.fields.role",
-          "type" => "text",
-          "header" => "Profile Confirmation",
-          "caption" => ""
-        },
-        "options" => [
-          %{"type" => "text", "title" => "Switch User"},
-          %{"type" => "text", "title" => "Continue"}
-        ]
-      }
-
-      Repo.insert!(%InteractiveTemplate{
-        label: get_in(interactive_content, ["content", "header"]),
-        type: :quick_reply,
-        interactive_content: interactive_content,
-        organization_id: organization.id,
-        language_id: en.id,
-        translations: %{
-          "1" => interactive_content
-        }
-      })
-
-      interactive_content = %{
-        "type" => "quick_reply",
-        "content" => %{"text" => "Whose profile is this?", "type" => "text", "header" => "Role"},
-        "options" => [
-          %{"type" => "text", "title" => "Student"},
-          %{"type" => "text", "title" => "Parent"}
-        ]
-      }
-
-      Repo.insert!(%InteractiveTemplate{
-        label: get_in(interactive_content, ["content", "header"]),
-        type: :quick_reply,
-        interactive_content: interactive_content,
-        organization_id: organization.id,
-        language_id: en.id,
-        translations: %{
-          "1" => interactive_content
-        }
-      })
-
-      interactive_content = %{
-        "type" => "quick_reply",
-        "content" => %{
-          "text" =>
-            "Please *confirm* if the below details are correct-\n\n*Name:* @results.name\n*Profile of:* @results.role",
-          "type" => "text",
-          "header" => "Details Confirmation",
-          "caption" => ""
-        },
-        "options" => [
-          %{"type" => "text", "title" => "Correct"},
-          %{"type" => "text", "title" => "Re-enter details"}
-        ]
-      }
-
-      Repo.insert!(%InteractiveTemplate{
-        label: get_in(interactive_content, ["content", "header"]),
-        type: :quick_reply,
-        interactive_content: interactive_content,
-        organization_id: organization.id,
-        language_id: en.id,
-        translations: %{
-          "1" => interactive_content
-        }
-      })
-
-      interactive_content = %{
-        "type" => "quick_reply",
-        "content" => %{
-          "text" => "Would you like to learn more about Glific?",
-          "type" => "text",
-          "header" => "Want to know more about Glific?",
-          "caption" => ""
-        },
-        "options" => [
-          %{"type" => "text", "title" => "👍 Yes"},
-          %{"type" => "text", "title" => "👎 No"}
         ]
       }
 

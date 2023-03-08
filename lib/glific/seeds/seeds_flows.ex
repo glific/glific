@@ -9,6 +9,7 @@ defmodule Glific.Seeds.SeedsFlows do
     Partners.Organization,
     Repo,
     Seeds.SeedsDev,
+    Settings,
     Templates.InteractiveTemplate
   }
 
@@ -21,11 +22,95 @@ defmodule Glific.Seeds.SeedsFlows do
       {uuid_map, data} = get_data_and_uuid_map(org)
       {opt_uuid_map, opt_data} = get_opt_data(org)
 
+      add_interactive_templates(org)
+
       add_flow(
         org,
         data ++ opt_data,
         Map.merge(uuid_map, opt_uuid_map)
       )
+    end)
+  end
+
+  @spec add_interactive_templates(Organization.t()) :: :ok
+  defp add_interactive_templates(org) do
+    [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
+
+    [
+      %{
+        "type" => "quick_reply",
+        "content" => %{
+          "text" => "Hello!😁 \nTell me- What do you want to do today?",
+          "type" => "text",
+          "header" => "Profile Selection"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "Create New Profile"},
+          %{"type" => "text", "title" => "Select Profile"},
+          %{"type" => "text", "title" => "Start New Activity"}
+        ]
+      },
+      %{
+        "type" => "quick_reply",
+        "content" => %{
+          "text" =>
+            "Great! Before starting an activity, Kindly confirm who is using the phone now :)\n\n*Name:* @contact.fields.name\n*Role:* @contact.fields.role",
+          "type" => "text",
+          "header" => "Profile Confirmation",
+          "caption" => ""
+        },
+        "options" => [
+          %{"type" => "text", "title" => "Switch User"},
+          %{"type" => "text", "title" => "Continue"}
+        ]
+      },
+      %{
+        "type" => "quick_reply",
+        "content" => %{"text" => "Whose profile is this?", "type" => "text", "header" => "Role"},
+        "options" => [
+          %{"type" => "text", "title" => "Student"},
+          %{"type" => "text", "title" => "Parent"}
+        ]
+      },
+      %{
+        "type" => "quick_reply",
+        "content" => %{
+          "text" =>
+            "Please *confirm* if the below details are correct-\n\n*Name:* @results.name\n*Profile of:* @results.role",
+          "type" => "text",
+          "header" => "Details Confirmation",
+          "caption" => ""
+        },
+        "options" => [
+          %{"type" => "text", "title" => "Correct"},
+          %{"type" => "text", "title" => "Re-enter details"}
+        ]
+      },
+      %{
+        "type" => "quick_reply",
+        "content" => %{
+          "text" => "Would you like to learn more about Glific?",
+          "type" => "text",
+          "header" => "Want to know more about Glific?",
+          "caption" => ""
+        },
+        "options" => [
+          %{"type" => "text", "title" => "👍 Yes"},
+          %{"type" => "text", "title" => "👎 No"}
+        ]
+      }
+    ]
+    |> Enum.each(fn interactive_content ->
+      Repo.insert!(%InteractiveTemplate{
+        label: get_in(interactive_content, ["content", "header"]),
+        type: :quick_reply,
+        interactive_content: interactive_content,
+        organization_id: org.id,
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content
+        }
+      })
     end)
   end
 
@@ -194,7 +279,11 @@ defmodule Glific.Seeds.SeedsFlows do
       registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
       activity: generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
       feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5"),
-      template: generate_uuid(organization, "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd")
+      template: generate_uuid(organization, "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"),
+      multiple_profile: generate_uuid(organization, "3c50b79a-0420-4ced-bcd7-f37e0577cca6"),
+      multiple_profile_creation:
+        generate_uuid(organization, "15666d20-7ba9-4698-adf1-50e91cee2b6b"),
+      ab_test: generate_uuid(organization, "5f3fd8c6-2ec3-4945-8e7c-314db8c04c31")
     }
 
     data = [
@@ -205,7 +294,12 @@ defmodule Glific.Seeds.SeedsFlows do
       {"New Contact Workflow", ["newcontact"], uuid_map.newcontact, false, "new_contact.json"},
       {"Registration Workflow", ["registration"], uuid_map.registration, false,
        "registration.json"},
-      {"Template Workflow", ["template"], uuid_map.template, false, "template.json"}
+      {"Template Workflow", ["template"], uuid_map.template, false, "template.json"},
+      {"Multiple Profiles", ["multiple"], uuid_map.multiple_profile, false,
+       "multiple_profile.json"},
+      {"Multiple Profile Creation Flow", ["profilecreation"], uuid_map.multiple_profile_creation,
+       false, "multiple_profile_creation.json"},
+      {"AB Test Workflow", ["abtest"], uuid_map.ab_test, false, "ab_test.json"}
     ]
 
     {uuid_map, data}

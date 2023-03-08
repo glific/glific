@@ -167,7 +167,7 @@
         {
           "type": "add_contact_groups",
           "uuid": "7df85e2b-5482-4a32-9bef-88d428480931",
-          "groups": [{ "name": "STARTED_AB", "type": "group", "uuid": "5" }]
+          "groups": [{ "name": "STARTED_AB", "type": "group", "uuid": "3" }]
         }
       ]
     },
@@ -731,7 +731,7 @@
         {
           "type": "remove_contact_groups",
           "uuid": "5a570260-44f5-476a-ba7a-2727de331aa0",
-          "groups": [{ "name": "STARTED_AB", "uuid": "5" }],
+          "groups": [{ "name": "STARTED_AB", "uuid": "3" }],
           "all_groups": false
         }
       ]
