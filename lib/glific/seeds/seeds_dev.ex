@@ -1194,35 +1194,131 @@ if Code.ensure_loaded?(Faker) do
 
       [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
-      interactive_content = %{
-        "type" => "quick_reply",
-        "content" => %{
-          "type" => "text",
-          "header" => "Quick Reply Text",
-          "text" => "Glific is a two way communication platform"
-        },
-        "options" => [
-          %{
+      [
+        %{
+          "type" => "quick_reply",
+          "content" => %{
             "type" => "text",
-            "title" => "Excited"
+            "header" => "Quick Reply Text",
+            "text" => "Glific is a two way communication platform"
           },
-          %{
-            "type" => "text",
-            "title" => "Very Excited"
-          }
-        ]
-      }
-
-      Repo.insert!(%InteractiveTemplate{
-        label: get_in(interactive_content, ["content", "header"]),
-        type: :quick_reply,
-        interactive_content: interactive_content,
-        organization_id: organization.id,
-        language_id: en.id,
-        translations: %{
-          "1" => interactive_content
+          "options" => [
+            %{
+              "type" => "text",
+              "title" => "Excited"
+            },
+            %{
+              "type" => "text",
+              "title" => "Very Excited"
+            }
+          ]
+        },
+        %{
+          "type" => "quick_reply",
+          "content" => %{
+            "header" => "Quick Reply Image",
+            "type" => "image",
+            "url" => "https://picsum.photos/200/300",
+            "text" => "body text"
+          },
+          "options" => [
+            %{"type" => "text", "title" => "First"},
+            %{"type" => "text", "title" => "Second"},
+            %{"type" => "text", "title" => "Third"}
+          ]
+        },
+        %{
+          "type" => "quick_reply",
+          "content" => %{
+            "header" => "Quick Reply Document",
+            "type" => "file",
+            "url" => "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf",
+            "filename" => "Sample file"
+          },
+          "options" => [
+            %{"type" => "text", "title" => "First"},
+            %{"type" => "text", "title" => "Second"},
+            %{"type" => "text", "title" => "Third"}
+          ]
+        },
+        %{
+          "type" => "quick_reply",
+          "content" => %{
+            "header" => "Quick Reply Video",
+            "type" => "video",
+            "url" => "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4",
+            "text" => "Sample video"
+          },
+          "options" => [
+            %{"type" => "text", "title" => "First"},
+            %{"type" => "text", "title" => "Second"},
+            %{"type" => "text", "title" => "Third"}
+          ]
+        },
+        %{
+          "type" => "list",
+          "title" => "Interactive list",
+          "body" => "Glific",
+          "globalButtons" => [%{"type" => "text", "title" => "button text"}],
+          "items" => [
+            %{
+              "title" => "Glific Features",
+              "subtitle" => "first Subtitle",
+              "options" => [
+                %{
+                  "type" => "text",
+                  "title" => "Custom Flows",
+                  "description" => "Flow Editor for creating flows"
+                },
+                %{
+                  "type" => "text",
+                  "title" => "Analytic Reports",
+                  "description" => "DataStudio for report generation"
+                },
+                %{
+                  "type" => "text",
+                  "title" => "ML/AI",
+                  "description" => "Dialogflow for AI/ML"
+                }
+              ]
+            },
+            %{
+              "title" => "Glific Usecases",
+              "subtitle" => "some usecases of Glific",
+              "options" => [
+                %{
+                  "type" => "text",
+                  "title" => "Educational programs",
+                  "description" => "Sharing education content with school student"
+                }
+              ]
+            },
+            %{
+              "title" => "Onboarded NGOs",
+              "subtitle" => "List of NGOs onboarded",
+              "options" => [
+                %{
+                  "type" => "text",
+                  "title" => "SOL",
+                  "description" => "Slam Out Loud is a non-profit with a vision to change lives."
+                }
+              ]
+            }
+          ]
         }
-      })
+      ]
+      |> Enum.each(fn interactive_content ->
+        Repo.insert!(%InteractiveTemplate{
+          label: get_in(interactive_content, ["content", "header"]),
+          type: :quick_reply,
+          interactive_content: interactive_content,
+          organization_id: organization.id,
+          language_id: en.id,
+          translations: %{
+            "1" => interactive_content
+          }
+        })
+      end)
 
       interactive_content_eng = %{
         "type" => "quick_reply",
@@ -1262,147 +1358,6 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization.id,
         language_id: en.id,
         translations: translation
-      })
-
-      interactive_content = %{
-        "type" => "quick_reply",
-        "content" => %{
-          "header" => "Quick Reply Image",
-          "type" => "image",
-          "url" => "https://picsum.photos/200/300",
-          "text" => "body text"
-        },
-        "options" => [
-          %{"type" => "text", "title" => "First"},
-          %{"type" => "text", "title" => "Second"},
-          %{"type" => "text", "title" => "Third"}
-        ]
-      }
-
-      Repo.insert!(%InteractiveTemplate{
-        label: get_in(interactive_content, ["content", "header"]),
-        type: :quick_reply,
-        interactive_content: interactive_content,
-        organization_id: organization.id,
-        language_id: en.id,
-        translations: %{
-          "1" => interactive_content
-        }
-      })
-
-      interactive_content = %{
-        "type" => "quick_reply",
-        "content" => %{
-          "header" => "Quick Reply Document",
-          "type" => "file",
-          "url" => "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf",
-          "filename" => "Sample file"
-        },
-        "options" => [
-          %{"type" => "text", "title" => "First"},
-          %{"type" => "text", "title" => "Second"},
-          %{"type" => "text", "title" => "Third"}
-        ]
-      }
-
-      Repo.insert!(%InteractiveTemplate{
-        label: get_in(interactive_content, ["content", "header"]),
-        type: :quick_reply,
-        interactive_content: interactive_content,
-        organization_id: organization.id,
-        language_id: en.id,
-        translations: %{
-          "1" => interactive_content
-        }
-      })
-
-      interactive_content = %{
-        "type" => "quick_reply",
-        "content" => %{
-          "header" => "Quick Reply Video",
-          "type" => "video",
-          "url" => "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4",
-          "text" => "Sample video"
-        },
-        "options" => [
-          %{"type" => "text", "title" => "First"},
-          %{"type" => "text", "title" => "Second"},
-          %{"type" => "text", "title" => "Third"}
-        ]
-      }
-
-      Repo.insert!(%InteractiveTemplate{
-        label: get_in(interactive_content, ["content", "header"]),
-        type: :quick_reply,
-        interactive_content: interactive_content,
-        organization_id: organization.id,
-        language_id: en.id,
-        translations: %{
-          "1" => interactive_content
-        }
-      })
-
-      interactive_content = %{
-        "type" => "list",
-        "title" => "Interactive list",
-        "body" => "Glific",
-        "globalButtons" => [%{"type" => "text", "title" => "button text"}],
-        "items" => [
-          %{
-            "title" => "Glific Features",
-            "subtitle" => "first Subtitle",
-            "options" => [
-              %{
-                "type" => "text",
-                "title" => "Custom Flows",
-                "description" => "Flow Editor for creating flows"
-              },
-              %{
-                "type" => "text",
-                "title" => "Analytic Reports",
-                "description" => "DataStudio for report generation"
-              },
-              %{
-                "type" => "text",
-                "title" => "ML/AI",
-                "description" => "Dialogflow for AI/ML"
-              }
-            ]
-          },
-          %{
-            "title" => "Glific Usecases",
-            "subtitle" => "some usecases of Glific",
-            "options" => [
-              %{
-                "type" => "text",
-                "title" => "Educational programs",
-                "description" => "Sharing education content with school student"
-              }
-            ]
-          },
-          %{
-            "title" => "Onboarded NGOs",
-            "subtitle" => "List of NGOs onboarded",
-            "options" => [
-              %{
-                "type" => "text",
-                "title" => "SOL",
-                "description" => "Slam Out Loud is a non-profit with a vision to change lives."
-              }
-            ]
-          }
-        ]
-      }
-
-      Repo.insert!(%InteractiveTemplate{
-        label: get_in(interactive_content, ["title"]),
-        type: :list,
-        interactive_content: interactive_content,
-        organization_id: organization.id,
-        language_id: en.id,
-        translations: %{
-          "1" => interactive_content
-        }
       })
     end
 
