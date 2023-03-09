@@ -116,7 +116,7 @@
       ],
       "actions": [
         {
-          "id": 7,
+          "id": "role_id",
           "name": "Role",
           "text": "{\"content\":{\"header\":\"Role\",\"text\":\"Kindly tell us your role\",\"type\":\"text\"},\"options\":[{\"title\":\"student\",\"type\":\"text\"},{\"title\":\"teacher\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
           "type": "send_interactive_msg",
@@ -160,7 +160,7 @@
       ],
       "actions": [
         {
-          "id": 8,
+          "id": "details_confirmation_id",
           "name": "Details Confirmation",
           "text": "{\"content\":{\"caption\":\"\",\"header\":\"Details Confirmation\",\"text\":\"Please *confirm* if the below details are correct\\n\\n*Name:* @results.name\\n*Profile of:* @results.role\",\"type\":\"text\"},\"options\":[{\"title\":\"Correct\",\"type\":\"text\"},{\"title\":\"Re-enter details\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
           "type": "send_interactive_msg",

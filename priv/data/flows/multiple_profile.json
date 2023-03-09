@@ -75,7 +75,7 @@
         "position": { "top": 0, "left": 460 }
       },
       "db88d488-279a-4016-b98d-66a9be7b41fc": {
-        "body": "In this flow, we have created a scenario in which a user is creating multiple profiles using \"Create new profile\" button. We have saved only 1 data point of the user in this scenario i.e their role(Parent or student). One can collect as many data points as needed (eg-age, grade etc) during profile creation and update contact accordingly.\n\nOnce the profiles are created, user can select profile/switch user (based on who is using the bot currently) and continue with the rest of the flow.\n\nKeyword to try this flow on your phone is \"multiple\"",
+        "body": "In this flow, we have created a scenario in which a user is creating multiple profiles using \"Create New Profile\" button. We have saved only 1 data point of the user in this scenario i.e their role(Parent or student). One can collect as many data points as needed (eg-age, grade etc) during profile creation and update contact accordingly.\n\nOnce the profiles are created, user can select profile/switch user (based on who is using the bot currently) and continue with the rest of the flow.\n\nKeyword to try this flow on your phone is \"multiple\"",
         "color": "yellow",
         "title": "What is added in this flow?",
         "position": { "top": 0, "left": 1020, "right": null, "bottom": null }
@@ -97,9 +97,9 @@
       ],
       "actions": [
         {
-          "id": 8,
+          "id": "profile_selection_id",
           "name": "Profile Selection",
-          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Profile Selection\",\"text\":\"Hello!😁 Welcome to Glific chatbot!\\nWhat do you want to do today?\",\"type\":\"text\"},\"options\":[{\"title\":\"Create new profile\",\"type\":\"text\"},{\"title\":\"Select Profile\",\"type\":\"text\"},{\"title\":\"Start new activity\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+          "text": "{\"content\":{\"caption\":\"\",\"header\":\"Profile Selection\",\"text\":\"Hello!😁 Welcome to Glific chatbot!\\nWhat do you want to do today?\",\"type\":\"text\"},\"options\":[{\"title\":\"Create New Profile\",\"type\":\"text\"},{\"title\":\"Select Profile\",\"type\":\"text\"},{\"title\":\"Start New Activity\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
           "type": "send_interactive_msg",
           "uuid": "2e422e2d-f1e1-4214-88cb-c315e4e53d91",
           "labels": [],
@@ -154,7 +154,7 @@
           {
             "type": "has_phrase",
             "uuid": "a3c9e4d3-7c47-4b7b-a25e-d5c3d718cab4",
-            "arguments": ["Create new profile"],
+            "arguments": ["Create New Profile"],
             "category_uuid": "f60faba7-e827-4a38-ac31-bf86f46f99dc"
           },
           {
@@ -166,14 +166,14 @@
           {
             "type": "has_phrase",
             "uuid": "c7dc4df8-1d4c-43b2-a423-fffa4207fc3e",
-            "arguments": ["Start new activity"],
+            "arguments": ["Start New Activity"],
             "category_uuid": "66b231e1-147f-41aa-9552-135a9d525157"
           }
         ],
         "operand": "@input.text",
         "categories": [
           {
-            "name": "Create new profile",
+            "name": "Create New Profile",
             "uuid": "f60faba7-e827-4a38-ac31-bf86f46f99dc",
             "exit_uuid": "9b8dc5c3-c9a2-4f54-a812-b23dccdcde7d"
           },
@@ -183,7 +183,7 @@
             "exit_uuid": "fa1810b2-5a6e-4969-b49b-e1b770057dc1"
           },
           {
-            "name": "Start new activity",
+            "name": "Start New Activity",
             "uuid": "66b231e1-147f-41aa-9552-135a9d525157",
             "exit_uuid": "0d91dff1-08b6-4d2e-92ab-28c126b28dad"
           },
@@ -208,7 +208,7 @@
       ],
       "actions": [
         {
-          "id": 9,
+          "id": "profile_confirmation_id",
           "name": "Profile Confirmation",
           "text": "{\"content\":{\"caption\":\"\",\"header\":\"Profile Confirmation\",\"text\":\"Great! Before starting an activity, Kindly confirm who is using the phone now :)\\n\\n*Name:* @contact.fields.name\\n*Role:* @contact.fields.role\",\"type\":\"text\"},\"options\":[{\"title\":\"Switch user\",\"type\":\"text\"},{\"title\":\"Continue\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
           "type": "send_interactive_msg",
@@ -284,7 +284,7 @@
       "actions": [
         {
           "flow": {
-            "name": "Multiple Profile creation flow",
+            "name": "Multiple Profile Creation Flow",
             "uuid": "15666d20-7ba9-4698-adf1-50e91cee2b6b"
           },
           "type": "enter_flow",

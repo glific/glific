@@ -1,6 +1,8 @@
 defmodule Glific.Seeds.SeedsFlows do
   @moduledoc false
 
+  import Ecto.Query, warn: false
+
   alias Glific.{
     Flows.Flow,
     Flows.FlowLabel,
@@ -8,7 +10,6 @@ defmodule Glific.Seeds.SeedsFlows do
     Groups.Group,
     Partners.Organization,
     Repo,
-    Seeds.SeedsDev,
     Settings,
     Templates.InteractiveTemplate
   }
@@ -91,7 +92,7 @@ defmodule Glific.Seeds.SeedsFlows do
         "content" => %{
           "text" => "Would you like to learn more about Glific?",
           "type" => "text",
-          "header" => "Want to know more about Glific?",
+          "header" => "More about Glific",
           "caption" => ""
         },
         "options" => [
@@ -177,11 +178,33 @@ defmodule Glific.Seeds.SeedsFlows do
         acc |> Map.merge(%{flow_label.name => flow_label.uuid})
       end)
 
-    Enum.each(data, &flow(&1, organization, uuid_map, flow_labels_id_map))
+    interactive_template_map =
+      InteractiveTemplate
+      |> where([m], m.organization_id == ^organization.id)
+      |> select([m], %{label: m.label, id: m.id})
+      |> Repo.all()
+      |> Enum.reduce(%{}, fn interactive_template, acc ->
+        name =
+          interactive_template.label
+          |> String.downcase()
+          |> String.replace(" ", "_")
+          |> then(&(&1 <> "_id"))
+
+        Map.merge(acc, %{name => interactive_template.id})
+      end)
+
+    Enum.each(
+      data,
+      &flow(&1, organization,
+        uuid_map: uuid_map,
+        id_map: flow_labels_id_map,
+        label_map: interactive_template_map
+      )
+    )
   end
 
-  @spec flow(tuple(), Organization.t(), map(), map()) :: nil
-  defp flow({name, keywords, uuid, ignore_keywords, file}, organization, uuid_map, id_map) do
+  @spec flow(tuple(), Organization.t(), Keyword.t()) :: nil
+  defp flow({name, keywords, uuid, ignore_keywords, file}, organization, opts) do
     f =
       Repo.insert!(%Flow{
         name: name,
@@ -192,17 +215,21 @@ defmodule Glific.Seeds.SeedsFlows do
         organization_id: organization.id
       })
 
-    flow_revision(f, organization, file, uuid_map, id_map)
+    flow_revision(f, organization, file, opts)
   end
 
   @doc false
-  @spec flow_revision(Flow.t(), Organization.t(), String.t(), map(), map()) :: nil
-  def flow_revision(f, organization, file, uuid_map, id_map) do
+  @spec flow_revision(Flow.t(), Organization.t(), String.t(), Keyword.t()) :: nil
+  def flow_revision(f, organization, file, opts \\ []) do
+    uuid_map = Keyword.get(opts, :uuid_map, %{})
+    id_map = Keyword.get(opts, :id_map, %{})
+    label_map = Keyword.get(opts, :label_map, %{})
+
     definition =
       File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> file))
       |> replace_uuids(uuid_map)
       |> replace_label_uuids(id_map)
-      |> replace_interactive_template_id(organization)
+      |> replace_interactive_template_id(label_map)
       |> Jason.decode!()
       |> Map.merge(%{
         "name" => f.name,
@@ -236,39 +263,13 @@ defmodule Glific.Seeds.SeedsFlows do
   @spec replace_label_uuids(String.t(), map()) :: String.t()
   defp replace_label_uuids(json, flow_labels_id_map),
     do:
-      Enum.reduce(
-        flow_labels_id_map,
-        json,
-        fn {key, id}, acc ->
-          String.replace(
-            acc,
-            key |> Kernel.<>(":ID"),
-            "#{id}"
-          )
-        end
-      )
+      Enum.reduce(flow_labels_id_map, json, fn {key, id}, acc ->
+        String.replace(acc, key |> Kernel.<>(":ID"), "#{id}")
+      end)
 
-  @spec replace_interactive_template_id(String.t(), Organization.t()) :: String.t()
-  defp replace_interactive_template_id(json, organization) do
-    optin_template =
-      Repo.fetch_by(InteractiveTemplate, %{label: "Optin template"})
-      |> case do
-        {:ok, optin_template} -> optin_template
-        {:error, _error} -> SeedsDev.seed_optin_interactives(organization)
-      end
-
-    Enum.reduce(
-      %{"optin_template_id" => optin_template.id},
-      json,
-      fn {_key, id}, acc ->
-        String.replace(
-          acc,
-          "optin_template_id",
-          "#{id}"
-        )
-      end
-    )
-  end
+  @spec replace_interactive_template_id(String.t(), map()) :: String.t()
+  defp replace_interactive_template_id(json, label_map),
+    do: Enum.reduce(label_map, json, fn {key, id}, acc -> String.replace(acc, key, "#{id}") end)
 
   @spec get_data_and_uuid_map(Organization.t()) :: tuple()
   defp get_data_and_uuid_map(organization) do
