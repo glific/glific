@@ -55,9 +55,9 @@ jobs:
           mix local.rebar --force
           mix local.hex --force
           mix hex.repo add oban https://getoban.pro/repo \
-            --fetch-public-key SHA256:4/OSKi0NRF91QVVXlGAhb/BIMLnK8NHcx/EWs+aIWPc \
+            --fetch-public-key ${{ secrets.OBAN_PUBLIC_KEY }} \
             --auth-key ${{ secrets.OBAN_PRO_KEY }}
-            
+
           mix deps.get
 
       - name: Retrieve PLT Cache
