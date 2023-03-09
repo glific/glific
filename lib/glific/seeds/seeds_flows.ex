@@ -10,6 +10,7 @@ defmodule Glific.Seeds.SeedsFlows do
     Groups.Group,
     Partners.Organization,
     Repo,
+    Seeds.SeedsDev,
     Settings,
     Templates.InteractiveTemplate
   }
@@ -35,6 +36,8 @@ defmodule Glific.Seeds.SeedsFlows do
 
   @spec add_interactive_templates(Organization.t()) :: :ok
   defp add_interactive_templates(org) do
+    SeedsDev.seed_optin_interactives(org)
+
     [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
     [
@@ -268,8 +271,10 @@ defmodule Glific.Seeds.SeedsFlows do
       end)
 
   @spec replace_interactive_template_id(String.t(), map()) :: String.t()
-  defp replace_interactive_template_id(json, label_map),
-    do: Enum.reduce(label_map, json, fn {key, id}, acc -> String.replace(acc, key, "#{id}") end)
+  defp replace_interactive_template_id(json, label_map) do
+    IO.inspect(label_map)
+    Enum.reduce(label_map, json, fn {key, id}, acc -> String.replace(acc, key, "#{id}") end)
+  end
 
   @spec get_data_and_uuid_map(Organization.t()) :: tuple()
   defp get_data_and_uuid_map(organization) do

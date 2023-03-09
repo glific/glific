@@ -629,7 +629,7 @@
           "labels": [
             {
               "name": "AB_A_Success",
-              "uuid": "355bece2-4302-48c0-9331-24b091de8f50",
+              "uuid": "AB_A_Success:ID",
               "count": 0
             }
           ]
@@ -651,7 +651,7 @@
           "labels": [
             {
               "name": "AB_B_Success",
-              "uuid": "fdc512bf-c656-40d3-8b2b-3e23992e4dad",
+              "uuid": "AB_B_Success:ID",
               "count": 0
             }
           ]
@@ -673,7 +673,7 @@
           "labels": [
             {
               "name": "AB_C_Success",
-              "uuid": "a5c0ed85-bc7a-4f19-8b28-dace9ac5bf7b",
+              "uuid": "AB_C_Success:ID",
               "count": 0
             }
           ]
