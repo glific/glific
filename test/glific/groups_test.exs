@@ -43,10 +43,10 @@ defmodule Glific.GroupsTest do
 
     test "count_groups/1 returns count of all groups", attrs do
       _ = group_fixture(attrs)
-      assert Groups.count_groups(%{filter: attrs}) == 3
+      assert Groups.count_groups(%{filter: attrs}) == 4
 
       _ = group_fixture(Map.merge(attrs, @valid_other_attrs))
-      assert Groups.count_groups(%{filter: attrs}) == 4
+      assert Groups.count_groups(%{filter: attrs}) == 5
 
       assert Groups.count_groups(%{filter: Map.merge(attrs, %{label: "other group"})}) == 1
     end
