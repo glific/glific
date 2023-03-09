@@ -56,10 +56,10 @@
     },
     "stickies": {}
   },
-  "name": "Multiple Profile creation flow",
+  "name": "Multiple Profile Creation Flow",
   "type": "messaging",
-  "uuid": "15666d20-7ba9-4698-adf1-50e91cee2b6b",
-  "vars": ["15666d20-7ba9-4698-adf1-50e91cee2b6b"],
+  "uuid": "MULTIPLE_PROFILE_CREATION_UUID",
+  "vars": ["MULTIPLE_PROFILE_CREATION_UUID"],
   "nodes": [
     {
       "uuid": "6c713eff-29d9-41e6-8abe-c104fef6bc78",

@@ -82,10 +82,10 @@
       }
     }
   },
-  "name": "Multiple profiles",
+  "name": "Multiple Profile Workflow",
   "type": "messaging",
-  "uuid": "3c50b79a-0420-4ced-bcd7-f37e0577cca6",
-  "vars": ["3c50b79a-0420-4ced-bcd7-f37e0577cca6"],
+  "uuid": "MULTIPLE_PROFILE_UUID",
+  "vars": ["MULTIPLE_PROFILE_UUID"],
   "nodes": [
     {
       "uuid": "3394c76d-fc1e-4abe-9ccb-4c1a32838335",
@@ -285,7 +285,7 @@
         {
           "flow": {
             "name": "Multiple Profile Creation Flow",
-            "uuid": "15666d20-7ba9-4698-adf1-50e91cee2b6b"
+            "uuid": "MULTIPLE_PROFILE_CREATION_UUID"
           },
           "type": "enter_flow",
           "uuid": "928ef4cf-da45-46e1-bf6d-5d49bc644aac"

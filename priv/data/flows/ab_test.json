@@ -112,8 +112,8 @@
   },
   "name": "AB Test Workflow",
   "type": "messaging",
-  "uuid": "5f3fd8c6-2ec3-4945-8e7c-314db8c04c31",
-  "vars": ["5f3fd8c6-2ec3-4945-8e7c-314db8c04c31"],
+  "uuid": "AB_TEST_UUID",
+  "vars": ["AB_TEST_UUID"],
   "nodes": [
     {
       "uuid": "6d393955-30ca-4f3b-a44d-2df4faaa81aa",
