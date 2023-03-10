@@ -15,6 +15,7 @@ defmodule GlificWeb.Resolvers.Media do
         %{context: %{current_user: user}}
       ) do
     GcsWorker.upload_media(media.path, remote_name(user, extension), organization_id)
+    |> handle_response()
   end
 
   @doc """
@@ -38,6 +39,7 @@ defmodule GlificWeb.Resolvers.Media do
     )
 
     GcsWorker.upload_media(local_file, remote_name(user, extension, uuid), organization_id)
+    |> handle_response()
   end
 
   @spec local_name(String.t(), Ecto.UUID.t()) :: String.t()
@@ -48,5 +50,14 @@ defmodule GlificWeb.Resolvers.Media do
   defp remote_name(user, extension, uuid \\ Ecto.UUID.generate()) do
     {year, week} = Timex.iso_week(Timex.now())
     "outbound/#{year}-#{week}/#{user.name}/#{uuid}.#{extension}"
+  end
+
+  @spec handle_response(any()) :: {:ok, String.t()} | {:error, String.t()}
+  defp handle_response(response) do
+    response
+    |> case do
+      {:ok, %{url: url} = _} -> {:ok, url}
+      error -> {:error, "Something went wrong #{inspect(error)}"}
+    end
   end
 end

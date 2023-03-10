@@ -12,7 +12,13 @@ defmodule Glific.Flows.Webhook do
   use Oban.Worker,
     queue: :webhook,
     max_attempts: 2,
-    priority: 0
+    priority: 1,
+    unique: [
+      period: 60,
+      fields: [:args, :worker],
+      keys: [:context_id, :url],
+      states: [:available, :scheduled, :executing]
+    ]
 
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
@@ -196,18 +202,39 @@ defmodule Glific.Flows.Webhook do
     action = Map.put(action, :url, parsed_attrs.url)
     webhook_log = create_log(action, map, parsed_attrs.header, context)
 
-    {:ok, _} =
-      __MODULE__.new(%{
-        method: String.downcase(action.method),
-        url: parsed_attrs.url,
-        result_name: action.result_name,
-        body: body,
-        headers: headers,
-        webhook_log_id: webhook_log.id,
-        context: %{id: context.id, delay: context.delay},
-        organization_id: context.organization_id
-      })
-      |> Oban.insert()
+    __MODULE__.new(%{
+      method: String.downcase(action.method),
+      url: parsed_attrs.url,
+      result_name: action.result_name,
+      body: body,
+      headers: headers,
+      webhook_log_id: webhook_log.id,
+      # for jon uniqueness,
+      context_id: context.id,
+      context: %{id: context.id, delay: context.delay},
+      organization_id: context.organization_id
+    })
+    |> Oban.insert()
+    |> case do
+      {:ok, %Job{conflict?: true} = response} ->
+        error =
+          "Message received while executing webhook. context: #{context.id} and url: #{parsed_attrs.url}"
+
+        Glific.log_error(error, false)
+
+        {:ok, response}
+
+      {:ok, response} ->
+        {:ok, response}
+
+      response ->
+        Glific.log_error(
+          "something wrong while inserting webhook node. ",
+          true
+        )
+
+        response
+    end
   end
 
   defp do_action("post", url, body, headers),

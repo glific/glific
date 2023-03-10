@@ -215,7 +215,7 @@ defmodule Glific.InteractiveTemplatesTest do
           filter: Map.merge(%{type: :quick_reply}, attrs)
         })
 
-      assert length(interactives) == 3
+      assert length(interactives) == 8
       assert interactive1 in interactives
       assert interactive2 in interactives
     end

@@ -77,7 +77,12 @@ You will need to do the following:
 Glific depends 100% on job processing.
 Oban is **required** before running mix
 for Glific to operate.
-You **must** purchase license.
+
+**For contributors:** 
+Please get in touch with the team on Discord and get a limited time key.
+
+**For production use:**
+You must purchase license.
 When purchashing you must buy WEB+PRO .
 After you purchased
 Go to account and get this information and run this in glific_backend
@@ -236,40 +241,40 @@ Do not use '' for after the = or leave spaces
 Broken For example 1
 
 ```bash
-REACT_APP_GLIFIC_BACKEND_URL='gitflic.test'
+REACT_APP_GLIFIC_BACKEND_URL='glific.test'
 ```
 
-this will be read like this by react https://%27gitflic.test%27 . notice the %27 which will fail the connection
+this will be read like this by react https://%27glific.test%27 . notice the %27 which will fail the connection
 
 Broken For example 2
 
 ```bash
-REACT_APP_GLIFIC_BACKEND_URL= gitflic.test'
+REACT_APP_GLIFIC_BACKEND_URL= glific.test'
 ```
 
-this will be read like this by react https://%32gitflic.test%27 . notice the %32 which will fail the connection
+this will be read like this by react https://%32glific.test%27 . notice the %32 which will fail the connection
 
 Broken For example 3
 
 ```bash
-REACT_APP_GLIFIC_BACKEND_URL="gitflic.test "
+REACT_APP_GLIFIC_BACKEND_URL="glific.test "
 ```
 
-this will be read like this by react https://gitflic.test%32 . notice the %32 which will fail the connection
+this will be read like this by react https://glific.test%32 . notice the %32 which will fail the connection
 
 Broken For example 4
 
 ```bash
-REACT_APP_GLIFIC_BACKEND_URL="https://gitflic.test"
+REACT_APP_GLIFIC_BACKEND_URL="https://glific.test"
 ```
 
-this will be read like this by react https://https://gitflic.test . notice the extra https:// which will fail the connection
+this will be read like this by react https://https://glific.test . notice the extra https:// which will fail the connection
 
 Correct For examples
 
 ```bash
-REACT_APP_GLIFIC_BACKEND_URL="gitflic.test"
-REACT_APP_GLIFIC_BACKEND_URL=gitflic.test
+REACT_APP_GLIFIC_BACKEND_URL="glific.test"
+REACT_APP_GLIFIC_BACKEND_URL=glific.test
 ```
 
 Now run install
