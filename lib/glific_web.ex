@@ -17,6 +17,8 @@ defmodule GlificWeb do
   and import those modules here.
   """
 
+  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+
   def controller do
     quote do
       use Phoenix.Controller, namespace: GlificWeb
@@ -24,6 +26,7 @@ defmodule GlificWeb do
       import Plug.Conn
       import GlificWeb.Gettext
       alias GlificWeb.Router.Helpers, as: Routes
+      unquote(verified_routes())
     end
   end
 
@@ -89,12 +92,23 @@ defmodule GlificWeb do
       # Import LiveView helpers (live_render, live_component, live_patch, etc)
       import Phoenix.LiveView.Helpers
 
+      unquote(verified_routes())
+
       # Import basic rendering functionality (render, render_layout, etc)
       import Phoenix.View
 
       import GlificWeb.ErrorHelpers
       import GlificWeb.Gettext
       alias GlificWeb.Router.Helpers, as: Routes
+    end
+  end
+
+  def verified_routes do
+    quote do
+      use Phoenix.VerifiedRoutes,
+        endpoint: DemoWeb.Endpoint,
+        router: DemoWeb.Router,
+        statics: DemoWeb.static_paths()
     end
   end
 
