@@ -55,7 +55,8 @@ defmodule Glific.MixProject do
         licenses: ["AGPL 3.0"],
         links: %{
           "GitHub" => @github_url
-        }
+        },
+        exclude_patterns: ["priv/plts", "build_scripts/*", "assets/*"]
       ]
     ]
   end
