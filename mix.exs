@@ -117,7 +117,7 @@ defmodule Glific.MixProject do
       {:oban, "~> 2.13"},
       {:oban_web, "~> 2.9", organization: "oban", only: @oban_envs},
       {:oban_pro, "~> 0.12", organization: "oban", only: @oban_envs},
-      {:pow, git: "https://github.com/pow-auth/pow.git"},
+
       {:faker, "~> 0.13"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.15", only: @test_envs},
@@ -135,14 +135,12 @@ defmodule Glific.MixProject do
       {:passwordless_auth, "~> 0.3.0"},
       {:appsignal_phoenix, "~> 2.3"},
       {:poolboy, "~> 1.5"},
-      {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git", branch: "dev"},
       {:cloak_ecto, "~> 1.2"},
       {:google_api_big_query, "~> 0.47"},
       {:google_api_dialogflow, "~> 0.62"},
       {:absinthe_graphql_ws, "~> 0.3"},
       {:google_api_sheets, "~> 0.29"},
       {:waffle, "~> 1.1"},
-      {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
       {:waffle_ecto, "~> 0.0"},
       {:csv, "~> 2.5"},
       {:observer_cli, "~> 1.7"},
@@ -155,7 +153,10 @@ defmodule Glific.MixProject do
       {:exvcr, "~> 0.13", only: @test_envs},
       {:dotenvy, "~> 0.1"},
       {:phoenix_swoosh, "~> 1.2"},
-      {:gen_smtp, "~> 1.1"}
+      {:gen_smtp, "~> 1.1"},
+      {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git", branch: "dev"},
+      {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
+      {:pow, git: "https://github.com/pow-auth/pow.git"}
     ]
   end
 
