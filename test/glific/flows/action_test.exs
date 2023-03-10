@@ -154,6 +154,81 @@ defmodule Glific.Flows.ActionTest do
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
+  test "process extracts the right values from json for start_session" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "start_session",
+      "contacts" => [%{"name" => "NGO Admin", "uuid" => "14"}],
+      "create_contact" => false,
+      "flow" => %{
+        "name" => "Help Workflow",
+        "uuid" => "3fa22108-f464-41e5-81d9-d8a298854429"
+      }
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+    assert action.uuid == "UUID 1"
+    assert action.type == "start_session"
+    assert action.create_contact == false
+    assert action.node_uuid == node.uuid
+    assert action.flow["name"] == "Help Workflow"
+    assert action.flow["uuid"] == "3fa22108-f464-41e5-81d9-d8a298854429"
+    contacts = hd(action.contacts)
+
+    assert contacts["name"] == "NGO Admin"
+    assert contacts["uuid"] == "14"
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "start_session", "create_contact" => false}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "start_session",
+      "contacts" => [%{"name" => "NGO Admin", "uuid" => "14"}]
+    }
+
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+    json = %{}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "process extracts the right values from json for link_google_sheet" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "link_google_sheet",
+      "sheet_id" => 1,
+      "row" => "14/11/2022",
+      "result_name" => "sheet"
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+    assert action.uuid == "UUID 1"
+    assert action.type == "link_google_sheet"
+    assert action.node_uuid == node.uuid
+    assert action.sheet_id == 1
+    assert action.row == "14/11/2022"
+    assert action.result_name == "sheet"
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "link_google_sheet", "sheet_id" => 1}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "link_google_sheet",
+      "row" => "14/11/2022"
+    }
+
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+    json = %{}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
   test "process extracts the right values from json for set_contact_profile action when profile type is Create Profile" do
     node = %Node{uuid: "Test UUID"}
 
