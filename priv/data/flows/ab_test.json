@@ -1,0 +1,798 @@
+{
+  "_ui": {
+    "nodes": {
+      "21163eb1-997f-4b08-820d-d42a95a53a58": {
+        "type": "wait_for_response",
+        "config": { "cases": {} },
+        "position": { "top": 1060, "left": 700 }
+      },
+      "343017da-58fe-42a8-bd52-9883a63e710b": {
+        "type": "execute_actions",
+        "position": { "top": 480, "left": 180 }
+      },
+      "482b7ee4-f9aa-44c4-90f4-06241aa8ce0c": {
+        "type": "execute_actions",
+        "position": { "top": 1240, "left": 600 }
+      },
+      "5032860b-2f28-4159-ac5c-0d7ff500230f": {
+        "type": "wait_for_response",
+        "config": { "cases": {} },
+        "position": { "top": 1060, "left": 120 }
+      },
+      "607a3ebb-17cb-4eb4-8cbd-6a38ab818483": {
+        "type": "split_by_random",
+        "config": null,
+        "position": { "top": 260, "left": 260 }
+      },
+      "674075bb-4b6a-4b19-b81e-f09d2e034a93": {
+        "type": "execute_actions",
+        "position": { "top": 1320, "left": 940 }
+      },
+      "6b416502-cbe6-4068-b286-f4bc13e1244f": {
+        "type": "execute_actions",
+        "position": { "top": 760, "left": 180 }
+      },
+      "6d393955-30ca-4f3b-a44d-2df4faaa81aa": {
+        "type": "split_by_groups",
+        "config": { "cases": {} },
+        "position": { "top": 0, "left": 40 }
+      },
+      "9a12d327-7d32-4f40-bd65-90b8bf478aa9": {
+        "type": "execute_actions",
+        "position": { "top": 460, "left": 400 }
+      },
+      "9c43cacf-6143-4086-8dbb-a5d00534ed2c": {
+        "type": "execute_actions",
+        "position": { "top": 1400, "left": 340 }
+      },
+      "ace700e9-a511-4013-864f-02464f0a0271": {
+        "type": "execute_actions",
+        "position": { "top": 1640, "left": 340 }
+      },
+      "b484eb10-cc90-489e-a47e-53199d4ea45c": {
+        "type": "wait_for_response",
+        "config": { "cases": {} },
+        "position": { "top": 1060, "left": 420 }
+      },
+      "bca8ce17-20c7-4f8b-a10c-35d87851dcc0": {
+        "type": "execute_actions",
+        "position": { "top": 100, "left": 280 }
+      },
+      "d623ba8e-23c6-4411-8e01-0ae2eba977fd": {
+        "type": "execute_actions",
+        "position": { "top": 1240, "left": 60 }
+      },
+      "e1039bac-112b-4908-b34b-fef681afc3a1": {
+        "type": "execute_actions",
+        "position": { "top": 1240, "left": 320 }
+      },
+      "e3550b04-864a-4ee5-a890-488b96b77e10": {
+        "type": "split_by_subflow",
+        "config": {},
+        "position": { "top": 1820, "left": 340 }
+      },
+      "e4943052-c434-4ecd-a57e-a9b3612b8249": {
+        "type": "split_by_subflow",
+        "config": {},
+        "position": { "top": 340, "left": 0 }
+      },
+      "ecf7f2eb-fa8a-46c8-b7f5-a9d50a2ba5e1": {
+        "type": "execute_actions",
+        "position": { "top": 780, "left": 660 }
+      },
+      "f8da37b6-c5d9-4521-ab12-48cdd76c258e": {
+        "type": "execute_actions",
+        "position": { "top": 460, "left": 620 }
+      },
+      "fc1341de-e0d3-4eab-83aa-cd8d053dcd21": {
+        "type": "execute_actions",
+        "position": { "top": 760, "left": 400 }
+      }
+    },
+    "stickies": {
+      "1ef4736e-4638-4b2b-ae29-448ba781748f": {
+        "body": "You should redirect users who have already engaged with the test once back to any existing default flow for them to continue their user journey. This ensures they can't re-enter another branch and skew the results of the test.",
+        "color": "yellow",
+        "title": "Why Split by collection?",
+        "position": { "top": 100, "left": 0 }
+      },
+      "2fd49dd1-4706-4e5f-a73c-d58806302f00": {
+        "body": "In this workflow we are testing the effectiveness of 3 videos against each other. Success is measured by the user replying \"yes\" to learn more about Glific. \n\nYou could test other aspects as well.\n \nThe number of nodes, labels, and how success is measured will vary accordingly.\nas well, refer: https://bit.ly/AB_blog",
+        "color": "yellow",
+        "title": "New Note",
+        "position": { "top": 40, "left": 700 }
+      },
+      "de606dc3-a4b0-4c13-87be-0ac3c5902fdf": {
+        "body": "You can even keep each message separate and label them if you want to check how many users in each branch have replied no.",
+        "color": "yellow",
+        "title": "New Note",
+        "position": { "top": 1320, "left": 1160 }
+      }
+    }
+  },
+  "name": "AB Test Workflow",
+  "type": "messaging",
+  "uuid": "AB_TEST_UUID",
+  "vars": ["AB_TEST_UUID"],
+  "nodes": [
+    {
+      "uuid": "6d393955-30ca-4f3b-a44d-2df4faaa81aa",
+      "exits": [
+        {
+          "uuid": "b6070425-0b7c-41ba-a347-691a3e739005",
+          "destination_uuid": "e4943052-c434-4ecd-a57e-a9b3612b8249"
+        },
+        {
+          "uuid": "cbf1cce6-0deb-43f1-81a2-0542d90b1076",
+          "destination_uuid": "bca8ce17-20c7-4f8b-a10c-35d87851dcc0"
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "cases": [
+          {
+            "type": "has_group",
+            "uuid": "7acd4aa9-4294-4273-9bc4-0941ed85a888",
+            "arguments": ["5", "STARTED_AB"],
+            "category_uuid": "19f52b7e-ef6c-448b-8255-8840c890da5c"
+          }
+        ],
+        "operand": "@contact.groups",
+        "categories": [
+          {
+            "name": "STARTED_AB",
+            "uuid": "19f52b7e-ef6c-448b-8255-8840c890da5c",
+            "exit_uuid": "b6070425-0b7c-41ba-a347-691a3e739005"
+          },
+          {
+            "name": "Other",
+            "uuid": "b717b1a3-aefb-4f8e-b37e-4a1a05fd3016",
+            "exit_uuid": "cbf1cce6-0deb-43f1-81a2-0542d90b1076"
+          }
+        ],
+        "result_name": "",
+        "default_category_uuid": "b717b1a3-aefb-4f8e-b37e-4a1a05fd3016"
+      },
+      "actions": []
+    },
+    {
+      "uuid": "bca8ce17-20c7-4f8b-a10c-35d87851dcc0",
+      "exits": [
+        {
+          "uuid": "d4ddead1-460a-4432-8d7f-4553f3d61787",
+          "destination_uuid": "607a3ebb-17cb-4eb4-8cbd-6a38ab818483"
+        }
+      ],
+      "actions": [
+        {
+          "type": "add_contact_groups",
+          "uuid": "7df85e2b-5482-4a32-9bef-88d428480931",
+          "groups": [{ "name": "STARTED_AB", "type": "group", "uuid": "3" }]
+        }
+      ]
+    },
+    {
+      "uuid": "607a3ebb-17cb-4eb4-8cbd-6a38ab818483",
+      "exits": [
+        {
+          "uuid": "12f6b5fb-dff2-497a-addd-2609d4fff335",
+          "destination_uuid": "343017da-58fe-42a8-bd52-9883a63e710b"
+        },
+        {
+          "uuid": "0bc3fb4f-6774-4686-bce5-471e2193373b",
+          "destination_uuid": "9a12d327-7d32-4f40-bd65-90b8bf478aa9"
+        },
+        {
+          "uuid": "e5a96d2b-bf82-4101-8c32-d1103dce26c6",
+          "destination_uuid": "f8da37b6-c5d9-4521-ab12-48cdd76c258e"
+        }
+      ],
+      "router": {
+        "type": "random",
+        "categories": [
+          {
+            "name": "Flow- A (Default flow)",
+            "uuid": "be8d1344-4baf-4724-9c07-eca934e43539",
+            "exit_uuid": "12f6b5fb-dff2-497a-addd-2609d4fff335"
+          },
+          {
+            "name": "Testing Flow- B",
+            "uuid": "47b10940-7c2f-4e62-8f16-0d3e824f0571",
+            "exit_uuid": "0bc3fb4f-6774-4686-bce5-471e2193373b"
+          },
+          {
+            "name": "Testing Flow- C",
+            "uuid": "8e46613f-afe1-44ce-8ee9-d11784b78525",
+            "exit_uuid": "e5a96d2b-bf82-4101-8c32-d1103dce26c6"
+          }
+        ]
+      },
+      "actions": []
+    },
+    {
+      "uuid": "e4943052-c434-4ecd-a57e-a9b3612b8249",
+      "exits": [
+        {
+          "uuid": "77ecd0af-8a71-49d5-8d6b-0410f283ed0d",
+          "destination_uuid": null
+        },
+        {
+          "uuid": "a0ae0c81-ed2c-42ab-8d7f-82ce8171c644",
+          "destination_uuid": null
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "cases": [
+          {
+            "type": "has_only_text",
+            "uuid": "ec487e52-7f14-4d16-88ef-8a12b97cfd0b",
+            "arguments": ["completed"],
+            "category_uuid": "6cd68e7c-834d-4a0b-a30d-1244a655a74e"
+          },
+          {
+            "type": "has_only_text",
+            "uuid": "b69924dd-ea32-4873-8fbc-a3c1115394f7",
+            "arguments": ["expired"],
+            "category_uuid": "b367af45-4a7a-4ea5-a4a6-2b027f7ac8e5"
+          }
+        ],
+        "operand": "@child.status",
+        "categories": [
+          {
+            "name": "Complete",
+            "uuid": "6cd68e7c-834d-4a0b-a30d-1244a655a74e",
+            "exit_uuid": "77ecd0af-8a71-49d5-8d6b-0410f283ed0d"
+          },
+          {
+            "name": "Expired",
+            "uuid": "b367af45-4a7a-4ea5-a4a6-2b027f7ac8e5",
+            "exit_uuid": "a0ae0c81-ed2c-42ab-8d7f-82ce8171c644"
+          }
+        ],
+        "default_category_uuid": "b367af45-4a7a-4ea5-a4a6-2b027f7ac8e5"
+      },
+      "actions": [
+        {
+          "flow": {
+            "name": "Help Workflow",
+            "uuid": "3fa22108-f464-41e5-81d9-d8a298854429"
+          },
+          "type": "enter_flow",
+          "uuid": "6d27471c-940a-4ac0-a718-920adb7d1e69"
+        }
+      ]
+    },
+    {
+      "uuid": "9a12d327-7d32-4f40-bd65-90b8bf478aa9",
+      "exits": [
+        {
+          "uuid": "44432ec8-cac7-4bd8-ae80-6d8883ec69e3",
+          "destination_uuid": "fc1341de-e0d3-4eab-83aa-cd8d053dcd21"
+        }
+      ],
+      "actions": [
+        {
+          "text": "Hi, watch this video to learn about Glific.\n\nVideo B: https://www.youtube.com/watch?v=EO-W0cFy_i8&t=1s\n",
+          "type": "send_msg",
+          "uuid": "04f91daa-697c-4992-9a08-45e138ec81a9",
+          "labels": [
+            {
+              "name": "AB_B_START",
+              "uuid": "4a996677-6fff-4bab-a610-f63dfd06bfe2",
+              "count": 0
+            }
+          ],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "f8da37b6-c5d9-4521-ab12-48cdd76c258e",
+      "exits": [
+        {
+          "uuid": "15cbbc1b-ed3d-4e4e-a055-4d3fcf75512b",
+          "destination_uuid": "ecf7f2eb-fa8a-46c8-b7f5-a9d50a2ba5e1"
+        }
+      ],
+      "actions": [
+        {
+          "text": "Hi, watch this video to learn about Glific.\n\nVideo C: https://www.youtube.com/watch?v=6tQSLj2PIEQ&t=127s",
+          "type": "send_msg",
+          "uuid": "0e5ae3e8-3b89-40fb-b6e9-2b7b4a449daf",
+          "labels": [
+            {
+              "name": "AB_C_START",
+              "uuid": "de4f190a-30cb-4e8d-9e11-302d0ed546e1",
+              "count": 0
+            }
+          ],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "343017da-58fe-42a8-bd52-9883a63e710b",
+      "exits": [
+        {
+          "uuid": "b5b5ec08-b3eb-4745-92b3-f3fdcc7715ad",
+          "destination_uuid": "6b416502-cbe6-4068-b286-f4bc13e1244f"
+        }
+      ],
+      "actions": [
+        {
+          "text": "Hi, watch this video to learn about Glific.\n\nDefault Video A: https://www.youtube.com/watch?v=r6pI3YnINws&t=3s\n\n",
+          "type": "send_msg",
+          "uuid": "492c0d38-5067-420f-89a7-38de3566d978",
+          "labels": [
+            {
+              "name": "AB_A_Start",
+              "uuid": "cbaf61c6-7075-4259-865e-57a5085fc0b3"
+            }
+          ],
+          "all_urns": false,
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "6b416502-cbe6-4068-b286-f4bc13e1244f",
+      "exits": [
+        {
+          "uuid": "66697f2c-092f-4b2d-a5bf-33e0293dc07f",
+          "destination_uuid": "5032860b-2f28-4159-ac5c-0d7ff500230f"
+        }
+      ],
+      "actions": [
+        {
+          "id": "more_about_glific_id",
+          "name": "More about Glific",
+          "text": "{\"content\":{\"caption\":\"\",\"header\":\"More about Glific\",\"text\":\"Would you like to learn more about Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"👍 Yes\",\"type\":\"text\"},{\"title\":\"👎 No\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+          "type": "send_interactive_msg",
+          "uuid": "31b0e8da-dc15-4fd6-844c-68a37344f6ed",
+          "labels": [],
+          "attachment_url": "",
+          "attachment_type": ""
+        }
+      ]
+    },
+    {
+      "uuid": "fc1341de-e0d3-4eab-83aa-cd8d053dcd21",
+      "exits": [
+        {
+          "uuid": "7432c92a-635c-444e-a71c-571c431454cf",
+          "destination_uuid": "b484eb10-cc90-489e-a47e-53199d4ea45c"
+        }
+      ],
+      "actions": [
+        {
+          "id": "more_about_glific_id",
+          "name": "More about Glific",
+          "text": "{\"content\":{\"caption\":\"\",\"header\":\"More about Glific\",\"text\":\"Would you like to learn more about Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"👍 Yes\",\"type\":\"text\"},{\"title\":\"👎 No\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+          "type": "send_interactive_msg",
+          "uuid": "c45e68dd-0cc1-4cd5-b880-4d4de9f12b91",
+          "labels": [],
+          "attachment_url": "",
+          "attachment_type": ""
+        }
+      ]
+    },
+    {
+      "uuid": "ecf7f2eb-fa8a-46c8-b7f5-a9d50a2ba5e1",
+      "exits": [
+        {
+          "uuid": "9ba5828c-2a3c-4457-bec1-700ff25fc0f7",
+          "destination_uuid": "21163eb1-997f-4b08-820d-d42a95a53a58"
+        }
+      ],
+      "actions": [
+        {
+          "id": "more_about_glific_id",
+          "name": "More about Glific",
+          "text": "{\"content\":{\"caption\":\"\",\"header\":\"More about Glific\",\"text\":\"Would you like to learn more about Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"👍 Yes\",\"type\":\"text\"},{\"title\":\"👎 No\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+          "type": "send_interactive_msg",
+          "uuid": "29a2b3c3-e6ad-446e-be1d-8b32925dd7b3",
+          "labels": [],
+          "attachment_url": "",
+          "attachment_type": ""
+        }
+      ]
+    },
+    {
+      "uuid": "5032860b-2f28-4159-ac5c-0d7ff500230f",
+      "exits": [
+        {
+          "uuid": "6f4ae0e2-e3d4-48b7-955e-e0bd70765661",
+          "destination_uuid": "d623ba8e-23c6-4411-8e01-0ae2eba977fd"
+        },
+        {
+          "uuid": "6416ad34-f4c4-4d43-9137-80eefb39dd46",
+          "destination_uuid": "674075bb-4b6a-4b19-b81e-f09d2e034a93"
+        },
+        {
+          "uuid": "b2813288-3f2c-492f-a08f-4b2975bab551",
+          "destination_uuid": "6b416502-cbe6-4068-b286-f4bc13e1244f"
+        },
+        {
+          "uuid": "d33f084d-73d6-4d31-b2d5-e13f1cf34374",
+          "destination_uuid": "6b416502-cbe6-4068-b286-f4bc13e1244f"
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "wait": {
+          "type": "msg",
+          "timeout": {
+            "seconds": 300,
+            "category_uuid": "634a1700-0b1c-4a7f-a169-916c73648b70"
+          }
+        },
+        "cases": [
+          {
+            "type": "has_any_word",
+            "uuid": "7bf34ead-04bb-459f-a789-048a3bb2d873",
+            "arguments": ["Y,yes"],
+            "category_uuid": "2653a9be-b22e-4030-819a-5193db99c12f"
+          },
+          {
+            "type": "has_any_word",
+            "uuid": "5ab26a46-e7bb-4055-87fa-a473d7034995",
+            "arguments": ["N,no"],
+            "category_uuid": "16d39fee-67b8-4ec7-90ce-b27eed463fc1"
+          }
+        ],
+        "operand": "@input.text",
+        "categories": [
+          {
+            "name": "Yes",
+            "uuid": "2653a9be-b22e-4030-819a-5193db99c12f",
+            "exit_uuid": "6f4ae0e2-e3d4-48b7-955e-e0bd70765661"
+          },
+          {
+            "name": "No",
+            "uuid": "16d39fee-67b8-4ec7-90ce-b27eed463fc1",
+            "exit_uuid": "6416ad34-f4c4-4d43-9137-80eefb39dd46"
+          },
+          {
+            "name": "Other",
+            "uuid": "5eae8345-9931-436a-b367-c3c693b5b727",
+            "exit_uuid": "b2813288-3f2c-492f-a08f-4b2975bab551"
+          },
+          {
+            "name": "No Response",
+            "uuid": "634a1700-0b1c-4a7f-a169-916c73648b70",
+            "exit_uuid": "d33f084d-73d6-4d31-b2d5-e13f1cf34374"
+          }
+        ],
+        "result_name": "ab_a",
+        "default_category_uuid": "5eae8345-9931-436a-b367-c3c693b5b727"
+      },
+      "actions": []
+    },
+    {
+      "uuid": "b484eb10-cc90-489e-a47e-53199d4ea45c",
+      "exits": [
+        {
+          "uuid": "808ca384-087d-4746-93f0-a8bb64288213",
+          "destination_uuid": "e1039bac-112b-4908-b34b-fef681afc3a1"
+        },
+        {
+          "uuid": "98a8cbab-fce9-499d-a688-33e6bad72a3b",
+          "destination_uuid": "674075bb-4b6a-4b19-b81e-f09d2e034a93"
+        },
+        {
+          "uuid": "3eb5212a-08b7-4183-9f7d-3cb2f90c882b",
+          "destination_uuid": "fc1341de-e0d3-4eab-83aa-cd8d053dcd21"
+        },
+        {
+          "uuid": "800cff79-cb39-488b-b9bc-490e231aaf1c",
+          "destination_uuid": "fc1341de-e0d3-4eab-83aa-cd8d053dcd21"
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "wait": {
+          "type": "msg",
+          "timeout": {
+            "seconds": 300,
+            "category_uuid": "abb9d982-d961-485d-9bac-1932cc8d45e2"
+          }
+        },
+        "cases": [
+          {
+            "type": "has_any_word",
+            "uuid": "b1c5d6a7-8199-451a-8565-286a22e97cab",
+            "arguments": ["Y,yes"],
+            "category_uuid": "a41f6431-d16a-481a-a2bb-1e610ae608ed"
+          },
+          {
+            "type": "has_any_word",
+            "uuid": "7b44c62e-7fcc-4dd3-a586-a82b85eee513",
+            "arguments": ["N,no"],
+            "category_uuid": "549aba9b-0986-4ca3-89d5-228657ddbec2"
+          }
+        ],
+        "operand": "@input.text",
+        "categories": [
+          {
+            "name": "Yes",
+            "uuid": "a41f6431-d16a-481a-a2bb-1e610ae608ed",
+            "exit_uuid": "808ca384-087d-4746-93f0-a8bb64288213"
+          },
+          {
+            "name": "No",
+            "uuid": "549aba9b-0986-4ca3-89d5-228657ddbec2",
+            "exit_uuid": "98a8cbab-fce9-499d-a688-33e6bad72a3b"
+          },
+          {
+            "name": "Other",
+            "uuid": "c9a29610-6096-496e-95a4-5fd282be4dcf",
+            "exit_uuid": "3eb5212a-08b7-4183-9f7d-3cb2f90c882b"
+          },
+          {
+            "name": "No Response",
+            "uuid": "abb9d982-d961-485d-9bac-1932cc8d45e2",
+            "exit_uuid": "800cff79-cb39-488b-b9bc-490e231aaf1c"
+          }
+        ],
+        "result_name": "ab_b",
+        "default_category_uuid": "c9a29610-6096-496e-95a4-5fd282be4dcf"
+      },
+      "actions": []
+    },
+    {
+      "uuid": "21163eb1-997f-4b08-820d-d42a95a53a58",
+      "exits": [
+        {
+          "uuid": "5abff032-c188-4181-a0a0-f3e9f0d96662",
+          "destination_uuid": "482b7ee4-f9aa-44c4-90f4-06241aa8ce0c"
+        },
+        {
+          "uuid": "c3aad166-aba5-4ae2-a3c7-ddb79a9ee1c9",
+          "destination_uuid": "674075bb-4b6a-4b19-b81e-f09d2e034a93"
+        },
+        {
+          "uuid": "2d6643df-2166-41c8-9e17-822294513d7b",
+          "destination_uuid": "ecf7f2eb-fa8a-46c8-b7f5-a9d50a2ba5e1"
+        },
+        {
+          "uuid": "0087de69-6f17-4137-9fb3-334c54451092",
+          "destination_uuid": "ecf7f2eb-fa8a-46c8-b7f5-a9d50a2ba5e1"
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "wait": {
+          "type": "msg",
+          "timeout": {
+            "seconds": 300,
+            "category_uuid": "268ccd55-0730-4ccf-8743-09ee231d7d26"
+          }
+        },
+        "cases": [
+          {
+            "type": "has_any_word",
+            "uuid": "2034809b-c959-4d08-9793-ab72f3c86e66",
+            "arguments": ["Y,yes"],
+            "category_uuid": "81200e2b-ed4c-4007-9260-1d5dab5837e7"
+          },
+          {
+            "type": "has_any_word",
+            "uuid": "7804df24-3654-4d47-a8b2-3dc606fbc197",
+            "arguments": ["N,no"],
+            "category_uuid": "fd8526af-706a-4ea1-9fc9-f9f7345278d4"
+          }
+        ],
+        "operand": "@input.text",
+        "categories": [
+          {
+            "name": "Yes",
+            "uuid": "81200e2b-ed4c-4007-9260-1d5dab5837e7",
+            "exit_uuid": "5abff032-c188-4181-a0a0-f3e9f0d96662"
+          },
+          {
+            "name": "No",
+            "uuid": "fd8526af-706a-4ea1-9fc9-f9f7345278d4",
+            "exit_uuid": "c3aad166-aba5-4ae2-a3c7-ddb79a9ee1c9"
+          },
+          {
+            "name": "Other",
+            "uuid": "6b892cdc-3f00-40ad-94d4-d7894a5c468e",
+            "exit_uuid": "2d6643df-2166-41c8-9e17-822294513d7b"
+          },
+          {
+            "name": "No Response",
+            "uuid": "268ccd55-0730-4ccf-8743-09ee231d7d26",
+            "exit_uuid": "0087de69-6f17-4137-9fb3-334c54451092"
+          }
+        ],
+        "result_name": "ab_c",
+        "default_category_uuid": "6b892cdc-3f00-40ad-94d4-d7894a5c468e"
+      },
+      "actions": []
+    },
+    {
+      "uuid": "d623ba8e-23c6-4411-8e01-0ae2eba977fd",
+      "exits": [
+        {
+          "uuid": "0b9a4003-541f-493a-b8fa-a75da83fd8f5",
+          "destination_uuid": "9c43cacf-6143-4086-8dbb-a5d00534ed2c"
+        }
+      ],
+      "actions": [
+        {
+          "type": "add_input_labels",
+          "uuid": "9525bfa8-f090-4e69-9303-11d512aeff47",
+          "labels": [
+            {
+              "name": "AB_A_Success",
+              "uuid": "AB_A_Success:ID",
+              "count": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uuid": "e1039bac-112b-4908-b34b-fef681afc3a1",
+      "exits": [
+        {
+          "uuid": "7ce4157e-97cb-4498-93b2-2532f9324806",
+          "destination_uuid": "9c43cacf-6143-4086-8dbb-a5d00534ed2c"
+        }
+      ],
+      "actions": [
+        {
+          "type": "add_input_labels",
+          "uuid": "c166358a-7437-40e3-885a-1e11420394b2",
+          "labels": [
+            {
+              "name": "AB_B_Success",
+              "uuid": "AB_B_Success:ID",
+              "count": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uuid": "482b7ee4-f9aa-44c4-90f4-06241aa8ce0c",
+      "exits": [
+        {
+          "uuid": "b6d803b6-1881-4fd9-8e1c-6f5a5aba5bb7",
+          "destination_uuid": "9c43cacf-6143-4086-8dbb-a5d00534ed2c"
+        }
+      ],
+      "actions": [
+        {
+          "type": "add_input_labels",
+          "uuid": "b732eb9e-b2ce-47b9-9951-4b4a3b51f4e7",
+          "labels": [
+            {
+              "name": "AB_C_Success",
+              "uuid": "AB_C_Success:ID",
+              "count": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uuid": "674075bb-4b6a-4b19-b81e-f09d2e034a93",
+      "exits": [
+        {
+          "uuid": "bb099bd4-55fa-4a8e-856b-1c41d83173be",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "text": "Thank you for your interest in Glific! Send *Hi* to start chatting with us again!",
+          "type": "send_msg",
+          "uuid": "7357ba62-08fe-4e79-a22c-ca1e420bcf10",
+          "labels": [],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "9c43cacf-6143-4086-8dbb-a5d00534ed2c",
+      "exits": [
+        {
+          "uuid": "7f25b1e5-3df3-4674-b619-d95392ec7277",
+          "destination_uuid": "ace700e9-a511-4013-864f-02464f0a0271"
+        }
+      ],
+      "actions": [
+        {
+          "text": "Great! Please register with us",
+          "type": "send_msg",
+          "uuid": "5fce2d57-6a1e-4af3-92ec-373a8b004e8d",
+          "labels": [],
+          "all_urns": false,
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "ace700e9-a511-4013-864f-02464f0a0271",
+      "exits": [
+        {
+          "uuid": "4a7a5c05-d73e-41b9-aa6e-3b2e08ea5548",
+          "destination_uuid": "e3550b04-864a-4ee5-a890-488b96b77e10"
+        }
+      ],
+      "actions": [
+        {
+          "type": "remove_contact_groups",
+          "uuid": "5a570260-44f5-476a-ba7a-2727de331aa0",
+          "groups": [{ "name": "STARTED_AB", "uuid": "3" }],
+          "all_groups": false
+        }
+      ]
+    },
+    {
+      "uuid": "e3550b04-864a-4ee5-a890-488b96b77e10",
+      "exits": [
+        {
+          "uuid": "67a9d0bd-b50c-4c85-9e2e-3a46dd8f6a31",
+          "destination_uuid": null
+        },
+        {
+          "uuid": "22864d6c-879d-49fd-93ef-2593d1180339",
+          "destination_uuid": null
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "cases": [
+          {
+            "type": "has_only_text",
+            "uuid": "52512c89-cee2-4bc0-ad52-8fb695f1b0d4",
+            "arguments": ["completed"],
+            "category_uuid": "b6ac0c66-b57c-403f-9b7f-98769fca0888"
+          },
+          {
+            "type": "has_only_text",
+            "uuid": "f4dfb00a-6873-411a-9bef-fd3d275a8d0f",
+            "arguments": ["expired"],
+            "category_uuid": "e1dd8c34-41bb-49ff-9e53-6714da911ddf"
+          }
+        ],
+        "operand": "@child.status",
+        "categories": [
+          {
+            "name": "Complete",
+            "uuid": "b6ac0c66-b57c-403f-9b7f-98769fca0888",
+            "exit_uuid": "67a9d0bd-b50c-4c85-9e2e-3a46dd8f6a31"
+          },
+          {
+            "name": "Expired",
+            "uuid": "e1dd8c34-41bb-49ff-9e53-6714da911ddf",
+            "exit_uuid": "22864d6c-879d-49fd-93ef-2593d1180339"
+          }
+        ],
+        "default_category_uuid": "e1dd8c34-41bb-49ff-9e53-6714da911ddf"
+      },
+      "actions": [
+        {
+          "flow": {
+            "name": "Registration Workflow",
+            "uuid": "f4f38e00-3a50-4892-99ce-a281fe24d040"
+          },
+          "type": "enter_flow",
+          "uuid": "b2dda0c3-691b-42f6-aff9-44c21e023ca9"
+        }
+      ]
+    }
+  ],
+  "language": "base",
+  "localization": {},
+  "spec_version": "13.2.0",
+  "expire_after_minutes": 10080
+}
