@@ -117,6 +117,7 @@ defmodule Glific.MixProject do
       {:oban, "~> 2.13"},
       {:oban_web, "~> 2.9", organization: "oban", only: @oban_envs},
       {:oban_pro, "~> 0.12", organization: "oban", only: @oban_envs},
+      {:pow, git: "https://github.com/pow-auth/pow.git"},
       {:faker, "~> 0.13"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.15", only: @test_envs},

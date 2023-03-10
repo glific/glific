@@ -106,9 +106,9 @@ defmodule GlificWeb do
   def verified_routes do
     quote do
       use Phoenix.VerifiedRoutes,
-        endpoint: DemoWeb.Endpoint,
-        router: DemoWeb.Router,
-        statics: DemoWeb.static_paths()
+        endpoint: GlificWeb.Endpoint,
+        router: GlificWeb.Router,
+        statics: GlificWeb.static_paths()
     end
   end
 
