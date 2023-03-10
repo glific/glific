@@ -15,7 +15,6 @@ defmodule Glific.BillingTest do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_billing(organization)
     SeedsDev.seed_stats(organization)
-    HTTPoison.start()
     ExVCR.Config.cassette_library_dir("test/support/ex_vcr")
     :ok
   end

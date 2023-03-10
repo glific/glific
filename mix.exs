@@ -105,7 +105,6 @@ defmodule Glific.MixProject do
       {:ex_doc, "~> 0.29", only: [:dev | @test_envs], runtime: false},
       {:inch_ex, "~> 2.0", only: [:dev | @test_envs], runtime: false},
       {:doctor, "~> 0.20"},
-      {:httpoison, "~> 1.8"},
       {:poison, "~> 4.0"},
       {:ex_rated, "~> 2.0"},
       {:absinthe, "~> 1.7"},
