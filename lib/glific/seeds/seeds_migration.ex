@@ -187,6 +187,12 @@ defmodule Glific.Seeds.SeedsMigration do
       is_restricted: false,
       organization_id: organization.id
     })
+
+    Repo.insert!(%Group{
+      label: "STARTED_AB",
+      is_restricted: false,
+      organization_id: organization.id
+    })
   end
 
   @doc false
