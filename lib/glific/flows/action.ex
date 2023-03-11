@@ -647,7 +647,6 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "link_google_sheet"} = action, context, _messages) do
-    IO.inspect(action)
     {context, message} = Sheets.execute(action, context)
 
     {:ok, context, [message]}
