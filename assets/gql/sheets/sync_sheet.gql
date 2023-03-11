@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation syncSheet($id: ID!) {
+  syncSheet(id: $id) {
+    ...SheetFields
+
+    ...ErrorFields
+  }
+}
