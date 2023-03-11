@@ -128,8 +128,8 @@ defmodule Glific.Flows.Action do
     field(:type, :string)
     field(:profile_type, :string)
 
-    field :create_contact, :boolean, default: false
-    field :flow, :map
+    field(:create_contact, :boolean, default: false)
+    field(:flow, :map)
 
     field(:quick_replies, {:array, :string}, default: [])
 
@@ -531,24 +531,19 @@ defmodule Glific.Flows.Action do
       context = Map.update!(context, :uuids_seen, &Map.put(&1, flow_uuid, 1))
 
       action.contacts
-      |> Enum.reduce(
-        {:ok, context, []},
-        fn contact, {_, _, _} ->
-          {:ok, contact} =
-            Repo.fetch_by(Glific.Contacts.Contact, %{
-              id: contact["uuid"],
-              organization_id: context.organization_id
-            })
+      |> Enum.each(fn contact ->
+        {:ok, contact} =
+          Repo.fetch_by(Glific.Contacts.Contact, %{
+            id: contact["uuid"],
+            organization_id: context.organization_id
+          })
 
-          context
-          |> Map.put(:contact, contact)
-          |> Map.put(:contact_id, contact.id)
-          |> Flow.start_sub_flow(flow_uuid, parent_id)
-        end
-      )
+        context
+        |> Map.put(:contact, contact)
+        |> Map.put(:contact_id, contact.id)
+        |> Flow.start_sub_flow(flow_uuid, parent_id)
+      end)
 
-      # We null the messages here, since we are going into a different flow
-      # this clears any potential errors
       {:ok, context, []}
     end
   end
