@@ -117,7 +117,6 @@ defmodule Glific.MixProject do
       {:oban, "~> 2.13"},
       {:oban_web, "~> 2.9", organization: "oban", only: @oban_envs},
       {:oban_pro, "~> 0.12", organization: "oban", only: @oban_envs},
-
       {:faker, "~> 0.13"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.15", only: @test_envs},
@@ -154,8 +153,8 @@ defmodule Glific.MixProject do
       {:dotenvy, "~> 0.1"},
       {:phoenix_swoosh, "~> 1.2"},
       {:gen_smtp, "~> 1.1"},
-      {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git", branch: "dev"},
-      {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
+      {:glific_phil_columns, "~> 3.2"},
+      {:glific_forked_waffle_gcs, "~> 0.1.1"},
       {:pow, git: "https://github.com/pow-auth/pow.git"}
     ]
   end
