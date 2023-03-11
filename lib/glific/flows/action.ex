@@ -74,6 +74,8 @@ defmodule Glific.Flows.Action do
           body: String.t() | nil,
           type: String.t() | nil,
           profile_type: String.t() | nil,
+          create_contact: boolean,
+          flow: map() | nil,
           field: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
@@ -125,6 +127,9 @@ defmodule Glific.Flows.Action do
 
     field(:type, :string)
     field(:profile_type, :string)
+
+    field :create_contact, :boolean, default: false
+    field :flow, :map
 
     field(:quick_replies, {:array, :string}, default: [])
 
@@ -506,7 +511,6 @@ defmodule Glific.Flows.Action do
     if Map.has_key?(context.uuids_seen, flow_uuid) do
       Glific.log_error("Repeated loop, hence finished the flow", false)
     else
-
       # if the action is part of a terminal node, then lets mark this context as
       # complete, and use the parent context
       {:node, node} = context.uuid_map[action.node_uuid]

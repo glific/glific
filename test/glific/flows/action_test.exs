@@ -824,6 +824,46 @@ defmodule Glific.Flows.ActionTest do
              Glific.delete_multiple(context, [:delay, :uuids_seen])
   end
 
+  test "execute an action when type is start_session", attrs do
+    Partners.organization(attrs.organization_id)
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    # preload contact
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
+      |> Repo.preload([:contact, :flow])
+      |> Map.put(:uuid_map, %{"Test UUID" => {:node, %{is_terminal: false}}})
+
+    saas_admin = Repo.get_by(Contact, %{name: "SaaS Admin"})
+    saas_admin_id = to_string(saas_admin.id)
+
+    # using uuid of help flow
+    action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "start_session",
+      contacts: [%{"name" => "NGO Admin", "uuid" => saas_admin_id}],
+      create_contact: false,
+      flow: %{
+        "name" => "Help Workflow",
+        "uuid" => "3fa22108-f464-41e5-81d9-d8a298854429"
+      }
+    }
+
+    assert {:ok, _updated_context, _updated_message_stream} = Action.execute(action, context, [])
+
+    # Check last flow context for saas admin
+    new_flow_context =
+      FlowContext
+      |> where([fc], fc.contact_id == ^saas_admin.id)
+      |> order_by([fc], desc: fc.id)
+      |> Repo.all()
+      |> hd()
+
+    assert new_flow_context.flow_uuid == "3fa22108-f464-41e5-81d9-d8a298854429"
+  end
+
   test "execute an action when type is wait_for_time", attrs do
     Partners.organization(attrs.organization_id)
 
