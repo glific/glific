@@ -824,9 +824,57 @@ defmodule Glific.Flows.ActionTest do
              Glific.delete_multiple(context, [:delay, :uuids_seen])
   end
 
-  test "execute an action when type is start_session", attrs do
-    Partners.organization(attrs.organization_id)
+  test "execute an action when type is link_google_sheet", attrs do
+    sheet =
+      Repo.insert!(%Glific.Sheets.Sheet{
+        label: "Daily Activity",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: attrs.organization_id
+      })
 
+    Repo.insert!(%Glific.Sheets.SheetData{
+      key: "7/11/2022",
+      row_data: %{
+        "day" => "1",
+        "key" => "7/11/2022",
+        "video_link" =>
+          "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
+        "message_hindi" => "Glific में आपका स्वागत है।",
+        "message_english" => "Hi welcome to Glific."
+      },
+      sheet_id: sheet.id,
+      organization_id: attrs.organization_id
+    })
+
+    action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "link_google_sheet",
+      sheet_id: sheet.id,
+      row: "7/11/2022",
+      result_name: "sheet"
+    }
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+    # preload contact
+    context_args = %{
+      contact_id: contact.id,
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(context_args)
+    context = Repo.preload(context, [:contact, :flow])
+
+    assert {:ok, updated_context, _message_stream} = Action.execute(action, context, [])
+    assert updated_context.results["sheet"]["key"] == "7/11/2022"
+    assert updated_context.results["sheet"]["message_english"] == "Hi welcome to Glific."
+    assert updated_context.results["sheet"]["message_hindi"] == "Glific में आपका स्वागत है।"
+  end
+
+  test "execute an action when type is start_session", attrs do
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     # preload contact

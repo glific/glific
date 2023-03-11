@@ -77,6 +77,7 @@ defmodule Glific.Flows.Action do
           create_contact: boolean,
           flow: map() | nil,
           field: map() | nil,
+          row: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
           enter_flow_name: String.t() | nil,
@@ -92,6 +93,7 @@ defmodule Glific.Flows.Action do
           ## this is a custom delay in minutes for wait for time nodes.
           ## Currently we use this only for the wait for time node.
           wait_time: integer() | nil,
+          sheet_id: integer() | nil,
 
           ## this is a custom delay in seconds before processing for the node.
           ## Currently only used for send messages
@@ -138,8 +140,10 @@ defmodule Glific.Flows.Action do
     field(:labels, :map)
     field(:groups, :map)
     field(:contacts, :map)
+    field(:row, :map)
 
     field(:wait_time, :integer)
+    field(:sheet_id, :integer)
     field(:interactive_template_id, :integer)
 
     field(:node_uuid, Ecto.UUID)
@@ -643,6 +647,7 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "link_google_sheet"} = action, context, _messages) do
+    IO.inspect(action)
     {context, message} = Sheets.execute(action, context)
 
     {:ok, context, [message]}
