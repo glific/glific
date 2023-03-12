@@ -94,7 +94,7 @@ config :passwordless_auth,
   verification_code_ttl: 300
 
 # phil columns to seed production data
-config :phil_columns,
+config :glific_phil_columns,
   ensure_all_started: ~w(timex)a
 
 # FunWithFlags configuration.

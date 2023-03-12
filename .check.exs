@@ -8,6 +8,7 @@
     ## curated tools may be disabled (e.g. the check for compilation warnings)
     # {:compiler, false}
     {:sobelow, false},
+    {:mix_audit, false},
     {:npm_test, false},
     {:formatter, false},
 

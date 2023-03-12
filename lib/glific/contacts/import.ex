@@ -141,7 +141,7 @@ defmodule Glific.Contacts.Import do
          %{
            message: "All contacts could not be added",
            details:
-             "Could not fetch the organization with id #{contact_attrs.organization_id}. Error -> #{error}"
+             "Could not fetch the organization with id #{contact_attrs.organization_id}. Error -> #{inspect(error)}"
          }}
     end
   end

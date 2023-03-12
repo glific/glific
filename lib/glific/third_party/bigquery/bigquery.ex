@@ -74,6 +74,16 @@ defmodule Glific.BigQuery do
   end
 
   @doc """
+    Returns the status if the bigquery is enabled for
+    organization.
+  """
+  @spec is_active?(non_neg_integer()) :: boolean()
+  def is_active?(org_id) do
+    organization = Partners.organization(org_id)
+    not is_nil(organization.services["bigquery"])
+  end
+
+  @doc """
   Creating a dataset with messages and contacts as tables
   """
   @spec sync_schema_with_bigquery(non_neg_integer) :: {:ok, any} | {:error, any}
