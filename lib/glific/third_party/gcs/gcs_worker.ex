@@ -18,6 +18,7 @@ defmodule Glific.GCS.GcsWorker do
   alias Waffle.Storage.Google.CloudStorage
 
   alias Glific.{
+    BigQuery,
     BigQuery.BigQueryWorker,
     Jobs,
     Messages,
@@ -308,11 +309,13 @@ defmodule Glific.GCS.GcsWorker do
 
     organization_id = message_media.organization_id
 
-    BigQueryWorker.queue_message_media_data([message_media], organization_id, %{
-      action: :update,
-      max_id: nil,
-      last_updated_at: Timex.now()
-    })
+    if BigQuery.is_active?(organization_id) do
+      BigQueryWorker.queue_message_media_data([message_media], organization_id, %{
+        action: :update,
+        max_id: nil,
+        last_updated_at: Timex.now()
+      })
+    end
 
     {:ok, message_media}
   end
