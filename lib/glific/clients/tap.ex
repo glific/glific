@@ -161,7 +161,7 @@ defmodule Glific.Clients.Tap do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
     school_name = fields["school_name"] || ""
-    formatted_school_name = String.split(school_name, " ")
+    formatted_school_name = String.split(school_name, [" ", ","])
 
     school_short_form =
       if length(formatted_school_name) > 1 do
@@ -326,6 +326,14 @@ defmodule Glific.Clients.Tap do
             attachment_url: question_data["attachmentenglish"]
           }
 
+        "Marathi" ->
+          %{
+            valid_answers: question_data["validresponsesmarathi"],
+            correct_response: question_data["answermarathi"],
+            question: question_data["questionmessagemarathi"],
+            attachment_url: question_data["attachmentenglish"]
+          }
+
         _ ->
           %{}
       end
@@ -407,20 +415,20 @@ defmodule Glific.Clients.Tap do
         "Marathi" ->
           %{
             intro: %{
-              shortcode: activity_info["introtemplateuuidenglish"],
-              params: activity_info["introtemplatevariablesenglish"]
+              shortcode: activity_info["introtemplateuuidmarathi"],
+              params: activity_info["introtemplatevariablesmarathi"]
             },
             intro_no_response: %{
-              shortcode: activity_info["intronoresponsenudgetemplateuuidenglish"],
-              params: activity_info["intronoresponsenudgetemplatevariablesenglish"]
+              shortcode: activity_info["intronoresponsenudgetemplateuuidmarathi"],
+              params: activity_info["intronoresponsenudgetemplatevariablesmarathi"]
             },
             submission_first_no_response: %{
-              shortcode: activity_info["activitysubmissionfirstnoresponsetemplatemessageenglish"],
-              params: activity_info["activitysubmissionfirstnoresponsetemplatevariablesenglish"]
+              shortcode: activity_info["activitysubmissionfirstnoresponsetemplatemessagemarathi"],
+              params: activity_info["activitysubmissionfirstnoresponsetemplatevariablesmarathi"]
             },
             submission_second_no_response: %{
-              shortcode: activity_info["activitysubmissionsecondnoresponsetemplateuuidenglish"],
-              params: activity_info["activitysubmissionsecondnoresponsetemplatevariablesenglish"]
+              shortcode: activity_info["activitysubmissionsecondnoresponsetemplateuuidmarathi"],
+              params: activity_info["activitysubmissionsecondnoresponsetemplatevariablesmarathi"]
             }
           }
 

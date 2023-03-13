@@ -177,8 +177,11 @@ defmodule GlificWeb.Router do
     end
   end
 
-  # implement basic authentication for live dashboard and oban pro
-  defp auth(conn, _opts) do
+  @doc """
+  implement basic authentication for live dashboard and oban pro
+  """
+  @spec auth(any(), any()) :: any()
+  def auth(conn, _opts) do
     username = Application.fetch_env!(:glific, :auth_username)
     password = Application.fetch_env!(:glific, :auth_password)
     Plug.BasicAuth.basic_auth(conn, username: username, password: password)

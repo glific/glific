@@ -37,6 +37,8 @@ defmodule GlificWeb.ConnCase do
       # The default endpoint for testing
       @endpoint GlificWeb.Endpoint
 
+      use GlificWeb, :verified_routes
+
       defmacro auth_query_gql_by(query, user, options \\ []) do
         quote do
           options_user =

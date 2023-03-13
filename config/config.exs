@@ -28,7 +28,7 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 # Configure Oban, its queues and crontab entries
 
 oban_queues = [
-  bigquery: 5,
+  bigquery: 10,
   crontab: 10,
   default: 10,
   dialogflow: 5,
@@ -94,7 +94,7 @@ config :passwordless_auth,
   verification_code_ttl: 300
 
 # phil columns to seed production data
-config :phil_columns,
+config :glific_phil_columns,
   ensure_all_started: ~w(timex)a
 
 # FunWithFlags configuration.

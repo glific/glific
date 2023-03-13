@@ -1,8 +1,7 @@
 defmodule GlificWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :glific
   use Absinthe.Phoenix.Endpoint
-  use Appsignal.Phoenix
-  plug GlificWeb.Plugs.AppsignalAbsinthePlug
+  plug(GlificWeb.Plugs.AppsignalAbsinthePlug)
 
   @moduledoc false
 
@@ -22,32 +21,33 @@ defmodule GlificWeb.Endpoint do
     ]
   )
 
-  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+  socket("/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]])
 
   # Serve at "/" the static files from "priv/static" directory.
   #
   # You should set gzip to true if you are running phx.digest
   # when deploying your static files in production.
-  plug Plug.Static,
+  plug(Plug.Static,
     at: "/",
     from: :glific,
     gzip: false,
-    only: ~w(assets flows fonts images favicon.ico robots.txt)
+    only: GlificWeb.static_paths()
+  )
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
   if code_reloading? do
-    socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
-    plug Phoenix.LiveReloader
-    plug Phoenix.CodeReloader
-    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :glific
+    socket("/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket)
+    plug(Phoenix.LiveReloader)
+    plug(Phoenix.CodeReloader)
+    plug(Phoenix.Ecto.CheckRepoStatus, otp_app: :glific)
   end
 
-  plug Phoenix.LiveDashboard.RequestLogger, param_key: "request_logger"
-  plug Plug.RequestId
-  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+  plug(Phoenix.LiveDashboard.RequestLogger, param_key: "request_logger")
+  plug(Plug.RequestId)
+  plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
 
-  plug :parse_body
+  plug(:parse_body)
 
   opts = [
     parsers: [:urlencoded, :multipart, :json],
@@ -67,21 +67,21 @@ defmodule GlificWeb.Endpoint do
   defp parse_body(conn, _),
     do: Plug.Parsers.call(conn, @parser_without_cache)
 
-  plug Plug.MethodOverride
-  plug Plug.Head
-  plug Plug.Session, @session_options
-  plug CORSPlug
+  plug(Plug.MethodOverride)
+  plug(Plug.Head)
+  plug(Plug.Session, @session_options)
+  plug(CORSPlug)
 
   # add the subdomain/domain
-  plug GlificWeb.SubdomainPlug
-  plug GlificWeb.EnsurePlug
+  plug(GlificWeb.SubdomainPlug)
+  plug(GlificWeb.EnsurePlug)
 
   # we'll use the raw_body here for webhook
-  plug GlificWeb.StripeWebhook
+  plug(GlificWeb.StripeWebhook)
 
   # Gigalixir puts us behind a proxy, hence using this to get the right
   # IP
-  plug RemoteIp
+  plug(RemoteIp)
 
-  plug GlificWeb.Router
+  plug(GlificWeb.Router)
 end

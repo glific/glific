@@ -13,9 +13,7 @@ defmodule Glific.Repo.Migrations.AddMissingIndexes do
     create_if_not_exists(index(:message_broadcasts, :flow_id))
     create_if_not_exists(index(:message_broadcasts, :group_id))
     create_if_not_exists(index(:message_broadcast_contacts, :updated_at))
-    create_if_not_exists(index(:messages_conversations, :updated_at))
     create_if_not_exists(index(:users, :contact_id))
     create_if_not_exists(index(:webhook_logs, :flow_id))
-    create_if_not_exists(index(:webhook_logs, :contact_id))
   end
 end
