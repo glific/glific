@@ -5,7 +5,7 @@ defmodule Glific.PasswordMigration do
 
   import Ecto.Query, warn: false
 
-  def fix_password(user_id, :reverse \\ false) do
+  def fix_password(user_id, reverse \\ false) do
     user = Repo.get!(User, user_id, skip_organization_id: true)
     new_hash = convert_hash_to_new_auth(user.password_hash, reverse)
 
