@@ -67,3 +67,6 @@ config :glific, Glific.Communications.Mailer,
 
 config :glific,
   google_captcha_secret_key: env!("RECAPTCHA_SECRET_KEY", :string!, "This is not a secret")
+
+config :glific,
+  gcs_file_count: env!("GCS_FILE_COUNT", :integer, 5)
