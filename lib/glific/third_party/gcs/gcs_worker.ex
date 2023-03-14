@@ -64,8 +64,9 @@ defmodule Glific.GCS.GcsWorker do
       |> select([m], m.id)
       |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
       |> where([m], m.organization_id == ^organization_id and m.id > ^message_media_id)
+      |> where([m, msg], msg.flow == :inbound)
       |> order_by([m], asc: m.id)
-      |> limit(5)
+      |> limit(files_per_minute_count())
       |> Repo.all()
 
     max_id = if is_list(data), do: List.last(data), else: message_media_id
@@ -82,6 +83,16 @@ defmodule Glific.GCS.GcsWorker do
     :ok
   end
 
+  @spec files_per_minute_count() :: :integer
+  defp files_per_minute_count do
+    Application.fetch_env!(:glific, :gcs_file_count)
+    |> Glific.parse_maybe_integer()
+    |> case do
+      {:ok, count} -> count
+      _ -> 5
+    end
+  end
+
   @doc """
     Queue urls for gcs jobs.
   """
@@ -92,6 +103,7 @@ defmodule Glific.GCS.GcsWorker do
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
       |> where([m, msg], msg.organization_id == ^organization_id)
+      |> where([m, msg], msg.flow == :inbound)
       |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id, msg.flow_id])
       |> order_by([m], [m.inserted_at, m.id])
 
