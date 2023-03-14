@@ -59,6 +59,8 @@ defmodule Glific.GCS.GcsWorker do
 
     message_media_id = message_media_id || 0
 
+    limit = files_per_minute_count()
+
     data =
       MessageMedia
       |> select([m], m.id)
@@ -66,7 +68,7 @@ defmodule Glific.GCS.GcsWorker do
       |> where([m], m.organization_id == ^organization_id and m.id > ^message_media_id)
       |> where([m, msg], msg.flow == :inbound)
       |> order_by([m], asc: m.id)
-      |> limit(files_per_minute_count())
+      |> limit(^limit)
       |> Repo.all()
 
     max_id = if is_list(data), do: List.last(data), else: message_media_id
