@@ -221,11 +221,24 @@ defmodule Glific.Flows.Broadcast do
     |> Repo.preload([:flow])
   end
 
-  @unprocessed_contact_limit 100
+  @spec broadcast_per_minute_count() :: integer()
+  defp broadcast_per_minute_count do
+    default_limit = 100
+
+    Application.fetch_env!(:glific, :broadcast_contact_count)
+    |> Glific.parse_maybe_integer()
+    |> case do
+      {:ok, nil} -> default_limit
+      {:ok, count} -> count
+      _ -> default_limit
+    end
+  end
 
   defp unprocessed_contacts(message_broadcast) do
+    contact_limit = broadcast_per_minute_count()
+
     broadcast_contacts_query(message_broadcast)
-    |> limit(@unprocessed_contact_limit)
+    |> limit(^contact_limit)
     |> order_by([c, _fbc], asc: c.id)
     |> Repo.all()
   end
