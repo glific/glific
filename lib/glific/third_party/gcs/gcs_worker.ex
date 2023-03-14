@@ -90,6 +90,7 @@ defmodule Glific.GCS.GcsWorker do
     Application.fetch_env!(:glific, :gcs_file_count)
     |> Glific.parse_maybe_integer()
     |> case do
+      {:ok, nil} -> 5
       {:ok, count} -> count
       _ -> 5
     end
