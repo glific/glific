@@ -85,7 +85,7 @@ defmodule Glific.GCS.GcsWorker do
     :ok
   end
 
-  @spec files_per_minute_count() :: :integer
+  @spec files_per_minute_count() :: integer()
   defp files_per_minute_count do
     Application.fetch_env!(:glific, :gcs_file_count)
     |> Glific.parse_maybe_integer()
