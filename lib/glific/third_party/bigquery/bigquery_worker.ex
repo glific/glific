@@ -53,15 +53,12 @@ defmodule Glific.BigQuery.BigQueryWorker do
   and queue them up for delivery to bigquery
   """
   @spec perform_periodic(non_neg_integer) :: :ok
-  def perform_periodic(organization_id) do
-    organization = Partners.organization(organization_id)
-    credential = organization.services["bigquery"]
+  def perform_periodic(org_id) do
+    if BigQuery.is_active?(org_id) do
+      Logger.info("Found bigquery credentials for org_id: #{org_id}")
 
-    if credential do
-      Logger.info("Found bigquery credentials for org_id: #{organization_id}")
-
-      Jobs.get_bigquery_jobs(organization_id)
-      |> Enum.each(&init_insert_job(&1, organization_id))
+      Jobs.get_bigquery_jobs(org_id)
+      |> Enum.each(&init_insert_job(&1, org_id))
     end
 
     :ok

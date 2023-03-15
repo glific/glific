@@ -45,7 +45,7 @@ We tested and developed against the following versions:
 
 ```bash
     - erlang : 24.3.4
-    - elixir : 1.13.4-otp-24
+    - elixir : 1.14.2-otp-24
 ```
 
 ### 3. Backend - Download

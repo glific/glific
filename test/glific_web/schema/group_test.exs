@@ -42,7 +42,7 @@ defmodule GlificWeb.Schema.GroupTest do
     assert length(groups) > 0
 
     [group | _] = groups
-    assert get_in(group, ["label"]) == "Restricted Group"
+    assert get_in(group, ["label"]) == "STARTED_AB"
   end
 
   test "organizations groups field returns list of groups in desc order", %{staff: user} do
@@ -64,7 +64,7 @@ defmodule GlificWeb.Schema.GroupTest do
     assert length(groups) > 0
 
     [group | _] = groups
-    assert get_in(group, ["label"]) == "Restricted Group"
+    assert get_in(group, ["label"]) == "STARTED_AB"
   end
 
   test "groups field returns list of groups in various filters", %{staff: user} do

@@ -8,7 +8,7 @@ defmodule Glific.Mails.BalanceAlertMail do
   @spec low_balance_alert(Organization.t(), integer()) :: Swoosh.Email.t()
   def low_balance_alert(org, bsp_balance) do
     subject = """
-    Glific Alert: Your Gupshup balance is low.
+    [URGENT Low balance] : Messages on Glific will stop soon
     """
 
     body = """
