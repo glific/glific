@@ -1,30 +1,36 @@
-FROM elixir:1.13.4
+FROM elixir:latest
 
 WORKDIR /opt/glific
 
-RUN apk update && \
-  apk upgrade --no-cache && \
-  apk add --no-cache \
-    nodejs \
-    yarn \
-    git \
-    build-base \
-    nss \
-    mkcert && \
-  mix local.rebar --force && \
-  mix local.hex --force && \
-  mix hex.repo add oban https://getoban.pro/repo --fetch-public-key ${OBAN_PUBLIC_KEY} --auth-key ${OBAN_AUTH_KEY} && \
-  mix hex.organization auth oban --key ${OBAN_AUTH_KEY} && \
-  mkcert --install && \
-  mkcert glific.test api.glific.test && \
-  mkdir priv/cert &&  \
-  mv glific.test* priv/cert
 
 COPY . .
 
+RUN apt update
+# RUN apt install nodejs
+RUN apt-get install git
+# RUN apt install libnss3-tools -y
+# RUN curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/amd64"
+# RUN chmod +x mkcert-v*-linux-amd64
+# RUN cp mkcert-v*-linux-amd64 /usr/local/bin/mkcert
+# RUN mkcert --install && \
+#   mkcert glific.test api.glific.test && \
+#   # mkdir priv/cert &&  \
+#   mv glific.test* priv/cert
+
+
+RUN mix local.rebar --force
+RUN mix local.hex --force
+
+RUN mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/OSKi0NRF91QVVXlGAhb/BIMLnK8NHcx/EWs+aIWPc --auth-key ************************
+RUN mix hex.organization auth oban --key ************************
+
+
 RUN rm -rf deps/
 
-RUN mix do deps.get, setup
+RUN HEX_HTTP_TIMEOUT=120 mix deps.get
+
+
+RUN mix setup
 
 EXPOSE 4000
 

@@ -9,13 +9,24 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  backend:
+      container_name: glific-backend
+      build:
+        dockerfile: Dockerfile
 
-  erlang:
-    build: .
-    ports:
-      - "4000:4000"
-    env_file:
-      - config/.env.dev.txt
+      environment:
+         # Variables to connect to our Postgres server.
+         PGUSER: postgres
+         PGPASSWORD: postgres
+         PGDATABASE: glific_dev
+         PGPORT: 5432
+         PGHOST: postgres
+      ports:
+      - 4000:4000
+      depends_on:
+      - postgres
+
+
 
 volumes:
   pgdata:

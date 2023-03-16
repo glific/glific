@@ -141,7 +141,7 @@ defmodule Glific.MixProject do
       {:google_api_sheets, "~> 0.29"},
       {:waffle, "~> 1.1"},
       {:waffle_ecto, "~> 0.0"},
-      {:csv, "~> 2.5"},
+      # {:csv, "~> 2.5"},
       {:observer_cli, "~> 1.7"},
       {:apiac_filter_ip_whitelist, "~> 1.0"},
       {:ex_phone_number, "~> 0.3"},
