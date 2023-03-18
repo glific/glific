@@ -32,6 +32,9 @@ defmodule Glific.Erase do
       # need such a large timeout specifically to vacuum the messages
       &Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true)
     )
+
+
+
   end
 
   @doc """
