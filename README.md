@@ -234,9 +234,9 @@ to update your codebase from the glific repository.
 ## Documentation
 
 - [User Guide](https://docs.glific.com)
-- [Postman API docs](https://api.glific.com/)
-- [GraphQL API docs](https://glific.github.io/slate/)
-- [Code Documentation](https://glific.github.io/glific/doc/readme.html#documentation)
+- [API docs (Postman) ](https://api.glific.com/)
+- [API docs (Slate)](https://glific.github.io/slate/)
+- [Code Documentation](https://hexdocs.pm/glific/5.1.6/readme.html)
 - [Recipes](https://github.com/glific/recipes) - Code smaples for some common use cases in glific.
 
 ## Learn more
