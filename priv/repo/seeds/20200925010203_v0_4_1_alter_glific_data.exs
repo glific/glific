@@ -90,8 +90,9 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
       Glific.Repo.put_organization_id(org_id)
 
       query =
-        from c in Credential,
+        from(c in Credential,
           where: c.organization_id == ^org_id and c.provider_id == ^gupshup.id
+        )
 
       if !Repo.exists?(query),
         do:
@@ -133,10 +134,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     add_google_asr()
 
     add_airtel()
+
+    add_chatgpt()
   end
 
   defp add_dialogflow do
-    query = from p in Provider, where: p.shortcode == "dialogflow"
+    query = from(p in Provider, where: p.shortcode == "dialogflow")
 
     # add dialogflow
     if !Repo.exists?(query),
@@ -166,7 +169,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   end
 
   defp add_google_asr do
-    query = from p in Provider, where: p.shortcode == "google_asr"
+    query = from(p in Provider, where: p.shortcode == "google_asr")
 
     # add google_asr
     if !Repo.exists?(query),
@@ -197,7 +200,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
 
   defp add_goth do
     # add goth (since we'll be using other google services also)
-    query = from p in Provider, where: p.shortcode == "goth"
+    query = from(p in Provider, where: p.shortcode == "goth")
 
     if !Repo.exists?(query),
       do:
@@ -227,7 +230,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
 
   defp add_bigquery() do
     # add bigquery
-    query = from p in Provider, where: p.shortcode == "bigquery"
+    query = from(p in Provider, where: p.shortcode == "bigquery")
 
     if !Repo.exists?(query),
       do:
@@ -256,7 +259,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   end
 
   defp add_google_cloud_storage() do
-    query = from p in Provider, where: p.shortcode == "google_cloud_storage"
+    query = from(p in Provider, where: p.shortcode == "google_cloud_storage")
 
     # add google cloud storage (gcs)
     if !Repo.exists?(query),
@@ -285,7 +288,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   end
 
   defp add_navana_tech() do
-    query = from p in Provider, where: p.shortcode == "navana_tech"
+    query = from(p in Provider, where: p.shortcode == "navana_tech")
 
     # add only if does not exist
     if !Repo.exists?(query),
@@ -316,7 +319,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   end
 
   defp add_exotel() do
-    query = from p in Provider, where: p.shortcode == "exotel"
+    query = from(p in Provider, where: p.shortcode == "exotel")
 
     # add only if does not exist
     if !Repo.exists?(query),
@@ -360,8 +363,9 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
       Glific.Repo.put_organization_id(org_id)
 
       query =
-        from c in Credential,
+        from(c in Credential,
           where: c.organization_id == ^org_id and c.provider_id == ^gupshup_enterprise.id
+        )
 
       if !Repo.exists?(query),
         do:
@@ -394,8 +398,9 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
       Glific.Repo.put_organization_id(org_id)
 
       query =
-        from c in Credential,
+        from(c in Credential,
           where: c.organization_id == ^org_id and c.provider_id == ^airtel.id
+        )
 
       if !Repo.exists?(query),
         do:
@@ -417,5 +422,29 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             is_active: false
           })
     end)
+  end
+
+  defp add_chatgpt() do
+    query = from(p in Provider, where: p.shortcode == "chat_gpt")
+
+    # add only if does not exist
+    if !Repo.exists?(query),
+      do:
+        Repo.insert!(%Provider{
+          name: "ChatGPT (Beta)",
+          shortcode: "chat_gpt",
+          description: "First cut (Beta version) to integrate simple chat gpt api.",
+          group: nil,
+          is_required: false,
+          keys: %{},
+          secrets: %{
+            api_key: %{
+              type: :string,
+              label: "Chat GPT API KEY",
+              default: nil,
+              view_only: false
+            }
+          }
+        })
   end
 end

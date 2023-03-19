@@ -225,7 +225,7 @@ defmodule Glific.Clients.Tap do
     end
   end
 
-  def webhook(_, fields), do: fields
+  def webhook(name, fields), do: Glific.Clients.CommonWebhook.webhook(name, fields)
 
   @spec load_activities(non_neg_integer()) :: :ok
   defp load_activities(org_id) do

@@ -251,7 +251,7 @@ defmodule Glific.Clients do
 
     if module_name,
       do: module_name.webhook(name, fields),
-      else: %{error: "Missing webhook function implementation"}
+      else: Glific.Clients.CommonWebhook.webhook(name, fields)
   end
 
   @doc """
