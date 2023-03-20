@@ -45,7 +45,7 @@ We tested and developed against the following versions:
 
 ```bash
     - erlang : 24.3.4
-    - elixir : 1.13.4-otp-24
+    - elixir : 1.14.2-otp-24
 ```
 
 ### 3. Backend - Download
@@ -198,99 +198,10 @@ Go to glific_backend folder in the terminal console.
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
-### 8. Frontend - Install glific_frontend
+### 8. Frontend - Install glific frontend
 
-You cannot do much from the glific_backend unless you are an API developer. To see Glific in its glory, please
+You cannot do much from the glific backend unless you are an API developer. To see Glific in its glory, please
 install [Glific Frontend](https://github.com/glific/glific-frontend/)
-
-```bash
-git clone https://github.com/glific/glific-frontend
-cd glific-frontend
-```
-
-open package.json
-
-```bash
-nano package.json
-```
-
-Copy config file
-
-```bash
-cp .env.example .env
-```
-
-Make sure the .env config file looks like this
-
-```bash
-REACT_APP_API_PREFIX="api"
-# localhost
-REACT_APP_GLIFIC_API_PORT=4001
-REACT_APP_GLIFIC_BACKEND_URL=""
-REACT_APP_APPSIGNAL_API_KEY=""
-REACT_APP_APPLICATION_NAME="Glific: Two way communication platform"
-REACT_APP_LOGFLARE_API_KEY=""
-REACT_APP_LOGFLARE_SOURCE_TOKEN=""
-REACT_APP_STRIPE_PUBLISH_KEY=""
-REACT_APP_RECAPTCHA_CLIENT_KEY="Your recaptch key"
-```
-
-USE Double quotes " " , not single ' ' quotes. And do not leave spaces before or after.
-
-Do not use '' for after the = or leave spaces
-Broken For example 1
-
-```bash
-REACT_APP_GLIFIC_BACKEND_URL='glific.test'
-```
-
-this will be read like this by react https://%27glific.test%27 . notice the %27 which will fail the connection
-
-Broken For example 2
-
-```bash
-REACT_APP_GLIFIC_BACKEND_URL= glific.test'
-```
-
-this will be read like this by react https://%32glific.test%27 . notice the %32 which will fail the connection
-
-Broken For example 3
-
-```bash
-REACT_APP_GLIFIC_BACKEND_URL="glific.test "
-```
-
-this will be read like this by react https://glific.test%32 . notice the %32 which will fail the connection
-
-Broken For example 4
-
-```bash
-REACT_APP_GLIFIC_BACKEND_URL="https://glific.test"
-```
-
-this will be read like this by react https://https://glific.test . notice the extra https:// which will fail the connection
-
-Correct For examples
-
-```bash
-REACT_APP_GLIFIC_BACKEND_URL="glific.test"
-REACT_APP_GLIFIC_BACKEND_URL=glific.test
-```
-
-Now run install
-
-```bash
-yarn setup
-```
-
-If there were no failures
-
-```bash
-yarn start
-```
-
-Go to [`localhost:3000`](http://localhost:3000) from your browser.
-
 ### Front end credentials
 
 - Phone `917834811114`
@@ -323,9 +234,9 @@ to update your codebase from the glific repository.
 ## Documentation
 
 - [User Guide](https://docs.glific.com)
-- [Postman API docs](https://api.glific.com/)
-- [GraphQL API docs](https://glific.github.io/slate/)
-- [Code Documentation](https://glific.github.io/glific/doc/readme.html#documentation)
+- [API docs (Postman) ](https://api.glific.com/)
+- [API docs (Slate)](https://glific.github.io/slate/)
+- [Code Documentation](https://hexdocs.pm/glific/5.1.6/readme.html)
 - [Recipes](https://github.com/glific/recipes) - Code smaples for some common use cases in glific.
 
 ## Learn more

@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "5.1.4",
+      version: "5.1.6",
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -89,6 +89,7 @@ defmodule Glific.MixProject do
       {:phoenix_live_dashboard, "~> 0.7"},
       {:phoenix_view, "~> 2.0"},
       {:pbkdf2_elixir, "~> 2.0"},
+      {:pow, "~> 1.0.28"},
       {:telemetry, "~> 1.0"},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
@@ -156,8 +157,7 @@ defmodule Glific.MixProject do
       {:phoenix_swoosh, "~> 1.2"},
       {:gen_smtp, "~> 1.1"},
       {:glific_phil_columns, "~> 3.2"},
-      {:glific_forked_waffle_gcs, "~> 0.1.1"},
-      {:pow, git: "https://github.com/pow-auth/pow.git"}
+      {:glific_forked_waffle_gcs, "~> 0.1.1"}
     ]
   end
 
