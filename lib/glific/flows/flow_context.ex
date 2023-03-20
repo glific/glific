@@ -45,7 +45,8 @@ defmodule Glific.Flows.FlowContext do
     :recent_inbound,
     :recent_outbound,
     :message_broadcast_id,
-    :profile_id
+    :profile_id,
+    :reason
   ]
 
   # we store one more than the number of messages specified here
@@ -102,6 +103,7 @@ defmodule Glific.Flows.FlowContext do
     field(:is_background_flow, :boolean, default: false)
     field(:is_await_result, :boolean, default: false)
     field(:is_killed, :boolean, default: false)
+    field(:reason, :string, default: nil)
 
     field(:delay, :integer, default: 0, virtual: true)
 
@@ -226,15 +228,41 @@ defmodule Glific.Flows.FlowContext do
     message = get_in(opts, [:event_meta, :message])
     parent_id = get_in(opts, [:event_meta, :parent_id])
     source = Keyword.get(opts, :source, "")
+    IO.inspect(source)
+    IO.inspect(source)
+
+
+    event_label =
+      cond do
+        !is_nil(message) && source == "reset_all_contexts" ->
+          "Flow terminated abruptly"
+
+        !is_nil(parent_id) ->
+          "Child Flow Completed"
+
+        true ->
+          "Flow Completed"
+      end
 
     {:ok, context} =
-      update_flow_context(
-        context,
-        %{
-          completed_at: DateTime.utc_now(),
-          is_killed: is_killed
-        }
-      )
+      if is_killed do
+        update_flow_context(
+          context,
+          %{
+            completed_at: DateTime.utc_now(),
+            is_killed: is_killed,
+            reason: event_label
+          }
+        )
+      else
+        update_flow_context(
+          context,
+          %{
+            completed_at: DateTime.utc_now(),
+            is_killed: is_killed
+          }
+        )
+      end
 
     :telemetry.execute(
       [:glific, :flow, :stop],
@@ -248,18 +276,6 @@ defmodule Glific.Flows.FlowContext do
     )
 
     context = Repo.preload(context, [:flow, :contact])
-
-    event_label =
-      cond do
-        !is_nil(message) && source == "reset_all_contexts" ->
-          "Flow terminated abruptly"
-
-        !is_nil(parent_id) ->
-          "Child Flow Completed"
-
-        true ->
-          "Flow Completed"
-      end
 
     {:ok, _} =
       Contacts.capture_history(context.contact, :contact_flow_ended, %{
@@ -511,13 +527,6 @@ defmodule Glific.Flows.FlowContext do
 
     now = DateTime.utc_now()
 
-    FlowContext
-    |> where([fc], fc.contact_id == ^contact_id)
-    |> where([fc], is_nil(fc.completed_at))
-    |> add_date_clause(after_insert_date)
-    # lets not touch the contexts which are waiting to be woken up at a specific time
-    |> where([fc], fc.is_background_flow == false)
-    |> Repo.update_all(set: [completed_at: now, updated_at: now, is_killed: true])
 
     event_label =
       cond do
@@ -533,6 +542,14 @@ defmodule Glific.Flows.FlowContext do
         true ->
           "Mark all the flow as completed."
       end
+
+    FlowContext
+    |> where([fc], fc.contact_id == ^contact_id)
+    |> where([fc], is_nil(fc.completed_at))
+    |> add_date_clause(after_insert_date)
+    # lets not touch the contexts which are waiting to be woken up at a specific time
+    |> where([fc], fc.is_background_flow == false)
+    |> Repo.update_all(set: [completed_at: now, updated_at: now, is_killed: true, reason: event_label])
 
     {:ok, _} =
       Contacts.capture_history(contact_id, :contact_flow_ended_all, %{
