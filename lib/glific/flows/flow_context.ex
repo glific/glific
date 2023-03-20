@@ -229,7 +229,6 @@ defmodule Glific.Flows.FlowContext do
     parent_id = get_in(opts, [:event_meta, :parent_id])
     source = Keyword.get(opts, :source, "")
 
-
     event_label =
       cond do
         !is_nil(message) && source == "reset_all_contexts" ->
@@ -524,7 +523,6 @@ defmodule Glific.Flows.FlowContext do
     source = Keyword.get(opts, :source, "")
 
     now = DateTime.utc_now()
-
 
     event_label =
       cond do
