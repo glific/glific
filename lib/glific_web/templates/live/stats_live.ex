@@ -10,7 +10,7 @@ defmodule GlificWeb.StatsLive do
   @spec render(Plug.Conn.t()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
-    <h1> Current temperature: <%= @temperature %> </h1>
+    <h1>Current temperature: <%= @temperature %></h1>
     """
   end
 
