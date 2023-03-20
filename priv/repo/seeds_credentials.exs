@@ -25,10 +25,11 @@ defmodule Glific.Seeds.Credentials do
     }
 
     query =
-      from c in Credential,
+      from(c in Credential,
         join: p in Provider,
         on: c.provider_id == p.id,
         where: p.shortcode == "gupshup" and c.organization_id == ^organization_id
+      )
 
     Repo.update_all(query, set: [secrets: secrets])
   end
