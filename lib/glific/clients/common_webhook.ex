@@ -37,5 +37,5 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  def webhook(_, _fields), do: %{}
+  def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 end
