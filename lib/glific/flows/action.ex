@@ -521,26 +521,14 @@ defmodule Glific.Flows.Action do
 
       {context, parent_id} =
         if node.is_terminal == true,
-          do:
-            {FlowContext.reset_one_context(context,
-               source: "start_session",
-               event_meta: %{
-                 "action" => "#{inspect(action)}",
-                 "current_flow_uuid" => context.flow_uuid,
-                 "new_flow" => flow_uuid
-               }
-             ), context.parent_id},
+          do: reset_one_context(context, "start_session", action, flow_uuid),
           else: {context, context.id}
 
       context = Map.update!(context, :uuids_seen, &Map.put(&1, flow_uuid, 1))
 
       action.contacts
       |> Enum.each(fn contact ->
-        {:ok, contact} =
-          Repo.fetch_by(Glific.Contacts.Contact, %{
-            id: contact["uuid"],
-            organization_id: context.organization_id
-          })
+        contact = Repo.get_by(Contact, %{id: contact["uuid"]})
 
         context
         |> Map.put(:contact, contact)
@@ -621,15 +609,7 @@ defmodule Glific.Flows.Action do
 
       {context, parent_id} =
         if node.is_terminal == true,
-          do:
-            {FlowContext.reset_one_context(context,
-               source: "enter_flow",
-               event_meta: %{
-                 "action" => "#{inspect(action)}",
-                 "current_flow_uuid" => context.flow_uuid,
-                 "new_flow" => flow_uuid
-               }
-             ), context.parent_id},
+          do: reset_one_context(context, "enter_flow", action, flow_uuid),
           else: {context, context.id}
 
       # we start off a new context here and don't really modify the current context
@@ -852,6 +832,19 @@ defmodule Glific.Flows.Action do
 
   def execute(action, _context, _messages),
     do: raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
+
+  @spec reset_one_context(FlowContext.t(), String.t(), Action.t(), String.t()) ::
+          {FlowContext.t(), non_neg_integer()}
+  defp reset_one_context(context, source, action, flow_uuid) do
+    {FlowContext.reset_one_context(context,
+       source: source,
+       event_meta: %{
+         "action" => "#{inspect(action)}",
+         "current_flow_uuid" => context.flow_uuid,
+         "new_flow" => flow_uuid
+       }
+     ), context.parent_id}
+  end
 
   @spec add_flow_label(FlowContext.t(), String.t()) :: nil
   defp add_flow_label(%{last_message: nil}, _flow_label), do: nil
