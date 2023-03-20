@@ -440,7 +440,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           secrets: %{
             api_key: %{
               type: :string,
-              label: "Chat GPT API KEY",
+              label: "OpenAI API KEY",
               default: nil,
               view_only: false
             }
