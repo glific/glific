@@ -1,9 +1,9 @@
 defmodule Glific.Clients.CommonWebhook do
   @moduledoc """
-  Common webhooks which we can call with any clients
+  Common webhooks which we can call with any clients.
   """
 
-  import Ecto.Query, warn: false
+  alias Glific.OpenAI.ChatGPT
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -20,7 +20,7 @@ defmodule Glific.Clients.CommonWebhook do
         parsed_msg: "Could not parsed"
       }
     else
-      Glific.ChatGPT.parse(org_id, question_text)
+      ChatGPT.parse(org_id, question_text)
       |> case do
         {:ok, text} ->
           %{
