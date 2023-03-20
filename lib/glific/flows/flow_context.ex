@@ -228,8 +228,6 @@ defmodule Glific.Flows.FlowContext do
     message = get_in(opts, [:event_meta, :message])
     parent_id = get_in(opts, [:event_meta, :parent_id])
     source = Keyword.get(opts, :source, "")
-    IO.inspect(source)
-    IO.inspect(source)
 
 
     event_label =
