@@ -14,7 +14,12 @@ defmodule Glific.Clients.CommonWebhook do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     question_text = fields["question_text"]
 
-    if(question_text not in [nil, ""]) do
+    if question_text in [nil, ""] do
+      %{
+        success: false,
+        parsed_msg: "Could not parsed"
+      }
+    else
       Glific.ChatGPT.parse(org_id, question_text)
       |> case do
         {:ok, text} ->
@@ -29,11 +34,6 @@ defmodule Glific.Clients.CommonWebhook do
             parsed_msg: error
           }
       end
-    else
-      %{
-        success: false,
-        parsed_msg: "Could not parsed"
-      }
     end
   end
 
