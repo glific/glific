@@ -19,7 +19,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
 
   """
-  @spec parse(String.t(), non_neg_integer()) :: tuple()
+  @spec parse(non_neg_integer(), String.t()) :: tuple()
   def parse(org_id, question_text) do
     data = @default_params |> Map.merge(%{"prompt" => question_text})
 

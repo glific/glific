@@ -425,7 +425,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   end
 
   defp add_open_ai() do
-    query = from(p in Provider, where: p.shortcode == "chat_gpt")
+    query = from(p in Provider, where: p.shortcode == "open_ai")
 
     # add only if does not exist
     if !Repo.exists?(query),
