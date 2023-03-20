@@ -65,7 +65,7 @@ defmodule Glific.OpenAI.ChatGPT do
   defp credentials(org_id) do
     organization = Partners.organization(org_id)
 
-    organization.services["chat_gpt"]
+    organization.services["open_ai"]
     |> case do
       nil ->
         {:error, "Secret not found."}

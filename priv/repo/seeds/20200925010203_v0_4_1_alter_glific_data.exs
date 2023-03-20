@@ -135,7 +135,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
 
     add_airtel()
 
-    add_chatgpt()
+    add_open_ai()
   end
 
   defp add_dialogflow do
@@ -424,15 +424,15 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     end)
   end
 
-  defp add_chatgpt() do
+  defp add_open_ai() do
     query = from(p in Provider, where: p.shortcode == "chat_gpt")
 
     # add only if does not exist
     if !Repo.exists?(query),
       do:
         Repo.insert!(%Provider{
-          name: "ChatGPT (Beta)",
-          shortcode: "chat_gpt",
+          name: "OpenAI (ChatGPT) (Beta)",
+          shortcode: "open_ai",
           description: "First cut (Beta version) to integrate simple chat gpt api.",
           group: nil,
           is_required: false,
