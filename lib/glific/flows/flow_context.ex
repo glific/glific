@@ -242,24 +242,14 @@ defmodule Glific.Flows.FlowContext do
       end
 
     {:ok, context} =
-      if is_killed do
         update_flow_context(
           context,
           %{
             completed_at: DateTime.utc_now(),
             is_killed: is_killed,
-            reason: event_label
+            reason:  (if is_killed == true, do: event_label, else: nil)
           }
         )
-      else
-        update_flow_context(
-          context,
-          %{
-            completed_at: DateTime.utc_now(),
-            is_killed: is_killed
-          }
-        )
-      end
 
     :telemetry.execute(
       [:glific, :flow, :stop],
