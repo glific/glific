@@ -509,35 +509,16 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "start_session"} = action, context, _messages) do
-    flow_uuid = action.flow["uuid"]
+    flow = Repo.get_by(Flow, %{uuid: action.flow["uuid"]})
 
-    # check if we've seen this flow in this execution
-    if Map.has_key?(context.uuids_seen, flow_uuid) do
-      Glific.log_error("Repeated loop, hence finished the flow", false)
-    else
-      # if the action is part of a terminal node, then lets mark this context as
-      # complete, and use the parent context
-      {:node, node} = context.uuid_map[action.node_uuid]
+    action.contacts
+    |> Enum.each(fn contact ->
+      contact = Repo.get_by(Contact, %{id: contact["uuid"]})
 
-      {context, parent_id} =
-        if node.is_terminal == true,
-          do: reset_one_context(context, "start_session", action, flow_uuid),
-          else: {context, context.id}
+      Flows.start_contact_flow(flow.id, contact, %{"parent" => context.results})
+    end)
 
-      context = Map.update!(context, :uuids_seen, &Map.put(&1, flow_uuid, 1))
-
-      action.contacts
-      |> Enum.each(fn contact ->
-        contact = Repo.get_by(Contact, %{id: contact["uuid"]})
-
-        context
-        |> Map.put(:contact, contact)
-        |> Map.put(:contact_id, contact.id)
-        |> Flow.start_sub_flow(flow_uuid, parent_id)
-      end)
-
-      {:ok, context, []}
-    end
+    {:ok, context, []}
   end
 
   def execute(%{type: "set_contact_language"} = action, context, messages) do
