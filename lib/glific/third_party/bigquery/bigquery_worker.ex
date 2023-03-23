@@ -660,7 +660,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             wakeup_at: BigQuery.format_date(row.wakeup_at, organization_id),
             completed_at: BigQuery.format_date(row.completed_at, organization_id),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
-            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+            updated_at: BigQuery.format_date(row.updated_at, organization_id),
+            reason: row.reason
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
