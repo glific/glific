@@ -590,7 +590,15 @@ defmodule Glific.Flows.Action do
 
       {context, parent_id} =
         if node.is_terminal == true,
-          do: reset_one_context(context, "enter_flow", action, flow_uuid),
+          do:
+            {FlowContext.reset_one_context(context,
+               source: "enter_flow",
+               event_meta: %{
+                 "action" => "#{inspect(action)}",
+                 "current_flow_uuid" => context.flow_uuid,
+                 "new_flow" => flow_uuid
+               }
+             ), context.parent_id},
           else: {context, context.id}
 
       # we start off a new context here and don't really modify the current context
@@ -813,19 +821,6 @@ defmodule Glific.Flows.Action do
 
   def execute(action, _context, _messages),
     do: raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
-
-  @spec reset_one_context(FlowContext.t(), String.t(), Action.t(), String.t()) ::
-          {FlowContext.t(), non_neg_integer()}
-  defp reset_one_context(context, source, action, flow_uuid) do
-    {FlowContext.reset_one_context(context,
-       source: source,
-       event_meta: %{
-         "action" => "#{inspect(action)}",
-         "current_flow_uuid" => context.flow_uuid,
-         "new_flow" => flow_uuid
-       }
-     ), context.parent_id}
-  end
 
   @spec add_flow_label(FlowContext.t(), String.t()) :: nil
   defp add_flow_label(%{last_message: nil}, _flow_label), do: nil
