@@ -14,6 +14,7 @@ defmodule GlificWeb.Schema.SheetTest do
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/sheets/by_id.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/sheets/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/sheets/delete.gql")
+  load_gql(:sync_sheet, GlificWeb.Schema, "assets/gql/sheets/sync_sheet.gql")
 
   setup do
     Tesla.Mock.mock(fn
@@ -64,6 +65,12 @@ defmodule GlificWeb.Schema.SheetTest do
     assert {:ok, query_data} = result
     label = get_in(query_data, [:data, "createSheet", "sheet", "label"])
     assert label == "new sheet"
+    id = get_in(query_data, [:data, "createSheet", "sheet", "id"])
+
+    result = auth_query_gql_by(:sync_sheet, user, variables: %{"id" => id})
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "syncSheet", "sheet", "sheetDataCount"]) == 4
   end
 
   test "sheet id returns one sheet or nil", %{staff: user} = attrs do
