@@ -125,7 +125,7 @@ defmodule Glific.Providers.Gupshup.Template do
           {String.t(), map()} | {String.t(), String.t()}
   defp process_templates(org_id, template, db_templates) do
     with {:ok, _template} <- validate_dropdowns(template),
-         {:ok, language} <- Repo.fetch_by(Language, %{label_locale: template["Language"]}),
+         {:ok, language} <- Repo.fetch_by(Language, %{label: template["Language"]}),
          {:ok, _template} <- check_duplicate(template, db_templates, language.id) do
       %{
         body: String.replace(template["Message"], "\r\n", ""),
@@ -285,7 +285,7 @@ defmodule Glific.Providers.Gupshup.Template do
       sample_msg_variables
       |> Enum.zip(1..length(sample_msg_variables))
       |> Enum.reduce(body, fn {value, index}, acc ->
-        String.replace(acc, "#{index}", value)
+        String.replace(acc, "[#{index}]", "[#{value}]")
       end)
 
     if String.equivalent?(parsed_body, sample_msg),
