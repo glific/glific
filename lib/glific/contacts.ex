@@ -313,18 +313,17 @@ defmodule Glific.Contacts do
     where = "WHERE organization_id = #{contact.organization_id} AND contact_id = #{contact.id}"
 
     # lets delete manually all the tables where most of the data is
-    tasks =
-      [
-        "DELETE FROM messages #{where}",
-        "DELETE FROM contact_histories #{where}",
-        "DELETE FROM contacts_groups #{where}",
-        "DELETE FROM flow_contexts #{where}"
-      ]
-      |> Enum.map(
-        &Task.async(fn -> Repo.query!(&1, [], timeout: 400_000, skip_organization_id: true) end)
-      )
+    [
+      "DELETE FROM messages #{where}",
+      "DELETE FROM contact_histories #{where}",
+      "DELETE FROM contacts_groups #{where}",
+      "DELETE FROM flow_contexts #{where}"
+    ]
+    |> Enum.map(
+      &Task.async(fn -> Repo.query!(&1, [], timeout: 400_000, skip_organization_id: true) end)
+    )
+    |> Task.await_many()
 
-    Task.await_many(tasks)
     Repo.delete(contact)
   end
 
