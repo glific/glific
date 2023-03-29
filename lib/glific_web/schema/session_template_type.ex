@@ -6,10 +6,11 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
-  alias Glific.Templates
   alias Glific.Repo
+  alias Glific.Templates
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
+
 
   object :session_template_result do
     field :session_template, :session_template
