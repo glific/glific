@@ -249,10 +249,11 @@ defmodule Glific.Providers.Gupshup.Template do
   defp is_valid_language?(_language), do: {:error, "Invalid Language"}
 
   @spec is_valid_category?(String.t()) :: true | {:error, String.t()}
-  defp is_valid_category?(category) when category in ["UTILITY", "MARKETING", "AUTHENTICATION"],
-    do: true
-
-  defp is_valid_category?(_category), do: {:error, "Invalid Category"}
+  defp is_valid_category?(category) do
+    if category in Templates.list_whatsapp_hsm_categories(),
+      do: true,
+      else: {:error, "Invalid Category"}
+  end
 
   @spec is_valid_shortcode?(String.t()) :: true | {:error, String.t()}
   defp is_valid_shortcode?(shortcode) do

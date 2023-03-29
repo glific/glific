@@ -713,7 +713,7 @@ defmodule Glific.TemplatesTest do
                 "status" => "success",
                 "templates" => [
                   %{
-                    "category" => "UTILITY",
+                    "category" => Templates.list_whatsapp_hsm_categories() |> Enum.at(0),
                     "createdOn" => 1_595_904_220_466,
                     "data" => "Hi {{1}}, What is your status | [cold] | [warm]",
                     "elementName" => "status_response",
