@@ -983,15 +983,15 @@ defmodule Glific.Partners do
   @doc """
   Common function to get the goth config
   """
-  @spec get_goth_token(non_neg_integer, String.t()) :: nil | Goth.Token.t()
-  def get_goth_token(organization_id, provider_shortcode) do
+  @spec get_goth_token(non_neg_integer, String.t(), Keyword.t()) :: nil | Goth.Token.t()
+  def get_goth_token(organization_id, provider_shortcode, opts \\ []) do
     key = {:provider_token, provider_shortcode}
     organization = organization(organization_id)
 
     if is_nil(organization.services[provider_shortcode]) do
       nil
     else
-      Caches.fetch(organization_id, key, &load_goth_token/1)
+      Caches.fetch(organization_id, key, fn key -> load_goth_token(key, opts) end)
       |> case do
         {_status, res} when is_map(res) ->
           res
@@ -1016,7 +1016,20 @@ defmodule Glific.Partners do
     if credentials == :error do
       {:ignore, nil}
     else
-      Goth.Token.fetch(source: {:service_account, credentials})
+      IO.inspect("loading token again")
+
+      Goth.Token.fetch(
+        source:
+          {:service_account, credentials,
+           [
+             scopes: [
+               "https://www.googleapis.com/auth/drive",
+               "https://www.googleapis.com/auth/drive.file",
+               "https://www.googleapis.com/auth/drive.readonly",
+               "https://www.googleapis.com/auth/spreadsheets"
+             ]
+           ]}
+      )
       |> case do
         {:ok, token} ->
           opts = [ttl: :timer.seconds(token.expires - System.system_time(:second) - 60)]
