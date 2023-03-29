@@ -1489,6 +1489,13 @@ if Code.ensure_loaded?(Faker) do
         is_reserved: true,
         organization_id: organization.id
       })
+
+      Repo.insert!(%Role{
+        label: "Glific Admin",
+        description: "Super Admin Role for Glific",
+        is_reserved: true,
+        organization_id: organization.id
+      })
     end
 
     @doc """
