@@ -36,14 +36,20 @@ defmodule Glific.Contacts.Import do
     }
 
     results =
-        case data["opt_in"] do
-          "" ->  Map.put(results, :optin, nil)
-          nil -> result
-          _ ->  Map.put(
+      case data["opt_in"] do
+        "" ->
+          Map.put(results, :optin, nil)
+
+        nil ->
+          results
+
+        _ ->
+          Map.put(
             results,
             :optin,
-            elem(Timex.parse(data["opt_in"], date_format), 1)_
-        end
+            elem(Timex.parse(data["opt_in"], date_format), 1)
+          )
+      end
 
     cond do
       user.roles == [:glific_admin] ->
