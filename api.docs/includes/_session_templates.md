@@ -217,7 +217,7 @@ query {
 ```json
 {
   "data": {
-    "whatsappHsmCategories": ["TRANSACTIONAL", "MARKETING", "OTP"]
+    "whatsappHsmCategories": ["UTILITY", "MARKETING", "AUTHENTICATION"]
   }
 }
 ```
@@ -349,7 +349,7 @@ mutation RootMutationType($data: String!) {
 }
 
 {
-  "data": "Language,Title,Message,Sample Message,Element Name,Category,Attachment Type,Attachment URL,Has Buttons,Button Type,CTA Button 1 Type,CTA Button 1 Title,CTA Button 1 Value,CTA Button 2 Type,CTA Button 2 Title,CTA Button 2 Value,Quick Reply 1 Title,Quick Reply 2 Title,Quick Reply 3 Title\r\nEnglish,Signup Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",welcome_arogya,TRANSACTIONAL,,,TRUE,,,,,,,,,,\r\nEnglish,Welcome Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",signup_arogya,TRANSACTIONAL,,,TRUE,QUICK_REPLY,,,,,,,Yes,No,\r\nEnglish,Help Arogya,\"Hi {{1}},Need help?\",\"Hi [Akhilesh],Need help?\",help_arogya,TRANSACTIONAL,,,TRUE,CALL_TO_ACTION,Phone Number,Call here,8979120220,URL,Visit Here,https://github.com/glific,,,\r\nEnglish,Activity,\"Hi {{1}},\nLook at this image.\",\"Hi [Akhilesh],\nLook at this image.\",activity,TRANSACTIONAL,image,https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg,FALSE,,,,,,,,,,"
+  "data": "Language,Title,Message,Sample Message,Element Name,Category,Attachment Type,Attachment URL,Has Buttons,Button Type,CTA Button 1 Type,CTA Button 1 Title,CTA Button 1 Value,CTA Button 2 Type,CTA Button 2 Title,CTA Button 2 Value,Quick Reply 1 Title,Quick Reply 2 Title,Quick Reply 3 Title\r\nEnglish,Signup Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",welcome_arogya,UTILITY,,,TRUE,,,,,,,,,,\r\nEnglish,Welcome Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",signup_arogya,UTILITY,,,TRUE,QUICK_REPLY,,,,,,,Yes,No,\r\nEnglish,Help Arogya,\"Hi {{1}},Need help?\",\"Hi [Akhilesh],Need help?\",help_arogya,UTILITY,,,TRUE,CALL_TO_ACTION,Phone Number,Call here,8979120220,URL,Visit Here,https://github.com/glific,,,\r\nEnglish,Activity,\"Hi {{1}},\nLook at this image.\",\"Hi [Akhilesh],\nLook at this image.\",activity,UTILITY,image,https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg,FALSE,,,,,,,,,,"
 }
 ```
 

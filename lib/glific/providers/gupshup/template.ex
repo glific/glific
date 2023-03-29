@@ -249,7 +249,7 @@ defmodule Glific.Providers.Gupshup.Template do
   defp is_valid_language?(_language), do: {:error, "Invalid Language"}
 
   @spec is_valid_category?(String.t()) :: true | {:error, String.t()}
-  defp is_valid_category?(category) when category in ["TRANSACTIONAL", "MARKETING", "OTP"],
+  defp is_valid_category?(category) when category in ["UTILITY", "MARKETING", "AUTHENTICATION"],
     do: true
 
   defp is_valid_category?(_category), do: {:error, "Invalid Category"}
