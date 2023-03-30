@@ -18,16 +18,12 @@ defmodule Glific.Sheets.GoogleSheets do
     "https://www.googleapis.com/auth/spreadsheets.readonly"
   ]
 
-  def test(org_id) do
-    spreadsheet_id = "161lpwhhxGyc-DwBkyVn25XMvPVuv1r1LL3udgye3cYE"
-
-    insert_row(org_id, spreadsheet_id, %{
-      range: "A:A",
-      data: [["1", "2", "3"]]
-    })
-  end
-
-  def insert_row(org_id, spreadsheet_id, %{range: range, data: data} = _params) do
+  @doc """
+    Insert new row to the spreadsheet.
+  """
+  @spec insert_row(non_neg_integer(), String.t(), map()) ::
+          GoogleApi.Sheets.V4.Model.AppendValuesResponse.t()
+  def(insert_row(org_id, spreadsheet_id, %{range: range, data: data} = _params)) do
     {:ok, %{conn: conn}} = fetch_credentials(org_id)
 
     params = [
@@ -45,7 +41,6 @@ defmodule Glific.Sheets.GoogleSheets do
   @spec fetch_credentials(non_neg_integer) :: nil | {:ok, any} | {:error, any}
   def fetch_credentials(organization_id) do
     organization = Partners.organization(organization_id)
-    org_contact = organization.contact
 
     organization.services["bigquery"]
     |> case do
@@ -53,15 +48,15 @@ defmodule Glific.Sheets.GoogleSheets do
         {:ok, "Google API is not active"}
 
       credentials ->
-        decode_credential(credentials, org_contact, organization_id)
+        decode_credential(credentials, organization_id)
     end
   end
 
   @doc """
   Decoding the credential for bigquery
   """
-  @spec decode_credential(map(), map(), non_neg_integer) :: {:ok, any} | {:error, any}
-  def decode_credential(credentials, org_contact, organization_id) do
+  @spec decode_credential(map(), non_neg_integer) :: {:ok, any} | {:error, any}
+  def decode_credential(credentials, organization_id) do
     case Jason.decode(credentials.secrets["service_account"]) do
       {:ok, _service_account} ->
         token = Partners.get_goth_token(organization_id, "bigquery", scopes: @scopes)
