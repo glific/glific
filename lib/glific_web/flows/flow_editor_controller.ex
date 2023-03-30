@@ -15,6 +15,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Flows.Flow,
     Flows.FlowCount,
     Flows.FlowLabel,
+    Groups,
     GCS.GcsWorker,
     Partners,
     Repo,
@@ -361,7 +362,13 @@ defmodule GlificWeb.Flows.FlowEditorController do
         [%{id: "#{c.id}", name: c.name, type: "contact", extra: c.id} | acc]
       end)
 
-    json(conn, %{results: recipients})
+    groups =
+      Groups.list_groups(%{})
+      |> Enum.reduce([], fn g, acc ->
+        [%{id: "#{g.id}", name: g.label, type: "group", extra: g.id} | acc]
+      end)
+
+    json(conn, %{results: recipients ++ groups})
   end
 
   @doc """
