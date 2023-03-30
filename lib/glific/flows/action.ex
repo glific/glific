@@ -201,7 +201,8 @@ defmodule Glific.Flows.Action do
     process(json, uuid_map, node, %{
       contacts: json["contacts"],
       create_contact: json["create_contact"],
-      flow: json["flow"]
+      flow: json["flow"],
+      groups: json["groups"]
     })
   end
 
@@ -516,6 +517,13 @@ defmodule Glific.Flows.Action do
       contact = Repo.get_by(Contact, %{id: contact["uuid"]})
 
       Flows.start_contact_flow(flow.id, contact, %{"parent" => context.results})
+    end)
+
+    action.groups
+    |> Enum.each(fn group ->
+      group = Repo.get_by(Group, %{id: group["uuid"]})
+
+      Flows.start_group_flow(flow, group, %{"parent" => context.results})
     end)
 
     {:ok, context, []}
