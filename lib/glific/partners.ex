@@ -1006,8 +1006,8 @@ defmodule Glific.Partners do
     end
   end
 
-  @spec load_goth_token(tuple()) :: tuple()
-  defp load_goth_token(cache_key) do
+  @spec load_goth_token(tuple(), Keyword.t()) :: tuple()
+  defp load_goth_token(cache_key, opts \\ []) do
     {organization_id, {:provider_token, provider_shortcode}} = cache_key
 
     organization = organization(organization_id)
@@ -1016,20 +1016,7 @@ defmodule Glific.Partners do
     if credentials == :error do
       {:ignore, nil}
     else
-      IO.inspect("loading token again")
-
-      Goth.Token.fetch(
-        source:
-          {:service_account, credentials,
-           [
-             scopes: [
-               "https://www.googleapis.com/auth/drive",
-               "https://www.googleapis.com/auth/drive.file",
-               "https://www.googleapis.com/auth/drive.readonly",
-               "https://www.googleapis.com/auth/spreadsheets"
-             ]
-           ]}
-      )
+      Goth.Token.fetch(source: {:service_account, credentials, opts})
       |> case do
         {:ok, token} ->
           opts = [ttl: :timer.seconds(token.expires - System.system_time(:second) - 60)]
