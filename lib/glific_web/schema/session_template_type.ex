@@ -11,7 +11,6 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
-
   object :session_template_result do
     field :session_template, :session_template
     field :errors, list_of(:input_error)
