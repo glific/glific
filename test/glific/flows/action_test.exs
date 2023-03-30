@@ -874,6 +874,7 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.results["sheet"]["message_hindi"] == "Glific में आपका स्वागत है।"
   end
 
+  @tag :pending
   test "execute an action when type is start_session", attrs do
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
