@@ -523,7 +523,9 @@ defmodule Glific.Flows.Action do
     |> Enum.each(fn group ->
       group = Repo.get_by(Group, %{id: group["uuid"]})
 
-      Flows.start_group_flow(flow, group, %{"parent" => context.results})
+      Task.async(fn ->
+        Flows.start_group_flow(flow, group, %{"parent" => context.results})
+      end)
     end)
 
     {:ok, context, []}
