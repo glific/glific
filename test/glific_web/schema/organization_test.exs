@@ -290,7 +290,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
         variables: %{
           "id" => organization.id,
           "input" => %{
-            "timezone" => "incorrent_timezone"
+            "timezone" => "incorrect_timezone"
           }
         }
       )

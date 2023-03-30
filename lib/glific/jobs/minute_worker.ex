@@ -7,6 +7,8 @@ defmodule Glific.Jobs.MinuteWorker do
     queue: :crontab,
     max_attempts: 3
 
+  require Logger
+
   alias Glific.{
     BigQuery.BigQueryWorker,
     Contacts,
@@ -31,7 +33,8 @@ defmodule Glific.Jobs.MinuteWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
-  def perform(%Oban.Job{args: %{"job" => _job}} = args) do
+  def perform(%Oban.Job{args: %{"job" => job}} = args) do
+    Logger.info("Performing job: #{inspect(job)}")
     services = Partners.get_organization_services()
     perform(args, services)
   end
@@ -60,14 +63,16 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&BroadcastWorker.execute/1, nil, [])
 
       "bigquery" ->
-        Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil, services["bigquery"], true)
+        Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil, services["bigquery"],
+          only_recent: true
+        )
 
       "gcs" ->
         Partners.perform_all(
           &GcsWorker.perform_periodic/1,
           nil,
           services["google_cloud_storage"],
-          true
+          only_recent: true
         )
 
       "stats" ->
@@ -83,7 +88,8 @@ defmodule Glific.Jobs.MinuteWorker do
               "hourly_tasks",
               "delete_tasks",
               "five_minute_tasks",
-              "update_hsms"
+              "update_hsms",
+              "weekly_tasks"
             ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
@@ -91,7 +97,7 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&Glific.Clients.daily_tasks/1, nil, [])
         Partners.perform_all(&Billing.update_usage/2, %{time: DateTime.utc_now()}, [])
         Erase.perform_daily()
-        Erase.perform_periodic()
+        Partners.perform_all(&Erase.clean_messages/1, nil, [])
 
       "weekly_tasks" ->
         Partners.perform_all(&Glific.Clients.weekly_tasks/1, nil, [])
@@ -105,8 +111,13 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "hourly_tasks" ->
         Partners.unsuspend_organizations()
-        Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
-        Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"], true)
+
+        Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], only_recent: true)
+
+        Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"],
+          only_recent: true
+        )
+
         Partners.perform_all(&Glific.Clients.hourly_tasks/1, nil, [])
 
       "five_minute_tasks" ->

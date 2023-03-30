@@ -13,12 +13,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   }
 
   def up(_repo, _opts) do
-    update_exisiting_providers()
+    update_existing_providers()
 
     add_providers()
   end
 
-  defp update_exisiting_providers() do
+  defp update_existing_providers() do
     # add pseudo credentials for gupshup
     {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
@@ -90,8 +90,9 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
       Glific.Repo.put_organization_id(org_id)
 
       query =
-        from c in Credential,
+        from(c in Credential,
           where: c.organization_id == ^org_id and c.provider_id == ^gupshup.id
+        )
 
       if !Repo.exists?(query),
         do:
@@ -131,10 +132,14 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     add_gupshup_enterprise()
 
     add_google_asr()
+
+    add_airtel()
+
+    add_open_ai()
   end
 
   defp add_dialogflow do
-    query = from p in Provider, where: p.shortcode == "dialogflow"
+    query = from(p in Provider, where: p.shortcode == "dialogflow")
 
     # add dialogflow
     if !Repo.exists?(query),
@@ -164,7 +169,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   end
 
   defp add_google_asr do
-    query = from p in Provider, where: p.shortcode == "google_asr"
+    query = from(p in Provider, where: p.shortcode == "google_asr")
 
     # add google_asr
     if !Repo.exists?(query),
@@ -195,7 +200,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
 
   defp add_goth do
     # add goth (since we'll be using other google services also)
-    query = from p in Provider, where: p.shortcode == "goth"
+    query = from(p in Provider, where: p.shortcode == "goth")
 
     if !Repo.exists?(query),
       do:
@@ -225,7 +230,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
 
   defp add_bigquery() do
     # add bigquery
-    query = from p in Provider, where: p.shortcode == "bigquery"
+    query = from(p in Provider, where: p.shortcode == "bigquery")
 
     if !Repo.exists?(query),
       do:
@@ -254,7 +259,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   end
 
   defp add_google_cloud_storage() do
-    query = from p in Provider, where: p.shortcode == "google_cloud_storage"
+    query = from(p in Provider, where: p.shortcode == "google_cloud_storage")
 
     # add google cloud storage (gcs)
     if !Repo.exists?(query),
@@ -283,7 +288,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   end
 
   defp add_navana_tech() do
-    query = from p in Provider, where: p.shortcode == "navana_tech"
+    query = from(p in Provider, where: p.shortcode == "navana_tech")
 
     # add only if does not exist
     if !Repo.exists?(query),
@@ -314,7 +319,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   end
 
   defp add_exotel() do
-    query = from p in Provider, where: p.shortcode == "exotel"
+    query = from(p in Provider, where: p.shortcode == "exotel")
 
     # add only if does not exist
     if !Repo.exists?(query),
@@ -358,8 +363,9 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
       Glific.Repo.put_organization_id(org_id)
 
       query =
-        from c in Credential,
+        from(c in Credential,
           where: c.organization_id == ^org_id and c.provider_id == ^gupshup_enterprise.id
+        )
 
       if !Repo.exists?(query),
         do:
@@ -382,5 +388,63 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             is_active: false
           })
     end)
+  end
+
+  defp add_airtel() do
+    {:ok, airtel} = Repo.fetch_by(Provider, %{shortcode: "airtel_iq"})
+
+    Partners.active_organizations([])
+    |> Enum.each(fn {org_id, _name} ->
+      Glific.Repo.put_organization_id(org_id)
+
+      query =
+        from(c in Credential,
+          where: c.organization_id == ^org_id and c.provider_id == ^airtel.id
+        )
+
+      if !Repo.exists?(query),
+        do:
+          Repo.insert!(%Credential{
+            organization_id: org_id,
+            provider_id: airtel.id,
+            keys: %{
+              url: "https://www.airtel.in/business/b2b/airtel-iq/dashboard",
+              api_end_point:
+                "https://iqwhatsapp.airtel.in/gateway/airtel-xchange/whatsapp-manager",
+              handler: "Glific.Providers.Airtel.Message",
+              worker: "Glific.Providers.Airtel.Worker",
+              bsp_limit: 40
+            },
+            secrets: %{
+              username: "airtel iq user name",
+              secret: "airtel iq secrets"
+            },
+            is_active: false
+          })
+    end)
+  end
+
+  defp add_open_ai() do
+    query = from(p in Provider, where: p.shortcode == "open_ai")
+
+    # add only if does not exist
+    if !Repo.exists?(query),
+      do:
+        Repo.insert!(%Provider{
+          name: "OpenAI (ChatGPT) (Beta)",
+          shortcode: "open_ai",
+          description: "First cut (Beta version) to integrate simple chat gpt api.",
+          group: nil,
+          is_required: false,
+          keys: %{},
+          secrets: %{
+            api_key: %{
+              type: :string,
+              label: "OpenAI API KEY",
+              default: nil,
+              view_only: false
+            }
+          }
+        })
   end
 end

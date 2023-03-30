@@ -63,6 +63,7 @@ defmodule Glific.Contacts do
   @spec list_contacts(map()) :: [Contact.t()]
   def list_contacts(args) do
     args
+    |> Glific.add_limit()
     |> Repo.list_filter_query(Contact, &Repo.opts_with_name/2, &filter_with/2)
     |> Repo.add_permission(&Contacts.add_permission/2)
     |> Repo.all()
@@ -299,6 +300,9 @@ defmodule Glific.Contacts do
       is_org_root_contact?(contact) == true ->
         {:error, "Sorry, this is your chatbot number and hence cannot be deleted."}
 
+      is_simulator_contact?(contact.phone) == true ->
+        {:error, "Sorry, this is simulator number and hence cannot be deleted."}
+
       true ->
         Repo.delete(contact)
     end
@@ -408,19 +412,13 @@ defmodule Glific.Contacts do
 
   @doc """
   Check if this contact id is a new contact.
-  In general, we should always retrieve as little as possible from the DB
+  We set the last message number in the contact.
+  So if this is a first message then we can assume that this is a new contact.
   """
   @spec is_new_contact(integer()) :: boolean()
   def is_new_contact(contact_id) do
-    case Glific.Messages.Message
-         |> where([m], m.contact_id == ^contact_id)
-         |> where([m], m.flow == "outbound")
-         |> select([m], m.id)
-         |> limit(1)
-         |> Repo.all() do
-      [] -> true
-      _ -> false
-    end
+    contact = get_contact!(contact_id)
+    contact.last_message_number <= 1
   end
 
   @doc """

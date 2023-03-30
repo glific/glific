@@ -6,6 +6,8 @@ defmodule GlificWeb.Router do
   @dialyzer {:nowarn_function, __checks__: 0}
   use Appsignal.Plug
 
+  use GlificWeb.InjectOban
+
   pipeline :browser do
     plug(:accepts, ["html"])
     plug(:fetch_session)
@@ -34,10 +36,7 @@ defmodule GlificWeb.Router do
     plug(GlificWeb.ContextPlug)
   end
 
-  pipeline :auth_protected do
-    plug(:auth)
-  end
-
+  # Glific Authentication routes
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
     pipe_through(:api)
 
@@ -46,17 +45,8 @@ defmodule GlificWeb.Router do
     post("/registration/reset-password", RegistrationController, :reset_password)
     resources("/session", SessionController, singleton: true, only: [:create, :delete])
     post("/session/renew", SessionController, :renew)
-
     post("/onboard/setup", OnboardController, :setup)
   end
-
-  scope "/", GlificWeb do
-    pipe_through([:browser])
-
-    live("/liveview", StatsLive)
-  end
-
-  use GlificWeb.InjectOban
 
   # Enables LiveDashboard only for development
   #
@@ -72,6 +62,12 @@ defmodule GlificWeb.Router do
     live_dashboard("/dashboard", metrics: GlificWeb.Telemetry, ecto_repos: [Glific.Repo])
   end
 
+  scope "/", GlificWeb do
+    pipe_through([:browser])
+
+    live("/liveview", StatsLive)
+  end
+
   # Custom stack for Absinthe
   scope "/" do
     pipe_through([:api, :api_protected])
@@ -79,44 +75,26 @@ defmodule GlificWeb.Router do
     forward("/api", Absinthe.Plug, schema: GlificWeb.Schema)
   end
 
-  if Mix.env() in [:dev, :test] do
-    scope "/" do
-      pipe_through([:api, :api_protected])
-
-      forward(
-        "/graphiql",
-        Absinthe.Plug.GraphiQL,
-        schema: GlificWeb.Schema,
-        interface: :playground
-      )
-    end
-  end
-
-  # pipeline :gupshup do
-  #   plug APIacFilterIPWhitelist,
-  #     whitelist: [
-  #       # Whitelisting IP of localhost
-  #       "127.0.0.0/8",
-  #       # Whitelisting IP of Gigalixir
-  #       "35.226.132.161/32",
-  #       # Whitelisting IP of Gupshup
-  #       "34.202.224.208/1",
-  #       "52.66.99.126/1"
-  #     ]
-  # end
-
+  # BSP webhooks
   scope "/", GlificWeb do
-    # pipe_through :gupshup
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
+    forward("/airtel", Providers.Airtel.Plugs.Shunt)
     forward("/gupshup-enterprise", Providers.Gupshup.Enterprise.Plugs.Shunt)
   end
 
+  # """
+  # Third party webhook except BSPs. Ideally we should have merge the BSPs also in this scope.
+  # But since the BSP is a primary webhooks for this application We kept it separated.
+  # """
+
   scope "/webhook", GlificWeb do
     post("/stripe", StripeController, :stripe_webhook)
-    # we need to remove this. This was a experimental code
-    post("/stir/survey", Flows.WebhookController, :stir_survey)
     get("/exotel/optin", ExotelController, :optin)
   end
+
+  # """
+  # All the flow editor routes which is used while designing the flow.
+  # """
 
   scope "/flow-editor", GlificWeb.Flows do
     pipe_through([:api, :api_protected])
@@ -170,10 +148,28 @@ defmodule GlificWeb.Router do
     get("/attachments-enabled", FlowEditorController, :attachments_enabled)
 
     post("/flow-attachment", FlowEditorController, :flow_attachment)
+
+    get("/sheets", FlowEditorController, :sheets)
   end
 
-  # implement basic authentication for live dashboard and oban pro
-  defp auth(conn, _opts) do
+  if Mix.env() in [:dev, :test] do
+    scope "/" do
+      pipe_through([:api, :api_protected])
+
+      forward(
+        "/graphiql",
+        Absinthe.Plug.GraphiQL,
+        schema: GlificWeb.Schema,
+        interface: :playground
+      )
+    end
+  end
+
+  @doc """
+  implement basic authentication for live dashboard and oban pro
+  """
+  @spec auth(any(), any()) :: any()
+  def auth(conn, _opts) do
     username = Application.fetch_env!(:glific, :auth_username)
     password = Application.fetch_env!(:glific, :auth_password)
     Plug.BasicAuth.basic_auth(conn, username: username, password: password)

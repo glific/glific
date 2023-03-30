@@ -139,7 +139,6 @@ defmodule Glific.Flows.WebhookTest do
         body: Jason.encode!(@action_body)
       }
 
-      Webhook.execute(action, context)
       assert Webhook.execute(action, context) == nil
       Oban.drain_queue(queue: :webhook)
 

@@ -53,15 +53,12 @@ defmodule Glific.BigQuery.BigQueryWorker do
   and queue them up for delivery to bigquery
   """
   @spec perform_periodic(non_neg_integer) :: :ok
-  def perform_periodic(organization_id) do
-    organization = Partners.organization(organization_id)
-    credential = organization.services["bigquery"]
+  def perform_periodic(org_id) do
+    if BigQuery.is_active?(org_id) do
+      Logger.info("Found bigquery credentials for org_id: #{org_id}")
 
-    if credential do
-      Logger.info("Found bigquery credentials for org_id: #{organization_id}")
-
-      Jobs.get_bigquery_jobs(organization_id)
-      |> Enum.each(&insert_for_table(&1, organization_id))
+      Jobs.get_bigquery_jobs(org_id)
+      |> Enum.each(&init_insert_job(&1, org_id))
     end
 
     :ok
@@ -76,18 +73,74 @@ defmodule Glific.BigQuery.BigQueryWorker do
     credential = organization.services["bigquery"]
 
     if credential do
-      make_job_to_remove_duplicate("contacts", organization_id)
-      make_job_to_remove_duplicate("messages", organization_id)
-      make_job_to_remove_duplicate("flow_results", organization_id)
-      make_job_to_remove_duplicate("flow_counts", organization_id)
-      make_job_to_remove_duplicate("messages_media", organization_id)
-      make_job_to_remove_duplicate("flow_contexts", organization_id)
-      make_job_to_remove_duplicate("profiles", organization_id)
-      make_job_to_remove_duplicate("message_broadcasts", organization_id)
-      make_job_to_remove_duplicate("message_broadcast_contacts", organization_id)
+      [
+        "contacts",
+        "messages",
+        "flow_results",
+        "flow_counts",
+        "messages_media",
+        "flow_contexts",
+        "profiles",
+        "message_broadcasts",
+        "message_broadcast_contacts"
+      ]
+      |> Enum.each(&init_removal_job(&1, organization_id))
     end
 
     :ok
+  end
+
+  @spec init_insert_job(BigQuery.BigQueryJob.t() | nil, non_neg_integer) :: any()
+  defp init_insert_job(bq_job, org_id) do
+    [:insert, :update]
+    |> Enum.each(fn action ->
+      __MODULE__.new(%{
+        table: bq_job.table,
+        organization_id: org_id,
+        action: action
+      })
+      |> Oban.insert()
+    end)
+  end
+
+  defp init_removal_job(table, org_id) do
+    __MODULE__.new(%{
+      table: table,
+      organization_id: org_id,
+      remove_duplicates: true
+    })
+    |> Oban.insert()
+  end
+
+  @impl Oban.Worker
+  @doc """
+  Standard perform method to use Oban worker
+  """
+  @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
+  def perform(
+        %Oban.Job{
+          args: %{
+            "table" => table,
+            "organization_id" => organization_id,
+            "remove_duplicates" => true
+          }
+        } = _job
+      ) do
+    Repo.put_process_state(organization_id)
+    Logger.info("removing duplicates for org_id: #{organization_id} table: #{table}")
+    BigQuery.make_job_to_remove_duplicate(table, organization_id)
+    :ok
+  end
+
+  def perform(
+        %Oban.Job{
+          args: %{"table" => table, "organization_id" => organization_id, "action" => action}
+        } = _job
+      ) do
+    Repo.put_process_state(organization_id)
+
+    Jobs.get_bigquery_job(organization_id, table)
+    |> insert_for_table(organization_id, action)
   end
 
   @spec format_date_with_millisecond(DateTime.t(), non_neg_integer()) :: String.t()
@@ -101,7 +154,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   @spec insert_max_id(String.t(), non_neg_integer, non_neg_integer) :: non_neg_integer
   defp insert_max_id(table_name, table_id, organization_id) do
-    Logger.info("Checking for bigquery job: #{table_name}, org_id: #{organization_id}")
+    Logger.info("Checking for bigquery job for org_id: #{organization_id} table: #{table_name}")
 
     max_id =
       BigQuery.get_table_struct(table_name)
@@ -109,7 +162,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> add_organization_id(table_name, organization_id)
       |> order_by([m], asc: m.id)
       |> limit(@per_min_limit)
-      |> Repo.aggregate(:max, :id, skip_organization_id: true)
+      |> Repo.aggregate(:max, :id)
 
     if is_nil(max_id),
       do: table_id,
@@ -119,7 +172,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   @spec insert_last_updated(String.t(), DateTime.t() | nil, non_neg_integer) :: DateTime.t()
   defp insert_last_updated(table_name, table_last_updated_at, organization_id) do
     Logger.info(
-      "Checking for bigquery job for last update: #{table_name}, org_id: #{organization_id}"
+      "Checking for bigquery job for org_id: #{organization_id} table: #{table_name} since: #{table_last_updated_at}"
     )
 
     max_last_update =
@@ -128,22 +181,27 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> add_organization_id(table_name, organization_id)
       |> order_by([m], asc: m.id)
       |> limit(@per_min_limit)
-      |> Repo.aggregate(:max, :updated_at, skip_organization_id: true)
+      |> Repo.aggregate(:max, :updated_at, timeout: 40_000)
 
     if is_nil(max_last_update),
       do: table_last_updated_at,
       else: max_last_update
   end
 
-  @spec insert_for_table(BigQuery.BigQueryJob.t() | nil, non_neg_integer) :: :ok | nil
-  defp insert_for_table(nil, _), do: nil
+  @spec insert_for_table(BigQuery.BigQueryJob.t() | nil, non_neg_integer, String.t()) :: :ok | nil
+  defp insert_for_table(nil, _, _), do: nil
 
   defp insert_for_table(
          %{table: table, table_id: table_id, last_updated_at: table_last_updated_at} = _job,
-         organization_id
+         organization_id,
+         action
        ) do
-    insert_new_records(table, table_id, organization_id)
-    insert_updated_records(table, table_last_updated_at, organization_id)
+    if action == "update" do
+      insert_updated_records(table, table_last_updated_at, organization_id)
+    else
+      insert_new_records(table, table_id, organization_id)
+    end
+
     :ok
   end
 
@@ -162,17 +220,21 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
-  @spec insert_updated_records(binary, DateTime.t(), non_neg_integer) :: :ok
+  @spec insert_updated_records(binary, DateTime.t() | nil, non_neg_integer) :: :ok
   defp insert_updated_records(table, table_last_updated_at, organization_id) do
-    table_last_updated_at = table_last_updated_at || DateTime.utc_now()
-    last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
+    if table in BigQuery.ignore_updates_for_table() do
+      :ok
+    else
+      table_last_updated_at = table_last_updated_at || DateTime.utc_now()
+      last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
 
-    queue_table_data(table, organization_id, %{
-      action: :update,
-      max_id: nil,
-      last_updated_at: last_updated_at,
-      table_last_updated_at: table_last_updated_at
-    })
+      queue_table_data(table, organization_id, %{
+        action: :update,
+        max_id: nil,
+        last_updated_at: last_updated_at,
+        table_last_updated_at: table_last_updated_at
+      })
+    end
   end
 
   @spec add_organization_id(Ecto.Query.t(), String.t(), non_neg_integer) :: Ecto.Query.t()
@@ -190,7 +252,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("messages", organization_id, attrs) do
     Logger.info(
-      "fetching data for messages to send on bigquery attrs: #{inspect(attrs)}, org_id: #{organization_id}"
+      "fetching messages data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
     get_query("messages", organization_id, attrs)
@@ -212,7 +274,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("message_broadcast_contacts", organization_id, attrs) do
     Logger.info(
-      "fetching data for message_broadcast_contacts to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+      "fetching message_broadcast_contacts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
     get_query("message_broadcast_contacts", organization_id, attrs)
@@ -244,7 +306,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("message_broadcasts", organization_id, attrs) do
     Logger.info(
-      "fetching data for message_broadcasts to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+      "fetching message_broadcasts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
     get_query("message_broadcasts", organization_id, attrs)
@@ -282,7 +344,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("contacts", organization_id, attrs) do
     Logger.info(
-      "fetching data for contacts to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+      "fetching contacts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
     get_query("contacts", organization_id, attrs)
@@ -342,7 +404,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp queue_table_data("profiles", organization_id, attrs) do
     # This function will fetch all the profiles from the database and will insert it in bigquery in chunks of 100.
     Logger.info(
-      "fetching data for profiles to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+      "fetching profiles data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
     get_query("profiles", organization_id, attrs)
@@ -383,7 +445,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("contact_histories", organization_id, attrs) do
     Logger.info(
-      "fetching data for contact_histories to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+      "fetching contact_histories data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
     get_query("contact_histories", organization_id, attrs)
@@ -416,7 +478,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("message_conversations", organization_id, attrs) do
     Logger.info(
-      "fetching data for message_conversations to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+      "fetching message_conversations data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
     get_query("message_conversations", organization_id, attrs)
@@ -450,7 +512,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("flows", organization_id, attrs) do
     Logger.info(
-      "fetching data for flows to send on bigquery attrs: #{inspect(attrs)}, org_id: #{organization_id}"
+      "fetching flows data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
     get_query("flows", organization_id, attrs)
@@ -483,7 +545,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("flow_results", organization_id, attrs) do
     Logger.info(
-      "fetching data for flow_results to send on bigquery attrs: #{inspect(attrs)}, org_id: #{organization_id}"
+      "fetching flow_results data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
     get_query("flow_results", organization_id, attrs)
@@ -521,7 +583,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("flow_counts", organization_id, attrs) do
     Logger.info(
-      "fetching data for flow_counts to send on bigquery attrs: #{inspect(attrs)}, org_id: #{organization_id}"
+      "fetching flow_counts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
     get_query("flow_counts", organization_id, attrs)
@@ -556,40 +618,19 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("messages_media", organization_id, attrs) do
     Logger.info(
-      "fetching data for messages_media to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+      "fetching messages_media data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
     get_query("messages_media", organization_id, attrs)
     |> Repo.all()
-    |> Enum.reduce(
-      [],
-      fn row, acc ->
-        [
-          # We are sending nil, as setting is a record type and need to structure the data first(like field)
-          %{
-            id: row.id,
-            caption: row.caption,
-            url: row.url,
-            source_url: row.source_url,
-            gcs_url: row.gcs_url,
-            inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
-            updated_at: format_date_with_millisecond(row.updated_at, organization_id)
-          }
-          |> Map.merge(bq_fields(organization_id))
-          |> then(&%{json: &1})
-          | acc
-        ]
-      end
-    )
-    |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :messages_media, organization_id, attrs))
+    |> queue_message_media_data(organization_id, attrs)
 
     :ok
   end
 
   defp queue_table_data("flow_contexts", organization_id, attrs) do
     Logger.info(
-      "fetching data for flow_contexts to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+      "fetching flow_contexts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
     get_query("flow_contexts", organization_id, attrs)
@@ -619,7 +660,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             wakeup_at: BigQuery.format_date(row.wakeup_at, organization_id),
             completed_at: BigQuery.format_date(row.completed_at, organization_id),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
-            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+            updated_at: BigQuery.format_date(row.updated_at, organization_id),
+            reason: row.reason
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
@@ -635,7 +677,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data(stat, organization_id, attrs) when stat in ["stats", "stats_all"] do
     Logger.info(
-      "fetching data for #{stat} to send on bigquery attrs: #{inspect(attrs)}, org_id: #{organization_id}"
+      "fetching #{stat} data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
     stat_atom =
@@ -698,6 +740,37 @@ defmodule Glific.BigQuery.BigQueryWorker do
       bq_uuid: Ecto.UUID.generate(),
       bq_inserted_at: format_date_with_millisecond(DateTime.utc_now(), org_id)
     }
+  end
+
+  @doc """
+  Moving this logic to a different function so that we can reuse it
+  for gcs worker also.
+  """
+  @spec queue_message_media_data(list(), non_neg_integer(), map()) :: :ok
+  def queue_message_media_data(media_list, organization_id, attrs) do
+    media_list
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          # We are sending nil, as setting is a record type and need to structure the data first(like field)
+          %{
+            id: row.id,
+            caption: row.caption,
+            url: row.url,
+            source_url: row.source_url,
+            gcs_url: row.gcs_url,
+            inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
+            updated_at: format_date_with_millisecond(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :messages_media, organization_id, attrs))
   end
 
   @spec get_message_row(atom | map(), non_neg_integer) :: map()
@@ -785,31 +858,18 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp make_job(data, table, organization_id, attrs) do
     Logger.info(
-      "making a new job for #{table} to send on bigquery org_id: #{organization_id} with max id: #{inspect(attrs)}"
+      "making a new job for org_id: #{organization_id} table: #{table} to send on bigquery with max id: #{inspect(attrs)}"
     )
 
-    __MODULE__.new(%{
-      data: data,
-      table: table,
-      organization_id: organization_id,
-      max_id: attrs[:max_id],
-      last_updated_at: attrs[:last_updated_at]
-    })
-    |> Oban.insert()
+    table = Atom.to_string(table)
+    max_id = attrs[:max_id]
+    last_updated_at = attrs[:last_updated_at]
 
-    :ok
-  end
-
-  @spec make_job_to_remove_duplicate(String.t(), non_neg_integer) :: :ok
-  defp make_job_to_remove_duplicate(table, organization_id) do
-    Logger.info("removing duplicates for the table #{table} and org_id: #{organization_id}")
-
-    __MODULE__.new(%{
-      table: table,
-      organization_id: organization_id,
-      remove_duplicates: true
-    })
-    |> Oban.insert()
+    BigQuery.make_insert_query(data, table, organization_id,
+      max_id: max_id,
+      last_updated_at: if(!is_nil(last_updated_at), do: last_updated_at),
+      else: nil
+    )
 
     :ok
   end
@@ -834,6 +894,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
          )
          |> where(
            [tb],
+           ## Adding clause so that we don't pick the newly inserted rows.
            fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0
          )
 
@@ -1000,39 +1061,4 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:organization])
-
-  @impl Oban.Worker
-  @doc """
-  Standard perform method to use Oban worker
-  """
-  @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
-  def perform(
-        %Oban.Job{
-          args: %{
-            "table" => table,
-            "organization_id" => organization_id,
-            "remove_duplicates" => true
-          }
-        } = _job
-      ),
-      do: BigQuery.make_job_to_remove_duplicate(table, organization_id)
-
-  def perform(
-        %Oban.Job{
-          args: %{
-            "data" => data,
-            "table" => table,
-            "organization_id" => organization_id,
-            "max_id" => max_id,
-            "last_updated_at" => last_updated_at
-          }
-        } = _job
-      ),
-      do:
-        BigQuery.make_insert_query(data, table, organization_id,
-          max_id: max_id,
-          last_updated_at:
-            if(!is_nil(last_updated_at), do: Timex.parse!(last_updated_at, "{RFC3339z}")),
-          else: nil
-        )
 end

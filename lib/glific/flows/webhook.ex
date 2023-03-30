@@ -6,13 +6,19 @@ defmodule Glific.Flows.Webhook do
   import GlificWeb.Gettext
   require Logger
 
-  alias Glific.{Contacts, Messages, Repo}
+  alias Glific.{Messages, Repo}
   alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
 
   use Oban.Worker,
     queue: :webhook,
     max_attempts: 2,
-    priority: 0
+    priority: 1,
+    unique: [
+      period: 60,
+      fields: [:args, :worker],
+      keys: [:context_id, :url],
+      states: [:available, :scheduled, :executing]
+    ]
 
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
@@ -132,11 +138,7 @@ defmodule Glific.Flows.Webhook do
       flow: %{name: context.flow.name, id: context.flow.id}
     }
 
-    fields = %{
-      "contact" => Contacts.get_contact_field_map(context.contact_id),
-      "results" => context.results,
-      "flow" => %{name: context.flow.name, id: context.flow.id}
-    }
+    fields = FlowContext.get_vars_to_parse(context)
 
     action_body_map =
       MessageVarParser.parse_map(action_body_map, fields)
@@ -184,11 +186,7 @@ defmodule Glific.Flows.Webhook do
   # THis function will create a dynamic headers
   @spec parse_header_and_url(Action.t(), FlowContext.t()) :: map()
   defp parse_header_and_url(action, context) do
-    fields = %{
-      "contact" => Contacts.get_contact_field_map(context.contact_id),
-      "results" => context.results,
-      "flow" => %{name: context.flow.name, id: context.flow.id}
-    }
+    fields = FlowContext.get_vars_to_parse(context)
 
     header = MessageVarParser.parse_map(action.headers, fields)
     url = MessageVarParser.parse(action.url, fields)
@@ -204,18 +202,39 @@ defmodule Glific.Flows.Webhook do
     action = Map.put(action, :url, parsed_attrs.url)
     webhook_log = create_log(action, map, parsed_attrs.header, context)
 
-    {:ok, _} =
-      __MODULE__.new(%{
-        method: String.downcase(action.method),
-        url: parsed_attrs.url,
-        result_name: action.result_name,
-        body: body,
-        headers: headers,
-        webhook_log_id: webhook_log.id,
-        context: %{id: context.id, delay: context.delay},
-        organization_id: context.organization_id
-      })
-      |> Oban.insert()
+    __MODULE__.new(%{
+      method: String.downcase(action.method),
+      url: parsed_attrs.url,
+      result_name: action.result_name,
+      body: body,
+      headers: headers,
+      webhook_log_id: webhook_log.id,
+      # for jon uniqueness,
+      context_id: context.id,
+      context: %{id: context.id, delay: context.delay},
+      organization_id: context.organization_id
+    })
+    |> Oban.insert()
+    |> case do
+      {:ok, %Job{conflict?: true} = response} ->
+        error =
+          "Message received while executing webhook. context: #{context.id} and url: #{parsed_attrs.url}"
+
+        Glific.log_error(error, false)
+
+        {:ok, response}
+
+      {:ok, response} ->
+        {:ok, response}
+
+      response ->
+        Glific.log_error(
+          "something wrong while inserting webhook node. ",
+          true
+        )
+
+        response
+    end
   end
 
   defp do_action("post", url, body, headers),
@@ -280,14 +299,14 @@ defmodule Glific.Flows.Webhook do
         {:ok, %Tesla.Env{status: status} = message} when status in 200..299 ->
           case Jason.decode(message.body) do
             {:ok, list_response} when is_list(list_response) ->
-              list_response = webhook_list_response_to_map(list_response)
+              list_response = format_response(list_response)
               updated_message = Map.put(message, :body, Jason.encode!(list_response))
               update_log(webhook_log_id, updated_message)
               list_response
 
             {:ok, json_response} ->
               update_log(webhook_log_id, message)
-              json_response
+              format_response(json_response)
 
             {:error, _error} ->
               update_log(webhook_log_id, "Could not decode message body: " <> message.body)
@@ -340,20 +359,20 @@ defmodule Glific.Flows.Webhook do
     :ok
   end
 
-  @spec webhook_list_response_to_map(any()) :: any()
-  defp webhook_list_response_to_map(response_json) when is_list(response_json) do
+  @spec format_response(any()) :: any()
+  defp format_response(response_json) when is_list(response_json) do
     Enum.with_index(response_json)
     |> Enum.map(fn {value, index} ->
-      {index, webhook_list_response_to_map(value)}
+      {index, format_response(value)}
     end)
     |> Enum.into(%{})
   end
 
-  defp webhook_list_response_to_map(response_json) when is_map(response_json) do
+  defp format_response(response_json) when is_map(response_json) do
     response_json
-    |> Enum.map(fn {key, value} -> {key, webhook_list_response_to_map(value)} end)
+    |> Enum.map(fn {key, value} -> {key, format_response(value)} end)
     |> Enum.into(%{})
   end
 
-  defp webhook_list_response_to_map(response_json), do: response_json
+  defp format_response(response_json), do: response_json
 end

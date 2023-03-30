@@ -28,6 +28,15 @@
     "lib/glific/providers/gupshup_enterprise/api_client.ex",
     "lib/glific/providers/gupshup_enterprise/worker.ex",
     "lib/glific_web/providers/gupshup_enterprise/controllers/default_controller.ex",
+    "lib/glific/providers/airtel/template.ex",
+    "lib/glific/providers/airtel/contacts.ex",
+    "lib/glific/providers/airtel/message.ex",
+    "lib/glific/providers/airtel/response_handler.ex",
+    "lib/glific/providers/airtel/api_client.ex",
+    "lib/glific/providers/airtel/worker.ex",
+    "lib/glific_web/providers/airtel/controllers/default_controller.ex",
+    "lib/glific_web/providers/airtel/controllers/message_controller.ex",
+    "lib/glific_web/providers/airtel/controllers/message_event_controller.ex",
     "lib/glific_web.ex",
     "lib/glific_web/channels/user_socket.ex",
     "lib/glific_web/controllers/stripe_controller.ex",
@@ -45,7 +54,8 @@
     "lib/glific_web/uploaders",
     "lib/glific_web/views",
     "test/support",
-    "lib/glific_web/templates/live/stats_live.ex"
+    "lib/glific_web/templates/live/stats_live.ex",
+    "lib/glific/third_party/openAI/chatGPT.ex"
   ],
   "coverage_options": {
     "treat_no_relevant_lines_as_covered": true,

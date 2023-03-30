@@ -88,7 +88,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert message == "successfull"
   end
 
-  test "sync hsm with bsp if it doesn't estabilish a connection with gupshup test", %{staff: user} do
+  test "sync hsm with bsp if it doesn't establish a connection with gupshup test", %{staff: user} do
     user = Map.put(user, :organization_id, nil)
     Fixtures.session_template_fixture(%{label: "AAA"})
 

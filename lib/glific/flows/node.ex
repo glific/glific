@@ -35,17 +35,17 @@ defmodule Glific.Flows.Node do
         }
 
   embedded_schema do
-    field :uuid, Ecto.UUID
-    field :flow_id, :integer
-    field :flow_uuid, Ecto.UUID
+    field(:uuid, Ecto.UUID)
+    field(:flow_id, :integer)
+    field(:flow_uuid, Ecto.UUID)
 
-    field :is_terminal, :boolean, default: false
+    field(:is_terminal, :boolean, default: false)
 
-    embeds_one :flow, Flow
+    embeds_one(:flow, Flow)
 
-    embeds_many :actions, Action
-    embeds_many :exits, Exit
-    embeds_one :router, Router
+    embeds_many(:actions, Action)
+    embeds_many(:exits, Exit)
+    embeds_one(:router, Router)
   end
 
   @doc """

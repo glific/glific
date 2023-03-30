@@ -22,33 +22,40 @@ defmodule Glific.Contacts.Import do
   @spec cleanup_contact_data(map(), map(), String.t()) :: map()
   defp cleanup_contact_data(
          data,
-         %{user: user, organization_id: organization_id},
+         %{user: user, organization_id: organization_id} = contact_attrs,
          date_format
        ) do
-    if user.roles == [:glific_admin] do
-      %{
-        name: data["name"],
-        phone: data["phone"],
-        organization_id: organization_id,
-        collection: data["collection"],
-        language_id: Enum.at(Settings.get_language_by_label_or_locale(data["language"]), 0).id,
-        optin_time:
-          if(data["opt_in"] != "",
-            do: elem(Timex.parse(data["opt_in"], date_format), 1),
-            else: nil
-          ),
-        delete: data["delete"],
-        contact_fields: Map.drop(data, ["phone", "language", "opt_in", "delete", "group"])
-      }
-    else
-      %{
-        name: data["name"],
-        phone: data["phone"],
-        collection: data["collection"],
-        delete: data["delete"],
-        organization_id: user.organization_id,
-        contact_fields: Map.drop(data, ["phone", "group", "delete"])
-      }
+    results = %{
+      name: data["name"],
+      phone: data["phone"],
+      organization_id: organization_id,
+      language_id: Enum.at(Settings.get_language_by_label_or_locale(data["language"]), 0).id,
+      collection: data["collection"],
+      delete: data["delete"],
+      contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"]),
+      optin_time:
+        if(data["opt_in"] in ["", nil],
+          do: nil,
+          else: elem(Timex.parse(data["opt_in"], date_format), 1)
+        )
+    }
+
+    cond do
+      user.roles == [:glific_admin] ->
+        results
+        |> Map.merge(%{
+          delete: data["delete"],
+          collection: contact_attrs.collection
+        })
+
+      user.upload_contacts ->
+        results
+        |> Map.merge(%{
+          delete: data["delete"]
+        })
+
+      true ->
+        results
     end
   end
 
@@ -96,26 +103,45 @@ defmodule Glific.Contacts.Import do
   The method takes in a csv file path and adds the contacts to the particular organization
   and group.
   """
-  @spec import_contacts(integer, map(), [{atom(), String.t()}]) :: tuple()
-  def import_contacts(organization_id, user, opts \\ []) do
+  @spec import_contacts(non_neg_integer(), map(), [{atom(), String.t()}]) :: tuple()
+  def import_contacts(
+        organization_id,
+        %{user: user, collection: collection} = _contact_attrs,
+        opts
+      ) do
     if length(opts) > 1 do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
 
     contact_data_as_stream = fetch_contact_data_as_string(opts)
+    contact_attrs = %{organization_id: organization_id, user: user, collection: collection}
 
+    handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
+  end
+
+  def import_contacts(organization_id, contact_attrs, opts) do
+    if length(opts) > 1 do
+      raise "Please specify only one of keyword arguments: file_path, url or data"
+    end
+
+    contact_data_as_stream = fetch_contact_data_as_string(opts)
+    contact_attrs = %{organization_id: organization_id, user: contact_attrs.user}
+    handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
+  end
+
+  @spec handle_csv_for_admins(map(), map(), [{atom(), String.t()}]) :: tuple()
+  defp handle_csv_for_admins(contact_attrs, data, opts) do
     # this ensures the  org_id exists and is valid
-    case Partners.organization(organization_id) do
+    case Partners.organization(contact_attrs.organization_id) do
       %{} ->
-        params = %{organization_id: organization_id, user: user}
-        decode_csv_data(params, contact_data_as_stream, opts)
+        decode_csv_data(contact_attrs, data, opts)
 
       {:error, error} ->
         {:error,
          %{
            message: "All contacts could not be added",
            details:
-             "Could not fetch the organization with id #{organization_id}. Error -> #{error}"
+             "Could not fetch the organization with id #{contact_attrs.organization_id}. Error -> #{inspect(error)}"
          }}
     end
   end
@@ -123,14 +149,12 @@ defmodule Glific.Contacts.Import do
   @spec decode_csv_data(map(), map(), [{atom(), String.t()}]) :: tuple()
   defp decode_csv_data(params, data, opts) do
     %{organization_id: organization_id, user: user} = params
-    {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D}_{h24}:{m}:{s}")
+    {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
 
     result =
       data
       |> CSV.decode(headers: true, strip_fields: true)
-      |> Stream.map(fn {_, data} ->
-        cleanup_contact_data(data, params, date_format)
-      end)
+      |> Stream.map(fn {_, data} -> cleanup_contact_data(data, params, date_format) end)
       |> Task.async_stream(
         fn contact ->
           process_data(user, contact, %{
@@ -157,7 +181,7 @@ defmodule Glific.Contacts.Import do
 
   @spec process_data(User.t(), map(), map()) :: Contact.t() | map()
   defp process_data(user, %{delete: "1"} = contact, _contact_attrs) do
-    if user.roles == [:glific_admin] do
+    if user.roles == [:glific_admin] || user.upload_contacts == true do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
         nil ->
           %{ok: "Contact does not exist"}
@@ -174,13 +198,20 @@ defmodule Glific.Contacts.Import do
   end
 
   defp process_data(user, contact_attrs, _attrs) do
-    if user.roles == [:glific_admin] do
-      {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
+    cond do
+      user.roles == [:glific_admin] ->
+        {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
 
-      create_group_and_contact_fields(contact_attrs, contact)
-      optin_contact(user, contact, contact_attrs)
-    else
-      may_update_contact(contact_attrs)
+        create_group_and_contact_fields(contact_attrs, contact)
+        optin_contact(user, contact, contact_attrs)
+
+      user.upload_contacts ->
+        {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
+        may_update_contact(contact_attrs)
+        optin_contact(user, contact, contact_attrs)
+
+      true ->
+        may_update_contact(contact_attrs)
     end
   end
 
@@ -258,17 +289,17 @@ defmodule Glific.Contacts.Import do
   @spec should_optin_contact?(User.t(), Contact.t(), map()) :: boolean()
   defp should_optin_contact?(user, contact, attrs) do
     cond do
-      user.roles != [:glific_admin] ->
-        false
-
       attrs.optin_time == nil ->
         false
 
       contact.optout_time != nil ->
         false
 
-      true ->
+      user.roles == [:glific_admin] || user.upload_contacts ->
         true
+
+      true ->
+        false
     end
   end
 

@@ -195,7 +195,7 @@ defmodule Glific.Clients.KEF do
   end
 
   def webhook("get_school_id_info", fields) do
-    school_id = Glific.string_clean(fields["school_id"] || "")
+    school_id = fields["school_id"] || ""
 
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> get_school_id_info(school_id)
@@ -288,7 +288,7 @@ defmodule Glific.Clients.KEF do
           |> Enum.find(fn {_k, v} ->
             v["userinputcorrectcode"]
             |> Glific.string_clean()
-            |> String.equivalent?(Glific.string_clean(school_id))
+            |> String.equivalent?(school_id)
           end) || {nil, nil}
 
         %{

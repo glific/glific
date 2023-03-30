@@ -61,6 +61,13 @@ config :stripity_stripe,
   signing_secret: env!("STRIPE_SIGNING_SECRET", :string!)
 
 config :glific, Glific.Communications.Mailer,
-  region: env!("SES_REGION", :string!, "This is not a Region"),
-  access_key: env!("SES_KEY", :string!, "This is not a Key"),
-  secret: env!("SES_SECRET", :string!, "This is not a Secret")
+  region: env!("SES_REGION", :string!, "This is not a region"),
+  access_key: env!("SES_KEY", :string!, "This is not a key"),
+  secret: env!("SES_SECRET", :string!, "This is not a secret")
+
+config :glific,
+  google_captcha_secret_key: env!("RECAPTCHA_SECRET_KEY", :string!, "This is not a secret")
+
+config :glific,
+  gcs_file_count: env!("GCS_FILE_COUNT", :integer, 5),
+  broadcast_contact_count: env!("BROADCAST_CONTACT_COUNT", :integer, 100)

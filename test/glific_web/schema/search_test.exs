@@ -188,7 +188,7 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
 
-    # we are just asseting that we got back one contact and it has a valid id
+    # we are just asserting that we got back one contact and it has a valid id
     assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) != 0
 
     result =
@@ -419,7 +419,7 @@ defmodule GlificWeb.Schema.SearchTest do
     result = auth_query_gql_by(:search_count, user, variables: %{"id" => saved_search.id})
 
     assert {:ok, query_data} = result
-    # we dont know how many exist from the seed daya
+    # we don't know how many exist from the seed data
     assert get_in(query_data, [:data, "savedSearchCount"]) > 1
   end
 
@@ -689,9 +689,8 @@ defmodule GlificWeb.Schema.SearchTest do
           "filter" => %{
             "term" => "",
             "dateRange" => %{
-              "from" =>
-                DateTime.utc_now() |> DateTime.to_date() |> Date.add(-2) |> Date.to_string(),
-              "to" => DateTime.utc_now() |> DateTime.to_date() |> Date.to_string()
+              "from" => DateTime.utc_now() |> DateTime.add(-2, :hour) |> DateTime.to_string(),
+              "to" => DateTime.utc_now() |> DateTime.to_string()
             }
           },
           "contactOpts" => %{"limit" => contact_count},
@@ -716,8 +715,13 @@ defmodule GlificWeb.Schema.SearchTest do
             "term" => "",
             "dateRange" => %{
               "from" =>
-                DateTime.utc_now() |> DateTime.to_date() |> Date.add(-2) |> Date.to_string(),
-              "to" => DateTime.utc_now() |> DateTime.to_date() |> Date.add(-1) |> Date.to_string()
+                DateTime.utc_now()
+                |> DateTime.add(-2, :day)
+                |> DateTime.to_string(),
+              "to" =>
+                DateTime.utc_now()
+                |> DateTime.add(-1, :day)
+                |> DateTime.to_string()
             }
           },
           "contactOpts" => %{"limit" => contact_count},
@@ -798,12 +802,12 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
 
-    conatct_ids =
+    contact_ids =
       Enum.reduce(query_data[:data]["search"], [], fn row, acc ->
         acc ++ [row["contact"]["id"]]
       end)
 
-    assert "#{contact.id}" in conatct_ids
+    assert "#{contact.id}" in contact_ids
 
     result =
       auth_query_gql_by(:search, user,
@@ -811,8 +815,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "filter" => %{
             "term" => "",
             "dateRange" => %{
-              "from" =>
-                DateTime.utc_now() |> DateTime.to_date() |> Date.add(-2) |> Date.to_string()
+              "from" => DateTime.utc_now() |> DateTime.add(-2, :hour) |> DateTime.to_string()
             }
           },
           "contactOpts" => %{"limit" => contact_count},
@@ -822,12 +825,12 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
 
-    conatct_ids =
+    contact_ids =
       Enum.reduce(query_data[:data]["search"], [], fn row, acc ->
         acc ++ [row["contact"]["id"]]
       end)
 
-    assert "#{contact.id}" in conatct_ids
+    assert "#{contact.id}" in contact_ids
 
     result =
       auth_query_gql_by(:search, user,
@@ -835,7 +838,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "filter" => %{
             "term" => "",
             "dateRange" => %{
-              "to" => DateTime.utc_now() |> DateTime.to_date() |> Date.to_string()
+              "to" => DateTime.utc_now() |> DateTime.to_string()
             }
           },
           "contactOpts" => %{"limit" => contact_count},
@@ -845,12 +848,12 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
 
-    conatct_ids =
+    contact_ids =
       Enum.reduce(query_data[:data]["search"], [], fn row, acc ->
         acc ++ [row["contact"]["id"]]
       end)
 
-    assert "#{contact.id}" in conatct_ids
+    assert "#{contact.id}" in contact_ids
   end
 
   test "Search by term will return the search input", %{staff: user} do

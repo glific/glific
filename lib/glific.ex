@@ -11,6 +11,8 @@ defmodule Glific do
   For now we'll keep some commonly used functions here, until we need
   a new file
   """
+  @captcha_verify_url "https://www.google.com/recaptcha/api/siteverify"
+  @captcha_score_threshold 0.5
 
   require Logger
 
@@ -18,6 +20,8 @@ defmodule Glific do
     Partners,
     Repo
   }
+
+  alias Tesla.Multipart
 
   @doc """
   Wrapper to return :ok/:error when parsing strings to potential integers
@@ -47,7 +51,37 @@ defmodule Glific do
   end
 
   @doc """
-  Validates inputed shortcode, if shortcode is invalid it returns message that the shortcode is invalid
+  Wrapper to return :ok/:error when parsing strings to potential integers
+  """
+  @spec parse_maybe_number(String.t() | integer) :: {:ok, integer} | {:ok, nil} | :error
+  def parse_maybe_number(nil),
+    do: {:ok, nil}
+
+  def parse_maybe_number(value) when is_integer(value),
+    do: {:ok, value}
+
+  def parse_maybe_number(value) when is_float(value),
+    do: {:ok, value}
+
+  def parse_maybe_number(value) do
+    case Integer.parse(value) do
+      :error ->
+        :error
+
+      {n, ""} ->
+        {:ok, n}
+
+      _ ->
+        Float.parse(value)
+        |> case do
+          {n, ""} -> {:ok, n}
+          _ -> :error
+        end
+    end
+  end
+
+  @doc """
+  Validates inputted shortcode, if shortcode is invalid it returns message that the shortcode is invalid
   along with the valid shortcode.
   """
   @spec(
@@ -239,18 +273,18 @@ defmodule Glific do
   end
 
   @doc """
-  Given a string seperated by spaces, commas, or semi-colons, create a set of individual
+  Given a string separated by spaces, commas, or semi-colons, create a set of individual
   elements in the string
   """
   @spec make_set(String.t(), list()) :: MapSet.t()
-  def make_set(str, seperators \\ [",", ";"]) do
+  def make_set(str, separators \\ [",", ";"]) do
     str
     # string downcase for making it case-insensitive
     |> String.downcase()
     # First ALWAYS split by white space
     |> String.split()
-    # then split by seperators
-    |> Enum.flat_map(fn x -> String.split(x, seperators, trim: true) end)
+    # then split by separators
+    |> Enum.flat_map(fn x -> String.split(x, separators, trim: true) end)
     # finally create a mapset for easy fast checks
     |> MapSet.new()
   end
@@ -302,4 +336,66 @@ defmodule Glific do
 
     {:error, error}
   end
+
+  @doc """
+  Verifying Google Captcha
+  """
+  @spec verify_google_captcha(String.t()) :: {:ok, String.t()} | {:error, any()}
+  def verify_google_captcha(token) do
+    create_request(token)
+    |> then(&Tesla.post(@captcha_verify_url, &1))
+    |> handle_response()
+  end
+
+  @spec create_request(String.t()) :: Tesla.Multipart.t()
+  defp create_request(token) do
+    Multipart.new()
+    |> Multipart.add_field("secret", Application.get_env(:glific, :google_captcha_secret_key))
+    |> Multipart.add_field("response", token)
+  end
+
+  @spec handle_response(tuple()) :: tuple()
+  defp handle_response(response) do
+    response
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        response_body = Jason.decode!(body)
+
+        if response_body["success"] && response_body["score"] > @captcha_score_threshold do
+          {:ok, "success"}
+        else
+          captcha_error =
+            response_body
+            |> Map.get("error-codes", "Token verification failed")
+            |> List.first()
+
+          Logger.info("Failed to verify Google Captcha: #{captcha_error}")
+          {:error, "Failed to verify Google Captcha: #{captcha_error}"}
+        end
+
+      {_status, response} ->
+        Logger.info("Invalid response verifying Google Captcha: #{response}")
+        {:error, "invalid response #{inspect(response)}"}
+    end
+  end
+
+  @doc """
+  Adds a limit to restrict accessing data from big tables like messages, contacts
+  which slows DB and takes longer to complete request
+
+  Adding upper limit to 50 when limit is passed and is more than 50
+  Adding limit to 25 when limit is not passed in args
+  """
+  @spec add_limit(map) :: map()
+  def add_limit(%{opts: %{limit: limit}} = args) when limit > 50 do
+    opts = Map.get(args, :opts, %{})
+
+    Map.put(args, :opts, Map.put(opts, :limit, 50))
+  end
+
+  def add_limit(%{opts: %{limit: _limit}} = args), do: args
+
+  def add_limit(%{opts: opts} = args), do: Map.put(args, :opts, Map.put(opts, :limit, 25))
+
+  def add_limit(args), do: Map.put(args, :opts, Map.put(%{}, :limit, 25))
 end

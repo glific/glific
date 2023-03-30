@@ -15,10 +15,14 @@ defmodule Glific.BigQueryTest do
     {
       Goth.Token,
       [:passthrough],
-      [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+      [
+        for_scope: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ]
     }
   ]) do
-    %{token: "0xFAKETOKEN_Q="}
+    %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}
   end
 
   setup do
@@ -48,73 +52,6 @@ defmodule Glific.BigQueryTest do
     :ok
   end
 
-  @max_id 100
-  @min_id 0
-
-  defp get_max_id(table, attrs) do
-    data =
-      BigQuery.get_table_struct(table)
-      |> select([m], m.id)
-      |> where([m], m.organization_id == ^attrs.organization_id)
-      |> order_by([m], asc: m.id)
-      |> limit(100)
-      |> Repo.all()
-
-    if is_list(data), do: List.last(data), else: @max_id
-  end
-
-  test "queue_table_data/4 should create job for messages",
-       %{global_schema: global_schema} = attrs do
-    max_id = get_max_id("messages", attrs)
-
-    BigQueryWorker.queue_table_data("messages", attrs.organization_id, %{
-      min_id: @min_id,
-      max_id: max_id
-    })
-
-    assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
-    Oban.drain_queue(queue: :bigquery)
-  end
-
-  test "queue_table_data/4 should create job for contacts",
-       %{global_schema: global_schema} = attrs do
-    max_id = get_max_id("contacts", attrs)
-
-    BigQueryWorker.queue_table_data("contacts", attrs.organization_id, %{
-      min_id: @min_id,
-      max_id: max_id
-    })
-
-    assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
-    Oban.drain_queue(queue: :bigquery)
-  end
-
-  test "queue_table_data/4 should create job for flows",
-       %{global_schema: global_schema} = attrs do
-    max_id = get_max_id("flows", attrs)
-
-    BigQueryWorker.queue_table_data("flows", attrs.organization_id, %{
-      min_id: @min_id,
-      max_id: max_id
-    })
-
-    assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
-    Oban.drain_queue(queue: :bigquery)
-  end
-
-  test "queue_table_data/4 should create job for flow_results",
-       %{global_schema: global_schema} = attrs do
-    max_id = get_max_id("flow_results", attrs)
-
-    BigQueryWorker.queue_table_data("flow_results", attrs.organization_id, %{
-      min_id: @min_id,
-      max_id: max_id
-    })
-
-    assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
-    Oban.drain_queue(queue: :bigquery)
-  end
-
   test "periodic_updates/4 should create job for to remove duplicate contact",
        %{global_schema: global_schema} = attrs do
     BigQueryWorker.periodic_updates(attrs.organization_id)
@@ -140,7 +77,9 @@ defmodule Glific.BigQueryTest do
         Goth.Token,
         [:passthrough],
         [
-          fetch: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
         ]
       }
     ]) do
@@ -167,7 +106,11 @@ defmodule Glific.BigQueryTest do
       {
         Goth.Token,
         [:passthrough],
-        [fetch: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+        [
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
+        ]
       }
     ]) do
       # we'll need to figure out how to check if this did the right thing
@@ -259,16 +202,6 @@ defmodule Glific.BigQueryTest do
                table: "messages",
                max_id: nil
              )
-  end
-
-  test "handle_sync_errors/2 should raise error", attrs do
-    assert_raise ArgumentError, fn ->
-      BigQuery.handle_sync_errors(
-        {:error, "error"},
-        attrs.organization_id,
-        attrs
-      )
-    end
   end
 
   test "handle_sync_errors/2 return ok atom when status is not ALREADY_EXISTS", attrs do

@@ -77,6 +77,20 @@ defmodule GlificWeb.Schema.MessageTest do
     assert get_in(message, ["receiver", "id"]) > 0
   end
 
+  test "messages field returns list of messages based on limits in opts", %{staff: user} do
+    Enum.each(1..50, fn _x -> Fixtures.message_fixture(%{}) end)
+    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{}})
+    assert {:ok, query_data} = result
+    messages = get_in(query_data, [:data, "messages"])
+    assert length(messages) == 25
+
+    # messages field returns list of messages when limit passed is more than 50
+    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 60}})
+    assert {:ok, query_data} = result
+    messages = get_in(query_data, [:data, "messages"])
+    assert length(messages) == 50
+  end
+
   test "messages field returns list of messages in various filters", %{staff: user} do
     result =
       auth_query_gql_by(:list, user, variables: %{"filter" => %{"body" => "Default message body"}})
@@ -161,7 +175,7 @@ defmodule GlificWeb.Schema.MessageTest do
     messages = get_in(query_data, [:data, "messages"])
     assert length(messages) == 3
 
-    # lets make sure we dont get Test as a message
+    # lets make sure we don't get Test as a message
     assert get_in(messages, [Access.at(0), "body"]) != "Test"
     assert get_in(messages, [Access.at(1), "body"]) != "Test"
     assert get_in(messages, [Access.at(2), "body"]) != "Test"
@@ -239,7 +253,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert {:ok, query_data} = result
     assert "Message body" = get_in(query_data, [:data, "createMessage", "message", "body"])
 
-    # create message without required atributes
+    # create message without required attributes
     result =
       auth_query_gql_by(:create, user,
         variables: %{

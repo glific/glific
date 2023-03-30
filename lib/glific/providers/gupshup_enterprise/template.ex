@@ -3,17 +3,26 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
   Module for handling template operations specific to Gupshup
   """
 
+  @behaviour Glific.Providers.TemplateBehaviour
   alias Glific.{
     Partners,
     Repo,
     Settings.Language,
-    Templates
+    Templates,
+    Templates.SessionTemplate
   }
 
   @template_status %{
     "ENABLED" => "APPROVED",
     "REJECTED" => "REJECTED"
   }
+
+  @doc """
+  Submitting HSM template for approval
+  """
+  @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, any()}
+  def submit_for_approval(attrs),
+    do: {:ok, Templates.get_session_template!(attrs.id)}
 
   @doc """
   Import pre approved templates when BSP is GupshupEnterprise
@@ -30,6 +39,14 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
     |> Templates.update_hsms(organization)
 
     {:ok, %{message: "All templates have been added"}}
+  end
+
+  @doc """
+  Bulk apply templates from CSV when BSP is GupshupEnterprise
+  """
+  @spec bulk_apply_templates(non_neg_integer(), String.t()) :: {:ok, any}
+  def bulk_apply_templates(_organization_id, _data) do
+    {:ok, %{message: "Feature not available"}}
   end
 
   @doc """

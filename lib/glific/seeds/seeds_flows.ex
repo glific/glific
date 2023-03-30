@@ -1,6 +1,8 @@
 defmodule Glific.Seeds.SeedsFlows do
   @moduledoc false
 
+  import Ecto.Query, warn: false
+
   alias Glific.{
     Flows.Flow,
     Flows.FlowLabel,
@@ -9,6 +11,7 @@ defmodule Glific.Seeds.SeedsFlows do
     Partners.Organization,
     Repo,
     Seeds.SeedsDev,
+    Settings,
     Templates.InteractiveTemplate
   }
 
@@ -21,11 +24,97 @@ defmodule Glific.Seeds.SeedsFlows do
       {uuid_map, data} = get_data_and_uuid_map(org)
       {opt_uuid_map, opt_data} = get_opt_data(org)
 
+      add_interactive_templates(org)
+
       add_flow(
         org,
         data ++ opt_data,
         Map.merge(uuid_map, opt_uuid_map)
       )
+    end)
+  end
+
+  @spec add_interactive_templates(Organization.t()) :: :ok
+  defp add_interactive_templates(org) do
+    SeedsDev.seed_optin_interactives(org)
+
+    [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
+
+    [
+      %{
+        "type" => "quick_reply",
+        "content" => %{
+          "text" => "Hello!😁 \nTell me- What do you want to do today?",
+          "type" => "text",
+          "header" => "Profile Selection"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "Create New Profile"},
+          %{"type" => "text", "title" => "Select Profile"},
+          %{"type" => "text", "title" => "Start New Activity"}
+        ]
+      },
+      %{
+        "type" => "quick_reply",
+        "content" => %{
+          "text" =>
+            "Great! Before starting an activity, Kindly confirm who is using the phone now :)\n\n*Name:* @contact.fields.name\n*Role:* @contact.fields.role",
+          "type" => "text",
+          "header" => "Profile Confirmation",
+          "caption" => ""
+        },
+        "options" => [
+          %{"type" => "text", "title" => "Switch User"},
+          %{"type" => "text", "title" => "Continue"}
+        ]
+      },
+      %{
+        "type" => "quick_reply",
+        "content" => %{"text" => "Whose profile is this?", "type" => "text", "header" => "Role"},
+        "options" => [
+          %{"type" => "text", "title" => "Student"},
+          %{"type" => "text", "title" => "Parent"}
+        ]
+      },
+      %{
+        "type" => "quick_reply",
+        "content" => %{
+          "text" =>
+            "Please *confirm* if the below details are correct-\n\n*Name:* @results.name\n*Profile of:* @results.role",
+          "type" => "text",
+          "header" => "Details Confirmation",
+          "caption" => ""
+        },
+        "options" => [
+          %{"type" => "text", "title" => "Correct"},
+          %{"type" => "text", "title" => "Re-enter details"}
+        ]
+      },
+      %{
+        "type" => "quick_reply",
+        "content" => %{
+          "text" => "Would you like to learn more about Glific?",
+          "type" => "text",
+          "header" => "More about Glific",
+          "caption" => ""
+        },
+        "options" => [
+          %{"type" => "text", "title" => "👍 Yes"},
+          %{"type" => "text", "title" => "👎 No"}
+        ]
+      }
+    ]
+    |> Enum.each(fn interactive_content ->
+      Repo.insert!(%InteractiveTemplate{
+        label: get_in(interactive_content, ["content", "header"]),
+        type: :quick_reply,
+        interactive_content: interactive_content,
+        organization_id: org.id,
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content
+        }
+      })
     end)
   end
 
@@ -51,11 +140,16 @@ defmodule Glific.Seeds.SeedsFlows do
     {:ok, optout_collection} =
       Repo.fetch_by(Group, %{label: "Optout contacts", organization_id: organization.id})
 
+    {:ok, started_ab} =
+      Repo.fetch_by(Group, %{label: "STARTED_AB", organization_id: organization.id})
+
     uuid_map = %{
       optin: generate_uuid(organization, "dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f"),
       optout: generate_uuid(organization, "9e607fd5-232e-43c8-8fac-d8a99d72561e"),
+      ab_test: generate_uuid(organization, "5f3fd8c6-2ec3-4945-8e7c-314db8c04c31"),
       optin_collection: Integer.to_string(optin_collection.id),
-      optout_collection: Integer.to_string(optout_collection.id)
+      optout_collection: Integer.to_string(optout_collection.id),
+      started_ab_collection: Integer.to_string(started_ab.id)
     }
 
     data = [
@@ -92,11 +186,33 @@ defmodule Glific.Seeds.SeedsFlows do
         acc |> Map.merge(%{flow_label.name => flow_label.uuid})
       end)
 
-    Enum.each(data, &flow(&1, organization, uuid_map, flow_labels_id_map))
+    interactive_template_map =
+      InteractiveTemplate
+      |> where([m], m.organization_id == ^organization.id)
+      |> select([m], %{label: m.label, id: m.id})
+      |> Repo.all()
+      |> Enum.reduce(%{}, fn interactive_template, acc ->
+        name =
+          interactive_template.label
+          |> String.downcase()
+          |> String.replace(" ", "_")
+          |> then(&(&1 <> "_id"))
+
+        Map.merge(acc, %{name => interactive_template.id})
+      end)
+
+    Enum.each(
+      data,
+      &flow(&1, organization,
+        uuid_map: uuid_map,
+        id_map: flow_labels_id_map,
+        label_map: interactive_template_map
+      )
+    )
   end
 
-  @spec flow(tuple(), Organization.t(), map(), map()) :: nil
-  defp flow({name, keywords, uuid, ignore_keywords, file}, organization, uuid_map, id_map) do
+  @spec flow(tuple(), Organization.t(), Keyword.t()) :: nil
+  defp flow({name, keywords, uuid, ignore_keywords, file}, organization, opts) do
     f =
       Repo.insert!(%Flow{
         name: name,
@@ -107,17 +223,21 @@ defmodule Glific.Seeds.SeedsFlows do
         organization_id: organization.id
       })
 
-    flow_revision(f, organization, file, uuid_map, id_map)
+    flow_revision(f, organization, file, opts)
   end
 
   @doc false
-  @spec flow_revision(Flow.t(), Organization.t(), String.t(), map(), map()) :: nil
-  def flow_revision(f, organization, file, uuid_map, id_map) do
+  @spec flow_revision(Flow.t(), Organization.t(), String.t(), Keyword.t()) :: nil
+  def flow_revision(f, organization, file, opts \\ []) do
+    uuid_map = Keyword.get(opts, :uuid_map, %{})
+    id_map = Keyword.get(opts, :id_map, %{})
+    label_map = Keyword.get(opts, :label_map, %{})
+
     definition =
       File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> file))
       |> replace_uuids(uuid_map)
       |> replace_label_uuids(id_map)
-      |> replace_interactive_template_id(organization)
+      |> replace_interactive_template_id(label_map)
       |> Jason.decode!()
       |> Map.merge(%{
         "name" => f.name,
@@ -151,39 +271,13 @@ defmodule Glific.Seeds.SeedsFlows do
   @spec replace_label_uuids(String.t(), map()) :: String.t()
   defp replace_label_uuids(json, flow_labels_id_map),
     do:
-      Enum.reduce(
-        flow_labels_id_map,
-        json,
-        fn {key, id}, acc ->
-          String.replace(
-            acc,
-            key |> Kernel.<>(":ID"),
-            "#{id}"
-          )
-        end
-      )
+      Enum.reduce(flow_labels_id_map, json, fn {key, id}, acc ->
+        String.replace(acc, key |> Kernel.<>(":ID"), "#{id}")
+      end)
 
-  @spec replace_interactive_template_id(String.t(), Organization.t()) :: String.t()
-  defp replace_interactive_template_id(json, organization) do
-    optin_template =
-      Repo.fetch_by(InteractiveTemplate, %{label: "Optin template"})
-      |> case do
-        {:ok, optin_template} -> optin_template
-        {:error, _error} -> SeedsDev.seed_optin_interactives(organization)
-      end
-
-    Enum.reduce(
-      %{"optin_template_id" => optin_template.id},
-      json,
-      fn {_key, id}, acc ->
-        String.replace(
-          acc,
-          "optin_template_id",
-          "#{id}"
-        )
-      end
-    )
-  end
+  @spec replace_interactive_template_id(String.t(), map()) :: String.t()
+  defp replace_interactive_template_id(json, label_map),
+    do: Enum.reduce(label_map, json, fn {key, id}, acc -> String.replace(acc, key, "#{id}") end)
 
   @spec get_data_and_uuid_map(Organization.t()) :: tuple()
   defp get_data_and_uuid_map(organization) do
@@ -194,7 +288,11 @@ defmodule Glific.Seeds.SeedsFlows do
       registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
       activity: generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
       feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5"),
-      template: generate_uuid(organization, "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd")
+      template: generate_uuid(organization, "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"),
+      multiple_profile: generate_uuid(organization, "3c50b79a-0420-4ced-bcd7-f37e0577cca6"),
+      multiple_profile_creation:
+        generate_uuid(organization, "15666d20-7ba9-4698-adf1-50e91cee2b6b"),
+      ab_test: generate_uuid(organization, "5f3fd8c6-2ec3-4945-8e7c-314db8c04c31")
     }
 
     data = [
@@ -205,7 +303,12 @@ defmodule Glific.Seeds.SeedsFlows do
       {"New Contact Workflow", ["newcontact"], uuid_map.newcontact, false, "new_contact.json"},
       {"Registration Workflow", ["registration"], uuid_map.registration, false,
        "registration.json"},
-      {"Template Workflow", ["template"], uuid_map.template, false, "template.json"}
+      {"Template Workflow", ["template"], uuid_map.template, false, "template.json"},
+      {"Multiple Profiles", ["multiple"], uuid_map.multiple_profile, false,
+       "multiple_profile.json"},
+      {"Multiple Profile Creation Flow", ["profilecreation"], uuid_map.multiple_profile_creation,
+       false, "multiple_profile_creation.json"},
+      {"AB Test Workflow", ["abtest"], uuid_map.ab_test, false, "ab_test.json"}
     ]
 
     {uuid_map, data}

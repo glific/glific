@@ -180,6 +180,14 @@ defmodule Glific.Templates do
   end
 
   @doc """
+  Bulk applying templates from CSV
+  """
+  @spec bulk_apply_templates(non_neg_integer(), String.t()) :: {:ok, any} | {:error, any}
+  def bulk_apply_templates(org_id, data) do
+    Provider.bsp_module(org_id, :template).bulk_apply_templates(org_id, data)
+  end
+
+  @doc """
   Updates a session_template.
 
   ## Examples
@@ -215,7 +223,7 @@ defmodule Glific.Templates do
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def delete_session_template(%SessionTemplate{} = session_template) do
     if session_template.is_hsm do
-      Task.async(fn ->
+      Task.Supervisor.async_nolink(Glific.TaskSupervisor, fn ->
         org_id = session_template.organization_id
         bsp_module = Provider.bsp_module(org_id, :template)
         bsp_module.delete(org_id, Map.from_struct(session_template))

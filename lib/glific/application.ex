@@ -49,7 +49,10 @@ defmodule Glific.Application do
       Glific.State,
 
       # Add the broadcast task supervisor
-      {Task.Supervisor, name: Glific.Broadcast.Supervisor}
+      {Task.Supervisor, name: Glific.Broadcast.Supervisor},
+
+      ## Add Generic task supervisor
+      {Task.Supervisor, name: Glific.TaskSupervisor}
     ]
 
     # Add this :telemetry.attach/4 for oban success/failure call:

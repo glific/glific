@@ -37,6 +37,8 @@ defmodule GlificWeb.ConnCase do
       # The default endpoint for testing
       @endpoint GlificWeb.Endpoint
 
+      use GlificWeb, :verified_routes
+
       defmacro auth_query_gql_by(query, user, options \\ []) do
         quote do
           options_user =
@@ -62,6 +64,8 @@ defmodule GlificWeb.ConnCase do
 
     Glific.Repo.put_organization_id(1)
     Glific.Repo.put_current_user(manager)
+    Fixtures.set_bsp_partner_tokens(organization_id)
+
     Code.compiler_options(ignore_module_conflict: true)
 
     {

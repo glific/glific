@@ -67,6 +67,27 @@ defmodule Glific.Flows.Router do
   Process a json structure from flow editor to the Glific data types
   """
   @spec process(map(), map(), Node.t()) :: {Router.t(), map()}
+  def process(%{"type" => "random"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, [:type, :categories])
+
+    router = %Router{
+      node: node,
+      node_uuid: node.uuid,
+      type: json["type"],
+      operand: json["operand"] || "",
+      result_name: json["result_name"]
+    }
+
+    {categories, uuid_map} =
+      Flows.build_flow_objects(
+        json["categories"],
+        uuid_map,
+        &Category.process/3
+      )
+
+    {Map.put(router, :categories, categories), uuid_map}
+  end
+
   def process(json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields)
 
@@ -175,8 +196,30 @@ defmodule Glific.Flows.Router do
   def execute(nil, context, messages),
     do: {:ok, context, messages}
 
+  ## Check if there is no messages and wait for
+  ## user message to process further.
+
   def execute(%{wait: wait} = _router, context, []) when wait != nil,
     do: Wait.execute(wait, context, [])
+
+  def execute(%{type: type} = router, context, messages) when type == "random" do
+    Node.bump_count(router.node, context)
+
+    {msg, rest} =
+      if messages == [] do
+        msg =
+          context.organization_id
+          |> Messages.create_temp_message("random")
+
+        {msg, []}
+      else
+        [msg | rest] = messages
+        {msg, rest}
+      end
+
+    {category_uuid, is_checkbox} = find_category(router, context, msg)
+    execute_category(router, context, {msg, rest}, {category_uuid, is_checkbox})
+  end
 
   def execute(%{type: type} = router, context, messages) when type == "switch" do
     Node.bump_count(router.node, context)
@@ -276,6 +319,11 @@ defmodule Glific.Flows.Router do
       else: {category.uuid, false}
   end
 
+  defp find_category(%{type: "random"} = router, _context, _msg) do
+    category = Enum.random(router.categories)
+    {category.uuid, false}
+  end
+
   defp find_category(router, context, msg) do
     # go thru the cases and find the first one that succeeds
     c =
@@ -358,6 +406,8 @@ defmodule Glific.Flows.Router do
   ## Format operand and replace @fields. to @contact.fields. so that system can parse it automatically.
   ## for other router operand we are handling everything in a same way.
   @spec format_operand(String.t()) :: String.t()
+  defp format_operand(nil), do: ""
+
   defp format_operand(operand) do
     if String.starts_with?(operand, "@fields."),
       do: String.replace(operand, "fields.", "contact.fields.", global: false),

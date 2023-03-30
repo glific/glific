@@ -285,7 +285,7 @@ defmodule Glific.Flows.RouterTest do
     # incorrect EEx expression
     {router, uuid_map} =
       json
-      |> Map.merge(%{"operand" => "<%= end %>"})
+      |> Map.merge(%{"operand" => "<% end %>"})
       |> Router.process(uuid_map, node)
 
     context = flow_context_fixture(%{uuid_map: uuid_map})

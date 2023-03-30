@@ -353,7 +353,7 @@ defmodule Glific.FLowsTest do
       first_action = hd(hd(flow.nodes).actions)
 
       assert {:ok, _message} =
-               Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact.id})
+               Repo.fetch_by(Message, %{uuid: first_action.node_uuid, contact_id: contact.id})
     end
 
     test "start_contact_flow/2 if flow is not available", attrs do
@@ -398,6 +398,7 @@ defmodule Glific.FLowsTest do
       group = Fixtures.group_fixture()
       contact = Fixtures.contact_fixture()
       contact2 = Fixtures.contact_fixture()
+      default_results = %{key: "value"}
 
       Groups.create_contact_group(%{
         group_id: group.id,
@@ -411,7 +412,7 @@ defmodule Glific.FLowsTest do
         organization_id: attrs.organization_id
       })
 
-      {:ok, flow} = Flows.start_group_flow(flow, group)
+      {:ok, flow} = Flows.start_group_flow(flow, group, default_results)
 
       assert {:ok, message_broadcast} =
                Repo.fetch_by(MessageBroadcast, %{
@@ -422,18 +423,18 @@ defmodule Glific.FLowsTest do
       assert message_broadcast.completed_at == nil
 
       # lets sleep for 3 seconds, to ensure that messages have been delivered
-      Broadcast.execute_group_broadcasts(attrs.organization_id)
+      Broadcast.execute_broadcasts(attrs.organization_id)
       Process.sleep(3_000)
 
       first_action = hd(hd(flow.nodes).actions)
 
       assert {:ok, _message} =
-               Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact.id})
+               Repo.fetch_by(Message, %{uuid: first_action.node_uuid, contact_id: contact.id})
 
       assert {:ok, _message} =
-               Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact2.id})
+               Repo.fetch_by(Message, %{uuid: first_action.node_uuid, contact_id: contact2.id})
 
-      Broadcast.execute_group_broadcasts(attrs.organization_id)
+      Broadcast.execute_broadcasts(attrs.organization_id)
 
       assert {:ok, message_broadcast} =
                Repo.fetch_by(MessageBroadcast, %{
@@ -442,6 +443,9 @@ defmodule Glific.FLowsTest do
                })
 
       assert message_broadcast.completed_at != nil
+
+      broadcast_results = message_broadcast.default_results
+      assert broadcast_results["key"] == default_results.key
     end
 
     test "copy_flow/2 with valid data makes a copy of flow" do

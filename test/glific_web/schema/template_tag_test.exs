@@ -37,7 +37,7 @@ defmodule GlificWeb.Schema.TemplateTagTest do
     assert template_tag["tag"]["id"] |> String.to_integer() == tag.id
 
     # try creating the same template tag twice
-    # upserts come into play here and we dont return an error
+    # upserts come into play here and we don't return an error
     result =
       auth_query_gql_by(:create, user,
         variables: %{"input" => %{"template_id" => template.id, "tag_id" => tag.id}}

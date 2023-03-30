@@ -202,13 +202,19 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   defp default_ids(),
     do: [
-      product: "prod_JG5ns5s9yPRiOq",
       setup: "price_1IdZeIEMShkCsLFn5OdWiuC4",
-      monthly: "price_1IdZbfEMShkCsLFn8TF0NLPO",
-      users: "price_1IdZehEMShkCsLFnyYhuDu6p",
-      messages: "price_1IdZdTEMShkCsLFnPAf9zzym",
-      consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk",
-      inactive: "price_1ImvA9EMShkCsLFnTtiXOslM"
+      monthly: %{
+        users: "price_1IdZehEMShkCsLFnyYhuDu6p",
+        monthly: "price_1IdZbfEMShkCsLFn8TF0NLPO",
+        product: "prod_JG5ns5s9yPRiOq",
+        inactive: "price_1ImvA9EMShkCsLFnTtiXOslM",
+        messages: "price_1IdZdTEMShkCsLFnPAf9zzym",
+        consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk"
+      },
+      quarterly: %{
+        product: "prod_N11hy4EQ5YbJNd",
+        quarterly: "price_1MGzdvEMShkCsLFninxSY6iZ"
+      }
     ]
 
   def gtags(organization, en) do
@@ -576,7 +582,10 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       %{name: "Age Group 15 to 18"},
       %{name: "Age Group 19 or above"},
       %{name: "Hindi"},
-      %{name: "English"}
+      %{name: "English"},
+      %{name: "AB_A_Success"},
+      %{name: "AB_B_Success"},
+      %{name: "AB_C_Success"}
     ]
 
     flow_labels =

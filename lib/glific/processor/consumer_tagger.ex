@@ -23,37 +23,17 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @doc false
   @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
-  def process_message({message, state}, body) do
+  def process_message({message, state}, _body) do
     state = Map.put(state, :tagged, false)
 
     {message, state}
-    |> keyword_tagger(body)
     |> new_contact_tagger()
-
-    # |> numeric_tagger(body)
-    # |> dialogflow_tagger()
-  end
-
-  @spec keyword_tagger({atom() | Message.t(), map()}, String.t()) :: {Message.t(), map()}
-  defp keyword_tagger({message, state}, body) do
-    case Taggers.Keyword.tag_body(body, state.keyword_map) do
-      {:ok, value} ->
-        {
-          Helper.add_tag(message, value, body),
-          Map.put(state, :tagged, true)
-        }
-
-      _ ->
-        {message, state}
-    end
   end
 
   @spec new_contact_tagger({atom() | Message.t(), map()}) :: {Message.t(), map()}
   defp new_contact_tagger({message, state}) do
-    if Status.is_new_contact(message.sender_id) do
-      message
-      |> add_status_tag("newcontact", state)
-
+    if Status.is_new_contact(message) do
+      add_status_tag(message, "newcontact", state)
       {message, state |> Map.put(:tagged, true) |> Map.put(:newcontact, true)}
     else
       {message, state}

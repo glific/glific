@@ -41,10 +41,12 @@ defmodule Glific.Messages do
 
   """
   @spec list_messages(map()) :: [Message.t()]
-  def list_messages(args),
-    do:
-      Repo.list_filter(args, Message, &Repo.opts_with_body/2, &filter_with/2)
-      |> Enum.map(&put_clean_body/1)
+  def list_messages(args) do
+    args
+    |> Glific.add_limit()
+    |> Repo.list_filter(Message, &Repo.opts_with_body/2, &filter_with/2)
+    |> Enum.map(&put_clean_body/1)
+  end
 
   @doc """
   Return the count of messages, using the same filter as list_messages
@@ -158,7 +160,10 @@ defmodule Glific.Messages do
 
     %Message{}
     |> Message.changeset(attrs)
-    |> Repo.insert(returning: [:message_number, :session_uuid, :context_message_id])
+    |> Repo.insert(
+      returning: [:message_number, :session_uuid, :context_message_id],
+      timeout: 45_000
+    )
   end
 
   @spec put_contact_id(map()) :: map()
@@ -228,6 +233,9 @@ defmodule Glific.Messages do
 
   @doc false
   @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
+  def create_and_send_message(%{body: body, type: :text} = _attrs) when body in ["", nil],
+    do: {:error, "Could not send message with empty body"}
+
   def create_and_send_message(attrs) do
     contact = Contacts.get_contact!(attrs.receiver_id)
     attrs = Map.put(attrs, :receiver, contact)
@@ -725,8 +733,11 @@ defmodule Glific.Messages do
 
   """
   @spec list_messages_media(map()) :: [MessageMedia.t()]
-  def list_messages_media(args \\ %{}),
-    do: Repo.list_filter(args, MessageMedia, &opts_media_with/2, &filter_media_with/2)
+  def list_messages_media(args \\ %{}) do
+    args
+    |> Glific.add_limit()
+    |> Repo.list_filter(MessageMedia, &opts_media_with/2, &filter_media_with/2)
+  end
 
   defp filter_media_with(query, _), do: query
 
@@ -1252,8 +1263,10 @@ defmodule Glific.Messages do
   @doc """
     Get Media type from a url. We will primary use it for when we receive the url from EEX call.
   """
-  @spec get_media_type_from_url(String.t()) :: tuple()
-  def get_media_type_from_url(url) do
+  @spec get_media_type_from_url(String.t(), Keyword.t()) :: tuple()
+  def get_media_type_from_url(url, opts \\ []) do
+    log_error = Keyword.get(opts, :log_error, true)
+
     extension =
       url
       |> Path.extname()
@@ -1276,7 +1289,7 @@ defmodule Glific.Messages do
         {type, url}
 
       _ ->
-        Logger.info("Could not find media type for extension: #{extension}")
+        if log_error, do: Logger.info("Could not find media type for extension: #{extension}")
         {:text, nil}
     end
   end

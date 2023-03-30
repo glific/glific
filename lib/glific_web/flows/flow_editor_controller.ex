@@ -5,7 +5,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
   use GlificWeb, :controller
 
-  plug :set_appsignal_namespace
+  plug(:set_appsignal_namespace)
 
   alias Glific.{
     Contacts,
@@ -19,6 +19,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Partners,
     Repo,
     Settings,
+    Sheets,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Users.User
@@ -365,7 +366,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
   @doc """
   instead of reading a file we can call it directly from Assets.
-  We will come back on that when we have more clearity of the use cases
+  We will come back on that when we have more clarity of the use cases
   """
   @spec completion(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def completion(conn, _params) do
@@ -474,7 +475,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   def revisions(conn, %{"vars" => vars}) do
     case vars do
       [flow_uuid] -> json(conn, Flows.get_flow_revision_list(flow_uuid))
-      [flow_uuid, revison_id] -> json(conn, Flows.get_flow_revision(flow_uuid, revison_id))
+      [flow_uuid, revision_id] -> json(conn, Flows.get_flow_revision(flow_uuid, revision_id))
     end
   end
 
@@ -514,11 +515,32 @@ defmodule GlificWeb.Flows.FlowEditorController do
     res =
       GcsWorker.upload_media(media.path, remote_name, organization_id)
       |> case do
-        {:ok, gcs_url} -> %{url: gcs_url, error: nil}
+        {:ok, media} -> %{url: media.url, type: media.type, error: nil}
         {:error, error} -> %{url: nil, error: error}
       end
 
     json(conn, res)
+  end
+
+  @doc false
+  @spec sheets(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def sheets(conn, _params) do
+    results =
+      Sheets.list_sheets(%{
+        filter: %{organization_id: conn.assigns[:organization_id], is_active: true}
+      })
+      |> Enum.reduce([], fn sheet, acc ->
+        [
+          %{
+            id: sheet.id,
+            name: sheet.label,
+            url: sheet.url
+          }
+          | acc
+        ]
+      end)
+
+    json(conn, %{results: results})
   end
 
   @doc false

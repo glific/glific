@@ -52,7 +52,8 @@ defmodule Glific.Partners.Billing do
     :is_delinquent,
     :is_active,
     :deduct_tds,
-    :tds_amount
+    :tds_amount,
+    :billing_period
   ]
 
   @type t() :: %__MODULE__{
@@ -73,6 +74,7 @@ defmodule Glific.Partners.Billing do
           is_active: boolean() | true,
           deduct_tds: boolean() | false,
           tds_amount: float() | nil,
+          billing_period: String.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -97,8 +99,8 @@ defmodule Glific.Partners.Billing do
     field :is_active, :boolean, default: true
 
     field :deduct_tds, :boolean, default: false
-
     field :tds_amount, :float
+    field :billing_period, :string
 
     belongs_to :organization, Organization
 
@@ -141,7 +143,7 @@ defmodule Glific.Partners.Billing do
   def get_billing(clauses), do: Repo.get_by(Billing, clauses, skip_organization_id: true)
 
   @doc """
-  Upate the billing record
+  Update the billing record
   """
   @spec update_billing(Billing.t(), map()) ::
           {:ok, Billing.t()} | {:error, Ecto.Changeset.t()}
@@ -152,7 +154,7 @@ defmodule Glific.Partners.Billing do
   end
 
   @doc """
-  Upate the stripe customer details record
+  Update the stripe customer details record
   """
   @spec update_stripe_customer(Billing.t(), map()) ::
           {:ok, Billing.t()} | {:error, Stripe.Error.t()}
@@ -219,7 +221,7 @@ defmodule Glific.Partners.Billing do
   defp format_errors([]), do: :ok
   defp format_errors(list), do: {:error, Enum.join(list, ", ")}
 
-  # We dont know what to do with billing currency as yet, but we'll figure it out soon
+  # We don't know what to do with billing currency as yet, but we'll figure it out soon
   # In Stripe, one contact can only have one currency
   @spec check_required(map()) :: :ok | {:error, String.t()}
   defp check_required(attrs) do
@@ -241,9 +243,16 @@ defmodule Glific.Partners.Billing do
   @doc """
   Fetch the stripe id's
   """
-  @spec stripe_ids :: map()
-  def stripe_ids,
-    do: Saas.stripe_ids()
+  @spec monthly_stripe_ids :: map()
+  def monthly_stripe_ids,
+    do: Saas.stripe_ids()["monthly"]
+
+  @doc """
+  Fetch the stripe id's
+  """
+  @spec quarterly_stripe_ids :: map()
+  def quarterly_stripe_ids,
+    do: Saas.stripe_ids()["quarterly"]
 
   @doc """
   Fetch the stripe tax rates
@@ -252,8 +261,39 @@ defmodule Glific.Partners.Billing do
   def tax_rates,
     do: Saas.tax_rates()
 
-  @spec subscription_params(Billing.t(), Organization.t()) :: map()
-  defp subscription_params(billing, organization) do
+  @spec quarterly_subscription_params(Billing.t(), Organization.t()) :: map()
+  defp quarterly_subscription_params(billing, organization) do
+    # start date should be start of next quarter
+    anchor_timestamp =
+      DateTime.utc_now()
+      |> Timex.end_of_quarter()
+      |> Timex.shift(days: 1)
+      |> Timex.beginning_of_day()
+      |> DateTime.to_unix()
+
+    prices = quarterly_stripe_ids()
+
+    %{
+      customer: billing.stripe_customer_id,
+      billing_cycle_anchor: anchor_timestamp,
+      collection_method: "send_invoice",
+      proration_behavior: "none",
+      days_until_due: 10,
+      items: [
+        %{
+          price: prices["quarterly"]
+        }
+      ],
+      metadata: %{
+        "id" => Integer.to_string(billing.organization_id),
+        "name" => organization.name
+      },
+      default_tax_rates: tax_rates()
+    }
+  end
+
+  @spec monthly_subscription_params(Billing.t(), Organization.t()) :: map()
+  defp monthly_subscription_params(billing, organization) do
     # Temporary to make sure that the subscription starts from the beginning of next month
     anchor_timestamp =
       DateTime.utc_now()
@@ -262,13 +302,13 @@ defmodule Glific.Partners.Billing do
       |> Timex.beginning_of_day()
       |> DateTime.to_unix()
 
-    prices = stripe_ids()
+    prices = monthly_stripe_ids()
 
     %{
       customer: billing.stripe_customer_id,
       # Temporary for existing customers.
       billing_cycle_anchor: anchor_timestamp,
-      prorate: false,
+      proration_behavior: "create_prorations",
       items: [
         %{
           price: prices["users"]
@@ -344,15 +384,14 @@ defmodule Glific.Partners.Billing do
   end
 
   @doc """
+  Create a monthly subscription.
   Once the organization has entered a new payment card we create a subscription for it.
-  We'll do updating the card in a seperate function
+  We'll do updating the card in a separate function
   """
-  @spec create_subscription(Organization.t(), map()) ::
+  @spec create_monthly_subscription(Organization.t(), map(), map()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
-  def create_subscription(organization, params) do
+  def create_monthly_subscription(organization, billing, params) do
     stripe_payment_method_id = params.stripe_payment_method_id
-    # get the billing record
-    billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
 
     update_payment_method(organization, stripe_payment_method_id)
     |> case do
@@ -367,16 +406,87 @@ defmodule Glific.Partners.Billing do
     end
   end
 
+  @doc """
+  Create a quarterly subscription.
+  """
+  @spec create_quarterly_subscription(Organization.t(), map()) ::
+          {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
+  def create_quarterly_subscription(organization, billing) do
+    opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
+
+    billing
+    |> quarterly_subscription_params(organization)
+    |> Subscription.create(opts)
+    |> case do
+      {:ok, subscription} ->
+        update_subscription_details(subscription, organization.id, billing)
+
+      {:error, stripe_error} ->
+        {:error, inspect(stripe_error)}
+    end
+  end
+
+  @doc """
+  create subscription on the basis of billing period
+  """
+  @spec create_period_based_subscription(Organization.t(), map(), map()) ::
+          {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
+  def create_period_based_subscription(organization, billing, params) do
+    if params |> Map.has_key?(:billing_period) do
+      params.billing_period
+      |> case do
+        "MONTHLY" ->
+          create_monthly_subscription(organization, billing, params)
+
+        "QUARTERLY" ->
+          create_quarterly_subscription(organization, billing)
+
+        _ ->
+          {:ok, billing}
+      end
+    else
+      # Setting the default as monthly for now so it doesnt need any change for frontend.
+      # Will remove this once frontend changes are implemented
+      create_monthly_subscription(organization, billing, params)
+    end
+  end
+
+  @spec add_billing_period(map(), map()) :: {:error, Ecto.Changeset.t()} | {:ok, any()}
+  defp add_billing_period(billing, %{billing_period: billing_period}) do
+    update_billing(billing, %{billing_period: billing_period})
+  end
+
+  defp add_billing_period(billing, _) do
+    # setting default as monthly for now.
+    update_billing(billing, %{billing_period: "MONTHLY"})
+  end
+
+  @doc """
+  create subscription on the basis of billing period
+  """
+  @spec create_subscription(Organization.t(), map()) ::
+          {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
+  def create_subscription(organization, params) do
+    billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
+
+    subscription = create_period_based_subscription(organization, billing, params)
+
+    case subscription do
+      {:ok, _} -> add_billing_period(billing, params)
+      _ -> subscription
+    end
+  end
+
   @spec setup(Billing.t(), Organization.t(), map()) :: Billing.t()
   defp setup(billing, organization, params) do
-    ## let's create an invocie items. We are not attaching this to the invoice
+    ## let's create an invoice items. We are not attaching this to the invoice
     ## so it will be attached automatically to the next invoice create.
 
     {:ok, invoice_item} =
       Stripe.Invoiceitem.create(%{
         customer: billing.stripe_customer_id,
         currency: billing.currency,
-        price: stripe_ids()["setup"],
+        price: Saas.stripe_ids()["setup"],
         tax_rates: tax_rates(),
         metadata: %{
           "id" => Integer.to_string(organization.id),
@@ -460,7 +570,7 @@ defmodule Glific.Partners.Billing do
     opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
 
     billing
-    |> subscription_params(organization)
+    |> monthly_subscription_params(organization)
     |> Subscription.create(opts)
     |> case do
       # subscription is active, we need to update the same information via the
@@ -509,7 +619,7 @@ defmodule Glific.Partners.Billing do
       proration_behavior: "create_prorations",
       items: [
         %{
-          price: stripe_ids()["inactive"],
+          price: monthly_stripe_ids()["inactive"],
           quantity: 1,
           tax_rates: tax_rates()
         }
@@ -521,7 +631,7 @@ defmodule Glific.Partners.Billing do
     }
 
     SubscriptionItem.delete(
-      billing.stripe_subscription_items[stripe_ids()["monthly"]],
+      billing.stripe_subscription_items[monthly_stripe_ids()["monthly"]],
       %{},
       []
     )
@@ -591,7 +701,7 @@ defmodule Glific.Partners.Billing do
     end
   end
 
-  # function to check if the subscription requires another authentcation i.e 3D
+  # function to check if the subscription requires another authentication i.e 3D
   @spec subscription_requires_auth?(Stripe.Subscription.t()) :: boolean()
   defp subscription_requires_auth?(%{pending_setup_intent: pending_setup_intent})
        when is_map(pending_setup_intent),
@@ -650,14 +760,16 @@ defmodule Glific.Partners.Billing do
     ## data.
 
     with billing <- get_billing(%{organization_id: org_id}),
-         false <- billing.stripe_subscription_items |> Map.has_key?(stripe_ids()["monthly"]) do
+         "MONTHLY" <- billing.billing_period,
+         false <-
+           billing.stripe_subscription_items |> Map.has_key?(monthly_stripe_ids()["monthly"]) do
       proration_date = DateTime.utc_now() |> DateTime.to_unix()
 
       make_stripe_request("subscription_items", :post, %{
         subscription: subscription.id,
-        prorate: true,
+        proration_behavior: "create_prorations",
         proration_date: proration_date,
-        price: stripe_ids()["monthly"],
+        price: monthly_stripe_ids()["monthly"],
         quantity: 1
       })
     else
@@ -709,7 +821,7 @@ defmodule Glific.Partners.Billing do
   defp update_period_usage(billing, end_date) do
     start_date =
       if is_nil(billing.stripe_last_usage_recorded),
-        # if we dont have last_usage, set it to start of the week as we update it on weekly basis
+        # if we don't have last_usage, set it to start of the week as we update it on weekly basis
         do: Timex.beginning_of_week(end_date),
         # We know the last time recorded usage, we bump the date
         # to the next day for this period
@@ -752,7 +864,7 @@ defmodule Glific.Partners.Billing do
 
       usage ->
         record_subscription_item(
-          subscription_items[stripe_ids()["messages"]],
+          subscription_items[monthly_stripe_ids()["messages"]],
           # dividing the messages as every 10 message is 1 unit in stripe messages subscription item
           div(usage.messages, 10),
           dates.time,
@@ -770,7 +882,7 @@ defmodule Glific.Partners.Billing do
            calculate_consulting_hours(organization_id, start_date, end_date).duration,
          false <- is_nil(consulting_hours) do
       record_subscription_item(
-        subscription_items[stripe_ids()["consulting_hours"]],
+        subscription_items[monthly_stripe_ids()["consulting_hours"]],
         # dividing the consulting hours as every 15 min is 1 unit in stripe consulting hour subscription item
         div(consulting_hours, 15),
         dates.time,
@@ -791,7 +903,7 @@ defmodule Glific.Partners.Billing do
     case Stats.usage(organization_id, dates.start_usage_date, dates.end_usage_date) do
       %{messages: _messages, users: users} ->
         record_subscription_item(
-          subscription_items[stripe_ids()["users"]],
+          subscription_items[monthly_stripe_ids()["users"]],
           users,
           dates.time,
           "users: #{organization_id}, #{Date.to_string(dates.start_usage_date)}"
@@ -847,6 +959,18 @@ defmodule Glific.Partners.Billing do
       _ ->
         {:error, "Invalid Stripe Key"}
     end
+  end
+
+  @doc """
+  List of available billing period
+  """
+  @spec list_billing_period() :: [String.t()]
+  def list_billing_period do
+    [
+      "MONTHLY",
+      "QUARTERLY",
+      "MANUAL"
+    ]
   end
 
   # events that we need to handle, delete comment once handled :)

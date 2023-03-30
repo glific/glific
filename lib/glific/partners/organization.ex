@@ -12,6 +12,7 @@ defmodule Glific.Partners.Organization do
     Contacts.Contact,
     Enums.OrganizationStatus,
     Partners.OrganizationSettings.OutOfOffice,
+    Partners.OrganizationSettings.RegxFlow,
     Partners.Provider,
     Repo,
     Settings.Language
@@ -59,6 +60,7 @@ defmodule Glific.Partners.Organization do
           default_language_id: non_neg_integer | nil,
           default_language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           out_of_office: OutOfOffice.t() | nil,
+          regx_flow: RegxFlow.t() | nil,
           newcontact_flow_id: non_neg_integer | nil,
           hours: list() | nil,
           days: list() | nil,
@@ -80,70 +82,72 @@ defmodule Glific.Partners.Organization do
         }
 
   schema "organizations" do
-    field :name, :string
-    field :shortcode, :string
+    field(:name, :string)
+    field(:shortcode, :string)
 
-    field :email, :string
+    field(:email, :string)
 
     # we'll cache all the services here
-    field :services, :map, virtual: true, default: %{}
+    field(:services, :map, virtual: true, default: %{})
 
     # we'll cache the root user of the org here, this gives
-    # us a permissioning object for calls from gupshup and
-    # floweditor
-    field :root_user, :map, virtual: true
+    # us a permission object for calls from gupshup and
+    # flow editor
+    field(:root_user, :map, virtual: true)
 
     # lets cache the start/end hours in here
     # to make it easier on the flows
-    field :hours, {:array, :time}, virtual: true
-    field :days, {:array, :integer}, virtual: true
+    field(:hours, {:array, :time}, virtual: true)
+    field(:days, {:array, :integer}, virtual: true)
 
-    belongs_to :bsp, Provider, foreign_key: :bsp_id
-    belongs_to :contact, Contact
-    belongs_to :default_language, Language
+    belongs_to(:bsp, Provider, foreign_key: :bsp_id)
+    belongs_to(:contact, Contact)
+    belongs_to(:default_language, Language)
 
-    embeds_one :out_of_office, OutOfOffice, on_replace: :update
+    embeds_one(:out_of_office, OutOfOffice, on_replace: :update)
+
+    embeds_one(:regx_flow, RegxFlow, on_replace: :update)
 
     # id of flow which gets triggered when new contact joins bot
-    field :newcontact_flow_id, :integer
-    field :is_active, :boolean, default: true
-    field :is_approved, :boolean, default: false
+    field(:newcontact_flow_id, :integer)
+    field(:is_active, :boolean, default: true)
+    field(:is_approved, :boolean, default: false)
 
-    field :status, OrganizationStatus
+    field(:status, OrganizationStatus)
 
-    field :timezone, :string, default: "Asia/Kolkata"
+    field(:timezone, :string, default: "Asia/Kolkata")
 
-    field :active_language_ids, {:array, :integer}, default: []
+    field(:active_language_ids, {:array, :integer}, default: [])
 
     # new version of ecto was giving us an error if we set the inner_type ot Language
-    field :languages, {:array, :any}, virtual: true
+    field(:languages, {:array, :any}, virtual: true)
 
-    field :session_limit, :integer, default: 60
+    field(:session_limit, :integer, default: 60)
 
     # this is just to make our friends in org id enforcer happy and to keep the code clean
-    field :organization_id, :integer
+    field(:organization_id, :integer)
 
     # webhook sign phrase, kept encrypted (soon)
-    field :signature_phrase, Glific.Encrypted.Binary
+    field(:signature_phrase, Glific.Encrypted.Binary)
 
-    field :last_communication_at, :utc_datetime
+    field(:last_communication_at, :utc_datetime)
 
-    field :fields, :map, default: %{}
+    field(:fields, :map, default: %{})
 
     # lets add support for suspending orgs briefly
-    field :is_suspended, :boolean, default: false
-    field :suspended_until, :utc_datetime
+    field(:is_suspended, :boolean, default: false)
+    field(:suspended_until, :utc_datetime)
 
     # 2085
     # Lets create a virtual field for now to conditionally enable
     # the display of node uuids. We need an NGO friendly way to do this globally
-    field :is_flow_uuid_display, :boolean, default: false, virtual: true
+    field(:is_flow_uuid_display, :boolean, default: false, virtual: true)
 
     # virtual field for roles and permission
-    field :is_roles_and_permission, :boolean, default: false, virtual: true
+    field(:is_roles_and_permission, :boolean, default: false, virtual: true)
 
     # A virtual field for now to conditionally enable contact profile feature for an organization
-    field :is_contact_profile_enabled, :boolean, default: false, virtual: true
+    field(:is_contact_profile_enabled, :boolean, default: false, virtual: true)
 
     timestamps(type: :utc_datetime)
   end
@@ -157,6 +161,7 @@ defmodule Glific.Partners.Organization do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> add_out_of_office_if_missing()
     |> cast_embed(:out_of_office, with: &OutOfOffice.out_of_office_changeset/2)
+    |> cast_embed(:regx_flow, with: &RegxFlow.regx_flow_changeset/2)
     |> validate_required(@required_fields)
     |> validate_inclusion(:timezone, Tzdata.zone_list())
     |> validate_active_languages()

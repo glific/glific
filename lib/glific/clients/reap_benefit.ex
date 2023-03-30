@@ -10,11 +10,11 @@ defmodule Glific.Clients.ReapBenefit do
     Repo
   }
 
-  @frappe_open_civic_api_url "http://frappe.solveninja.org/api/resource/"
-  @frappe_open_civic_location_api "http://frappe.solveninja.org/api/method/open_civic_backend.api.location.new"
+  @frappe_open_civic_api_url "https://solveninja.org/api/resource/"
+  @frappe_open_civic_location_api "https://solveninja.org/api/method/open_civic_backend.api.location.new"
 
   @doc """
-  In the case of RB we retrive the flow name of the object (id any)
+  In the case of RB we retrieve the flow name of the object (id any)
   and set that as the directory name
   """
   @spec gcs_file_name(map()) :: String.t()
@@ -65,13 +65,20 @@ defmodule Glific.Clients.ReapBenefit do
     token = fields["token"]
     header = get_header(token)
 
+    name =
+      if fields["contact"]["preferred_name"] in [nil, ""],
+        do: String.trim(fields["contact"]["name"]),
+        else: String.trim(fields["contact"]["preferred_name"])
+
+    name = name |> String.split() |> Enum.join("")
+
     body =
       %{
         "email" => fields["contact"]["phone"] <> "@solveninja.org ",
-        "first_name" => fields["contact"]["name"],
+        "first_name" => name,
         "mobile_no" => fields["contact"]["phone"],
-        "username" => fields["contact"]["name"],
-        "location" => fields["contact"]["Administrative_area_level_2"]
+        "username" => name,
+        "location" => fields["contact"]["Administrative_area_level_3"]
       }
       |> Jason.encode!()
 

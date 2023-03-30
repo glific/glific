@@ -312,7 +312,7 @@ Type | Description
 
 ```graphql
 mutation createBillingSubscription($input:PaymentMethodInput!) {
-  createBillingSubscription($stripePaymentMethodId: stripePaymentMethodId, $couponCode: couponCode) {
+  createBillingSubscription($stripePaymentMethodId: stripePaymentMethodId, $couponCode: couponCode,  $billingPeriod: billingPeriod) {
     subscription
     errors
   }
@@ -321,6 +321,7 @@ mutation createBillingSubscription($input:PaymentMethodInput!) {
 {
     "stripePaymentMethodId": "pm_1IbONxSAmm68Jt0wLWwLIPa",
     "couponCode": "P3XU8ZEB"
+    "billingPeriod": "MONTHLY"
 }```
 
 > The above query returns JSON structured like this:

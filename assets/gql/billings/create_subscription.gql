@@ -1,5 +1,5 @@
-mutation createBillingSubscription($StripePaymentMethodId: String!, $couponCode: String) {
-  createBillingSubscription(StripePaymentMethodId: $StripePaymentMethodId, couponCode: $couponCode) {
+mutation createBillingSubscription($StripePaymentMethodId: String, $couponCode: String, $billingPeriod: String) {
+  createBillingSubscription(StripePaymentMethodId: $StripePaymentMethodId, couponCode: $couponCode, billingPeriod: $billingPeriod) {
     subscription
     errors
   }

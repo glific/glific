@@ -28,12 +28,13 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 # Configure Oban, its queues and crontab entries
 
 oban_queues = [
-  bigquery: 5,
+  bigquery: 10,
   crontab: 10,
   default: 10,
   dialogflow: 5,
   gcs: 5,
   gupshup: 10,
+  airtel: 10,
   webhook: 10,
   broadcast: 5
 ]
@@ -42,7 +43,7 @@ oban_crontab = [
   {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
   {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
   {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
-  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
+  {"*/2 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
   {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :triggers_and_broadcast}},
   {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :stats}},
   {"1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
@@ -93,7 +94,7 @@ config :passwordless_auth,
   verification_code_ttl: 300
 
 # phil columns to seed production data
-config :phil_columns,
+config :glific_phil_columns,
   ensure_all_started: ~w(timex)a
 
 # FunWithFlags configuration.
@@ -128,6 +129,8 @@ config :esbuild,
   ]
 
 config :glific, Glific.Communications.Mailer, adapter: Swoosh.Adapters.AmazonSES
+
+config :glific, secrets: []
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

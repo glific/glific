@@ -18,6 +18,8 @@ defmodule Glific.Flows do
     Groups.Group,
     Partners,
     Repo,
+    Templates.InteractiveTemplate,
+    Templates.InteractiveTemplates,
     Templates.SessionTemplate
   }
 
@@ -103,11 +105,12 @@ defmodule Glific.Flows do
 
     Enum.reduce(filter, query, fn
       {:keyword, keyword}, query ->
-        from f in query,
+        from(f in query,
           where: ^keyword in f.keywords
+        )
 
       {:uuid, uuid}, query ->
-        from q in query, where: q.uuid == ^uuid
+        from(q in query, where: q.uuid == ^uuid)
 
       {:status, status}, query ->
         query
@@ -121,13 +124,13 @@ defmodule Glific.Flows do
         )
 
       {:is_active, is_active}, query ->
-        from q in query, where: q.is_active == ^is_active
+        from(q in query, where: q.is_active == ^is_active)
 
       {:is_background, is_background}, query ->
-        from q in query, where: q.is_background == ^is_background
+        from(q in query, where: q.is_background == ^is_background)
 
       {:is_pinned, is_pinned}, query ->
-        from q in query, where: q.is_pinned == ^is_pinned
+        from(q in query, where: q.is_pinned == ^is_pinned)
 
       {:name_or_keyword, name_or_keyword}, query ->
         query
@@ -605,25 +608,29 @@ defmodule Glific.Flows do
   @doc """
   Start flow for a contact and cache the result
   """
-  @spec start_contact_flow(Flow.t() | integer, Contact.t()) ::
+  @spec start_contact_flow(Flow.t() | integer, Contact.t(), map()) ::
           {:ok, Flow.t()} | {:error, String.t()}
-  def start_contact_flow(flow_id, %Contact{} = contact) when is_integer(flow_id) do
+
+  def start_contact_flow(f, c, default_results \\ %{})
+
+  def start_contact_flow(flow_id, %Contact{} = contact, default_results)
+      when is_integer(flow_id) do
     case get_cached_flow(contact.organization_id, {:flow_id, flow_id, @status}) do
       {:ok, flow} ->
-        process_contact_flow([contact], flow, @status)
+        process_contact_flow([contact], flow, default_results)
 
       {:error, _error} ->
         {:error, ["Flow", dgettext("errors", "Flow not found")]}
     end
   end
 
-  def start_contact_flow(%Flow{} = flow, %Contact{} = contact),
-    do: start_contact_flow(flow.id, contact)
+  def start_contact_flow(%Flow{} = flow, %Contact{} = contact, default_results),
+    do: start_contact_flow(flow.id, contact, default_results)
 
-  @spec process_contact_flow(list(), Flow.t(), String.t()) :: {:ok, Flow.t()}
-  defp process_contact_flow(contacts, flow, _status) do
+  @spec process_contact_flow(list(), Flow.t(), map()) :: {:ok, Flow.t()}
+  defp process_contact_flow(contacts, flow, default_results) do
     if flow.is_active do
-      Broadcast.broadcast_contacts(flow, contacts)
+      Broadcast.broadcast_contacts(flow, contacts, default_results)
       {:ok, flow}
     else
       {:error, ["Flow", dgettext("errors", "Flow is not active")]}
@@ -633,11 +640,11 @@ defmodule Glific.Flows do
   @doc """
   Start flow for contacts of a group
   """
-  @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
-  def start_group_flow(flow, group) do
+  @spec start_group_flow(Flow.t(), Group.t(), map()) :: {:ok, Flow.t()}
+  def start_group_flow(flow, group, default_results \\ %{}) do
     # the flow returned is the expanded version
     {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id, @status})
-    Broadcast.broadcast_flow_to_group(flow, group)
+    Broadcast.broadcast_flow_to_group(flow, group, default_results)
     {:ok, flow}
   end
 
@@ -803,6 +810,8 @@ defmodule Glific.Flows do
   """
   @spec import_flow(map(), non_neg_integer()) :: boolean()
   def import_flow(import_flow, organization_id) do
+    interactive_template_list = import_interactive_templates(import_flow, organization_id)
+
     import_flow_list =
       Enum.map(import_flow["flows"], fn flow_revision ->
         with {:ok, flow} <-
@@ -816,13 +825,13 @@ defmodule Glific.Flows do
                }),
              {:ok, _flow_revision} <-
                FlowRevision.create_flow_revision(%{
-                 definition: clean_flow_with_hsm_template(flow_revision["definition"]),
+                 definition:
+                   clean_flow_definition(flow_revision["definition"], interactive_template_list),
                  flow_id: flow.id,
                  organization_id: flow.organization_id
                }) do
           import_contact_field(import_flow, organization_id)
           import_groups(import_flow, organization_id)
-
           true
         else
           _ -> false
@@ -832,39 +841,65 @@ defmodule Glific.Flows do
     !Enum.member?(import_flow_list, false)
   end
 
-  @spec clean_flow_with_hsm_template(map()) :: map()
-  defp clean_flow_with_hsm_template(definition) do
-    # checking if the imported template is present in database
-    template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
-
+  @spec clean_flow_definition(map(), list()) :: map()
+  defp clean_flow_definition(definition, interactive_template_list) do
     nodes =
       definition
       |> Map.get("nodes", [])
-      |> Enum.reduce([], &(&2 ++ do_clean_flow_with_hsm_template(&1, template_uuid_list)))
+      |> Enum.reduce([], &(&2 ++ process_node_actions(&1, interactive_template_list)))
 
     put_in(definition, ["nodes"], nodes)
   end
 
-  @spec do_clean_flow_with_hsm_template(map(), list()) :: list()
-  defp do_clean_flow_with_hsm_template(%{"actions" => actions} = node, _template_uuid_list)
+  @spec process_node_actions(map(), list()) :: list()
+  defp process_node_actions(%{"actions" => actions} = node, _interactive_template_list)
        when actions == [],
        do: [node]
 
-  defp do_clean_flow_with_hsm_template(%{"actions" => actions} = node, template_uuid_list) do
-    action = actions |> hd
-    template_uuid = get_in(action, ["templating", "template", "uuid"])
+  defp process_node_actions(%{"actions" => actions} = node, interactive_template_list) do
+    Enum.reduce(actions, [], fn action, acc ->
+      template_uuid = get_in(action, ["templating", "template", "uuid"])
 
-    with "send_msg" <- action["type"],
-         true <- Map.has_key?(action, "templating"),
-         false <- template_uuid in template_uuid_list do
-      # update the node if template uuid in the node is not present in DB
-      action = action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
+      cond do
+        action["type"] == "send_msg" ->
+          # checking if the imported template is present in database
+          template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
 
-      node = put_in(node, ["actions"], [action])
-      [node]
-    else
-      _ -> [node]
-    end
+          with true <- Map.has_key?(action, "templating"),
+               false <- template_uuid in template_uuid_list do
+            # update the node if template uuid in the node is not present in DB
+            action =
+              action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
+
+            node = put_in(node, ["actions"], [action])
+            acc ++ [node]
+          else
+            _ -> acc ++ [node]
+          end
+
+        action["type"] == "send_interactive_msg" ->
+          {:ok, action_id} = Glific.parse_maybe_integer(action["id"])
+
+          template_id = find_interactive_template(interactive_template_list, action_id)
+
+          node = put_in(node, ["actions"], [Map.put(action, "id", template_id)])
+          acc ++ [node]
+
+        true ->
+          acc ++ [node]
+      end
+    end)
+  end
+
+  @spec find_interactive_template(list(), integer | nil) :: String.t()
+  defp find_interactive_template(interactive_template_list, action_id) do
+    {_source_id, template_id, _interactive_template_label} =
+      Enum.find(interactive_template_list, fn {source_id, _template_id,
+                                               _interactive_template_label} ->
+        source_id == action_id
+      end)
+
+    template_id
   end
 
   defp import_contact_field(import_flow, organization_id) do
@@ -886,6 +921,34 @@ defmodule Glific.Flows do
     end)
   end
 
+  defp import_interactive_templates(import_flow, organization_id) do
+    import_flow["interactive_templates"]
+    |> Enum.reduce([], fn interactive_template, acc ->
+      Repo.fetch_by(InteractiveTemplate, %{label: interactive_template["label"]})
+      |> case do
+        {:ok, db_interactive_template} ->
+          acc ++
+            [
+              {interactive_template["source_id"], db_interactive_template.id,
+               db_interactive_template.label}
+            ]
+
+        _ ->
+          {:ok, new_interactive_template} =
+            interactive_template
+            |> Map.delete("source_id")
+            |> Map.put("organization_id", organization_id)
+            |> InteractiveTemplates.create_interactive_template()
+
+          acc ++
+            [
+              {interactive_template["source_id"], new_interactive_template.id,
+               new_interactive_template.label}
+            ]
+      end
+    end)
+  end
+
   @doc """
   Generate a json map with all the flows related fields.
   """
@@ -895,7 +958,7 @@ defmodule Glific.Flows do
 
     export_flow_details(
       flow.uuid,
-      %{"flows" => [], "contact_field" => [], "collections" => []}
+      %{"flows" => [], "contact_field" => [], "collections" => [], "interactive_templates" => []}
     )
   end
 
@@ -928,6 +991,10 @@ defmodule Glific.Flows do
         |> Map.put(
           "collections",
           results["collections"] ++ export_collections(definition)
+        )
+        |> Map.put(
+          "interactive_templates",
+          results["interactive_templates"] ++ export_interactive_templates(definition)
         )
 
       ## here we can export more details like fields, triggers, groups and all.
@@ -970,6 +1037,39 @@ defmodule Glific.Flows do
   defp do_export_contact_fields(%{"actions" => actions}) do
     action = actions |> hd
     if action["type"] == "set_contact_field", do: [action["field"]["key"]], else: []
+  end
+
+  @spec export_interactive_templates(map()) :: list()
+  defp export_interactive_templates(definition) do
+    definition
+    |> Map.get("nodes", [])
+    |> Enum.reduce([], &(&2 ++ do_export_interactive_templates(&1)))
+    |> fetch_interactive_templates_from_db()
+  end
+
+  @spec do_export_interactive_templates(map()) :: list()
+  defp do_export_interactive_templates(%{"actions" => actions}) when actions == [], do: []
+
+  defp do_export_interactive_templates(%{"actions" => actions}) do
+    actions
+    |> Enum.reduce([], fn action, acc ->
+      if action["type"] == "send_interactive_msg", do: acc ++ [action["id"]], else: acc
+    end)
+  end
+
+  defp fetch_interactive_templates_from_db(ids) do
+    InteractiveTemplate
+    |> where([it], it.id in ^ids)
+    |> select([it], %{
+      source_id: it.id,
+      label: it.label,
+      type: it.type,
+      interactive_content: it.interactive_content,
+      translations: it.translations,
+      language_id: it.language_id,
+      send_with_title: it.send_with_title
+    })
+    |> Repo.all()
   end
 
   @doc """

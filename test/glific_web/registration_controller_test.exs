@@ -20,6 +20,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
+    Fixtures.set_bsp_partner_tokens()
     Fixtures.otp_hsm_fixture()
     :ok
   end
@@ -132,6 +133,21 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
   end
 
   describe "send_otp/2" do
+    setup do
+      Tesla.Mock.mock(fn
+        %{
+          method: :post
+        } ->
+          %Tesla.Env{
+            body:
+              "{\n  \"success\": true,\n  \"challenge_ts\": \"2023-01-09T04:58:39Z\",\n  \"hostname\": \"glific.test\",\n  \"score\": 0.9,\n  \"action\": \"register\"\n}",
+            status: 200
+          }
+      end)
+
+      :ok
+    end
+
     test "send otp", %{conn: conn} do
       receiver = Fixtures.contact_fixture()
 
@@ -141,7 +157,9 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         DateTime.utc_now()
       )
 
-      valid_params = %{"user" => %{"phone" => receiver.phone}}
+      valid_params = %{
+        "user" => %{"phone" => receiver.phone, "registration" => "true", "token" => "some_token"}
+      }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
 
@@ -150,8 +168,11 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "send otp to invalid contact", %{conn: conn} do
-      phone = "invalid contact"
-      invalid_params = %{"user" => %{"phone" => phone}}
+      phone = nil
+
+      invalid_params = %{
+        "user" => %{"phone" => phone, "registration" => "true", "token" => "some_token"}
+      }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
 
@@ -162,7 +183,10 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     test "send otp to existing user will return an error", %{conn: conn} do
       [user | _] = Users.list_users(%{filter: %{organization_id: conn.assigns[:organization_id]}})
       phone = user.phone
-      invalid_params = %{"user" => %{"phone" => phone}}
+
+      invalid_params = %{
+        "user" => %{"phone" => phone, "registration" => "true", "token" => "some_token"}
+      }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
 
@@ -170,18 +194,20 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert get_in(json, ["error", "message"]) == "Cannot send the otp to #{phone}"
     end
 
-    test "send otp to optout contact will return an error", %{conn: conn} do
+    test "send otp to optout contact will optin the contact again", %{conn: conn} do
       receiver = Fixtures.contact_fixture()
 
       Contacts.contact_opted_out(receiver.phone, receiver.organization_id, DateTime.utc_now())
-      invalid_params = %{"user" => %{"phone" => receiver.phone}}
+
+      invalid_params = %{
+        "user" => %{"phone" => receiver.phone, "registration" => "true", "token" => "some_token"}
+      }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
 
-      assert json = json_response(conn, 400)
+      assert json = json_response(conn, 200)
 
-      assert get_in(json, ["error", "message"]) ==
-               "Cannot send the otp to #{receiver.phone}"
+      assert get_in(json, ["error", "message"]) == nil
     end
 
     test "send otp with registration 'false' flag to existing user should succeed", %{conn: conn} do
@@ -205,7 +231,13 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         }
         |> Users.create_user()
 
-      valid_params = %{"user" => %{"phone" => user.phone, "registration" => "false"}}
+      valid_params = %{
+        "user" => %{
+          "phone" => user.phone,
+          "registration" => "false",
+          "token" => "some_token"
+        }
+      }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
 

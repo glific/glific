@@ -17,9 +17,9 @@
   min_module_doc_coverage: 100,
   min_module_spec_coverage: 100,
   min_overall_doc_coverage: 100,
+  min_overall_moduledoc_coverage: 100,
   min_overall_spec_coverage: 0,
-  moduledoc_required: true,
-  raise: false,
   reporter: Doctor.Reporters.Full,
+  raise: false,
   umbrella: false
 }

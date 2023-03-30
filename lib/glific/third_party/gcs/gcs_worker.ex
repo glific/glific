@@ -18,7 +18,10 @@ defmodule Glific.GCS.GcsWorker do
   alias Waffle.Storage.Google.CloudStorage
 
   alias Glific.{
+    BigQuery,
+    BigQuery.BigQueryWorker,
     Jobs,
+    Messages,
     Messages.Message,
     Messages.MessageMedia,
     Partners,
@@ -56,33 +59,54 @@ defmodule Glific.GCS.GcsWorker do
 
     message_media_id = message_media_id || 0
 
+    limit = files_per_minute_count()
+
     data =
       MessageMedia
       |> select([m], m.id)
       |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
       |> where([m], m.organization_id == ^organization_id and m.id > ^message_media_id)
+      |> where([m, msg], msg.flow == :inbound)
       |> order_by([m], asc: m.id)
-      |> limit(5)
+      |> limit(^limit)
       |> Repo.all()
 
     max_id = if is_list(data), do: List.last(data), else: message_media_id
 
     if !is_nil(max_id) and max_id > message_media_id do
+      Logger.info(
+        "GCSWORKER: Updating GCS jobs with max id:  #{max_id} , min id: #{message_media_id} for org_id: #{organization_id}"
+      )
+
       queue_urls(organization_id, message_media_id, max_id)
-      Logger.info("Updating GCS jobs with max id:  #{max_id} for org_id: #{organization_id}")
       Jobs.update_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
     end
 
     :ok
   end
 
+  @spec files_per_minute_count() :: integer()
+  defp files_per_minute_count do
+    Application.fetch_env!(:glific, :gcs_file_count)
+    |> Glific.parse_maybe_integer()
+    |> case do
+      {:ok, nil} -> 5
+      {:ok, count} -> count
+      _ -> 5
+    end
+  end
+
+  @doc """
+    Queue urls for gcs jobs.
+  """
   @spec queue_urls(non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
-  defp queue_urls(organization_id, min_id, max_id) do
+  def queue_urls(organization_id, min_id, max_id) do
     query =
       MessageMedia
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
       |> where([m, msg], msg.organization_id == ^organization_id)
+      |> where([m, msg], msg.flow == :inbound)
       |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id, msg.flow_id])
       |> order_by([m], [m.inserted_at, m.id])
 
@@ -101,6 +125,8 @@ defmodule Glific.GCS.GcsWorker do
   @spec make_media(list(), non_neg_integer) :: map()
   defp make_media(row, organization_id) do
     [id, url, type, contact_id, flow_id] = row
+
+    Logger.info("GCSWORKER: Making media for media id: #{id}")
 
     %{
       url: url,
@@ -138,6 +164,8 @@ defmodule Glific.GCS.GcsWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:discard, String.t()}
   def perform(%Oban.Job{args: %{"media" => media}}) do
+    Logger.info("GCSWORKER: Performing gcs media for media id: #{media["id"]}")
+
     Repo.put_process_state(media["organization_id"])
 
     # We will download the file from internet and then upload it to gsc and then remove it.
@@ -153,6 +181,8 @@ defmodule Glific.GCS.GcsWorker do
       |> Map.put("remote_name", remote_name)
       |> Map.put("local_name", local_name)
 
+    Logger.info("GCSWORKER: Performing gcs media with details for media id: #{inspect(media)}")
+
     download_file_to_temp(media["url"], local_name, media["organization_id"])
     |> case do
       {:ok, _} ->
@@ -160,16 +190,20 @@ defmodule Glific.GCS.GcsWorker do
         :ok
 
       {:error, :timeout} ->
-        {:error,
-         """
-         GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}
-         """}
+        error =
+          "GCSWORKER: GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
+
+        Logger.info(error)
+
+        {:error, error}
 
       {:error, error} ->
-        {:discard,
-         """
-         GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}
-         """}
+        error =
+          "GCSWORKER: GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}"
+
+        Logger.info(error)
+
+        {:discard, error}
     end
   end
 
@@ -206,12 +240,19 @@ defmodule Glific.GCS.GcsWorker do
           )
         end
 
-        "Error while uploading file to GCS #{inspect(error)}"
+        error = "GCSWORKER: Error while uploading file to GCS #{inspect(error)}"
+        Logger.info(error)
+
+        error
 
       _ ->
-        error = "Error while uploading file to GCS #{inspect(error)}"
         {_, stacktrace} = Process.info(self(), :current_stacktrace)
-        Appsignal.send_error(:error, error, stacktrace)
+
+        error =
+          "GCSWORKER: Error while uploading file to GCS #{inspect(error)} stacktrace: #{inspect(stacktrace)}"
+
+        Logger.info(error)
+
         error
     end
   end
@@ -232,7 +273,7 @@ defmodule Glific.GCS.GcsWorker do
   @spec upload_file_on_gcs(String.t(), String.t(), non_neg_integer) ::
           {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()} | {:error, map()}
   defp upload_file_on_gcs(local, remote, organization_id) do
-    Logger.info("Uploading to GCS, org_id: #{organization_id}, file_name: #{remote}")
+    Logger.info("GCSWORKER: Uploading to GCS, org_id: #{organization_id}, file_name: #{remote}")
 
     CloudStorage.put(
       Glific.Media,
@@ -257,13 +298,15 @@ defmodule Glific.GCS.GcsWorker do
   @doc """
   Public interface to upload a file provided by the org at local name to gcs as remote name
   """
-  @spec upload_media(String.t(), String.t(), non_neg_integer) :: {:ok | :error, String.t()}
+  @spec upload_media(String.t(), String.t(), non_neg_integer) ::
+          {:ok, map()} | {:error, String.t()}
   def upload_media(local, remote, organization_id) do
     upload_file_on_gcs(local, remote, organization_id)
     |> case do
       {:ok, response} ->
         File.rm(local)
-        {:ok, get_public_link(response)}
+        {type, _media} = Messages.get_media_type_from_url(response.selfLink)
+        {:ok, %{url: get_public_link(response), type: type}}
 
       {:error, error} ->
         error = handle_gcs_error(organization_id, error)
@@ -279,10 +322,15 @@ defmodule Glific.GCS.GcsWorker do
       |> MessageMedia.changeset(%{gcs_url: gcs_url})
       |> Repo.update()
 
-    message_media.organization_id
-    |> Jobs.update_bigquery_job("messages", %{
-      last_updated_at: Timex.shift(Timex.now(), minutes: -2)
-    })
+    organization_id = message_media.organization_id
+
+    if BigQuery.is_active?(organization_id) do
+      BigQueryWorker.queue_message_media_data([message_media], organization_id, %{
+        action: :update,
+        max_id: nil,
+        last_updated_at: Timex.now()
+      })
+    end
 
     {:ok, message_media}
   end
@@ -305,9 +353,9 @@ defmodule Glific.GCS.GcsWorker do
   @spec download_file_to_temp(String.t(), String.t(), non_neg_integer) ::
           {:ok, String.t()} | {:error, any()}
   def download_file_to_temp(url, path, org_id) do
-    Logger.info("Downloading file: org_id: #{org_id}, url: #{url}")
+    Logger.info("GCSWORKER: Downloading file: org_id: #{org_id}, url: #{url}")
 
-    Tesla.get(url)
+    Tesla.get(url, opts: [adapter: [recv_timeout: 10_000]])
     |> case do
       {:ok, %Tesla.Env{status: status, body: body} = _env} when status in 200..299 ->
         File.write!(path, body)
