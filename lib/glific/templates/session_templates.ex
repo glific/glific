@@ -174,16 +174,4 @@ defmodule Glific.Templates.SessionTemplate do
   def to_minimal_map(sessiontemplate) do
     Map.take(sessiontemplate, [:id | @required_fields ++ @optional_fields])
   end
-
-  @doc """
-  List of available categories provided by whatsapp
-  """
-  @spec list_whatsapp_hsm_categories() :: [String.t()]
-  def list_whatsapp_hsm_categories do
-    [
-      "TRANSACTIONAL",
-      "MARKETING",
-      "OTP"
-    ]
-  end
 end

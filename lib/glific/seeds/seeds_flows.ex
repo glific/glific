@@ -140,11 +140,16 @@ defmodule Glific.Seeds.SeedsFlows do
     {:ok, optout_collection} =
       Repo.fetch_by(Group, %{label: "Optout contacts", organization_id: organization.id})
 
+    {:ok, started_ab} =
+      Repo.fetch_by(Group, %{label: "STARTED_AB", organization_id: organization.id})
+
     uuid_map = %{
       optin: generate_uuid(organization, "dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f"),
       optout: generate_uuid(organization, "9e607fd5-232e-43c8-8fac-d8a99d72561e"),
+      ab_test: generate_uuid(organization, "5f3fd8c6-2ec3-4945-8e7c-314db8c04c31"),
       optin_collection: Integer.to_string(optin_collection.id),
-      optout_collection: Integer.to_string(optout_collection.id)
+      optout_collection: Integer.to_string(optout_collection.id),
+      started_ab_collection: Integer.to_string(started_ab.id)
     }
 
     data = [
