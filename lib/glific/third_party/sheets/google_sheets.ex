@@ -3,9 +3,11 @@ defmodule Glific.Sheets.GoogleSheets do
   Glific Google sheet API layer
   """
 
+  alias Glific.Partners
+
   alias GoogleApi.Sheets.V4.{
-    Connection,
-    Spreadsheets
+    Api.Spreadsheets,
+    Connection
   }
 
   @scopes [
@@ -19,13 +21,13 @@ defmodule Glific.Sheets.GoogleSheets do
   def test(org_id) do
     spreadsheet_id = "161lpwhhxGyc-DwBkyVn25XMvPVuv1r1LL3udgye3cYE"
 
-    insert_new_row(org_id, spreadsheet_id, %{
-      range: "A:C",
-      data: [["1", "2", "3"], ["4", "5", "6"]]
+    insert_row(org_id, spreadsheet_id, %{
+      range: "A:A",
+      data: [["1", "2", "3"]]
     })
   end
 
-  def insert_new_row(org_id, spreadsheet_id, %{range: range, data: data} = _params) do
+  def insert_row(org_id, spreadsheet_id, %{range: range, data: data} = _params) do
     {:ok, %{conn: conn}} = fetch_credentials(org_id)
 
     params = [
