@@ -891,11 +891,12 @@ defmodule Glific.Flows.ActionTest do
       uuid: "UUID 1",
       node_uuid: "Test UUID",
       type: "start_session",
+      groups: [],
       contacts: [%{"name" => "NGO Admin", "uuid" => saas_admin_id}],
       create_contact: false,
       flow: %{
-        "name" => "Help Workflow",
-        "uuid" => "3fa22108-f464-41e5-81d9-d8a298854429"
+        "name" => "Template Workflow",
+        "uuid" => "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"
       }
     }
 
@@ -909,7 +910,7 @@ defmodule Glific.Flows.ActionTest do
       |> Repo.all()
       |> hd()
 
-    assert new_flow_context.flow_uuid == "3fa22108-f464-41e5-81d9-d8a298854429"
+    assert new_flow_context.flow_uuid == "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"
   end
 
   test "execute an action when type is wait_for_time", attrs do
