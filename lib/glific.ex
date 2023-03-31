@@ -234,6 +234,12 @@ defmodule Glific do
   def signature(organization_id, body, timestamp) do
     secret = Partners.organization(organization_id).signature_phrase
 
+    # 2731 - create a default if does not exist
+    secret =
+      if secret in ["", nil],
+        do: "This is a dummy secret",
+        else: secret
+
     signed_payload = "#{timestamp}.#{body}"
     hmac = :crypto.mac(:hmac, :sha256, secret, signed_payload)
     Base.encode16(hmac, case: :lower)

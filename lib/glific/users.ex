@@ -159,6 +159,7 @@ defmodule Glific.Users do
         Enum.any?(roles, fn role -> role == "Manager" end) -> ["manager"]
         Enum.any?(roles, fn role -> role == "Staff" end) -> ["staff"]
         Enum.any?(roles, fn role -> role == "No access" end) -> ["none"]
+        Enum.any?(roles, fn role -> role == "Glific Admin" end) -> ["glific_admin"]
         true -> ["manager"]
       end
 

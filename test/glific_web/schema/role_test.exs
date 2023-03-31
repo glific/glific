@@ -127,6 +127,7 @@ defmodule GlificWeb.Schema.RoleTest do
     {:ok, query_data} =
       auth_query_gql_by(:count, user, variables: %{"filter" => %{"label" => "Admin"}})
 
-    assert get_in(query_data, [:data, "countAccessRoles"]) == 1
+    # Admin and Glific Admin
+    assert get_in(query_data, [:data, "countAccessRoles"]) == 2
   end
 end
