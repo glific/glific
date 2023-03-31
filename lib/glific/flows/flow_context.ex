@@ -242,14 +242,14 @@ defmodule Glific.Flows.FlowContext do
       end
 
     {:ok, context} =
-        update_flow_context(
-          context,
-          %{
-            completed_at: DateTime.utc_now(),
-            is_killed: is_killed,
-            reason:  (if is_killed == true, do: event_label, else: nil)
-          }
-        )
+      update_flow_context(
+        context,
+        %{
+          completed_at: DateTime.utc_now(),
+          is_killed: is_killed,
+          reason: if(is_killed == true, do: event_label, else: nil)
+        }
+      )
 
     :telemetry.execute(
       [:glific, :flow, :stop],
@@ -535,7 +535,9 @@ defmodule Glific.Flows.FlowContext do
     |> add_date_clause(after_insert_date)
     # lets not touch the contexts which are waiting to be woken up at a specific time
     |> where([fc], fc.is_background_flow == false)
-    |> Repo.update_all(set: [completed_at: now, updated_at: now, is_killed: true, reason: event_label])
+    |> Repo.update_all(
+      set: [completed_at: now, updated_at: now, is_killed: true, reason: event_label]
+    )
 
     {:ok, _} =
       Contacts.capture_history(contact_id, :contact_flow_ended_all, %{
