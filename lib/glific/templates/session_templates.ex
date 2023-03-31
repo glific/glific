@@ -76,41 +76,42 @@ defmodule Glific.Templates.SessionTemplate do
   ]
 
   schema "session_templates" do
-    field :uuid, Ecto.UUID, autogenerate: true
-    field :label, :string
-    field :body, :string
-    field :type, MessageType
-    field :shortcode, :string
+    field(:uuid, Ecto.UUID, autogenerate: true)
+    field(:label, :string)
+    field(:body, :string)
+    field(:type, MessageType)
+    field(:shortcode, :string)
 
-    field :status, :string
-    field :is_hsm, :boolean, default: false
-    field :number_parameters, :integer
-    field :category, :string
-    field :example, :string
+    field(:status, :string)
+    field(:is_hsm, :boolean, default: false)
+    field(:number_parameters, :integer)
+    field(:category, :string)
+    field(:example, :string)
 
-    field :is_source, :boolean, default: false
-    field :is_active, :boolean, default: false
-    field :is_reserved, :boolean, default: false
-    field :translations, :map, default: %{}
+    field(:is_source, :boolean, default: false)
+    field(:is_active, :boolean, default: false)
+    field(:is_reserved, :boolean, default: false)
+    field(:translations, :map, default: %{})
 
-    field :has_buttons, :boolean, default: false
-    field :button_type, TemplateButtonType
-    field :buttons, {:array, :map}, default: []
-    field :bsp_id, :string
-    field :reason, :string
+    field(:has_buttons, :boolean, default: false)
+    field(:button_type, TemplateButtonType)
+    field(:buttons, {:array, :map}, default: [])
+    field(:bsp_id, :string)
+    field(:reason, :string)
 
-    belongs_to :language, Language
-    belongs_to :organization, Organization
+    belongs_to(:language, Language)
+    belongs_to(:organization, Organization)
 
-    belongs_to :message_media, MessageMedia
+    belongs_to(:message_media, MessageMedia)
 
-    belongs_to :parent, SessionTemplate, foreign_key: :parent_id
-    has_many :child, SessionTemplate, foreign_key: :parent_id
+    belongs_to(:parent, SessionTemplate, foreign_key: :parent_id)
+    has_many(:child, SessionTemplate, foreign_key: :parent_id)
 
-    many_to_many :tags, Tag,
+    many_to_many(:tags, Tag,
       join_through: "templates_tags",
       on_replace: :delete,
       join_keys: [template_id: :id, tag_id: :id]
+    )
 
     timestamps(type: :utc_datetime)
   end
@@ -172,17 +173,5 @@ defmodule Glific.Templates.SessionTemplate do
   @spec to_minimal_map(SessionTemplate.t()) :: map()
   def to_minimal_map(sessiontemplate) do
     Map.take(sessiontemplate, [:id | @required_fields ++ @optional_fields])
-  end
-
-  @doc """
-  List of available categories provided by whatsapp
-  """
-  @spec list_whatsapp_hsm_categories() :: [String.t()]
-  def list_whatsapp_hsm_categories do
-    [
-      "TRANSACTIONAL",
-      "MARKETING",
-      "OTP"
-    ]
   end
 end
