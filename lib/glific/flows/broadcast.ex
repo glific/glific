@@ -31,8 +31,6 @@ defmodule Glific.Flows.Broadcast do
   def broadcast_flow_to_group(flow, group, default_results \\ %{}) do
     # lets set up the state and then call our helper friend to split group into smaller chunks
     # of contacts
-    {:ok, flow} = Flows.get_cached_flow(group.organization_id, {:flow_id, flow.id, @status})
-
     {:ok, group_message} =
       Messages.create_group_message(%{
         body: "Starting flow: #{flow.name} for group: #{group.label}",

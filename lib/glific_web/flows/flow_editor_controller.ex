@@ -16,6 +16,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Flows.FlowCount,
     Flows.FlowLabel,
     GCS.GcsWorker,
+    Groups,
     Partners,
     Repo,
     Settings,
@@ -42,7 +43,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec groups(Plug.Conn.t(), map) :: Plug.Conn.t()
   def groups(conn, _params) do
     group_list =
-      Glific.Groups.list_groups(
+      Groups.list_groups(
         %{filter: %{organization_id: conn.assigns[:organization_id]}},
         true
       )
@@ -361,7 +362,13 @@ defmodule GlificWeb.Flows.FlowEditorController do
         [%{id: "#{c.id}", name: c.name, type: "contact", extra: c.id} | acc]
       end)
 
-    json(conn, %{results: recipients})
+    groups =
+      Groups.list_groups(%{})
+      |> Enum.reduce([], fn g, acc ->
+        [%{id: "#{g.id}", name: g.label, type: "group", extra: g.id} | acc]
+      end)
+
+    json(conn, %{results: recipients ++ groups})
   end
 
   @doc """
