@@ -4,6 +4,7 @@ defmodule Glific.Providers.Gupshup.Template do
   """
 
   @behaviour Glific.Providers.TemplateBehaviour
+
   @languages [
     "Tamil",
     "Kannada",
@@ -21,6 +22,7 @@ defmodule Glific.Providers.Gupshup.Template do
     "English",
     "Sign Language"
   ]
+
   import Ecto.Query
 
   alias Glific.{
