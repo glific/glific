@@ -1007,7 +1007,7 @@ defmodule Glific.Partners do
   end
 
   @spec load_goth_token(tuple(), Keyword.t()) :: tuple()
-  defp load_goth_token(cache_key, opts \\ []) do
+  defp load_goth_token(cache_key, goth_opts) do
     {organization_id, {:provider_token, provider_shortcode}} = cache_key
 
     organization = organization(organization_id)
@@ -1016,7 +1016,7 @@ defmodule Glific.Partners do
     if credentials == :error do
       {:ignore, nil}
     else
-      Goth.Token.fetch(source: {:service_account, credentials, opts})
+      Goth.Token.fetch(source: {:service_account, credentials, goth_opts})
       |> case do
         {:ok, token} ->
           opts = [ttl: :timer.seconds(token.expires - System.system_time(:second) - 60)]
