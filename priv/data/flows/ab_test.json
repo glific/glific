@@ -167,7 +167,7 @@
         {
           "type": "add_contact_groups",
           "uuid": "7df85e2b-5482-4a32-9bef-88d428480931",
-          "groups": [{ "name": "STARTED_AB", "type": "group", "uuid": "3" }]
+          "groups": [{ "name": "STARTED_AB", "type": "group", "uuid": "STARTED_AB_COLLECTION_UUID" }]
         }
       ]
     },
@@ -256,7 +256,7 @@
         {
           "flow": {
             "name": "Help Workflow",
-            "uuid": "3fa22108-f464-41e5-81d9-d8a298854429"
+            "uuid": "HELP_UUID"
           },
           "type": "enter_flow",
           "uuid": "6d27471c-940a-4ac0-a718-920adb7d1e69"
@@ -731,7 +731,7 @@
         {
           "type": "remove_contact_groups",
           "uuid": "5a570260-44f5-476a-ba7a-2727de331aa0",
-          "groups": [{ "name": "STARTED_AB", "uuid": "3" }],
+          "groups": [{ "name": "STARTED_AB", "uuid": "STARTED_AB_COLLECTION_UUID" }],
           "all_groups": false
         }
       ]
@@ -783,7 +783,7 @@
         {
           "flow": {
             "name": "Registration Workflow",
-            "uuid": "f4f38e00-3a50-4892-99ce-a281fe24d040"
+            "uuid": "REGISTRATION_UUID"
           },
           "type": "enter_flow",
           "uuid": "b2dda0c3-691b-42f6-aff9-44c21e023ca9"

@@ -650,7 +650,7 @@ if Code.ensure_loaded?(Faker) do
         translations: translations,
         status: "APPROVED",
         is_active: true,
-        category: "TRANSACTIONAL",
+        category: "UTILITY",
         example: "Hi [Anil],\nPlease find the attached bill.",
         body: "Hi {{1}},\nPlease find the attached bill.",
         uuid: Ecto.UUID.generate()
@@ -674,7 +674,7 @@ if Code.ensure_loaded?(Faker) do
         language_id: en.id,
         organization_id: organization.id,
         status: "PENDING",
-        category: "TRANSACTIONAL",
+        category: "UTILITY",
         body: "Hi {{1}},\n\nYour account image was updated on {{2}} by {{3}} with above",
         example:
           "Hi [Anil],\n\nYour account image was updated on [19th December] by [Saurav] with above",
@@ -699,7 +699,7 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization.id,
         translations: translations,
         status: "PENDING",
-        category: "TRANSACTIONAL",
+        category: "UTILITY",
         body: "Hi {{1}},\nPlease find the attached bill.",
         example: "Hi [Anil],\nPlease find the attached bill.",
         uuid: Ecto.UUID.generate()
@@ -715,7 +715,7 @@ if Code.ensure_loaded?(Faker) do
         language_id: en.id,
         organization_id: organization.id,
         status: "APPROVED",
-        category: "TRANSACTIONAL",
+        category: "UTILITY",
         body: "Hi {{1}},\n\nYour image file was updated today",
         example: "Hi [Anil],\n\nYour image file was updated today",
         uuid: Ecto.UUID.generate()
@@ -1017,7 +1017,7 @@ if Code.ensure_loaded?(Faker) do
         """,
         translations: translations,
         status: "PENDING",
-        category: "TRANSACTIONAL",
+        category: "UTILITY",
         uuid: uuid,
         bsp_id: uuid
       })
@@ -1083,7 +1083,7 @@ if Code.ensure_loaded?(Faker) do
         language_id: en.id,
         translations: translations,
         status: "REJECTED",
-        category: "TRANSACTIONAL",
+        category: "UTILITY",
         organization_id: organization.id,
         number_parameters: 0,
         uuid: uuid,
