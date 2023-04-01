@@ -136,6 +136,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     add_airtel()
 
     add_open_ai()
+
+    add_google_sheet()
   end
 
   defp add_dialogflow do
@@ -441,6 +443,30 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             api_key: %{
               type: :string,
               label: "OpenAI API KEY",
+              default: nil,
+              view_only: false
+            }
+          }
+        })
+  end
+
+  defp add_google_sheet() do
+    query = from(p in Provider, where: p.shortcode == "google_sheets")
+
+    # add only if does not exist
+    if !Repo.exists?(query),
+      do:
+        Repo.insert!(%Provider{
+          name: "Google sheet",
+          shortcode: "google_sheets",
+          description: "First cut (Beta version) to write data to google sheet via flow.",
+          group: nil,
+          is_required: false,
+          keys: %{},
+          secrets: %{
+            service_account: %{
+              type: :string,
+              label: "Goth Credentials",
               default: nil,
               view_only: false
             }
