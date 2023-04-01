@@ -96,9 +96,23 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
+  Deletes all the test (dynamic) data of an organization
+  """
+  @spec delete_organization_test_data(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def delete_organization_test_data(_, %{id: id}, _) do
+    # make sure organization exists
+    with {:ok, organization} <- Repo.fetch(Organization, id) do
+      Partners.delete_organization_test_data(organization)
+      {:ok, true}
+    end
+  end
+
+  @doc """
   Updates an organization status is_active/is_approved. We will add checks to
   validate approval and activation
   """
+
   @spec update_organization_status(Absinthe.Resolution.t(), map(), %{
           context: map()
         }) :: {:ok, any} | {:error, any}
