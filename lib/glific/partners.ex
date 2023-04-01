@@ -379,7 +379,7 @@ defmodule Glific.Partners do
   A feature to add in the future, might to be mark test contact with a "test" contact
   field and we'll delete only those contacts
   """
-  @spec delete_organization_test_data(Organization.t()) :: boolean()
+  @spec delete_organization_test_data(Organization.t()) :: {:ok, Organization.t()}
   def delete_organization_test_data(organization) do
     [
       "DELETE FROM messages WHERE organization_id = #{organization.id}",
@@ -395,7 +395,7 @@ defmodule Glific.Partners do
     ]
     |> Enum.each(&Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true))
 
-    true
+    {:ok, organization}
   end
 
   @doc """

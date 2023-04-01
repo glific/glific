@@ -460,7 +460,7 @@ defmodule Glific.PartnersTest do
       Fixtures.message_fixture(%{organization_id: organization.id})
       Fixtures.message_fixture(%{organization_id: organization.id})
 
-      assert true == Partners.delete_organization_test_data(organization)
+      assert {:ok, organization} == Partners.delete_organization_test_data(organization)
       assert Partners.get_organization!(organization.id) != nil
 
       {:ok, result} =

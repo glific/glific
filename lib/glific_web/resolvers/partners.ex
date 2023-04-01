@@ -104,7 +104,6 @@ defmodule GlificWeb.Resolvers.Partners do
     # make sure organization exists
     with {:ok, organization} <- Repo.fetch(Organization, id) do
       Partners.delete_organization_test_data(organization)
-      {:ok, true}
     end
   end
 
