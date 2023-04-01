@@ -32,13 +32,24 @@ defmodule Glific.Contacts.Import do
       language_id: Enum.at(Settings.get_language_by_label_or_locale(data["language"]), 0).id,
       collection: data["collection"],
       delete: data["delete"],
-      contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"]),
-      optin_time:
-        if(data["opt_in"] in ["", nil],
-          do: nil,
-          else: elem(Timex.parse(data["opt_in"], date_format), 1)
-        )
+      contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
     }
+
+    results =
+      case data["opt_in"] do
+        "" ->
+          Map.put(results, :optin, nil)
+
+        nil ->
+          results
+
+        _ ->
+          Map.put(
+            results,
+            :optin,
+            elem(Timex.parse(data["opt_in"], date_format), 1)
+          )
+      end
 
     cond do
       user.roles == [:glific_admin] ->
@@ -289,7 +300,7 @@ defmodule Glific.Contacts.Import do
   @spec should_optin_contact?(User.t(), Contact.t(), map()) :: boolean()
   defp should_optin_contact?(user, contact, attrs) do
     cond do
-      attrs.optin_time == nil ->
+      Map.get(attrs, :optin_time, nil) == nil ->
         false
 
       contact.optout_time != nil ->

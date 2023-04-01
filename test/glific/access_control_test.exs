@@ -34,7 +34,7 @@ defmodule Glific.AccessControlTest do
       Fixtures.role_fixture(attrs)
 
       assert AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id}) ==
-               4
+               5
     end
 
     test "list_roles/0 returns all roles", attrs do

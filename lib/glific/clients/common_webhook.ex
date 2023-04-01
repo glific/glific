@@ -4,6 +4,7 @@ defmodule Glific.Clients.CommonWebhook do
   """
 
   alias Glific.OpenAI.ChatGPT
+  alias Glific.Sheets.GoogleSheets
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -35,6 +36,14 @@ defmodule Glific.Clients.CommonWebhook do
           }
       end
     end
+  end
+
+  def webhook("sheets.insert_row", fields) do
+    org_id = fields["organization_id"]
+    range = fields["range"] || "A:Z"
+    spreadsheet_id = fields["spreadsheet_id"]
+    row_data = fields["row_data"]
+    GoogleSheets.insert_row(org_id, spreadsheet_id, %{range: range, data: [row_data]})
   end
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
