@@ -304,8 +304,27 @@ defmodule Glific.Contacts do
         {:error, "Sorry, this is simulator number and hence cannot be deleted."}
 
       true ->
-        Repo.delete(contact)
+        do_delete_contact(contact)
     end
+  end
+
+  @spec do_delete_contact(Contact.t()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp do_delete_contact(contact) do
+    where = "WHERE organization_id = #{contact.organization_id} AND contact_id = #{contact.id}"
+
+    # lets delete manually all the tables where most of the data is
+    [
+      "DELETE FROM messages #{where}",
+      "DELETE FROM contact_histories #{where}",
+      "DELETE FROM contacts_groups #{where}",
+      "DELETE FROM flow_contexts #{where}"
+    ]
+    |> Enum.map(
+      &Task.async(fn -> Repo.query!(&1, [], timeout: 400_000, skip_organization_id: true) end)
+    )
+    |> Task.await_many()
+
+    Repo.delete(contact)
   end
 
   @doc """
