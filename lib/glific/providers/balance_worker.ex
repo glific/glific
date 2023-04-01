@@ -44,10 +44,14 @@ defmodule Glific.Jobs.BSPBalanceWorker do
   end
 
   @spec send_low_balance_notification(integer(), non_neg_integer()) :: nil | {:ok, any}
-  defp send_low_balance_notification(bsp_balance, organization_id) when bsp_balance < 1 do
-    ## We need to check if we have already sent this notification in last 24 hours
+  defp send_low_balance_notification(bsp_balance, organization_id) when bsp_balance < 10 do
+    # start sending a warning message when the balance is lower than $10
+    # we can tweak this over time
+    go_back = if bsp_balance < 3, do: 24, else: 48
+
+    ## We need to check if we have already sent this notification in last go_back time
     category = "low_bsp_balance"
-    time = Glific.go_back_time(24)
+    time = Glific.go_back_time(go_back)
 
     if MailLog.mail_sent_in_past_time?(category, time, organization_id) == false do
       {:ok, _} =
