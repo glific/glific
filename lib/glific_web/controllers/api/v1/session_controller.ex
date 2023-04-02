@@ -6,7 +6,7 @@ defmodule GlificWeb.API.V1.SessionController do
   use GlificWeb, :controller
   require Logger
 
-  alias Glific.{Repo, Users.User, Partners}
+  alias Glific.{Partners, Repo, Users.User}
   alias GlificWeb.APIAuthPlug
   alias Plug.Conn
 
