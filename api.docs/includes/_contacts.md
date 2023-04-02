@@ -1212,6 +1212,18 @@ Filtering options for contacts
 </tr>
 </thead>
 <tbody>
+
+<tr>
+<td colspan="2" valign="top"><strong>term</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td valign="top">Filter by name or phone</td>
+<td>
+
+Match the name
+
+</td>
+</tr>
+
 <tr>
 <td colspan="2" valign="top"><strong>name</strong></td>
 <td valign="top"><a href="#string">String</a></td>
