@@ -42,6 +42,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/organizations/update.gql")
   load_gql(:update_status, GlificWeb.Schema, "assets/gql/organizations/update_status.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/organizations/delete.gql")
+  load_gql(:delete_test, GlificWeb.Schema, "assets/gql/organizations/delete_test.gql")
+
   load_gql(:delete_onboarded, GlificWeb.Schema, "assets/gql/organizations/delete_onboarded.gql")
   load_gql(:attachments, GlificWeb.Schema, "assets/gql/organizations/attachments.gql")
   load_gql(:list_timezones, GlificWeb.Schema, "assets/gql/organizations/list_timezones.gql")
@@ -492,6 +494,24 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "deleteOrganization", "errors", Access.at(0), "message"])
+    assert message == "Resource not found"
+  end
+
+  test "delete an organization test data", %{user: user} do
+    organization = Fixtures.organization_fixture()
+
+    # sometime This is causing a deadlock issue so we need to fix this
+    result = auth_query_gql_by(:delete_test, user, variables: %{"id" => organization.id})
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "deleteOrganizationTestData", "errors"]) == nil
+
+    result = auth_query_gql_by(:delete_test, user, variables: %{"id" => 123_456_789})
+    assert {:ok, query_data} = result
+
+    message =
+      get_in(query_data, [:data, "deleteOrganizationTestData", "errors", Access.at(0), "message"])
+
     assert message == "Resource not found"
   end
 
