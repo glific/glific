@@ -116,4 +116,24 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
       assert json["data"] == %{}
     end
   end
+
+  describe "name/2" do
+    setup %{conn: conn, organization_id: organization_id} do
+      params = put_in(@valid_params, ["user", "organization_id"], organization_id)
+      authed_conn = post(conn, Routes.api_v1_session_path(conn, :create, params))
+      :timer.sleep(100)
+
+      {:ok, access_token: authed_conn.private[:api_access_token]}
+    end
+
+    test "name", %{conn: conn, access_token: token} do
+      conn =
+        conn
+        |> Plug.Conn.put_req_header("authorization", token)
+        |> post(Routes.api_v1_session_path(conn, :name))
+
+      assert json = json_response(conn, 200) |> IO.inspect()
+      assert json["data"] == %{"name" => "Glific"}
+    end
+  end
 end
