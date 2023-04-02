@@ -132,7 +132,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
         |> Plug.Conn.put_req_header("authorization", token)
         |> post(Routes.api_v1_session_path(conn, :name))
 
-      assert json = json_response(conn, 200) |> IO.inspect()
+      assert json = json_response(conn, 200)
       assert json["data"] == %{"name" => "Glific"}
     end
   end
