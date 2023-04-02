@@ -57,6 +57,7 @@ defmodule GlificWeb.Router do
     post("/registration/reset-password", RegistrationController, :reset_password)
     resources("/session", SessionController, singleton: true, only: [:create, :delete])
     post("/session/renew", SessionController, :renew)
+    post("/session/name", SessionController, :name)
     post("/onboard/setup", OnboardController, :setup)
   end
 

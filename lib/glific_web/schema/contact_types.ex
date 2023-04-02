@@ -118,6 +118,9 @@ defmodule GlificWeb.Schema.ContactTypes do
 
   @desc "Filtering options for contacts"
   input_object :contact_filter do
+    @desc "Match the name or phone"
+    field :term, :string
+
     @desc "Match the name"
     field :name, :string
 

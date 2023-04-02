@@ -56,6 +56,7 @@ defmodule Glific.Flows.FlowCount do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:uuid, :flow_id, :type])
+    |> foreign_key_constraint(:flow_id)
   end
 
   @doc """

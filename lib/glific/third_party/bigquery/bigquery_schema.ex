@@ -747,6 +747,12 @@ defmodule Glific.BigQuery.Schema do
         name: "profile_id",
         type: "INTEGER",
         mode: "NULLABLE"
+      },
+      %{
+        description: "Reason behind the flow killed",
+        name: "reason",
+        type: "STRING",
+        mode: "NULLABLE"
       }
     ]
   end

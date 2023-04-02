@@ -372,6 +372,33 @@ defmodule Glific.Partners do
   end
 
   @doc """
+  Deletes all the dynamic data for an organization. This includes all messages
+  and contacts that are not users.any()
+
+  This allows an organization to reset all its experiment data before going live.
+  A feature to add in the future, might to be mark test contact with a "test" contact
+  field and we'll delete only those contacts
+  """
+  @spec delete_organization_test_data(Organization.t()) :: {:ok, Organization.t()}
+  def delete_organization_test_data(organization) do
+    [
+      "DELETE FROM messages WHERE organization_id = #{organization.id}",
+      """
+      DELETE FROM contacts WHERE
+        organization_id = #{organization.id}
+        AND (id NOT IN
+          (SELECT c.id FROM contacts c
+            LEFT JOIN  users ON users.contact_id = c.id
+            WHERE c.organization_id = #{organization.id} AND users.id IS NOT NULL))
+        AND id != #{organization.contact_id}
+      """
+    ]
+    |> Enum.each(&Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true))
+
+    {:ok, organization}
+  end
+
+  @doc """
   Returns an `%Ecto.Changeset{}` for tracking organization changes.
 
   ## Examples
@@ -983,15 +1010,15 @@ defmodule Glific.Partners do
   @doc """
   Common function to get the goth config
   """
-  @spec get_goth_token(non_neg_integer, String.t()) :: nil | Goth.Token.t()
-  def get_goth_token(organization_id, provider_shortcode) do
+  @spec get_goth_token(non_neg_integer, String.t(), Keyword.t()) :: nil | Goth.Token.t()
+  def get_goth_token(organization_id, provider_shortcode, opts \\ []) do
     key = {:provider_token, provider_shortcode}
     organization = organization(organization_id)
 
     if is_nil(organization.services[provider_shortcode]) do
       nil
     else
-      Caches.fetch(organization_id, key, &load_goth_token/1)
+      Caches.fetch(organization_id, key, fn key -> load_goth_token(key, opts) end)
       |> case do
         {_status, res} when is_map(res) ->
           res
@@ -1006,8 +1033,8 @@ defmodule Glific.Partners do
     end
   end
 
-  @spec load_goth_token(tuple()) :: tuple()
-  defp load_goth_token(cache_key) do
+  @spec load_goth_token(tuple(), Keyword.t()) :: tuple()
+  defp load_goth_token(cache_key, goth_opts) do
     {organization_id, {:provider_token, provider_shortcode}} = cache_key
 
     organization = organization(organization_id)
@@ -1016,7 +1043,7 @@ defmodule Glific.Partners do
     if credentials == :error do
       {:ignore, nil}
     else
-      Goth.Token.fetch(source: {:service_account, credentials})
+      Goth.Token.fetch(source: {:service_account, credentials, goth_opts})
       |> case do
         {:ok, token} ->
           opts = [ttl: :timer.seconds(token.expires - System.system_time(:second) - 60)]
