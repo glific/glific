@@ -92,12 +92,16 @@ defmodule Glific.Contacts do
     |> Repo.aggregate(:count)
   end
 
-  # codebeat:disable[ABC, LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
 
     Enum.reduce(filter, query, fn
+      {:term, term}, query ->
+        from(q in query,
+          where: ilike(field(q, :name), ^"%#{term}%") or ilike(field(q, :phone), ^"%#{term}%")
+        )
+
       {:status, status}, query ->
         from(q in query, where: q.status == ^status)
 
@@ -109,7 +113,7 @@ defmodule Glific.Contacts do
 
       # We need distinct query expression with join,
       # in case if filter requires contacts added to multiple groups
-      # Using subquery instead of join, so that distinct query expression can be avoided
+      # Using sub query instead of join, so that distinct query expression can be avoided
       # We can come back and decide, which one is more expensive in this scenario.
       {:include_groups, group_ids}, query ->
         sub_query =
@@ -137,8 +141,6 @@ defmodule Glific.Contacts do
     end)
     |> filter_contacts_with_blocked_status(filter)
   end
-
-  # codebeat:enable[ABC, LOC]
 
   # Remove contacts with blocked status unless filtered by status
   @spec filter_contacts_with_blocked_status(Ecto.Queryable.t(), %{optional(atom()) => any}) ::

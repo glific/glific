@@ -43,7 +43,11 @@ defmodule Glific.Clients.CommonWebhook do
     range = fields["range"] || "A:Z"
     spreadsheet_id = fields["spreadsheet_id"]
     row_data = fields["row_data"]
-    GoogleSheets.insert_row(org_id, spreadsheet_id, %{range: range, data: [row_data]})
+    response = GoogleSheets.insert_row(org_id, spreadsheet_id, %{range: range, data: [row_data]})
+
+    %{
+      response: "#{inspect(response)}"
+    }
   end
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
