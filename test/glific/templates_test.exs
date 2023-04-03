@@ -895,7 +895,7 @@ defmodule Glific.TemplatesTest do
         body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
         shortcode: "common_otp",
         is_hsm: true,
-        category: "OTP",
+        category: "AUTHENTICATION",
         example:
           "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
         language_id: language_id,
