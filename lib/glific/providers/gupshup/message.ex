@@ -150,7 +150,7 @@ defmodule Glific.Providers.Gupshup.Message do
       context_id: context_id(payload),
       caption: message_payload["caption"],
       url: message_payload["url"],
-      content_type: message_payload["contentType"]
+      content_type: message_payload["contentType"],
       source_url: message_payload["url"],
       sender: %{
         phone: payload["sender"]["phone"],
