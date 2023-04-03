@@ -513,6 +513,12 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
+        description: "Content Type of media file from provider",
+        name: "content_type",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
         description: "URL of media file stored in GCS",
         name: "gcs_url",
         type: "STRING",

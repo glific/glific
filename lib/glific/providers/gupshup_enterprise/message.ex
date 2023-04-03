@@ -242,6 +242,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
       context_id: params["messageId"],
       caption: message_payload["caption"],
       url: message_payload["url"] <> message_payload["signature"],
+      content_type: message_payload["contentType"],
       source_url: message_payload["url"] <> message_payload["signature"],
       sender: %{
         phone: params["mobile"],
