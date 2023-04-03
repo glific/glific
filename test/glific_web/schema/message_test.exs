@@ -383,7 +383,8 @@ defmodule GlificWeb.Schema.MessageTest do
     {:ok, hsm_template} =
       Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
 
-    parameters = ["param1", "param2", "param3"]
+    param_with_extra_spaces = "Param \n   with \n   Extra     Space"
+    parameters = ["param1", "param2", param_with_extra_spaces]
 
     result =
       auth_query_gql_by(:send_hsm_message, user,
@@ -397,6 +398,11 @@ defmodule GlificWeb.Schema.MessageTest do
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "sendHsmMessage", "errors"]) == nil
     assert get_in(query_data, [:data, "sendHsmMessage", "message", "is_hsm"]) == true
+
+    # it removes the extra spaces and new lines from the hsm params. (WABA policy)
+    message_body = get_in(query_data, [:data, "sendHsmMessage", "message", "body"])
+    assert String.contains?(message_body, param_with_extra_spaces) == false
+    assert String.contains?(message_body, "Param with Extra Space") == true
   end
 
   test "create and send a message to valid contact", %{staff: user} do
