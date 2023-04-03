@@ -39,10 +39,7 @@ defmodule Glific.Templates.InteractiveTemplates do
         from(q in query,
           where:
             ilike(field(q, :label), ^"%#{term}%") or
-              fragment(
-                "exists(select * from jsonb_each_text(interactive_content) where value ILIKE ?)",
-                ^"%#{term}%"
-              )
+            fragment("interactive_content::text like ?", ^"%#{term}%")
         )
 
       {:type, type}, query ->
