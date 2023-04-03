@@ -481,6 +481,10 @@ Filtering options for session_templates
 </thead>
 <tbody>
 <tr>
+<td colspan="2" valign="top"><strong>term</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>
+<tr>
 <td colspan="2" valign="top"><strong>label</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td>
