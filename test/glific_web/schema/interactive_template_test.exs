@@ -23,7 +23,24 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/interactives/delete.gql")
   load_gql(:copy, GlificWeb.Schema, "assets/gql/interactives/copy.gql")
 
-  test "session templates field returns list of interactives", %{staff: user} do
+  test "Interactive templates field returns list of interactives", %{staff: user} do
+    {:ok, query_data} =
+      auth_query_gql_by(:list, user,
+        variables: %{"filter" => %{"term" => "Glific comes with all new features"}}
+      )
+
+    interactives = get_in(query_data, [:data, "interactiveTemplates"])
+    assert length(interactives) > 0
+
+    res =
+      interactives
+      |> get_in([Access.all(), "label"])
+      |> Enum.find(fn x -> x == "Are you excited for *Glific*?" end)
+
+    assert res == "Are you excited for *Glific*?"
+  end
+
+  test "Interactive templates field returns list of interactives filter by term", %{staff: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
     interactives = get_in(query_data, [:data, "interactiveTemplates"])
