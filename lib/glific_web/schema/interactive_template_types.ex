@@ -33,6 +33,9 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
 
   @desc "Filtering options for interactives"
   input_object :interactive_template_filter do
+    @desc "Match the term"
+    field :term, :string
+
     @desc "Match the label"
     field :label, :string
 
