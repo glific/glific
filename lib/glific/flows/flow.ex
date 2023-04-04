@@ -11,12 +11,14 @@ defmodule Glific.Flows.Flow do
 
   alias Glific.{
     AccessControl.Role,
+    Contacts.Contact,
     Enums.FlowType,
     Flows,
     Flows.FlowContext,
     Flows.FlowRevision,
     Flows.Localization,
     Flows.Node,
+    Groups.Group,
     Partners.Organization,
     Repo
   }
@@ -64,43 +66,43 @@ defmodule Glific.Flows.Flow do
         }
 
   schema "flows" do
-    field :name, :string
+    field(:name, :string)
 
     # this is the flow editor version number
-    field :version_number, :string
-    field :flow_type, FlowType
-    field :uuid, Ecto.UUID
+    field(:version_number, :string)
+    field(:flow_type, FlowType)
+    field(:uuid, Ecto.UUID)
 
-    field :uuid_map, :map, virtual: true
-    field :start_node, :map, virtual: true
-    field :nodes, :map, virtual: true
-    field :localization, :map, virtual: true
-    field :last_published_at, :utc_datetime, virtual: true
-    field :last_changed_at, :utc_datetime, virtual: true
+    field(:uuid_map, :map, virtual: true)
+    field(:start_node, :map, virtual: true)
+    field(:nodes, :map, virtual: true)
+    field(:localization, :map, virtual: true)
+    field(:last_published_at, :utc_datetime, virtual: true)
+    field(:last_changed_at, :utc_datetime, virtual: true)
 
     # This is the dynamic status that we use primarily during
     # flow execution. It tells us if we are using the draft version
     # or the published version of the flow
-    field :status, :string, virtual: true, default: "published"
+    field(:status, :string, virtual: true, default: "published")
 
-    field :keywords, {:array, :string}, default: []
-    field :ignore_keywords, :boolean, default: false
-    field :is_active, :boolean, default: true
-    field :is_background, :boolean, default: false
-    field :is_pinned, :boolean, default: false
-    field :respond_other, :boolean, default: false
-    field :respond_no_response, :boolean, default: false
+    field(:keywords, {:array, :string}, default: [])
+    field(:ignore_keywords, :boolean, default: false)
+    field(:is_active, :boolean, default: true)
+    field(:is_background, :boolean, default: false)
+    field(:is_pinned, :boolean, default: false)
+    field(:respond_other, :boolean, default: false)
+    field(:respond_no_response, :boolean, default: false)
 
     # we use this to store the latest definition and version from flow_revisions for this flow
-    field :definition, :map, virtual: true
+    field(:definition, :map, virtual: true)
 
     # this is the version of the flow revision
-    field :version, :integer, virtual: true, default: 0
+    field(:version, :integer, virtual: true, default: 0)
 
-    belongs_to :organization, Organization
+    belongs_to(:organization, Organization)
 
-    has_many :revisions, FlowRevision
-    many_to_many :roles, Role, join_through: "flow_roles", on_replace: :delete
+    has_many(:revisions, FlowRevision)
+    many_to_many(:roles, Role, join_through: "flow_roles", on_replace: :delete)
 
     timestamps(type: :utc_datetime_usec)
   end
@@ -247,9 +249,10 @@ defmodule Glific.Flows.Flow do
   @spec get_latest_definition(integer) :: map()
   def get_latest_definition(flow_id) do
     query =
-      from fr in FlowRevision,
+      from(fr in FlowRevision,
         where: fr.revision_number == 0 and fr.flow_id == ^flow_id,
         select: fr.definition
+      )
 
     Repo.one(query)
     # lets get rid of stuff we don't use, specifically the definition and
@@ -297,7 +300,7 @@ defmodule Glific.Flows.Flow do
   @spec get_loaded_flow(non_neg_integer, String.t(), map()) :: map()
   def get_loaded_flow(organization_id, status, args) do
     query =
-      from f in Flow,
+      from(f in Flow,
         join: fr in assoc(f, :revisions),
         where: f.organization_id == ^organization_id,
         where: fr.flow_id == f.id,
@@ -315,6 +318,7 @@ defmodule Glific.Flows.Flow do
           definition: fr.definition,
           version: fr.version
         }
+      )
 
     flow =
       query
@@ -446,4 +450,47 @@ defmodule Glific.Flows.Flow do
 
   defp status_clause(query, "draft"),
     do: query |> where([_f, fr], fr.revision_number == 0)
+
+  @doc """
+    We need to perform the execute in case template is an expression
+  """
+  @spec execute(Action.t(), FlowContext.t()) :: {:ok, FlowContext.t(), []}
+  def execute(action, context) do
+    flow = Repo.get_by(Flow, %{uuid: action.flow["uuid"]})
+
+    contact_ids =
+      Enum.reduce(action.contacts, [], &(&2 ++ [&1["uuid"]]))
+      |> then(fn contact_ids ->
+        if action.exclusions, do: exclude_active_flow_contacts(contact_ids), else: contact_ids
+      end)
+
+    contact_ids
+    |> Enum.each(fn contact_id ->
+      contact = Repo.get_by(Contact, %{id: contact_id})
+
+      Flows.start_contact_flow(flow.id, contact, %{"parent" => context.results})
+    end)
+
+    action.groups
+    |> Enum.each(fn group ->
+      group = Repo.get_by(Group, %{id: group["uuid"]})
+      Flows.start_group_flow(flow, group, %{"parent" => context.results})
+    end)
+
+    {:ok, context, []}
+  end
+
+  defp exclude_active_flow_contacts(contact_ids) do
+    query =
+      from(fc in FlowContext,
+        select: fc.contact_id,
+        where: fc.contact_id in ^contact_ids and is_nil(fc.completed_at)
+      )
+
+    active_flow_contacts = Repo.all(query)
+
+    Enum.filter(contact_ids, fn contact_id ->
+      String.to_integer(contact_id) not in active_flow_contacts
+    end)
+  end
 end
