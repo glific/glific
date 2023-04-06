@@ -44,22 +44,32 @@ defmodule Glific.Providers.GupshupContacts do
   @doc """
   Fetch opted in contacts data from providers server
   """
-  @spec fetch_opted_in_contacts(map()) :: :ok | {:error, String.t()}
+  @spec fetch_opted_in_contacts(map()) :: :ok
   def fetch_opted_in_contacts(attrs) do
     organization = Partners.organization(attrs.organization_id)
 
-    result =
-      ApiClient.fetch_opted_in_contacts(attrs.organization_id)
-      |> validate_opted_in_contacts()
+    Enum.reduce_while(0..10, 0, fn _count, page ->
+      result =
+        ApiClient.fetch_opted_in_contacts(attrs.organization_id, page)
+        |> validate_opted_in_contacts()
 
-    case result do
-      {:ok, users} ->
-        update_contacts(users, organization)
-        :ok
+      case result do
+        {:ok, users} ->
+          Enum.chunk_every(users, 1000)
+          |> Enum.each(fn users -> update_contacts(users, organization) end)
 
-      error ->
-        error
-    end
+          if length(users) == 5000 do
+            {:cont, page + 1}
+          else
+            {:halt, page}
+          end
+
+        _error ->
+          {:halt, page}
+      end
+    end)
+
+    :ok
   end
 
   @doc """
