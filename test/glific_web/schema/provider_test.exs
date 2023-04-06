@@ -32,7 +32,7 @@ defmodule GlificWeb.Schema.ProviderTest do
     res =
       providers
       |> get_in([Access.all(), "name"])
-      |> Enum.find(fn x -> x == "Gupshup" end)
+      |> Enum.find(fn name -> name == "Gupshup" end)
 
     assert res == "Gupshup"
   end
