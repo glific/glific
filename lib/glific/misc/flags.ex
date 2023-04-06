@@ -106,7 +106,7 @@ defmodule Glific.Flags do
       ),
       do: out_of_office_check(organization),
       # lets make sure that out_of_office_active is disabled
-      # if we dont want this functionality
+      # if we don't want this functionality
       else: disable_out_of_office(organization.id)
     )
   end
@@ -143,7 +143,7 @@ defmodule Glific.Flags do
       for_actor: %{organization_id: organization.id}
     )
 
-    [:is_contact_profile_enabled, :is_flow_uuid_display, :is_roles_and_permission]
+    [:is_contact_profile_enabled, :flow_uuid_display, :roles_and_permission]
     |> Enum.each(fn flag ->
       FunWithFlags.disable(
         flag,

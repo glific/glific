@@ -85,7 +85,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     {:ok, %{data: %{"syncHSMTemplate" => %{"message" => message}}}} =
       auth_query_gql_by(:sync, user)
 
-    assert message == "successfull"
+    assert message == "successful"
   end
 
   test "sync hsm with bsp if it doesn't establish a connection with gupshup test", %{staff: user} do
