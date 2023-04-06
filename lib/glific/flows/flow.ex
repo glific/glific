@@ -461,7 +461,7 @@ defmodule Glific.Flows.Flow do
     contact_ids =
       Enum.reduce(action.contacts, [], &(&2 ++ [&1["uuid"]]))
       |> then(fn contact_ids ->
-        if action.exclusions, do: exclude_active_flow_contacts(contact_ids), else: contact_ids
+        if action.exclusions, do: exclude_contacts_in_flow(contact_ids), else: contact_ids
       end)
 
     contact_ids
@@ -474,23 +474,28 @@ defmodule Glific.Flows.Flow do
     action.groups
     |> Enum.each(fn group ->
       group = Repo.get_by(Group, %{id: group["uuid"]})
-      Flows.start_group_flow(flow, group, %{"parent" => context.results})
+
+      Flows.start_group_flow(flow, group, %{"parent" => context.results},
+        exclusions: action.exclusions
+      )
     end)
 
     {:ok, context, []}
   end
 
-  defp exclude_active_flow_contacts(contact_ids) do
+  # Filter contacts which are not currently in the flow if there is exclusion
+  @spec exclude_contacts_in_flow(list()) :: list()
+  def exclude_contacts_in_flow(contact_ids) do
     query =
       from(fc in FlowContext,
         select: fc.contact_id,
-        where: fc.contact_id in ^contact_ids and is_nil(fc.completed_at)
+        where: fc.contact_id in [1, 12, 3] and is_nil(fc.completed_at)
       )
 
-    active_flow_contacts = Repo.all(query)
+    contacts_in_flow = Repo.all(query)
 
     Enum.filter(contact_ids, fn contact_id ->
-      String.to_integer(contact_id) not in active_flow_contacts
+      String.to_integer(contact_id) not in contacts_in_flow
     end)
   end
 end

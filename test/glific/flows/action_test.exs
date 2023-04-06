@@ -162,6 +162,8 @@ defmodule Glific.Flows.ActionTest do
       "type" => "start_session",
       "contacts" => [%{"name" => "NGO Admin", "uuid" => "14"}],
       "create_contact" => false,
+      "exclusions" => %{"in_a_flow" => false},
+      "groups" => [],
       "flow" => %{
         "name" => "Help Workflow",
         "uuid" => "3fa22108-f464-41e5-81d9-d8a298854429"

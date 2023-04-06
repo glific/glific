@@ -26,11 +26,13 @@ defmodule Glific.Flows.Broadcast do
   @doc """
   The one simple public interface to broadcast a group
   """
-  @spec broadcast_flow_to_group(Flow.t(), Group.t(), map()) ::
+  @spec broadcast_flow_to_group(Flow.t(), Group.t(), map(), Keyword.t()) ::
           {:ok, MessageBroadcast.t()} | {:error, String.t()}
-  def broadcast_flow_to_group(flow, group, default_results \\ %{}) do
+  def broadcast_flow_to_group(flow, group, default_results \\ %{}, opts \\ []) do
     # lets set up the state and then call our helper friend to split group into smaller chunks
     # of contacts
+    exclusion = Keyword.get(opts, :exclusions, false)
+
     {:ok, group_message} =
       Messages.create_group_message(%{
         body: "Starting flow: #{flow.name} for group: #{group.label}",
@@ -48,7 +50,7 @@ defmodule Glific.Flows.Broadcast do
       type: "flow",
       default_results: default_results
     }
-    |> init_msg_broadcast(group_message)
+    |> init_msg_broadcast(group_message, exclusion)
   end
 
   @doc """
@@ -67,7 +69,7 @@ defmodule Glific.Flows.Broadcast do
       type: "message",
       default_results: default_results
     }
-    |> init_msg_broadcast(group_message)
+    |> init_msg_broadcast(group_message, false)
   end
 
   @doc """
@@ -346,9 +348,9 @@ defmodule Glific.Flows.Broadcast do
     Stream.run(stream)
   end
 
-  @spec init_msg_broadcast(map(), Messages.Message.t()) ::
+  @spec init_msg_broadcast(map(), Messages.Message.t(), boolean()) ::
           {:ok, MessageBroadcast.t()} | {:error, String.t()}
-  defp init_msg_broadcast(broadcast_attrs, group_message) do
+  defp init_msg_broadcast(broadcast_attrs, group_message, exclusion \\ false) do
     {:ok, message_broadcast} =
       broadcast_attrs
       |> create_message_broadcast()
@@ -357,7 +359,7 @@ defmodule Glific.Flows.Broadcast do
       group_message
       |> Messages.update_message(%{message_broadcast_id: message_broadcast.id})
 
-    populate_message_broadcast_contacts(message_broadcast)
+    populate_message_broadcast_contacts(message_broadcast, exclusion)
     |> case do
       {:ok, _} -> {:ok, message_broadcast}
       _ -> {:error, "could not initiate broadcast"}
@@ -381,9 +383,33 @@ defmodule Glific.Flows.Broadcast do
     |> Repo.insert()
   end
 
-  @spec populate_message_broadcast_contacts(MessageBroadcast.t()) ::
+  @spec populate_message_broadcast_contacts(MessageBroadcast.t(), boolean()) ::
           {:ok, any()} | {:error, any()}
-  defp populate_message_broadcast_contacts(message_broadcast) do
+  def populate_message_broadcast_contacts(message_broadcast, true) do
+    contact_ids =
+      from(cg in Glific.Groups.ContactGroup,
+        join: c in assoc(cg, :contact),
+        select: cg.contact_id,
+        where:
+          c.id == cg.contact_id and
+            cg.group_id == ^message_broadcast.group_id
+      )
+      |> Repo.all()
+
+    inactive_contact_ids = Flow.exclude_contacts_in_flow(contact_ids)
+
+    """
+    INSERT INTO message_broadcast_contacts
+    (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id)
+
+    (SELECT #{message_broadcast.id}, 'pending', #{message_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, contact_id
+      FROM contacts_groups left join contacts on contacts.id = contacts_groups.contact_id
+      WHERE group_id = #{message_broadcast.group_id} AND (status !=  'blocked') AND (contacts.optout_time is null)) AND contact_id in #{inactive_contact_ids}
+    """
+    |> Repo.query()
+  end
+
+  def populate_message_broadcast_contacts(message_broadcast, _exclusion) do
     """
     INSERT INTO message_broadcast_contacts
     (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id)
