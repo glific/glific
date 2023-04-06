@@ -125,7 +125,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   """
   @spec users_get(String.t(), String.t(), non_neg_integer()) ::
           Tesla.Env.result() | {:error, String.t()}
-  def users_get(api_key, app_name, page) do
+  def users_get(api_key, app_name, page \\ 0) do
     url = @gupshup_url <> "/users/" <> app_name <> "?maxResult=5000&pageNo=#{page}"
     gupshup_get(url, api_key)
   end
