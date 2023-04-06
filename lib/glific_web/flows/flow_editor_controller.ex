@@ -446,7 +446,11 @@ defmodule GlificWeb.Flows.FlowEditorController do
         [] ->
           ## We need to fix this before merging this branch
           Flows.list_flows(%{
-            filter: %{organization_id: conn.assigns[:organization_id], status: "published"}
+            filter: %{
+              organization_id: conn.assigns[:organization_id],
+              status: "published",
+              is_active: true
+            }
           })
           |> Enum.reduce([], fn flow, acc ->
             [
