@@ -35,7 +35,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     res =
       interactives
       |> get_in([Access.all(), "label"])
-      |> Enum.find(fn x -> x == "Are you excited for *Glific*?" end)
+      |> Enum.find(fn label -> label == "Are you excited for *Glific*?" end)
 
     assert res == "Are you excited for *Glific*?"
   end
@@ -49,7 +49,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     res =
       interactives
       |> get_in([Access.all(), "label"])
-      |> Enum.find(fn x -> x == "Interactive list" end)
+      |> Enum.find(fn label -> label == "Interactive list" end)
 
     assert res == "Interactive list"
   end
