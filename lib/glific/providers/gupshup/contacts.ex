@@ -41,36 +41,32 @@ defmodule Glific.Providers.GupshupContacts do
     end
   end
 
+  @per_page_limit 5000
   @doc """
   Fetch opted in contacts data from providers server
   """
-  @spec fetch_opted_in_contacts(map()) :: :ok
+  @spec fetch_opted_in_contacts(map()) :: :ok | {:error, String.t()}
   def fetch_opted_in_contacts(attrs) do
     organization = Partners.organization(attrs.organization_id)
-
-    Enum.reduce_while(0..10, 0, fn _count, page ->
-      result =
-        ApiClient.fetch_opted_in_contacts(attrs.organization_id, page)
-        |> validate_opted_in_contacts()
-
-      case result do
-        {:ok, users} ->
-          Enum.chunk_every(users, 1000)
-          |> Enum.each(fn users -> update_contacts(users, organization) end)
-
-          if length(users) == 5000 do
-            {:cont, page + 1}
-          else
-            {:halt, page}
-          end
-
-        _error ->
-          {:halt, page}
-      end
-    end)
-
-    :ok
+    fetch_opted_in_contacts(organization, @per_page_limit, 1)
   end
+
+  def fetch_opted_in_contacts(organization, @per_page_limit, page) do
+    ApiClient.fetch_opted_in_contacts(organization.id, page)
+    |> validate_opted_in_contacts()
+    |> case do
+      {:ok, users} ->
+        Enum.chunk_every(users, 1000)
+        |> Enum.each(fn users -> update_contacts(users, organization) end)
+
+        fetch_opted_in_contacts(organization, length(users), page + 1)
+
+      error ->
+        error
+    end
+  end
+
+  def fetch_opted_in_contacts(_organization, _user_count, _page), do: :ok
 
   @doc """
   Perform the gupshup API call and parse the results for downstream functions.
