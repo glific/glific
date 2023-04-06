@@ -14,11 +14,7 @@ defmodule Glific.Flags do
   @doc false
   @spec init(Organization.t()) :: nil
   def init(organization) do
-    FunWithFlags.enable(
-      :enable_out_of_office,
-      for_actor: %{organization_id: organization.id}
-    )
-
+    init_fun_with_flags(organization)
     out_of_office_update(organization)
 
     dialogflow(organization)
@@ -137,5 +133,22 @@ defmodule Glific.Flags do
     end
 
     nil
+  end
+
+  # setting default fun_with_flags values as disabled for an organization except for out_of_office
+  @spec init_fun_with_flags(Organization.t()) :: :ok
+  defp init_fun_with_flags(organization) do
+    FunWithFlags.enable(
+      :enable_out_of_office,
+      for_actor: %{organization_id: organization.id}
+    )
+
+    [:is_contact_profile_enabled, :is_flow_uuid_display, :is_roles_and_permission]
+    |> Enum.each(fn flag ->
+      FunWithFlags.disable(
+        flag,
+        for_actor: %{organization_id: organization.id}
+      )
+    end)
   end
 end

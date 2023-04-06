@@ -43,7 +43,7 @@ defmodule GlificWeb.Schema.UserTest do
     users = get_in(query_data, [:data, "users"])
     assert length(users) > 0
 
-    res = users |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "NGO Staff" end)
+    res = users |> get_in([Access.all(), "name"]) |> Enum.find(fn name -> name == "NGO Staff" end)
 
     assert res == "NGO Staff"
 

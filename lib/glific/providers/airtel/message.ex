@@ -115,8 +115,8 @@ defmodule Glific.Providers.Airtel.Message do
   @spec parse_interactive_message(map(), atom()) :: map()
   defp parse_interactive_message(content, :quick_reply) do
     buttons =
-      Enum.map(content["options"], fn x ->
-        %{"title" => x["title"], "tag" => x["title"]}
+      Enum.map(content["options"], fn option ->
+        %{"title" => option["title"], "tag" => option["title"]}
       end)
 
     %{
