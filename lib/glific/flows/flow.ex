@@ -489,13 +489,14 @@ defmodule Glific.Flows.Flow do
     query =
       from(fc in FlowContext,
         select: fc.contact_id,
-        where: fc.contact_id in [1, 12, 3] and is_nil(fc.completed_at)
+        where: fc.contact_id in ^contact_ids and is_nil(fc.completed_at)
       )
 
     contacts_in_flow = Repo.all(query)
 
     Enum.filter(contact_ids, fn contact_id ->
-      String.to_integer(contact_id) not in contacts_in_flow
+      {:ok, contact_id} = Glific.parse_maybe_integer(contact_id)
+      contact_id not in contacts_in_flow
     end)
   end
 end
