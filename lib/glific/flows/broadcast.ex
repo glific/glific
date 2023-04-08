@@ -385,7 +385,7 @@ defmodule Glific.Flows.Broadcast do
 
   @spec populate_message_broadcast_contacts(MessageBroadcast.t(), boolean()) ::
           {:ok, any()} | {:error, any()}
-  def populate_message_broadcast_contacts(message_broadcast, true) do
+  defp populate_message_broadcast_contacts(message_broadcast, true) do
     contact_ids =
       from(cg in Glific.Groups.ContactGroup,
         join: c in assoc(cg, :contact),
@@ -411,7 +411,7 @@ defmodule Glific.Flows.Broadcast do
     |> Repo.query()
   end
 
-  def populate_message_broadcast_contacts(message_broadcast, _exclusion) do
+  defp populate_message_broadcast_contacts(message_broadcast, _exclusion) do
     """
     INSERT INTO message_broadcast_contacts
     (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id)

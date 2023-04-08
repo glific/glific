@@ -483,7 +483,9 @@ defmodule Glific.Flows.Flow do
     {:ok, context, []}
   end
 
-  # Filter contacts which are not currently in the flow if there is exclusion
+  @doc """
+  Filter contacts which are not currently in the flow if there is exclusion
+  """
   @spec exclude_contacts_in_flow(list()) :: list()
   def exclude_contacts_in_flow(contact_ids) do
     query =
