@@ -26,6 +26,8 @@ defmodule Glific.Providers.Gupshup.ContactWorker do
   def make_job(users, organization_id) do
     __MODULE__.new(%{users: users, organization_id: organization_id})
     |> Oban.insert()
+
+    :ok
   end
 
   @impl Oban.Worker
