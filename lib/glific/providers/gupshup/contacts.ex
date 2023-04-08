@@ -44,10 +44,12 @@ defmodule Glific.Providers.GupshupContacts do
   """
   @spec fetch_opted_in_contacts(map()) :: :ok | {:error, String.t()}
   def fetch_opted_in_contacts(attrs) do
-    fetch_opted_in_contacts(attrs.organization_id, @per_page_limit, 1)
+    do_fetch_opted_in_contacts(attrs.organization_id, @per_page_limit, 1)
   end
 
-  def fetch_opted_in_contacts(org_id, @per_page_limit, page) do
+  @spec do_fetch_opted_in_contacts(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+          :ok | {:error, String.t()}
+  defp do_fetch_opted_in_contacts(org_id, @per_page_limit, page) do
     ApiClient.fetch_opted_in_contacts(org_id, page)
     |> validate_opted_in_contacts()
     |> case do
@@ -57,14 +59,14 @@ defmodule Glific.Providers.GupshupContacts do
           ContactWorker.make_job(users, org_id)
         end)
 
-        fetch_opted_in_contacts(org_id, length(users), page + 1)
+        do_fetch_opted_in_contacts(org_id, length(users), page + 1)
 
       error ->
         error
     end
   end
 
-  def fetch_opted_in_contacts(_org_id, _user_count, _page), do: :ok
+  defp do_fetch_opted_in_contacts(_org_id, _user_count, _page), do: :ok
 
   @doc """
   Perform the gupshup API call and parse the results for downstream functions.

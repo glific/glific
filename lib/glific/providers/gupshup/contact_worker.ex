@@ -13,6 +13,7 @@ defmodule Glific.Providers.Gupshup.ContactWorker do
   alias Glific.{
     Contacts,
     Partners,
+    Partners.Organization,
     Repo
   }
 
