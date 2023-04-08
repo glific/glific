@@ -70,7 +70,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     res =
       organizations
       |> get_in([Access.all(), "name"])
-      |> Enum.find(fn x -> x == "Glific" end)
+      |> Enum.find(fn name -> name == "Glific" end)
 
     assert res == "Glific"
   end
