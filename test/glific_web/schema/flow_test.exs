@@ -57,7 +57,9 @@ defmodule GlificWeb.Schema.FlowTest do
     flows = get_in(query_data, [:data, "flows"])
     assert length(flows) > 0
 
-    res = flows |> get_in([Access.all(), "name"]) |> Enum.find(fn name -> name == "Help Workflow" end)
+    res =
+      flows |> get_in([Access.all(), "name"]) |> Enum.find(fn name -> name == "Help Workflow" end)
+
     assert res == "Help Workflow"
 
     [flow | _] = flows

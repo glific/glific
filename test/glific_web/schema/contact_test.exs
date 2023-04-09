@@ -72,7 +72,9 @@ defmodule GlificWeb.Schema.ContactTest do
     assert length(contacts) > 0
 
     res =
-      contacts |> get_in([Access.all(), "name"]) |> Enum.find(fn name -> name == "NGO Main Account" end)
+      contacts
+      |> get_in([Access.all(), "name"])
+      |> Enum.find(fn name -> name == "NGO Main Account" end)
 
     assert res == "NGO Main Account"
 
