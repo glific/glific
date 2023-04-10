@@ -3,7 +3,7 @@
   {":0:unknown_function Function ExUnit.CaseTemplate.__proxy__/2 does not exist."},
   {":0:unknown_function Function IEx.started?/0 does not exist."},
   {"lib/glific/application.ex", :unknown_function, 113},
-  {"lib/glific/processor/consumer_flow.ex", :exact_eq, 254},
+  {"lib/glific/processor/consumer_flow.ex", :exact_eq, 255},
   {":0:unknown_function Function Mix.PhilColumns.seeds_path/1 does not exist."},
   {":0:unknown_function Function PhilColumns.Seeder.run/4 does not exist."},
   {":0:unknown_function Function Appsignal.Ecto.handle_event/4 does not exist."},
