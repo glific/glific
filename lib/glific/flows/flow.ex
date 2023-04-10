@@ -14,6 +14,7 @@ defmodule Glific.Flows.Flow do
     Contacts.Contact,
     Enums.FlowType,
     Flows,
+    Flows.Action,
     Flows.FlowContext,
     Flows.FlowRevision,
     Flows.Localization,
