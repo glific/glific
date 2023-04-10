@@ -3,10 +3,10 @@ defmodule Glific.Flows.ActionTest do
 
   alias Glific.{
     Contacts.Contact,
+    Fixtures,
+    Flows,
     Groups,
     Groups.ContactGroup,
-    Flows,
-    Fixtures,
     Partners,
     Profiles,
     Seeds.SeedsDev,
