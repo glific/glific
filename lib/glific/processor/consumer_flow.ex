@@ -202,9 +202,12 @@ defmodule Glific.Processor.ConsumerFlow do
       }
     )
 
+    flow_id = state.flow_keywords["org_default_optin"]
+    start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
+
     Flows.get_cached_flow(
       message.organization_id,
-      {:flow_keyword, @optin_flow_keyword, @final_phrase}
+      {:flow_id, flow_id, @final_phrase}
     )
     |> case do
       {:ok, flow} ->
