@@ -496,6 +496,27 @@ defmodule Glific.PartnersTest do
       assert_raise Ecto.NoResultsError, fn -> Partners.get_organization!(organization.id) end
     end
 
+    test "delete_organization_test_data/1 deletes the organization test data" do
+      organization = Fixtures.organization_fixture()
+
+      # add a few messages
+      Fixtures.message_fixture(%{organization_id: organization.id})
+      Fixtures.message_fixture(%{organization_id: organization.id})
+
+      assert {:ok, organization} == Partners.delete_organization_test_data(organization)
+      assert Partners.get_organization!(organization.id) != nil
+
+      {:ok, result} =
+        Repo.query("SELECT count(*) FROM contacts WHERE id = #{organization.contact_id}")
+
+      [[count]] = result.rows
+      assert count == 1
+
+      {:ok, result} = Repo.query("SELECT count(*) FROM messages")
+      [[count]] = result.rows
+      assert count == 0
+    end
+
     test "change_organization/1 returns a organization changeset" do
       organization = Fixtures.organization_fixture()
       assert %Ecto.Changeset{} = Partners.change_organization(organization)

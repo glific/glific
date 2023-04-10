@@ -52,7 +52,13 @@ defmodule Glific.Flows.Action do
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
   @required_fields_sheet [:sheet_id, :row, :result_name | @required_field_common]
-  @required_fields_start_session [:contacts, :create_contact, :flow | @required_field_common]
+  @required_fields_start_session [
+    :contacts,
+    :create_contact,
+    :flow,
+    :groups,
+    :exclusions | @required_field_common
+  ]
   @required_fields_group [:groups | @required_field_common]
   @required_fields_contact [:contacts, :text | @required_field_common]
   @required_fields_waittime [:delay]
@@ -75,6 +81,7 @@ defmodule Glific.Flows.Action do
           type: String.t() | nil,
           profile_type: String.t() | nil,
           create_contact: boolean,
+          exclusions: boolean,
           flow: map() | nil,
           field: map() | nil,
           row: map() | nil,
@@ -131,6 +138,7 @@ defmodule Glific.Flows.Action do
     field(:profile_type, :string)
 
     field(:create_contact, :boolean, default: false)
+    field(:exclusions, :boolean, default: false)
     field(:flow, :map)
 
     field(:quick_replies, {:array, :string}, default: [])
@@ -202,7 +210,8 @@ defmodule Glific.Flows.Action do
       contacts: json["contacts"],
       create_contact: json["create_contact"],
       flow: json["flow"],
-      groups: json["groups"]
+      groups: json["groups"],
+      exclusions: json["exclusions"]["in_a_flow"]
     })
   end
 
@@ -509,27 +518,8 @@ defmodule Glific.Flows.Action do
     ContactAction.send_broadcast(context, action, messages)
   end
 
-  def execute(%{type: "start_session"} = action, context, _messages) do
-    flow = Repo.get_by(Flow, %{uuid: action.flow["uuid"]})
-
-    action.contacts
-    |> Enum.each(fn contact ->
-      contact = Repo.get_by(Contact, %{id: contact["uuid"]})
-
-      Flows.start_contact_flow(flow.id, contact, %{"parent" => context.results})
-    end)
-
-    action.groups
-    |> Enum.each(fn group ->
-      group = Repo.get_by(Group, %{id: group["uuid"]})
-
-      Task.async(fn ->
-        Flows.start_group_flow(flow, group, %{"parent" => context.results})
-      end)
-    end)
-
-    {:ok, context, []}
-  end
+  def execute(%{type: "start_session"} = action, context, _messages),
+    do: Flow.execute(action, context)
 
   def execute(%{type: "set_contact_language"} = action, context, messages) do
     # make sure we have a valid language to set

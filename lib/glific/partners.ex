@@ -400,6 +400,33 @@ defmodule Glific.Partners do
   end
 
   @doc """
+  Deletes all the dynamic data for an organization. This includes all messages
+  and contacts that are not users.any()
+
+  This allows an organization to reset all its experiment data before going live.
+  A feature to add in the future, might to be mark test contact with a "test" contact
+  field and we'll delete only those contacts
+  """
+  @spec delete_organization_test_data(Organization.t()) :: {:ok, Organization.t()}
+  def delete_organization_test_data(organization) do
+    [
+      "DELETE FROM messages WHERE organization_id = #{organization.id}",
+      """
+      DELETE FROM contacts WHERE
+        organization_id = #{organization.id}
+        AND (id NOT IN
+          (SELECT c.id FROM contacts c
+            LEFT JOIN  users ON users.contact_id = c.id
+            WHERE c.organization_id = #{organization.id} AND users.id IS NOT NULL))
+        AND id != #{organization.contact_id}
+      """
+    ]
+    |> Enum.each(&Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true))
+
+    {:ok, organization}
+  end
+
+  @doc """
   Returns an `%Ecto.Changeset{}` for tracking organization changes.
 
   ## Examples

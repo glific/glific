@@ -42,7 +42,7 @@ defmodule Glific.Sheets.GoogleSheets do
   def fetch_credentials(organization_id) do
     organization = Partners.organization(organization_id)
 
-    organization.services["bigquery"]
+    organization.services["google_sheets"]
     |> case do
       nil ->
         {:ok, "Google API is not active"}
@@ -53,13 +53,13 @@ defmodule Glific.Sheets.GoogleSheets do
   end
 
   @doc """
-  Decoding the credential for bigquery
+  Decoding the credential for google sheets
   """
   @spec decode_credential(map(), non_neg_integer) :: {:ok, any} | {:error, any}
   def decode_credential(credentials, organization_id) do
     case Jason.decode(credentials.secrets["service_account"]) do
       {:ok, _service_account} ->
-        token = Partners.get_goth_token(organization_id, "bigquery", scopes: @scopes)
+        token = Partners.get_goth_token(organization_id, "google_sheets", scopes: @scopes)
 
         if is_nil(token),
           do: {:error, "Error fetching token with Service Account JSON"},

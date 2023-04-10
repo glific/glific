@@ -1,0 +1,10 @@
+#import "./fields.frag.gql"
+
+mutation deleteOrganizationTestData($id: ID!) {
+  deleteOrganizationTestData(id: $id) {
+    ...OrganizationFields
+    
+    ...ErrorFields
+
+  }
+}

@@ -35,6 +35,13 @@ defmodule Glific.Templates.InteractiveTemplates do
     query = Repo.filter_with(query, filter)
     # these filters are specific to interactive templates only.
     Enum.reduce(filter, query, fn
+      {:term, term}, query ->
+        from(q in query,
+          where:
+            ilike(field(q, :label), ^"%#{term}%") or
+            fragment("interactive_content::text like ?", ^"%#{term}%")
+        )
+
       {:type, type}, query ->
         from(q in query, where: q.type == ^type)
 

@@ -20,13 +20,15 @@ defmodule Glific.Messages.MessageMedia do
     :thumbnail,
     :provider_media_id,
     :caption,
-    :gcs_url
+    :gcs_url,
+    :content_type
   ]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           url: String.t() | nil,
+          content_type: String.t() | nil,
           source_url: String.t() | nil,
           caption: String.t() | nil,
           thumbnail: String.t() | nil,
@@ -39,14 +41,15 @@ defmodule Glific.Messages.MessageMedia do
         }
 
   schema "messages_media" do
-    field :url, :string
-    field :source_url, :string
-    field :thumbnail, :string
-    field :caption, :string
-    field :provider_media_id, :string
-    field :gcs_url, :string
+    field(:url, :string)
+    field(:source_url, :string)
+    field(:thumbnail, :string)
+    field(:caption, :string)
+    field(:provider_media_id, :string)
+    field(:gcs_url, :string)
+    field(:content_type, :string)
 
-    belongs_to :organization, Organization
+    belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
   end
