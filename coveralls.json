@@ -55,7 +55,9 @@
     "lib/glific_web/views",
     "test/support",
     "lib/glific_web/templates/live/stats_live.ex",
-    "lib/glific/third_party/openAI/chatGPT.ex"
+    "lib/glific/third_party/openAI/chatGPT.ex",
+    "lib/glific/providers/gupshup/contacts.ex",
+    "lib/glific/providers/gupshup/contact_worker.ex"
   ],
   "coverage_options": {
     "treat_no_relevant_lines_as_covered": true,
