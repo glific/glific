@@ -60,7 +60,6 @@ defmodule Glific.Processor.ConsumerFlow do
   @delay_time 0
   @draft_phrase "draft"
   @final_phrase "published"
-  @optin_flow_keyword "optin"
 
   @doc """
   In case contact is not in optin flow let's move ahead with the regular processing.
@@ -203,7 +202,6 @@ defmodule Glific.Processor.ConsumerFlow do
     )
 
     flow_id = state.flow_keywords["org_default_optin"]
-    start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
 
     Flows.get_cached_flow(
       message.organization_id,
