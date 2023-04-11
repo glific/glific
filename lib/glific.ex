@@ -27,7 +27,7 @@ defmodule Glific do
   Default session window time in Glific
   """
   @spec session_window_time() :: integer()
-  def session_window_time(), do: @session_window_time
+  def session_window_time, do: @session_window_time
 
   @doc """
   Wrapper to return :ok/:error when parsing strings to potential integers
