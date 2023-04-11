@@ -85,10 +85,8 @@ defmodule Glific.Providers.Gupshup.ContactWorker do
 
   @spec check_bsp_status(DateTime.t()) :: atom()
   defp check_bsp_status(last_message_at) do
-    if Timex.diff(DateTime.utc_now(), last_message_at, :hours) < 24 do
-      :session_and_hsm
-    else
-      :hsm
-    end
+    if Timex.diff(DateTime.utc_now(), last_message_at, :hours) < Glific.session_window_time(),
+      do: :session_and_hsm,
+      else: :hsm
   end
 end

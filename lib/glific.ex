@@ -13,7 +13,7 @@ defmodule Glific do
   """
   @captcha_verify_url "https://www.google.com/recaptcha/api/siteverify"
   @captcha_score_threshold 0.5
-
+  @session_window_time 24
   require Logger
 
   alias Glific.{
@@ -22,6 +22,12 @@ defmodule Glific do
   }
 
   alias Tesla.Multipart
+
+  @doc """
+  Default session window time in Glific
+  """
+  @spec session_window_time() :: integer()
+  def session_window_time(), do: @session_window_time
 
   @doc """
   Wrapper to return :ok/:error when parsing strings to potential integers
