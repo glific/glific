@@ -57,7 +57,9 @@ defmodule GlificWeb.Schema.FlowTest do
     flows = get_in(query_data, [:data, "flows"])
     assert length(flows) > 0
 
-    res = flows |> get_in([Access.all(), "name"]) |> Enum.find(fn name -> name == "Help Workflow" end)
+    res =
+      flows |> get_in([Access.all(), "name"]) |> Enum.find(fn name -> name == "Help Workflow" end)
+
     assert res == "Help Workflow"
 
     [flow | _] = flows
@@ -119,7 +121,7 @@ defmodule GlificWeb.Schema.FlowTest do
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"isPinned" => true}})
     assert {:ok, query_data} = result
     flows = get_in(query_data, [:data, "flows"])
-    assert length(flows) == 2
+    assert length(flows) == 3
   end
 
   test "flow field id returns one flow or nil", %{staff: user} do

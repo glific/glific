@@ -760,6 +760,7 @@ defmodule Glific.Flows do
       )
       |> add_default_flows(organization.out_of_office)
       |> Map.put("org_default_new_contact", organization.newcontact_flow_id)
+      |> Map.put("org_default_optin", organization.optin_flow_id)
 
     {:commit, keyword_map}
   end

@@ -60,7 +60,6 @@ defmodule Glific.Processor.ConsumerFlow do
   @delay_time 0
   @draft_phrase "draft"
   @final_phrase "published"
-  @optin_flow_keyword "optin"
 
   @doc """
   In case contact is not in optin flow let's move ahead with the regular processing.
@@ -202,9 +201,11 @@ defmodule Glific.Processor.ConsumerFlow do
       }
     )
 
+    flow_id = state.flow_keywords["org_default_optin"]
+
     Flows.get_cached_flow(
       message.organization_id,
-      {:flow_keyword, @optin_flow_keyword, @final_phrase}
+      {:flow_id, flow_id, @final_phrase}
     )
     |> case do
       {:ok, flow} ->
@@ -250,8 +251,6 @@ defmodule Glific.Processor.ConsumerFlow do
   end
 
   @spec is_context_nil?(FlowContext.t() | nil) :: boolean()
-  defp is_context_nil?(context) do
-    ## not sure why this is giving dialyzer error. Ignoring for now
-    is_nil(context)
-  end
+  ## not sure why this is giving dialyzer error. Ignoring for now
+  defp is_context_nil?(context), do: is_nil(context)
 end

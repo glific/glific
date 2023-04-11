@@ -302,52 +302,49 @@ defmodule Glific.Partners do
            organization
            |> Organization.changeset(attrs)
            |> Repo.update(skip_organization_id: true) do
-      maybe_pin_newcontact_flow(
+      # pin both new contact and optin flow id
+      maybe_pin_flow(
         updated_organization.newcontact_flow_id,
         organization.newcontact_flow_id,
+        updated_organization
+      )
+
+      maybe_pin_flow(
+        updated_organization.optin_flow_id,
+        organization.optin_flow_id,
         updated_organization
       )
     end
   end
 
-  @spec maybe_pin_newcontact_flow(non_neg_integer(), non_neg_integer(), Organization.t()) ::
+  @spec maybe_pin_flow(non_neg_integer(), non_neg_integer(), Organization.t()) ::
           {:ok, Organization.t()}
-  defp maybe_pin_newcontact_flow(nil, old_newcontact_flow_id, organization) do
-    unpin_old_newcontact_flow(old_newcontact_flow_id)
+  defp maybe_pin_flow(nil, old_flow_id, organization) do
+    pin_flow(old_flow_id, false)
     {:ok, organization}
   end
 
-  defp maybe_pin_newcontact_flow(newcontact_flow_id, nil, organization) do
-    pin_new_newcontact_flow(newcontact_flow_id)
+  defp maybe_pin_flow(flow_id, nil, organization) do
+    pin_flow(flow_id, true)
     {:ok, organization}
   end
 
-  defp maybe_pin_newcontact_flow(newcontact_flow_id, old_newcontact_flow_id, organization)
-       when newcontact_flow_id != old_newcontact_flow_id do
-    unpin_old_newcontact_flow(old_newcontact_flow_id)
-    pin_new_newcontact_flow(newcontact_flow_id)
+  defp maybe_pin_flow(flow_id, old_flow_id, organization)
+       when flow_id != old_flow_id do
+    pin_flow(old_flow_id, false)
+    pin_flow(flow_id, true)
     {:ok, organization}
   end
 
-  defp maybe_pin_newcontact_flow(_newcontact_flow_id, _old_newcontact_flow_id, organization),
+  defp maybe_pin_flow(_flow_id, _old_flow_id, organization),
     do: {:ok, organization}
 
-  @spec unpin_old_newcontact_flow(non_neg_integer()) ::
+  @spec pin_flow(non_neg_integer(), boolean()) ::
           {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
-  defp unpin_old_newcontact_flow(newcontact_flow_id) do
-    with false <- is_nil(newcontact_flow_id),
-         {:ok, flow} <- Flows.fetch_flow(newcontact_flow_id) do
-      Flows.update_flow(flow, %{is_pinned: false})
-    end
-  end
-
-  @spec pin_new_newcontact_flow(non_neg_integer()) ::
-          {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
-  defp pin_new_newcontact_flow(newcontact_flow_id) do
-    with {:ok, new_newcontact_flow} <- Flows.fetch_flow(newcontact_flow_id) do
-      Flows.update_flow(new_newcontact_flow, %{
-        is_pinned: true
-      })
+  defp pin_flow(flow_id, pin_value) do
+    with false <- is_nil(flow_id),
+         {:ok, flow} <- Flows.fetch_flow(flow_id) do
+      Flows.update_flow(flow, %{is_pinned: pin_value})
     end
   end
 
