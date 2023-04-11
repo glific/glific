@@ -15,10 +15,14 @@ defmodule Glific.BigQueryTest do
     {
       Goth.Token,
       [:passthrough],
-      [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+      [
+        for_scope: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ]
     }
   ]) do
-    %{token: "0xFAKETOKEN_Q="}
+    %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}
   end
 
   setup do
@@ -73,7 +77,9 @@ defmodule Glific.BigQueryTest do
         Goth.Token,
         [:passthrough],
         [
-          fetch: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
         ]
       }
     ]) do
@@ -100,7 +106,11 @@ defmodule Glific.BigQueryTest do
       {
         Goth.Token,
         [:passthrough],
-        [fetch: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+        [
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
+        ]
       }
     ]) do
       # we'll need to figure out how to check if this did the right thing

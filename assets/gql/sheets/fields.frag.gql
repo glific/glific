@@ -4,6 +4,7 @@ fragment SheetFields on SheetResult {
     label
     isActive
     url
+    sheetDataCount
   }
 }
 

@@ -53,15 +53,12 @@ defmodule Glific.BigQuery.BigQueryWorker do
   and queue them up for delivery to bigquery
   """
   @spec perform_periodic(non_neg_integer) :: :ok
-  def perform_periodic(organization_id) do
-    organization = Partners.organization(organization_id)
-    credential = organization.services["bigquery"]
+  def perform_periodic(org_id) do
+    if BigQuery.is_active?(org_id) do
+      Logger.info("Found bigquery credentials for org_id: #{org_id}")
 
-    if credential do
-      Logger.info("Found bigquery credentials for org_id: #{organization_id}")
-
-      Jobs.get_bigquery_jobs(organization_id)
-      |> Enum.each(&init_insert_job(&1, organization_id))
+      Jobs.get_bigquery_jobs(org_id)
+      |> Enum.each(&init_insert_job(&1, org_id))
     end
 
     :ok
@@ -663,7 +660,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             wakeup_at: BigQuery.format_date(row.wakeup_at, organization_id),
             completed_at: BigQuery.format_date(row.completed_at, organization_id),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
-            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+            updated_at: BigQuery.format_date(row.updated_at, organization_id),
+            reason: row.reason
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
@@ -761,6 +759,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             caption: row.caption,
             url: row.url,
             source_url: row.source_url,
+            content_type: row.content_type,
             gcs_url: row.gcs_url,
             inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
             updated_at: format_date_with_millisecond(row.updated_at, organization_id)

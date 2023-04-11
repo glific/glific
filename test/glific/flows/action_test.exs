@@ -3,6 +3,8 @@ defmodule Glific.Flows.ActionTest do
 
   alias Glific.{
     Contacts.Contact,
+    Fixtures,
+    Flows,
     Groups,
     Groups.ContactGroup,
     Partners,
@@ -150,6 +152,83 @@ defmodule Glific.Flows.ActionTest do
 
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
 
+    json = %{}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "process extracts the right values from json for start_session" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "start_session",
+      "contacts" => [%{"name" => "NGO Admin", "uuid" => "14"}],
+      "create_contact" => false,
+      "exclusions" => %{"in_a_flow" => false},
+      "groups" => [],
+      "flow" => %{
+        "name" => "Help Workflow",
+        "uuid" => "3fa22108-f464-41e5-81d9-d8a298854429"
+      }
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+    assert action.uuid == "UUID 1"
+    assert action.type == "start_session"
+    assert action.create_contact == false
+    assert action.node_uuid == node.uuid
+    assert action.flow["name"] == "Help Workflow"
+    assert action.flow["uuid"] == "3fa22108-f464-41e5-81d9-d8a298854429"
+    contacts = hd(action.contacts)
+
+    assert contacts["name"] == "NGO Admin"
+    assert contacts["uuid"] == "14"
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "start_session", "create_contact" => false}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "start_session",
+      "contacts" => [%{"name" => "NGO Admin", "uuid" => "14"}]
+    }
+
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+    json = %{}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "process extracts the right values from json for link_google_sheet" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "link_google_sheet",
+      "sheet_id" => 1,
+      "row" => "14/11/2022",
+      "result_name" => "sheet"
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+    assert action.uuid == "UUID 1"
+    assert action.type == "link_google_sheet"
+    assert action.node_uuid == node.uuid
+    assert action.sheet_id == 1
+    assert action.row == "14/11/2022"
+    assert action.result_name == "sheet"
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "link_google_sheet", "sheet_id" => 1}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "link_google_sheet",
+      "row" => "14/11/2022"
+    }
+
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
     json = %{}
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
@@ -747,6 +826,159 @@ defmodule Glific.Flows.ActionTest do
 
     assert Glific.delete_multiple(updated_context, [:delay, :uuids_seen]) ==
              Glific.delete_multiple(context, [:delay, :uuids_seen])
+  end
+
+  test "execute an action when type is link_google_sheet", attrs do
+    sheet =
+      Repo.insert!(%Glific.Sheets.Sheet{
+        label: "Daily Activity",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: attrs.organization_id
+      })
+
+    Repo.insert!(%Glific.Sheets.SheetData{
+      key: "7/11/2022",
+      row_data: %{
+        "day" => "1",
+        "key" => "7/11/2022",
+        "video_link" =>
+          "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
+        "message_hindi" => "Glific में आपका स्वागत है।",
+        "message_english" => "Hi welcome to Glific."
+      },
+      sheet_id: sheet.id,
+      organization_id: attrs.organization_id
+    })
+
+    action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "link_google_sheet",
+      sheet_id: sheet.id,
+      row: "7/11/2022",
+      result_name: "sheet"
+    }
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+    # preload contact
+    context_args = %{
+      contact_id: contact.id,
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(context_args)
+    context = Repo.preload(context, [:contact, :flow])
+
+    assert {:ok, updated_context, _message_stream} = Action.execute(action, context, [])
+    assert updated_context.results["sheet"]["key"] == "7/11/2022"
+    assert updated_context.results["sheet"]["message_english"] == "Hi welcome to Glific."
+    assert updated_context.results["sheet"]["message_hindi"] == "Glific में आपका स्वागत है।"
+  end
+
+  test "execute an action when type is start_session and exclusion is true",
+       attrs do
+    [flow, flow2 | _tail] = Flows.list_flows(%{filter: attrs})
+    group = Fixtures.group_fixture()
+    contact = Fixtures.contact_fixture()
+    contact2 = Fixtures.contact_fixture()
+
+    Groups.create_contact_group(%{
+      group_id: group.id,
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    })
+
+    Groups.create_contact_group(%{
+      group_id: group.id,
+      contact_id: contact2.id,
+      organization_id: attrs.organization_id
+    })
+
+    # Starting flow for contact1, so that flow will not start for this contact as exclusion is true
+    Flows.start_contact_flow(flow, contact)
+
+    # preload contact
+    attrs = %{
+      flow_id: flow.id,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    # preload contact
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+    context = Repo.preload(context, [:flow, :contact])
+
+    # using uuid of help flow
+    action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "start_session",
+      exclusions: true,
+      groups: [%{"name" => "#{group.label}", "uuid" => "#{group.id}"}],
+      contacts: [],
+      create_contact: false,
+      flow: %{
+        "name" => "#{flow2.name}",
+        "uuid" => "#{flow2.uuid}"
+      }
+    }
+
+    message_broadcast_contact_count =
+      Flows.MessageBroadcastContact
+      |> where([mbc], mbc.contact_id == ^contact2.id)
+      |> Repo.aggregate(:count, [])
+
+    assert {:ok, _updated_context, _updated_message_stream} = Action.execute(action, context, [])
+
+    new_message_broadcast_contact_count =
+      Flows.MessageBroadcastContact
+      |> where([mbc], mbc.contact_id == ^contact2.id)
+      |> Repo.aggregate(:count, [])
+
+    assert new_message_broadcast_contact_count > message_broadcast_contact_count
+  end
+
+  test "execute an action when type is start_session", attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    # preload contact
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
+      |> Repo.preload([:contact, :flow])
+      |> Map.put(:uuid_map, %{"Test UUID" => {:node, %{is_terminal: false}}})
+
+    saas_admin = Repo.get_by(Contact, %{name: "SaaS Admin"})
+    saas_admin_id = to_string(saas_admin.id)
+
+    # using uuid of help flow
+    action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "start_session",
+      groups: [],
+      contacts: [%{"name" => "NGO Admin", "uuid" => saas_admin_id}],
+      create_contact: false,
+      flow: %{
+        "name" => "Template Workflow",
+        "uuid" => "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"
+      }
+    }
+
+    assert {:ok, _updated_context, _updated_message_stream} = Action.execute(action, context, [])
+
+    # Check last flow context for saas admin
+    new_flow_context =
+      FlowContext
+      |> where([fc], fc.contact_id == ^saas_admin.id)
+      |> order_by([fc], desc: fc.id)
+      |> Repo.all()
+      |> hd()
+
+    assert new_flow_context.flow_uuid == "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"
   end
 
   test "execute an action when type is wait_for_time", attrs do

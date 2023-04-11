@@ -1,0 +1,72 @@
+defmodule Glific.Sheets.GoogleSheets do
+  @moduledoc """
+  Glific Google sheet API layer
+  """
+
+  alias Glific.Partners
+
+  alias GoogleApi.Sheets.V4.{
+    Api.Spreadsheets,
+    Connection
+  }
+
+  @scopes [
+    "https://www.googleapis.com/auth/drive",
+    "https://www.googleapis.com/auth/drive.file",
+    "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/spreadsheets.readonly"
+  ]
+
+  @doc """
+    Insert new row to the spreadsheet.
+  """
+  @spec insert_row(non_neg_integer(), String.t(), map()) ::
+          GoogleApi.Sheets.V4.Model.AppendValuesResponse.t()
+  def(insert_row(org_id, spreadsheet_id, %{range: range, data: data} = _params)) do
+    {:ok, %{conn: conn}} = fetch_credentials(org_id)
+
+    params = [
+      valueInputOption: "USER_ENTERED",
+      body: %{majorDimension: "ROWS", values: data}
+    ]
+
+    {:ok, response} =
+      Spreadsheets.sheets_spreadsheets_values_append(conn, spreadsheet_id, range, params)
+
+    response
+  end
+
+  @doc false
+  @spec fetch_credentials(non_neg_integer) :: nil | {:ok, any} | {:error, any}
+  def fetch_credentials(organization_id) do
+    organization = Partners.organization(organization_id)
+
+    organization.services["google_sheets"]
+    |> case do
+      nil ->
+        {:ok, "Google API is not active"}
+
+      credentials ->
+        decode_credential(credentials, organization_id)
+    end
+  end
+
+  @doc """
+  Decoding the credential for google sheets
+  """
+  @spec decode_credential(map(), non_neg_integer) :: {:ok, any} | {:error, any}
+  def decode_credential(credentials, organization_id) do
+    case Jason.decode(credentials.secrets["service_account"]) do
+      {:ok, _service_account} ->
+        token = Partners.get_goth_token(organization_id, "google_sheets", scopes: @scopes)
+
+        if is_nil(token),
+          do: {:error, "Error fetching token with Service Account JSON"},
+          else: {:ok, %{conn: Connection.new(token.token)}}
+
+      {:error, _error} ->
+        {:error, "Invalid Service Account JSON"}
+    end
+  end
+end

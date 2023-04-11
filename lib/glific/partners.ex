@@ -302,52 +302,49 @@ defmodule Glific.Partners do
            organization
            |> Organization.changeset(attrs)
            |> Repo.update(skip_organization_id: true) do
-      maybe_pin_newcontact_flow(
+      # pin both new contact and optin flow id
+      maybe_pin_flow(
         updated_organization.newcontact_flow_id,
         organization.newcontact_flow_id,
+        updated_organization
+      )
+
+      maybe_pin_flow(
+        updated_organization.optin_flow_id,
+        organization.optin_flow_id,
         updated_organization
       )
     end
   end
 
-  @spec maybe_pin_newcontact_flow(non_neg_integer(), non_neg_integer(), Organization.t()) ::
+  @spec maybe_pin_flow(non_neg_integer(), non_neg_integer(), Organization.t()) ::
           {:ok, Organization.t()}
-  defp maybe_pin_newcontact_flow(nil, old_newcontact_flow_id, organization) do
-    unpin_old_newcontact_flow(old_newcontact_flow_id)
+  defp maybe_pin_flow(nil, old_flow_id, organization) do
+    pin_flow(old_flow_id, false)
     {:ok, organization}
   end
 
-  defp maybe_pin_newcontact_flow(newcontact_flow_id, nil, organization) do
-    pin_new_newcontact_flow(newcontact_flow_id)
+  defp maybe_pin_flow(flow_id, nil, organization) do
+    pin_flow(flow_id, true)
     {:ok, organization}
   end
 
-  defp maybe_pin_newcontact_flow(newcontact_flow_id, old_newcontact_flow_id, organization)
-       when newcontact_flow_id != old_newcontact_flow_id do
-    unpin_old_newcontact_flow(old_newcontact_flow_id)
-    pin_new_newcontact_flow(newcontact_flow_id)
+  defp maybe_pin_flow(flow_id, old_flow_id, organization)
+       when flow_id != old_flow_id do
+    pin_flow(old_flow_id, false)
+    pin_flow(flow_id, true)
     {:ok, organization}
   end
 
-  defp maybe_pin_newcontact_flow(_newcontact_flow_id, _old_newcontact_flow_id, organization),
+  defp maybe_pin_flow(_flow_id, _old_flow_id, organization),
     do: {:ok, organization}
 
-  @spec unpin_old_newcontact_flow(non_neg_integer()) ::
+  @spec pin_flow(non_neg_integer(), boolean()) ::
           {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
-  defp unpin_old_newcontact_flow(newcontact_flow_id) do
-    with false <- is_nil(newcontact_flow_id),
-         {:ok, flow} <- Flows.fetch_flow(newcontact_flow_id) do
-      Flows.update_flow(flow, %{is_pinned: false})
-    end
-  end
-
-  @spec pin_new_newcontact_flow(non_neg_integer()) ::
-          {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
-  defp pin_new_newcontact_flow(newcontact_flow_id) do
-    with {:ok, new_newcontact_flow} <- Flows.fetch_flow(newcontact_flow_id) do
-      Flows.update_flow(new_newcontact_flow, %{
-        is_pinned: true
-      })
+  defp pin_flow(flow_id, pin_value) do
+    with false <- is_nil(flow_id),
+         {:ok, flow} <- Flows.fetch_flow(flow_id) do
+      Flows.update_flow(flow, %{is_pinned: pin_value})
     end
   end
 
@@ -369,6 +366,33 @@ defmodule Glific.Partners do
     # we are deleting an organization that is one of the SaaS users, not the current users org
     # setting timeout as the deleting organization is an expensive operation
     Repo.delete(organization, skip_organization_id: true, timeout: 900_000)
+  end
+
+  @doc """
+  Deletes all the dynamic data for an organization. This includes all messages
+  and contacts that are not users.any()
+
+  This allows an organization to reset all its experiment data before going live.
+  A feature to add in the future, might to be mark test contact with a "test" contact
+  field and we'll delete only those contacts
+  """
+  @spec delete_organization_test_data(Organization.t()) :: {:ok, Organization.t()}
+  def delete_organization_test_data(organization) do
+    [
+      "DELETE FROM messages WHERE organization_id = #{organization.id}",
+      """
+      DELETE FROM contacts WHERE
+        organization_id = #{organization.id}
+        AND (id NOT IN
+          (SELECT c.id FROM contacts c
+            LEFT JOIN  users ON users.contact_id = c.id
+            WHERE c.organization_id = #{organization.id} AND users.id IS NOT NULL))
+        AND id != #{organization.contact_id}
+      """
+    ]
+    |> Enum.each(&Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true))
+
+    {:ok, organization}
   end
 
   @doc """
@@ -983,15 +1007,15 @@ defmodule Glific.Partners do
   @doc """
   Common function to get the goth config
   """
-  @spec get_goth_token(non_neg_integer, String.t()) :: nil | Goth.Token.t()
-  def get_goth_token(organization_id, provider_shortcode) do
+  @spec get_goth_token(non_neg_integer, String.t(), Keyword.t()) :: nil | Goth.Token.t()
+  def get_goth_token(organization_id, provider_shortcode, opts \\ []) do
     key = {:provider_token, provider_shortcode}
     organization = organization(organization_id)
 
     if is_nil(organization.services[provider_shortcode]) do
       nil
     else
-      Caches.fetch(organization_id, key, &load_goth_token/1)
+      Caches.fetch(organization_id, key, fn key -> load_goth_token(key, opts) end)
       |> case do
         {_status, res} when is_map(res) ->
           res
@@ -1006,8 +1030,8 @@ defmodule Glific.Partners do
     end
   end
 
-  @spec load_goth_token(tuple()) :: tuple()
-  defp load_goth_token(cache_key) do
+  @spec load_goth_token(tuple(), Keyword.t()) :: tuple()
+  defp load_goth_token(cache_key, goth_opts) do
     {organization_id, {:provider_token, provider_shortcode}} = cache_key
 
     organization = organization(organization_id)
@@ -1016,7 +1040,7 @@ defmodule Glific.Partners do
     if credentials == :error do
       {:ignore, nil}
     else
-      Goth.Token.fetch(source: {:service_account, credentials})
+      Goth.Token.fetch(source: {:service_account, credentials, goth_opts})
       |> case do
         {:ok, token} ->
           opts = [ttl: :timer.seconds(token.expires - System.system_time(:second) - 60)]

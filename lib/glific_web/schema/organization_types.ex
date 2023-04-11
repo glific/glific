@@ -62,6 +62,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:out_of_office, :out_of_office)
 
     field(:newcontact_flow_id, :id)
+    field(:optin_flow_id, :id)
 
     field(:is_active, :boolean)
 
@@ -242,6 +243,12 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       arg(:input, :organization_input)
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.update_organization/3)
+    end
+
+    field :delete_organization_test_data, :organization_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Partners.delete_organization_test_data/3)
     end
 
     field :delete_organization, :organization_result do

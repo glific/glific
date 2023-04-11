@@ -8,6 +8,7 @@
     ## curated tools may be disabled (e.g. the check for compilation warnings)
     # {:compiler, false}
     {:sobelow, false},
+    {:mix_audit, false},
     {:npm_test, false},
     {:formatter, false},
 
@@ -24,7 +25,7 @@
     # {:my_arbitrary_script, command: ["my_script", "argument with spaces"], cd: "scripts"}
 
     {:mix_format, "mix format"},
-    {:dialyzer, "mix dialyzer --force-check --quiet", detect: [{:package, :dialyxir}]},
+    {:dialyzer, "mix dialyzer --quiet", detect: [{:package, :dialyxir}]},
     # We will enable it later
     # {:sobelow, "mix sobelow --skip --exit", umbrella: [recursive: true], detect: [{:package, :sobelow}]},
     {:mix_coveralls, "mix coveralls", [{:deps, [:ex_unit]}, {:env, %{"MIX_ENV" => "test"}}]}

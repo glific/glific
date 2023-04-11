@@ -45,6 +45,7 @@ defmodule GlificWeb.Router do
     post("/registration/reset-password", RegistrationController, :reset_password)
     resources("/session", SessionController, singleton: true, only: [:create, :delete])
     post("/session/renew", SessionController, :renew)
+    post("/session/name", SessionController, :name)
     post("/onboard/setup", OnboardController, :setup)
   end
 
@@ -165,8 +166,11 @@ defmodule GlificWeb.Router do
     end
   end
 
-  # implement basic authentication for live dashboard and oban pro
-  defp auth(conn, _opts) do
+  @doc """
+  implement basic authentication for live dashboard and oban pro
+  """
+  @spec auth(any(), any()) :: any()
+  def auth(conn, _opts) do
     username = Application.fetch_env!(:glific, :auth_username)
     password = Application.fetch_env!(:glific, :auth_password)
     Plug.BasicAuth.basic_auth(conn, username: username, password: password)

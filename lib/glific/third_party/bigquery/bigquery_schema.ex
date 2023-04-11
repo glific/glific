@@ -513,6 +513,12 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
+        description: "Content Type of media file from provider",
+        name: "content_type",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
         description: "URL of media file stored in GCS",
         name: "gcs_url",
         type: "STRING",
@@ -746,6 +752,12 @@ defmodule Glific.BigQuery.Schema do
         description: "ID of the profile table reference to the profile table",
         name: "profile_id",
         type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Reason behind the flow killed",
+        name: "reason",
+        type: "STRING",
         mode: "NULLABLE"
       }
     ]

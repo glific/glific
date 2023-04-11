@@ -22,7 +22,6 @@ defmodule Glific.OnboardTest do
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_billing(organization)
-    HTTPoison.start()
     ExVCR.Config.cassette_library_dir("test/support/ex_vcr")
 
     Tesla.Mock.mock_global(fn

@@ -72,7 +72,9 @@ defmodule GlificWeb.Schema.ContactTest do
     assert length(contacts) > 0
 
     res =
-      contacts |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "NGO Main Account" end)
+      contacts
+      |> get_in([Access.all(), "name"])
+      |> Enum.find(fn name -> name == "NGO Main Account" end)
 
     assert res == "NGO Main Account"
 
@@ -277,8 +279,8 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
-    assert count == 1
+    assert Contacts.count_contacts(%{filter: %{phone: test_phone}}) == 1
+    assert Contacts.count_contacts(%{filter: %{term: test_phone}}) == 1
 
     # Test success for creating a contact with opt-in
     Tesla.Mock.mock(fn
@@ -333,8 +335,8 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    count = Contacts.count_contacts(%{filter: %{name: "#{test_name} updated"}})
-    assert count == 1
+    assert Contacts.count_contacts(%{filter: %{name: "#{test_name} updated"}}) == 1
+    assert Contacts.count_contacts(%{filter: %{term: "#{test_name} updated"}}) == 1
 
     # # Test success for uploading contact through url
     Tesla.Mock.mock(fn

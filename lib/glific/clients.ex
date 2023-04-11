@@ -8,6 +8,7 @@ defmodule Glific.Clients do
   """
 
   alias Glific.{
+    Clients.CommonWebhook,
     Contacts.Contact,
     Flows.Action,
     Triggers.Trigger
@@ -251,7 +252,7 @@ defmodule Glific.Clients do
 
     if module_name,
       do: module_name.webhook(name, fields),
-      else: %{error: "Missing webhook function implementation"}
+      else: CommonWebhook.webhook(name, fields)
   end
 
   @doc """

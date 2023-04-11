@@ -52,6 +52,13 @@ defmodule Glific.Flows.Action do
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
   @required_fields_sheet [:sheet_id, :row, :result_name | @required_field_common]
+  @required_fields_start_session [
+    :contacts,
+    :create_contact,
+    :flow,
+    :groups,
+    :exclusions | @required_field_common
+  ]
   @required_fields_group [:groups | @required_field_common]
   @required_fields_contact [:contacts, :text | @required_field_common]
   @required_fields_waittime [:delay]
@@ -73,7 +80,11 @@ defmodule Glific.Flows.Action do
           body: String.t() | nil,
           type: String.t() | nil,
           profile_type: String.t() | nil,
+          create_contact: boolean,
+          exclusions: boolean,
+          flow: map() | nil,
           field: map() | nil,
+          row: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
           enter_flow_name: String.t() | nil,
@@ -89,6 +100,7 @@ defmodule Glific.Flows.Action do
           ## this is a custom delay in minutes for wait for time nodes.
           ## Currently we use this only for the wait for time node.
           wait_time: integer() | nil,
+          sheet_id: integer() | nil,
 
           ## this is a custom delay in seconds before processing for the node.
           ## Currently only used for send messages
@@ -125,6 +137,10 @@ defmodule Glific.Flows.Action do
     field(:type, :string)
     field(:profile_type, :string)
 
+    field(:create_contact, :boolean, default: false)
+    field(:exclusions, :boolean, default: false)
+    field(:flow, :map)
+
     field(:quick_replies, {:array, :string}, default: [])
 
     field(:attachments, :map)
@@ -132,8 +148,10 @@ defmodule Glific.Flows.Action do
     field(:labels, :map)
     field(:groups, :map)
     field(:contacts, :map)
+    field(:row, :map)
 
     field(:wait_time, :integer)
+    field(:sheet_id, :integer)
     field(:interactive_template_id, :integer)
 
     field(:node_uuid, Ecto.UUID)
@@ -182,6 +200,18 @@ defmodule Glific.Flows.Action do
       sheet_id: json["sheet_id"],
       row: json["row"],
       result_name: json["result_name"]
+    })
+  end
+
+  def process(%{"type" => "start_session"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_start_session)
+
+    process(json, uuid_map, node, %{
+      contacts: json["contacts"],
+      create_contact: json["create_contact"],
+      flow: json["flow"],
+      groups: json["groups"],
+      exclusions: json["exclusions"]["in_a_flow"]
     })
   end
 
@@ -487,6 +517,9 @@ defmodule Glific.Flows.Action do
   def execute(%{type: "send_broadcast"} = action, context, messages) do
     ContactAction.send_broadcast(context, action, messages)
   end
+
+  def execute(%{type: "start_session"} = action, context, _messages),
+    do: Flow.execute(action, context)
 
   def execute(%{type: "set_contact_language"} = action, context, messages) do
     # make sure we have a valid language to set

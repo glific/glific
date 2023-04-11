@@ -6,7 +6,7 @@ defmodule GlificWeb.API.V1.SessionController do
   use GlificWeb, :controller
   require Logger
 
-  alias Glific.{Repo, Users.User}
+  alias Glific.{Partners, Repo, Users.User}
   alias GlificWeb.APIAuthPlug
   alias Plug.Conn
 
@@ -84,5 +84,21 @@ defmodule GlificWeb.API.V1.SessionController do
     conn
     |> Pow.Plug.delete()
     |> json(%{data: %{}})
+  end
+
+  @doc """
+  Given the organization ID, lets send back the organization Name
+  so the user is aware that they are logging into the right account.any()
+
+  This is an internal API, so we will not document it (for now)
+  """
+  @spec name(Conn.t(), map()) :: Conn.t()
+  def name(conn, _params) do
+    organization =
+      conn.assigns[:organization_id]
+      |> Partners.get_organization!()
+
+    conn
+    |> json(%{data: %{name: organization.name}})
   end
 end

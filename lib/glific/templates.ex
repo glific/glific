@@ -608,4 +608,16 @@ defmodule Glific.Templates do
     do: button["text"] <> ", " <> button["phone_number"]
 
   defp do_parse_buttons("QUICK_REPLY", button), do: button["text"]
+
+  @doc """
+  List of available categories provided by whatsapp
+  """
+  @spec list_whatsapp_hsm_categories() :: [String.t()]
+  def list_whatsapp_hsm_categories do
+    [
+      "UTILITY",
+      "MARKETING",
+      "AUTHENTICATION"
+    ]
+  end
 end

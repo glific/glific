@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "5.1.4",
+      version: "5.1.7",
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -29,7 +29,6 @@ defmodule Glific.MixProject do
       ],
       # to avoid compiler iex warning in application.ex
       xref: [exclude: [IEx]],
-      compilers: [:phoenix] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
@@ -56,7 +55,8 @@ defmodule Glific.MixProject do
         licenses: ["AGPL 3.0"],
         links: %{
           "GitHub" => @github_url
-        }
+        },
+        exclude_patterns: ["priv/plts", "build_scripts/*", "assets/*"]
       ]
     ]
   end
@@ -80,36 +80,36 @@ defmodule Glific.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.6"},
+      {:phoenix, "~> 1.7"},
       {:phoenix_ecto, "~> 4.1"},
       {:phoenix_html, "~> 3.0"},
       {:phoenix_live_reload, "~> 1.4", only: [:dev | @test_envs]},
       {:phoenix_pubsub, "~> 2.0"},
       {:phoenix_live_view, "~> 0.18"},
       {:phoenix_live_dashboard, "~> 0.7"},
+      {:phoenix_view, "~> 2.0"},
+      {:pow, "~> 1.0.28"},
       {:telemetry, "~> 1.0"},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
       {:ecto_sql, "~> 3.9"},
       {:ecto_psql_extras, "~> 0.7"},
-      {:esbuild, "~> 0.2", runtime: Mix.env() == :dev},
+      {:esbuild, "~> 0.6", runtime: Mix.env() == :dev},
       {:postgrex, "~> 0.16"},
       {:floki, ">= 0.27.0", only: @test_envs},
-      {:gettext, "~> 0.20"},
+      {:gettext, "~> 0.22"},
       {:decimal, "~> 2.0"},
       {:jason, "~> 1.4"},
       {:plug_cowboy, "~> 2.0"},
       {:ecto_enum, "~> 1.4"},
-      {:pow, "~> 1.0.24"},
       {:dialyxir, "~> 1.2", only: [:dev | @test_envs], runtime: false},
       {:credo, "~> 1.6", only: [:dev | @test_envs], runtime: false},
       {:ex_doc, "~> 0.29", only: [:dev | @test_envs], runtime: false},
       {:inch_ex, "~> 2.0", only: [:dev | @test_envs], runtime: false},
       {:doctor, "~> 0.20"},
-      {:httpoison, "~> 1.8"},
       {:poison, "~> 4.0"},
       {:ex_rated, "~> 2.0"},
-      {:absinthe, "~> 1.5"},
+      {:absinthe, "~> 1.7"},
       {:absinthe_plug, "~> 1.5"},
       {:absinthe_phoenix, "~> 2.0"},
       {:dataloader, "~> 1.0"},
@@ -123,26 +123,24 @@ defmodule Glific.MixProject do
       {:excoveralls, "~> 0.15", only: @test_envs},
       {:publicist, "~> 1.1"},
       {:cors_plug, "~> 3.0"},
-      {:ex_check, "~> 0.12", only: [:dev | @test_envs], runtime: false},
+      {:ex_check, "~> 0.15", only: [:dev | @test_envs], runtime: false},
       {:sobelow, "~> 0.8", only: [:dev | @test_envs]},
       {:goth, "~> 1.3"},
       {:wormwood, "~> 0.1"},
       {:timex, "~> 3.7"},
       {:slugify, "~> 1.3"},
-      {:cachex, "~> 3.2"},
+      {:cachex, "~> 3.6"},
       {:fun_with_flags, "~> 1.9"},
       {:fun_with_flags_ui, "~> 0.8"},
       {:passwordless_auth, "~> 0.3.0"},
-      {:appsignal_phoenix, "~> 2.1"},
+      {:appsignal_phoenix, "~> 2.3"},
       {:poolboy, "~> 1.5"},
-      {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git", branch: "dev"},
       {:cloak_ecto, "~> 1.2"},
       {:google_api_big_query, "~> 0.47"},
       {:google_api_dialogflow, "~> 0.62"},
       {:absinthe_graphql_ws, "~> 0.3"},
       {:google_api_sheets, "~> 0.29"},
       {:waffle, "~> 1.1"},
-      {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
       {:waffle_ecto, "~> 0.0"},
       {:csv, "~> 2.5"},
       {:observer_cli, "~> 1.7"},
@@ -154,8 +152,10 @@ defmodule Glific.MixProject do
       {:remote_ip, "~> 1.0"},
       {:exvcr, "~> 0.13", only: @test_envs},
       {:dotenvy, "~> 0.1"},
-      {:phoenix_swoosh, "~> 1.0"},
-      {:gen_smtp, "~> 1.1"}
+      {:phoenix_swoosh, "~> 1.2"},
+      {:gen_smtp, "~> 1.1"},
+      {:glific_phil_columns, "~> 3.2"},
+      {:glific_forked_waffle_gcs, "~> 0.1.1"}
     ]
   end
 
