@@ -97,7 +97,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     bigquery_jobs(organization)
 
-    set_newcontact_flow_id(organization)
+    set_newcontact_optin_flow_id(organization)
   end
 
   def down(_repo) do
@@ -694,16 +694,25 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     })
   end
 
-  @spec set_newcontact_flow_id(Organization.t()) :: Organization.t()
-  defp set_newcontact_flow_id(organization) do
-    {:ok, flow} =
+  @spec set_newcontact_optin_flow_id(Organization.t()) :: Organization.t()
+  defp set_newcontact_optin_flow_id(organization) do
+    {:ok, nc_flow} =
       Repo.fetch_by(Flow, %{
         name: "New Contact Workflow",
         organization_id: organization.id
       })
 
+    {:ok, opt_flow} =
+      Repo.fetch_by(Flow, %{
+        name: "Optin Workflow",
+        organization_id: organization.id
+      })
+
     organization
-    |> Partners.update_organization(%{newcontact_flow_id: flow.id})
+    |> Partners.update_organization(%{
+      newcontact_flow_id: nc_flow.id,
+      optin_flow_id: opt_flow.id
+    })
   end
 
   defp set_organization_language(organization, [en, hi]) do
