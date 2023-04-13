@@ -92,7 +92,7 @@ defmodule Glific.Flows.ContactAction do
 
     with {false, context} <- has_loops?(context, body, messages) do
       attrs = %{
-        body: body,
+        body: MessageVarParser.parse(body, message_vars),
         uuid: action.node_uuid,
         type: interactive_content["type"],
         receiver_id: cid,
