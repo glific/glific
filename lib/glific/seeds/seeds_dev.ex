@@ -1048,7 +1048,7 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization.id,
         translations: translations,
         status: "REJECTED",
-        category: "OTP",
+        category: "AUTHENTICATION",
         body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
         example:
           "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",

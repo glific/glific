@@ -759,6 +759,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             caption: row.caption,
             url: row.url,
             source_url: row.source_url,
+            content_type: row.content_type,
             gcs_url: row.gcs_url,
             inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
             updated_at: format_date_with_millisecond(row.updated_at, organization_id)

@@ -79,7 +79,7 @@ defmodule Glific.FLowsTest do
                |> Flows.create_flow()
 
       flows = Flows.list_flows(%{filter: %{is_pinned: true}})
-      assert length(flows) == 2
+      assert length(flows) == 3
     end
 
     test "list_flows/1 returns flows filtered by name keyword", attrs do

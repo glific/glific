@@ -640,11 +640,11 @@ defmodule Glific.Flows do
   @doc """
   Start flow for contacts of a group
   """
-  @spec start_group_flow(Flow.t(), Group.t(), map()) :: {:ok, Flow.t()}
-  def start_group_flow(flow, group, default_results \\ %{}) do
+  @spec start_group_flow(Flow.t(), Group.t(), map(), Keyword.t()) :: {:ok, Flow.t()}
+  def start_group_flow(flow, group, default_results \\ %{}, opts \\ []) do
     # the flow returned is the expanded version
     {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id, @status})
-    Broadcast.broadcast_flow_to_group(flow, group, default_results)
+    Broadcast.broadcast_flow_to_group(flow, group, default_results, opts)
     {:ok, flow}
   end
 
@@ -760,6 +760,7 @@ defmodule Glific.Flows do
       )
       |> add_default_flows(organization.out_of_office)
       |> Map.put("org_default_new_contact", organization.newcontact_flow_id)
+      |> Map.put("org_default_optin", organization.optin_flow_id)
 
     {:commit, keyword_map}
   end

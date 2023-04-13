@@ -469,7 +469,11 @@ defmodule Glific.Templates do
   end
 
   @spec change_template_status(String.t(), map(), map()) :: map()
-  defp change_template_status("APPROVED", db_template, _bsp_template) do
+  defp change_template_status("APPROVED", db_template, bsp_template) do
+    Logger.info(
+      "org_id:#{db_template.organization_id} template:#{db_template.shortcode} bsp_id:#{bsp_template["bsp_id"]} has been approved"
+    )
+
     Notifications.create_notification(%{
       category: "Templates",
       message: "Template #{db_template.shortcode} has been approved",

@@ -80,6 +80,9 @@ defmodule Glific.Seeds.SeedsMigration do
   defp do_migrate_data(:set_newcontact_flow_id, organizations),
     do: Enum.map(organizations, fn org -> set_newcontact_flow_id(org.id) end)
 
+  defp do_migrate_data(:set_optin_flow_id, organizations),
+    do: Enum.map(organizations, fn org -> set_optin_flow_id(org.id) end)
+
   defp do_migrate_data(:set_default_organization_roles, organizations),
     do: Enum.map(organizations, fn org -> set_default_organization_roles(org.id) end)
 
@@ -115,7 +118,7 @@ defmodule Glific.Seeds.SeedsMigration do
       label: "common_otp",
       body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
       type: :text,
-      category: "OTP",
+      category: "AUTHENTICATION",
       example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
       is_active: true,
       is_source: false,
@@ -138,6 +141,21 @@ defmodule Glific.Seeds.SeedsMigration do
     org_id
     |> Partners.get_organization!()
     |> Partners.update_organization(%{newcontact_flow_id: flow_id})
+  end
+
+  @doc false
+  @spec set_optin_flow_id(non_neg_integer()) ::
+          {:error, Ecto.Changeset.t()} | {:ok, Organization.t()}
+  def set_optin_flow_id(org_id) do
+    flow_id =
+      org_id
+      |> Flows.flow_keywords_map()
+      |> Map.get("published")
+      |> Map.get("optin", nil)
+
+    org_id
+    |> Partners.get_organization!()
+    |> Partners.update_organization(%{optin_flow_id: flow_id})
   end
 
   @spec has_contact?(Organization.t(), String.t()) :: boolean

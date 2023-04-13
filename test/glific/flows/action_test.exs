@@ -3,6 +3,8 @@ defmodule Glific.Flows.ActionTest do
 
   alias Glific.{
     Contacts.Contact,
+    Fixtures,
+    Flows,
     Groups,
     Groups.ContactGroup,
     Partners,
@@ -162,6 +164,8 @@ defmodule Glific.Flows.ActionTest do
       "type" => "start_session",
       "contacts" => [%{"name" => "NGO Admin", "uuid" => "14"}],
       "create_contact" => false,
+      "exclusions" => %{"in_a_flow" => false},
+      "groups" => [],
       "flow" => %{
         "name" => "Help Workflow",
         "uuid" => "3fa22108-f464-41e5-81d9-d8a298854429"
@@ -872,6 +876,70 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.results["sheet"]["key"] == "7/11/2022"
     assert updated_context.results["sheet"]["message_english"] == "Hi welcome to Glific."
     assert updated_context.results["sheet"]["message_hindi"] == "Glific में आपका स्वागत है।"
+  end
+
+  test "execute an action when type is start_session and exclusion is true",
+       attrs do
+    [flow, flow2 | _tail] = Flows.list_flows(%{filter: attrs})
+    group = Fixtures.group_fixture()
+    contact = Fixtures.contact_fixture()
+    contact2 = Fixtures.contact_fixture()
+
+    Groups.create_contact_group(%{
+      group_id: group.id,
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    })
+
+    Groups.create_contact_group(%{
+      group_id: group.id,
+      contact_id: contact2.id,
+      organization_id: attrs.organization_id
+    })
+
+    # Starting flow for contact1, so that flow will not start for this contact as exclusion is true
+    Flows.start_contact_flow(flow, contact)
+
+    # preload contact
+    attrs = %{
+      flow_id: flow.id,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    # preload contact
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+    context = Repo.preload(context, [:flow, :contact])
+
+    # using uuid of help flow
+    action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "start_session",
+      exclusions: true,
+      groups: [%{"name" => "#{group.label}", "uuid" => "#{group.id}"}],
+      contacts: [],
+      create_contact: false,
+      flow: %{
+        "name" => "#{flow2.name}",
+        "uuid" => "#{flow2.uuid}"
+      }
+    }
+
+    message_broadcast_contact_count =
+      Flows.MessageBroadcastContact
+      |> where([mbc], mbc.contact_id == ^contact2.id)
+      |> Repo.aggregate(:count, [])
+
+    assert {:ok, _updated_context, _updated_message_stream} = Action.execute(action, context, [])
+
+    new_message_broadcast_contact_count =
+      Flows.MessageBroadcastContact
+      |> where([mbc], mbc.contact_id == ^contact2.id)
+      |> Repo.aggregate(:count, [])
+
+    assert new_message_broadcast_contact_count > message_broadcast_contact_count
   end
 
   test "execute an action when type is start_session", attrs do

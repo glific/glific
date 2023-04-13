@@ -409,7 +409,7 @@ defmodule Glific.Groups do
       |> select([ug], ug.group_id)
       |> Repo.all()
 
-    group_ids = Enum.map(group_ids, fn x -> String.to_integer(x) end)
+    group_ids = Enum.map(group_ids, fn group_id -> String.to_integer(group_id) end)
     add_group_ids = group_ids -- user_group_ids
     delete_group_ids = user_group_ids -- group_ids
 

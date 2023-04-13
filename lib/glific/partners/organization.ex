@@ -41,6 +41,7 @@ defmodule Glific.Partners.Organization do
     :last_communication_at,
     :fields,
     :newcontact_flow_id,
+    :optin_flow_id,
     :is_suspended,
     :suspended_until
   ]
@@ -62,6 +63,7 @@ defmodule Glific.Partners.Organization do
           out_of_office: OutOfOffice.t() | nil,
           regx_flow: RegxFlow.t() | nil,
           newcontact_flow_id: non_neg_integer | nil,
+          optin_flow_id: non_neg_integer | nil,
           hours: list() | nil,
           days: list() | nil,
           is_active: boolean() | true,
@@ -108,8 +110,10 @@ defmodule Glific.Partners.Organization do
 
     embeds_one(:regx_flow, RegxFlow, on_replace: :update)
 
-    # id of flow which gets triggered when new contact joins bot
+    # id of flow which gets triggered when new contact joins or optin's
     field(:newcontact_flow_id, :integer)
+    field(:optin_flow_id, :integer)
+
     field(:is_active, :boolean, default: true)
     field(:is_approved, :boolean, default: false)
 
