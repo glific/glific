@@ -157,6 +157,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:out_of_office, :out_of_office_input)
 
     field(:newcontact_flow_id, :id)
+    field(:optin_flow_id, :id)
 
     field(:is_active, :boolean)
 
