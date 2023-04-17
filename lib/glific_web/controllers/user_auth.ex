@@ -1,4 +1,8 @@
 defmodule GlificWeb.UserAuth do
+  @moduledoc """
+  Glific Auth user form phx authentication module. We will merge both of the auth module soon.
+  """
+
   import Plug.Conn
   import Phoenix.Controller
 

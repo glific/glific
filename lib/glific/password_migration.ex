@@ -1,9 +1,14 @@
 defmodule Glific.PasswordMigration do
-  alias Glific.Users.User
-  alias Pbkdf2.Base64
-  alias Glific.Repo
+  @moduledoc """
+  Convert all the previous password hashes to newly encoded password which are compatible with both auth libraries.
+  We will remove this migration soon or may be move this file to priv migration directory
+  """
 
   import Ecto.Query, warn: false
+
+  alias Glific.Repo
+  alias Glific.Users.User
+  alias Pbkdf2.Base64
 
   def fix_password(user_id, reverse \\ false) do
     user = Repo.get!(User, user_id, skip_organization_id: true)

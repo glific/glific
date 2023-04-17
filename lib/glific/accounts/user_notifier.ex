@@ -1,4 +1,6 @@
 defmodule Glific.Accounts.UserNotifier do
+  @moduledoc false
+
   import Swoosh.Email
 
   alias Glific.Mailer

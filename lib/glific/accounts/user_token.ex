@@ -1,4 +1,6 @@
 defmodule Glific.Accounts.UserToken do
+  @moduledoc false
+
   use Ecto.Schema
   import Ecto.Query
   alias Glific.Accounts.UserToken

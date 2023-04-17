@@ -12,7 +12,7 @@ defmodule GlificWeb.UserRegistrationController do
 
   @spec create(Plug.Conn.t(), map) :: {:ok, any} | Plug.Conn.t()
   def create(conn, %{"user" => user_params}) do
-    # TODO: fix user registration
+    # fix user registration
 
     # user_params =
     #   user_params
