@@ -24,6 +24,7 @@ defmodule Glific.Accounts do
       nil
 
   """
+  @spec get_user_by_email(String.t()) :: User.t() | term | nil
   def get_user_by_email(email) when is_binary(email) do
     Repo.get_by(User, email: email)
   end
@@ -40,6 +41,7 @@ defmodule Glific.Accounts do
       nil
 
   """
+  @spec get_user_by_phone_and_password(String.t(), String.t()) :: User.t() | term | nil
   def get_user_by_phone_and_password(phone, password)
       when is_binary(phone) and is_binary(password) do
     user = Repo.get_by(User, phone: phone)
@@ -60,6 +62,7 @@ defmodule Glific.Accounts do
       ** (Ecto.NoResultsError)
 
   """
+  @spec get_user!(non_neg_integer()) :: User.t()
   def get_user!(id), do: Repo.get!(User, id)
 
   ## User registration
@@ -76,12 +79,17 @@ defmodule Glific.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec register_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def register_user(attrs) do
     %User{}
     |> User.registration_changeset(attrs)
     |> Repo.insert()
   end
 
+  @spec change_user_registration(Glific.Users.User.t(), %{
+          optional(:__struct__) => none,
+          optional(atom | binary) => any
+        }) :: Ecto.Changeset.t()
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking user changes.
 
@@ -136,6 +144,7 @@ defmodule Glific.Accounts do
   If the token matches, the user email is updated and the token is deleted.
   The confirmed_at date is also updated to the current time.
   """
+  @spec update_user_email(atom | %{:email => any, optional(any) => any}, binary) :: :error | :ok
   def update_user_email(user, token) do
     context = "change:#{user.email}"
 

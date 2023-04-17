@@ -3,7 +3,7 @@ defmodule Glific.Accounts.UserNotifier do
 
   import Swoosh.Email
 
-  alias Glific.Mailer
+  # alias Glific.Mailer
 
   # Delivers the email using the application mailer.
   defp deliver(recipient, subject, body) do
@@ -14,9 +14,11 @@ defmodule Glific.Accounts.UserNotifier do
       |> subject(subject)
       |> text_body(body)
 
-    with {:ok, _metadata} <- Mailer.deliver(email) do
-      {:ok, email}
-    end
+    {:ok, email}
+
+    # with {:ok, _metadata} <- Mailer.deliver(email) do
+    #   {:ok, email}
+    # end
   end
 
   @doc """
