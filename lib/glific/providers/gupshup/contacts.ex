@@ -66,6 +66,8 @@ defmodule Glific.Providers.GupshupContacts do
     end
   end
 
+  # Putting a check if the page number is 10 then stop, as we don't want recursion to go on indefinitely
+  defp do_fetch_opted_in_contacts(_org_id, _user_count, 10), do: :ok
   defp do_fetch_opted_in_contacts(_org_id, _user_count, _page), do: :ok
 
   @doc """
