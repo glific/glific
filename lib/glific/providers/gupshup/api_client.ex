@@ -113,18 +113,20 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @doc """
   Fetch opted in contacts data from providers server
   """
-  @spec fetch_opted_in_contacts(non_neg_integer()) :: Tesla.Env.result() | {:error, String.t()}
-  def fetch_opted_in_contacts(org_id) do
+  @spec fetch_opted_in_contacts(non_neg_integer(), non_neg_integer()) ::
+          Tesla.Env.result() | {:error, String.t()}
+  def fetch_opted_in_contacts(org_id, page) do
     with {:ok, credentials} <- get_credentials(org_id),
-         do: users_get(credentials.api_key, credentials.app_name)
+         do: users_get(credentials.api_key, credentials.app_name, page)
   end
 
   @doc """
   Build the Gupshup user list url
   """
-  @spec users_get(String.t(), String.t()) :: Tesla.Env.result() | {:error, String.t()}
-  def users_get(api_key, app_name) do
-    url = @gupshup_url <> "/users/" <> app_name
+  @spec users_get(String.t(), String.t(), non_neg_integer()) ::
+          Tesla.Env.result() | {:error, String.t()}
+  def users_get(api_key, app_name, page \\ 0) do
+    url = @gupshup_url <> "/users/" <> app_name <> "?maxResult=5000&pageNo=#{page}"
     gupshup_get(url, api_key)
   end
 end
