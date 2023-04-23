@@ -4,7 +4,7 @@ defmodule Glific.AccountsTest do
   alias Glific.Accounts
 
   import Glific.AccountsFixtures
-  alias Glific.Accounts.{UserToken}
+  alias Glific.Accounts.UserToken
 
   describe "generate_user_session_token/1" do
     setup do
