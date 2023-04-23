@@ -1,10 +1,10 @@
 defmodule Glific.Accounts.UserToken do
   @moduledoc false
 
+  alias __MODULE__
   use Ecto.Schema
   import Ecto.Query
-  alias Glific.Accounts.UserToken
-  alias Glific.Partners.Organization
+  alias Glific.{Accounts.UserToken, Partners.Organization, Users.User}
 
   @hash_algorithm :sha256
   @rand_size 32
@@ -15,6 +15,20 @@ defmodule Glific.Accounts.UserToken do
   @confirm_validity_in_days 7
   @change_email_validity_in_days 7
   @session_validity_in_days 60
+
+  @type t() :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
+          id: non_neg_integer | nil,
+          token: String.t() | nil,
+          context: String.t() | nil,
+          sent_to: String.t() | nil,
+          user_id: non_neg_integer | nil,
+          user: User.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          inserted_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil
+        }
 
   schema "users_tokens" do
     field(:token, :binary)
@@ -46,19 +60,7 @@ defmodule Glific.Accounts.UserToken do
   session they deem invalid.
   """
   @spec build_session_token(atom | %{:id => any, optional(any) => any}) ::
-          {any,
-           %Glific.Accounts.UserToken{
-             __meta__: Ecto.Schema.Metadata.t(),
-             context: <<_::56>>,
-             id: nil,
-             inserted_at: nil,
-             organization: Ecto.Association.NotLoaded.t(),
-             organization_id: 1,
-             sent_to: nil,
-             token: any,
-             user: Ecto.Association.NotLoaded.t(),
-             user_id: any
-           }}
+          {any, UserToken.t()}
   def build_session_token(user) do
     token = :crypto.strong_rand_bytes(@rand_size)
     {token, %UserToken{token: token, context: "session", user_id: user.id, organization_id: 1}}

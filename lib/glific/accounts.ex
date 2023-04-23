@@ -8,7 +8,7 @@ defmodule Glific.Accounts do
 
   alias Glific.Users.User
 
-  alias Glific.Accounts.{UserToken}
+  alias Glific.Accounts.UserToken
 
   ## Database getters
 
