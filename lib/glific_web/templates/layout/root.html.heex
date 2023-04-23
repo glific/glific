@@ -18,12 +18,12 @@
   <body>
     <header>
       <section class="container">
-        <ul>
-            <li><%= @current_user.phone %></li>
-            <li><%= link "Log in", to: Routes.user_session_path(@conn, :new) %></li>
-            <li><%= link "Log out", to: Routes.user_session_path(@conn, :new) %></li>
-     
-        </ul>
+        <ul style = "list-style-type: none;">
+          <%= if @current_user do %>
+            <li><%= @current_user.name %></li>
+            <li><%= link "Log out", to: Routes.user_session_path(@conn, :delete), method: :delete %></li>
+          <% end %>
+          </ul>
       </section>
     </header>
     <%= @inner_content %>

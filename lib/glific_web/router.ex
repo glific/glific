@@ -195,4 +195,9 @@ defmodule GlificWeb.Router do
     get("/users/log_in", UserSessionController, :new)
     post("/users/log_in", UserSessionController, :create)
   end
+
+  scope "/", GlificWeb do
+    pipe_through([:phx_browser])
+    delete("/users/log_out", UserSessionController, :delete)
+  end
 end

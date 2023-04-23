@@ -90,6 +90,15 @@
   cursor: pointer;
 }
 
+.container {
+  @apply h-full
+}
+.center_form {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .card {
   @apply block m-12 p-6 max-w-sm bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
 }

@@ -1,30 +1,45 @@
-<h1>Log in</h1>
 
-<.form :let={f} for={@conn} action={Routes.user_session_path(@conn, :create)} as={:user}>
-  <%= if @error_message do %>
-    <div class="alert alert-danger">
+<h1 class="text-full font-bold"> Login to Glific Dashboard </h1>
+
+<div class="center_form mt-20">
+
+<div class="w-full max-w-xs ">
+  <.form :let={f} for={@conn} action={Routes.user_session_path(@conn, :create)} as={:user} class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+    <%= if @error_message do %>
+    <div class="alert alert-danger mb-4">
       <p><%= @error_message %></p>
     </div>
-  <% end %>
+   <% end %>
+    
+    <div class="mb-4">
+      <label class="block text-gray-700 text-sm font-bold mb-2" for="username">
+        Phone
+      </label>
+      <%= text_input f, 
+        :phone, 
+        required: true,  
+        class: "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline",  
+        placeholder: "Phone" %>
 
-  <%= label f, :phone %>
-  <%= text_input f, :phone, required: true %>
-  <br>
+    </div>
+    <div class="mb-6">
+      <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
+        Password
+      </label>
+      <%= password_input f, :password, 
+      required: true,
+      class: "shadow appearance-none border border-red-500 rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline",  
+      placeholder: "******************"  %>
 
-  <%= label f, :password %>
-  <%= password_input f, :password, required: true %>
+    </div>
+    <div class="flex items-center justify-between">
+      <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="button">
+        Sign In
+      </button>
+    </div>
+  </.form>
 
-  <br>
-  <br>
+</div>
+</div>
 
-  <%= label f, :remember_me, "Keep me logged in for 60 days" %>
-  <%= checkbox f, :remember_me %>
 
-  <div>
-    <%= submit "Log in" %>
-  </div>
-</.form>
-
-<br>
-<br>
-<br>
