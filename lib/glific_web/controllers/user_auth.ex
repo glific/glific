@@ -76,6 +76,7 @@ defmodule GlificWeb.UserAuth do
 
   It clears all session data for safety. See renew_session.
   """
+  @spec log_out_user(Plug.Conn.t()) :: Plug.Conn.t()
   def log_out_user(conn) do
     user_token = get_session(conn, :user_token)
     user_token && Accounts.delete_session_token(user_token)
@@ -118,6 +119,10 @@ defmodule GlificWeb.UserAuth do
   @doc """
   Used for routes that require the user to not be authenticated.
   """
+  @spec redirect_if_user_is_authenticated(
+          atom | %{:assigns => nil | maybe_improper_list | map, optional(any) => any},
+          any
+        ) :: atom | %{:assigns => nil | maybe_improper_list | map, optional(any) => any}
   def redirect_if_user_is_authenticated(conn, _opts) do
     if conn.assigns[:current_user] do
       conn
@@ -134,6 +139,10 @@ defmodule GlificWeb.UserAuth do
   If you want to enforce the user email is confirmed before
   they use the application at all, here would be a good place.
   """
+  @spec require_authenticated_user(
+          atom | %{:assigns => nil | maybe_improper_list | map, optional(any) => any},
+          any
+        ) :: atom | %{:assigns => nil | maybe_improper_list | map, optional(any) => any}
   def require_authenticated_user(conn, _opts) do
     if conn.assigns[:current_user] do
       conn
