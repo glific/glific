@@ -79,7 +79,7 @@ defmodule GlificWeb.Endpoint do
   # we'll use the raw_body here for webhook
   plug(GlificWeb.StripeWebhook)
 
-  # Gigalixir puts us behind a proxy, hence using this to get the right
+  # gigalixir puts us behind a proxy, hence using this to get the right
   # IP
   plug(RemoteIp)
 
