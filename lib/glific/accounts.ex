@@ -34,10 +34,10 @@ defmodule Glific.Accounts do
 
   ## Examples
 
-      iex> get_user_by_email_and_password("foo@example.com", "correct_password")
+      iex> get_user_by_phone_and_password("987654321", "correct_password")
       %User{}
 
-      iex> get_user_by_email_and_password("foo@example.com", "invalid_password")
+      iex> get_user_by_phone_and_password("987654321", "invalid_password")
       nil
 
   """

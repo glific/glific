@@ -3,22 +3,24 @@ defmodule Glific.AccountsFixtures do
   This module defines test helpers for creating
   entities via the `Glific.Accounts` context.
   """
+  alias Glific.Fixtures
 
-  def unique_user_email, do: "user#{System.unique_integer()}@example.com"
+  def unique_user_email, do: "#{System.unique_integer()}2323243"
   def valid_user_password, do: "hello world!"
 
   def valid_user_attributes(attrs \\ %{}) do
     Enum.into(attrs, %{
-      email: unique_user_email(),
-      password: valid_user_password()
+      phone: unique_user_email(),
+      password: valid_user_password(),
+      password_confirmation: valid_user_password()
     })
   end
 
   def user_fixture(attrs \\ %{}) do
-    {:ok, user} =
+    user =
       attrs
       |> valid_user_attributes()
-      |> Glific.Accounts.register_user()
+      |> Fixtures.user_fixture()
 
     user
   end
