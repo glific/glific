@@ -26,8 +26,7 @@ defmodule Glific.Accounts.UserToken do
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          inserted_at: :utc_datetime | nil
         }
 
   schema "users_tokens" do
@@ -74,6 +73,7 @@ defmodule Glific.Accounts.UserToken do
   The token is valid if it matches the value in the database and it has
   not expired (after @session_validity_in_days).
   """
+  @spec verify_session_token_query(String.t()) :: {:ok, any()}
   def verify_session_token_query(token) do
     query =
       from(token in token_and_context_query(token, "session"),
@@ -98,6 +98,7 @@ defmodule Glific.Accounts.UserToken do
   Users can easily adapt the existing code to provide other types of delivery methods,
   for example, by phone numbers.
   """
+  @spec build_email_token(User.t(), any()) :: tuple()
   def build_email_token(user, context) do
     build_hashed_token(user, context, user.phone)
   end
@@ -112,7 +113,7 @@ defmodule Glific.Accounts.UserToken do
        context: context,
        sent_to: sent_to,
        user_id: user.id,
-       organization_id: 1
+       organization_id: user.organization_id
      }}
   end
 
@@ -129,6 +130,7 @@ defmodule Glific.Accounts.UserToken do
   for resetting the password. For verifying requests to change the email,
   see `verify_change_email_token_query/2`.
   """
+  @spec verify_email_token_query(User.t(), any()) :: {:ok, any()} | :error
   def verify_email_token_query(token, context) do
     case Base.url_decode64(token, padding: false) do
       {:ok, decoded_token} ->
@@ -166,6 +168,7 @@ defmodule Glific.Accounts.UserToken do
   database and if it has not expired (after @change_email_validity_in_days).
   The context must always start with "change:".
   """
+  @spec verify_change_email_token_query(String.t(), any()) :: {:ok, any()} | :error
   def verify_change_email_token_query(token, "change:" <> _ = context) do
     case Base.url_decode64(token, padding: false) do
       {:ok, decoded_token} ->
@@ -186,6 +189,7 @@ defmodule Glific.Accounts.UserToken do
   @doc """
   Returns the token struct for the given token value and context.
   """
+  @spec token_and_context_query(String.t(), any()) :: any()
   def token_and_context_query(token, context) do
     from(UserToken, where: [token: ^token, context: ^context])
   end
@@ -193,6 +197,7 @@ defmodule Glific.Accounts.UserToken do
   @doc """
   Gets all tokens for the given user for the given contexts.
   """
+  @spec user_and_contexts_query(User.t(), atom()) :: any()
   def user_and_contexts_query(user, :all) do
     from(t in UserToken, where: t.user_id == ^user.id)
   end
