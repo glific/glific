@@ -53,11 +53,14 @@
     "lib/glific_web/templates",
     "lib/glific_web/uploaders",
     "lib/glific_web/views",
+    "lib/glific/accounts.ex",
     "test/support",
     "lib/glific_web/templates/live/stats_live.ex",
     "lib/glific/third_party/openAI/chatGPT.ex",
     "lib/glific/providers/gupshup/contacts.ex",
-    "lib/glific/providers/gupshup/contact_worker.ex"
+    "lib/glific/providers/gupshup/contact_worker.ex",
+    "lib/glific_web/controllers/user_auth.ex",
+    "lib/glific_web/controllers/user_session_controller.ex"
   ],
   "coverage_options": {
     "treat_no_relevant_lines_as_covered": true,
