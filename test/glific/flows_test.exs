@@ -68,18 +68,19 @@ defmodule Glific.FLowsTest do
     end
 
     test "list_flows/1 returns flows filtered by is_pinned", attrs do
-      [predefine_flow | _tail] = Flows.list_flows(%{filter: attrs})
+      flows = Flows.list_flows(%{filter: %{is_pinned: true}})
+      old_count = length(flows)
 
       assert {:ok, %Flow{} = _flow} =
                @valid_attrs
                |> Map.merge(%{
-                 organization_id: predefine_flow.organization_id,
+                 organization_id: attrs.organization_id,
                  is_pinned: true
                })
                |> Flows.create_flow()
 
       flows = Flows.list_flows(%{filter: %{is_pinned: true}})
-      assert length(flows) == 3
+      assert length(flows) == old_count + 1
     end
 
     test "list_flows/1 returns flows filtered by name keyword", attrs do

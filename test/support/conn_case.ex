@@ -88,6 +88,7 @@ defmodule GlificWeb.ConnCase do
   It stores an updated connection and a registered user in the
   test context.
   """
+  @spec register_and_log_in_user(Plug.Conn.t()) :: any()
   def register_and_log_in_user(%{conn: conn}) do
     user = Glific.AccountsFixtures.user_fixture()
     %{conn: log_in_user(conn, user), user: user}
@@ -98,6 +99,7 @@ defmodule GlificWeb.ConnCase do
 
   It returns an updated `conn`.
   """
+  @spec log_in_user(Plug.Conn.t(), any()) :: any()
   def log_in_user(conn, user) do
     token = Glific.Accounts.generate_user_session_token(user)
 
