@@ -8,7 +8,7 @@ defmodule Glific.Accounts do
 
   alias Glific.Users.User
 
-  alias Glific.Accounts.{UserNotifier, UserToken}
+  alias Glific.Accounts.{UserToken}
 
   ## Database getters
 
@@ -44,6 +44,7 @@ defmodule Glific.Accounts do
   @spec get_user_by_phone_and_password(String.t(), String.t()) :: User.t() | term | nil
   def get_user_by_phone_and_password(phone, password)
       when is_binary(phone) and is_binary(password) do
+    phone = Glific.string_clean(phone)
     user = Repo.get_by(User, phone: phone)
     if User.valid_password?(user, password), do: user
   end
@@ -64,44 +65,6 @@ defmodule Glific.Accounts do
   """
   @spec get_user!(non_neg_integer()) :: User.t()
   def get_user!(id), do: Repo.get!(User, id)
-
-  ## User registration
-
-  @doc """
-  Registers a user.
-
-  ## Examples
-
-      iex> register_user(%{field: value})
-      {:ok, %User{}}
-
-      iex> register_user(%{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  @spec register_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
-  def register_user(attrs) do
-    %User{}
-    |> User.registration_changeset(attrs)
-    |> Repo.insert()
-  end
-
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking user changes.
-
-  ## Examples
-
-      iex> change_user_registration(user)
-      %Ecto.Changeset{data: %User{}}
-
-  """
-  @spec change_user_registration(Glific.Users.User.t(), %{
-          optional(:__struct__) => none,
-          optional(atom | binary) => any
-        }) :: Ecto.Changeset.t()
-  def change_user_registration(%User{} = user, attrs \\ %{}) do
-    User.registration_changeset(user, attrs, hash_password: false)
-  end
 
   ## Settings
   @doc """
@@ -182,25 +145,6 @@ defmodule Glific.Accounts do
     Ecto.Multi.new()
     |> Ecto.Multi.update(:user, changeset)
     |> Ecto.Multi.delete_all(:tokens, UserToken.user_and_contexts_query(user, [context]))
-  end
-
-  @doc """
-  Delivers the update email instructions to the given user.
-
-  ## Examples
-
-      iex> deliver_update_email_instructions(user, current_email, &Routes.user_update_email_url(conn, :edit, &1))
-      {:ok, %{to: ..., body: ...}}
-
-  """
-  @spec deliver_update_email_instructions(Glific.Users.User.t(), any, (any -> any)) ::
-          {:ok, Swoosh.Email.t()}
-  def deliver_update_email_instructions(%User{} = user, current_email, update_email_url_fun)
-      when is_function(update_email_url_fun, 1) do
-    {encoded_token, user_token} = UserToken.build_email_token(user, "change:#{current_email}")
-
-    Repo.insert!(user_token)
-    UserNotifier.deliver_update_email_instructions(user, update_email_url_fun.(encoded_token))
   end
 
   @doc """
@@ -294,30 +238,6 @@ defmodule Glific.Accounts do
   ## Confirmation
 
   @doc """
-  Delivers the confirmation email instructions to the given user.
-
-  ## Examples
-
-      iex> deliver_user_confirmation_instructions(user, &Routes.user_confirmation_url(conn, :edit, &1))
-      {:ok, %{to: ..., body: ...}}
-
-      iex> deliver_user_confirmation_instructions(confirmed_user, &Routes.user_confirmation_url(conn, :edit, &1))
-      {:error, :already_confirmed}
-
-  """
-  @spec deliver_user_confirmation_instructions(User.t(), (any -> any)) :: :ok
-  def deliver_user_confirmation_instructions(%User{} = user, confirmation_url_fun)
-      when is_function(confirmation_url_fun, 1) do
-    if user.confirmed_at do
-      {:error, :already_confirmed}
-    else
-      {encoded_token, user_token} = UserToken.build_email_token(user, "confirm")
-      Repo.insert!(user_token)
-      UserNotifier.deliver_confirmation_instructions(user, confirmation_url_fun.(encoded_token))
-    end
-  end
-
-  @doc """
   Confirms a user by the given token.
 
   If the token matches, the user account is marked as confirmed
@@ -338,78 +258,5 @@ defmodule Glific.Accounts do
     Ecto.Multi.new()
     |> Ecto.Multi.update(:user, User.confirm_changeset(user))
     |> Ecto.Multi.delete_all(:tokens, UserToken.user_and_contexts_query(user, ["confirm"]))
-  end
-
-  ## Reset password
-
-  @doc """
-  Delivers the reset password email to the given user.
-
-  ## Examples
-
-      iex> deliver_user_reset_password_instructions(user, &Routes.user_reset_password_url(conn, :edit, &1))
-      {:ok, %{to: ..., body: ...}}
-
-  """
-  @spec deliver_user_reset_password_instructions(User.t(), (any -> any)) ::
-          {:ok, Swoosh.Email.t()}
-  def deliver_user_reset_password_instructions(%User{} = user, reset_password_url_fun)
-      when is_function(reset_password_url_fun, 1) do
-    {encoded_token, user_token} = UserToken.build_email_token(user, "reset_password")
-    Repo.insert!(user_token)
-    UserNotifier.deliver_reset_password_instructions(user, reset_password_url_fun.(encoded_token))
-  end
-
-  @doc """
-  Gets the user by reset password token.
-
-  ## Examples
-
-      iex> get_user_by_reset_password_token("validtoken")
-      %User{}
-
-      iex> get_user_by_reset_password_token("invalidtoken")
-      nil
-
-  """
-  @spec get_user_by_reset_password_token(String.t()) :: nil | User.t()
-  def get_user_by_reset_password_token(token) do
-    with {:ok, query} <- UserToken.verify_email_token_query(token, "reset_password"),
-         %User{} = user <- Repo.one(query) do
-      user
-    else
-      _ -> nil
-    end
-  end
-
-  @doc """
-  Resets the user password.
-
-  ## Examples
-
-      iex> reset_user_password(user, %{password: "new long password", password_confirmation: "new long password"})
-      {:ok, %User{}}
-
-      iex> reset_user_password(user, %{password: "valid", password_confirmation: "not the same"})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  @spec reset_user_password(
-          %{
-            :__struct__ => atom | %{:__changeset__ => map, optional(any) => any},
-            :id => any,
-            optional(atom) => any
-          },
-          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
-        ) :: {:error, any} | {:ok, any}
-  def reset_user_password(user, attrs) do
-    Ecto.Multi.new()
-    |> Ecto.Multi.update(:user, User.password_changeset_v2(user, attrs))
-    |> Ecto.Multi.delete_all(:tokens, UserToken.user_and_contexts_query(user, :all))
-    |> Repo.transaction()
-    |> case do
-      {:ok, %{user: user}} -> {:ok, user}
-      {:error, :user, changeset, _} -> {:error, changeset}
-    end
   end
 end

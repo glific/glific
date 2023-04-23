@@ -166,7 +166,7 @@ defmodule Glific.Users.User do
 
     if hash_password? && password && changeset.valid? do
       changeset
-      |> put_change(:password_hash, Pbkdf2.hash_pwd_salt(password))
+      |> put_change(:password_hash, Pbkdf2.hash_pwd_salt(password, rounds: 100_000))
       |> delete_change(:password)
     else
       changeset

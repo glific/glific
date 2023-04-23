@@ -240,7 +240,7 @@ defmodule Glific.Users do
   @spec verify_password(User.t(), String.t()) :: User.t() | nil
   defp verify_password(user, password),
     do:
-      if(User.verify_password(user, password),
+      if(User.valid_password?(user, password),
         do: user,
         else: nil
       )
