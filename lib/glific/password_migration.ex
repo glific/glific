@@ -10,6 +10,8 @@ defmodule Glific.PasswordMigration do
   alias Glific.Users.User
   alias Pbkdf2.Base64
 
+  @doc false
+  @spec fix_password(non_neg_integer(), boolean()) :: any()
   def fix_password(user_id, reverse \\ false) do
     user = Repo.get!(User, user_id, skip_organization_id: true)
     new_hash = convert_hash_to_new_auth(user.password_hash, reverse)
@@ -18,6 +20,8 @@ defmodule Glific.PasswordMigration do
     |> Repo.update_all(set: [password_hash: new_hash])
   end
 
+  @doc false
+  @spec convert_hash_to_new_auth(String.t(), boolean()) :: any()
   def convert_hash_to_new_auth(current_hash, reverse \\ false) do
     [digest, iterations, salt, hash] = decode(current_hash)
 
@@ -42,6 +46,8 @@ defmodule Glific.PasswordMigration do
     "$pbkdf2-#{digest}$#{iterations}$#{salt}$#{hash}"
   end
 
+  @doc false
+  @spec decode(String.t()) :: any()
   def decode(hash) do
     case String.split(hash, "$", trim: true) do
       ["pbkdf2-" <> digest, iterations, salt, hash] ->

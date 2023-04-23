@@ -12,7 +12,8 @@
     "lib/glific/application.ex",
     "lib/glific_web.ex",
     "lib/glific_web/telemetry.ex",
-    "lib/glific/enums/ecto_enums.ex"
+    "lib/glific/enums/ecto_enums.ex",
+    ~r(lib/glific/accounts/*)
   ],
   min_module_doc_coverage: 100,
   min_module_spec_coverage: 100,

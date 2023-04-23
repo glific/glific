@@ -86,10 +86,6 @@ defmodule Glific.Accounts do
     |> Repo.insert()
   end
 
-  @spec change_user_registration(Glific.Users.User.t(), %{
-          optional(:__struct__) => none,
-          optional(atom | binary) => any
-        }) :: Ecto.Changeset.t()
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking user changes.
 
@@ -99,12 +95,15 @@ defmodule Glific.Accounts do
       %Ecto.Changeset{data: %User{}}
 
   """
+  @spec change_user_registration(Glific.Users.User.t(), %{
+          optional(:__struct__) => none,
+          optional(atom | binary) => any
+        }) :: Ecto.Changeset.t()
   def change_user_registration(%User{} = user, attrs \\ %{}) do
     User.registration_changeset(user, attrs, hash_password: false)
   end
 
   ## Settings
-
   @doc """
   Returns an `%Ecto.Changeset{}` for changing the user email.
 
@@ -114,6 +113,14 @@ defmodule Glific.Accounts do
       %Ecto.Changeset{data: %User{}}
 
   """
+  @spec change_user_email(
+          {map, map}
+          | %{
+              :__struct__ => atom | %{:__changeset__ => map, optional(any) => any},
+              optional(atom) => any
+            },
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   def change_user_email(user, attrs \\ %{}) do
     User.email_changeset(user, attrs)
   end
@@ -131,6 +138,15 @@ defmodule Glific.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec apply_user_email(
+          {map, map}
+          | %{
+              :__struct__ => atom | %{:__changeset__ => map, optional(any) => any},
+              optional(atom) => any
+            },
+          any,
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: {:error, Ecto.Changeset.t()} | {:ok, map}
   def apply_user_email(user, password, attrs) do
     user
     |> User.email_changeset(attrs)
@@ -177,6 +193,8 @@ defmodule Glific.Accounts do
       {:ok, %{to: ..., body: ...}}
 
   """
+  @spec deliver_update_email_instructions(Glific.Users.User.t(), any, (any -> any)) ::
+          {:ok, Swoosh.Email.t()}
   def deliver_update_email_instructions(%User{} = user, current_email, update_email_url_fun)
       when is_function(update_email_url_fun, 1) do
     {encoded_token, user_token} = UserToken.build_email_token(user, "change:#{current_email}")
@@ -194,19 +212,18 @@ defmodule Glific.Accounts do
       %Ecto.Changeset{data: %User{}}
 
   """
+  @spec change_user_password(
+          {map, map}
+          | %{
+              :__struct__ => atom | %{:__changeset__ => map, optional(any) => any},
+              optional(atom) => any
+            },
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   def change_user_password(user, attrs \\ %{}) do
     User.password_changeset_v2(user, attrs, hash_password: false)
   end
 
-  @spec update_user_password(
-          %{
-            :__struct__ => atom | %{:__changeset__ => map, optional(any) => any},
-            :id => any,
-            optional(atom) => any
-          },
-          any,
-          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
-        ) :: {:error, any} | {:ok, any}
   @doc """
   Updates the user password.
 
@@ -219,6 +236,15 @@ defmodule Glific.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec update_user_password(
+          %{
+            :__struct__ => atom | %{:__changeset__ => map, optional(any) => any},
+            :id => any,
+            optional(atom) => any
+          },
+          any,
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: {:error, any} | {:ok, any}
   def update_user_password(user, password, attrs) do
     changeset =
       user
@@ -240,6 +266,7 @@ defmodule Glific.Accounts do
   @doc """
   Generates a session token.
   """
+  @spec generate_user_session_token(atom | %{:id => any, optional(any) => any}) :: any()
   def generate_user_session_token(user) do
     {token, user_token} = UserToken.build_session_token(user)
     Repo.insert!(user_token)
@@ -249,6 +276,7 @@ defmodule Glific.Accounts do
   @doc """
   Gets the user with the given signed token.
   """
+  @spec get_user_by_session_token(any()) :: any()
   def get_user_by_session_token(token) do
     {:ok, query} = UserToken.verify_session_token_query(token)
     Repo.one(query)
@@ -257,6 +285,7 @@ defmodule Glific.Accounts do
   @doc """
   Deletes the signed token with the given context.
   """
+  @spec delete_session_token(any) :: :ok
   def delete_session_token(token) do
     Repo.delete_all(UserToken.token_and_context_query(token, "session"))
     :ok
@@ -276,6 +305,7 @@ defmodule Glific.Accounts do
       {:error, :already_confirmed}
 
   """
+  @spec deliver_user_confirmation_instructions(User.t(), (any -> any)) :: :ok
   def deliver_user_confirmation_instructions(%User{} = user, confirmation_url_fun)
       when is_function(confirmation_url_fun, 1) do
     if user.confirmed_at do
@@ -293,6 +323,7 @@ defmodule Glific.Accounts do
   If the token matches, the user account is marked as confirmed
   and the token is deleted.
   """
+  @spec confirm_user(String.t()) :: :error | {:ok, any}
   def confirm_user(token) do
     with {:ok, query} <- UserToken.verify_email_token_query(token, "confirm"),
          %User{} = user <- Repo.one(query),
@@ -320,6 +351,8 @@ defmodule Glific.Accounts do
       {:ok, %{to: ..., body: ...}}
 
   """
+  @spec deliver_user_reset_password_instructions(User.t(), (any -> any)) ::
+          {:ok, Swoosh.Email.t()}
   def deliver_user_reset_password_instructions(%User{} = user, reset_password_url_fun)
       when is_function(reset_password_url_fun, 1) do
     {encoded_token, user_token} = UserToken.build_email_token(user, "reset_password")
@@ -339,6 +372,7 @@ defmodule Glific.Accounts do
       nil
 
   """
+  @spec get_user_by_reset_password_token(String.t()) :: nil | User.t()
   def get_user_by_reset_password_token(token) do
     with {:ok, query} <- UserToken.verify_email_token_query(token, "reset_password"),
          %User{} = user <- Repo.one(query) do
@@ -360,6 +394,14 @@ defmodule Glific.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec reset_user_password(
+          %{
+            :__struct__ => atom | %{:__changeset__ => map, optional(any) => any},
+            :id => any,
+            optional(atom) => any
+          },
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: {:error, any} | {:ok, any}
   def reset_user_password(user, attrs) do
     Ecto.Multi.new()
     |> Ecto.Multi.update(:user, User.password_changeset_v2(user, attrs))

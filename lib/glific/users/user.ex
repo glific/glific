@@ -138,20 +138,17 @@ defmodule Glific.Users.User do
   defp maybe_normalize_user_id_field_value(value) when is_binary(value),
     do: Pow.Ecto.Schema.normalize_user_id_field_value(value)
 
+  @doc false
+  @spec registration_changeset(
+          Glific.Users.User.t(),
+          %{optional(:__struct__) => none, optional(atom | binary) => any},
+          keyword
+        ) :: Ecto.Changeset.t()
   def registration_changeset(user, attrs, opts \\ []) do
     user
     |> changeset(attrs)
     |> validate_password(opts)
   end
-
-  # defp validate_email(changeset) do
-  #   changeset
-  #   |> validate_required([:email])
-  #   |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/, message: "must have the @ sign and no spaces")
-  #   |> validate_length(:email, max: 160)
-  #   |> unsafe_validate_unique(:email, Glific.Repo)
-  #   |> unique_constraint(:email)
-  # end
 
   defp validate_password(changeset, opts) do
     changeset
@@ -181,6 +178,14 @@ defmodule Glific.Users.User do
 
   It requires the email to change otherwise an error is added.
   """
+  @spec email_changeset(
+          {map, map}
+          | %{
+              :__struct__ => atom | %{:__changeset__ => map, optional(any) => any},
+              optional(atom) => any
+            },
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   def email_changeset(user, attrs) do
     user
     |> cast(attrs, [:phone])
@@ -193,6 +198,13 @@ defmodule Glific.Users.User do
   @doc """
   Confirms the account by setting `confirmed_at`.
   """
+  @spec confirm_changeset(
+          {map, map}
+          | %{
+              :__struct__ => atom | %{:__changeset__ => any, optional(any) => any},
+              optional(atom) => any
+            }
+        ) :: Ecto.Changeset.t()
   def confirm_changeset(user) do
     now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
     change(user, confirmed_at: now)
@@ -204,6 +216,7 @@ defmodule Glific.Users.User do
   If there is no user or the user doesn't have a password, we call
   `Pbkdf2.no_user_verify/0` to avoid timing attacks.
   """
+  @spec valid_password?(any(), any()) :: boolean()
   def valid_password?(%Glific.Users.User{password_hash: hashed_password}, password)
       when is_binary(hashed_password) and byte_size(password) > 0 do
     Pbkdf2.verify_pass(password, hashed_password)
@@ -217,6 +230,8 @@ defmodule Glific.Users.User do
   @doc """
   Validates the current password otherwise adds an error to the changeset.
   """
+  @spec validate_current_password(atom | %{:data => any, optional(any) => any}, any) ::
+          atom | %{:data => any, optional(any) => any}
   def validate_current_password(changeset, password) do
     if valid_password?(changeset.data, password) do
       changeset
@@ -237,6 +252,15 @@ defmodule Glific.Users.User do
       validations on a LiveView form), this option can be set to `false`.
       Defaults to `true`.
   """
+  @spec password_changeset_v2(
+          {map, map}
+          | %{
+              :__struct__ => atom | %{:__changeset__ => map, optional(any) => any},
+              optional(atom) => any
+            },
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any},
+          keyword
+        ) :: Ecto.Changeset.t()
   def password_changeset_v2(user, attrs, opts \\ []) do
     user
     |> cast(attrs, [:password])
