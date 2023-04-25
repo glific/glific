@@ -56,7 +56,7 @@ defmodule Glific.Contacts.Import do
         results
         |> Map.merge(%{
           delete: data["delete"],
-          collection: contact_attrs.collection
+          collection: Map.get(contact_attrs, :collection, data["collection"])
         })
 
       user.upload_contacts ->
@@ -178,7 +178,7 @@ defmodule Glific.Contacts.Import do
 
     errors =
       result
-      |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
+      |> Enum.filter(fn r -> Map.has_key?(r, :error) end)
       |> Enum.map(fn %{error: error} -> error end)
 
     case errors do
@@ -186,7 +186,7 @@ defmodule Glific.Contacts.Import do
         {:ok, %{message: "All contacts added"}}
 
       _ ->
-        {:error, errors}
+        {:error, Enum.join(errors, "<p>\n")}
     end
   end
 
@@ -230,7 +230,7 @@ defmodule Glific.Contacts.Import do
   defp may_update_contact(contact_attrs) do
     case Contacts.maybe_update_contact(contact_attrs) do
       {:ok, contact} -> create_group_and_contact_fields(contact_attrs, contact)
-      {:error, error} -> %{error: error}
+      {:error, error} -> %{error: "#{error}: #{contact_attrs.phone}"}
     end
   end
 
@@ -285,13 +285,13 @@ defmodule Glific.Contacts.Import do
           contact
 
         {:error, error} ->
-          %{phone: contact.phone, error: error}
+          %{phone: contact.phone, error: "#{error}: #{contact.phone}"}
       end
     else
       %{
         phone: contact.phone,
         error:
-          "Not able to optin the contact. Either the contact is opted out, invalid or the opted-in time present in sheet is not in the correct format"
+          "Not able to optin the contact #{contact.phone}. Either the contact is opted out, invalid or the opted-in time present in sheet is not in the correct format"
       }
     end
   end
