@@ -114,6 +114,11 @@ defmodule GlificWeb.Schema.FlowTest do
 
   test "flows field returns list of flows filtered by isPinned flag", %{manager: user} do
     # Create a new flow
+    old_results = auth_query_gql_by(:list, user, variables: %{"filter" => %{"isPinned" => true}})
+    assert {:ok, query_data} = old_results
+    flows = get_in(query_data, [:data, "flows"])
+    old_count = length(flows)
+
     auth_query_gql_by(:create, user,
       variables: %{"input" => %{"name" => "New Flow", "keywords" => "new", "isPinned" => true}}
     )
@@ -121,7 +126,8 @@ defmodule GlificWeb.Schema.FlowTest do
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"isPinned" => true}})
     assert {:ok, query_data} = result
     flows = get_in(query_data, [:data, "flows"])
-    assert length(flows) == 3
+    ## it depends on the test sequence how many flows have pinned.
+    assert length(flows) == old_count + 1
   end
 
   test "flow field id returns one flow or nil", %{staff: user} do

@@ -88,7 +88,7 @@ defmodule Glific.MixProject do
       {:phoenix_live_view, "~> 0.18"},
       {:phoenix_live_dashboard, "~> 0.7"},
       {:phoenix_view, "~> 2.0"},
-      {:pow, "~> 1.0.28"},
+      {:pbkdf2_elixir, "~> 2.0"},
       {:telemetry, "~> 1.0"},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
@@ -152,10 +152,12 @@ defmodule Glific.MixProject do
       {:remote_ip, "~> 1.0"},
       {:exvcr, "~> 0.13", only: @test_envs},
       {:dotenvy, "~> 0.1"},
+      {:tailwind, "~> 0.1", runtime: Mix.env() == :dev},
       {:phoenix_swoosh, "~> 1.2"},
       {:gen_smtp, "~> 1.1"},
       {:glific_phil_columns, "~> 3.2"},
-      {:glific_forked_waffle_gcs, "~> 0.1.1"}
+      {:glific_forked_waffle_gcs, "~> 0.1.1"},
+      {:pow, git: "https://github.com/glific/pow.git"}
     ]
   end
 
@@ -193,7 +195,7 @@ defmodule Glific.MixProject do
         "test"
       ],
       test: ["ecto.create --quiet", "ecto.migrate", "test"],
-      "assets.deploy": ["esbuild default --minify", "phx.digest"]
+      "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
     ]
   end
 end
