@@ -207,22 +207,15 @@ defmodule Glific.Flows.Action do
   def process(%{"type" => "link_google_sheet"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_sheet)
 
-    parsed_json = %{
-      row: json["row"],
-      row_data: ["@result.name", "@result.age"],
-      action_type: "WRITE",
-      range: "A1:B4",
-      url:
-        "https://docs.google.com/spreadsheets/d/1x6lPyPccBq_VnZFXVUrQXWfuELPMUH3VLijbYL0cRKw/edit#gid=0",
-      name: "saample",
-      type: "link_google_sheet",
-      uuid: "7bd800a8-8741-49eb-8587-5b02d0c8b04e",
+    process(json, uuid_map, node, %{
       sheet_id: json["sheet_id"],
+      row: json["row"],
+      row_data: json["sheet_id"] || [],
+      url: json["url"] || [],
+      action_type: json["action_type"] || "READ",
+      range: json["action_type"] || "",
       result_name: json["result_name"]
-    }
-
-    IO.inspect(parsed_json)
-    process(json, uuid_map, node, parsed_json)
+    })
   end
 
   def process(%{"type" => "start_session"} = json, uuid_map, node) do
