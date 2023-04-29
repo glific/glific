@@ -51,7 +51,7 @@ defmodule Glific.Flows.Action do
   @required_fields_classifier [:input, :result_name | @required_field_common]
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
-  @required_fields_sheet [:sheet_id, :row, :result_name | @required_field_common]
+  @required_fields_sheet [:sheet_id, :row, :result_name, :url, :name | @required_field_common]
   @required_fields_start_session [
     :contacts,
     :create_contact,
@@ -84,7 +84,6 @@ defmodule Glific.Flows.Action do
           exclusions: boolean,
           flow: map() | nil,
           field: map() | nil,
-          row: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
           enter_flow_name: String.t() | nil,
@@ -100,6 +99,12 @@ defmodule Glific.Flows.Action do
           ## this is a custom delay in minutes for wait for time nodes.
           ## Currently we use this only for the wait for time node.
           wait_time: integer() | nil,
+
+          # Google sheet node specific fields
+          row: map() | nil,
+          column_data: [String.t()],
+          action_type: String.t() | nil,
+          range: String.t() | nil,
           sheet_id: integer() | nil,
 
           ## this is a custom delay in seconds before processing for the node.
@@ -148,10 +153,16 @@ defmodule Glific.Flows.Action do
     field(:labels, :map)
     field(:groups, :map)
     field(:contacts, :map)
+
+    # fields for google sheet action
     field(:row, :map)
+    field(:column_data, {:array, :string}, default: [])
+    field(:action_type, :string)
+    field(:range, :string)
+    field(:sheet_id, :integer)
 
     field(:wait_time, :integer)
-    field(:sheet_id, :integer)
+
     field(:interactive_template_id, :integer)
 
     field(:node_uuid, Ecto.UUID)
