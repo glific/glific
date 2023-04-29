@@ -12,6 +12,7 @@ defmodule Glific.Sheets do
     Messages,
     Repo,
     Sheets.ApiClient,
+    Sheets.GoogleSheets,
     Sheets.Sheet,
     Sheets.SheetData
   }
@@ -274,6 +275,19 @@ defmodule Glific.Sheets do
   Execute a sheet action
   """
   @spec execute(Action.t() | any(), FlowContext.t()) :: {FlowContext.t(), Messages.Message.t()}
+  def execute(%{action_type: "WRITE"} = action, context) do
+    spreadsheet_id =
+      action.url
+      |> String.replace("https://docs.google.com/spreadsheets/d/", "")
+      |> String.split("/")
+      |> List.first()
+
+    GoogleSheets.insert_row(context.organization_id, spreadsheet_id, %{
+      range: action.range,
+      data: [action.row_data]
+    })
+  end
+
   def execute(action, context) do
     with {:ok, loaded_sheet} <-
            Repo.fetch_by(SheetData, %{

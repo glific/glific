@@ -102,7 +102,7 @@ defmodule Glific.Flows.Action do
 
           # Google sheet node specific fields
           row: map() | nil,
-          column_data: [String.t()],
+          row_data: [String.t()],
           action_type: String.t() | nil,
           range: String.t() | nil,
           sheet_id: integer() | nil,
@@ -156,7 +156,7 @@ defmodule Glific.Flows.Action do
 
     # fields for google sheet action
     field(:row, :map)
-    field(:column_data, {:array, :string}, default: [])
+    field(:row_data, {:array, :string}, default: [])
     field(:action_type, :string)
     field(:range, :string)
     field(:sheet_id, :integer)
@@ -207,11 +207,22 @@ defmodule Glific.Flows.Action do
   def process(%{"type" => "link_google_sheet"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_sheet)
 
-    process(json, uuid_map, node, %{
-      sheet_id: json["sheet_id"],
+    parsed_json = %{
       row: json["row"],
+      row_data: ["@result.name", "@result.age"],
+      action_type: "WRITE",
+      range: "A1:B4",
+      url:
+        "https://docs.google.com/spreadsheets/d/1x6lPyPccBq_VnZFXVUrQXWfuELPMUH3VLijbYL0cRKw/edit#gid=0",
+      name: "saample",
+      type: "link_google_sheet",
+      uuid: "7bd800a8-8741-49eb-8587-5b02d0c8b04e",
+      sheet_id: json["sheet_id"],
       result_name: json["result_name"]
-    })
+    }
+
+    IO.inspect(parsed_json)
+    process(json, uuid_map, node, parsed_json)
   end
 
   def process(%{"type" => "start_session"} = json, uuid_map, node) do
