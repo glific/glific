@@ -3,6 +3,8 @@ defmodule GlificWeb.Router do
   a default gateway for all the external requests
   """
   use GlificWeb, :router
+
+  import GlificWeb.UserAuth
   @dialyzer {:nowarn_function, __checks__: 0}
   use Appsignal.Plug
 
@@ -16,6 +18,16 @@ defmodule GlificWeb.Router do
     plug(:protect_from_forgery)
     plug(:put_secure_browser_headers)
     plug(Pow.Plug.Session, otp_app: :glific)
+  end
+
+  pipeline :phx_browser do
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+    plug(:fetch_live_flash)
+    plug(:put_root_layout, {GlificWeb.LayoutView, :root})
+    plug(:protect_from_forgery)
+    plug(:put_secure_browser_headers)
+    plug(:fetch_current_user)
   end
 
   scope path: "/feature-flags" do
@@ -64,9 +76,9 @@ defmodule GlificWeb.Router do
   end
 
   scope "/", GlificWeb do
-    pipe_through([:browser])
+    pipe_through([:phx_browser, :require_authenticated_user])
 
-    live("/liveview", StatsLive)
+    live("/stats", StatsLive)
   end
 
   # Custom stack for Absinthe
@@ -174,5 +186,18 @@ defmodule GlificWeb.Router do
     username = Application.fetch_env!(:glific, :auth_username)
     password = Application.fetch_env!(:glific, :auth_password)
     Plug.BasicAuth.basic_auth(conn, username: username, password: password)
+  end
+
+  ## Authentication routes
+
+  scope "/", GlificWeb do
+    pipe_through([:phx_browser, :redirect_if_user_is_authenticated])
+    get("/users/log_in", UserSessionController, :new)
+    post("/users/log_in", UserSessionController, :create)
+  end
+
+  scope "/", GlificWeb do
+    pipe_through([:phx_browser])
+    delete("/users/log_out", UserSessionController, :delete)
   end
 end
