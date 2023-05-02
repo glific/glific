@@ -46,7 +46,6 @@ defmodule Glific.Clients.PehlayAkshar do
     end
   end
 
-  @spec webhook(String.t(), map()) :: map()
   def webhook("get_question_buttons", fields) do
     buttons =
       fields["question"]
