@@ -51,7 +51,7 @@ defmodule Glific.Flows.Action do
   @required_fields_classifier [:input, :result_name | @required_field_common]
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
-  @required_fields_sheet [:sheet_id, :row, :result_name, :url, :name | @required_field_common]
+  @required_fields_sheet [:sheet_id, :row, :result_name | @required_field_common]
   @required_fields_start_session [
     :contacts,
     :create_contact,

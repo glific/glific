@@ -23,7 +23,7 @@ defmodule Glific.Sheets.GoogleSheets do
   """
   @spec insert_row(non_neg_integer(), String.t(), map()) ::
           GoogleApi.Sheets.V4.Model.AppendValuesResponse.t()
-  def(insert_row(org_id, spreadsheet_id, %{range: range, data: data} = _params)) do
+  def insert_row(org_id, spreadsheet_id, %{range: range, data: data} = _params) do
     {:ok, %{conn: conn}} = fetch_credentials(org_id)
 
     params = [

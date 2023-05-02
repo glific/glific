@@ -276,7 +276,13 @@ defmodule Glific.Sheets do
   """
   @spec execute(Action.t() | any(), FlowContext.t()) :: {FlowContext.t(), Messages.Message.t()}
   def execute(%{action_type: "WRITE"} = action, context) do
-    GoogleSheets.insert_row(context.organization_id, action.url, %{
+    spreadsheet_id =
+      action.url
+      |> String.replace("https://docs.google.com/spreadsheets/d/", "")
+      |> String.split("/")
+      |> List.first()
+
+    GoogleSheets.insert_row(context.organization_id, spreadsheet_id, %{
       range: action.range,
       data: [action.row_data]
     })
