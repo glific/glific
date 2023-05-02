@@ -51,7 +51,7 @@ defmodule Glific.Flows.Action do
   @required_fields_classifier [:input, :result_name | @required_field_common]
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
-  @required_fields_sheet [:sheet_id, :row, :result_name | @required_field_common]
+  @required_fields_sheet [:sheet_id, :result_name | @required_field_common]
   @required_fields_start_session [
     :contacts,
     :create_contact,
@@ -102,7 +102,7 @@ defmodule Glific.Flows.Action do
 
           # Google sheet node specific fields
           row: map() | nil,
-          row_data: [String.t()],
+          row_data: list() | nil,
           action_type: String.t() | nil,
           range: String.t() | nil,
           sheet_id: integer() | nil,
@@ -156,7 +156,7 @@ defmodule Glific.Flows.Action do
 
     # fields for google sheet action
     field(:row, :map)
-    field(:row_data, {:array, :string}, default: [])
+    field(:row_data, :map)
     field(:action_type, :string)
     field(:range, :string)
     field(:sheet_id, :integer)
@@ -206,14 +206,15 @@ defmodule Glific.Flows.Action do
   @spec process(map(), map(), Node.t()) :: {Action.t(), map()}
   def process(%{"type" => "link_google_sheet"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_sheet)
+    row_data = json["row_data"] |> hd |> String.split(",", trim: true)
 
     process(json, uuid_map, node, %{
       sheet_id: json["sheet_id"],
       row: json["row"],
-      row_data: json["sheet_id"] || [],
+      row_data: row_data,
       url: json["url"] || [],
       action_type: json["action_type"] || "READ",
-      range: json["action_type"] || "",
+      range: json["range"] || "",
       result_name: json["result_name"]
     })
   end

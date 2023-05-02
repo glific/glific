@@ -286,6 +286,13 @@ defmodule Glific.Sheets do
       range: action.range,
       data: [action.row_data]
     })
+    |> case do
+      {:ok, _response} ->
+        {context, Messages.create_temp_message(context.organization_id, "Success")}
+
+      {:error, _response} ->
+        {context, Messages.create_temp_message(context.organization_id, "Failure")}
+    end
   end
 
   def execute(action, context) do
