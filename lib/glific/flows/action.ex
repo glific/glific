@@ -206,12 +206,11 @@ defmodule Glific.Flows.Action do
   @spec process(map(), map(), Node.t()) :: {Action.t(), map()}
   def process(%{"type" => "link_google_sheet"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_sheet)
-    row_data = json["row_data"] |> hd |> String.split(",", trim: true)
 
     process(json, uuid_map, node, %{
       sheet_id: json["sheet_id"],
       row: json["row"],
-      row_data: row_data,
+      row_data: json["row_data"] || [],
       url: json["url"] || [],
       action_type: json["action_type"] || "READ",
       range: json["range"] || "",

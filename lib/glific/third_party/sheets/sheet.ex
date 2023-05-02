@@ -17,7 +17,7 @@ defmodule Glific.Sheets.Sheet do
     :organization_id
   ]
 
-  @optional_fields [:last_synced_at, :is_active, :sheet_data_count]
+  @optional_fields [:last_synced_at, :is_active, :sheet_data_count, :type]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
