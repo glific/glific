@@ -46,6 +46,27 @@ defmodule Glific.Clients.PehlayAkshar do
     end
   end
 
+  def webhook("get_question_buttons", fields) do
+    buttons =
+      fields["question"]
+      |> String.split("|")
+      |> Enum.with_index()
+      |> Enum.map(fn {answer, index} -> {"button_#{index + 1}", String.trim(answer)} end)
+      |> Enum.into(%{})
+
+    %{
+      buttons: buttons,
+      button_count: length(Map.keys(buttons)),
+      is_valid: true
+    }
+  end
+
+  def webhook("check_response", fields) do
+    %{
+      response: String.equivalent?(fields["correct_response"], fields["user_response"])
+    }
+  end
+
   def webhook(_, _) do
     raise "Unknown webhook"
   end
