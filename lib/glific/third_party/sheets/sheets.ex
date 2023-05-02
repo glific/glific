@@ -9,6 +9,7 @@ defmodule Glific.Sheets do
   alias Glific.{
     Flows.Action,
     Flows.FlowContext,
+    Flows.MessageVarParser,
     Messages,
     Repo,
     Sheets.ApiClient,
@@ -282,9 +283,15 @@ defmodule Glific.Sheets do
       |> String.split("/")
       |> List.first()
 
+    fields = FlowContext.get_vars_to_parse(context)
+
+    row_data =
+      action.row_data
+      |> Enum.map(&MessageVarParser.parse(&1, fields))
+
     GoogleSheets.insert_row(context.organization_id, spreadsheet_id, %{
       range: action.range,
-      data: [action.row_data]
+      data: [row_data]
     })
     |> case do
       {:ok, _response} ->
