@@ -1,9 +1,11 @@
 defmodule GlificWeb.Schema.SheetTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
+  import Mock
 
   alias Glific.{
     Fixtures,
+    Partners,
     Repo,
     Sheets.Sheet
   }
@@ -74,25 +76,52 @@ defmodule GlificWeb.Schema.SheetTest do
     assert get_in(query_data, [:data, "syncSheet", "sheet", "sheetDataCount"]) == 4
   end
 
-  test "create a sheet with type as write and test possible scenarios and errors ", %{
-    manager: user
-  } do
-    result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "label" => "new sheet",
-            "url" =>
-              "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
-            "type" => "WRITE"
-          }
-        }
-      )
+  test "create a sheet with type as write and test possible scenarios and errors ",
+       %{manager: user} = attrs do
+    variables = %{
+      "input" => %{
+        "label" => "new sheet",
+        "url" =>
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        "type" => "WRITE"
+      }
+    }
+
+    result = auth_query_gql_by(:create, user, variables: variables)
 
     assert {:ok, query_data} = result
 
     assert "Please add the credentials for google sheet from the settings menu" ==
              get_in(query_data, [:errors, Access.at(0)])[:message]
+
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      valid_attrs = %{
+        shortcode: "google_sheets",
+        secrets: %{
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "DEFAULT PROJECT ID",
+              private_key_id: "DEFAULT API KEY",
+              client_email: "DEFAULT CLIENT EMAIL",
+              private_key: "DEFAULT PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: attrs.organization_id
+      }
+
+      Partners.create_credential(valid_attrs)
+      result = auth_query_gql_by(:create, user, variables: variables)
+      assert {:ok, query_data} = result
+      label = get_in(query_data, [:data, "createSheet", "sheet", "label"])
+      assert label == "new sheet"
+    end
   end
 
   test "sheet id returns one sheet or nil", %{staff: user} = attrs do
