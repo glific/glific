@@ -27,7 +27,7 @@ if Code.ensure_loaded?(Plug) do
     def call(conn, config) do
       subdomain = get_subdomain(conn, config)
 
-      # we allow nil subdom,ains while testing for now
+      # we allow nil subdomains while testing for now
       if is_nil(subdomain) && Application.get_env(:glific, :environment) != :test,
         do: Plug.send_error(conn),
         else: Plug.put_organization(conn, subdomain, config)

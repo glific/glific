@@ -6,6 +6,8 @@ defmodule GlificWeb.StatsLive do
 
   alias Glific.Reports
 
+  on_mount {GlificWeb.UserAuth, :ensure_authenticated}
+
   @doc false
   @spec mount(any(), any(), any()) ::
           {:ok, Phoenix.LiveView.Socket.t()} | {:ok, Phoenix.LiveView.Socket.t(), Keyword.t()}
@@ -25,7 +27,8 @@ defmodule GlificWeb.StatsLive do
   end
 
   def handle_info({:get_stats, kpi}, socket) do
-    {:noreply, assign(socket, kpi, Reports.get_kpi(kpi))}
+    user = socket.assigns[:current_user]
+    {:noreply, assign(socket, kpi, Reports.get_kpi(kpi, user.organization_id))}
   end
 
   @spec assign_stats(Phoenix.LiveView.Socket.t(), atom()) :: Phoenix.LiveView.Socket.t()
