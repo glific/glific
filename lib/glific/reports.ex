@@ -8,10 +8,10 @@ defmodule Glific.Reports do
   alias Glific.Repo
 
   @doc false
-  @spec get_kpi(atom()) :: integer()
-  def get_kpi(kpi) do
+  @spec get_kpi(atom(), non_neg_integer()) :: integer()
+  def get_kpi(kpi, org_id) do
     [[count]] =
-      get_count_query(1, kpi)
+      get_count_query(org_id, kpi)
       |> Repo.query!([])
       |> then(& &1.rows)
 
