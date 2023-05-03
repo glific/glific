@@ -57,7 +57,8 @@ defmodule GlificWeb.Schema.SheetTest do
           "input" => %{
             "label" => "new sheet",
             "url" =>
-              "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
+              "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+            "type" => "READ"
           }
         }
       )

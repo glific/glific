@@ -41,7 +41,7 @@ defmodule Glific.Sheets.GoogleSheets do
     organization.services["google_sheets"]
     |> case do
       nil ->
-        {:ok, "Google API is not active"}
+        {:error, "Google API is not active"}
 
       credentials ->
         decode_credential(credentials, organization_id)

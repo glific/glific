@@ -32,7 +32,7 @@ defmodule Glific.Sheets do
   """
   @spec create_sheet(map()) :: {:ok, Sheet.t()} | {:error, any()}
   def create_sheet(attrs) do
-    with {:ok, true} <- validate_sheet(attrs.url),
+    with {:ok, true} <- validate_sheet(attrs),
          {:ok, sheet} <-
            %Sheet{}
            |> Sheet.changeset(attrs)
@@ -41,9 +41,20 @@ defmodule Glific.Sheets do
     end
   end
 
-  @spec validate_sheet(String.t()) :: {:ok, true} | {:error, String.t()}
-  defp validate_sheet(url) do
-    Tesla.get(url)
+  @spec validate_sheet(map()) :: {:ok, true} | {:error, String.t()}
+  defp validate_sheet(%{type: "WRITE"} = attrs) do
+    GoogleSheets.fetch_credentials(attrs.organization_id)
+    |> case do
+      {:ok, _credentials} ->
+        {:ok, true}
+
+      {:error, _error} ->
+        {:error, "Please add the credentials for google sheet from the settings menu"}
+    end
+  end
+
+  defp validate_sheet(attrs) do
+    Tesla.get(attrs.url)
     |> case do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
         {:ok, true}
@@ -146,6 +157,8 @@ defmodule Glific.Sheets do
   Sync a sheet
   """
   @spec sync_sheet_data(Sheet.t()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
+  def sync_sheet_data(%{type: "WRITE"} = sheet), do: {:ok, sheet}
+
   def sync_sheet_data(sheet) do
     [sheet_url, gid] = String.split(sheet.url, ["edit", "view", "comment"])
 
