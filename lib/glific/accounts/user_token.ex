@@ -62,7 +62,14 @@ defmodule Glific.Accounts.UserToken do
           {any, UserToken.t()}
   def build_session_token(user) do
     token = :crypto.strong_rand_bytes(@rand_size)
-    {token, %UserToken{token: token, context: "session", user_id: user.id, organization_id: 1}}
+
+    {token,
+     %UserToken{
+       token: token,
+       context: "session",
+       user_id: user.id,
+       organization_id: user.organization_id
+     }}
   end
 
   @doc """

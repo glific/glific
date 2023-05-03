@@ -225,7 +225,7 @@ defmodule Glific.Contacts do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_contact(map()) :: {:ok, Contact} | {:error, Ecto.Changeset.t()}
   def create_contact(%{organization_id: organization_id} = attrs) do
     attrs =
       attrs
