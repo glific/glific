@@ -198,6 +198,8 @@ defmodule GlificWeb.UserAuth do
         live "/profile", ProfileLive, :index
       end
   """
+
+  @spec on_mount(atom(), any(), any(), any()) :: tuple()
   def on_mount(:mount_current_user, _params, session, socket) do
     {:cont, mount_current_user(session, socket)}
   end
