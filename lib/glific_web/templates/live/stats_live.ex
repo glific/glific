@@ -6,8 +6,6 @@ defmodule GlificWeb.StatsLive do
 
   alias Glific.Reports
 
-  on_mount {GlificWeb.UserAuth, :ensure_authenticated}
-
   @doc false
   @spec mount(any(), any(), any()) ::
           {:ok, Phoenix.LiveView.Socket.t()} | {:ok, Phoenix.LiveView.Socket.t(), Keyword.t()}
