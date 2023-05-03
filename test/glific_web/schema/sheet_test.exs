@@ -74,6 +74,27 @@ defmodule GlificWeb.Schema.SheetTest do
     assert get_in(query_data, [:data, "syncSheet", "sheet", "sheetDataCount"]) == 4
   end
 
+  test "create a sheet with type as write and test possible scenarios and errors ", %{
+    manager: user
+  } do
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "new sheet",
+            "url" =>
+              "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+            "type" => "WRITE"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    assert "Please add the credentials for google sheet from the settings menu" ==
+             get_in(query_data, [:errors, Access.at(0)])[:message]
+  end
+
   test "sheet id returns one sheet or nil", %{staff: user} = attrs do
     Fixtures.sheet_fixture(attrs)
 
