@@ -29,11 +29,12 @@ defmodule Glific.Contacts.Import do
       name: data["name"],
       phone: data["phone"],
       organization_id: organization_id,
-      language_id: Enum.at(Settings.get_language_by_label_or_locale(data["language"]), 0).id,
       collection: data["collection"],
       delete: data["delete"],
       contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
     }
+
+    results = results |> check_language(data["language"])
 
     results =
       case data["opt_in"] do
@@ -354,4 +355,15 @@ defmodule Glific.Contacts.Import do
     |> select([c], c.id)
     |> Repo.all()
   end
+
+  @spec check_language(map(), nil) :: map()
+  defp check_language(results, nil), do: results
+
+  defp check_language(results, language),
+    do:
+      Map.put(
+        results,
+        :language_id,
+        Enum.at(Settings.get_language_by_label_or_locale(language), 0).id
+      )
 end
