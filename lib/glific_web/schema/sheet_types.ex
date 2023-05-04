@@ -17,6 +17,7 @@ defmodule GlificWeb.Schema.SheetTypes do
     field :id, :id
     field :label, :string
     field :url, :string
+    field :type, :string
     field :is_active, :boolean
     field :last_synced_at, :datetime
     field :warnings, :json
@@ -38,6 +39,7 @@ defmodule GlificWeb.Schema.SheetTypes do
     field :label, :string
     field :url, :string
     field :is_active, :boolean
+    field :type, :string
   end
 
   object :sheet_queries do

@@ -21,9 +21,8 @@ defmodule Glific.Sheets.GoogleSheets do
   @doc """
     Insert new row to the spreadsheet.
   """
-  @spec insert_row(non_neg_integer(), String.t(), map()) ::
-          GoogleApi.Sheets.V4.Model.AppendValuesResponse.t()
-  def(insert_row(org_id, spreadsheet_id, %{range: range, data: data} = _params)) do
+  @spec insert_row(non_neg_integer(), String.t(), map()) :: {:ok, any()} | {:error, any()}
+  def insert_row(org_id, spreadsheet_id, %{range: range, data: data} = _params) do
     {:ok, %{conn: conn}} = fetch_credentials(org_id)
 
     params = [
@@ -31,10 +30,7 @@ defmodule Glific.Sheets.GoogleSheets do
       body: %{majorDimension: "ROWS", values: data}
     ]
 
-    {:ok, response} =
-      Spreadsheets.sheets_spreadsheets_values_append(conn, spreadsheet_id, range, params)
-
-    response
+    Spreadsheets.sheets_spreadsheets_values_append(conn, spreadsheet_id, range, params)
   end
 
   @doc false
@@ -45,7 +41,7 @@ defmodule Glific.Sheets.GoogleSheets do
     organization.services["google_sheets"]
     |> case do
       nil ->
-        {:ok, "Google API is not active"}
+        {:error, "Google API is not active"}
 
       credentials ->
         decode_credential(credentials, organization_id)
