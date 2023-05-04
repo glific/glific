@@ -25,32 +25,17 @@ defmodule Glific.Contacts.Import do
          %{user: user, organization_id: organization_id} = contact_attrs,
          date_format
        ) do
-    results = %{
-      name: data["name"],
-      phone: data["phone"],
-      organization_id: organization_id,
-      collection: data["collection"],
-      delete: data["delete"],
-      contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
-    }
-
-    results = results |> check_language(data["language"])
-
     results =
-      case data["opt_in"] do
-        "" ->
-          Map.put(results, :optin, nil)
-
-        nil ->
-          results
-
-        _ ->
-          Map.put(
-            results,
-            :optin,
-            elem(Timex.parse(data["opt_in"], date_format), 1)
-          )
-      end
+      %{
+        name: data["name"],
+        phone: data["phone"],
+        organization_id: organization_id,
+        collection: data["collection"],
+        delete: data["delete"],
+        contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
+      }
+      |> add_language(data["language"])
+      |> add_optin_date(data["opt_in"], date_format)
 
     cond do
       user.roles == [:glific_admin] ->
@@ -356,14 +341,26 @@ defmodule Glific.Contacts.Import do
     |> Repo.all()
   end
 
-  @spec check_language(map(), nil) :: map()
-  defp check_language(results, nil), do: results
+  @spec add_language(map(), nil) :: map()
+  defp add_language(results, nil), do: results
 
-  defp check_language(results, language),
-    do:
-      Map.put(
-        results,
-        :language_id,
-        Enum.at(Settings.get_language_by_label_or_locale(language), 0).id
-      )
+  defp add_language(results, language) do
+    Map.put(
+      results,
+      :language_id,
+      Enum.at(Settings.get_language_by_label_or_locale(language), 0).id
+    )
+  end
+
+  @spec add_optin_date(map(), any(), String.t()) :: map()
+  defp add_optin_date(results, "", _date_format), do: Map.put(results, :optin, nil)
+  defp add_optin_date(results, nil, _date_format), do: results
+
+  defp add_optin_date(results, opt_in, date_format) do
+    Map.put(
+      results,
+      :optin,
+      elem(Timex.parse(opt_in, date_format), 1)
+    )
+  end
 end
