@@ -207,7 +207,7 @@ defmodule Glific.Flows.ActionTest do
       "type" => "link_google_sheet",
       "sheet_id" => 1,
       "row" => "14/11/2022",
-      "result_name" => "sheet"
+      "result_name" => "sheet",
       "action_type" => "READ"
     }
 
@@ -245,7 +245,8 @@ defmodule Glific.Flows.ActionTest do
       "sheet_id" => 1,
       "row_data" => ["Hello", "@results.input.input"],
       "action_type" => "WRITE",
-      "url" =>  "https://docs.google.com/spreadsheets/d/1x6lPyPccBq_VnZFXVUrQXWfuELPMUH3VLijbYL0cRKw/edit#gid=0"
+      "url" =>
+        "https://docs.google.com/spreadsheets/d/1x6lPyPccBq_VnZFXVUrQXWfuELPMUH3VLijbYL0cRKw/edit#gid=0"
     }
 
     {action, _uuid_map} = Action.process(json, %{}, node)
