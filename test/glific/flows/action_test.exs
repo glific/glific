@@ -245,6 +245,7 @@ defmodule Glific.Flows.ActionTest do
       "sheet_id" => 1,
       "row_data" => ["Hello", "@results.input.input"],
       "action_type" => "WRITE",
+      "result_name" => "",
       "url" =>
         "https://docs.google.com/spreadsheets/d/1x6lPyPccBq_VnZFXVUrQXWfuELPMUH3VLijbYL0cRKw/edit#gid=0"
     }
