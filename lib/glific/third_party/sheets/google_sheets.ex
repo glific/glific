@@ -21,7 +21,7 @@ defmodule Glific.Sheets.GoogleSheets do
   @doc """
     Insert new row to the spreadsheet.
   """
-  @spec insert_row(non_neg_integer(), String.t(), map()) :: {:ok, list()} | {:error, any()}
+  @spec insert_row(non_neg_integer(), String.t(), map()) :: {:ok, any()} | {:error, any()}
   def insert_row(org_id, spreadsheet_id, %{range: range, data: data} = _params) do
     {:ok, %{conn: conn}} = fetch_credentials(org_id)
 
