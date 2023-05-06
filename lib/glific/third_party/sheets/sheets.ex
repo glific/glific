@@ -9,9 +9,11 @@ defmodule Glific.Sheets do
   alias Glific.{
     Flows.Action,
     Flows.FlowContext,
+    Flows.MessageVarParser,
     Messages,
     Repo,
     Sheets.ApiClient,
+    Sheets.GoogleSheets,
     Sheets.Sheet,
     Sheets.SheetData
   }
@@ -30,7 +32,7 @@ defmodule Glific.Sheets do
   """
   @spec create_sheet(map()) :: {:ok, Sheet.t()} | {:error, any()}
   def create_sheet(attrs) do
-    with {:ok, true} <- validate_sheet(attrs.url),
+    with {:ok, true} <- validate_sheet(attrs),
          {:ok, sheet} <-
            %Sheet{}
            |> Sheet.changeset(attrs)
@@ -39,9 +41,20 @@ defmodule Glific.Sheets do
     end
   end
 
-  @spec validate_sheet(String.t()) :: {:ok, true} | {:error, String.t()}
-  defp validate_sheet(url) do
-    Tesla.get(url)
+  @spec validate_sheet(map()) :: {:ok, true} | {:error, String.t()}
+  defp validate_sheet(%{type: "WRITE"} = attrs) do
+    GoogleSheets.fetch_credentials(attrs.organization_id)
+    |> case do
+      {:ok, _credentials} ->
+        {:ok, true}
+
+      {:error, _error} ->
+        {:error, "Please add the credentials for google sheet from the settings menu"}
+    end
+  end
+
+  defp validate_sheet(attrs) do
+    Tesla.get(attrs.url)
     |> case do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
         {:ok, true}
@@ -135,6 +148,9 @@ defmodule Glific.Sheets do
       {:is_active, is_active}, query ->
         from(q in query, where: q.is_active == ^is_active)
 
+      {:type, type}, query ->
+        from(q in query, where: ilike(q.type, ^"%#{type}%"))
+
       _, query ->
         query
     end)
@@ -144,6 +160,8 @@ defmodule Glific.Sheets do
   Sync a sheet
   """
   @spec sync_sheet_data(Sheet.t()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
+  def sync_sheet_data(%{type: "WRITE"} = sheet), do: {:ok, sheet}
+
   def sync_sheet_data(sheet) do
     [sheet_url, gid] = String.split(sheet.url, ["edit", "view", "comment"])
 
@@ -274,6 +292,32 @@ defmodule Glific.Sheets do
   Execute a sheet action
   """
   @spec execute(Action.t() | any(), FlowContext.t()) :: {FlowContext.t(), Messages.Message.t()}
+  def execute(%{action_type: "WRITE"} = action, context) do
+    spreadsheet_id =
+      action.url
+      |> String.replace("https://docs.google.com/spreadsheets/d/", "")
+      |> String.split("/")
+      |> List.first()
+
+    fields = FlowContext.get_vars_to_parse(context)
+
+    row_data =
+      action.row_data
+      |> Enum.map(&MessageVarParser.parse(&1, fields))
+
+    GoogleSheets.insert_row(context.organization_id, spreadsheet_id, %{
+      range: action.range,
+      data: [row_data]
+    })
+    |> case do
+      {:ok, _response} ->
+        {context, Messages.create_temp_message(context.organization_id, "Success")}
+
+      {:error, _response} ->
+        {context, Messages.create_temp_message(context.organization_id, "Failure")}
+    end
+  end
+
   def execute(action, context) do
     with {:ok, loaded_sheet} <-
            Repo.fetch_by(SheetData, %{

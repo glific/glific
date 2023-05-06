@@ -199,7 +199,7 @@ defmodule Glific.Flows.ActionTest do
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
-  test "process extracts the right values from json for link_google_sheet" do
+  test "process extracts the right values from json for link_google_sheet when action_type is READ" do
     node = %Node{uuid: "Test UUID"}
 
     json = %{
@@ -207,7 +207,8 @@ defmodule Glific.Flows.ActionTest do
       "type" => "link_google_sheet",
       "sheet_id" => 1,
       "row" => "14/11/2022",
-      "result_name" => "sheet"
+      "result_name" => "sheet",
+      "action_type" => "READ"
     }
 
     {action, _uuid_map} = Action.process(json, %{}, node)
@@ -225,12 +226,37 @@ defmodule Glific.Flows.ActionTest do
     json = %{
       "uuid" => "UUID 1",
       "type" => "link_google_sheet",
-      "row" => "14/11/2022"
+      "row" => "14/11/2022",
+      "action_type" => "READ"
     }
 
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
     json = %{}
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "process extracts the right values from json for link_google_sheet when action_type is WRITE" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "range" => "Sheet1!A:Z",
+      "type" => "link_google_sheet",
+      "sheet_id" => 1,
+      "row_data" => ["Hello", "@results.input.input"],
+      "action_type" => "WRITE",
+      "result_name" => "",
+      "url" =>
+        "https://docs.google.com/spreadsheets/d/1x6lPyPccBq_VnZFXVUrQXWfuELPMUH3VLijbYL0cRKw/edit#gid=0"
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+    assert action.uuid == "UUID 1"
+    assert action.type == "link_google_sheet"
+    assert action.range == "Sheet1!A:Z"
+    assert action.node_uuid == node.uuid
+    assert action.sheet_id == 1
+    assert action.row_data == ["Hello", "@results.input.input"]
   end
 
   test "process extracts the right values from json for set_contact_profile action when profile type is Create Profile" do

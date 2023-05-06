@@ -78,7 +78,10 @@ defmodule GlificWeb.Router do
   scope "/", GlificWeb do
     pipe_through([:phx_browser, :require_authenticated_user])
 
-    live("/stats", StatsLive)
+    live_session(:authenticated, on_mount: {GlificWeb.UserAuth, :ensure_authenticated}) do
+      live("/stats", StatsLive)
+      ## add all the authenticated live views here.
+    end
   end
 
   # Custom stack for Absinthe
