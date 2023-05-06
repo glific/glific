@@ -31,8 +31,8 @@ defmodule Glific.Trackers.Tracker do
 
   schema "trackers" do
     field :type, :string
-    field :day, :utc_datetime,
-    field :month, :utc_datetime,
+    field :day, :utc_datetime
+    field :month, :utc_datetime
     field :count, :integer
     field :destination_uuid, Ecto.UUID
     field :recent_messages, {:array, :map}, default: []
@@ -105,10 +105,10 @@ defmodule Glific.Trackers.Tracker do
     |> Repo.delete_all()
   end
 
-  @spec add_month(Ecto.Query.t(), non_neg_integer)
+  @spec add_month(Ecto.Query.t(), non_neg_integer) :: any
   defp add_month(query, 0), do: query
   defp add_month(query, month), do:
     query
-    |> where([t], fc.month == ^month)
+    |> where([fc], fc.month == ^month)
 
 end
