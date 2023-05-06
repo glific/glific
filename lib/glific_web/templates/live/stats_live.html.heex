@@ -2,16 +2,20 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
+<!--
+Commented out the filter code. Will add this once the functionality is ready
+
 <div class="flex content-center justify-center" id="date-filters" phx-update="ignore">
     <input id="start_date" phx-hook="dateInput"  class="mr-3 flatpickr flatpickr-input active" type="text" placeholder="Select Start Date.." readonly="readonly">
 
     <input id="end_date" phx-hook="dateInput"  class="flatpickr flatpickr-input active" type="text" placeholder="Select End Date.." readonly="readonly">
 </div>
+-->
 
 
 <div>
     <div class="flex content-center justify-center" id="charts" phx-update="ignore">
-        <canvas  class="card"  id="contacts_chart"  phx-hook="chart"  data-label="Contacts" 
+        <canvas  class="card"  id="contacts_chart"  phx-hook="chart"  data-label="Contacts"
         data-chart-data= {Jason.encode!(@contact_chart_data)} >
         </canvas>
         <canvas class="card" id="conversation_chart" phx-hook="chart" data-label="Conversations" data-chart-data= {Jason.encode!(@conversation_chart_data)} ></canvas>

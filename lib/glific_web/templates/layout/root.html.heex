@@ -17,12 +17,12 @@
   </head>
   <body>
     <header>
-      <section class="container">
+      <section class="p-4">
 
-      <ul class="items-end justify-end mb-6 text-gray-900">
+      <ul class="flex">
           <%= if @current_user do %>
-            <li><%= @current_user.name %></li>
-            <li><%= link "Log out", to: Routes.user_session_path(@conn, :delete), method: :delete, class: "mr-4 hover:underline md:mr-6" %></li>
+            <li class="flex-grow p-2"><%= @current_user.name %></li>
+            <li class="text-right"><button class="bg-gray-100 p-2 rounded"><%= link "Log out", to: Routes.user_session_path(@conn, :delete), method: :delete, class: "mr-4 hover:underline md:mr-6" %></button></li>
           <% end %>
       </ul>
 
