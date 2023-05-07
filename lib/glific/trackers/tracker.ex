@@ -110,20 +110,4 @@ defmodule Glific.Trackers.Tracker do
   defp add_month(query, month), do:
     query
     |> where([t], t.month == ^month)
-
-    :telemetry.attach_many(
-  :demo,
-  [
-    [:absinthe, :execute, :operation, :start]
-  ],
-  fn event_name, measurements, metadata, _config ->
-    %{
-      event_name: event_name,
-      measurements: measurements,
-      metadata: metadata
-    }
-    |> IO.inspect()
-  end,
-  []
-)
 end
