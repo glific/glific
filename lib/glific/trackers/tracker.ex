@@ -23,16 +23,15 @@ defmodule Glific.Trackers.Tracker do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           counts: map() | %{},
           is_summary: boolean() | false,
-          day: :utc_datetime | nil,
-          month: :utc_datetime | nil,
+          day: Date.t() | nil,
+          month: Date.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
 
   schema "trackers" do
-    field :type, :string
-    field :day, :utc_datetime
-    field :month, :utc_datetime
+    field :day, :date
+    field :month, :date
     field :counts, :map, default: %{}
     field :is_summary, :boolean, default: false
 
