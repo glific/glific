@@ -13,18 +13,18 @@ defmodule Glific.Trackers.Tracker do
     Repo
   }
 
-  @required_fields [:organization_id, :type, :day]
-  @optional_fields [:destination_uuid, :recent_messages, :count, :month]
+  @required_fields [:organization_id, :counts, :day]
+  @optional_fields [:destination_uuid, :month, :is_summary]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          type: String.t() | nil,
+          counts: map(),
+          is_summary: boolean() | false,
           day: :utc_datetime | nil,
           month: :utc_datetime | nil,
-          count: integer() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -33,9 +33,8 @@ defmodule Glific.Trackers.Tracker do
     field :type, :string
     field :day, :utc_datetime
     field :month, :utc_datetime
-    field :count, :integer
-    field :destination_uuid, Ecto.UUID
-    field :recent_messages, {:array, :map}, default: []
+    field :counts, :map, default: %{}
+    field :is_summary, :boolean, default: false
 
     belongs_to :organization, Organization
 
@@ -76,18 +75,26 @@ defmodule Glific.Trackers.Tracker do
   @doc """
   Upsert tracker
   """
-  @spec upsert_tracker(map()) :: :error | Tracker.t()
-  def upsert_tracker(%{flow_uuid: nil} = _attrs), do: :error
+  @spec upsert_tracker(map(), non_neg_integer, Date.t()) :: :error | Tracker.t()
+  def upsert_tracker(_counts = %{}, _organization_id, _day), do: :error
 
-  def upsert_tracker(attrs) do
-    case Repo.fetch_by(Tracker, %{uuid: attrs.uuid, flow_id: attrs.flow_id, type: attrs.type}) do
-      {:ok, Tracker} ->
+  def upsert_tracker(counts, organization_id, day) do
+    day = if day == nil, do: Date.utc_today(), else: day
+
+    attrs = %{
+      counts: counts,
+      organization_id: organization_id,
+      day: day
+    }
+
+    case Repo.fetch_by(Tracker, %{day: day, organization_id: organization_id}) do
+      {:ok, tracker} ->
         update_tracker(
           Tracker,
-          Map.merge(attrs, %{
-            count: Tracker.count + attrs.count,
-            recent_messages: Enum.take(attrs.recent_messages ++ Tracker.recent_messages, 5)
-          })
+          Map.put(
+            attrs,
+            :counts,
+            Map.merge(tracker.counts, counts, fn _k, v1, v2 -> v1 + v2 end))
         )
 
       {:error, _} ->
@@ -101,6 +108,7 @@ defmodule Glific.Trackers.Tracker do
   @spec reset_tracker(non_neg_integer, non_neg_integer) :: any
   def reset_tracker(organization_id, month = 0) do
     Tracker
+    |> where([t], t.organization_id == ^organization_id)
     |> add_month(month)
     |> Repo.delete_all()
   end
