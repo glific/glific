@@ -9,7 +9,7 @@ defmodule Glific.Metrics.WorkerTracker do
 
   @registry Glific.Metrics.Registry
 
-  alias Glific.{Trackers.Tracker, Repo}
+  alias Glific.{Repo, Trackers.Tracker}
 
   @doc false
   def start_link(key) do
@@ -24,8 +24,7 @@ defmodule Glific.Metrics.WorkerTracker do
     {:ok, %{organization_id: organization_id, counts: %{}}}
   end
 
-  defp bump(counts, key), do:
-    Map.update(counts, key, 1, fn v -> v + 1 end)
+  defp bump(counts, key), do: Map.update(counts, key, 1, fn v -> v + 1 end)
 
   @doc false
   defp schedule_upsert do
@@ -56,7 +55,7 @@ defmodule Glific.Metrics.WorkerTracker do
     {:stop, :shutdown, state}
   end
 
-  @spec upsert!(map()) :: :ok
+  @spec upsert!(map()) :: any
   defp upsert!(%{organization_id: organization_id, counts: counts}) do
     Repo.put_process_state(organization_id)
 

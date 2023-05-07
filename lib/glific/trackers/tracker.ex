@@ -4,8 +4,8 @@ defmodule Glific.Trackers.Tracker do
   """
   use Ecto.Schema
   import Ecto.Changeset
-
   import Ecto.Query, warn: false
+
   alias __MODULE__
 
   alias Glific.{
@@ -21,7 +21,7 @@ defmodule Glific.Trackers.Tracker do
           id: non_neg_integer | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          counts: map(),
+          counts: map() | %{},
           is_summary: boolean() | false,
           day: :utc_datetime | nil,
           month: :utc_datetime | nil,
@@ -77,7 +77,7 @@ defmodule Glific.Trackers.Tracker do
   """
   @spec upsert_tracker(map(), non_neg_integer, Date.t() | nil) :: :error | Tracker.t()
   def upsert_tracker(counts, organization_id, day \\ nil)
-  def upsert_tracker(_counts = %{}, _organization_id, _day), do: :error
+  def upsert_tracker(%{}, _organization_id, _day), do: :error
 
   def upsert_tracker(counts, organization_id, day) do
     day = if day == nil, do: Date.utc_today(), else: day
@@ -91,11 +91,12 @@ defmodule Glific.Trackers.Tracker do
     case Repo.fetch_by(Tracker, %{day: day, organization_id: organization_id}) do
       {:ok, tracker} ->
         update_tracker(
-          Tracker,
+          tracker,
           Map.put(
             attrs,
             :counts,
-            Map.merge(tracker.counts, counts, fn _k, v1, v2 -> v1 + v2 end))
+            Map.merge(tracker.counts, counts, fn _k, v1, v2 -> v1 + v2 end)
+          )
         )
 
       {:error, _} ->
@@ -107,7 +108,7 @@ defmodule Glific.Trackers.Tracker do
   Resets the tracker for a given flow in a month (optional_
   """
   @spec reset_tracker(non_neg_integer, non_neg_integer) :: any
-  def reset_tracker(organization_id, month = 0) do
+  def reset_tracker(organization_id, month \\ 0) do
     Tracker
     |> where([t], t.organization_id == ^organization_id)
     |> add_month(month)
@@ -116,7 +117,9 @@ defmodule Glific.Trackers.Tracker do
 
   @spec add_month(Ecto.Query.t(), non_neg_integer) :: Ecto.Query.t()
   defp add_month(query, 0), do: query
-  defp add_month(query, month), do:
-    query
-    |> where([t], t.month == ^month)
+
+  defp add_month(query, month),
+    do:
+      query
+      |> where([t], t.month == ^month)
 end
