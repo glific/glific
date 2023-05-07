@@ -7,6 +7,7 @@ defmodule Glific.Metrics do
   use Supervisor
 
   @worker Glific.Metrics.Worker
+  @worker_tracker Glific.Metrics.WorkerTracker
   @registry Glific.Metrics.Registry
   @supervisor Glific.Metrics.WorkerSupervisor
 
@@ -46,6 +47,25 @@ defmodule Glific.Metrics do
       end
 
     send(pid, {:bump, args})
+    :ok
+  end
+
+  def bump(%{type: :tracker} = args) do
+    key = {:tracker, args.organization_id}
+
+    pid =
+      case Registry.lookup(@registry, key) do
+        [{pid, _}] ->
+          pid
+
+        [] ->
+          case DynamicSupervisor.start_child(@supervisor, {@worker_tracker, key}) do
+            {:ok, pid} -> pid
+            {:error, {:already_started, pid}} -> pid
+          end
+      end
+
+    send(pid, {:bump, args.key})
     :ok
   end
 end

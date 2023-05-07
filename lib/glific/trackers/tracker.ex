@@ -75,7 +75,8 @@ defmodule Glific.Trackers.Tracker do
   @doc """
   Upsert tracker
   """
-  @spec upsert_tracker(map(), non_neg_integer, Date.t()) :: :error | Tracker.t()
+  @spec upsert_tracker(map(), non_neg_integer, Date.t() | nil) :: :error | Tracker.t()
+  def upsert_tracker(counts, organization_id, day \\ nil)
   def upsert_tracker(_counts = %{}, _organization_id, _day), do: :error
 
   def upsert_tracker(counts, organization_id, day) do
