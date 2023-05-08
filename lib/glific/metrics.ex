@@ -65,7 +65,15 @@ defmodule Glific.Metrics do
           end
       end
 
-    send(pid, {:bump, args.key})
+    send(pid, {:bump, args.event})
     :ok
   end
+
+  def increment(organization_id, event), do:
+    bump(%{
+      type: :tracker,
+      organization_id: organization_id,
+      event: event
+    })
+
 end

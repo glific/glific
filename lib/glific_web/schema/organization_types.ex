@@ -208,6 +208,17 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       end)
     end
 
+    @desc "Tracks action (various high level clicks) done by org users"
+    field :track_event, :boolean do
+      arg(:event, non_null(:string))
+      middleware(Authorize, :staff)
+
+      resolve(fn _, %{event: event}, %{context: %{current_user: user}} ->
+        Glific.Metrics.increment(user.organization_id, event)
+        {:ok, true}
+      end)
+    end
+
     @desc "Get a list of all organizations services"
     field :organization_services, :organization_services_result do
       middleware(Authorize, :staff)

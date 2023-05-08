@@ -23,6 +23,8 @@ defmodule GlificWeb.API.V1.SessionController do
 
         update_last_login(conn.assigns[:current_user], conn)
 
+        Glific.Metrics.increment(conn.assigns[:organization_id], "login")
+
         json(conn, %{
           data: %{
             access_token: conn.private[:api_access_token],
