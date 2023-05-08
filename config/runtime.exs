@@ -45,7 +45,8 @@ config :appsignal, :config,
   revision: Application.spec(:glific, :vsn) |> to_string(),
   push_api_key: env!("APPSIGNAL_PUSH_API_KEY", :string!),
   ecto_repos: [],
-  ignore_namespaces: ["gupshup_webhooks", "gupshup_enterprise_webhooks", "flow_editor_controller"]
+  ignore_namespaces: ["gupshup_webhooks", "gupshup_enterprise_webhooks", "flow_editor_controller"],
+  instrument_oban: false
 
 config :glific, Glific.Vault,
   ciphers: [
