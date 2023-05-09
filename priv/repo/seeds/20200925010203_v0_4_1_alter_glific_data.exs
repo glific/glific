@@ -335,7 +335,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           keys: %{
             flow_id: %{
               type: :integer,
-              label: "Glific Flow to trigger when a contact opts in",
+              label: "Glific Flow id's to trigger (comma separated)",
               default: nil,
               view_only: false
             },
@@ -349,7 +349,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           secrets: %{
             phone: %{
               type: :string,
-              label: "Exotel Phone Number",
+              label: "Exotel Phone Numbers (comma separated)",
               default: nil,
               view_only: false
             }
