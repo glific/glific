@@ -42,7 +42,10 @@ defmodule GlificWeb.ExotelController do
           do: {exotel_from, exotel_to},
           else: {exotel_to, exotel_from}
 
-      if ngo_exotel_phone == credentials.secrets["phone"] do
+      phone_list = credentials.secrets["phone"] |> String.split(",")
+      flows_list = keys["flow_id"] |> String.split(",")
+
+      if Enum.member?(phone_list, ngo_exotel_phone) do
         # first create and optin the contact
         attrs = %{
           phone: clean_phone(phone),
@@ -51,11 +54,11 @@ defmodule GlificWeb.ExotelController do
         }
 
         result = Contacts.optin_contact(attrs)
-
+        flow_to_start = flows_list |> Enum.at(phone_list |> Enum.find_index(ngo_exotel_phone))
         # then start  the intro flow
         case result do
           {:ok, contact} ->
-            {:ok, flow_id} = Glific.parse_maybe_integer(keys["flow_id"])
+            {:ok, flow_id} = Glific.parse_maybe_integer(flow_to_start)
             Flows.start_contact_flow(flow_id, contact)
 
           {:error, error} ->
