@@ -27,9 +27,7 @@ defmodule GlificWeb.ExotelController do
     Logger.info("exotel #{inspect(params)}")
 
     organization = Partners.organization(organization_id)
-
     Repo.put_process_state(organization.id)
-
     credentials = organization.services["exotel"]
 
     if is_nil(credentials) do
@@ -42,11 +40,9 @@ defmodule GlificWeb.ExotelController do
           do: {exotel_from, exotel_to},
           else: {exotel_to, exotel_from}
 
-      phone_list = credentials.secrets["phone"] |> get_clean_list()
-      flows_list = keys["flow_id"] |> get_clean_list()
-      phone_flow_map = Enum.zip(phone_list, flows_list) |> Enum.into(%{})
+      phone_flow_map = get_phone_flow_map(credentials)
 
-      if Enum.member?(phone_list, ngo_exotel_phone) do
+      if Map.has_key?(phone_flow_map, ngo_exotel_phone) do
         # first create and optin the contact
         attrs = %{
           phone: clean_phone(phone),
@@ -93,6 +89,13 @@ defmodule GlificWeb.ExotelController do
     Logger.error(message)
     {_, stacktrace} = Process.info(self(), :current_stacktrace)
     Appsignal.send_error(:error, message, stacktrace)
+  end
+
+  @spec get_phone_flow_map(any) :: map()
+  defp get_phone_flow_map(credentials) do
+    phone_list = credentials.secrets["phone"] |> get_clean_list()
+    flows_list = credentials.keys["flow_id"] |> get_clean_list()
+    Enum.zip(phone_list, flows_list) |> Enum.into(%{})
   end
 
   @spec get_clean_list(String.t()) :: [String.t()]
