@@ -163,6 +163,8 @@ defmodule Glific.Sheets do
   def sync_sheet_data(%{type: "WRITE"} = sheet), do: {:ok, sheet}
 
   def sync_sheet_data(sheet) do
+    Glific.Metrics.increment("Sheets Read")
+
     [sheet_url, gid] = String.split(sheet.url, ["edit", "view", "comment"])
 
     last_synced_at = DateTime.utc_now()

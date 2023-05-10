@@ -13,7 +13,8 @@ defmodule GlificWeb.API.V1.SessionController do
   @doc false
   @spec create(Conn.t(), map()) :: Conn.t()
   def create(conn, %{"user" => user_params}) do
-    user_params = Map.put(user_params, "organization_id", conn.assigns[:organization_id])
+    organization_id = conn.assigns[:organization_id]
+    user_params = Map.put(user_params, "organization_id", organization_id)
 
     conn
     |> Pow.Plug.authenticate_user(user_params)
@@ -23,7 +24,7 @@ defmodule GlificWeb.API.V1.SessionController do
 
         update_last_login(conn.assigns[:current_user], conn)
 
-        Glific.Metrics.increment(conn.assigns[:organization_id], "login")
+        Glific.Metrics.increment("Login", organization_id)
 
         json(conn, %{
           data: %{

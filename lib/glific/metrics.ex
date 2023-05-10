@@ -72,12 +72,18 @@ defmodule Glific.Metrics do
   @doc """
   Wrapper function for bump that we can call from the main code
   """
-  @spec increment(non_neg_integer, String.t()) :: :ok
-  def increment(organization_id, event),
-    do:
-      bump(%{
-        type: :tracker,
-        organization_id: organization_id,
-        event: event
-      })
+  @spec increment(String.t(), non_neg_integer | nil) :: :ok
+
+  def increment(event, organization_id \\ nil) do
+    organization_id =
+      if organization_id == nil,
+        do: Glific.Repo.get_organization_id(),
+        else: organization_id
+
+    bump(%{
+      type: :tracker,
+      organization_id: organization_id,
+      event: event
+    })
+  end
 end
