@@ -14,7 +14,7 @@ defmodule Glific.Trackers.Tracker do
   }
 
   @required_fields [:organization_id, :counts, :day]
-  @optional_fields [:destination_uuid, :month, :is_summary]
+  @optional_fields [:month, :is_summary]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -30,12 +30,12 @@ defmodule Glific.Trackers.Tracker do
         }
 
   schema "trackers" do
-    field :day, :date
-    field :month, :date
-    field :counts, :map, default: %{}
-    field :is_summary, :boolean, default: false
+    field(:day, :date)
+    field(:month, :date)
+    field(:counts, :map, default: %{})
+    field(:is_summary, :boolean, default: false)
 
-    belongs_to :organization, Organization
+    belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
   end
@@ -75,10 +75,7 @@ defmodule Glific.Trackers.Tracker do
   Upsert tracker
   """
   @spec upsert_tracker(map(), non_neg_integer, Date.t() | nil) :: :error | Tracker.t()
-  def upsert_tracker(counts, organization_id, day \\ nil)
-  def upsert_tracker(%{}, _organization_id, _day), do: :error
-
-  def upsert_tracker(counts, organization_id, day) do
+  def upsert_tracker(counts, organization_id, day \\ nil) do
     day = if day == nil, do: Date.utc_today(), else: day
 
     attrs = %{
