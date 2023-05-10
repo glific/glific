@@ -27,9 +27,7 @@ defmodule GlificWeb.ExotelController do
     Logger.info("exotel #{inspect(params)}")
 
     organization = Partners.organization(organization_id)
-
     Repo.put_process_state(organization.id)
-
     credentials = organization.services["exotel"]
 
     if is_nil(credentials) do
@@ -42,7 +40,9 @@ defmodule GlificWeb.ExotelController do
           do: {exotel_from, exotel_to},
           else: {exotel_to, exotel_from}
 
-      if ngo_exotel_phone == credentials.secrets["phone"] do
+      phone_flow_map = get_phone_flow_map(credentials)
+
+      if Map.has_key?(phone_flow_map, ngo_exotel_phone) do
         # first create and optin the contact
         attrs = %{
           phone: clean_phone(phone),
@@ -55,7 +55,8 @@ defmodule GlificWeb.ExotelController do
         # then start  the intro flow
         case result do
           {:ok, contact} ->
-            {:ok, flow_id} = Glific.parse_maybe_integer(keys["flow_id"])
+            flow_to_start = phone_flow_map[ngo_exotel_phone]
+            {:ok, flow_id} = Glific.parse_maybe_integer(flow_to_start)
             Flows.start_contact_flow(flow_id, contact)
 
           {:error, error} ->
@@ -75,6 +76,7 @@ defmodule GlificWeb.ExotelController do
     json(conn, "")
   end
 
+  # this will be an issue when we expand beyond India
   @country_code "91"
 
   @spec clean_phone(String.t()) :: String.t()
@@ -89,5 +91,19 @@ defmodule GlificWeb.ExotelController do
     Logger.error(message)
     {_, stacktrace} = Process.info(self(), :current_stacktrace)
     Appsignal.send_error(:error, message, stacktrace)
+  end
+
+  @spec get_phone_flow_map(any) :: map()
+  defp get_phone_flow_map(credentials) do
+    # at some point we should also ensure that phone list and flows list
+    # have the same number of entries. Leaving it as a future exercise
+    phone_list = credentials.secrets["phone"] |> get_clean_list()
+    flows_list = credentials.keys["flow_id"] |> get_clean_list()
+    Enum.zip(phone_list, flows_list) |> Enum.into(%{})
+  end
+
+  @spec get_clean_list(String.t()) :: [String.t()]
+  defp get_clean_list(data) do
+    data |> String.replace(" ", "") |> String.split(",")
   end
 end
