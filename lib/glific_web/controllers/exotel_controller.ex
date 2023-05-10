@@ -51,10 +51,11 @@ defmodule GlificWeb.ExotelController do
         }
 
         result = Contacts.optin_contact(attrs)
-        flow_to_start = phone_flow_map[ngo_exotel_phone]
+
         # then start  the intro flow
         case result do
           {:ok, contact} ->
+            flow_to_start = phone_flow_map[ngo_exotel_phone]
             {:ok, flow_id} = Glific.parse_maybe_integer(flow_to_start)
             Flows.start_contact_flow(flow_id, contact)
 
@@ -75,6 +76,7 @@ defmodule GlificWeb.ExotelController do
     json(conn, "")
   end
 
+  # this will be an issue when we expand beyond India
   @country_code "91"
 
   @spec clean_phone(String.t()) :: String.t()
@@ -93,6 +95,8 @@ defmodule GlificWeb.ExotelController do
 
   @spec get_phone_flow_map(any) :: map()
   defp get_phone_flow_map(credentials) do
+    # at some point we should also ensure that phone list and flows list
+    # have the same number of entries. Leaving it as a future exercise
     phone_list = credentials.secrets["phone"] |> get_clean_list()
     flows_list = credentials.keys["flow_id"] |> get_clean_list()
     Enum.zip(phone_list, flows_list) |> Enum.into(%{})
