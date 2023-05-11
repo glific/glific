@@ -697,6 +697,11 @@ defmodule Glific.MessagesTest do
       {:ok, message} = Messages.create_and_send_message(message_attrs)
       message = Messages.get_message!(message.id)
       assert message.body == "test message"
+
+      # also ensure that we get an error when receiver is non existent
+      message_attrs = Map.put(message_attrs, :receiver_id, 1_234_567)
+      {:error, error} = Messages.create_and_send_message(message_attrs)
+      assert error == "Receiver does not exist"
     end
 
     test "create and send message should send message to contact through gupshup enterprise",
