@@ -545,7 +545,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
           %{
             id: sheet.id,
             name: sheet.label,
-            url: sheet.url
+            url: sheet.url,
+            type: sheet.type
           }
           | acc
         ]
