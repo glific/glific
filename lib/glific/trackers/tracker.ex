@@ -115,6 +115,23 @@ defmodule Glific.Trackers.Tracker do
   end
 
   @doc """
+  Daily summarization tasks for tracker. This also triggers monthly tasks
+  at end of month
+  """
+  @spec daily_tasks() :: any
+  def daily_tasks do
+    # find the previous day
+    date = Date.add(Date.utc_today(), -1)
+
+    add_platform_day(date)
+
+    if Date.end_of_month(date) == date do
+      date = Date.beginning_of_month(date)
+      add_monthly_summary(date)
+    end
+  end
+
+  @doc """
   This function is called after midnite UTC to compute the stats for
   the platform on a daily basis
   """
