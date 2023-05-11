@@ -112,8 +112,8 @@ defmodule GlificWeb.API.V1.SessionController do
   This is an internal API, so we will not document it (for now)
   """
   @spec tracker(Conn.t(), map()) :: Conn.t()
-  def tracker(conn, params) do
-    Glific.Metrics.increment(params["event"], conn.assigns[:organization_id])
+  def tracker(conn, %{"event" => event}) do
+    Glific.Metrics.increment(event, conn.assigns[:organization_id])
 
     conn
     |> json(%{data: %{status: :ok}})

@@ -10,6 +10,7 @@ defmodule Glific.Trackers.Tracker do
 
   alias Glific.{
     Partners.Organization,
+    Partners.Saas,
     Repo
   }
 
@@ -21,8 +22,8 @@ defmodule Glific.Trackers.Tracker do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           counts: map() | %{},
-          date: Date.t(),
-          period: String.t(),
+          date: Date.t() | nil,
+          period: String.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -117,12 +118,15 @@ defmodule Glific.Trackers.Tracker do
   This function is called after midnite UTC to compute the stats for
   the platform on a daily basis
   """
-  @spec add_platform_day() :: any
-  def add_platform_day() do
+  @spec add_platform_day(Date.t() | nil) :: any
+  def add_platform_day(date \\ nil) do
     # find the previous day
-    date = Date.add(Date.utc_today(), -1)
+    date =
+      if date == nil,
+        do: Date.add(Date.utc_today(), -1),
+        else: date
 
-    platform_id = Glific.Partners.Saas.organization_id()
+    platform_id = Saas.organization_id()
 
     counts =
       Tracker
@@ -142,20 +146,28 @@ defmodule Glific.Trackers.Tracker do
       })
   end
 
-  def add_monthly_summary() do
+  @doc """
+  Given the daily totals for orgs and the platform, sum up and compute the
+  monthly totals and store in DB
+  """
+  @spec add_monthly_summary(Date.t() | nil) :: any
+  def add_monthly_summary(date \\ nil) do
     # lets go back 3 days to make sure we are in last month and use beginning of month
-    day =
-      Date.utc_today()
-      |> Date.add(-3)
-      |> Date.beginning_of_month()
+    date =
+      if date != nil,
+        do: date,
+        else:
+          Date.utc_today()
+          |> Date.add(-3)
+          |> Date.beginning_of_month()
 
     Tracker
-    |> where([t], fragment("date_part('year', ?)", t.date) == ^day.year)
-    |> where([t], fragment("date_part('month', ?)", t.date) == ^day.month)
+    |> where([t], fragment("date_part('year', ?)", t.date) == ^date.year)
+    |> where([t], fragment("date_part('month', ?)", t.date) == ^date.month)
     |> where([t], t.period == "day")
     |> select([t], [t.counts, t.organization_id])
     |> Repo.all(skip_organization_id: true)
-    |> monthly(day)
+    |> monthly(date)
   end
 
   defp daily(results) do
