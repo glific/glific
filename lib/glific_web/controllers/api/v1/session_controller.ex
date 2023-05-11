@@ -104,4 +104,18 @@ defmodule GlificWeb.API.V1.SessionController do
     conn
     |> json(%{data: %{name: organization.name}})
   end
+
+  @doc """
+  Given the organization ID, lets register an event for it.
+  This is used for tracking purposes
+
+  This is an internal API, so we will not document it (for now)
+  """
+  @spec tracker(Conn.t(), map()) :: Conn.t()
+  def tracker(conn, params) do
+    Glific.Metrics.increment(params["event"], conn.assigns[:organization_id])
+
+    conn
+    |> json(%{data: %{status: :ok}})
+  end
 end
