@@ -15,7 +15,7 @@ defmodule Glific.Repo.Migrations.CreateTrackers do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:trackers, [:day, :organization_id])
+    create unique_index(:trackers, [:day, :organization_id, :is_summary])
     create index(:trackers, [:month, :organization_id])
     create index(:trackers, :organization_id)
   end

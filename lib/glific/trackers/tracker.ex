@@ -13,8 +13,8 @@ defmodule Glific.Trackers.Tracker do
     Repo
   }
 
-  @required_fields [:organization_id, :counts, :day]
-  @optional_fields [:month, :is_summary]
+  @required_fields [:organization_id, :counts]
+  @optional_fields [:day, :month]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -22,7 +22,6 @@ defmodule Glific.Trackers.Tracker do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           counts: map() | %{},
-          is_summary: boolean() | false,
           day: Date.t() | nil,
           month: Date.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -33,7 +32,6 @@ defmodule Glific.Trackers.Tracker do
     field(:day, :date)
     field(:month, :date)
     field(:counts, :map, default: %{})
-    field(:is_summary, :boolean, default: false)
 
     belongs_to(:organization, Organization)
 
@@ -74,7 +72,8 @@ defmodule Glific.Trackers.Tracker do
   @doc """
   Upsert tracker
   """
-  @spec upsert_tracker(map(), non_neg_integer, Date.t() | nil) :: :error | Tracker.t()
+  @spec upsert_tracker(map(), non_neg_integer, Date.t() | nil) ::
+          {:ok, Tracker.t()} | {:error, Ecto.Changeset.t()}
   def upsert_tracker(counts, organization_id, day \\ nil) do
     day = if day == nil, do: Date.utc_today(), else: day
 
@@ -96,7 +95,7 @@ defmodule Glific.Trackers.Tracker do
         )
 
       {:error, _} ->
-        create_tracker(attrs)
+        {:ok, _tracker} = create_tracker(attrs)
     end
   end
 
@@ -118,4 +117,81 @@ defmodule Glific.Trackers.Tracker do
     do:
       query
       |> where([t], t.month == ^month)
+
+  @doc """
+  This function is called after midnite UTC to compute the stats for
+  the platform on a daily basis
+  """
+  @spec add_platform_day() :: any
+  def add_platform_day() do
+    # find the previous day
+    day = Date.add(Date.utc_today(), -1)
+
+    platform_id = Glific.Partners.Saas.organization_id()
+
+    counts =
+      Tracker
+      |> where([t], t.day == ^day)
+      |> where([t], is_nil(t.month))
+      |> where([t], t.organization_id != ^platform_id)
+      |> select([t], t.counts)
+      |> Repo.all(skip_organization_id: true)
+      |> daily()
+
+    {:ok, _tracker} =
+      create_tracker(%{
+        day: day,
+        counts: counts,
+        organization_id: platform_id
+      })
+  end
+
+  def add_monthly_summary() do
+    # lets go back 3 days to make sure we are in last month and use beginning of month
+    day =
+      Date.utc_today()
+      |> Date.add(-3)
+      |> Date.beginning_of_month()
+
+    Tracker
+    |> where([t], fragment("date_part('year', ?)", t.day) == ^day.year)
+    |> where([t], fragment("date_part('month', ?)", t.day) == ^day.month)
+    |> where([t], is_nil(t.month))
+    |> select([t], [t.counts, t.organization_id])
+    |> Repo.all(skip_organization_id: true)
+    |> monthly(day)
+  end
+
+  defp daily(results) do
+    results
+    |> Enum.reduce(fn result, acc ->
+      Map.merge(acc, result, fn _k, v1, v2 -> v1 + v2 end)
+    end)
+  end
+
+  defp monthly(results, month) do
+    results
+    |> Enum.reduce(
+      %{},
+      fn [counts, organization_id], acc ->
+        Map.put(
+          acc,
+          organization_id,
+          Map.merge(
+            Map.get(acc, organization_id, %{}),
+            counts,
+            fn _k, v1, v2 -> v1 + v2 end
+          )
+        )
+      end
+    )
+    |> Enum.map(fn {organization_id, counts} ->
+      {:ok, _tracker} =
+        create_tracker(%{
+          month: month,
+          counts: counts,
+          organization_id: organization_id
+        })
+    end)
+  end
 end
