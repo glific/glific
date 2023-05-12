@@ -17,6 +17,7 @@ defmodule Glific.Tickets do
       [%Ticket{}, ...]
 
   """
+  @spec list_tickets :: [Ticket.t()]
   def list_tickets do
     Repo.all(Ticket)
   end
@@ -35,6 +36,7 @@ defmodule Glific.Tickets do
       ** (Ecto.NoResultsError)
 
   """
+  @spec get_ticket!(non_neg_integer) :: Ticket.t()
   def get_ticket!(id), do: Repo.get!(Ticket, id)
 
   @doc """
@@ -49,6 +51,7 @@ defmodule Glific.Tickets do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec create_ticket(map()) :: {:ok, Ticket.t()} | {:error, Ecto.Changeset.t()}
   def create_ticket(attrs \\ %{}) do
     %Ticket{}
     |> Ticket.changeset(attrs)
@@ -67,6 +70,7 @@ defmodule Glific.Tickets do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec update_ticket(Ticket.t(), map()) :: {:ok, Ticket.t()} | {:error, Ecto.Changeset.t()}
   def update_ticket(%Ticket{} = ticket, attrs) do
     ticket
     |> Ticket.changeset(attrs)
@@ -85,6 +89,7 @@ defmodule Glific.Tickets do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec delete_ticket(Ticket.t()) :: {:ok, Ticket.t()} | {:error, Ecto.Changeset.t()}
   def delete_ticket(%Ticket{} = ticket) do
     Repo.delete(ticket)
   end
@@ -98,6 +103,7 @@ defmodule Glific.Tickets do
       %Ecto.Changeset{data: %Ticket{}}
 
   """
+  @spec change_ticket(Ticket.t(), map()) :: Ecto.Changeset.t()
   def change_ticket(%Ticket{} = ticket, attrs \\ %{}) do
     Ticket.changeset(ticket, attrs)
   end

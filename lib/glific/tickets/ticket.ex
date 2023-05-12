@@ -1,4 +1,8 @@
 defmodule Glific.Tickets.Ticket do
+  @moduledoc """
+  Schema definition for the ticket table
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -40,6 +44,7 @@ defmodule Glific.Tickets.Ticket do
   end
 
   @doc false
+  @spec changeset(Ticket.t(), map()) :: Ecto.Changeset.t()
   def changeset(ticket, attrs) do
     ticket
     |> cast(attrs, @required_fields ++ @optional_fields)
