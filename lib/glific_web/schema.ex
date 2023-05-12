@@ -8,7 +8,11 @@ defmodule GlificWeb.Schema do
   import GlificWeb.Gettext
 
   alias Glific.Repo
-  alias GlificWeb.Schema.Middleware
+
+  alias GlificWeb.Schema.{
+    Middleware,
+    Middleware.SafeResolution
+  }
 
   import_types(Absinthe.Type.Custom)
 
@@ -185,11 +189,13 @@ defmodule GlificWeb.Schema do
           Absinthe.Type.Field.t(),
           Absinthe.Type.Object.t()
         ) :: [Absinthe.Middleware.spec(), ...]
-  def middleware(middleware, _field, %{identifier: :mutation}),
-    do: [Middleware.AddOrganization | middleware] ++ [Middleware.ChangesetErrors]
+  def middleware(middleware, _field, %{identifier: type}) when type in [:query, :mutation] do
+    middleware = [Middleware.AddOrganization | SafeResolution.apply(middleware)]
 
-  def middleware(middleware, _field, %{identifier: :query}),
-    do: [Middleware.AddOrganization | middleware] ++ [Middleware.QueryErrors]
+    if type == :mutation,
+      do: middleware ++ [Middleware.ChangesetErrors],
+      else: middleware ++ [Middleware.QueryErrors]
+  end
 
   def middleware(middleware, _field, _object),
     do: middleware
