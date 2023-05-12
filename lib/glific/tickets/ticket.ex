@@ -6,6 +6,8 @@ defmodule Glific.Tickets.Ticket do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias __MODULE__
+
   alias Glific.{
     Contacts.Contact,
     Partners.Organization,

@@ -12,7 +12,10 @@ defmodule Glific.TicketsFixtures do
       attrs
       |> Enum.into(%{
         body: "some body",
-        topic: "some topic"
+        topic: "some topic",
+        organization_id: 1,
+        contact_id: 1,
+        status: "Open"
       })
       |> Glific.Tickets.create_ticket()
 

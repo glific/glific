@@ -21,7 +21,13 @@ defmodule Glific.TicketsTest do
     end
 
     test "create_ticket/1 with valid data creates a ticket" do
-      valid_attrs = %{body: "some body", topic: "some topic"}
+      valid_attrs = %{
+        body: "some body",
+        topic: "some topic",
+        status: "Open",
+        organization_id: 1,
+        contact_id: 1
+      }
 
       assert {:ok, %Ticket{} = ticket} = Tickets.create_ticket(valid_attrs)
       assert ticket.body == "some body"
