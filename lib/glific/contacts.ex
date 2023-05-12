@@ -192,7 +192,7 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Return :error_logger_file_h if contact is not present (rather than failing)
+  Return nil if contact is not present (rather than raising exception)
   """
   @spec get_contact(integer) :: Contact.t() | nil
   def get_contact(id) do
