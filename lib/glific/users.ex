@@ -223,9 +223,12 @@ defmodule Glific.Users do
   @spec authenticate_user_organization(non_neg_integer | nil, map()) :: User.t() | nil
   defp authenticate_user_organization(nil, _params), do: nil
 
-  defp authenticate_user_organization(organization_id, params) do
+  defp authenticate_user_organization(
+         organization_id,
+         %{phone: phone, password: password}
+       ) do
     User
-    |> Repo.get_by(phone: params["phone"], organization_id: organization_id)
+    |> Repo.get_by(phone: phone, organization_id: organization_id)
     |> case do
       # Prevent timing attack
       nil ->
@@ -234,8 +237,10 @@ defmodule Glific.Users do
       user ->
         user |> Repo.preload(:language)
     end
-    |> verify_password(params["password"])
+    |> verify_password(password)
   end
+
+  defp authenticate_user_organization(_organization_id, _params), do: nil
 
   @spec verify_password(User.t(), String.t()) :: User.t() | nil
   defp verify_password(user, password),
