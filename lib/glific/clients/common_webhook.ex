@@ -50,5 +50,25 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  def webhook("jugalbandi", fields) do
+    Tesla.get(fields["url"],
+      headers: [{"Accept", "application/json"}],
+      query: [
+        query_string: fields["query_string"],
+        uuid_number: fields["uuid_number"]
+      ],
+      opts: [adapter: [recv_timeout: 100_000]]
+    )
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        Jason.decode!(body)
+        |> Map.take(["answer"])
+        |> Map.merge(%{success: true})
+
+      {_status, _response} ->
+        %{success: false, response: "Invalid response"}
+    end
+  end
+
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 end

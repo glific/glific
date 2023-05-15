@@ -148,6 +148,9 @@ defmodule Glific.Sheets do
       {:is_active, is_active}, query ->
         from(q in query, where: q.is_active == ^is_active)
 
+      {:type, type}, query ->
+        from(q in query, where: ilike(q.type, ^"%#{type}%"))
+
       _, query ->
         query
     end)

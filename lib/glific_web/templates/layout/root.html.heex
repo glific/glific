@@ -18,14 +18,20 @@
   <body>
     <header>
       <section class="p-4">
-
-      <ul class="flex">
+        <ul class="flex">
           <%= if @current_user do %>
             <li class="flex-grow p-2"><%= @current_user.name %></li>
-            <li class="text-right"><button class="bg-gray-100 p-2 rounded"><%= link "Log out", to: Routes.user_session_path(@conn, :delete), method: :delete, class: "mr-4 hover:underline md:mr-6" %></button></li>
+            <li class="text-right">
+              <button class="bg-gray-100 p-2 rounded">
+                <%= link("Log out",
+                  to: Routes.user_session_path(@conn, :delete),
+                  method: :delete,
+                  class: "mr-4 hover:underline md:mr-6"
+                ) %>
+              </button>
+            </li>
           <% end %>
-      </ul>
-
+        </ul>
       </section>
     </header>
     <%= @inner_content %>
