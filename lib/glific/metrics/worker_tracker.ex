@@ -28,8 +28,14 @@ defmodule Glific.Metrics.WorkerTracker do
 
   @doc false
   defp schedule_upsert do
-    # store to database between 5 to 15 minutes
-    Process.send_after(self(), :upsert, Enum.random(300..900) * 1_000)
+    # store to database between 5 to 15 minutes (for prod)
+    # and 5 to 15 seconds for other
+    time_factor =
+      if Application.get_env(:glific, :environment) == :prod,
+        do: 1_000,
+        else: 1_0
+
+    Process.send_after(self(), :upsert, Enum.random(300..900) * time_factor)
   end
 
   @doc false
