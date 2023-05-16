@@ -3,10 +3,11 @@ defmodule Glific.Repo.Migrations.CreateTickets do
 
   def change do
     create table(:tickets) do
-      add(:topic, :string)
+      add(:description, :string)
       add(:body, :string)
 
       add(:status, :string, comment: "Status of this ticket: Open or Closed")
+      add(:remarks, :string, comment: "Closing remarks for the ticket")
 
       # contact who initiated this ticket
       add(:contact_id, references(:contacts, on_delete: :delete_all), null: false)
