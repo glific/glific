@@ -187,6 +187,14 @@ defmodule Glific.ContactsTest do
       assert Contacts.get_contact!(contact.id) == contact
     end
 
+    test "get_contact/1 returns the contact with given id and nil if does not exist",
+         %{organization_id: _organization_id} = attrs do
+      contact = contact_fixture(attrs)
+      assert Contacts.get_contact(contact.id) == contact
+
+      assert Contacts.get_contact(1_234_567) == nil
+    end
+
     test "create_contact/1 with valid data creates a contact",
          %{organization_id: _organization_id} = attrs do
       attrs = Map.merge(attrs, @valid_attrs)

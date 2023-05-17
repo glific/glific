@@ -236,14 +236,19 @@ defmodule Glific.Messages do
   def create_and_send_message(%{body: body, type: :text} = _attrs) when body in ["", nil],
     do: {:error, "Could not send message with empty body"}
 
-  def create_and_send_message(attrs) do
-    contact = Contacts.get_contact!(attrs.receiver_id)
-    attrs = Map.put(attrs, :receiver, contact)
+  def create_and_send_message(%{receiver_id: receiver_id} = attrs) do
+    contact = Contacts.get_contact(receiver_id)
 
-    ## we need to clean this code in the future.
-    attrs = check_for_interactive(attrs, contact.language_id)
+    if contact do
+      attrs = Map.put(attrs, :receiver, contact)
 
-    check_for_hsm_message(attrs, contact)
+      ## we need to clean this code in the future.
+      attrs = check_for_interactive(attrs, contact.language_id)
+
+      check_for_hsm_message(attrs, contact)
+    else
+      {:error, "Receiver does not exist"}
+    end
   end
 
   @spec check_for_interactive(map(), non_neg_integer()) :: map()

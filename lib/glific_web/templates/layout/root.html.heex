@@ -18,14 +18,18 @@
   <body>
     <header>
       <section class="container">
-
-      <ul class="items-end justify-end mb-6 text-gray-900">
+        <ul class="items-end justify-end mb-6 text-gray-900">
           <%= if @current_user do %>
             <li><%= @current_user.name %></li>
-            <li><%= link "Log out", to: Routes.user_session_path(@conn, :delete), method: :delete, class: "mr-4 hover:underline md:mr-6" %></li>
+            <li>
+              <%= link("Log out",
+                to: Routes.user_session_path(@conn, :delete),
+                method: :delete,
+                class: "mr-4 hover:underline md:mr-6"
+              ) %>
+            </li>
           <% end %>
-      </ul>
-
+        </ul>
       </section>
     </header>
     <%= @inner_content %>
