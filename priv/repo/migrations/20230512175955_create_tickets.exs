@@ -3,8 +3,8 @@ defmodule Glific.Repo.Migrations.CreateTickets do
 
   def change do
     create table(:tickets) do
-      add(:description, :string)
       add(:body, :string)
+      add(:topic, :string)
 
       add(:status, :string, comment: "Status of this ticket: Open or Closed")
       add(:remarks, :string, comment: "Closing remarks for the ticket")

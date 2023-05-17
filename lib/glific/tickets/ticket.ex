@@ -14,13 +14,14 @@ defmodule Glific.Tickets.Ticket do
     Users.User
   }
 
-  @required_fields [:description, :contact_id, :status, :organization_id]
-  @optional_fields [:user_id, :remarks]
+  @required_fields [:body, :contact_id, :status, :organization_id]
+  @optional_fields [:user_id, :topic, :remarks]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
-          description: String.t() | nil,
+          body: String.t() | nil,
+          topic: String.t() | nil,
           status: String.t() | nil,
           remarks: String.t() | nil,
           contact_id: non_neg_integer | nil,
@@ -34,7 +35,8 @@ defmodule Glific.Tickets.Ticket do
         }
 
   schema "tickets" do
-    field(:description, :string)
+    field(:body, :string)
+    field(:topic, :string)
     field(:status, :string)
     field(:remarks, :string)
 

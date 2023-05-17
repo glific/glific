@@ -225,7 +225,7 @@ defmodule Glific.Users do
 
   defp authenticate_user_organization(
          organization_id,
-         %{phone: phone, password: password}
+         %{"phone" => phone, "password" => password}
        ) do
     User
     |> Repo.get_by(phone: phone, organization_id: organization_id)

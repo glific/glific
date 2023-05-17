@@ -40,11 +40,19 @@ defmodule Glific.TicketsTest do
 
     test "update_ticket/2 with valid data updates the ticket" do
       ticket = ticket_fixture()
-      update_attrs = %{body: "some updated body", topic: "some updated topic"}
+
+      update_attrs = %{
+        body: "some updated body",
+        topic: "some updated topic",
+        remarks: "closing remarks",
+        status: "closed"
+      }
 
       assert {:ok, %Ticket{} = ticket} = Tickets.update_ticket(ticket, update_attrs)
       assert ticket.body == "some updated body"
       assert ticket.topic == "some updated topic"
+      assert ticket.remarks == "closing remarks"
+      assert ticket.status == "closed"
     end
 
     test "update_ticket/2 with invalid data returns error changeset" do
