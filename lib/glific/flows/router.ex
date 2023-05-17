@@ -320,7 +320,7 @@ defmodule Glific.Flows.Router do
   end
 
   defp find_category(%{type: "random"} = router, _context, _msg) do
-    Glific.Metrics.increment("A/B Node")
+    Glific.Metrics.increment("Random Splits")
     category = Enum.random(router.categories)
     {category.uuid, false}
   end
