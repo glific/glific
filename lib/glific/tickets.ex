@@ -61,8 +61,10 @@ defmodule Glific.Tickets do
   """
   @spec create_ticket(map()) :: {:ok, Ticket.t()} | {:error, Ecto.Changeset.t()}
   def create_ticket(attrs \\ %{}) do
+    ticket_params = Map.put_new(attrs, :status, "open")
+
     %Ticket{}
-    |> Ticket.changeset(attrs)
+    |> Ticket.changeset(ticket_params)
     |> Repo.insert()
   end
 
