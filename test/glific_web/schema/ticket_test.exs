@@ -38,8 +38,20 @@ defmodule GlificWeb.Schema.TicketTest do
   end
 
   test "tickets field returns list of filtered tickets", %{staff: user} do
-    TicketsFixtures.ticket_fixture()
+    TicketsFixtures.ticket_fixture(%{user_id: user.id})
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"status" => "open"}})
+    assert {:ok, query_data} = result
+
+    tickets = get_in(query_data, [:data, "tickets"])
+    assert length(tickets) == 1
+
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"contact_id" => 1}})
+    assert {:ok, query_data} = result
+
+    tickets = get_in(query_data, [:data, "tickets"])
+    assert length(tickets) == 1
+
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"user_id" => user.id}})
     assert {:ok, query_data} = result
 
     tickets = get_in(query_data, [:data, "tickets"])

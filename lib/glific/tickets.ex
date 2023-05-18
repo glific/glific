@@ -115,8 +115,8 @@ defmodule Glific.Tickets do
       {:contact_id, contact_id}, query ->
         from(q in query, where: q.contact_id == ^contact_id)
 
-      {:profile_id, profile_id}, query ->
-        from(q in query, where: q.profile_id == ^profile_id)
+      {:user_id, user_id}, query ->
+        from(q in query, where: q.user_id == ^user_id)
 
       _, query ->
         query
