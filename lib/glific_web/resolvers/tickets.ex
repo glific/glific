@@ -5,8 +5,8 @@ defmodule GlificWeb.Resolvers.Tickets do
   """
   alias Glific.{
     Repo,
-    Tickets.Ticket,
-    Tickets
+    Tickets,
+    Tickets.Ticket
   }
 
   @doc """
