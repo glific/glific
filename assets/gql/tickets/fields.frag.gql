@@ -1,0 +1,26 @@
+fragment TicketFields on TicketResult {
+  ticket {
+    id
+    body
+    topic
+    status
+    remarks
+    contact {
+      id
+      name
+      phone
+    }
+    user {
+      id
+      name
+      phone
+    }
+  }
+}
+
+fragment ErrorFields on TicketResult {
+  errors {
+    key
+    message
+  }
+}

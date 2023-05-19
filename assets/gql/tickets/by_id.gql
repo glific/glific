@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query ticket($id: ID!) {
+  ticket(id: $id) {
+    ...TicketFields
+
+    ...ErrorFields
+  }
+}
