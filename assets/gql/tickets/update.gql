@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateTicket($id: ID!, $input: TicketInput!) {
+  updateTicket(id: $id, input: $input) {
+    ...TicketFields
+
+    ...ErrorFields
+  }
+}

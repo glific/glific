@@ -12,7 +12,7 @@ defmodule Glific.TicketsTest do
 
     test "list_tickets/0 returns all tickets" do
       ticket = ticket_fixture()
-      assert Tickets.list_tickets() == [ticket]
+      assert Tickets.list_tickets(%{}) == [ticket]
     end
 
     test "get_ticket!/1 returns the ticket with given id" do
@@ -24,7 +24,7 @@ defmodule Glific.TicketsTest do
       valid_attrs = %{
         body: "some body",
         topic: "some topic",
-        status: "Open",
+        status: "open",
         organization_id: 1,
         contact_id: 1
       }
