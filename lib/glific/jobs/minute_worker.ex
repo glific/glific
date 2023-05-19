@@ -23,7 +23,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Searches.CollectionCount,
     Stats,
     Templates,
-    Trackers.Tracker,
+    Trackers,
     Triggers
   }
 
@@ -101,7 +101,7 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&Erase.clean_messages/1, nil, [])
 
       "tracker_tasks" ->
-        Tracker.daily_tasks()
+        Trackers.daily_tasks()
 
       "weekly_tasks" ->
         Partners.perform_all(&Glific.Clients.weekly_tasks/1, nil, [])

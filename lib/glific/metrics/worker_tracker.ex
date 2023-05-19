@@ -9,7 +9,7 @@ defmodule Glific.Metrics.WorkerTracker do
 
   @registry Glific.Metrics.Registry
 
-  alias Glific.{Repo, Trackers.Tracker}
+  alias Glific.{Repo, Trackers}
 
   @doc false
   def start_link(key) do
@@ -66,7 +66,7 @@ defmodule Glific.Metrics.WorkerTracker do
     Repo.put_process_state(organization_id)
 
     # we are only interested in the value of the map, which has map to be inserted
-    Tracker.upsert_tracker(counts, organization_id)
+    Trackers.upsert_tracker(counts, organization_id)
   end
 
   @doc false
