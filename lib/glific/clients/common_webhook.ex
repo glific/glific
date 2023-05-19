@@ -84,12 +84,12 @@ defmodule Glific.Clients.CommonWebhook do
     |> GoogleASR.speech_to_text(fields["results"], contact.language.locale)
   end
 
+  def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
+
   defp get_contact_language(contact_id) do
     case Repo.fetch(Contact, contact_id) do
       {:ok, contact} -> contact |> Repo.preload(:language)
       {:error, error} -> error
     end
   end
-
-  def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 end
