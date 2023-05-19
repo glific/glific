@@ -84,7 +84,7 @@ defmodule Glific.Trackers do
   @spec daily_tasks() :: any
   def daily_tasks do
     # find the previous day
-    date = Date.add(Date.utc_today(), -1)
+    date = Date.add(Date.utc_today(), 12)
 
     add_platform_day(date)
 
@@ -132,6 +132,8 @@ defmodule Glific.Trackers do
   end
 
   @spec daily(list()) :: map()
+  defp daily([]), do: %{}
+
   defp daily(results) do
     results
     |> Enum.reduce(fn result, acc ->
@@ -140,6 +142,8 @@ defmodule Glific.Trackers do
   end
 
   @spec monthly(list(), Date.t()) :: list()
+  defp monthly([], _month), do: []
+
   defp monthly(results, month) do
     results
     |> Enum.reduce(
