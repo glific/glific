@@ -58,6 +58,7 @@ defmodule GlificWeb.Router do
     resources("/session", SessionController, singleton: true, only: [:create, :delete])
     post("/session/renew", SessionController, :renew)
     post("/session/name", SessionController, :name)
+    post("/session/tracker", SessionController, :tracker)
     post("/onboard/setup", OnboardController, :setup)
   end
 

@@ -49,6 +49,7 @@ oban_crontab = [
   {"1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
   {"2 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :delete_tasks}},
   {"58 23 * * *", Glific.Jobs.MinuteWorker, args: %{job: :daily_tasks}},
+  {"0 3 * * *", Glific.Jobs.MinuteWorker, args: %{job: :tracker_tasks}},
   {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
   {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}},
   # 21:00 Sat UTC is  02:30 Sun IST and hence low traffic

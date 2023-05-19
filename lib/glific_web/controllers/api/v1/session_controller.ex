@@ -13,7 +13,8 @@ defmodule GlificWeb.API.V1.SessionController do
   @doc false
   @spec create(Conn.t(), map()) :: Conn.t()
   def create(conn, %{"user" => user_params}) do
-    user_params = Map.put(user_params, "organization_id", conn.assigns[:organization_id])
+    organization_id = conn.assigns[:organization_id]
+    user_params = Map.put(user_params, "organization_id", organization_id)
 
     conn
     |> Pow.Plug.authenticate_user(user_params)
@@ -22,6 +23,8 @@ defmodule GlificWeb.API.V1.SessionController do
         Logger.info("Logged in user: user_id: '#{conn.assigns[:current_user].id}'")
 
         update_last_login(conn.assigns[:current_user], conn)
+
+        Glific.Metrics.increment("Login", organization_id)
 
         json(conn, %{
           data: %{
@@ -100,5 +103,19 @@ defmodule GlificWeb.API.V1.SessionController do
 
     conn
     |> json(%{data: %{name: organization.name}})
+  end
+
+  @doc """
+  Given the organization ID, lets register an event for it.
+  This is used for tracking purposes
+
+  This is an internal API, so we will not document it (for now)
+  """
+  @spec tracker(Conn.t(), map()) :: Conn.t()
+  def tracker(conn, %{"event" => event}) do
+    Glific.Metrics.increment(event, conn.assigns[:organization_id])
+
+    conn
+    |> json(%{data: %{status: :ok}})
   end
 end
