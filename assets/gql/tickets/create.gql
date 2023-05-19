@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createTicket($input: TicketInput! ) {
+  createTicket(input: $input) {
+    ...TicketFields
+
+    ...ErrorFields
+  }
+}

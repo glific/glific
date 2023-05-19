@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation deleteTicket($id: ID!) {
+  deleteTicket(id: $id) {
+    ...TicketFields
+
+    ...ErrorFields
+  }
+}
