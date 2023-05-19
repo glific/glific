@@ -84,7 +84,7 @@ defmodule Glific.Trackers do
   @spec daily_tasks() :: any
   def daily_tasks do
     # find the previous day
-    date = Date.add(Date.utc_today(), 12)
+    date = Date.add(Date.utc_today(), -1)
 
     add_platform_day(date)
 
