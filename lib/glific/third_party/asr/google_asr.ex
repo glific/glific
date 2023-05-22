@@ -32,10 +32,7 @@ defmodule Glific.ASR.GoogleASR do
   """
 
   @spec speech_to_text(non_neg_integer, String.t(), String.t()) :: map()
-  def speech_to_text(org_id, _uri, language) do
-    uri =
-      "https://storage.googleapis.com/glific_flow_reports/uploads/918979120220/2023-05-19T15:25:01+05:30.mp3"
-
+  def speech_to_text(org_id, uri, language) do
     {:ok, response} = get(uri)
     content = Base.encode64(response.body)
 
