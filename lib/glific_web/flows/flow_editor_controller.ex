@@ -23,6 +23,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Sheets,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
+    Topic,
     Users.User
   }
 
@@ -66,6 +67,22 @@ defmodule GlificWeb.Flows.FlowEditorController do
       count: 0,
       name: "ALERT: PLEASE CREATE NEW GROUP FROM THE ORGANIZATION SETTINGS"
     })
+  end
+
+  @doc false
+  @spec users(Plug.Conn.t(), map) :: Plug.Conn.t()
+  def users(conn, _params) do
+    user_list =
+      Users.list_users(
+        %{filter: %{organization_id: conn.assigns[:organization_id]}},
+        true
+      )
+      |> Enum.reduce([], fn user, acc ->
+        [%{uuid: "#{user.id}", name: user.name, type: "user"} | acc]
+      end)
+
+    conn
+    |> json(%{results: user_list})
   end
 
   @doc false
@@ -145,6 +162,31 @@ defmodule GlificWeb.Flows.FlowEditorController do
       })
 
     json(conn, %{uuid: flow_label.uuid, name: flow_label.name, count: 0})
+  end
+
+  @doc """
+    Get all the topics so that user can apply them on tickets.
+  """
+  @spec topics(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def topics(conn, _params) do
+    flow_list = Topic.get_all_topics(conn.assigns[:organization_id])
+
+    json(conn, %{results: flow_list})
+  end
+
+  @doc """
+  Store a topic in the system. The return response should be a map of 3 keys.
+  [%{uuid: topic.uuid, name: params["name"], count}]
+  """
+  @spec topics_post(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def topics_post(conn, params) do
+    {:ok, flow_topic} =
+      Topic.create_topic(%{
+        name: params["name"],
+        organization_id: conn.assigns[:organization_id]
+      })
+
+    json(conn, %{uuid: topic.uuid, name: topic.name, count: 0})
   end
 
   @doc """
