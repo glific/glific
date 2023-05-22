@@ -52,6 +52,7 @@ defmodule Glific.Flows.Action do
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
   @required_fields_sheet [:sheet_id, :result_name | @required_field_common]
+  @required_fields_open_ticket [:topic, :body, :assignee | @required_field_common]
   @required_fields_start_session [
     :contacts,
     :create_contact,
@@ -215,6 +216,16 @@ defmodule Glific.Flows.Action do
       action_type: json["action_type"] || "READ",
       range: json["range"] || "",
       result_name: json["result_name"]
+    })
+  end
+
+  def process(%{"type" => "open_ticket"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_open_ticket)
+
+    process(json, uuid_map, node, %{
+      topic: json["topic"],
+      body: json["body"],
+      assignee: json["assignee"]
     })
   end
 
@@ -634,6 +645,15 @@ defmodule Glific.Flows.Action do
     {context, message} = Sheets.execute(action, context)
 
     {:ok, context, [message]}
+  end
+
+  def execute(%{type: "open_ticket"} = action, context, messages) do
+    Glific.Tickets.create_ticket(%{
+      body: action.body,
+      topic: action.topic
+    })
+
+    {:ok, context, messages}
   end
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
