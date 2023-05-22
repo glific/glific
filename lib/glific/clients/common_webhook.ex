@@ -3,8 +3,13 @@ defmodule Glific.Clients.CommonWebhook do
   Common webhooks which we can call with any clients.
   """
 
-  alias Glific.OpenAI.ChatGPT
-  alias Glific.Sheets.GoogleSheets
+  alias Glific.{
+    ASR.GoogleASR,
+    Contacts.Contact,
+    OpenAI.ChatGPT,
+    Repo,
+    Sheets.GoogleSheets
+  }
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -70,5 +75,21 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  # This webhook will call Google speech-to-text API
+  def webhook("speech_to_text", fields) do
+    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+    contact = get_contact_language(contact_id)
+
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> GoogleASR.speech_to_text(fields["results"], contact.language.locale)
+  end
+
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
+
+  defp get_contact_language(contact_id) do
+    case Repo.fetch(Contact, contact_id) do
+      {:ok, contact} -> contact |> Repo.preload(:language)
+      {:error, error} -> error
+    end
+  end
 end

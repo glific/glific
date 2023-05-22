@@ -27,6 +27,5 @@ defmodule Glific.Clients.Lahi do
   additional functionality as needed
   """
   @spec webhook(String.t(), map()) :: map()
-  def webhook(_, _fields),
-    do: %{}
+  def webhook(_, _fields), do: %{}
 end
