@@ -73,10 +73,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec users(Plug.Conn.t(), map) :: Plug.Conn.t()
   def users(conn, _params) do
     user_list =
-      Users.list_users(
-        %{filter: %{organization_id: conn.assigns[:organization_id]}},
-        true
-      )
+      Glific.Users.list_users(%{filter: %{organization_id: conn.assigns[:organization_id]}})
       |> Enum.reduce([], fn user, acc ->
         [%{uuid: "#{user.id}", name: user.name, type: "user"} | acc]
       end)
@@ -180,7 +177,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
   @spec topics_post(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def topics_post(conn, params) do
-    {:ok, flow_topic} =
+    {:ok, topic} =
       Topic.create_topic(%{
         name: params["name"],
         organization_id: conn.assigns[:organization_id]

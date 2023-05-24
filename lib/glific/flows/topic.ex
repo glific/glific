@@ -10,7 +10,6 @@ defmodule Glific.Topic do
   alias __MODULE__
 
   alias Glific.{
-    Flows.Topic,
     Partners.Organization,
     Repo
   }
