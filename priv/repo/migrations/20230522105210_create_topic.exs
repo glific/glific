@@ -7,4 +7,5 @@ defmodule Glific.Repo.Migrations.CreateTopic do
         comment: "Flow label type for now can be flow or ticket"
       )
     end
+  end
 end
