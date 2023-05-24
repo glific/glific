@@ -53,7 +53,7 @@ defmodule Glific.Flows.Action do
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
   @required_fields_sheet [:sheet_id, :result_name | @required_field_common]
-  @required_fields_open_ticket [:topic, :body, :assignee | @required_field_common]
+  @required_fields_open_ticket [:body | @required_field_common]
   @required_fields_start_session [
     :contacts,
     :create_contact,
