@@ -225,7 +225,7 @@ defmodule Glific.Flows.Action do
     process(json, uuid_map, node, %{
       topic: json["topic"],
       body: json["body"],
-      assignee: json["assignee"]
+      assignee: json["assignee"]["uuid"]
     })
   end
 
@@ -650,7 +650,10 @@ defmodule Glific.Flows.Action do
   def execute(%{type: "open_ticket"} = action, context, messages) do
     Glific.Tickets.create_ticket(%{
       body: action.body,
-      topic: action.topic
+      topic: action.topic,
+      user_id: action.assignee,
+      contact_id: context.contact_id,
+      organization_id: context.organization_id
     })
 
     {:ok, context, messages}
