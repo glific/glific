@@ -192,9 +192,10 @@ Go to glific_backend folder in the terminal console.
   \*\* (Mix) Unknown package oban_pro in lockfile
 
 - e. Run `mix setup`
-- f. Run `mix phx.server`
-- g. Another tab of terminal - Start the backend server in iex session: `iex -S mix`
-- h. Inside the iex - Update HSM templates: `Glific.Templates.sync_hsms_from_bsp(1)`
+- f. Run `iex -S mix phx.server`
+- g. Inside the iex (you might need to hit enter/return to see the prompt)
+  - Update HSM templates by running the following command:
+  - `Glific.Templates.sync_hsms_from_bsp(1)`
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
