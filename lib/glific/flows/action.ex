@@ -20,7 +20,8 @@ defmodule Glific.Flows.Action do
     Messages.Message,
     Profiles,
     Repo,
-    Sheets
+    Sheets,
+    Tickets
   }
 
   alias Glific.Flows.{
@@ -223,7 +224,7 @@ defmodule Glific.Flows.Action do
     Flows.check_required_fields(json, @required_fields_open_ticket)
 
     process(json, uuid_map, node, %{
-      topic: json["topic"],
+      topic: json["topic"]["name"],
       body: json["body"],
       assignee: json["assignee"]["uuid"]
     })
@@ -647,16 +648,10 @@ defmodule Glific.Flows.Action do
     {:ok, context, [message]}
   end
 
-  def execute(%{type: "open_ticket"} = action, context, messages) do
-    Glific.Tickets.create_ticket(%{
-      body: action.body,
-      topic: action.topic,
-      user_id: action.assignee,
-      contact_id: context.contact_id,
-      organization_id: context.organization_id
-    })
+  def execute(%{type: "open_ticket"} = action, context, _messages) do
+    {context, message} = Tickets.execute(action, context)
 
-    {:ok, context, messages}
+    {:ok, context, [message]}
   end
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
