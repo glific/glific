@@ -108,6 +108,8 @@ defmodule Glific.Flows.Action do
           action_type: String.t() | nil,
           range: String.t() | nil,
           sheet_id: integer() | nil,
+          assignee: integer() | nil,
+          topic: String.t() | nil,
 
           ## this is a custom delay in seconds before processing for the node.
           ## Currently only used for send messages
@@ -162,6 +164,8 @@ defmodule Glific.Flows.Action do
     field(:action_type, :string)
     field(:range, :string)
     field(:sheet_id, :integer)
+    field(:assignee, :integer)
+    field(:topic, :string)
 
     field(:wait_time, :integer)
 
