@@ -639,6 +639,9 @@ defmodule Glific.Partners do
     do:
       FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: organization.id})
 
+  @doc """
+  Determine if we need to enable ticketing for an organization
+  """
   @spec set_ticketing_enabled(map()) :: map()
   def set_ticketing_enabled(organization) do
     Map.put(

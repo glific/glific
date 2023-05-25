@@ -143,7 +143,12 @@ defmodule Glific.Flags do
       for_actor: %{organization_id: organization.id}
     )
 
-    [:is_contact_profile_enabled, :flow_uuid_display, :roles_and_permission, :is_ticketing_enabled]
+    [
+      :is_contact_profile_enabled,
+      :flow_uuid_display,
+      :roles_and_permission,
+      :is_ticketing_enabled
+    ]
     |> Enum.each(fn flag ->
       FunWithFlags.disable(
         flag,
