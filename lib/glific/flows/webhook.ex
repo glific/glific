@@ -33,6 +33,8 @@ defmodule Glific.Flows.Webhook do
   """
   @spec execute(Action.t(), FlowContext.t()) :: nil
   def execute(action, context) do
+    Glific.Metrics.increment("Webhook", context.organization_id)
+
     case String.downcase(action.method) do
       "get" -> method(action, context)
       "post" -> method(action, context)
