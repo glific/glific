@@ -52,7 +52,7 @@ defmodule Glific.ASR.GoogleASR do
       }
     }
 
-    {:ok, result} = post(new_client(org_id), url, body)
+    {:ok, result} = post(new_client(org_id), url, body, opts: [adapter: [recv_timeout: 50_000]])
 
     case result.body["error"] do
       nil ->

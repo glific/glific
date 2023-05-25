@@ -30,6 +30,7 @@
     "lib/glific/providers/gupshup_enterprise/api_client.ex",
     "lib/glific/providers/gupshup_enterprise/worker.ex",
     "lib/glific/trackers/tracker.ex",
+    "lib/glific/trackers.ex",
     "lib/glific_web/providers/gupshup_enterprise/controllers/default_controller.ex",
     "lib/glific_web.ex",
     "lib/glific_web/channels/user_socket.ex",

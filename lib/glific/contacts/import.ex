@@ -359,7 +359,7 @@ defmodule Glific.Contacts.Import do
   defp add_optin_date(results, opt_in, date_format) do
     Map.put(
       results,
-      :optin,
+      :optin_time,
       elem(Timex.parse(opt_in, date_format), 1)
     )
   end

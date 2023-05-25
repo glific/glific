@@ -4,9 +4,11 @@ defmodule Glific.Tickets do
   """
 
   import Ecto.Query, warn: false
-  alias Glific.Repo
 
-  alias Glific.Tickets.Ticket
+  alias Glific.{
+    Repo,
+    Tickets.Ticket
+  }
 
   @doc """
   Returns the list of tickets.
@@ -17,10 +19,16 @@ defmodule Glific.Tickets do
       [%Ticket{}, ...]
 
   """
-  @spec list_tickets :: [Ticket.t()]
-  def list_tickets do
-    Repo.all(Ticket)
-  end
+  @spec list_tickets(map()) :: [Ticket.t()]
+  def list_tickets(args),
+    do: Repo.list_filter(args, Ticket, &Repo.opts_with_label/2, &filter_with/2)
+
+  @doc """
+  Return the count of tickets, using the same filter as list_tickets
+  """
+  @spec count_tickets(map()) :: integer
+  def count_tickets(args),
+    do: Repo.count_filter(args, Ticket, &filter_with/2)
 
   @doc """
   Gets a single ticket.
@@ -53,8 +61,10 @@ defmodule Glific.Tickets do
   """
   @spec create_ticket(map()) :: {:ok, Ticket.t()} | {:error, Ecto.Changeset.t()}
   def create_ticket(attrs \\ %{}) do
+    ticket_params = Map.put_new(attrs, :status, "open")
+
     %Ticket{}
-    |> Ticket.changeset(attrs)
+    |> Ticket.changeset(ticket_params)
     |> Repo.insert()
   end
 
@@ -92,6 +102,25 @@ defmodule Glific.Tickets do
   @spec delete_ticket(Ticket.t()) :: {:ok, Ticket.t()} | {:error, Ecto.Changeset.t()}
   def delete_ticket(%Ticket{} = ticket) do
     Repo.delete(ticket)
+  end
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:status, status}, query ->
+        from(q in query, where: q.status == ^status)
+
+      {:contact_id, contact_id}, query ->
+        from(q in query, where: q.contact_id == ^contact_id)
+
+      {:user_id, user_id}, query ->
+        from(q in query, where: q.user_id == ^user_id)
+
+      _, query ->
+        query
+    end)
   end
 
   @doc """
