@@ -6,6 +6,7 @@ defmodule Glific.Tickets do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Flows.Action,
     Flows.FlowContext,
     Flows.MessageVarParser,
     Messages,
