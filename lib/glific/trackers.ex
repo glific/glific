@@ -123,7 +123,7 @@ defmodule Glific.Trackers do
 
   # Given the daily totals for orgs and the platform, sum up and compute the monthly totals and store in DB
   @spec add_monthly_summary(Date.t()) :: any
-  def add_monthly_summary(date) do
+  defp add_monthly_summary(date) do
     Tracker
     |> where([t], fragment("date_part('year', ?)", t.date) == ^date.year)
     |> where([t], fragment("date_part('month', ?)", t.date) == ^date.month)
