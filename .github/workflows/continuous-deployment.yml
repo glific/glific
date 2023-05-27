@@ -15,18 +15,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ref: master # Checkout out master instead of the latest commit
           fetch-depth: 0 # Checkout the whole branch
 
-      # setup the python
-      - uses: actions/setup-python@v2
+      # setup  python
+      - uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.10'
               
       # configure the gigalixir-actions with our credentials and app name
-      - uses: mhanberg/gigalixir-action@v0.4.3
+      - uses: mhanberg/gigalixir-action@v0.6.2
         with:
           GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
           GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
