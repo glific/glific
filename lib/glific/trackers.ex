@@ -115,7 +115,7 @@ defmodule Glific.Trackers do
     {:ok, _tracker} =
       create_tracker(%{
         date: date,
-        period: "day.summary",
+        period: "platform.day",
         counts: counts,
         organization_id: platform_id
       })
@@ -127,8 +127,7 @@ defmodule Glific.Trackers do
     Tracker
     |> where([t], fragment("date_part('year', ?)", t.date) == ^date.year)
     |> where([t], fragment("date_part('month', ?)", t.date) == ^date.month)
-    |> where([t], t.period == "day")
-    |> or_where([t], t.period == "day.summary")
+    |> where([t], like(t.period, "%day"))
     |> select([t], [t.counts, t.period, t.organization_id])
     |> Repo.all(skip_organization_id: true)
     |> monthly(date)
@@ -164,15 +163,10 @@ defmodule Glific.Trackers do
       end
     )
     |> Enum.map(fn {{organization_id, period}, counts} ->
-      period =
-        if period == "day",
-          do: "month",
-          else: "month.summary"
-
       {:ok, _tracker} =
         create_tracker(%{
           date: month,
-          period: period,
+          period: String.replace(period, "day", "month"),
           counts: counts,
           organization_id: organization_id
         })
