@@ -6,6 +6,10 @@ defmodule Glific.Tickets do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Flows.Action,
+    Flows.FlowContext,
+    Flows.MessageVarParser,
+    Messages,
     Repo,
     Tickets.Ticket
   }
@@ -135,5 +139,31 @@ defmodule Glific.Tickets do
   @spec change_ticket(Ticket.t(), map()) :: Ecto.Changeset.t()
   def change_ticket(%Ticket{} = ticket, attrs \\ %{}) do
     Ticket.changeset(ticket, attrs)
+  end
+
+  @doc """
+  Execute a sheet action
+  """
+  @spec execute(Action.t() | any(), FlowContext.t()) :: {FlowContext.t(), Messages.Message.t()}
+  def execute(action, context) do
+    fields = FlowContext.get_vars_to_parse(context)
+
+    ticket_body = MessageVarParser.parse(action.body, fields)
+
+    ticket_params = %{
+      body: ticket_body,
+      topic: action.topic,
+      user_id: action.assignee,
+      contact_id: context.contact_id,
+      organization_id: context.organization_id
+    }
+
+    case create_ticket(ticket_params) do
+      {:ok, _response} ->
+        {context, Messages.create_temp_message(context.organization_id, "Success")}
+
+      {:error, _response} ->
+        {context, Messages.create_temp_message(context.organization_id, "Failure")}
+    end
   end
 end

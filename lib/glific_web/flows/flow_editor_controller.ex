@@ -69,6 +69,19 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc false
+  @spec users(Plug.Conn.t(), map) :: Plug.Conn.t()
+  def users(conn, _params) do
+    user_list =
+      Glific.Users.list_users(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+      |> Enum.reduce([], fn user, acc ->
+        [%{uuid: "#{user.id}", name: user.name, type: "user"} | acc]
+      end)
+
+    conn
+    |> json(%{results: user_list})
+  end
+
+  @doc false
   @spec fields(Plug.Conn.t(), map) :: Plug.Conn.t()
   def fields(conn, _params) do
     fields =

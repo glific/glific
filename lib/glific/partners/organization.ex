@@ -153,6 +153,9 @@ defmodule Glific.Partners.Organization do
     # A virtual field for now to conditionally enable contact profile feature for an organization
     field(:is_contact_profile_enabled, :boolean, default: false, virtual: true)
 
+    # A virtual field for now to conditionally enable ticketing feature for an organization
+    field(:is_ticketing_enabled, :boolean, default: false, virtual: true)
+
     timestamps(type: :utc_datetime)
   end
 
