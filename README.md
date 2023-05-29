@@ -64,12 +64,12 @@ DO NOT run mix deps.get until the next steps are completed.
 
 You will need to do the following:
 
- a. Create a [Gupshup Account](https://www.gupshup.io/developer/home)
- b. Create an app and select [Access API](https://www.gupshup.io/whatsapp/create-app/access-api)
- c. You can name it `NewNameHere` "GlificTest <-- Bot Name is already in use, then use anotherone"
- d. Edit `glific_backend/config/dev.secret.exs`
- e. Find your API Key, check top left corner or inside the curl sample message
- f. Enter your APP name
+a. Create a [Gupshup Account](https://www.gupshup.io/developer/home)
+b. Create an app and select [Access API](https://www.gupshup.io/whatsapp/create-app/access-api)
+c. You can name it `NewNameHere` "GlificTest <-- Bot Name is already in use, then use anotherone"
+d. Run the following command `cp config/dev.secret.exs.txt config/dev.secret.exs`
+e. Find your API Key, check the top right corner and click the profile picture or inside the curl sample message
+f. Enter your APP name and API Key in the dev.secret.exs file
 
 ### 5. External service - Oban Pro
 
@@ -78,24 +78,20 @@ Glific depends 100% on job processing.
 Oban is **required** before running mix
 for Glific to operate.
 
-**For contributors:** 
+**For contributors:**
 Please get in touch with the team on Discord and get a limited time key.
 
 **For production use:**
 You must purchase license.
 When purchashing you must buy WEB+PRO .
 After you purchased
-Go to account and get this information and run this in glific_backend
+Go to account and get this information and run this command in glific_backend
 
 ```bash
-mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abdedcqweasdj__KEY_AUTH__asdafasdf
+mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
 ```
 
-Copy the --auth KEY and run this other command
-
-```bash
-mix hex.organization auth oban --key abdedcqweasdj__KEY_AUTH__asdafasdf
-```
+Replace public key "SHA256:4/abc/edf/gef+aIWPc" with your public key and auth key "abcdefghi" with your auth key.
 
 Make sure your key is in the list
 
@@ -203,6 +199,7 @@ Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
 You cannot do much from the glific backend unless you are an API developer. To see Glific in its glory, please
 install [Glific Frontend](https://github.com/glific/glific-frontend/)
+
 ### Front end credentials
 
 - Phone `917834811114`

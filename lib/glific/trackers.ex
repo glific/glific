@@ -81,10 +81,13 @@ defmodule Glific.Trackers do
   Daily summarization tasks for tracker. This also triggers monthly tasks
   at end of month
   """
-  @spec daily_tasks() :: any
-  def daily_tasks do
+  @spec daily_tasks(Date.t() | nil) :: any
+  def daily_tasks(date \\ nil) do
     # find the previous day
-    date = Date.add(Date.utc_today(), -1)
+    date =
+      if date == nil,
+        do: Date.add(Date.utc_today(), -1),
+        else: date
 
     add_platform_day(date)
 
@@ -112,7 +115,7 @@ defmodule Glific.Trackers do
     {:ok, _tracker} =
       create_tracker(%{
         date: date,
-        period: "day",
+        period: "platform.day",
         counts: counts,
         organization_id: platform_id
       })
@@ -121,12 +124,11 @@ defmodule Glific.Trackers do
   # Given the daily totals for orgs and the platform, sum up and compute the monthly totals and store in DB
   @spec add_monthly_summary(Date.t()) :: any
   defp add_monthly_summary(date) do
-    # lets go back 3 days to make sure we are in last month and use beginning of month
     Tracker
     |> where([t], fragment("date_part('year', ?)", t.date) == ^date.year)
     |> where([t], fragment("date_part('month', ?)", t.date) == ^date.month)
-    |> where([t], t.period == "day")
-    |> select([t], [t.counts, t.organization_id])
+    |> where([t], like(t.period, "%day"))
+    |> select([t], [t.counts, t.period, t.organization_id])
     |> Repo.all(skip_organization_id: true)
     |> monthly(date)
   end
@@ -148,23 +150,23 @@ defmodule Glific.Trackers do
     results
     |> Enum.reduce(
       %{},
-      fn [counts, organization_id], acc ->
+      fn [counts, period, organization_id], acc ->
         Map.put(
           acc,
-          organization_id,
+          {organization_id, period},
           Map.merge(
-            Map.get(acc, organization_id, %{}),
+            Map.get(acc, {organization_id, period}, %{}),
             counts,
             fn _k, v1, v2 -> v1 + v2 end
           )
         )
       end
     )
-    |> Enum.map(fn {organization_id, counts} ->
+    |> Enum.map(fn {{organization_id, period}, counts} ->
       {:ok, _tracker} =
         create_tracker(%{
           date: month,
-          period: "month",
+          period: String.replace(period, "day", "month"),
           counts: counts,
           organization_id: organization_id
         })
