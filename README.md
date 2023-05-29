@@ -169,6 +169,54 @@ Go to glific_backend folder in the terminal console.
       if returns nothing
       then make sure hosts file has those names added
       `sudo bash -c 'echo "127.0.0.1 glific.test api.glific.test" >> /etc/hosts'`
+      
+      
+      
+**For Windows the steps is as follows:**
+
+- a. Install mkcert (https://github.com/FiloSottile/mkcert)
+- b. Run the following command to install the local CA certificates:
+         `mkcert --install`
+- c. `mkcert glific.test api.glific.test`
+- d. `mkdir priv/cert`
+- e. `move glific.test* priv/cert`
+- f. `cd priv/cert`
+- g. `dir` Check that glific.test+1-key.pem and glific.test+1.pem exists
+
+      if not then copy any certificate found in there to the correct names
+      for example if I see:
+
+```bash
+      ❯ dir
+      glific.test+*-key.pem
+      glific.test+*.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
+      ❯ cp glific.test+*-key.pem glific.test+1-key.pem
+      ❯ cp glific.test+*.pem glific.test+1.pem
+```
+
+      And check again
+
+```bash
+      ❯ dir
+      glific.test+*-key.pem
+      glific.test+*.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
+```
+
+- h. Check port 4001 `netstat -ano | findstr :4001` should return nothing.
+- i. Check hosts file by`type %SystemRoot%\System32\drivers\etc\hosts | findstr glific`
+
+      if returns nothing
+      then make sure hosts file has those names added
+      127.0.0.1 glific.test
+      127.0.0.1 api.glific.test      
+
+
 
 ### 7. Backend - Config
 
@@ -194,6 +242,39 @@ Go to glific_backend folder in the terminal console.
   - `Glific.Templates.sync_hsms_from_bsp(1)`
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+
+
+
+**For Windows the steps is as follows:**
+
+- a. Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs` and edit
+- b. Copy the file: `cp config/.env.dev.txt config/.env.dev` and edit
+- c. Run this on command prompt:
+    ```
+    cd <path-to-glific-backend>
+    set /p=DUMMY < config\.env.dev
+    ```
+    Replace <path-to-glific-backend> with the actual path to the glific_backend directory. This will load the environment variables from the .env.dev file.
+- d. Run `mix deps.get`
+  if this fails try first `mix local.hex --force` then `mix deps.get`
+
+  if you see this error, then Oban key is wrong or failing. Check step 5. Or contact Oban.
+
+  ❯ mix deps.get
+  Failed to fetch record for 'hexpm:oban/oban_pro' from registry (using cache instead)
+  This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
+  Failed to fetch record for 'hexpm:oban/oban_web' from registry (using cache instead)
+  This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
+  \*\* (Mix) Unknown package oban_pro in lockfile
+
+- e. Run `mix setup`
+- f. Run `iex -S mix phx.server`
+- g. Inside the iex (you might need to hit enter/return to see the prompt)
+  - Update HSM templates by running the following command:
+  - `Glific.Templates.sync_hsms_from_bsp(1)`
+
+Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+
 
 ### 8. Frontend - Install glific frontend
 
