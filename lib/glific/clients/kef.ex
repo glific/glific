@@ -201,6 +201,21 @@ defmodule Glific.Clients.KEF do
     |> get_school_id_info(school_id)
   end
 
+  def webhook("check_is_completed_worksheet", fields) do
+    worksheet_code = String.trim(fields["worksheet_code"] || "")
+    contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
+
+    completed_worksheet_codes =
+      get_in(fields, ["contact", "fields", "completed_worksheet_code", "value"]) || ""
+
+    is_completed = worksheet_code in String.split(completed_worksheet_codes, ", ")
+
+    %{
+      error: false,
+      is_completed: is_completed
+    }
+  end
+
   def webhook(_, _) do
     raise "Unknown webhook"
   end
