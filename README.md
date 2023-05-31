@@ -165,8 +165,8 @@ Go to glific_backend folder in the terminal console.
       glific.test+*.pem
 ```
 
-- h. Check port 4001 `sudo lsof -n -i:4001 | grep LISTEN` should return nothing.
-- i. Check hosts file `grep glific /etc/hosts`
+- Check port 4001 `sudo lsof -n -i:4001 | grep LISTEN` should return nothing.
+- Check hosts file `grep glific /etc/hosts`
 
       if returns nothing
       then make sure hosts file has those names added
@@ -176,14 +176,14 @@ Go to glific_backend folder in the terminal console.
       
 **For Windows the steps is as follows:**
 
-- a. Install mkcert (https://github.com/FiloSottile/mkcert)
-- b. Run the following command to install the local CA certificates:
+- Install mkcert (https://github.com/FiloSottile/mkcert)
+- Run the following command to install the local CA certificates:
          `mkcert --install`
-- c. `mkcert glific.test api.glific.test`
-- d. `mkdir priv/cert`
-- e. `move glific.test* priv/cert`
-- f. `cd priv/cert`
-- g. `dir` Check that glific.test+1-key.pem and glific.test+1.pem exists
+- `mkcert glific.test api.glific.test`
+- `mkdir priv/cert`
+- `move glific.test* priv/cert`
+- `cd priv/cert`
+- `dir` Check that glific.test+1-key.pem and glific.test+1.pem exists
 
       if not then copy any certificate found in there to the correct names
       for example if I see:
@@ -210,8 +210,8 @@ Go to glific_backend folder in the terminal console.
       glific.test+*.pem
 ```
 
-- h. Check port 4001 `netstat -ano | findstr :4001` should return nothing.
-- i. Check hosts file by`type %SystemRoot%\System32\drivers\etc\hosts | findstr glific`
+- Check port 4001 `netstat -ano | findstr :4001` should return nothing.
+- Check hosts file by`type %SystemRoot%\System32\drivers\etc\hosts | findstr glific`
 
       if returns nothing
       then make sure hosts file has those names added
@@ -222,10 +222,10 @@ Go to glific_backend folder in the terminal console.
 
 ### 7. Backend - Config
 
-- a. Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs` and edit
-- b. Copy the file: `cp config/.env.dev.txt config/.env.dev` and edit
-- c. Run `source config/.env.dev`
-- d. Run `mix deps.get`
+- Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs` and edit
+- Copy the file: `cp config/.env.dev.txt config/.env.dev` and edit
+- Run `source config/.env.dev`
+- Run `mix deps.get`
   if this fails try first `mix local.hex --force` then `mix deps.get`
 
   if you see this error, then Oban key is wrong or failing. Check step 5. Or contact Oban.
@@ -237,9 +237,9 @@ Go to glific_backend folder in the terminal console.
   This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
   \*\* (Mix) Unknown package oban_pro in lockfile
 
-- e. Run `mix setup`
-- f. Run `iex -S mix phx.server`
-- g. Inside the iex (you might need to hit enter/return to see the prompt)
+- Run `mix setup`
+- Run `iex -S mix phx.server`
+- Inside the iex (you might need to hit enter/return to see the prompt)
   - Update HSM templates by running the following command:
   - `Glific.Templates.sync_hsms_from_bsp(1)`
 
@@ -249,15 +249,15 @@ Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
 **For Windows the steps is as follows:**
 
-- a. Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs` and edit
-- b. Copy the file: `cp config/.env.dev.txt config/.env.dev` and edit
-- c. Run this on command prompt:
+- Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs` and edit
+- Copy the file: `cp config/.env.dev.txt config/.env.dev` and edit
+- Run this on command prompt:
     ```
     cd <path-to-glific-backend>
     set /p=DUMMY < config\.env.dev
     ```
     Replace <path-to-glific-backend> with the actual path to the glific_backend directory. This will load the environment variables from the .env.dev file.
-- d. Run `mix deps.get`
+- Run `mix deps.get`
   if this fails try first `mix local.hex --force` then `mix deps.get`
 
   if you see this error, then Oban key is wrong or failing. Check step 5. Or contact Oban.
@@ -269,9 +269,9 @@ Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
   This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
   \*\* (Mix) Unknown package oban_pro in lockfile
 
-- e. Run `mix setup`
-- f. Run `iex -S mix phx.server`
-- g. Inside the iex (you might need to hit enter/return to see the prompt)
+- Run `mix setup`
+- Run `iex -S mix phx.server`
+- Inside the iex (you might need to hit enter/return to see the prompt)
   - Update HSM templates by running the following command:
   - `Glific.Templates.sync_hsms_from_bsp(1)`
 
