@@ -66,12 +66,12 @@ DO NOT run mix deps.get until the next steps are completed.
 
 You will need to do the following:
 
-a. Create a [Gupshup Account](https://www.gupshup.io/developer/home)
-b. Create an app and select [Access API](https://www.gupshup.io/whatsapp/create-app/access-api)
-c. You can name it `NewNameHere` "GlificTest <-- Bot Name is already in use, then use anotherone"
-d. Run the following command `cp config/dev.secret.exs.txt config/dev.secret.exs`
-e. Find your API Key, check the top right corner and click the profile picture or inside the curl sample message
-f. Enter your APP name and API Key in the dev.secret.exs file
+- Create a [Gupshup Account](https://www.gupshup.io/developer/home)
+- Create an app and select [Access API](https://www.gupshup.io/whatsapp/create-app/access-api)
+- You can name it `NewNameHere` "GlificTest <-- Bot Name is already in use, then use anotherone"
+- Run the following command `cp config/dev.secret.exs.txt config/dev.secret.exs`
+- Find your API Key, check the top right corner and click the profile picture or inside the curl sample message
+- Enter your APP name and API Key in the dev.secret.exs file
 
 ### 5. External service - Oban Pro
 
@@ -132,13 +132,13 @@ mix hex.repo list
 Before install also you need to create this SSL cert simila to this
 Go to glific_backend folder in the terminal console.
 
-- a. Install mkcert (https://github.com/FiloSottile/mkcert)
-- b. `mkcert --install`
-- c. `mkcert glific.test api.glific.test`
-- d. `mkdir priv/cert`
-- e. `mv glific.test* priv/cert`
-- f. `cd priv/cert`
-- g. `ls -1` Check that glific.test+1-key.pem and glific.test+1.pem exists
+- Install mkcert (https://github.com/FiloSottile/mkcert)
+- `mkcert --install`
+- `mkcert glific.test api.glific.test`
+- `mkdir priv/cert`
+- `mv glific.test* priv/cert`
+- `cd priv/cert`
+- `ls -1` Check that glific.test+1-key.pem and glific.test+1.pem exists
 
       if not then copy any certificate found in there to the correct names
       for example if I see:
