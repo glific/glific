@@ -37,16 +37,18 @@ We tested and developed against the following version:
 
 ### 2. Software dependency - Erlang / Elixir
 
-- [Install Elixir](https://elixir-lang.org/install.html#distributions) (check package versions below)
+- [Install Elixir](https://elixir-lang.org/install.html#distributions) using asdf (check package versions below)
 
 For Ubuntu users you also need to install the `inotify-tools` package
 
 We tested and developed against the following versions:
 
 ```bash
-    - erlang : 24.3.4
-    - elixir : 1.14.2-otp-24
+    - erlang : 25.3.2
+    - elixir : 1.14.5-otp-25
 ```
+
+**Note**: It is important to use asdf to install Erlang and Elixir.
 
 ### 3. Backend - Download
 
