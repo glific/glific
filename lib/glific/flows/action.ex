@@ -20,7 +20,8 @@ defmodule Glific.Flows.Action do
     Messages.Message,
     Profiles,
     Repo,
-    Sheets
+    Sheets,
+    Tickets
   }
 
   alias Glific.Flows.{
@@ -52,6 +53,7 @@ defmodule Glific.Flows.Action do
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
   @required_fields_sheet [:sheet_id, :result_name | @required_field_common]
+  @required_fields_open_ticket [:body | @required_field_common]
   @required_fields_start_session [
     :contacts,
     :create_contact,
@@ -106,6 +108,8 @@ defmodule Glific.Flows.Action do
           action_type: String.t() | nil,
           range: String.t() | nil,
           sheet_id: integer() | nil,
+          assignee: integer() | nil,
+          topic: String.t() | nil,
 
           ## this is a custom delay in seconds before processing for the node.
           ## Currently only used for send messages
@@ -160,6 +164,8 @@ defmodule Glific.Flows.Action do
     field(:action_type, :string)
     field(:range, :string)
     field(:sheet_id, :integer)
+    field(:assignee, :integer)
+    field(:topic, :string)
 
     field(:wait_time, :integer)
 
@@ -215,6 +221,16 @@ defmodule Glific.Flows.Action do
       action_type: json["action_type"] || "READ",
       range: json["range"] || "",
       result_name: json["result_name"]
+    })
+  end
+
+  def process(%{"type" => "open_ticket"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_open_ticket)
+
+    process(json, uuid_map, node, %{
+      topic: json["topic"]["name"],
+      body: json["body"],
+      assignee: json["assignee"]["uuid"]
     })
   end
 
@@ -632,6 +648,12 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "link_google_sheet"} = action, context, _messages) do
     {context, message} = Sheets.execute(action, context)
+
+    {:ok, context, [message]}
+  end
+
+  def execute(%{type: "open_ticket"} = action, context, _messages) do
+    {context, message} = Tickets.execute(action, context)
 
     {:ok, context, [message]}
   end

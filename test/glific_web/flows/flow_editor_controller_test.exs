@@ -9,7 +9,8 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     Seeds.SeedsDev,
     Settings,
     Templates,
-    Templates.InteractiveTemplates
+    Templates.InteractiveTemplates,
+    Users
   }
 
   alias GlificWeb.Flows.FlowEditorController
@@ -129,6 +130,16 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
                  "status" => 400
                }
              }
+    end
+
+    test "users", %{conn: conn, access_token: token} do
+      users = Users.list_users(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/users", %{})
+
+      assert length(json_response(conn, 200)["results"]) == length(users)
     end
 
     test "labels", %{conn: conn, access_token: token} do
