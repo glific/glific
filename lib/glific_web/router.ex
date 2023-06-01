@@ -49,7 +49,7 @@ defmodule GlificWeb.Router do
   end
 
   # Glific Default Route
-  scope "/",GlificWeb do
+  scope "/", GlificWeb do
     pipe_through(:browser)
 
     get("/", LandingPageController, :index)

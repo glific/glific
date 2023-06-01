@@ -3,6 +3,6 @@ defmodule GlificWeb.LandingPageControllerTest do
 
   test "GET / renders the landing page", %{conn: conn} do
     conn = get(conn, "/")
-    assert html_response(conn, 200) =- "Welcome to Glific Backend!"
+    assert html_response(conn, 200) =~ "Welcome to Glific Backend!"
   end
 end
