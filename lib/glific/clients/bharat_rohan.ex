@@ -3,9 +3,7 @@ defmodule Glific.Clients.BharatRohan do
   Custom webhook implementation specific to BharatRohan use case
   """
 
-  alias Glific.{
-    Messages
-  }
+  alias Glific.Messages
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
