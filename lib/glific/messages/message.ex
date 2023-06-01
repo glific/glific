@@ -175,7 +175,7 @@ defmodule Glific.Messages.Message do
   @spec changeset(Message.t(), map()) :: Ecto.Changeset.t()
   def changeset(message, attrs) do
     message
-    |> cast(attrs, @required_fields ++ @optional_fields)
+    |> cast(attrs, @required_fields ++ @optional_fields, empty_values: [[], nil])
     |> validate_required(@required_fields)
     |> validate_media(message)
     |> unique_constraint([:bsp_message_id, :organization_id])
@@ -184,7 +184,6 @@ defmodule Glific.Messages.Message do
   @doc """
   Convert message structure to map
   """
-
   @spec to_minimal_map(Message.t()) :: map()
   def to_minimal_map(message) do
     message
