@@ -48,6 +48,13 @@ defmodule GlificWeb.Router do
     plug(GlificWeb.ContextPlug)
   end
 
+  # Glific Default Route
+  scope "/",GlificWeb do
+    pipe_through(:browser)
+
+    get("/", LandingPageController, :index)
+  end
+
   # Glific Authentication routes
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
     pipe_through(:api)
