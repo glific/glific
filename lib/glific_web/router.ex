@@ -126,6 +126,8 @@ defmodule GlificWeb.Router do
     get("/groups", FlowEditorController, :groups)
     post("/groups", FlowEditorController, :groups_post)
 
+    get("/users", FlowEditorController, :users)
+
     get("/labels", FlowEditorController, :labels)
     post("/labels", FlowEditorController, :labels_post)
 

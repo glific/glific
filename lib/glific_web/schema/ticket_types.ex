@@ -44,6 +44,9 @@ defmodule GlificWeb.Schema.TicketTypes do
 
   @desc "Filtering options for tickets"
   input_object :ticket_filter do
+    @desc "Match the body"
+    field(:body, :string)
+
     @desc "Match the status"
     field(:status, :string)
 

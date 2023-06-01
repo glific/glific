@@ -112,8 +112,14 @@ defmodule Glific.Messages do
       {:bsp_status, bsp_status}, query ->
         from(q in query, where: q.bsp_status == ^bsp_status)
 
+      {:flow_label, flow_label}, query ->
+        from(q in query, where: q.flow_label == ^flow_label)
+
       {:flow_id, flow_id}, query ->
         from(q in query, where: q.flow_id == ^flow_id)
+
+      {:contact_id, contact_id}, query ->
+        from(q in query, where: q.contact_id == ^contact_id)
 
       _, query ->
         query
