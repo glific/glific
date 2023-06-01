@@ -634,6 +634,13 @@ defmodule Glific.Partners do
   @doc """
   Determine if we need to enable contact profile for an organization
   """
+  @spec get_ticketing_enabled(map()) :: boolean
+  def get_ticketing_enabled(organization),
+    do: FunWithFlags.enabled?(:is_ticketing_enabled, for: %{organization_id: organization.id})
+
+  @doc """
+  Determine if we need to enable contact profile for an organization
+  """
   @spec get_contact_profile_enabled(map()) :: boolean
   def get_contact_profile_enabled(organization),
     do:
@@ -1238,7 +1245,7 @@ defmodule Glific.Partners do
       "flow_uuid_display" => get_flow_uuid_display(organization),
       "roles_and_permission" => get_roles_and_permission(organization),
       "contact_profile_enabled" => get_contact_profile_enabled(organization),
-      "ticketing_enabled" => set_ticketing_enabled(organization)
+      "ticketing_enabled" => get_ticketing_enabled(organization)
     }
   end
 
