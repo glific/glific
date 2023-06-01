@@ -17,7 +17,7 @@ defmodule Glific.Clients.BharatRohan do
       filter: %{flow_label: fields["flow_label"], contact_id: fields["contact_id"]},
       opts: %{limit: 3}
     })
-    |> Enum.map(fn message ->
+    |> Enum.each(fn message ->
       Messages.create_and_send_message(%{
         body: message.body,
         flow: message.flow,
