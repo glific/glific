@@ -37,16 +37,18 @@ We tested and developed against the following version:
 
 ### 2. Software dependency - Erlang / Elixir
 
-- [Install Elixir](https://elixir-lang.org/install.html#distributions) (check package versions below)
+- [Install Elixir](https://elixir-lang.org/install.html#distributions) using asdf (check package versions below)
 
 For Ubuntu users you also need to install the `inotify-tools` package
 
 We tested and developed against the following versions:
 
 ```bash
-    - erlang : 24.3.4
-    - elixir : 1.14.2-otp-24
+    - erlang : 25.3.2
+    - elixir : 1.14.5-otp-25
 ```
+
+**Note**: It is important to use asdf to install Erlang and Elixir.
 
 ### 3. Backend - Download
 
@@ -64,12 +66,12 @@ DO NOT run mix deps.get until the next steps are completed.
 
 You will need to do the following:
 
-a. Create a [Gupshup Account](https://www.gupshup.io/developer/home)
-b. Create an app and select [Access API](https://www.gupshup.io/whatsapp/create-app/access-api)
-c. You can name it `NewNameHere` "GlificTest <-- Bot Name is already in use, then use anotherone"
-d. Run the following command `cp config/dev.secret.exs.txt config/dev.secret.exs`
-e. Find your API Key, check the top right corner and click the profile picture or inside the curl sample message
-f. Enter your APP name and API Key in the dev.secret.exs file
+- Create a [Gupshup Account](https://www.gupshup.io/developer/home)
+- Create an app and select [Access API](https://www.gupshup.io/whatsapp/create-app/access-api)
+- You can name it `NewNameHere` "GlificTest <-- Bot Name is already in use, then use anotherone"
+- Run the following command `cp config/dev.secret.exs.txt config/dev.secret.exs`
+- Find your API Key, check the top right corner and click the profile picture or inside the curl sample message
+- Enter your APP name and API Key in the dev.secret.exs file
 
 ### 5. External service - Oban Pro
 
@@ -130,13 +132,13 @@ mix hex.repo list
 Before install also you need to create this SSL cert simila to this
 Go to glific_backend folder in the terminal console.
 
-- a. Install mkcert (https://github.com/FiloSottile/mkcert)
-- b. `mkcert --install`
-- c. `mkcert glific.test api.glific.test`
-- d. `mkdir priv/cert`
-- e. `mv glific.test* priv/cert`
-- f. `cd priv/cert`
-- g. `ls -1` Check that glific.test+1-key.pem and glific.test+1.pem exists
+- Install mkcert (https://github.com/FiloSottile/mkcert)
+- `mkcert --install`
+- `mkcert glific.test api.glific.test`
+- `mkdir priv/cert`
+- `mv glific.test* priv/cert`
+- `cd priv/cert`
+- `ls -1` Check that glific.test+1-key.pem and glific.test+1.pem exists
 
       if not then copy any certificate found in there to the correct names
       for example if I see:
@@ -163,19 +165,67 @@ Go to glific_backend folder in the terminal console.
       glific.test+*.pem
 ```
 
-- h. Check port 4001 `sudo lsof -n -i:4001 | grep LISTEN` should return nothing.
-- i. Check hosts file `grep glific /etc/hosts`
+- Check port 4001 `sudo lsof -n -i:4001 | grep LISTEN` should return nothing.
+- Check hosts file `grep glific /etc/hosts`
 
       if returns nothing
       then make sure hosts file has those names added
       `sudo bash -c 'echo "127.0.0.1 glific.test api.glific.test" >> /etc/hosts'`
+      
+      
+      
+**For Windows the steps is as follows:**
+
+- Install mkcert (https://github.com/FiloSottile/mkcert)
+- Run the following command to install the local CA certificates:
+         `mkcert --install`
+- `mkcert glific.test api.glific.test`
+- `mkdir priv/cert`
+- `move glific.test* priv/cert`
+- `cd priv/cert`
+- `dir` Check that glific.test+1-key.pem and glific.test+1.pem exists
+
+      if not then copy any certificate found in there to the correct names
+      for example if I see:
+
+```bash
+      ❯ dir
+      glific.test+*-key.pem
+      glific.test+*.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
+      ❯ cp glific.test+*-key.pem glific.test+1-key.pem
+      ❯ cp glific.test+*.pem glific.test+1.pem
+```
+
+      And check again
+
+```bash
+      ❯ dir
+      glific.test+*-key.pem
+      glific.test+*.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
+```
+
+- Check port 4001 `netstat -ano | findstr :4001` should return nothing.
+- Check hosts file by`type %SystemRoot%\System32\drivers\etc\hosts | findstr glific`
+
+      if returns nothing
+      then make sure hosts file has those names added
+      127.0.0.1 glific.test
+      127.0.0.1 api.glific.test      
+
+
 
 ### 7. Backend - Config
 
-- a. Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs` and edit
-- b. Copy the file: `cp config/.env.dev.txt config/.env.dev` and edit
-- c. Run `source config/.env.dev`
-- d. Run `mix deps.get`
+- Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs` and edit
+- Copy the file: `cp config/.env.dev.txt config/.env.dev` and edit
+- Run `source config/.env.dev`
+- Run `mix deps.get`
   if this fails try first `mix local.hex --force` then `mix deps.get`
 
   if you see this error, then Oban key is wrong or failing. Check step 5. Or contact Oban.
@@ -187,13 +237,46 @@ Go to glific_backend folder in the terminal console.
   This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
   \*\* (Mix) Unknown package oban_pro in lockfile
 
-- e. Run `mix setup`
-- f. Run `iex -S mix phx.server`
-- g. Inside the iex (you might need to hit enter/return to see the prompt)
+- Run `mix setup`
+- Run `iex -S mix phx.server`
+- Inside the iex (you might need to hit enter/return to see the prompt)
   - Update HSM templates by running the following command:
   - `Glific.Templates.sync_hsms_from_bsp(1)`
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+
+
+
+**For Windows the steps is as follows:**
+
+- Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs` and edit
+- Copy the file: `cp config/.env.dev.txt config/.env.dev` and edit
+- Run this on command prompt:
+    ```
+    cd <path-to-glific-backend>
+    set /p=DUMMY < config\.env.dev
+    ```
+    Replace <path-to-glific-backend> with the actual path to the glific_backend directory. This will load the environment variables from the .env.dev file.
+- Run `mix deps.get`
+  if this fails try first `mix local.hex --force` then `mix deps.get`
+
+  if you see this error, then Oban key is wrong or failing. Check step 5. Or contact Oban.
+
+  ❯ mix deps.get
+  Failed to fetch record for 'hexpm:oban/oban_pro' from registry (using cache instead)
+  This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
+  Failed to fetch record for 'hexpm:oban/oban_web' from registry (using cache instead)
+  This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
+  \*\* (Mix) Unknown package oban_pro in lockfile
+
+- Run `mix setup`
+- Run `iex -S mix phx.server`
+- Inside the iex (you might need to hit enter/return to see the prompt)
+  - Update HSM templates by running the following command:
+  - `Glific.Templates.sync_hsms_from_bsp(1)`
+
+Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+
 
 ### 8. Frontend - Install glific frontend
 
