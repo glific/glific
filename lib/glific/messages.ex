@@ -182,6 +182,14 @@ defmodule Glific.Messages do
   defp put_contact_id(attrs), do: attrs
 
   @spec put_clean_body(map()) :: map()
+  # sometimes we get no body, so we need to ensure we set to null for text type
+  # Issue #2798
+  defp put_clean_body(%{body: nil, type: :text} = attrs),
+    do:
+      attrs
+      |> Map.put(:body, "")
+      |> Map.put(:clean_body, "")
+
   defp put_clean_body(%{body: body} = attrs),
     do: Map.put(attrs, :clean_body, Glific.string_clean(body))
 

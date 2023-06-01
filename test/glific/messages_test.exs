@@ -332,6 +332,16 @@ defmodule Glific.MessagesTest do
                |> Messages.create_message()
     end
 
+    test "create_message/1 with valid data and nil body creates a message", attrs do
+      assert {:ok, message} =
+               @valid_attrs
+               |> Map.put(:body, nil)
+               |> Map.merge(foreign_key_constraint(attrs))
+               |> Messages.create_message()
+
+      assert message.body == ""
+    end
+
     test "create_message/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} = Messages.create_message(@invalid_attrs)
     end
