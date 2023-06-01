@@ -1,4 +1,4 @@
-defmodule GlificWeb.Landing PageControllerTest do
+defmodule GlificWeb.LandingPageControllerTest do
   use GlificWeb.ConnCase
 
   test "GET / renders the landing page", %{conn: conn} do
