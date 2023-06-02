@@ -293,7 +293,7 @@ defmodule GlificWeb.Schema.MessageTest do
 
     assert {:ok, query_data} = result
     message = get_in(query_data, [:data, "updateMessage", "errors", Access.at(0), "message"])
-    assert message =~ "can't be blank"
+    assert message =~ "Sender_id: is invalid"
   end
 
   test "delete a message", %{user: user} do
