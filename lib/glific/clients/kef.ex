@@ -205,7 +205,7 @@ defmodule Glific.Clients.KEF do
     worksheet_code = String.trim(fields["worksheet_code"] || "")
 
     completed_worksheet_codes =
-      get_in(fields, ["contact", "fields", "completed_worksheet_code", "value"]) || ""
+      get_in(fields, ["contact", "fields", "sheeet_completed_worksheet_code", "value"]) || ""
 
     is_completed = worksheet_code in String.split(completed_worksheet_codes, ", ")
 
@@ -233,6 +233,33 @@ defmodule Glific.Clients.KEF do
   def webhook("check_response", fields) do
     %{
       response: String.equivalent?(fields["correct_response"], fields["user_response"])
+    }
+  end
+
+  def webhook("mark_sheeet_worksheet_completed", fields) do
+    worksheet_code = String.trim(fields["worksheet_code"] || "")
+    contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
+
+    sheeet_completed_worksheet_codes =
+      get_in(fields, ["contact", "fields", "sheeet_completed_worksheet_code", "value"]) || ""
+
+    sheeet_completed_worksheet_codes =
+      if sheeet_completed_worksheet_codes == "" do
+        worksheet_code
+      else
+        "#{sheeet_completed_worksheet_codes}, #{worksheet_code}"
+      end
+
+    Contacts.get_contact!(contact_id)
+    |> ContactField.do_add_contact_field(
+      "sheeet_completed_worksheet_code",
+      "sheeet_completed_worksheet_code",
+      sheeet_completed_worksheet_codes
+    )
+
+    %{
+      error: false,
+      message: "Worksheet #{worksheet_code} marked as completed"
     }
   end
 
