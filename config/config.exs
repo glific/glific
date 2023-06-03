@@ -49,6 +49,7 @@ oban_crontab = [
   {"1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
   {"2 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :delete_tasks}},
   {"58 23 * * *", Glific.Jobs.MinuteWorker, args: %{job: :daily_tasks}},
+  {"0 3 * * *", Glific.Jobs.MinuteWorker, args: %{job: :tracker_tasks}},
   {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
   {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}},
   # 21:00 Sat UTC is  02:30 Sun IST and hence low traffic
@@ -126,6 +127,17 @@ config :esbuild,
     args: ~w(js/app.js --bundle --target=es2016 --outdir=../priv/static/assets),
     cd: Path.expand("../assets", __DIR__),
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
+  ]
+
+config :tailwind,
+  version: "3.2.1",
+  default: [
+    args: ~w(
+      --config=tailwind.config.js
+      --input=css/app.css
+      --output=../priv/static/assets/app.css
+    ),
+    cd: Path.expand("../assets", __DIR__)
   ]
 
 config :glific, Glific.Communications.Mailer, adapter: Swoosh.Adapters.AmazonSES

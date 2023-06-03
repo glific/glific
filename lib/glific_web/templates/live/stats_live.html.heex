@@ -1,0 +1,104 @@
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0">
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/flatpickr">
+</script>
+<!--
+Commented out the filter code. Will add this once the functionality is ready
+
+<div class="flex content-center justify-center" id="date-filters" phx-update="ignore">
+  <input
+    id="start_date"
+    phx-hook="dateInput"
+    class="mr-3 flatpickr flatpickr-input active"
+    type="text"
+    placeholder="Select Start Date.."
+    readonly="readonly"
+  />
+
+  <input
+    id="end_date"
+    phx-hook="dateInput"
+    class="flatpickr flatpickr-input active"
+    type="text"
+    placeholder="Select End Date.."
+    readonly="readonly"
+  />
+</div>
+-->
+<div>
+  <div class="flex content-center justify-center" id="charts" phx-update="ignore">
+    <canvas
+      class="card"
+      id="contacts_chart"
+      phx-hook="chart"
+      data-label="Contacts"
+      data-chart-data={Jason.encode!(@contact_chart_data)}
+    >
+    </canvas>
+    <canvas
+      class="card"
+      id="conversation_chart"
+      phx-hook="chart"
+      data-label="Conversations"
+      data-chart-data={Jason.encode!(@conversation_chart_data)}
+    >
+    </canvas>
+  </div>
+</div>
+
+<div class="flex content-center justify-center flex-wrap">
+  <a class="card">
+    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+      Monthly Conversations
+    </h5>
+    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
+      <%= @conversation_count %>
+    </p>
+  </a>
+
+  <a class="card">
+    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+      Contacts In Flows
+    </h5>
+    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
+      <%= @active_flow_count %>
+    </p>
+  </a>
+
+  <a class="card">
+    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+      Total Valid Contacts
+    </h5>
+    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
+      <%= @valid_contact_count %>
+    </p>
+  </a>
+
+  <a class="card">
+    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+      Total Invalid Contacts
+    </h5>
+    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
+      <%= @invalid_contact_count %>
+    </p>
+  </a>
+
+  <a class="card">
+    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+      Opted In Contacts
+    </h5>
+    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
+      <%= @opted_in_contacts_count %>
+    </p>
+  </a>
+
+  <a class="card">
+    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+      Opted Out Contacts
+    </h5>
+    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
+      <%= @opted_out_contacts_count %>
+    </p>
+  </a>
+</div>

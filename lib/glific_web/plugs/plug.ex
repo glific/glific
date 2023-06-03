@@ -61,7 +61,7 @@ if Code.ensure_loaded?(Plug) do
             conn
 
           organization_id == 0 ->
-            Logger.info("Halting on failure to retrive #{organization}")
+            Logger.info("Halting on failure to retrieve #{organization}")
             send_error(conn)
 
           true ->

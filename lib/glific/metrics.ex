@@ -7,6 +7,7 @@ defmodule Glific.Metrics do
   use Supervisor
 
   @worker Glific.Metrics.Worker
+  @worker_tracker Glific.Metrics.WorkerTracker
   @registry Glific.Metrics.Registry
   @supervisor Glific.Metrics.WorkerSupervisor
 
@@ -47,5 +48,42 @@ defmodule Glific.Metrics do
 
     send(pid, {:bump, args})
     :ok
+  end
+
+  def bump(%{type: :tracker} = args) do
+    key = {:tracker, args.organization_id}
+
+    pid =
+      case Registry.lookup(@registry, key) do
+        [{pid, _}] ->
+          pid
+
+        [] ->
+          case DynamicSupervisor.start_child(@supervisor, {@worker_tracker, key}) do
+            {:ok, pid} -> pid
+            {:error, {:already_started, pid}} -> pid
+          end
+      end
+
+    send(pid, {:bump, args.event})
+    :ok
+  end
+
+  @doc """
+  Wrapper function for bump that we can call from the main code
+  """
+  @spec increment(String.t(), non_neg_integer | nil) :: :ok
+
+  def increment(event, organization_id \\ nil) do
+    organization_id =
+      if organization_id == nil,
+        do: Glific.Repo.get_organization_id(),
+        else: organization_id
+
+    bump(%{
+      type: :tracker,
+      organization_id: organization_id,
+      event: event
+    })
   end
 end

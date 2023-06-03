@@ -192,6 +192,17 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  Return nil if contact is not present (rather than raising exception)
+  """
+  @spec get_contact(integer) :: Contact.t() | nil
+  def get_contact(id) do
+    Contact
+    |> where([c], c.id == ^id)
+    |> Repo.add_permission(&Contacts.add_permission/2)
+    |> Repo.one()
+  end
+
+  @doc """
   Gets a single contact by phone number.
 
   Raises `Ecto.NoResultsError` if the Contact does not exist.

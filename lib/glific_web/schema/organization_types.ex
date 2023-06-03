@@ -23,6 +23,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:flow_uuid_display, :boolean)
     field(:roles_and_permission, :boolean)
     field(:contact_profile_enabled, :boolean)
+    field(:ticketing_enabled, :boolean)
     field(:errors, list_of(:input_error))
   end
 
@@ -102,6 +103,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:is_flow_uuid_display, :boolean)
     field(:is_roles_and_permission, :boolean)
     field(:is_contact_profile_enabled, :boolean)
+    field(:is_ticketing_enabled, :boolean)
 
     field(:inserted_at, :datetime)
 
@@ -205,6 +207,17 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
       resolve(fn _, _, %{context: %{current_user: user}} ->
         {:ok, Partners.attachments_enabled?(user.organization_id)}
+      end)
+    end
+
+    @desc "Tracks action (various high level clicks) done by org users"
+    field :tracker, :boolean do
+      arg(:event, non_null(:string))
+      middleware(Authorize, :staff)
+
+      resolve(fn _, %{event: event}, %{context: %{current_user: user}} ->
+        Glific.Metrics.increment(event, user.organization_id)
+        {:ok, true}
       end)
     end
 

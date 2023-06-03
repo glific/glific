@@ -3,8 +3,13 @@ defmodule Glific.Clients.CommonWebhook do
   Common webhooks which we can call with any clients.
   """
 
-  alias Glific.OpenAI.ChatGPT
-  alias Glific.Sheets.GoogleSheets
+  alias Glific.{
+    ASR.GoogleASR,
+    Contacts.Contact,
+    OpenAI.ChatGPT,
+    Repo,
+    Sheets.GoogleSheets
+  }
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -43,12 +48,48 @@ defmodule Glific.Clients.CommonWebhook do
     range = fields["range"] || "A:Z"
     spreadsheet_id = fields["spreadsheet_id"]
     row_data = fields["row_data"]
-    response = GoogleSheets.insert_row(org_id, spreadsheet_id, %{range: range, data: [row_data]})
 
-    %{
-      response: "#{inspect(response)}"
-    }
+    with {:ok, response} <-
+           GoogleSheets.insert_row(org_id, spreadsheet_id, %{range: range, data: [row_data]}) do
+      %{response: "#{inspect(response)}"}
+    end
+  end
+
+  def webhook("jugalbandi", fields) do
+    Tesla.get(fields["url"],
+      headers: [{"Accept", "application/json"}],
+      query: [
+        query_string: fields["query_string"],
+        uuid_number: fields["uuid_number"]
+      ],
+      opts: [adapter: [recv_timeout: 100_000]]
+    )
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        Jason.decode!(body)
+        |> Map.take(["answer"])
+        |> Map.merge(%{success: true})
+
+      {_status, _response} ->
+        %{success: false, response: "Invalid response"}
+    end
+  end
+
+  # This webhook will call Google speech-to-text API
+  def webhook("speech_to_text", fields) do
+    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+    contact = get_contact_language(contact_id)
+
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> GoogleASR.speech_to_text(fields["results"], contact.language.locale)
   end
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
+
+  defp get_contact_language(contact_id) do
+    case Repo.fetch(Contact, contact_id) do
+      {:ok, contact} -> contact |> Repo.preload(:language)
+      {:error, error} -> error
+    end
+  end
 end

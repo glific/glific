@@ -1,0 +1,9 @@
+query tickets {
+  tickets {
+    id
+    body
+    topic
+    status
+    remarks
+  }
+}

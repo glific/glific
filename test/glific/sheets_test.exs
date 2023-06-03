@@ -23,6 +23,7 @@ defmodule Glific.SheetsTest do
     end
 
     @valid_attrs %{
+      type: "READ",
       label: "sample sheet",
       # this is sample sheet url
       url:

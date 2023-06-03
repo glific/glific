@@ -95,7 +95,7 @@ defmodule Glific.Flows.FlowLabel do
   end
 
   @doc """
-  Try to first get the flow label, if not present, create it. We dont use the upsert function, since
+  Try to first get the flow label, if not present, create it. We don't use the upsert function, since
   it consumes id's for every failure. we expect a lot more gets, than inserts
   """
   @spec get_or_create_flow_label(map()) :: {:ok, FlowLabel.t()} | {:error, Ecto.Changeset.t()}

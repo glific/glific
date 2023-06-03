@@ -3,6 +3,8 @@ defmodule GlificWeb.Router do
   a default gateway for all the external requests
   """
   use GlificWeb, :router
+
+  import GlificWeb.UserAuth
   @dialyzer {:nowarn_function, __checks__: 0}
   use Appsignal.Plug
 
@@ -16,6 +18,16 @@ defmodule GlificWeb.Router do
     plug(:protect_from_forgery)
     plug(:put_secure_browser_headers)
     plug(Pow.Plug.Session, otp_app: :glific)
+  end
+
+  pipeline :phx_browser do
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+    plug(:fetch_live_flash)
+    plug(:put_root_layout, {GlificWeb.LayoutView, :root})
+    plug(:protect_from_forgery)
+    plug(:put_secure_browser_headers)
+    plug(:fetch_current_user)
   end
 
   scope path: "/feature-flags" do
@@ -36,6 +48,13 @@ defmodule GlificWeb.Router do
     plug(GlificWeb.ContextPlug)
   end
 
+  # Glific Default Route
+  scope "/", GlificWeb do
+    pipe_through(:browser)
+
+    get("/", LandingPageController, :index)
+  end
+
   # Glific Authentication routes
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
     pipe_through(:api)
@@ -46,6 +65,7 @@ defmodule GlificWeb.Router do
     resources("/session", SessionController, singleton: true, only: [:create, :delete])
     post("/session/renew", SessionController, :renew)
     post("/session/name", SessionController, :name)
+    post("/session/tracker", SessionController, :tracker)
     post("/onboard/setup", OnboardController, :setup)
   end
 
@@ -64,9 +84,12 @@ defmodule GlificWeb.Router do
   end
 
   scope "/", GlificWeb do
-    pipe_through([:browser])
+    pipe_through([:phx_browser, :require_authenticated_user])
 
-    live("/liveview", StatsLive)
+    live_session(:authenticated, on_mount: {GlificWeb.UserAuth, :ensure_authenticated}) do
+      live("/stats", StatsLive)
+      ## add all the authenticated live views here.
+    end
   end
 
   # Custom stack for Absinthe
@@ -102,6 +125,8 @@ defmodule GlificWeb.Router do
 
     get("/groups", FlowEditorController, :groups)
     post("/groups", FlowEditorController, :groups_post)
+
+    get("/users", FlowEditorController, :users)
 
     get("/labels", FlowEditorController, :labels)
     post("/labels", FlowEditorController, :labels_post)
@@ -174,5 +199,18 @@ defmodule GlificWeb.Router do
     username = Application.fetch_env!(:glific, :auth_username)
     password = Application.fetch_env!(:glific, :auth_password)
     Plug.BasicAuth.basic_auth(conn, username: username, password: password)
+  end
+
+  ## Authentication routes
+
+  scope "/", GlificWeb do
+    pipe_through([:phx_browser, :redirect_if_user_is_authenticated])
+    get("/users/log_in", UserSessionController, :new)
+    post("/users/log_in", UserSessionController, :create)
+  end
+
+  scope "/", GlificWeb do
+    pipe_through([:phx_browser])
+    delete("/users/log_out", UserSessionController, :delete)
   end
 end

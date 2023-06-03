@@ -635,6 +635,7 @@ defmodule Glific.Flows.FlowContext do
   @spec init_context(Flow.t(), Contact.t(), String.t(), Keyword.t() | []) ::
           {:ok | :wait, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def init_context(flow, contact, status, opts \\ []) do
+    Glific.Metrics.increment("Flows Started")
     parent_id = Keyword.get(opts, :parent_id)
     # set all previous context to be completed if we are not starting a sub flow
     if is_nil(parent_id) do

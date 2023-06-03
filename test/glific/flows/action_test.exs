@@ -11,7 +11,8 @@ defmodule Glific.Flows.ActionTest do
     Profiles,
     Seeds.SeedsDev,
     Settings,
-    Templates.InteractiveTemplate
+    Templates.InteractiveTemplate,
+    Tickets.Ticket
   }
 
   alias Glific.Flows.{
@@ -199,7 +200,7 @@ defmodule Glific.Flows.ActionTest do
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
-  test "process extracts the right values from json for link_google_sheet" do
+  test "process extracts the right values from json for link_google_sheet when action_type is READ" do
     node = %Node{uuid: "Test UUID"}
 
     json = %{
@@ -207,7 +208,8 @@ defmodule Glific.Flows.ActionTest do
       "type" => "link_google_sheet",
       "sheet_id" => 1,
       "row" => "14/11/2022",
-      "result_name" => "sheet"
+      "result_name" => "sheet",
+      "action_type" => "READ"
     }
 
     {action, _uuid_map} = Action.process(json, %{}, node)
@@ -225,10 +227,64 @@ defmodule Glific.Flows.ActionTest do
     json = %{
       "uuid" => "UUID 1",
       "type" => "link_google_sheet",
-      "row" => "14/11/2022"
+      "row" => "14/11/2022",
+      "action_type" => "READ"
     }
 
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+    json = %{}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "process extracts the right values from json for link_google_sheet when action_type is WRITE" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "range" => "Sheet1!A:Z",
+      "type" => "link_google_sheet",
+      "sheet_id" => 1,
+      "row_data" => ["Hello", "@results.input.input"],
+      "action_type" => "WRITE",
+      "result_name" => "",
+      "url" =>
+        "https://docs.google.com/spreadsheets/d/1x6lPyPccBq_VnZFXVUrQXWfuELPMUH3VLijbYL0cRKw/edit#gid=0"
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+    assert action.uuid == "UUID 1"
+    assert action.type == "link_google_sheet"
+    assert action.range == "Sheet1!A:Z"
+    assert action.node_uuid == node.uuid
+    assert action.sheet_id == 1
+    assert action.row_data == ["Hello", "@results.input.input"]
+  end
+
+  test "process extracts the right values from json for open_ticket" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "assignee" => %{"name" => "NGO Manager", "type" => "user", "uuid" => "4"},
+      "body" => "Help regarding flow",
+      "result_name" => "Result",
+      "topic" => %{
+        "name" => "Help",
+        "uuid" => "c9907a7f-ffbc-4d1f-a8db-44a479138aa5"
+      },
+      "type" => "open_ticket",
+      "uuid" => "UUID 1"
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+    assert action.uuid == "UUID 1"
+    assert action.type == "open_ticket"
+    assert action.body == "Help regarding flow"
+    assert action.assignee == "4"
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "open_ticket"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+
     json = %{}
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
@@ -797,6 +853,37 @@ defmodule Glific.Flows.ActionTest do
     Action.execute(action, context, message_stream)
     {:ok, contact} = Repo.fetch_by(Contact, %{id: profile.contact_id})
     assert contact.active_profile_id == profile.id
+  end
+
+  test "execute an action when type is open_ticket to create a new ticket", attrs do
+    user = Fixtures.user_fixture()
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+
+    context =
+      %FlowContext{
+        contact_id: user.contact_id,
+        flow_id: flow.id,
+        organization_id: attrs.organization_id
+      }
+      |> Repo.preload([:contact, :flow])
+
+    # Create a profile for a contact
+    action = %Action{
+      body: "Need help with registration",
+      assignee: user.id,
+      uuid: "UUID 1",
+      type: "open_ticket",
+      topic: "registration"
+    }
+
+    message_stream = []
+
+    Action.execute(action, context, message_stream)
+
+    {:ok, ticket} = Repo.fetch_by(Ticket, %{body: "Need help with registration"})
+    assert ticket.topic == "registration"
+    assert ticket.status == "open"
+    assert ticket.user_id == user.id
   end
 
   test "execute an action when type is enter_flow", attrs do

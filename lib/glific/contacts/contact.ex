@@ -77,41 +77,41 @@ defmodule Glific.Contacts.Contact do
         }
 
   schema "contacts" do
-    field :name, :string
-    field :phone, :string
-    field :masked_phone, :string, virtual: true
+    field(:name, :string)
+    field(:phone, :string)
+    field(:masked_phone, :string, virtual: true)
 
-    field :status, ContactStatus
-    field :bsp_status, ContactProviderStatus
+    field(:status, ContactStatus)
+    field(:bsp_status, ContactProviderStatus)
 
-    field :is_org_read, :boolean, default: true
-    field :is_org_replied, :boolean, default: true
-    field :is_contact_replied, :boolean, default: true
+    field(:is_org_read, :boolean, default: true)
+    field(:is_org_replied, :boolean, default: true)
+    field(:is_contact_replied, :boolean, default: true)
 
-    field :optin_time, :utc_datetime
-    field :optin_status, :boolean, default: false
-    field :optin_method, :string
-    field :optin_message_id, :string
+    field(:optin_time, :utc_datetime)
+    field(:optin_status, :boolean, default: false)
+    field(:optin_method, :string)
+    field(:optin_message_id, :string)
 
-    field :last_message_number, :integer, default: 0
+    field(:last_message_number, :integer, default: 0)
 
-    field :optout_time, :utc_datetime
-    field :optout_method, :string
+    field(:optout_time, :utc_datetime)
+    field(:optout_method, :string)
 
-    field :last_message_at, :utc_datetime
-    field :last_communication_at, :utc_datetime
+    field(:last_message_at, :utc_datetime)
+    field(:last_communication_at, :utc_datetime)
 
-    field :settings, :map, default: %{}
-    field :fields, :map, default: %{}
+    field(:settings, :map, default: %{})
+    field(:fields, :map, default: %{})
 
-    belongs_to :language, Language
-    belongs_to :active_profile, Profile
-    belongs_to :organization, Organization
+    belongs_to(:language, Language)
+    belongs_to(:active_profile, Profile)
+    belongs_to(:organization, Organization)
 
-    has_one :user, User
-    many_to_many :tags, Tag, join_through: "contacts_tags", on_replace: :delete
+    has_one(:user, User)
+    many_to_many(:tags, Tag, join_through: "contacts_tags", on_replace: :delete)
 
-    many_to_many :groups, Group, join_through: "contacts_groups", on_replace: :delete
+    many_to_many(:groups, Group, join_through: "contacts_groups", on_replace: :delete)
 
     timestamps(type: :utc_datetime_usec)
   end

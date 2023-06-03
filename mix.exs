@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "5.1.7",
+      version: "5.2.4",
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -88,7 +88,7 @@ defmodule Glific.MixProject do
       {:phoenix_live_view, "~> 0.18"},
       {:phoenix_live_dashboard, "~> 0.7"},
       {:phoenix_view, "~> 2.0"},
-      {:pow, "~> 1.0.28"},
+      {:pbkdf2_elixir, "~> 2.0"},
       {:telemetry, "~> 1.0"},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
@@ -116,8 +116,8 @@ defmodule Glific.MixProject do
       {:hackney, "~> 1.17"},
       {:tesla, "~> 1.5"},
       {:oban, "~> 2.13"},
-      {:oban_web, "~> 2.9", organization: "oban", only: @oban_envs},
-      {:oban_pro, "~> 0.12", organization: "oban", only: @oban_envs},
+      {:oban_web, "~> 2.9", repo: "oban", only: @oban_envs},
+      {:oban_pro, "~> 0.12", repo: "oban", only: @oban_envs},
       {:faker, "~> 0.13"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.15", only: @test_envs},
@@ -152,10 +152,12 @@ defmodule Glific.MixProject do
       {:remote_ip, "~> 1.0"},
       {:exvcr, "~> 0.13", only: @test_envs},
       {:dotenvy, "~> 0.1"},
+      {:tailwind, "~> 0.1", runtime: Mix.env() == :dev},
       {:phoenix_swoosh, "~> 1.2"},
       {:gen_smtp, "~> 1.1"},
       {:glific_phil_columns, "~> 3.2"},
-      {:glific_forked_waffle_gcs, "~> 0.1.1"}
+      {:glific_forked_waffle_gcs, "~> 0.1.1"},
+      {:pow, git: "https://github.com/glific/pow.git"}
     ]
   end
 
@@ -193,7 +195,7 @@ defmodule Glific.MixProject do
         "test"
       ],
       test: ["ecto.create --quiet", "ecto.migrate", "test"],
-      "assets.deploy": ["esbuild default --minify", "phx.digest"]
+      "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
     ]
   end
 end

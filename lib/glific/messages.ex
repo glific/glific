@@ -112,8 +112,14 @@ defmodule Glific.Messages do
       {:bsp_status, bsp_status}, query ->
         from(q in query, where: q.bsp_status == ^bsp_status)
 
+      {:flow_label, flow_label}, query ->
+        from(q in query, where: q.flow_label == ^flow_label)
+
       {:flow_id, flow_id}, query ->
         from(q in query, where: q.flow_id == ^flow_id)
+
+      {:contact_id, contact_id}, query ->
+        from(q in query, where: q.contact_id == ^contact_id)
 
       _, query ->
         query
@@ -176,6 +182,14 @@ defmodule Glific.Messages do
   defp put_contact_id(attrs), do: attrs
 
   @spec put_clean_body(map()) :: map()
+  # sometimes we get no body, so we need to ensure we set to null for text type
+  # Issue #2798
+  defp put_clean_body(%{body: nil, type: :text} = attrs),
+    do:
+      attrs
+      |> Map.put(:body, "")
+      |> Map.put(:clean_body, "")
+
   defp put_clean_body(%{body: body} = attrs),
     do: Map.put(attrs, :clean_body, Glific.string_clean(body))
 
@@ -236,14 +250,19 @@ defmodule Glific.Messages do
   def create_and_send_message(%{body: body, type: :text} = _attrs) when body in ["", nil],
     do: {:error, "Could not send message with empty body"}
 
-  def create_and_send_message(attrs) do
-    contact = Contacts.get_contact!(attrs.receiver_id)
-    attrs = Map.put(attrs, :receiver, contact)
+  def create_and_send_message(%{receiver_id: receiver_id} = attrs) do
+    contact = Contacts.get_contact(receiver_id)
 
-    ## we need to clean this code in the future.
-    attrs = check_for_interactive(attrs, contact.language_id)
+    if contact do
+      attrs = Map.put(attrs, :receiver, contact)
 
-    check_for_hsm_message(attrs, contact)
+      ## we need to clean this code in the future.
+      attrs = check_for_interactive(attrs, contact.language_id)
+
+      check_for_hsm_message(attrs, contact)
+    else
+      {:error, "Receiver does not exist"}
+    end
   end
 
   @spec check_for_interactive(map(), non_neg_integer()) :: map()
