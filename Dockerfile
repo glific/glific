@@ -1,31 +1,66 @@
-FROM elixir:1.13.4
+# Start with a base image
+FROM elixir:1.14.5
 
-WORKDIR /opt/glific
+# Install software dependencies
+RUN apt-get update && \
+    apt-get install -y postgresql inotify-tools wget build-essential curl git
 
-RUN apk update && \
-  apk upgrade --no-cache && \
-  apk add --no-cache \
-    nodejs \
-    yarn \
-    git \
-    build-base \
-    nss \
-    mkcert && \
-  mix local.rebar --force && \
-  mix local.hex --force && \
-  mix hex.repo add oban https://getoban.pro/repo --fetch-public-key ${OBAN_PUBLIC_KEY} --auth-key ${OBAN_AUTH_KEY} && \
-  mix hex.organization auth oban --key ${OBAN_AUTH_KEY} && \
-  mkcert --install && \
-  mkcert glific.test api.glific.test && \
-  mkdir priv/cert &&  \
-  mv glific.test* priv/cert
+# Install PostgreSQL
+RUN apt-get update && \
+    apt-get install -y postgresql
 
+
+# Install additional dependencies
+RUN apt-get update && \
+    apt-get install -y wget build-essential
+
+# Install Erlang
+RUN wget https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb && \
+    dpkg -i erlang-solutions_2.0_all.deb && \
+    apt-get update && \
+    apt-get install -y esl-erlang
+
+# Set the working directory
+WORKDIR /app.
+
+
+# Copy the dev.secret.exs file
+COPY config/dev.secret.exs.txt config/dev.secret.exs
+
+# Copy the .env.dev file
+COPY config/.env.dev.txt config/.env.dev
+
+# Install mkcert
+RUN wget -O mkcert https://github.com/FiloSottile/mkcert/releases/download/v1.4.3/mkcert-v1.4.3-linux-amd64 && \
+    chmod +x mkcert && \
+    mv mkcert /usr/local/bin
+
+# Create the priv/cert directory
+RUN mkdir -p priv/cert
+
+# Install SSL certificates
+RUN mkcert --install && \
+    mkcert glific.test api.glific.test && \
+    mv glific.test* priv/cert
+
+
+ # Copy the application files
 COPY . .
 
-RUN rm -rf deps/
 
-RUN mix do deps.get, setup
+# Expose the PostgreSQL port
+EXPOSE 5432
 
-EXPOSE 4000
+RUN mix local.hex --force
 
-CMD ["mix", "phx.server"]
+RUN mix local.rebar --force
+RUN mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/OSKi0NRF91QVVXlGAhb/BIMLnK8NHcx/EWs+aIWPc --auth-key 6udhjiba4sp7o333zep6fc4psgllibwi
+
+# Install project dependencies and compile
+RUN mix deps.get 
+
+# Run the setup command
+RUN mix setup
+
+# Start the Phoenix server
+CMD ["iex", "-S", "mix", "phx.server"]
