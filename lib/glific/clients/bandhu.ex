@@ -5,6 +5,8 @@ defmodule Glific.Clients.Bandhu do
 
   import Ecto.Query, warn: false
 
+  alias Glific.Clients.CommonWebhook
+
   @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
@@ -57,6 +59,8 @@ defmodule Glific.Clients.Bandhu do
         "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png"
     }
 
+  def webhook("jugalbandi", fields), do: CommonWebhook.webhook("jugalbandi", fields)
+
   def webhook(_, _fields), do: %{}
 
   defp format_profile_message(profiles) do
@@ -72,19 +76,4 @@ defmodule Glific.Clients.Bandhu do
       }
     end)
   end
-
-  # defp random_profiles(profile_count) do
-  #   1..profile_count
-  #   |> Enum.into([])
-  #   |> Enum.reduce([], fn number, acc ->
-  #     acc ++
-  #       [
-  #         %{
-  #           "name" => "Profile #{number}",
-  #           "profile_id" => "profile_#{number}",
-  #           "id" => "profile_#{number}"
-  #         }
-  #       ]
-  #   end)
-  # end
 end
