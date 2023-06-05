@@ -54,7 +54,7 @@ EXPOSE 5432
 RUN mix local.hex --force
 
 RUN mix local.rebar --force
-RUN mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/OSKi0NRF91QVVXlGAhb/BIMLnK8NHcx/EWs+aIWPc --auth-key 6udhjiba4sp7o333zep6fc4psgllibwi
+RUN mix hex.repo 
 
 # Install project dependencies and compile
 RUN mix deps.get 
