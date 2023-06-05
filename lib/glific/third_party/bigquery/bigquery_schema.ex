@@ -1524,12 +1524,6 @@ defmodule Glific.BigQuery.Schema do
         mode: "REQUIRED"
       },
       %{
-          description: "Organization ID",
-          name: "organization_id",
-          type: "INTEGER",
-          mode: "REQUIRED"
-        },
-      %{
         description: "Time when the trackers data was first created",
         name: "inserted_at",
         type: "DATETIME",

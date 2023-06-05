@@ -680,7 +680,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data(stat, organization_id, attrs) when stat in ["stats", "stats_all"] do
-    IO.inpect("fetching stats")
     Logger.info(
       "fetching #{stat} data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
@@ -738,7 +737,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data(tracker, organization_id, attrs) when tracker in ["trackers", "trackers_all"] do
-    IO.inpect("fetching tracker")
     Logger.info(
       "fetching #{tracker} data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
