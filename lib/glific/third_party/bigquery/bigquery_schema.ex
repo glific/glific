@@ -1492,7 +1492,6 @@ defmodule Glific.BigQuery.Schema do
     ]
   end
 
-
     @doc """
   Schema for tracker table
   """

@@ -43,8 +43,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Profiles.Profile,
     Repo,
     Stats.Stat,
-    Users.User,
-    Trackers.Tracker
+    Trackers.Tracker,
+    Users.User
   }
 
   @per_min_limit 500
