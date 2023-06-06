@@ -1,21 +1,34 @@
+version: "3.9"
+
 services:
   postgres:
     image: postgres:13
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: glific_dev
     ports:
       - "5432:5432"
+    networks:
+      - glific_network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - postgres
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-
-  erlang:
-    build: .
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: glific_dev
+      DB_HOST: postgres
     ports:
       - "4000:4000"
-    env_file:
-      - config/.env.dev.txt
+    networks:
+      - glific_network
 
-volumes:
-  pgdata:
+networks:
+  glific_network:
