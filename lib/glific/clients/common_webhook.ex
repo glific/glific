@@ -79,7 +79,7 @@ defmodule Glific.Clients.CommonWebhook do
     Tesla.get(fields["url"],
       headers: [{"Accept", "application/json"}],
       query: [
-        query_text: fields["query_string"],
+        query_text: fields["query_text"],
         uuid_number: fields["uuid_number"],
         input_language: fields["input_language"],
         output_format: fields["output_format"]
