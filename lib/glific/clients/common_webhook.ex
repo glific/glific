@@ -75,6 +75,28 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  def webhook("jugalbandi-voice", fields) do
+    Tesla.get(fields["url"],
+      headers: [{"Accept", "application/json"}],
+      query: [
+        query_text: fields["query_string"],
+        uuid_number: fields["uuid_number"],
+        input_language: fields["input_language"],
+        output_format: fields["output_format"]
+      ],
+      opts: [adapter: [recv_timeout: 100_000]]
+    )
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        Jason.decode!(body)
+        |> Map.take(["answer", "audio_output_url"])
+        |> Map.merge(%{success: true})
+
+      {_status, _response} ->
+        %{success: false, response: "Invalid response"}
+    end
+  end
+
   # This webhook will call Google speech-to-text API
   def webhook("speech_to_text", fields) do
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
