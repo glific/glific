@@ -60,6 +60,7 @@ defmodule Glific.Clients.Bandhu do
     }
 
   def webhook("jugalbandi", fields), do: CommonWebhook.webhook("jugalbandi", fields)
+  def webhook("jugalbandi-voice", fields), do: CommonWebhook.webhook("jugalbandi-voice", fields)
 
   def webhook(_, _fields), do: %{}
 
