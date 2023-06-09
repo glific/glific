@@ -75,15 +75,33 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  def webhook("jugalbandi-voice", %{query_text: query_text} = fields) do
-    webhook("jugalbandi-voice", fields, query_text: query_text)
+  def webhook("jugalbandi-voice", %{query_text: query_text} = fields),
+    do: query_jugalbandi_api(fields, query_text: query_text)
+
+  def webhook("jugalbandi-voice", %{audio_url: audio_url} = fields),
+    do: query_jugalbandi_api(fields, audio_url: audio_url)
+
+  # This webhook will call Google speech-to-text API
+  def webhook("speech_to_text", fields) do
+    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+    contact = get_contact_language(contact_id)
+
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> GoogleASR.speech_to_text(fields["results"], contact.language.locale)
   end
 
-  def webhook("jugalbandi-voice", %{audio_url: audio_url} = fields) do
-    webhook("jugalbandi-voice", fields, audio_url: audio_url)
+  def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
+
+  @spec get_contact_language(integer()) :: {:ok, Ecto.Schema.t()} | {:error, [String.t()]}
+  defp get_contact_language(contact_id) do
+    case Repo.fetch(Contact, contact_id) do
+      {:ok, contact} -> contact |> Repo.preload(:language)
+      {:error, error} -> error
+    end
   end
 
-  def webhook("jugalbandi-voice", fields, input) do
+  @spec query_jugalbandi_api(map(), list()) :: map()
+  defp query_jugalbandi_api(fields, input) do
     query =
       [
         uuid_number: fields["uuid_number"],
@@ -104,24 +122,6 @@ defmodule Glific.Clients.CommonWebhook do
 
       {_status, _response} ->
         %{success: false, response: "Invalid response"}
-    end
-  end
-
-  # This webhook will call Google speech-to-text API
-  def webhook("speech_to_text", fields) do
-    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
-    contact = get_contact_language(contact_id)
-
-    Glific.parse_maybe_integer!(fields["organization_id"])
-    |> GoogleASR.speech_to_text(fields["results"], contact.language.locale)
-  end
-
-  def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
-
-  defp get_contact_language(contact_id) do
-    case Repo.fetch(Contact, contact_id) do
-      {:ok, contact} -> contact |> Repo.preload(:language)
-      {:error, error} -> error
     end
   end
 end
