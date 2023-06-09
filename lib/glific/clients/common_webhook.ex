@@ -75,10 +75,10 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  def webhook("jugalbandi-voice", %{query_text: query_text} = fields),
+  def webhook("jugalbandi-voice", %{"query_text" => query_text} = fields),
     do: query_jugalbandi_api(fields, query_text: query_text)
 
-  def webhook("jugalbandi-voice", %{audio_url: audio_url} = fields),
+  def webhook("jugalbandi-voice", %{"audio_url" => audio_url} = fields),
     do: query_jugalbandi_api(fields, audio_url: audio_url)
 
   # This webhook will call Google speech-to-text API
@@ -92,7 +92,6 @@ defmodule Glific.Clients.CommonWebhook do
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
-  @spec get_contact_language(integer()) :: {:ok, Ecto.Schema.t()} | {:error, [String.t()]}
   defp get_contact_language(contact_id) do
     case Repo.fetch(Contact, contact_id) do
       {:ok, contact} -> contact |> Repo.preload(:language)
