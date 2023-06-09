@@ -466,6 +466,7 @@ defmodule Glific.Partners do
       |> set_flow_uuid_display()
       |> set_roles_and_permission()
       |> set_contact_profile_enabled()
+      |> set_ticketing_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -593,6 +594,13 @@ defmodule Glific.Partners do
   end
 
   @doc """
+  check fun_with_flag toggle for an organization and returns boolean value
+  """
+  @spec get_ticketing(Organization.t()) :: boolean()
+  def get_ticketing(organization),
+    do: FunWithFlags.enabled?(:ticketing, for: %{organization_id: organization.id})
+
+  @doc """
   Determine if we need to show uuid on the nodes.
   """
   @spec get_flow_uuid_display(map()) :: boolean
@@ -626,10 +634,29 @@ defmodule Glific.Partners do
   @doc """
   Determine if we need to enable contact profile for an organization
   """
+  @spec get_ticketing_enabled(map()) :: boolean
+  def get_ticketing_enabled(organization),
+    do: FunWithFlags.enabled?(:is_ticketing_enabled, for: %{organization_id: organization.id})
+
+  @doc """
+  Determine if we need to enable contact profile for an organization
+  """
   @spec get_contact_profile_enabled(map()) :: boolean
   def get_contact_profile_enabled(organization),
     do:
       FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: organization.id})
+
+  @doc """
+  Determine if we need to enable ticketing for an organization
+  """
+  @spec set_ticketing_enabled(map()) :: map()
+  def set_ticketing_enabled(organization) do
+    Map.put(
+      organization,
+      :is_ticketing_enabled,
+      FunWithFlags.enabled?(:is_ticketing_enabled, for: %{organization_id: organization.id})
+    )
+  end
 
   @spec set_flow_uuid_display(map()) :: map()
   defp set_flow_uuid_display(organization) do
@@ -1217,7 +1244,8 @@ defmodule Glific.Partners do
       "dialogflow" => organization.services["dialogflow"] != nil,
       "flow_uuid_display" => get_flow_uuid_display(organization),
       "roles_and_permission" => get_roles_and_permission(organization),
-      "contact_profile_enabled" => get_contact_profile_enabled(organization)
+      "contact_profile_enabled" => get_contact_profile_enabled(organization),
+      "ticketing_enabled" => get_ticketing_enabled(organization)
     }
   end
 

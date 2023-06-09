@@ -86,6 +86,7 @@ defmodule Glific.Jobs.MinuteWorker do
   defp perform(%Oban.Job{args: %{"job" => job}} = _args, services)
        when job in [
               "daily_tasks",
+              "tracker_tasks",
               "hourly_tasks",
               "delete_tasks",
               "five_minute_tasks",

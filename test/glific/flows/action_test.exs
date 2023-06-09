@@ -11,7 +11,8 @@ defmodule Glific.Flows.ActionTest do
     Profiles,
     Seeds.SeedsDev,
     Settings,
-    Templates.InteractiveTemplate
+    Templates.InteractiveTemplate,
+    Tickets.Ticket
   }
 
   alias Glific.Flows.{
@@ -257,6 +258,35 @@ defmodule Glific.Flows.ActionTest do
     assert action.node_uuid == node.uuid
     assert action.sheet_id == 1
     assert action.row_data == ["Hello", "@results.input.input"]
+  end
+
+  test "process extracts the right values from json for open_ticket" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "assignee" => %{"name" => "NGO Manager", "type" => "user", "uuid" => "4"},
+      "body" => "Help regarding flow",
+      "result_name" => "Result",
+      "topic" => %{
+        "name" => "Help",
+        "uuid" => "c9907a7f-ffbc-4d1f-a8db-44a479138aa5"
+      },
+      "type" => "open_ticket",
+      "uuid" => "UUID 1"
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+    assert action.uuid == "UUID 1"
+    assert action.type == "open_ticket"
+    assert action.body == "Help regarding flow"
+    assert action.assignee == "4"
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "open_ticket"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+
+    json = %{}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
   test "process extracts the right values from json for set_contact_profile action when profile type is Create Profile" do
@@ -823,6 +853,37 @@ defmodule Glific.Flows.ActionTest do
     Action.execute(action, context, message_stream)
     {:ok, contact} = Repo.fetch_by(Contact, %{id: profile.contact_id})
     assert contact.active_profile_id == profile.id
+  end
+
+  test "execute an action when type is open_ticket to create a new ticket", attrs do
+    user = Fixtures.user_fixture()
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+
+    context =
+      %FlowContext{
+        contact_id: user.contact_id,
+        flow_id: flow.id,
+        organization_id: attrs.organization_id
+      }
+      |> Repo.preload([:contact, :flow])
+
+    # Create a profile for a contact
+    action = %Action{
+      body: "Need help with registration",
+      assignee: user.id,
+      uuid: "UUID 1",
+      type: "open_ticket",
+      topic: "registration"
+    }
+
+    message_stream = []
+
+    Action.execute(action, context, message_stream)
+
+    {:ok, ticket} = Repo.fetch_by(Ticket, %{body: "Need help with registration"})
+    assert ticket.topic == "registration"
+    assert ticket.status == "open"
+    assert ticket.user_id == user.id
   end
 
   test "execute an action when type is enter_flow", attrs do
