@@ -70,8 +70,8 @@ defmodule Glific.Clients.CommonWebhook do
         |> Map.take(["answer"])
         |> Map.merge(%{success: true})
 
-      {_status, _response} ->
-        %{success: false, response: "Invalid response"}
+      {_status, response} ->
+        %{success: false, response: "Invalid response #{response}"}
     end
   end
 
@@ -111,7 +111,7 @@ defmodule Glific.Clients.CommonWebhook do
     Tesla.get(fields["url"],
       headers: [{"Accept", "application/json"}],
       query: query,
-      opts: [adapter: [recv_timeout: 100_000]]
+      opts: [adapter: [recv_timeout: 200_000]]
     )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
@@ -119,8 +119,8 @@ defmodule Glific.Clients.CommonWebhook do
         |> Map.take(["answer", "audio_output_url"])
         |> Map.merge(%{success: true})
 
-      {_status, _response} ->
-        %{success: false, response: "Invalid response"}
+      {_status, response} ->
+        %{success: false, response: "Invalid response #{response}"}
     end
   end
 end
