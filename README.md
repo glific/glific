@@ -222,8 +222,18 @@ Go to glific_backend folder in the terminal console.
 
 ### 7. Backend - Config
 
-- Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs` and edit
-- Copy the file: `cp config/.env.dev.txt config/.env.dev` and edit
+- Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs`
+or simply rename `config/dev.secret.exs.txt` to `config/dev.secret.exs`
+
+- Edit `config/dev.secret.exs` file and add your Gupshup API key and app name
+	 `gupshup: [api_key: "your_api_key", app_name: "your_app"]`
+
+- Copy the file: `cp config/.env.dev.txt config/.env.dev`
+or simply rename `config/dev.secret.exs.txt` to `config/dev.secret.exs`
+	
+	You may leave this file as it is, unless you have different DATABASE_URL or any other configuration
+
+
 - Run `source config/.env.dev`
 - Run `mix deps.get`
   if this fails try first `mix local.hex --force` then `mix deps.get`
