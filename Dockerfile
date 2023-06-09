@@ -20,7 +20,7 @@ RUN apk add --no-cache --update \
     postgresql14-dev~${POSTGRES_VERSION}
 
 # Create a directory for the app code
-WORKDIR /app
+WORKDIR /app/glific
 
 # Install Hex and Rebar
 RUN mix local.hex --force && \
@@ -34,14 +34,17 @@ RUN wget -O mkcert https://github.com/FiloSottile/mkcert/releases/download/v1.4.
     chmod +x mkcert && \
     mv mkcert /usr/local/bin
 
-# Lets make sure everything is in /app
-COPY . .
+RUN mkdir config
+
+
+# copy entire config directory
+COPY config config
 
 # Copy the dev.secret.exs file
-RUN cp -f config/dev.secret.exs.txt config/dev.secret.exs
+COPY config/dev.secret.exs.txt config/dev.secret.exs
 
 # Copy the .env.dev file
-RUN cp -f config/.env.dev.txt config/.env.dev
+COPY config/.env.dev.txt config/.env.dev
 
 # Create the priv/cert directory
 RUN mkdir -p priv/cert
@@ -51,9 +54,15 @@ RUN /usr/local/bin/mkcert --install && \
     mkcert glific.test api.glific.test && \
     mv glific.test* priv/cert
 
+COPY mix.lock mix.exs .
+
 # do the setup, break into steps for caching during debugging
 RUN mix deps.get
 RUN mix deps.compile
+
+# Lets make sure everything is in /app
+COPY . .
+
 RUN mix compile
     
-RUN /bin/sh
+CMD ["tail", "-f", "/dev/null"]
