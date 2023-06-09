@@ -75,15 +75,25 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  def webhook("jugalbandi-voice", fields) do
-    Tesla.get(fields["url"],
-      headers: [{"Accept", "application/json"}],
-      query: [
-        query_text: fields["query_text"],
+  def webhook("jugalbandi-voice", %{query_text: query_text} = fields) do
+    webhook("jugalbandi-voice", fields, query_text: query_text)
+  end
+
+  def webhook("jugalbandi-voice", %{audio_url: audio_url} = fields) do
+    webhook("jugalbandi-voice", fields, audio_url: audio_url)
+  end
+
+  def webhook("jugalbandi-voice", fields, input) do
+    query =
+      [
         uuid_number: fields["uuid_number"],
         input_language: fields["input_language"],
         output_format: fields["output_format"]
-      ],
+      ] ++ input
+
+    Tesla.get(fields["url"],
+      headers: [{"Accept", "application/json"}],
+      query: query,
       opts: [adapter: [recv_timeout: 100_000]]
     )
     |> case do
