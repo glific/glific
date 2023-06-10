@@ -251,7 +251,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   ## ignore the tables for updates.
   @spec queue_table_data(String.t(), non_neg_integer(), map()) :: :ok
   defp queue_table_data(table, _organization_id, %{action: :update, max_id: nil} = _attrs)
-       when table in ["flows", "stats", "stats_all"],
+       when table in ["flows", "stats", "stats_all", "trackers", "trackers_all"],
        do: :ok
 
   defp queue_table_data("messages", organization_id, attrs) do
@@ -764,9 +764,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
           %{
             id: row.id,
             period: row.period,
-            active: row.active,
             date: Date.to_string(row.date),
-            counts: row.counts,
+            counts: BigQuery.format_json(row.counts),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
