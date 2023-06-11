@@ -194,8 +194,8 @@ Go to glific_backend folder in the terminal console.
 - Check hosts file `grep glific /etc/hosts`
 
       if returns nothing, then add these 2 lines to the hosts file
-      ``` 127.0.0.1 glific.test 
-      127.0.0.1 api.glific.test ```
+      127.0.0.1 glific.test 
+      127.0.0.1 api.glific.test
       
       
       
