@@ -1492,6 +1492,73 @@ defmodule Glific.BigQuery.Schema do
     ]
   end
 
+    @doc """
+  Schema for tracker table
+  """
+  @spec trackers_schema :: list()
+  def trackers_schema do
+    [
+      %{
+        description: "Unique ID for the trackers",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "PERIOD",
+        name: "period",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "DATE",
+        name: "date",
+        type: "DATE",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "JSON object for storing the user tracking",
+        name: "counts",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the trackers data was first created",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the trackers data was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for the trackers_all_schema table
+  """
+  @spec trackers_all_schema :: list()
+  def trackers_all_schema do
+    trackers_schema() ++
+      [
+        %{
+          description: "Organization ID",
+          name: "organization_id",
+          type: "INTEGER",
+          mode: "REQUIRED"
+        },
+        %{
+          description: "Organization Name",
+          name: "organization_name",
+          type: "STRING",
+          mode: "NULLABLE"
+        }
+      ]
+  end
+
   @doc """
   Procedure for flat fields
   """

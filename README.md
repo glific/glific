@@ -171,14 +171,12 @@ Go to glific_backend folder in the terminal console.
       if returns nothing
       then make sure hosts file has those names added
       `sudo bash -c 'echo "127.0.0.1 glific.test api.glific.test" >> /etc/hosts'`
-      
-      
-      
+
 **For Windows the steps is as follows:**
 
 - Install mkcert (https://github.com/FiloSottile/mkcert)
 - Run the following command to install the local CA certificates:
-         `mkcert --install`
+  `mkcert --install`
 - `mkcert glific.test api.glific.test`
 - `mkdir priv/cert`
 - `move glific.test* priv/cert`
@@ -216,9 +214,7 @@ Go to glific_backend folder in the terminal console.
       if returns nothing
       then make sure hosts file has those names added
       127.0.0.1 glific.test
-      127.0.0.1 api.glific.test      
-
-
+      127.0.0.1 api.glific.test
 
 ### 7. Backend - Config
 
@@ -245,18 +241,17 @@ Go to glific_backend folder in the terminal console.
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
-
-
 **For Windows the steps is as follows:**
 
-- Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs` and edit
-- Copy the file: `cp config/.env.dev.txt config/.env.dev` and edit
+- Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs`
+- Copy the file: `cp config/.env.dev.txt config/.env.dev`.
+  You may not need to edit the default values for DB URL and hostnames in this file if they look suitable for your needs.
 - Run this on command prompt:
-    ```
-    cd <path-to-glific-backend>
-    set /p=DUMMY < config\.env.dev
-    ```
-    Replace <path-to-glific-backend> with the actual path to the glific_backend directory. This will load the environment variables from the .env.dev file.
+  ```
+  cd <path-to-glific-backend>
+  set /p=DUMMY < config\.env.dev
+  ```
+  Replace <path-to-glific-backend> with the actual path to the glific_backend directory. This will load the environment variables from the .env.dev file.
 - Run `mix deps.get`
   if this fails try first `mix local.hex --force` then `mix deps.get`
 
@@ -276,7 +271,6 @@ Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
   - `Glific.Templates.sync_hsms_from_bsp(1)`
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
-
 
 ### 8. Frontend - Install glific frontend
 
