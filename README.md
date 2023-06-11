@@ -267,7 +267,7 @@ Go to glific_backend folder in the terminal console.
 
 ```bash
 sudo -u postgres psql
-ALTER USER postgres WITH PASSWORD 'new_password';
+ALTER USER postgres WITH PASSWORD 'postgres';
 ```
 Exit the PostgreSQL terminal by typing `\q` and pressing Enter. Run `mix setup` again.
 
