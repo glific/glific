@@ -62,7 +62,5 @@ RUN mix deps.compile
 
 # Lets make sure everything is in /app
 COPY . .
-
-RUN mix compile
     
-CMD ["tail", "-f", "/dev/null"]
+ENTRYPOINT ["/bin/sh", "/app/glific/config/entrypoint.sh"]
