@@ -27,12 +27,12 @@ There is level of understanding middle to advanced level. It is assumed that you
 
 - Download and start [postgres server](https://www.postgresql.org/download/)
 
-For Postgres, for the development server, we default to using postgres/postgres as the username/password. This is configurable
+For Postgres, for the development server, we default to using postgres/postgres/postgres as the username/password/machine name. This is configurable
 
 We tested and developed against the following version:
 
 ```bash
-    - postgres : v13.x
+    - postgres : v13.x, v14.x
 ```
 
 ### 2. Software dependency - Erlang / Elixir
@@ -169,8 +169,12 @@ Go to glific_backend folder in the terminal console.
 - Check hosts file `grep glific /etc/hosts`
 
       if returns nothing
-      then make sure hosts file has those names added
-      `sudo bash -c 'echo "127.0.0.1 glific.test api.glific.test" >> /etc/hosts'`
+      then make sure hosts file has those names and postgres added
+      `sudo bash -c ' \
+        echo " \
+        127.0.0.1 glific.test \
+        127.0.0.1 api.glific.test \
+        127.0.0.1 postgres" >> /etc/hosts'`
 
 **For Windows the steps is as follows:**
 
@@ -215,6 +219,7 @@ Go to glific_backend folder in the terminal console.
       then make sure hosts file has those names added
       127.0.0.1 glific.test
       127.0.0.1 api.glific.test
+      127.0.0.1 postgres
 
 ### 7. Backend - Config
 
