@@ -12,7 +12,7 @@
 
 ## Pre-requisites
 
-There is level of understanding middle to advanced level. It is assumed that you know how to use a terminal, install things and have git; for the backend, and for the frontend use install yarn and react.
+There is level of understanding middle to advanced level. It is assumed that you know how to use a terminal, install things and have git and curl; for the backend, and for the frontend use install yarn and react.
 
 1. Software dependency - Postgres server
 2. Software dependency - Erlang / Elixir
@@ -48,6 +48,25 @@ We tested and developed against the following versions:
     - elixir : 1.14.5-otp-25
 ```
 
+It is recommended to install these very specific versions.
+
+After installing asdf, install the Erlang and Elixir plugins.
+
+``` bash
+asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
+asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
+```
+
+Now, install the specific versions:
+``` bash
+asdf install erlang 25.3.2
+asdf install elixir 1.14.5-otp-25
+asdf global erlang 25.3.2
+asdf global 1.14.5-otp-25
+```
+
+If you get any warnings for missing packages, just install them using apt and try again.
+
 **Note**: It is important to use asdf to install Erlang and Elixir.
 
 ### 3. Backend - Download
@@ -69,9 +88,9 @@ You will need to do the following:
 - Create a [Gupshup Account](https://www.gupshup.io/developer/home)
 - Create an app and select [Access API](https://www.gupshup.io/whatsapp/create-app/access-api)
 - You can name it `NewNameHere` "GlificTest <-- Bot Name is already in use, then use anotherone"
-- Run the following command `cp config/dev.secret.exs.txt config/dev.secret.exs`
-- Find your API Key, check the top right corner and click the profile picture or inside the curl sample message
-- Enter your APP name and API Key in the dev.secret.exs file
+- Run the following command `cp config/dev.secret.exs.txt config/dev.secret.exs` 
+- Now, in Gupshup, find your API Key: check the top right corner and click the profile picture or inside the curl sample message
+- Enter your APP name and API Key in the dev.secret.exs file using any text editor.
 
 ### 5. External service - Oban Pro
 
@@ -81,7 +100,13 @@ Oban is **required** before running mix
 for Glific to operate.
 
 **For contributors:**
-Please get in touch with the team on Discord and get a limited time key.
+Please get in touch with the team on Discord and get a limited time key. Once they're provided to you, run: 
+
+```bash
+mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
+```
+
+with your keys
 
 **For production use:**
 You must purchase license.
@@ -168,9 +193,10 @@ Go to glific_backend folder in the terminal console.
 - Check port 4001 `sudo lsof -n -i:4001 | grep LISTEN` should return nothing.
 - Check hosts file `grep glific /etc/hosts`
 
-      if returns nothing
-      then make sure hosts file has those names added
-      `sudo bash -c 'echo "127.0.0.1 glific.test api.glific.test" >> /etc/hosts'`
+      if returns nothing, then add these 2 lines to the hosts file
+      ``` 127.0.0.1 glific.test 
+127.0.0.1 api.glific.test ```
+      
       
       
       
@@ -222,8 +248,7 @@ Go to glific_backend folder in the terminal console.
 
 ### 7. Backend - Config
 
-- Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs` and edit
-- Copy the file: `cp config/.env.dev.txt config/.env.dev` and edit
+- Run: `cp config/.env.dev.txt config/.env.dev`
 - Run `source config/.env.dev`
 - Run `mix deps.get`
   if this fails try first `mix local.hex --force` then `mix deps.get`
@@ -238,6 +263,14 @@ Go to glific_backend folder in the terminal console.
   \*\* (Mix) Unknown package oban_pro in lockfile
 
 - Run `mix setup`
+ At this point you may get an error saying `password authentication failed for user "postgres"`, in which case, you need to configure the postgres server properly:
+
+```bash
+sudo -u postgres psql
+ALTER USER postgres WITH PASSWORD 'new_password';
+```
+Exit the PostgreSQL terminal by typing `\q` and pressing Enter. Run `mix setup` again.
+
 - Run `iex -S mix phx.server`
 - Inside the iex (you might need to hit enter/return to see the prompt)
   - Update HSM templates by running the following command:
@@ -245,12 +278,13 @@ Go to glific_backend folder in the terminal console.
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
+Also try: [`https://glific.test:4001`] and check if the connection is secure.
+
 
 
 **For Windows the steps is as follows:**
 
-- Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs` and edit
-- Copy the file: `cp config/.env.dev.txt config/.env.dev` and edit
+- Copy the file: `cp config/.env.dev.txt config/.env.dev`
 - Run this on command prompt:
     ```
     cd <path-to-glific-backend>
