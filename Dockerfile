@@ -50,9 +50,11 @@ COPY config/.env.dev.txt config/.env.dev
 RUN mkdir -p priv/cert
 
 # Install SSL certificates
+
 RUN /usr/local/bin/mkcert --install && \
     mkcert glific.test api.glific.test && \
-    mv glific.test* priv/cert
+    mv glific.test* priv/cert && \
+    cp "`mkcert --CAROOT`/"/* priv/cert
 
 COPY mix.lock mix.exs .
 
