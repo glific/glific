@@ -29,7 +29,7 @@ There is level of understanding middle to advanced level. It is assumed that you
 
 For Postgres, for the development server, we default to using postgres/postgres/postgres as the username/password/machine name. This is configurable
 
-We tested and developed against the following version:
+We tested and developed against the following versions:
 
 ```bash
     - postgres : v13.x, v14.x
@@ -41,7 +41,7 @@ We tested and developed against the following version:
 
 For Ubuntu users you also need to install the `inotify-tools` package
 
-We tested and developed against the following versions:
+We tested and developed against the following versions (please check .tool-versions in repository for the latest versons we are using):
 
 ```bash
     - erlang : 25.3.2

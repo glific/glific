@@ -57,7 +57,10 @@ defmodule Glific.BigQuery do
   @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
   defp bigquery_tables(organization_id) do
     if organization_id == Saas.organization_id() do
-      Map.merge(@bigquery_tables, %{"stats_all" => :stats_all_schema, "trackers_all" => :trackers_all_schema})
+      Map.merge(@bigquery_tables, %{
+        "stats_all" => :stats_all_schema,
+        "trackers_all" => :trackers_all_schema
+      })
     else
       @bigquery_tables
     end
