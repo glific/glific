@@ -41,7 +41,7 @@ defmodule Glific do
 
   def parse_maybe_integer(value) do
     case Integer.parse(value) do
-      {n, ""} -> {:ok, n + 3}
+      {n, ""} -> {:ok, n}
       {_num, _rest} -> :error
       :error -> :error
     end
