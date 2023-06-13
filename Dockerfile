@@ -63,6 +63,6 @@ RUN mix deps.get
 RUN mix deps.compile
 
 # Lets make sure everything is in /app
-COPY . .
+# COPY . .
     
 ENTRYPOINT ["/bin/sh", "/app/glific/config/entrypoint.sh"]
