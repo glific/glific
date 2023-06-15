@@ -536,7 +536,7 @@ defmodule Glific.Flows do
 
       # we had an error saving to the DB
       elem(result, 0) == :error ->
-        Logger.info("error while publishing the flow. #{inspect(result)}")
+        Logger.info("Error while publishing the flow. #{inspect(result)}")
         result
 
       # We had an error validating the flow
@@ -556,8 +556,15 @@ defmodule Glific.Flows do
       |> FlowRevision.changeset(%{status: "published", version: last_version + 1})
       |> Repo.update()
 
-    if elem(result, 0) == :ok,
-      do: update_cached_flow(flow, "published")
+    if elem(result, 0) == :ok do
+      revision_id = get_in(elem(result, 1), [Access.key(:id, "default")])
+
+      Logger.info(
+        "Last published flow revision for flow_id: #{flow.id} is updated with revision_id: #{revision_id}"
+      )
+
+      update_cached_flow(flow, "published")
+    end
 
     result
   end
@@ -600,6 +607,8 @@ defmodule Glific.Flows do
     |> where([fr], fr.flow_id == ^flow.id)
     |> where([fr], fr.id < ^old_published_revision.id)
     |> where([fr], fr.status == "draft")
+    # This is temporary to keep draft revisions for 48hrs
+    |> where([fr], fr.inserted_at <= fragment("CURRENT_DATE - ('2' || ?)::interval", "day"))
     |> Repo.delete_all()
   end
 
