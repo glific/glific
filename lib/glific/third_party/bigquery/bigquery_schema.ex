@@ -1492,7 +1492,7 @@ defmodule Glific.BigQuery.Schema do
     ]
   end
 
-    @doc """
+  @doc """
   Schema for tracker table
   """
   @spec trackers_schema :: list()

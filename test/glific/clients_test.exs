@@ -85,13 +85,13 @@ defmodule Glific.ClientsTest do
     assert directory == "foo"
   end
 
-  test "check blocked only allow US and India numbers" do
+  test "check blocked allow all numbers" do
     assert Clients.blocked?("91123", 1) == false
     assert Clients.blocked?("1123", 1) == false
     assert Clients.blocked?("44123", 1) == false
     assert Clients.blocked?("256123", 1) == false
-    assert Clients.blocked?("255123", 1) == true
-    assert Clients.blocked?("925123", 1) == true
+    assert Clients.blocked?("255123", 1) == false
+    assert Clients.blocked?("925123", 1) == false
     assert Clients.blocked?("255123", 2) == false
     assert Clients.blocked?("256123", 2) == false
     assert Clients.blocked?("56123", 2) == false

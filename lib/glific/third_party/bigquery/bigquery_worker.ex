@@ -736,7 +736,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
-  defp queue_table_data(tracker, organization_id, attrs) when tracker in ["trackers", "trackers_all"] do
+  defp queue_table_data(tracker, organization_id, attrs)
+       when tracker in ["trackers", "trackers_all"] do
     Logger.info(
       "fetching #{tracker} data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
@@ -756,7 +757,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
           if tracker == "trackers_all",
             do: %{
               organization_id: row.organization_id,
-              organization_name: row.organization.name,
+              organization_name: row.organization.name
             },
             else: %{}
 
@@ -1119,10 +1120,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
 
-    defp get_query("trackers_all", _organization_id, attrs),
-      do:
-        Tracker
-        |> apply_action_clause(attrs)
-        |> order_by([f], [f.inserted_at, f.id])
-        |> preload([:organization])
+  defp get_query("trackers_all", _organization_id, attrs),
+    do:
+      Tracker
+      |> apply_action_clause(attrs)
+      |> order_by([f], [f.inserted_at, f.id])
+      |> preload([:organization])
 end
