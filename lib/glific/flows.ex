@@ -608,7 +608,7 @@ defmodule Glific.Flows do
     |> where([fr], fr.id < ^old_published_revision.id)
     |> where([fr], fr.status == "draft")
     # This is temporary to keep draft revisions for 48hrs
-    |> where([fr], fr.inserted_at < fragment("CURRENT_DATE - ('2' || ?)::interval", "day"))
+    |> where([fr], fr.inserted_at <= fragment("CURRENT_DATE - ('2' || ?)::interval", "day"))
     |> Repo.delete_all()
   end
 
