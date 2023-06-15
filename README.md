@@ -57,7 +57,7 @@ asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
 asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
 ```
 
-Now, install the specific versions:
+If you want to install the specific versions that were used for developing and testing:
 ``` bash
 asdf install erlang 25.3.2
 asdf install elixir 1.14.5-otp-25
@@ -197,14 +197,12 @@ Go to glific_backend folder in the terminal console.
       127.0.0.1 glific.test 
       127.0.0.1 api.glific.test
       
-      
-      
-      
+     
 **For Windows the steps is as follows:**
 
 - Install mkcert (https://github.com/FiloSottile/mkcert)
 - Run the following command to install the local CA certificates:
-         `mkcert --install`
+  `mkcert --install`
 - `mkcert glific.test api.glific.test`
 - `mkdir priv/cert`
 - `move glific.test* priv/cert`
@@ -240,11 +238,9 @@ Go to glific_backend folder in the terminal console.
 - Check hosts file by`type %SystemRoot%\System32\drivers\etc\hosts | findstr glific`
 
       if returns nothing
-      then make sure hosts file has those names added
+      then add these two lines in your hosts file
       127.0.0.1 glific.test
-      127.0.0.1 api.glific.test      
-
-
+      127.0.0.1 api.glific.test
 
 ### 7. Backend - Config
 
@@ -278,19 +274,22 @@ Exit the PostgreSQL terminal by typing `\q` and pressing Enter. Run `mix setup` 
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
-Also try: [`https://glific.test:4001`] and check if the connection is secure.
 
+Also try: [`https://glific.test:4001`] and check if the connection is secure.
 
 
 **For Windows the steps is as follows:**
 
-- Copy the file: `cp config/.env.dev.txt config/.env.dev`
+- Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs`
+- Copy the file: `cp config/.env.dev.txt config/.env.dev`.
+  You may not need to edit the default values for DB URL and hostnames in this file if they look suitable for your needs.
+
 - Run this on command prompt:
-    ```
-    cd <path-to-glific-backend>
-    set /p=DUMMY < config\.env.dev
-    ```
-    Replace <path-to-glific-backend> with the actual path to the glific_backend directory. This will load the environment variables from the .env.dev file.
+  ```
+  cd <path-to-glific-backend>
+  set /p=DUMMY < config\.env.dev
+  ```
+  Replace <path-to-glific-backend> with the actual path to the glific_backend directory. This will load the environment variables from the .env.dev file.
 - Run `mix deps.get`
   if this fails try first `mix local.hex --force` then `mix deps.get`
 
@@ -310,7 +309,6 @@ Also try: [`https://glific.test:4001`] and check if the connection is secure.
   - `Glific.Templates.sync_hsms_from_bsp(1)`
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
-
 
 ### 8. Frontend - Install glific frontend
 
