@@ -110,9 +110,9 @@ defmodule GlificWeb.Resolvers.Flows do
   """
   @spec publish_flow(Absinthe.Resolution.t(), %{uuid: String.t()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def publish_flow(_, %{uuid: uuid}, _) do
+  def publish_flow(_, %{uuid: uuid}, %{context: %{current_user: user}}) do
     with {:ok, flow} <- Repo.fetch_by(Flow, %{uuid: uuid}),
-         {:ok, _flow} <- Flows.publish_flow(flow) do
+         {:ok, _flow} <- Flows.publish_flow(flow, user.id) do
       {:ok, %{success: true, errors: nil}}
     else
       {:errors, errors} ->

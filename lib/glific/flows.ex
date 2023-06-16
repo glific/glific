@@ -522,12 +522,12 @@ defmodule Glific.Flows do
   Update latest flow revision status as published and increment the version
   Update cached flow definition
   """
-  @spec publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, any()}
-  def publish_flow(%Flow{} = flow) do
+  @spec publish_flow(Flow.t(), non_neg_integer()) :: {:ok, Flow.t()} | {:error, any()}
+  def publish_flow(%Flow{} = flow, user_id) do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
 
     errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
-    result = do_publish_flow(flow)
+    result = do_publish_flow(flow, user_id)
 
     cond do
       # if validate and published both worked
@@ -545,22 +545,26 @@ defmodule Glific.Flows do
     end
   end
 
-  @spec do_publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, any()}
-  defp do_publish_flow(%Flow{} = flow) do
+  @spec do_publish_flow(Flow.t(), non_neg_integer()) :: {:ok, Flow.t()} | {:error, any()}
+  defp do_publish_flow(%Flow{} = flow, user_id) do
     last_version = get_last_version_and_update_old_revisions(flow)
     ## if invalid flow then return the {:error, array} otherwise move forward
     {:ok, latest_revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
 
     result =
       latest_revision
-      |> FlowRevision.changeset(%{status: "published", version: last_version + 1})
+      |> FlowRevision.changeset(%{
+        status: "published",
+        version: last_version + 1,
+        user_id: user_id
+      })
       |> Repo.update()
 
     if elem(result, 0) == :ok do
       revision_id = get_in(elem(result, 1), [Access.key(:id, "default")])
 
       Logger.info(
-        "Last published flow revision for flow_id: #{flow.id} is updated with revision_id: #{revision_id}"
+        "Last published flow revision for flow_id: #{flow.id} is updated with revision_id: #{revision_id} by user_id: #{user_id}"
       )
 
       update_cached_flow(flow, "published")
