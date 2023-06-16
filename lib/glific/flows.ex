@@ -202,6 +202,8 @@ defmodule Glific.Flows do
   """
   @spec create_flow(map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def create_flow(attrs) do
+    user = Repo.get_current_user()
+
     attrs =
       Map.put(attrs, :keywords, sanitize_flow_keywords(attrs[:keywords]))
       |> Map.put_new(:uuid, Ecto.UUID.generate())
@@ -216,6 +218,7 @@ defmodule Glific.Flows do
         FlowRevision.create_flow_revision(%{
           definition: FlowRevision.default_definition(flow),
           flow_id: flow.id,
+          user_id: user.id,
           organization_id: flow.organization_id
         })
 
@@ -370,8 +373,8 @@ defmodule Glific.Flows do
   @doc """
   Save new revision for the flow
   """
-  @spec create_flow_revision(map()) :: FlowRevision.t()
-  def create_flow_revision(definition) do
+  @spec create_flow_revision(map(), non_neg_integer()) :: FlowRevision.t()
+  def create_flow_revision(definition, user_id) do
     {:ok, flow} = Repo.fetch_by(Flow, %{uuid: definition["uuid"]})
 
     {:ok, revision} =
@@ -379,7 +382,8 @@ defmodule Glific.Flows do
       |> FlowRevision.changeset(%{
         definition: definition,
         flow_id: flow.id,
-        organization_id: flow.organization_id
+        organization_id: flow.organization_id,
+        user_id: user_id
       })
       |> Repo.insert()
 
@@ -522,12 +526,11 @@ defmodule Glific.Flows do
   Update latest flow revision status as published and increment the version
   Update cached flow definition
   """
-  @spec publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, any()}
-  def publish_flow(%Flow{} = flow) do
+  @spec publish_flow(Flow.t(), non_neg_integer()) :: {:ok, Flow.t()} | {:error, any()}
+  def publish_flow(%Flow{} = flow, user_id) do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
-
     errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
-    result = do_publish_flow(flow)
+    result = do_publish_flow(flow, user_id)
 
     cond do
       # if validate and published both worked
@@ -545,22 +548,26 @@ defmodule Glific.Flows do
     end
   end
 
-  @spec do_publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, any()}
-  defp do_publish_flow(%Flow{} = flow) do
-    last_version = get_last_version_and_update_old_revisions(flow)
+  @spec do_publish_flow(Flow.t(), non_neg_integer()) :: {:ok, Flow.t()} | {:error, any()}
+  defp do_publish_flow(%Flow{} = flow, user_id) do
+    last_version = get_last_version_and_update_old_revisions(flow, user_id)
     ## if invalid flow then return the {:error, array} otherwise move forward
     {:ok, latest_revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
 
     result =
       latest_revision
-      |> FlowRevision.changeset(%{status: "published", version: last_version + 1})
+      |> FlowRevision.changeset(%{
+        status: "published",
+        version: last_version + 1,
+        user_id: user_id
+      })
       |> Repo.update()
 
     if elem(result, 0) == :ok do
       revision_id = get_in(elem(result, 1), [Access.key(:id, "default")])
 
       Logger.info(
-        "Last published flow revision for flow_id: #{flow.id} is updated with revision_id: #{revision_id}"
+        "Last published flow revision for flow_id: #{flow.id} is updated with revision_id: #{revision_id} by user_id: #{user_id}"
       )
 
       update_cached_flow(flow, "published")
@@ -579,15 +586,15 @@ defmodule Glific.Flows do
 
   # Get version of last published flow revision
   # Archive the last published flow revision
-  @spec get_last_version_and_update_old_revisions(Flow.t()) :: integer
-  defp get_last_version_and_update_old_revisions(flow) do
+  @spec get_last_version_and_update_old_revisions(Flow.t(), non_neg_integer()) :: integer
+  defp get_last_version_and_update_old_revisions(flow, user_id) do
     FlowRevision
     |> Repo.fetch_by(%{flow_id: flow.id, status: "published"})
     |> case do
       {:ok, last_published_revision} ->
         {:ok, _} =
           last_published_revision
-          |> FlowRevision.changeset(%{status: "archived"})
+          |> FlowRevision.changeset(%{status: "archived", user_id: user_id})
           |> Repo.update()
 
         delete_old_draft_flow_revisions(flow, last_published_revision)
@@ -684,6 +691,8 @@ defmodule Glific.Flows do
 
   @spec copy_flow_revision(Flow.t(), Flow.t()) :: {:ok, FlowRevision.t()} | {:error, String.t()}
   defp copy_flow_revision(flow, flow_copy) do
+    user = Repo.get_current_user()
+
     with {:ok, latest_flow_revision} <-
            Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}) do
       definition_copy =
@@ -694,7 +703,8 @@ defmodule Glific.Flows do
         FlowRevision.create_flow_revision(%{
           definition: definition_copy,
           flow_id: flow_copy.id,
-          organization_id: flow_copy.organization_id
+          organization_id: flow_copy.organization_id,
+          user_id: user.id
         })
     end
   end
@@ -820,6 +830,7 @@ defmodule Glific.Flows do
   """
   @spec import_flow(map(), non_neg_integer()) :: boolean()
   def import_flow(import_flow, organization_id) do
+    user = Repo.get_current_user()
     interactive_template_list = import_interactive_templates(import_flow, organization_id)
 
     import_flow_list =
@@ -838,7 +849,8 @@ defmodule Glific.Flows do
                  definition:
                    clean_flow_definition(flow_revision["definition"], interactive_template_list),
                  flow_id: flow.id,
-                 organization_id: flow.organization_id
+                 organization_id: flow.organization_id,
+                 user_id: user.id
                }) do
           import_contact_field(import_flow, organization_id)
           import_groups(import_flow, organization_id)

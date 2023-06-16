@@ -11,10 +11,11 @@ defmodule Glific.Flows.FlowRevision do
   alias Glific.{
     Flows.Flow,
     Partners.Organization,
-    Repo
+    Repo,
+    Users.User
   }
 
-  @required_fields [:definition, :flow_id, :organization_id]
+  @required_fields [:definition, :flow_id, :organization_id, :user_id]
   @optional_fields [:revision_number, :status, :version]
 
   @type t() :: %__MODULE__{
@@ -26,6 +27,8 @@ defmodule Glific.Flows.FlowRevision do
           status: String.t() | nil,
           flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
+          user_id: non_neg_integer | nil,
+          user: User.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime_usec | nil,
@@ -36,7 +39,7 @@ defmodule Glific.Flows.FlowRevision do
     field(:definition, :map)
 
     # this value is only needed for revisions that are published at any point
-    # this basically allows us to map specific data to a specific flow versio
+    # this basically allows us to map specific data to a specific flow version
     field(:version, :integer, default: 0)
 
     field(:revision_number, :integer)
@@ -45,6 +48,7 @@ defmodule Glific.Flows.FlowRevision do
     # archived is for versions which were published previously
     field(:status, :string, default: "draft")
 
+    belongs_to(:user, User)
     belongs_to(:flow, Flow)
     belongs_to(:organization, Organization)
 
@@ -80,7 +84,18 @@ defmodule Glific.Flows.FlowRevision do
     }
   end
 
-  @doc false
+  @doc """
+  Creates a flow revision.
+
+  ## Examples
+
+      iex> create_flow_revision(%{field: value})
+      {:ok, %FlowRevision{}}
+
+      iex> create_flow_revision(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
   @spec create_flow_revision(map()) :: {:ok, FlowRevision.t()} | {:error, Ecto.Changeset.t()}
   def create_flow_revision(attrs \\ %{}) do
     %FlowRevision{}
