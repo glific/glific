@@ -15,7 +15,7 @@ defmodule Glific.Flows.FlowRevision do
     Users.User
   }
 
-  @required_fields [:definition, :flow_id, :organization_id]
+  @required_fields [:definition, :flow_id, :organization_id, :user_id]
   @optional_fields [:revision_number, :status, :version]
 
   @type t() :: %__MODULE__{
