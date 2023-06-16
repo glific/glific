@@ -105,6 +105,10 @@ defmodule Glific.Flags do
 
   def out_of_office_update(organization), do: get_out_of_office(organization)
 
+  @doc """
+  Check the out of office flag and enable/disable based on it
+  """
+  @spec get_out_of_office(Organization.t()) :: nil
   def get_out_of_office(organization) do
     if(
       FunWithFlags.enabled?(
