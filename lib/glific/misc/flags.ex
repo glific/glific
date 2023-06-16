@@ -141,12 +141,11 @@ defmodule Glific.Flags do
     nil
   end
 
-  @spec get_ticketing(Organization.t()) :: boolean()
-  defp get_ticketing(organization),
-    do: FunWithFlags.enabled?(:ticketing, for: %{organization_id: organization.id})
-
+  @doc """
+  Get show uuid on nodes value for organization flag
+  """
   @spec get_flow_uuid_display(map()) :: boolean
-  defp get_flow_uuid_display(organization) do
+  def get_flow_uuid_display(organization) do
     id = organization.id
 
     cond do
@@ -166,21 +165,30 @@ defmodule Glific.Flags do
     end
   end
 
+  @doc """
+  Get role and permission value for organization flag
+  """
   @spec get_roles_and_permission(Organization.t()) :: boolean()
   def get_roles_and_permission(organization),
     do: FunWithFlags.enabled?(:roles_and_permission, for: %{organization_id: organization.id})
 
+  @doc """
+  Get ticketing value for organization flag
+  """
   @spec get_ticketing_enabled(map()) :: boolean
-  defp get_ticketing_enabled(organization),
+  def get_ticketing_enabled(organization),
     do: FunWithFlags.enabled?(:is_ticketing_enabled, for: %{organization_id: organization.id})
 
+  @doc """
+  Get contact profile value for organization flag
+  """
   @spec get_contact_profile_enabled(map()) :: boolean
-  defp get_contact_profile_enabled(organization),
+  def get_contact_profile_enabled(organization),
     do:
       FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: organization.id})
 
   @doc """
-  Determine if we need to enable ticketing for an organization
+  Set fun_with_flag toggle for ticketing for an organization
   """
   @spec set_ticketing_enabled(map()) :: map()
   def set_ticketing_enabled(organization) do
@@ -191,6 +199,9 @@ defmodule Glific.Flags do
     )
   end
 
+  @doc """
+  Set fun_with_flag toggle for out of office for an organization
+  """
   @spec set_out_of_office(map()) :: map()
   def set_out_of_office(organization) do
     Map.put(
@@ -201,7 +212,7 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  Determine if we need to show uuid on the nodes.
+  Set fun_with_flag toggle for uuid on nodes for an organization
   """
   @spec set_flow_uuid_display(map()) :: map()
   def set_flow_uuid_display(organization) do
@@ -213,7 +224,7 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  check fun_with_flag toggle for an organization and returns boolean value
+  Set fun_with_flag toggle for roles and permission for an organization
   """
   @spec set_roles_and_permission(map()) :: map()
   def set_roles_and_permission(organization) do
@@ -225,7 +236,7 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  Determine if we need to enable contact profile for an organization
+  Set fun_with_flag toggle for contact profile enabled for an organization
   """
   @spec set_contact_profile_enabled(map()) :: map()
   def set_contact_profile_enabled(organization) do
