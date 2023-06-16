@@ -462,11 +462,12 @@ defmodule Glific.Partners do
       |> Repo.preload([:bsp, :contact])
       |> set_bsp_info()
       |> set_out_of_office_values()
+      |> Flags.set_out_of_office()
       |> set_languages()
-      |> set_flow_uuid_display()
-      |> set_roles_and_permission()
-      |> set_contact_profile_enabled()
-      |> set_ticketing_enabled()
+      |> Flags.set_flow_uuid_display()
+      |> Flags.set_roles_and_permission()
+      |> Flags.set_contact_profile_enabled()
+      |> Flags.set_ticketing_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -591,98 +592,6 @@ defmodule Glific.Partners do
 
     organization
     |> Map.put(:languages, languages)
-  end
-
-  @doc """
-  check fun_with_flag toggle for an organization and returns boolean value
-  """
-  @spec get_ticketing(Organization.t()) :: boolean()
-  def get_ticketing(organization),
-    do: FunWithFlags.enabled?(:ticketing, for: %{organization_id: organization.id})
-
-  @doc """
-  Determine if we need to show uuid on the nodes.
-  """
-  @spec get_flow_uuid_display(map()) :: boolean
-  def get_flow_uuid_display(organization) do
-    id = organization.id
-
-    cond do
-      FunWithFlags.enabled?(:flow_uuid_display, for: %{organization_id: id}) ->
-        true
-
-      # the below 2 conditions are just for testing and prototyping purposes
-      # we'll get rid of them when we start using this actively
-      Application.get_env(:glific, :environment) == :prod && id == 2 ->
-        true
-
-      Application.get_env(:glific, :environment) != :prod && id == 1 ->
-        true
-
-      true ->
-        false
-    end
-  end
-
-  @doc """
-  check fun_with_flag toggle for an organization and returns boolean value
-  """
-  @spec get_roles_and_permission(Organization.t()) :: boolean()
-  def get_roles_and_permission(organization),
-    do: FunWithFlags.enabled?(:roles_and_permission, for: %{organization_id: organization.id})
-
-  @doc """
-  Determine if we need to enable contact profile for an organization
-  """
-  @spec get_ticketing_enabled(map()) :: boolean
-  def get_ticketing_enabled(organization),
-    do: FunWithFlags.enabled?(:is_ticketing_enabled, for: %{organization_id: organization.id})
-
-  @doc """
-  Determine if we need to enable contact profile for an organization
-  """
-  @spec get_contact_profile_enabled(map()) :: boolean
-  def get_contact_profile_enabled(organization),
-    do:
-      FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: organization.id})
-
-  @doc """
-  Determine if we need to enable ticketing for an organization
-  """
-  @spec set_ticketing_enabled(map()) :: map()
-  def set_ticketing_enabled(organization) do
-    Map.put(
-      organization,
-      :is_ticketing_enabled,
-      FunWithFlags.enabled?(:is_ticketing_enabled, for: %{organization_id: organization.id})
-    )
-  end
-
-  @spec set_flow_uuid_display(map()) :: map()
-  defp set_flow_uuid_display(organization) do
-    Map.put(
-      organization,
-      :is_flow_uuid_display,
-      get_flow_uuid_display(organization)
-    )
-  end
-
-  @spec set_roles_and_permission(map()) :: map()
-  defp set_roles_and_permission(organization) do
-    Map.put(
-      organization,
-      :is_roles_and_permission,
-      get_roles_and_permission(organization)
-    )
-  end
-
-  @spec set_contact_profile_enabled(map()) :: map()
-  defp set_contact_profile_enabled(organization) do
-    Map.put(
-      organization,
-      :is_contact_profile_enabled,
-      get_contact_profile_enabled(organization)
-    )
   end
 
   # Lets cache all bsp provider specific info in the organization entity since
@@ -1242,10 +1151,10 @@ defmodule Glific.Partners do
       "bigquery" => organization.services["bigquery"] != nil,
       "google_cloud_storage" => organization.services["google_cloud_storage"] != nil,
       "dialogflow" => organization.services["dialogflow"] != nil,
-      "flow_uuid_display" => get_flow_uuid_display(organization),
-      "roles_and_permission" => get_roles_and_permission(organization),
-      "contact_profile_enabled" => get_contact_profile_enabled(organization),
-      "ticketing_enabled" => get_ticketing_enabled(organization)
+      "flow_uuid_display" => Flags.get_flow_uuid_display(organization),
+      "roles_and_permission" => Flags.get_roles_and_permission(organization),
+      "contact_profile_enabled" => Flags.get_contact_profile_enabled(organization),
+      "ticketing_enabled" => Flags.get_ticketing_enabled(organization)
     }
   end
 

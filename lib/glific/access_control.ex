@@ -5,7 +5,7 @@ defmodule Glific.AccessControl do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{Partners, Repo, Users.User}
+  alias Glific.{Flags, Partners, Repo, Users.User}
 
   alias Glific.AccessControl.{
     FlowRole,
@@ -29,7 +29,7 @@ defmodule Glific.AccessControl do
   @spec list_roles(map()) :: [Role.t()]
   def list_roles(args) do
     Partners.organization(args.organization_id)
-    |> Partners.get_roles_and_permission()
+    |> Flags.get_roles_and_permission()
     |> hide_organization_roles(args)
     |> Repo.list_filter(Role, &Repo.opts_with_label/2, &filter_with/2)
   end
@@ -86,7 +86,7 @@ defmodule Glific.AccessControl do
   @spec count_roles(map()) :: integer
   def count_roles(args) do
     Partners.organization(args.organization_id)
-    |> Partners.get_roles_and_permission()
+    |> Flags.get_roles_and_permission()
     |> hide_organization_roles(args)
     |> Repo.count_filter(Role, &filter_with/2)
   end
@@ -258,7 +258,7 @@ defmodule Glific.AccessControl do
     user = Repo.get_current_user()
     organization = Partners.organization(user.organization_id)
 
-    with true <- Partners.get_roles_and_permission(organization),
+    with true <- Flags.get_roles_and_permission(organization),
          user <- Repo.preload(user, [:access_roles]),
          true <- is_organization_role?(user) do
       do_check_access(entity_list, entity_type, user)
