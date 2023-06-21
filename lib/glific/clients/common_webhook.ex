@@ -56,12 +56,17 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   def webhook("jugalbandi", fields) do
-    Tesla.get(fields["url"],
-      headers: [{"Accept", "application/json"}],
-      query: [
+    prompt = if Map.has_key?(fields, "prompt"), do: [prompt: fields["prompt"]], else: []
+
+    query =
+      [
         query_string: fields["query_string"],
         uuid_number: fields["uuid_number"]
-      ],
+      ] ++ prompt
+
+    Tesla.get(fields["url"],
+      headers: [{"Accept", "application/json"}],
+      query: query,
       opts: [adapter: [recv_timeout: 100_000]]
     )
     |> case do
