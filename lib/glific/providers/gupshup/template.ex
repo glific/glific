@@ -366,7 +366,6 @@ defmodule Glific.Providers.Gupshup.Template do
            ApiClient.get_templates(org_id),
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
-          IO.inspect(response_data)
       response_data["templates"]
       |> Enum.reduce([], &(&2 ++ [Map.put(&1, "bsp_id", &1["id"])]))
       |> Templates.update_hsms(organization)
