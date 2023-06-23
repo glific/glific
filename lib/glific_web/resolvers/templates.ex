@@ -58,6 +58,19 @@ defmodule GlificWeb.Resolvers.Templates do
   end
 
   @doc false
+  @spec edit_approved_template(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def edit_approved_template(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, session_template} <-
+           Repo.fetch_by(SessionTemplate, %{id: id, organization_id: user.organization_id}),
+         {:ok, session_template} <- Templates.edit_approved_template(session_template, params, user.organization_id) do
+      {:ok, %{session_template: session_template}}
+    end
+  end
+
+  @doc false
   @spec delete_session_template(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_session_template(_, %{id: id}, %{context: %{current_user: user}}) do

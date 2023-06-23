@@ -107,6 +107,22 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  def edit_approved_template(org_id, payload) do
+    payload = Map.put(payload, "appId", app_id!(org_id))
+
+    (app_url(org_id) <> "/templates" <> Map.get(payload, "id"))
+    |> put_request(payload,
+      org_id: org_id
+    )
+    |> case do
+      {:ok, response} ->
+        {:ok, response}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
   @doc """
   Remove hsm template from the WABA.
   """
@@ -215,6 +231,20 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
     post(url, data, headers: req_headers)
+    |> case do
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+        {:ok, Jason.decode!(body)}
+
+      err ->
+        {:error, "#{inspect(err)}"}
+    end
+  end
+
+  @spec put_request(String.t(), map(), Keyword.t()) :: tuple()
+  defp put_request(url, data, opts) do
+    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
+
+    put(url, data, headers: req_headers)
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}

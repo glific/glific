@@ -207,6 +207,15 @@ defmodule Glific.Templates do
     |> Repo.update()
   end
 
+  @spec edit_approved_template(SessionTemplate.t(), map(), any()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
+  def edit_approved_template(%SessionTemplate{} = session_template, attrs, org_id) do
+    session_template
+    |> SessionTemplate.update_changeset(attrs)
+    |> Repo.update() #update on database
+    Glific.Providers.Gupshup.PartnerAPI.edit_approved_template(org_id, session_template)
+  end
+
   @doc """
   Deletes a session_template.
 
