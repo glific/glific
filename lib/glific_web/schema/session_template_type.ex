@@ -189,6 +189,13 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       resolve(&Resolvers.Templates.update_session_template/3)
     end
 
+    field :edit_approved_template, :session_template_result do
+      arg(:id, non_null(:id))
+      arg(:input, :session_template_input)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Templates.edit_approved_template/3)
+    end
+
     field :delete_session_template, :session_template_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
