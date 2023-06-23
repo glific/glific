@@ -3,6 +3,8 @@ import Config
 # setting the state of the environment for use within code base
 config :glific, :environment, :dev
 
+config :glific, GlificWeb.Endpoint, http: [ip: {0, 0, 0, 0}, port: 4000]
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #

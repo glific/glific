@@ -27,12 +27,12 @@ There is level of understanding middle to advanced level. It is assumed that you
 
 - Download and start [postgres server](https://www.postgresql.org/download/)
 
-For Postgres, for the development server, we default to using postgres/postgres as the username/password. This is configurable
+For Postgres, for the development server, we default to using postgres/postgres/postgres as the username/password/machine name. This is configurable
 
-We tested and developed against the following version:
+We tested and developed against the following versions:
 
 ```bash
-    - postgres : v13.x
+    - postgres : v13.x, v14.x
 ```
 
 ### 2. Software dependency - Erlang / Elixir
@@ -41,7 +41,7 @@ We tested and developed against the following version:
 
 For Ubuntu users you also need to install the `inotify-tools` package
 
-We tested and developed against the following versions:
+We tested and developed against the following versions (please check .tool-versions in repository for the latest versons we are using):
 
 ```bash
     - erlang : 25.3.2
@@ -138,39 +138,17 @@ Go to glific_backend folder in the terminal console.
 - `mkdir priv/cert`
 - `mv glific.test* priv/cert`
 - `cd priv/cert`
-- `ls -1` Check that glific.test+1-key.pem and glific.test+1.pem exists
-
-      if not then copy any certificate found in there to the correct names
-      for example if I see:
-
-```bash
-      ❯ ls -1
-      glific.test+*-key.pem
-      glific.test+*.pem
-      glific.test+*-key.pem
-      glific.test+*.pem
-      ❯ cp glific.test+*-key.pem glific.test+1-key.pem
-      ❯ cp glific.test+*.pem glific.test+1.pem
-```
-
-      And check again
-
-```bash
-      ❯ ls -1
-      glific.test+*-key.pem
-      glific.test+*.pem
-      glific.test+*-key.pem
-      glific.test+*.pem
-      glific.test+*-key.pem
-      glific.test+*.pem
-```
-
+- `ls -1` Check that glific.test+1-key.pem and glific.test+1.pem exists.
 - Check port 4001 `sudo lsof -n -i:4001 | grep LISTEN` should return nothing.
 - Check hosts file `grep glific /etc/hosts`
 
       if returns nothing
-      then make sure hosts file has those names added
-      `sudo bash -c 'echo "127.0.0.1 glific.test api.glific.test" >> /etc/hosts'`
+      then make sure hosts file has those names and postgres added
+      `sudo bash -c ' \
+        echo " \
+        127.0.0.1 glific.test \
+        127.0.0.1 api.glific.test \
+        127.0.0.1 postgres" >> /etc/hosts'`
 
 **For Windows the steps is as follows:**
 
@@ -181,33 +159,7 @@ Go to glific_backend folder in the terminal console.
 - `mkdir priv/cert`
 - `move glific.test* priv/cert`
 - `cd priv/cert`
-- `dir` Check that glific.test+1-key.pem and glific.test+1.pem exists
-
-      if not then copy any certificate found in there to the correct names
-      for example if I see:
-
-```bash
-      ❯ dir
-      glific.test+*-key.pem
-      glific.test+*.pem
-      glific.test+*-key.pem
-      glific.test+*.pem
-      ❯ cp glific.test+*-key.pem glific.test+1-key.pem
-      ❯ cp glific.test+*.pem glific.test+1.pem
-```
-
-      And check again
-
-```bash
-      ❯ dir
-      glific.test+*-key.pem
-      glific.test+*.pem
-      glific.test+*-key.pem
-      glific.test+*.pem
-      glific.test+*-key.pem
-      glific.test+*.pem
-```
-
+- `dir` Check that glific.test+1-key.pem and glific.test+1.pem exists. 
 - Check port 4001 `netstat -ano | findstr :4001` should return nothing.
 - Check hosts file by`type %SystemRoot%\System32\drivers\etc\hosts | findstr glific`
 
@@ -215,6 +167,7 @@ Go to glific_backend folder in the terminal console.
       then make sure hosts file has those names added
       127.0.0.1 glific.test
       127.0.0.1 api.glific.test
+      127.0.0.1 postgres
 
 ### 7. Backend - Config
 
@@ -239,7 +192,7 @@ Go to glific_backend folder in the terminal console.
   - Update HSM templates by running the following command:
   - `Glific.Templates.sync_hsms_from_bsp(1)`
 
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+Now you can visit [`https://glific.test:4001`](https://glific.test:4001) from your browser.
 
 **For Windows the steps is as follows:**
 
@@ -270,7 +223,7 @@ Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
   - Update HSM templates by running the following command:
   - `Glific.Templates.sync_hsms_from_bsp(1)`
 
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+Now you can visit [`https://glific.test:4001`](https://glific.test:4001) from your browser.
 
 ### 8. Frontend - Install glific frontend
 
@@ -287,7 +240,7 @@ install [Glific Frontend](https://github.com/glific/glific-frontend/)
 - Install [ngrok](https://ngrok.com/download)
 - Start ngrok to proxy port 4000:
   - Start the backend server: `mix phx.server`
-  - `$ ngrok http 4000 --host-header=localhost:4000` (do this in a new window))
+  - `$ ngrok http 4000 --host-header=glific.test:4000` (do this in a new window))
   - Remember the URL it assigns you, something like: `https://9f6a7c7822d2.ngrok.io`
 - Goto the [Settings Page](https://www.gupshup.io/whatsappassistant/#/settings)
 - On that page, Search for `Manage your Template messaging settings` and enable it
@@ -310,7 +263,6 @@ to update your codebase from the glific repository.
 
 - [User Guide](https://docs.glific.com)
 - [API docs (Postman) ](https://api.glific.com/)
-- [API docs (Slate)](https://glific.github.io/slate/)
 - [Code Documentation](https://hexdocs.pm/glific/5.1.6/readme.html)
 - [Recipes](https://github.com/glific/recipes) - Code smaples for some common use cases in glific.
 
