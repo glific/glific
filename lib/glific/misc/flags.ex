@@ -14,6 +14,11 @@ defmodule Glific.Flags do
   @doc false
   @spec init(Organization.t()) :: nil
   def init(organization) do
+    FunWithFlags.enable(
+      :enable_out_of_office,
+      for_actor: %{organization_id: organization.id}
+    )
+
     init_fun_with_flags(organization)
     out_of_office_update(organization)
 
@@ -95,10 +100,16 @@ defmodule Glific.Flags do
   """
   @spec out_of_office_update(Organization.t() | non_neg_integer) :: nil
   def out_of_office_update(organization) when is_integer(organization) do
-    out_of_office_update(Partners.organization(organization))
+    get_out_of_office(Partners.organization(organization))
   end
 
-  def out_of_office_update(organization) do
+  def out_of_office_update(organization), do: get_out_of_office(organization)
+
+  @doc """
+  Check the out of office flag and enable/disable based on it
+  """
+  @spec get_out_of_office(Organization.t()) :: nil
+  def get_out_of_office(organization) do
     if(
       FunWithFlags.enabled?(
         :enable_out_of_office,
@@ -135,6 +146,112 @@ defmodule Glific.Flags do
     nil
   end
 
+  @doc """
+  Get show uuid on nodes value for organization flag
+  """
+  @spec get_flow_uuid_display(map()) :: boolean
+  def get_flow_uuid_display(organization) do
+    id = organization.id
+
+    cond do
+      FunWithFlags.enabled?(:flow_uuid_display, for: %{organization_id: id}) ->
+        true
+
+      # the below 2 conditions are just for testing and prototyping purposes
+      # we'll get rid of them when we start using this actively
+      Application.get_env(:glific, :environment) == :prod && id == 2 ->
+        true
+
+      Application.get_env(:glific, :environment) != :prod && id == 1 ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  @doc """
+  Get role and permission value for organization flag
+  """
+  @spec get_roles_and_permission(Organization.t()) :: boolean()
+  def get_roles_and_permission(organization),
+    do: FunWithFlags.enabled?(:roles_and_permission, for: %{organization_id: organization.id})
+
+  @doc """
+  Get ticketing value for organization flag
+  """
+  @spec get_ticketing_enabled(map()) :: boolean
+  def get_ticketing_enabled(organization),
+    do: FunWithFlags.enabled?(:is_ticketing_enabled, for: %{organization_id: organization.id})
+
+  @doc """
+  Get contact profile value for organization flag
+  """
+  @spec get_contact_profile_enabled(map()) :: boolean
+  def get_contact_profile_enabled(organization),
+    do:
+      FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: organization.id})
+
+  @doc """
+  Set fun_with_flag toggle for ticketing for an organization
+  """
+  @spec set_ticketing_enabled(map()) :: map()
+  def set_ticketing_enabled(organization) do
+    Map.put(
+      organization,
+      :is_ticketing_enabled,
+      get_ticketing_enabled(organization)
+    )
+  end
+
+  @doc """
+  Set fun_with_flag toggle for out of office for an organization
+  """
+  @spec set_out_of_office(map()) :: map()
+  def set_out_of_office(organization) do
+    Map.put(
+      organization,
+      :enable_out_of_office,
+      get_out_of_office(organization)
+    )
+  end
+
+  @doc """
+  Set fun_with_flag toggle for uuid on nodes for an organization
+  """
+  @spec set_flow_uuid_display(map()) :: map()
+  def set_flow_uuid_display(organization) do
+    Map.put(
+      organization,
+      :is_flow_uuid_display,
+      get_flow_uuid_display(organization)
+    )
+  end
+
+  @doc """
+  Set fun_with_flag toggle for roles and permission for an organization
+  """
+  @spec set_roles_and_permission(map()) :: map()
+  def set_roles_and_permission(organization) do
+    Map.put(
+      organization,
+      :is_roles_and_permission,
+      get_roles_and_permission(organization)
+    )
+  end
+
+  @doc """
+  Set fun_with_flag toggle for contact profile enabled for an organization
+  """
+  @spec set_contact_profile_enabled(map()) :: map()
+  def set_contact_profile_enabled(organization) do
+    Map.put(
+      organization,
+      :is_contact_profile_enabled,
+      get_contact_profile_enabled(organization)
+    )
+  end
+
   # setting default fun_with_flags values as disabled for an organization except for out_of_office
   @spec init_fun_with_flags(Organization.t()) :: :ok
   defp init_fun_with_flags(organization) do
@@ -150,10 +267,15 @@ defmodule Glific.Flags do
       :is_ticketing_enabled
     ]
     |> Enum.each(fn flag ->
-      FunWithFlags.disable(
-        flag,
-        for_actor: %{organization_id: organization.id}
-      )
+      if !FunWithFlags.enabled?(
+           flag,
+           for: %{organization_id: organization.id}
+         ),
+         do:
+           FunWithFlags.disable(
+             flag,
+             for_actor: %{organization_id: organization.id}
+           )
     end)
   end
 end
