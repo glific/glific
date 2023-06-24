@@ -88,6 +88,9 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     @desc "Match the hsm template message"
     field :is_hsm, :boolean
 
+    @desc "Match the category of the template"
+    field :category, :string
+
     @desc "Match the parent"
     field :parent, :string
 

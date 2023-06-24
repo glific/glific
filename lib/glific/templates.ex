@@ -55,6 +55,9 @@ defmodule Glific.Templates do
       {:status, status}, query ->
         from(q in query, where: q.status == ^status)
 
+      {:category, category}, query ->
+        from(q in query, where: q.category == ^category)
+
       {:term, term}, query ->
         query
         |> join(:left, [template], template_tag in TemplateTag,
