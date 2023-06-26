@@ -207,7 +207,7 @@ defmodule Glific.Flows do
 
     attrs =
       Map.put(attrs, :keywords, sanitize_string_list(attrs[:keywords]))
-      |> Map.put(attrs, :labels, sanitize_string_list(attrs[:labels]))
+      |> Map.put(:labels, sanitize_string_list(attrs[:labels]))
       |> Map.put_new(:uuid, Ecto.UUID.generate())
 
     clean_cached_flow_keywords_map(attrs.organization_id)

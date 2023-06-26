@@ -37,7 +37,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :last_published_at, :datetime
     field :last_changed_at, :datetime
     field :is_background, :boolean
-    field :labels, list_of(string)
+    field :labels, list_of(:string)
 
     field :roles, list_of(:access_role) do
       resolve(dataloader(Repo, use_parent: true))
