@@ -37,6 +37,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :last_published_at, :datetime
     field :last_changed_at, :datetime
     field :is_background, :boolean
+    field :labels, list_of(string)
 
     field :roles, list_of(:access_role) do
       resolve(dataloader(Repo, use_parent: true))
@@ -48,6 +49,7 @@ defmodule GlificWeb.Schema.FlowTypes do
   input_object :flow_input do
     field :name, :string
     field :keywords, list_of(:string)
+    field :labels, list_of(:string)
     field :ignore_keywords, :boolean
     field :is_active, :boolean
     field :is_background, :boolean
@@ -61,8 +63,8 @@ defmodule GlificWeb.Schema.FlowTypes do
     @desc "Match the name"
     field :name, :string
 
-    @desc "Match the name and keyword"
-    field :name_or_keyword, :string
+    @desc "Match the name or keyword or labels"
+    field :name_or_keyword_or_labels, :string
 
     @desc "Match the keyword"
     field :keyword, :string

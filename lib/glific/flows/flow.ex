@@ -36,7 +36,8 @@ defmodule Glific.Flows.Flow do
     :is_background,
     :is_pinned,
     :respond_other,
-    :respond_no_response
+    :respond_no_response,
+    :labels
   ]
 
   @type t :: %__MODULE__{
@@ -63,7 +64,8 @@ defmodule Glific.Flows.Flow do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          labels: [String.t()] | nil
         }
 
   schema "flows" do
@@ -93,6 +95,7 @@ defmodule Glific.Flows.Flow do
     field(:is_pinned, :boolean, default: false)
     field(:respond_other, :boolean, default: false)
     field(:respond_no_response, :boolean, default: false)
+    field(:labels, {:array, :string}, default: [])
 
     # we use this to store the latest definition and version from flow_revisions for this flow
     field(:definition, :map, virtual: true)
@@ -121,16 +124,17 @@ defmodule Glific.Flows.Flow do
         message: "Sorry, the flow name already exists."
       )
       |> unique_constraint([:uuid, :organization_id])
-      |> update_change(:keywords, &update_keywords(&1))
+      |> update_change(:keywords, &downcase_list_values(&1))
+      |> update_change(:labels, &downcase_list_values(&1))
 
     validate_keywords(changeset, get_change(changeset, :keywords))
   end
 
-  @spec update_keywords(any()) :: list()
-  defp update_keywords(keywords) when is_list(keywords),
+  @spec downcase_list_values(any()) :: list()
+  defp downcase_list_values(keywords) when is_list(keywords),
     do: Enum.map(keywords, fn keyword -> String.downcase(keyword) end)
 
-  defp update_keywords(_), do: []
+  defp downcase_list_values(_), do: []
 
   @doc """
   Changeset helper for keywords

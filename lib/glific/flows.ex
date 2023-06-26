@@ -132,10 +132,11 @@ defmodule Glific.Flows do
       {:is_pinned, is_pinned}, query ->
         from(q in query, where: q.is_pinned == ^is_pinned)
 
-      {:name_or_keyword, name_or_keyword}, query ->
+      {:name_or_keyword_or_labels, name_or_keyword_or_labels}, query ->
         query
-        |> where([fr], ilike(fr.name, ^"%#{name_or_keyword}%"))
-        |> or_where([fr], ^name_or_keyword in fr.keywords)
+        |> where([fr], ilike(fr.name, ^"%#{name_or_keyword_or_labels}%"))
+        |> or_where([fr], ^name_or_keyword_or_labels in fr.keywords)
+        |> or_where([fr], ^name_or_keyword_or_labels in fr.labels)
 
       _, query ->
         query
@@ -205,7 +206,8 @@ defmodule Glific.Flows do
     user = Repo.get_current_user()
 
     attrs =
-      Map.put(attrs, :keywords, sanitize_flow_keywords(attrs[:keywords]))
+      Map.put(attrs, :keywords, sanitize_string_list(attrs[:keywords]))
+      |> Map.put(attrs, :labels, sanitize_string_list(attrs[:labels]))
       |> Map.put_new(:uuid, Ecto.UUID.generate())
 
     clean_cached_flow_keywords_map(attrs.organization_id)
@@ -261,8 +263,7 @@ defmodule Glific.Flows do
 
     attrs =
       attrs
-      |> Map.merge(%{keywords: sanitize_flow_keywords(attrs[:keywords] || flow.keywords)})
-
+      |> Map.merge(%{keywords: sanitize_string_list(attrs[:keywords] || flow.keywords)})
     with {:ok, updated_flow} <-
            flow
            |> Flow.changeset(attrs)
@@ -809,11 +810,11 @@ defmodule Glific.Flows do
     Caches.remove(organization_id, ["flow_keywords_map"])
   end
 
-  @spec sanitize_flow_keywords(list) :: list()
-  defp sanitize_flow_keywords(keywords) when is_list(keywords),
+  @spec sanitize_string_list(list) :: list()
+  defp sanitize_string_list(keywords) when is_list(keywords),
     do: Enum.map(keywords, &Glific.string_clean(&1))
 
-  defp sanitize_flow_keywords(keywords), do: keywords
+  defp sanitize_string_list(keywords), do: keywords
 
   @optin_flow_keyword "optin"
 
