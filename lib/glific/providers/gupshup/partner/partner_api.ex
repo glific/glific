@@ -107,10 +107,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @spec edit_approved_template(non_neg_integer(), map) :: tuple()
   def edit_approved_template(org_id, payload) do
     payload = Map.put(payload, "appId", app_id!(org_id))
 
-    (app_url(org_id) <> "/templates" <> Map.get(payload, "id"))
+    (app_url(org_id) <> "/templates/" <> Integer.to_string(payload.id))
     |> put_request(payload,
       org_id: org_id
     )

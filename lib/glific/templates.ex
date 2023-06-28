@@ -210,10 +210,13 @@ defmodule Glific.Templates do
   @spec edit_approved_template(SessionTemplate.t(), map(), any()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def edit_approved_template(%SessionTemplate{} = session_template, attrs, org_id) do
-    session_template
-    |> SessionTemplate.update_changeset(attrs)
-    |> Repo.update() #update on database
-    Glific.Providers.Gupshup.PartnerAPI.edit_approved_template(org_id, session_template)
+
+    case Glific.Providers.Gupshup.PartnerAPI.edit_approved_template(org_id, session_template) do
+      {:ok, updated_session_template} -> update_session_template(updated_session_template, attrs)
+      _ -> {:error, "Error while updating template"}
+    end
+
+    #check API response, only update when successful
   end
 
   @doc """
