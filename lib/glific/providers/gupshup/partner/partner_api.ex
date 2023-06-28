@@ -113,9 +113,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec apply_for_template(non_neg_integer(), map) :: tuple()
   def apply_for_template(org_id, payload) do
     payload =
-    payload
-    |> Map.put("allowTemplateCategoryChange", true)
-    |> Map.put("appId", app_id!(org_id))
+      payload
+      |> Map.put("allowTemplateCategoryChange", true)
+      |> Map.put("appId", app_id!(org_id))
+
     (app_url(org_id) <> "/templates")
     |> post_request(payload,
       org_id: org_id
