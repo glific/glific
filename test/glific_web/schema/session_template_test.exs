@@ -146,8 +146,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     # verifies the functionality of the category filter by querying session templates with the "UTILITY" category
     # and ensures the presence of atleast one filter
-    result =
-      auth_query_gql_by(:list, user, variables: %{"filter" => %{"category" => "UTILITY"}})
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"category" => "UTILITY"}})
 
     assert {:ok, query_data} = result
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
