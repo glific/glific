@@ -215,6 +215,9 @@ defmodule Glific.Templates do
     attrs |> IO.inspect(label: "attrs to merge")
     #update session_template with attrs here
     session_template = Map.merge(session_template, attrs,fn _k, _v1, v2 -> v2 end) |> IO.inspect(label: "merged session_template")
+    keys = [:body, :example, :type, :id, :uuid]
+    {session_template, _} = Map.split(session_template, keys)
+    session_template |> IO.inspect(label: "session_template to send to API")
     case Glific.Providers.Gupshup.PartnerAPI.edit_approved_template(org_id, session_template) |> IO.inspect(label: "API result") do
       {:ok, updated_session_template} -> update_session_template(updated_session_template, attrs)
       _ -> {:error, "Error while updating template"}
