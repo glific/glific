@@ -18,6 +18,7 @@ defmodule Glific.Templates.SessionTemplate do
           id: non_neg_integer | nil,
           uuid: Ecto.UUID.t() | nil,
           label: String.t() | nil,
+          labels: String.t() | nil, #Labels for searching in Dashboard
           body: String.t() | nil,
           type: String.t() | nil,
           shortcode: String.t() | nil,
@@ -55,6 +56,7 @@ defmodule Glific.Templates.SessionTemplate do
   ]
   @optional_fields [
     :body,
+    :labels, #Labels for searching in Dashboard
     :shortcode,
     :number_parameters,
     :is_reserved,
@@ -79,6 +81,7 @@ defmodule Glific.Templates.SessionTemplate do
     field(:uuid, Ecto.UUID, autogenerate: true)
     field(:label, :string)
     field(:body, :string)
+    field(:labels, :string, default: "")
     field(:type, MessageType)
     field(:shortcode, :string)
 

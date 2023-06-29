@@ -35,6 +35,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :id, :id
     field :label, :string
     field :body, :string
+    field :labels, :string #Labels for searching in Dashboard
     field :type, :message_type_enum
     field :shortcode, :string
     field :is_hsm, :boolean
@@ -73,11 +74,14 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
 
   @desc "Filtering options for session_templates"
   input_object :session_template_filter do
-    @desc "Match term with labe/body/shortcode of template or label/shortcode of associated tag"
+    @desc "Match term with label/body/shortcode of template or label/shortcode of associated tag"
     field :term, :string
 
     @desc "Match the label"
     field :label, :string
+
+    @desc "Match the labels"
+    field :labels, :string
 
     @desc "Match the body of template"
     field :body, :string
@@ -119,6 +123,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   input_object :session_template_input do
     field :label, :string
     field :body, :string
+    field :labels, :string
     field :type, :message_type_enum
     field :shortcode, :string
     field :is_hsm, :boolean
