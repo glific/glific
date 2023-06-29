@@ -144,6 +144,14 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     [session_template | _] = session_templates
     assert get_in(session_template, ["body"]) == "Default Template"
 
+    # verifies the functionality of the category filter by querying session templates with the "UTILITY" category
+    # and ensures the presence of atleast one filter
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"category" => "UTILITY"}})
+
+    assert {:ok, query_data} = result
+    session_templates = get_in(query_data, [:data, "sessionTemplates"])
+    assert length(session_templates) > 0
+
     # get language_id for next test
     parent_id = String.to_integer(get_in(session_template, ["id"]))
     language_id = String.to_integer(get_in(session_template, ["language", "id"]))

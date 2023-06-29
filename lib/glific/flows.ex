@@ -132,10 +132,11 @@ defmodule Glific.Flows do
       {:is_pinned, is_pinned}, query ->
         from(q in query, where: q.is_pinned == ^is_pinned)
 
-      {:name_or_keyword, name_or_keyword}, query ->
+      {:name_or_keyword_or_labels, name_or_keyword_or_labels}, query ->
         query
-        |> where([fr], ilike(fr.name, ^"%#{name_or_keyword}%"))
-        |> or_where([fr], ^name_or_keyword in fr.keywords)
+        |> where([fr], ilike(fr.name, ^"%#{name_or_keyword_or_labels}%"))
+        |> or_where([fr], ^name_or_keyword_or_labels in fr.keywords)
+        |> or_where([fr], ilike(fr.labels, ^"%#{name_or_keyword_or_labels}%"))
 
       _, query ->
         query
