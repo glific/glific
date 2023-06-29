@@ -210,8 +210,12 @@ defmodule Glific.Templates do
   @spec edit_approved_template(SessionTemplate.t(), map(), any()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def edit_approved_template(%SessionTemplate{} = session_template, attrs, org_id) do
-
-    case Glific.Providers.Gupshup.PartnerAPI.edit_approved_template(org_id, session_template) do
+    org_id |> IO.inspect()
+    session_template |> IO.inspect(label: "session_template to merge")
+    attrs |> IO.inspect(label: "attrs to merge")
+    #update session_template with attrs here
+    session_template = Map.merge(session_template, attrs,fn _k, _v1, v2 -> v2 end) |> IO.inspect(label: "merged session_template")
+    case Glific.Providers.Gupshup.PartnerAPI.edit_approved_template(org_id, session_template) |> IO.inspect(label: "API result") do
       {:ok, updated_session_template} -> update_session_template(updated_session_template, attrs)
       _ -> {:error, "Error while updating template"}
     end
