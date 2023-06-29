@@ -111,9 +111,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   def edit_approved_template(org_id, payload) do
     app_id!(org_id) |> IO.inspect(label: "app_id")
     app_url(org_id) |> IO.inspect(label: "app_url")
-    payload = Map.put(payload, "appId", app_id!(org_id)) |> IO.inspect(label: "payload")
+   # payload = Map.put(payload, "appId", app_id!(org_id)) |> IO.inspect(label: "payload")
 
-    (app_url(org_id) <> "/templates/" <> (payload.uuid))
+    (app_url(org_id) <> "/templates/" <> (payload.bsp_id))
     |> put_request(payload,
       org_id: org_id
     )
