@@ -48,8 +48,6 @@ We tested and developed against the following versions (please check .tool-versi
     - elixir : 1.14.5-otp-25
 ```
 
-It is recommended to install these very specific versions.
-
 After installing asdf, install the Erlang and Elixir plugins.
 
 ``` bash
