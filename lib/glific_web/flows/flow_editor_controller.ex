@@ -508,7 +508,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
   @spec save_revisions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def save_revisions(conn, params) do
-    revision = Flows.create_flow_revision(params)
+    user = conn.assigns[:current_user]
+    revision = Flows.create_flow_revision(params, user.id)
     json(conn, %{revision: revision.id})
   end
 
