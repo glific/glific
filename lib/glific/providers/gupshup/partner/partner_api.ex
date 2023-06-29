@@ -109,8 +109,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @spec edit_approved_template(non_neg_integer(), map) :: tuple()
   def edit_approved_template(org_id, payload) do
-    app_id!(org_id) |> IO.inspect(label: "app_id")
-    app_url(org_id) |> IO.inspect(label: "app_url")
    # payload = Map.put(payload, "appId", app_id!(org_id)) |> IO.inspect(label: "payload")
 
     (app_url(org_id) <> "/templates/" <> (payload.bsp_id))
@@ -246,9 +244,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec put_request(String.t(), map(), Keyword.t()) :: tuple()
   defp put_request(url, data, opts) do
     req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
-    IO.inspect(url, label: "URL")
-    IO.inspect(data, label: "DATA")
-    IO.inspect(req_headers, label: "HEADERS")
     put(url, data, headers: req_headers)
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->

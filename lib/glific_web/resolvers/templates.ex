@@ -63,7 +63,7 @@ defmodule GlificWeb.Resolvers.Templates do
         }) ::
           {:ok, any} | {:error, any}
   def edit_approved_template(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
-    params |> IO.inspect(label: "input")
+
     with {:ok, session_template} <-
            Repo.fetch_by(SessionTemplate, %{id: id, organization_id: user.organization_id}),
          {:ok, session_template} <- Templates.edit_approved_template(session_template, params, user.organization_id) do

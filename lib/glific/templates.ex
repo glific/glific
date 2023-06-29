@@ -210,17 +210,15 @@ defmodule Glific.Templates do
   @spec edit_approved_template(SessionTemplate.t(), map(), any()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def edit_approved_template(%SessionTemplate{} = session_template, attrs, org_id) do
-    org_id |> IO.inspect()
-    session_template |> IO.inspect(label: "session_template to merge")
-    attrs |> IO.inspect(label: "attrs to merge")
+
     #update session_template with attrs here
-    session_template = Map.merge(session_template, attrs,fn _k, _v1, v2 -> v2 end) |> IO.inspect(label: "merged session_template")
-    keys = [:body, :example, :type, :id, :uuid, :bsp_id]
+    session_template = Map.merge(session_template, attrs,fn _k, _v1, v2 -> v2 end)
+    keys = [:body, :example, :type, :id, :uuid, :bsp_id] #keeping only required keys + only some more
     {session_template, _} = Map.split(session_template, keys)
     body = Map.get(session_template, :body)
     session_template = Map.drop(session_template, [:body])
-    session_template = Map.put(session_template, :content, body)
-    session_template |> IO.inspect(label: "session_template to send to API")
+    session_template = Map.put(session_template, :content, body) #Gupshup API requires "content" instead of "body"
+
     case Glific.Providers.Gupshup.PartnerAPI.edit_approved_template(org_id, session_template) |> IO.inspect(label: "API result") do
       {:ok, updated_session_template} -> updated_session_template |> SessionTemplate.update_changeset(attrs) |> Repo.update()
       _ -> {:error, "Error while updating template"}
