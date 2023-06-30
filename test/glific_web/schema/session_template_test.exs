@@ -69,13 +69,15 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
                   "id" => hsm.uuid,
                   "modifiedOn" =>
                     DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
-                  "status" => "APPROVED"
+                  "status" => "APPROVED",
+                  "category" => "UTILITY"
                 },
                 %{
                   "id" => hsm2.uuid,
                   "modifiedOn" =>
                     DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
-                  "status" => "PENDING"
+                  "status" => "PENDING",
+                  "category" => "AUTHENTICATION"
                 }
               ]
             })
@@ -86,6 +88,8 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
       auth_query_gql_by(:sync, user)
 
     assert message == "successful"
+    assert hsm.category == "UTILITY"
+    assert hsm2.category == "AUTHENTICATION"
   end
 
   test "sync hsm with bsp if it doesn't establish a connection with gupshup test", %{staff: user} do
