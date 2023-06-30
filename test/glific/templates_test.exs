@@ -192,6 +192,16 @@ defmodule Glific.TemplatesTest do
       assert length(session_template_list) == 5
     end
 
+    test "list_session_templates/1 with labels filter on session_templates", attrs do
+      session_template_fixture(Map.merge(attrs, %{labels: "hello,abc"}))
+      session_template_fixture(Map.merge(attrs, %{labels: "world"}))
+      session_template_fixture(Map.merge(attrs, %{labels: "abc"}))
+
+      session_template_list = Templates.list_session_templates(%{filter: Map.merge(attrs, %{labels: "abc"})})
+
+      assert length(session_template_list) == 2
+    end
+
     test "list_session_templates/1 with multiple items", attrs do
       templates_count = Templates.count_session_templates(%{filter: attrs})
 
