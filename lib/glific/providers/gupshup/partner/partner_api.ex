@@ -107,12 +107,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
-  @spec edit_approved_template(non_neg_integer(), map) :: tuple()
-  def edit_approved_template(org_id, payload) do
-   # payload = Map.put(payload, "appId", app_id!(org_id)) |> IO.inspect(label: "payload")
-
-    (app_url(org_id) <> "/templates/" <> (payload.bsp_id))
-    |> put_request(payload,
+  @spec edit_approved_template(non_neg_integer(), String.t(), map) :: tuple()
+  def edit_approved_template(org_id, bsp_id, params) do
+    (app_url(org_id) <> "/templates/" <> bsp_id)
+    |> put_request(params,
       org_id: org_id
     )
     |> case do
@@ -244,10 +242,13 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec put_request(String.t(), map(), Keyword.t()) :: tuple()
   defp put_request(url, data, opts) do
     req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
+    IO.inspect(req_headers)
+
     put(url, data, headers: req_headers)
+    |> IO.inspect()
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
-        {:ok, Jason.decode!(body)} |> IO.inspect(label: "RESPONSE")
+        {:ok, Jason.decode!(body)}
 
       err ->
         {:error, "#{inspect(err)}"}

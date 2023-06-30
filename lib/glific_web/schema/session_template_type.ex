@@ -131,6 +131,12 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :buttons, :json
   end
 
+  input_object :edit_approved_template_input do
+    field :content, :string
+    field :example, :string
+    field :category, :string
+  end
+
   input_object :message_to_template_input do
     field :label, :string
     field :shortcode, :string
@@ -191,7 +197,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
 
     field :edit_approved_template, :session_template_result do
       arg(:id, non_null(:id))
-      arg(:input, :session_template_input)
+      arg(:input, :edit_approved_template_input)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Templates.edit_approved_template/3)
     end

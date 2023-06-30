@@ -83,6 +83,24 @@ defmodule Glific.Providers.Gupshup.Template do
   end
 
   @doc """
+  Editing pre approved template
+  """
+  @spec edit_approved_template(integer(), map()) :: {:ok, any}
+  def edit_approved_template(template_id, params) do
+    with {:ok, session_template} <-
+           Repo.fetch_by(SessionTemplate, %{
+             id: template_id,
+             organization_id: params.organization_id
+           }) do
+      PartnerAPI.edit_approved_template(
+        params.organization_id,
+        session_template.bsp_id,
+        params
+      )
+    end
+  end
+
+  @doc """
   Bulk apply templates from CSV when BSP is Gupshup
   """
   @spec bulk_apply_templates(non_neg_integer(), String.t()) :: {:ok, any}
