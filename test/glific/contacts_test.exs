@@ -293,6 +293,17 @@ defmodule Glific.ContactsTest do
       fields: %{}
   }
 
+    invalid_update_attrs = %{
+      name: "invalid name",
+      optin_time: nil,
+      optin_status: false,
+      optout_time: ~U[2022-01-01 00:00:00Z],
+      phone: invalid_contact.phone,
+      status: :valid,
+      bsp_status: :non_hsm,
+      fields: %{}
+  }
+
   # Test updating a valid contact
   assert {:ok, %Contact{} = valid_contact} = Contacts.maybe_update_contact(valid_update_attrs)
   assert valid_contact.name == "some updated name"
