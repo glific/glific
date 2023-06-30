@@ -91,12 +91,16 @@ defmodule Glific.Providers.Gupshup.Template do
            Repo.fetch_by(SessionTemplate, %{
              id: template_id,
              organization_id: params.organization_id
-           }) do
-      PartnerAPI.edit_approved_template(
+           }),
+     {:ok, _body} <-PartnerAPI.edit_approved_template(
         params.organization_id,
         session_template.bsp_id,
         params
-      )
+      ) do
+        #change this a bit
+        Templates.update_session_template(template_id, %{})
+      end
+
     end
   end
 
