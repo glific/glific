@@ -172,7 +172,7 @@ defmodule Glific.Contacts.Import do
         {:ok, %{message: "All contacts added"}}
 
       _ ->
-        {:error, Enum.join(errors, "<p>\n")}
+        {:error, Enum.join(errors, "\n")}
     end
   end
 

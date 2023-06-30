@@ -269,13 +269,43 @@ defmodule Glific.ContactsTest do
       assert contact.bsp_status == :hsm
     end
 
-    test "mabe_update_contact/1 with invalid phone number which is not in DB",
+    test "maybe_update_contact/1 with invalid phone number which is not in DB",
          %{organization_id: _organization_id} = attrs do
       contact_fixture(attrs)
 
       {:error, error} = Contacts.maybe_update_contact(@update_attrs)
       assert error == "New contacts were found in this file. Sorry those could not be added"
     end
+
+    test "maybe_update_contact/1 with a mix of valid and invalid contacts",
+      %{organization_id: _organization_id} = attrs do
+      valid_contact = contact_fixture(attrs)  # Create a valid contact
+      invalid_contact = %Contact{}  # Create an invalid contact with an empty struct
+
+    valid_update_attrs = %{
+      name: "some updated name",
+      optin_time: ~U[2011-05-18 15:01:01Z],
+      optin_status: true,
+      optout_time: nil,
+      phone: valid_contact.phone,
+      status: :invalid,
+      bsp_status: :hsm,
+      fields: %{}
+  }
+
+  # Test updating a valid contact
+  assert {:ok, %Contact{} = valid_contact} = Contacts.maybe_update_contact(valid_update_attrs)
+  assert valid_contact.name == "some updated name"
+  assert valid_contact.optin_time == ~U[2011-05-18 15:01:01Z]
+  assert valid_contact.optout_time == nil
+  assert valid_contact.status == :invalid
+  assert valid_contact.bsp_status == :hsm
+
+  # Test handling an invalid contact
+  {:error, error} = Contacts.maybe_update_contact(invalid_update_attrs)
+  assert error == "Contact was not found and hence not added"
+end
+
 
     test "import_contact/3 with valid data from file inserts new contacts in the database" do
       file = get_tmp_file()

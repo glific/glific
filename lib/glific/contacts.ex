@@ -433,12 +433,16 @@ defmodule Glific.Contacts do
   @spec maybe_update_contact(map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, any}
   def maybe_update_contact(sender) do
+    map=%{}
     case Repo.get_by(Contact, %{phone: sender.phone}) do
       nil ->
         {:error, "Contact #{sender.phone} was not found and hence not added"}
+       #Map.put(map, sender.phone, :error)
+
 
       contact ->
         update_contact(contact, sender)
+        #Map.put(map, :contact, :ok)
     end
   end
 
