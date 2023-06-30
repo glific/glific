@@ -57,6 +57,9 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
         filter: %{organization_id: user.organization_id, is_hsm: true}
       })
 
+    assert hsm.category == "UTILITY"
+    assert hsm2.category == "AUTHENTICATION"
+
     Tesla.Mock.mock(fn
       %{method: :get} ->
         %Tesla.Env{
@@ -69,13 +72,15 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
                   "id" => hsm.uuid,
                   "modifiedOn" =>
                     DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
-                  "status" => "APPROVED"
+                  "status" => "APPROVED",
+                  "category" => "MARKETING"
                 },
                 %{
                   "id" => hsm2.uuid,
                   "modifiedOn" =>
                     DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
-                  "status" => "PENDING"
+                  "status" => "PENDING",
+                  "category" => "AUTHENTICATION"
                 }
               ]
             })
@@ -85,7 +90,14 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     {:ok, %{data: %{"syncHSMTemplate" => %{"message" => message}}}} =
       auth_query_gql_by(:sync, user)
 
+    [updated_hsm, updated_hsm2 | _] =
+      Templates.list_session_templates(%{
+        filter: %{organization_id: user.organization_id, is_hsm: true}
+      })
+
     assert message == "successful"
+    assert updated_hsm.category == "MARKETING"
+    assert updated_hsm2.category == "AUTHENTICATION"
   end
 
   test "sync hsm with bsp if it doesn't establish a connection with gupshup test", %{staff: user} do

@@ -473,9 +473,12 @@ defmodule Glific.Templates do
     current_template = db_templates[template["bsp_id"]]
 
     update_attrs =
-      if current_template.status != template["status"],
-        do: change_template_status(template["status"], current_template, template),
-        else: %{status: template["status"]}
+      if current_template.status != template["status"] do
+        change_template_status(template["status"], current_template, template)
+        |> Map.put(:category, template["category"])
+      else
+        %{status: template["status"], category: template["category"]}
+      end
 
     db_templates[template["bsp_id"]]
     |> SessionTemplate.changeset(update_attrs)
