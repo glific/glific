@@ -25,7 +25,8 @@ defmodule Glific.BigQuery do
     Partners.Saas,
     Profiles.Profile,
     Repo,
-    Stats.Stat
+    Stats.Stat,
+    Trackers.Tracker
   }
 
   alias GoogleApi.BigQuery.V2.{
@@ -49,14 +50,20 @@ defmodule Glific.BigQuery do
     "contact_histories" => :contact_history_schema,
     "message_conversations" => :message_conversation_schema,
     "message_broadcasts" => :message_broadcasts_schema,
-    "message_broadcast_contacts" => :message_broadcast_contacts_schema
+    "message_broadcast_contacts" => :message_broadcast_contacts_schema,
+    "trackers" => :trackers_schema
   }
 
   @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
   defp bigquery_tables(organization_id) do
-    if organization_id == Saas.organization_id(),
-      do: Map.put(@bigquery_tables, "stats_all", :stats_all_schema),
-      else: @bigquery_tables
+    if organization_id == Saas.organization_id() do
+      Map.merge(@bigquery_tables, %{
+        "stats_all" => :stats_all_schema,
+        "trackers_all" => :trackers_all_schema
+      })
+    else
+      @bigquery_tables
+    end
   end
 
   @doc """
@@ -166,7 +173,9 @@ defmodule Glific.BigQuery do
     "contact_histories" => ContactHistory,
     "message_conversations" => MessageConversation,
     "message_broadcasts" => MessageBroadcast,
-    "message_broadcast_contacts" => MessageBroadcastContact
+    "message_broadcast_contacts" => MessageBroadcastContact,
+    "trackers" => Tracker,
+    "trackers_all" => Tracker
   }
 
   @doc false

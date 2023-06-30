@@ -18,7 +18,6 @@ defmodule Glific.Clients do
     id: 1,
     name: "Glific",
     gcs_file_name: Glific.Clients.Tap,
-    blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
     webhook: Glific.Clients.Tap,
     daily_tasks: Glific.Clients.DigitalGreen,

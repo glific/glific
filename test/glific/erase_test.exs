@@ -43,12 +43,14 @@ defmodule Glific.EraseTest do
 
   test "perform_periodic clears flow revisions with status as draft, and saving only recent 10",
        attrs do
+    user = Repo.get_current_user()
     flow = Fixtures.flow_fixture(attrs)
 
     Enum.each(1..15, fn _x ->
       FlowRevision.create_flow_revision(%{
         definition: FlowRevision.default_definition(flow),
         flow_id: flow.id,
+        user_id: user.id,
         organization_id: flow.organization_id
       })
     end)

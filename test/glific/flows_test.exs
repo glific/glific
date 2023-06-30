@@ -87,10 +87,10 @@ defmodule Glific.FLowsTest do
       f0 = flow_fixture(@valid_attrs)
       f1 = flow_fixture(@valid_more_attrs |> Map.merge(%{name: "testkeyword"}))
 
-      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword: "testkeyword"})})
+      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword_or_labels: "testkeyword"})})
       assert flows == [f0, f1]
 
-      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword: "wrongkeyword"})})
+      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword_or_labels: "wrongkeyword"})})
       assert flows == []
 
       flows = Flows.list_flows(%{filter: Map.merge(attrs, %{wrong_filter: "test"})})
@@ -252,13 +252,15 @@ defmodule Glific.FLowsTest do
     end
 
     test "create_flow_revision/1 create a specific revision for the flow" do
+      user = Repo.get_current_user()
+
       flow =
         flow_fixture()
         |> Repo.preload([:revisions])
 
       [revision] = flow.revisions
 
-      Flows.create_flow_revision(revision.definition)
+      Flows.create_flow_revision(revision.definition, user.id)
       current_revisions = Flows.get_flow_revision_list(flow.uuid).results
       assert length(current_revisions) == length(flow.revisions) + 1
     end
@@ -301,6 +303,8 @@ defmodule Glific.FLowsTest do
 
     test "publish_flow/1 updates the latest flow revision status",
          %{organization_id: organization_id} = _attrs do
+      user = Repo.get_current_user()
+
       SeedsDev.seed_test_flows()
 
       name = "Language Workflow"
@@ -308,7 +312,7 @@ defmodule Glific.FLowsTest do
       flow = Repo.preload(flow, [:revisions])
 
       # should set status of recent flow revision as "published"
-      assert {:ok, %Flow{}} = Flows.publish_flow(flow)
+      assert {:ok, %Flow{}} = Flows.publish_flow(flow, user.id)
 
       {:ok, revision} =
         FlowRevision
@@ -326,9 +330,9 @@ defmodule Glific.FLowsTest do
       # If a flow revision is already published
       # should reset previously published flow revision and set status of recent one as "published"
       new_definition = revision.definition |> Map.merge(%{"revision" => 2})
-      Flows.create_flow_revision(new_definition)
+      Flows.create_flow_revision(new_definition, user.id)
 
-      assert {:ok, %Flow{}} = Flows.publish_flow(flow)
+      assert {:ok, %Flow{}} = Flows.publish_flow(flow, user.id)
 
       {:ok, revision} =
         FlowRevision
@@ -597,13 +601,13 @@ defmodule Glific.FLowsTest do
   test "publishing multiple flow revision of a same flow throws and error",
        %{organization_id: organization_id} = _attrs do
     SeedsDev.seed_test_flows()
-
+    user = Repo.get_current_user()
     name = "Language Workflow"
     {:ok, flow} = Repo.fetch_by(Flow, %{name: name, organization_id: organization_id})
     flow = Repo.preload(flow, [:revisions])
 
     # should set status of recent flow revision as "published"
-    assert {:ok, %Flow{}} = Flows.publish_flow(flow)
+    assert {:ok, %Flow{}} = Flows.publish_flow(flow, user.id)
 
     {:ok, revision} =
       FlowRevision

@@ -43,6 +43,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Profiles.Profile,
     Repo,
     Stats.Stat,
+    Trackers.Tracker,
     Users.User
   }
 
@@ -241,13 +242,16 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp add_organization_id(query, "stats_all", _organization_id),
     do: query
 
+  defp add_organization_id(query, "trackers_all", _organization_id),
+    do: query
+
   defp add_organization_id(query, _table, organization_id),
     do: query |> where([m], m.organization_id == ^organization_id)
 
   ## ignore the tables for updates.
   @spec queue_table_data(String.t(), non_neg_integer(), map()) :: :ok
   defp queue_table_data(table, _organization_id, %{action: :update, max_id: nil} = _attrs)
-       when table in ["flows", "stats", "stats_all"],
+       when table in ["flows", "stats", "stats_all", "trackers", "trackers_all"],
        do: :ok
 
   defp queue_table_data("messages", organization_id, attrs) do
@@ -732,6 +736,52 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
+  defp queue_table_data(tracker, organization_id, attrs)
+       when tracker in ["trackers", "trackers_all"] do
+    Logger.info(
+      "fetching #{tracker} data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    tracker_atom =
+      if tracker == "trackers",
+        do: :trackers,
+        else: :trackers_all
+
+    get_query(tracker, organization_id, attrs)
+    # for tracker_all we specifically want to skip organization_id
+    |> Repo.all(skip_organization_id: true)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        additional =
+          if tracker == "trackers_all",
+            do: %{
+              organization_id: row.organization_id,
+              organization_name: row.organization.name
+            },
+            else: %{}
+
+        [
+          %{
+            id: row.id,
+            period: row.period,
+            date: Date.to_string(row.date),
+            counts: BigQuery.format_json(row.counts),
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(additional)
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, tracker_atom, organization_id, attrs))
+
+    :ok
+  end
+
   defp queue_table_data(_, _, _), do: :ok
 
   @spec bq_fields(non_neg_integer) :: map()
@@ -1059,6 +1109,20 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp get_query("stats_all", _organization_id, attrs),
     do:
       Stat
+      |> apply_action_clause(attrs)
+      |> order_by([f], [f.inserted_at, f.id])
+      |> preload([:organization])
+
+  defp get_query("trackers", organization_id, attrs),
+    do:
+      Tracker
+      |> where([f], f.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([f], [f.inserted_at, f.id])
+
+  defp get_query("trackers_all", _organization_id, attrs),
+    do:
+      Tracker
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:organization])
