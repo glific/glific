@@ -112,7 +112,6 @@ defmodule Glific.Contacts.Import do
 
     contact_data_as_stream = fetch_contact_data_as_string(opts)
     contact_attrs = %{organization_id: organization_id, user: user, collection: collection}
-
     handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
   end
 
@@ -163,9 +162,7 @@ defmodule Glific.Contacts.Import do
       |> Enum.map(fn {:ok, result} -> result end)
 
     errors =
-      result
-      |> Enum.filter(fn r -> Map.has_key?(r, :error) end)
-      |> Enum.map(fn %{error: error} -> error end)
+      Enum.reject(result, fn contact -> Map.values(contact) == ["Contact has been updated"] end)
 
     case errors do
       [] ->
@@ -215,8 +212,12 @@ defmodule Glific.Contacts.Import do
   @spec may_update_contact(map()) :: {:ok, any} | {:error, any}
   defp may_update_contact(contact_attrs) do
     case Contacts.maybe_update_contact(contact_attrs) do
-      {:ok, contact} -> create_group_and_contact_fields(contact_attrs, contact)
-      {:error, error} -> %{error: "#{error}: #{contact_attrs.phone}"}
+      {:ok, contact} ->
+        create_group_and_contact_fields(contact_attrs, contact)
+        Map.put(%{}, contact.phone, "Contact has been updated")
+
+      {:error, error} ->
+        Map.put(%{}, contact_attrs.phone, "#{error}")
     end
   end
 
