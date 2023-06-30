@@ -164,13 +164,12 @@ defmodule Glific.Contacts.Import do
     errors =
       Enum.reject(result, fn contact -> Map.values(contact) == ["Contact has been updated"] end)
 
-    case errors do
-      [] ->
-        {:ok, %{message: "All contacts added"}}
+    {:ok, csv_result(result)}
+  end
 
-      _ ->
-        {:error, Enum.join(errors, "\n")}
-    end
+  @spec csv_result(map()) :: String.t()
+  defp csv_result(result) do
+    "parsed_result"
   end
 
   @spec process_data(User.t(), map(), map()) :: Contact.t() | map()
