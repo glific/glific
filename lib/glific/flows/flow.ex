@@ -28,7 +28,6 @@ defmodule Glific.Flows.Flow do
   @optional_fields [
     :flow_type,
     :keywords,
-    :labels,
     :version_number,
     :uuid_map,
     :nodes,
@@ -47,7 +46,6 @@ defmodule Glific.Flows.Flow do
           uuid: Ecto.UUID.t() | nil,
           uuid_map: map() | nil,
           keywords: [String.t()] | nil,
-          labels: String.t() | nil,
           ignore_keywords: boolean() | nil,
           is_active: boolean() | nil,
           is_background: boolean() | nil,
@@ -89,7 +87,6 @@ defmodule Glific.Flows.Flow do
     field(:status, :string, virtual: true, default: "published")
 
     field(:keywords, {:array, :string}, default: [])
-    field(:labels, :string, default: "")
     field(:ignore_keywords, :boolean, default: false)
     field(:is_active, :boolean, default: true)
     field(:is_background, :boolean, default: false)

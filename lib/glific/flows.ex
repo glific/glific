@@ -136,7 +136,6 @@ defmodule Glific.Flows do
         query
         |> where([fr], ilike(fr.name, ^"%#{name_or_keyword_or_labels}%"))
         |> or_where([fr], ^name_or_keyword_or_labels in fr.keywords)
-        |> or_where([fr], ilike(fr.labels, ^"%#{name_or_keyword_or_labels}%"))
 
       _, query ->
         query

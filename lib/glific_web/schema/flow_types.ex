@@ -28,7 +28,6 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :uuid, :uuid4
     field :name, :string
     field :keywords, list_of(:string)
-    field :labels, :string
     field :ignore_keywords, :boolean
     field :is_active, :boolean
     field :version_number, :string
@@ -49,7 +48,6 @@ defmodule GlificWeb.Schema.FlowTypes do
   input_object :flow_input do
     field :name, :string
     field :keywords, list_of(:string)
-    field :labels, :string
     field :ignore_keywords, :boolean
     field :is_active, :boolean
     field :is_background, :boolean
