@@ -435,7 +435,7 @@ defmodule Glific.Contacts do
   def maybe_update_contact(sender) do
     case Repo.get_by(Contact, %{phone: sender.phone}) do
       nil ->
-        {:error, "Contact #{sender.phone} was not found and hence not added"}
+        {:error, "New contacts were found in this file. Sorry those could not be added"}
 
       contact ->
         update_contact(contact, sender)
