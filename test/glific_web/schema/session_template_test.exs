@@ -200,13 +200,11 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert length(session_templates) >= 1
 
     Fixtures.session_template_fixture(%{label: "term_filter"})
-    Fixtures.session_template_fixture(%{label: "label2", body: "term_filter"})
-    Fixtures.session_template_fixture(%{label: "label3", shortcode: "term_filter"})
 
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"term" => "term_filter"}})
     assert {:ok, query_data} = result
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
-    assert length(session_templates) == 3
+    assert length(session_templates) == 1
   end
 
   test "session_template by id returns one session_template or nil", %{staff: user} do

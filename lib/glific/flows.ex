@@ -20,7 +20,8 @@ defmodule Glific.Flows do
     Repo,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Tags.Tag
   }
 
   alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
@@ -132,10 +133,15 @@ defmodule Glific.Flows do
       {:is_pinned, is_pinned}, query ->
         from(q in query, where: q.is_pinned == ^is_pinned)
 
-      {:name_or_keyword_or_labels, name_or_keyword_or_labels}, query ->
+      {:name_or_keyword_or_tags, name_or_keyword_or_tags}, query ->
+        sub_query =
+          Tag
+          |> where([t], ilike(t.label, ^"%#{name_or_keyword_or_tags}%"))
+          |> select([t], t.id)
+
         query
-        |> where([fr], ilike(fr.name, ^"%#{name_or_keyword_or_labels}%"))
-        |> or_where([fr], ^name_or_keyword_or_labels in fr.keywords)
+        |> where([fr], ilike(fr.name, ^"%#{name_or_keyword_or_tags}%"))
+        |> or_where([fr], (^name_or_keyword_or_tags in fr.keywords) or fr.tag_id in subquery(sub_query))
 
       _, query ->
         query

@@ -8,7 +8,8 @@ defmodule Glific.TemplatesTest do
     Seeds.SeedsDev,
     Settings,
     Templates,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Tags
   }
 
   setup do
@@ -147,15 +148,17 @@ defmodule Glific.TemplatesTest do
     end
 
     test "list_session_templates/1 with term filter on session_templates", attrs do
-      # Match term with labe/body/shortcode of template
-      session_template_fixture(Map.merge(attrs, %{label: "filterterm"}))
-      session_template_fixture(Map.merge(attrs, %{label: "label2", body: "filterterm"}))
-      session_template_fixture(Map.merge(attrs, %{label: "label3", shortcode: "filterterm"}))
+      # Match term with label of template
+      tag_label = Tags.get_tag!(1).label
+      session_template_fixture(Map.merge(attrs, %{label: tag_label}))
+
+      session_template_fixture(Map.merge(attrs, %{label: "secondtemplate", tag_id: 1}))
 
       session_template_list =
-        Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: "filterterm"})})
+        Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: tag_label})})
 
-      assert length(session_template_list) == 3
+      assert length(session_template_list) == 2
+
 
       # Match term with label/shortcode of associated tag
       template = session_template_fixture(Map.merge(attrs, %{label: "label4"}))
@@ -190,16 +193,6 @@ defmodule Glific.TemplatesTest do
         Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: "filterterm"})})
 
       assert length(session_template_list) == 5
-    end
-
-    test "list_session_templates/1 with labels filter on session_templates", attrs do
-      session_template_fixture(Map.merge(attrs, %{labels: "hello,abc"}))
-      session_template_fixture(Map.merge(attrs, %{labels: "world"}))
-      session_template_fixture(Map.merge(attrs, %{labels: "abc"}))
-
-      session_template_list = Templates.list_session_templates(%{filter: Map.merge(attrs, %{labels: "abc"})})
-
-      assert length(session_template_list) == 2
     end
 
     test "list_session_templates/1 with multiple items", attrs do

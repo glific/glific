@@ -122,7 +122,6 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   input_object :session_template_input do
     field :label, :string
     field :body, :string
-    field :labels, :string
     field :type, :message_type_enum
     field :shortcode, :string
     field :is_hsm, :boolean
