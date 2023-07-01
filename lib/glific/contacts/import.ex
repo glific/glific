@@ -161,15 +161,13 @@ defmodule Glific.Contacts.Import do
       )
       |> Enum.map(fn {:ok, result} -> result end)
 
-    errors =
-      Enum.reject(result, fn contact -> Map.values(contact) == ["Contact has been updated"] end)
+    csv_rows =
+      result
+      |> Enum.reduce("Phone,Status", fn {phone, status}, acc ->
+        acc <> "\r\n#{phone},#{status}"
+      end)
 
-    {:ok, csv_result(result)}
-  end
-
-  @spec csv_result(map()) :: String.t()
-  defp csv_result(result) do
-    "parsed_result"
+    {:ok, %{csv_rows: csv_rows}}
   end
 
   @spec process_data(User.t(), map(), map()) :: Contact.t() | map()
@@ -213,10 +211,11 @@ defmodule Glific.Contacts.Import do
     case Contacts.maybe_update_contact(contact_attrs) do
       {:ok, contact} ->
         create_group_and_contact_fields(contact_attrs, contact)
-        Map.put(%{}, contact.phone, "Contact has been updated")
+        {contact.phone, "Contact has been updated"}
 
       {:error, error} ->
         Map.put(%{}, contact_attrs.phone, "#{error}")
+        {contact_attrs.phone, "#{error}"}
     end
   end
 
