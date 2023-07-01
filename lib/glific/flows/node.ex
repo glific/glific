@@ -293,6 +293,11 @@ defmodule Glific.Flows.Node do
     end
   end
 
+  defp maybe_router_message([first | _rest]),
+    do: first.clean_body in ["completed", "expired", "success", "failure"]
+
+  defp maybe_router_message(_messages), do: false
+
   @spec execute_node_router(Node.t(), FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   defp execute_node_router(node, context, messages) do
@@ -300,11 +305,26 @@ defmodule Glific.Flows.Node do
     # this is a hack for now
     action = hd(node.actions)
 
-    if messages != [] and
-         hd(messages).clean_body in ["completed", "expired", "success", "failure"] do
+    if maybe_router_message(messages) do
       Router.execute(node.router, context, messages)
     else
-      Action.execute(action, context, messages)
+      result = Action.execute(action, context, messages)
+
+      case elem(result, 0) do
+        :error ->
+          result
+
+        :wait ->
+          result
+
+        :ok ->
+          if maybe_router_message(elem(result, 2)),
+            do: execute_node_router(node, elem(result, 1), elem(result, 2)),
+            else: result
+
+        _ ->
+          result
+      end
     end
   end
 
