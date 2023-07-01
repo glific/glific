@@ -43,7 +43,8 @@ jobs:
           otp-version: ${{ matrix.otp }}
 
       - name: Retrieve Mix Dependencies Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v3
+        if: always()
         id: elixir-mix-cache #id to use in retrieve action
         with:
           path: deps
@@ -64,7 +65,8 @@ jobs:
           mix deps.get
 
       - name: Retrieve PLT Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v3
+        if: always()
         id: elixir-plt-cache #id to use in retrieve action
         with:
           path: priv/plts_v1
