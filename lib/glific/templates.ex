@@ -57,9 +57,6 @@ defmodule Glific.Templates do
       {:category, category}, query ->
         from(q in query, where: q.category == ^category)
 
-      {:labels, labels}, query ->
-        from(q in query, where: ilike(q.labels, ^"%#{labels}%"))
-
       {:language, language}, query ->
         from(q in query,
           join: l in assoc(q, :language),
@@ -73,7 +70,7 @@ defmodule Glific.Templates do
           |> select([t], t.id)
 
         query
-        |> or_where([q], ilike(q.label, ^"%#{term}%") or q.tag_id in subquery(sub_query))
+        |> where([q], ilike(q.label, ^"%#{term}%") or q.tag_id in subquery(sub_query))
 
       _, query ->
         query

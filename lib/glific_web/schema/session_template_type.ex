@@ -69,12 +69,11 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :parent, :session_template do
       resolve(dataloader(Repo))
     end
-
   end
 
   @desc "Filtering options for session_templates"
   input_object :session_template_filter do
-    @desc "Match term with label/body/shortcode of template or label/shortcode of associated tag"
+    @desc "Match term with label and associated tag of template"
     field(:term, :string)
 
     @desc "Match the label"

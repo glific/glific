@@ -61,8 +61,8 @@ defmodule GlificWeb.Schema.FlowTypes do
     @desc "Match the name"
     field :name, :string
 
-    @desc "Match the name or keyword or labels"
-    field :name_or_keyword_or_labels, :string
+    @desc "Match the name or keyword or tags"
+    field :name_or_keyword_or_tags, :string
 
     @desc "Match the keyword"
     field :keyword, :string
