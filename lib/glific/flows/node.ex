@@ -310,21 +310,12 @@ defmodule Glific.Flows.Node do
     else
       result = Action.execute(action, context, messages)
 
-      case elem(result, 0) do
-        :error ->
-          result
-
-        :wait ->
-          result
-
-        :ok ->
-          if maybe_router_message(elem(result, 2)),
-            do: execute_node_router(node, elem(result, 1), elem(result, 2)),
-            else: result
-
-        _ ->
-          result
-      end
+      # check if we got an answer and if its a possible router that has
+      # already completed (i.e. a google sheet, or an internal webhook)
+      # 2663
+      if elem(result, 0) == :ok && maybe_router_message(elem(result, 2)),
+        do: execute_node_router(node, elem(result, 1), elem(result, 2)),
+        else: result
     end
   end
 
