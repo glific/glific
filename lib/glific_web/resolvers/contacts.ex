@@ -70,13 +70,11 @@ defmodule GlificWeb.Resolvers.Contacts do
           %{
             data: String.t(),
             id: integer,
-            type: :data | :file_path | :url
+            type: :data | :file_path | :url,
+            group_label: String.t()
           },
-          %{
-            context: map()
-          }
-        ) ::
-          {:ok, any} | {:error, any}
+          %{context: map()}
+        ) :: any()
 
   def import_contacts(
         _,

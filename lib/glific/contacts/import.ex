@@ -129,9 +129,7 @@ defmodule Glific.Contacts.Import do
     |> parse_result("csv")
   end
 
-  @spec parse_result({:error, any()} | list(), String.t()) :: {:ok, any()} | {:error, any()}
-  defp parse_result({:error, error}, _default), do: {:error, error}
-
+  @spec parse_result(any(), String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_result(result, "csv") do
     csv_rows =
       result
@@ -142,7 +140,7 @@ defmodule Glific.Contacts.Import do
     {:ok, %{csv_rows: csv_rows}}
   end
 
-  defp parse_result(result, _default) do
+  defp parse_result(result, "default") do
     errors =
       result
       |> Enum.filter(fn {_contact, status} -> status != "Contact has been updated" end)
@@ -156,6 +154,8 @@ defmodule Glific.Contacts.Import do
         {:error, errors}
     end
   end
+
+  defp parse_result({:error, error}, _default), do: {:error, error}
 
   @spec handle_csv_for_admins(map(), map(), [{atom(), String.t()}]) :: tuple()
   defp handle_csv_for_admins(contact_attrs, data, opts) do
@@ -174,7 +174,7 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  @spec decode_csv_data(map(), map(), [{atom(), String.t()}]) :: tuple()
+  @spec decode_csv_data(map(), map(), [{atom(), String.t()}]) :: list()
   defp decode_csv_data(params, data, opts) do
     %{organization_id: organization_id, user: user} = params
     {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
