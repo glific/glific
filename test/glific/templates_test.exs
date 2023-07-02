@@ -7,7 +7,7 @@ defmodule Glific.TemplatesTest do
     Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
     Settings,
-    Tags,
+    # Tags,
     Templates,
     Templates.SessionTemplate
   }
@@ -148,18 +148,17 @@ defmodule Glific.TemplatesTest do
     end
 
     test "list_session_templates/1 with term filter on session_templates", attrs do
-      # Match term with label of template
-      tag_label = Tags.get_tag!(1).label
-      session_template_fixture(Map.merge(attrs, %{label: tag_label}))
-
-      session_template_fixture(Map.merge(attrs, %{label: "secondtemplate", tag_id: 1}))
+      # Match term with labe/body/shortcode of template
+      session_template_fixture(Map.merge(attrs, %{label: "filterterm"}))
+      session_template_fixture(Map.merge(attrs, %{label: "label2", body: "filterterm"}))
+      session_template_fixture(Map.merge(attrs, %{label: "label3", shortcode: "filterterm"}))
 
       session_template_list =
-        Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: tag_label})})
+        Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: "filterterm"})})
 
-      assert length(session_template_list) == 2
+      assert length(session_template_list) == 3
 
-      # Match term with label/shortcode of associated tag
+      # Match term with label of associated tag
       template = session_template_fixture(Map.merge(attrs, %{label: "label4"}))
       tag_1 = Fixtures.tag_fixture(Map.merge(attrs, %{label: "filterterm"}))
 
@@ -176,10 +175,11 @@ defmodule Glific.TemplatesTest do
           Map.merge(attrs, %{template_id: template.id, tag_id: tag_2.id})
         )
 
+      # Match term with label of associated tag and not shortcode
       session_template_list =
         Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: "filterterm"})})
 
-      assert length(session_template_list) == 5
+      assert length(session_template_list) == 4
 
       # In case of a template tagged with multiple tags with similar label or shortcode
       # result should not give repeated templates

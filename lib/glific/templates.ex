@@ -71,6 +71,8 @@ defmodule Glific.Templates do
 
         query
         |> where([q], ilike(q.label, ^"%#{term}%") or q.tag_id in subquery(sub_query))
+        |> or_where([q], ilike(q.shortcode, ^"%#{term}%"))
+        |> or_where([q], ilike(q.body, ^"%#{term}%"))
 
       _, query ->
         query
