@@ -126,11 +126,11 @@ defmodule Glific.Contacts.Import do
     contact_data_as_stream = fetch_contact_data_as_string(opts)
     contact_attrs = %{organization_id: organization_id, user: contact_attrs.user}
 
-    handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
-    |> parse_result("csv")
+    result = handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
+    if is_list(result), do: parse_result(result, "csv"), else: result
   end
 
-  @spec parse_result(any(), String.t()) :: {:ok, any()} | {:error, any()}
+  @spec parse_result(list(), String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_result(result, "csv") do
     csv_rows =
       result
@@ -156,9 +156,7 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  defp parse_result({:error, error}, _default), do: {:error, error}
-
-  @spec handle_csv_for_admins(map(), map(), [{atom(), String.t()}]) :: tuple()
+  @spec handle_csv_for_admins(map(), map(), [{atom(), String.t()}]) :: list() | {:error, any()}
   defp handle_csv_for_admins(contact_attrs, data, opts) do
     # this ensures the  org_id exists and is valid
     case Partners.organization(contact_attrs.organization_id) do
