@@ -21,14 +21,14 @@ defmodule Glific.Flows.Flow do
     Flows.Node,
     Groups.Group,
     Partners.Organization,
-    Repo
+    Repo,
+    Tags.Tag
   }
 
   @required_fields [:name, :uuid, :organization_id]
   @optional_fields [
     :flow_type,
     :keywords,
-    :labels,
     :version_number,
     :uuid_map,
     :nodes,
@@ -37,7 +37,8 @@ defmodule Glific.Flows.Flow do
     :is_background,
     :is_pinned,
     :respond_other,
-    :respond_no_response
+    :respond_no_response,
+    :tag_id
   ]
 
   @type t :: %__MODULE__{
@@ -47,7 +48,6 @@ defmodule Glific.Flows.Flow do
           uuid: Ecto.UUID.t() | nil,
           uuid_map: map() | nil,
           keywords: [String.t()] | nil,
-          labels: String.t() | nil,
           ignore_keywords: boolean() | nil,
           is_active: boolean() | nil,
           is_background: boolean() | nil,
@@ -62,6 +62,8 @@ defmodule Glific.Flows.Flow do
           nodes: [Node.t()] | nil,
           version_number: String.t() | nil,
           revisions: [FlowRevision.t()] | Ecto.Association.NotLoaded.t() | nil,
+          tag_id: non_neg_integer | nil,
+          tag: Tag.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -89,7 +91,6 @@ defmodule Glific.Flows.Flow do
     field(:status, :string, virtual: true, default: "published")
 
     field(:keywords, {:array, :string}, default: [])
-    field(:labels, :string, default: "")
     field(:ignore_keywords, :boolean, default: false)
     field(:is_active, :boolean, default: true)
     field(:is_background, :boolean, default: false)
@@ -103,7 +104,7 @@ defmodule Glific.Flows.Flow do
     field(:version, :integer, virtual: true, default: 0)
 
     belongs_to(:organization, Organization)
-
+    belongs_to(:tag, Tag)
     has_many(:revisions, FlowRevision)
     many_to_many(:roles, Role, join_through: "flow_roles", on_replace: :delete)
 
@@ -123,6 +124,7 @@ defmodule Glific.Flows.Flow do
         message: "Sorry, the flow name already exists."
       )
       |> unique_constraint([:uuid, :organization_id])
+      |> foreign_key_constraint(:tag_id)
       |> update_change(:keywords, &update_keywords(&1))
 
     validate_keywords(changeset, get_change(changeset, :keywords))

@@ -7,6 +7,7 @@ defmodule Glific.TemplatesTest do
     Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
     Settings,
+    # Tags,
     Templates,
     Templates.SessionTemplate
   }
@@ -157,7 +158,7 @@ defmodule Glific.TemplatesTest do
 
       assert length(session_template_list) == 3
 
-      # Match term with label/shortcode of associated tag
+      # Match term with label of associated tag
       template = session_template_fixture(Map.merge(attrs, %{label: "label4"}))
       tag_1 = Fixtures.tag_fixture(Map.merge(attrs, %{label: "filterterm"}))
 
@@ -174,10 +175,11 @@ defmodule Glific.TemplatesTest do
           Map.merge(attrs, %{template_id: template.id, tag_id: tag_2.id})
         )
 
+      # Match term with label of associated tag and not shortcode
       session_template_list =
         Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: "filterterm"})})
 
-      assert length(session_template_list) == 5
+      assert length(session_template_list) == 4
 
       # In case of a template tagged with multiple tags with similar label or shortcode
       # result should not give repeated templates
