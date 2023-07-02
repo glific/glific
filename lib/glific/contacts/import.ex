@@ -113,8 +113,9 @@ defmodule Glific.Contacts.Import do
     contact_data_as_stream = fetch_contact_data_as_string(opts)
     contact_attrs = %{organization_id: organization_id, user: user, collection: collection}
 
-    handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
-    |> parse_result("default")
+    result = handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
+
+    if is_list(result), do: parse_result(result, "default"), else: result
   end
 
   def import_contacts(organization_id, contact_attrs, opts) do
