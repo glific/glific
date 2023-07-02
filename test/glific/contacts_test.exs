@@ -612,7 +612,10 @@ defmodule Glific.ContactsTest do
 
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
-      assert {:error, _} = Import.import_contacts(999, %{user: user}, file_path: get_tmp_path())
+      assert {:error, _} =
+               Import.import_contacts(999, %{user: user, collection: "collection"},
+                 file_path: get_tmp_path()
+               )
     end
 
     test "update_contact/2 with valid data updates the contact",
