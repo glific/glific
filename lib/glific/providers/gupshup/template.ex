@@ -97,11 +97,12 @@ defmodule Glific.Providers.Gupshup.Template do
         session_template.bsp_id,
         params
       ) do
-        #change this a bit
-        Templates.update_session_template(template_id, %{})
-      end
-
+        params = Map.put(params, :body, params.content)
+        params = Map.drop(params, [:content])
+        Templates.update_session_template(session_template, params)
     end
+
+
   end
 
   @doc """

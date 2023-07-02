@@ -47,6 +47,16 @@ defmodule Glific.TemplatesTest do
       is_active: true,
       is_reserved: true
     }
+    @valid_attrs_to_test_edit %{
+      body: "some body",
+      example: "some example",
+      type: "text"
+      id: 1
+    }
+    @update_attrs_to_test_edit %{
+      body: "some updated body",
+      example: "some updated example",
+    }
     @update_attrs %{
       label: "some updated label",
       body: "some updated body"
@@ -521,7 +531,7 @@ defmodule Glific.TemplatesTest do
       assert session_template == Templates.get_session_template!(session_template.id)
     end
 
-    test "update_session_template/2 for HSM template should update only the editable fields",
+    test "update_session_template/2 for HSM template should update only the editable fields",mock
          attrs do
       Tesla.Mock.mock(fn
         %{method: :post} ->
@@ -574,6 +584,37 @@ defmodule Glific.TemplatesTest do
       assert updated_template.is_active == true
       assert updated_template.body == "Your train ticket no. {{1}}"
     end
+
+    test "edit_approved_template/2 should edit the approved template", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :put} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "token" => "new_partner_token",
+                "template" => %{}
+                  "data" => "some updated body",
+                  "status" => "APPROVED",
+                  "templateType" => "TEXT"
+                })
+              }
+
+      end)
+
+      language = language_fixture()
+      attrs =
+        attrs
+        |> Map.merge(@updated_attrs_to_test_edit)
+        |> Map.merge(%{language_id: language.id})
+
+      assert {:ok, %SessionTemplate{} = session_template} = Glific.Providers.Gupshup.Template.edit_approved_template(attrs.id, attrs)
+
+      assert session_template.body == "some updated body"
+
+    end
+
 
     test "delete_session_template/1 deletes the session_template", attrs do
       session_template = session_template_fixture(attrs)
