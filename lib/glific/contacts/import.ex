@@ -129,7 +129,7 @@ defmodule Glific.Contacts.Import do
     |> parse_result("csv")
   end
 
-  @spec parse_result({:error, any()} | list()) :: {:ok, any()} | {:error, any()}
+  @spec parse_result({:error, any()} | list(), String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_result({:error, error}, _default), do: {:error, error}
 
   defp parse_result(result, "csv") do

@@ -92,6 +92,9 @@ defmodule GlificWeb.Resolvers.Contacts do
     )
   end
 
+  @doc false
+  @spec move_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
   def move_contacts(_, params, %{context: %{current_user: user}}) do
     Import.import_contacts(user.organization_id, %{user: user}, [{params.type, params.data}])
   end

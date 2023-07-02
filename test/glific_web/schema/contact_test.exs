@@ -263,7 +263,6 @@ defmodule GlificWeb.Schema.ContactTest do
   test "moving contacts and test possible scenarios and errors", %{manager: user} do
     data = "name,phone,collection\r\nJohn Doe,9876543210_4,Bleach\r\nUkitake,918979120220,Bleach"
 
-    # Test success for creating a contact without opt-in
     result =
       auth_query_gql_by(:move_contacts, user,
         variables: %{

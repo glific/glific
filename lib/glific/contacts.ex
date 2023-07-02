@@ -429,7 +429,6 @@ defmodule Glific.Contacts do
   @doc """
   This function will be use just by ngo user where they can only update the contacts.
   """
-
   @spec maybe_update_contact(map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, any}
   def maybe_update_contact(sender) do
