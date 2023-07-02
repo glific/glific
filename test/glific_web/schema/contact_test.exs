@@ -49,6 +49,7 @@ defmodule GlificWeb.Schema.ContactTest do
   load_gql(:contact_location, GlificWeb.Schema, "assets/gql/contacts/contact_location.gql")
   load_gql(:optin_contact, GlificWeb.Schema, "assets/gql/contacts/optin_contact.gql")
   load_gql(:import_contacts, GlificWeb.Schema, "assets/gql/contacts/import.gql")
+  load_gql(:move_contacts, GlificWeb.Schema, "assets/gql/contacts/move.gql")
   load_gql(:sim_get, GlificWeb.Schema, "assets/gql/contacts/simulator_get.gql")
   load_gql(:sim_rel, GlificWeb.Schema, "assets/gql/contacts/simulator_release.gql")
 
@@ -257,6 +258,26 @@ defmodule GlificWeb.Schema.ContactTest do
 
     count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
     assert count == 0
+  end
+
+  test "moving contacts and test possible scenarios and errors", %{manager: user} do
+    data = "name,phone,collection\r\nJohn Doe,9876543210_4,Bleach\r\nUkitake,918979120220,Bleach"
+
+    # Test success for creating a contact without opt-in
+    result =
+      auth_query_gql_by(:move_contacts, user,
+        variables: %{
+          "type" => "DATA",
+          "data" => data,
+          "id" => user.organization_id
+        }
+      )
+
+    assert {:ok, query_data} = result
+    csv_rows = get_in(query_data, [:data, "moveContacts", "csvRows"])
+
+    assert csv_rows ==
+             "Phone,Status\r\n9876543210_4,Contact has been updated\r\n918979120220,Contact 918979120220 was not found and hence not added"
   end
 
   test "import contacts and test possible scenarios and errors", %{manager: user} do
