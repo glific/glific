@@ -112,7 +112,9 @@ defmodule Glific.Contacts.Import do
 
     contact_data_as_stream = fetch_contact_data_as_string(opts)
     contact_attrs = %{organization_id: organization_id, user: user, collection: collection}
+
     handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
+    |> parse_result("default")
   end
 
   def import_contacts(organization_id, contact_attrs, opts) do
@@ -122,7 +124,34 @@ defmodule Glific.Contacts.Import do
 
     contact_data_as_stream = fetch_contact_data_as_string(opts)
     contact_attrs = %{organization_id: organization_id, user: contact_attrs.user}
+
     handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
+    |> parse_result("csv")
+  end
+
+  defp parse_result(result, "csv") do
+    csv_rows =
+      result
+      |> Enum.reduce("Phone,Status", fn {phone, status}, acc ->
+        acc <> "\r\n#{phone},#{status}"
+      end)
+
+    {:ok, %{csv_rows: csv_rows}}
+  end
+
+  defp parse_result(result, _default) do
+    errors =
+      result
+      |> Enum.filter(fn {_contact, status} -> status != "Contact has been updated" end)
+      |> Enum.map(fn {_contact, error} -> error end)
+
+    case errors do
+      [] ->
+        {:ok, %{message: "All contacts added"}}
+
+      _ ->
+        {:error, errors}
+    end
   end
 
   @spec handle_csv_for_admins(map(), map(), [{atom(), String.t()}]) :: tuple()
@@ -147,44 +176,33 @@ defmodule Glific.Contacts.Import do
     %{organization_id: organization_id, user: user} = params
     {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
 
-    result =
-      data
-      |> CSV.decode(headers: true, strip_fields: true)
-      |> Stream.map(fn {_, data} -> cleanup_contact_data(data, params, date_format) end)
-      |> Task.async_stream(
-        fn contact ->
-          process_data(user, contact, %{
-            organization_id: Repo.put_process_state(organization_id)
-          })
-        end,
-        max_concurrency: @max_concurrency
-      )
-      |> Enum.map(fn {:ok, result} -> result end)
-
-    csv_rows =
-      result
-      |> Enum.reduce("Phone,Status", fn {phone, status}, acc ->
-        acc <> "\r\n#{phone},#{status}"
-      end)
-
-    {:ok, %{csv_rows: csv_rows}}
+    data
+    |> CSV.decode(headers: true, strip_fields: true)
+    |> Stream.map(fn {_, data} -> cleanup_contact_data(data, params, date_format) end)
+    |> Task.async_stream(
+      fn contact ->
+        process_data(user, contact, %{
+          organization_id: Repo.put_process_state(organization_id)
+        })
+      end,
+      max_concurrency: @max_concurrency
+    )
+    |> Enum.map(fn {:ok, result} -> result end)
   end
 
-  @spec process_data(User.t(), map(), map()) :: Contact.t() | map()
+  @spec process_data(User.t(), map(), map()) :: {String.t(), String.t()}
   defp process_data(user, %{delete: "1"} = contact, _contact_attrs) do
     if user.roles == [:glific_admin] || user.upload_contacts == true do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
         nil ->
-          %{ok: "Contact does not exist"}
+          {contact.phone, "Contact does not exist"}
 
         contact ->
           {:ok, contact} = Contacts.delete_contact(contact)
-          contact
+          {contact.phone, "Contact has been deleted as per flag in csv"}
       end
     else
-      %{
-        error: "This user doesn't have enough permission"
-      }
+      {:error, "This user doesn't have enough permission"}
     end
   end
 
@@ -195,11 +213,13 @@ defmodule Glific.Contacts.Import do
 
         create_group_and_contact_fields(contact_attrs, contact)
         optin_contact(user, contact, contact_attrs)
+        {contact.phone, "New contact has been created and marked as opted in"}
 
       user.upload_contacts ->
         {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
         may_update_contact(contact_attrs)
         optin_contact(user, contact, contact_attrs)
+        {contact.phone, "New contact has been created and marked as opted in"}
 
       true ->
         may_update_contact(contact_attrs)

@@ -92,11 +92,7 @@ defmodule GlificWeb.Resolvers.Contacts do
     )
   end
 
-  def move_contacts(
-        _,
-        params,
-        %{context: %{current_user: user}}
-      ) do
+  def move_contacts(_, params, %{context: %{current_user: user}}) do
     Import.import_contacts(user.organization_id, %{user: user}, [{params.type, params.data}])
   end
 

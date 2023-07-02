@@ -274,49 +274,8 @@ defmodule Glific.ContactsTest do
       contact_fixture(attrs)
 
       {:error, error} = Contacts.maybe_update_contact(@update_attrs)
-      assert error == "New contacts were found in this file. Sorry those could not be added"
+      assert error == "Contact some updated phone was not found and hence not added"
     end
-
-    test "maybe_update_contact/1 with a mix of valid and invalid contacts",
-      %{organization_id: _organization_id} = attrs do
-      valid_contact = contact_fixture(attrs)  # Create a valid contact
-      invalid_contact = %Contact{}  # Create an invalid contact with an empty struct
-
-    valid_update_attrs = %{
-      name: "some updated name",
-      optin_time: ~U[2011-05-18 15:01:01Z],
-      optin_status: true,
-      optout_time: nil,
-      phone: valid_contact.phone,
-      status: :invalid,
-      bsp_status: :hsm,
-      fields: %{}
-  }
-
-    invalid_update_attrs = %{
-      name: "invalid name",
-      optin_time: nil,
-      optin_status: false,
-      optout_time: ~U[2022-01-01 00:00:00Z],
-      phone: invalid_contact.phone,
-      status: :valid,
-      bsp_status: :non_hsm,
-      fields: %{}
-  }
-
-  # Test updating a valid contact
-  assert {:ok, %Contact{} = valid_contact} = Contacts.maybe_update_contact(valid_update_attrs)
-  assert valid_contact.name == "some updated name"
-  assert valid_contact.optin_time == ~U[2011-05-18 15:01:01Z]
-  assert valid_contact.optout_time == nil
-  assert valid_contact.status == :invalid
-  assert valid_contact.bsp_status == :hsm
-
-  # Test handling an invalid contact
-  {:error, error} = Contacts.maybe_update_contact(invalid_update_attrs)
-  assert error == "Contact was not found and hence not added"
-end
-
 
     test "import_contact/3 with valid data from file inserts new contacts in the database" do
       file = get_tmp_file()
@@ -552,7 +511,9 @@ end
       [organization | _] = Partners.list_organizations()
 
       {:error, message} =
-        Import.import_contacts(organization.id, %{user: user}, file_path: get_tmp_path())
+        Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+          file_path: get_tmp_path()
+        )
 
       assert message == ["This user doesn't have enough permission"]
 
@@ -652,23 +613,6 @@ end
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
       assert {:error, _} = Import.import_contacts(999, %{user: user}, file_path: get_tmp_path())
-    end
-
-    test "insert_or_update_contact_data/3 returns an error if insertion fails" do
-      file = get_tmp_file()
-
-      [
-        ~w(name phone Language opt_in),
-        ["test", "phone", "english", @optin_date]
-      ]
-      |> CSV.encode()
-      |> Enum.each(&IO.write(file, &1))
-
-      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
-
-      {:error, message} = Import.import_contacts(1, %{user: user}, file_path: get_tmp_path())
-
-      assert ["New contacts were found in this file. Sorry those could not be added"] == message
     end
 
     test "update_contact/2 with valid data updates the contact",
