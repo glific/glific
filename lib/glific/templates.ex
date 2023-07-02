@@ -14,7 +14,6 @@ defmodule Glific.Templates do
     Repo,
     Settings,
     Tags.Tag,
-    Tags.TemplateTag,
     Templates.SessionTemplate
   }
 
@@ -58,25 +57,22 @@ defmodule Glific.Templates do
       {:category, category}, query ->
         from(q in query, where: q.category == ^category)
 
+      {:language, language}, query ->
+        from(q in query,
+          join: l in assoc(q, :language),
+          where: ilike(l.label, ^"%#{language}%")
+        )
+
       {:term, term}, query ->
+        sub_query =
+          Tag
+          |> where([t], ilike(t.label, ^"%#{term}%"))
+          |> select([t], t.id)
+
         query
-        |> join(:left, [template], template_tag in TemplateTag,
-          as: :template_tag,
-          on: template_tag.template_id == template.id
-        )
-        |> join(:left, [template_tag: template_tag], tag in Tag,
-          as: :tag,
-          on: template_tag.tag_id == tag.id
-        )
-        |> where(
-          [template, tag: tag],
-          ilike(template.label, ^"%#{term}%") or
-            ilike(template.shortcode, ^"%#{term}%") or
-            ilike(template.body, ^"%#{term}%") or
-            ilike(tag.label, ^"%#{term}%") or
-            ilike(tag.shortcode, ^"%#{term}%")
-        )
-        |> distinct([template], template.id)
+        |> where([q], ilike(q.label, ^"%#{term}%") or q.tag_id in subquery(sub_query))
+        |> or_where([q], ilike(q.shortcode, ^"%#{term}%"))
+        |> or_where([q], ilike(q.body, ^"%#{term}%"))
 
       _, query ->
         query

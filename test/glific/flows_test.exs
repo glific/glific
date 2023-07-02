@@ -88,12 +88,12 @@ defmodule Glific.FLowsTest do
       f1 = flow_fixture(@valid_more_attrs |> Map.merge(%{name: "testkeyword"}))
 
       flows =
-        Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword_or_labels: "testkeyword"})})
+        Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword_or_tags: "testkeyword"})})
 
       assert flows == [f0, f1]
 
       flows =
-        Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword_or_labels: "wrongkeyword"})})
+        Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword_or_tags: "wrongkeyword"})})
 
       assert flows == []
 

@@ -29,6 +29,8 @@ defmodule Glific.Templates.SessionTemplate do
           is_source: boolean(),
           is_active: boolean(),
           is_reserved: boolean(),
+          tag_id: non_neg_integer | nil,
+          tag: Tag.t() | Ecto.Association.NotLoaded.t() | nil,
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
@@ -55,6 +57,7 @@ defmodule Glific.Templates.SessionTemplate do
   ]
   @optional_fields [
     :body,
+    :tag_id,
     :shortcode,
     :number_parameters,
     :is_reserved,
@@ -99,6 +102,7 @@ defmodule Glific.Templates.SessionTemplate do
     field(:bsp_id, :string)
     field(:reason, :string)
 
+    belongs_to(:tag, Tag)
     belongs_to(:language, Language)
     belongs_to(:organization, Organization)
 
@@ -106,12 +110,6 @@ defmodule Glific.Templates.SessionTemplate do
 
     belongs_to(:parent, SessionTemplate, foreign_key: :parent_id)
     has_many(:child, SessionTemplate, foreign_key: :parent_id)
-
-    many_to_many(:tags, Tag,
-      join_through: "templates_tags",
-      on_replace: :delete,
-      join_keys: [template_id: :id, tag_id: :id]
-    )
 
     timestamps(type: :utc_datetime)
   end
@@ -125,6 +123,7 @@ defmodule Glific.Templates.SessionTemplate do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_body(session_template)
+    |> foreign_key_constraint(:tag_id)
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:parent_id)
     |> unique_constraint([:label, :language_id, :organization_id])
@@ -155,12 +154,12 @@ defmodule Glific.Templates.SessionTemplate do
 
   def update_changeset(%{is_hsm: true, status: "APPROVED"} = session_template, attrs) do
     session_template
-    |> cast(attrs, [:is_active, :label])
+    |> cast(attrs, [:is_active, :label, :tag_id])
   end
 
   def update_changeset(%{is_hsm: true} = session_template, attrs) do
     session_template
-    |> cast(attrs, [:is_active, :label])
+    |> cast(attrs, [:is_active, :label, :tag_id])
     |> add_error(
       :hsm,
       "HSM is not approved yet, it can't be modified"
