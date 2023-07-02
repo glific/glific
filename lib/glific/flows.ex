@@ -18,10 +18,10 @@ defmodule Glific.Flows do
     Groups.Group,
     Partners,
     Repo,
+    Tags.Tag,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
-    Templates.SessionTemplate,
-    Tags.Tag
+    Templates.SessionTemplate
   }
 
   alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
@@ -141,7 +141,10 @@ defmodule Glific.Flows do
 
         query
         |> where([fr], ilike(fr.name, ^"%#{name_or_keyword_or_tags}%"))
-        |> or_where([fr], (^name_or_keyword_or_tags in fr.keywords) or fr.tag_id in subquery(sub_query))
+        |> or_where(
+          [fr],
+          ^name_or_keyword_or_tags in fr.keywords or fr.tag_id in subquery(sub_query)
+        )
 
       _, query ->
         query

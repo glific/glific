@@ -7,9 +7,9 @@ defmodule Glific.TemplatesTest do
     Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
     Settings,
+    Tags,
     Templates,
-    Templates.SessionTemplate,
-    Tags
+    Templates.SessionTemplate
   }
 
   setup do
@@ -158,7 +158,6 @@ defmodule Glific.TemplatesTest do
         Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: tag_label})})
 
       assert length(session_template_list) == 2
-
 
       # Match term with label/shortcode of associated tag
       template = session_template_fixture(Map.merge(attrs, %{label: "label4"}))
