@@ -1,0 +1,5 @@
+mutation moveContacts($data: String!, $id: ID!, $type: ImportContactsTypeEnum) {
+  moveContacts(data: $data, id: $id, type: $type) {
+    csvRows
+  }
+}

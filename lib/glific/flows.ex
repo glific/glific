@@ -18,6 +18,7 @@ defmodule Glific.Flows do
     Groups.Group,
     Partners,
     Repo,
+    Tags.Tag,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate
@@ -132,11 +133,18 @@ defmodule Glific.Flows do
       {:is_pinned, is_pinned}, query ->
         from(q in query, where: q.is_pinned == ^is_pinned)
 
-      {:name_or_keyword_or_labels, name_or_keyword_or_labels}, query ->
+      {:name_or_keyword_or_tags, name_or_keyword_or_tags}, query ->
+        sub_query =
+          Tag
+          |> where([t], ilike(t.label, ^"%#{name_or_keyword_or_tags}%"))
+          |> select([t], t.id)
+
         query
-        |> where([fr], ilike(fr.name, ^"%#{name_or_keyword_or_labels}%"))
-        |> or_where([fr], ^name_or_keyword_or_labels in fr.keywords)
-        |> or_where([fr], ilike(fr.labels, ^"%#{name_or_keyword_or_labels}%"))
+        |> where([fr], ilike(fr.name, ^"%#{name_or_keyword_or_tags}%"))
+        |> or_where(
+          [fr],
+          ^name_or_keyword_or_tags in fr.keywords or fr.tag_id in subquery(sub_query)
+        )
 
       _, query ->
         query

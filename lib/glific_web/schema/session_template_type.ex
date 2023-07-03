@@ -54,6 +54,10 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :inserted_at, :datetime
     field :updated_at, :datetime
 
+    field :tag, :tag do
+      resolve(dataloader(Repo))
+    end
+
     field :language, :language do
       resolve(dataloader(Repo))
     end
@@ -65,55 +69,54 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :parent, :session_template do
       resolve(dataloader(Repo))
     end
-
-    field :tags, list_of(:tag) do
-      resolve(dataloader(Repo))
-    end
   end
 
   @desc "Filtering options for session_templates"
   input_object :session_template_filter do
-    @desc "Match term with labe/body/shortcode of template or label/shortcode of associated tag"
-    field :term, :string
+    @desc "Match term with label and associated tag of template"
+    field(:term, :string)
 
     @desc "Match the label"
-    field :label, :string
+    field(:label, :string)
+
+    @desc "Match the tag"
+    field(:tag, :string)
 
     @desc "Match the body of template"
-    field :body, :string
+    field(:body, :string)
 
     @desc "Match the shortcode of template"
-    field :shortcode, :string
+    field(:shortcode, :string)
 
     @desc "Match the hsm template message"
-    field :is_hsm, :boolean
+    field(:is_hsm, :boolean)
 
     @desc "Match the category of the template"
-    field :category, :string
+    field(:category, :string)
 
     @desc "Match the parent"
-    field :parent, :string
+    field(:parent, :string)
 
     @desc "Match the parent"
-    field :parent_id, :integer
+    field(:parent_id, :integer)
 
     @desc "Match a language"
-    field :language, :string
+    field(:language, :string)
 
     @desc "Match a language id"
-    field :language_id, :integer
+    field(:language_id, :integer)
 
     @desc "Match status of hsm"
-    field :status, :string
+    field(:status, :string)
 
     @desc "Match the active flag"
-    field :is_active, :boolean
+    field(:is_active, :boolean)
 
     @desc "Match the reserved flag"
-    field :is_reserved, :boolean
+    field(:is_reserved, :boolean)
 
     @desc "a static date range input field which will apply on updated at column."
-    field :date_range, :date_range_input
+    field(:date_range, :date_range_input)
   end
 
   input_object :session_template_input do
@@ -128,10 +131,21 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :is_source, :boolean
     field :message_media_id, :id
     field :language_id, :id
+    field :tag_id, :id
     field :translations, :json
     field :has_buttons, :boolean
     field :button_type, :template_button_type_enum
     field :buttons, :json
+  end
+
+  input_object :edit_approved_template_input do
+    field :content, :string
+    field :example, :string
+    field :template_ype, :string
+    field :enable_sample, :string
+    field :header, :string
+    field :footer, :string
+    field :category, :string
   end
 
   input_object :message_to_template_input do
@@ -190,6 +204,13 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       arg(:input, :session_template_input)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Templates.update_session_template/3)
+    end
+
+    field :edit_approved_template, :session_template_result do
+      arg(:id, non_null(:id))
+      arg(:input, :edit_approved_template_input)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Templates.edit_approved_template/3)
     end
 
     field :delete_session_template, :session_template_result do
