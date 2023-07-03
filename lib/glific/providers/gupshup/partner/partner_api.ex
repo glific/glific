@@ -107,6 +107,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @doc """
+  Edit pre approved template
+  """
   @spec edit_approved_template(non_neg_integer(), String.t(), map) :: tuple()
   def edit_approved_template(org_id, bsp_id, params) do
     (app_url(org_id) <> "/templates/" <> bsp_id)
