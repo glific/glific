@@ -23,6 +23,7 @@ defmodule Glific.Templates.InteractiveTemplate do
 
   @optional_fields [
     :translations,
+    :tag_id,
     :send_with_title
   ]
 
@@ -32,6 +33,8 @@ defmodule Glific.Templates.InteractiveTemplate do
           label: String.t() | nil,
           type: String.t() | nil,
           interactive_content: map() | nil,
+          tag_id: non_neg_integer | nil,
+          tag: Tag.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           language_id: non_neg_integer | nil,
@@ -49,6 +52,7 @@ defmodule Glific.Templates.InteractiveTemplate do
     field :translations, :map, default: %{}
     field :send_with_title, :boolean, default: true
 
+    belongs_to(:tag, Tag)
     belongs_to :language, Language
     belongs_to :organization, Organization
 
@@ -69,6 +73,7 @@ defmodule Glific.Templates.InteractiveTemplate do
     |> unique_constraint([:label, :language_id, :organisation_id],
       name: :interactive_templates_label_type_organization_id_index
     )
+    |> foreign_key_constraint(:tag_id)
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:organization_id)
   end

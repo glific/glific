@@ -26,6 +26,10 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
     field :updated_at, :datetime
     field :translations, :json
 
+    field :tag, :tag do
+      resolve(dataloader(Repo))
+    end
+
     field :language, :language do
       resolve(dataloader(Repo))
     end
@@ -33,23 +37,23 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
 
   @desc "Filtering options for interactives"
   input_object :interactive_template_filter do
-    @desc "Match the term"
-    field :term, :string
+    @desc "Match term with label and associated tag of template"
+    field(:term, :string)
 
     @desc "Match the label"
-    field :label, :string
+    field(:label, :string)
 
     @desc "Match the type of interactive"
-    field :type, :interactive_message_type_enum
+    field(:type, :interactive_message_type_enum)
 
     @desc "Match a language"
-    field :language, :string
+    field(:language, :string)
 
     @desc "Match a language id"
-    field :language_id, :integer
+    field(:language_id, :integer)
 
     @desc "Match a send interactive title field"
-    field :send_with_title, :boolean
+    field(:send_with_title, :boolean)
   end
 
   input_object :interactive_template_input do
@@ -57,6 +61,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
     field :type, :interactive_message_type_enum
     field :interactive_content, :json
     field :language_id, :id
+    field :tag_id, :id
     field :translations, :json
     field :send_with_title, :boolean
   end
