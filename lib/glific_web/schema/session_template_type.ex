@@ -139,21 +139,13 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   end
 
   input_object :edit_approved_template_input do
-    field :label, :string
     field :content, :string
-    field :type, :message_type_enum
-    field :shortcode, :string
-    field :is_hsm, :boolean
-    field :category, :string
     field :example, :string
-    field :is_active, :boolean
-    field :is_source, :boolean
-    field :message_media_id, :id
-    field :language_id, :id
-    field :translations, :json
-    field :has_buttons, :boolean
-    field :button_type, :template_button_type_enum
-    field :buttons, :json
+    field :template_ype, :string
+    field :enable_sample, :string
+    field :header, :string
+    field :footer, :string
+    field :category, :string
   end
 
   input_object :message_to_template_input do
