@@ -63,6 +63,9 @@ defmodule Glific.Templates do
           where: ilike(l.label, ^"%#{language}%")
         )
 
+      {:tag_ids, tag_ids}, query ->
+        from(q in query, where: q.tag_id in ^tag_ids)
+
       {:term, term}, query ->
         sub_query =
           Tag
