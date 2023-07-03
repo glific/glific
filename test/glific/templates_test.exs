@@ -48,6 +48,7 @@ defmodule Glific.TemplatesTest do
       is_active: true,
       is_reserved: true
     }
+
     @update_attrs %{
       label: "some updated label",
       body: "some updated body"
@@ -575,6 +576,53 @@ defmodule Glific.TemplatesTest do
 
       assert updated_template.is_active == true
       assert updated_template.body == "Your train ticket no. {{1}}"
+    end
+
+    test "edit_approved_template/2 should edit the approved template", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "token" => "some random partner token"
+              })
+          }
+
+        %{method: :put} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success"
+              })
+          }
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success"
+              })
+          }
+      end)
+
+      {:ok, session_template} =
+        session_template_fixture(attrs)
+        |> Templates.update_session_template(%{bsp_id: Ecto.UUID.generate()})
+
+      Templates.edit_approved_template(session_template.id, %{
+        content: "updated template content",
+        example: "updated template example",
+        organization_id: session_template.organization_id
+      })
+
+      assert {:ok, %SessionTemplate{} = updated_hsm} =
+               Repo.fetch_by(SessionTemplate, %{uuid: session_template.uuid})
+
+      assert updated_hsm.body == "updated template content"
+      assert updated_hsm.example == "updated template example"
     end
 
     test "delete_session_template/1 deletes the session_template", attrs do

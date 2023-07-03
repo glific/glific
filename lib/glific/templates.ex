@@ -210,6 +210,17 @@ defmodule Glific.Templates do
   end
 
   @doc """
+  Editing pre approved templates
+  """
+  @spec edit_approved_template(integer(), map()) :: {:ok, any} | {:error, any}
+  def edit_approved_template(template_id, params) do
+    Provider.bsp_module(params.organization_id, :template).edit_approved_template(
+      template_id,
+      params
+    )
+  end
+
+  @doc """
   Deletes a session_template.
 
   ## Examples
