@@ -48,16 +48,7 @@ defmodule Glific.TemplatesTest do
       is_active: true,
       is_reserved: true
     }
-    @valid_attrs_to_test_edit %{
-      body: "some body",
-      example: "some example",
-      type: "text"
-      id: 1
-    }
-    @update_attrs_to_test_edit %{
-      body: "some updated body",
-      example: "some updated example",
-    }
+
     @update_attrs %{
       label: "some updated label",
       body: "some updated body"
@@ -533,7 +524,7 @@ defmodule Glific.TemplatesTest do
       assert session_template == Templates.get_session_template!(session_template.id)
     end
 
-    test "update_session_template/2 for HSM template should update only the editable fields",mock
+    test "update_session_template/2 for HSM template should update only the editable fields",
          attrs do
       Tesla.Mock.mock(fn
         %{method: :post} ->
@@ -589,34 +580,50 @@ defmodule Glific.TemplatesTest do
 
     test "edit_approved_template/2 should edit the approved template", attrs do
       Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "token" => "some random partner token"
+              })
+          }
+
         %{method: :put} ->
           %Tesla.Env{
             status: 200,
             body:
               Jason.encode!(%{
-                "status" => "success",
-                "token" => "new_partner_token",
-                "template" => %{}
-                  "data" => "some updated body",
-                  "status" => "APPROVED",
-                  "templateType" => "TEXT"
-                })
-              }
+                "status" => "success"
+              })
+          }
 
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success"
+              })
+          }
       end)
 
-      language = language_fixture()
-      attrs =
-        attrs
-        |> Map.merge(@updated_attrs_to_test_edit)
-        |> Map.merge(%{language_id: language.id})
+      {:ok, session_template} =
+        session_template_fixture(attrs)
+        |> Templates.update_session_template(%{bsp_id: Ecto.UUID.generate()})
 
-      assert {:ok, %SessionTemplate{} = session_template} = Glific.Providers.Gupshup.Template.edit_approved_template(attrs.id, attrs)
+      Templates.edit_approved_template(session_template.id, %{
+        content: "updated template content",
+        example: "updated template example",
+        organization_id: session_template.organization_id
+      })
 
-      assert session_template.body == "some updated body"
+      assert {:ok, %SessionTemplate{} = updated_hsm} =
+               Repo.fetch_by(SessionTemplate, %{uuid: session_template.uuid})
 
+      assert updated_hsm.body == "updated template content"
+      assert updated_hsm.example == "updated template example"
     end
-
 
     test "delete_session_template/1 deletes the session_template", attrs do
       session_template = session_template_fixture(attrs)
