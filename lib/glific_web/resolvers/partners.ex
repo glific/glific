@@ -8,6 +8,7 @@ defmodule GlificWeb.Resolvers.Partners do
   alias Glific.{
     Partners,
     Partners.Credential,
+    Partners.Export,
     Partners.Organization,
     Partners.Provider,
     Repo,
@@ -159,6 +160,39 @@ defmodule GlificWeb.Resolvers.Partners do
         _
       ) do
     Onboard.reset(reset_organization_id, is_confirmed)
+  end
+
+  @doc """
+  Export dynamic data of an organization
+  """
+  @spec organization_export_data(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def organization_export_data(_, %{id: id, start_time: _start_time} = args, _) do
+    with {:ok, _organization} <- Repo.fetch(Organization, id) do
+      {:ok, %{data: Export.export_data(id, args)}}
+    end
+  end
+
+  @doc """
+  Export global stats of an organization
+  """
+  @spec organization_export_stats(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def organization_export_stats(_, %{id: id} = args, _) do
+    with {:ok, _organization} <- Repo.fetch(Organization, id) do
+      {:ok, %{data: Export.export_stats(id, args)}}
+    end
+  end
+
+  @doc """
+  Export config data of Glific (useful to all organizations)
+  """
+  @spec organization_export_config(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def organization_export_config(_, %{id: id}, _) do
+    with {:ok, _organization} <- Repo.fetch(Organization, id) do
+      {:ok, %{data: Export.export_config()}}
+    end
   end
 
   @doc """
