@@ -1,4 +1,10 @@
 defmodule Glific.Partners.Export do
+  @moduledoc """
+  Lets do a bulk export of all data belonging to an organization, since this is API
+  driven we are not streaming the output, and hence not using the streaming fucntionality
+  of elixir
+  """
+
   @meta [
     "languages",
     "providers"
@@ -46,7 +52,6 @@ defmodule Glific.Partners.Export do
       },
       fn queries, acc -> execute(queries, acc) end
     )
-    |> Enum.reverse()
   end
 
   @spec config_query(String.t()) :: String.t()
@@ -58,7 +63,7 @@ defmodule Glific.Partners.Export do
   is nothing secret in there, but help orgs with referential integrity
   """
   @spec export_config() :: map()
-  def export_config() do
+  def export_config do
     @meta
     |> Enum.reduce(
       %{},
@@ -112,20 +117,21 @@ defmodule Glific.Partners.Export do
       else: acc
   end
 
-  @spec execute(Tuple.t(), map()) :: map()
+  @spec execute(tuple, map()) :: map()
   defp execute({table, data, stats}, acc) do
     acc
     |> Map.put(:stats, add_map(stats, acc.stats, table))
     |> Map.put(:data, add_map(data, acc.data, table))
   end
 
-  @spec make_sql(non_neg_integer, map()) :: List.t()
+  @spec make_sql(non_neg_integer, map()) :: list()
   defp make_sql(organization_id, opts) do
     @tables
     |> Enum.reduce(
       [],
       fn table, acc -> [sql(table, organization_id, opts) | acc] end
     )
+    |> Enum.reverse()
   end
 
   @spec query(String.t(), non_neg_integer, map) :: String.t()
@@ -153,7 +159,7 @@ defmodule Glific.Partners.Export do
     """
   end
 
-  @spec sql(String.t(), non_neg_integer, map) :: Tuple.t()
+  @spec sql(String.t(), non_neg_integer, map) :: tuple
   defp sql(table, organization_id, opts) do
     q = query(table, organization_id, opts)
 

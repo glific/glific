@@ -165,8 +165,12 @@ defmodule GlificWeb.Resolvers.Partners do
   @doc """
   Export dynamic data of an organization
   """
-  @spec organization_export_data(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
+  @spec organization_export_data(
+          Absinthe.Resolution.t(),
+          %{id: integer, start_time: DateTime.t()},
+          %{context: map()}
+        ) ::
+          {:ok, %{data: map}} | {:error, any}
   def organization_export_data(_, %{id: id, start_time: _start_time} = args, _) do
     with {:ok, _organization} <- Repo.fetch(Organization, id) do
       {:ok, %{data: Export.export_data(id, args)}}
@@ -177,7 +181,7 @@ defmodule GlificWeb.Resolvers.Partners do
   Export global stats of an organization
   """
   @spec organization_export_stats(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
+          {:ok, %{data: map}} | {:error, any}
   def organization_export_stats(_, %{id: id} = args, _) do
     with {:ok, _organization} <- Repo.fetch(Organization, id) do
       {:ok, %{data: Export.export_stats(id, args)}}
@@ -188,7 +192,7 @@ defmodule GlificWeb.Resolvers.Partners do
   Export config data of Glific (useful to all organizations)
   """
   @spec organization_export_config(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
+          {:ok, %{data: map}} | {:error, any}
   def organization_export_config(_, %{id: id}, _) do
     with {:ok, _organization} <- Repo.fetch(Organization, id) do
       {:ok, %{data: Export.export_config()}}
