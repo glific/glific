@@ -70,13 +70,11 @@ defmodule GlificWeb.Resolvers.Contacts do
           %{
             data: String.t(),
             id: integer,
-            type: :data | :file_path | :url
+            type: :data | :file_path | :url,
+            group_label: String.t()
           },
-          %{
-            context: map()
-          }
-        ) ::
-          {:ok, any} | {:error, any}
+          %{context: map()}
+        ) :: any()
 
   def import_contacts(
         _,
@@ -92,11 +90,10 @@ defmodule GlificWeb.Resolvers.Contacts do
     )
   end
 
-  def import_contacts(
-        _,
-        params,
-        %{context: %{current_user: user}}
-      ) do
+  @doc false
+  @spec move_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def move_contacts(_, params, %{context: %{current_user: user}}) do
     Import.import_contacts(user.organization_id, %{user: user}, [{params.type, params.data}])
   end
 
