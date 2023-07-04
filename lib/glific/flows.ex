@@ -133,6 +133,9 @@ defmodule Glific.Flows do
       {:is_pinned, is_pinned}, query ->
         from(q in query, where: q.is_pinned == ^is_pinned)
 
+      {:tag_ids, tag_ids}, query ->
+        from(q in query, where: q.tag_id in ^tag_ids)
+
       {:name_or_keyword_or_tags, name_or_keyword_or_tags}, query ->
         sub_query =
           Tag

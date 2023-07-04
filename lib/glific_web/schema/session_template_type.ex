@@ -79,8 +79,8 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     @desc "Match the label"
     field(:label, :string)
 
-    @desc "Match the tag"
-    field(:tag, :string)
+    @desc "Match the tag_ids"
+    field(:tag_ids, list_of(:integer))
 
     @desc "Match the body of template"
     field(:body, :string)
