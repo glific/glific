@@ -167,7 +167,7 @@ defmodule GlificWeb.Resolvers.Partners do
   """
   @spec organization_export_data(
           Absinthe.Resolution.t(),
-          %{start_time: DateTime.t()},
+          %{filter: %{start_time: DateTime.t()}},
           %{context: map()}
         ) ::
           {:ok, %{data: map}} | {:error, any}
