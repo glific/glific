@@ -1,5 +1,5 @@
-query organizationExportStats {
-  organizationExportStats {
+query organizationExportStats($filter: ExportFilter) {
+  organizationExportStats(filter: $filter) {
     data
 
     errors {

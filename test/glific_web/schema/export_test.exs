@@ -57,7 +57,7 @@ defmodule GlificWeb.Schema.ExportTest do
         organization_id: user.organization_id
       })
 
-    result = auth_query_gql_by(:export_stats, user)
+    result = auth_query_gql_by(:export_stats, user, variables: %{"filter" => %{}})
 
     assert {:ok, data} = result
 
@@ -83,18 +83,20 @@ defmodule GlificWeb.Schema.ExportTest do
     start_time = DateTime.add(end_time, -7, :day)
 
     opts = %{
-      start_time: start_time,
-      end_time: end_time
+      "start_time" => start_time |> DateTime.to_string(),
+      "end_time" => end_time |> DateTime.to_string()
     }
 
-    result = auth_query_gql_by(:export_data, user, variables: opts)
+    result = auth_query_gql_by(:export_data, user, variables: %{"filter" => opts})
 
-    assert {:ok, data} = result |> IO.inspect()
+    assert {:ok, data} = result
 
     assert data != nil
 
     data =
-      get_in(data, [:data, "organizationExportData", "data"]) |> IO.inspect() |> Jason.decode!()
+      get_in(data, [:data, "organizationExportData", "data"])
+      |> Jason.decode!()
+      |> Map.get("data")
 
     assert data["contacts"] != nil
     assert data["contacts"] |> length() > 0

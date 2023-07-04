@@ -171,11 +171,11 @@ defmodule GlificWeb.Resolvers.Partners do
           %{context: map()}
         ) ::
           {:ok, %{data: map}} | {:error, any}
-  def organization_export_data(_, %{start_time: _start_time} = args, %{
+  def organization_export_data(_, %{filter: %{start_time: _start_time}} = args, %{
         context: %{current_user: user}
       }) do
     with {:ok, _organization} <- Repo.fetch(Organization, user.organization_id) do
-      {:ok, %{data: Export.export_data(user.organization_id, args)}}
+      {:ok, %{data: Export.export_data(user.organization_id, args.filter)}}
     end
   end
 
@@ -186,7 +186,7 @@ defmodule GlificWeb.Resolvers.Partners do
           {:ok, %{data: map}} | {:error, any}
   def organization_export_stats(_, args, %{context: %{current_user: user}}) do
     with {:ok, _organization} <- Repo.fetch(Organization, user.organization_id) do
-      {:ok, %{data: Export.export_stats(user.organization_id, args)}}
+      {:ok, %{data: Export.export_stats(user.organization_id, args.filter)}}
     end
   end
 

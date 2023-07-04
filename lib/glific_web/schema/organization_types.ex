@@ -183,6 +183,14 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:fields, :json)
   end
 
+  input_object :export_filter do
+    field(:start_time, :datetime)
+    field(:end_time, :datetime)
+    field(:limit, :integer)
+    field(:offset, :integer)
+    field(:tables, list_of(:string))
+  end
+
   object :organization_queries do
     @desc "get the details of one organization"
     field :organization, :organization_result do
@@ -234,10 +242,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     @desc "Export organization dynamic data"
     field :organization_export_data, :organization_export_result do
-      arg(:start_time, non_null(:datetime))
-      arg(:end_time, :datetime)
-      arg(:limit, :integer)
-      arg(:offset, :integer)
+      arg(:filter, :export_filter)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Partners.organization_export_data/3)
     end
@@ -250,8 +255,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     @desc "Export organization stats data"
     field :organization_export_stats, :organization_export_result do
-      arg(:id, :id)
-      arg(:start_time, :datetime)
+      arg(:filter, :export_filter)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Partners.organization_export_stats/3)
     end
