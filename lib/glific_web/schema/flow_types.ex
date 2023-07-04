@@ -69,6 +69,9 @@ defmodule GlificWeb.Schema.FlowTypes do
     @desc "Match the name or keyword or tags"
     field(:name_or_keyword_or_tags, :string)
 
+    @desc "Match the tag_ids"
+    field(:tag_ids, list_of(:integer))
+
     @desc "Match the keyword"
     field(:keyword, :string)
 
