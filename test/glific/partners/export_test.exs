@@ -75,7 +75,7 @@ defmodule Glific.ExportTest do
       tables: ["contacts"]
     }
 
-    export = Export.export_data(organization_id, opts) |> IO.inspect()
+    export = Export.export_data(organization_id, opts)
 
     assert export != nil
     assert map_size(export.data) > 0
