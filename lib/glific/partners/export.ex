@@ -31,20 +31,18 @@ defmodule Glific.Partners.Export do
   """
   @spec export_data(non_neg_integer, map()) :: map()
   def export_data(organization_id, opts) do
+    # Add a rate limiter here, once per minute or so per organization
+
     # fix limit for API calls that dont adhere to it
     limit = Map.get(opts, :limit, 500)
     limit = if limit > 500, do: 500, else: limit
 
-    opts =
-      opts
-      |> Map.put(:limit, limit)
-      |> Map.put_new(:offset, 0)
-      |> Map.put_new(:end_date, DateTime.utc_now())
-
-    # Add a rate limiter here, once per minute or so per organization
-
-    organization_id
-    |> make_sql(opts)
+    opts
+    |> Map.put(:limit, limit)
+    |> Map.put_new(:offset, 0)
+    |> Map.put_new(:end_date, DateTime.utc_now())
+    |> Map.put_new(:tables, [])
+    |> make_sql(organization_id)
     |> Enum.reduce(
       %{
         stats: %{},
@@ -56,7 +54,7 @@ defmodule Glific.Partners.Export do
 
   @spec config_query(String.t()) :: String.t()
   defp config_query(table),
-    do: "COPY (SELECT * FROM #{table}) TO STDOUT csv header"
+    do: "COPY (SELECT * FROM global.#{table}) TO STDOUT csv header"
 
   @doc """
   Export the global config tables which are shared by all organizations. There
@@ -82,13 +80,10 @@ defmodule Glific.Partners.Export do
   @spec stats_query(String.t(), non_neg_integer(), DateTime.t() | nil) :: String.t()
   defp stats_query(table, organization_id, start_time),
     do: """
-    COPY (
       SELECT count(*), min(updated_at), max(updated_at)
       FROM #{table}
       WHERE organization_id = #{organization_id}
       #{add_start(start_time)}
-      )
-      TO STDOUT csv header
     """
 
   @doc """
@@ -97,39 +92,59 @@ defmodule Glific.Partners.Export do
   """
   @spec export_stats(non_neg_integer(), map()) :: map()
   def export_stats(organization_id, opts) do
-    @tables
+    opts
+    |> Map.put_new(:tables, [])
+    |> tables()
     |> Enum.reduce(
       %{},
       fn table, acc ->
         table
         |> stats_query(organization_id, opts[:start_time])
-        |> add_map(acc, table)
+        |> add_map(acc, table, true)
       end
     )
   end
 
-  @spec add_map(String.t(), map(), String.t()) :: map()
-  defp add_map(query, acc, table) do
+  defp flatten(rows, false), do: rows
+  defp flatten(rows, true), do: rows |> hd()
+
+  @spec add_map(String.t(), map(), String.t(), boolean) :: map()
+  defp add_map(query, acc, table, is_flatten \\ false) do
     data = Repo.query!(query, [], timeout: 60_000, skip_organization_id: true)
 
     if is_list(data.rows) && length(data.rows) > 0,
-      do: Map.put(acc, table, data.rows),
+      do: Map.put(acc, table, flatten(data.rows, is_flatten)),
       else: acc
   end
 
   @spec execute(tuple, map()) :: map()
   defp execute({table, data, stats}, acc) do
     acc
-    |> Map.put(:stats, add_map(stats, acc.stats, table))
+    |> Map.put(:stats, add_map(stats, acc.stats, table, true))
     |> Map.put(:data, add_map(data, acc.data, table))
   end
 
-  @spec make_sql(non_neg_integer, map()) :: list()
-  defp make_sql(organization_id, opts) do
-    @tables
+  # filter the tables to include only valid table required by the caller
+  @spec tables(map) :: list
+  defp tables(opts) do
+    if opts.tables == [],
+      do: @tables,
+      else:
+        @tables
+        |> MapSet.new()
+        |> MapSet.intersection(MapSet.new(opts.tables))
+        |> MapSet.to_list()
+  end
+
+  @spec make_sql(map, non_neg_integer) :: list
+  defp make_sql(opts, organization_id) do
+    opts
+    |> tables()
     |> Enum.reduce(
       [],
-      fn table, acc -> [sql(table, organization_id, opts) | acc] end
+      fn table, acc ->
+        [sql(table, organization_id, opts) | acc]
+      end
     )
     |> Enum.reverse()
   end
@@ -166,7 +181,7 @@ defmodule Glific.Partners.Export do
     {
       table,
       "COPY (SELECT * #{q}) TO STDOUT csv header",
-      "COPY (SELECT count(*), min(updated_at), max(updated_at) #{q}) TO STDOUT"
+      "SELECT count(*), min(updated_at), max(updated_at) #{q}"
     }
   end
 end
