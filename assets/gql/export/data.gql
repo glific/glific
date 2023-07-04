@@ -1,0 +1,11 @@
+query organizationExportData {
+  organizationExportData {
+    data
+
+    errors {
+        key
+        message
+    }
+
+  }
+}

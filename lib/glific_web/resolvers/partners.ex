@@ -167,34 +167,36 @@ defmodule GlificWeb.Resolvers.Partners do
   """
   @spec organization_export_data(
           Absinthe.Resolution.t(),
-          %{id: integer, start_time: DateTime.t()},
+          %{start_time: DateTime.t()},
           %{context: map()}
         ) ::
           {:ok, %{data: map}} | {:error, any}
-  def organization_export_data(_, %{id: id, start_time: _start_time} = args, _) do
-    with {:ok, _organization} <- Repo.fetch(Organization, id) do
-      {:ok, %{data: Export.export_data(id, args)}}
+  def organization_export_data(_, %{start_time: _start_time} = args, %{
+        context: %{current_user: user}
+      }) do
+    with {:ok, _organization} <- Repo.fetch(Organization, user.organization_id) do
+      {:ok, %{data: Export.export_data(user.organization_id, args)}}
     end
   end
 
   @doc """
   Export global stats of an organization
   """
-  @spec organization_export_stats(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+  @spec organization_export_stats(Absinthe.Resolution.t(), map, %{context: map()}) ::
           {:ok, %{data: map}} | {:error, any}
-  def organization_export_stats(_, %{id: id} = args, _) do
-    with {:ok, _organization} <- Repo.fetch(Organization, id) do
-      {:ok, %{data: Export.export_stats(id, args)}}
+  def organization_export_stats(_, args, %{context: %{current_user: user}}) do
+    with {:ok, _organization} <- Repo.fetch(Organization, user.organization_id) do
+      {:ok, %{data: Export.export_stats(user.organization_id, args)}}
     end
   end
 
   @doc """
   Export config data of Glific (useful to all organizations)
   """
-  @spec organization_export_config(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+  @spec organization_export_config(Absinthe.Resolution.t(), map, %{context: map()}) ::
           {:ok, %{data: map}} | {:error, any}
-  def organization_export_config(_, %{id: id}, _) do
-    with {:ok, _organization} <- Repo.fetch(Organization, id) do
+  def organization_export_config(_, _, %{context: %{current_user: user}}) do
+    with {:ok, _organization} <- Repo.fetch(Organization, user.organization_id) do
       {:ok, %{data: Export.export_config()}}
     end
   end

@@ -234,8 +234,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     @desc "Export organization dynamic data"
     field :organization_export_data, :organization_export_result do
-      arg(:start_date, non_null(:datetime))
-      arg(:end_date, :datetime)
+      arg(:start_time, non_null(:datetime))
+      arg(:end_time, :datetime)
       arg(:limit, :integer)
       arg(:offset, :integer)
       middleware(Authorize, :staff)
@@ -250,7 +250,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     @desc "Export organization stats data"
     field :organization_export_stats, :organization_export_result do
-      arg(:start_date, :datetime)
+      arg(:id, :id)
+      arg(:start_time, :datetime)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Partners.organization_export_stats/3)
     end
