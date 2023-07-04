@@ -148,6 +148,16 @@ defmodule Glific.TemplatesTest do
       assert session_template1 in session_template_list
     end
 
+    test "list_session_templates/1 with tag_ids filter on session_templates", attrs do
+      tag1 = Fixtures.tag_fixture(Map.merge(attrs, %{label: "test_tag"}))
+      template = session_template_fixture(Map.merge(attrs, %{label: "label4", tag_id: tag1.id}))
+
+      session_template_list =
+        Templates.list_session_templates(%{filter: Map.merge(attrs, %{tag_ids: [tag1.id]})})
+
+      assert session_template_list == [template]
+    end
+
     test "list_session_templates/1 with term filter on session_templates", attrs do
       # Match term with labe/body/shortcode of template
       session_template_fixture(Map.merge(attrs, %{label: "filterterm"}))
