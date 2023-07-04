@@ -86,6 +86,8 @@ defmodule Glific.Partners.Export do
         |> add_map(acc, table)
       end
     )
+    |> Map.put("tables", @tables)
+    |> Map.put("config", @meta)
   end
 
   @spec config_query(String.t()) :: String.t()
