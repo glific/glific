@@ -5,7 +5,9 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   alias Glific.{
     Repo,
-    Templates.InteractiveTemplate
+    Templates.InteractiveTemplate,
+    Tags.Tag,
+
   }
 
   import Ecto.Query, warn: false
@@ -37,18 +39,21 @@ defmodule Glific.Templates.InteractiveTemplates do
     Enum.reduce(filter, query, fn
       {:term, term}, query ->
         from(q in query,
-          where:
-            ilike(field(q, :label), ^"%#{term}%") or
-              fragment("interactive_content::text like ?", ^"%#{term}%")
+          where: ilike(field(q, :label), ^"%#{term}%") or
+                 fragment("interactive_content::text LIKE ?", ^"%#{term}%")
         )
 
       {:type, type}, query ->
         from(q in query, where: q.type == ^type)
 
+        {:tag_ids, tag_ids}, query ->
+          from(q in query, where: q.tag_id in ^tag_ids)
+
       _, query ->
         query
     end)
   end
+
 
   @doc """
   Gets a single interactive template

@@ -5,7 +5,8 @@ defmodule Glific.Templates.InteractiveTemplate do
   alias __MODULE__
 
   alias Glific.{
-    Partners.Organization
+    Partners.Organization,
+    Tags.Tag
   }
 
   alias Glific.{

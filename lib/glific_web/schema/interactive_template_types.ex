@@ -43,6 +43,9 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
     @desc "Match the label"
     field(:label, :string)
 
+    @desc "Match the tag_ids"
+    field(:tag_ids, list_of(:integer))
+
     @desc "Match the type of interactive"
     field(:type, :interactive_message_type_enum)
 
