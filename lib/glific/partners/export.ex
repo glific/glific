@@ -52,40 +52,6 @@ defmodule Glific.Partners.Export do
     )
   end
 
-  @spec config_query(String.t()) :: String.t()
-  defp config_query(table),
-    do: "COPY (SELECT * FROM global.#{table}) TO STDOUT csv header"
-
-  @doc """
-  Export the global config tables which are shared by all organizations. There
-  is nothing secret in there, but help orgs with referential integrity
-  """
-  @spec export_config() :: map()
-  def export_config do
-    @meta
-    |> Enum.reduce(
-      %{},
-      fn table, acc ->
-        table
-        |> config_query()
-        |> add_map(acc, table)
-      end
-    )
-  end
-
-  @spec add_start(DateTime.t() | nil) :: String.t()
-  defp add_start(nil), do: ""
-  defp add_start(time), do: " AND updated_at >= '#{time}'"
-
-  @spec stats_query(String.t(), non_neg_integer(), DateTime.t() | nil) :: String.t()
-  defp stats_query(table, organization_id, start_time),
-    do: """
-      SELECT count(*), min(updated_at), max(updated_at)
-      FROM #{table}
-      WHERE organization_id = #{organization_id}
-      #{add_start(start_time)}
-    """
-
   @doc """
   Export the stats for all tables, so the caller can decide how to structure the
   sequence of requests to get all the data
@@ -105,35 +71,45 @@ defmodule Glific.Partners.Export do
     )
   end
 
-  defp flatten(rows, false), do: rows
-  defp flatten(rows, true), do: rows |> hd()
-
-  @spec add_map(String.t(), map(), String.t(), boolean) :: map()
-  defp add_map(query, acc, table, is_flatten \\ false) do
-    data = Repo.query!(query, [], timeout: 60_000, skip_organization_id: true)
-
-    if is_list(data.rows) && length(data.rows) > 0,
-      do: Map.put(acc, table, flatten(data.rows, is_flatten)),
-      else: acc
+  @doc """
+  Export the global config tables which are shared by all organizations. There
+  is nothing secret in there, but help orgs with referential integrity
+  """
+  @spec export_config :: map()
+  def export_config do
+    @meta
+    |> Enum.reduce(
+      %{},
+      fn table, acc ->
+        table
+        |> config_query()
+        |> add_map(acc, table)
+      end
+    )
   end
+
+  @spec config_query(String.t()) :: String.t()
+  defp config_query(table),
+    do: "COPY (SELECT * FROM global.#{table}) TO STDOUT csv header"
+
+  @spec add_start(DateTime.t() | nil) :: String.t()
+  defp add_start(nil), do: ""
+  defp add_start(time), do: " AND updated_at >= '#{time}'"
+
+  @spec stats_query(String.t(), non_neg_integer(), DateTime.t() | nil) :: String.t()
+  defp stats_query(table, organization_id, start_time),
+    do: """
+      SELECT count(*), min(updated_at), max(updated_at)
+      FROM #{table}
+      WHERE organization_id = #{organization_id}
+      #{add_start(start_time)}
+    """
 
   @spec execute(tuple, map()) :: map()
   defp execute({table, data, stats}, acc) do
     acc
     |> Map.put(:stats, add_map(stats, acc.stats, table, true))
     |> Map.put(:data, add_map(data, acc.data, table))
-  end
-
-  # filter the tables to include only valid table required by the caller
-  @spec tables(map) :: list
-  defp tables(opts) do
-    if opts.tables == [],
-      do: @tables,
-      else:
-        @tables
-        |> MapSet.new()
-        |> MapSet.intersection(MapSet.new(opts.tables))
-        |> MapSet.to_list()
   end
 
   @spec make_sql(map, non_neg_integer) :: list
@@ -147,6 +123,17 @@ defmodule Glific.Partners.Export do
       end
     )
     |> Enum.reverse()
+  end
+
+  @spec sql(String.t(), non_neg_integer, map) :: tuple
+  defp sql(table, organization_id, opts) do
+    q = query(table, organization_id, opts)
+
+    {
+      table,
+      "COPY (SELECT * #{q}) TO STDOUT csv header",
+      "SELECT count(*), min(updated_at), max(updated_at) #{q}"
+    }
   end
 
   @spec query(String.t(), non_neg_integer, map) :: String.t()
@@ -174,14 +161,27 @@ defmodule Glific.Partners.Export do
     """
   end
 
-  @spec sql(String.t(), non_neg_integer, map) :: tuple
-  defp sql(table, organization_id, opts) do
-    q = query(table, organization_id, opts)
+  # filter the tables to include only valid table required by the caller
+  @spec tables(map) :: list
+  defp tables(opts) do
+    if opts.tables == [],
+      do: @tables,
+      else:
+        @tables
+        |> MapSet.new()
+        |> MapSet.intersection(MapSet.new(opts.tables))
+        |> MapSet.to_list()
+  end
 
-    {
-      table,
-      "COPY (SELECT * #{q}) TO STDOUT csv header",
-      "SELECT count(*), min(updated_at), max(updated_at) #{q}"
-    }
+  defp flatten(rows, false), do: rows
+  defp flatten(rows, true), do: rows |> hd()
+
+  @spec add_map(String.t(), map(), String.t(), boolean) :: map()
+  defp add_map(query, acc, table, is_flatten \\ false) do
+    data = Repo.query!(query, [], timeout: 60_000, skip_organization_id: true)
+
+    if is_list(data.rows) && length(data.rows) > 0,
+      do: Map.put(acc, table, flatten(data.rows, is_flatten)),
+      else: acc
   end
 end
