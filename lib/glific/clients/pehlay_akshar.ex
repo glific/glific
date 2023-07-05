@@ -158,7 +158,7 @@ defmodule Glific.Clients.PehlayAkshar do
     end
   end
 
-  @spec fetch_bigquery_data(map(), String.t()) :: map()
+  @spec fetch_bigquery_data(map(), atom()) :: map()
   defp fetch_bigquery_data(fields, query_type) do
     Glific.BigQuery.fetch_bigquery_credentials(fields["organization_id"])
     |> case do
