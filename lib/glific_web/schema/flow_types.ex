@@ -4,7 +4,7 @@ defmodule GlificWeb.Schema.FlowTypes do
   """
 
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers, only: [dataloader: 2]
+  import Absinthe.Resolution.Helpers, only: [dataloader: 1, dataloader: 2]
   alias Glific.Repo
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
@@ -42,12 +42,17 @@ defmodule GlificWeb.Schema.FlowTypes do
       resolve(dataloader(Repo, use_parent: true))
     end
 
+    field :tag, :tag do
+      resolve(dataloader(Repo))
+    end
+
     field :is_pinned, :boolean
   end
 
   input_object :flow_input do
     field :name, :string
     field :keywords, list_of(:string)
+    field :tag_id, :id
     field :ignore_keywords, :boolean
     field :is_active, :boolean
     field :is_background, :boolean
@@ -59,28 +64,31 @@ defmodule GlificWeb.Schema.FlowTypes do
   @desc "Filtering options for flows"
   input_object :flow_filter do
     @desc "Match the name"
-    field :name, :string
+    field(:name, :string)
 
-    @desc "Match the name and keyword"
-    field :name_or_keyword, :string
+    @desc "Match the name or keyword or tags"
+    field(:name_or_keyword_or_tags, :string)
+
+    @desc "Match the tag_ids"
+    field(:tag_ids, list_of(:integer))
 
     @desc "Match the keyword"
-    field :keyword, :string
+    field(:keyword, :string)
 
     @desc "Match the uuid"
-    field :uuid, :uuid4
+    field(:uuid, :uuid4)
 
     @desc "Match the status of flow revision"
-    field :status, :string
+    field(:status, :string)
 
     @desc "Match the is_active flag of flow"
-    field :is_active, :boolean
+    field(:is_active, :boolean)
 
     @desc "Match the is_background flag of flow"
-    field :is_background, :boolean
+    field(:is_background, :boolean)
 
     @desc "Match the is_pinned flag of flow"
-    field :is_pinned, :boolean
+    field(:is_pinned, :boolean)
   end
 
   object :flow_queries do

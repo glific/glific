@@ -108,11 +108,23 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
+  Edit pre approved template
+  """
+  @spec edit_approved_template(non_neg_integer(), String.t(), map) :: tuple()
+  def edit_approved_template(org_id, bsp_id, params) do
+    (app_url(org_id) <> "/templates/" <> bsp_id)
+    |> put_request(params, org_id: org_id)
+  end
+
+  @doc """
   Remove hsm template from the WABA.
   """
   @spec apply_for_template(non_neg_integer(), map) :: tuple()
   def apply_for_template(org_id, payload) do
-    payload = Map.put(payload, "appId", app_id!(org_id))
+    payload =
+      payload
+      |> Map.put("allowTemplateCategoryChange", true)
+      |> Map.put("appId", app_id!(org_id))
 
     (app_url(org_id) <> "/templates")
     |> post_request(payload,
@@ -215,6 +227,20 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
     post(url, data, headers: req_headers)
+    |> case do
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+        {:ok, Jason.decode!(body)}
+
+      err ->
+        {:error, "#{inspect(err)}"}
+    end
+  end
+
+  @spec put_request(String.t(), map(), Keyword.t()) :: tuple()
+  defp put_request(url, data, opts) do
+    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
+
+    put(url, data, headers: req_headers)
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}

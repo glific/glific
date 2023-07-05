@@ -7,6 +7,7 @@ defmodule Glific.TemplatesTest do
     Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
     Settings,
+    # Tags,
     Templates,
     Templates.SessionTemplate
   }
@@ -47,6 +48,7 @@ defmodule Glific.TemplatesTest do
       is_active: true,
       is_reserved: true
     }
+
     @update_attrs %{
       label: "some updated label",
       body: "some updated body"
@@ -146,6 +148,16 @@ defmodule Glific.TemplatesTest do
       assert session_template1 in session_template_list
     end
 
+    test "list_session_templates/1 with tag_ids filter on session_templates", attrs do
+      tag1 = Fixtures.tag_fixture(Map.merge(attrs, %{label: "test_tag"}))
+      template = session_template_fixture(Map.merge(attrs, %{label: "label4", tag_id: tag1.id}))
+
+      session_template_list =
+        Templates.list_session_templates(%{filter: Map.merge(attrs, %{tag_ids: [tag1.id]})})
+
+      assert session_template_list == [template]
+    end
+
     test "list_session_templates/1 with term filter on session_templates", attrs do
       # Match term with labe/body/shortcode of template
       session_template_fixture(Map.merge(attrs, %{label: "filterterm"}))
@@ -157,7 +169,7 @@ defmodule Glific.TemplatesTest do
 
       assert length(session_template_list) == 3
 
-      # Match term with label/shortcode of associated tag
+      # Match term with label of associated tag
       template = session_template_fixture(Map.merge(attrs, %{label: "label4"}))
       tag_1 = Fixtures.tag_fixture(Map.merge(attrs, %{label: "filterterm"}))
 
@@ -174,10 +186,11 @@ defmodule Glific.TemplatesTest do
           Map.merge(attrs, %{template_id: template.id, tag_id: tag_2.id})
         )
 
+      # Match term with label of associated tag and not shortcode
       session_template_list =
         Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: "filterterm"})})
 
-      assert length(session_template_list) == 5
+      assert length(session_template_list) == 4
 
       # In case of a template tagged with multiple tags with similar label or shortcode
       # result should not give repeated templates
@@ -573,6 +586,53 @@ defmodule Glific.TemplatesTest do
 
       assert updated_template.is_active == true
       assert updated_template.body == "Your train ticket no. {{1}}"
+    end
+
+    test "edit_approved_template/2 should edit the approved template", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "token" => "some random partner token"
+              })
+          }
+
+        %{method: :put} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success"
+              })
+          }
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success"
+              })
+          }
+      end)
+
+      {:ok, session_template} =
+        session_template_fixture(attrs)
+        |> Templates.update_session_template(%{bsp_id: Ecto.UUID.generate()})
+
+      Templates.edit_approved_template(session_template.id, %{
+        content: "updated template content",
+        example: "updated template example",
+        organization_id: session_template.organization_id
+      })
+
+      assert {:ok, %SessionTemplate{} = updated_hsm} =
+               Repo.fetch_by(SessionTemplate, %{uuid: session_template.uuid})
+
+      assert updated_hsm.body == "updated template content"
+      assert updated_hsm.example == "updated template example"
     end
 
     test "delete_session_template/1 deletes the session_template", attrs do

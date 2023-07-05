@@ -67,6 +67,16 @@ defmodule Glific.FLowsTest do
       assert length(flows) >= 2
     end
 
+    test "list_flows/1 returns flows filtered by tag_id", attrs do
+      tag1 = Fixtures.tag_fixture(Map.merge(attrs, %{label: "test_tag"}))
+
+      f0 = flow_fixture(Map.merge(@valid_attrs, %{tag_id: tag1.id}))
+      _f1 = flow_fixture(@valid_more_attrs)
+
+      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{tag_ids: [tag1.id]})})
+      assert flows == [f0]
+    end
+
     test "list_flows/1 returns flows filtered by is_pinned", attrs do
       flows = Flows.list_flows(%{filter: %{is_pinned: true}})
       old_count = length(flows)
@@ -87,10 +97,14 @@ defmodule Glific.FLowsTest do
       f0 = flow_fixture(@valid_attrs)
       f1 = flow_fixture(@valid_more_attrs |> Map.merge(%{name: "testkeyword"}))
 
-      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword: "testkeyword"})})
+      flows =
+        Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword_or_tags: "testkeyword"})})
+
       assert flows == [f0, f1]
 
-      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword: "wrongkeyword"})})
+      flows =
+        Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword_or_tags: "wrongkeyword"})})
+
       assert flows == []
 
       flows = Flows.list_flows(%{filter: Map.merge(attrs, %{wrong_filter: "test"})})
