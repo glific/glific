@@ -14,7 +14,6 @@ defmodule Glific.Templates do
     Repo,
     Settings,
     Tags.Tag,
-    Tags.TemplateTag,
     Templates.SessionTemplate
   }
 
@@ -55,25 +54,28 @@ defmodule Glific.Templates do
       {:status, status}, query ->
         from(q in query, where: q.status == ^status)
 
+      {:category, category}, query ->
+        from(q in query, where: q.category == ^category)
+
+      {:language, language}, query ->
+        from(q in query,
+          join: l in assoc(q, :language),
+          where: ilike(l.label, ^"%#{language}%")
+        )
+
+      {:tag_ids, tag_ids}, query ->
+        from(q in query, where: q.tag_id in ^tag_ids)
+
       {:term, term}, query ->
+        sub_query =
+          Tag
+          |> where([t], ilike(t.label, ^"%#{term}%"))
+          |> select([t], t.id)
+
         query
-        |> join(:left, [template], template_tag in TemplateTag,
-          as: :template_tag,
-          on: template_tag.template_id == template.id
-        )
-        |> join(:left, [template_tag: template_tag], tag in Tag,
-          as: :tag,
-          on: template_tag.tag_id == tag.id
-        )
-        |> where(
-          [template, tag: tag],
-          ilike(template.label, ^"%#{term}%") or
-            ilike(template.shortcode, ^"%#{term}%") or
-            ilike(template.body, ^"%#{term}%") or
-            ilike(tag.label, ^"%#{term}%") or
-            ilike(tag.shortcode, ^"%#{term}%")
-        )
-        |> distinct([template], template.id)
+        |> where([q], ilike(q.label, ^"%#{term}%") or q.tag_id in subquery(sub_query))
+        |> or_where([q], ilike(q.shortcode, ^"%#{term}%"))
+        |> or_where([q], ilike(q.body, ^"%#{term}%"))
 
       _, query ->
         query
@@ -205,6 +207,17 @@ defmodule Glific.Templates do
     session_template
     |> SessionTemplate.update_changeset(attrs)
     |> Repo.update()
+  end
+
+  @doc """
+  Editing pre approved templates
+  """
+  @spec edit_approved_template(integer(), map()) :: {:ok, any} | {:error, any}
+  def edit_approved_template(template_id, params) do
+    Provider.bsp_module(params.organization_id, :template).edit_approved_template(
+      template_id,
+      params
+    )
   end
 
   @doc """
@@ -459,9 +472,12 @@ defmodule Glific.Templates do
     current_template = db_templates[template["bsp_id"]]
 
     update_attrs =
-      if current_template.status != template["status"],
-        do: change_template_status(template["status"], current_template, template),
-        else: %{status: template["status"]}
+      if current_template.status != template["status"] do
+        change_template_status(template["status"], current_template, template)
+        |> Map.put(:category, template["category"])
+      else
+        %{status: template["status"], category: template["category"]}
+      end
 
     db_templates[template["bsp_id"]]
     |> SessionTemplate.changeset(update_attrs)
