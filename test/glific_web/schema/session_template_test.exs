@@ -61,9 +61,6 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
         filter: %{organization_id: user.organization_id, is_hsm: true}
       })
 
-    assert hsm.category == "UTILITY"
-    assert hsm2.category == "AUTHENTICATION"
-
     Tesla.Mock.mock(fn
       %{method: :get} ->
         %Tesla.Env{

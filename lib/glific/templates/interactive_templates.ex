@@ -5,8 +5,8 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   alias Glific.{
     Repo,
-    Templates.InteractiveTemplate,
-    Tags.Tag
+    Tags.Tag,
+    Templates.InteractiveTemplate
   }
 
   import Ecto.Query, warn: false
