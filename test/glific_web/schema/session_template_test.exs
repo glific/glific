@@ -52,6 +52,10 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   end
 
   test "sync hsm with bsp", %{staff: user} do
+    Templates.list_session_templates(%{
+      filter: %{organization_id: user.organization_id, is_hsm: true}
+    })
+
     [hsm, hsm2 | _] =
       Templates.list_session_templates(%{
         filter: %{organization_id: user.organization_id, is_hsm: true}
@@ -90,10 +94,11 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     {:ok, %{data: %{"syncHSMTemplate" => %{"message" => message}}}} =
       auth_query_gql_by(:sync, user)
 
-    [updated_hsm, updated_hsm2 | _] =
-      Templates.list_session_templates(%{
-        filter: %{organization_id: user.organization_id, is_hsm: true}
-      })
+    {:ok, updated_hsm} =
+      Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid, organization_id: user.organization_id})
+
+    {:ok, updated_hsm2} =
+      Repo.fetch_by(SessionTemplate, %{uuid: hsm2.uuid, organization_id: user.organization_id})
 
     assert message == "successful"
     assert updated_hsm.category == "MARKETING"
