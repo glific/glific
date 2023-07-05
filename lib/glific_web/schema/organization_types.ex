@@ -27,6 +27,11 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:errors, list_of(:input_error))
   end
 
+  object :organization_export_result do
+    field(:data, :json)
+    field(:errors, list_of(:input_error))
+  end
+
   object :enabled_day do
     field(:id, :integer)
     field(:enabled, :boolean)
@@ -178,6 +183,14 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:fields, :json)
   end
 
+  input_object :export_filter do
+    field(:start_time, :datetime)
+    field(:end_time, :datetime)
+    field(:limit, :integer)
+    field(:offset, :integer)
+    field(:tables, list_of(:string))
+  end
+
   object :organization_queries do
     @desc "get the details of one organization"
     field :organization, :organization_result do
@@ -225,6 +238,26 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :organization_services, :organization_services_result do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Partners.organization_services/3)
+    end
+
+    @desc "Export organization dynamic data"
+    field :organization_export_data, :organization_export_result do
+      arg(:filter, :export_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Partners.organization_export_data/3)
+    end
+
+    @desc "Export organization config data"
+    field :organization_export_config, :organization_export_result do
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Partners.organization_export_config/3)
+    end
+
+    @desc "Export organization stats data"
+    field :organization_export_stats, :organization_export_result do
+      arg(:filter, :export_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Partners.organization_export_stats/3)
     end
 
     field :timezones, list_of(:string) do
