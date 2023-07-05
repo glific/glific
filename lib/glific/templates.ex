@@ -63,6 +63,9 @@ defmodule Glific.Templates do
           where: ilike(l.label, ^"%#{language}%")
         )
 
+      {:tag_ids, tag_ids}, query ->
+        from(q in query, where: q.tag_id in ^tag_ids)
+
       {:term, term}, query ->
         sub_query =
           Tag
@@ -204,6 +207,17 @@ defmodule Glific.Templates do
     session_template
     |> SessionTemplate.update_changeset(attrs)
     |> Repo.update()
+  end
+
+  @doc """
+  Editing pre approved templates
+  """
+  @spec edit_approved_template(integer(), map()) :: {:ok, any} | {:error, any}
+  def edit_approved_template(template_id, params) do
+    Provider.bsp_module(params.organization_id, :template).edit_approved_template(
+      template_id,
+      params
+    )
   end
 
   @doc """

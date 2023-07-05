@@ -79,8 +79,8 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     @desc "Match the label"
     field(:label, :string)
 
-    @desc "Match the tag"
-    field(:tag, :string)
+    @desc "Match the tag_ids"
+    field(:tag_ids, list_of(:integer))
 
     @desc "Match the body of template"
     field(:body, :string)
@@ -136,6 +136,16 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :has_buttons, :boolean
     field :button_type, :template_button_type_enum
     field :buttons, :json
+  end
+
+  input_object :edit_approved_template_input do
+    field :content, :string
+    field :example, :string
+    field :template_ype, :string
+    field :enable_sample, :string
+    field :header, :string
+    field :footer, :string
+    field :category, :string
   end
 
   input_object :message_to_template_input do
@@ -194,6 +204,13 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       arg(:input, :session_template_input)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Templates.update_session_template/3)
+    end
+
+    field :edit_approved_template, :session_template_result do
+      arg(:id, non_null(:id))
+      arg(:input, :edit_approved_template_input)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Templates.edit_approved_template/3)
     end
 
     field :delete_session_template, :session_template_result do
