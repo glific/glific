@@ -99,7 +99,7 @@ defmodule Glific.Clients.PehlayAkshar do
     raise "Unknown webhook"
   end
 
-  def format_leadership_data(data) do
+  defp format_leadership_data(data) do
     Enum.with_index(data)
     |> Enum.map(fn {user, index} ->
       name = user["name"]
@@ -135,7 +135,7 @@ defmodule Glific.Clients.PehlayAkshar do
     |> Jason.encode!()
   end
 
-  def send_template(uuid, variables) do
+  defp send_template(uuid, variables) do
     variables_list = Enum.map(variables, &to_string/1)
 
     %{
