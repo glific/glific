@@ -40,7 +40,8 @@ defmodule Glific.Templates.InteractiveTemplates do
       {:term, term}, query ->
         from(q in query,
           where: ilike(field(q, :label), ^"%#{term}%") or
-                 fragment("interactive_content::text LIKE ?", ^"%#{term}%")
+                 fragment("interactive_content::text LIKE ?", ^"%#{term}%") or
+                 ilike(field(q, :tag_label), ^"%#{term}%")
         )
 
       {:type, type}, query ->
