@@ -204,6 +204,16 @@ defmodule Glific.InteractiveTemplatesTest do
       assert h == interactive2
     end
 
+    test "list_interactives/1 with tag_ids filter on interactive_templates", attrs do
+      tag1 = Fixtures.tag_fixture(Map.merge(attrs, %{label: "test_tag"}))
+      interactives = Fixtures.interactive_fixture(Map.merge(attrs, %{label: "label4", tag_id: tag1.id}))
+
+      interactive_list =
+      InteractiveTemplates.list_interactives(%{filter: Map.merge(attrs, %{tag_ids: [tag1.id]})})
+
+      assert interactive_list == [interactives]
+    end
+
     test "list_interactives/1 with interactive type",
          %{organization_id: _organization_id} = attrs do
       interactive1 = Fixtures.interactive_fixture(attrs)
