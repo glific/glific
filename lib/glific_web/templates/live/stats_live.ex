@@ -55,7 +55,8 @@ defmodule GlificWeb.StatsLive do
         labels: fetch_date_labels("messages_conversations")
       },
       opted_in_chart_data: Reports.get_kpi(:opted_in_contacts_count, 1),
-      opted_out_chart_data: Reports.get_kpi(:opted_out_contacts_count, 1)
+      opted_out_chart_data: Reports.get_kpi(:opted_out_contacts_count, 1),
+      non_opted_chart_data: Reports.get_kpi(:non_opted_contacts_count, 1)
     ]
   end
 

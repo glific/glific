@@ -52,16 +52,27 @@ Hooks.optin_chart = {
     var ctx = this.el.getContext("2d");
     let optin = JSON.parse(this.el.dataset.chartDataOptin);
     let optout = JSON.parse(this.el.dataset.chartDataOptout);
+    let nonopt = JSON.parse(this.el.dataset.chartDataNonopt);
     var chart = new Chart(ctx, {
       type: "pie",
       data: {
-        labels: ["Optin", "Optout"],
+        labels: ["Opted-In", "Opted-Out", "Not-Opted"],
         datasets: [ {
           label: "Optin",
-          data: [optin, optout],
-          backgroundColor: ["#3e95cd", "#8e5ea2"],
+          data: [optin, optout, nonopt],
+          backgroundColor: ["#109654", "#23d4c2", "#ffc600"],
         },],
-      }
+      },
+      options: {
+        title: {
+          text: "Optin Rate",
+          fontSize: 20,
+        },
+        legend: {
+          display: true,
+          position: "right",
+        },
+      },
     });
   }
 }
