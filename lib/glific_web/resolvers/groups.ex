@@ -28,6 +28,10 @@ defmodule GlificWeb.Resolvers.Groups do
     {:ok, Groups.info_group_contacts(id)}
   end
 
+  def import_collection(_, %{id: id}, _) do
+    {:ok, Groups.import_collection(id)}
+  end
+
   @doc """
   Get the list of groups filtered by args
   """
