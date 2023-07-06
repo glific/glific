@@ -31,10 +31,10 @@ defmodule GlificWeb.StatsLive do
 
   @spec assign_stats(Phoenix.LiveView.Socket.t(), atom()) :: Phoenix.LiveView.Socket.t()
   defp assign_stats(socket, :init) do
-    stats = Enum.map(Reports.kpi_list(), &{&1, "loading.."}) |> IO.inspect(label: "stats")
+    stats = Enum.map(Reports.kpi_list(), &{&1, "loading.."})
 
-    assign(socket, Keyword.merge(stats, page_title: "Glific Dashboard")) |> IO.inspect(label: "socket")
-    |> assign(get_chart_data()) |> IO.inspect(label: "after chart data")
+    assign(socket, Keyword.merge(stats, page_title: "Glific Dashboard"))
+    |> assign(get_chart_data())
   end
 
   defp assign_stats(socket, :call) do
