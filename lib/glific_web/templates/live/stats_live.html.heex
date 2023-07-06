@@ -44,6 +44,14 @@ Commented out the filter code. Will add this once the functionality is ready
       data-chart-data={Jason.encode!(@conversation_chart_data)}
     >
     </canvas>
+    <canvas
+      class="card"
+      id="stats_chart"
+      phx-hook="pieChart"
+      data-label="Stats"
+      data-chart-data={Jason.encode!(@stats_chart_data)}
+    >
+    </canvas>
   </div>
 </div>
 

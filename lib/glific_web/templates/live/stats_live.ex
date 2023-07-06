@@ -53,6 +53,10 @@ defmodule GlificWeb.StatsLive do
       conversation_chart_data: %{
         data: fetch_data("messages_conversations"),
         labels: fetch_date_labels("messages_conversations")
+      },
+      stats_chart_data: %{
+        data: fetch_pie_data("stats"),
+        labels: ["Inbound", "Outbound"]
       }
     ]
   end
@@ -67,5 +71,11 @@ defmodule GlificWeb.StatsLive do
   defp fetch_date_labels(table_name) do
     Reports.get_kpi_data(1, table_name)
     |> Map.keys()
+  end
+
+  @spec fetch_pie_data(String.t()) :: list()
+  defp fetch_pie_data(table_name) do
+    Reports.get_kpi_pie_data(1, table_name)
+    |> Map.values()
   end
 end

@@ -46,4 +46,26 @@ Hooks.dateInput = {
   },
 };
 
+Hooks.pieChart = {
+  mounted() {
+    var ctx = this.el.getContext("2d");
+    let chartData = JSON.parse(this.el.dataset.chartData);
+
+    var chart = new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: ["Inbound", "Outbound"],
+        datasets: [
+          {
+            backgroundColor: ["rgb(17, 150, 86)", "rgb(255, 99, 132)"],
+            borderColor: "rgb(255, 99, 132)",
+            data: chartData.data,
+          },
+        ],
+      },
+      options: {},
+    });
+  },
+};
+
 export default Hooks;
