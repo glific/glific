@@ -135,7 +135,11 @@ defmodule Glific.Clients.PehlayAkshar do
     |> Jason.encode!()
   end
 
-  defp send_template(uuid, variables) do
+  @doc """
+   Send template from expression from the flows
+  """
+  @spec send_template(String.t(), list()) :: binary
+  def send_template(uuid, variables) do
     variables_list = Enum.map(variables, &to_string/1)
 
     %{
