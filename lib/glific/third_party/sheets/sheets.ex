@@ -339,6 +339,7 @@ defmodule Glific.Sheets do
   @doc """
   Sync all the sheets of the organization
   """
+  @spec sync_organization_sheets(integer(), boolean()) :: :ok
   def sync_organization_sheets(organization_id, is_active \\ true) do
     Sheet
     |> where([sh], sh.organization_id == ^organization_id)
