@@ -12,10 +12,10 @@ defmodule Glific.Reports do
   def get_kpi(kpi, org_id) do
     [[count]] =
       get_count_query(org_id, kpi)
-      |> Repo.query!([]) |> IO.inspect(label: "query result")
-      |> then(& &1.rows) |> IO.inspect(label: "query rows")
+      |> Repo.query!([])
+      |> then(& &1.rows) 
 
-    count |> IO.inspect(label: "count")
+    count
   end
 
   @doc false
