@@ -9,5 +9,10 @@ defmodule Glific.Repo.Migrations.AddTagsToFlows do
     alter table(:session_templates) do
       add(:tag_id, references(:tags, on_delete: :nothing))
     end
+
+    alter table(:interactive_templates) do
+      add(:tag_id, references(:tags, on_delete: :nothing))
+    end
+
   end
 end

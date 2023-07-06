@@ -5,6 +5,7 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   alias Glific.{
     Repo,
+    Tags.Tag,
     Templates.InteractiveTemplate
   }
 
@@ -36,14 +37,24 @@ defmodule Glific.Templates.InteractiveTemplates do
     # these filters are specific to interactive templates only.
     Enum.reduce(filter, query, fn
       {:term, term}, query ->
+        sub_query =
+          from(t in Tag,
+            where: ilike(t.label, ^"%#{term}%"),
+            select: t.id
+          )
+
         from(q in query,
           where:
             ilike(field(q, :label), ^"%#{term}%") or
-              fragment("interactive_content::text like ?", ^"%#{term}%")
+              fragment("interactive_content::text LIKE ?", ^"%#{term}%") or
+              q.tag_id in subquery(sub_query)
         )
 
       {:type, type}, query ->
         from(q in query, where: q.type == ^type)
+
+      {:tag_ids, tag_ids}, query ->
+        from(q in query, where: q.tag_id in ^tag_ids)
 
       _, query ->
         query
