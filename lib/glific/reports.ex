@@ -12,10 +12,10 @@ defmodule Glific.Reports do
   def get_kpi(kpi, org_id) do
     [[count]] =
       get_count_query(org_id, kpi)
-      |> Repo.query!([])
-      |> then(& &1.rows)
+      |> Repo.query!([]) |> IO.inspect(label: "query result")
+      |> then(& &1.rows) |> IO.inspect(label: "query rows")
 
-    count
+    count |> IO.inspect(label: "count")
   end
 
   @doc false
@@ -46,12 +46,10 @@ defmodule Glific.Reports do
     do: "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and status = 'invalid'"
 
   defp get_count_query(org_id, :opted_in_contacts_count),
-    do:
-      "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optin_time IS NOT NULL"
+    do: "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optin_time IS NOT NULL"
 
   defp get_count_query(org_id, :opted_out_contacts_count),
-    do:
-      "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NOT NULL"
+    do: "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NOT NULL"
 
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count

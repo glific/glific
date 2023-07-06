@@ -44,6 +44,16 @@ Commented out the filter code. Will add this once the functionality is ready
       data-chart-data={Jason.encode!(@conversation_chart_data)}
     >
     </canvas>
+    <div>
+  <canvas
+      class="card" 
+      id="optin_chart"
+      phx-hook="optin_chart"
+      data-chart-data-optin={Jason.encode!(@opted_in_chart_data)}
+      data-chart-data-optout={Jason.encode!(@opted_out_chart_data)}
+    >
+    </canvas>
+</div>
   </div>
 </div>
 
@@ -102,3 +112,5 @@ Commented out the filter code. Will add this once the functionality is ready
     </p>
   </a>
 </div>
+
+

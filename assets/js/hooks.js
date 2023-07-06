@@ -46,4 +46,23 @@ Hooks.dateInput = {
   },
 };
 
+// creating a pie chart
+Hooks.optin_chart = { 
+  mounted() { 
+    var ctx = this.el.getContext("2d");
+    let optin = JSON.parse(this.el.dataset.chartDataOptin);
+    let optout = JSON.parse(this.el.dataset.chartDataOptout);
+    var chart = new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: ["Optin", "Optout"],
+        datasets: [ {
+          label: "Optin",
+          data: [optin, optout],
+          backgroundColor: ["#3e95cd", "#8e5ea2"],
+        },],
+      }
+    });
+  }
+}
 export default Hooks;
