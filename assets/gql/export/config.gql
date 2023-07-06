@@ -1,0 +1,11 @@
+query organizationExportConfig {
+  organizationExportConfig {
+    data
+
+    errors {
+        key
+        message
+    }
+
+  }
+}
