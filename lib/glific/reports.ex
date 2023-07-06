@@ -13,8 +13,7 @@ defmodule Glific.Reports do
     [[count]] =
       get_count_query(org_id, kpi)
       |> Repo.query!([])
-      |> then(& &1.rows) 
-
+      |> then(& &1.rows)
     count
   end
 
