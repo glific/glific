@@ -103,6 +103,31 @@ defmodule Glific.Reports do
     """
   end
 
+  @doc false
+  @spec get_message_type_data(non_neg_integer(), String.t()) :: map()
+  def get_message_type_data(org_id, table) do
+    query_data =
+      get_message_type_query(table, org_id)
+      |> Repo.query!([])
+
+    Enum.reduce(query_data.rows, %{}, fn [inbound, outbound], acc ->
+      Map.put(acc, :inbound, inbound) |> Map.put(:outbound, outbound)
+
+    end)
+  end
+
+  defp get_message_type_query(table, org_id) do
+    """
+    SELECT
+      inbound AS inbound_count,
+      outbound AS outbound_count
+    FROM #{table}
+    WHERE
+      inserted_at >= CURRENT_DATE
+      AND organization_id = #{org_id};
+    """
+  end
+
   @spec get_date_preset(DateTime.t()) :: map()
   defp get_date_preset(time \\ DateTime.utc_now()) do
     today = shifted_time(time, 1) |> Timex.format!("{YYYY}-{0M}-{0D}")
