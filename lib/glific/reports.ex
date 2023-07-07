@@ -49,6 +49,7 @@ defmodule Glific.Reports do
 
   defp get_count_query(org_id, :opted_out_contacts_count),
     do: "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NOT NULL"
+
   defp get_count_query(org_id, :non_opted_contacts_count),
     do: "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NULL and optin_time IS NULL"
 
