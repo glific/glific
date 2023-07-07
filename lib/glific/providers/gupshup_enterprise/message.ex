@@ -94,8 +94,8 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     message_media = message.media
 
     %{
-      type: :sticker,
-      url: message_media.url
+      msg_type: :STICKER,
+      media_url: message_media.url
     }
     |> send_message(message, attrs)
   end
