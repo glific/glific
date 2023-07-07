@@ -32,12 +32,6 @@ defmodule GlificWeb.Resolvers.Groups do
     {:ok, Groups.import_collection(id)}
   end
 
-  def export_collection(_, %{id: id}, _) do
-    result = Groups.import_collection(id)
-    {:ok, Groups.export_to_csv(result)}
-  end
-
-
   @doc """
   Get the list of groups filtered by args
   """

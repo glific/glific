@@ -144,28 +144,10 @@ defmodule Glific.Groups do
       |> select([c: c], [c.name, c.phone])
       |> Repo.all()
       |> Enum.reduce(%{}, fn [name, phone], acc -> Map.put(acc, name, phone) end)
+      |> Enum.map(fn {name, phone} -> "#{name},#{phone}" end)
+      |> Enum.join("\n")|>IO.inspect()
 
-
-    status =
-      if Enum.empty?(result) do
-        "Not Found"
-      else
-        "Fetched"
-      end
-
-    %{status: status, errors: []}
-  end
-
-  def export_to_csv(result) do
-    if Enum.empty?(result) do
-      %{csv_data: "No data to export.", errors: []}
-    else
-      csv_data = result
-        |> Enum.map(fn {name, phone} -> "#{name},#{phone}" end)
-        |> Enum.join("\n")
-
-      %{csv_data: "CSV data:\n#{csv_data}", errors: []}
-    end
+     %{status: result, errors: []}
   end
 
 
