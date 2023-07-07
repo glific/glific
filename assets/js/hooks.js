@@ -2,13 +2,10 @@ let Hooks = {};
 
 function createChart(ctx, chartType, chartData, label, options) {
   let backgroundColor, borderColor;
-
+  borderColor = "#F9F7F4";
+  backgroundColor = ["#129656", "#EBEDEC", "#93A29B"];
   if (chartType === "bar") {
-    backgroundColor = "#109654";
-    borderColor = "rgb(72, 72, 72)";
-  } else if (chartType === "pie") {
-    backgroundColor = ["#109654", "#23d4c2", "#ffc600"];
-    borderColor = "rgb(72, 72, 72)";
+    backgroundColor = backgroundColor[0];
   }
 
   return new Chart(ctx, {
@@ -41,8 +38,8 @@ Hooks.barChart = {
 };
 
 // creating a pie chart
-Hooks.pieChart = { 
-  mounted() { 
+Hooks.pieChart = {
+  mounted() {
     var ctx = this.el.getContext("2d");
     let label = this.el.dataset.label;
     let chartData = JSON.parse(this.el.dataset.chartData);
@@ -52,8 +49,8 @@ Hooks.pieChart = {
         position: "right",
       },
     });
-  }
-}
+  },
+};
 
 Hooks.dateInput = {
   mounted() {

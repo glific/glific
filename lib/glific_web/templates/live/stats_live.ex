@@ -56,7 +56,7 @@ defmodule GlificWeb.StatsLive do
       },
       optin_chart_data: %{
         data: fetch_optin_data(),
-        labels: fetch_optin_labels()
+        labels: ["Opted In", "Opted Out", "Non Opted"]
       }
     ]
   end
@@ -68,11 +68,6 @@ defmodule GlificWeb.StatsLive do
       Reports.get_kpi(:opted_out_contacts_count, 1),
       Reports.get_kpi(:non_opted_contacts_count, 1)
     ]
-  end
-
-  @spec fetch_optin_labels() :: list()
-  defp fetch_optin_labels do
-    ["Opted In", "Opted Out", "Non Opted"]
   end
 
   @spec fetch_data(String.t()) :: list()
