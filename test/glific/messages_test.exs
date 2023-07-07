@@ -134,6 +134,16 @@ defmodule Glific.MessagesTest do
       assert Messages.list_messages(%{filter: attrs}) == [message]
     end
 
+    test "list_messages/1 returns all messages with types filter", attrs do
+      message_fixture(Map.merge(attrs,%{type: :quick_reply}))
+      message_fixture(Map.merge(attrs,%{type: :location}))
+      message_fixture(Map.merge(attrs,%{type: :text}))
+      message_fixture(Map.merge(attrs,%{type: :quick_reply}))
+      message_fixture(Map.merge(attrs,%{type: :text}))
+
+      assert length(Messages.list_messages(%{filter: %{types: [:quick_reply, :location]}})) == 3
+    end
+
     test "list_messages/1 with multiple messages filtered", attrs do
       message = message_fixture(attrs)
 
