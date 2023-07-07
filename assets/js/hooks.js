@@ -1,30 +1,51 @@
 let Hooks = {};
 
+function createChart(ctx, chartType, chartData, label) {
+  let backgroundColor, borderColor;
+
+  if (chartType === "bar") {
+    backgroundColor = "rgb(17, 150, 86)";
+    borderColor = "rgb(72, 72, 72)";
+  } else if (chartType === "pie") {
+    backgroundColor = ["rgb(58,168,114)", "rgb(13,108,61)"];
+    borderColor = "rgb(72, 72, 72)";
+  }
+
+  return new Chart(ctx, {
+    // The type of chart we want to create
+    type: chartType,
+    data: {
+      labels: chartData.labels,
+      // The data for our dataset
+      datasets: [
+        {
+          label: label,
+          backgroundColor: backgroundColor,
+          borderColor: borderColor,
+          data: chartData.data,
+        },
+      ],
+    },
+    // Configuration options go here
+    options: {},
+  });
+}
+
 Hooks.chart = {
   mounted() {
     var ctx = this.el.getContext("2d");
     let label = this.el.dataset.label;
     let chartData = JSON.parse(this.el.dataset.chartData);
-    var chart = new Chart(ctx, {
-      // The type of chart we want to create
-      type: "bar",
-      // The data for our dataset
-      data: {
-        // date_labels are the default last 7 day dates
-        labels: chartData.labels,
-        datasets: [
-          {
-            label: label,
-            backgroundColor: "rgb(17, 150, 86)",
-            borderColor: "rgb(255, 99, 132)",
-            // data is the data trend in last 7 day
-            data: chartData.data,
-          },
-        ],
-      },
-      // Configuration options go here
-      options: {},
-    });
+    createChart(ctx, "bar", chartData, label);
+  },
+};
+
+Hooks.pieChart = {
+  mounted() {
+    var ctx = this.el.getContext("2d");
+    let label = this.el.dataset.label;
+    let chartData = JSON.parse(this.el.dataset.chartData);
+    createChart(ctx, "pie", chartData, label);
   },
 };
 
@@ -42,28 +63,6 @@ Hooks.dateInput = {
         );
         return localizedDate;
       },
-    });
-  },
-};
-
-Hooks.pieChart = {
-  mounted() {
-    var ctx = this.el.getContext("2d");
-    let chartData = JSON.parse(this.el.dataset.chartData);
-
-    var chart = new Chart(ctx, {
-      type: "pie",
-      data: {
-        labels: ["Inbound", "Outbound"],
-        datasets: [
-          {
-            backgroundColor: ["rgb(17, 150, 86)", "rgb(255, 99, 132)"],
-            borderColor: "rgb(255, 99, 132)",
-            data: chartData.data,
-          },
-        ],
-      },
-      options: {},
     });
   },
 };
