@@ -28,8 +28,8 @@ defmodule GlificWeb.Resolvers.Groups do
     {:ok, Groups.info_group_contacts(id)}
   end
 
-  def import_collection(_, %{id: id}, _) do
-    {:ok, Groups.import_collection(id)}
+  def export_collection(_, %{id: id}, _) do
+    {:ok, Groups.export_collection(id)}
   end
 
   @doc """

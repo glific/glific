@@ -14,7 +14,7 @@ defmodule GlificWeb.Schema.GroupTypes do
     field :errors, list_of(:input_error)
   end
 
-  object :import_collection_result do
+  object :export_collection_result do
     field(:status, :string)
     field(:errors, list_of(:input_error))
   end
@@ -105,10 +105,10 @@ defmodule GlificWeb.Schema.GroupTypes do
       resolve(&Resolvers.Groups.organization_groups/3)
     end
 
-    field :import_collection, :import_collection_result do
+    field :export_collection, :export_collection_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Groups.import_collection/3)
+      resolve(&Resolvers.Groups.export_collection/3)
     end
 
   @desc "Get a count of all groups filtered by various criteria"

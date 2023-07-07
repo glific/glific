@@ -136,7 +136,7 @@ defmodule Glific.Groups do
     |> Repo.one!()
   end
 
-  def import_collection(group_id) do
+  def export_collection(group_id) do
     result =
       ContactGroup
       |> join(:inner, [cg], c in Contact, as: :c, on: cg.contact_id == c.id)
