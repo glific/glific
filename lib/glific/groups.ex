@@ -137,13 +137,37 @@ defmodule Glific.Groups do
   end
 
   def import_collection(group_id) do
-    result = ContactGroup
-    |> join(:inner, [cg], c in Contact, as: :c, on: cg.contact_id == c.id)
-    |> where([cg], cg.group_id == ^group_id)
-    |> select([c: c], [c.name, c.phone])
-    |> Repo.all()
-    |> Enum.reduce(%{}, fn {name, phone}, acc -> Map.put(acc, name, phone) end)
+    result =
+      ContactGroup
+      |> join(:inner, [cg], c in Contact, as: :c, on: cg.contact_id == c.id)
+      |> where([cg], cg.group_id == ^group_id)
+      |> select([c: c], [c.name, c.phone])
+      |> Repo.all()
+      |> Enum.reduce(%{}, fn [name, phone], acc -> Map.put(acc, name, phone) end)
+
+
+    status =
+      if Enum.empty?(result) do
+        "Not Found"
+      else
+        "Fetched"
+      end
+
+    %{status: status, errors: []}
   end
+
+  def export_to_csv(result) do
+    if Enum.empty?(result) do
+      %{csv_data: "No data to export.", errors: []}
+    else
+      csv_data = result
+        |> Enum.map(fn {name, phone} -> "#{name},#{phone}" end)
+        |> Enum.join("\n")
+
+      %{csv_data: "CSV data:\n#{csv_data}", errors: []}
+    end
+  end
+
 
   @doc """
   Get group by group name.

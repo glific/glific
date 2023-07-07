@@ -19,6 +19,12 @@ defmodule GlificWeb.Schema.GroupTypes do
     field(:errors, list_of(:input_error))
   end
 
+  object :export_collection_result do
+    field(:csv_data, :string)
+    field(:errors, list_of(:input_error))
+  end
+
+
   object :group do
     field :id, :id
     field :label, :string
@@ -109,6 +115,12 @@ defmodule GlificWeb.Schema.GroupTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Groups.import_collection/3)
+    end
+
+    field :export_collection, :export_collection_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Groups.export_collection/3)
     end
 
     @desc "Get a count of all groups filtered by various criteria"
