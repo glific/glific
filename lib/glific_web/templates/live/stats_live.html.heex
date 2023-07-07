@@ -31,7 +31,7 @@ Commented out the filter code. Will add this once the functionality is ready
     <canvas
       class="card"
       id="contacts_chart"
-      phx-hook="chart"
+      phx-hook="barChart"
       data-label="Contacts"
       data-chart-data={Jason.encode!(@contact_chart_data)}
     >
@@ -39,11 +39,21 @@ Commented out the filter code. Will add this once the functionality is ready
     <canvas
       class="card"
       id="conversation_chart"
-      phx-hook="chart"
+      phx-hook="barChart"
       data-label="Conversations"
       data-chart-data={Jason.encode!(@conversation_chart_data)}
     >
     </canvas>
+    <div>
+      <canvas
+        class="card"
+        id="optin_chart"
+        phx-hook="pieChart"
+        data-label="Optin"
+        data-chart-data={Jason.encode!(@optin_chart_data)}
+      >
+      </canvas>
+    </div>
   </div>
 </div>
 

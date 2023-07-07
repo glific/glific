@@ -1,29 +1,53 @@
 let Hooks = {};
 
-Hooks.chart = {
+function createChart(ctx, chartType, chartData, label, options) {
+  let backgroundColor, borderColor;
+  borderColor = "#F9F7F4";
+  backgroundColor = ["#129656", "#EBEDEC", "#93A29B"];
+  if (chartType === "bar") {
+    backgroundColor = backgroundColor[0];
+  }
+
+  return new Chart(ctx, {
+    // The type of chart we want to create
+    type: chartType,
+    data: {
+      labels: chartData.labels,
+      // The data for our dataset
+      datasets: [
+        {
+          label: label,
+          backgroundColor: backgroundColor,
+          borderColor: borderColor,
+          data: chartData.data,
+        },
+      ],
+    },
+    // Configuration options go here
+    options: options,
+  });
+}
+
+Hooks.barChart = {
   mounted() {
     var ctx = this.el.getContext("2d");
     let label = this.el.dataset.label;
     let chartData = JSON.parse(this.el.dataset.chartData);
-    var chart = new Chart(ctx, {
-      // The type of chart we want to create
-      type: "bar",
-      // The data for our dataset
-      data: {
-        // date_labels are the default last 7 day dates
-        labels: chartData.labels,
-        datasets: [
-          {
-            label: label,
-            backgroundColor: "rgb(17, 150, 86)",
-            borderColor: "rgb(255, 99, 132)",
-            // data is the data trend in last 7 day
-            data: chartData.data,
-          },
-        ],
+    createChart(ctx, "bar", chartData, label);
+  },
+};
+
+// creating a pie chart
+Hooks.pieChart = {
+  mounted() {
+    var ctx = this.el.getContext("2d");
+    let label = this.el.dataset.label;
+    let chartData = JSON.parse(this.el.dataset.chartData);
+    createChart(ctx, "pie", chartData, label, {
+      legend: {
+        display: true,
+        position: "right",
       },
-      // Configuration options go here
-      options: {},
     });
   },
 };
@@ -45,5 +69,4 @@ Hooks.dateInput = {
     });
   },
 };
-
 export default Hooks;
