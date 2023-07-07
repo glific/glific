@@ -99,6 +99,7 @@ defmodule Glific.Reports do
     """
   end
 
+  @doc false
   @spec get_kpi_pie_data(non_neg_integer(), String.t()) :: map()
   def get_kpi_pie_data(org_id, table) do
     presets = get_date_preset()
