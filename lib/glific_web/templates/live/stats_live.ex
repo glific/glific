@@ -60,7 +60,7 @@ defmodule GlificWeb.StatsLive do
       },
       message_type_chart_data: %{
         data: fetch_message_type_data("stats"),
-        labels: ["Inbound","Outbound"]
+        labels: ["Inbound", "Outbound"]
       }
     ]
   end
