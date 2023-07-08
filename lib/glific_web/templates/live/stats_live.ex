@@ -85,4 +85,10 @@ defmodule GlificWeb.StatsLive do
     Reports.get_kpi_data(1, table_name)
     |> Map.keys()
   end
+
+  @spec fetch_message_type_data(String.t()) :: list()
+  defp fetch_message_type_data(table_name) do
+    Reports.get_message_type_data(1, table_name)
+    |> Map.values()
+  end
 end
