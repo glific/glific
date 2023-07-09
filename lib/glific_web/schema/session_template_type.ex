@@ -33,7 +33,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
 
   object :session_template do
     field :id, :id
-    field :bsp, :string
+    field :bsp_id, :string
     field :label, :string
     field :body, :string
     field :type, :message_type_enum
