@@ -179,7 +179,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   end
 
   defp do_send_message(%{"msg_type" => msg_type} = payload, credentials)
-       when msg_type in ["DOCUMENT", "VIDEO", "AUDIO", "IMAGE"] do
+       when msg_type in ["DOCUMENT", "VIDEO", "AUDIO", "IMAGE", "STICKER"] do
     payload
     |> Map.merge(@default_send_media_message_params)
     |> then(
