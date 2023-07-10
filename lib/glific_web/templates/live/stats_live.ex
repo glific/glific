@@ -47,22 +47,26 @@ defmodule GlificWeb.StatsLive do
   def get_chart_data do
     [
       contact_chart_data: %{
-        data: fetch_data("contacts"),
+        data: fetch_date_formatted_data("contacts"),
         labels: fetch_date_labels("contacts")
       },
       conversation_chart_data: %{
-        data: fetch_data("messages_conversations"),
+        data: fetch_date_formatted_data("messages_conversations"),
         labels: fetch_date_labels("messages_conversations")
       },
       optin_chart_data: %{
-        data: fetch_optin_data(),
+        data: fetch_count_data(:optin_chart_data),
         labels: ["Opted In", "Opted Out", "Non Opted"]
+      },
+      notification_chart_data: %{
+        data: fetch_count_data(:notification_chart_data),
+        labels: ["Critical", "Warning", "Information"]
       }
     ]
   end
 
-  @spec fetch_optin_data() :: list()
-  defp fetch_optin_data do
+  @spec fetch_count_data(atom()) :: list()
+  defp fetch_count_data(:optin_chart_data) do
     [
       Reports.get_kpi(:opted_in_contacts_count, 1),
       Reports.get_kpi(:opted_out_contacts_count, 1),
@@ -70,8 +74,17 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  @spec fetch_data(String.t()) :: list()
-  defp fetch_data(table_name) do
+  @spec fetch_count_data(atom()) :: list()
+  defp fetch_count_data(:notification_chart_data) do
+    [
+      Reports.get_kpi(:critical_notification_count, 1),
+      Reports.get_kpi(:warning_notification_count, 1),
+      Reports.get_kpi(:information_notification_count, 1)
+    ]
+  end
+
+  @spec fetch_date_formatted_data(String.t()) :: list()
+  defp fetch_date_formatted_data(table_name) do
     Reports.get_kpi_data(1, table_name)
     |> Map.values()
   end

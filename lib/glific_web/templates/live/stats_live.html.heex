@@ -57,6 +57,20 @@ Commented out the filter code. Will add this once the functionality is ready
   </div>
 </div>
 
+<div>
+  <div class="flex content-center justify-center" id="charts" phx-update="ignore">
+    <canvas
+        class="card"
+        id="notification_chart"
+        phx-hook="pieChart"
+        data-label="Notification Chart"
+        data-chart-data={Jason.encode!(@notification_chart_data)}
+      >
+      </canvas>
+  </div>
+</div>
+
+
 <div class="flex content-center justify-center flex-wrap">
   <a class="card">
     <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">

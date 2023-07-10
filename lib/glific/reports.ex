@@ -57,6 +57,18 @@ defmodule Glific.Reports do
     do:
       "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NULL and optin_time IS NULL"
 
+  defp get_count_query(org_id, :critical_notification_count),
+    do:
+      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Critical'"
+
+  defp get_count_query(org_id, :warning_notification_count),
+    do:
+      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Warning'"
+
+  defp get_count_query(org_id, :information_notification_count),
+    do:
+      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Information'"
+
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
 
