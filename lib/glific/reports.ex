@@ -111,8 +111,9 @@ defmodule Glific.Reports do
       |> Repo.query!([])
 
     Enum.reduce(query_data.rows, %{}, fn [inbound, outbound], acc ->
-      Map.put(acc, :inbound, inbound) |> Map.put(:outbound, outbound)
-
+      acc
+      |> Map.put(:inbound, inbound)
+      |> Map.put(:outbound, outbound)
     end)
   end
 
