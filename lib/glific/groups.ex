@@ -136,6 +136,10 @@ defmodule Glific.Groups do
     |> Repo.one!()
   end
 
+  @doc """
+  Exporting collection membership details
+  """
+  @spec export_collection(integer) :: map()
   def export_collection(group_id) do
     result =
       ContactGroup
@@ -143,13 +147,12 @@ defmodule Glific.Groups do
       |> where([cg], cg.group_id == ^group_id)
       |> select([c: c], [c.name, c.phone])
       |> Repo.all()
-      |> Enum.reduce("", fn [name, phone], acc ->
+      |> Enum.reduce("Name,Phone\r\n", fn [name, phone], acc ->
         acc <> "#{name},#{phone}\r\n"
       end)
 
-     %{status: result, errors: []}
+    %{status: result}
   end
-
 
   @doc """
   Get group by group name.

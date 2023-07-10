@@ -28,6 +28,11 @@ defmodule GlificWeb.Resolvers.Groups do
     {:ok, Groups.info_group_contacts(id)}
   end
 
+  @doc """
+  Exporting collection details
+  """
+  @spec export_collection(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
   def export_collection(_, %{id: id}, _) do
     {:ok, Groups.export_collection(id)}
   end
