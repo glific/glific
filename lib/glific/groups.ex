@@ -143,9 +143,9 @@ defmodule Glific.Groups do
       |> where([cg], cg.group_id == ^group_id)
       |> select([c: c], [c.name, c.phone])
       |> Repo.all()
-      |> Enum.reduce(%{}, fn [name, phone], acc -> Map.put(acc, name, phone) end)
-      |> Enum.map(fn {name, phone} -> "#{name},#{phone}" end)
-      |> Enum.join("\n")|>IO.inspect()
+      |> Enum.reduce("", fn [name, phone], acc ->
+        acc <> "#{name},#{phone}\r\n"
+      end)
 
      %{status: result, errors: []}
   end
