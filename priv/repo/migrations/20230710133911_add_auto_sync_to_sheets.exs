@@ -1,4 +1,4 @@
-defmodule Glific.Repo.Migrations.AddTagsToFlows do
+defmodule Glific.Repo.Migrations.AddAutoSyncToSheets do
   use Ecto.Migration
 
   def change do
