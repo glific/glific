@@ -27,7 +27,8 @@ defmodule Glific.Reports do
       :valid_contact_count,
       :invalid_contact_count,
       :opted_in_contacts_count,
-      :opted_out_contacts_count
+      :opted_out_contacts_count,
+      :monthly_error_count
     ]
   end
 
@@ -56,6 +57,10 @@ defmodule Glific.Reports do
   defp get_count_query(org_id, :non_opted_contacts_count),
     do:
       "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NULL and optin_time IS NULL"
+
+  defp get_count_query(org_id, :monthly_error_count),
+    do:
+      "SELECT COUNT(id) FROM messages WHERE organization_id = #{org_id} and errors != '{}'"
 
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
