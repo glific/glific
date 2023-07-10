@@ -121,6 +121,9 @@ defmodule Glific.Messages do
       {:contact_id, contact_id}, query ->
         from(q in query, where: q.contact_id == ^contact_id)
 
+      {:types, types}, query ->
+        from(q in query, where: q.type in ^types)
+
       _, query ->
         query
     end)
