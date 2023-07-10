@@ -27,7 +27,7 @@ Commented out the filter code. Will add this once the functionality is ready
 </div>
 -->
 <div>
-  <div class="flex content-center justify-center" id="charts" phx-update="ignore">
+  <div class="flex content-center justify-center flex-wrap" id="charts" phx-update="ignore">
     <canvas
       class="card"
       id="contacts_chart"
@@ -54,6 +54,14 @@ Commented out the filter code. Will add this once the functionality is ready
       >
       </canvas>
     </div>
+    <canvas
+        class="card"
+        id="message_type_chart"
+        phx-hook="pieChart"
+        data-label="MessageType"
+        data-chart-data={Jason.encode!(@message_type_chart_data)}
+      >
+    </canvas>
   </div>
 </div>
 
