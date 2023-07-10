@@ -74,7 +74,6 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  @spec fetch_count_data(atom()) :: list()
   defp fetch_count_data(:notification_chart_data) do
     [
       Reports.get_kpi(:critical_notification_count, 1),
