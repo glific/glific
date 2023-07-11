@@ -17,7 +17,7 @@ defmodule Glific.Sheets.Sheet do
     :organization_id
   ]
 
-  @optional_fields [:last_synced_at, :is_active, :sheet_data_count, :type]
+  @optional_fields [:last_synced_at, :is_active, :sheet_data_count, :type, :auto_sync]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -27,6 +27,7 @@ defmodule Glific.Sheets.Sheet do
           type: String.t() | nil,
           is_active: boolean() | nil,
           last_synced_at: :utc_datetime | nil,
+          auto_sync: boolean() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -40,6 +41,7 @@ defmodule Glific.Sheets.Sheet do
     field(:type, :string, default: "READ")
     field(:is_active, :boolean, default: true)
     field(:last_synced_at, :utc_datetime)
+    field(:auto_sync, :boolean, default: false)
     field(:warnings, :map, default: %{}, virtual: true)
     field(:sheet_data_count, :integer)
 

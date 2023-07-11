@@ -335,4 +335,20 @@ defmodule Glific.Sheets do
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
   end
+
+  @doc """
+  Sync all the sheets of the organization
+  """
+  @spec sync_organization_sheets(integer(), boolean()) :: :ok
+  def sync_organization_sheets(organization_id, is_active \\ true) do
+    Sheet
+    |> where([sh], sh.organization_id == ^organization_id)
+    |> where([sh], sh.auto_sync == true)
+    |> where([sh], sh.is_active == ^is_active)
+    |> where([sh], sh.type in ["ALL", "READ"])
+    |> Repo.all()
+    |> Enum.each(fn sheet ->
+      sync_sheet_data(sheet)
+    end)
+  end
 end
