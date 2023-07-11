@@ -343,10 +343,10 @@ defmodule Glific.Sheets do
   def sync_organization_sheets(organization_id, is_active \\ true) do
     Sheet
     |> where([sh], sh.organization_id == ^organization_id)
+    |> where([sh], sh.auto_sync == true)
     |> where([sh], sh.is_active == ^is_active)
     |> where([sh], sh.type in ["ALL", "READ"])
     |> Repo.all()
-    |> Enum.filter(fn %{auto_sync: auto_sync} -> auto_sync end)
     |> Enum.each(fn sheet ->
       sync_sheet_data(sheet)
     end)
