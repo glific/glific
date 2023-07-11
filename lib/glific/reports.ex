@@ -28,6 +28,7 @@ defmodule Glific.Reports do
       :invalid_contact_count,
       :opted_in_contacts_count,
       :opted_out_contacts_count,
+      :non_opted_contacts_count,
       :flows_started,
       :flows_completed
     ]
