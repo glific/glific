@@ -61,6 +61,10 @@ defmodule GlificWeb.StatsLive do
       notification_chart_data: %{
         data: fetch_count_data(:notification_chart_data),
         labels: ["Critical", "Warning", "Information"]
+      },  
+      message_type_chart_data: %{
+        data: fetch_message_type_data("stats"),
+        labels: ["Inbound", "Outbound"]
       }
     ]
   end
@@ -92,5 +96,11 @@ defmodule GlificWeb.StatsLive do
   defp fetch_date_labels(table_name) do
     Reports.get_kpi_data(1, table_name)
     |> Map.keys()
+  end
+
+  @spec fetch_message_type_data(String.t()) :: list()
+  defp fetch_message_type_data(table_name) do
+    Reports.get_message_type_data(1, table_name)
+    |> Map.values()
   end
 end

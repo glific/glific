@@ -27,7 +27,7 @@ Commented out the filter code. Will add this once the functionality is ready
 </div>
 -->
 <div>
-  <div class="flex content-center justify-center" id="charts" phx-update="ignore">
+  <div class="flex content-center justify-center flex-wrap" id="charts" phx-update="ignore">
     <canvas
       class="card"
       id="contacts_chart"
@@ -54,6 +54,14 @@ Commented out the filter code. Will add this once the functionality is ready
       >
       </canvas>
     </div>
+    <canvas
+        class="card"
+        id="message_type_chart"
+        phx-hook="pieChart"
+        data-label="MessageType"
+        data-chart-data={Jason.encode!(@message_type_chart_data)}
+      >
+    </canvas>
   </div>
 </div>
 
@@ -123,6 +131,15 @@ Commented out the filter code. Will add this once the functionality is ready
     </h5>
     <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
       <%= @opted_out_contacts_count %>
+    </p>
+  </a>
+
+  <a class="card">
+    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+      Non Opted Contacts
+    </h5>
+    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
+      <%= @non_opted_contacts_count %>
     </p>
   </a>
 </div>
