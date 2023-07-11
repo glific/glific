@@ -91,5 +91,10 @@ defmodule Glific.SheetsTest do
       assert {:ok, %Sheet{}} = Sheets.delete_sheet(sheet)
       assert_raise Ecto.NoResultsError, fn -> Sheets.get_sheet!(sheet.id) end
     end
+
+    test "sync_organization_sheets/1 sync all the sheets of organization", %{organization_id: organization_id} = attrs  do
+      Fixtures.sheet_fixture(attrs)
+      assert Sheets.sync_organization_sheets(organization_id) == :ok
+    end
   end
 end
