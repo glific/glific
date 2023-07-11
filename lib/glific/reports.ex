@@ -28,6 +28,7 @@ defmodule Glific.Reports do
       :invalid_contact_count,
       :opted_in_contacts_count,
       :opted_out_contacts_count,
+      :non_opted_contacts_count,
       :monthly_error_count
     ]
   end
@@ -105,6 +106,33 @@ defmodule Glific.Reports do
       AND inserted_at <= '#{presets.today}'
       AND organization_id = #{org_id}
     GROUP BY date
+    """
+  end
+
+  @doc false
+  @spec get_message_type_data(non_neg_integer(), String.t()) :: map()
+  def get_message_type_data(org_id, table) do
+    query_data =
+      get_message_type_query(table, org_id)
+      |> Repo.query!([])
+
+    Enum.reduce(query_data.rows, %{}, fn [inbound, outbound], acc ->
+      acc
+      |> Map.put(:inbound, inbound)
+      |> Map.put(:outbound, outbound)
+    end)
+  end
+
+  defp get_message_type_query(table, org_id) do
+    """
+    SELECT
+      SUM(inbound) AS inbound_count,
+      SUM(outbound) AS outbound_count
+    FROM #{table}
+    WHERE
+      inserted_at >= CURRENT_DATE
+      AND period = 'hour'
+      AND organization_id = #{org_id};
     """
   end
 
