@@ -28,6 +28,7 @@ defmodule Glific.Reports do
       :invalid_contact_count,
       :opted_in_contacts_count,
       :opted_out_contacts_count,
+      :non_opted_contacts_count,
       :inbound_messages_count,
       :outbound_messages_count,
       :hsm_messages_count
