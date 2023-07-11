@@ -77,8 +77,8 @@ defmodule GlificWeb.StatsLive do
   @spec fetch_count_data(atom()) :: list()
   defp fetch_count_data(:message_type_chart_data) do
     [
-      Reports.get_kpi(:outbound_messages_count, 1),
-      Reports.get_kpi(:inbound_messages_count, 1)
+      Reports.get_kpi(:inbound_messages_count, 1),
+      Reports.get_kpi(:outbound_messages_count, 1)
     ]
   end
 
