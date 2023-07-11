@@ -120,11 +120,12 @@ defmodule Glific.Reports do
   defp get_message_type_query(table, org_id) do
     """
     SELECT
-      inbound AS inbound_count,
-      outbound AS outbound_count
+      SUM(inbound) AS inbound_count,
+      SUM(outbound) AS outbound_count
     FROM #{table}
     WHERE
       inserted_at >= CURRENT_DATE
+      AND period = 'hour'
       AND organization_id = #{org_id};
     """
   end

@@ -137,6 +137,24 @@ defmodule Glific.Groups do
   end
 
   @doc """
+  Exporting collection membership details
+  """
+  @spec export_collection(integer) :: map()
+  def export_collection(group_id) do
+    result =
+      ContactGroup
+      |> join(:inner, [cg], c in Contact, as: :c, on: cg.contact_id == c.id)
+      |> where([cg], cg.group_id == ^group_id)
+      |> select([c: c], [c.name, c.phone])
+      |> Repo.all()
+      |> Enum.reduce("Name,Phone\r\n", fn [name, phone], acc ->
+        acc <> "#{name},#{phone}\r\n"
+      end)
+
+    %{status: result}
+  end
+
+  @doc """
   Get group by group name.
   Create the group if it does not exist
   """
