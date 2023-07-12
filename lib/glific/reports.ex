@@ -28,9 +28,7 @@ defmodule Glific.Reports do
       :invalid_contact_count,
       :opted_in_contacts_count,
       :opted_out_contacts_count,
-      :non_opted_contacts_count,
-      :flows_started,
-      :flows_completed
+      :non_opted_contacts_count
     ]
   end
 
@@ -59,12 +57,6 @@ defmodule Glific.Reports do
   defp get_count_query(org_id, :non_opted_contacts_count),
     do:
       "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NULL and optin_time IS NULL"
-  defp get_count_query(org_id, :flows_started),
-    do:
-      "SELECT flows_started FROM stats WHERE organization_id = #{org_id} and inserted_at >= date_trunc('day', CURRENT_DATE) and period = 'day'"
-  defp get_count_query(org_id, :flows_completed),
-    do:
-      "SELECT flows_completed FROM stats WHERE organization_id = #{org_id} and inserted_at >= date_trunc('day', CURRENT_DATE) and period = 'day'"
 
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
