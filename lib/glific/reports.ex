@@ -10,13 +10,13 @@ defmodule Glific.Reports do
   @doc false
   @spec get_kpi(atom(), non_neg_integer()) :: integer()
   def get_kpi(kpi, org_id) do
-    count =
+    [[count]] =
       get_count_query(org_id, kpi)
       |> Repo.query!([])
       |> then(& &1.rows)
 
     case count do
-      [[count]] -> count
+      count -> count
       _ -> 0
     end
   end
