@@ -33,7 +33,9 @@ defmodule GlificWeb.APIAuthPlug do
   def get_credentials(conn, signed_token, config) do
     with {:ok, token} <- verify_token(conn, signed_token, config),
          {user, metadata} <- CredentialsCache.get(store_config(config), token) do
-      {Map.put(user, :fingerprint, metadata[:fingerprint]), metadata}
+          if conn.assigns[:organization_id] == user.organization_id,
+            do: {Map.put(user, :fingerprint, metadata[:fingerprint]), metadata},
+            else: nil
     else
       _any -> nil
     end
