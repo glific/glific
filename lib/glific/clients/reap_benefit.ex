@@ -6,6 +6,7 @@ defmodule Glific.Clients.ReapBenefit do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Clients.CommonWebhook,
     Flows.Flow,
     Repo
   }
@@ -158,6 +159,7 @@ defmodule Glific.Clients.ReapBenefit do
     end
   end
 
+  def webhook("jugalbandi", fields), do: CommonWebhook.webhook("jugalbandi", fields)
   def webhook(_, _fields), do: %{}
 
   @spec get_header(String.t()) :: list()

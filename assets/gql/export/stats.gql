@@ -1,0 +1,11 @@
+query organizationExportStats($filter: ExportFilter) {
+  organizationExportStats(filter: $filter) {
+    data
+
+    errors {
+        key
+        message
+    }
+
+  }
+}

@@ -120,6 +120,9 @@ defmodule GlificWeb.Schema.MessageTypes do
     @desc "Match the receiver"
     field :receiver, :string
 
+    @desc "Match the message types"
+    field :types, list_of(:message_type_enum)
+
     @desc "Match the phone with either the sender or receiver"
     field :either, :string
 

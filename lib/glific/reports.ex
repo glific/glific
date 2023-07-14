@@ -27,7 +27,8 @@ defmodule Glific.Reports do
       :valid_contact_count,
       :invalid_contact_count,
       :opted_in_contacts_count,
-      :opted_out_contacts_count
+      :opted_out_contacts_count,
+      :non_opted_contacts_count
     ]
   end
 
@@ -52,6 +53,10 @@ defmodule Glific.Reports do
   defp get_count_query(org_id, :opted_out_contacts_count),
     do:
       "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NOT NULL"
+
+  defp get_count_query(org_id, :non_opted_contacts_count),
+    do:
+      "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NULL and optin_time IS NULL"
 
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
@@ -96,6 +101,33 @@ defmodule Glific.Reports do
       AND inserted_at <= '#{presets.today}'
       AND organization_id = #{org_id}
     GROUP BY date
+    """
+  end
+
+  @doc false
+  @spec get_message_type_data(non_neg_integer(), String.t()) :: map()
+  def get_message_type_data(org_id, table) do
+    query_data =
+      get_message_type_query(table, org_id)
+      |> Repo.query!([])
+
+    Enum.reduce(query_data.rows, %{}, fn [inbound, outbound], acc ->
+      acc
+      |> Map.put(:inbound, inbound)
+      |> Map.put(:outbound, outbound)
+    end)
+  end
+
+  defp get_message_type_query(table, org_id) do
+    """
+    SELECT
+      SUM(inbound) AS inbound_count,
+      SUM(outbound) AS outbound_count
+    FROM #{table}
+    WHERE
+      inserted_at >= CURRENT_DATE
+      AND period = 'hour'
+      AND organization_id = #{org_id};
     """
   end
 
