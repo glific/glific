@@ -78,7 +78,6 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-
   @spec fetch_count_data(atom(), non_neg_integer()) :: list()
   defp fetch_count_data(:optin_chart_data, org_id) do
     [
