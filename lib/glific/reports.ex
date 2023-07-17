@@ -26,6 +26,8 @@ defmodule Glific.Reports do
     [
       :conversation_count,
       :active_flow_count,
+      :flows_started,
+      :flows_completed,
       :valid_contact_count,
       :invalid_contact_count,
       :opted_in_contacts_count,
@@ -44,6 +46,13 @@ defmodule Glific.Reports do
   defp get_count_query(org_id, :active_flow_count),
     do:
       "SELECT COUNT(id) FROM flow_contexts WHERE organization_id = #{org_id} and completed_at IS NULL"
+
+  defp get_count_query(org_id, :flows_started),
+    do:
+      "SELECT flows_started FROM stats WHERE organization_id = #{org_id} and inserted_at >= date_trunc('day', CURRENT_DATE) and period = 'day'"
+  defp get_count_query(org_id, :flows_completed),
+    do:
+      "SELECT flows_completed FROM stats WHERE organization_id = #{org_id} and inserted_at >= date_trunc('day', CURRENT_DATE) and period = 'day'"
 
   defp get_count_query(org_id, :valid_contact_count),
     do: "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and status = 'valid'"
