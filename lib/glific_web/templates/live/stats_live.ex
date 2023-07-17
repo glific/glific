@@ -56,26 +56,30 @@ defmodule GlificWeb.StatsLive do
   def get_chart_data(org_id) do
     [
       contact_chart_data: %{
-        data: fetch_data("contacts", org_id),
+        data: fetch_date_formatted_data("contacts", org_id),
         labels: fetch_date_labels("contacts", org_id)
       },
       conversation_chart_data: %{
-        data: fetch_data("messages_conversations", org_id),
+        data: fetch_date_formatted_data("messages_conversations", org_id),
         labels: fetch_date_labels("messages_conversations", org_id)
       },
       optin_chart_data: %{
-        data: fetch_optin_data(org_id),
+        data: fetch_count_data(:optin_chart_data, org_id),
         labels: ["Opted In", "Opted Out", "Non Opted"]
       },
+      notification_chart_data: %{
+        data: fetch_count_data(:notification_chart_data, org_id),
+        labels: ["Critical", "Warning", "Information"]
+      },
       message_type_chart_data: %{
-        data: fetch_count_data(:message_type_chart_data),
+        data: fetch_count_data(:message_type_chart_data, org_id),
         labels: ["Inbound", "Outbound"]
       }
     ]
   end
 
-  @spec fetch_optin_data(non_neg_integer()) :: list()
-  defp fetch_optin_data(org_id) do
+  @spec fetch_count_data(atom(), non_neg_integer()) :: list()
+  defp fetch_count_data(:optin_chart_data, org_id) do
     [
       Reports.get_kpi(:opted_in_contacts_count, org_id),
       Reports.get_kpi(:opted_out_contacts_count, org_id),
@@ -83,16 +87,23 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  @spec fetch_count_data(atom()) :: list()
-  defp fetch_count_data(:message_type_chart_data) do
+  defp fetch_count_data(:notification_chart_data, org_id) do
     [
-      Reports.get_kpi(:inbound_messages_count, 1),
-      Reports.get_kpi(:outbound_messages_count, 1)
+      Reports.get_kpi(:critical_notification_count, org_id),
+      Reports.get_kpi(:warning_notification_count, org_id),
+      Reports.get_kpi(:information_notification_count, org_id)
     ]
   end
 
-  @spec fetch_data(String.t(), non_neg_integer()) :: list()
-  defp fetch_data(table_name, org_id) do
+  defp fetch_count_data(:message_type_chart_data, org_id) do
+    [
+      Reports.get_kpi(:inbound_messages_count, org_id),
+      Reports.get_kpi(:outbound_messages_count, org_id)
+    ]
+  end
+
+  @spec fetch_date_formatted_data(String.t(), non_neg_integer()) :: list()
+  defp fetch_date_formatted_data(table_name, org_id) do
     Reports.get_kpi_data(org_id, table_name)
     |> Map.values()
   end

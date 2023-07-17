@@ -62,6 +62,14 @@ Commented out the filter code. Will add this once the functionality is ready
       data-chart-data={Jason.encode!(@message_type_chart_data)}
     >
     </canvas>
+    <canvas
+      class="card"
+      id="notification_chart"
+      phx-hook="pieChart"
+      data-label="Notification Chart"
+      data-chart-data={Jason.encode!(@notification_chart_data)}
+      >
+    </canvas>
   </div>
 </div>
 

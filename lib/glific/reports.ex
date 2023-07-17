@@ -63,6 +63,18 @@ defmodule Glific.Reports do
     do:
       "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NULL and optin_time IS NULL"
 
+  defp get_count_query(org_id, :critical_notification_count),
+    do:
+      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Critical'"
+
+  defp get_count_query(org_id, :warning_notification_count),
+    do:
+      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Warning'"
+
+  defp get_count_query(org_id, :information_notification_count),
+    do:
+      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Information'"
+
   defp get_count_query(org_id, :inbound_messages_count),
     do:
       "SELECT inbound FROM stats WHERE organization_id = #{org_id} and inserted_at >= CURRENT_DATE and period = 'day'"
