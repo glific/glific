@@ -91,16 +91,16 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  @spec fetch_data(String.t()) :: list()
-  defp fetch_data(table_name) do
-    Reports.get_kpi_data(1, table_name)
+  @spec fetch_data(String.t(), non_neg_integer()) :: list()
+  defp fetch_data(table_name, org_id) do
+    Reports.get_kpi_data(org_id, table_name)
     |> Map.values()
   end
 
-  @spec fetch_date_labels(String.t()) :: list()
-  defp fetch_date_labels(table_name) do
-    Reports.get_kpi_data(1, table_name)
-    |> Map.keys()
+  @spec fetch_message_type_data(String.t(), non_neg_integer()) :: list()
+  defp fetch_message_type_data(table_name, org_id) do
+    Reports.get_message_type_data(org_id, table_name)
+    |> Map.values()
   end
 end
 
