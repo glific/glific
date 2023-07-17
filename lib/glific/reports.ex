@@ -10,12 +10,14 @@ defmodule Glific.Reports do
   @doc false
   @spec get_kpi(atom(), non_neg_integer()) :: integer()
   def get_kpi(kpi, org_id) do
-    [[count]] =
-      get_count_query(org_id, kpi)
+    count = get_count_query(org_id, kpi)
       |> Repo.query!([])
       |> then(& &1.rows)
 
-    count
+    case count do
+      [[num]] -> num
+      _ -> 0
+    end
   end
 
   @doc false
@@ -30,6 +32,10 @@ defmodule Glific.Reports do
       :opted_out_contacts_count,
       :non_opted_contacts_count,
       :monthly_error_count
+      :inbound_messages_count,
+      :outbound_messages_count,
+      :hsm_messages_count
+
     ]
   end
 
@@ -62,6 +68,30 @@ defmodule Glific.Reports do
   defp get_count_query(org_id, :monthly_error_count),
     do:
       "SELECT COUNT(id) FROM messages WHERE organization_id = #{org_id} and errors != '{}'"
+      
+  defp get_count_query(org_id, :critical_notification_count),
+    do:
+      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Critical'"
+
+  defp get_count_query(org_id, :warning_notification_count),
+    do:
+      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Warning'"
+
+  defp get_count_query(org_id, :information_notification_count),
+    do:
+      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Information'"
+
+  defp get_count_query(org_id, :inbound_messages_count),
+    do:
+      "SELECT inbound FROM stats WHERE organization_id = #{org_id} and inserted_at >= CURRENT_DATE and period = 'day'"
+
+  defp get_count_query(org_id, :outbound_messages_count),
+    do:
+      "SELECT outbound FROM stats WHERE organization_id = #{org_id} and inserted_at >= CURRENT_DATE and period = 'day'"
+
+  defp get_count_query(org_id, :hsm_messages_count),
+    do:
+      "SELECT hsm FROM stats WHERE organization_id = #{org_id} and inserted_at >= CURRENT_DATE and period = 'day'"
 
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
@@ -106,33 +136,6 @@ defmodule Glific.Reports do
       AND inserted_at <= '#{presets.today}'
       AND organization_id = #{org_id}
     GROUP BY date
-    """
-  end
-
-  @doc false
-  @spec get_message_type_data(non_neg_integer(), String.t()) :: map()
-  def get_message_type_data(org_id, table) do
-    query_data =
-      get_message_type_query(table, org_id)
-      |> Repo.query!([])
-
-    Enum.reduce(query_data.rows, %{}, fn [inbound, outbound], acc ->
-      acc
-      |> Map.put(:inbound, inbound)
-      |> Map.put(:outbound, outbound)
-    end)
-  end
-
-  defp get_message_type_query(table, org_id) do
-    """
-    SELECT
-      SUM(inbound) AS inbound_count,
-      SUM(outbound) AS outbound_count
-    FROM #{table}
-    WHERE
-      inserted_at >= CURRENT_DATE
-      AND period = 'hour'
-      AND organization_id = #{org_id};
     """
   end
 
