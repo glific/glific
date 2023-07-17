@@ -103,4 +103,3 @@ defmodule GlificWeb.StatsLive do
     |> Map.keys()
   end
 end
-
