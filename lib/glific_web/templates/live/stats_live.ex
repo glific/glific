@@ -68,7 +68,7 @@ defmodule GlificWeb.StatsLive do
         labels: ["Opted In", "Opted Out", "Non Opted"]
       },
       message_type_chart_data: %{
-        data: fetch_message_type_data("stats", org_id),
+        data: fetch_count_data(:message_type_chart_data),
         labels: ["Inbound", "Outbound"]
       }
     ]
@@ -83,6 +83,14 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
+  @spec fetch_count_data(atom()) :: list()
+  defp fetch_count_data(:message_type_chart_data) do
+    [
+      Reports.get_kpi(:inbound_messages_count, 1),
+      Reports.get_kpi(:outbound_messages_count, 1)
+    ]
+  end
+
   @spec fetch_data(String.t(), non_neg_integer()) :: list()
   defp fetch_data(table_name, org_id) do
     Reports.get_kpi_data(org_id, table_name)
@@ -93,11 +101,5 @@ defmodule GlificWeb.StatsLive do
   defp fetch_date_labels(table_name, org_id) do
     Reports.get_kpi_data(org_id, table_name)
     |> Map.keys()
-  end
-
-  @spec fetch_message_type_data(String.t(), non_neg_integer()) :: list()
-  defp fetch_message_type_data(table_name, org_id) do
-    Reports.get_message_type_data(org_id, table_name)
-    |> Map.values()
   end
 end
