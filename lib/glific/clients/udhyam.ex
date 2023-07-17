@@ -5,9 +5,20 @@ defmodule Glific.Clients.Udhyam do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Clients.CommonWebhook,
     Flows.Flow,
     Repo
   }
+
+  @doc """
+  Create a webhook with different signatures, so we can easily implement
+  additional functionality as needed
+  """
+  @spec webhook(String.t(), map()) :: map()
+  def webhook("jugalbandi", fields), do: CommonWebhook.webhook("jugalbandi", fields)
+
+  def webhook(_, _fields),
+    do: %{}
 
   @doc """
   Tweak GCS Bucket name based Udhyam usecase
