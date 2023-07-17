@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "5.3.2",
+      version: "5.3.3",
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
