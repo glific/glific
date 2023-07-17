@@ -23,16 +23,16 @@ defmodule Glific.Sheets.GoogleSheets do
   """
   @spec insert_row(non_neg_integer(), String.t(), map()) :: {:ok, any()} | {:error, any()}
   def insert_row(org_id, spreadsheet_id, %{range: range, data: data} = _params) do
-    {:ok, %{conn: conn}} = fetch_credentials(org_id)
+    with {:ok, %{conn: conn}} <- fetch_credentials(org_id) do
+      Glific.Metrics.increment("Sheets Write", org_id)
 
-    Glific.Metrics.increment("Sheets Write", org_id)
+      params = [
+        valueInputOption: "USER_ENTERED",
+        body: %{majorDimension: "ROWS", values: data}
+      ]
 
-    params = [
-      valueInputOption: "USER_ENTERED",
-      body: %{majorDimension: "ROWS", values: data}
-    ]
-
-    Spreadsheets.sheets_spreadsheets_values_append(conn, spreadsheet_id, range, params)
+      Spreadsheets.sheets_spreadsheets_values_append(conn, spreadsheet_id, range, params)
+    end
   end
 
   @doc false
