@@ -70,7 +70,7 @@ defmodule GlificWeb.StatsLive do
       notification_chart_data: %{
         data: fetch_count_data(:notification_chart_data, org_id),
         labels: ["Critical", "Warning", "Information"]
-      },  
+      },
       message_type_chart_data: %{
         data: fetch_count_data(:message_type_chart_data, org_id),
         labels: ["Inbound", "Outbound"]
@@ -88,7 +88,6 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-
   defp fetch_count_data(:notification_chart_data, org_id) do
     [
       Reports.get_kpi(:critical_notification_count, org_id),
@@ -97,12 +96,6 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  @spec fetch_date_formatted_data(String.t()) :: list()
-  defp fetch_date_formatted_data(table_name, org_id) do
-    Reports.get_kpi_data(org_id, table_name)
-    |> Map.values()
-
-  @spec fetch_count_data(atom()) :: list()
   defp fetch_count_data(:message_type_chart_data, org_id) do
     [
       Reports.get_kpi(:inbound_messages_count, org_id),
@@ -110,8 +103,8 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  @spec fetch_data(String.t(), non_neg_integer()) :: list()
-  defp fetch_data(table_name, org_id) do
+  @spec fetch_date_formatted_data(String.t(), non_neg_integer()) :: list()
+  defp fetch_date_formatted_data(table_name, org_id) do
     Reports.get_kpi_data(org_id, table_name)
     |> Map.values()
   end
