@@ -133,7 +133,7 @@ defmodule Glific.Partners.Export do
 
     {
       table,
-      "COPY (SELECT * #{q}) TO STDOUT csv header",
+      "SELECT JSON_AGG(t) FROM (SELECT * #{q}) t",
       "SELECT count(*), min(updated_at), max(updated_at) #{q}"
     }
   end
