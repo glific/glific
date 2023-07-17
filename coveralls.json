@@ -59,7 +59,8 @@
     "lib/glific_web/providers/airtel",
     "lib/glific/providers/airtel",
     "lib/glific/tags/contact_tags.ex",
-    "lib/glific/metrics.ex"
+    "lib/glific/metrics.ex",
+    "lib/glific/reports.ex"
   ],
   "coverage_options": {
     "treat_no_relevant_lines_as_covered": true,
