@@ -11,6 +11,7 @@ defmodule Glific.Sheets do
     Flows.FlowContext,
     Flows.MessageVarParser,
     Messages,
+    Notifications,
     Repo,
     Sheets.ApiClient,
     Sheets.GoogleSheets,
@@ -315,7 +316,20 @@ defmodule Glific.Sheets do
       {:ok, _response} ->
         {context, Messages.create_temp_message(context.organization_id, "Success")}
 
-      {:error, _response} ->
+      {:error, error} ->
+        Notifications.create_notification(%{
+          category: "Flow",
+          message: error,
+          severity: Notifications.types().warning,
+          organization_id: context.organization_id,
+          entity: %{
+            contact_id: context.contact_id,
+            flow_id: context.flow_id,
+            flow_uuid: context.flow.uuid,
+            name: context.flow.name
+          }
+        })
+
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
   end
@@ -334,5 +348,21 @@ defmodule Glific.Sheets do
       _ ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
+  end
+
+  @doc """
+  Sync all the sheets of the organization
+  """
+  @spec sync_organization_sheets(integer(), boolean()) :: :ok
+  def sync_organization_sheets(organization_id, is_active \\ true) do
+    Sheet
+    |> where([sh], sh.organization_id == ^organization_id)
+    |> where([sh], sh.auto_sync == true)
+    |> where([sh], sh.is_active == ^is_active)
+    |> where([sh], sh.type in ["ALL", "READ"])
+    |> Repo.all()
+    |> Enum.each(fn sheet ->
+      sync_sheet_data(sheet)
+    end)
   end
 end
