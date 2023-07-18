@@ -10,7 +10,8 @@ defmodule Glific.Reports do
   @doc false
   @spec get_kpi(atom(), non_neg_integer()) :: integer()
   def get_kpi(kpi, org_id) do
-    count = get_count_query(org_id, kpi)
+    count =
+      get_count_query(org_id, kpi)
       |> Repo.query!([])
       |> then(& &1.rows)
 
@@ -35,7 +36,6 @@ defmodule Glific.Reports do
       :inbound_messages_count,
       :outbound_messages_count,
       :hsm_messages_count
-
     ]
   end
 
@@ -66,8 +66,7 @@ defmodule Glific.Reports do
       "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NULL and optin_time IS NULL"
 
   defp get_count_query(org_id, :monthly_error_count),
-    do:
-      "SELECT COUNT(id) FROM messages WHERE organization_id = #{org_id} and errors != '{}'"
+    do: "SELECT COUNT(id) FROM messages WHERE organization_id = #{org_id} and errors != '{}'"
 
   defp get_count_query(org_id, :critical_notification_count),
     do:
