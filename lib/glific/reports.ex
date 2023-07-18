@@ -133,6 +133,29 @@ defmodule Glific.Reports do
     """
   end
 
+  @spec get_messages_data(non_neg_integer()) :: map()
+  def get_messages_data(org_id) do
+    query_data =
+      get_hourly_messages_query(org_id)
+      |> Repo.query!([])
+
+    hourly_msg = Enum.into(0..23, %{}, fn key -> {key, 0} end)
+    Enum.reduce(query_data.rows, hourly_msg, fn [count, hour], acc ->
+      Map.put(acc, hour, count)
+    end)
+  end
+
+  defp get_hourly_messages_query(org_id) do
+    """
+    SELECT messages, hour
+    FROM stats
+    WHERE
+      organization_id = #{org_id}
+      and inserted_at >= CURRENT_DATE
+      and period = 'hour'
+    """
+  end
+
   @spec get_date_preset(DateTime.t()) :: map()
   defp get_date_preset(time \\ DateTime.utc_now()) do
     today = shifted_time(time, 1) |> Timex.format!("{YYYY}-{0M}-{0D}")

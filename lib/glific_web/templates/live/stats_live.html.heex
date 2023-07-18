@@ -44,6 +44,14 @@ Commented out the filter code. Will add this once the functionality is ready
       data-chart-data={Jason.encode!(@conversation_chart_data)}
     >
     </canvas>
+    <canvas
+      class="card"
+      id="message_chart"
+      phx-hook="barChart"
+      data-label="Messages"
+      data-chart-data={Jason.encode!(@messages_chart_data)}
+    >
+    </canvas>
     <div>
       <canvas
         class="card"
