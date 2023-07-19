@@ -91,15 +91,15 @@ defmodule Glific.Reports do
 
   defp get_count_query(org_id, :inbound_messages_count),
     do:
-      "SELECT SUM(inbound) FROM stats WHERE organization_id = #{org_id} and period = 'day'"
+      "SELECT SUM(inbound) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', inserted_at) = date_trunc('month', CURRENT_DATE) "
 
   defp get_count_query(org_id, :outbound_messages_count),
     do:
-      "SELECT SUM(outbound) FROM stats WHERE organization_id = #{org_id} and period = 'day'"
+      "SELECT SUM(outbound) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', inserted_at) = date_trunc('month', CURRENT_DATE) "
 
   defp get_count_query(org_id, :hsm_messages_count),
     do:
-      "SELECT SUM(hsm) FROM stats WHERE organization_id = #{org_id} and period = 'day'"
+      "SELECT SUM(hsm) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', inserted_at) = date_trunc('month', CURRENT_DATE) "
 
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
