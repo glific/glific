@@ -74,8 +74,13 @@ defmodule GlificWeb.StatsLive do
       message_type_chart_data: %{
         data: fetch_count_data(:message_type_chart_data, org_id),
         labels: ["Inbound", "Outbound"]
-      }
+      },
+      broadcast_data: fetch_table_data(:broadcasts, org_id)
     ]
+  end
+
+  defp fetch_table_data(:broadcasts, org_id) do
+    Reports.get_broadcast_data(org_id)
   end
 
   @spec fetch_count_data(atom(), non_neg_integer()) :: list()

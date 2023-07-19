@@ -139,6 +139,63 @@ defmodule Glific.Reports do
     """
   end
 
+  defp get_flow_name_sql(flow_id) do
+    """
+    SELECT name FROM flows WHERE id=#{flow_id};
+    """
+  end
+
+  defp get_group_name_sql(group_id) do
+    """
+    SELECT label FROM groups WHERE id=#{group_id};
+    """
+  end
+
+  defp get_group_name(group_id) do
+    name = get_group_name_sql(group_id)
+      |> Repo.query!([])
+      |> then(& &1.rows)
+
+    case name do
+      [[name]] -> name
+      _ -> 0
+    end
+  end
+
+  defp get_flow_name(flow_id) do
+    name = get_flow_name_sql(flow_id)
+      |> Repo.query!([])
+      |> then(& &1.rows)
+
+    case name do
+      [[name]] -> name
+      _ -> 0
+    end
+  end
+
+  def get_broadcast_data(org_id) do
+    query_data =
+        get_broadcast_query(org_id)
+        |> Repo.query!([]) |> IO.inspect(lable: "broadcast query data")
+
+    Enum.map(query_data.rows, fn
+      [flow_id, group_id, started, nil] -> [get_flow_name(flow_id),
+                                                  get_group_name(group_id),
+                                                  Timex.format!(started, "{0D}-{0M}-{YYYY}"),
+                                                  "Not Completed Yet"]
+      [flow_id, group_id, started, completed] -> [get_flow_name(flow_id),
+                                                  get_group_name(group_id),
+                                                  Timex.format!(started, "{0D}-{0M}-{YYYY}"),
+                                                  Timex.format!(completed, "{0D}-{0M}-{YYYY}")]
+    end)
+  end
+
+  defp get_broadcast_query(org_id) do
+    """
+    SELECT flow_id, group_id, started_at, completed_at FROM message_broadcasts WHERE type='flow' AND organization_id=#{org_id};
+    """
+  end
+
   @spec get_date_preset(DateTime.t()) :: map()
   defp get_date_preset(time \\ DateTime.utc_now()) do
     today = shifted_time(time, 1) |> Timex.format!("{YYYY}-{0M}-{0D}")
