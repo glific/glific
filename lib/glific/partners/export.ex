@@ -175,7 +175,11 @@ defmodule Glific.Partners.Export do
         |> MapSet.to_list()
   end
 
-  defp flatten(rows, false), do: rows |> hd()
+  @spec flatten(list | String.t(), boolean()) :: any()
+  defp flatten(rows, false) when is_list(rows),
+    do: rows |> get_in([Access.at(0)]) |> then(&if is_nil(&1), do: [], else: &1)
+
+  defp flatten(rows, false), do: rows
   defp flatten(rows, true), do: rows
 
   @spec add_map(String.t(), map(), String.t(), boolean) :: map()
