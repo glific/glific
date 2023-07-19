@@ -55,6 +55,7 @@ defmodule Glific.Providers.Gupshup.Template do
     |> case do
       {:ok, %{"template" => template} = _response} ->
         attrs
+        IO.inspect(attrs)
         |> Map.merge(%{
           number_parameters: Templates.template_parameters_count(attrs),
           uuid: template["id"],

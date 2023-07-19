@@ -204,29 +204,23 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec headers(atom(), Keyword.t()) :: list()
   defp headers(:app_token, opts) do
     org_id = Keyword.get(opts, :org_id)
-    {:ok, %{partner_app_token: partner_app_token}} = get_partner_app_token(org_id)
-    [{"token", partner_app_token}, {"Authorization", partner_app_token}]
-  end
-
-  defp headers(:partner_token, _opts) do
-    get_partner_token()
-    |> case do
-      {:ok, %{partner_token: partner_token}} ->
-        [
-          {"token", partner_token},
-          {"Authorization", partner_token}
-        ]
-
-      _ ->
-        []
+    case get_partner_app_token(org_id) do
+      {:ok, %{partner_app_token: partner_app_token}} ->
+        [{"token", partner_app_token}, {"Authorization", partner_app_token}]
+    {:error, _error} ->
+      {:error, "Could not fetch the credentials"}
     end
   end
 
   @spec post_request(String.t(), map(), Keyword.t()) :: tuple()
   defp post_request(url, data, opts) do
-    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
+      case headers(Keyword.get(opts, :token_type, :app_token), opts) do
+        {:ok, req_headers} ->
+          post(url, data, headers: req_headers)
+        {:error, _error} ->
+          {:error, "Could not fetch the credentials"}
+      end
 
-    post(url, data, headers: req_headers)
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}
