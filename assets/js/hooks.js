@@ -25,16 +25,16 @@ function createChart(ctx, chartType, chartData, label, options) {
   });
 }
 
-function createTable(element, data) {
+function createTable(element, headers, data) {
   let table = document.createElement("table");
   let thead = document.createElement("thead");
   let tbody = document.createElement("tbody");
 
   // Create table header (thead)
   let headerRow = document.createElement("tr");
-  Object.keys(data[0]).forEach((key) => {
+  headers.forEach((header) => {
     let th = document.createElement("th");
-    th.textContent = key;
+    th.textContent = header;
     headerRow.appendChild(th);
   });
   thead.appendChild(headerRow);
@@ -82,7 +82,8 @@ Hooks.pieChart = {
 Hooks.table = {
   mounted() {
     let tableData = JSON.parse(this.el.dataset.tableData);
-    createTable(this.el, tableData);
+    let tableHeaders = ["Flow Name", "Group Name", "Started At", "Completed At"]
+    createTable(this.el, tableHeaders, tableData);
   },
 };
 

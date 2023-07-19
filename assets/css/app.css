@@ -114,3 +114,22 @@
 .card .description a {
   @apply underline text-blue-600;
 }
+
+.table {
+  @apply block bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;}
+
+.table th, .table td {
+  @apply p-2 border;
+}
+
+.table th {
+  @apply bg-gray-200;
+}
+
+/* Alternate row colors for better readability */
+.table tr:nth-child(even) {
+  @apply bg-gray-100;
+}
+
+
+

@@ -72,7 +72,11 @@ Commented out the filter code. Will add this once the functionality is ready
 </div>
 
 <div class="flex content-center justify-center flex-wrap">
-  <div id="table" class="table-container card" phx-hook="table" data-table-data={Jason.encode!(@broadcast_data)} phx-update="ignore">
+  <div id="broadcast-table" 
+    class="table" 
+    phx-hook="table" 
+    data-table-data={Jason.encode!(@broadcast_data)} 
+    phx-update="ignore">
   </div>
 </div>
 

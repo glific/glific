@@ -176,17 +176,17 @@ defmodule Glific.Reports do
   def get_broadcast_data(org_id) do
     query_data =
         get_broadcast_query(org_id)
-        |> Repo.query!([]) |> IO.inspect(lable: "broadcast query data")
+        |> Repo.query!([])
 
     Enum.map(query_data.rows, fn
       [flow_id, group_id, started, nil] -> [get_flow_name(flow_id),
                                                   get_group_name(group_id),
-                                                  Timex.format!(started, "{0D}-{0M}-{YYYY}"),
+                                                  Timex.format!(started, "%H:%M, %d-%m-%Y", :strftime),
                                                   "Not Completed Yet"]
       [flow_id, group_id, started, completed] -> [get_flow_name(flow_id),
                                                   get_group_name(group_id),
-                                                  Timex.format!(started, "{0D}-{0M}-{YYYY}"),
-                                                  Timex.format!(completed, "{0D}-{0M}-{YYYY}")]
+                                                  Timex.format!(started, "%H:%M, %d-%m-%Y", :strftime),
+                                                  Timex.format!(completed, "%H:%M, %d-%m-%Y", :strftime)]
     end)
   end
 
