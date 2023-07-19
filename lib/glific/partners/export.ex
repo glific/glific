@@ -181,9 +181,10 @@ defmodule Glific.Partners.Export do
   @spec add_map(String.t(), map(), String.t(), boolean) :: map()
   defp add_map(query, acc, table, is_flatten \\ false) do
     data = Repo.query!(query, [], timeout: 60_000, skip_organization_id: true)
+    rows = get_in(data.rows, [Access.at(0), Access.at(0)])
 
-    if is_list(data.rows) && length(data.rows) > 0,
-      do: Map.put(acc, table, flatten(data.rows, is_flatten)),
+    if is_list(rows) && length(rows) > 0,
+      do: Map.put(acc, table, flatten(rows, is_flatten)),
       else: acc
   end
 end
