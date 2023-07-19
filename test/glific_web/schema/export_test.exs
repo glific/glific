@@ -39,7 +39,6 @@ defmodule GlificWeb.Schema.ExportTest do
       })
 
     result = auth_query_gql_by(:export_config, user)
-    IO.inspect(result)
     assert {:ok, data} = result
 
     assert data != nil
