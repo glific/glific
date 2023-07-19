@@ -51,10 +51,10 @@ defmodule Glific.Reports do
 
   defp get_count_query(org_id, :flows_started),
     do:
-      "SELECT flows_started FROM stats WHERE organization_id = #{org_id} and inserted_at >= date_trunc('day', CURRENT_DATE) and period = 'day'"
+      "SELECT SUM(flows_started) FROM stats WHERE organization_id = #{org_id} and period = 'day'"
   defp get_count_query(org_id, :flows_completed),
     do:
-      "SELECT flows_completed FROM stats WHERE organization_id = #{org_id} and inserted_at >= date_trunc('day', CURRENT_DATE) and period = 'day'"
+      "SELECT SUM(flows_completed) FROM stats WHERE organization_id = #{org_id} and period = 'day'"
 
   defp get_count_query(org_id, :valid_contact_count),
     do: "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and status = 'valid'"
