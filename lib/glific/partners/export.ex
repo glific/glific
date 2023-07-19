@@ -92,7 +92,7 @@ defmodule Glific.Partners.Export do
 
   @spec config_query(String.t()) :: String.t()
   defp config_query(table),
-    do: "COPY (SELECT * FROM global.#{table}) TO STDOUT csv header"
+    do: "SELECT JSON_AGG(t) FROM (SELECT * FROM global.#{table}) t"
 
   @spec add_start(DateTime.t() | nil) :: String.t()
   defp add_start(nil), do: ""
