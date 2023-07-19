@@ -24,6 +24,8 @@ defmodule Glific.Searches do
     Users.User
   }
 
+  @search_timeout 30_000
+
   @doc """
   Returns the list of searches.
 
@@ -357,7 +359,7 @@ defmodule Glific.Searches do
         true ->
           search_query(args.filter[:term], args)
       end
-      |> Repo.all(timeout: 60_000)
+      |> Repo.all(timeout: @search_timeout)
       |> get_contact_ids(is_status?)
 
     # if we don't have any contact ids at this stage
@@ -411,7 +413,7 @@ defmodule Glific.Searches do
       end)
     ]
 
-    [contacts, messages, labels] = Task.await_many(search_item_tasks)
+    [contacts, messages, labels] = Task.await_many(search_item_tasks, @search_timeout + 1_000)
 
     Search.new(contacts, messages, tags, labels)
   end
@@ -445,7 +447,7 @@ defmodule Glific.Searches do
     |> limit(^limit)
     |> offset(^offset)
     |> order_by([c: c], desc: c.last_message_at)
-    |> Repo.all()
+    |> Repo.all(timeout: @search_timeout)
   end
 
   # codebeat:enable[ABC]
@@ -455,7 +457,7 @@ defmodule Glific.Searches do
     filtered_query(args)
     |> where([m: m], ilike(m.body, ^"%#{term}%"))
     |> order_by([m: m], desc: m.message_number)
-    |> Repo.all()
+    |> Repo.all(timeout: @search_timeout)
   end
 
   @spec get_filtered_labeled_message(String.t(), map()) :: list()
@@ -463,7 +465,7 @@ defmodule Glific.Searches do
     filtered_query(args)
     |> where([m: m], ilike(m.flow_label, ^"%#{term}%"))
     |> order_by([m: m], desc: m.message_number)
-    |> Repo.all()
+    |> Repo.all(timeout: @search_timeout)
   end
 
   # codebeat:enable[ABC]
