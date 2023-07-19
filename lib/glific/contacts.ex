@@ -27,6 +27,8 @@ defmodule Glific.Contacts do
     Users.User
   }
 
+  @delete_timeout 400_000
+
   @doc """
   Add permission specific to groups, in this case we want to restrict the visibility of
   groups that the user can see
@@ -333,9 +335,11 @@ defmodule Glific.Contacts do
       "DELETE FROM flow_contexts #{where}"
     ]
     |> Enum.map(
-      &Task.async(fn -> Repo.query!(&1, [], timeout: 400_000, skip_organization_id: true) end)
+      &Task.async(fn ->
+        Repo.query!(&1, [], timeout: @delete_timeout, skip_organization_id: true)
+      end)
     )
-    |> Task.await_many()
+    |> Task.await_many(@delete_timeout + 1_000)
 
     Repo.delete(contact)
   end

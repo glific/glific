@@ -25,70 +25,92 @@ defmodule GlificWeb.StatsLive do
   end
 
   def handle_info({:get_stats, kpi}, socket) do
-    user = socket.assigns[:current_user]
-    {:noreply, assign(socket, kpi, Reports.get_kpi(kpi, user.organization_id))}
+    org_id = get_org_id(socket)
+    {:noreply, assign(socket, kpi, Reports.get_kpi(kpi, org_id))}
   end
 
   @spec assign_stats(Phoenix.LiveView.Socket.t(), atom()) :: Phoenix.LiveView.Socket.t()
   defp assign_stats(socket, :init) do
     stats = Enum.map(Reports.kpi_list(), &{&1, "loading.."})
 
+    org_id = get_org_id(socket)
+
     assign(socket, Keyword.merge(stats, page_title: "Glific Dashboard"))
-    |> assign(get_chart_data())
+    |> assign(get_chart_data(org_id))
   end
 
   defp assign_stats(socket, :call) do
     Enum.each(Reports.kpi_list(), &send(self(), {:get_stats, &1}))
-    assign(socket, get_chart_data())
+    org_id = get_org_id(socket)
+    assign(socket, get_chart_data(org_id))
   end
 
   @doc false
-  @spec get_chart_data :: list()
-  def get_chart_data do
+  @spec get_org_id(Phoenix.LiveView.Socket.t()) :: non_neg_integer()
+  def get_org_id(socket) do
+    socket.assigns[:current_user].organization_id
+  end
+
+  @doc false
+  @spec get_chart_data(non_neg_integer()) :: list()
+  def get_chart_data(org_id) do
     [
       contact_chart_data: %{
-        data: fetch_data("contacts"),
-        labels: fetch_date_labels("contacts")
+        data: fetch_date_formatted_data("contacts", org_id),
+        labels: fetch_date_labels("contacts", org_id)
       },
       conversation_chart_data: %{
-        data: fetch_data("messages_conversations"),
-        labels: fetch_date_labels("messages_conversations")
+        data: fetch_date_formatted_data("messages_conversations", org_id),
+        labels: fetch_date_labels("messages_conversations", org_id)
       },
       optin_chart_data: %{
-        data: fetch_optin_data(),
+        data: fetch_count_data(:optin_chart_data, org_id),
         labels: ["Opted In", "Opted Out", "Non Opted"]
       },
+      notification_chart_data: %{
+        data: fetch_count_data(:notification_chart_data, org_id),
+        labels: ["Critical", "Warning", "Information"]
+      },
       message_type_chart_data: %{
-        data: fetch_message_type_data("stats"),
+        data: fetch_count_data(:message_type_chart_data, org_id),
         labels: ["Inbound", "Outbound"]
       }
     ]
   end
 
-  @spec fetch_optin_data() :: list()
-  defp fetch_optin_data do
+  @spec fetch_count_data(atom(), non_neg_integer()) :: list()
+  defp fetch_count_data(:optin_chart_data, org_id) do
     [
-      Reports.get_kpi(:opted_in_contacts_count, 1),
-      Reports.get_kpi(:opted_out_contacts_count, 1),
-      Reports.get_kpi(:non_opted_contacts_count, 1)
+      Reports.get_kpi(:opted_in_contacts_count, org_id),
+      Reports.get_kpi(:opted_out_contacts_count, org_id),
+      Reports.get_kpi(:non_opted_contacts_count, org_id)
     ]
   end
 
-  @spec fetch_data(String.t()) :: list()
-  defp fetch_data(table_name) do
-    Reports.get_kpi_data(1, table_name)
+  defp fetch_count_data(:notification_chart_data, org_id) do
+    [
+      Reports.get_kpi(:critical_notification_count, org_id),
+      Reports.get_kpi(:warning_notification_count, org_id),
+      Reports.get_kpi(:information_notification_count, org_id)
+    ]
+  end
+
+  defp fetch_count_data(:message_type_chart_data, org_id) do
+    [
+      Reports.get_kpi(:inbound_messages_count, org_id),
+      Reports.get_kpi(:outbound_messages_count, org_id)
+    ]
+  end
+
+  @spec fetch_date_formatted_data(String.t(), non_neg_integer()) :: list()
+  defp fetch_date_formatted_data(table_name, org_id) do
+    Reports.get_kpi_data(org_id, table_name)
     |> Map.values()
   end
 
-  @spec fetch_date_labels(String.t()) :: list()
-  defp fetch_date_labels(table_name) do
-    Reports.get_kpi_data(1, table_name)
+  @spec fetch_date_labels(String.t(), non_neg_integer()) :: list()
+  defp fetch_date_labels(table_name, org_id) do
+    Reports.get_kpi_data(org_id, table_name)
     |> Map.keys()
-  end
-
-  @spec fetch_message_type_data(String.t()) :: list()
-  defp fetch_message_type_data(table_name) do
-    Reports.get_message_type_data(1, table_name)
-    |> Map.values()
   end
 end

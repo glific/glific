@@ -111,7 +111,7 @@ defmodule GlificWeb.Schema.GroupTypes do
       resolve(&Resolvers.Groups.export_collection/3)
     end
 
-  @desc "Get a count of all groups filtered by various criteria"
+    @desc "Get a count of all groups filtered by various criteria"
     field :count_groups, :integer do
       arg(:filter, :group_filter)
       middleware(Authorize, :staff)

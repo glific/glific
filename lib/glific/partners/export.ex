@@ -1,7 +1,7 @@
 defmodule Glific.Partners.Export do
   @moduledoc """
   Lets do a bulk export of all data belonging to an organization, since this is API
-  driven we are not streaming the output, and hence not using the streaming fucntionality
+  driven we are not streaming the output, and hence not using the streaming functionality
   of elixir
   """
 
@@ -33,14 +33,14 @@ defmodule Glific.Partners.Export do
   def export_data(organization_id, opts) do
     # Add a rate limiter here, once per minute or so per organization
 
-    # fix limit for API calls that dont adhere to it
+    # fix limit for API calls that don't adhere to it
     limit = Map.get(opts, :limit, 500)
     limit = if limit > 500, do: 500, else: limit
 
     opts
     |> Map.put(:limit, limit)
     |> Map.put_new(:offset, 0)
-    |> Map.put_new(:end_date, DateTime.utc_now())
+    |> Map.put_new(:end_time, DateTime.utc_now())
     |> Map.put_new(:tables, [])
     |> make_sql(organization_id)
     |> Enum.reduce(

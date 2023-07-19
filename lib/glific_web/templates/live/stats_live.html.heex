@@ -44,23 +44,29 @@ Commented out the filter code. Will add this once the functionality is ready
       data-chart-data={Jason.encode!(@conversation_chart_data)}
     >
     </canvas>
-    <div>
-      <canvas
-        class="card"
-        id="optin_chart"
-        phx-hook="pieChart"
-        data-label="Optin"
-        data-chart-data={Jason.encode!(@optin_chart_data)}
-      >
-      </canvas>
-    </div>
     <canvas
-        class="card"
-        id="message_type_chart"
-        phx-hook="pieChart"
-        data-label="MessageType"
-        data-chart-data={Jason.encode!(@message_type_chart_data)}
-      >
+      class="card"
+      id="optin_chart"
+      phx-hook="pieChart"
+      data-label="Optin"
+      data-chart-data={Jason.encode!(@optin_chart_data)}
+    >
+    </canvas>
+    <canvas
+      class="card"
+      id="message_type_chart"
+      phx-hook="pieChart"
+      data-label="MessageType"
+      data-chart-data={Jason.encode!(@message_type_chart_data)}
+    >
+    </canvas>
+    <canvas
+      class="card"
+      id="notification_chart"
+      phx-hook="pieChart"
+      data-label="Notification Chart"
+      data-chart-data={Jason.encode!(@notification_chart_data)}
+    >
     </canvas>
   </div>
 </div>
@@ -122,10 +128,46 @@ Commented out the filter code. Will add this once the functionality is ready
 
   <a class="card">
     <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+      Monthly Error Messages
+    </h5>
+    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
+      <%= @monthly_error_count %>
+    </p>
+  </a>
+
+  <a class="card">
+    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
       Non Opted Contacts
     </h5>
     <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
       <%= @non_opted_contacts_count %>
+    </p>
+  </a>
+
+  <a class="card">
+    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+      Monthly Incoming Messages
+    </h5>
+    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
+      <%= @inbound_messages_count %>
+    </p>
+  </a>
+
+  <a class="card">
+    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+      Monthly Outgoing Messages
+    </h5>
+    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
+      <%= @outbound_messages_count %>
+    </p>
+  </a>
+
+  <a class="card">
+    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+      HSM Messages
+    </h5>
+    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
+      <%= @hsm_messages_count %>
     </p>
   </a>
 </div>
