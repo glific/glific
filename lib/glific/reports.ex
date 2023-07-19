@@ -172,6 +172,10 @@ defmodule Glific.Reports do
     end
   end
 
+  @doc """
+    gets data for the broadcast table
+  """
+  @spec get_broadcast_data(non_neg_integer()) :: list()
   def get_broadcast_data(org_id) do
     query_data =
         get_broadcast_query(org_id)
