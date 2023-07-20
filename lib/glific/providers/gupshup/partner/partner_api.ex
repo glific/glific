@@ -197,21 +197,16 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:ok, %{partner_app_token: app_token}}
 
       {:error, error} ->
-        {:error, "Could not fetch the partner app token }"}
+        {:error, "Could not fetch the partner app token #{inspect(error)}"}
     end
   end
 
-  @spec headers(atom(), Keyword.t()) :: list()
+  @spec headers(atom(), Keyword.t()) :: {:ok, any()} | {:error, any()}
   defp headers(:app_token, opts) do
     org_id = Keyword.get(opts, :org_id)
 
-    get_partner_app_token(org_id)
-    |> case do
-      {:ok, %{partner_app_token: partner_app_token}} ->
-        [{"token", partner_app_token}, {"Authorization", partner_app_token}]
-
-      {:error, error} ->
-        {:error, error}
+    with {:ok, %{partner_app_token: partner_app_token}} <- get_partner_app_token(org_id) do
+      {:ok, [{"token", partner_app_token}, {"Authorization", partner_app_token}]}
     end
   end
 
@@ -231,31 +226,21 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @spec post_request(String.t(), map(), Keyword.t()) :: tuple()
   defp post_request(url, data, opts) do
-    headers(Keyword.get(opts, :token_type, :app_token), opts)
-    |> case do
-      {:error, error} ->
-        {:error, error}
+    with {:ok, req_headers} <- headers(Keyword.get(opts, :token_type, :app_token), opts) do
+      post(url, data, headers: req_headers)
+      |> case do
+        {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+          {:ok, Jason.decode!(body)}
 
-      req_headers ->
-        do_post_request(url, data, req_headers)
-    end
-  end
-
-  @spec do_post_request(String.t(), map(), list()) :: {:ok, any()}, {:error, String.t()}
-  defp do_post_request(url, data, req_headers) do
-    post(url, data, headers: req_headers)
-    |> case do
-      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
-        {:ok, Jason.decode!(body)}
-
-      err ->
-        {:error, "#{inspect(err)}"}
+        err ->
+          {:error, "#{inspect(err)}"}
+      end
     end
   end
 
   @spec put_request(String.t(), map(), Keyword.t()) :: tuple()
   defp put_request(url, data, opts) do
-    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
+    {:ok, req_headers} = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
     put(url, data, headers: req_headers)
     |> case do
@@ -269,7 +254,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @spec get_request(String.t(), Keyword.t()) :: tuple()
   defp get_request(url, opts) do
-    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
+    {:ok, req_headers} = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
     get(url, headers: req_headers)
     |> case do
@@ -283,7 +268,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @spec delete_request(String.t(), Keyword.t()) :: tuple()
   defp delete_request(url, opts) do
-    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
+    {:ok, req_headers} = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
     delete(url, headers: req_headers)
     |> case do
