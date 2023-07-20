@@ -148,9 +148,9 @@ defmodule Glific.Reports do
   end
 
   defp get_flow_name_and_group_name(flow_id, group_id) do
-      get_flow_name_and_group_name_sql(flow_id, group_id)
-      |> Repo.query!([])
-      |> then(& &1.rows)
+    get_flow_name_and_group_name_sql(flow_id, group_id)
+    |> Repo.query!([])
+    |> then(& &1.rows)
   end
 
   @doc """
@@ -159,20 +159,23 @@ defmodule Glific.Reports do
   @spec get_broadcast_data(non_neg_integer()) :: list()
   def get_broadcast_data(org_id) do
     query_data =
-        get_broadcast_query(org_id)
-        |> Repo.query!([])
+      get_broadcast_query(org_id)
+      |> Repo.query!([])
 
     Enum.map(query_data.rows, fn
-      [flow_id, group_id, started, nil] -> [[name], [label]] = get_flow_name_and_group_name(flow_id, group_id)
-                                                  [name,
-                                                  label,
-                                                  Timex.format!(started, "%H:%M, %d-%m-%Y", :strftime),
-                                                  "Not Completed Yet"]
-      [flow_id, group_id, started, completed] ->  [[name], [label]] = get_flow_name_and_group_name(flow_id, group_id)
-                                                  [name,
-                                                  label,
-                                                  Timex.format!(started, "%H:%M, %d-%m-%Y", :strftime),
-                                                  Timex.format!(completed, "%H:%M, %d-%m-%Y", :strftime)]
+      [flow_id, group_id, started, nil] ->
+        [[name], [label]] = get_flow_name_and_group_name(flow_id, group_id)
+        [name, label, Timex.format!(started, "%H:%M, %d-%m-%Y", :strftime), "Not Completed Yet"]
+
+      [flow_id, group_id, started, completed] ->
+        [[name], [label]] = get_flow_name_and_group_name(flow_id, group_id)
+
+        [
+          name,
+          label,
+          Timex.format!(started, "%H:%M, %d-%m-%Y", :strftime),
+          Timex.format!(completed, "%H:%M, %d-%m-%Y", :strftime)
+        ]
     end)
   end
 
