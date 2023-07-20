@@ -10,7 +10,8 @@ defmodule Glific.Reports do
   @doc false
   @spec get_kpi(atom(), non_neg_integer()) :: integer()
   def get_kpi(kpi, org_id) do
-    count = get_count_query(org_id, kpi)
+    count =
+      get_count_query(org_id, kpi)
       |> Repo.query!([])
       |> then(& &1.rows)
 
@@ -26,6 +27,8 @@ defmodule Glific.Reports do
     [
       :conversation_count,
       :active_flow_count,
+      :flows_started,
+      :flows_completed,
       :valid_contact_count,
       :invalid_contact_count,
       :opted_in_contacts_count,
@@ -35,7 +38,6 @@ defmodule Glific.Reports do
       :inbound_messages_count,
       :outbound_messages_count,
       :hsm_messages_count
-
     ]
   end
 
@@ -46,6 +48,14 @@ defmodule Glific.Reports do
   defp get_count_query(org_id, :active_flow_count),
     do:
       "SELECT COUNT(id) FROM flow_contexts WHERE organization_id = #{org_id} and completed_at IS NULL"
+
+  defp get_count_query(org_id, :flows_started),
+    do:
+      "SELECT SUM(flows_started) FROM stats WHERE organization_id = #{org_id} and period = 'day' and EXTRACT(MONTH FROM date) = EXTRACT(MONTH FROM CURRENT_DATE)"
+
+  defp get_count_query(org_id, :flows_completed),
+    do:
+      "SELECT SUM(flows_completed) FROM stats WHERE organization_id = #{org_id} and period = 'day' and EXTRACT(MONTH FROM date) = EXTRACT(MONTH FROM CURRENT_DATE)"
 
   defp get_count_query(org_id, :valid_contact_count),
     do: "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and status = 'valid'"
@@ -67,19 +77,19 @@ defmodule Glific.Reports do
 
   defp get_count_query(org_id, :monthly_error_count),
     do:
-      "SELECT COUNT(id) FROM messages WHERE organization_id = #{org_id} and errors != '{}'"
+      "SELECT COUNT(id) FROM messages WHERE organization_id = #{org_id} and errors != '{}' and inserted_at >= date_trunc('month', CURRENT_DATE)"
 
   defp get_count_query(org_id, :critical_notification_count),
     do:
-      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Critical'"
+      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Critical' and inserted_at >= date_trunc('month', CURRENT_DATE)"
 
   defp get_count_query(org_id, :warning_notification_count),
     do:
-      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Warning'"
+      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Warning' and inserted_at >= date_trunc('month', CURRENT_DATE)"
 
   defp get_count_query(org_id, :information_notification_count),
     do:
-      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Information'"
+      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Information' and inserted_at >= date_trunc('month', CURRENT_DATE)"
 
   defp get_count_query(org_id, :inbound_messages_count),
     do:

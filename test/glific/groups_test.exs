@@ -126,6 +126,30 @@ defmodule Glific.GroupsTest do
       assert (h == group1 && t == group2) || (h == group2 && t == group1)
     end
 
+    test "export_collection/1 returns the correct CSV data for group_id", attrs do
+      group = group_fixture(attrs)
+
+      contact_attrs = %{
+        organization_id: attrs.organization_id,
+        name: "John Doe",
+        phone: "9876543210_6"
+      }
+
+      {:ok, contact} = Contacts.create_contact(contact_attrs)
+
+      contact_group_attrs = %{
+        contact_id: contact.id,
+        group_id: group.id,
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, _} = Groups.create_contact_group(contact_group_attrs)
+
+      assert Groups.export_collection(group.id) == %{
+               status: "Name,Phone\r\n" <> "John Doe,9876543210_6\r\n"
+             }
+    end
+
     test "load_group_by_label", attrs do
       group_fixture(attrs)
 
