@@ -227,7 +227,6 @@ defmodule Glific.Flows.ContactField do
     |> Repo.delete()
   end
 
-
   @doc """
   Delete data associated with the given field in the contacts table
   """

@@ -114,12 +114,16 @@ defmodule Glific.ContactsFieldTest do
     }
 
     attrs = Map.merge(attrs, attr)
-    assert {:ok, %Contact{} = contact} = Contacts.create_contact(attrs) #creating a test contact
+    #creating a test contact
+    assert {:ok, %Contact{} = contact} = Contacts.create_contact(attrs)
 
-    ContactField.do_add_contact_field(contact, "test", "Test Field", "it works") #adding a contact variable
-    assert %Contact{fields: %{"test" => %{"value" => "it works"}}} = Contacts.get_contact(contact.id) #checking if the contact variable has been added successfully
+    #adding a contact variable
+    ContactField.do_add_contact_field(contact, "test", "Test Field", "it works")
+    #checking if the contact variable has been added successfully
+    assert %Contact{fields: %{"test" => %{"value" => "it works"}}} = Contacts.get_contact(contact.id)
 
-    ContactField.delete_associated_contacts_field("test", organization_id) #Deleting the contact field and its associated data
+    #Deleting the contact field and its associated data
+    ContactField.delete_associated_contacts_field("test", organization_id)
     assert Contacts.get_contact(contact.id).fields == %{}
   end
 end
