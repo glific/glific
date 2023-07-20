@@ -135,6 +135,12 @@ defmodule Glific.Clients do
     webhook: Glific.Clients.SunoSunao
   }
 
+  @udhyam %{
+    id: 95,
+    name: "Udhyam Learning Foundation",
+    webhook: Glific.Clients.Udhyam
+  }
+
   @digitalgreen_jh %{
     id: 105,
     name: "DigitalGreen Jharkhand",
@@ -189,6 +195,7 @@ defmodule Glific.Clients do
     @kef[:id] => @kef,
     @pehlayaksharfoundation[:id] => @pehlayaksharfoundation,
     @sunosunao[:id] => @sunosunao,
+    @udhyam[:id] => @udhyam,
     @digitalgreen_jh[:id] => @digitalgreen_jh,
     @quest_afeqc[:id] => @quest_afeqc,
     @quest_tcec[:id] => @quest_tcec,
