@@ -47,6 +47,7 @@ defmodule Glific.Providers.Gupshup.Template do
   @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
   def submit_for_approval(attrs) do
     organization = Partners.organization(attrs.organization_id)
+
     PartnerAPI.apply_for_template(
       attrs.organization_id,
       body(attrs, organization)

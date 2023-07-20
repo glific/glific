@@ -197,30 +197,53 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:ok, %{partner_app_token: app_token}}
 
       {:error, error} ->
-        {:error, "Could not fetch the partner app token #{inspect(error)}"}
+        {:error, "Could not fetch the partner app token }"}
     end
   end
 
   @spec headers(atom(), Keyword.t()) :: list()
   defp headers(:app_token, opts) do
     org_id = Keyword.get(opts, :org_id)
-    case get_partner_app_token(org_id) do
-      {:ok, %{partner_app_token: partner_app_token}}->
+
+    get_partner_app_token(org_id)
+    |> case do
+      {:ok, %{partner_app_token: partner_app_token}} ->
         [{"token", partner_app_token}, {"Authorization", partner_app_token}]
-      {:error, _error} ->
-        {:error, "Could not fetch the credietials"}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  defp headers(:partner_token, _opts) do
+    get_partner_token()
+    |> case do
+      {:ok, %{partner_token: partner_token}} ->
+        [
+          {"token", partner_token},
+          {"Authorization", partner_token}
+        ]
+
+      _ ->
+        []
     end
   end
 
   @spec post_request(String.t(), map(), Keyword.t()) :: tuple()
   defp post_request(url, data, opts) do
-    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
-    if is_list(req_headers) do
-        post(url, data, headers: req_headers)
-    else
-      {:error, "Could not fetch the credietials"}
-    end
+    headers(Keyword.get(opts, :token_type, :app_token), opts)
+    |> case do
+      {:error, error} ->
+        {:error, error}
 
+      req_headers ->
+        do_post_request(url, data, req_headers)
+    end
+  end
+
+  @spec do_post_request(String.t(), map(), list()) :: {:ok, any()}, {:error, String.t()}
+  defp do_post_request(url, data, req_headers) do
+    post(url, data, headers: req_headers)
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}
