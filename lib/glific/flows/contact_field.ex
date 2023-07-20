@@ -215,7 +215,7 @@ defmodule Glific.Flows.ContactField do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_contacts_field(ContactsField.t()) ::
+  @spec delete_contacts_field(ContactsField.t(), boolean()) ::
           {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
   def delete_contacts_field(%ContactsField{} = contacts_field, delete_assoc \\ false) do
 

@@ -61,7 +61,7 @@ defmodule GlificWeb.Resolvers.ContactsField do
   @doc """
   Delete an existing contact field
   """
-  @spec delete_contacts_field(Absinthe.Resolution.t(), %{id: integer, delete_assoc: boolean}, %{context: map()}) ::
+  @spec delete_contacts_field(Absinthe.Resolution.t(), %{id: integer, delete_assoc: boolean()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_contacts_field(_, %{id: id, delete_assoc: delete_assoc}, %{context: %{current_user: user}}) do
     with {:ok, contacts_field} <-
