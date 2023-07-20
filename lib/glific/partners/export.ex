@@ -92,7 +92,7 @@ defmodule Glific.Partners.Export do
 
   @spec config_query(String.t()) :: String.t()
   defp config_query(table),
-    do: "COPY (SELECT * FROM global.#{table}) TO STDOUT csv header"
+    do: "SELECT JSON_AGG(t) FROM (SELECT * FROM global.#{table}) t"
 
   @spec add_start(DateTime.t() | nil) :: String.t()
   defp add_start(nil), do: ""
@@ -133,7 +133,7 @@ defmodule Glific.Partners.Export do
 
     {
       table,
-      "COPY (SELECT * #{q}) TO STDOUT csv header",
+      "SELECT JSON_AGG(t) FROM (SELECT * #{q}) t",
       "SELECT count(*), min(updated_at), max(updated_at) #{q}"
     }
   end
@@ -175,15 +175,19 @@ defmodule Glific.Partners.Export do
         |> MapSet.to_list()
   end
 
+  @spec flatten(list | String.t(), boolean()) :: any()
+  defp flatten(rows, false) when is_list(rows),
+    do: rows |> get_in([Access.at(0)]) |> then(&if is_nil(&1), do: [], else: &1)
+
   defp flatten(rows, false), do: rows
-  defp flatten(rows, true), do: rows |> hd()
+  defp flatten(rows, true), do: rows
 
   @spec add_map(String.t(), map(), String.t(), boolean) :: map()
   defp add_map(query, acc, table, is_flatten \\ false) do
     data = Repo.query!(query, [], timeout: 60_000, skip_organization_id: true)
 
     if is_list(data.rows) && length(data.rows) > 0,
-      do: Map.put(acc, table, flatten(data.rows, is_flatten)),
+      do: Map.put(acc, table, flatten(hd(data.rows), is_flatten)),
       else: acc
   end
 end
