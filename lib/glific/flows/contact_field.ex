@@ -179,6 +179,8 @@ defmodule Glific.Flows.ContactField do
     contact
   end
 
+  @spec maybe_update_profile_field(Contact.t(), map()) ::
+          Contact.t()
   def maybe_update_profile_field(contact, _fields), do: contact
 
   @doc """
@@ -229,7 +231,8 @@ defmodule Glific.Flows.ContactField do
   @doc """
   Delete data associated with the given field in the contacts table
   """
-  @spec delete_associated_contacts_field(String.t(), integer()) :: {:ok, Postgrex.Result.t()}
+  @spec delete_associated_contacts_field(String.t(), integer()) ::
+          {:ok, Postgrex.Result.t()}
   def delete_associated_contacts_field(field, organization_id) do
     #Converting field name to snake case as it used as a key in contacts.fields
     field = Glific.string_snake_case(field)
