@@ -138,38 +138,18 @@ defmodule Glific.Reports do
     """
   end
 
-  defp get_flow_name_sql(flow_id) do
+  defp get_flow_name_and_group_name_sql(flow_id, group_id) do
     """
-    SELECT name FROM flows WHERE id=#{flow_id};
-    """
-  end
-
-  defp get_group_name_sql(group_id) do
-    """
-    SELECT label FROM groups WHERE id=#{group_id};
+    SELECT name AS result FROM flows WHERE id = #{flow_id}
+    UNION
+    SELECT label AS result FROM groups WHERE id = #{group_id};
     """
   end
 
-  defp get_group_name(group_id) do
-    name = get_group_name_sql(group_id)
+  defp get_flow_name_and_group_name(flow_id, group_id) do
+      get_flow_name_and_group_name_sql(flow_id, group_id)
       |> Repo.query!([])
       |> then(& &1.rows)
-
-    case name do
-      [[name]] -> name
-      _ -> 0
-    end
-  end
-
-  defp get_flow_name(flow_id) do
-    name = get_flow_name_sql(flow_id)
-      |> Repo.query!([])
-      |> then(& &1.rows)
-
-    case name do
-      [[name]] -> name
-      _ -> 0
-    end
   end
 
   @doc """
@@ -182,12 +162,14 @@ defmodule Glific.Reports do
         |> Repo.query!([])
 
     Enum.map(query_data.rows, fn
-      [flow_id, group_id, started, nil] -> [get_flow_name(flow_id),
-                                                  get_group_name(group_id),
+      [flow_id, group_id, started, nil] -> [[name], [label]] = get_flow_name_and_group_name(flow_id, group_id)
+                                                  [name,
+                                                  label,
                                                   Timex.format!(started, "%H:%M, %d-%m-%Y", :strftime),
                                                   "Not Completed Yet"]
-      [flow_id, group_id, started, completed] -> [get_flow_name(flow_id),
-                                                  get_group_name(group_id),
+      [flow_id, group_id, started, completed] ->  [[name], [label]] = get_flow_name_and_group_name(flow_id, group_id)
+                                                  [name,
+                                                  label,
                                                   Timex.format!(started, "%H:%M, %d-%m-%Y", :strftime),
                                                   Timex.format!(completed, "%H:%M, %d-%m-%Y", :strftime)]
     end)
