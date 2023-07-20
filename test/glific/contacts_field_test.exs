@@ -3,6 +3,8 @@ defmodule Glific.ContactsFieldTest do
   use ExUnit.Case
 
   alias Glific.{
+    Contacts,
+    Contacts.Contact,
     Contacts.ContactsField,
     Fixtures,
     Flows.ContactField,
@@ -96,5 +98,28 @@ defmodule Glific.ContactsFieldTest do
     assert {:ok, %ContactsField{}} = ContactField.delete_contacts_field(contacts_field)
 
     assert_raise Ecto.NoResultsError, fn -> Repo.get!(ContactsField, contacts_field.id) end
+  end
+
+  test "delete_associated_contacts_field/2 deletes data associated with contacts_field", %{organization_id: organization_id} = attrs do
+    attr = %{
+      name: "some name",
+      optin_time: ~U[2010-04-17 14:00:00Z],
+      optin_status: false,
+      optout_time: nil,
+      phone: "some phone",
+      status: :valid,
+      bsp_status: :hsm,
+      language_id: 1,
+      fields: %{}
+    }
+
+    attrs = Map.merge(attrs, attr)
+    assert {:ok, %Contact{} = contact} = Contacts.create_contact(attrs) #creating a test contact
+
+    ContactField.do_add_contact_field(contact, "test", "Test Field", "it works") #adding a contact variable
+    assert %Contact{fields: %{"test" => %{"value" => "it works"}}} = Contacts.get_contact(contact.id) #checking if the contact variable has been added successfully
+
+    ContactField.delete_associated_contacts_field("test", organization_id) #Deleting the contact field and its associated data
+    assert Contacts.get_contact(contact.id).fields == %{}
   end
 end

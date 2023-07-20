@@ -202,7 +202,7 @@ defmodule Glific.Flows.ContactField do
   end
 
   @doc """
-  Deletes a contact field.
+  Deletes a contact field, and all associated data in the contacts table.
 
   ## Examples
 
@@ -216,8 +216,27 @@ defmodule Glific.Flows.ContactField do
   @spec delete_contacts_field(ContactsField.t()) ::
           {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
   def delete_contacts_field(%ContactsField{} = contacts_field) do
+    #Converting field name to snake case as it used as a key in contacts.fields
+    field = Glific.string_snake_case(contacts_field.name)
+    delete_associated_contacts_field(field, contacts_field.organization_id)
+
     contacts_field
     |> ContactsField.changeset(%{})
     |> Repo.delete()
+  end
+
+  @doc """
+  Delete data associated with the given field in the contacts table
+  """
+  @spec delete_associated_contacts_field(String.t(), integer()) :: {:ok, Postgrex.Result.t()}
+  def delete_associated_contacts_field(field, organization_id) do
+    sql =
+    """
+    UPDATE contacts
+    SET fields = fields - '#{field}'
+    WHERE organization_id = #{organization_id}
+    """
+    info = Repo.query!(sql)
+    {:ok, info}
   end
 end
