@@ -39,7 +39,6 @@ defmodule GlificWeb.Schema.ExportTest do
       })
 
     result = auth_query_gql_by(:export_config, user)
-
     assert {:ok, data} = result
 
     assert data != nil
@@ -101,7 +100,7 @@ defmodule GlificWeb.Schema.ExportTest do
     assert data["contacts"] != nil
     assert data["contacts"] |> length() > 0
 
-    assert data["messages"] != nil
-    assert data["messages"] |> length() > 0
+    assert data["flows"] != nil
+    assert data["flows"] |> length() > 0
   end
 end
