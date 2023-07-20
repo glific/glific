@@ -128,23 +128,26 @@ defmodule Glific.GroupsTest do
 
     test "export_collection/1 returns the correct CSV data for group_id", attrs do
       group = group_fixture(attrs)
+
       contact_attrs = %{
         organization_id: attrs.organization_id,
         name: "John Doe",
-        phone: "9876543210_6",
+        phone: "9876543210_6"
       }
+
       {:ok, contact} = Contacts.create_contact(contact_attrs)
+
       contact_group_attrs = %{
         contact_id: contact.id,
         group_id: group.id,
         organization_id: attrs.organization_id
       }
+
       {:ok, _} = Groups.create_contact_group(contact_group_attrs)
-      expected_result =
-        "Name,Phone\r\n" <>
-        "John Doe,9876543210_6\r\n"
-      actual_result = Groups.export_collection(group.id)
-      assert Map.get(actual_result, :status) == expected_result
+
+      assert Groups.export_collection(group.id) == %{
+               status: "Name,Phone\r\n" <> "John Doe,9876543210_6\r\n"
+             }
     end
 
     test "load_group_by_label", attrs do
@@ -157,7 +160,7 @@ defmodule Glific.GroupsTest do
       assert Enum.empty?(result) == false
     end
 
-   test "list_groups/1 with multiple items sorted", attrs do
+    test "list_groups/1 with multiple items sorted", attrs do
       group1 = group_fixture(attrs)
       group2 = group_fixture(Map.merge(attrs, @valid_other_attrs))
       groups = Groups.list_groups(%{opts: %{order: :asc}, filter: Map.put(attrs, :label, "some")})
