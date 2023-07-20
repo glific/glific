@@ -218,7 +218,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     if is_list(req_headers) do
         post(url, data, headers: req_headers)
     else
-      {:error, "Request headers not found or not in the expected format."}
+      {:error, "Could not fetch the credietials"}
     end
 
     |> case do
