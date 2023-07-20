@@ -82,7 +82,7 @@ Hooks.pieChart = {
 Hooks.table = {
   mounted() {
     let tableData = JSON.parse(this.el.dataset.tableData);
-    let tableHeaders = ["Flow Name", "Group Name", "Started At", "Completed At"]
+    let tableHeaders = JSON.parse(this.el.dataset.tableHeaders);
     createTable(this.el, tableHeaders, tableData);
   },
 };

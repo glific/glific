@@ -165,7 +165,7 @@ defmodule Glific.Reports do
     Enum.map(query_data.rows, fn
       [flow_id, group_id, started, nil] ->
         [[name], [label]] = get_flow_name_and_group_name(flow_id, group_id)
-        [name, label, Timex.format!(started, "%H:%M, %d-%m-%Y", :strftime), "Not Completed Yet"]
+        [name, label, Timex.format!(started, "%d-%m-%Y %I:%M %p", :strftime), "Not Completed Yet"]
 
       [flow_id, group_id, started, completed] ->
         [[name], [label]] = get_flow_name_and_group_name(flow_id, group_id)
@@ -173,8 +173,8 @@ defmodule Glific.Reports do
         [
           name,
           label,
-          Timex.format!(started, "%H:%M, %d-%m-%Y", :strftime),
-          Timex.format!(completed, "%H:%M, %d-%m-%Y", :strftime)
+          Timex.format!(started, "%d-%m-%Y %I:%M %p", :strftime),
+          Timex.format!(completed, "%d-%m-%Y %I:%M %p", :strftime)
         ]
     end)
   end

@@ -115,10 +115,19 @@
   @apply underline text-blue-600;
 }
 
-.table {
-  @apply block bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;}
+.table-container {
+  height: 300px;
+  overflow-y: auto; 
+}
 
-.table th, .table td {
+.table {
+  @apply block bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
+  width: 100%; 
+  table-layout: fixed; 
+}
+
+.table th,
+.table td {
   @apply p-2 border;
 }
 

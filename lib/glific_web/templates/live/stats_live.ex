@@ -75,7 +75,8 @@ defmodule GlificWeb.StatsLive do
         data: fetch_count_data(:message_type_chart_data, org_id),
         labels: ["Inbound", "Outbound"]
       },
-      broadcast_data: fetch_table_data(:broadcasts, org_id)
+      broadcast_data: fetch_table_data(:broadcasts, org_id),
+      broadcast_headers: ["Flow Name", "Group Name", "Started At", "Completed At"]
     ]
   end
 
