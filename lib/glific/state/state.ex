@@ -162,14 +162,9 @@ defmodule Glific.State do
           flow: %{free: free_flows, busy: busy_flows}
         } = state,
         :flows,
-        %{user: user, is_forced: is_forced}
+        args
       ) do
-    {free, busy} =
-      do_free_entity(free_flows, busy_flows, %{
-        user: user,
-        is_forced: is_forced,
-        entity_type: :flows
-      })
+    {free, busy} = do_free_entity(free_flows, busy_flows, Map.put(args, :entity_type, :flows))
 
     update_state(state, :flow, free, busy)
   end
