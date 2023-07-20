@@ -198,22 +198,33 @@ defmodule Glific.State do
 
   # we'll assign the simulator and flows for 10 minute intervals
   @cache_time 10
+
   @spec do_free_entity(map(), map(), map()) :: {map(), map()}
-  defp do_free_entity(free, busy, %{user: user, is_forced: true, entity_type: entity_type}) do
-    Enum.reduce(
-      busy,
+  defp do_free_entity(free, busy, %{
+         user: user,
+         is_forced: true,
+         entity_type: entity_type,
+         # entity_id is present ONLY if is_forced is true
+         entity_id: entity_id
+       }) do
+    busy
+    |> Enum.reduce(
       {free, busy},
       fn {{id, fingerprint}, {entity, _time}}, {free, busy} ->
-        Logger.info(
-          "Releasing entity: #{inspect(entity)} for user: #{user.name} of org_id: #{user.organization_id} by force."
-        )
+        if entity.id == entity_id do
+          Logger.info(
+            "Releasing entity: #{inspect(entity)} for user: #{user.name} of org_id: #{user.organization_id} by force."
+          )
 
-        publish_data(entity.organization_id, id, entity_type)
+          publish_data(entity.organization_id, id, entity_type)
 
-        {
-          [entity | free],
-          Map.delete(busy, {id, fingerprint})
-        }
+          {
+            [entity | free],
+            Map.delete(busy, {id, fingerprint})
+          }
+        else
+          {free, busy}
+        end
       end
     )
   end
@@ -221,8 +232,8 @@ defmodule Glific.State do
   defp do_free_entity(free, busy, %{user: user, is_forced: _is_forced, entity_type: entity_type}) do
     expiry_time = DateTime.utc_now() |> DateTime.add(-1 * @cache_time * 60, :second)
 
-    Enum.reduce(
-      busy,
+    busy
+    |> Enum.reduce(
       {free, busy},
       fn {{id, fingerprint}, {entity, time}}, {free, busy} ->
         # when user already has entity flow assigned with same fingerprint
