@@ -5,20 +5,25 @@ defmodule Glific.Reports do
 
   import Ecto.Query, warn: false
 
-  alias Glific.Repo
+  alias Glific.{
+    Contacts.Contact,
+    Flows.FlowContext,
+    Messages.Message,
+    Messages.MessageConversation,
+    Notifications.Notification,
+    Repo,
+    Stats.Stat
+  }
 
   @doc false
   @spec get_kpi(atom(), non_neg_integer()) :: integer()
   def get_kpi(kpi, org_id) do
-    count =
-      get_count_query(org_id, kpi)
-      |> Repo.query!([])
-      |> then(& &1.rows)
+    Repo.put_process_state(org_id)
 
-    case count do
-      [[num]] -> num
-      _ -> 0
-    end
+    get_count_query(kpi)
+    |> where([q], q.organization_id == ^org_id)
+    |> Repo.all()
+    |> hd
   end
 
   @doc false
@@ -41,66 +46,134 @@ defmodule Glific.Reports do
     ]
   end
 
-  defp get_count_query(org_id, :conversation_count),
-    do:
-      "SELECT COUNT(id) FROM messages_conversations WHERE organization_id = #{org_id} and inserted_at >= date_trunc('month', CURRENT_DATE)"
+  defp get_count_query(:conversation_count) do
+    date = Timex.beginning_of_month(DateTime.utc_now())
 
-  defp get_count_query(org_id, :active_flow_count),
-    do:
-      "SELECT COUNT(id) FROM flow_contexts WHERE organization_id = #{org_id} and completed_at IS NULL"
+    MessageConversation
+    |> select([q], count(q.id))
+    |> where([q], q.inserted_at >= ^date)
+  end
 
-  defp get_count_query(org_id, :flows_started),
-    do:
-      "SELECT SUM(flows_started) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', date) = date_trunc('month', CURRENT_DATE)"
-  defp get_count_query(org_id, :flows_completed),
-    do:
-      "SELECT SUM(flows_completed) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', date) = date_trunc('month', CURRENT_DATE)"
+  defp get_count_query(:active_flow_count) do
+    date = Timex.beginning_of_month(DateTime.utc_now())
 
-  defp get_count_query(org_id, :valid_contact_count),
-    do: "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and status = 'valid'"
+    FlowContext
+    |> select([q], count(q.id))
+    |> where([q], is_nil(q.completed_at))
+    |> where([q], q.inserted_at >= ^date)
+  end
 
-  defp get_count_query(org_id, :invalid_contact_count),
-    do: "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and status = 'invalid'"
+  defp get_count_query(:flows_started) do
+    day = Date.beginning_of_month(DateTime.utc_now())
 
-  defp get_count_query(org_id, :opted_in_contacts_count),
-    do:
-      "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optin_time IS NOT NULL"
+    Stat
+    |> where([q], q.period == "day")
+    |> where([q], q.date >= ^day)
+    |> select([q], sum(q.flows_started))
+  end
 
-  defp get_count_query(org_id, :opted_out_contacts_count),
-    do:
-      "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NOT NULL"
+  defp get_count_query(:flows_completed) do
+    day = Date.beginning_of_month(DateTime.utc_now())
 
-  defp get_count_query(org_id, :non_opted_contacts_count),
-    do:
-      "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NULL and optin_time IS NULL"
+    Stat
+    |> where([q], q.period == "day")
+    |> where([q], q.date >= ^day)
+    |> select([q], sum(q.flows_completed))
+  end
 
-  defp get_count_query(org_id, :monthly_error_count),
-    do:
-      "SELECT COUNT(id) FROM messages WHERE organization_id = #{org_id} and errors != '{}' and inserted_at >= date_trunc('month', CURRENT_DATE)"
+  defp get_count_query(:valid_contact_count) do
+    Contact
+    |> select([q], count(q.id))
+    |> where([q], q.status == "valid")
+  end
 
-  defp get_count_query(org_id, :critical_notification_count),
-    do:
-      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Critical' and inserted_at >= date_trunc('month', CURRENT_DATE)"
+  defp get_count_query(:invalid_contact_count) do
+    Contact
+    |> select([q], count(q.id))
+    |> where([q], q.status == "invalid")
+  end
 
-  defp get_count_query(org_id, :warning_notification_count),
-    do:
-      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Warning' and inserted_at >= date_trunc('month', CURRENT_DATE)"
+  defp get_count_query(:opted_in_contacts_count) do
+    Contact
+    |> select([q], count(q.id))
+    |> where([q], not is_nil(q.optin_time))
+  end
 
-  defp get_count_query(org_id, :information_notification_count),
-    do:
-      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Information' and inserted_at >= date_trunc('month', CURRENT_DATE)"
+  defp get_count_query(:opted_out_contacts_count) do
+    Contact
+    |> select([q], count(q.id))
+    |> where([q], not is_nil(q.optout_time))
+  end
 
-  defp get_count_query(org_id, :inbound_messages_count),
-    do:
-      "SELECT SUM(inbound) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', date) = date_trunc('month', CURRENT_DATE)"
+  defp get_count_query(:non_opted_contacts_count) do
+    Contact
+    |> select([q], count(q.id))
+    |> where([q], is_nil(q.optin_time))
+    |> where([q], is_nil(q.optout_time))
+  end
 
-  defp get_count_query(org_id, :outbound_messages_count),
-    do:
-      "SELECT SUM(outbound) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', date) = date_trunc('month', CURRENT_DATE)"
+  defp get_count_query(:monthly_error_count) do
+    date = Timex.beginning_of_month(DateTime.utc_now())
 
-  defp get_count_query(org_id, :hsm_messages_count),
-    do:
-      "SELECT SUM(hsm) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', date) = date_trunc('month', CURRENT_DATE)"
+    Message
+    |> select([q], count(q.id))
+    |> where([q], fragment("? != '{}'", q.errors))
+    |> where([q], q.inserted_at >= ^date)
+  end
+
+  defp get_count_query(:critical_notification_count) do
+    date = Timex.beginning_of_month(DateTime.utc_now())
+
+    Notification
+    |> select([q], count(q.id))
+    |> where([q], q.severity == "Critical")
+    |> where([q], q.inserted_at >= ^date)
+  end
+
+  defp get_count_query(:warning_notification_count) do
+    date = Timex.beginning_of_month(DateTime.utc_now())
+
+    Notification
+    |> select([q], count(q.id))
+    |> where([q], q.severity == "Warning")
+    |> where([q], q.inserted_at >= ^date)
+  end
+
+  defp get_count_query(:information_notification_count) do
+    date = Timex.beginning_of_month(DateTime.utc_now())
+
+    Notification
+    |> select([q], count(q.id))
+    |> where([q], q.severity == "Information")
+    |> where([q], q.inserted_at >= ^date)
+  end
+
+  defp get_count_query(:inbound_messages_count) do
+    day = Date.beginning_of_month(DateTime.utc_now())
+
+    Stat
+    |> where([q], q.period == "day")
+    |> where([q], q.date >= ^day)
+    |> select([q], sum(q.inbound))
+  end
+
+  defp get_count_query(:outbound_messages_count) do
+    day = Date.beginning_of_month(DateTime.utc_now())
+
+    Stat
+    |> where([q], q.period == "day")
+    |> where([q], q.date >= ^day)
+    |> select([q], sum(q.outbound))
+  end
+
+  defp get_count_query(:hsm_messages_count) do
+    day = Date.beginning_of_month(DateTime.utc_now())
+
+    Stat
+    |> where([q], q.period == "day")
+    |> where([q], q.date >= ^day)
+    |> select([q], sum(q.hsm))
+  end
 
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
