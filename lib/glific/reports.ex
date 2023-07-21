@@ -21,6 +21,7 @@ defmodule Glific.Reports do
     Repo.put_process_state(org_id)
 
     get_count_query(kpi)
+    |> add_timestamps(kpi)
     |> where([q], q.organization_id == ^org_id)
     |> Repo.all()
     |> hd
@@ -46,41 +47,7 @@ defmodule Glific.Reports do
     ]
   end
 
-  defp get_count_query(:conversation_count) do
-    date = Timex.beginning_of_month(DateTime.utc_now())
-
-    MessageConversation
-    |> select([q], count(q.id))
-    |> where([q], q.inserted_at >= ^date)
-  end
-
-  defp get_count_query(:active_flow_count) do
-    date = Timex.beginning_of_month(DateTime.utc_now())
-
-    FlowContext
-    |> select([q], count(q.id))
-    |> where([q], is_nil(q.completed_at))
-    |> where([q], q.inserted_at >= ^date)
-  end
-
-  defp get_count_query(:flows_started) do
-    day = Date.beginning_of_month(DateTime.utc_now())
-
-    Stat
-    |> where([q], q.period == "day")
-    |> where([q], q.date >= ^day)
-    |> select([q], sum(q.flows_started))
-  end
-
-  defp get_count_query(:flows_completed) do
-    day = Date.beginning_of_month(DateTime.utc_now())
-
-    Stat
-    |> where([q], q.period == "day")
-    |> where([q], q.date >= ^day)
-    |> select([q], sum(q.flows_completed))
-  end
-
+  @spec get_count_query(atom()) :: Ecto.Query.t()
   defp get_count_query(:valid_contact_count) do
     Contact
     |> select([q], count(q.id))
@@ -113,67 +80,82 @@ defmodule Glific.Reports do
   end
 
   defp get_count_query(:monthly_error_count) do
-    date = Timex.beginning_of_month(DateTime.utc_now())
-
     Message
     |> select([q], count(q.id))
     |> where([q], fragment("? != '{}'", q.errors))
-    |> where([q], q.inserted_at >= ^date)
   end
 
   defp get_count_query(:critical_notification_count) do
-    date = Timex.beginning_of_month(DateTime.utc_now())
-
     Notification
     |> select([q], count(q.id))
     |> where([q], q.severity == "Critical")
-    |> where([q], q.inserted_at >= ^date)
   end
 
   defp get_count_query(:warning_notification_count) do
-    date = Timex.beginning_of_month(DateTime.utc_now())
-
     Notification
     |> select([q], count(q.id))
     |> where([q], q.severity == "Warning")
-    |> where([q], q.inserted_at >= ^date)
   end
 
   defp get_count_query(:information_notification_count) do
-    date = Timex.beginning_of_month(DateTime.utc_now())
-
     Notification
     |> select([q], count(q.id))
     |> where([q], q.severity == "Information")
+  end
+
+  defp get_count_query(:conversation_count) do
+    MessageConversation
+    |> select([q], count(q.id))
+  end
+
+  defp get_count_query(:active_flow_count) do
+    FlowContext
+    |> select([q], count(q.id))
+    |> where([q], is_nil(q.completed_at))
+  end
+
+  defp get_count_query(:inbound_messages_count), do: select(Stat, [q], sum(q.inbound))
+
+  defp get_count_query(:outbound_messages_count), do: select(Stat, [q], sum(q.outbound))
+
+  defp get_count_query(:hsm_messages_count), do: select(Stat, [q], sum(q.hsm))
+
+  defp get_count_query(:flows_started), do: select(Stat, [q], sum(q.flows_started))
+
+  defp get_count_query(:flows_completed), do: select(Stat, [q], sum(q.flows_completed))
+
+  @spec add_timestamps(Ecto.Query.t(), atom()) :: Ecto.Query.t()
+  defp add_timestamps(query, kpi)
+       when kpi in [
+              :critical_notification_count,
+              :warning_notification_count,
+              :information_notification_count,
+              :monthly_error_count,
+              :active_flow_count,
+              :conversation_count
+            ] do
+    date = Timex.beginning_of_month(DateTime.utc_now())
+
+    query
     |> where([q], q.inserted_at >= ^date)
   end
 
-  defp get_count_query(:inbound_messages_count) do
+  defp add_timestamps(query, kpi)
+       when kpi in [
+              :outbound_messages_count,
+              :hsm_messages_count,
+              :inbound_messages_count,
+              :flows_started,
+              :flows_completed
+            ] do
     day = Date.beginning_of_month(DateTime.utc_now())
 
-    Stat
+    query
     |> where([q], q.period == "day")
     |> where([q], q.date >= ^day)
-    |> select([q], sum(q.inbound))
   end
 
-  defp get_count_query(:outbound_messages_count) do
-    day = Date.beginning_of_month(DateTime.utc_now())
-
-    Stat
-    |> where([q], q.period == "day")
-    |> where([q], q.date >= ^day)
-    |> select([q], sum(q.outbound))
-  end
-
-  defp get_count_query(:hsm_messages_count) do
-    day = Date.beginning_of_month(DateTime.utc_now())
-
-    Stat
-    |> where([q], q.period == "day")
-    |> where([q], q.date >= ^day)
-    |> select([q], sum(q.hsm))
-  end
+  defp add_timestamps(query, _kpi), do: query
 
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
