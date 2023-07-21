@@ -153,6 +153,7 @@ defmodule Glific.Reports do
     """
   end
 
+  @doc false
   @spec get_contact_data(non_neg_integer()) :: map()
   def get_contact_data(org_id) do
     query_data =
