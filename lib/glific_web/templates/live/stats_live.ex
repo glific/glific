@@ -74,6 +74,10 @@ defmodule GlificWeb.StatsLive do
       message_type_chart_data: %{
         data: fetch_count_data(:message_type_chart_data, org_id),
         labels: ["Inbound", "Outbound"]
+      },
+      contact_pie_chart_data: %{
+        data: fetch_contact_data(org_id),
+        labels: fetch_contact_labels(org_id)
       }
     ]
   end
@@ -111,6 +115,18 @@ defmodule GlificWeb.StatsLive do
   @spec fetch_date_labels(String.t(), non_neg_integer()) :: list()
   defp fetch_date_labels(table_name, org_id) do
     Reports.get_kpi_data(org_id, table_name)
+    |> Map.keys()
+  end
+
+  @spec fetch_contact_data(non_neg_integer()) :: list()
+  defp fetch_contact_data(org_id) do
+    Reports.get_contact_data(org_id)
+    |> Map.values()
+  end
+
+  @spec fetch_contact_labels(non_neg_integer()) :: list()
+  defp fetch_contact_labels(org_id) do
+    Reports.get_contact_data(org_id)
     |> Map.keys()
   end
 end

@@ -93,6 +93,10 @@ defmodule Glific.Reports do
     do:
       "SELECT hsm FROM stats WHERE organization_id = #{org_id} and inserted_at >= CURRENT_DATE and period = 'day'"
 
+  defp get_count_query(org_id, :bsp_status),
+    do:
+      "SELECT bsp_status, count(*) FROM contacts WHERE organization_id = #{org_id} GROUP BY bsp_status"
+
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
 
@@ -137,6 +141,17 @@ defmodule Glific.Reports do
       AND organization_id = #{org_id}
     GROUP BY date
     """
+  end
+
+  @spec get_contact_data(non_neg_integer()) :: map()
+  def get_contact_data(org_id) do
+    query_data =
+      get_count_query(org_id, :bsp_status)
+      |> Repo.query!([])
+
+    Enum.reduce(query_data.rows, %{}, fn [label, count], acc ->
+      Map.put(acc, label, count)
+    end)
   end
 
   @spec get_date_preset(DateTime.t()) :: map()
