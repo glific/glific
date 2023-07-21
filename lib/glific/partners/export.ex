@@ -92,8 +92,14 @@ defmodule Glific.Partners.Export do
 
   @spec config_query(String.t()) :: String.t()
   defp config_query(table),
-    do: "SELECT JSON_BUILD_OBJECT('name', 'user','schema', JSON_AGG(t)) AS formatted_data
-          FROM global.#{table} t"
+    do: "SELECT JSON_AGG(t)
+    FROM (
+      SELECT table_name,
+             COLUMN_NAME,
+             DATA_TYPE
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_NAME = 'users'
+    ) AS t;"
 
   @spec add_start(DateTime.t() | nil) :: String.t()
   defp add_start(nil), do: ""
