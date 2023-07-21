@@ -181,7 +181,7 @@ defmodule Glific.Reports do
 
   defp get_broadcast_query(org_id) do
     """
-    SELECT flow_id, group_id, started_at, completed_at FROM message_broadcasts WHERE type='flow' AND organization_id=#{org_id};
+    SELECT flow_id, group_id, started_at, completed_at FROM message_broadcasts WHERE type='flow' AND organization_id=#{org_id} LIMIT 10;
     """
   end
 
