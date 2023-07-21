@@ -51,10 +51,10 @@ defmodule Glific.Reports do
 
   defp get_count_query(org_id, :flows_started),
     do:
-      "SELECT SUM(flows_started) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', inserted_at) = date_trunc('month', CURRENT_DATE)"
+      "SELECT SUM(flows_started) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', date) = date_trunc('month', CURRENT_DATE)"
   defp get_count_query(org_id, :flows_completed),
     do:
-      "SELECT SUM(flows_completed) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', inserted_at) = date_trunc('month', CURRENT_DATE)"
+      "SELECT SUM(flows_completed) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', date) = date_trunc('month', CURRENT_DATE)"
 
   defp get_count_query(org_id, :valid_contact_count),
     do: "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and status = 'valid'"
@@ -92,15 +92,15 @@ defmodule Glific.Reports do
 
   defp get_count_query(org_id, :inbound_messages_count),
     do:
-      "SELECT SUM(inbound) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', inserted_at) = date_trunc('month', CURRENT_DATE) "
+      "SELECT SUM(inbound) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', date) = date_trunc('month', CURRENT_DATE)"
 
   defp get_count_query(org_id, :outbound_messages_count),
     do:
-      "SELECT SUM(outbound) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', inserted_at) = date_trunc('month', CURRENT_DATE) "
+      "SELECT SUM(outbound) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', date) = date_trunc('month', CURRENT_DATE)"
 
   defp get_count_query(org_id, :hsm_messages_count),
     do:
-      "SELECT SUM(hsm) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', inserted_at) = date_trunc('month', CURRENT_DATE) "
+      "SELECT SUM(hsm) FROM stats WHERE organization_id = #{org_id} and period = 'day' and date_trunc('month', date) = date_trunc('month', CURRENT_DATE)"
 
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
