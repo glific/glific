@@ -7086,13 +7086,6 @@ CREATE INDEX triggers_organization_id_index ON public.triggers USING btree (orga
 
 
 --
--- Name: unique_contact_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX unique_contact_id_index ON public.users USING btree (contact_id);
-
-
---
 -- Name: user_roles_user_id_role_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
