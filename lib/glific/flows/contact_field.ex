@@ -231,17 +231,15 @@ defmodule Glific.Flows.ContactField do
   Delete data associated with the given field in the contacts table
   """
   @spec delete_associated_contacts_field(String.t(), integer()) ::
-          {:ok, Postgrex.Result.t()}
+          {:ok, {non_neg_integer(), any()}}
   def delete_associated_contacts_field(field, organization_id) do
     #Converting field name to snake case as it used as a key in contacts.fields
     field = Glific.string_snake_case(field)
-    sql =
-    """
-    UPDATE contacts
-    SET fields = fields - '#{field}'
-    WHERE organization_id = #{organization_id}
-    """
-    info = Repo.query!(sql)
+
+    info = Contact
+    |> where([ct], organization_id == ^organization_id)
+    |> Repo.update_all([set: [fields: fragment("fields - ?", ^field)]])
+
     {:ok, info}
   end
 end
