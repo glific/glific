@@ -190,13 +190,5 @@ defmodule Glific.Partners.Export do
     if is_list(data.rows) && length(data.rows) > 0,
       do: Map.put(acc, table, flatten(hd(data.rows), is_flatten)),
       else: acc
-
-    schema = query(config_query(table))
-
-    if schema do
-      Map.put_new(acc, "schema", schema)
-    end
-
-    acc
   end
 end
