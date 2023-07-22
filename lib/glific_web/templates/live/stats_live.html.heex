@@ -68,6 +68,14 @@ Commented out the filter code. Will add this once the functionality is ready
       data-chart-data={Jason.encode!(@notification_chart_data)}
     >
     </canvas>
+    <canvas
+      class="card"
+      id="contact_pie_chart"
+      phx-hook="pieChart"
+      data-label="Contact Status Chart"
+      data-chart-data={Jason.encode!(@contact_pie_chart_data)}
+    >
+    </canvas>
   </div>
 </div>
 
@@ -102,6 +110,24 @@ Commented out the filter code. Will add this once the functionality is ready
     </h5>
     <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
       <%= @active_flow_count %>
+    </p>
+  </a>
+
+  <a class="card">
+    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+      Monthly Flows Started
+    </h5>
+    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
+      <%= @flows_started %>
+    </p>
+  </a>
+
+  <a class="card">
+    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+      Monthly Flows Completed
+    </h5>
+    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
+      <%= @flows_completed %>
     </p>
   </a>
 
@@ -179,7 +205,7 @@ Commented out the filter code. Will add this once the functionality is ready
 
   <a class="card">
     <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-      HSM Messages
+      Monthly HSM Messages
     </h5>
     <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
       <%= @hsm_messages_count %>
