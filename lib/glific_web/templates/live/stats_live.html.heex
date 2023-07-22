@@ -80,6 +80,20 @@ Commented out the filter code. Will add this once the functionality is ready
 </div>
 
 <div class="flex content-center justify-center flex-wrap">
+  <div class="table-container">
+    <div
+      id="broadcast-table"
+      class="table"
+      phx-hook="table"
+      data-table-data={Jason.encode!(@broadcast_data)}
+      data-table-headers={Jason.encode!(@broadcast_headers)}
+      phx-update="ignore"
+    >
+    </div>
+  </div>
+</div>
+
+<div class="flex content-center justify-center flex-wrap">
   <a class="card">
     <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
       Monthly Conversations
