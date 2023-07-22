@@ -79,6 +79,12 @@ defmodule Glific.Reports do
     |> where([q], is_nil(q.optout_time))
   end
 
+  defp get_count_query(:bsp_status) do
+    Contact
+    |> group_by([c], c.bsp_status)
+    |> select([c], [c.bsp_status, count(c.id)])
+  end
+
   defp get_count_query(:monthly_error_count) do
     Message
     |> select([q], count(q.id))
@@ -157,10 +163,6 @@ defmodule Glific.Reports do
 
   defp add_timestamps(query, _kpi), do: query
 
-  defp get_count_query(org_id, :bsp_status),
-    do:
-      "SELECT bsp_status, count(*) FROM contacts WHERE organization_id = #{org_id} GROUP BY bsp_status"
-
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
 
@@ -210,13 +212,9 @@ defmodule Glific.Reports do
   @doc false
   @spec get_contact_data(non_neg_integer()) :: map()
   def get_contact_data(org_id) do
-    query_data =
-      get_count_query(org_id, :bsp_status)
-      |> Repo.query!([])
-
-    Enum.reduce(query_data.rows, %{}, fn [label, count], acc ->
-      Map.put(acc, label, count)
-    end)
+    get_count_query(:bsp_status)
+    |> where([q], q.organization_id == ^org_id)
+    |> Repo.all()
   end
 
   @spec get_date_preset(DateTime.t()) :: map()

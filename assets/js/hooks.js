@@ -3,7 +3,7 @@ let Hooks = {};
 function createChart(ctx, chartType, chartData, label, options) {
   let backgroundColor, borderColor;
   borderColor = "#F9F7F4";
-  backgroundColor = ["#129656", "#93A29B", "#EBEDEC", "#b5d8c7"];
+  backgroundColor = ["#129656", "#93A29B", "#EBEDEC", "#B5D8C7"];
   if (chartType === "bar") {
     backgroundColor = backgroundColor[0];
   }
