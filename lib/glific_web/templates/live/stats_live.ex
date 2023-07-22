@@ -74,7 +74,8 @@ defmodule GlificWeb.StatsLive do
       message_type_chart_data: %{
         data: fetch_count_data(:message_type_chart_data, org_id),
         labels: ["Inbound", "Outbound"]
-      }
+      },
+      contact_pie_chart_data: fetch_contact_pie_chart_data(org_id)
     ]
   end
 
@@ -112,5 +113,15 @@ defmodule GlificWeb.StatsLive do
   defp fetch_date_labels(table_name, org_id) do
     Reports.get_kpi_data(org_id, table_name)
     |> Map.keys()
+  end
+
+  @spec fetch_contact_pie_chart_data(non_neg_integer()) :: list()
+  defp fetch_contact_pie_chart_data(org_id) do
+    Reports.get_contact_data(org_id)
+    |> Enum.reduce(%{data: [], labels: []}, fn [label, count], acc ->
+      data = acc.data ++ [count]
+      labels = acc.labels ++ [label]
+      %{data: data, labels: labels}
+    end)
   end
 end

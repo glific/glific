@@ -79,6 +79,12 @@ defmodule Glific.Reports do
     |> where([q], is_nil(q.optout_time))
   end
 
+  defp get_count_query(:bsp_status) do
+    Contact
+    |> group_by([c], c.bsp_status)
+    |> select([c], [c.bsp_status, count(c.id)])
+  end
+
   defp get_count_query(:monthly_error_count) do
     Message
     |> select([q], count(q.id))
@@ -201,6 +207,14 @@ defmodule Glific.Reports do
       AND organization_id = #{org_id}
     GROUP BY date
     """
+  end
+
+  @doc false
+  @spec get_contact_data(non_neg_integer()) :: map()
+  def get_contact_data(org_id) do
+    get_count_query(:bsp_status)
+    |> where([q], q.organization_id == ^org_id)
+    |> Repo.all()
   end
 
   @spec get_date_preset(DateTime.t()) :: map()
