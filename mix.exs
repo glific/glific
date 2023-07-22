@@ -173,7 +173,8 @@ defmodule Glific.MixProject do
       common: ["clean", "compile", "ecto.reset", "assets.deploy"],
       "ecto.setup": [
         "ecto.create --quiet",
-        "ecto.migrate",
+        "ecto.load --quiet --skip-if-loaded",
+        "ecto.migrate --quiet",
         "phil_columns.seed --tenant glific",
         "run priv/repo/seeds_dev.exs",
         "run priv/repo/seeds_credentials.exs"
@@ -190,11 +191,12 @@ defmodule Glific.MixProject do
       test_full: [
         "ecto.drop",
         "ecto.create --quiet",
-        "ecto.migrate",
+        "ecto.load --quiet --skip-if-loaded",
+        "ecto.migrate --quiet",
         "phil_columns.seed --tenant glific",
         "test"
       ],
-      test: ["ecto.create --quiet", "ecto.migrate", "test"],
+      test: ["ecto.create --quiet", "ecto.load --quiet --skip-if-loaded", "ecto.migrate", "test"],
       "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
     ]
   end
