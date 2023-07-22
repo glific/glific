@@ -225,6 +225,8 @@ defmodule Glific.Reports do
       started_at: mb.started_at,
       completed_at: mb.completed_at
     })
+    |> order_by([mb], desc: mb.inserted_at)
+    |> limit(25)
     |> Repo.all()
     |> Enum.reduce([], fn message_broadcast, acc ->
       started_at = Timex.format!(message_broadcast.started_at, "%d-%m-%Y %I:%M %p", :strftime)
