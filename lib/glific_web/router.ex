@@ -102,7 +102,6 @@ defmodule GlificWeb.Router do
   # BSP webhooks
   scope "/", GlificWeb do
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
-    forward("/airtel", Providers.Airtel.Plugs.Shunt)
     forward("/gupshup-enterprise", Providers.Gupshup.Enterprise.Plugs.Shunt)
   end
 
