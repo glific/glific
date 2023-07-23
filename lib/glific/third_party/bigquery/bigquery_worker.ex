@@ -171,7 +171,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   @spec insert_last_updated(String.t(), DateTime.t() | nil, non_neg_integer) :: DateTime.t()
-  def insert_last_updated(table_name, table_last_updated_at, organization_id) do
+  defp insert_last_updated(table_name, table_last_updated_at, organization_id) do
     Logger.info(
       "Checking for bigquery job for org_id: #{organization_id} table: #{table_name} since: #{table_last_updated_at}"
     )
