@@ -3,6 +3,7 @@ defmodule Glific.Flows.ContactField do
   Since many of the functions set/update fields in contact and related tables, lets
   centralize all the code here for now
   """
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Contacts,
@@ -231,14 +232,18 @@ defmodule Glific.Flows.ContactField do
   Delete data associated with the given field in the contacts table
   """
   @spec delete_associated_contacts_field(String.t(), integer()) ::
-          {:ok, {non_neg_integer(), any()}}
+          {:ok, {non_neg_integer(), tuple()}}
   def delete_associated_contacts_field(field, organization_id) do
     #Converting field name to snake case as it used as a key in contacts.fields
     field = Glific.string_snake_case(field)
 
-    info = Contact
-    |> where([ct], organization_id == ^organization_id)
-    |> Repo.update_all([set: [fields: fragment("fields - ?", ^field)]])
+    query =
+      from(c in Contact,
+        where: c.organization_id == ^organization_id,
+        update: [set: [fields: fragment("fields - ?", ^field)]]
+      )
+
+    info = Repo.update_all(query, [])
 
     {:ok, info}
   end
