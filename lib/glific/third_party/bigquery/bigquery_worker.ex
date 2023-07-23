@@ -161,7 +161,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       BigQuery.get_table_struct(table_name)
       |> where([m], m.id > ^table_id)
       |> add_organization_id(table_name, organization_id)
-      |> order_by([m], asc: m.id)
+      |> order_by([m], m.id)
       |> limit(@per_min_limit)
       |> Repo.aggregate(:max, :id)
 
@@ -171,7 +171,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   @spec insert_last_updated(String.t(), DateTime.t() | nil, non_neg_integer) :: DateTime.t()
-  defp insert_last_updated(table_name, table_last_updated_at, organization_id) do
+  def insert_last_updated(table_name, table_last_updated_at, organization_id) do
     Logger.info(
       "Checking for bigquery job for org_id: #{organization_id} table: #{table_name} since: #{table_last_updated_at}"
     )
@@ -180,7 +180,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       BigQuery.get_table_struct(table_name)
       |> where([m], m.updated_at > ^table_last_updated_at)
       |> add_organization_id(table_name, organization_id)
-      |> order_by([m], asc: m.id)
+      |> order_by([m], [m.updated_at, m.id])
       |> limit(@per_min_limit)
       |> Repo.aggregate(:max, :updated_at, timeout: 40_000)
 
@@ -189,7 +189,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
       else: max_last_update
   end
 
-  @spec insert_for_table(BigQuery.BigQueryJob.t() | nil, non_neg_integer, String.t()) :: :ok | nil
+  @spec insert_for_table(BigQuery.BigQueryJob.t() | nil, non_neg_integer, String.t()) ::
+          :ok | nil
   defp insert_for_table(nil, _, _), do: nil
 
   defp insert_for_table(
