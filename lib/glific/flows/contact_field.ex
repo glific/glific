@@ -219,9 +219,9 @@ defmodule Glific.Flows.ContactField do
   @spec delete_contacts_field(ContactsField.t(), boolean()) ::
           {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
   def delete_contacts_field(%ContactsField{} = contacts_field, delete_assoc \\ false) do
-
     if delete_assoc,
-    do: delete_associated_contacts_field(contacts_field.name, contacts_field.organization_id)
+      do:
+        delete_associated_contacts_field(contacts_field.shortcode, contacts_field.organization_id)
 
     contacts_field
     |> ContactsField.changeset(%{})
@@ -233,18 +233,12 @@ defmodule Glific.Flows.ContactField do
   """
   @spec delete_associated_contacts_field(String.t(), integer()) ::
           {:ok, {non_neg_integer(), tuple()}}
-  def delete_associated_contacts_field(field, organization_id) do
-    #Converting field name to snake case as it used as a key in contacts.fields
-    field = Glific.string_snake_case(field)
-
+  def delete_associated_contacts_field(shortcode, organization_id) do
     query =
-      from(c in Contact,
+      from c in Contact,
         where: c.organization_id == ^organization_id,
-        update: [set: [fields: fragment("fields - ?", ^field)]]
-      )
+        update: [set: [fields: fragment("fields - ?", ^shortcode)]]
 
-    info = Repo.update_all(query, [])
-
-    {:ok, info}
+    Repo.update_all(query, [])
   end
 end
