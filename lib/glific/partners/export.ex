@@ -107,7 +107,8 @@ defmodule Glific.Partners.Export do
             _ -> data_type
           end
 
-        Map.put(acc, column_name, {airbyte_data_type, [column_default]})
+        # sending a list of lists, since json does not understand elixir tuples
+        Map.put(acc, column_name, [airbyte_data_type, [column_default]])
       end
     )
   end
