@@ -83,7 +83,10 @@ defmodule Glific.Partners.Export do
       data = Repo.query!(query, [], timeout: 60_000, skip_organization_id: true).rows
       table_data = transform_data(data)
       Map.put(acc, table, %{"schema" => table_data})
-    end)
+    end
+    )
+    |> Map.put("tables", @tables)
+    |> Map.put("config", @meta)
 
   end
 
