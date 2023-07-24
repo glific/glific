@@ -43,6 +43,15 @@ defmodule GlificWeb.API.V1.SessionController do
     end
   end
 
+  @doc """
+  Catch the case when the caller does not send in a user array with phone / password
+  """
+  def create(conn, _params) do
+    conn
+    |> put_status(401)
+    |> json(%{error: %{status: 401, message: "Invalid phone or password"}})
+  end
+
   defp update_last_login(user, conn) do
     remote_ip = GlificWeb.Tenants.remote_ip(conn)
 

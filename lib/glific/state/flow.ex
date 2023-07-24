@@ -42,13 +42,13 @@ defmodule Glific.State.Flow do
     key = {user.id, user.fingerprint}
     organization_id = user.organization_id
 
-    [flow] =
+    flow =
       Flow
       |> where([f], f.organization_id == ^organization_id)
       |> where([f], f.id == ^flow_id)
-      |> Repo.all(skip_organization_id: true, skip_permission: true)
+      |> Repo.one(skip_organization_id: true, skip_permission: true)
 
-    available_flow = if(Enum.member?(free, flow), do: flow, else: nil)
+    available_flow = if flow && Enum.member?(free, flow), do: flow, else: nil
 
     cond do
       # when the requested flow is either not available in flow or if all the flows are busy
