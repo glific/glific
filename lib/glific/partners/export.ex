@@ -78,17 +78,21 @@ defmodule Glific.Partners.Export do
   @spec export_config :: map()
   def export_config do
     @tables
-    |> Enum.reduce(
-      %{},
-      fn table, acc ->
-        a = table
-        |> config_query()
-        |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
-        Map.put(acc,table,a.rows)
-      end
-    )
-    |> Map.put("tables", @tables)
-    |> Map.put("config", @meta)
+    |> Enum.reduce(%{}, fn table, acc ->
+      query = config_query(table)
+      data = Repo.query!(query, [], timeout: 60_000, skip_organization_id: true).rows
+      table_data = transform_data(data)
+      Map.put(acc, table, %{"schema" => table_data})
+    end)
+
+  end
+
+  @spec transform_data(list()) :: map()
+  defp transform_data(data) do
+    data
+    |> Enum.reduce(%{}, fn [column_name, data_type, column_default], acc ->
+      Map.put(acc, column_name, {data_type, [column_default]})
+    end)
   end
 
   @spec config_query(String.t()) :: String.t()
@@ -187,6 +191,7 @@ defmodule Glific.Partners.Export do
   defp add_map(query, acc, table, is_flatten \\ false) do
     data = Repo.query!(query, [], timeout: 60_000, skip_organization_id: true)
 
+    IO.inspect(data)
     if is_list(data.rows) && length(data.rows) > 0,
       do: Map.put(acc, table, flatten(hd(data.rows), is_flatten)),
       else: acc
