@@ -94,7 +94,14 @@ defmodule Glific.Partners.Export do
   defp transform_data(data) do
     data
     |> Enum.reduce(%{}, fn [column_name, data_type, column_default], acc ->
-      Map.put(acc, column_name, {data_type, [column_default]})
+      airbyte_data_type =
+        case data_type do
+          "bigint" -> "integer"
+          "timestamp without time zone" -> "timestamp_without_timezone"
+          _ -> data_type
+        end
+
+      Map.put(acc, column_name, {airbyte_data_type, [column_default]})
     end)
   end
 
