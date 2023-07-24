@@ -77,13 +77,14 @@ defmodule Glific.Partners.Export do
   """
   @spec export_config :: map()
   def export_config do
-    @meta
+    @tables
     |> Enum.reduce(
       %{},
       fn table, acc ->
-        table
+        a = table
         |> config_query()
-        |> add_map(acc, table)
+        |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
+        Map.put(acc,table,a.rows)
       end
     )
     |> Map.put("tables", @tables)
@@ -92,14 +93,7 @@ defmodule Glific.Partners.Export do
 
   @spec config_query(String.t()) :: String.t()
   defp config_query(table),
-    do: "SELECT JSON_AGG(t)
-    FROM (
-      SELECT table_name,
-             COLUMN_NAME,
-             DATA_TYPE
-      FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_NAME = 'users'
-    ) AS t;"
+   do: "SELECT column_name, data_type, column_default FROM information_schema.columns WHERE table_name = '#{table}'"
 
   @spec add_start(DateTime.t() | nil) :: String.t()
   defp add_start(nil), do: ""
