@@ -98,6 +98,8 @@ defmodule Glific.Partners.Export do
         case data_type do
           "bigint" -> "integer"
           "timestamp without time zone" -> "timestamp_without_timezone"
+          "jsonb" -> "object"
+          "USER-DEFINED" -> "string"
           _ -> data_type
         end
 
