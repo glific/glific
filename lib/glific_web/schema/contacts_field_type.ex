@@ -88,6 +88,7 @@ defmodule GlificWeb.Schema.ContactsFieldTypes do
 
     field :delete_contacts_field, :contacts_field_result do
       arg(:id, non_null(:id))
+      arg(:delete_assoc, :boolean, default_value: false)
       middleware(Authorize, :staff)
       resolve(&Resolvers.ContactsField.delete_contacts_field/3)
     end
