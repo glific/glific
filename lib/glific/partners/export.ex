@@ -77,39 +77,48 @@ defmodule Glific.Partners.Export do
   """
   @spec export_config :: map()
   def export_config do
-    @tables
+    (@tables ++ @meta)
     |> Enum.reduce(%{}, fn table, acc ->
-      query = config_query(table)
-      data = Repo.query!(query, [], timeout: 60_000, skip_organization_id: true).rows
-      table_data = transform_data(data)
-      Map.put(acc, table, %{"schema" => table_data})
-    end
-    )
+      data =
+        table
+        |> config_query()
+        |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
+        |> Map.get(:rows)
+        |> transform_data()
+
+      Map.put(acc, table, %{"schema" => data})
+    end)
     |> Map.put("tables", @tables)
     |> Map.put("config", @meta)
-
   end
 
   @spec transform_data(list()) :: map()
   defp transform_data(data) do
     data
-    |> Enum.reduce(%{}, fn [column_name, data_type, column_default], acc ->
-      airbyte_data_type =
-        case data_type do
-          "bigint" -> "integer"
-          "timestamp without time zone" -> "timestamp_without_timezone"
-          "jsonb" -> "object"
-          "USER-DEFINED" -> "string"
-          _ -> data_type
-        end
+    |> Enum.reduce(
+      %{},
+      fn [column_name, data_type, column_default], acc ->
+        airbyte_data_type =
+          case data_type do
+            "bigint" -> "integer"
+            "timestamp without time zone" -> "timestamp_without_timezone"
+            "jsonb" -> "object"
+            "USER-DEFINED" -> "string"
+            _ -> data_type
+          end
 
-      Map.put(acc, column_name, {airbyte_data_type, [column_default]})
-    end)
+        Map.put(acc, column_name, {airbyte_data_type, [column_default]})
+      end
+    )
   end
 
   @spec config_query(String.t()) :: String.t()
   defp config_query(table),
-   do: "SELECT column_name, data_type, column_default FROM information_schema.columns WHERE table_name = '#{table}'"
+    do: """
+    SELECT column_name, data_type, column_default
+    FROM information_schema.columns
+    WHERE table_name = '#{table}'
+    """
 
   @spec add_start(DateTime.t() | nil) :: String.t()
   defp add_start(nil), do: ""
