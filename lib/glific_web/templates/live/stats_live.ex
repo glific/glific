@@ -29,20 +29,33 @@ defmodule GlificWeb.StatsLive do
     {:noreply, assign(socket, kpi, Reports.get_kpi(kpi, org_id))}
   end
 
+  @doc false
+  @spec handle_event(String.t(), map(), Phoenix.LiveView.Socket.t()) ::
+          {:noreply, Phoenix.LiveView.Socket.t()}
+  def handle_event("date_offset", %{"number" => value}, socket) do
+    org_id = get_org_id(socket)
+    date_offset = String.to_integer(value)
+    socket = assign(socket, get_daily_data(org_id, date_offset)) |> IO.inspect(label: "updated daily data")
+    {:noreply, assign(socket, :date_offset, date_offset)} |> IO.inspect(label: "assigned date offset")
+  end
+
   @spec assign_stats(Phoenix.LiveView.Socket.t(), atom()) :: Phoenix.LiveView.Socket.t()
   defp assign_stats(socket, :init) do
     stats = Enum.map(Reports.kpi_list(), &{&1, "loading.."})
 
     org_id = get_org_id(socket)
+    date_offset = 10
 
     assign(socket, Keyword.merge(stats, page_title: "Glific Dashboard"))
-    |> assign(get_chart_data(org_id))
+    |> assign(date_offset: date_offset)
+    |> assign(get_chart_data(org_id, date_offset)) |> IO.inspect(label: "initial assign")
   end
 
   defp assign_stats(socket, :call) do
     Enum.each(Reports.kpi_list(), &send(self(), {:get_stats, &1}))
     org_id = get_org_id(socket)
-    assign(socket, get_chart_data(org_id))
+    date_offset = get_date_offset(socket)
+    assign(socket, get_chart_data(org_id, date_offset))
   end
 
   @doc false
@@ -52,17 +65,16 @@ defmodule GlificWeb.StatsLive do
   end
 
   @doc false
-  @spec get_chart_data(non_neg_integer()) :: list()
-  def get_chart_data(org_id) do
+  @spec get_date_offset(Phoenix.LiveView.Socket.t()) :: non_neg_integer()
+  def get_date_offset(socket) do
+    socket.assigns[:date_offset]
+  end
+
+  @doc false
+  @spec get_chart_data(non_neg_integer(), non_neg_integer()) :: list()
+  def get_chart_data(org_id, date_offset) do
     [
-      contact_chart_data: %{
-        data: fetch_date_formatted_data("contacts", org_id),
-        labels: fetch_date_labels("contacts", org_id)
-      },
-      conversation_chart_data: %{
-        data: fetch_date_formatted_data("messages_conversations", org_id),
-        labels: fetch_date_labels("messages_conversations", org_id)
-      },
+      get_daily_data(org_id, date_offset),
       optin_chart_data: %{
         data: fetch_count_data(:optin_chart_data, org_id),
         labels: ["Opted In", "Opted Out", "Non Opted"]
@@ -78,7 +90,22 @@ defmodule GlificWeb.StatsLive do
       broadcast_data: fetch_table_data(:broadcasts, org_id),
       broadcast_headers: ["Flow Name", "Group Name", "Started At", "Completed At"],
       contact_pie_chart_data: fetch_contact_pie_chart_data(org_id)
-    ]
+    ] |> List.flatten()
+  end
+
+  @doc false
+  @spec get_daily_data(non_neg_integer(), non_neg_integer()) :: list()
+  def get_daily_data(org_id, date_offset) do
+    [
+      contact_chart_data: %{
+        data: fetch_date_formatted_data("contacts", org_id, date_offset),
+        labels: fetch_date_labels("contacts", org_id, date_offset)
+      },
+      conversation_chart_data: %{
+        data: fetch_date_formatted_data("messages_conversations", org_id, date_offset),
+        labels: fetch_date_labels("messages_conversations", org_id, date_offset)
+      }
+    ] |> IO.inspect(label: "daily data")
   end
 
   defp fetch_table_data(:broadcasts, org_id) do
@@ -109,15 +136,15 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  @spec fetch_date_formatted_data(String.t(), non_neg_integer()) :: list()
-  defp fetch_date_formatted_data(table_name, org_id) do
-    Reports.get_kpi_data(org_id, table_name)
+  @spec fetch_date_formatted_data(String.t(), non_neg_integer(), non_neg_integer()) :: list()
+  defp fetch_date_formatted_data(table_name, org_id, date_offset) do
+    Reports.get_kpi_data(org_id, table_name, date_offset)
     |> Map.values()
   end
 
-  @spec fetch_date_labels(String.t(), non_neg_integer()) :: list()
-  defp fetch_date_labels(table_name, org_id) do
-    Reports.get_kpi_data(org_id, table_name)
+  @spec fetch_date_labels(String.t(), non_neg_integer(), non_neg_integer()) :: list()
+  defp fetch_date_labels(table_name, org_id, date_offset) do
+    Reports.get_kpi_data(org_id, table_name, date_offset)
     |> Map.keys()
   end
 

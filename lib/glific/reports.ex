@@ -184,9 +184,9 @@ defmodule Glific.Reports do
     iex> Glific.Reports.get_kpi_data(1, "optout")
     iex> Glific.Reports.get_kpi_data(1, "contact_type")
   """
-  @spec get_kpi_data(non_neg_integer(), String.t()) :: map()
-  def get_kpi_data(org_id, table) do
-    presets = get_date_preset()
+  @spec get_kpi_data(non_neg_integer(), String.t(), non_neg_integer()) :: map()
+  def get_kpi_data(org_id, table, date_offset) do
+    presets = get_date_preset(date_offset) |> IO.inspect(label: "presets")
 
     query_data =
       get_kpi_query(presets, table, org_id)
@@ -249,14 +249,15 @@ defmodule Glific.Reports do
     |> Repo.all()
   end
 
-  @spec get_date_preset(DateTime.t()) :: map()
-  defp get_date_preset(time \\ DateTime.utc_now()) do
+  @spec get_date_preset(non_neg_integer()) :: map()
+  defp get_date_preset(date_offset) do
+    time = DateTime.utc_now()
     today = shifted_time(time, 1) |> Timex.format!("{YYYY}-{0M}-{0D}")
 
-    last_day = shifted_time(time, -6) |> Timex.format!("{YYYY}-{0M}-{0D}")
+    last_day = shifted_time(time, -date_offset) |> Timex.format!("{YYYY}-{0M}-{0D}")
 
     date_map =
-      Enum.reduce(0..6, %{}, fn day, acc ->
+      Enum.reduce(0..date_offset, %{}, fn day, acc ->
         time
         |> shifted_time(-day)
         |> Timex.format!("{0D}-{0M}-{YYYY}")

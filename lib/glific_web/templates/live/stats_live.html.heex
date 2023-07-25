@@ -27,7 +27,15 @@ Commented out the filter code. Will add this once the functionality is ready
 </div>
 -->
 <div>
-  <div class="flex content-center justify-center flex-wrap" id="charts" phx-update="ignore">
+  <div class="flex content-center justify-center flex-wrap" id="daily-charts" phx-update="replace">
+    <.link href="#" phx-click="date_offset" phx-value-number= {7} >
+      <%= 7 %>
+    </.link>
+    <hr>
+    <.link href="#" phx-click="date_offset" phx-value-number= {14} >
+      <%= 14 %>
+    </.link>
+    <h1> <%= Jason.encode!(@contact_chart_data) %> </h1>
     <canvas
       class="card"
       id="contacts_chart"
@@ -44,6 +52,8 @@ Commented out the filter code. Will add this once the functionality is ready
       data-chart-data={Jason.encode!(@conversation_chart_data)}
     >
     </canvas>
+  </div>
+  <div class="flex content-center justify-center flex-wrap" id="charts" phx-update="ignore">
     <canvas
       class="card"
       id="optin_chart"
