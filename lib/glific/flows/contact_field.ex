@@ -3,6 +3,7 @@ defmodule Glific.Flows.ContactField do
   Since many of the functions set/update fields in contact and related tables, lets
   centralize all the code here for now
   """
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Contacts,
@@ -179,6 +180,8 @@ defmodule Glific.Flows.ContactField do
     contact
   end
 
+  @spec maybe_update_profile_field(Contact.t(), map()) ::
+          Contact.t()
   def maybe_update_profile_field(contact, _fields), do: contact
 
   @doc """
@@ -202,7 +205,7 @@ defmodule Glific.Flows.ContactField do
   end
 
   @doc """
-  Deletes a contact field.
+  Deletes a contact field, optionally deletes the associated with the contact field
 
   ## Examples
 
@@ -213,11 +216,29 @@ defmodule Glific.Flows.ContactField do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_contacts_field(ContactsField.t()) ::
+  @spec delete_contacts_field(ContactsField.t(), boolean()) ::
           {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
-  def delete_contacts_field(%ContactsField{} = contacts_field) do
+  def delete_contacts_field(%ContactsField{} = contacts_field, delete_assoc \\ false) do
+    if delete_assoc,
+      do:
+        delete_associated_contacts_field(contacts_field.shortcode, contacts_field.organization_id)
+
     contacts_field
     |> ContactsField.changeset(%{})
     |> Repo.delete()
+  end
+
+  @doc """
+  Delete data associated with the given field in the contacts table
+  """
+  @spec delete_associated_contacts_field(String.t(), integer()) ::
+          {:ok, {non_neg_integer(), tuple()}}
+  def delete_associated_contacts_field(shortcode, organization_id) do
+    query =
+      from c in Contact,
+        where: c.organization_id == ^organization_id,
+        update: [set: [fields: fragment("fields - ?", ^shortcode)]]
+
+    Repo.update_all(query, [])
   end
 end
