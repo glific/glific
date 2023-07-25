@@ -24,6 +24,13 @@ defmodule Glific.Partners.Export do
     "profiles"
   ]
 
+  @airbyte_types %{
+    "bigint" => "integer",
+    "timestamp without time zone" => "timestamp_without_timezone",
+    "jsonb" => "object",
+    "USER-DEFINED" => "string",
+  }
+
   alias Glific.Repo
 
   @doc """
@@ -98,14 +105,7 @@ defmodule Glific.Partners.Export do
     |> Enum.reduce(
       %{},
       fn [column_name, data_type, column_default], acc ->
-        airbyte_data_type =
-          case data_type do
-            "bigint" -> "integer"
-            "timestamp without time zone" -> "timestamp_without_timezone"
-            "jsonb" -> "object"
-            "USER-DEFINED" -> "string"
-            _ -> data_type
-          end
+        airbyte_data_type = Map.get(@airbyte_types, data_type, data_type)
 
         # sending a list of lists, since json does not understand elixir tuples
         Map.put(acc, column_name, [airbyte_data_type, [column_default]])
