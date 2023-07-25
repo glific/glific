@@ -37,7 +37,8 @@ defmodule Glific.Messages.MessageMedia do
           updated_at: :utc_datetime | nil,
           gcs_url: String.t() | nil,
           organization_id: non_neg_integer | nil,
-          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          flow: String.t() | nil
         }
 
   schema "messages_media" do
@@ -48,6 +49,7 @@ defmodule Glific.Messages.MessageMedia do
     field(:provider_media_id, :string)
     field(:gcs_url, :string)
     field(:content_type, :string)
+    field(:flow, :string)
 
     belongs_to(:organization, Organization)
 
