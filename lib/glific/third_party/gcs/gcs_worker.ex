@@ -19,6 +19,8 @@ defmodule Glific.GCS.GcsWorker do
   @base_url "https://www.googleapis.com/upload/storage/v1/b/"
   @bucket_name "bulk_uploadtest"
   @path_to_private_key "lib/glific/third_party/gcs/conf.json"
+  @transfer_service_url "https://storagetransfer.googleapis.com/v1/transferJobs"
+
 
 
 
@@ -35,10 +37,59 @@ defmodule Glific.GCS.GcsWorker do
 
   @provider_shortcode "google_cloud_storage"
 
+  @spec transfer_to_bucket(remote_url :: String.t(), bucket_name :: String.t()) :: :ok | {:error, term}
+  def transfer_to_bucket(remote_url, bucket_name) do
+    access_token = get_access_token();
+
+    transfer_request = %{
+      "description" => "Transfer from remote URL to Cloud Storage Bucket",
+      "status" => "ENABLED",
+      "projectId" => "tides-saas-309509",
+      "transferSpec" => %{
+        "gcsDataSink" => %{
+          "bucketName" => bucket_name
+          # "objectName" => object_name
+        },
+        "transferOptions" => %{
+          "overwriteObjectsAlreadyExistingInSink" => true
+        },
+        "httpDataSource" => %{
+          "listUrl" => remote_url
+        }
+      }
+    }
+
+    headers = [
+      {"Content-Type", "application/json"},
+      {"Authorization", "Bearer #{access_token}"},
+      {"x-goog-user-project", "tides-saas-309509"}
+    ]
+
+    case HTTPoison.post("https://storagetransfer.googleapis.com/v1/transferJobs", Poison.encode!(transfer_request), headers) do
+      {:ok, %{status_code: 200, body: _body}} ->
+        IO.puts("Transfer request successful!")
+      {:ok, %{status_code: status_code, body: body}} ->
+        IO.puts("Transfer request failed with status code #{status_code}: #{body}")
+        IO.inspect(body)
+      {:error, reason} ->
+        IO.puts("Error during transfer request: #{reason}")
+    end
+  end
+
+  defp get_access_token() do
+    "gcloud"
+    |> System.cmd(["auth", "print-access-token"])
+    |> elem(0)
+    |> String.trim()
+  end
+
+
+
   @doc """
   This is called from the cron job on a regular schedule. we sweep the message media url  table
   and queue them up for delivery to gcs
   """
+
   @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(organization_id) do
     organization = Partners.organization(organization_id)
@@ -150,74 +201,6 @@ defmodule Glific.GCS.GcsWorker do
       |> Oban.insert()
 
     :ok
-  end
-
-  def upload_to_gcs(urls) do
-    {:ok, token} = get_access_token()
-    Enum.each(urls, fn url -> upload_file(url, token) end)
-  end
-
-  defp get_access_token do
-    headers = %{
-      "Content-Type" => "application/x-www-form-urlencoded"
-    }
-    body = URI.encode_query(%{
-      "grant_type" => "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      "assertion" => read_file(@path_to_private_key)
-    })
-
-    response = HTTPoison.post("https://oauth2.googleapis.com/token", body, headers)
-    IO.puts("OAuth API Response:")
-    IO.inspect(response)
-
-    case response do
-      {:ok, %{body: body}} ->
-        case Poison.decode(body) do
-          {:ok, parsed_body} ->
-            {:ok, parsed_body["access_token"]}
-          _ ->
-            {:error, "Failed to decode JSON response"}
-        end
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  defp upload_file(url, token) do
-    case HTTPoison.get(url) do
-      {:ok, %{status_code: 200, body: file_content}} ->
-        file_name = List.last(String.split(url, "/"))
-        headers = %{
-          "Authorization" => "Bearer #{token}",
-          "Content-Type" => "application/octet-stream",
-          "Content-Length" => Integer.to_string(byte_size(file_content))
-        }
-
-        gcs_upload_url = "#{@base_url}/#{@bucket_name}/o?uploadType=media&name=#{file_name}"
-
-        IO.puts("Uploading file #{file_name} to GCS...")
-        IO.inspect(headers)
-
-        response = HTTPoison.post(gcs_upload_url, file_content, headers)
-
-        IO.inspect(response)
-
-        case response do
-          {:ok, %{status_code: 200}} ->
-            IO.puts("File #{file_name} uploaded successfully to GCS.")
-          _ ->
-            IO.puts("Failed to upload the file #{file_name} to GCS.")
-        end
-
-      _ ->
-        IO.puts("Failed to fetch the content from URL: #{url}")
-    end
-  end
-
-
-  defp read_file(file_path) do
-    File.read!(file_path)
   end
 
   @spec pad(non_neg_integer) :: String.t()
