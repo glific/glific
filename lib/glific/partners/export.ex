@@ -28,7 +28,7 @@ defmodule Glific.Partners.Export do
     "bigint" => "integer",
     "timestamp without time zone" => "timestamp_without_timezone",
     "jsonb" => "object",
-    "USER-DEFINED" => "string",
+    "USER-DEFINED" => "string"
   }
 
   alias Glific.Repo
