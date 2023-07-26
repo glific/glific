@@ -16,13 +16,6 @@ defmodule Glific.GCS.GcsWorker do
     priority: 2
 
   alias Waffle.Storage.Google.CloudStorage
-  @base_url "https://www.googleapis.com/upload/storage/v1/b/"
-  @bucket_name "bulk_uploadtest"
-  @path_to_private_key "lib/glific/third_party/gcs/conf.json"
-  @transfer_service_url "https://storagetransfer.googleapis.com/v1/transferJobs"
-
-
-
 
   alias Glific.{
     BigQuery,
