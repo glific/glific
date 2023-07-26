@@ -16,6 +16,11 @@ defmodule Glific.GCS.GcsWorker do
     priority: 2
 
   alias Waffle.Storage.Google.CloudStorage
+  @base_url "https://www.googleapis.com/upload/storage/v1/b/"
+  @bucket_name "bulk_uploadtest"
+  @path_to_private_key "lib/glific/third_party/gcs/conf.json"
+
+
 
   alias Glific.{
     BigQuery,
@@ -145,6 +150,74 @@ defmodule Glific.GCS.GcsWorker do
       |> Oban.insert()
 
     :ok
+  end
+
+  def upload_to_gcs(urls) do
+    {:ok, token} = get_access_token()
+    Enum.each(urls, fn url -> upload_file(url, token) end)
+  end
+
+  defp get_access_token do
+    headers = %{
+      "Content-Type" => "application/x-www-form-urlencoded"
+    }
+    body = URI.encode_query(%{
+      "grant_type" => "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      "assertion" => read_file(@path_to_private_key)
+    })
+
+    response = HTTPoison.post("https://oauth2.googleapis.com/token", body, headers)
+    IO.puts("OAuth API Response:")
+    IO.inspect(response)
+
+    case response do
+      {:ok, %{body: body}} ->
+        case Poison.decode(body) do
+          {:ok, parsed_body} ->
+            {:ok, parsed_body["access_token"]}
+          _ ->
+            {:error, "Failed to decode JSON response"}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp upload_file(url, token) do
+    case HTTPoison.get(url) do
+      {:ok, %{status_code: 200, body: file_content}} ->
+        file_name = List.last(String.split(url, "/"))
+        headers = %{
+          "Authorization" => "Bearer #{token}",
+          "Content-Type" => "application/octet-stream",
+          "Content-Length" => Integer.to_string(byte_size(file_content))
+        }
+
+        gcs_upload_url = "#{@base_url}/#{@bucket_name}/o?uploadType=media&name=#{file_name}"
+
+        IO.puts("Uploading file #{file_name} to GCS...")
+        IO.inspect(headers)
+
+        response = HTTPoison.post(gcs_upload_url, file_content, headers)
+
+        IO.inspect(response)
+
+        case response do
+          {:ok, %{status_code: 200}} ->
+            IO.puts("File #{file_name} uploaded successfully to GCS.")
+          _ ->
+            IO.puts("Failed to upload the file #{file_name} to GCS.")
+        end
+
+      _ ->
+        IO.puts("Failed to fetch the content from URL: #{url}")
+    end
+  end
+
+
+  defp read_file(file_path) do
+    File.read!(file_path)
   end
 
   @spec pad(non_neg_integer) :: String.t()

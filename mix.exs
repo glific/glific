@@ -119,6 +119,7 @@ defmodule Glific.MixProject do
       {:oban_web, "~> 2.9", repo: "oban", only: @oban_envs},
       {:oban_pro, "~> 0.12", repo: "oban", only: @oban_envs},
       {:faker, "~> 0.13"},
+      {:httpoison, "~> 2.0"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.15", only: @test_envs},
       {:publicist, "~> 1.1"},
