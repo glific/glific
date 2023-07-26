@@ -48,31 +48,33 @@ defmodule Glific.Providers.Gupshup.Template do
   def submit_for_approval(attrs) do
     organization = Partners.organization(attrs.organization_id)
 
-    PartnerAPI.apply_for_template(
-      attrs.organization_id,
-      body(attrs, organization)
-    )
-    |> case do
-      {:ok, %{"template" => template} = _response} ->
-        attrs
-        |> Map.merge(%{
-          number_parameters: Templates.template_parameters_count(attrs),
-          uuid: template["id"],
-          bsp_id: template["id"],
-          status: template["status"],
-          is_active: template["status"] == "APPROVED"
-        })
-        |> append_buttons(attrs)
-        |> Templates.do_create_session_template()
-
+    with {:ok, app_id} <- PartnerAPI.app_id(attrs.organization_id),
+         {:ok, _app_id} <- validate_app_id(app_id),
+         {:ok, %{"template" => template} = _response} <-
+           PartnerAPI.apply_for_template(
+             attrs.organization_id,
+             body(attrs, organization)
+           ) do
+      attrs
+      |> Map.merge(%{
+        number_parameters: Templates.template_parameters_count(attrs),
+        uuid: template["id"],
+        bsp_id: template["id"],
+        status: template["status"],
+        is_active: template["status"] == "APPROVED"
+      })
+      |> append_buttons(attrs)
+      |> Templates.do_create_session_template()
+    else
       {:error, error} ->
         Logger.error(error)
         {:error, ["BSP", "couldn't submit for approval"]}
-
-      other_response ->
-        other_response
     end
   end
+
+  @spec validate_app_id(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  defp validate_app_id("NA"), do: {:error, "Invalid APP ID, Check Gupshup Setting"}
+  defp validate_app_id(app_id), do: {:ok, app_id}
 
   @doc """
   Import pre approved templates when BSP is Gupshup

@@ -43,6 +43,7 @@ defmodule GlificWeb.Schema.SheetTypes do
     field(:label, :string)
     field(:url, :string)
     field(:is_active, :boolean)
+    field(:auto_sync, :boolean)
     field(:type, :string)
   end
 

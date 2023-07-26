@@ -24,6 +24,13 @@ defmodule Glific.Partners.Export do
     "profiles"
   ]
 
+  @airbyte_types %{
+    "bigint" => "integer",
+    "timestamp without time zone" => "timestamp_without_timezone",
+    "jsonb" => "object",
+    "USER-DEFINED" => "string",
+  }
+
   alias Glific.Repo
 
   @doc """
@@ -77,22 +84,42 @@ defmodule Glific.Partners.Export do
   """
   @spec export_config :: map()
   def export_config do
-    @meta
-    |> Enum.reduce(
-      %{},
-      fn table, acc ->
+    (@tables ++ @meta)
+    |> Enum.reduce(%{}, fn table, acc ->
+      data =
         table
         |> config_query()
-        |> add_map(acc, table)
-      end
-    )
+        |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
+        |> Map.get(:rows)
+        |> transform_data()
+
+      Map.put(acc, table, %{"schema" => data})
+    end)
     |> Map.put("tables", @tables)
     |> Map.put("config", @meta)
   end
 
+  @spec transform_data(list()) :: map()
+  defp transform_data(data) do
+    data
+    |> Enum.reduce(
+      %{},
+      fn [column_name, data_type, column_default], acc ->
+        airbyte_data_type = Map.get(@airbyte_types, data_type, data_type)
+
+        # sending a list of lists, since json does not understand elixir tuples
+        Map.put(acc, column_name, [airbyte_data_type, [column_default]])
+      end
+    )
+  end
+
   @spec config_query(String.t()) :: String.t()
   defp config_query(table),
-    do: "SELECT JSON_AGG(t) FROM (SELECT * FROM global.#{table}) t"
+    do: """
+    SELECT column_name, data_type, column_default
+    FROM information_schema.columns
+    WHERE table_name = '#{table}'
+    """
 
   @spec add_start(DateTime.t() | nil) :: String.t()
   defp add_start(nil), do: ""
