@@ -201,12 +201,12 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
-  @spec headers(atom(), Keyword.t()) :: {:ok, any()} | {:error, any()}
+  @spec headers(atom(), Keyword.t()) :: list()
   defp headers(:app_token, opts) do
     org_id = Keyword.get(opts, :org_id)
 
     with {:ok, %{partner_app_token: partner_app_token}} <- get_partner_app_token(org_id) do
-      {:ok, [{"token", partner_app_token}, {"Authorization", partner_app_token}]}
+      [{"token", partner_app_token}, {"Authorization", partner_app_token}]
     end
   end
 
@@ -226,21 +226,21 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @spec post_request(String.t(), map(), Keyword.t()) :: tuple()
   defp post_request(url, data, opts) do
-    with {:ok, req_headers} <- headers(Keyword.get(opts, :token_type, :app_token), opts) do
-      post(url, data, headers: req_headers)
-      |> case do
-        {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
-          {:ok, Jason.decode!(body)}
+    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
-        err ->
-          {:error, "#{inspect(err)}"}
-      end
+    post(url, data, headers: req_headers)
+    |> case do
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+        {:ok, Jason.decode!(body)}
+
+      err ->
+        {:error, "#{inspect(err)}"}
     end
   end
 
   @spec put_request(String.t(), map(), Keyword.t()) :: tuple()
   defp put_request(url, data, opts) do
-    {:ok, req_headers} = headers(Keyword.get(opts, :token_type, :app_token), opts)
+    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
     put(url, data, headers: req_headers)
     |> case do
@@ -254,7 +254,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @spec get_request(String.t(), Keyword.t()) :: tuple()
   defp get_request(url, opts) do
-    {:ok, req_headers} = headers(Keyword.get(opts, :token_type, :app_token), opts)
+    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
     get(url, headers: req_headers)
     |> case do
@@ -268,7 +268,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @spec delete_request(String.t(), Keyword.t()) :: tuple()
   defp delete_request(url, opts) do
-    {:ok, req_headers} = headers(Keyword.get(opts, :token_type, :app_token), opts)
+    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
     delete(url, headers: req_headers)
     |> case do
@@ -280,8 +280,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @doc """
+    Fetch App ID
+  """
   @spec app_id(non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
-  defp app_id(org_id) do
+  def app_id(org_id) do
     organization = Partners.organization(org_id)
     gupshup_secrets = organization.services["bsp"].secrets
 
