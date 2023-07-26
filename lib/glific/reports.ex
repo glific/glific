@@ -266,6 +266,33 @@ defmodule Glific.Reports do
     %{today: today, last_day: last_day, date_map: date_map}
   end
 
+  @doc false
+  @spec get_export_data(atom(), non_neg_integer()) :: list()
+  def get_export_data(chart, org_id) do
+    get_export_query(chart)
+    |> where([q], q.organization_id == ^org_id)
+    |> Repo.all()
+  end
+
+  defp get_export_query(:optin) do
+    Contact
+    |> select([q], [q.id, q.name, q.phone])
+    |> where([q], not is_nil(q.optin_time))
+  end
+
+  defp get_export_query(:optout) do
+    Contact
+    |> select([q], [q.id, q.name, q.phone])
+    |> where([q], not is_nil(q.optout_time))
+  end
+
+  defp get_export_query(:nonopt) do
+    Contact
+    |> select([q], [q.id, q.name, q.phone])
+    |> where([q], is_nil(q.optin_time))
+    |> where([q], is_nil(q.optout_time))
+  end
+
   @spec shifted_time(DateTime.t(), integer()) :: DateTime.t()
   defp shifted_time(time, days) do
     time

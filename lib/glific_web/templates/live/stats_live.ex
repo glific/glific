@@ -29,6 +29,19 @@ defmodule GlificWeb.StatsLive do
     {:noreply, assign(socket, kpi, Reports.get_kpi(kpi, org_id))}
   end
 
+  @doc false
+  @spec handle_event(any(), any(), Phoenix.LiveView.Socket.t()) :: {:noreply, Phoenix.LiveView.Socket.t()}
+  def handle_event("export", %{"chart" => chart}, socket) do
+    org_id = get_org_id(socket)
+    data = Reports.get_export_data(String.to_atom(chart), org_id)
+
+    {:noreply,
+    socket |> push_event("download-file", %{
+      data: data,
+      filename: chart <> ".csv"
+  })}
+  end
+
   @spec assign_stats(Phoenix.LiveView.Socket.t(), atom()) :: Phoenix.LiveView.Socket.t()
   defp assign_stats(socket, :init) do
     stats = Enum.map(Reports.kpi_list(), &{&1, "loading.."})
