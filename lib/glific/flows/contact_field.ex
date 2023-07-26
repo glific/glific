@@ -4,6 +4,7 @@ defmodule Glific.Flows.ContactField do
   centralize all the code here for now
   """
   import Ecto.Query, warn: false
+  import Ecto.Changeset
 
   alias Glific.{
     Contacts,
@@ -199,9 +200,14 @@ defmodule Glific.Flows.ContactField do
   @spec update_contacts_field(ContactsField.t(), map()) ::
           {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
   def update_contacts_field(%ContactsField{} = contacts_field, attrs) do
-    contacts_field
+    changeset = contacts_field
     |> ContactsField.changeset(attrs)
-    |> Repo.update()
+
+    shortcode = get_change(changeset, :shortcode)
+    label = get_change(changeset, :name)
+
+    update_field_label_shortcode(contacts_field.shortcode, shortcode, label, attrs.organization_id)
+    Repo.update(changeset)
   end
 
   @doc """
@@ -231,13 +237,72 @@ defmodule Glific.Flows.ContactField do
   @doc """
   Delete data associated with the given field in the contacts table
   """
-  @spec delete_associated_contacts_field(String.t(), integer()) ::
-          {:ok, {non_neg_integer(), tuple()}}
+  @spec delete_associated_contacts_field(String.t(), integer()) :: tuple()
   def delete_associated_contacts_field(shortcode, organization_id) do
     query =
       from c in Contact,
         where: c.organization_id == ^organization_id,
         update: [set: [fields: fragment("fields - ?", ^shortcode)]]
+
+    Repo.update_all(query, [])
+  end
+
+
+  @doc """
+  Update contacts_field label or shortcode in the contacts table
+  """
+  @spec update_field_label_shortcode(String.t(), String.t(), String.t(), integer()) :: :error | tuple()
+  def update_field_label_shortcode(_, nil, nil, _), do: :error
+
+  def update_field_label_shortcode(prev_shortcode, nil, label, organization_id) do
+    query =
+      from c in Contact,
+        where: c.organization_id == ^organization_id and not is_nil(fragment("fields->?", type(^prev_shortcode,:string))),
+        update: [
+          set: [
+            fields: fragment(
+              "jsonb_set(fields, array[?::text, 'label'], to_jsonb(?))",
+              ^prev_shortcode,
+              type(^label, :string)
+            )
+          ]
+        ]
+    Repo.update_all(query, [])
+  end
+
+  def update_field_label_shortcode(prev_shortcode, shortcode, nil, organization_id) do
+    query =
+      from c in Contact,
+        where: c.organization_id == ^organization_id and not is_nil(fragment("fields->?", type(^prev_shortcode, :string))),
+        update: [
+          set: [
+            fields: fragment(
+              "(fields || jsonb_build_object(?, fields->?)) - ?",
+              type(^shortcode, :string),
+              type(^prev_shortcode, :string),
+              type(^prev_shortcode, :string)
+            )
+          ]
+        ]
+
+    Repo.update_all(query, [])
+  end
+
+  def update_field_label_shortcode(prev_shortcode, shortcode, label, organization_id) do
+    query =
+      from c in Contact,
+        where: c.organization_id == ^organization_id and not is_nil(fragment("fields->?", type(^prev_shortcode,:string))),
+        update: [
+          set: [
+            fields: fragment(
+              "(fields || jsonb_build_object(?, fields->? || '{\"label\": ?}')) - ?",
+              type(^shortcode, :string),
+              type(^prev_shortcode, :string),
+              type(^label, :string),
+              type(^prev_shortcode, :string)
+            )
+          ]
+        ]
 
     Repo.update_all(query, [])
   end
