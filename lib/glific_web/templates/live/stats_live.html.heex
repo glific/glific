@@ -27,15 +27,10 @@ Commented out the filter code. Will add this once the functionality is ready
 </div>
 -->
 <div>
+<div id="survey-results-chart" class="chart">
+<%= @chart_svg %>
+</div>
   <div class="flex content-center justify-center flex-wrap" id="charts" phx-update="ignore">
-    <canvas
-      class="card"
-      id="contacts_chart"
-      phx-hook="barChart"
-      data-label="Contacts"
-      data-chart-data={Jason.encode!(@contact_chart_data)}
-    >
-    </canvas>
     <canvas
       class="card"
       id="conversation_chart"

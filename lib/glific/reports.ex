@@ -197,6 +197,19 @@ defmodule Glific.Reports do
     end)
   end
 
+  @spec get_kpi_data_new(non_neg_integer(), String.t()) :: map()
+  def get_kpi_data_new(org_id, table) do
+    presets = get_date_preset()
+
+    query_data =
+      get_kpi_query(presets, table, org_id)
+      |> Repo.query!([])
+
+    Enum.reduce(query_data.rows, presets.date_map, fn [date, count], acc ->
+      Map.put(acc, Timex.format!(date, "{0D}-{0M}-{YYYY}"), count)
+    end) |> Map.to_list()
+  end
+
   defp get_kpi_query(presets, table, org_id) do
     """
     SELECT date_trunc('day', inserted_at) as date,
@@ -253,10 +266,10 @@ defmodule Glific.Reports do
   defp get_date_preset(time \\ DateTime.utc_now()) do
     today = shifted_time(time, 1) |> Timex.format!("{YYYY}-{0M}-{0D}")
 
-    last_day = shifted_time(time, -6) |> Timex.format!("{YYYY}-{0M}-{0D}")
+    last_day = shifted_time(time, -10) |> Timex.format!("{YYYY}-{0M}-{0D}")
 
     date_map =
-      Enum.reduce(0..6, %{}, fn day, acc ->
+      Enum.reduce(0..10, %{}, fn day, acc ->
         time
         |> shifted_time(-day)
         |> Timex.format!("{0D}-{0M}-{YYYY}")

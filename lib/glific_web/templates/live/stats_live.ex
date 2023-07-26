@@ -5,6 +5,7 @@ defmodule GlificWeb.StatsLive do
   use GlificWeb, :live_view
 
   alias Glific.Reports
+  alias Contex.Plot
 
   @doc false
   @spec mount(any(), any(), any()) ::
@@ -37,6 +38,9 @@ defmodule GlificWeb.StatsLive do
 
     assign(socket, Keyword.merge(stats, page_title: "Glific Dashboard"))
     |> assign(get_chart_data(org_id))
+    |> assign_dataset() |> IO.inspect(label: "dataset")
+    |> assign_chart() |> IO.inspect(label: "chart")
+    |> assign_chart_svg() |> IO.inspect(label: "svg")
   end
 
   defp assign_stats(socket, :call) do
@@ -45,20 +49,33 @@ defmodule GlificWeb.StatsLive do
     assign(socket, get_chart_data(org_id))
   end
 
+  def assign_dataset(
+    %{assigns: %{
+      contact_chart_data: chart_data}
+    } = socket) do
+      socket
+      |> assign(
+        :dataset,
+        make_bar_chart_dataset(chart_data)
+      )
+  end
+
+  defp make_bar_chart_dataset(data) do
+    Contex.Dataset.new(data)
+  end
+
   @doc false
   @spec get_org_id(Phoenix.LiveView.Socket.t()) :: non_neg_integer()
   def get_org_id(socket) do
     socket.assigns[:current_user].organization_id
   end
 
+  #GlificWeb.StatsLive.fetch_date_formatted_data("contacts", 1)
   @doc false
   @spec get_chart_data(non_neg_integer()) :: list()
   def get_chart_data(org_id) do
     [
-      contact_chart_data: %{
-        data: fetch_date_formatted_data("contacts", org_id),
-        labels: fetch_date_labels("contacts", org_id)
-      },
+      contact_chart_data:  Reports.get_kpi_data_new(org_id, "contacts"),
       conversation_chart_data: %{
         data: fetch_date_formatted_data("messages_conversations", org_id),
         labels: fetch_date_labels("messages_conversations", org_id)
@@ -110,7 +127,7 @@ defmodule GlificWeb.StatsLive do
   end
 
   @spec fetch_date_formatted_data(String.t(), non_neg_integer()) :: list()
-  defp fetch_date_formatted_data(table_name, org_id) do
+  def fetch_date_formatted_data(table_name, org_id) do
     Reports.get_kpi_data(org_id, table_name)
     |> Map.values()
   end
@@ -130,4 +147,41 @@ defmodule GlificWeb.StatsLive do
       %{data: data, labels: labels}
     end)
   end
+
+  #def update(assigns, socket) do
+  #  {:ok,
+   # socket
+   # |> assign(assigns)
+   # |> assign_chart_data()
+   # |> assign_dataset()
+   # |> assign_chart()
+    #|> assign_chart_svg()}
+ # end
+
+  defp assign_chart_data(socket) do
+    socket
+    |> assign(
+    :chart_data,
+    Reports.get_kpi_data(1, "contacts"))
+  end
+
+  defp assign_chart(%{assigns: %{dataset: dataset}} = socket) do
+    socket
+    |> assign(:chart, make_bar_chart(dataset))
+  end
+
+  defp make_bar_chart(dataset) do
+    Contex.BarChart.new(dataset)
+  end
+
+  def assign_chart_svg(%{assigns: %{chart: chart}} = socket) do
+    socket
+    |> assign(:chart_svg, render_bar_chart(chart))
+  end
+
+  defp render_bar_chart(chart) do
+    Plot.new(500, 400, chart)
+    |> Plot.to_svg()
+  end
+
 end

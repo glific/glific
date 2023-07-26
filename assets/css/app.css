@@ -140,5 +140,10 @@
   @apply bg-gray-100;
 }
 
+.chart {
+  height: 500px;
+  width: 500px;
+}
+
 
 
