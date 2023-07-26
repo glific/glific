@@ -15,6 +15,7 @@ defmodule Glific.Messages.MessageMedia do
   # define all the required fields for message media
   @required_fields [
     :url,
+    :flow,
     :source_url,
     :organization_id
   ]
