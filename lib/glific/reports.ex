@@ -5,20 +5,27 @@ defmodule Glific.Reports do
 
   import Ecto.Query, warn: false
 
-  alias Glific.Repo
+  alias Glific.{
+    Contacts.Contact,
+    Flows.FlowContext,
+    Flows.MessageBroadcast,
+    Messages.Message,
+    Messages.MessageConversation,
+    Notifications.Notification,
+    Repo,
+    Stats.Stat
+  }
 
   @doc false
   @spec get_kpi(atom(), non_neg_integer()) :: integer()
   def get_kpi(kpi, org_id) do
-    count =
-      get_count_query(org_id, kpi)
-      |> Repo.query!([])
-      |> then(& &1.rows)
+    Repo.put_process_state(org_id)
 
-    case count do
-      [[num]] -> num
-      _ -> 0
-    end
+    get_count_query(kpi)
+    |> add_timestamps(kpi)
+    |> where([q], q.organization_id == ^org_id)
+    |> Repo.all()
+    |> hd
   end
 
   @doc false
@@ -41,67 +48,121 @@ defmodule Glific.Reports do
     ]
   end
 
-  defp get_count_query(org_id, :conversation_count),
-    do:
-      "SELECT COUNT(id) FROM messages_conversations WHERE organization_id = #{org_id} and inserted_at >= date_trunc('month', CURRENT_DATE)"
+  @spec get_count_query(atom()) :: Ecto.Query.t()
+  defp get_count_query(:valid_contact_count) do
+    Contact
+    |> select([q], count(q.id))
+    |> where([q], q.status == "valid")
+  end
 
-  defp get_count_query(org_id, :active_flow_count),
-    do:
-      "SELECT COUNT(id) FROM flow_contexts WHERE organization_id = #{org_id} and completed_at IS NULL"
+  defp get_count_query(:invalid_contact_count) do
+    Contact
+    |> select([q], count(q.id))
+    |> where([q], q.status == "invalid")
+  end
 
-  defp get_count_query(org_id, :flows_started),
-    do:
-      "SELECT SUM(flows_started) FROM stats WHERE organization_id = #{org_id} and period = 'day' and EXTRACT(MONTH FROM date) = EXTRACT(MONTH FROM CURRENT_DATE)"
+  defp get_count_query(:opted_in_contacts_count) do
+    Contact
+    |> select([q], count(q.id))
+    |> where([q], not is_nil(q.optin_time))
+  end
 
-  defp get_count_query(org_id, :flows_completed),
-    do:
-      "SELECT SUM(flows_completed) FROM stats WHERE organization_id = #{org_id} and period = 'day' and EXTRACT(MONTH FROM date) = EXTRACT(MONTH FROM CURRENT_DATE)"
+  defp get_count_query(:opted_out_contacts_count) do
+    Contact
+    |> select([q], count(q.id))
+    |> where([q], not is_nil(q.optout_time))
+  end
 
-  defp get_count_query(org_id, :valid_contact_count),
-    do: "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and status = 'valid'"
+  defp get_count_query(:non_opted_contacts_count) do
+    Contact
+    |> select([q], count(q.id))
+    |> where([q], is_nil(q.optin_time))
+    |> where([q], is_nil(q.optout_time))
+  end
 
-  defp get_count_query(org_id, :invalid_contact_count),
-    do: "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and status = 'invalid'"
+  defp get_count_query(:bsp_status) do
+    Contact
+    |> group_by([c], c.bsp_status)
+    |> select([c], [c.bsp_status, count(c.id)])
+  end
 
-  defp get_count_query(org_id, :opted_in_contacts_count),
-    do:
-      "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optin_time IS NOT NULL"
+  defp get_count_query(:monthly_error_count) do
+    Message
+    |> select([q], count(q.id))
+    |> where([q], fragment("? != '{}'", q.errors))
+  end
 
-  defp get_count_query(org_id, :opted_out_contacts_count),
-    do:
-      "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NOT NULL"
+  defp get_count_query(:critical_notification_count) do
+    Notification
+    |> select([q], count(q.id))
+    |> where([q], q.severity == "Critical")
+  end
 
-  defp get_count_query(org_id, :non_opted_contacts_count),
-    do:
-      "SELECT COUNT(id) FROM contacts WHERE organization_id = #{org_id} and optout_time IS NULL and optin_time IS NULL"
+  defp get_count_query(:warning_notification_count) do
+    Notification
+    |> select([q], count(q.id))
+    |> where([q], q.severity == "Warning")
+  end
 
-  defp get_count_query(org_id, :monthly_error_count),
-    do:
-      "SELECT COUNT(id) FROM messages WHERE organization_id = #{org_id} and errors != '{}' and inserted_at >= date_trunc('month', CURRENT_DATE)"
+  defp get_count_query(:information_notification_count) do
+    Notification
+    |> select([q], count(q.id))
+    |> where([q], q.severity == "Information")
+  end
 
-  defp get_count_query(org_id, :critical_notification_count),
-    do:
-      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Critical' and inserted_at >= date_trunc('month', CURRENT_DATE)"
+  defp get_count_query(:conversation_count) do
+    MessageConversation
+    |> select([q], count(q.id))
+  end
 
-  defp get_count_query(org_id, :warning_notification_count),
-    do:
-      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Warning' and inserted_at >= date_trunc('month', CURRENT_DATE)"
+  defp get_count_query(:active_flow_count) do
+    FlowContext
+    |> select([q], count(q.id))
+    |> where([q], is_nil(q.completed_at))
+  end
 
-  defp get_count_query(org_id, :information_notification_count),
-    do:
-      "SELECT COUNT(id) FROM notifications WHERE organization_id = #{org_id} and severity = 'Information' and inserted_at >= date_trunc('month', CURRENT_DATE)"
+  defp get_count_query(:inbound_messages_count), do: select(Stat, [q], sum(q.inbound))
 
-  defp get_count_query(org_id, :inbound_messages_count),
-    do:
-      "SELECT inbound FROM stats WHERE organization_id = #{org_id} and inserted_at >= CURRENT_DATE and period = 'day'"
+  defp get_count_query(:outbound_messages_count), do: select(Stat, [q], sum(q.outbound))
 
-  defp get_count_query(org_id, :outbound_messages_count),
-    do:
-      "SELECT outbound FROM stats WHERE organization_id = #{org_id} and inserted_at >= CURRENT_DATE and period = 'day'"
+  defp get_count_query(:hsm_messages_count), do: select(Stat, [q], sum(q.hsm))
 
-  defp get_count_query(org_id, :hsm_messages_count),
-    do:
-      "SELECT hsm FROM stats WHERE organization_id = #{org_id} and inserted_at >= CURRENT_DATE and period = 'day'"
+  defp get_count_query(:flows_started), do: select(Stat, [q], sum(q.flows_started))
+
+  defp get_count_query(:flows_completed), do: select(Stat, [q], sum(q.flows_completed))
+
+  @spec add_timestamps(Ecto.Query.t(), atom()) :: Ecto.Query.t()
+  defp add_timestamps(query, kpi)
+       when kpi in [
+              :critical_notification_count,
+              :warning_notification_count,
+              :information_notification_count,
+              :monthly_error_count,
+              :active_flow_count,
+              :conversation_count
+            ] do
+    date = Timex.beginning_of_month(DateTime.utc_now())
+
+    query
+    |> where([q], q.inserted_at >= ^date)
+  end
+
+  defp add_timestamps(query, kpi)
+       when kpi in [
+              :outbound_messages_count,
+              :hsm_messages_count,
+              :inbound_messages_count,
+              :flows_started,
+              :flows_completed
+            ] do
+    day = Date.beginning_of_month(DateTime.utc_now())
+
+    query
+    |> where([q], q.period == "day")
+    |> where([q], q.date >= ^day)
+  end
+
+  defp add_timestamps(query, _kpi), do: query
 
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
@@ -155,19 +216,20 @@ defmodule Glific.Reports do
       get_hourly_messages_query(org_id)
       |> Repo.query!([])
 
-    hourly_msg = Enum.into(0..23, %{}, fn key -> {key, 0} end)
-    Enum.reduce(query_data.rows, hourly_msg, fn [count, hour], acc ->
-      Map.put(acc, hour, count)
+    hourly_msg = Enum.into(0..23, %{}, fn key -> {key, %{inbound: 0, outbound: 0}} end)
+    res = Enum.reduce(query_data.rows, hourly_msg, fn [hour, inbound, outbound], acc ->
+      Map.put(acc, hour, %{inbound: inbound, outbound: outbound})
     end)
+    IO.inspect(res)
   end
 
   defp get_hourly_messages_query(org_id) do
     """
-    SELECT messages, hour
+    SELECT hour, inbound, outbound
     FROM stats
     WHERE
       organization_id = #{org_id}
-      and inserted_at >= CURRENT_DATE
+      and date_trunc('month',date) = date_trunc('month',CURRENT_DATE)
       and period = 'hour'
     """
   end

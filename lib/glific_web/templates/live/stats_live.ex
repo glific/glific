@@ -65,7 +65,8 @@ defmodule GlificWeb.StatsLive do
       },
       messages_chart_data: %{
         data: fetch_hourly_data(org_id),
-        labels: fetch_hourly_labels(org_id)
+        labels: fetch_hourly_labels(org_id),
+        label: ["Inbound", "Outbound"]
       },
       optin_chart_data: %{
         data: fetch_count_data(:optin_chart_data, org_id),
@@ -78,8 +79,15 @@ defmodule GlificWeb.StatsLive do
       message_type_chart_data: %{
         data: fetch_count_data(:message_type_chart_data, org_id),
         labels: ["Inbound", "Outbound"]
-      }
+      },
+      broadcast_data: fetch_table_data(:broadcasts, org_id),
+      broadcast_headers: ["Flow Name", "Group Name", "Started At", "Completed At"],
+      contact_pie_chart_data: fetch_contact_pie_chart_data(org_id)
     ]
+  end
+
+  defp fetch_table_data(:broadcasts, org_id) do
+    Reports.get_broadcast_data(org_id)
   end
 
   @spec fetch_count_data(atom(), non_neg_integer()) :: list()
@@ -108,8 +116,12 @@ defmodule GlificWeb.StatsLive do
 
   @spec fetch_hourly_data(non_neg_integer()) :: list()
   defp fetch_hourly_data(org_id) do
-    Reports.get_messages_data(org_id)
-    |> Map.values()
+    [
+      Reports.get_messages_data(org_id)
+      |> Map.values() |> Enum.into([], &(&1.inbound)),
+      Reports.get_messages_data(org_id)
+      |> Map.values() |> Enum.into([], &(&1.outbound))
+    ]
   end
 
   @spec fetch_hourly_labels(non_neg_integer()) :: list()
@@ -128,5 +140,15 @@ defmodule GlificWeb.StatsLive do
   defp fetch_date_labels(table_name, org_id) do
     Reports.get_kpi_data(org_id, table_name)
     |> Map.keys()
+  end
+
+  @spec fetch_contact_pie_chart_data(non_neg_integer()) :: list()
+  defp fetch_contact_pie_chart_data(org_id) do
+    Reports.get_contact_data(org_id)
+    |> Enum.reduce(%{data: [], labels: []}, fn [label, count], acc ->
+      data = acc.data ++ [count]
+      labels = acc.labels ++ [label]
+      %{data: data, labels: labels}
+    end)
   end
 end
