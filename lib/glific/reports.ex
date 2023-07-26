@@ -213,25 +213,20 @@ defmodule Glific.Reports do
   @doc false
   @spec get_messages_data(non_neg_integer()) :: map()
   def get_messages_data(org_id) do
-    query_data =
-      get_hourly_messages_query(org_id)
-      |> Repo.query!([])
+    Repo.put_process_state(org_id)
 
-    hourly_msg = Enum.into(0..23, %{}, fn key -> {key, %{inbound: 0, outbound: 0}} end)
-    Enum.reduce(query_data.rows, hourly_msg, fn [hour, inbound, outbound], acc ->
-      Map.put(acc, hour, %{inbound: inbound, outbound: outbound})
+    Stat
+    |> select([q], %{
+      hour: fragment("date_part('hour', ?)", q.inserted_at),
+      inbound: sum(q.inbound),
+      outbound: sum(q.outbound)
+    })
+    |> group_by([q], fragment("date_part('hour', ?)", q.inserted_at))
+    |> where([q], q.organization_id == ^org_id)
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn hourly_stat, acc ->
+      Map.put(acc, hourly_stat.hour, Map.delete(hourly_stat, :hour))
     end)
-  end
-
-  defp get_hourly_messages_query(org_id) do
-    """
-    SELECT hour, inbound, outbound
-    FROM stats
-    WHERE
-      organization_id = #{org_id}
-      and date_trunc('month',date) = date_trunc('month',CURRENT_DATE)
-      and period = 'hour'
-    """
   end
 
   @doc """

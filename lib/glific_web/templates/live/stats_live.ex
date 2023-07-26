@@ -117,10 +117,8 @@ defmodule GlificWeb.StatsLive do
   @spec fetch_hourly_data(non_neg_integer()) :: list()
   defp fetch_hourly_data(org_id) do
     [
-      Reports.get_messages_data(org_id)
-      |> Map.values() |> Enum.into([], &(&1.inbound)),
-      Reports.get_messages_data(org_id)
-      |> Map.values() |> Enum.into([], &(&1.outbound))
+      Reports.get_messages_data(org_id) |> Map.values() |> Enum.into([], & &1.inbound),
+      Reports.get_messages_data(org_id) |> Map.values() |> Enum.into([], & &1.outbound)
     ]
   end
 
