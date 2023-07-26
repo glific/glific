@@ -22,10 +22,10 @@ defmodule Glific.ExportTest do
     test "export_config/0 returns config info", %{organization_id: _organization_id} do
       config = Export.export_config()
 
-      assert config["languages"] != []
-      assert config["languages"] |> length() > 10
-      assert config["providers"] != []
-      assert config["providers"] |> length() > 10
+      assert config["languages"] != nil
+      assert map_size(config["languages"]["schema"]) > 8
+      assert config["providers"] != nil
+      assert map_size(config["providers"]["schema"]) > 8
     end
 
     test "export_stats/1 returns the stats for a specific organization", %{
