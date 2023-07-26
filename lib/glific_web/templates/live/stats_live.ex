@@ -65,7 +65,7 @@ defmodule GlificWeb.StatsLive do
       },
       messages_chart_data: %{
         data: fetch_hourly_data(org_id),
-        labels: fetch_hourly_labels(org_id),
+        labels: Enum.to_list(0..23),
         label: ["Inbound", "Outbound"]
       },
       optin_chart_data: %{
@@ -120,12 +120,6 @@ defmodule GlificWeb.StatsLive do
       Reports.get_messages_data(org_id) |> Map.values() |> Enum.into([], & &1.inbound),
       Reports.get_messages_data(org_id) |> Map.values() |> Enum.into([], & &1.outbound)
     ]
-  end
-
-  @spec fetch_hourly_labels(non_neg_integer()) :: list()
-  defp fetch_hourly_labels(org_id) do
-    Reports.get_messages_data(org_id)
-    |> Map.keys()
   end
 
   @spec fetch_date_formatted_data(String.t(), non_neg_integer()) :: list()
