@@ -211,6 +211,23 @@ defmodule Glific.Flows.ContactField do
   end
 
   @doc """
+  Merges two Contact fields by updating the old field with new field
+  """
+  @spec merge_contacts_fields(ContactsField.t(), map()) ::
+          {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
+  def merge_contacts_fields(%ContactsField{} = contacts_field, attrs) do
+    changeset = contacts_field
+    |> ContactsField.changeset(attrs)
+
+    shortcode = get_change(changeset, :shortcode)
+    label = get_change(changeset, :name)
+
+    update_field_label_shortcode(contacts_field.shortcode, shortcode, label, attrs.organization_id)
+    delete_prev_field(contacts_field.shortcode, shortcode, attrs.organization_id)
+    delete_contacts_field(contacts_field)
+  end
+
+  @doc """
   Deletes a contact field, optionally deletes the associated with the contact field
 
   ## Examples
@@ -257,7 +274,8 @@ defmodule Glific.Flows.ContactField do
   def update_field_label_shortcode(prev_shortcode, nil, label, organization_id) do
     query =
       from c in Contact,
-        where: c.organization_id == ^organization_id and not is_nil(fragment("fields->?", type(^prev_shortcode,:string))),
+        where: c.organization_id == ^organization_id
+        and not is_nil(fragment("fields->?", type(^prev_shortcode,:string))),
         update: [
           set: [
             fields: fragment(
@@ -273,7 +291,9 @@ defmodule Glific.Flows.ContactField do
   def update_field_label_shortcode(prev_shortcode, shortcode, nil, organization_id) do
     query =
       from c in Contact,
-        where: c.organization_id == ^organization_id and not is_nil(fragment("fields->?", type(^prev_shortcode, :string))),
+        where: c.organization_id == ^organization_id
+        and not is_nil(fragment("fields->?", type(^prev_shortcode,:string)))
+        and is_nil(fragment("fields->?", type(^shortcode,:string))),
         update: [
           set: [
             fields: fragment(
@@ -291,14 +311,34 @@ defmodule Glific.Flows.ContactField do
   def update_field_label_shortcode(prev_shortcode, shortcode, label, organization_id) do
     query =
       from c in Contact,
-        where: c.organization_id == ^organization_id and not is_nil(fragment("fields->?", type(^prev_shortcode,:string))),
+        where: c.organization_id == ^organization_id
+        and not is_nil(fragment("fields->?", type(^prev_shortcode,:string)))
+        and is_nil(fragment("fields->?", type(^shortcode,:string))),
         update: [
           set: [
             fields: fragment(
-              "(fields || jsonb_build_object(?, fields->? || '{\"label\": ?}')) - ?",
+              "(fields || jsonb_build_object(?, fields->? || jsonb_build_object('label', ?))) - ?",
               type(^shortcode, :string),
               type(^prev_shortcode, :string),
               type(^label, :string),
+              type(^prev_shortcode, :string)
+            )
+          ]
+        ]
+
+    Repo.update_all(query, [])
+  end
+
+  def delete_prev_field(prev_shortcode, shortcode, organization_id) do
+    query =
+      from c in Contact,
+        where: c.organization_id == ^organization_id
+        and not is_nil(fragment("fields->?", type(^prev_shortcode,:string)))
+        and not is_nil(fragment("fields->?", type(^shortcode,:string))),
+        update: [
+          set: [
+            fields: fragment(
+              "fields - ?",
               type(^prev_shortcode, :string)
             )
           ]
