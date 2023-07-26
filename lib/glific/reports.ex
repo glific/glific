@@ -210,6 +210,7 @@ defmodule Glific.Reports do
     """
   end
 
+  @doc false
   @spec get_messages_data(non_neg_integer()) :: map()
   def get_messages_data(org_id) do
     query_data =
