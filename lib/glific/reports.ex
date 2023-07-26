@@ -217,10 +217,9 @@ defmodule Glific.Reports do
       |> Repo.query!([])
 
     hourly_msg = Enum.into(0..23, %{}, fn key -> {key, %{inbound: 0, outbound: 0}} end)
-    res = Enum.reduce(query_data.rows, hourly_msg, fn [hour, inbound, outbound], acc ->
+    Enum.reduce(query_data.rows, hourly_msg, fn [hour, inbound, outbound], acc ->
       Map.put(acc, hour, %{inbound: inbound, outbound: outbound})
     end)
-    IO.inspect(res)
   end
 
   defp get_hourly_messages_query(org_id) do
