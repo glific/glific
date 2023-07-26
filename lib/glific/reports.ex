@@ -199,28 +199,32 @@ defmodule Glific.Reports do
 
   @spec get_kpi_data_new(non_neg_integer(), String.t()) :: map()
   def get_kpi_data_new(org_id, table) do
-    presets = get_date_preset()
+    presets = get_date_preset() |> IO.inspect(label: "preset")
+    Repo.put_process_state(org_id)
 
     query_data =
       get_kpi_query(presets, table, org_id)
-      |> Repo.query!([])
+      |> Repo.all() |> IO.inspect(label: "Ecto query")
 
-    Enum.reduce(query_data.rows, presets.date_map, fn [date, count], acc ->
-      Map.put(acc, Timex.format!(date, "{0D}-{0M}-{YYYY}"), count)
-    end) |> Map.to_list()
+    Enum.reduce(query_data, presets.date_map, fn %{count: count, date: date}, acc ->
+      #%{count: count, date: Map.put(acc, Timex.format!(date, "{0D}-{0M}-{YYYY}"))}
+      Map.put(acc, date, count)
+    end)
+    |> Enum.map(fn {k, v} -> {Timex.format!(k, "{0D}-{0M}-{YYYY}"), v} end)
+    #|> Map.to_list()
+    |> IO.inspect(label: "after mapping")
   end
 
+  # [%{count: 15, date: ~N[2023-07-19 00:00:00.000000]}]
+
+
   defp get_kpi_query(presets, table, org_id) do
-    """
-    SELECT date_trunc('day', inserted_at) as date,
-    COUNT(id) as count
-    FROM #{table}
-    WHERE
-      inserted_at > '#{presets.last_day}'
-      AND inserted_at <= '#{presets.today}'
-      AND organization_id = #{org_id}
-    GROUP BY date
-    """
+    from(
+      t in table,
+      where: t.inserted_at > ^presets.last_day and t.inserted_at <= ^presets.today and t.organization_id == ^org_id,
+      group_by: fragment("date_trunc('day', ?)", t.inserted_at),
+      select: %{date: fragment("date_trunc('day', ?)", t.inserted_at), count: count(t.id)}
+    ) |> IO.inspect(label: "raw query")
   end
 
   @doc """
@@ -263,16 +267,15 @@ defmodule Glific.Reports do
   end
 
   @spec get_date_preset(DateTime.t()) :: map()
-  defp get_date_preset(time \\ DateTime.utc_now()) do
-    today = shifted_time(time, 1) |> Timex.format!("{YYYY}-{0M}-{0D}")
+  defp get_date_preset(time \\ NaiveDateTime.utc_now()) do
+    today = shifted_time(time, 1)
 
-    last_day = shifted_time(time, -10) |> Timex.format!("{YYYY}-{0M}-{0D}")
+    last_day = shifted_time(time, -10)
 
     date_map =
       Enum.reduce(0..10, %{}, fn day, acc ->
         time
         |> shifted_time(-day)
-        |> Timex.format!("{0D}-{0M}-{YYYY}")
         |> then(&Map.put(acc, &1, 0))
       end)
 
