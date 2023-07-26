@@ -44,11 +44,27 @@ defmodule Glific.Clients.KEF do
       })
 
     school_id = get_in(contact.fields, ["school_id", "value"])
+    current_worksheet_code = get_in(contact.fields, ["current_worksheet_code", "value"])
     phone = contact.phone
+
+    worksheet_subfolder =
+      if is_nil(current_worksheet_code),
+        do: "Others",
+        else: "Worksheets/#{current_worksheet_code}"
+
+    media_subfolder =
+      case media["type"] do
+        "image" -> "Images"
+        "video" -> "Videos"
+        "audio" -> "Audio note"
+        _ -> "Others"
+      end
 
     if is_nil(school_id),
       do: media["remote_name"],
-      else: "schools/#{school_id}/#{phone}" <> "/" <> media["remote_name"]
+      else:
+        "schools/#{school_id}/#{worksheet_subfolder}/#{media_subfolder}/#{phone}/" <>
+          media["remote_name"]
   end
 
   @doc """
