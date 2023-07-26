@@ -234,6 +234,45 @@ defmodule Glific.Reports do
     """
   end
 
+  @doc """
+    gets data for the broadcast table
+  """
+  @spec get_broadcast_data(non_neg_integer()) :: list()
+  def get_broadcast_data(org_id) do
+    MessageBroadcast
+    |> join(:inner, [mb], flow in assoc(mb, :flow))
+    |> join(:inner, [mb, flow], group in assoc(mb, :group))
+    |> where([mb], mb.organization_id == ^org_id)
+    |> select([mb, flow, group], %{
+      flow_name: flow.name,
+      group_label: group.label,
+      started_at: mb.started_at,
+      completed_at: mb.completed_at
+    })
+    |> order_by([mb], desc: mb.inserted_at)
+    |> limit(25)
+    |> Repo.all()
+    |> Enum.reduce([], fn message_broadcast, acc ->
+      started_at = Timex.format!(message_broadcast.started_at, "%d-%m-%Y %I:%M %p", :strftime)
+
+      completed_at =
+        if is_nil(message_broadcast.completed_at),
+          do: "Not Completed Yet",
+          else: Timex.format!(message_broadcast.completed_at, "%d-%m-%Y %I:%M %p", :strftime)
+
+      acc ++
+        [[message_broadcast.flow_name, message_broadcast.group_label, started_at, completed_at]]
+    end)
+  end
+
+  @doc false
+  @spec get_contact_data(non_neg_integer()) :: map()
+  def get_contact_data(org_id) do
+    get_count_query(:bsp_status)
+    |> where([q], q.organization_id == ^org_id)
+    |> Repo.all()
+  end
+
   @spec get_date_preset(DateTime.t()) :: map()
   defp get_date_preset(time \\ DateTime.utc_now()) do
     today = shifted_time(time, 1) |> Timex.format!("{YYYY}-{0M}-{0D}")
