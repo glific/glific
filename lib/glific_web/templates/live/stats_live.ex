@@ -51,12 +51,17 @@ defmodule GlificWeb.StatsLive do
 
   def assign_dataset(
     %{assigns: %{
-      contact_chart_data: chart_data}
+      contact_chart_data: contact_chart_data,
+      conversation_chart_data: conversation_chart_data}
     } = socket) do
       socket
       |> assign(
-        :dataset,
-        make_bar_chart_dataset(chart_data)
+        :contact_dataset,
+        make_bar_chart_dataset(contact_chart_data)
+      )
+      |> assign(
+        :conversation_dataset,
+        make_bar_chart_dataset(conversation_chart_data)
       )
   end
 
@@ -76,10 +81,7 @@ defmodule GlificWeb.StatsLive do
   def get_chart_data(org_id) do
     [
       contact_chart_data:  Reports.get_kpi_data_new(org_id, "contacts"),
-      conversation_chart_data: %{
-        data: fetch_date_formatted_data("messages_conversations", org_id),
-        labels: fetch_date_labels("messages_conversations", org_id)
-      },
+      conversation_chart_data: Reports.get_kpi_data_new(org_id, "messages_conversations"),
       optin_chart_data: %{
         data: fetch_count_data(:optin_chart_data, org_id),
         labels: ["Opted In", "Opted Out", "Non Opted"]
@@ -158,25 +160,22 @@ defmodule GlificWeb.StatsLive do
     #|> assign_chart_svg()}
  # end
 
-  defp assign_chart_data(socket) do
+  defp assign_chart(%{assigns: %{contact_dataset: contact_dataset,
+                                 conversation_dataset: conversation_dataset}} = socket) do
     socket
-    |> assign(
-    :chart_data,
-    Reports.get_kpi_data(1, "contacts"))
-  end
-
-  defp assign_chart(%{assigns: %{dataset: dataset}} = socket) do
-    socket
-    |> assign(:chart, make_bar_chart(dataset))
+    |> assign(:contact_chart, make_bar_chart(contact_dataset))
+    |> assign(:conversation_chart, make_bar_chart(conversation_dataset))
   end
 
   defp make_bar_chart(dataset) do
     Contex.BarChart.new(dataset)
   end
 
-  def assign_chart_svg(%{assigns: %{chart: chart}} = socket) do
+  def assign_chart_svg(%{assigns: %{contact_chart: contact_chart,
+                                    conversation_chart: conversation_chart}} = socket) do
     socket
-    |> assign(:chart_svg, render_bar_chart(chart))
+    |> assign(:contact_chart_svg, render_bar_chart(contact_chart))
+    |> assign(:conversation_chart_svg, render_bar_chart(conversation_chart))
   end
 
   defp render_bar_chart(chart) do
