@@ -100,7 +100,8 @@ defmodule Glific.ContactsFieldTest do
     assert_raise Ecto.NoResultsError, fn -> Repo.get!(ContactsField, contacts_field.id) end
   end
 
-  test "delete_associated_contacts_field/2 deletes data associated with contacts_field", %{organization_id: organization_id} = attrs do
+  test "delete_associated_contacts_field/2 deletes data associated with contacts_field",
+       %{organization_id: organization_id} = attrs do
     attr = %{
       name: "some name",
       optin_time: ~U[2010-04-17 14:00:00Z],
@@ -114,15 +115,16 @@ defmodule Glific.ContactsFieldTest do
     }
 
     attrs = Map.merge(attrs, attr)
-    #creating a test contact
+    # creating a test contact
     assert {:ok, %Contact{} = contact} = Contacts.create_contact(attrs)
 
-    #adding a contact variable
+    # adding a contact variable
     ContactField.do_add_contact_field(contact, "test", "Test Field", "it works")
-    #checking if the contact variable has been added successfully
-    assert %Contact{fields: %{"test" => %{"value" => "it works"}}} = Contacts.get_contact(contact.id)
+    # checking if the contact variable has been added successfully
+    assert %Contact{fields: %{"test" => %{"value" => "it works"}}} =
+             Contacts.get_contact(contact.id)
 
-    #Deleting the contact field and its associated data
+    # Deleting the contact field and its associated data
     ContactField.delete_associated_contacts_field("test", organization_id)
     assert Contacts.get_contact(contact.id).fields == %{}
   end
