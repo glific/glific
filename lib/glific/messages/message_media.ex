@@ -29,7 +29,6 @@ defmodule Glific.Messages.MessageMedia do
     :gcs_url,
     :content_type
   ]
-  alias Glific.Enums.{MessageFlow}
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
