@@ -109,9 +109,8 @@ defmodule Glific.Partners.Export do
 
         # sending a list of lists, since json does not understand elixir tuples
         Map.put(acc, column_name, [airbyte_data_type, column_default])
-      end
-      )
-      |> Poison.encode!()
+      end)
+      |> Jason.encode!()
   end
 
   @spec config_query(String.t()) :: String.t()
