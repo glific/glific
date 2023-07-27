@@ -449,6 +449,7 @@ defmodule Glific.MessagesTest do
           source_url: "some source_url",
           thumbnail: "some thumbnail",
           url: "some url",
+          flow: :inbound,
           provider_media_id: "some provider_media_id",
           organization_id: attrs.organization_id
         })
@@ -1306,6 +1307,7 @@ defmodule Glific.MessagesTest do
       source_url: "some source_url",
       thumbnail: "some thumbnail",
       url: "some url",
+      flow: :inbound,
       provider_media_id: "some provider_media_id"
     }
     @update_attrs %{

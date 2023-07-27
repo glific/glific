@@ -9,7 +9,7 @@ defmodule Glific.Messages.MessageMedia do
 
   alias Glific.{
     Partners.Organization,
-    Messages.MessageMedia,
+    Messages.MessageMedia
   }
 
   # define all the required fields for message media

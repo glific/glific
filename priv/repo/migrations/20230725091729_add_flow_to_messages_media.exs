@@ -5,7 +5,6 @@ defmodule Glific.Repo.Migrations.AddFlowToMessagesMedia do
     alter table(:messages_media) do
       add(:flow, :message_flow_enum)
     end
-
   end
 
   def down do

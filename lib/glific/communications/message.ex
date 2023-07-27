@@ -251,7 +251,8 @@ defmodule Glific.Communications.Message do
   # handler for receiving the media (image|video|audio|document|sticker)  message
   @spec receive_media(map()) :: :ok
   defp receive_media(message_params) do
-    {:ok, message_media} = Messages.create_message_media(message_params)
+    {:ok, message_media} =
+      Messages.create_message_media(Map.put_new(message_params, :flow, :inbound))
 
     message_params
     |> Map.put(:media_id, message_media.id)
