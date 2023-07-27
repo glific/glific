@@ -29,6 +29,7 @@ defmodule Glific.GCS.GcsWorker do
   }
 
   @provider_shortcode "google_cloud_storage"
+  @base_url "https://oauth2.googleapis.com/token"
 
   @spec transfer_to_bucket(remote_url :: String.t(), bucket_name :: String.t()) :: :ok | {:error, term}
   def transfer_to_bucket(remote_url, bucket_name) do
@@ -63,7 +64,6 @@ defmodule Glific.GCS.GcsWorker do
         IO.puts("Transfer request successful!")
       {:ok, %{status_code: status_code, body: body}} ->
         IO.puts("Transfer request failed with status code #{status_code}: #{body}")
-        IO.inspect(body)
       {:error, reason} ->
         IO.puts("Error during transfer request: #{reason}")
     end
@@ -132,6 +132,39 @@ defmodule Glific.GCS.GcsWorker do
     end
 
     :ok
+  end
+
+
+
+  def get_access_token(client_email, private_key) do
+    jwt_payload = %{
+      "iss" => client_email,
+      "scope" => "https://www.googleapis.com/auth/cloud-platform",
+      "aud" => @base_url,
+      "exp" => DateTime.to_unix(DateTime.utc_now) + 3600,
+      "iat" => DateTime.to_unix(DateTime.utc_now)
+    }
+
+    jwt = JOSE.JWS.sign(jwt_payload, JOSE.JWA.RS256, private_key)
+
+    body_params = %{
+      "grant_type" => "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      "assertion" => jwt
+    }
+
+    headers = [{"Content-Type", "application/x-www-form-urlencoded"}]
+
+    case HTTPoison.post(@base_url, URI.encode_query(body_params), headers) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        access_token = Jason.decode!(body)["access_token"]
+        {:ok, access_token}
+
+      {:ok, %HTTPoison.Response{status_code: status_code, body: body}} ->
+        {:error, "Error getting access token: #{status_code}: #{body}"}
+
+      {:error, reason} ->
+        {:error, "Error during HTTP request: #{reason}"}
+    end
   end
 
   @spec files_per_minute_count() :: integer()
