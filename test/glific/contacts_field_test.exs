@@ -79,17 +79,35 @@ defmodule Glific.ContactsFieldTest do
   test "update_contacts_field/2 with valid data updates the contacts_field", %{
     organization_id: organization_id
   } do
-    attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
+    attr = %{
+      name: "some name",
+      optin_time: ~U[2010-04-17 14:00:00Z],
+      optin_status: false,
+      optout_time: nil,
+      phone: "some phone",
+      status: :valid,
+      bsp_status: :hsm,
+      language_id: 1,
+      fields: %{},
+      organization_id: organization_id
+    }
 
-    assert {:ok, %ContactsField{} = contacts_field} = ContactField.create_contact_field(attrs)
+    assert {:ok, %Contact{} = contact} = Contacts.create_contact(attr)
 
-    attrs = Map.merge(@update_attrs, %{shortcode: "citizen"})
+    ContactField.do_add_contact_field(contact, "test", "test field", "hello")
+    contacts_field = ContactsField |> where([cf], cf.shortcode == "test") |> Repo.one()
+
+    assert contacts_field != nil
+
+    attrs = Map.merge(@update_attrs, %{shortcode: "citizen", organization_id: organization_id})
 
     assert {:ok, %ContactsField{} = updated_contacts_field} =
              ContactField.update_contacts_field(contacts_field, attrs)
 
     assert updated_contacts_field.name == "Citizen"
     assert updated_contacts_field.shortcode == "citizen"
+    assert %Contact{fields: %{"citizen" => %{"label" => "Citizen"}}} =
+      Contacts.get_contact(contact.id)
   end
 
   test "contacts_field/1 deletes the contacts_field", %{organization_id: organization_id} do
@@ -127,5 +145,44 @@ defmodule Glific.ContactsFieldTest do
     # Deleting the contact field and its associated data
     ContactField.delete_associated_contacts_field("test", organization_id)
     assert Contacts.get_contact(contact.id).fields == %{}
+  end
+
+  test "merge_contacts_fields/2 merge old contact field with new field", attrs do
+    attr = %{
+    name: "some name",
+    optin_time: ~U[2010-04-17 14:00:00Z],
+    optin_status: false,
+    optout_time: nil,
+    phone: "some phone",
+    status: :valid,
+    bsp_status: :hsm,
+    language_id: 1,
+    fields: %{}
+    }
+
+    attrs = Map.merge(attrs, attr)
+    # creating a test contact
+    assert {:ok, %Contact{} = contact} = Contacts.create_contact(attrs)
+
+    # adding two contact variable
+    ContactField.do_add_contact_field(contact, "old", "Old Field", "hello")
+    ContactField.do_add_contact_field(contact, "new", "New Field", "hello world")
+
+    #Getting the contact field to be replaced
+    old_contact = ContactsField |> where([cf], cf.shortcode == "old") |> Repo.one()
+
+    assert old_contact != nil
+
+    #updating old field values with new field
+    attrs = Map.merge(attrs, %{label: "New Field", shortcode: "new"})
+
+    ContactField.merge_contacts_fields(old_contact, attrs)
+
+    # checking if the contact variable has been merged
+    assert %Contact{fields: %{"new" => %{"value" => "hello world"}}} =
+          Contacts.get_contact(contact.id)
+
+    # checking if the old field is removed
+    assert Contacts.get_contact(contact.id).fields["old"] == nil
   end
 end

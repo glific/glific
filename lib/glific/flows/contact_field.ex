@@ -203,11 +203,17 @@ defmodule Glific.Flows.ContactField do
     changeset = contacts_field
     |> ContactsField.changeset(attrs)
 
+    #first updating in contacts field to verify that it has unique shortcode
+    info = Repo.update(changeset)
+
     shortcode = get_change(changeset, :shortcode)
     label = get_change(changeset, :name)
 
-    update_field_label_shortcode(contacts_field.shortcode, shortcode, label, attrs.organization_id)
-    Repo.update(changeset)
+    case info do
+      {:ok, _} ->
+        update_field_label_shortcode(contacts_field.shortcode, shortcode, label, attrs.organization_id)
+    end
+    info
   end
 
   @doc """
@@ -222,8 +228,11 @@ defmodule Glific.Flows.ContactField do
     shortcode = get_change(changeset, :shortcode)
     label = get_change(changeset, :name)
 
+    #replacing old field with new field where new field is not present
     update_field_label_shortcode(contacts_field.shortcode, shortcode, label, attrs.organization_id)
+    #delete the old field if both old and new field is there
     delete_prev_field(contacts_field.shortcode, shortcode, attrs.organization_id)
+    #delete the old field from the contacts_fields table
     delete_contacts_field(contacts_field)
   end
 
@@ -254,7 +263,7 @@ defmodule Glific.Flows.ContactField do
   @doc """
   Delete data associated with the given field in the contacts table
   """
-  @spec delete_associated_contacts_field(String.t(), integer()) :: tuple()
+  @spec delete_associated_contacts_field(String.t(), non_neg_integer()) :: tuple()
   def delete_associated_contacts_field(shortcode, organization_id) do
     query =
       from c in Contact,
@@ -268,10 +277,11 @@ defmodule Glific.Flows.ContactField do
   @doc """
   Update contacts_field label or shortcode in the contacts table
   """
-  @spec update_field_label_shortcode(String.t(), String.t(), String.t(), integer()) :: :error | tuple()
+  @spec update_field_label_shortcode(String.t(), String.t(), String.t(), non_neg_integer()) :: :error | tuple()
   def update_field_label_shortcode(_, nil, nil, _), do: :error
 
   def update_field_label_shortcode(prev_shortcode, nil, label, organization_id) do
+    #only update the label
     query =
       from c in Contact,
         where: c.organization_id == ^organization_id
@@ -289,6 +299,8 @@ defmodule Glific.Flows.ContactField do
   end
 
   def update_field_label_shortcode(prev_shortcode, shortcode, nil, organization_id) do
+    #only update the shortcode
+    shortcode = Glific.string_snake_case(shortcode)
     query =
       from c in Contact,
         where: c.organization_id == ^organization_id
@@ -309,6 +321,8 @@ defmodule Glific.Flows.ContactField do
   end
 
   def update_field_label_shortcode(prev_shortcode, shortcode, label, organization_id) do
+    #update shortcode and label
+    shortcode = Glific.string_snake_case(shortcode)
     query =
       from c in Contact,
         where: c.organization_id == ^organization_id
@@ -329,7 +343,12 @@ defmodule Glific.Flows.ContactField do
     Repo.update_all(query, [])
   end
 
+  @doc """
+  When merging two contact fields, delete the previous field
+  """
+  @spec delete_prev_field(String.t(), String.t(), non_neg_integer()) :: any
   def delete_prev_field(prev_shortcode, shortcode, organization_id) do
+    shortcode = Glific.string_snake_case(shortcode)
     query =
       from c in Contact,
         where: c.organization_id == ^organization_id
