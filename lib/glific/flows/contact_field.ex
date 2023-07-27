@@ -273,7 +273,6 @@ defmodule Glific.Flows.ContactField do
     Repo.update_all(query, [])
   end
 
-
   @doc """
   Update contacts_field label or shortcode in the contacts table
   """
@@ -285,7 +284,7 @@ defmodule Glific.Flows.ContactField do
     query =
       from c in Contact,
         where: c.organization_id == ^organization_id
-        and not is_nil(fragment("fields->?", type(^prev_shortcode,:string))),
+        and not is_nil(fragment("fields->?", type(^prev_shortcode, :string))),
         update: [
           set: [
             fields: fragment(
@@ -304,8 +303,8 @@ defmodule Glific.Flows.ContactField do
     query =
       from c in Contact,
         where: c.organization_id == ^organization_id
-        and not is_nil(fragment("fields->?", type(^prev_shortcode,:string)))
-        and is_nil(fragment("fields->?", type(^shortcode,:string))),
+        and not is_nil(fragment("fields->?", type(^prev_shortcode, :string)))
+        and is_nil(fragment("fields->?", type(^shortcode, :string))),
         update: [
           set: [
             fields: fragment(
@@ -326,8 +325,8 @@ defmodule Glific.Flows.ContactField do
     query =
       from c in Contact,
         where: c.organization_id == ^organization_id
-        and not is_nil(fragment("fields->?", type(^prev_shortcode,:string)))
-        and is_nil(fragment("fields->?", type(^shortcode,:string))),
+        and not is_nil(fragment("fields->?", type(^prev_shortcode, :string)))
+        and is_nil(fragment("fields->?", type(^shortcode, :string))),
         update: [
           set: [
             fields: fragment(
@@ -352,8 +351,8 @@ defmodule Glific.Flows.ContactField do
     query =
       from c in Contact,
         where: c.organization_id == ^organization_id
-        and not is_nil(fragment("fields->?", type(^prev_shortcode,:string)))
-        and not is_nil(fragment("fields->?", type(^shortcode,:string))),
+        and not is_nil(fragment("fields->?", type(^prev_shortcode, :string)))
+        and not is_nil(fragment("fields->?", type(^shortcode, :string))),
         update: [
           set: [
             fields: fragment(
