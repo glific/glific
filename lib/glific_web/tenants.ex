@@ -41,7 +41,7 @@ defmodule GlificWeb.Tenants do
   @spec reserved_organization?(String.t()) :: boolean()
   def reserved_organization?(prefix) do
     Enum.any?(reserved_organizations(), fn i ->
-      if is_bitstring(prefix) and Regex.regex?(i) do
+      if is_bitstring(prefix) and Kernel.is_struct(i, Regex) do
         Regex.match?(i, prefix)
       else
         i == prefix
