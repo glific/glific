@@ -210,6 +210,25 @@ defmodule Glific.Reports do
     """
   end
 
+  @doc false
+  @spec get_messages_data(non_neg_integer()) :: map()
+  def get_messages_data(org_id) do
+    Repo.put_process_state(org_id)
+
+    Stat
+    |> select([q], %{
+      hour: fragment("date_part('hour', ?)", q.inserted_at),
+      inbound: sum(q.inbound),
+      outbound: sum(q.outbound)
+    })
+    |> group_by([q], fragment("date_part('hour', ?)", q.inserted_at))
+    |> where([q], q.organization_id == ^org_id)
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn hourly_stat, acc ->
+      Map.put(acc, hourly_stat.hour, Map.delete(hourly_stat, :hour))
+    end)
+  end
+
   @doc """
     gets data for the broadcast table
   """
