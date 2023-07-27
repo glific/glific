@@ -8,8 +8,9 @@ defmodule Glific.Messages.MessageMedia do
   alias __MODULE__
 
   alias Glific.{
-    Partners.Organization,
-    Messages.MessageMedia
+    Enums.MessageFlow,
+    Messages.MessageMedia,
+    Partners.Organization
   }
 
   # define all the required fields for message media
@@ -28,7 +29,6 @@ defmodule Glific.Messages.MessageMedia do
     :gcs_url,
     :content_type
   ]
-  alias Glific.Enums.{MessageFlow}
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
