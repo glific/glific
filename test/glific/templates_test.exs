@@ -7,7 +7,6 @@ defmodule Glific.TemplatesTest do
     Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
     Settings,
-    # Tags,
     Templates,
     Templates.SessionTemplate
   }
@@ -300,30 +299,38 @@ defmodule Glific.TemplatesTest do
     test "create_session_template/1 for HSM data should submit it for approval", attrs do
       whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9b94e53b4b"
 
+      body =
+        Jason.encode!(%{
+          "status" => "success",
+          "token" => "new_partner_token",
+          "template" => %{
+            "category" => "ACCOUNT_UPDATE",
+            "createdOn" => 1_595_904_220_495,
+            "data" => "Your train ticket no. {{1}}",
+            "elementName" => "ticket_update_status",
+            "id" => whatspp_hsm_uuid,
+            "languageCode" => "en",
+            "languagePolicy" => "deterministic",
+            "master" => true,
+            "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
+            "modifiedOn" => 1_595_904_220_495,
+            "status" => "PENDING",
+            "templateType" => "TEXT",
+            "vertical" => "ACTION_BUTTON"
+          }
+        })
+
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
-            body:
-              Jason.encode!(%{
-                "status" => "success",
-                "token" => "new_partner_token",
-                "template" => %{
-                  "category" => "ACCOUNT_UPDATE",
-                  "createdOn" => 1_595_904_220_495,
-                  "data" => "Your train ticket no. {{1}}",
-                  "elementName" => "ticket_update_status",
-                  "id" => whatspp_hsm_uuid,
-                  "languageCode" => "en",
-                  "languagePolicy" => "deterministic",
-                  "master" => true,
-                  "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
-                  "modifiedOn" => 1_595_904_220_495,
-                  "status" => "PENDING",
-                  "templateType" => "TEXT",
-                  "vertical" => "ACTION_BUTTON"
-                }
-              })
+            body: body
+          }
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})
           }
       end)
 
@@ -356,6 +363,12 @@ defmodule Glific.TemplatesTest do
       whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9c94e53b4b"
 
       Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})
+          }
+
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
@@ -484,6 +497,12 @@ defmodule Glific.TemplatesTest do
     test "update_session_template/2 for HSM template should not update the Pending HSM",
          attrs do
       Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})
+          }
+
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
@@ -537,6 +556,12 @@ defmodule Glific.TemplatesTest do
     test "update_session_template/2 for HSM template should update only the editable fields",
          attrs do
       Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})
+          }
+
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
