@@ -1,10 +1,7 @@
 let Hooks = {};
 
 function createChart(ctx, chartType, chartData, label, options) {
-  let backgroundColor,
-    borderColor,
-    datasets = [];
-
+  datasets = [];
   borderColor = "#F9F7F4";
   backgroundColor = ["#129656", "#93A29B", "#EBEDEC", "#B5D8C7"];
 
