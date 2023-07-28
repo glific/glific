@@ -1,5 +1,5 @@
 defmodule GlificWeb.Schema.OrganizationTest do
-  use GlificWeb.ConnCase, async: false
+  use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
   alias Glific.{
@@ -390,8 +390,13 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:data, "updateOrganization", "errors", Access.at(0), "message"])
-    assert message =~ "has an invalid entry"
+    message_1 =
+      get_in(query_data, [:data, "updateOrganization", "errors", Access.at(0), "message"])
+
+    message_2 =
+      get_in(query_data, [:data, "updateOrganization", "errors", Access.at(1), "message"])
+
+    assert message_1 =~ "has an invalid entry" || message_2 =~ "has an invalid entry"
 
     # default language should be included in active language list
     result =

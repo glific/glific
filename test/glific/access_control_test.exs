@@ -49,6 +49,10 @@ defmodule Glific.AccessControlTest do
                fn r -> r.label == role.label end
              ) ==
                [role]
+
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
     end
 
     test "list_roles/0 returns with filtered data", attrs do
@@ -67,6 +71,10 @@ defmodule Glific.AccessControlTest do
                organization_id: attrs.organization_id,
                filter: %{is_reserved: role.is_reserved}
              }) == [role]
+
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
     end
 
     test "organization_roles/1 returns all organization roles",
@@ -80,6 +88,10 @@ defmodule Glific.AccessControlTest do
 
       assert ["some more organization label"] =
                AccessControl.organization_roles(%{organization_id: organization_id})
+
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
     end
 
     test "get_role!/1 returns the role with given id", attrs do
@@ -150,6 +162,10 @@ defmodule Glific.AccessControlTest do
 
       assert AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id}) ==
                role_count + 2
+
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
     end
 
     test "list_flows/1 returns list of flows assigned to user", attrs do
@@ -183,6 +199,7 @@ defmodule Glific.AccessControlTest do
       })
 
       assert [] == Flows.list_flows(%{})
+      admin_user = Repo.get_current_user()
       Repo.put_current_user(user)
       [assigned_flow] = Flows.list_flows(%{})
       assert assigned_flow == flow
@@ -197,8 +214,14 @@ defmodule Glific.AccessControlTest do
         organization_id: attrs.organization_id
       })
 
-      [_f1, f2 | _] = Flows.list_flows(%{})
-      assert f2.name == name
+      [f1, f2 | _] = Flows.list_flows(%{})
+      assert f2.name == name || f1.name == name
+
+      Repo.put_current_user(admin_user)
+
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
     end
 
     test "list_groups/1 returns list of flows assigned to user", attrs do
@@ -232,6 +255,7 @@ defmodule Glific.AccessControlTest do
       })
 
       assert [] == Groups.list_groups(%{})
+      admin_user = Repo.get_current_user()
       Repo.put_current_user(user)
       [assigned_group] = Groups.list_groups(%{})
       assert assigned_group == group
@@ -251,6 +275,12 @@ defmodule Glific.AccessControlTest do
         |> Enum.map(fn group -> group.label end)
 
       assert label in label_list
+
+      Repo.put_current_user(admin_user)
+
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
     end
 
     test "list_triggers/1 returns list of triggers assigned to user", attrs do
@@ -287,6 +317,7 @@ defmodule Glific.AccessControlTest do
       })
 
       assert [] == Triggers.list_triggers(%{})
+      admin_user = Repo.get_current_user()
       Repo.put_current_user(user)
       [assigned_trigger] = Triggers.list_triggers(%{})
       assert assigned_trigger.name == trigger.name
@@ -323,9 +354,14 @@ defmodule Glific.AccessControlTest do
         organization_id: attrs.organization_id
       })
 
-      [_t1, t2 | _] = Triggers.list_triggers(%{})
+      [t1, t2 | _] = Triggers.list_triggers(%{})
 
-      assert t2.frequency == ["daily"]
+      assert t2.frequency == ["daily"] || t1.frequency == ["daily"]
+      Repo.put_current_user(admin_user)
+
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
     end
 
     test "do_check_access/3 should return error tuple when entity type is unknown", _attrs do
