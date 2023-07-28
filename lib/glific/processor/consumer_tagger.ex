@@ -58,7 +58,7 @@ defmodule Glific.Processor.ConsumerTagger do
   end
   """
 
-  _ = '''
+  _ = ~c"""
   alias Glific.Dialogflow.Sessions
 
   @spec dialogflow_tagger({Message.t(), map()}) :: {Message.t(), map()}
@@ -78,7 +78,7 @@ defmodule Glific.Processor.ConsumerTagger do
   end
 
   defp dialogflow_tagger({message, state}), do: {message, state}
-  '''
+  """
 
   @spec add_status_tag(Message.t(), String.t(), map()) :: Message.t()
   defp add_status_tag(message, status, state),
