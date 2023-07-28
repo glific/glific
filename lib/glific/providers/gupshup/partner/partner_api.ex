@@ -165,9 +165,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         res = Jason.decode!(body)
 
         {:ok, token} =
-          Caches.set(@global_organization_id, "partner_token", res["token"],
-            ttl: :timer.hours(22)
-          )
+          Caches.set(@global_organization_id, "partner_token", res["token"], ttl: :timer.hours(22))
 
         {:ok, %{partner_token: token}}
 

@@ -199,9 +199,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     contact1 = Repo.preload(contact1, :groups)
 
     result =
-      auth_query_gql_by(:list, user_auth,
-        variables: %{"filter" => %{"contact_id" => contact1.id}}
-      )
+      auth_query_gql_by(:list, user_auth, variables: %{"filter" => %{"contact_id" => contact1.id}})
 
     assert {:ok, query_data} = result
 

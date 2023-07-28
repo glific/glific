@@ -114,9 +114,7 @@ defmodule GlificWeb.Schema.NotificationTest do
     assert get_in(query_data, [:data, "countNotifications"]) == 0
 
     {:ok, query_data} =
-      auth_query_gql_by(:count, user,
-        variables: %{"filter" => %{"category" => notify_2.category}}
-      )
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"category" => notify_2.category}})
 
     assert get_in(query_data, [:data, "countNotifications"]) == 1
   end

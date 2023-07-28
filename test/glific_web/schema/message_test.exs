@@ -93,9 +93,7 @@ defmodule GlificWeb.Schema.MessageTest do
 
   test "messages field returns list of messages in various filters", %{staff: user} do
     result =
-      auth_query_gql_by(:list, user,
-        variables: %{"filter" => %{"body" => "Default message body"}}
-      )
+      auth_query_gql_by(:list, user, variables: %{"filter" => %{"body" => "Default message body"}})
 
     assert {:ok, query_data} = result
 
@@ -105,9 +103,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert get_in(message, ["body"]) == "Default message body"
 
     result =
-      auth_query_gql_by(:list, user,
-        variables: %{"filter" => %{"receiver" => "Default receiver"}}
-      )
+      auth_query_gql_by(:list, user, variables: %{"filter" => %{"receiver" => "Default receiver"}})
 
     assert {:ok, query_data} = result
 
