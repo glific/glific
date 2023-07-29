@@ -392,6 +392,8 @@ defmodule Glific.FLowsTest do
 
       {:error, error} = Flows.start_contact_flow(flow.id, contact)
       assert get_in(error, [Access.at(1)]) == "Flow is not active"
+
+      assert {:ok, _flow} = Flows.update_flow(flow, %{is_active: true})
     end
 
     test "start_contact_flow/2 will setup the template flow for a contact", attrs do
