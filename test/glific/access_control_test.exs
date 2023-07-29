@@ -97,6 +97,10 @@ defmodule Glific.AccessControlTest do
 
       assert AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id}) ==
                role_count + 2
+
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
     end
   end
 
