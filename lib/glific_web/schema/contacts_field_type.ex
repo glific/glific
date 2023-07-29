@@ -92,5 +92,12 @@ defmodule GlificWeb.Schema.ContactsFieldTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.ContactsField.delete_contacts_field/3)
     end
+
+    field :merge_contacts_field, :contacts_field_result do
+      arg(:id, non_null(:id))
+      arg(:input, :contacts_field_input)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.ContactsField.merge_contacts_fields/3)
+    end
   end
 end

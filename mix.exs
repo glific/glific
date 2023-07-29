@@ -196,7 +196,12 @@ defmodule Glific.MixProject do
         "phil_columns.seed --tenant glific",
         "test"
       ],
-      test: ["ecto.create --quiet", "ecto.load --quiet --skip-if-loaded", "ecto.migrate", "test"],
+      test: [
+        "ecto.create --quiet",
+        "ecto.load --quiet --skip-if-loaded",
+        "ecto.migrate --quiet",
+        "test"
+      ],
       "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
     ]
   end
