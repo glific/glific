@@ -1,5 +1,5 @@
 defmodule GlificWeb.Schema.LanguageTest do
-  use GlificWeb.ConnCase, async: true
+  use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/languages/count.gql")
