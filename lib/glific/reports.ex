@@ -223,6 +223,7 @@ defmodule Glific.Reports do
     })
     |> group_by([q], fragment("date_part('hour', ?)", q.inserted_at))
     |> where([q], q.organization_id == ^org_id)
+    |> where([q], q.period == "hour")
     |> Repo.all()
     |> Enum.reduce(%{}, fn hourly_stat, acc ->
       Map.put(acc, hourly_stat.hour, Map.delete(hourly_stat, :hour))
