@@ -133,7 +133,7 @@ defmodule Glific.Erase do
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
   end
 
-  @limit 100
+  @limit 500
 
   @doc """
   Keep latest limited messages for a contact
@@ -148,7 +148,7 @@ defmodule Glific.Erase do
     WHERE organization_id = #{org_id}
       AND last_message_number > #{limit + 2}
     ORDER BY last_message_number desc
-    LIMIT 500
+    LIMIT 100
     """
 
     Repo.query!(contact_query).rows
@@ -179,7 +179,7 @@ defmodule Glific.Erase do
       """
 
       Logger.info(
-        "message cleanup started for #{contact_id} where message number #{message_to_delete}"
+        "Deleting messages for #{contact_id} where message number < #{message_to_delete}"
       )
 
       Repo.query!(delete_message_query, [], timeout: 400_000, skip_organization_id: true)
