@@ -152,7 +152,6 @@ defmodule Glific.Erase do
     """
 
     Repo.query!(contact_query).rows
-    |> IO.inspect(as_lists: true)
     |> Enum.map(fn [contact_id, last_message_number] ->
       clean_message_for_contact(contact_id, last_message_number, org_id, limit)
     end)
