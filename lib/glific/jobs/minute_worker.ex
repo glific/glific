@@ -98,6 +98,8 @@ defmodule Glific.Jobs.MinuteWorker do
       "daily_tasks" ->
         Partners.perform_all(&Glific.Clients.daily_tasks/1, nil, [])
         Partners.perform_all(&Billing.update_usage/2, %{time: DateTime.utc_now()}, [])
+        Erase.perform_daily()
+        # Partners.perform_all(&Erase.clean_messages/1, nil, [])
         Partners.perform_all(&Glific.Sheets.sync_organization_sheets/1, nil, [])
         Erase.perform_daily()
         # We dont want to clog this process
