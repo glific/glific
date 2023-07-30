@@ -736,7 +736,7 @@ defmodule Glific.Partners do
   # lets always perform requests in a random order to
   # avoid starvation of any specific partner
   @spec randomize_orgs(map) :: list
-  def randomize_orgs(orgs) do
+  defp randomize_orgs(orgs) do
     orgs
     |> Enum.reduce(
       [],
