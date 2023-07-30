@@ -72,9 +72,10 @@ defmodule Glific.Erase do
   defp remove_old_records do
     [
       {"message_broadcasts", "week"},
-      {"notifications", "month"},
-      {"webhook_logs", "month"},
+      {"notifications", "week"},
+      {"webhook_logs", "week"},
       {"flow_contexts", "month"},
+      {"flow_results", "month"},
       {"messages_conversations", "month"}
     ]
     |> Enum.each(fn {table, duration} ->
@@ -137,16 +138,22 @@ defmodule Glific.Erase do
   @doc """
   Keep latest limited messages for a contact
   """
-  @spec clean_messages(non_neg_integer(), non_neg_integer(), boolean()) :: list
-  def clean_messages(org_id, limit \\ @limit, skip_delete \\ false) do
+  @spec clean_messages(non_neg_integer, non_neg_integer) :: list
+  def clean_messages(org_id, limit \\ @limit) do
     Repo.put_process_state(org_id)
 
-    contact_query =
-      "select id from contacts where organization_id = #{org_id} and last_message_number > #{limit + 2} order by last_message_number"
+    contact_query = """
+    SELECT id, last_message_number
+    FROM contacts
+    WHERE organization_id = #{org_id}
+      AND last_message_number > #{limit + 2}
+    ORDER BY last_message_number desc
+    LIMIT 500
+    """
 
     Repo.query!(contact_query).rows
-    |> Enum.map(fn [contact_id] ->
-      clean_message_for_contact(contact_id, org_id, limit, skip_delete)
+    |> Enum.map(fn [contact_id, last_message_number] ->
+      clean_message_for_contact(contact_id, last_message_number, org_id, limit)
     end)
   end
 
@@ -154,27 +161,27 @@ defmodule Glific.Erase do
   Keep latest limited messages for a contact
   """
   @spec clean_message_for_contact(
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          boolean()
+          non_neg_integer,
+          non_neg_integer,
+          non_neg_integer,
+          non_neg_integer
         ) :: :ok
-  def clean_message_for_contact(contact_id, org_id, limit, skip_delete \\ false) do
-    SeedsMigration.fix_message_number_for_contact(contact_id)
-
-    [[last_message_number]] =
-      Glific.Repo.query!("select last_message_number from contacts where id = #{contact_id}").rows
-
+  def clean_message_for_contact(contact_id, last_message_number, org_id, limit) do
     message_to_delete = last_message_number - limit
 
-    delete_message_query =
-      "delete from messages where organization_id = #{org_id} and contact_id = #{contact_id} and message_number < #{message_to_delete}"
+    if message_to_delete > 0 do
+      delete_message_query = """
+      DELETE
+      FROM messages
+      WHERE organization_id = #{org_id}
+      AND contact_id = #{contact_id}
+      AND message_number < #{message_to_delete}
+      """
 
-    Logger.info(
-      "message cleanup started for #{contact_id} where message number #{message_to_delete}"
-    )
+      Logger.info(
+        "message cleanup started for #{contact_id} where message number #{message_to_delete}"
+      )
 
-    if skip_delete == false && message_to_delete > 0 do
       Repo.query!(delete_message_query, [], timeout: 400_000, skip_organization_id: true)
       SeedsMigration.fix_message_number_for_contact(contact_id)
     end
