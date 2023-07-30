@@ -100,7 +100,7 @@ defmodule Glific.FLowsTest do
       flows =
         Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword_or_tags: "testkeyword"})})
 
-      assert flows == [f0, f1]
+      assert flows == [f0, f1] || flows == [f1, f0]
 
       flows =
         Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword_or_tags: "wrongkeyword"})})

@@ -486,8 +486,8 @@ defmodule Glific.Seeds.SeedsMigration do
           messages
         WHERE
           contact_id = c.id)
-      WHERE
-        organization_id = #{org_id};
+    WHERE
+      organization_id = #{org_id};
     """
   end
 

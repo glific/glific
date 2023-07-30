@@ -62,6 +62,7 @@ defmodule Glific.Contacts.ContactsField do
     case changeset do
       %Ecto.Changeset{valid?: true, changes: %{shortcode: shortcode}} ->
         put_change(changeset, :shortcode, Glific.string_snake_case(shortcode))
+
       _ ->
         changeset
     end
