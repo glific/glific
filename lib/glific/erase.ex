@@ -74,7 +74,10 @@ defmodule Glific.Erase do
       {"message_broadcasts", "week"},
       {"notifications", "week"},
       {"webhook_logs", "week"},
+      {"notifications", "week"},
+      {"webhook_logs", "week"},
       {"flow_contexts", "month"},
+      {"flow_results", "month"},
       {"flow_results", "month"},
       {"messages_conversations", "month"}
     ]
