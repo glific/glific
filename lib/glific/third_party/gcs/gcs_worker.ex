@@ -29,6 +29,7 @@ defmodule Glific.GCS.GcsWorker do
   }
 
   @provider_shortcode "google_cloud_storage"
+  @base_url "https://oauth2.googleapis.com/token"
 
   @spec transfer_to_bucket(remote_url :: String.t(), bucket_name :: String.t()) :: :ok | {:error, term}
   def transfer_to_bucket(remote_url, bucket_name) do
@@ -63,7 +64,6 @@ defmodule Glific.GCS.GcsWorker do
         IO.puts("Transfer request successful!")
       {:ok, %{status_code: status_code, body: body}} ->
         IO.puts("Transfer request failed with status code #{status_code}: #{body}")
-        IO.inspect(body)
       {:error, reason} ->
         IO.puts("Error during transfer request: #{reason}")
     end
@@ -75,8 +75,6 @@ defmodule Glific.GCS.GcsWorker do
     |> elem(0)
     |> String.trim()
   end
-
-
 
   @doc """
   This is called from the cron job on a regular schedule. we sweep the message media url  table
