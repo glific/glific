@@ -418,4 +418,11 @@ defmodule Glific.GCS.GcsWorker do
         {:error, error}
     end
   end
+
+  def urls_list_to_bucket(urls, bucketname, local_path, ) do
+    tsv_data = "TsvHttpData-1.0\n" Enum.join(data_list, "\n")
+    File.write!(local_path, tsv_data)
+
+
+  end
 end
