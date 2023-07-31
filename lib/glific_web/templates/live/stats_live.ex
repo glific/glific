@@ -47,6 +47,9 @@ defmodule GlificWeb.StatsLive do
     Enum.each(Reports.kpi_list(), &send(self(), {:get_stats, &1}))
     org_id = get_org_id(socket)
     assign(socket, get_chart_data(org_id))
+    |> assign_dataset() |> IO.inspect(label: "dataset")
+    |> assign_chart() |> IO.inspect(label: "chart")
+    |> assign_chart_svg() |> IO.inspect(label: "svg")
   end
 
   def assign_dataset(
@@ -56,17 +59,39 @@ defmodule GlificWeb.StatsLive do
     } = socket) do
       socket
       |> assign(
-        :contact_dataset,
-        make_bar_chart_dataset(contact_chart_data)
-      )
-      |> assign(
-        :conversation_dataset,
+        contact_dataset:
+        make_bar_chart_dataset(contact_chart_data),
+        conversation_dataset:
         make_bar_chart_dataset(conversation_chart_data)
       )
   end
 
   defp make_bar_chart_dataset(data) do
     Contex.Dataset.new(data)
+  end
+
+  defp assign_chart(%{assigns: %{contact_dataset: contact_dataset,
+                                 conversation_dataset: conversation_dataset}} = socket) do
+    socket
+    |> assign(contact_chart: make_bar_chart(contact_dataset),
+              conversation_chart: make_bar_chart(conversation_dataset))
+  end
+
+  defp make_bar_chart(dataset) do
+    Contex.BarChart.new(dataset)
+  end
+
+  @spec assign_chart_svg(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
+  def assign_chart_svg(%{assigns: %{contact_chart: contact_chart,
+                                    conversation_chart: conversation_chart}} = socket) do
+    socket
+    |> assign(contact_chart_svg: render_bar_chart(contact_chart),
+              conversation_chart_svg: render_bar_chart(conversation_chart))
+  end
+
+  defp render_bar_chart(chart) do
+    Plot.new(500, 400, chart)
+    |> Plot.to_svg()
   end
 
   @doc false
@@ -160,27 +185,12 @@ defmodule GlificWeb.StatsLive do
     #|> assign_chart_svg()}
  # end
 
-  defp assign_chart(%{assigns: %{contact_dataset: contact_dataset,
-                                 conversation_dataset: conversation_dataset}} = socket) do
-    socket
-    |> assign(:contact_chart, make_bar_chart(contact_dataset))
-    |> assign(:conversation_chart, make_bar_chart(conversation_dataset))
-  end
 
-  defp make_bar_chart(dataset) do
-    Contex.BarChart.new(dataset)
-  end
 
-  def assign_chart_svg(%{assigns: %{contact_chart: contact_chart,
-                                    conversation_chart: conversation_chart}} = socket) do
-    socket
-    |> assign(:contact_chart_svg, render_bar_chart(contact_chart))
-    |> assign(:conversation_chart_svg, render_bar_chart(conversation_chart))
-  end
 
-  defp render_bar_chart(chart) do
-    Plot.new(500, 400, chart)
-    |> Plot.to_svg()
-  end
+
+
+
+
 
 end
