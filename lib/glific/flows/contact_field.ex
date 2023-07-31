@@ -4,6 +4,7 @@ defmodule Glific.Flows.ContactField do
   centralize all the code here for now
   """
   import Ecto.Query, warn: false
+  import Ecto.Changeset
 
   alias Glific.{
     Contacts,
@@ -199,9 +200,51 @@ defmodule Glific.Flows.ContactField do
   @spec update_contacts_field(ContactsField.t(), map()) ::
           {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
   def update_contacts_field(%ContactsField{} = contacts_field, attrs) do
-    contacts_field
-    |> ContactsField.changeset(attrs)
-    |> Repo.update()
+    changeset =
+      contacts_field
+      |> ContactsField.changeset(attrs)
+
+    # first updating in contacts field to verify that it has unique shortcode
+    with {:ok, updated_field} <- Repo.update(changeset) do
+      shortcode = get_change(changeset, :shortcode)
+      label = get_change(changeset, :name)
+
+      update_field_label_shortcode(
+        contacts_field.shortcode,
+        shortcode,
+        label,
+        attrs.organization_id
+      )
+
+      {:ok, updated_field}
+    end
+  end
+
+  @doc """
+  Merges two Contact fields by updating the old field with new field
+  """
+  @spec merge_contacts_fields(ContactsField.t(), map()) ::
+          {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
+  def merge_contacts_fields(%ContactsField{} = contacts_field, attrs) do
+    changeset =
+      contacts_field
+      |> ContactsField.changeset(attrs)
+
+    shortcode = get_change(changeset, :shortcode)
+    label = get_change(changeset, :name)
+
+    # replacing old field with new field where new field is not present
+    update_field_label_shortcode(
+      contacts_field.shortcode,
+      shortcode,
+      label,
+      attrs.organization_id
+    )
+
+    # delete the old field if both old and new field is there
+    delete_prev_field(contacts_field.shortcode, shortcode, attrs.organization_id)
+    # delete the old field from the contacts_fields table
+    delete_contacts_field(contacts_field)
   end
 
   @doc """
@@ -231,13 +274,122 @@ defmodule Glific.Flows.ContactField do
   @doc """
   Delete data associated with the given field in the contacts table
   """
-  @spec delete_associated_contacts_field(String.t(), integer()) ::
-          {:ok, {non_neg_integer(), tuple()}}
+  @spec delete_associated_contacts_field(String.t(), non_neg_integer()) :: tuple()
   def delete_associated_contacts_field(shortcode, organization_id) do
     query =
-      from c in Contact,
+      from(c in Contact,
         where: c.organization_id == ^organization_id,
         update: [set: [fields: fragment("fields - ?", ^shortcode)]]
+      )
+
+    Repo.update_all(query, [])
+  end
+
+  @doc """
+  Update contacts_field label or shortcode in the contacts table
+  """
+  @spec update_field_label_shortcode(String.t(), String.t(), String.t(), non_neg_integer()) ::
+          :error | tuple()
+  def update_field_label_shortcode(_, nil, nil, _), do: :error
+
+  def update_field_label_shortcode(prev_shortcode, nil, label, organization_id) do
+    # only update the label
+    query =
+      from(c in Contact,
+        where:
+          c.organization_id == ^organization_id and
+            not is_nil(fragment("fields->?", type(^prev_shortcode, :string))),
+        update: [
+          set: [
+            fields:
+              fragment(
+                "jsonb_set(fields, array[?::text, 'label'], to_jsonb(?))",
+                ^prev_shortcode,
+                type(^label, :string)
+              )
+          ]
+        ]
+      )
+
+    Repo.update_all(query, [])
+  end
+
+  def update_field_label_shortcode(prev_shortcode, shortcode, nil, organization_id) do
+    # only update the shortcode
+    shortcode = Glific.string_snake_case(shortcode)
+
+    query =
+      from(c in Contact,
+        where:
+          c.organization_id == ^organization_id and
+            not is_nil(fragment("fields->?", type(^prev_shortcode, :string))) and
+            is_nil(fragment("fields->?", type(^shortcode, :string))),
+        update: [
+          set: [
+            fields:
+              fragment(
+                "(fields || jsonb_build_object(?, fields->?)) - ?",
+                type(^shortcode, :string),
+                type(^prev_shortcode, :string),
+                type(^prev_shortcode, :string)
+              )
+          ]
+        ]
+      )
+
+    Repo.update_all(query, [])
+  end
+
+  def update_field_label_shortcode(prev_shortcode, shortcode, label, organization_id) do
+    # update shortcode and label
+    shortcode = Glific.string_snake_case(shortcode)
+
+    query =
+      from(c in Contact,
+        where:
+          c.organization_id == ^organization_id and
+            not is_nil(fragment("fields->?", type(^prev_shortcode, :string))) and
+            is_nil(fragment("fields->?", type(^shortcode, :string))),
+        update: [
+          set: [
+            fields:
+              fragment(
+                "(fields || jsonb_build_object(?, fields->? || jsonb_build_object('label', ?))) - ?",
+                type(^shortcode, :string),
+                type(^prev_shortcode, :string),
+                type(^label, :string),
+                type(^prev_shortcode, :string)
+              )
+          ]
+        ]
+      )
+
+    Repo.update_all(query, [])
+  end
+
+  @doc """
+  When merging two contact fields, delete the previous field
+  """
+  @spec delete_prev_field(String.t(), String.t(), non_neg_integer()) :: any
+  def delete_prev_field(prev_shortcode, shortcode, organization_id) do
+    shortcode = Glific.string_snake_case(shortcode)
+
+    query =
+      from(c in Contact,
+        where:
+          c.organization_id == ^organization_id and
+            not is_nil(fragment("fields->?", type(^prev_shortcode, :string))) and
+            not is_nil(fragment("fields->?", type(^shortcode, :string))),
+        update: [
+          set: [
+            fields:
+              fragment(
+                "fields - ?",
+                type(^prev_shortcode, :string)
+              )
+          ]
+        ]
+      )
 
     Repo.update_all(query, [])
   end

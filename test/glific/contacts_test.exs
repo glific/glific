@@ -651,6 +651,8 @@ defmodule Glific.ContactsTest do
     end
 
     test "delete_contact/1 raises error when does not have permission" do
+      admin_user = Repo.get_current_user()
+
       with {:ok, user} <- Repo.fetch_by(Users.User, %{name: "NGO Staff"}),
            {:ok, restricted_user} <- Users.update_user(user, %{is_restricted: true}) do
         Repo.put_current_user(restricted_user)
@@ -661,6 +663,9 @@ defmodule Glific.ContactsTest do
       assert_raise RuntimeError, fn ->
         Contacts.delete_contact(contact)
       end
+
+      # restore state
+      Repo.put_current_user(admin_user)
     end
 
     test "change_contact/1 returns a contact changeset",

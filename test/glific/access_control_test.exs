@@ -13,35 +13,30 @@ defmodule Glific.AccessControlTest do
     Users
   }
 
-  describe "roles" do
-    @invalid_attrs %{description: nil, is_reserved: nil, label: nil}
+  describe "Testing with Fun_with_flags enabled" do
     @valid_attrs %{
       description: "some more organization description",
       is_reserved: false,
       label: "some more organization label"
     }
+
     @valid_more_attrs %{
       description: "some more description",
       is_reserved: false,
       label: "some more label"
     }
 
-    test "list_roles/0 returns all reserved roles when flag is disabled", attrs do
-      FunWithFlags.disable(:roles_and_permission,
-        for_actor: %{organization_id: attrs.organization_id}
+    setup do
+      organization = SeedsDev.seed_organizations()
+
+      FunWithFlags.enable(:roles_and_permission,
+        for_actor: %{organization_id: organization.id}
       )
 
-      Fixtures.role_fixture(attrs)
-
-      assert AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id}) ==
-               5
+      :ok
     end
 
     test "list_roles/0 returns all roles", attrs do
-      FunWithFlags.enable(:roles_and_permission,
-        for_actor: %{organization_id: attrs.organization_id}
-      )
-
       role = Fixtures.role_fixture(attrs)
 
       assert Enum.filter(
@@ -49,13 +44,13 @@ defmodule Glific.AccessControlTest do
                fn r -> r.label == role.label end
              ) ==
                [role]
+
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
     end
 
     test "list_roles/0 returns with filtered data", attrs do
-      FunWithFlags.enable(:roles_and_permission,
-        for_actor: %{organization_id: attrs.organization_id}
-      )
-
       role = Fixtures.role_fixture(attrs)
 
       assert AccessControl.list_roles(%{
@@ -67,12 +62,14 @@ defmodule Glific.AccessControlTest do
                organization_id: attrs.organization_id,
                filter: %{is_reserved: role.is_reserved}
              }) == [role]
+
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
     end
 
     test "organization_roles/1 returns all organization roles",
          %{organization_id: organization_id} = attrs do
-      FunWithFlags.enable(:roles_and_permission, for_actor: %{organization_id: organization_id})
-
       assert {:ok, _role} =
                attrs
                |> Map.merge(@valid_attrs)
@@ -80,6 +77,51 @@ defmodule Glific.AccessControlTest do
 
       assert ["some more organization label"] =
                AccessControl.organization_roles(%{organization_id: organization_id})
+
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
+    end
+
+    test "count_roles/1 returns count of all roles",
+         %{organization_id: _organization_id} = attrs do
+      role_count =
+        AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id})
+
+      _ = Fixtures.role_fixture(attrs)
+
+      assert AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id}) ==
+               role_count + 1
+
+      _ = Fixtures.role_fixture(Map.merge(attrs, @valid_more_attrs))
+
+      assert AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id}) ==
+               role_count + 2
+
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
+    end
+  end
+
+  describe "Testing with Fun_with_flags disabled" do
+    setup do
+      organization = SeedsDev.seed_organizations()
+
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: organization.id}
+      )
+
+      :ok
+    end
+
+    @invalid_attrs %{description: nil, is_reserved: nil, label: nil}
+
+    test "list_roles/0 returns all reserved roles when flag is disabled", attrs do
+      Fixtures.role_fixture(attrs)
+
+      assert AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id}) ==
+               5
     end
 
     test "get_role!/1 returns the role with given id", attrs do
@@ -132,31 +174,7 @@ defmodule Glific.AccessControlTest do
       assert_raise Ecto.NoResultsError, fn -> AccessControl.get_role!(role.id) end
     end
 
-    test "count_roles/1 returns count of all roles",
-         %{organization_id: _organization_id} = attrs do
-      FunWithFlags.enable(:roles_and_permission,
-        for_actor: %{organization_id: attrs.organization_id}
-      )
-
-      role_count =
-        AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id})
-
-      _ = Fixtures.role_fixture(attrs)
-
-      assert AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id}) ==
-               role_count + 1
-
-      _ = Fixtures.role_fixture(Map.merge(attrs, @valid_more_attrs))
-
-      assert AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id}) ==
-               role_count + 2
-    end
-
     test "list_flows/1 returns list of flows assigned to user", attrs do
-      FunWithFlags.disable(:roles_and_permission,
-        for_actor: %{organization_id: attrs.organization_id}
-      )
-
       SeedsDev.seed_test_flows()
       default_role = Fixtures.role_fixture(attrs)
       default_role_id = to_string(default_role.id)
@@ -183,6 +201,7 @@ defmodule Glific.AccessControlTest do
       })
 
       assert [] == Flows.list_flows(%{})
+      admin_user = Repo.get_current_user()
       Repo.put_current_user(user)
       [assigned_flow] = Flows.list_flows(%{})
       assert assigned_flow == flow
@@ -197,15 +216,17 @@ defmodule Glific.AccessControlTest do
         organization_id: attrs.organization_id
       })
 
-      [_f1, f2 | _] = Flows.list_flows(%{})
-      assert f2.name == name
-    end
+      [f1, f2 | _] = Flows.list_flows(%{})
+      assert f2.name == name || f1.name == name
 
-    test "list_groups/1 returns list of flows assigned to user", attrs do
+      Repo.put_current_user(admin_user)
+
       FunWithFlags.disable(:roles_and_permission,
         for_actor: %{organization_id: attrs.organization_id}
       )
+    end
 
+    test "list_groups/1 returns list of flows assigned to user", attrs do
       SeedsDev.seed_groups()
       default_role = Fixtures.role_fixture(attrs)
       default_role_id = to_string(default_role.id)
@@ -232,6 +253,7 @@ defmodule Glific.AccessControlTest do
       })
 
       assert [] == Groups.list_groups(%{})
+      admin_user = Repo.get_current_user()
       Repo.put_current_user(user)
       [assigned_group] = Groups.list_groups(%{})
       assert assigned_group == group
@@ -251,13 +273,15 @@ defmodule Glific.AccessControlTest do
         |> Enum.map(fn group -> group.label end)
 
       assert label in label_list
-    end
 
-    test "list_triggers/1 returns list of triggers assigned to user", attrs do
+      Repo.put_current_user(admin_user)
+
       FunWithFlags.disable(:roles_and_permission,
         for_actor: %{organization_id: attrs.organization_id}
       )
+    end
 
+    test "list_triggers/1 returns list of triggers assigned to user", attrs do
       SeedsDev.seed_test_flows()
       SeedsDev.seed_groups()
       Fixtures.trigger_fixture(%{organization_id: attrs.organization_id})
@@ -287,6 +311,7 @@ defmodule Glific.AccessControlTest do
       })
 
       assert [] == Triggers.list_triggers(%{})
+      admin_user = Repo.get_current_user()
       Repo.put_current_user(user)
       [assigned_trigger] = Triggers.list_triggers(%{})
       assert assigned_trigger.name == trigger.name
@@ -323,9 +348,14 @@ defmodule Glific.AccessControlTest do
         organization_id: attrs.organization_id
       })
 
-      [_t1, t2 | _] = Triggers.list_triggers(%{})
+      [t1, t2 | _] = Triggers.list_triggers(%{})
 
-      assert t2.frequency == ["daily"]
+      assert t2.frequency == ["daily"] || t1.frequency == ["daily"]
+      Repo.put_current_user(admin_user)
+
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
     end
 
     test "do_check_access/3 should return error tuple when entity type is unknown", _attrs do

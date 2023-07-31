@@ -1,5 +1,5 @@
 defmodule GlificWeb.Schema.ExportTest do
-  use GlificWeb.ConnCase, async: false
+  use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
   alias Glific.{

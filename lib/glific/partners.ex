@@ -721,7 +721,8 @@ defmodule Glific.Partners do
     list
     |> active_organizations()
     |> recent_organizations(only_recent)
-    |> Enum.each(fn {id, %{name: name}} ->
+    |> randomize_orgs()
+    |> Enum.each(fn {id, name} ->
       perform_handler(handler, handler_args, id, name)
     end)
   rescue
@@ -732,7 +733,19 @@ defmodule Glific.Partners do
       |> Glific.log_error()
   end
 
-  @active_minutes 120
+  # lets always perform requests in a random order to
+  # avoid starvation of any specific partner
+  @spec randomize_orgs(map) :: list
+  defp randomize_orgs(orgs) do
+    orgs
+    |> Enum.reduce(
+      [],
+      fn {id, %{name: name}}, acc -> [{id, name} | acc] end
+    )
+    |> then(fn x -> Enum.take_random(x, length(x)) end)
+  end
+
+  @active_minutes 720
 
   @doc """
   Get the organizations which had a message transaction in the last minutes
