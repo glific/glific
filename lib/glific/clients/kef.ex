@@ -46,15 +46,25 @@ defmodule Glific.Clients.KEF do
         organization_id: media["organization_id"]
       })
 
-    school_id = get_in(contact.fields, ["school_id", "value"])
+    contact_type = get_in(contact.fields, ["contact_type", "value"])
     current_worksheet_code = get_in(contact.fields, ["current_worksheet_code", "value"])
     phone = contact.phone
+
+    school_id =
+      if contact_type == "Parents",
+        do: get_in(contact.fields, ["usersschoolid", "value"]),
+        else: get_in(contact.fields, ["child_school_id", "value"])
+
+    school_name =
+      if contact_type == "Parents",
+        do: get_in(contact.fields, ["child_school_name", "value"]),
+        else: get_in(contact.fields, ["school_name", "value"])
 
     flow_subfolder =
       cond do
         media["flow_id"] in @worksheet_flow_ids -> "Worksheets/#{current_worksheet_code}"
         media["flow_id"] in @video_flow_ids -> "Videos"
-        _ -> "Others"
+        true -> "Others"
       end
 
     if is_nil(current_worksheet_code),
@@ -72,7 +82,7 @@ defmodule Glific.Clients.KEF do
     if is_nil(school_id),
       do: media["remote_name"],
       else:
-        "schools/#{school_id}/#{flow_subfolder}/#{media_subfolder}/#{phone}/" <>
+        "#{school_name}/#{school_id}/#{flow_subfolder}/#{media_subfolder}/#{phone}/" <>
           media["remote_name"]
   end
 
