@@ -183,8 +183,8 @@ defmodule GlificWeb.Schema.FlowTest do
       get_in(query_data, [:data, "exportFlow", "export_data"])
       |> Jason.decode!()
 
-    # Deleting all existing flows as importing same flow
-    Flows.list_flows(%{})
+    # Deleting only import flows as importing same flow
+    Flows.list_flows(%{id: flow.id})
     |> Enum.each(fn flow -> Flows.delete_flow(flow) end)
 
     assert length(data["flows"]) > 0
@@ -219,7 +219,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert length(data["flows"]) > 0
 
     # Deleting all existing flows as importing New Contact Flow creates sub flows as well
-    Flows.list_flows(%{})
+    Flows.list_flows(%{id: flow.id})
     |> Enum.each(fn flow -> Flows.delete_flow(flow) end)
 
     # Deleting all existing collections as importing New Contact Flow creates collections

@@ -100,7 +100,7 @@ defmodule Glific.FLowsTest do
       flows =
         Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword_or_tags: "testkeyword"})})
 
-      assert flows == [f0, f1]
+      assert flows == [f0, f1] || flows == [f1, f0]
 
       flows =
         Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword_or_tags: "wrongkeyword"})})
@@ -392,6 +392,8 @@ defmodule Glific.FLowsTest do
 
       {:error, error} = Flows.start_contact_flow(flow.id, contact)
       assert get_in(error, [Access.at(1)]) == "Flow is not active"
+
+      assert {:ok, _flow} = Flows.update_flow(flow, %{is_active: true})
     end
 
     test "start_contact_flow/2 will setup the template flow for a contact", attrs do

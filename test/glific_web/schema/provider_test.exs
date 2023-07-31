@@ -1,5 +1,5 @@
 defmodule GlificWeb.Schema.ProviderTest do
-  use GlificWeb.ConnCase, async: true
+  use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
   alias Glific.{
