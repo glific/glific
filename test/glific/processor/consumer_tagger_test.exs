@@ -20,7 +20,7 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     6 => {"thanks", "thankyou", nil},
     7 => {"ek", "numeric", "1"},
     8 => {"हिंदी", "language", nil},
-    9 => {to_string(['\u0039', 65_039, 8419]), "numeric", "9"},
+    9 => {to_string([~c"\u0039", 65_039, 8419]), "numeric", "9"},
     10 => {"hey there", "greeting", nil}
   }
   @checks_size Enum.count(@checks)

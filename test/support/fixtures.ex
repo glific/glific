@@ -789,7 +789,13 @@ defmodule Glific.Fixtures do
   @spec extension_fixture(map()) :: Extension.t()
   def extension_fixture(attrs) do
     valid_attrs = %{
-      code: "defmodule Glific.Test.Extension, do: def default_phone(), do: %{phone: 9876543210}",
+      code: """
+      defmodule Glific.Test.ExtensionFixture do
+        def default_phone() do
+          %{phone: 9876543210}
+        end
+      end
+      """,
       is_active: true,
       module: "Glific.Test.Extension",
       name: "Test extension",

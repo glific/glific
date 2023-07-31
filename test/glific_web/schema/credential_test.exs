@@ -21,7 +21,9 @@ defmodule GlificWeb.Schema.CredentialTest do
   test "credential by shortcode returns one credential or nil", %{user: user} do
     [provider | _] = Glific.Partners.list_providers(%{filter: %{shortcode: "gupshup_enterprise"}})
 
-    auth_query_gql_by(:create, user, variables: %{"input" => %{"shortcode" => provider.shortcode}})
+    auth_query_gql_by(:create, user,
+      variables: %{"input" => %{"shortcode" => provider.shortcode}}
+    )
 
     result =
       auth_query_gql_by(:by_shortcode, user, variables: %{"shortcode" => provider.shortcode})

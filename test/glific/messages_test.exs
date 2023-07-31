@@ -639,6 +639,7 @@ defmodule Glific.MessagesTest do
         })
 
       {:ok, restricted_user} = Users.update_user(u4, %{is_restricted: true})
+      admin_user = Repo.get_current_user()
       Repo.put_current_user(restricted_user)
 
       valid_attrs = %{
@@ -656,6 +657,7 @@ defmodule Glific.MessagesTest do
         })
 
       assert {:ok, %Message{}} = Messages.create_group_message(message_attrs)
+      Repo.put_current_user(admin_user)
     end
 
     test "create_group_message/1 should return changeset error", attrs do

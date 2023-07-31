@@ -59,11 +59,30 @@ defmodule GlificWeb.Resolvers.ContactsField do
   end
 
   @doc """
+  Merge two contact fields
+  """
+  @spec merge_contacts_fields(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def merge_contacts_fields(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, contacts_field} <-
+           Repo.fetch_by(ContactsField, %{id: id, organization_id: user.organization_id}),
+         {:ok, contacts_field} <- ContactField.merge_contacts_fields(contacts_field, params) do
+      {:ok, %{contacts_field: contacts_field}}
+    end
+  end
+
+  @doc """
   Delete an existing contact field
   """
-  @spec delete_contacts_field(Absinthe.Resolution.t(), %{id: integer, delete_assoc: boolean()}, %{context: map()}) ::
+  @spec delete_contacts_field(Absinthe.Resolution.t(), %{id: integer, delete_assoc: boolean()}, %{
+          context: map()
+        }) ::
           {:ok, any} | {:error, any}
-  def delete_contacts_field(_, %{id: id, delete_assoc: delete_assoc}, %{context: %{current_user: user}}) do
+  def delete_contacts_field(_, %{id: id, delete_assoc: delete_assoc}, %{
+        context: %{current_user: user}
+      }) do
     with {:ok, contacts_field} <-
            Repo.fetch_by(ContactsField, %{id: id, organization_id: user.organization_id}) do
       ContactField.delete_contacts_field(contacts_field, delete_assoc)

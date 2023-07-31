@@ -37,10 +37,21 @@ defmodule GlificWeb.API.V1.SessionController do
       {:error, conn} ->
         Logger.error("Logged in user failure: user_phone: '#{user_params["phone"]}'")
 
-        conn
-        |> put_status(401)
-        |> json(%{error: %{status: 401, message: "Invalid phone or password"}})
+        create_error(conn)
     end
+  end
+
+  @doc """
+  Catch the case when the caller does not send in a user array with phone / password
+  """
+  def create(conn, _params),
+    do: create_error(conn)
+
+  # one function to return errors from invalid auth
+  defp create_error(conn) do
+    conn
+    |> put_status(401)
+    |> json(%{error: %{status: 401, message: "Invalid phone or password"}})
   end
 
   defp update_last_login(user, conn) do

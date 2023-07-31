@@ -17,14 +17,21 @@ defmodule GlificWeb.Schema.ExtensionTest do
 
   load_gql(:delete, GlificWeb.Schema, "assets/gql/extension/delete.gql")
 
+  @code """
+  defmodule Extension.Schema.Test.Phone do
+    def default_phone() do
+      %{phone: 9876543210}
+    end
+  end
+  """
+
   test "create a new extension", %{user: user} = attrs do
     result =
       auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
             "clientId" => attrs.organization_id,
-            "code" =>
-              "defmodule Extension.Schema.Test.Phone, do: def default_phone(), do: %{phone: 9876543210}",
+            "code" => @code,
             "isActive" => true,
             "name" => "Extension.Schema.Test.Phone"
           }
@@ -34,8 +41,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
     assert {:ok, query_data} = result
     extension = get_in(query_data, [:data, "createExtension", "extension"])
 
-    assert extension["code"] ==
-             "defmodule Extension.Schema.Test.Phone, do: def default_phone(), do: %{phone: 9876543210}"
+    assert extension["code"] == @code
 
     assert extension["isActive"] == true
     assert extension["isValid"] == true
@@ -47,8 +53,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
         variables: %{
           "input" => %{
             "clientId" => attrs.organization_id,
-            "code" =>
-              "defmodule Extension.Schema.Test.Phone, do: def default_phone(), do: %{phone: 9876543210}",
+            "code" => @code,
             "isActive" => true,
             "name" => "Extension.Schema.Test.Phone"
           }
@@ -70,8 +75,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
           "input" => %{
             "clientId" => attrs.organization_id,
             "isActive" => true,
-            "code" =>
-              "defmodule Extension.Schema.Test.Id, do: def default_id(), do: %{id: 9997123545}"
+            "code" => @code
           }
         }
       )
@@ -93,14 +97,15 @@ defmodule GlificWeb.Schema.ExtensionTest do
           "input" => %{
             "clientId" => attrs.organization_id,
             "isActive" => true,
-            "code" =>
-              "defmodule Extension.Schema.Test.Id, do: def default_id(), do: %{id: 9997123545}"
+            "code" => @code
           }
         }
       )
 
     assert {:ok, query_data} = result
+
     extensions = get_in(query_data, [:data, "updateOrganizationExtension", "extension"])
+
     assert extensions["isActive"] == true
     assert extensions["isValid"] == true
     assert extensions["name"] == "Test extension"
@@ -118,7 +123,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
 
     assert {:ok, query_data} = result
     extensions = get_in(query_data, [:data, "deleteExtension", "extension"])
-    assert extensions["module"] == "Elixir.Glific.Test.Extension"
+    assert extensions["module"] == "Elixir.Glific.Test.ExtensionFixture"
 
     error = get_in(query_data, [:data, "deleteExtension", "extension", "errors"])
     assert true == is_nil(error)
