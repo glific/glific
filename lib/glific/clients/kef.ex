@@ -17,6 +17,9 @@ defmodule Glific.Clients.KEF do
     Sheets.ApiClient
   }
 
+  @worksheet_flow_ids [8880, 8176]
+  @video_flow_ids [8750, 8842, 8911]
+
   @props %{
     worksheets: %{
       sheet_links: %{
@@ -47,10 +50,16 @@ defmodule Glific.Clients.KEF do
     current_worksheet_code = get_in(contact.fields, ["current_worksheet_code", "value"])
     phone = contact.phone
 
-    worksheet_subfolder =
-      if is_nil(current_worksheet_code),
-        do: "Others",
-        else: "Worksheets/#{current_worksheet_code}"
+    flow_subfolder =
+      cond do
+        media["flow_id"] in @worksheet_flow_ids -> "Worksheets/#{current_worksheet_code}"
+        media["flow_id"] in @video_flow_ids -> "Videos"
+        _ -> "Others"
+      end
+
+    if is_nil(current_worksheet_code),
+      do: "Others",
+      else: "Worksheets/#{current_worksheet_code}"
 
     media_subfolder =
       case media["type"] do
@@ -63,7 +72,7 @@ defmodule Glific.Clients.KEF do
     if is_nil(school_id),
       do: media["remote_name"],
       else:
-        "schools/#{school_id}/#{worksheet_subfolder}/#{media_subfolder}/#{phone}/" <>
+        "schools/#{school_id}/#{flow_subfolder}/#{media_subfolder}/#{phone}/" <>
           media["remote_name"]
   end
 
