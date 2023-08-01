@@ -133,7 +133,7 @@ defmodule Glific.Erase do
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
   end
 
-  @limit 100
+  @limit 500
 
   @doc """
   Keep latest limited messages for a contact
