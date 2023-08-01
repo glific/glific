@@ -169,7 +169,7 @@ defmodule Glific.Reports do
 
     ## Examples
 
-    iex> Glific.Reports.get_kpi_data(1, "contacts")
+    iex> Glific.Reports.get_kpi_data_new(1, "contacts")
       %{
         "04-01-2023" => 0,
         "05-01-2023" => 0,
@@ -184,39 +184,20 @@ defmodule Glific.Reports do
     iex> Glific.Reports.get_kpi_data(1, "optout")
     iex> Glific.Reports.get_kpi_data(1, "contact_type")
   """
-  @spec get_kpi_data(non_neg_integer(), String.t()) :: map()
-  def get_kpi_data(org_id, table) do
-    presets = get_date_preset()
-
-    query_data =
-      get_kpi_query(presets, table, org_id)
-      |> Repo.query!([])
-
-    Enum.reduce(query_data.rows, presets.date_map, fn [date, count], acc ->
-      Map.put(acc, Timex.format!(date, "{0D}-{0M}-{YYYY}"), count)
-    end)
-  end
-
   @spec get_kpi_data_new(non_neg_integer(), String.t()) :: map()
   def get_kpi_data_new(org_id, table) do
-    presets = get_date_preset() |> IO.inspect(label: "preset")
+    presets = get_date_preset()
     Repo.put_process_state(org_id)
 
     query_data =
       get_kpi_query(presets, table, org_id)
-      |> Repo.all() |> IO.inspect(label: "Ecto query")
+      |> Repo.all()
 
     Enum.reduce(query_data, presets.date_map, fn %{count: count, date: date}, acc ->
-      #%{count: count, date: Map.put(acc, Timex.format!(date, "{0D}-{0M}-{YYYY}"))}
       Map.put(acc, date, count)
     end)
     |> Enum.map(fn {k, v} -> {Timex.format!(k, "{0D}-{0M}-{YYYY}"), v} end)
-    #|> Map.to_list()
-    |> IO.inspect(label: "after mapping")
   end
-
-  # [%{count: 15, date: ~N[2023-07-19 00:00:00.000000]}]
-
 
   defp get_kpi_query(presets, table, org_id) do
     from(
@@ -224,7 +205,7 @@ defmodule Glific.Reports do
       where: t.inserted_at > ^presets.last_day and t.inserted_at <= ^presets.today and t.organization_id == ^org_id,
       group_by: fragment("date_trunc('day', ?)", t.inserted_at),
       select: %{date: fragment("date_trunc('day', ?)", t.inserted_at), count: count(t.id)}
-    ) |> IO.inspect(label: "raw query")
+    )
   end
 
   @doc """
@@ -263,7 +244,7 @@ defmodule Glific.Reports do
   def get_contact_data(org_id) do
     get_count_query(:bsp_status)
     |> where([q], q.organization_id == ^org_id)
-    |> Repo.all() |> IO.inspect(label: "CONTACT QUERY")
+    |> Repo.all()
   end
 
   @spec get_date_preset(DateTime.t()) :: map()

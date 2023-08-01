@@ -4,8 +4,8 @@ defmodule GlificWeb.StatsLive do
   """
   use GlificWeb, :live_view
 
-  alias Glific.Reports
   alias Contex.Plot
+  alias Glific.Reports
 
   @doc false
   @spec mount(any(), any(), any()) ::
@@ -50,7 +50,8 @@ defmodule GlificWeb.StatsLive do
     |> assign_chart_svg()
   end
 
-  def assign_dataset(
+  @spec assign_dataset(Phoenix.LiveView.Socket.t()) ::  Phoenix.LiveView.Socket.t()
+  defp assign_dataset(
     %{assigns: %{
       contact_chart_data: contact_chart_data,
       conversation_chart_data: conversation_chart_data,
@@ -85,7 +86,7 @@ defmodule GlificWeb.StatsLive do
 end
 
   @spec assign_chart_svg(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
-  def assign_chart_svg(%{assigns: %{contact_dataset: contact_dataset,
+  defp assign_chart_svg(%{assigns: %{contact_dataset: contact_dataset,
                                     conversation_dataset: conversation_dataset,
                                     optin_dataset: optin_dataset,
                                     notification_dataset: notification_dataset,
@@ -102,7 +103,7 @@ end
   end
 
   defp render_bar_chart(dataset) do
-    Contex.Plot.new(dataset, Contex.BarChart, 600, 400)
+    Contex.Plot.new(dataset, Contex.BarChart, 500, 400)
     |> Contex.Plot.to_svg()
   end
 
@@ -114,9 +115,9 @@ end
       data_labels: true,
       title: "Opted In Data"
     ]
-    plot = Contex.Plot.new(dataset, Contex.PieChart, 600, 400, opts)
-    [{_, v1}, {_, v2}, {_, v3}] = dataset.data |> IO.inspect(label: "DATASET.DATA")
-    if [0,0,0] === [v1, v2, v3] do
+    plot = Contex.Plot.new(dataset, Contex.PieChart, 500, 400, opts)
+    [{_, v1}, {_, v2}, {_, v3}] = dataset.data
+    if [0, 0, 0] === [v1, v2, v3] do
       Jason.encode!("No data in the past month")
     else
       Contex.Plot.to_svg(plot)
@@ -131,9 +132,9 @@ end
       data_labels: true,
       title: "Notification Data"
     ]
-    plot = Contex.Plot.new(dataset, Contex.PieChart, 600, 400, opts)
-    [{_, v1}, {_, v2}, {_, v3}] = dataset.data |> IO.inspect(label: "DATASET.DATA")
-    if [0,0,0] === [v1, v2, v3] do
+    plot = Contex.Plot.new(dataset, Contex.PieChart, 500, 400, opts)
+    [{_, v1}, {_, v2}, {_, v3}] = dataset.data
+    if [0, 0, 0] === [v1, v2, v3] do
       Jason.encode!("No Notifications in the past month")
     else
       Contex.Plot.to_svg(plot)
@@ -148,8 +149,8 @@ end
       data_labels: true,
       title: "Message Type"
     ]
-    plot = Contex.Plot.new(dataset, Contex.PieChart, 600, 400, opts)
-    [{_, v1}, {_, v2}] = dataset.data |> IO.inspect(label: "DATASET.DATA")
+    plot = Contex.Plot.new(dataset, Contex.PieChart, 500, 400, opts)
+    [{_, v1}, {_, v2}] = dataset.data
     if [nil, nil] == [v1, v2] do
       Jason.encode!("No data in the past month")
     else
@@ -165,9 +166,9 @@ end
       data_labels: true,
       title: "Contact Type"
     ]
-    plot = Contex.Plot.new(dataset, Contex.PieChart, 600, 400, opts)
-    [{_, v1}, {_, v2}] = dataset.data |> IO.inspect(label: "DATASET.DATA")
-    if [0,0] === [v1, v2] or [nil, nil] == [v1,v2] do
+    plot = Contex.Plot.new(dataset, Contex.PieChart, 500, 400, opts)
+    [{_, v1}, {_, v2}] = dataset.data
+    if [0, 0] === [v1, v2] or [nil, nil] == [v1, v2] do
       Jason.encode!("No data in the past month")
     else
       Contex.Plot.to_svg(plot)
@@ -224,45 +225,9 @@ end
     ]
   end
 
-  @spec fetch_date_formatted_data(String.t(), non_neg_integer()) :: list()
-  def fetch_date_formatted_data(table_name, org_id) do
-    Reports.get_kpi_data(org_id, table_name)
-    |> Map.values()
-  end
-
-  @spec fetch_date_labels(String.t(), non_neg_integer()) :: list()
-  defp fetch_date_labels(table_name, org_id) do
-    Reports.get_kpi_data(org_id, table_name)
-    |> Map.keys()
-  end
-
   @spec fetch_contact_pie_chart_data(non_neg_integer()) :: list()
   defp fetch_contact_pie_chart_data(org_id) do
     [[_, v1], [_, v2]] = Reports.get_contact_data(org_id)
     [{"Session and HSM", v1}, {"None", v2}]
-    #|> Enum.reduce(%{data: [], labels: []}, fn [label, count], acc ->
-     # data = acc.data ++ [count]
-      #labels = acc.labels ++ [label]
-      #%{data: data, labels: labels}
-    #end) |> IO.inspect(label: "CONTACT PIE CHART DATA")
   end
-
-  #def update(assigns, socket) do
-  #  {:ok,
-   # socket
-   # |> assign(assigns)
-   # |> assign_chart_data()
-   # |> assign_dataset()
-   # |> assign_chart()
-    #|> assign_chart_svg()}
- # end
-
-
-
-
-
-
-
-
-
 end
