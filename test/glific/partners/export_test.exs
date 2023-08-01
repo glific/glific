@@ -24,10 +24,10 @@ defmodule Glific.ExportTest do
 
       assert config["languages"] != nil
 
-      assert map_size(config["languages"]["schema"] |> Jason.decode!()) > 8
+      assert map_size(config["languages"]["schema"]) > 8
 
       assert config["providers"] != nil
-      assert map_size(config["providers"]["schema"] |> Jason.decode!()) > 8
+      assert map_size(config["providers"]["schema"]) > 8
     end
 
     test "export_stats/1 returns the stats for a specific organization", %{

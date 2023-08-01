@@ -111,7 +111,6 @@ defmodule Glific.Partners.Export do
         Map.put(acc, column_name, [airbyte_data_type, column_default])
       end
     )
-    |> Jason.encode!()
   end
 
   @spec config_query(String.t()) :: String.t()
