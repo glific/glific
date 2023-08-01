@@ -263,7 +263,7 @@ defmodule Glific.Reports do
   def get_contact_data(org_id) do
     get_count_query(:bsp_status)
     |> where([q], q.organization_id == ^org_id)
-    |> Repo.all()
+    |> Repo.all() |> IO.inspect(label: "CONTACT QUERY")
   end
 
   @spec get_date_preset(DateTime.t()) :: map()

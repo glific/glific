@@ -55,7 +55,9 @@ defmodule GlificWeb.StatsLive do
       contact_chart_data: contact_chart_data,
       conversation_chart_data: conversation_chart_data,
       optin_chart_data: optin_chart_data,
-      notification_chart_data: notification_chart_data}
+      notification_chart_data: notification_chart_data,
+      message_type_chart_data: message_type_chart_data,
+      contact_pie_chart_data: contact_type_chart_data}
     } = socket) do
       socket
       |> assign(
@@ -64,9 +66,13 @@ defmodule GlificWeb.StatsLive do
         conversation_dataset:
         make_bar_chart_dataset(conversation_chart_data),
         optin_dataset:
-        make_pie_chart_dataset(:optin, optin_chart_data),
+        make_pie_chart_dataset(optin_chart_data),
         notification_dataset:
-        make_pie_chart_dataset(:notification, notification_chart_data)
+        make_pie_chart_dataset(notification_chart_data),
+        message_dataset:
+        make_pie_chart_dataset(message_type_chart_data),
+        contact_type_dataset:
+        make_pie_chart_dataset(contact_type_chart_data)
       )
   end
 
@@ -74,24 +80,24 @@ defmodule GlificWeb.StatsLive do
     Contex.Dataset.new(data)
   end
 
-  defp make_pie_chart_dataset(:optin, data) do #multiple of these
+  defp make_pie_chart_dataset(data) do
     Contex.Dataset.new(data, ["Type", "Value"])
-  end
-
-  defp make_pie_chart_dataset(:notification, data) do
-    Contex.Dataset.new(data, ["Type", "Value"]) |> IO.inspect(label: "DATASET")
-  end
+end
 
   @spec assign_chart_svg(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
   def assign_chart_svg(%{assigns: %{contact_dataset: contact_dataset,
                                     conversation_dataset: conversation_dataset,
                                     optin_dataset: optin_dataset,
-                                    notification_dataset: notification_dataset}} = socket) do
+                                    notification_dataset: notification_dataset,
+                                    message_dataset: message_dataset,
+                                    contact_type_dataset: contact_type_dataset}} = socket) do
     socket
     |> assign(contact_chart_svg: render_bar_chart(contact_dataset),
               conversation_chart_svg: render_bar_chart(conversation_dataset),
               optin_chart_svg: render_pie_chart(:optin, optin_dataset),
-              notification_chart_svg: render_pie_chart(:notification, notification_dataset)
+              notification_chart_svg: render_pie_chart(:notification, notification_dataset),
+              message_chart_svg: render_pie_chart(:message, message_dataset),
+              contact_type_chart_svg: render_pie_chart(:contact_type, contact_type_dataset)
               )
   end
 
@@ -134,6 +140,40 @@ defmodule GlificWeb.StatsLive do
     end
   end
 
+  defp render_pie_chart(:message, dataset) do
+    opts = [
+      mapping: %{category_col: "Type", value_col: "Value"},
+      colour_palette: ["fbb4ae", "b3cde3", "ccebc5"],
+      legend_setting: :legend_right,
+      data_labels: true,
+      title: "Message Type"
+    ]
+    plot = Contex.Plot.new(dataset, Contex.PieChart, 600, 400, opts)
+    [{_, v1}, {_, v2}] = dataset.data |> IO.inspect(label: "DATASET.DATA")
+    if [nil, nil] == [v1, v2] do
+      Jason.encode!("No data in the past month")
+    else
+      Contex.Plot.to_svg(plot)
+    end
+  end
+
+  defp render_pie_chart(:contact_type, dataset) do
+    opts = [
+      mapping: %{category_col: "Type", value_col: "Value"},
+      colour_palette: ["fbb4ae", "b3cde3", "ccebc5"],
+      legend_setting: :legend_right,
+      data_labels: true,
+      title: "Contact Type"
+    ]
+    plot = Contex.Plot.new(dataset, Contex.PieChart, 600, 400, opts)
+    [{_, v1}, {_, v2}] = dataset.data |> IO.inspect(label: "DATASET.DATA")
+    if [0,0] === [v1, v2] or [nil, nil] == [v1,v2] do
+      Jason.encode!("No data in the past month")
+    else
+      Contex.Plot.to_svg(plot)
+    end
+  end
+
   @doc false
   @spec get_org_id(Phoenix.LiveView.Socket.t()) :: non_neg_integer()
   def get_org_id(socket) do
@@ -149,10 +189,7 @@ defmodule GlificWeb.StatsLive do
       conversation_chart_data: Reports.get_kpi_data_new(org_id, "messages_conversations"),
       optin_chart_data: fetch_count_data(:optin_chart_data, org_id),
       notification_chart_data: fetch_count_data(:notification_chart_data, org_id),
-      message_type_chart_data: %{
-        data: fetch_count_data(:message_type_chart_data, org_id),
-        labels: ["Inbound", "Outbound"]
-      },
+      message_type_chart_data: fetch_count_data(:message_type_chart_data, org_id),
       broadcast_data: fetch_table_data(:broadcasts, org_id),
       broadcast_headers: ["Flow Name", "Group Name", "Started At", "Completed At"],
       contact_pie_chart_data: fetch_contact_pie_chart_data(org_id)
@@ -182,8 +219,8 @@ defmodule GlificWeb.StatsLive do
 
   defp fetch_count_data(:message_type_chart_data, org_id) do
     [
-      Reports.get_kpi(:inbound_messages_count, org_id),
-      Reports.get_kpi(:outbound_messages_count, org_id)
+      {"Inbound", Reports.get_kpi(:inbound_messages_count, org_id)},
+      {"Outbound", Reports.get_kpi(:outbound_messages_count, org_id)}
     ]
   end
 
@@ -201,12 +238,13 @@ defmodule GlificWeb.StatsLive do
 
   @spec fetch_contact_pie_chart_data(non_neg_integer()) :: list()
   defp fetch_contact_pie_chart_data(org_id) do
-    Reports.get_contact_data(org_id)
-    |> Enum.reduce(%{data: [], labels: []}, fn [label, count], acc ->
-      data = acc.data ++ [count]
-      labels = acc.labels ++ [label]
-      %{data: data, labels: labels}
-    end)
+    [[_, v1], [_, v2]] = Reports.get_contact_data(org_id)
+    [{"Session and HSM", v1}, {"None", v2}]
+    #|> Enum.reduce(%{data: [], labels: []}, fn [label, count], acc ->
+     # data = acc.data ++ [count]
+      #labels = acc.labels ++ [label]
+      #%{data: data, labels: labels}
+    #end) |> IO.inspect(label: "CONTACT PIE CHART DATA")
   end
 
   #def update(assigns, socket) do

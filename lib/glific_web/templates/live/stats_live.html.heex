@@ -40,22 +40,12 @@ Commented out the filter code. Will add this once the functionality is ready
     <div id="notification-chart" class="card">
     <%= @notification_chart_svg %>
     </div>
-    <canvas
-      class="card"
-      id="message_type_chart"
-      phx-hook="pieChart"
-      data-label="MessageType"
-      data-chart-data={Jason.encode!(@message_type_chart_data)}
-    >
-    </canvas>
-    <canvas
-      class="card"
-      id="contact_pie_chart"
-      phx-hook="pieChart"
-      data-label="Contact Status Chart"
-      data-chart-data={Jason.encode!(@contact_pie_chart_data)}
-    >
-    </canvas>
+    <div id="notification-chart" class="card">
+    <%= @message_chart_svg %>
+    </div>
+    <div id="notification-chart" class="card">
+    <%= @contact_type_chart_svg %>
+    </div>
   </div>
 </div>
 
