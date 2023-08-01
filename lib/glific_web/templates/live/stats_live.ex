@@ -109,8 +109,12 @@ defmodule GlificWeb.StatsLive do
       title: "Opted In Data"
     ]
     plot = Contex.Plot.new(dataset, Contex.PieChart, 600, 400, opts)
-
-    Contex.Plot.to_svg(plot)
+    [{_, v1}, {_, v2}, {_, v3}] = dataset.data |> IO.inspect(label: "DATASET.DATA")
+    if [0,0,0] === [v1, v2, v3] do
+      Jason.encode!("No data in the past month")
+    else
+      Contex.Plot.to_svg(plot)
+    end
   end
 
   defp render_pie_chart(:notification, dataset) do
@@ -122,7 +126,12 @@ defmodule GlificWeb.StatsLive do
       title: "Notification Data"
     ]
     plot = Contex.Plot.new(dataset, Contex.PieChart, 600, 400, opts)
-    Contex.Plot.to_svg(plot)
+    [{_, v1}, {_, v2}, {_, v3}] = dataset.data |> IO.inspect(label: "DATASET.DATA")
+    if [0,0,0] === [v1, v2, v3] do
+      Jason.encode!("No Notifications in the past month")
+    else
+      Contex.Plot.to_svg(plot)
+    end
   end
 
   @doc false
@@ -139,11 +148,7 @@ defmodule GlificWeb.StatsLive do
       contact_chart_data:  Reports.get_kpi_data_new(org_id, "contacts"),
       conversation_chart_data: Reports.get_kpi_data_new(org_id, "messages_conversations"),
       optin_chart_data: fetch_count_data(:optin_chart_data, org_id),
-      notification_chart_data: [
-        {"Critical", 10},
-        {"Warning", 20},
-        {"Information", 30}
-      ],
+      notification_chart_data: fetch_count_data(:notification_chart_data, org_id),
       message_type_chart_data: %{
         data: fetch_count_data(:message_type_chart_data, org_id),
         labels: ["Inbound", "Outbound"]
