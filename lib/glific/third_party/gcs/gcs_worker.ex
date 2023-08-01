@@ -31,14 +31,30 @@ defmodule Glific.GCS.GcsWorker do
   @provider_shortcode "google_cloud_storage"
   @base_url "https://oauth2.googleapis.com/token"
 
-  @spec transfer_to_bucket(remote_url :: String.t(), bucket_name :: String.t()) :: :ok | {:error, term}
-  def transfer_to_bucket(remote_url, bucket_name) do
-    access_token = get_access_token();
+  @spec transfer_to_bucket(remote_url :: String.t(), bucket_name :: String.t(), organization_id :: non_neg_integer()) ::
+          :ok | {:error, term}
+  def transfer_to_bucket(remote_url, bucket_name, organization_id) do
+    # access_token = get_access_token()
+    access_token = get_token("#{organization_id}")
 
     transfer_request = %{
       "description" => "Transfer from remote URL to Cloud Storage Bucket",
       "status" => "ENABLED",
+      #have to remove the hardcoded value
       "projectId" => "tides-saas-309509",
+      # any past date works here to run the transfer only once or can still look for better way?
+      "schedule" => %{
+        "scheduleStartDate" => %{
+            "day" => 25,
+            "month" => 7,
+            "year" => 2023
+        },
+        "scheduleEndDate"=> %{
+            "day" => 25,
+            "month" => 7,
+            "year" => 2023
+        }
+    },
       "transferSpec" => %{
         "gcsDataSink" => %{
           "bucketName" => bucket_name
@@ -59,11 +75,17 @@ defmodule Glific.GCS.GcsWorker do
       {"x-goog-user-project", "tides-saas-309509"}
     ]
 
-    case HTTPoison.post("https://storagetransfer.googleapis.com/v1/transferJobs", Poison.encode!(transfer_request), headers) do
+    case HTTPoison.post(
+           "https://storagetransfer.googleapis.com/v1/transferJobs",
+           Poison.encode!(transfer_request),
+           headers
+         ) do
       {:ok, %{status_code: 200, body: _body}} ->
         IO.puts("Transfer request successful!")
+
       {:ok, %{status_code: status_code, body: body}} ->
         IO.puts("Transfer request failed with status code #{status_code}: #{body}")
+
       {:error, reason} ->
         IO.puts("Error during transfer request: #{reason}")
     end
@@ -74,6 +96,11 @@ defmodule Glific.GCS.GcsWorker do
     |> System.cmd(["auth", "print-access-token"])
     |> elem(0)
     |> String.trim()
+  end
+
+  @spec get_token(String.t()) :: String.t()
+  defp get_token(org_id) do
+    Glific.GCS.get_token(org_id)
   end
 
   @doc """
@@ -419,10 +446,42 @@ defmodule Glific.GCS.GcsWorker do
     end
   end
 
-  def urls_list_to_bucket(urls, bucketname, local_path, ) do
-    tsv_data = "TsvHttpData-1.0\n" Enum.join(data_list, "\n")
-    File.write!(local_path, tsv_data)
+  def urls_list_to_bucket(urls, local, remote, organization_id) do
+    tsv_data = "TsvHttpData-1.0\n" <> Enum.join(urls, "\n")
 
+    local = System.tmp_dir!()
+    |> Path.join(local)
+    File.write!(local, tsv_data)
 
+    url = upload_file_on_gcs(local, remote, organization_id)
+    |> case do
+      {:ok, response} ->
+        File.rm(local)
+        get_public_link(response)
+
+      other -> other
+    end
+
+    IO.inspect url
+    # IO.inspect Glific.Media.bucket()
+    bucket_name = Glific.Media.bucket({"", "#{organization_id}"})
+    transfer_to_bucket(url, bucket_name, organization_id)
   end
 end
+
+#This data could be use for testing
+# urls = [
+# "https://filemanager.gupshup.io/fm/wamedia/ColoredCow/1099e8e4-83e9-4169-b260-ceb394d6574f",
+# "https://filemanager.gupshup.io/fm/wamedia/ColoredCow/48d5b347-c6c3-4cf8-9583-0a7b76cd3606",
+# "https://filemanager.gupshup.io/fm/wamedia/ColoredCow/8176d04e-970d-4e2a-9987-2b3da974421a",
+# "https://filemanager.gupshup.io/fm/wamedia/ColoredCow/492e3e32-755a-4b32-b08a-1cb35870e46e",
+# "https://filemanager.gupshup.io/fm/wamedia/ColoredCow/a27697f8-b4c1-4305-8572-17e346aadfa3",
+# "https://filemanager.gupshup.io/fm/wamedia/ColoredCow/69edddc3-cd52-453a-af66-f2d3e0959d8a",
+# "https://filemanager.gupshup.io/fm/wamedia/ColoredCow/2f08a86e-3e4d-4c7f-9c35-e1f0c06103b5",
+# "https://filemanager.gupshup.io/fm/wamedia/ColoredCow/39d5b91b-a152-4fb1-b182-2014921856a6",
+# "https://filemanager.gupshup.io/fm/wamedia/ColoredCow/abc6a2ea-2d2d-4828-9197-3566bf0f4bf8",
+# "https://filemanager.gupshup.io/fm/wamedia/ColoredCow/61c55695-2e8e-4518-b327-96bf1e064836",
+# "https://filemanager.gupshup.io/fm/wamedia/ColoredCow/136ed31e-f2d0-4f89-8137-6a1dfd577dd0",
+# ]
+
+# Glific.GCS.GcsWorker.urls_list_to_bucket(urls, "test_file.tsv", "test_file.tsv", 1)
