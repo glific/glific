@@ -99,7 +99,7 @@ defmodule Glific.Partners.Export do
     |> Map.put("config", @meta)
   end
 
-  @spec transform_data(list()) :: String.t()
+  @spec transform_data(list()) :: map()
   defp transform_data(data) do
     data
     |> Enum.reduce(
