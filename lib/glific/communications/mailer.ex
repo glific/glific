@@ -53,22 +53,30 @@ defmodule Glific.Communications.Mailer do
   Lets write a common function and centralize notification
   code
   """
-  @spec common_send(Organization.t(), String.t(), String.t(), tuple() | nil) :: Swoosh.Email.t()
-  def common_send(org, subject, body, send_to \\ nil) do
+  @spec common_send(Organization.t(), String.t(), String.t(), String.t(), tuple() | nil) :: Swoosh.Email.t()
+  def common_send(org, team, subject, body, send_to \\ nil) do
     # Subject can not have a line break
     subject = String.replace(subject, "\n", "")
 
     send_to =
       if is_nil(send_to),
-        do: {org.name, org.email},
+        do: get_team_email(org, team),
         else: send_to
 
     new()
-    |> to(send_to)
-    |> from(sender())
-    |> cc(glific_support())
-    |> subject(subject)
-    |> text_body(body)
+      |> to(send_to)
+      |> from(sender())
+      |> cc(glific_support())
+      |> subject(subject)
+      |> text_body(body)
+  end
+
+  def get_team_email(org, team) do
+    team_emails =
+      org.team_emails
+      |> Jason.decode!()
+
+    Map.get(team_emails, team) || raise ArgumentError, "Team email not found for team #{team}"
   end
 
   defp capture_log(
