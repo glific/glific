@@ -10,7 +10,7 @@ defmodule Glific.Reports do
     Flows.FlowContext,
     Flows.MessageBroadcast,
     Messages.Message,
-    Messages.MessageConversation,
+    # Messages.MessageConversation,
     Notifications.Notification,
     Repo,
     Stats.Stat
@@ -110,11 +110,6 @@ defmodule Glific.Reports do
     |> where([q], q.severity == "Information")
   end
 
-  defp get_count_query(:conversation_count) do
-    MessageConversation
-    |> select([q], count(q.id))
-  end
-
   defp get_count_query(:active_flow_count) do
     FlowContext
     |> select([q], count(q.id))
@@ -131,6 +126,8 @@ defmodule Glific.Reports do
 
   defp get_count_query(:flows_completed), do: select(Stat, [q], sum(q.flows_completed))
 
+  defp get_count_query(:conversation_count), do: select(Stat, [q], sum(q.conversations))
+
   @spec add_timestamps(Ecto.Query.t(), atom()) :: Ecto.Query.t()
   defp add_timestamps(query, kpi)
        when kpi in [
@@ -138,8 +135,7 @@ defmodule Glific.Reports do
               :warning_notification_count,
               :information_notification_count,
               :monthly_error_count,
-              :active_flow_count,
-              :conversation_count
+              :active_flow_count
             ] do
     date = Timex.beginning_of_month(DateTime.utc_now())
 
@@ -153,7 +149,8 @@ defmodule Glific.Reports do
               :hsm_messages_count,
               :inbound_messages_count,
               :flows_started,
-              :flows_completed
+              :flows_completed,
+              :conversation_count
             ] do
     day = Date.beginning_of_month(DateTime.utc_now())
 

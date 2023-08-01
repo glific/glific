@@ -28,7 +28,8 @@ defmodule Glific.Stats.Stat do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          conversations: non_neg_integer()
         }
 
   @required_fields [
@@ -49,7 +50,8 @@ defmodule Glific.Stats.Stat do
     :flows_completed,
     :users,
     :hour,
-    :organization_id
+    :organization_id,
+    :conversations
   ]
 
   schema "stats" do
@@ -77,6 +79,8 @@ defmodule Glific.Stats.Stat do
 
     field :date, :date
     field :hour, :integer, default: 0
+
+    field :conversations, :integer, default: 0
 
     belongs_to :organization, Organization
 

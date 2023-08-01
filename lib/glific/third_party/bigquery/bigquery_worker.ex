@@ -723,7 +723,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             date: Date.to_string(row.date),
             hour: row.hour,
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
-            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+            updated_at: BigQuery.format_date(row.updated_at, organization_id),
+            conversation: row.conversations
           }
           |> Map.merge(additional)
           |> then(&%{json: &1})
