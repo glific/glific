@@ -1,4 +1,4 @@
-defmodule MyApp.Repo.Migrations.AddTeamEmailsToOrganizations do
+defmodule Glific.Repo.Migrations.AddTeamEmailsToOrganizations do
   use Ecto.Migration
 
   def change do
