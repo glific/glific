@@ -38,25 +38,24 @@ defmodule GlificWeb.StatsLive do
 
     assign(socket, Keyword.merge(stats, page_title: "Glific Dashboard"))
     |> assign(get_chart_data(org_id))
-    |> assign_dataset() |> IO.inspect(label: "dataset")
-    |> assign_chart() |> IO.inspect(label: "chart")
-    |> assign_chart_svg() |> IO.inspect(label: "svg")
+    |> assign_dataset()
+    |> assign_chart_svg()
   end
 
   defp assign_stats(socket, :call) do
     Enum.each(Reports.kpi_list(), &send(self(), {:get_stats, &1}))
     org_id = get_org_id(socket)
     assign(socket, get_chart_data(org_id))
-    |> assign_dataset() |> IO.inspect(label: "dataset")
-    |> assign_chart() |> IO.inspect(label: "chart")
-    |> assign_chart_svg() |> IO.inspect(label: "svg")
+    |> assign_dataset()
+    |> assign_chart_svg()
   end
 
   def assign_dataset(
     %{assigns: %{
       contact_chart_data: contact_chart_data,
       conversation_chart_data: conversation_chart_data,
-      optin_chart_data: optin_chart_data}
+      optin_chart_data: optin_chart_data,
+      notification_chart_data: notification_chart_data}
     } = socket) do
       socket
       |> assign(
@@ -65,7 +64,9 @@ defmodule GlificWeb.StatsLive do
         conversation_dataset:
         make_bar_chart_dataset(conversation_chart_data),
         optin_dataset:
-        make_pie_chart_dataset(optin_chart_data)
+        make_pie_chart_dataset(:optin, optin_chart_data),
+        notification_dataset:
+        make_pie_chart_dataset(:notification, notification_chart_data)
       )
   end
 
@@ -73,46 +74,55 @@ defmodule GlificWeb.StatsLive do
     Contex.Dataset.new(data)
   end
 
-  defp make_pie_chart_dataset(data) do
-    Contex.Dataset.new(data)
+  defp make_pie_chart_dataset(:optin, data) do #multiple of these
+    Contex.Dataset.new(data, ["Type", "Value"])
   end
 
-  defp assign_chart(%{assigns: %{contact_dataset: contact_dataset,
-                                 conversation_dataset: conversation_dataset,
-                                 optin_dataset: optin_dataset}} = socket) do
-    socket
-    |> assign(contact_chart: make_bar_chart(contact_dataset),
-              conversation_chart: make_bar_chart(conversation_dataset),
-              optin_chart: make_pie_chart(optin_dataset)
-            )
-  end
-
-  defp make_bar_chart(dataset) do
-    Contex.BarChart.new(dataset)
-  end
-
-  defp make_pie_chart(dataset) do
-    Contex.PieChart.new(dataset) |> IO.inspect(label: "PIE CHART STRUCT")
+  defp make_pie_chart_dataset(:notification, data) do
+    Contex.Dataset.new(data, ["Type", "Value"]) |> IO.inspect(label: "DATASET")
   end
 
   @spec assign_chart_svg(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
-  def assign_chart_svg(%{assigns: %{contact_chart: contact_chart,
-                                    conversation_chart: conversation_chart,
-                                    optin_chart: optin_chart}} = socket) do
+  def assign_chart_svg(%{assigns: %{contact_dataset: contact_dataset,
+                                    conversation_dataset: conversation_dataset,
+                                    optin_dataset: optin_dataset,
+                                    notification_dataset: notification_dataset}} = socket) do
     socket
-    |> assign(contact_chart_svg: render_chart(contact_chart),
-              conversation_chart_svg: render_chart(conversation_chart),
-              optin_chart_svg: render_chart(optin_chart))
+    |> assign(contact_chart_svg: render_bar_chart(contact_dataset),
+              conversation_chart_svg: render_bar_chart(conversation_dataset),
+              optin_chart_svg: render_pie_chart(:optin, optin_dataset),
+              notification_chart_svg: render_pie_chart(:notification, notification_dataset)
+              )
   end
 
-  defp render_chart(chart) do
-    Plot.new(500, 400, chart)
-    |> Plot.to_svg()
+  defp render_bar_chart(dataset) do
+    Contex.Plot.new(dataset, Contex.BarChart, 600, 400)
+    |> Contex.Plot.to_svg()
   end
 
-  defp render_pie_chart(dataset) do
-    Contex.Plot.new(dataset, Contex.PieChart, 500, 400)
-    |> Plot.to_svg()
+  defp render_pie_chart(:optin, dataset) do
+    opts = [
+      mapping: %{category_col: "Type", value_col: "Value"},
+      colour_palette: ["fbb4ae", "b3cde3", "ccebc5"],
+      legend_setting: :legend_right,
+      data_labels: true,
+      title: "Opted In Data"
+    ]
+    plot = Contex.Plot.new(dataset, Contex.PieChart, 600, 400, opts)
+
+    Contex.Plot.to_svg(plot)
+  end
+
+  defp render_pie_chart(:notification, dataset) do
+    opts = [
+      mapping: %{category_col: "Type", value_col: "Value"},
+      colour_palette: ["fbb4ae", "b3cde3", "ccebc5"],
+      legend_setting: :legend_right,
+      data_labels: true,
+      title: "Notification Data"
+    ]
+    plot = Contex.Plot.new(dataset, Contex.PieChart, 600, 400, opts)
+    Contex.Plot.to_svg(plot)
   end
 
   @doc false
@@ -129,10 +139,11 @@ defmodule GlificWeb.StatsLive do
       contact_chart_data:  Reports.get_kpi_data_new(org_id, "contacts"),
       conversation_chart_data: Reports.get_kpi_data_new(org_id, "messages_conversations"),
       optin_chart_data: fetch_count_data(:optin_chart_data, org_id),
-      notification_chart_data: %{
-        data: fetch_count_data(:notification_chart_data, org_id),
-        labels: ["Critical", "Warning", "Information"]
-      },
+      notification_chart_data: [
+        {"Critical", 10},
+        {"Warning", 20},
+        {"Information", 30}
+      ],
       message_type_chart_data: %{
         data: fetch_count_data(:message_type_chart_data, org_id),
         labels: ["Inbound", "Outbound"]
@@ -158,9 +169,9 @@ defmodule GlificWeb.StatsLive do
 
   defp fetch_count_data(:notification_chart_data, org_id) do
     [
-      Reports.get_kpi(:critical_notification_count, org_id),
-      Reports.get_kpi(:warning_notification_count, org_id),
-      Reports.get_kpi(:information_notification_count, org_id)
+      {"Critical", Reports.get_kpi(:critical_notification_count, org_id)},
+      {"Warning", Reports.get_kpi(:warning_notification_count, org_id)},
+      {"Information", Reports.get_kpi(:information_notification_count, org_id)}
     ]
   end
 
