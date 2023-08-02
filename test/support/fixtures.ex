@@ -589,6 +589,7 @@ defmodule Glific.Fixtures do
         url: Faker.Avatar.image_url(),
         source_url: Faker.Avatar.image_url(),
         thumbnail: Faker.Avatar.image_url(),
+        flow: :inbound,
         caption: Faker.String.base64(10),
         provider_media_id: Faker.String.base64(10),
         organization_id: attrs.organization_id
