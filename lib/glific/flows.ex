@@ -8,6 +8,7 @@ defmodule Glific.Flows do
 
   require Logger
 
+  alias Glific.Sheets.SheetData
   alias Glific.{
     AccessControl,
     AccessControl.FlowRole,
@@ -892,7 +893,8 @@ defmodule Glific.Flows do
 
   defp process_node_actions(%{"actions" => actions} = node, interactive_template_list) do
     Enum.reduce(actions, [], fn action, acc ->
-      template_uuid = get_in(action, ["templating", "template", "uuid"])
+      template_uuid = get_in(action, ["templating", "template", "uuid", ])
+      sheet_id = get_in(action, ["sheet_id"])
 
       cond do
         action["type"] == "send_msg" ->
@@ -909,6 +911,25 @@ defmodule Glific.Flows do
             acc ++ [node]
           else
             _ -> acc ++ [node]
+          end
+
+        action["type"] == "link_google_sheet" ->
+          # checking if the imported sheet is present in database
+          sheet_id_list = SheetData |> select( [sd], sd.sheet_id) |> Repo.all()
+
+          if sheet_id in sheet_id_list do
+            acc ++ [node]
+          else
+            # update the node if sheet_id in the node is not present in DB
+            action =
+              action
+              |> Map.delete("type")
+              |> put_in(["type"], "send_msg")
+              |> Map.delete("sheet_id")
+              |> put_in(["text"], "change this node with linked sheet and follow documentations")
+
+            node = put_in(node, ["actions"], [action])
+            acc ++ [node]
           end
 
         action["type"] == "send_interactive_msg" ->
