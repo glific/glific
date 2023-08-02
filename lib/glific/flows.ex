@@ -8,7 +8,6 @@ defmodule Glific.Flows do
 
   require Logger
 
-  alias Glific.Sheets.SheetData
   alias Glific.{
     AccessControl,
     AccessControl.FlowRole,
@@ -895,12 +894,9 @@ defmodule Glific.Flows do
 
   defp process_node_actions(%{"actions" => actions} = node, interactive_template_list) do
     Enum.reduce(actions, [], fn action, acc ->
-      template_uuid = get_in(action, ["templating", "template", "uuid", ])
+      template_uuid = get_in(action, ["templating", "template", "uuid"])
       sheet_url = get_in(action, ["url"])
-      sheet_id = get_in(action, ["sheet_id"])
       sheet_name = get_in(action, ["name"])
-      IO.inspect("this is url")
-      IO.inspect(sheet_url)
 
       cond do
         action["type"] == "send_msg" ->
@@ -920,19 +916,27 @@ defmodule Glific.Flows do
           end
 
         action["type"] == "link_google_sheet" ->
-          sheet = Repo.get_by(Sheet, %{url: sheet_url}) #database local
-          attrs = %{url: sheet_url, name: sheet_name}
+          current_user = Repo.get_current_user()
 
-          case sheet do
-            nil ->
-              IO
-              {:ok, sheet} = Sheets.create_sheet(attrs)
-              sheet
-            _ ->
-              action = Map.put(action, "sheet_id", sheet.id)
-              node = put_in(node, ["actions"], [action])
-              acc ++ [node]
-          end
+          attrs = %{
+            url: sheet_url,
+            label: sheet_name,
+            organization_id: current_user.organization_id
+          }
+
+          sheet =
+            case Repo.fetch_by(Sheet, %{url: sheet_url}) do
+              {:ok, sheet} ->
+                sheet
+
+              {:error, _} ->
+                {:ok, sheet} = Sheets.create_sheet(attrs)
+                sheet
+            end
+
+          action = Map.put(action, "sheet_id", sheet.id)
+          node = put_in(node, ["actions"], [action])
+          acc ++ [node]
 
         action["type"] == "send_interactive_msg" ->
           {:ok, action_id} = Glific.parse_maybe_integer(action["id"])
