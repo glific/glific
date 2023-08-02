@@ -36,12 +36,11 @@ defmodule Glific.GCS.GcsWorker do
   def transfer_to_bucket(remote_url, bucket_name, organization_id) do
     # access_token = get_access_token()
     access_token = get_token("#{organization_id}")
-
+    project_id = System.fetch_env!("PROJECT_ID")
     transfer_request = %{
       "description" => "Transfer from remote URL to Cloud Storage Bucket",
       "status" => "ENABLED",
-      #have to remove the hardcoded value
-      "projectId" => "tides-saas-309509",
+      "projectId" => project_id,
       # any past date works here to run the transfer only once or can still look for better way?
       "schedule" => %{
         "scheduleStartDate" => %{
@@ -58,7 +57,6 @@ defmodule Glific.GCS.GcsWorker do
       "transferSpec" => %{
         "gcsDataSink" => %{
           "bucketName" => bucket_name
-          # "objectName" => object_name
         },
         "transferOptions" => %{
           "overwriteObjectsAlreadyExistingInSink" => true
@@ -71,8 +69,7 @@ defmodule Glific.GCS.GcsWorker do
 
     headers = [
       {"Content-Type", "application/json"},
-      {"Authorization", "Bearer #{access_token}"},
-      {"x-goog-user-project", "tides-saas-309509"}
+      {"Authorization", "Bearer #{access_token}"}
     ]
 
     case HTTPoison.post(
@@ -89,13 +86,6 @@ defmodule Glific.GCS.GcsWorker do
       {:error, reason} ->
         IO.puts("Error during transfer request: #{reason}")
     end
-  end
-
-  defp get_access_token() do
-    "gcloud"
-    |> System.cmd(["auth", "print-access-token"])
-    |> elem(0)
-    |> String.trim()
   end
 
   @spec get_token(String.t()) :: String.t()
