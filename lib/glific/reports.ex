@@ -10,7 +10,6 @@ defmodule Glific.Reports do
     Flows.FlowContext,
     Flows.MessageBroadcast,
     Messages.Message,
-    # Messages.MessageConversation,
     Notifications.Notification,
     Repo,
     Stats.Stat
@@ -194,16 +193,27 @@ defmodule Glific.Reports do
     end)
   end
 
-  defp get_kpi_query(presets, table, org_id) do
+  defp get_kpi_query(presets, "contacts", org_id) do
     """
     SELECT date_trunc('day', inserted_at) as date,
     COUNT(id) as count
-    FROM #{table}
+    FROM contacts
     WHERE
       inserted_at > '#{presets.last_day}'
       AND inserted_at <= '#{presets.today}'
       AND organization_id = #{org_id}
     GROUP BY date
+    """
+  end
+defp get_kpi_query(presets, "stats", org_id) do
+    """
+    SELECT date_trunc('day', inserted_at) as date,
+    conversations
+    FROM stats
+    WHERE
+      inserted_at > '#{presets.last_day}'
+      AND inserted_at <= '#{presets.today}'
+      AND organization_id = #{org_id}
     """
   end
 
