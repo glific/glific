@@ -54,14 +54,20 @@ defmodule Glific.Communications.Mailer do
   code
   """
   @spec common_send(Organization.t(), String.t(), String.t(), String.t(), tuple() | nil) :: Swoosh.Email.t()
-  def common_send(org, team, subject, body, send_to \\ nil) do
+  def common_send(org, team \\nil , subject, body, send_to \\ nil) do
     # Subject can not have a line break
     subject = String.replace(subject, "\n", "")
 
     send_to =
-      if is_nil(send_to),
-        do: get_team_email(org, team),
-        else: send_to
+      if is_nil(send_to) do
+        if is_nil(team) do
+          {org.name, org.email}
+        else
+          get_team_email(org, team)
+        end
+      else
+        send_to
+      end
 
     new()
       |> to(send_to)
@@ -76,7 +82,7 @@ defmodule Glific.Communications.Mailer do
       org.team_emails
       |> Jason.decode!()
 
-    Map.get(team_emails, team) || raise ArgumentError, "Team email not found for team #{team}"
+    Map.get(team_emails, team)
   end
 
   defp capture_log(
