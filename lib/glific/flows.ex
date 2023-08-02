@@ -20,6 +20,8 @@ defmodule Glific.Flows do
     Partners,
     Repo,
     Tags.Tag,
+    Sheets,
+    Sheets.Sheet,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate
@@ -894,7 +896,11 @@ defmodule Glific.Flows do
   defp process_node_actions(%{"actions" => actions} = node, interactive_template_list) do
     Enum.reduce(actions, [], fn action, acc ->
       template_uuid = get_in(action, ["templating", "template", "uuid", ])
+      sheet_url = get_in(action, ["url"])
       sheet_id = get_in(action, ["sheet_id"])
+      sheet_name = get_in(action, ["name"])
+      IO.inspect("this is url")
+      IO.inspect(sheet_url)
 
       cond do
         action["type"] == "send_msg" ->
@@ -914,22 +920,18 @@ defmodule Glific.Flows do
           end
 
         action["type"] == "link_google_sheet" ->
-          # checking if the imported sheet is present in database
-          sheet_id_list = SheetData |> select( [sd], sd.sheet_id) |> Repo.all()
+          sheet = Repo.get_by(Sheet, %{url: sheet_url}) #database local
+          attrs = %{url: sheet_url, name: sheet_name}
 
-          if sheet_id in sheet_id_list do
-            acc ++ [node]
-          else
-            # update the node if sheet_id in the node is not present in DB
-            action =
-              action
-              |> Map.delete("type")
-              |> put_in(["type"], "send_msg")
-              |> Map.delete("sheet_id")
-              |> put_in(["text"], "change this node with linked sheet and follow documentations")
-
-            node = put_in(node, ["actions"], [action])
-            acc ++ [node]
+          case sheet do
+            nil ->
+              IO
+              {:ok, sheet} = Sheets.create_sheet(attrs)
+              sheet
+            _ ->
+              action = Map.put(action, "sheet_id", sheet.id)
+              node = put_in(node, ["actions"], [action])
+              acc ++ [node]
           end
 
         action["type"] == "send_interactive_msg" ->
