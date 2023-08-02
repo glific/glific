@@ -288,7 +288,8 @@ defmodule Glific.Templates.InteractiveTemplates do
         caption: content["caption"],
         organization_id: organization_id,
         source_url: content["url"],
-        url: content["url"]
+        url: content["url"],
+        flow: :outbound
       }
       |> Glific.Messages.create_message_media()
 

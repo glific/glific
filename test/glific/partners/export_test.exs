@@ -23,7 +23,9 @@ defmodule Glific.ExportTest do
       config = Export.export_config()
 
       assert config["languages"] != nil
+
       assert map_size(config["languages"]["schema"]) > 8
+
       assert config["providers"] != nil
       assert map_size(config["providers"]["schema"]) > 8
     end
