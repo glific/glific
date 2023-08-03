@@ -5,6 +5,7 @@ defmodule Glific.Mails.ReportGupshupMail do
   alias Glific.{Communications.Mailer, Partners.Organization}
 
   @gupshup_support {"Gupshup Dev Support", "devsupport@gupshup.io"}
+  @sender {"Glific support", "mohit@coloredcow.in"}
 
   @doc """
   Sends a mail to the Gupshup support team whenever issue arises related to approval of the template
@@ -24,6 +25,6 @@ defmodule Glific.Mails.ReportGupshupMail do
     4. Rejected Template ID: #{bsp_id}
     """
 
-    Mailer.common_send(org, subject, body, @gupshup_support, cc)
+    Mailer.common_send(org, subject, body, @gupshup_support, cc, @sender)
   end
 end
