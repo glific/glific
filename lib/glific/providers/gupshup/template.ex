@@ -189,6 +189,7 @@ defmodule Glific.Providers.Gupshup.Template do
       %{
         url: csv_template["Attachment URL"],
         source_url: csv_template["Attachment URL"],
+        flow: :outbound,
         organization_id: org_id
       }
       |> Messages.create_message_media()

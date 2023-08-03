@@ -197,6 +197,9 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec create_message_media(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_message_media(_, %{input: params}, _) do
+    # lets add the default value of outbound to the flow params
+    params = Map.put_new(params, :flow, :outbound)
+
     with {:ok, message_media} <- Messages.create_message_media(params) do
       {:ok, %{message_media: message_media}}
     end
