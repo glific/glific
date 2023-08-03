@@ -11,6 +11,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
   @doc false
   @spec new_mail(Organization.t()) :: Swoosh.Email.t()
   def new_mail(org) do
+    team=""
     subject = """
     Glific: Congratulations! We onboarded a new NGO.
     """
@@ -24,6 +25,6 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
     Email: #{org.email}
     """
 
-    Mailer.common_send(org, subject, body, {"", Saas.primary_email()})
+    Mailer.common_send(org, team, subject, body, {"", Saas.primary_email()})
   end
 end

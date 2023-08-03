@@ -9,6 +9,7 @@ defmodule Glific.Mails.CriticalNotificationMail do
   """
   @spec new_mail(Organization.t(), String.t()) :: Swoosh.Email.t()
   def new_mail(org, message) do
+    team=""
     subject = "Glific CRITICAL Issue: Needs your immediate attention."
 
     body = """
@@ -21,6 +22,6 @@ defmodule Glific.Mails.CriticalNotificationMail do
     The Glific team
     """
 
-    Mailer.common_send(org, subject, body)
+    Mailer.common_send(org, team, subject, body)
   end
 end
