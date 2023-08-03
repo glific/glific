@@ -435,13 +435,17 @@ defmodule Glific.GCS.GcsWorker do
     end
   end
 
+  # To use this function you have to first setup your bucket credentials on glific
+  @spec urls_list_to_bucket([String.t()], String.t(), String.t(), non_neg_integer()) :: any()
   def urls_list_to_bucket(urls, local, remote, organization_id) do
+    #creating tsv file with each url on new line
     tsv_data = "TsvHttpData-1.0\n" <> Enum.join(urls, "\n")
 
     local = System.tmp_dir!()
     |> Path.join(local)
     File.write!(local, tsv_data)
 
+    #uploading the tsv file on gcs bucket
     url = upload_file_on_gcs(local, remote, organization_id)
     |> case do
       {:ok, response} ->
@@ -454,6 +458,7 @@ defmodule Glific.GCS.GcsWorker do
     IO.inspect url
     # IO.inspect Glific.Media.bucket()
     bucket_name = Glific.Media.bucket({"", "#{organization_id}"})
+    #transfering all the files listed on tsv file to bucket
     transfer_to_bucket(url, bucket_name, organization_id)
   end
 end
