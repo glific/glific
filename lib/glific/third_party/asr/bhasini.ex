@@ -4,6 +4,53 @@ defmodule Glific.ASR.Bhasini do
   """
   use Tesla
 
+  @doc """
+  Performs an ASR (Automatic Speech Recognition) API call with configuration request.
+
+  This function makes an API call to the Bhasini ASR service using the provided configuration parameters and returns the ASR response text.
+  """
+  @spec with_config_request(map(), String.t()) :: map()
+  def with_config_request(fields, source_language) do
+    {:ok, response} = get(fields["speech"])
+
+    content = Base.encode64(response.body)
+
+    default_headers = [
+      {"userID", "#{fields["userID"]}"},
+      {"ulcaApiKey", "#{fields["ulcaApiKey"]}"},
+      {"Content-Type", "application/json"}
+    ]
+
+    post_body = %{
+      "pipelineTasks" => [
+        %{
+          "taskType" => "asr",
+          "config" => %{
+            "language" => %{
+              "sourceLanguage" => "#{source_language}"
+            }
+          }
+        }
+      ],
+      "pipelineRequestConfig" => %{
+        "pipelineId" => "#{fields["pipelineId"]}"
+      }
+    }
+
+    case Tesla.post("#{fields["base_url"]}getModelsPipeline", Jason.encode!(post_body),
+           headers: default_headers
+         ) do
+      {:ok, response} ->
+        handle_response(response, content)
+
+      {:error, reason} ->
+        %{
+          success: false,
+          msg: "API call failed with reason: #{reason}"
+        }
+    end
+  end
+
   @spec make_asr_api_call(
           authorization_key :: String.t(),
           authorization_value :: String.t(),
@@ -81,91 +128,45 @@ defmodule Glific.ASR.Bhasini do
     end
   end
 
-  @doc """
-  Performs an ASR (Automatic Speech Recognition) API call with configuration request.
+  @spec handle_response(map(), String.t()) :: map()
+  defp handle_response(%{status: 200} = response, content) do
+    # Extract necessary data from the response
+    decoded_response = Jason.decode!(response.body)
 
-  This function makes an API call to the Bhasini ASR service using the provided configuration parameters and returns the ASR response text.
-  """
-  @spec with_config_request(map(), String.t()) :: map()
-  def with_config_request(fields, source_language) do
-    {:ok, response} = get(fields["speech"])
+    callback_url = Map.get(decoded_response, "pipelineInferenceAPIEndPoint")["callbackUrl"]
 
-    content = Base.encode64(response.body)
+    inference_api_key =
+      Map.get(decoded_response, "pipelineInferenceAPIEndPoint")["inferenceApiKey"]
 
-    default_headers = [
-      {"userID", "#{fields["userID"]}"},
-      {"ulcaApiKey", "#{fields["ulcaApiKey"]}"},
-      {"Content-Type", "application/json"}
-    ]
+    authorization_key = Map.get(inference_api_key, "name")
+    authorization_value = Map.get(inference_api_key, "value")
 
-    post_body = %{
-      "pipelineTasks" => [
-        %{
-          "taskType" => "asr",
-          "config" => %{
-            "language" => %{
-              "sourceLanguage" => "#{source_language}"
-            }
-          }
-        }
-      ],
-      "pipelineRequestConfig" => %{
-        "pipelineId" => "#{fields["pipelineId"]}"
-      }
+    asr_service_id =
+      case Map.get(decoded_response, "pipelineResponseConfig") do
+        [%{"config" => [%{"serviceId" => service_id}]}] -> service_id
+        _ -> nil
+      end
+
+    source_language =
+      case Map.get(decoded_response, "languages") do
+        [%{"sourceLanguage" => source_language}] -> source_language
+        _ -> nil
+      end
+
+    make_asr_api_call(
+      authorization_key,
+      authorization_value,
+      callback_url,
+      asr_service_id,
+      source_language,
+      content
+    )
+  end
+
+  defp handle_response(%{status: status_code} = _response, _content) do
+    %{
+      success: false,
+      msg: "API call returned status code: #{status_code}"
     }
-
-    case Tesla.post("#{fields["base_url"]}getModelsPipeline", Jason.encode!(post_body),
-           headers: default_headers
-         ) do
-      {:ok, response} ->
-        case response.status do
-          200 ->
-            response.body
-            # Extract necessary data from the response
-            decoded_response = Jason.decode!(response.body)
-
-            callback_url =
-              Map.get(decoded_response, "pipelineInferenceAPIEndPoint")["callbackUrl"]
-
-            inference_api_key =
-              Map.get(decoded_response, "pipelineInferenceAPIEndPoint")["inferenceApiKey"]
-
-            authorization_key = Map.get(inference_api_key, "name")
-            authorization_value = Map.get(inference_api_key, "value")
-
-            asr_service_id =
-              case Map.get(decoded_response, "pipelineResponseConfig") do
-                [%{"config" => [%{"serviceId" => service_id}]}] -> service_id
-                _ -> nil
-              end
-
-            source_language =
-              case Map.get(decoded_response, "languages") do
-                [%{"sourceLanguage" => source_language}] -> source_language
-                _ -> nil
-              end
-
-            make_asr_api_call(
-              authorization_key,
-              authorization_value,
-              callback_url,
-              asr_service_id,
-              source_language,
-              content
-            )
-
-          code ->
-            %{
-              success: false,
-              msg: "API call returned status code: #{code}"
-            }
-        end
-
-      {:error, reason} ->
-        %{
-          success: false,
-          msg: "API call failed with reason: #{reason}"
-        }
-    end
   end
 end
