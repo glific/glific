@@ -4,7 +4,6 @@ defmodule GlificWeb.StatsLive do
   """
   use GlificWeb, :live_view
 
-  alias Contex.Plot
   alias Glific.Reports
 
   @doc false
@@ -93,83 +92,52 @@ end
                                     message_dataset: message_dataset,
                                     contact_type_dataset: contact_type_dataset}} = socket) do
     socket
-    |> assign(contact_chart_svg: render_bar_chart(contact_dataset),
-              conversation_chart_svg: render_bar_chart(conversation_dataset),
-              optin_chart_svg: render_pie_chart(:optin, optin_dataset),
-              notification_chart_svg: render_pie_chart(:notification, notification_dataset),
-              message_chart_svg: render_pie_chart(:message, message_dataset),
-              contact_type_chart_svg: render_pie_chart(:contact_type, contact_type_dataset)
+    |> assign(contact_chart_svg: render_bar_chart("Contacts", contact_dataset),
+              conversation_chart_svg: render_bar_chart("Conversations", conversation_dataset),
+              optin_chart_svg: render_pie_chart("Optin Data", optin_dataset),
+              notification_chart_svg: render_pie_chart("Notification Data", notification_dataset),
+              message_chart_svg: render_pie_chart("Message Data", message_dataset),
+              contact_type_chart_svg: render_pie_chart("Contact Type", contact_type_dataset)
               )
   end
 
-  defp render_bar_chart(dataset) do
-    Contex.Plot.new(dataset, Contex.BarChart, 500, 400)
+  defp render_bar_chart(title, dataset) do
+    opts = barchart_opts(title)
+    Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts)
     |> Contex.Plot.to_svg()
   end
 
-  defp render_pie_chart(:optin, dataset) do
-    opts = [
-      mapping: %{category_col: "Type", value_col: "Value"},
+  defp barchart_opts(title) do
+    [
       colour_palette: ["fbb4ae", "b3cde3", "ccebc5"],
-      legend_setting: :legend_right,
       data_labels: true,
-      title: "Opted In Data"
+      title: title
     ]
-    plot = Contex.Plot.new(dataset, Contex.PieChart, 500, 400, opts)
-    [{_, v1}, {_, v2}, {_, v3}] = dataset.data
-    if [0, 0, 0] === [v1, v2, v3] do
-      Jason.encode!("No data in the past month")
-    else
-      Contex.Plot.to_svg(plot)
-    end
   end
 
-  defp render_pie_chart(:notification, dataset) do
-    opts = [
-      mapping: %{category_col: "Type", value_col: "Value"},
+  defp piechart_opts(title, category_col \\ "Type", value_col \\ "Value" ) do
+    [
+      mapping: %{category_col: category_col, value_col: value_col},
       colour_palette: ["fbb4ae", "b3cde3", "ccebc5"],
-      legend_setting: :legend_right,
+      legend_setting: :legend_bottom,
       data_labels: true,
-      title: "Notification Data"
+      title: title
     ]
-    plot = Contex.Plot.new(dataset, Contex.PieChart, 500, 400, opts)
-    [{_, v1}, {_, v2}, {_, v3}] = dataset.data
-    if [0, 0, 0] === [v1, v2, v3] do
-      Jason.encode!("No Notifications in the past month")
-    else
-      Contex.Plot.to_svg(plot)
-    end
   end
 
-  defp render_pie_chart(:message, dataset) do
-    opts = [
-      mapping: %{category_col: "Type", value_col: "Value"},
-      colour_palette: ["fbb4ae", "b3cde3", "ccebc5"],
-      legend_setting: :legend_right,
-      data_labels: true,
-      title: "Message Type"
-    ]
-    plot = Contex.Plot.new(dataset, Contex.PieChart, 500, 400, opts)
-    [{_, v1}, {_, v2}] = dataset.data
-    if [nil, nil] == [v1, v2] do
-      Jason.encode!("No data in the past month")
-    else
-      Contex.Plot.to_svg(plot)
-    end
+  defp no_data?([{_, v1}, {_, v2}]) do
+    [0, 0] == [v1, v2] or (is_nil(v1) and is_nil(v2))
   end
 
-  defp render_pie_chart(:contact_type, dataset) do
-    opts = [
-      mapping: %{category_col: "Type", value_col: "Value"},
-      colour_palette: ["fbb4ae", "b3cde3", "ccebc5"],
-      legend_setting: :legend_right,
-      data_labels: true,
-      title: "Contact Type"
-    ]
+  defp no_data?([{_, v1}, {_, v2}, {_, v3}]) do
+    [0, 0, 0] == [v1, v2, v3] or (is_nil(v1) and is_nil(v2) and is_nil(v3))
+  end
+
+  defp render_pie_chart(title, dataset) do
+    opts = piechart_opts(title)
     plot = Contex.Plot.new(dataset, Contex.PieChart, 500, 400, opts)
-    [{_, v1}, {_, v2}] = dataset.data
-    if [0, 0] === [v1, v2] or [nil, nil] == [v1, v2] do
-      Jason.encode!("No data in the past month")
+    if no_data?(dataset.data) do
+      Jason.encode!(title <> ": No data")
     else
       Contex.Plot.to_svg(plot)
     end
@@ -181,7 +149,6 @@ end
     socket.assigns[:current_user].organization_id
   end
 
-  #GlificWeb.StatsLive.fetch_date_formatted_data("contacts", 1)
   @doc false
   @spec get_chart_data(non_neg_integer()) :: list()
   def get_chart_data(org_id) do
@@ -193,7 +160,7 @@ end
       message_type_chart_data: fetch_count_data(:message_type_chart_data, org_id),
       broadcast_data: fetch_table_data(:broadcasts, org_id),
       broadcast_headers: ["Flow Name", "Group Name", "Started At", "Completed At"],
-      contact_pie_chart_data: fetch_contact_pie_chart_data(org_id)
+      contact_pie_chart_data: fetch_count_data(:contact_type, org_id)
     ]
   end
 
@@ -225,8 +192,7 @@ end
     ]
   end
 
-  @spec fetch_contact_pie_chart_data(non_neg_integer()) :: list()
-  defp fetch_contact_pie_chart_data(org_id) do
+  defp fetch_count_data(:contact_type, org_id) do
     [[_, v1], [_, v2]] = Reports.get_contact_data(org_id)
     [{"Session and HSM", v1}, {"None", v2}]
   end
