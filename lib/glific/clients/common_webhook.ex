@@ -100,19 +100,10 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("speech_to_text_with_bhasini", fields) do
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
     contact = get_contact_language(contact_id)
-    speech = fields["speech"]
-    user_id = fields["userID"]
-    ulca_apikey = fields["ulcaApiKey"]
-    pipeline_id = fields["pipelineId"]
-    base_url = fields["base_url"]
 
     Bhasini.with_config_request(
-      speech,
-      user_id,
-      ulca_apikey,
-      pipeline_id,
-      contact.language.locale,
-      base_url
+      fields,
+      contact.language.locale
     )
   end
 

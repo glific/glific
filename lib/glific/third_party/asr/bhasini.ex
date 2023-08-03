@@ -86,32 +86,15 @@ defmodule Glific.ASR.Bhasini do
 
   This function makes an API call to the Bhasini ASR service using the provided configuration parameters and returns the ASR response text.
   """
-  @spec with_config_request(
-          speech :: binary(),
-          user_id :: String.t(),
-          ulca_apikey :: String.t(),
-          pipeline_id :: String.t(),
-          source_language :: String.t(),
-          base_url :: String.t()
-        ) :: %{
-          success: boolean(),
-          asr_response_text: String.t() | integer() | map()
-        }
-  def with_config_request(
-        speech,
-        user_id,
-        ulca_apikey,
-        pipeline_id,
-        source_language,
-        base_url
-      ) do
-    {:ok, response} = get(speech)
+  @spec with_config_request(map(), String.t()) :: map()
+  def with_config_request(fields, source_language) do
+    {:ok, response} = get(fields["speech"])
 
     content = Base.encode64(response.body)
 
     default_headers = [
-      {"userID", "#{user_id}"},
-      {"ulcaApiKey", "#{ulca_apikey}"},
+      {"userID", "#{fields["userID"]}"},
+      {"ulcaApiKey", "#{fields["ulcaApiKey"]}"},
       {"Content-Type", "application/json"}
     ]
 
@@ -127,11 +110,11 @@ defmodule Glific.ASR.Bhasini do
         }
       ],
       "pipelineRequestConfig" => %{
-        "pipelineId" => "#{pipeline_id}"
+        "pipelineId" => "#{fields["pipelineId"]}"
       }
     }
 
-    case Tesla.post("#{base_url}getModelsPipeline", Jason.encode!(post_body),
+    case Tesla.post("#{fields["base_url"]}getModelsPipeline", Jason.encode!(post_body),
            headers: default_headers
          ) do
       {:ok, response} ->
@@ -172,14 +155,17 @@ defmodule Glific.ASR.Bhasini do
             )
 
           code ->
-            # Handle other successful responses with non-200 status codes
-            IO.puts("API call returned status code: #{code}")
-            IO.puts(response.body)
+            %{
+              success: false,
+              msg: "API call returned status code: #{code}"
+            }
         end
 
       {:error, reason} ->
-        # Handle errors
-        IO.puts("API call failed with reason: #{inspect(reason)}")
+        %{
+          success: false,
+          msg: "API call failed with reason: #{reason}"
+        }
     end
   end
 end
