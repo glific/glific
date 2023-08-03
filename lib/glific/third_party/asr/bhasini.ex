@@ -4,24 +4,6 @@ defmodule Glific.ASR.Bhasini do
   """
   use Tesla
 
-  @doc """
-  This function makes an API call to the Bhasini ASR service.
-
-  ## Parameters
-
-    * `authorization_key` - The key for authorization.
-    * `authorization_value` - The value for authorization.
-    * `callback_url` - The URL for the callback after the API call.
-    * `asr_service_id` - The ID of the ASR service.
-    * `source_language` - The source language for the speech.
-    * `base64_data` - The audio data in base64 encoded format.
-
-  ## Returns
-
-  A map with the following keys:
-    * `success` - A boolean indicating if the API call was successful.
-    * `asr_response_text` - The ASR response text if successful, or the status code if unsuccessful.
-  """
   @spec make_asr_api_call(
           authorization_key :: String.t(),
           authorization_value :: String.t(),
@@ -88,17 +70,6 @@ defmodule Glific.ASR.Bhasini do
     end
   end
 
-  @doc """
-  This function extracts the source ASR text from the API response.
-
-  ## Parameters
-
-    * `decoded_response` - The decoded API response.
-
-  ## Returns
-
-  The source ASR text, or `nil` if not found in the response.
-  """
   @spec get_output_from_response(decoded_response :: map()) :: String.t() | nil
   defp get_output_from_response(decoded_response) do
     case decoded_response["pipelineResponse"] do
@@ -110,7 +81,22 @@ defmodule Glific.ASR.Bhasini do
     end
   end
 
-  # Make the API call using Tesla
+  @doc """
+  Performs an ASR (Automatic Speech Recognition) API call with configuration request.
+
+  This function makes an API call to the Bhasini ASR service using the provided configuration parameters and returns the ASR response text.
+  """
+  @spec with_config_request(
+          speech :: binary(),
+          user_id :: String.t(),
+          ulca_apikey :: String.t(),
+          pipeline_id :: String.t(),
+          source_language :: String.t(),
+          base_url :: String.t()
+        ) :: %{
+          success: boolean(),
+          asr_response_text: String.t() | integer() | map()
+        }
   def with_config_request(
         speech,
         user_id,
