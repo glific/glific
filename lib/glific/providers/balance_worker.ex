@@ -44,8 +44,8 @@ defmodule Glific.Jobs.BSPBalanceWorker do
   end
 
   @spec send_low_balance_notification(integer(), non_neg_integer()) :: nil | {:ok, any}
-  defp send_low_balance_notification(bsp_balance, organization_id) when bsp_balance < 10 do
-    # start sending a warning message when the balance is lower than $10
+  defp send_low_balance_notification(bsp_balance, organization_id) when bsp_balance == 10 do
+    # start sending a warning message when the balance is equal to $10
     # we can tweak this over time
     go_back = if bsp_balance < 3, do: 24, else: 48
 
