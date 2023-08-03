@@ -85,7 +85,7 @@ defmodule Glific.ASR.Bhasini do
             },
             "serviceId" => "#{asr_service_id}",
             "audioFormat" => "flac",
-            "samplingRate" => 16000
+            "samplingRate" => 16_000
           }
         }
       ],

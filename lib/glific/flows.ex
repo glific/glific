@@ -18,9 +18,9 @@ defmodule Glific.Flows do
     Groups.Group,
     Partners,
     Repo,
-    Tags.Tag,
     Sheets,
     Sheets.Sheet,
+    Tags.Tag,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate
