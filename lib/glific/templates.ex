@@ -9,12 +9,16 @@ defmodule Glific.Templates do
 
   alias Glific.{
     Notifications,
+    Partners,
     Partners.Organization,
     Partners.Provider,
     Repo,
     Settings,
     Tags.Tag,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Mails.ReportGupshupMail,
+    Communications.Mailer,
+    Contacts.Contact
   }
 
   require Logger
@@ -635,5 +639,34 @@ defmodule Glific.Templates do
       "MARKETING",
       "AUTHENTICATION"
     ]
+  end
+
+  @doc """
+  Report mail to gupshup
+  """
+  @spec report_to_gupshup(non_neg_integer(), non_neg_integer(), [String.t()])
+  :: {:ok, any} | {:error, any}
+  def report_to_gupshup(org_id, template_id, cc) do
+    org = Partners.organization(org_id)
+
+    phone = Contact
+    |> where([c], c.id == ^org.contact_id)
+    |> select([c], c.phone)
+    |> Repo.one()
+
+    %{"app_id" => app_id, "app_name" => app_name} = org.services["gupshup"].secrets
+
+    bsp_id = SessionTemplate
+    |> where([st], st.id == ^template_id)
+    |> select([st], st.bsp_id)
+    |> Repo.one()
+
+    mail = ReportGupshupMail.templates_approval_mail(org, app_id, app_name, phone, bsp_id, cc)
+    |> Mailer.send(%{
+      category: "report_gupshup",
+      organization_id: org_id
+    })
+
+    mail
   end
 end

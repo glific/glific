@@ -53,8 +53,8 @@ defmodule Glific.Communications.Mailer do
   Lets write a common function and centralize notification
   code
   """
-  @spec common_send(Organization.t(), String.t(), String.t(), tuple() | nil) :: Swoosh.Email.t()
-  def common_send(org, subject, body, send_to \\ nil) do
+  @spec common_send(Organization.t(), String.t(), String.t(), tuple() | nil, [String.t()] | nil) :: Swoosh.Email.t()
+  def common_send(org, subject, body, send_to \\ nil, in_cc \\ []) do
     # Subject can not have a line break
     subject = String.replace(subject, "\n", "")
 
@@ -63,10 +63,12 @@ defmodule Glific.Communications.Mailer do
         do: {org.name, org.email},
         else: send_to
 
+    in_cc = in_cc ++ [glific_support()]
+
     new()
     |> to(send_to)
     |> from(sender())
-    |> cc(glific_support())
+    |> cc(in_cc)
     |> subject(subject)
     |> text_body(body)
   end

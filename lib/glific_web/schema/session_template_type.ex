@@ -31,6 +31,11 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :report_to_gupshup_result do
+    field :message, :string
+    field :errors, list_of(:input_error)
+  end
+
   object :session_template do
     field :id, :id
     field :bsp_id, :string
@@ -237,6 +242,13 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       arg(:data, :string)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Templates.bulk_apply_templates/3)
+    end
+
+    field :report_to_gupshup, :report_to_gupshup_result do
+      arg(:template_id, non_null(:id))
+      arg(:cc, list_of(:string))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Templates.report_to_gupshup/3)
     end
   end
 end
