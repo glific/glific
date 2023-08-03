@@ -33,13 +33,19 @@ defmodule GlificWeb.StatsLive do
   @spec handle_event(any(), any(), Phoenix.LiveView.Socket.t()) :: {:noreply, Phoenix.LiveView.Socket.t()}
   def handle_event("export", %{"chart" => chart}, socket) do
     org_id = get_org_id(socket)
-    data = Reports.get_export_data(String.to_atom(chart), org_id)
+    data = get_export_data(String.to_atom(chart), org_id)
+    csv = Enum.map_join(data, "\n", &Enum.join(&1, ","))
 
     {:noreply,
     socket |> push_event("download-file", %{
-      data: data,
+      data: csv,
       filename: chart <> ".csv"
   })}
+  end
+
+  defp get_export_data(:optin, org_id) do
+    result = Reports.get_export_data(:optin, org_id)
+    [["ID", "Name", "Phone", "Optin Status"] | result]
   end
 
   @spec assign_stats(Phoenix.LiveView.Socket.t(), atom()) :: Phoenix.LiveView.Socket.t()

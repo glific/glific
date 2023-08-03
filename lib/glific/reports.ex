@@ -276,21 +276,7 @@ defmodule Glific.Reports do
 
   defp get_export_query(:optin) do
     Contact
-    |> select([q], [q.id, q.name, q.phone])
-    |> where([q], not is_nil(q.optin_time))
-  end
-
-  defp get_export_query(:optout) do
-    Contact
-    |> select([q], [q.id, q.name, q.phone])
-    |> where([q], not is_nil(q.optout_time))
-  end
-
-  defp get_export_query(:nonopt) do
-    Contact
-    |> select([q], [q.id, q.name, q.phone])
-    |> where([q], is_nil(q.optin_time))
-    |> where([q], is_nil(q.optout_time))
+    |> select([q], [q.id, q.name, q.phone, q.optin_status])
   end
 
   @spec shifted_time(DateTime.t(), integer()) :: DateTime.t()

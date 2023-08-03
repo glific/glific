@@ -109,7 +109,7 @@ Hooks.download = {
   mounted() {
     this.handleEvent("download-file", (event) => {
       var element = document.createElement('a');
-      element.setAttribute('href', 'data:csv/plain;charset=utf-8,' + encodeURIComponent(event.data));
+      element.setAttribute('href', 'data:csv/plain;charset=utf-8,%EF%BB%BF' + encodeURIComponent(event.data));
       element.setAttribute('download', event.filename);
       element.style.display = 'none';
       document.body.appendChild(element);
