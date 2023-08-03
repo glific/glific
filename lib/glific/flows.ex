@@ -19,6 +19,8 @@ defmodule Glific.Flows do
     Partners,
     Repo,
     Tags.Tag,
+    Sheets,
+    Sheets.Sheet,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate
@@ -893,6 +895,8 @@ defmodule Glific.Flows do
   defp process_node_actions(%{"actions" => actions} = node, interactive_template_list) do
     Enum.reduce(actions, [], fn action, acc ->
       template_uuid = get_in(action, ["templating", "template", "uuid"])
+      sheet_url = get_in(action, ["url"])
+      sheet_name = get_in(action, ["name"])
 
       cond do
         action["type"] == "send_msg" ->
@@ -910,6 +914,29 @@ defmodule Glific.Flows do
           else
             _ -> acc ++ [node]
           end
+
+        action["type"] == "link_google_sheet" ->
+          current_user = Repo.get_current_user()
+
+          attrs = %{
+            url: sheet_url,
+            label: sheet_name,
+            organization_id: current_user.organization_id
+          }
+
+          sheet =
+            case Repo.fetch_by(Sheet, %{url: sheet_url}) do
+              {:ok, sheet} ->
+                sheet
+
+              {:error, _} ->
+                {:ok, sheet} = Sheets.create_sheet(attrs)
+                sheet
+            end
+
+          action = Map.put(action, "sheet_id", sheet.id)
+          node = put_in(node, ["actions"], [action])
+          acc ++ [node]
 
         action["type"] == "send_interactive_msg" ->
           {:ok, action_id} = Glific.parse_maybe_integer(action["id"])
