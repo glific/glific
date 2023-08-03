@@ -47,29 +47,10 @@ defmodule Glific.Clients.KEF do
       })
 
     contact_type = get_in(contact.fields, ["contact_type", "value"])
-    current_worksheet_code = get_in(contact.fields, ["current_worksheet_code", "value"])
+
     phone = contact.phone
 
-    school_id =
-      if contact_type == "Parents",
-        do: get_in(contact.fields, ["usersschoolid", "value"]),
-        else: get_in(contact.fields, ["child_school_id", "value"])
-
-    school_name =
-      if contact_type == "Parents",
-        do: get_in(contact.fields, ["child_school_name", "value"]),
-        else: get_in(contact.fields, ["school_name", "value"])
-
-    flow_subfolder =
-      cond do
-        media["flow_id"] in @worksheet_flow_ids -> "Worksheets/#{current_worksheet_code}"
-        media["flow_id"] in @video_flow_ids -> "Videos"
-        true -> "Others"
-      end
-
-    if is_nil(current_worksheet_code),
-      do: "Others",
-      else: "Worksheets/#{current_worksheet_code}"
+    folder_structure = get_folder_structure(contact_type, fields)
 
     media_subfolder =
       case media["type"] do
@@ -79,12 +60,54 @@ defmodule Glific.Clients.KEF do
         _ -> "Others"
       end
 
-    if is_nil(school_id),
-      do: media["remote_name"],
-      else:
-        "#{school_name}/#{school_id}/#{flow_subfolder}/#{media_subfolder}/#{phone}/" <>
-          media["remote_name"]
+    "#{folder_structure}/#{media_subfolder}/#{phone}/" <> media["remote_name"]
   end
+
+  defp get_folder_structure(contact_type, fields) do
+    current_worksheet_code = get_in(contact.fields, ["current_worksheet_code", "value"])
+
+    with {:ok, school_id} <- get_school_id(contact_type, fields),
+         {:ok, school_name} <- get_school_name(contact_type, fields),
+         {:ok, flow_subfolder} <- get_flow_subfolder(media["flow_id"], current_worksheet_code) do
+      "#{school_name}/#{school_id}/#{flow_subfolder}/#{media_subfolder}/#{phone}/"
+    else
+      _ -> "Ungrouped users"
+    end
+  end
+
+  defp get_school_id(nil, fields), do: {:error, "Invalid contact_type"}
+
+  defp get_school_id("Parents", fields) do
+    school_id = get_in(contact.fields, ["usersschoolid", "value"])
+    {:ok, school_id}
+  end
+
+  defp get_school_id("Teachers", fields) do
+    school_id = get_in(contact.fields, ["child_school_id", "value"])
+    {:ok, school_id}
+  end
+
+  defp get_school_name(nil, fields), do: {:error, "Invalid contact_type"}
+
+  defp get_school_name("Parents", fields) do
+    school_name = get_in(contact.fields, ["child_school_name", "value"])
+    {:ok, school_name}
+  end
+
+  defp get_school_name("Teachers", fields) do
+    school_name = get_in(contact.fields, ["school_name", "value"])
+    {:ok, school_name}
+  end
+
+  defp get_flow_subfolder(flow_id, current_worksheet_code) when flow_id in @worksheet_flow_ids do
+    {:ok, "Worksheets/#{current_worksheet_code}"}
+  end
+
+  defp get_flow_subfolder(flow_id, _current_worksheet_code) when flow_id in @video_flow_ids do
+    {:ok, "Videos"}
+  end
+
+  defp get_flow_subfolder(_flow_id, nil), do: {:ok, "Others"}
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
