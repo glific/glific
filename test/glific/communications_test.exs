@@ -64,6 +64,7 @@ defmodule Glific.CommunicationsTest do
       source_url: "some source_url",
       thumbnail: "some thumbnail",
       url: "some url",
+      flow: :outbound,
       provider_media_id: "some provider_media_id"
     }
 
