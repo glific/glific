@@ -60,7 +60,7 @@ defmodule Glific.Communications.Mailer do
 
     send_to =
       if is_nil(send_to) do
-        if is_nil(team) do
+        if team="" do
           {org.name, org.email}
         else
           get_team_email(org, team)
