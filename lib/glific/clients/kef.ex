@@ -50,7 +50,7 @@ defmodule Glific.Clients.KEF do
 
     phone = contact.phone
 
-    folder_structure = get_folder_structure(contact_type, fields)
+    folder_structure = get_folder_structure(media, contact_type, contact.fields)
 
     media_subfolder =
       case media["type"] do
@@ -63,39 +63,39 @@ defmodule Glific.Clients.KEF do
     "#{folder_structure}/#{media_subfolder}/#{phone}/" <> media["remote_name"]
   end
 
-  defp get_folder_structure(contact_type, fields) do
-    current_worksheet_code = get_in(contact.fields, ["current_worksheet_code", "value"])
+  defp get_folder_structure(media, contact_type, fields) do
+    current_worksheet_code = get_in(fields, ["current_worksheet_code", "value"])
 
     with {:ok, school_id} <- get_school_id(contact_type, fields),
          {:ok, school_name} <- get_school_name(contact_type, fields),
          {:ok, flow_subfolder} <- get_flow_subfolder(media["flow_id"], current_worksheet_code) do
-      "#{school_name}/#{school_id}/#{flow_subfolder}/#{media_subfolder}/#{phone}/"
+      "#{school_name}/#{school_id}/#{flow_subfolder}/"
     else
       _ -> "Ungrouped users"
     end
   end
 
-  defp get_school_id(nil, fields), do: {:error, "Invalid contact_type"}
+  defp get_school_id(nil, _fields), do: {:error, "Invalid contact_type"}
 
   defp get_school_id("Parents", fields) do
-    school_id = get_in(contact.fields, ["usersschoolid", "value"])
+    school_id = get_in(fields, ["usersschoolid", "value"])
     {:ok, school_id}
   end
 
   defp get_school_id("Teachers", fields) do
-    school_id = get_in(contact.fields, ["child_school_id", "value"])
+    school_id = get_in(fields, ["child_school_id", "value"])
     {:ok, school_id}
   end
 
-  defp get_school_name(nil, fields), do: {:error, "Invalid contact_type"}
+  defp get_school_name(nil, _fields), do: {:error, "Invalid contact_type"}
 
   defp get_school_name("Parents", fields) do
-    school_name = get_in(contact.fields, ["child_school_name", "value"])
+    school_name = get_in(fields, ["child_school_name", "value"])
     {:ok, school_name}
   end
 
   defp get_school_name("Teachers", fields) do
-    school_name = get_in(contact.fields, ["school_name", "value"])
+    school_name = get_in(fields, ["school_name", "value"])
     {:ok, school_name}
   end
 
