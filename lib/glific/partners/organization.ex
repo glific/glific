@@ -43,7 +43,8 @@ defmodule Glific.Partners.Organization do
     :newcontact_flow_id,
     :optin_flow_id,
     :is_suspended,
-    :suspended_until
+    :suspended_until,
+    :parent_org
   ]
 
   @type t() :: %__MODULE__{
@@ -80,7 +81,8 @@ defmodule Glific.Partners.Organization do
           updated_at: :utc_datetime | nil,
           fields: map() | nil,
           is_suspended: boolean() | false,
-          suspended_until: DateTime.t() | nil
+          suspended_until: DateTime.t() | nil,
+          parent_org: String.t() | nil
         }
 
   schema "organizations" do
@@ -96,6 +98,7 @@ defmodule Glific.Partners.Organization do
     # us a permission object for calls from gupshup and
     # flow editor
     field(:root_user, :map, virtual: true)
+    field(:parent_org, :string, virtual: true)
 
     # lets cache the start/end hours in here
     # to make it easier on the flows
@@ -157,6 +160,7 @@ defmodule Glific.Partners.Organization do
     field(:is_ticketing_enabled, :boolean, default: false, virtual: true)
 
     timestamps(type: :utc_datetime)
+
   end
 
   @doc """
