@@ -193,27 +193,29 @@ defmodule Glific.Reports do
     end)
   end
 
-  defp get_kpi_query(presets, "contacts", org_id) do
+  @spec get_kpi_query(map(), String.t(), non_neg_integer()) :: String.t()
+  defp get_kpi_query(presets, "stats", org_id) do
+    """
+    SELECT date,
+    conversations
+    FROM stats
+    WHERE period = 'day'
+      AND date >= '#{presets.last_day}'
+      AND date <= '#{presets.today}'
+      AND organization_id = #{org_id}
+    """
+  end
+
+  defp get_kpi_query(presets, table, org_id) do
     """
     SELECT date_trunc('day', inserted_at) as date,
     COUNT(id) as count
-    FROM contacts
+    FROM #{table}
     WHERE
       inserted_at > '#{presets.last_day}'
       AND inserted_at <= '#{presets.today}'
       AND organization_id = #{org_id}
-    GROUP BY date
-    """
-  end
-defp get_kpi_query(presets, "stats", org_id) do
-    """
-    SELECT date_trunc('day', inserted_at) as date,
-    conversations
-    FROM stats
-    WHERE
-      inserted_at > '#{presets.last_day}'
-      AND inserted_at <= '#{presets.today}'
-      AND organization_id = #{org_id}
+    GROUP BY inserted_at
     """
   end
 
