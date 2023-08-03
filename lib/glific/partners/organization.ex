@@ -24,7 +24,8 @@ defmodule Glific.Partners.Organization do
     :shortcode,
     :email,
     :bsp_id,
-    :default_language_id
+    :default_language_id,
+    :setting
   ]
 
   # define all the optional fields for organization
@@ -82,7 +83,8 @@ defmodule Glific.Partners.Organization do
           fields: map() | nil,
           is_suspended: boolean() | false,
           suspended_until: DateTime.t() | nil,
-          parent_org: String.t() | nil
+          parent_org: String.t() | nil,
+          setting: map() | nil
         }
 
   schema "organizations" do
@@ -90,6 +92,8 @@ defmodule Glific.Partners.Organization do
     field(:shortcode, :string)
 
     field(:email, :string)
+
+    field(:setting, :map)
 
     # we'll cache all the services here
     field(:services, :map, virtual: true, default: %{})
@@ -179,6 +183,12 @@ defmodule Glific.Partners.Organization do
     |> validate_default_language()
     |> unique_constraint(:shortcode)
     |> unique_constraint(:contact_id)
+    |> handle_parent_org_assign(attrs)
+  end
+
+  defp handle_parent_org_assign(changeset, attrs) do
+    assoc_name = Map.get(attrs, :name)
+    put_change(changeset, :parent_org, assoc_name)
   end
 
   @doc false
