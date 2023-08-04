@@ -24,8 +24,7 @@ defmodule Glific.Partners.Organization do
     :shortcode,
     :email,
     :bsp_id,
-    :default_language_id,
-    :setting
+    :default_language_id
   ]
 
   # define all the optional fields for organization
@@ -45,7 +44,8 @@ defmodule Glific.Partners.Organization do
     :optin_flow_id,
     :is_suspended,
     :suspended_until,
-    :parent_org
+    :parent_org,
+    :setting
   ]
 
   @type t() :: %__MODULE__{
@@ -89,6 +89,8 @@ defmodule Glific.Partners.Organization do
 
   schema "organizations" do
     field(:name, :string)
+    field(:parent_org, :string)
+
     field(:shortcode, :string)
 
     field(:email, :string)
@@ -102,7 +104,6 @@ defmodule Glific.Partners.Organization do
     # us a permission object for calls from gupshup and
     # flow editor
     field(:root_user, :map, virtual: true)
-    field(:parent_org, :string, virtual: true)
 
     # lets cache the start/end hours in here
     # to make it easier on the flows
@@ -164,7 +165,6 @@ defmodule Glific.Partners.Organization do
     field(:is_ticketing_enabled, :boolean, default: false, virtual: true)
 
     timestamps(type: :utc_datetime)
-
   end
 
   @doc """
