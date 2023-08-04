@@ -63,6 +63,7 @@ defmodule Glific.Clients.KEF do
     "#{folder_structure}/#{media_subfolder}/#{phone}/" <> media["remote_name"]
   end
 
+  @spec get_folder_structure(map(), String.t(), map()) :: String.t()
   defp get_folder_structure(media, contact_type, fields) do
     current_worksheet_code = get_in(fields, ["current_worksheet_code", "value"])
 
@@ -75,6 +76,7 @@ defmodule Glific.Clients.KEF do
     end
   end
 
+  @spec get_school_id(nil | String.t(), map()) :: {:error, String.t()} | {:ok, String.t()}
   defp get_school_id(nil, _fields), do: {:error, "Invalid contact_type"}
 
   defp get_school_id("Parents", fields) do
@@ -87,6 +89,7 @@ defmodule Glific.Clients.KEF do
     {:ok, school_id}
   end
 
+  @spec get_school_name(nil | String.t(), map()) :: {:error, String.t()} | {:ok, String.t()}
   defp get_school_name(nil, _fields), do: {:error, "Invalid contact_type"}
 
   defp get_school_name("Parents", fields) do
@@ -99,6 +102,8 @@ defmodule Glific.Clients.KEF do
     {:ok, school_name}
   end
 
+  @spec get_flow_subfolder(non_neg_integer(), String.t()) ::
+          {:error, String.t()} | {:ok, String.t()}
   defp get_flow_subfolder(flow_id, current_worksheet_code) when flow_id in @worksheet_flow_ids do
     {:ok, "Worksheets/#{current_worksheet_code}"}
   end
