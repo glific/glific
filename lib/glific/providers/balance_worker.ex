@@ -3,12 +3,14 @@ defmodule Glific.Jobs.BSPBalanceWorker do
   Module for checking remaining balance
   """
 
+  alias Glific.Partners.Organization
   alias Glific.{
     Communications,
     Communications.Mailer,
     Mails.BalanceAlertMail,
     Mails.MailLog,
-    Partners
+    Partners,
+    Partners.Organization,
   }
 
   require Logger
@@ -18,34 +20,40 @@ defmodule Glific.Jobs.BSPBalanceWorker do
   """
   @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(organization_id) do
-    Logger.info("Checking BSP balance: organization_id: '#{organization_id}'")
+    organization = Repo.get!(Organization, organization_id)
+    threshold = organization.setting["low_balance"]
 
-    Partners.get_bsp_balance(organization_id)
-    |> case do
-      {:ok, data} ->
-        bsp_balance = data["balance"]
+    if threshold do
+      Logger.info("Checking BSP balance: organization_id: '#{organization_id}'")
 
-        send_low_balance_notification(bsp_balance, organization_id)
+      Partners.get_bsp_balance(organization_id)
+      |> case do
+        {:ok, data} ->
+          bsp_balance = data["balance"]
 
-        # We should move this to an embedded schema
-        # and then fix the function in publish_data. Basically have a periodic
-        # status message packet sent to frontend with this and other details
-        Communications.publish_data(
-          %{"balance" => bsp_balance},
-          :bsp_balance,
-          organization_id
-        )
+          send_low_balance_notification(bsp_balance, organization_id, threshold)
 
-      _ ->
-        nil
-    end
+          # We should move this to an embedded schema
+          # and then fix the function in publish_data. Basically have a periodic
+          # status message packet sent to frontend with this and other details
+          Communications.publish_data(
+            %{"balance" => bsp_balance},
+            :bsp_balance,
+            organization_id
+          )
 
-    :ok
+        _ ->
+          nil
+      end
+
+      :ok
+    else
+      IO.inspect("it does not have the value")
   end
 
   @spec send_low_balance_notification(integer(), non_neg_integer()) :: nil | {:ok, any}
-  defp send_low_balance_notification(bsp_balance, organization_id) when bsp_balance == 10 do
-    # start sending a warning message when the balance is equal to $10
+  defp send_low_balance_notification(bsp_balance, organization_id, threshold) when bsp_balance < threshold do
+    # start sending a warning message when the balance is lower than $10
     # we can tweak this over time
     go_back = if bsp_balance < 3, do: 24, else: 48
 
