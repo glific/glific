@@ -3,7 +3,6 @@ defmodule Glific.Jobs.BSPBalanceWorker do
   Module for checking remaining balance
   """
 
-  alias Glific.Partners.Organization
   alias Glific.{
     Communications,
     Communications.Mailer,
@@ -11,6 +10,7 @@ defmodule Glific.Jobs.BSPBalanceWorker do
     Mails.MailLog,
     Partners,
     Partners.Organization,
+    Repo
   }
 
   require Logger
