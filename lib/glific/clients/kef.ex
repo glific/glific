@@ -69,7 +69,7 @@ defmodule Glific.Clients.KEF do
     with {:ok, school_id} <- get_school_id(contact_type, fields),
          {:ok, school_name} <- get_school_name(contact_type, fields),
          {:ok, flow_subfolder} <- get_flow_subfolder(media["flow_id"], current_worksheet_code) do
-      "#{school_name}/#{school_id}/#{flow_subfolder}/"
+      "#{school_name}/#{school_id}/#{flow_subfolder}"
     else
       _ -> "Ungrouped users"
     end
@@ -108,6 +108,8 @@ defmodule Glific.Clients.KEF do
   end
 
   defp get_flow_subfolder(_flow_id, nil), do: {:ok, "Others"}
+
+  defp get_flow_subfolder(_flow_id, _current_worksheet_code), do: {:ok, "Others"}
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
