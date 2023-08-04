@@ -183,12 +183,6 @@ defmodule Glific.Partners.Organization do
     |> validate_default_language()
     |> unique_constraint(:shortcode)
     |> unique_constraint(:contact_id)
-    |> handle_parent_org_assign(attrs)
-  end
-
-  defp handle_parent_org_assign(changeset, attrs) do
-    assoc_name = Map.get(attrs, :name)
-    put_change(changeset, :parent_org, assoc_name)
   end
 
   @doc false
