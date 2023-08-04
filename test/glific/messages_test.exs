@@ -504,9 +504,7 @@ defmodule Glific.MessagesTest do
                |> Messages.create_message()
     end
 
-
     test "flow in the message_media should be outbound when we are sending message", attrs do
-
       message_media =
         message_media_fixture(%{
           caption: "image caption",
