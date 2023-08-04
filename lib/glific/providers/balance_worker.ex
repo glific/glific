@@ -8,7 +8,9 @@ defmodule Glific.Jobs.BSPBalanceWorker do
     Communications.Mailer,
     Mails.BalanceAlertMail,
     Mails.MailLog,
-    Partners
+    Partners,
+    Partners.Organization,
+    Repo
   }
 
   require Logger
@@ -18,6 +20,9 @@ defmodule Glific.Jobs.BSPBalanceWorker do
   """
   @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(organization_id) do
+    organization = Repo.get!(Organization, organization_id)
+    threshold = organization.setting["low_balance_threshold"]
+
     Logger.info("Checking BSP balance: organization_id: '#{organization_id}'")
 
     Partners.get_bsp_balance(organization_id)
@@ -25,7 +30,7 @@ defmodule Glific.Jobs.BSPBalanceWorker do
       {:ok, data} ->
         bsp_balance = data["balance"]
 
-        send_low_balance_notification(bsp_balance, organization_id)
+        send_low_balance_notification(bsp_balance, organization_id, threshold)
 
         # We should move this to an embedded schema
         # and then fix the function in publish_data. Basically have a periodic
@@ -43,8 +48,13 @@ defmodule Glific.Jobs.BSPBalanceWorker do
     :ok
   end
 
-  @spec send_low_balance_notification(integer(), non_neg_integer()) :: nil | {:ok, any}
-  defp send_low_balance_notification(bsp_balance, organization_id) when bsp_balance < 10 do
+  @spec send_low_balance_notification(integer(), non_neg_integer(), non_neg_integer()) ::
+          nil | {:ok, any}
+  defp send_low_balance_notification(bsp_balance, organization_id, nil),
+    do: send_low_balance_notification(bsp_balance, organization_id, 10)
+
+  defp send_low_balance_notification(bsp_balance, organization_id, threshold)
+       when bsp_balance < threshold do
     # start sending a warning message when the balance is lower than $10
     # we can tweak this over time
     go_back = if bsp_balance < 3, do: 24, else: 48
@@ -66,5 +76,5 @@ defmodule Glific.Jobs.BSPBalanceWorker do
     end
   end
 
-  defp send_low_balance_notification(_, _), do: nil
+  defp send_low_balance_notification(_, _, _), do: nil
 end
