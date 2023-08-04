@@ -21,7 +21,7 @@ defmodule Glific.Jobs.BSPBalanceWorker do
   @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(organization_id) do
     organization = Repo.get!(Organization, organization_id)
-    threshold = organization.setting["low_balance"]
+    threshold = organization.setting["low_balance_threshold"]
 
     Logger.info("Checking BSP balance: organization_id: '#{organization_id}'")
 
