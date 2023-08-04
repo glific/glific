@@ -22,14 +22,14 @@ defmodule Glific.Stats.Stat do
           flows_started: non_neg_integer(),
           flows_completed: non_neg_integer(),
           users: non_neg_integer(),
-          conversations: non_neg_integer()
+          conversations: non_neg_integer(),
           period: String.t() | nil,
           date: Date.t() | nil,
           hour: non_neg_integer(),
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil
         }
 
   @required_fields [
@@ -82,7 +82,6 @@ defmodule Glific.Stats.Stat do
 
     field :date, :date
     field :hour, :integer, default: 0
-
 
     belongs_to :organization, Organization
 
