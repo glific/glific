@@ -64,8 +64,9 @@ defmodule Glific.GCS.GcsWorker do
     data =
       MessageMedia
       |> select([m], m.id)
+      |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
       |> where([m], m.organization_id == ^organization_id and m.id > ^message_media_id)
-      |> where([m], m.flow == :inbound)
+      |> where([m, msg], msg.flow == :inbound)
       |> order_by([m], asc: m.id)
       |> limit(^limit)
       |> Repo.all()

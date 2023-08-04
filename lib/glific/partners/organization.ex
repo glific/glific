@@ -43,7 +43,9 @@ defmodule Glific.Partners.Organization do
     :newcontact_flow_id,
     :optin_flow_id,
     :is_suspended,
-    :suspended_until
+    :suspended_until,
+    :parent_org,
+    :setting
   ]
 
   @type t() :: %__MODULE__{
@@ -80,14 +82,20 @@ defmodule Glific.Partners.Organization do
           updated_at: :utc_datetime | nil,
           fields: map() | nil,
           is_suspended: boolean() | false,
-          suspended_until: DateTime.t() | nil
+          suspended_until: DateTime.t() | nil,
+          parent_org: String.t() | nil,
+          setting: map() | nil
         }
 
   schema "organizations" do
     field(:name, :string)
+    field(:parent_org, :string)
+
     field(:shortcode, :string)
 
     field(:email, :string)
+
+    field(:setting, :map)
 
     # we'll cache all the services here
     field(:services, :map, virtual: true, default: %{})
