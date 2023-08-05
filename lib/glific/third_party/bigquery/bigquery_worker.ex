@@ -724,7 +724,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             hour: row.hour,
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id),
-            conversation: row.conversations
+            conversations: row.conversations
           }
           |> Map.merge(additional)
           |> then(&%{json: &1})
