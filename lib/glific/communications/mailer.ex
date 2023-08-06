@@ -53,35 +53,31 @@ defmodule Glific.Communications.Mailer do
   Lets write a common function and centralize notification
   code
   """
- @spec common_send(Organization.t(), String.t(), String.t(), String.t(), tuple() | nil) :: Swoosh.Email.t()
-  def common_send(org, team \\nil , subject, body, send_to \\ nil) do
+  @spec common_send(Organization.t(), String.t(), String.t(), String.t(), tuple() | nil) ::
+          Swoosh.Email.t()
+  def common_send(org, team \\ nil, subject, body, send_to \\ nil) do
     # Subject can not have a line break
     subject = String.replace(subject, "\n", "")
 
-    send_to =
-      if is_nil(send_to) do
-        if team="" do
-          {org.name, org.email}
-        else
-          get_team_email(org, team)
-        end
-      else
-        send_to
-      end
+    send_to = get_team_email(org, team, send_to)
 
     new()
-      |> to(send_to)
-      |> from(sender())
-      |> cc(glific_support())
-      |> subject(subject)
-      |> text_body(body)
+    |> to(send_to)
+    |> from(sender())
+    |> cc(glific_support())
+    |> subject(subject)
+    |> text_body(body)
   end
 
-  def get_team_email(org, team) do
-    team_emails =
-      org.team_emails
-      |> Jason.decode!()
-    Map.get(team_emails, team)
+  @spec common_send(Organization.t(), String.t() | nil, tuple | nil) :: tuple()
+  defp get_team_email(org, _team, nil), do: {org.name, org.email}
+
+  defp get_team_email(_org, team, send_to) when team in [nil, ""], do: send_to
+
+  defp get_team_email(org, team, _send_to) do
+    org.team_emails
+    |> Jason.decode!()
+    |> Map.get(team)
   end
 
   defp capture_log(
