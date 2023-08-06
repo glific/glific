@@ -7,7 +7,8 @@ defmodule Glific.Mails.BalanceAlertMail do
   @doc false
   @spec low_balance_alert(Organization.t(), integer()) :: Swoosh.Email.t()
   def low_balance_alert(org, bsp_balance) do
-    team=""
+    team = ""
+
     subject = """
     [URGENT Low balance $#{bsp_balance}] : Messages on Glific will stop soon
     """
@@ -24,7 +25,8 @@ defmodule Glific.Mails.BalanceAlertMail do
   @doc false
   @spec no_balance(Organization.t(), String.t()) :: Swoosh.Email.t()
   def no_balance(org, body) do
-    team=""
+    team = ""
+
     subject = """
     Glific Critical: Your Gupshup balance is zero, please refill immediately.
     """
@@ -35,7 +37,8 @@ defmodule Glific.Mails.BalanceAlertMail do
   @doc false
   @spec rate_exceeded(Organization.t(), String.t()) :: Swoosh.Email.t()
   def rate_exceeded(org, body) do
-    team=""
+    team = ""
+
     subject = """
     Glific Critical: Your organization has exceeded it WhatsApp rate limit.
     """
