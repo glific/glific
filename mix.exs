@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "5.3.5",
+      version: "5.4.2",
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -197,7 +197,12 @@ defmodule Glific.MixProject do
         "phil_columns.seed --tenant glific",
         "test"
       ],
-      test: ["ecto.create --quiet", "ecto.load --quiet --skip-if-loaded", "ecto.migrate", "test"],
+      test: [
+        "ecto.create --quiet",
+        "ecto.load --quiet --skip-if-loaded",
+        "ecto.migrate --quiet",
+        "test"
+      ],
       "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
     ]
   end

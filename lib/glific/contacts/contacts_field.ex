@@ -53,7 +53,18 @@ defmodule Glific.Contacts.ContactsField do
     contact_field
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> shortcode_to_snakecase()
     |> unique_constraint([:name, :organization_id])
     |> unique_constraint([:shortcode, :organization_id])
+  end
+
+  defp shortcode_to_snakecase(changeset) do
+    case changeset do
+      %Ecto.Changeset{valid?: true, changes: %{shortcode: shortcode}} ->
+        put_change(changeset, :shortcode, Glific.string_snake_case(shortcode))
+
+      _ ->
+        changeset
+    end
   end
 end

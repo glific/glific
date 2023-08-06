@@ -42,13 +42,13 @@ defmodule Glific.Profiles.Profile do
         }
 
   schema "profiles" do
-    field :name, :string
-    field :type, :string
-    field :fields, :map, default: %{}
+    field(:name, :string)
+    field(:type, :string)
+    field(:fields, :map, default: %{})
 
-    belongs_to :language, Language, foreign_key: :language_id
-    belongs_to :contact, Contact, foreign_key: :contact_id
-    belongs_to :organization, Organization, foreign_key: :organization_id
+    belongs_to(:language, Language, foreign_key: :language_id)
+    belongs_to(:contact, Contact, foreign_key: :contact_id)
+    belongs_to(:organization, Organization, foreign_key: :organization_id)
 
     timestamps(type: :utc_datetime)
   end
@@ -61,7 +61,7 @@ defmodule Glific.Profiles.Profile do
     profile
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint([:name, :type, :organization_id],
+    |> unique_constraint([:name, :type, :contact_id, :organization_id],
       message: "Sorry, a profile with same name and type already exists"
     )
     |> foreign_key_constraint(:language_id)

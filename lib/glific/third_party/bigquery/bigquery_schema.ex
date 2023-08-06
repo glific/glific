@@ -1069,6 +1069,12 @@ defmodule Glific.BigQuery.Schema do
         name: "updated_at",
         type: "DATETIME",
         mode: "REQUIRED"
+      },
+      %{
+        description: "Total number of conversations",
+        name: "conversations",
+        type: "INTEGER",
+        mode: "NULLABLE"
       }
     ]
   end

@@ -6,11 +6,17 @@ defmodule Glific.Messages.MessageMedia do
   use Ecto.Schema
   import Ecto.Changeset
   alias __MODULE__
-  alias Glific.Partners.Organization
+
+  alias Glific.{
+    Enums.MessageFlow,
+    Messages.MessageMedia,
+    Partners.Organization
+  }
 
   # define all the required fields for message media
   @required_fields [
     :url,
+    :flow,
     :source_url,
     :organization_id
   ]
@@ -37,7 +43,8 @@ defmodule Glific.Messages.MessageMedia do
           updated_at: :utc_datetime | nil,
           gcs_url: String.t() | nil,
           organization_id: non_neg_integer | nil,
-          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          flow: String.t() | nil
         }
 
   schema "messages_media" do
@@ -48,6 +55,7 @@ defmodule Glific.Messages.MessageMedia do
     field(:provider_media_id, :string)
     field(:gcs_url, :string)
     field(:content_type, :string)
+    field(:flow, MessageFlow)
 
     belongs_to(:organization, Organization)
 

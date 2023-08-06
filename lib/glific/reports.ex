@@ -10,7 +10,6 @@ defmodule Glific.Reports do
     Flows.FlowContext,
     Flows.MessageBroadcast,
     Messages.Message,
-    Messages.MessageConversation,
     Notifications.Notification,
     Repo,
     Stats.Stat
@@ -110,11 +109,6 @@ defmodule Glific.Reports do
     |> where([q], q.severity == "Information")
   end
 
-  defp get_count_query(:conversation_count) do
-    MessageConversation
-    |> select([q], count(q.id))
-  end
-
   defp get_count_query(:active_flow_count) do
     FlowContext
     |> select([q], count(q.id))
@@ -131,6 +125,8 @@ defmodule Glific.Reports do
 
   defp get_count_query(:flows_completed), do: select(Stat, [q], sum(q.flows_completed))
 
+  defp get_count_query(:conversation_count), do: select(Stat, [q], sum(q.conversations))
+
   @spec add_timestamps(Ecto.Query.t(), atom()) :: Ecto.Query.t()
   defp add_timestamps(query, kpi)
        when kpi in [
@@ -138,8 +134,7 @@ defmodule Glific.Reports do
               :warning_notification_count,
               :information_notification_count,
               :monthly_error_count,
-              :active_flow_count,
-              :conversation_count
+              :active_flow_count
             ] do
     date = Timex.beginning_of_month(DateTime.utc_now())
 
@@ -153,7 +148,8 @@ defmodule Glific.Reports do
               :hsm_messages_count,
               :inbound_messages_count,
               :flows_started,
-              :flows_completed
+              :flows_completed,
+              :conversation_count
             ] do
     day = Date.beginning_of_month(DateTime.utc_now())
 
@@ -199,6 +195,19 @@ defmodule Glific.Reports do
     |> Enum.map(fn {k, v} -> {Timex.format!(k, "{0D}-{0M}-{YYYY}"), v} end)
   end
 
+  @spec get_kpi_query(map(), String.t(), non_neg_integer()) :: String.t()
+  defp get_kpi_query(presets, "stats", org_id) do
+    """
+    SELECT date,
+    conversations
+    FROM stats
+    WHERE period = 'day'
+      AND date >= '#{presets.last_day}'
+      AND date <= '#{presets.today}'
+      AND organization_id = #{org_id}
+    """
+  end
+
   defp get_kpi_query(presets, table, org_id) do
     from(
       t in table,
@@ -206,6 +215,26 @@ defmodule Glific.Reports do
       group_by: fragment("date_trunc('day', ?)", t.inserted_at),
       select: %{date: fragment("date_trunc('day', ?)", t.inserted_at), count: count(t.id)}
     )
+  end
+
+  @doc false
+  @spec get_messages_data(non_neg_integer()) :: map()
+  def get_messages_data(org_id) do
+    Repo.put_process_state(org_id)
+
+    Stat
+    |> select([q], %{
+      hour: fragment("date_part('hour', ?)", q.inserted_at),
+      inbound: sum(q.inbound),
+      outbound: sum(q.outbound)
+    })
+    |> group_by([q], fragment("date_part('hour', ?)", q.inserted_at))
+    |> where([q], q.organization_id == ^org_id)
+    |> where([q], q.period == "hour")
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn hourly_stat, acc ->
+      Map.put(acc, hourly_stat.hour, Map.delete(hourly_stat, :hour))
+    end)
   end
 
   @doc """

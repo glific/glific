@@ -449,6 +449,7 @@ defmodule Glific.MessagesTest do
           source_url: "some source_url",
           thumbnail: "some thumbnail",
           url: "some url",
+          flow: :inbound,
           provider_media_id: "some provider_media_id",
           organization_id: attrs.organization_id
         })
@@ -501,6 +502,29 @@ defmodule Glific.MessagesTest do
                |> Map.merge(foreign_key_constraint(attrs))
                |> Map.merge(%{type: :image})
                |> Messages.create_message()
+    end
+
+    test "flow in the message_media should be outbound when we are sending message", attrs do
+      message_media =
+        message_media_fixture(%{
+          caption: "image caption",
+          organization_id: attrs.organization_id,
+          flow: :outbound
+        })
+
+      valid_attrs = %{
+        flow: :outbound,
+        type: :image,
+        media_id: message_media.id
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.type == :image
+      assert is_nil(message.media_id) == false
+      message_media = Messages.get_message_media!(message.media_id)
+      assert message_media.flow == :outbound
     end
 
     test "variable will be replaced in media caption after creating a message", attrs do
@@ -639,6 +663,7 @@ defmodule Glific.MessagesTest do
         })
 
       {:ok, restricted_user} = Users.update_user(u4, %{is_restricted: true})
+      admin_user = Repo.get_current_user()
       Repo.put_current_user(restricted_user)
 
       valid_attrs = %{
@@ -656,6 +681,7 @@ defmodule Glific.MessagesTest do
         })
 
       assert {:ok, %Message{}} = Messages.create_group_message(message_attrs)
+      Repo.put_current_user(admin_user)
     end
 
     test "create_group_message/1 should return changeset error", attrs do
@@ -1306,6 +1332,7 @@ defmodule Glific.MessagesTest do
       source_url: "some source_url",
       thumbnail: "some thumbnail",
       url: "some url",
+      flow: :inbound,
       provider_media_id: "some provider_media_id"
     }
     @update_attrs %{

@@ -381,6 +381,7 @@ defmodule Glific.Flows.ContactAction do
           url: url,
           source_url: url,
           thumbnail: url,
+          flow: :outbound,
           caption: MessageVarParser.parse(caption, message_vars),
           organization_id: context.organization_id
         }
