@@ -44,36 +44,34 @@ defmodule GlificWeb.StatsLive do
   defp assign_stats(socket, :call) do
     Enum.each(Reports.kpi_list(), &send(self(), {:get_stats, &1}))
     org_id = get_org_id(socket)
+
     assign(socket, get_chart_data(org_id))
     |> assign_dataset()
     |> assign_chart_svg()
   end
 
-  @spec assign_dataset(Phoenix.LiveView.Socket.t()) ::  Phoenix.LiveView.Socket.t()
+  @spec assign_dataset(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
   defp assign_dataset(
-    %{assigns: %{
-      contact_chart_data: contact_chart_data,
-      conversation_chart_data: conversation_chart_data,
-      optin_chart_data: optin_chart_data,
-      notification_chart_data: notification_chart_data,
-      message_type_chart_data: message_type_chart_data,
-      contact_pie_chart_data: contact_type_chart_data}
-    } = socket) do
-      socket
-      |> assign(
-        contact_dataset:
-        make_bar_chart_dataset(contact_chart_data),
-        conversation_dataset:
-        make_bar_chart_dataset(conversation_chart_data),
-        optin_dataset:
-        make_pie_chart_dataset(optin_chart_data),
-        notification_dataset:
-        make_pie_chart_dataset(notification_chart_data),
-        message_dataset:
-        make_pie_chart_dataset(message_type_chart_data),
-        contact_type_dataset:
-        make_pie_chart_dataset(contact_type_chart_data)
-      )
+         %{
+           assigns: %{
+             contact_chart_data: contact_chart_data,
+             conversation_chart_data: conversation_chart_data,
+             optin_chart_data: optin_chart_data,
+             notification_chart_data: notification_chart_data,
+             message_type_chart_data: message_type_chart_data,
+             contact_pie_chart_data: contact_type_chart_data
+           }
+         } = socket
+       ) do
+    socket
+    |> assign(
+      contact_dataset: make_bar_chart_dataset(contact_chart_data),
+      conversation_dataset: make_bar_chart_dataset(conversation_chart_data),
+      optin_dataset: make_pie_chart_dataset(optin_chart_data),
+      notification_dataset: make_pie_chart_dataset(notification_chart_data),
+      message_dataset: make_pie_chart_dataset(message_type_chart_data),
+      contact_type_dataset: make_pie_chart_dataset(contact_type_chart_data)
+    )
   end
 
   defp make_bar_chart_dataset(data) do
@@ -82,27 +80,35 @@ defmodule GlificWeb.StatsLive do
 
   defp make_pie_chart_dataset(data) do
     Contex.Dataset.new(data, ["Type", "Value"])
-end
+  end
 
   @spec assign_chart_svg(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
-  defp assign_chart_svg(%{assigns: %{contact_dataset: contact_dataset,
-                                    conversation_dataset: conversation_dataset,
-                                    optin_dataset: optin_dataset,
-                                    notification_dataset: notification_dataset,
-                                    message_dataset: message_dataset,
-                                    contact_type_dataset: contact_type_dataset}} = socket) do
+  defp assign_chart_svg(
+         %{
+           assigns: %{
+             contact_dataset: contact_dataset,
+             conversation_dataset: conversation_dataset,
+             optin_dataset: optin_dataset,
+             notification_dataset: notification_dataset,
+             message_dataset: message_dataset,
+             contact_type_dataset: contact_type_dataset
+           }
+         } = socket
+       ) do
     socket
-    |> assign(contact_chart_svg: render_bar_chart("Contacts", contact_dataset),
-              conversation_chart_svg: render_bar_chart("Conversations", conversation_dataset),
-              optin_chart_svg: render_pie_chart("Optin Data", optin_dataset),
-              notification_chart_svg: render_pie_chart("Notification Data", notification_dataset),
-              message_chart_svg: render_pie_chart("Message Data", message_dataset),
-              contact_type_chart_svg: render_pie_chart("Contact Type", contact_type_dataset)
-              )
+    |> assign(
+      contact_chart_svg: render_bar_chart("Contacts", contact_dataset),
+      conversation_chart_svg: render_bar_chart("Conversations", conversation_dataset),
+      optin_chart_svg: render_pie_chart("Optin Data", optin_dataset),
+      notification_chart_svg: render_pie_chart("Notification Data", notification_dataset),
+      message_chart_svg: render_pie_chart("Message Data", message_dataset),
+      contact_type_chart_svg: render_pie_chart("Contact Type", contact_type_dataset)
+    )
   end
 
   defp render_bar_chart(title, dataset) do
     opts = barchart_opts(title)
+
     Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts)
     |> Contex.Plot.to_svg()
   end
@@ -115,7 +121,7 @@ end
     ]
   end
 
-  defp piechart_opts(title, category_col \\ "Type", value_col \\ "Value" ) do
+  defp piechart_opts(title, category_col \\ "Type", value_col \\ "Value") do
     [
       mapping: %{category_col: category_col, value_col: value_col},
       colour_palette: ["fbb4ae", "b3cde3", "ccebc5"],
@@ -136,6 +142,7 @@ end
   defp render_pie_chart(title, dataset) do
     opts = piechart_opts(title)
     plot = Contex.Plot.new(dataset, Contex.PieChart, 500, 400, opts)
+
     if no_data?(dataset.data) do
       Jason.encode!(title <> ": No data")
     else
@@ -153,8 +160,8 @@ end
   @spec get_chart_data(non_neg_integer()) :: list()
   def get_chart_data(org_id) do
     [
-      contact_chart_data:  Reports.get_kpi_data_new(org_id, "contacts"),
-      conversation_chart_data: Reports.get_kpi_data_new(org_id, "messages_conversations"),
+      contact_chart_data: Reports.get_kpi_data(org_id, "contacts"),
+      conversation_chart_data: Reports.get_kpi_data(org_id, "messages_conversations"),
       optin_chart_data: fetch_count_data(:optin_chart_data, org_id),
       notification_chart_data: fetch_count_data(:notification_chart_data, org_id),
       message_type_chart_data: fetch_count_data(:message_type_chart_data, org_id),

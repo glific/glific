@@ -165,7 +165,7 @@ defmodule Glific.Reports do
 
     ## Examples
 
-    iex> Glific.Reports.get_kpi_data_new(1, "contacts")
+    iex> Glific.Reports.get_kpi_data(1, "contacts")
       %{
         "04-01-2023" => 0,
         "05-01-2023" => 0,
@@ -180,8 +180,8 @@ defmodule Glific.Reports do
     iex> Glific.Reports.get_kpi_data(1, "optout")
     iex> Glific.Reports.get_kpi_data(1, "contact_type")
   """
-  @spec get_kpi_data_new(non_neg_integer(), String.t()) :: map()
-  def get_kpi_data_new(org_id, table) do
+  @spec get_kpi_data(non_neg_integer(), String.t()) :: list()
+  def get_kpi_data(org_id, table) do
     presets = get_date_preset()
     Repo.put_process_state(org_id)
 
@@ -211,7 +211,9 @@ defmodule Glific.Reports do
   defp get_kpi_query(presets, table, org_id) do
     from(
       t in table,
-      where: t.inserted_at > ^presets.last_day and t.inserted_at <= ^presets.today and t.organization_id == ^org_id,
+      where:
+        t.inserted_at > ^presets.last_day and t.inserted_at <= ^presets.today and
+          t.organization_id == ^org_id,
       group_by: fragment("date_trunc('day', ?)", t.inserted_at),
       select: %{date: fragment("date_trunc('day', ?)", t.inserted_at), count: count(t.id)}
     )
@@ -269,14 +271,13 @@ defmodule Glific.Reports do
   end
 
   @doc false
-  @spec get_contact_data(non_neg_integer()) :: map()
+  @spec get_contact_data(non_neg_integer()) :: list()
   def get_contact_data(org_id) do
     get_count_query(:bsp_status)
     |> where([q], q.organization_id == ^org_id)
     |> Repo.all()
   end
 
-  @spec get_date_preset(DateTime.t()) :: map()
   defp get_date_preset(time \\ NaiveDateTime.utc_now()) do
     today = shifted_time(time, 1)
 
@@ -292,7 +293,7 @@ defmodule Glific.Reports do
     %{today: today, last_day: last_day, date_map: date_map}
   end
 
-  @spec shifted_time(DateTime.t(), integer()) :: DateTime.t()
+  @spec shifted_time(NaiveDateTime.t(), integer()) :: NaiveDateTime.t()
   defp shifted_time(time, days) do
     time
     |> Timex.beginning_of_day()
