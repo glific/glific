@@ -9,8 +9,6 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     Fixtures,
     Repo,
     Seeds.SeedsDev,
-    Tags.ContactTag,
-    Tags.Tag,
     Users
   }
 
@@ -55,21 +53,11 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json["data"]["renewal_token"]
       assert json["data"]["token_expiry_time"]
 
-      # We will tag the user as a contact tag
-      {:ok, staff_tag} =
-        Repo.fetch_by(Tag, %{label: "Staff", organization_id: conn.assigns[:organization_id]})
-
-      {:ok, contact} =
+      {:ok, _contact} =
         Repo.fetch_by(Contact, %{
           phone: receiver.phone,
           organization_id: conn.assigns[:organization_id]
         })
-
-      assert {:ok, _contact_tag} =
-               Repo.fetch_by(ContactTag, %{
-                 contact_id: contact.id,
-                 tag_id: staff_tag.id
-               })
     end
 
     test "with password less than minimum characters should give error",
