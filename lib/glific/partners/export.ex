@@ -28,7 +28,7 @@ defmodule Glific.Partners.Export do
     "bigint" => "integer",
     "timestamp without time zone" => "timestamp_without_timezone",
     "jsonb" => "object",
-    "USER-DEFINED" => "string",
+    "USER-DEFINED" => "string"
   }
 
   alias Glific.Repo
@@ -108,7 +108,7 @@ defmodule Glific.Partners.Export do
         airbyte_data_type = Map.get(@airbyte_types, data_type, data_type)
 
         # sending a list of lists, since json does not understand elixir tuples
-        Map.put(acc, column_name, [airbyte_data_type, [column_default]])
+        Map.put(acc, column_name, [airbyte_data_type, column_default])
       end
     )
   end

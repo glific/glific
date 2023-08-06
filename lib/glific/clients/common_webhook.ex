@@ -4,6 +4,7 @@ defmodule Glific.Clients.CommonWebhook do
   """
 
   alias Glific.{
+    ASR.Bhasini,
     ASR.GoogleASR,
     Contacts.Contact,
     OpenAI.ChatGPT,
@@ -93,6 +94,17 @@ defmodule Glific.Clients.CommonWebhook do
 
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> GoogleASR.speech_to_text(fields["results"], contact.language.locale)
+  end
+
+  # This webhook will call Bhasini speech-to-text API
+  def webhook("speech_to_text_with_bhasini", fields) do
+    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+    contact = get_contact_language(contact_id)
+
+    Bhasini.with_config_request(
+      fields,
+      contact.language.locale
+    )
   end
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}

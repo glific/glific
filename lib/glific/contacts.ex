@@ -735,15 +735,17 @@ defmodule Glific.Contacts do
   end
 
   def set_session_status(contact_ids, :none = _status) when is_list(contact_ids) do
+    now = DateTime.utc_now()
+
     Contact
     |> where([c], is_nil(c.optin_time))
     |> where([c], c.id in ^contact_ids)
-    |> Repo.update_all([set: [bsp_status: :none]], skip_organization_id: true)
+    |> Repo.update_all([set: [bsp_status: :none, updated_at: now]], skip_organization_id: true)
 
     Contact
     |> where([c], not is_nil(c.optin_time))
     |> where([c], c.id in ^contact_ids)
-    |> Repo.update_all([set: [bsp_status: :hsm]], skip_organization_id: true)
+    |> Repo.update_all([set: [bsp_status: :hsm, updated_at: now]], skip_organization_id: true)
 
     :ok
   end

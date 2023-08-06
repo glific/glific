@@ -46,10 +46,10 @@ Commented out the filter code. Will add this once the functionality is ready
     </canvas>
     <canvas
       class="card"
-      id="optin_chart"
-      phx-hook="pieChart"
-      data-label="Optin"
-      data-chart-data={Jason.encode!(@optin_chart_data)}
+      id="message_chart"
+      phx-hook="barChart"
+      data-label="Messages"
+      data-chart-data={Jason.encode!(@messages_chart_data)}
     >
     </canvas>
     <div phx-hook="download" id="exports" class="flex content-center justify-center flex-wrap" >
@@ -58,6 +58,15 @@ Commented out the filter code. Will add this once the functionality is ready
       <h1> Export OptIn </h1>
     </.link>
     </button>
+    <div>
+      <canvas
+        class="card"
+        id="optin_chart"
+        phx-hook="pieChart"
+        data-label="Optin"
+        data-chart-data={Jason.encode!(@optin_chart_data)}
+      >
+      </canvas>
     </div>
     <canvas
       class="card"

@@ -1,5 +1,5 @@
 defmodule GlificWeb.RouterTest do
-  use GlificWeb.ConnCase, async: true
+  use GlificWeb.ConnCase
 
   alias Glific.{
     Fixtures,

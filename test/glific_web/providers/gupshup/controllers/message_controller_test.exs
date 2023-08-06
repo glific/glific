@@ -210,6 +210,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       # test media fields
       assert message.media.caption == setup_config.image_payload["caption"]
       assert message.media.url == setup_config.image_payload["url"]
+      assert message.media.flow == :inbound
       assert message.media.source_url == setup_config.image_payload["url"]
 
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)

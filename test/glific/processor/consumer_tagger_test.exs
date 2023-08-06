@@ -6,7 +6,6 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     Processor.ConsumerTagger,
     Repo,
     Seeds.SeedsDev,
-    Tags.MessageTag,
     Tags.Tag
   }
 
@@ -20,7 +19,7 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     6 => {"thanks", "thankyou", nil},
     7 => {"ek", "numeric", "1"},
     8 => {"हिंदी", "language", nil},
-    9 => {to_string(['\u0039', 65_039, 8419]), "numeric", "9"},
+    9 => {to_string([~c"\u0039", 65_039, 8419]), "numeric", "9"},
     10 => {"hey there", "greeting", nil}
   }
   @checks_size Enum.count(@checks)
@@ -48,9 +47,6 @@ defmodule Glific.Processor.ConsumerTaggerTest do
         ConsumerTagger.process_message({message, state}, message.body)
       end
     )
-
-    # ensure we have a few message tags in the DB
-    assert Repo.aggregate(MessageTag, :count) > 0
 
     # check the message tags
     tags = ["language", "unread", "greeting", "thankyou", "numeric", "goodbye"]

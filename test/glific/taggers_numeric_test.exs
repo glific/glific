@@ -12,12 +12,12 @@ defmodule Glific.TaggersNumericTest do
     1 => "one",
     2 => "\u0968",
     3 => "तीन",
-    4 => to_string(['\u0034', 65_039, 8419]),
+    4 => to_string([~c"\u0034", 65_039, 8419]),
     5 => "five",
     6 => "\u096C",
     7 => "saat",
     8 => "आठ",
-    9 => to_string(['\u0039', 65_039, 8419])
+    9 => to_string([~c"\u0039", 65_039, 8419])
   }
 
   @checker_punct %{
@@ -25,12 +25,12 @@ defmodule Glific.TaggersNumericTest do
     1 => ":.# o n e  ",
     2 => " \u0968  ",
     3 => "तीन",
-    4 => to_string(['\u0034', 65_039, 8419]),
+    4 => to_string([~c"\u0034", 65_039, 8419]),
     5 => "!@#five!@#",
     6 => "%^&\u096C:;:",
     7 => "  saat%$^",
     8 => "<>,.आठ  ",
-    9 => to_string(['\u0039', 65_039, 8419]),
+    9 => to_string([~c"\u0039", 65_039, 8419]),
     "23" => "23"
   }
 

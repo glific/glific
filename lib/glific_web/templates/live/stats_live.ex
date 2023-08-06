@@ -79,8 +79,13 @@ defmodule GlificWeb.StatsLive do
         labels: fetch_date_labels("contacts", org_id)
       },
       conversation_chart_data: %{
-        data: fetch_date_formatted_data("messages_conversations", org_id),
-        labels: fetch_date_labels("messages_conversations", org_id)
+        data: fetch_date_formatted_data("stats", org_id),
+        labels: fetch_date_labels("stats", org_id)
+      },
+      messages_chart_data: %{
+        data: fetch_hourly_data(org_id),
+        labels: Enum.to_list(0..23),
+        label: ["Inbound", "Outbound"]
       },
       optin_chart_data: %{
         data: fetch_count_data(:optin_chart_data, org_id),
@@ -125,6 +130,14 @@ defmodule GlificWeb.StatsLive do
     [
       Reports.get_kpi(:inbound_messages_count, org_id),
       Reports.get_kpi(:outbound_messages_count, org_id)
+    ]
+  end
+
+  @spec fetch_hourly_data(non_neg_integer()) :: list()
+  defp fetch_hourly_data(org_id) do
+    [
+      Reports.get_messages_data(org_id) |> Map.values() |> Enum.into([], & &1.inbound),
+      Reports.get_messages_data(org_id) |> Map.values() |> Enum.into([], & &1.outbound)
     ]
   end
 

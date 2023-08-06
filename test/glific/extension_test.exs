@@ -8,16 +8,29 @@ defmodule Glific.ExtensionTest do
   }
 
   describe "extensions" do
+    @valid_code """
+    defmodule Glific.Test.Extension.Version do
+      def current_version() do
+        %{version: 1}
+      end
+    end
+    """
     @valid_attrs %{
-      code:
-        "defmodule Glific.Test.Extension.Version, do: def current_verion(), do: %{version: 1}",
+      code: @valid_code,
       is_active: true,
       module: "Glific.Test.Extension",
       name: "Test extension version"
     }
+    @update_code """
+    defmodule Glific.Test.Extension.VersionUpdate do
+      def current_version() do
+        %{version: 2}
+      end
+    end
+    """
     @update_attrs %{
       is_active: false,
-      code: "defmodule Glific.Test.Extension.Version, do: def current_verion(), do: %{version: 2}"
+      code: @update_code
     }
     @invalid_attrs %{
       code: nil,
@@ -37,8 +50,7 @@ defmodule Glific.ExtensionTest do
     assert extension.is_valid == true
     assert extension.name == "Test extension version"
 
-    assert extension.code ==
-             "defmodule Glific.Test.Extension.Version, do: def current_verion(), do: %{version: 1}"
+    assert extension.code == @valid_code
   end
 
   test "create_extension/1 with invalid data returns error changeset", %{
@@ -63,8 +75,7 @@ defmodule Glific.ExtensionTest do
     assert updated_extension.is_valid == nil
     assert updated_extension.name == "Current Version"
 
-    assert updated_extension.code ==
-             "defmodule Glific.Test.Extension.Version, do: def current_verion(), do: %{version: 2}"
+    assert updated_extension.code == @update_code
   end
 
   test "extension/1 deletes the extension", %{organization_id: organization_id} do

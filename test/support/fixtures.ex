@@ -589,6 +589,7 @@ defmodule Glific.Fixtures do
         url: Faker.Avatar.image_url(),
         source_url: Faker.Avatar.image_url(),
         thumbnail: Faker.Avatar.image_url(),
+        flow: :inbound,
         caption: Faker.String.base64(10),
         provider_media_id: Faker.String.base64(10),
         organization_id: attrs.organization_id
@@ -789,7 +790,13 @@ defmodule Glific.Fixtures do
   @spec extension_fixture(map()) :: Extension.t()
   def extension_fixture(attrs) do
     valid_attrs = %{
-      code: "defmodule Glific.Test.Extension, do: def default_phone(), do: %{phone: 9876543210}",
+      code: """
+      defmodule Glific.Test.ExtensionFixture do
+        def default_phone() do
+          %{phone: 9876543210}
+        end
+      end
+      """,
       is_active: true,
       module: "Glific.Test.Extension",
       name: "Test extension",
