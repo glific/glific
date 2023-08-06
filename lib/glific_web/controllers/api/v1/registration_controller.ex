@@ -21,7 +21,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
     Contacts.Contact,
     Partners,
     Repo,
-    Tags,
     Users,
     Users.User
   }
@@ -74,9 +73,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
     |> Pow.Plug.create_user(updated_user_params)
     |> case do
       {:ok, user, conn} ->
-        {:ok, _} =
-          user
-          |> Users.promote_first_user()
+        Users.promote_first_user(user)
 
         response_data = %{
           data: %{
