@@ -69,7 +69,7 @@ defmodule Glific.Communications.Mailer do
     |> text_body(body)
   end
 
-  @spec get_team_email(Organization.t(), String.t() | nil, tuple | nil) :: tuple() | nil
+  @spec get_team_email(Organization.t(), String.t() | nil, tuple | nil) :: tuple()
   defp get_team_email(org, _team, nil), do: {org.name, org.email}
 
   defp get_team_email(_org, team, send_to) when team in [nil, ""], do: send_to
@@ -78,6 +78,7 @@ defmodule Glific.Communications.Mailer do
     org.team_emails
     |> Jason.decode!()
     |> Map.get(team)
+    |> then(&{team, &1})
   end
 
   defp capture_log(
