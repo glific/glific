@@ -115,7 +115,7 @@ defmodule GlificWeb.StatsLive do
 
   defp barchart_opts(title) do
     [
-      colour_palette: ["fbb4ae", "b3cde3", "ccebc5"],
+      colour_palette: ["129656", "93A29B", "EBEDEC", "B5D8C7"],
       data_labels: true,
       title: title
     ]
@@ -124,7 +124,7 @@ defmodule GlificWeb.StatsLive do
   defp piechart_opts(title, category_col \\ "Type", value_col \\ "Value") do
     [
       mapping: %{category_col: category_col, value_col: value_col},
-      colour_palette: ["fbb4ae", "b3cde3", "ccebc5"],
+      colour_palette: ["129656", "93A29B", "EBEDEC", "B5D8C7"],
       legend_setting: :legend_bottom,
       data_labels: true,
       title: title
