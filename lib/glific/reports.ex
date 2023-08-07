@@ -281,10 +281,10 @@ defmodule Glific.Reports do
   defp get_date_preset(time \\ NaiveDateTime.utc_now()) do
     today = shifted_time(time, 1)
 
-    last_day = shifted_time(time, -10)
+    last_day = shifted_time(time, -6)
 
     date_map =
-      Enum.reduce(0..10, %{}, fn day, acc ->
+      Enum.reduce(0..6, %{}, fn day, acc ->
         time
         |> shifted_time(-day)
         |> then(&Map.put(acc, &1, 0))
