@@ -62,7 +62,22 @@ defmodule Glific.Clients.Bandhu do
   def webhook("jugalbandi", fields), do: CommonWebhook.webhook("jugalbandi", fields)
   def webhook("jugalbandi-voice", fields), do: CommonWebhook.webhook("jugalbandi-voice", fields)
 
+  def webhook("jugalbandi-json", fields) do
+    CommonWebhook.webhook("jugalbandi", fields)
+    |> parse_bandhu_json()
+  end
+
   def webhook(_, _fields), do: %{}
+
+  @spec parse_bandhu_json(map()) :: map()
+  defp parse_bandhu_json(%{success: true} = json) do
+    json["answer"]
+    |> Jason.decode!()
+    |> Map.put(:success, true)
+  end
+
+  defp parse_bandhu_json(%{success: false} = json),
+    do: %{success: false, response: "Error Json received"}
 
   defp format_profile_message(profiles) do
     profiles
