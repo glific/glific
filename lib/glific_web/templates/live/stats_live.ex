@@ -117,7 +117,8 @@ defmodule GlificWeb.StatsLive do
     [
       colour_palette: ["129656", "93A29B", "EBEDEC", "B5D8C7"],
       data_labels: true,
-      title: title
+      title: title,
+      axis_label_rotation: 45
     ]
   end
 
@@ -126,7 +127,7 @@ defmodule GlificWeb.StatsLive do
       mapping: %{category_col: category_col, value_col: value_col},
       colour_palette: ["129656", "93A29B", "EBEDEC", "B5D8C7"],
       legend_setting: :legend_bottom,
-      data_labels: true,
+      data_labels: false,
       title: title
     ]
   end
@@ -177,30 +178,38 @@ defmodule GlificWeb.StatsLive do
 
   @spec fetch_count_data(atom(), non_neg_integer()) :: list()
   defp fetch_count_data(:optin_chart_data, org_id) do
+    opted_in = Reports.get_kpi(:opted_in_contacts_count, org_id)
+    opted_out = Reports.get_kpi(:opted_out_contacts_count, org_id)
+    non_opted = Reports.get_kpi(:non_opted_contacts_count, org_id)
     [
-      {"Opted In", Reports.get_kpi(:opted_in_contacts_count, org_id)},
-      {"Opted Out", Reports.get_kpi(:opted_out_contacts_count, org_id)},
-      {"Non Opted", Reports.get_kpi(:non_opted_contacts_count, org_id)}
+      {"Opted In = #{opted_in}", opted_in},
+      {"Opted Out = #{opted_out}", opted_out},
+      {"Non Opted = #{non_opted}", non_opted}
     ]
   end
 
   defp fetch_count_data(:notification_chart_data, org_id) do
+    critical = Reports.get_kpi(:critical_notification_count, org_id)
+    warning = Reports.get_kpi(:warning_notification_count, org_id)
+    information = Reports.get_kpi(:information_notification_count, org_id)
     [
-      {"Critical", Reports.get_kpi(:critical_notification_count, org_id)},
-      {"Warning", Reports.get_kpi(:warning_notification_count, org_id)},
-      {"Information", Reports.get_kpi(:information_notification_count, org_id)}
+      {"Critical = #{critical}", critical},
+      {"Warning = #{warning}", warning},
+      {"Information = #{information}", information}
     ]
   end
 
   defp fetch_count_data(:message_type_chart_data, org_id) do
+    inbound = Reports.get_kpi(:inbound_messages_count, org_id)
+    outbound = Reports.get_kpi(:outbound_messages_count, org_id)
     [
-      {"Inbound", Reports.get_kpi(:inbound_messages_count, org_id)},
-      {"Outbound", Reports.get_kpi(:outbound_messages_count, org_id)}
+      {"Inbound = #{inbound}", inbound},
+      {"Outbound = #{outbound}", outbound}
     ]
   end
 
   defp fetch_count_data(:contact_type, org_id) do
     [[_, v1], [_, v2]] = Reports.get_contact_data(org_id)
-    [{"Session and HSM", v1}, {"None", v2}]
+    [{"Session and HSM = #{v1}", v1}, {"None = #{v2}", v2}]
   end
 end
