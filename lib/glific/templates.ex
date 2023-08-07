@@ -644,10 +644,18 @@ defmodule Glific.Templates do
   @doc """
   Report mail to gupshup
   """
-  @spec report_to_gupshup(non_neg_integer(), non_neg_integer(), [tuple()] | [])
+  @spec report_to_gupshup(non_neg_integer(), non_neg_integer(), [map()] | [])
   :: {:ok, any} | {:error, any}
   def report_to_gupshup(org_id, template_id, cc \\ []) do
     org = Partners.organization(org_id)
+
+    cc = cc
+    |> Enum.map(fn c ->
+      {
+        Map.get(c, :name, ""),
+        Map.get(c, :email, "")
+      }
+    end)
 
     phone = Contact
     |> where([c], c.id == ^org.contact_id)
@@ -661,7 +669,13 @@ defmodule Glific.Templates do
     |> select([st], st.bsp_id)
     |> Repo.one()
 
-    mail = ReportGupshupMail.templates_approval_mail(org, app_id, app_name, phone, bsp_id, cc)
+    opts = [
+      phone: phone,
+      bsp_id: bsp_id,
+      cc: cc
+    ]
+
+    mail = ReportGupshupMail.templates_approval_mail(org, app_id, app_name, opts)
     |> Mailer.send(%{
       category: "report_gupshup",
       organization_id: org_id
