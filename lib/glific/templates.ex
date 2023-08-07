@@ -644,9 +644,9 @@ defmodule Glific.Templates do
   @doc """
   Report mail to gupshup
   """
-  @spec report_to_gupshup(non_neg_integer(), non_neg_integer(), [String.t()])
+  @spec report_to_gupshup(non_neg_integer(), non_neg_integer(), [tuple()] | [])
   :: {:ok, any} | {:error, any}
-  def report_to_gupshup(org_id, template_id, cc) do
+  def report_to_gupshup(org_id, template_id, cc \\ []) do
     org = Partners.organization(org_id)
 
     phone = Contact

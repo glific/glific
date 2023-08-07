@@ -4,14 +4,15 @@ defmodule Glific.Mails.ReportGupshupMail do
   """
   alias Glific.{Communications.Mailer, Partners.Organization}
 
-  @gupshup_support {"Gupshup Dev Support", "devsupport@gupshup.io"}
+  @gupshup_support {"ABC", "darshanjain727@gmail.com"}
+  # @gupshup_support {"Gupshup Dev Support", "devsupport@gupshup.io"}
   @sender {"Glific support", "mohit@coloredcow.in"}
 
   @doc """
   Sends a mail to the Gupshup support team whenever issue arises related to approval of the template
   """
-  @spec templates_approval_mail(Organization.t(), String.t(), String.t(), String.t(), String.t(), [String.t()]) :: Swoosh.Email.t()
-  def templates_approval_mail(org, app_id, app_name, phone, bsp_id, cc) do
+  @spec templates_approval_mail(Organization.t(), String.t(), String.t(), String.t(), String.t(), [tuple()] | []) :: Swoosh.Email.t()
+  def templates_approval_mail(org, app_id, app_name, phone, bsp_id, cc \\ []) do
     subject = "Issue Regarding templates approval"
 
     body = """
@@ -25,6 +26,6 @@ defmodule Glific.Mails.ReportGupshupMail do
     4. Rejected Template ID: #{bsp_id}
     """
 
-    Mailer.common_send(org, subject, body, @gupshup_support, cc, @sender)
+    Mailer.common_send(org, nil, subject, body, @gupshup_support, cc, @sender)
   end
 end

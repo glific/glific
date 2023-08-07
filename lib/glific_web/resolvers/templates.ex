@@ -130,7 +130,7 @@ defmodule GlificWeb.Resolvers.Templates do
   """
   @spec report_to_gupshup(
           Absinthe.Resolution.t(),
-          %{template_id: non_neg_integer(), details: String.t(), cc: [String.t()]},
+          map(),
           %{context: map()}
         ) :: {:ok, any} | {:error, any}
   def report_to_gupshup(_, attr, %{context: %{current_user: user}}) do
