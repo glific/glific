@@ -76,7 +76,7 @@ defmodule Glific.Clients.Bandhu do
     |> Map.put(:success, true)
   end
 
-  defp parse_bandhu_json(%{success: false} = json),
+  defp parse_bandhu_json(%{success: false} = _json),
     do: %{success: false, response: "Error Json received"}
 
   defp format_profile_message(profiles) do
