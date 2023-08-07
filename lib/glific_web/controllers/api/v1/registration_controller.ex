@@ -21,7 +21,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
     Contacts.Contact,
     Partners,
     Repo,
-    Tags,
     Users,
     Users.User
   }
@@ -74,10 +73,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
     |> Pow.Plug.create_user(updated_user_params)
     |> case do
       {:ok, user, conn} ->
-        {:ok, _} =
-          user
-          |> Users.promote_first_user()
-          |> add_staff_tag_to_user_contact()
+        Users.promote_first_user(user)
 
         response_data = %{
           data: %{
@@ -94,22 +90,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
         {:error, errors}
     end
-  end
-
-  @doc false
-  @spec add_staff_tag_to_user_contact(User.t()) :: {:ok, String.t()}
-  defp add_staff_tag_to_user_contact(user) do
-    with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{phone: user.phone, organization_id: user.organization_id}),
-         {:ok, tag} <-
-           Repo.fetch_by(Tags.Tag, %{label: "Staff", organization_id: user.organization_id}),
-         {:ok, _} <-
-           Tags.create_contact_tag(%{
-             contact_id: contact.id,
-             tag_id: tag.id,
-             organization_id: user.organization_id
-           }),
-         do: {:ok, "Staff tag added to the user contact"}
   end
 
   # we need to give user permissions here so we can retrieve and send messages

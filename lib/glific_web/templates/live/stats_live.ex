@@ -60,8 +60,8 @@ defmodule GlificWeb.StatsLive do
         labels: fetch_date_labels("contacts", org_id)
       },
       conversation_chart_data: %{
-        data: fetch_date_formatted_data("messages_conversations", org_id),
-        labels: fetch_date_labels("messages_conversations", org_id)
+        data: fetch_date_formatted_data("stats", org_id),
+        labels: fetch_date_labels("stats", org_id)
       },
       messages_chart_data: %{
         data: fetch_hourly_data(org_id),

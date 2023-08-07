@@ -11,6 +11,7 @@ defmodule Glific.Stats do
     BigQuery.BigQueryWorker,
     Flows.FlowContext,
     Messages.Message,
+    Messages.MessageConversation,
     Partners,
     Partners.Saas,
     Repo,
@@ -130,7 +131,8 @@ defmodule Glific.Stats do
       :outbound,
       :hsm,
       :flows_started,
-      :flows_completed
+      :flows_completed,
+      :conversations
     ]
 
     Enum.all?(keys, fn k -> Map.get(stat, k) == 0 end)
@@ -193,7 +195,8 @@ defmodule Glific.Stats do
       hour: if(period == :hour, do: date.hour, else: 0),
       organization_id: organization_id,
       inserted_at: now,
-      updated_at: now
+      updated_at: now,
+      conversations: 0
     }
   end
 
@@ -219,6 +222,7 @@ defmodule Glific.Stats do
     |> empty_stats(org_id_list, period_date)
     |> get_contact_stats(org_id_list, {period_date, start, finish})
     |> get_message_stats(org_id_list, {period_date, start, finish})
+    |> get_conversation_stats(org_id_list, {period_date, start, finish})
     |> get_flow_stats(org_id_list, {period_date, start, finish})
     |> get_user_stats(org_id_list, {period_date, start, finish})
   end
@@ -384,6 +388,28 @@ defmodule Glific.Stats do
     |> make_result(inbound, period_date, :inbound)
     |> make_result(outbound, period_date, :outbound)
     |> make_result(hsm, period_date, :hsm)
+  end
+
+  @spec get_conversation_stats(map(), list(), {tuple(), DateTime.t(), DateTime.t()}) :: map()
+  defp get_conversation_stats(stats, org_id_list, {period_date, start, finish}) do
+    query =
+      MessageConversation
+      |> where([c], c.organization_id in ^org_id_list)
+      |> group_by([c], c.organization_id)
+      |> select([c], [count(c.id), c.organization_id])
+
+    {period, _date} = period_date
+
+    time_query =
+      if period == :summary,
+        do: query,
+        else:
+          query
+          |> where([c], c.inserted_at >= ^start)
+          |> where([c], c.inserted_at <= ^finish)
+
+    stats
+    |> make_result(time_query, period_date, :conversations)
   end
 
   @spec get_flow_stats(map(), list(), {tuple(), DateTime.t(), DateTime.t()}) :: map()

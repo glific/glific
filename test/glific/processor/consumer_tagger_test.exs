@@ -6,7 +6,6 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     Processor.ConsumerTagger,
     Repo,
     Seeds.SeedsDev,
-    Tags.MessageTag,
     Tags.Tag
   }
 
@@ -48,9 +47,6 @@ defmodule Glific.Processor.ConsumerTaggerTest do
         ConsumerTagger.process_message({message, state}, message.body)
       end
     )
-
-    # ensure we have a few message tags in the DB
-    assert Repo.aggregate(MessageTag, :count) > 0
 
     # check the message tags
     tags = ["language", "unread", "greeting", "thankyou", "numeric", "goodbye"]

@@ -32,7 +32,7 @@ oban_queues = [
   crontab: 10,
   default: 10,
   dialogflow: 5,
-  gcs: 5,
+  gcs: 10,
   gupshup: 10,
   webhook: 10,
   broadcast: 5
