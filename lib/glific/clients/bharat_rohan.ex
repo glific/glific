@@ -47,27 +47,26 @@ defmodule Glific.Clients.BharatRohan do
     days_map = Map.get(weather_report, "days", %{})
     days = Map.values(days_map)
 
-    _formatted_output =
-      Enum.reduce(days, "", fn day, acc ->
-        windspeed = Map.get(day, "windspeed", "")
-        winddir = Map.get(day, "winddir", "")
-        tempmin = Map.get(day, "tempmin", "")
-        tempmax = Map.get(day, "tempmax", "")
-        datetime = Map.get(day, "datetime", "")
-        precipitation = Map.get(day, "precip", "")
-        humidity = Map.get(day, "humidity", "")
+    Enum.reduce(days, "", fn day, acc ->
+      windspeed = Map.get(day, "windspeed", "")
+      winddir = Map.get(day, "winddir", "")
+      tempmin = Map.get(day, "tempmin", "")
+      tempmax = Map.get(day, "tempmax", "")
+      datetime = Map.get(day, "datetime", "")
+      precipitation = Map.get(day, "precip", "")
+      humidity = Map.get(day, "humidity", "")
 
-        line = """
-        *Date:* #{datetime}
-        *Min Temperature:* #{tempmin} °C
-        *Max Temperature:* #{tempmax} °C
-        *Precipitation:* #{precipitation} mm
-        *Humidity:* #{humidity} %
-        *Wind speed:* #{windspeed} km/h
-        *Wind Direction:* #{winddir} °
-        """
+      line = """
+      *Date:* #{datetime}
+      *Min Temperature:* #{tempmin} °C
+      *Max Temperature:* #{tempmax} °C
+      *Precipitation:* #{precipitation} mm
+      *Humidity:* #{humidity} %
+      *Wind speed:* #{windspeed} km/h
+      *Wind Direction:* #{winddir} °
+      """
 
-        acc <> line <> "\n\n"
-      end)
+      acc <> line <> "\n\n"
+    end)
   end
 end
