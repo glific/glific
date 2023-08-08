@@ -305,7 +305,22 @@ defmodule Glific.Reports do
     Contact
     |> select([q], [q.id, q.name, q.phone, q.optin_status])
   end
-  
+
+  defp get_export_query(:notifications)  do
+    Notification
+    |> select([q], [q.id, q.category, q.severity])
+  end
+
+  defp get_export_query(:messages) do
+    Stat
+    |> select([q], [q.id, q.inbound, q.outbound])
+  end
+
+  defp get_export_query(:contact_type) do
+    Contact
+    |> select([q], [q.id, q.name, q.phone, q.bsp_status])
+  end
+
   @spec shifted_time(NaiveDateTime.t(), integer()) :: NaiveDateTime.t()
   defp shifted_time(time, days) do
     time

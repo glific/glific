@@ -44,8 +44,35 @@ defmodule GlificWeb.StatsLive do
   end
 
   defp get_export_data(:optin, org_id) do
-    result = Reports.get_export_data(:optin, org_id)
-    [["ID", "Name", "Phone", "Optin Status"] | result]
+    Reports.get_export_data(:optin, org_id)
+    |> List.insert_at(0, ["ID", "Name", "Phone", "Optin Status"])
+  end
+
+  defp get_export_data(:contacts, org_id) do
+    Reports.get_kpi_data(org_id, "contacts")
+    |> Enum.map(fn {date, count} -> [date, count] end)
+    |> List.insert_at(0, ["Date", "Number"])
+  end
+
+  defp get_export_data(:conversations, org_id) do
+    Reports.get_kpi_data(org_id, "messages_conversations")
+    |> Enum.map(fn {date, count} -> [date, count] end)
+    |> List.insert_at(0, ["Date", "Number"])
+  end
+
+  defp get_export_data(:notifications, org_id) do
+    Reports.get_export_data(:notifications, org_id)
+    |> List.insert_at(0, ["ID", "Category", "Severity"])
+  end
+
+  defp get_export_data(:messages, org_id) do
+    Reports.get_export_data(:messages, org_id)
+    |> List.insert_at(0, ["ID", "Inbound", "Outbound"])
+  end
+
+  defp get_export_data(:contact_type, org_id) do
+    Reports.get_export_data(:contact_type, org_id)
+    |> List.insert_at(0, ["ID", "Name", "Phone", "BSP Status"])
   end
 
   @spec assign_stats(Phoenix.LiveView.Socket.t(), atom()) :: Phoenix.LiveView.Socket.t()
