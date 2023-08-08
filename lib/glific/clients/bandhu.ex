@@ -88,9 +88,13 @@ defmodule Glific.Clients.Bandhu do
 
   @spec parse_bandhu_json(map()) :: map()
   defp parse_bandhu_json(%{success: true} = json) do
-    json["answer"]
-    |> Jason.decode!()
-    |> Map.put(:success, true)
+    case Jason.decode(json["answer"]) do
+      {:ok, decoded_response} ->
+        Map.put(decoded_response, :success, true)
+
+      {:error, _} ->
+        Map.put(%{response: json["answer"]}, :success, false)
+    end
   end
 
   defp parse_bandhu_json(%{success: false} = _json),
