@@ -75,6 +75,11 @@ defmodule GlificWeb.StatsLive do
     |> List.insert_at(0, ["ID", "Name", "Phone", "BSP Status"])
   end
 
+  defp get_export_data(:table, org_id) do
+    fetch_table_data(:broadcasts, org_id)
+    |> List.insert_at(0, ["Flow Name", "Group Name", "Started At", "Completed At"])
+  end
+
   @spec assign_stats(Phoenix.LiveView.Socket.t(), atom()) :: Phoenix.LiveView.Socket.t()
   defp assign_stats(socket, :init) do
     stats = Enum.map(Reports.kpi_list(), &{&1, "loading.."})
