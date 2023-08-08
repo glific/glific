@@ -53,18 +53,26 @@ defmodule Glific.Communications.Mailer do
   Lets write a common function and centralize notification
   code
   """
-  @spec common_send(Organization.t(), String.t() | nil, String.t(), String.t(), tuple() | nil) ::
+  @spec common_send(Organization.t(), String.t(), String.t(), [{atom(), any()}]) ::
           Swoosh.Email.t()
-  def common_send(org, team \\ nil, subject, body, send_to \\ nil) do
+  def common_send(org, subject, body, opts \\ []) do
+
+    team = Keyword.get(opts, :team, nil)
+    send_to = Keyword.get(opts, :send_to, nil)
+    in_cc = Keyword.get(opts, :in_cc, [])
+    from_email = Keyword.get(opts, :from_email, sender())
+
     # Subject can not have a line break
     subject = String.replace(subject, "\n", "")
 
     send_to = get_team_email(org, team, send_to)
 
+    in_cc = in_cc ++ [glific_support()]
+
     new()
     |> to(send_to)
-    |> from(sender())
-    |> cc(glific_support())
+    |> from(from_email)
+    |> cc(in_cc)
     |> subject(subject)
     |> text_body(body)
   end

@@ -1295,5 +1295,15 @@ defmodule Glific.TemplatesTest do
                buttons: buttons
              }
     end
+
+    test "report_to_gupshup/3 report mail to gupshup", attrs do
+      template = session_template_fixture(Map.merge(attrs, @valid_attrs_1))
+
+      %{id: temp_id} = template
+      %{organization_id: org_id} = attrs
+
+      cc = %{"test" => "test@test.com"}
+      assert {:ok, %{message: _}} = Templates.report_to_gupshup(org_id, temp_id, cc)
+    end
   end
 end
