@@ -678,7 +678,7 @@ defmodule Glific.Templates do
            organization_id: org_id
          }) do
       {:ok, %{id: _id}} -> {:ok, %{message: "Successfully sent mail to Gupshup Support"}}
-      error -> error
+      error -> {:ok, %{message: error}}
     end
   end
 end
