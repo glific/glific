@@ -180,17 +180,19 @@ defmodule Glific.Reports do
     iex> Glific.Reports.get_kpi_data(1, "optout")
     iex> Glific.Reports.get_kpi_data(1, "contact_type")
   """
-  @spec get_kpi_data(non_neg_integer(), String.t()) :: map()
+  @spec get_kpi_data(non_neg_integer(), String.t()) :: list()
   def get_kpi_data(org_id, table) do
     presets = get_date_preset()
+    Repo.put_process_state(org_id)
 
     query_data =
       get_kpi_query(presets, table, org_id)
-      |> Repo.query!([])
+      |> Repo.all()
 
-    Enum.reduce(query_data.rows, presets.date_map, fn [date, count], acc ->
-      Map.put(acc, Timex.format!(date, "{0D}-{0M}-{YYYY}"), count)
+    Enum.reduce(query_data, presets.date_map, fn %{count: count, date: date}, acc ->
+      Map.put(acc, date, count)
     end)
+    |> Enum.map(fn {k, v} -> {Timex.format!(k, "{0D}-{0M}-{YYYY}"), v} end)
   end
 
   @spec get_kpi_query(map(), String.t(), non_neg_integer()) :: String.t()
@@ -207,16 +209,14 @@ defmodule Glific.Reports do
   end
 
   defp get_kpi_query(presets, table, org_id) do
-    """
-    SELECT date_trunc('day', inserted_at) as date,
-    COUNT(id) as count
-    FROM #{table}
-    WHERE
-      inserted_at > '#{presets.last_day}'
-      AND inserted_at <= '#{presets.today}'
-      AND organization_id = #{org_id}
-    GROUP BY inserted_at
-    """
+    from(
+      t in table,
+      where:
+        t.inserted_at > ^presets.last_day and t.inserted_at <= ^presets.today and
+          t.organization_id == ^org_id,
+      group_by: fragment("date_trunc('day', ?)", t.inserted_at),
+      select: %{date: fragment("date_trunc('day', ?)", t.inserted_at), count: count(t.id)}
+    )
   end
 
   @doc false
@@ -271,31 +271,29 @@ defmodule Glific.Reports do
   end
 
   @doc false
-  @spec get_contact_data(non_neg_integer()) :: map()
+  @spec get_contact_data(non_neg_integer()) :: list()
   def get_contact_data(org_id) do
     get_count_query(:bsp_status)
     |> where([q], q.organization_id == ^org_id)
     |> Repo.all()
   end
 
-  @spec get_date_preset(DateTime.t()) :: map()
-  defp get_date_preset(time \\ DateTime.utc_now()) do
-    today = shifted_time(time, 1) |> Timex.format!("{YYYY}-{0M}-{0D}")
+  defp get_date_preset(time \\ NaiveDateTime.utc_now()) do
+    today = shifted_time(time, 1)
 
-    last_day = shifted_time(time, -6) |> Timex.format!("{YYYY}-{0M}-{0D}")
+    last_day = shifted_time(time, -6)
 
     date_map =
       Enum.reduce(0..6, %{}, fn day, acc ->
         time
         |> shifted_time(-day)
-        |> Timex.format!("{0D}-{0M}-{YYYY}")
         |> then(&Map.put(acc, &1, 0))
       end)
 
     %{today: today, last_day: last_day, date_map: date_map}
   end
 
-  @spec shifted_time(DateTime.t(), integer()) :: DateTime.t()
+  @spec shifted_time(NaiveDateTime.t(), integer()) :: NaiveDateTime.t()
   defp shifted_time(time, days) do
     time
     |> Timex.beginning_of_day()
