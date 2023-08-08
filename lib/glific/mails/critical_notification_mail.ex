@@ -22,6 +22,6 @@ defmodule Glific.Mails.CriticalNotificationMail do
     The Glific team
     """
 
-    Mailer.common_send(org, subject, body, [team: team])
+    Mailer.common_send(org, subject, body, team: team)
   end
 end
