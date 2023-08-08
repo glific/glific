@@ -212,7 +212,7 @@ defmodule GlificWeb.StatsLive do
   end
 
   defp fetch_count_data(:contact_type, org_id) do
-    [[_, v1], [_, v2]] = Reports.get_contact_data(org_id)
-    [{"Session and HSM: #{v1}", v1}, {"None: #{v2}", v2}]
+    [[_, v1], [_, v2], [_, v3] | _] = Reports.get_contact_data(org_id)
+    [{"HSM: #{v1}", v1}, {"Session and HSM: #{v2}", v2}, {"None: #{v3}", v3}]
   end
 end
