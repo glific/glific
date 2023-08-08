@@ -18,7 +18,8 @@ defmodule Glific.Templates do
     Templates.SessionTemplate,
     Mails.ReportGupshupMail,
     Communications.Mailer,
-    Contacts.Contact
+    Contacts.Contact,
+    Mails.MailLog
   }
 
   require Logger
@@ -672,13 +673,22 @@ defmodule Glific.Templates do
       cc: cc
     ]
 
-    case ReportGupshupMail.templates_approval_mail(org, app_id, app_name, opts)
+    ## We need to check if we have already sent this notification in last go_back time
+    go_back = 24
+    category = "report_gupshup"
+    time = Glific.go_back_time(go_back)
+
+    if MailLog.mail_sent_in_past_time?(category, time, org_id) == false do
+      case ReportGupshupMail.templates_approval_mail(org, app_id, app_name, opts)
          |> Mailer.send(%{
-           category: "report_gupshup",
+           category: category,
            organization_id: org_id
          }) do
       {:ok, %{id: _id}} -> {:ok, %{message: "Successfully sent mail to Gupshup Support"}}
       error -> {:ok, %{message: error}}
+      end
+    else
+      IO.puts("no email")
     end
   end
 end
