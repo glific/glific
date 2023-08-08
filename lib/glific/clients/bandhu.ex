@@ -7,6 +7,8 @@ defmodule Glific.Clients.Bandhu do
 
   alias Glific.Clients.CommonWebhook
 
+  @housing_url "https://housing.bandhumember.work/api/housing/create_sql_query_from_json"
+
   @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
@@ -62,7 +64,37 @@ defmodule Glific.Clients.Bandhu do
   def webhook("jugalbandi", fields), do: CommonWebhook.webhook("jugalbandi", fields)
   def webhook("jugalbandi-voice", fields), do: CommonWebhook.webhook("jugalbandi-voice", fields)
 
+  def webhook("jugalbandi-json", fields) do
+    CommonWebhook.webhook("jugalbandi", fields)
+    |> parse_bandhu_json()
+  end
+
+  def webhook("housing_sql", fields) do
+    header = [{"Content-Type", "application/json"}]
+
+    Tesla.post(@housing_url, Jason.encode!(fields), headers: header)
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        Jason.decode!(body)
+        |> get_in(["data"])
+        |> hd
+
+      {_status, _response} ->
+        %{success: false, response: "Error response received"}
+    end
+  end
+
   def webhook(_, _fields), do: %{}
+
+  @spec parse_bandhu_json(map()) :: map()
+  defp parse_bandhu_json(%{success: true} = json) do
+    json["answer"]
+    |> Jason.decode!()
+    |> Map.put(:success, true)
+  end
+
+  defp parse_bandhu_json(%{success: false} = _json),
+    do: %{success: false, response: "Error Json received"}
 
   defp format_profile_message(profiles) do
     profiles
