@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "5.4.1",
+      version: "5.4.2",
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -157,7 +157,8 @@ defmodule Glific.MixProject do
       {:gen_smtp, "~> 1.1"},
       {:glific_phil_columns, "~> 3.2"},
       {:glific_forked_waffle_gcs, "~> 0.1.1"},
-      {:pow, git: "https://github.com/glific/pow.git"}
+      {:pow, git: "https://github.com/glific/pow.git"},
+      {:contex, "~> 0.5.0"}
     ]
   end
 

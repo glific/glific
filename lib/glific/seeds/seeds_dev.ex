@@ -1187,7 +1187,8 @@ if Code.ensure_loaded?(Faker) do
         flows_completed: 10,
         users: 7,
         hour: 0,
-        organization_id: organization.id
+        organization_id: organization.id,
+        conversations: 0
       })
     end
 

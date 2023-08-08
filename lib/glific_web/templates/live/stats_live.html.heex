@@ -27,65 +27,25 @@ Commented out the filter code. Will add this once the functionality is ready
 </div>
 -->
 <div>
-  <div class="flex content-center justify-center flex-wrap" id="charts" phx-update="ignore">
-    <canvas
-      class="card"
-      id="contacts_chart"
-      phx-hook="barChart"
-      data-label="Contacts"
-      data-chart-data={Jason.encode!(@contact_chart_data)}
-    >
-    </canvas>
-    <canvas
-      class="card"
-      id="conversation_chart"
-      phx-hook="barChart"
-      data-label="Conversations"
-      data-chart-data={Jason.encode!(@conversation_chart_data)}
-    >
-    </canvas>
-    <canvas
-      class="card"
-      id="message_chart"
-      phx-hook="barChart"
-      data-label="Messages"
-      data-chart-data={Jason.encode!(@messages_chart_data)}
-    >
-    </canvas>
-    <div>
-      <canvas
-        class="card"
-        id="optin_chart"
-        phx-hook="pieChart"
-        data-label="Optin"
-        data-chart-data={Jason.encode!(@optin_chart_data)}
-      >
-      </canvas>
+  <div class="flex content-center justify-center flex-wrap" id="charts">
+    <div id="contact-chart" class="card">
+      <%= @contact_chart_svg %>
     </div>
-    <canvas
-      class="card"
-      id="message_type_chart"
-      phx-hook="pieChart"
-      data-label="MessageType"
-      data-chart-data={Jason.encode!(@message_type_chart_data)}
-    >
-    </canvas>
-    <canvas
-      class="card"
-      id="notification_chart"
-      phx-hook="pieChart"
-      data-label="Notification Chart"
-      data-chart-data={Jason.encode!(@notification_chart_data)}
-    >
-    </canvas>
-    <canvas
-      class="card"
-      id="contact_pie_chart"
-      phx-hook="pieChart"
-      data-label="Contact Status Chart"
-      data-chart-data={Jason.encode!(@contact_pie_chart_data)}
-    >
-    </canvas>
+    <div id="conversation-chart" class="card">
+      <%= @conversation_chart_svg %>
+    </div>
+    <div id="optin-chart" class="card">
+      <%= @optin_chart_svg %>
+    </div>
+    <div id="notification-chart" class="card">
+      <%= @notification_chart_svg %>
+    </div>
+    <div id="notification-chart" class="card">
+      <%= @message_chart_svg %>
+    </div>
+    <div id="notification-chart" class="card">
+      <%= @contact_type_chart_svg %>
+    </div>
   </div>
 </div>
 
