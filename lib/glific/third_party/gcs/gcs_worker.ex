@@ -89,9 +89,9 @@ defmodule Glific.GCS.GcsWorker do
     Application.fetch_env!(:glific, :gcs_file_count)
     |> Glific.parse_maybe_integer()
     |> case do
-      {:ok, nil} -> 5
+      {:ok, nil} -> 10
       {:ok, count} -> count
-      _ -> 5
+      _ -> 10
     end
   end
 
@@ -104,8 +104,8 @@ defmodule Glific.GCS.GcsWorker do
       MessageMedia
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
-      |> where([m, msg], msg.organization_id == ^organization_id)
-      |> where([m, msg], msg.flow == :inbound)
+      |> where([m, _msg], m.organization_id == ^organization_id)
+      |> where([m, _msg], m.flow == :inbound)
       |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id, msg.flow_id])
       |> order_by([m], [m.inserted_at, m.id])
 
