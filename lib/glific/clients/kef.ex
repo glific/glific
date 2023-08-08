@@ -18,7 +18,6 @@ defmodule Glific.Clients.KEF do
   }
 
   @worksheet_flow_ids [8880, 8176]
-  @video_flow_ids [8750, 8842, 8911]
 
   @props %{
     worksheets: %{
@@ -108,8 +107,12 @@ defmodule Glific.Clients.KEF do
     {:ok, "Worksheets/#{current_worksheet_code}"}
   end
 
-  defp get_flow_subfolder(flow_id, _current_worksheet_code) when flow_id in @video_flow_ids do
-    {:ok, "Videos"}
+  defp get_flow_subfolder(8842, _current_worksheet_code) do
+    {:ok, "Videos/Video 1"}
+  end
+
+  defp get_flow_subfolder(9870, _current_worksheet_code) do
+    {:ok, "Videos/Video 2"}
   end
 
   defp get_flow_subfolder(_flow_id, nil), do: {:ok, "Others"}
