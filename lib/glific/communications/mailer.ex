@@ -9,6 +9,8 @@ defmodule Glific.Communications.Mailer do
 
   require Logger
 
+  @type options :: {:my_option, any()}
+
   @moduledoc """
   This module provides a simple interface for sending emails.
   """
@@ -53,7 +55,7 @@ defmodule Glific.Communications.Mailer do
   Lets write a common function and centralize notification
   code
   """
-  @spec common_send(Organization.t(), String.t(), String.t(), [keyword()]) ::
+  @spec common_send(Organization.t(), String.t(), String.t(), [options]) ::
           Swoosh.Email.t()
   def common_send(org, subject, body, opts \\ []) do
 

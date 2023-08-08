@@ -134,13 +134,10 @@ defmodule GlificWeb.Resolvers.Templates do
           %{context: map()}
         ) :: {:ok, any} | {:error, any}
   def report_to_gupshup(_, attr, %{context: %{current_user: user}}) do
-    case Templates.report_to_gupshup(
-           user.organization_id,
-           Map.get(attr, :template_id),
-           Map.get(attr, :cc, [])
-         ) do
-      {:ok, %{id: id}} -> {:ok, %{message: id}}
-      error -> error
-    end
+    Templates.report_to_gupshup(
+      user.organization_id,
+      Map.get(attr, :template_id),
+      Map.get(attr, :cc, %{})
+    )
   end
 end

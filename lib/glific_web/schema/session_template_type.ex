@@ -160,11 +160,6 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :language_id, :id
   end
 
-  input_object :cc_input do
-    field :name, :string
-    field :email, :string
-  end
-
   object :session_template_queries do
     field :whatsapp_hsm_categories, list_of(:string) do
       middleware(Authorize, :manager)
@@ -251,7 +246,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
 
     field :report_to_gupshup, :report_to_gupshup_result do
       arg(:template_id, non_null(:id))
-      arg(:cc, list_of(:cc_input))
+      arg(:cc, :json)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Templates.report_to_gupshup/3)
     end
