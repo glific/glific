@@ -644,25 +644,27 @@ defmodule Glific.Templates do
   @doc """
   Report mail to gupshup
   """
-  @spec report_to_gupshup(non_neg_integer(), non_neg_integer(), map())
-  :: {:ok, any} | {:error, any}
+  @spec report_to_gupshup(non_neg_integer(), non_neg_integer(), map()) ::
+          {:ok, any} | {:error, any}
   def report_to_gupshup(org_id, template_id, cc \\ %{}) do
-
     org = Partners.organization(org_id)
 
     cc = Map.to_list(cc)
 
-    phone = Contact
-    |> where([c], c.id == ^org.contact_id)
-    |> select([c], c.phone)
-    |> Repo.one()
+    phone =
+      Contact
+      |> where([c], c.id == ^org.contact_id)
+      |> select([c], c.phone)
+      |> Repo.one()
 
-    %{"app_id" => app_id, "app_name" => app_name} = org.services["gupshup"].secrets
+    app_id = Map.get(org.services["gupshup"].secrets, "app_id")
+    app_name = Map.get(org.services["gupshup"].secrets, "app_name")
 
-    bsp_id = SessionTemplate
-    |> where([st], st.id == ^template_id)
-    |> select([st], st.bsp_id)
-    |> Repo.one()
+    bsp_id =
+      SessionTemplate
+      |> where([st], st.id == ^template_id)
+      |> select([st], st.bsp_id)
+      |> Repo.one()
 
     opts = [
       phone: phone,
@@ -670,12 +672,13 @@ defmodule Glific.Templates do
       cc: cc
     ]
 
-    {:ok, %{id: _id}} = ReportGupshupMail.templates_approval_mail(org, app_id, app_name, opts)
-    |> Mailer.send(%{
-      category: "report_gupshup",
-      organization_id: org_id
-    })
-
-    {:ok, %{message: "Successfully sent mail to Gupshup Support"}}
+    case ReportGupshupMail.templates_approval_mail(org, app_id, app_name, opts)
+         |> Mailer.send(%{
+           category: "report_gupshup",
+           organization_id: org_id
+         }) do
+      {:ok, %{id: _id}} -> {:ok, %{message: "Successfully sent mail to Gupshup Support"}}
+      error -> error
+    end
   end
 end

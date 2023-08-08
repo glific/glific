@@ -10,7 +10,7 @@ defmodule Glific.Mails.ReportGupshupMail do
   @doc """
   Sends a mail to the Gupshup support team whenever issue arises related to approval of the template
   """
-  @spec templates_approval_mail(Organization.t(), String.t(), String.t(), [keyword()]) :: Swoosh.Email.t()
+  @spec templates_approval_mail(Organization.t(), String.t(), String.t(), [{atom(), any()}]) :: Swoosh.Email.t()
   def templates_approval_mail(org, app_id, app_name, opts \\ []) do
     subject = "Issue Regarding templates approval"
 
