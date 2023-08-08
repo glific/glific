@@ -16,6 +16,9 @@ defmodule Glific.GCS.GcsWorker do
     priority: 2
 
   alias Waffle.Storage.Google.CloudStorage
+  alias GoogleApi.Storage.V1.{
+    Connection
+  }
 
   alias Glific.{
     BigQuery,
@@ -31,16 +34,34 @@ defmodule Glific.GCS.GcsWorker do
   @provider_shortcode "google_cloud_storage"
   @base_url "https://oauth2.googleapis.com/token"
 
+  def delete_object(bucket_name, object_name) do
+
+    # connection = GoogleApi.Storage.V1.Connection.new()|>IO.inspect()
+    connection = Connection.new()
+
+
+    case GoogleApi.Storage.V1.Api.Objects.storage_objects_delete(
+           connection,
+           bucket_name,
+           object_name
+         ) do
+      {:ok, _response} ->
+        IO.puts("Object #{object_name} deleted successfully from bucket #{bucket_name}")
+      {:error, error} ->
+        IO.puts("Error deleting object: #{inspect(error)}")
+    end
+  end
+
   @spec transfer_to_bucket(remote_url :: String.t(), bucket_name :: String.t(), organization_id :: non_neg_integer()) ::
           :ok | {:error, term}
   def transfer_to_bucket(remote_url, bucket_name, organization_id) do
     # access_token = get_access_token()
     access_token = get_token("#{organization_id}")
-    project_id = System.fetch_env!("PROJECT_ID")
+    # project_id = System.fetch_env!("PROJECT_ID")
     transfer_request = %{
       "description" => "Transfer from remote URL to Cloud Storage Bucket",
       "status" => "ENABLED",
-      "projectId" => project_id,
+      "projectId" => "tides-saas-309509",
       # any past date works here to run the transfer only once or can still look for better way?
       "schedule" => %{
         "scheduleStartDate" => %{
@@ -458,10 +479,19 @@ defmodule Glific.GCS.GcsWorker do
     IO.inspect url
     # IO.inspect Glific.Media.bucket()
     bucket_name = Glific.Media.bucket({"", "#{organization_id}"})
+
     #transfering all the files listed on tsv file to bucket
     transfer_to_bucket(url, bucket_name, organization_id)
+    Enum.map(urls, fn(url) -> generate_public_url(url, bucket_name)  end)
+
   end
-end
+
+  # @spec generate_public_url(remote_url :: String.t()) :: String.t()
+  def generate_public_url(remote_url, bucket_name) do
+    "https://storage.googleapis.com/#{bucket_name}" <> String.replace_prefix(remote_url, "https://", "/")
+  end
+
+# Glific.GCS.GcsWorker.generate_public_url(remote_url,"grasshopper2022")remote_url = "https://filemanager.gupshup.io/fm/wamedia/ColoredCow/1099e8e4-83e9-4169-b260-ceb394d6574f"
 
 #This data could be use for testing
 # urls = [
