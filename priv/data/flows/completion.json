@@ -149,6 +149,11 @@
           "type": "text"
         },
         {
+          "key": "active_profile_id",
+          "help": "the active profile id of the contact",
+          "type": "text"
+        },
+        {
           "key": "language",
           "help": "the language of the contact as 3-letter ISO code",
           "type": "text"
