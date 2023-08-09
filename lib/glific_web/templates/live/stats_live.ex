@@ -132,19 +132,12 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  defp no_data?([{_, v1}, {_, v2}]) do
-    [0, 0] == [v1, v2] or (is_nil(v1) and is_nil(v2))
-  end
-
-  defp no_data?([{_, v1}, {_, v2}, {_, v3}]) do
-    [0, 0, 0] == [v1, v2, v3] or (is_nil(v1) and is_nil(v2) and is_nil(v3))
-  end
-
   defp render_pie_chart(title, dataset) do
     opts = piechart_opts(title)
     plot = Contex.Plot.new(dataset, Contex.PieChart, 500, 400, opts)
+    has_no_data = Enum.any?(dataset.data, fn {_label, value} -> is_nil(value) end)
 
-    if no_data?(dataset.data) do
+    if has_no_data do
       Jason.encode!(title <> ": No data")
     else
       Contex.Plot.to_svg(plot)
@@ -212,7 +205,17 @@ defmodule GlificWeb.StatsLive do
   end
 
   defp fetch_count_data(:contact_type, org_id) do
-    [[_, v1], [_, v2], [_, v3] | _] = Reports.get_contact_data(org_id)
-    [{"HSM: #{v1}", v1}, {"Session and HSM: #{v2}", v2}, {"None: #{v3}", v3}]
+    Reports.get_contact_data(org_id)
+    |> Enum.reduce([], fn [status, count], acc ->
+      contact_status =
+        case status do
+          :none -> "None"
+          :session_and_hsm -> "Session and HSM"
+          :hsm -> "HSM"
+          :session -> "Session"
+        end
+
+      acc ++ [{"#{contact_status}: #{count}", count}]
+    end)
   end
 end
