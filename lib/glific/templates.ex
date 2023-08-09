@@ -673,28 +673,25 @@ defmodule Glific.Templates do
       cc: cc
     ]
 
+    time = Glific.go_back_time(24)
     ## We need to check if we have already sent this notification in last go_back time
-    go_back = 24
-    category = "report_gupshup"
-    time = Glific.go_back_time(go_back)
+    if MailLog.mail_sent_in_past_time?("report_gupshup", time, org.id) do
+      {:error, "Already a template has been raised to Gupshup in last 24hrs"}
+    else
+      raise_to_gupshup(org, app_id, app_name, opts)
+    end
+  end
 
-    case MailLog.mail_sent_in_past_time?(category, time, org_id) do
-      false ->
-        {:ok, result} =
-          ReportGupshupMail.templates_approval_mail(org, app_id, app_name, opts)
-          |> Mailer.send(%{
-            category: category,
-            organization_id: org_id
-          })
-
-        if result == :ok do
-          {:ok, %{message: "Successfully sent mail to Gupshup Support"}}
-        else
-          {:error, "couldn't send mail"}
-        end
-
-      _ ->
-        {:ok, "no email"}
+  @spec raise_to_gupshup(Organization.t(), String.t(), String.t(), Keyword.t()) ::
+          {:ok, any()} | {:error, any()}
+  defp raise_to_gupshup(org, app_id, app_name, opts) do
+    case ReportGupshupMail.raise_to_gupshup(org, app_id, app_name, opts)
+         |> Mailer.send(%{
+           category: "report_gupshup",
+           organization_id: org.id
+         }) do
+      {:ok, %{id: _id}} -> {:ok, %{message: "Successfully sent mail to Gupshup Support"}}
+      error -> {:ok, %{message: error}}
     end
   end
 end
