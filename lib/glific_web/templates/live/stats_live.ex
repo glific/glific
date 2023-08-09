@@ -206,7 +206,6 @@ defmodule GlificWeb.StatsLive do
 
   defp fetch_count_data(:contact_type, org_id) do
     Reports.get_contact_data(org_id)
-    |> IO.inspect()
     |> Enum.reduce([], fn [status, count], acc ->
       contact_status =
         case status do
