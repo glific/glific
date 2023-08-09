@@ -65,7 +65,6 @@ defmodule GlificWeb.Schema.SearchTypes do
 
     @desc "End date for the filter"
     field :to, :date
-
   end
 
   @desc "Filtering options for search"

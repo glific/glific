@@ -8,6 +8,10 @@ defmodule Glific.Templates do
   plug(Tesla.Middleware.FormUrlencoded)
 
   alias Glific.{
+    Communications.Mailer,
+    Contacts.Contact,
+    Mails.MailLog,
+    Mails.ReportGupshupMail,
     Notifications,
     Partners,
     Partners.Organization,
@@ -15,10 +19,7 @@ defmodule Glific.Templates do
     Repo,
     Settings,
     Tags.Tag,
-    Templates.SessionTemplate,
-    Mails.ReportGupshupMail,
-    Communications.Mailer,
-    Contacts.Contact
+    Templates.SessionTemplate
   }
 
   require Logger
@@ -672,10 +673,22 @@ defmodule Glific.Templates do
       cc: cc
     ]
 
-    case ReportGupshupMail.templates_approval_mail(org, app_id, app_name, opts)
+    time = Glific.go_back_time(24)
+    ## We need to check if we have already sent this notification in last go_back time
+    if MailLog.mail_sent_in_past_time?("report_gupshup", time, org.id) do
+      {:error, "Already a template has been raised to Gupshup in last 24hrs"}
+    else
+      raise_to_gupshup(org, app_id, app_name, opts)
+    end
+  end
+
+  @spec raise_to_gupshup(Organization.t(), String.t(), String.t(), Keyword.t()) ::
+          {:ok, any()} | {:error, any()}
+  defp raise_to_gupshup(org, app_id, app_name, opts) do
+    case ReportGupshupMail.raise_to_gupshup(org, app_id, app_name, opts)
          |> Mailer.send(%{
            category: "report_gupshup",
-           organization_id: org_id
+           organization_id: org.id
          }) do
       {:ok, %{id: _id}} -> {:ok, %{message: "Successfully sent mail to Gupshup Support"}}
       error -> {:ok, %{message: error}}
