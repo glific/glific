@@ -212,7 +212,17 @@ defmodule GlificWeb.StatsLive do
   end
 
   defp fetch_count_data(:contact_type, org_id) do
-    [[_, v1], [_, v2], [_, v3] | _] = Reports.get_contact_data(org_id)
-    [{"HSM: #{v1}", v1}, {"Session and HSM: #{v2}", v2}, {"None: #{v3}", v3}]
+    Reports.get_contact_data(org_id)
+    |> Enum.reduce([], fn [status, count], acc ->
+      contact_status =
+        case status do
+          :none -> "None"
+          :session_and_hsm -> "Session and HSM"
+          :hsm -> "HSM"
+          :session -> "Session"
+        end
+
+      acc ++ [{"#{contact_status}: #{count}", count}]
+    end)
   end
 end
