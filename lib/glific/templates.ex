@@ -8,6 +8,10 @@ defmodule Glific.Templates do
   plug(Tesla.Middleware.FormUrlencoded)
 
   alias Glific.{
+    Communications.Mailer,
+    Contacts.Contact,
+    Mails.MailLog,
+    Mails.ReportGupshupMail,
     Notifications,
     Partners,
     Partners.Organization,
@@ -15,11 +19,7 @@ defmodule Glific.Templates do
     Repo,
     Settings,
     Tags.Tag,
-    Templates.SessionTemplate,
-    Mails.ReportGupshupMail,
-    Communications.Mailer,
-    Contacts.Contact,
-    Mails.MailLog
+    Templates.SessionTemplate
   }
 
   require Logger
