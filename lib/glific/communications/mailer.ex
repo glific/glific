@@ -77,6 +77,27 @@ defmodule Glific.Communications.Mailer do
     |> text_body(body)
   end
 
+  def common_html_send(org, subject, body, opts \\ []) do
+    team = Keyword.get(opts, :team, nil)
+    send_to = Keyword.get(opts, :send_to, nil)
+    in_cc = Keyword.get(opts, :in_cc, [])
+    from_email = Keyword.get(opts, :from_email, sender())
+
+    # Subject can not have a line break
+    subject = String.replace(subject, "\n", "")
+
+    send_to = get_team_email(org, team, send_to)
+
+    in_cc = in_cc ++ [glific_support()]
+
+    new()
+    |> to(send_to)
+    |> from(from_email)
+    |> cc(in_cc)
+    |> subject(subject)
+    |> html_body(body)
+  end
+
   @spec get_team_email(Organization.t(), String.t() | nil, tuple | nil) :: tuple()
   defp get_team_email(org, _team, nil), do: {org.name, org.email}
 

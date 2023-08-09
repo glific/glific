@@ -74,11 +74,11 @@ defmodule GlificWeb.StatsLive do
     )
   end
 
-  defp make_bar_chart_dataset(data) do
+  def make_bar_chart_dataset(data) do
     Contex.Dataset.new(data)
   end
 
-  defp make_pie_chart_dataset(data) do
+  def make_pie_chart_dataset(data) do
     Contex.Dataset.new(data, ["Type", "Value"])
   end
 
@@ -106,7 +106,7 @@ defmodule GlificWeb.StatsLive do
     )
   end
 
-  defp render_bar_chart(title, dataset) do
+  def render_bar_chart(title, dataset) do
     opts = barchart_opts(title)
 
     Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts)
@@ -132,7 +132,7 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  defp render_pie_chart(title, dataset) do
+  def render_pie_chart(title, dataset) do
     opts = piechart_opts(title)
     plot = Contex.Plot.new(dataset, Contex.PieChart, 500, 400, opts)
     has_no_data = Enum.any?(dataset.data, fn {_label, value} -> is_nil(value) end)

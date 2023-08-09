@@ -16,8 +16,12 @@ defmodule Glific.Stats do
     Partners.Saas,
     Repo,
     Stats.Stat,
-    Users.User
+    Users.User,
+    Mails.DashboardMail,
+    Communications.Mailer
   }
+
+  alias GlificWeb.{StatsLive}
 
   @doc """
   Create a Stat
@@ -58,13 +62,13 @@ defmodule Glific.Stats do
 
     Enum.reduce(filter, query, fn
       {:period, period}, query ->
-        from q in query, where: q.period == ^period
+        from(q in query, where: q.period == ^period)
 
       {:hour, hour}, query ->
-        from q in query, where: q.hour == ^hour
+        from(q in query, where: q.hour == ^hour)
 
       {:date, date}, query ->
-        from q in query, where: q.date == ^date
+        from(q in query, where: q.date == ^date)
 
       _, query ->
         query
@@ -474,5 +478,45 @@ defmodule Glific.Stats do
       users: max(s.users)
     })
     |> Repo.one()
+  end
+
+  def load_pie_svg(data, title) do
+    data
+    |> StatsLive.make_pie_chart_dataset()
+    |> (&StatsLive.render_pie_chart(title, &1)).()
+  end
+
+  def load_bar_svg(data, title) do
+    data
+    |> StatsLive.make_bar_chart_dataset()
+    |> (&StatsLive.render_bar_chart(title, &1)).()
+  end
+
+  def mail_stats(org_id) do
+    org = Partners.organization(org_id)
+
+    data = StatsLive.get_chart_data(org_id)
+
+    assigns = %{
+      contact_chart_svg: load_bar_svg(Keyword.get(data, :contact_chart_data), "Contacts"),
+      conversation_chart_svg: load_bar_svg(Keyword.get(data, :conversation_chart_data), "Conversations"),
+      optin_chart_svg: load_pie_svg(Keyword.get(data, :optin_chart_data), "Contacts Optin Status"),
+      notification_chart_svg: load_pie_svg(Keyword.get(data, :notification_chart_data), "Notifications"),
+      message_chart_svg: load_pie_svg(Keyword.get(data, :message_type_chart_data), "Messages"),
+      contact_type_chart_svg: load_pie_svg(Keyword.get(data, :contact_pie_chart_data), "Contact Session Status")
+    }
+
+    IO.inspect assigns
+    # assigns = %{user: "Darshan"}
+
+    opts = [
+      template: "dashboard.html"
+    ]
+
+    DashboardMail.new_mail(org, assigns, opts)
+    |> Mailer.send(%{
+      category: "dashboard_report",
+      organization_id: org_id
+    })
   end
 end
