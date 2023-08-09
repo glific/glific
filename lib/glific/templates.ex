@@ -678,21 +678,23 @@ defmodule Glific.Templates do
     category = "report_gupshup"
     time = Glific.go_back_time(go_back)
 
-    if MailLog.mail_sent_in_past_time?(category, time, org_id) == false do
-      {:ok,result } =
-        ReportGupshupMail.templates_approval_mail(org, app_id, app_name, opts)
-        |> Mailer.send(%{
-          category: category,
-          organization_id: org_id
-        })
+    case MailLog.mail_sent_in_past_time?(category, time, org_id) do
+      false ->
+        {:ok, result} =
+          ReportGupshupMail.templates_approval_mail(org, app_id, app_name, opts)
+          |> Mailer.send(%{
+            category: category,
+            organization_id: org_id
+          })
 
-      if result == :ok do
-        {:ok, %{message: "Successfully sent mail to Gupshup Support"}}
-      else
-        {:error, "couldn't send mail"}
-      end
-    else
-      {:ok, "no email"}
+        if result == :ok do
+          {:ok, %{message: "Successfully sent mail to Gupshup Support"}}
+        else
+          {:error, "couldn't send mail"}
+        end
+
+      _ ->
+        {:ok, "no email"}
     end
   end
 end
