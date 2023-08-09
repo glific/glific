@@ -3,6 +3,46 @@ import Config
 # setting the state of the environment for use within code base
 config :glific, :environment, :dev
 
+db_host = "127.0.0.1" |> to_charlist()
+cert_dir = "/Users/lobo/.postgresql"
+
+decode_cert = fn cert ->
+  [{:Certificate, der, _}] = :public_key.pem_decode(cert |> File.read!())
+  der
+end
+
+decode_key = fn cert ->
+  [{:ECPrivateKey, key, :not_encrypted}] = :public_key.pem_decode(cert |> File.read!())
+  {:ECPrivateKey, key}
+end
+
+ca_cert = "#{cert_dir}/rootCA.pem"
+client_key = "#{cert_dir}/postgresql.key"
+client_cert = "#{cert_dir}/postgresql.crt"
+
+ssl_opts =
+  if ca_cert,
+    do: [
+      cacerts: [decode_cert.(ca_cert)],
+      verify: :verify_peer,
+      versions: [:"tlsv1.3"],
+      key: decode_key.(client_key),
+      cert: decode_cert.(client_cert),
+      server_name_indication: db_host,
+      customize_hostname_check: [
+        match_fun: fn a, b ->
+          IO.inspect(a, label: "MATCH: #{b}")
+          true
+        end
+      ],
+      verify_fun: {&:ssl_verify_hostname.verify_fun/3, []}
+    ]
+
+# lets experiment with DB SSL here
+config :glific, Glific.Repo,
+  ssl: true,
+  ssl_opts: ssl_opts
+
 config :glific, GlificWeb.Endpoint, http: [ip: {0, 0, 0, 0}, port: 4000]
 
 # For development, we disable any cache and enable
