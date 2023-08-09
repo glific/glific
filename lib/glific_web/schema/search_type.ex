@@ -59,6 +59,15 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :to_expression, :string
   end
 
+  input_object :date_input do
+    @desc "Start date for the filter"
+    field :from, :date
+
+    @desc "End date for the filter"
+    field :to, :date
+
+  end
+
   @desc "Filtering options for search"
   input_object :search_filter do
     @desc "Match one contact ID"
@@ -89,7 +98,7 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :status, :string
 
     @desc "a static date range input field which will apply on updated at column."
-    field :date_range, :date_range_input
+    field :date_range, :date_input
 
     @desc "a dynamic date expression input field"
     field :date_expression, :date_expression_input
