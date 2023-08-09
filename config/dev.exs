@@ -24,7 +24,7 @@ ssl_opts =
   if ca_cert,
     do: [
       cacerts: [decode_cert.(ca_cert)],
-      verify: :verify_peer,
+      verify: :verify_none,
       versions: [:"tlsv1.3"],
       key: decode_key.(client_key),
       cert: decode_cert.(client_cert),
@@ -34,8 +34,8 @@ ssl_opts =
           IO.inspect(a, label: "MATCH: #{b}")
           true
         end
-      ],
-      verify_fun: {&:ssl_verify_hostname.verify_fun/3, []}
+      ]
+      # verify_fun: {&:ssl_verify_hostname.verify_fun/3, []}
     ]
 
 # lets experiment with DB SSL here
