@@ -689,8 +689,8 @@ defmodule GlificWeb.Schema.SearchTest do
           "filter" => %{
             "term" => "",
             "dateRange" => %{
-              "from" => DateTime.utc_now() |> DateTime.add(-2, :hour) |> DateTime.to_string(),
-              "to" => DateTime.utc_now() |> DateTime.to_string()
+              "from" => DateTime.utc_now() |> DateTime.add(-2, :hour) |> Date.to_iso8601(),
+              "to" => DateTime.utc_now() |> Date.to_iso8601()
             }
           },
           "contactOpts" => %{"limit" => contact_count},
@@ -717,11 +717,11 @@ defmodule GlificWeb.Schema.SearchTest do
               "from" =>
                 DateTime.utc_now()
                 |> DateTime.add(-2, :day)
-                |> DateTime.to_string(),
+                |> Date.to_iso8601(),
               "to" =>
                 DateTime.utc_now()
                 |> DateTime.add(-1, :day)
-                |> DateTime.to_string()
+                |> Date.to_iso8601()
             }
           },
           "contactOpts" => %{"limit" => contact_count},
@@ -815,7 +815,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "filter" => %{
             "term" => "",
             "dateRange" => %{
-              "from" => DateTime.utc_now() |> DateTime.add(-2, :hour) |> DateTime.to_string()
+              "from" => DateTime.utc_now() |> DateTime.add(-2, :hour) |> Date.to_iso8601()
             }
           },
           "contactOpts" => %{"limit" => contact_count},
@@ -838,7 +838,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "filter" => %{
             "term" => "",
             "dateRange" => %{
-              "to" => DateTime.utc_now() |> DateTime.to_string()
+              "to" => DateTime.utc_now() |> Date.to_iso8601()
             }
           },
           "contactOpts" => %{"limit" => contact_count},

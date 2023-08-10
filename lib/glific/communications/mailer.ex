@@ -56,7 +56,6 @@ defmodule Glific.Communications.Mailer do
   @spec common_send(Organization.t(), String.t(), String.t(), [{atom(), any()}]) ::
           Swoosh.Email.t()
   def common_send(org, subject, body, opts \\ []) do
-
     team = Keyword.get(opts, :team, nil)
     send_to = Keyword.get(opts, :send_to, nil)
     in_cc = Keyword.get(opts, :in_cc, [])

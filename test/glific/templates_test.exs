@@ -3,6 +3,7 @@ defmodule Glific.TemplatesTest do
 
   alias Glific.{
     Fixtures,
+    Mails.MailLog,
     Providers.Gupshup,
     Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
@@ -1304,6 +1305,27 @@ defmodule Glific.TemplatesTest do
 
       cc = %{"test" => "test@test.com"}
       assert {:ok, %{message: _}} = Templates.report_to_gupshup(org_id, temp_id, cc)
+    end
+
+    test "report_to_gupshup/3 report mail to gupshup should throw error when mail is already sent",
+         attrs do
+      template = session_template_fixture(Map.merge(attrs, @valid_attrs_1))
+
+      %{id: temp_id} = template
+      %{organization_id: org_id} = attrs
+
+      %{
+        category: "report_gupshup",
+        organization_id: attrs.organization_id,
+        status: "sent",
+        content: %{data: "test mail regarding template rejection"}
+      }
+      |> MailLog.create_mail_log()
+
+      cc = %{"test" => "test@test.com"}
+
+      assert {:error, "Already a template has been raised to Gupshup in last 24hrs"} =
+               Templates.report_to_gupshup(org_id, temp_id, cc)
     end
   end
 end
