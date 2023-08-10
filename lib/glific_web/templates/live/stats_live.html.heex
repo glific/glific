@@ -3,118 +3,52 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/flatpickr">
 </script>
-<!--
-Commented out the filter code. Will add this once the functionality is ready
-
-<div class="flex content-center justify-center" id="date-filters" phx-update="ignore">
-  <input
-    id="start_date"
-    phx-hook="dateInput"
-    class="mr-3 flatpickr flatpickr-input active"
-    type="text"
-    placeholder="Select Start Date.."
-    readonly="readonly"
-  />
-
-  <input
-    id="end_date"
-    phx-hook="dateInput"
-    class="flatpickr flatpickr-input active"
-    type="text"
-    placeholder="Select End Date.."
-    readonly="readonly"
-  />
-</div>
--->
-
 <div>
   <div class="flex content-center justify-center flex-wrap" id="charts" phx-hook="download">
     <div id="contact-chart" class="card">
       <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
-        <.link id="export-link2" href="#" phx-click="export" phx-value-chart= {:contacts}  >
-        <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <mask id="mask0_1136_7518" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="25">
-          <rect width="24" height="24.0037" fill="#D9D9D9"/>  
-          </mask>
-          <g mask="url(#mask0_1136_7518)">  
-          <path d="M12 16.0019L7 11.0011L8.4 9.55086L11 12.1513V4H13V12.1513L15.6 9.55086L17 11.0011L12 16.0019ZM6 20.0025C5.45 20.0025 4.97917 19.8066 4.5875 19.4149C4.19583 19.0232 4 18.5523 4 18.0022V15.0017H6V18.0022H18V15.0017H20V18.0022C20 18.5523 19.8042 19.0232 19.4125 19.4149C19.0208 19.8066 18.55 20.0025 18 20.0025H6Z" fill="#CCCCCC"/>
-          </g>
-        </svg>
+        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:contacts}>
+          <%= GlificWeb.StatsLive.render_button_svg() %>
         </.link>
       </button>
       <%= @contact_chart_svg %>
     </div>
     <div id="conversation-chart" class="card">
       <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
-        <.link id="export-link2" href="#" phx-click="export" phx-value-chart= {:conversations}  >
-        <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <mask id="mask0_1136_7518" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="25">
-          <rect width="24" height="24.0037" fill="#D9D9D9"/>  
-          </mask>
-          <g mask="url(#mask0_1136_7518)">  
-          <path d="M12 16.0019L7 11.0011L8.4 9.55086L11 12.1513V4H13V12.1513L15.6 9.55086L17 11.0011L12 16.0019ZM6 20.0025C5.45 20.0025 4.97917 19.8066 4.5875 19.4149C4.19583 19.0232 4 18.5523 4 18.0022V15.0017H6V18.0022H18V15.0017H20V18.0022C20 18.5523 19.8042 19.0232 19.4125 19.4149C19.0208 19.8066 18.55 20.0025 18 20.0025H6Z" fill="#CCCCCC"/>
-          </g>
-        </svg>
+        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:conversations}>
+          <%= GlificWeb.StatsLive.render_button_svg() %>
         </.link>
       </button>
       <%= @conversation_chart_svg %>
     </div>
     <div id="optin-chart" class="card">
       <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
-        <.link id="export-link1" href="#" phx-click="export" phx-value-chart= {:optin}  >
-        <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <mask id="mask0_1136_7518" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="25">
-          <rect width="24" height="24.0037" fill="#D9D9D9"/>  
-          </mask>
-          <g mask="url(#mask0_1136_7518)">  
-          <path d="M12 16.0019L7 11.0011L8.4 9.55086L11 12.1513V4H13V12.1513L15.6 9.55086L17 11.0011L12 16.0019ZM6 20.0025C5.45 20.0025 4.97917 19.8066 4.5875 19.4149C4.19583 19.0232 4 18.5523 4 18.0022V15.0017H6V18.0022H18V15.0017H20V18.0022C20 18.5523 19.8042 19.0232 19.4125 19.4149C19.0208 19.8066 18.55 20.0025 18 20.0025H6Z" fill="#CCCCCC"/>
-          </g>
-        </svg>
+        <.link id="export-link1" href="#" phx-click="export" phx-value-chart={:optin}>
+          <%= GlificWeb.StatsLive.render_button_svg() %>
         </.link>
       </button>
       <%= @optin_chart_svg %>
     </div>
     <div id="notification-chart" class="card">
       <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
-        <.link id="export-link2" href="#" phx-click="export" phx-value-chart= {:notifications}  >
-        <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <mask id="mask0_1136_7518" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="25">
-          <rect width="24" height="24.0037" fill="#D9D9D9"/>  
-          </mask>
-          <g mask="url(#mask0_1136_7518)">  
-          <path d="M12 16.0019L7 11.0011L8.4 9.55086L11 12.1513V4H13V12.1513L15.6 9.55086L17 11.0011L12 16.0019ZM6 20.0025C5.45 20.0025 4.97917 19.8066 4.5875 19.4149C4.19583 19.0232 4 18.5523 4 18.0022V15.0017H6V18.0022H18V15.0017H20V18.0022C20 18.5523 19.8042 19.0232 19.4125 19.4149C19.0208 19.8066 18.55 20.0025 18 20.0025H6Z" fill="#CCCCCC"/>
-          </g>
-        </svg>
+        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:notifications}>
+          <%= GlificWeb.StatsLive.render_button_svg() %>
         </.link>
       </button>
       <%= @notification_chart_svg %>
     </div>
     <div id="notification-chart" class="card">
       <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
-        <.link id="export-link2" href="#" phx-click="export" phx-value-chart= {:messages}  >
-        <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <mask id="mask0_1136_7518" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="25">
-          <rect width="24" height="24.0037" fill="#D9D9D9"/>  
-          </mask>
-          <g mask="url(#mask0_1136_7518)">  
-          <path d="M12 16.0019L7 11.0011L8.4 9.55086L11 12.1513V4H13V12.1513L15.6 9.55086L17 11.0011L12 16.0019ZM6 20.0025C5.45 20.0025 4.97917 19.8066 4.5875 19.4149C4.19583 19.0232 4 18.5523 4 18.0022V15.0017H6V18.0022H18V15.0017H20V18.0022C20 18.5523 19.8042 19.0232 19.4125 19.4149C19.0208 19.8066 18.55 20.0025 18 20.0025H6Z" fill="#CCCCCC"/>
-          </g>
-        </svg>
+        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:messages}>
+          <%= GlificWeb.StatsLive.render_button_svg() %>
         </.link>
       </button>
       <%= @message_chart_svg %>
     </div>
     <div id="notification-chart" class="card">
       <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
-        <.link id="export-link2" href="#" phx-click="export" phx-value-chart= {:contact_type}  >
-        <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <mask id="mask0_1136_7518" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="25">
-          <rect width="24" height="24.0037" fill="#D9D9D9"/>  
-          </mask>
-          <g mask="url(#mask0_1136_7518)">  
-          <path d="M12 16.0019L7 11.0011L8.4 9.55086L11 12.1513V4H13V12.1513L15.6 9.55086L17 11.0011L12 16.0019ZM6 20.0025C5.45 20.0025 4.97917 19.8066 4.5875 19.4149C4.19583 19.0232 4 18.5523 4 18.0022V15.0017H6V18.0022H18V15.0017H20V18.0022C20 18.5523 19.8042 19.0232 19.4125 19.4149C19.0208 19.8066 18.55 20.0025 18 20.0025H6Z" fill="#CCCCCC"/>
-          </g>
-        </svg>
+        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:contact_type}>
+          <%= GlificWeb.StatsLive.render_button_svg() %>
         </.link>
       </button>
       <%= @contact_type_chart_svg %>
@@ -125,15 +59,8 @@ Commented out the filter code. Will add this once the functionality is ready
 <div class="flex content-center justify-center flex-wrap">
   <div class="table-container">
     <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
-      <.link id="export-link2" href="#" phx-click="export" phx-value-chart= {:table}  >
-        <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <mask id="mask0_1136_7518" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="25">
-          <rect width="24" height="24.0037" fill="#D9D9D9"/>  
-          </mask>
-          <g mask="url(#mask0_1136_7518)">  
-          <path d="M12 16.0019L7 11.0011L8.4 9.55086L11 12.1513V4H13V12.1513L15.6 9.55086L17 11.0011L12 16.0019ZM6 20.0025C5.45 20.0025 4.97917 19.8066 4.5875 19.4149C4.19583 19.0232 4 18.5523 4 18.0022V15.0017H6V18.0022H18V15.0017H20V18.0022C20 18.5523 19.8042 19.0232 19.4125 19.4149C19.0208 19.8066 18.55 20.0025 18 20.0025H6Z" fill="#CCCCCC"/>
-          </g>
-        </svg>
+      <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:table}>
+        <%= GlificWeb.StatsLive.render_button_svg() %>
       </.link>
     </button>
     <div

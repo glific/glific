@@ -30,17 +30,19 @@ defmodule GlificWeb.StatsLive do
   end
 
   @doc false
-  @spec handle_event(any(), any(), Phoenix.LiveView.Socket.t()) :: {:noreply, Phoenix.LiveView.Socket.t()}
+  @spec handle_event(any(), any(), Phoenix.LiveView.Socket.t()) ::
+          {:noreply, Phoenix.LiveView.Socket.t()}
   def handle_event("export", %{"chart" => chart}, socket) do
     org_id = get_org_id(socket)
     data = get_export_data(String.to_atom(chart), org_id)
     csv = Enum.map_join(data, "\n", &Enum.join(&1, ","))
 
     {:noreply,
-    socket |> push_event("download-file", %{
-      data: csv,
-      filename: chart <> ".csv"
-  })}
+     socket
+     |> push_event("download-file", %{
+       data: csv,
+       filename: chart <> ".csv"
+     })}
   end
 
   defp get_export_data(:optin, org_id) do
@@ -155,6 +157,31 @@ defmodule GlificWeb.StatsLive do
       message_chart_svg: render_pie_chart("Messages", message_dataset),
       contact_type_chart_svg: render_pie_chart("Contact Session Status", contact_type_dataset)
     )
+  end
+
+  def render_button_svg do
+    ~S"""
+    <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <mask
+        id="mask0_1136_7518"
+        style="mask-type:alpha"
+        maskUnits="userSpaceOnUse"
+        x="0"
+        y="0"
+        width="24"
+        height="25"
+      >
+        <rect width="24" height="24.0037" fill="#D9D9D9" />
+      </mask>
+      <g mask="url(#mask0_1136_7518)">
+        <path
+          d="M12 16.0019L7 11.0011L8.4 9.55086L11 12.1513V4H13V12.1513L15.6 9.55086L17 11.0011L12 16.0019ZM6 20.0025C5.45 20.0025 4.97917 19.8066 4.5875 19.4149C4.19583 19.0232 4 18.5523 4 18.0022V15.0017H6V18.0022H18V15.0017H20V18.0022C20 18.5523 19.8042 19.0232 19.4125 19.4149C19.0208 19.8066 18.55 20.0025 18 20.0025H6Z"
+          fill="#CCCCCC"
+        />
+      </g>
+    </svg>
+    """
+    |> raw()
   end
 
   defp render_bar_chart(title, dataset) do

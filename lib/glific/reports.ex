@@ -306,7 +306,7 @@ defmodule Glific.Reports do
     |> select([q], [q.id, q.name, q.phone, q.optin_status])
   end
 
-  defp get_export_query(:notifications)  do
+  defp get_export_query(:notifications) do
     Notification
     |> select([q], [q.id, q.category, q.severity])
   end
