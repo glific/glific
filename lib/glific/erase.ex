@@ -4,10 +4,7 @@ defmodule Glific.Erase do
   """
   import Ecto.Query
 
-  alias Glific.{
-    Repo,
-    Seeds.SeedsMigration
-  }
+  alias Glific.Repo
 
   require Logger
 
@@ -143,17 +140,20 @@ defmodule Glific.Erase do
     Repo.put_process_state(org_id)
 
     contact_query = """
-    SELECT id, last_message_number
+    SELECT id,
+           last_message_number,
+           first_message_number,
+           last_message_number - first_message_number as cnt
     FROM contacts
     WHERE organization_id = #{org_id}
-      AND last_message_number > #{limit + 2}
-    ORDER BY last_message_number desc
+      AND last_message_number - first_message_number > #{limit + 2}
+    ORDER BY cnt desc
     LIMIT 200
     """
 
     Repo.query!(contact_query).rows
-    |> Enum.map(fn [contact_id, last_message_number] ->
-      clean_message_for_contact(contact_id, last_message_number, org_id, limit)
+    |> Enum.map(fn [contact_id | opts] ->
+      clean_message_for_contact(contact_id, org_id, limit, opts)
     end)
   end
 
@@ -164,12 +164,15 @@ defmodule Glific.Erase do
           non_neg_integer,
           non_neg_integer,
           non_neg_integer,
-          non_neg_integer
+          list()
         ) :: :ok
-  def clean_message_for_contact(contact_id, last_message_number, org_id, limit) do
+  def clean_message_for_contact(contact_id, org_id, limit, opts) do
+    [last_message_number, first_message_number, _count] = opts
+
     message_to_delete = last_message_number - limit
 
-    if message_to_delete > 0 do
+    # make sure we keep a few messages around
+    if message_to_delete > 0 and message_to_delete > first_message_number + 2 do
       delete_message_query = """
       DELETE
       FROM messages
@@ -178,12 +181,19 @@ defmodule Glific.Erase do
       AND message_number < #{message_to_delete}
       """
 
+      update_contact_query = """
+      UPDATE contacts
+      SET first_message_number = #{first_message_number + limit}
+      WHERE contact_id = #{contact_id}
+      AND organization_id = #{org_id}
+      """
+
       Logger.info(
         "Deleting messages for #{contact_id} where message number < #{message_to_delete}"
       )
 
       Repo.query!(delete_message_query, [], timeout: 400_000, skip_organization_id: true)
-      SeedsMigration.fix_message_number_for_contact(contact_id)
+      Repo.query!(update_contact_query, [], skip_organization_id: true)
     end
 
     :ok
