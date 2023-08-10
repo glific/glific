@@ -84,6 +84,15 @@ defmodule Glific.NotificationTest do
     assert notification.message == "Disabling GCS. Billing account is disabled"
   end
 
+  test "create_notification/1 with valid data", %{
+    organization_id: organization_id
+  } do
+    attrs = Map.merge(@valid_attrs, %{organization_id: organization_id, severity: "Warning"})
+    assert {:ok, %Notification{} = notification} = Notifications.create_notification(attrs)
+    assert notification.category == "Partner"
+    assert notification.message == "Disabling GCS. Billing account is disabled"
+  end
+
   test "create_notification/1 with invalid data returns error changeset", %{
     organization_id: organization_id
   } do
