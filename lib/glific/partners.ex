@@ -608,23 +608,6 @@ defmodule Glific.Partners do
     %{organization | services: updated_services_map}
   end
 
-  @doc """
-    Update the team emails for respective teams.
-  """
-  @spec update_team_emails(integer()) :: {:ok, any} | {:error, any}
-  def update_team_emails(id) do
-    organization = Repo.get(Organization, id)
-
-    team_emails = %{
-        "finance" => organization.email,
-        "analytics" => organization.email,
-        "chatbot_design" => organization.email
-      }
-
-    changeset = Organization.changeset(organization, %{team_emails: team_emails})
-    Repo.update(changeset)
-  end
-
   # Lets cache keys and secrets of all the active services
   @spec set_credentials(map()) :: map()
   defp set_credentials(organization) do
