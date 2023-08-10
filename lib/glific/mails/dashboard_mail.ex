@@ -2,11 +2,16 @@ defmodule Glific.Mails.DashboardMail do
   @moduledoc """
   A montly report sent to organization
   """
-  alias Glific.{Communications.Mailer}
+  alias Glific.{
+    Communications.Mailer,
+    Partners.Organization
+  }
   alias GlificWeb.{DashboardView}
+
   @doc """
   Sends a mail to the organization with snippet of internal dashboard
   """
+  @spec new_mail(Organization.t(), map(), [{atom(), any()}]) :: Swoosh.Email.t()
   def new_mail(org, assigns, opts \\ []) do
     subject = "Internal Dashboard: Montly Report"
 

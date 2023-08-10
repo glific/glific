@@ -480,18 +480,24 @@ defmodule Glific.Stats do
     |> Repo.one()
   end
 
+  @spec load_pie_svg([any()], String.t()) :: any()
   def load_pie_svg(data, title) do
     data
     |> StatsLive.make_pie_chart_dataset()
     |> (&StatsLive.render_pie_chart(title, &1)).()
   end
 
+  @spec load_bar_svg([any()], String.t()) :: any()
   def load_bar_svg(data, title) do
     data
     |> StatsLive.make_bar_chart_dataset()
     |> (&StatsLive.render_bar_chart(title, &1)).()
   end
 
+  @doc """
+  Sends mail to organization with their stats
+  """
+  @spec mail_stats(non_neg_integer()) ::  {:ok, term} | {:error, term}
   def mail_stats(org_id) do
     org = Partners.organization(org_id)
 
@@ -505,9 +511,6 @@ defmodule Glific.Stats do
       message_chart_svg: load_pie_svg(Keyword.get(data, :message_type_chart_data), "Messages"),
       contact_type_chart_svg: load_pie_svg(Keyword.get(data, :contact_pie_chart_data), "Contact Session Status")
     }
-
-    IO.inspect assigns
-    # assigns = %{user: "Darshan"}
 
     opts = [
       template: "dashboard.html"
