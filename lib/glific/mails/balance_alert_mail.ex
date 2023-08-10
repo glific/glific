@@ -19,7 +19,7 @@ defmodule Glific.Mails.BalanceAlertMail do
     Please top up your account to keep sending and receiving messages on Glific."
     """
 
-    Mailer.common_send(org, team, subject, body)
+    Mailer.common_send(org, subject, body, team: team)
   end
 
   @doc false
@@ -31,7 +31,7 @@ defmodule Glific.Mails.BalanceAlertMail do
     Glific Critical: Your Gupshup balance is zero, please refill immediately.
     """
 
-    Mailer.common_send(org, team, subject, body)
+    Mailer.common_send(org, subject, body, team: team)
   end
 
   @doc false
@@ -43,6 +43,6 @@ defmodule Glific.Mails.BalanceAlertMail do
     Glific Critical: Your organization has exceeded it WhatsApp rate limit.
     """
 
-    Mailer.common_send(org, team, subject, body)
+    Mailer.common_send(org, subject, body, team: team)
   end
 end

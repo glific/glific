@@ -123,4 +123,21 @@ defmodule GlificWeb.Resolvers.Templates do
       {:error, error} -> {:error, error}
     end
   end
+
+  @doc """
+  Report mail to gupshup
+  Returns mail log id
+  """
+  @spec report_to_gupshup(
+          Absinthe.Resolution.t(),
+          map(),
+          %{context: map()}
+        ) :: {:ok, any} | {:error, any}
+  def report_to_gupshup(_, attr, %{context: %{current_user: user}}) do
+    Templates.report_to_gupshup(
+      user.organization_id,
+      Map.get(attr, :template_id),
+      Map.get(attr, :cc, %{})
+    )
+  end
 end
