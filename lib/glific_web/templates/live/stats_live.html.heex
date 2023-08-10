@@ -28,7 +28,7 @@ Commented out the filter code. Will add this once the functionality is ready
 -->
 
 <div>
-  <div class="flex content-center justify-center flex-wrap" id="charts">
+  <div class="flex content-center justify-center flex-wrap" id="charts" phx-hook="download">
     <div id="contact-chart" class="card">
       <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
         <.link id="export-link2" href="#" phx-click="export" phx-value-chart= {:contacts}  >
