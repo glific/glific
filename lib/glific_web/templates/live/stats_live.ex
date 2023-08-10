@@ -76,7 +76,7 @@ defmodule GlificWeb.StatsLive do
     )
   end
 
-  def make_series_bar_chart_dataset(data) do
+  defp make_series_bar_chart_dataset(data) do
     Contex.Dataset.new(data, ["Hour", "Inbound", "Outbound"])
   end
 
@@ -117,14 +117,14 @@ defmodule GlificWeb.StatsLive do
   defp render_bar_chart("Most Active Hour" = title, dataset) do
     opts = series_barchart_opts(title)
 
-    Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts) |> IO.inspect(label: "Bar chart data:")
+    Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts)
     |> Contex.Plot.to_svg()
   end
 
   defp render_bar_chart(title, dataset) do
     opts = barchart_opts(title)
 
-    Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts) |> IO.inspect(label: "Bar chart data:")
+    Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts)
     |> Contex.Plot.to_svg()
   end
 
@@ -190,7 +190,7 @@ defmodule GlificWeb.StatsLive do
       broadcast_data: fetch_table_data(:broadcasts, org_id),
       broadcast_headers: ["Flow Name", "Group Name", "Started At", "Completed At"],
       contact_pie_chart_data: fetch_count_data(:contact_type, org_id),
-      messages_chart_data: [[1,8,5], [2,6,7], [3,4,1], [4, 2, 3]]
+      messages_chart_data: fetch_hourly_data(org_id)
     ]
   end
 
@@ -248,11 +248,12 @@ defmodule GlificWeb.StatsLive do
     end)
   end
 
+  @doc false
   @spec fetch_hourly_data(non_neg_integer()) :: list()
   def fetch_hourly_data(org_id) do
-    [
-      Reports.get_messages_data(org_id) |> Map.values() |> Enum.into([], & &1.inbound),
-      Reports.get_messages_data(org_id) |> Map.values() |> Enum.into([], & &1.outbound)
-    ]
+    result = Reports.get_messages_data(org_id) |> Enum.into(%{}, fn {k, v} -> {trunc(k), v} end)
+    hourly_list = Enum.into(0..23, %{}, fn key -> {key, %{inbound: 0, outbound: 0}} end)
+    Map.merge(result, hourly_list, fn _k, v1, _v2 -> v1 end)
+    |> Enum.map(fn {k, %{inbound: inbound, outbound: outbound}} -> {k, inbound, outbound} end)
   end
 end
