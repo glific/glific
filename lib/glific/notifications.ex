@@ -9,7 +9,9 @@ defmodule Glific.Notifications do
   alias Glific.{
     Communications.Mailer,
     Mails.CriticalNotificationMail,
+    Mails.WarningNotificationMail,
     Notifications.Notification,
+    Partners.Organization
     Partners,
     Repo
   }
@@ -24,8 +26,12 @@ defmodule Glific.Notifications do
     |> Repo.insert()
     |> case do
       {:ok, notification} ->
-        if Glific.string_clean(attrs.severity) == "critical" do
+        severity = Glific.string_clean(attrs.severity)
+
+        if severity == "critical" do
           handle_critical_notification(notification)
+        else if severity == "warning" do
+          handle_warning_notification(notification)
         end
 
         {:ok, notification}
@@ -118,5 +124,20 @@ defmodule Glific.Notifications do
         category: "critical_notification",
         organization_id: notification.organization_id
       })
+  end
+
+  defp handle_warning_notification(notification) do
+    organization = Repo.get!(Organization, organization_id)
+    type = organization.setting["Error_type"]
+
+    if type == "warning" do
+      {:ok, _} =
+        Partners.organization(notification.organization_id)
+        |> WarningNotificationMail.new_mail(notification.message)
+        |> Mailer.send(%{
+          category: "Warning",
+          organization_id: notification.organization_id
+        })
+    end
   end
 end
