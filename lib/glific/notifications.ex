@@ -11,7 +11,7 @@ defmodule Glific.Notifications do
     Mails.CriticalNotificationMail,
     Mails.WarningNotificationMail,
     Notifications.Notification,
-    Partners.Organization
+    Partners.Organization,
     Partners,
     Repo
   }
