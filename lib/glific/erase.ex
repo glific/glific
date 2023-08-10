@@ -167,12 +167,14 @@ defmodule Glific.Erase do
           list()
         ) :: :ok
   def clean_message_for_contact(contact_id, org_id, limit, opts) do
-    [last_message_number, first_message_number, _count] = opts
+    [last_message_number, first_message_number, count] = opts
 
     message_to_delete = last_message_number - limit
 
     # make sure we keep a few messages around
-    if message_to_delete > 0 and message_to_delete > first_message_number + 2 do
+    if count > 3 &&
+         message_to_delete > 0 &&
+         message_to_delete > first_message_number + 3 do
       delete_message_query = """
       DELETE
       FROM messages
