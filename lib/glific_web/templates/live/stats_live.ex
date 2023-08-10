@@ -59,7 +59,8 @@ defmodule GlificWeb.StatsLive do
              optin_chart_data: optin_chart_data,
              notification_chart_data: notification_chart_data,
              message_type_chart_data: message_type_chart_data,
-             contact_pie_chart_data: contact_type_chart_data
+             contact_pie_chart_data: contact_type_chart_data,
+             messages_chart_data: messages_chart_data
            }
          } = socket
        ) do
@@ -70,8 +71,13 @@ defmodule GlificWeb.StatsLive do
       optin_dataset: make_pie_chart_dataset(optin_chart_data),
       notification_dataset: make_pie_chart_dataset(notification_chart_data),
       message_dataset: make_pie_chart_dataset(message_type_chart_data),
-      contact_type_dataset: make_pie_chart_dataset(contact_type_chart_data)
+      contact_type_dataset: make_pie_chart_dataset(contact_type_chart_data),
+      messages_dataset: make_series_bar_chart_dataset(messages_chart_data)
     )
+  end
+
+  def make_series_bar_chart_dataset(data) do
+    Contex.Dataset.new(data, ["Hour", "Inbound", "Outbound"])
   end
 
   defp make_bar_chart_dataset(data) do
@@ -91,7 +97,8 @@ defmodule GlificWeb.StatsLive do
              optin_dataset: optin_dataset,
              notification_dataset: notification_dataset,
              message_dataset: message_dataset,
-             contact_type_dataset: contact_type_dataset
+             contact_type_dataset: contact_type_dataset,
+             messages_dataset: messages_dataset
            }
          } = socket
        ) do
@@ -102,14 +109,22 @@ defmodule GlificWeb.StatsLive do
       optin_chart_svg: render_pie_chart("Contacts Optin Status", optin_dataset),
       notification_chart_svg: render_pie_chart("Notifications", notification_dataset),
       message_chart_svg: render_pie_chart("Messages", message_dataset),
-      contact_type_chart_svg: render_pie_chart("Contact Session Status", contact_type_dataset)
+      contact_type_chart_svg: render_pie_chart("Contact Session Status", contact_type_dataset),
+      messages_chart_svg: render_bar_chart("Most Active Hour", messages_dataset)
     )
+  end
+
+  defp render_bar_chart("Most Active Hour" = title, dataset) do
+    opts = series_barchart_opts(title)
+
+    Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts) |> IO.inspect(label: "Bar chart data:")
+    |> Contex.Plot.to_svg()
   end
 
   defp render_bar_chart(title, dataset) do
     opts = barchart_opts(title)
 
-    Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts)
+    Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts) |> IO.inspect(label: "Bar chart data:")
     |> Contex.Plot.to_svg()
   end
 
@@ -118,7 +133,20 @@ defmodule GlificWeb.StatsLive do
       colour_palette: ["129656", "93A29B", "EBEDEC", "B5D8C7"],
       data_labels: true,
       title: title,
-      axis_label_rotation: 45
+      axis_label_rotation: 45,
+    ]
+  end
+
+  defp series_barchart_opts(title) do
+    [
+      colour_palette: ["129656", "93A29B", "EBEDEC", "B5D8C7"],
+      mapping: %{category_col: "Hour", value_cols: ["Inbound", "Outbound"]},
+      data_labels: true,
+      title: title,
+      axis_label_rotation: 45,
+      type: :grouped,
+      padding: 20,
+      legend_setting: :legend_bottom,
     ]
   end
 
@@ -161,7 +189,8 @@ defmodule GlificWeb.StatsLive do
       message_type_chart_data: fetch_count_data(:message_type_chart_data, org_id),
       broadcast_data: fetch_table_data(:broadcasts, org_id),
       broadcast_headers: ["Flow Name", "Group Name", "Started At", "Completed At"],
-      contact_pie_chart_data: fetch_count_data(:contact_type, org_id)
+      contact_pie_chart_data: fetch_count_data(:contact_type, org_id),
+      messages_chart_data: [[1,8,5], [2,6,7], [3,4,1], [4, 2, 3]]
     ]
   end
 
@@ -217,5 +246,13 @@ defmodule GlificWeb.StatsLive do
 
       acc ++ [{"#{contact_status}: #{count}", count}]
     end)
+  end
+
+  @spec fetch_hourly_data(non_neg_integer()) :: list()
+  def fetch_hourly_data(org_id) do
+    [
+      Reports.get_messages_data(org_id) |> Map.values() |> Enum.into([], & &1.inbound),
+      Reports.get_messages_data(org_id) |> Map.values() |> Enum.into([], & &1.outbound)
+    ]
   end
 end
