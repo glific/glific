@@ -1,7 +1,7 @@
 defmodule Glific.StatsTest do
   use Glific.DataCase
 
-  alias Glific.{Seeds.SeedsDev, Stats, Partners}
+  alias Glific.{Seeds.SeedsDev, Stats}
 
   setup do
     default_provider = SeedsDev.seed_providers()

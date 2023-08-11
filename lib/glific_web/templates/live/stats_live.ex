@@ -224,7 +224,6 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-
   @doc """
   Render pie chart from dataset, returns SVG
   """

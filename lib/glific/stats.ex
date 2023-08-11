@@ -9,19 +9,19 @@ defmodule Glific.Stats do
 
   alias Glific.{
     BigQuery.BigQueryWorker,
+    Communications.Mailer,
     Flows.FlowContext,
     Messages.Message,
     Messages.MessageConversation,
+    Mails.DashboardMail,
     Partners,
     Partners.Saas,
     Repo,
     Stats.Stat,
-    Users.User,
-    Mails.DashboardMail,
-    Communications.Mailer
+    Users.User
   }
 
-  alias GlificWeb.{StatsLive}
+  alias GlificWeb.StatsLive
 
   @doc """
   Create a Stat
