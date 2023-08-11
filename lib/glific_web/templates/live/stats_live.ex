@@ -166,11 +166,18 @@ defmodule GlificWeb.StatsLive do
       messages_chart_svg: render_bar_chart("Most Active Hour", messages_dataset)
     )
   end
-  
+
   defp render_bar_chart("Most Active Hour" = title, dataset) do
     opts = series_barchart_opts(title)
 
     Contex.Plot.new(dataset, Contex.BarChart, 1800, 400, opts)
+    |> Contex.Plot.to_svg()
+  end
+
+  defp render_bar_chart(title, dataset) do
+    opts = barchart_opts(title)
+
+    Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts)
     |> Contex.Plot.to_svg()
   end
 
@@ -199,13 +206,6 @@ defmodule GlificWeb.StatsLive do
     </svg>
     """
     |> raw()
-  end
-
-  defp render_bar_chart(title, dataset) do
-    opts = barchart_opts(title)
-
-    Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts)
-    |> Contex.Plot.to_svg()
   end
 
   defp barchart_opts(title) do
