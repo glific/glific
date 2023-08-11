@@ -18,15 +18,13 @@ defmodule Glific.Notifications do
   Create a Notification
   """
   @spec create_notification(map()) :: {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
-  @spec create_notification(map()) :: {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
   def create_notification(attrs \\ %{}) do
-    severity = Glific.string_clean(attrs.severity)
     %Notification{}
     |> Notification.changeset(attrs)
     |> Repo.insert()
     |> case do
       {:ok, notification} ->
-        handle_notification(notification, severity)
+        handle_notification(notification, Glific.string_clean(attrs.severity))
 
       {:error, changeset} ->
         {:error, changeset}
@@ -122,6 +120,7 @@ defmodule Glific.Notifications do
     }
   end
 
+  @spec handle_critical_notification(map()) :: :ok | {:error, String.t()}
   defp handle_critical_notification(notification) do
     {:ok, _} =
       Partners.organization(notification.organization_id)
@@ -132,6 +131,7 @@ defmodule Glific.Notifications do
       })
   end
 
+  @spec handle_critical_notification(map()) :: :ok | {:error, String.t()}
   defp handle_warning_notification(notification) do
     org = Partners.organization(notification.organization_id)
     type = org.setting["Error_type"]
