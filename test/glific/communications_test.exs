@@ -371,9 +371,9 @@ defmodule Glific.CommunicationsTest do
     alias Glific.{
       Fixtures,
       Mails.BalanceAlertMail,
-      Mails.NotificationMail,
       Mails.MailLog,
       Mails.NewPartnerOnboardedMail,
+      Mails.NotificationMail,
       Partners
     }
 
