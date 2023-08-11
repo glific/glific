@@ -5,6 +5,7 @@ defmodule GlificWeb.StatsLive do
   use GlificWeb, :live_view
 
   alias Glific.Reports
+  @colour_palette ["129656", "93A29B", "EBEDEC", "B5D8C7"]
 
   @doc false
   @spec mount(any(), any(), any()) ::
@@ -216,7 +217,7 @@ defmodule GlificWeb.StatsLive do
 
   defp barchart_opts(title) do
     [
-      colour_palette: ["129656", "93A29B", "EBEDEC", "B5D8C7"],
+      colour_palette: @colour_palette,
       data_labels: true,
       title: title,
       axis_label_rotation: 45
@@ -225,7 +226,7 @@ defmodule GlificWeb.StatsLive do
 
   defp series_barchart_opts(title) do
     [
-      colour_palette: ["129656", "93A29B", "EBEDEC", "B5D8C7"],
+      colour_palette: @colour_palette,
       mapping: %{category_col: "Hour", value_cols: ["Inbound", "Outbound"]},
       data_labels: true,
       title: title,
@@ -239,7 +240,7 @@ defmodule GlificWeb.StatsLive do
   defp piechart_opts(title, category_col \\ "Type", value_col \\ "Value") do
     [
       mapping: %{category_col: category_col, value_col: value_col},
-      colour_palette: ["129656", "93A29B", "EBEDEC", "B5D8C7"],
+      colour_palette: @colour_palette,
       legend_setting: :legend_bottom,
       data_labels: false,
       title: title
