@@ -189,14 +189,14 @@ defmodule Glific.Erase do
       delete_message_query = """
       DELETE
       FROM messages
-      WHERE organization_id =
+      WHERE organization_id = #{org_id}
       AND contact_id = #{contact_id}
-      AND message_number <
+      AND message_number < #{message_to_delete}
       """
 
       update_contact_query = """
       UPDATE contacts
-      SET first_message_number = #{first_message_number + limit}
+      SET first_message_number = #{message_to_delete}
       WHERE contact_id = #{contact_id}
       AND organization_id = #{org_id}
       """
