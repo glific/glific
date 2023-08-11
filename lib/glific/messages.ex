@@ -231,6 +231,13 @@ defmodule Glific.Messages do
   """
   @spec delete_message(Message.t()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   def delete_message(%Message{} = message) do
+    # check if there is a message media object if so, delete it
+    if message.media_id,
+      do:
+        message.media_id
+        |> get_message_media!()
+        |> delete_message_media()
+
     Repo.delete(message)
   end
 
