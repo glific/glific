@@ -74,10 +74,18 @@ defmodule GlificWeb.StatsLive do
     )
   end
 
+  @doc """
+  Create Bar chart dataset from rows of data
+  """
+  @spec make_bar_chart_dataset([any()]) :: Contex.Dataset.t()
   def make_bar_chart_dataset(data) do
     Contex.Dataset.new(data)
   end
 
+  @doc """
+  Create Pie chart dataset from rows of data
+  """
+  @spec make_pie_chart_dataset([any()]) :: Contex.Dataset.t()
   def make_pie_chart_dataset(data) do
     Contex.Dataset.new(data, ["Type", "Value"])
   end
@@ -106,6 +114,10 @@ defmodule GlificWeb.StatsLive do
     )
   end
 
+  @doc """
+  Render bar chart from dataset, returns SVG
+  """
+  @spec render_bar_chart(String.t(), Contex.Dataset.t()) :: {:safe, [any()]}
   def render_bar_chart(title, dataset) do
     opts = barchart_opts(title)
 
@@ -132,6 +144,11 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
+
+  @doc """
+  Render pie chart from dataset, returns SVG
+  """
+  @spec render_pie_chart(String.t(), Contex.Dataset.t()) :: {:safe, [any()]}
   def render_pie_chart(title, dataset) do
     opts = piechart_opts(title)
     plot = Contex.Plot.new(dataset, Contex.PieChart, 500, 400, opts)

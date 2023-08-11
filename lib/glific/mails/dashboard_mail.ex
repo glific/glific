@@ -13,7 +13,7 @@ defmodule Glific.Mails.DashboardMail do
   """
   @spec new_mail(Organization.t(), map(), [{atom(), any()}]) :: Swoosh.Email.t()
   def new_mail(org, assigns, opts \\ []) do
-    subject = "Internal Dashboard: Montly Report"
+    subject = "Internal Dashboard: Report"
 
     template = Keyword.get(opts, :template)
 

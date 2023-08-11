@@ -480,15 +480,21 @@ defmodule Glific.Stats do
     |> Repo.one()
   end
 
-  @spec load_pie_svg([any()], String.t()) :: any()
-  def load_pie_svg(data, title) do
+  @doc """
+  Create pie chart svg from the data
+  """
+  @spec load_pie_svg([any()], String.t()) :: {:safe, [any()]}
+  defp load_pie_svg(data, title) do
     data
     |> StatsLive.make_pie_chart_dataset()
     |> (&StatsLive.render_pie_chart(title, &1)).()
   end
 
-  @spec load_bar_svg([any()], String.t()) :: any()
-  def load_bar_svg(data, title) do
+  @doc """
+  Create bar chart svg from the data
+  """
+  @spec load_bar_svg([any()], String.t()) :: {:safe, [any()]}
+  defp load_bar_svg(data, title) do
     data
     |> StatsLive.make_bar_chart_dataset()
     |> (&StatsLive.render_bar_chart(title, &1)).()
@@ -497,11 +503,9 @@ defmodule Glific.Stats do
   @doc """
   Sends mail to organization with their stats
   """
-  @spec mail_stats(non_neg_integer()) ::  {:ok, term} | {:error, term}
-  def mail_stats(org_id) do
-    org = Partners.organization(org_id)
-
-    data = StatsLive.get_chart_data(org_id)
+  @spec mail_stats(non_neg_integer()) :: {:ok, term} | {:error, term}
+  def mail_stats(org) do
+    data = StatsLive.get_chart_data(org.id)
 
     assigns = %{
       contact_chart_svg: load_bar_svg(Keyword.get(data, :contact_chart_data), "Contacts"),
@@ -519,7 +523,7 @@ defmodule Glific.Stats do
     DashboardMail.new_mail(org, assigns, opts)
     |> Mailer.send(%{
       category: "dashboard_report",
-      organization_id: org_id
+      organization_id: org.id
     })
   end
 end
