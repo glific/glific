@@ -79,7 +79,7 @@ defmodule GlificWeb.StatsLive do
 
   defp get_export_data(:active_hour, org_id) do
     fetch_hourly_data(org_id)
-    |> Enum.map(fn {a, b, c} -> [a, b, c] end)
+    |> Enum.map(fn {hour, inbound, outbound} -> [hour, inbound, outbound] end)
     |> List.insert_at(0, ["Hour", "Inbound", "Outbound"])
   end
 
@@ -219,7 +219,7 @@ defmodule GlificWeb.StatsLive do
       colour_palette: ["129656", "93A29B", "EBEDEC", "B5D8C7"],
       data_labels: true,
       title: title,
-      axis_label_rotation: 45,
+      axis_label_rotation: 45
     ]
   end
 
@@ -232,7 +232,7 @@ defmodule GlificWeb.StatsLive do
       axis_label_rotation: 45,
       type: :grouped,
       padding: 20,
-      legend_setting: :legend_bottom,
+      legend_setting: :legend_bottom
     ]
   end
 
@@ -337,9 +337,15 @@ defmodule GlificWeb.StatsLive do
   @doc false
   @spec fetch_hourly_data(non_neg_integer()) :: list()
   def fetch_hourly_data(org_id) do
-    result = Reports.get_messages_data(org_id) |> Enum.into(%{}, fn {k, v} -> {trunc(k), v} end)
-    hourly_list = Enum.into(0..23, %{}, fn key -> {key, %{inbound: 0, outbound: 0}} end)
-    Map.merge(result, hourly_list, fn _k, v1, _v2 -> v1 end)
-    |> Enum.map(fn {k, %{inbound: inbound, outbound: outbound}} -> {k, inbound, outbound} end)
+    Reports.get_messages_data(org_id)
+    |> Enum.map(fn {time, %{inbound: inbound, outbound: outbound}} ->
+      {get_time(time), inbound, outbound}
+    end)
   end
+
+  @spec get_time(non_neg_integer()) :: String.t()
+  defp get_time(0), do: "12AM"
+  defp get_time(12), do: "12PM"
+  defp get_time(time) when time < 12, do: "#{time}AM"
+  defp get_time(time), do: "#{time - 12}PM"
 end
