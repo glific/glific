@@ -480,9 +480,6 @@ defmodule Glific.Stats do
     |> Repo.one()
   end
 
-  @doc """
-  Create pie chart svg from the data
-  """
   @spec load_pie_svg([any()], String.t()) :: {:safe, [any()]}
   defp load_pie_svg(data, title) do
     data
@@ -490,9 +487,6 @@ defmodule Glific.Stats do
     |> (&StatsLive.render_pie_chart(title, &1)).()
   end
 
-  @doc """
-  Create bar chart svg from the data
-  """
   @spec load_bar_svg([any()], String.t()) :: {:safe, [any()]}
   defp load_bar_svg(data, title) do
     data
@@ -503,7 +497,7 @@ defmodule Glific.Stats do
   @doc """
   Sends mail to organization with their stats
   """
-  @spec mail_stats(non_neg_integer()) :: {:ok, term} | {:error, term}
+  @spec mail_stats(Partners.Organization.t()) :: {:ok, term} | {:error, term}
   def mail_stats(org) do
     data = StatsLive.get_chart_data(org.id)
 

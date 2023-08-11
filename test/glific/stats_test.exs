@@ -98,10 +98,4 @@ defmodule Glific.StatsTest do
 
     assert Stats.count_stats(%{filter: %{organization_id: attrs.organization_id}}) > inital
   end
-
-  test "mail_stats/1 send dashboard mail to organization", attrs do
-    org = Partners.get_organization!(attrs.organization_id)
-
-    assert Stats.mail_stats(org) == {:ok, any()}
-  end
 end

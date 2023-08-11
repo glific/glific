@@ -194,7 +194,11 @@ defmodule GlificWeb.StatsLive do
     |> raw()
   end
 
-  defp render_bar_chart(title, dataset) do
+  @doc """
+  Render bar chart from dataset, returns SVG
+  """
+  @spec render_bar_chart(String.t(), Contex.Dataset.t()) :: {:safe, [any()]}
+  def render_bar_chart(title, dataset) do
     opts = barchart_opts(title)
 
     Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts)
