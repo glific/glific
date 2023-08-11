@@ -77,6 +77,12 @@ defmodule GlificWeb.StatsLive do
     |> List.insert_at(0, ["ID", "Name", "Phone", "BSP Status"])
   end
 
+  defp get_export_data(:active_hour, org_id) do
+    fetch_hourly_data(org_id)
+    |> Enum.map(fn {a, b, c} -> [a, b, c] end)
+    |> List.insert_at(0, ["Hour", "Inbound", "Outbound"])
+  end
+
   defp get_export_data(:table, org_id) do
     fetch_table_data(:broadcasts, org_id)
     |> List.insert_at(0, ["Flow Name", "Group Name", "Started At", "Completed At"])
@@ -170,7 +176,7 @@ defmodule GlificWeb.StatsLive do
   defp render_bar_chart("Most Active Hour" = title, dataset) do
     opts = series_barchart_opts(title)
 
-    Contex.Plot.new(dataset, Contex.BarChart, 1800, 400, opts)
+    Contex.Plot.new(dataset, Contex.BarChart, 1600, 400, opts)
     |> Contex.Plot.to_svg()
   end
 
