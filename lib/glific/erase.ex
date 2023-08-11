@@ -175,12 +175,23 @@ defmodule Glific.Erase do
     if count > 3 &&
          message_to_delete > 0 &&
          message_to_delete > first_message_number + 3 do
+      delete_media_query = """
+      DELETE FROM messages_media mm
+      USING messages m
+      WHERE
+        m.media_id IS NOT NULL
+        AND mm.id = m.media_id
+        AND m.contact_id = #{contact_id}
+        AND m.organization_id = #{org_id}
+        AND m.message_number < #{message_to_delete}
+      """
+
       delete_message_query = """
       DELETE
       FROM messages
-      WHERE organization_id = #{org_id}
+      WHERE organization_id =
       AND contact_id = #{contact_id}
-      AND message_number < #{message_to_delete}
+      AND message_number <
       """
 
       update_contact_query = """
@@ -194,8 +205,11 @@ defmodule Glific.Erase do
         "Deleting messages for #{contact_id} where message number < #{message_to_delete}"
       )
 
-      Repo.query!(delete_message_query, [], timeout: 400_000, skip_organization_id: true)
-      Repo.query!(update_contact_query, [], skip_organization_id: true)
+      [delete_media_query, delete_message_query, update_contact_query]
+      |> Enum.each(fn query ->
+        Logger.info("QUERY: #{query}")
+        # Repo.query!(query, [], timeout: 400_000, skip_organization_id: true)
+      end)
     end
 
     :ok
