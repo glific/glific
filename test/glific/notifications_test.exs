@@ -87,7 +87,7 @@ defmodule Glific.NotificationTest do
   test "create_notification/1 with invalid data returns error changeset", %{
     organization_id: organization_id
   } do
-    attrs = Map.merge(@invalid_attrs, %{organization_id: organization_id})
+    attrs = Map.merge(@invalid_attrs, %{organization_id: organization_id, severity: "information"})
 
     assert {:error, %Ecto.Changeset{}} = Notifications.create_notification(attrs)
   end

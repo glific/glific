@@ -43,6 +43,10 @@ defmodule Glific.Notifications do
     {:ok, notification}
   end
 
+  defp handle_notification(_notification, _severity) do
+    {:error, "no email"}
+  end
+
   @doc """
   Update a Notification
   """
