@@ -31,19 +31,33 @@ defmodule Glific.Notifications do
     end
   end
 
+  @spec handle_notification(Notification.t(), String.t()) :: {:ok, Notification.t()}
   defp handle_notification(notification, "critical") do
-    handle_critical_notification(notification)
+    Partners.organization(notification.organization_id)
+    |> NotificationMail.critical_mail(notification.message)
+    |> Mailer.send(%{
+      category: "critical_notification",
+      organization_id: notification.organization_id
+    })
+
     {:ok, notification}
   end
 
   defp handle_notification(notification, "warning") do
-    handle_warning_notification(notification)
+    with organization <- Partners.organization(notification.organization_id),
+         true <- organization.setting["send_warning_mail"] do
+      organization
+      |> NotificationMail.warning_mail(notification.message)
+      |> Mailer.send(%{
+        category: "Warning",
+        organization_id: notification.organization_id
+      })
+    end
+
     {:ok, notification}
   end
 
-  defp handle_notification(_notification, _severity) do
-    {:error, "no email"}
-  end
+  defp handle_notification(notification, _severity), do: {:ok, notification}
 
   @doc """
   Update a Notification
@@ -118,32 +132,5 @@ defmodule Glific.Notifications do
       warning: "Warning",
       info: "Information"
     }
-  end
-
-  @spec handle_critical_notification(map()) :: :ok | {:error, String.t()}
-  defp handle_critical_notification(notification) do
-    {:ok, _} =
-      Partners.organization(notification.organization_id)
-      |> NotificationMail.critical_mail(notification.message)
-      |> Mailer.send(%{
-        category: "critical_notification",
-        organization_id: notification.organization_id
-      })
-  end
-
-  @spec handle_critical_notification(map()) :: :ok | {:error, String.t()}
-  defp handle_warning_notification(notification) do
-    org = Partners.organization(notification.organization_id)
-    type = org.setting["Error_type"]
-
-    if type == "warning" do
-      {:ok, _} =
-        org
-        |> NotificationMail.warning_mail(notification.message)
-        |> Mailer.send(%{
-          category: "Warning",
-          organization_id: notification.organization_id
-        })
-    end
   end
 end

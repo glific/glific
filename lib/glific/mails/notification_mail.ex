@@ -28,7 +28,7 @@ defmodule Glific.Mails.NotificationMail do
   @spec warning_mail(Organization.t(), String.t()) :: Swoosh.Email.t()
   def warning_mail(org, message) do
     team = ""
-    subject = "Glific warning: Needs your attention."
+    subject = "Glific Warning: Needs your attention."
 
     body = """
     Hello #{org.name}
