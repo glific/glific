@@ -146,6 +146,7 @@ defmodule Glific.Erase do
            last_message_number - first_message_number as cnt
     FROM contacts
     WHERE organization_id = #{org_id}
+      AND first_message_number IS NOT NULL
       AND last_message_number - first_message_number > #{limit + 2}
     ORDER BY cnt desc
     LIMIT 200
@@ -197,7 +198,7 @@ defmodule Glific.Erase do
       update_contact_query = """
       UPDATE contacts
       SET first_message_number = #{message_to_delete}
-      WHERE contact_id = #{contact_id}
+      WHERE id = #{contact_id}
       AND organization_id = #{org_id}
       """
 
