@@ -587,7 +587,7 @@ defmodule Glific.Seeds.SeedsMigration do
     WHERE
       c.organization_id = #{org_id}
     """
-    |> &Repo.query!(&1, [], skip_organization_id: true, timeout: 900_000))
+    |> Repo.query!([], skip_organization_id: true, timeout: 900_000)
   end
 
   @spec bigquery_enabled_org_ids() :: list()
