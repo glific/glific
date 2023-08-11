@@ -567,7 +567,7 @@ defmodule Glific.Seeds.SeedsMigration do
     """
   end
 
-  @spec set_first_message_number(integer()) :: String.t()
+  @spec set_first_message_number(integer()) :: any
   defp set_first_message_number(org_id) do
     """
     UPDATE
