@@ -8,8 +8,7 @@ defmodule Glific.Notifications do
 
   alias Glific.{
     Communications.Mailer,
-    Mails.CriticalNotificationMail,
-    Mails.WarningNotificationMail,
+    Mails.NotificationMail,
     Notifications.Notification,
     Partners.Organization,
     Partners,
@@ -21,24 +20,27 @@ defmodule Glific.Notifications do
   """
   @spec create_notification(map()) :: {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
   def create_notification(attrs \\ %{}) do
+    severity = Glific.string_clean(attrs.severity)
     %Notification{}
     |> Notification.changeset(attrs)
     |> Repo.insert()
     |> case do
       {:ok, notification} ->
-        severity = Glific.string_clean(attrs.severity)
-
-        if severity == "critical" do
-          handle_critical_notification(notification)
-        else if severity == "warning" do
-          handle_warning_notification(notification)
-        end
-
-        {:ok, notification}
+        handle_notification(notification, severity)
 
       {:error, changeset} ->
         {:error, changeset}
     end
+  end
+
+  defp handle_notification(notification, "critical") do
+    handle_critical_notification(notification)
+    {:ok, notification}
+  end
+
+  defp handle_notification(notification, "warning") do
+    handle_warning_notification(notification)
+    {:ok, notification}
   end
 
   @doc """
@@ -119,7 +121,7 @@ defmodule Glific.Notifications do
   defp handle_critical_notification(notification) do
     {:ok, _} =
       Partners.organization(notification.organization_id)
-      |> CriticalNotificationMail.new_mail(notification.message)
+      |> NotificationMail.critical_mail(notification.message)
       |> Mailer.send(%{
         category: "critical_notification",
         organization_id: notification.organization_id
@@ -127,13 +129,13 @@ defmodule Glific.Notifications do
   end
 
   defp handle_warning_notification(notification) do
-    organization = Repo.get!(Organization, organization_id)
-    type = organization.setting["Error_type"]
+    org = Partners.organization(notification.organization_id)
+    type = org.setting["Error_type"]
 
     if type == "warning" do
       {:ok, _} =
-        Partners.organization(notification.organization_id)
-        |> WarningNotificationMail.new_mail(notification.message)
+        org
+        |> NotificationMail.warning_mail(notification.message)
         |> Mailer.send(%{
           category: "Warning",
           organization_id: notification.organization_id

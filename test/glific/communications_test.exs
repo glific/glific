@@ -371,7 +371,7 @@ defmodule Glific.CommunicationsTest do
     alias Glific.{
       Fixtures,
       Mails.BalanceAlertMail,
-      Mails.CriticalNotificationMail,
+      Mails.NotificationMail,
       Mails.MailLog,
       Mails.NewPartnerOnboardedMail,
       Partners
@@ -388,13 +388,13 @@ defmodule Glific.CommunicationsTest do
              }) == 1
     end
 
-    test "CriticalNotificationMail mail struct sends the critical notification mail", attrs do
+    test "NotificationMail mail struct sends the critical notification mail", attrs do
       mail_attrs = %{category: "critical_notification", organization_id: attrs.organization_id}
       notification = Fixtures.notification_fixture(%{organization_id: attrs.organization_id})
 
       critical_notification_mail =
         Partners.organization(notification.organization_id)
-        |> CriticalNotificationMail.new_mail(notification.message)
+        |> NotificationMail.critical_mail(notification.message)
 
       assert {:ok, _} = Communications.Mailer.send(critical_notification_mail, mail_attrs)
 
