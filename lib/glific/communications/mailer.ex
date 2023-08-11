@@ -78,6 +78,9 @@ defmodule Glific.Communications.Mailer do
 
   #should we merge this both function(common_send and below one) ?
 
+  @doc """
+  Create Mail with HTML body
+  """
   @spec common_html_send(Organization.t(), String.t(), String.t(), [{atom(), any()}]) ::
           Swoosh.Email.t()
   def common_html_send(org, subject, body, opts \\ []) do
