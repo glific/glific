@@ -130,7 +130,7 @@ defmodule Glific.Erase do
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
   end
 
-  @limit 400
+  @limit 350
 
   @doc """
   Keep latest limited messages for a contact
@@ -209,7 +209,7 @@ defmodule Glific.Erase do
       [delete_media_query, delete_message_query, update_contact_query]
       |> Enum.each(fn query ->
         Logger.info("QUERY: #{query}")
-        # Repo.query!(query, [], timeout: 400_000, skip_organization_id: true)
+        Repo.query!(query, [], timeout: 400_000, skip_organization_id: true)
       end)
     end
 
