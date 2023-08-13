@@ -1,22 +1,222 @@
-<div style="display: flex; flex-direction: column; align-items: center;">
-  <div id="charts" style="display: flex; flex-wrap: wrap; gap: 30px;">
-    <div id="contact-chart" class="card" style="padding: 40px; width: 350px; height: 220px; background-color: #f0f8f0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); display: flex; align-items: center; justify-content: center;">
-      <%= @contact_chart_svg %>
-    </div>
-    <div id="conversation-chart" class="card" style="padding: 40px; width: 350px; height: 220px; background-color: #f0f8f0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); display: flex; align-items: center; justify-content: center;">
-      <%= @conversation_chart_svg %>
-    </div>
-    <div id="optin-chart" class="card" style="padding: 40px; width: 350px; height: 220px; background-color: #f0f8f0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); display: flex; align-items: center; justify-content: center;">
-      <%= @optin_chart_svg %>
-    </div>
-    <div id="notification-chart" class="card" style="padding: 40px; width: 350px; height: 220px; background-color: #f0f8f0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); display: flex; align-items: center; justify-content: center;">
-      <%= @notification_chart_svg %>
-    </div>
-    <div id="message-chart" class="card" style="padding: 40px; width: 350px; height: 220px; background-color: #f0f8f0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); display: flex; align-items: center; justify-content: center;">
-      <%= @message_chart_svg %>
-    </div>
-    <div id="contact-type-chart" class="card" style="padding: 40px; width: 350px; height: 220px; background-color: #f0f8f0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); display: flex; align-items: center; justify-content: center;">
-      <%= @contact_type_chart_svg %>
-    </div>
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <title></title>
+  <!--[if mso]>
+  <style>
+    table {border-collapse:collapse;border-spacing:0;border:none;margin:0;}
+    div, td {padding:0;}
+    div {margin:0 !important;}
+	</style>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+  <style>
+    table,
+    td,
+    div,
+    h1,
+    p {
+      font-family: Arial, sans-serif;
+    }
+  </style>
+</head>
+
+<body style="margin:0;padding:0;word-spacing:normal;background-color:#e0e9e4;">
+  <div role="article" aria-roledescription="email" lang="en"
+    style="text-size-adjust:100%;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;background-color:#e0e9e4;">
+    <table role="presentation" style="width:100%;border:none;border-spacing:0; padding-bottom: 30px;">
+      <tr>
+        <td align="center" style="padding:0;">
+          <!--[if mso]>
+          <table role="presentation" align="center" style="width:820px;">
+          <tr>
+          <td>
+          <![endif]-->
+          <table role="presentation"
+            style="width:94%;max-width:820px;border:none;border-spacing:0;text-align:left;font-family:Arial,sans-serif;font-size:16px;line-height:22px;color:#363636;">
+            <tr>
+              <td style="padding:30px 30px 20px 30px;text-align:center;font-size:24px;font-weight:bold;">
+                <a href="https://glific.org/" target="_blank" style="text-decoration:none;">
+                  <svg width="15%" height="auto" viewBox="0 0 309 188" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                    xmlns:xlink="http://www.w3.org/1999/xlink">
+                    <!-- Generator: Sketch 61.2 (89653) - https://sketch.com -->
+                    <title>Glific</title>
+                    <desc>Two way communication Platform</desc>
+                    <g id="Graphics" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                      <g id="Group-2-Copy" transform="translate(7.000000, 7.000000)">
+                        <g id="Group-21">
+                          <path
+                            d="M40.9620229,35 L225,35 C247.09139,35 265,52.90861 265,75 L265,133.461538 C265,155.552928 247.09139,173.461538 225,173.461538 L193.084646,173.461538 L193.084646,173.461538 L86.3386933,173.461538 L0.962022899,173.461538 L0.962022899,75 C0.962022899,52.90861 18.8706329,35 40.9620229,35 Z"
+                            id="Rectangle-Copy-75" stroke="#073F24" stroke-width="14" fill="#119656"></path>
+                          <path
+                            d="M75,0 L255,0 C277.09139,-4.05812251e-15 295,17.90861 295,40 L295,95 C295,117.09139 277.09139,135 255,135 L224.18446,135 L224.18446,135 L119.070991,135 L35,135 L35,40 C35,17.90861 52.90861,4.05812251e-15 75,0 Z"
+                            id="Rectangle-Copy-75" stroke="#073F24" stroke-width="14" fill="#FFFFFF"
+                            transform="translate(165.000000, 67.500000) scale(-1, -1) translate(-165.000000, -67.500000) ">
+                          </path>
+                          <path
+                            d="M87.3140496,110 C94.1322314,110 98.8498623,106.927711 101.466942,100.783133 C102.05751,105.408146 105.993485,108.873494 110.65605,108.873494 L112.417355,108.873494 L112.417355,108.873494 L112.417355,65.9143972 L98.677686,65.9143972 L98.677686,76.3072289 L98.677686,79.0611409 C98.677686,82.3382493 98.677686,87.253912 98.677686,93.8081288 C94.8438935,93.8081288 91.7791552,93.8081288 89.4834711,93.8081288 C85.9710744,93.8081288 83.5778237,92.6474863 82.303719,90.3262011 C81.0296143,88.004916 80.392562,84.4888517 80.392562,79.7780083 L80.392562,53.9337426 C80.392562,50.8614534 80.5819559,48.3694855 80.9607438,46.4578389 C81.3395317,44.5461924 82.1487603,42.9759112 83.3884298,41.7469956 C84.6280992,40.5180799 86.5220386,39.9036221 89.0702479,39.9036221 C91.4807163,39.9036221 93.2885675,40.3815337 94.4938017,41.337357 C95.6990358,42.2931803 96.7380547,43.3713058 97.3659312,44.9488962 C97.9938077,46.5264867 98.677686,49.5984012 98.677686,52.6024173 L98.677686,55.6686236 L112.004132,55.6686236 L112.004132,49.1686747 C112.004132,41.1807229 110.213499,35.1556225 106.632231,31.0933735 C103.050964,27.0311245 97.1280992,25 88.8636364,25 C80.1170799,25 73.953168,27.4066265 70.3719008,32.2198795 C66.7906336,37.0331325 65,44.184739 65,53.6746988 L65,81.5301205 C65,90.746988 66.7389807,97.7961847 70.2169421,102.677711 C73.6949036,107.559237 79.3939394,110 87.3140496,110 Z M138.725895,101.900353 L138.725895,35.9216867 C138.725895,30.3988392 134.248743,25.9216867 128.725895,25.9216867 L124.779614,25.9216867 L124.779614,25.9216867 L124.779614,101.900353 C124.779614,105.751513 127.901596,108.873494 131.752755,108.873494 C135.603914,108.873494 138.725895,105.751513 138.725895,101.900353 Z M164.799587,34.4728916 C164.799587,31.2772922 162.209042,28.686747 159.013442,28.686747 L156.536145,28.686747 C153.340545,28.686747 150.75,31.2772922 150.75,34.4728916 C150.75,37.668491 153.340545,40.2590361 156.536145,40.2590361 L159.013442,40.2590361 C162.209042,40.2590361 164.799587,37.668491 164.799587,34.4728916 Z M165.137741,101.848701 L165.137741,59.6807229 C165.137741,54.1578754 160.660589,49.6807229 155.137741,49.6807229 L151.088154,49.6807229 L151.088154,49.6807229 L151.088154,101.848701 C151.088154,105.728387 154.233261,108.873494 158.112948,108.873494 C161.992634,108.873494 165.137741,105.728387 165.137741,101.848701 Z M191.549587,101.848701 L191.549587,59.4096386 L191.549587,59.4096386 L203.739669,59.4096386 L203.739669,101.900353 C203.739669,105.751513 206.861651,108.873494 210.71281,108.873494 C214.563969,108.873494 217.68595,105.751513 217.68595,101.900353 L217.68595,59.6807229 C217.68595,54.1578754 213.208798,49.6807229 207.68595,49.6807229 L191.549587,49.6807229 L191.549587,49.6807229 L191.549587,44.7650602 C191.549587,42.4437751 191.893939,40.8052209 192.582645,39.8493976 C193.27135,38.8935743 194.442149,38.4156627 196.095041,38.4156627 C197.26584,38.4156627 198.298898,38.5522088 199.194215,38.8253012 L199.194215,28.8915663 C196.577135,28.5502008 194.373278,28.3795181 192.582645,28.3795181 C187.004132,28.3795181 183.09573,29.8303213 180.857438,32.7319277 C178.619146,35.6335341 177.5,40.0200803 177.5,45.8915663 L177.5,49.6807229 L177.5,59.4096386 L177.5,101.848701 C177.5,105.728387 180.645107,108.873494 184.524793,108.873494 C188.40448,108.873494 191.549587,105.728387 191.549587,101.848701 Z M217.789256,34.4728916 C217.789256,31.2772922 215.198711,28.686747 212.003112,28.686747 L210.558872,28.686747 C207.363272,28.686747 204.772727,31.2772922 204.772727,34.4728916 C204.772727,37.668491 207.363272,40.2590361 210.558872,40.2590361 L212.003112,40.2590361 C215.198711,40.2590361 217.789256,37.668491 217.789256,34.4728916 Z M246.714876,109.795181 C252.982094,109.795181 257.596419,108.2249 260.557851,105.084337 C263.519284,101.943775 265,97.3353414 265,91.2590361 L265,83.3304012 L251.77686,83.3304012 L251.77686,91.9759036 C251.77686,93.8420348 251.77686,96.5046854 251.77686,99.9638554 C249.756657,99.9638554 248.103765,99.9638554 246.818182,99.9638554 C244.958678,99.9638554 243.63292,99.2811245 242.840909,97.9156627 C242.048898,96.5502008 241.652893,94.0240964 241.652893,90.3373494 L241.652893,68.626506 C241.652893,64.8032129 242.014463,62.1746988 242.737603,60.7409639 C243.460744,59.3072289 244.820937,58.5903614 246.818182,58.5903614 C248.677686,58.5903614 249.969008,59.1706827 250.692149,60.3313253 C251.415289,61.4919679 251.77686,63.6084337 251.77686,66.6807229 L251.77686,73.0760697 L265,73.0760697 L265,66.9879518 C265,60.8433735 263.536501,56.2690763 260.609504,53.2650602 C257.682507,50.2610442 253.050964,48.7590361 246.714876,48.7590361 C240.034435,48.7590361 235.179063,50.6024096 232.14876,54.2891566 C229.118457,57.9759036 227.603306,63.3353414 227.603306,70.3674699 L227.603306,88.186747 C227.603306,95.1506024 229.118457,100.492972 232.14876,104.213855 C235.179063,107.934739 240.034435,109.795181 246.714876,109.795181 Z"
+                            id="Glifc-Copy" fill="#073F24" fill-rule="nonzero"></path>
+                        </g>
+                      </g>
+                    </g>
+                  </svg>
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:30px;background-color:#ffffff;">
+                <p style="margin-top:0;margin-bottom:30px;">
+                  Dear <%= @parent_org %> Team,
+                </p>
+                <p style="margin: 0;">
+                  We hope this message finds you well. As part of our commitment to provide you with valuable insights
+                  into the performance of your Glific-powered WhatsApp chatbot, we're pleased to share the Weekly
+                  Chatbot Performance Report for the period [Date Range].
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="background-color:#ffffff;">
+
+                <div class="two-col" style="text-align:center;font-size:20px;">
+                  <!--[if mso]> 
+        <table role="presentation" width="100%"> 
+        <tr> 
+        <td style="width:50%;" valign="middle"> 
+        <![endif]-->
+                  <div class="column" style="padding-left: 10px;padding-top:10px; width:100%;max-width:390px;display:inline-block;vertical-align:middle;">
+                    <div id="contact-chart" class="card"
+                      style="padding: 30px 10px; width: 350px; height: 250px; background-color: #f0f8f0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                      <%= @contact_chart_svg %>
+                    </div>
+                  </div>
+                  <!--[if mso]> 
+        </td> 
+        <td style="width:50%;" valign="middle"> 
+        <![endif]-->
+                  <div class="column" style="padding-left: 10px;padding-top:10px;width:100%;max-width:390px;display:inline-block;vertical-align:middle;">
+                    <div id="conversation-chart" class="card"
+                      style="padding: 30px 10px;width: 350px; height: 250px; background-color: #f0f8f0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); ">
+
+                      <%= @conversation_chart_svg %>
+                    </div>
+                  </div>
+                  <!--[if mso]> 
+        </td> 
+        </tr> 
+        </table> 
+        <![endif]-->
+                </div>
+              </td>
+            </tr>
+            
+            <tr>
+              <td style="background-color:#ffffff;">
+
+                <div class="two-col" style="text-align:center;font-size:20px;">
+                  <!--[if mso]> 
+        <table role="presentation" width="100%"> 
+        <tr> 
+        <td style="width:50%;" valign="middle"> 
+        <![endif]-->
+                  <div class="column" style="padding-left: 10px;padding-top:10px; width:100%;max-width:390px;display:inline-block;vertical-align:middle;">
+                    <div id="optin-chart" class="card"
+                      style="padding: 30px 10px; width: 350px; height: 250px; background-color: #f0f8f0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); ">
+                      <%= @optin_chart_svg %>
+                    </div>
+                  </div>
+                  <!--[if mso]> 
+        </td> 
+        <td style="width:50%;"  valign="middle"> 
+        <![endif]-->
+                  <div class="column" style="padding-left: 10px;padding-top:10px;width:100%;max-width:390px;display:inline-block;vertical-align:middle;">
+                    <div id="message-chart" class="card"
+                      style="padding: 30px 10px;width: 350px; height: 250px; background-color: #f0f8f0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); ">
+                      <%= @message_chart_svg %>
+                    </div>
+                  </div>
+                  <!--[if mso]> 
+        </td> 
+        </tr> 
+        </table> 
+        <![endif]-->
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:30px;background-color:#ffffff;">
+                <p style="margin-top:0; margin-bottom: 30px;">
+                  Please feel free to reach out to us if you have any questions, need further assistance, or would like
+                  to dive deeper into the data. Our team is here to support you in maximizing the impact of your chatbot
+                  and achieving your goals.
+                </p>
+                <p style="margin:0;">
+                  Best Regards,
+                </p>
+                <p style="margin:0;">
+                  Team Glific
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td
+                style="padding: 10px 0px 0px 20px;text-align:left;font-size:12px;background-color:#119656;color:#cccccc;">
+                <p style="margin:0 0 8px 0;">
+                  <a href="https://www.linkedin.com/company/glific" target="_blank" style="text-decoration:none;">
+                    <svg width="36" height="36" viewBox="34 34 36 36" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                      xmlns:xlink="http://www.w3.org/1999/xlink">
+                      <title>Linkedin</title>
+
+                      <g id="Login/Register" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                        <g id="Desktop/Login-Copy-5" transform="translate(-1057.000000, -516.000000)">
+                          <g id="Group" transform="translate(966.000000, 220.000000)">
+                            <g id="Vector" transform="translate(125.000000, 330.000000)">
+                              <rect id="Rectangle-Copy-17" fill="#119656" x="0" y="0" width="36" height="36" rx="18">
+                              </rect>
+                              <path
+                                d="M15.4333322,15.2406946 L18.6497679,15.2406946 L18.6497679,16.9097604 C19.1140659,15.950293 20.3017314,15.0867151 22.0864759,15.0867151 C25.5079817,15.0867151 26.3188405,16.9978773 26.3188405,20.5044702 L26.3188405,27 L22.8562414,27 L22.8562414,21.3033309 C22.8562414,19.3062609 22.3920226,18.1793959 21.2129875,18.1793959 C19.5772554,18.1793959 18.8970398,19.3943777 18.8970398,21.3033309 L18.8970398,27 L15.4333322,27 L15.4333322,15.2406946 Z M9.49504446,26.8471659 L12.9587045,26.8471659 L12.9587045,15.0867151 L9.49504446,15.0867151 L9.49504446,26.8460205 L9.49504446,26.8471659 Z M13.4542857,11.250989 C13.4608178,11.5574344 13.4080459,11.8621452 13.2990657,12.1472364 C13.1900934,12.4323276 13.0271061,12.6920473 12.8196764,12.9111695 C12.6122467,13.1302835 12.3645472,13.3043818 12.0911228,13.4232373 C11.8176985,13.5420928 11.5240442,13.6033246 11.2274129,13.6033246 C10.9307816,13.6033246 10.6371273,13.5420928 10.363703,13.4232373 C10.0902786,13.3043818 9.84257913,13.1302835 9.63514939,12.9111695 C9.42771966,12.6920473 9.26473237,12.4323276 9.1557601,12.1472364 C9.04677992,11.8621452 8.99400798,11.5574344 9.00054014,11.250989 C9.01335901,10.6494707 9.2536079,10.0770548 9.66982922,9.65632743 C10.0860505,9.23559192 10.6451559,9 11.2274129,9 C11.8096699,9 12.3687753,9.23559192 12.7849966,9.65632743 C13.2012179,10.0770548 13.4414668,10.6494707 13.4542857,11.250989 Z"
+                                id="Shape" fill="#FFFFFF"></path>
+                            </g>
+                          </g>
+                        </g>
+                      </g>
+                    </svg>
+                  </a>
+                  <a href="https://discord.com/invite/3PwRFUpJH3" target="_blank" style="text-decoration:none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="-22 -35 170 170"><defs><style>.cls-1{fill:#fff;}</style></defs><g id="图层_2" data-name="图层 2"><g id="Discord_Logos" data-name="Discord Logos"><g id="Discord_Logo_-_Large_-_White" data-name="Discord Logo - Large - White"><path class="cls-1" d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/></g></g></g></svg>
+                  </a>
+                  <a href="https://github.com/glific" target="_blank" style="text-decoration:none;">
+                    <svg width="36" height="36" viewBox="-20 -13 130 130" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z"
+                        fill="#fff" />
+                    </svg>
+                  </a>
+                </p>
+              </td>
+            </tr>
+          </table>
+          <!--[if mso]>
+          </td>
+          </tr>
+          </table>
+          <![endif]-->
+        </td>
+      </tr>
+    </table>
   </div>
-</div>
+</body>
+
+</html>

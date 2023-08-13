@@ -180,9 +180,11 @@ defmodule Glific.Reports do
     iex> Glific.Reports.get_kpi_data(1, "optout")
     iex> Glific.Reports.get_kpi_data(1, "contact_type")
   """
-  @spec get_kpi_data(non_neg_integer(), String.t()) :: list()
-  def get_kpi_data(org_id, table) do
-    presets = get_date_preset()
+  @spec get_kpi_data(non_neg_integer(), String.t(), [{atom(), any()}]) :: list()
+  def get_kpi_data(org_id, table, opts \\ []) do
+    duration = Keyword.get(opts, :duration, 7)
+
+    presets = get_date_preset(NaiveDateTime.utc_now(), duration)
     Repo.put_process_state(org_id)
 
     query_data =
@@ -278,13 +280,13 @@ defmodule Glific.Reports do
     |> Repo.all()
   end
 
-  defp get_date_preset(time \\ NaiveDateTime.utc_now()) do
+  def get_date_preset(time \\ NaiveDateTime.utc_now(), duration \\ 7) do
     today = shifted_time(time, 1)
 
-    last_day = shifted_time(time, -6)
+    last_day = shifted_time(time, -(duration-1))
 
     date_map =
-      Enum.reduce(0..6, %{}, fn day, acc ->
+      Enum.reduce(0..(duration-1), %{}, fn day, acc ->
         time
         |> shifted_time(-day)
         |> then(&Map.put(acc, &1, 0))

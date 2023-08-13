@@ -19,13 +19,19 @@ defmodule Glific.Mails.DashboardMail do
 
     html_body = DashboardView.render_dashboard(template, assigns)
 
-    body = """
-      <h2>Monthly Report</h2>
-      #{html_body}
+    # body = """
+    # Dear #{org.parent_org} Team,
 
-      For more insights checkout <a href="https://api.glific.test:4001/stats" target="_blank">Your Dashboard</a>
-    """
+    # We hope this message finds you well. As part of our commitment to provide you with valuable insights into the performance of your Glific-powered WhatsApp chatbot, we're pleased to share the Weekly Chatbot Performance Report for the period [Date Range].
 
-    Mailer.common_html_send(org, subject, body)
+    # #{html_body}
+
+    # Please feel free to reach out to us if you have any questions, need further assistance, or would like to dive deeper into the data. Our team is here to support you in maximizing the impact of your chatbot and achieving your goals.
+
+    # Best Regards,
+    # Team Glific
+    # """
+
+    Mailer.common_html_send(org, subject, html_body)
   end
 end

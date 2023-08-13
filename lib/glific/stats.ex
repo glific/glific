@@ -17,6 +17,7 @@ defmodule Glific.Stats do
     Partners,
     Partners.Saas,
     Repo,
+    Reports,
     Stats.Stat,
     Users.User
   }
@@ -494,20 +495,35 @@ defmodule Glific.Stats do
     |> (&StatsLive.render_bar_chart(title, &1)).()
   end
 
+  @spec fetch_inbound_outbound(non_neg_integer()) :: [tuple()]
+  defp fetch_inbound_outbound(org_id) do
+    inbound = Reports.get_kpi(:inbound_messages_count, org_id)
+    outbound = Reports.get_kpi(:outbound_messages_count, org_id)
+
+    [
+      {"Inbound: #{inbound}", inbound},
+      {"Outbound: #{outbound}", outbound}
+    ]
+  end
   @doc """
   Sends mail to organization with their stats
   """
-  @spec mail_stats(Partners.Organization.t()) :: {:ok, term} | {:error, term}
-  def mail_stats(org) do
-    data = StatsLive.get_chart_data(org.id)
+  @spec mail_stats(Partners.Organization.t(), non_neg_integer()) :: {:ok, term} | {:error, term}
+  def mail_stats(org, duration) do
+    # data = StatsLive.get_chart_data(org.id)
 
+    data = %{
+      "contacts" => Reports.get_kpi_data(org.id, "contacts", [duration: duration]),
+      "converstaions" => Reports.get_kpi_data(org.id, "messages_conversations", [duration: duration]),
+      "optin" => StatsLive.fetch_count_data(:optin_chart_data, org_id),
+      "messages" => fetch_inbound_outbound(org_id)
+    }
     assigns = %{
-      contact_chart_svg: load_bar_svg(Keyword.get(data, :contact_chart_data), "Contacts"),
-      conversation_chart_svg: load_bar_svg(Keyword.get(data, :conversation_chart_data), "Conversations"),
-      optin_chart_svg: load_pie_svg(Keyword.get(data, :optin_chart_data), "Contacts Optin Status"),
-      notification_chart_svg: load_pie_svg(Keyword.get(data, :notification_chart_data), "Notifications"),
-      message_chart_svg: load_pie_svg(Keyword.get(data, :message_type_chart_data), "Messages"),
-      contact_type_chart_svg: load_pie_svg(Keyword.get(data, :contact_pie_chart_data), "Contact Session Status")
+      contact_chart_svg: load_bar_svg(, "Contacts"),
+      conversation_chart_svg: load_bar_svg(, "Conversations"),
+      optin_chart_svg: load_pie_svg(, "Contacts Optin Status"),
+      message_chart_svg: load_pie_svg(, "Messages"),
+      parent_org: org.parent_org
     }
 
     opts = [
