@@ -235,7 +235,7 @@ defmodule Glific.Reports do
     |> where([q], q.period == "hour")
     |> Repo.all()
     |> Enum.reduce(%{}, fn hourly_stat, acc ->
-      Map.put(acc, hourly_stat.hour, Map.delete(hourly_stat, :hour))
+      Map.put(acc, round(hourly_stat.hour), Map.delete(hourly_stat, :hour))
     end)
   end
 
@@ -291,6 +291,34 @@ defmodule Glific.Reports do
       end)
 
     %{today: today, last_day: last_day, date_map: date_map}
+  end
+
+  @doc false
+  @spec get_export_data(atom(), non_neg_integer()) :: list()
+  def get_export_data(chart, org_id) do
+    get_export_query(chart)
+    |> where([q], q.organization_id == ^org_id)
+    |> Repo.all()
+  end
+
+  defp get_export_query(:optin) do
+    Contact
+    |> select([q], [q.id, q.name, q.phone, q.optin_status])
+  end
+
+  defp get_export_query(:notifications) do
+    Notification
+    |> select([q], [q.id, q.category, q.severity])
+  end
+
+  defp get_export_query(:messages) do
+    Stat
+    |> select([q], [q.id, q.inbound, q.outbound])
+  end
+
+  defp get_export_query(:contact_type) do
+    Contact
+    |> select([q], [q.id, q.name, q.phone, q.bsp_status])
   end
 
   @spec shifted_time(NaiveDateTime.t(), integer()) :: NaiveDateTime.t()

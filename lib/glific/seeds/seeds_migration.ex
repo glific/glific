@@ -86,6 +86,9 @@ defmodule Glific.Seeds.SeedsMigration do
   defp do_migrate_data(:set_default_organization_roles, organizations),
     do: Enum.map(organizations, fn org -> set_default_organization_roles(org.id) end)
 
+  defp do_migrate_data(:set_first_message_number, organizations),
+    do: Enum.map(organizations, fn org -> set_first_message_number(org.id) end)
+
   @doc false
   @spec add_simulators(list()) :: :ok
   def add_simulators(organizations) do
@@ -562,6 +565,29 @@ defmodule Glific.Seeds.SeedsMigration do
       WHERE
       id = #{contact_id};
     """
+  end
+
+  @spec set_first_message_number(integer()) :: any
+  defp set_first_message_number(org_id) do
+    """
+    UPDATE
+     contacts c
+    SET
+      first_message_number = (
+        SELECT
+          m.message_number
+        FROM
+          messages m
+        WHERE
+          m.sender_id != m.receiver_id
+          AND m.contact_id = c.id
+        ORDER BY
+          message_number
+        LIMIT 1)
+    WHERE
+      c.organization_id = #{org_id}
+    """
+    |> Repo.query!([], skip_organization_id: true, timeout: 900_000)
   end
 
   @spec bigquery_enabled_org_ids() :: list()
