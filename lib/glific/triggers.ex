@@ -12,7 +12,6 @@ defmodule Glific.Triggers do
     AccessControl.TriggerRole,
     Flows,
     Flows.Flow,
-    Groups,
     Partners,
     Repo,
     Triggers,
@@ -24,6 +23,7 @@ defmodule Glific.Triggers do
 
   @doc """
   Periodic call to execute the triggers outstanding for the day
+  Glific.Triggers.execute_triggers(1, time)
   """
   @spec execute_triggers(non_neg_integer(), DateTime.t()) :: [Trigger.t()]
   def execute_triggers(organization_id, now \\ DateTime.utc_now()) do

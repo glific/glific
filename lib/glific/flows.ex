@@ -15,7 +15,6 @@ defmodule Glific.Flows do
     Contacts.Contact,
     Flows.ContactField,
     Groups,
-    Groups.Group,
     Partners,
     Repo,
     Sheets,
