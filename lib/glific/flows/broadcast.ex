@@ -26,50 +26,59 @@ defmodule Glific.Flows.Broadcast do
   @doc """
   The one simple public interface to broadcast a group
   """
-  @spec broadcast_flow_to_group(Flow.t(), Group.t(), map(), Keyword.t()) ::
+  @spec broadcast_flow_to_group(Flow.t(), list(), map(), Keyword.t()) ::
           {:ok, MessageBroadcast.t()} | {:error, String.t()}
-  def broadcast_flow_to_group(flow, group, default_results \\ %{}, opts \\ []) do
+  def broadcast_flow_to_group(flow, group_ids, default_results \\ %{}, opts \\ []) do
     # lets set up the state and then call our helper friend to split group into smaller chunks
     # of contacts
     exclusion = Keyword.get(opts, :exclusions, false)
 
-    {:ok, group_message} =
-      Messages.create_group_message(%{
-        body: "Starting flow: #{flow.name} for group: #{group.label}",
-        type: :text,
-        group_id: group.id
-      })
+    group_messages =
+      Enum.map(group_ids, fn group_id ->
+        {:ok, group} = Repo.fetch_by(Group, %{id: group_id})
+
+        {:ok, group_message} =
+          Messages.create_group_message(%{
+            body: "Starting flow: #{flow.name} for group: #{group.label}",
+            type: :text,
+            group_id: group_id
+          })
+
+        group_message
+      end)
+
+    group_message = hd(group_messages)
 
     %{
-      group_id: group.id,
+      group_id: hd(group_ids),
       message_id: group_message.id,
       started_at: DateTime.utc_now(),
       user_id: Repo.get_current_user().id,
-      organization_id: group.organization_id,
+      organization_id: group_message.organization_id,
       flow_id: flow.id,
       type: "flow",
       default_results: default_results
     }
-    |> init_msg_broadcast(group_message, exclusion)
+    |> init_msg_broadcast(group_message, group_ids, exclusion)
   end
 
   @doc """
   The one simple public interface to broadcast a group
   """
-  @spec broadcast_message_to_group(Messages.Message.t(), Group.t(), map(), map()) ::
+  @spec broadcast_message_to_group(Messages.Message.t(), list(), map(), map()) ::
           {:ok, MessageBroadcast.t()} | {:error, String.t()}
-  def broadcast_message_to_group(group_message, group, message_params, default_results \\ %{}) do
+  def broadcast_message_to_group(group_message, group_ids, message_params, default_results \\ %{}) do
     %{
-      group_id: group.id,
+      group_id: group_ids,
       message_id: group_message.id,
       started_at: DateTime.utc_now(),
       user_id: Repo.get_current_user().id,
-      organization_id: group.organization_id,
+      organization_id: group_message.organization_id,
       message_params: message_params,
       type: "message",
       default_results: default_results
     }
-    |> init_msg_broadcast(group_message, false)
+    |> init_msg_broadcast(group_message, group_ids, false)
   end
 
   @doc """
@@ -348,9 +357,9 @@ defmodule Glific.Flows.Broadcast do
     Stream.run(stream)
   end
 
-  @spec init_msg_broadcast(map(), Messages.Message.t(), boolean()) ::
+  @spec init_msg_broadcast(map(), Messages.Message.t(), list(), boolean()) ::
           {:ok, MessageBroadcast.t()} | {:error, String.t()}
-  defp init_msg_broadcast(broadcast_attrs, group_message, exclusion) do
+  defp init_msg_broadcast(broadcast_attrs, group_message, group_ids, exclusion) do
     {:ok, message_broadcast} =
       broadcast_attrs
       |> create_message_broadcast()
@@ -359,7 +368,7 @@ defmodule Glific.Flows.Broadcast do
       group_message
       |> Messages.update_message(%{message_broadcast_id: message_broadcast.id})
 
-    populate_message_broadcast_contacts(message_broadcast, exclusion)
+    populate_message_broadcast_contacts(message_broadcast, group_ids, exclusion)
     |> case do
       {:ok, _} -> {:ok, message_broadcast}
       _ -> {:error, "could not initiate broadcast"}
@@ -383,17 +392,15 @@ defmodule Glific.Flows.Broadcast do
     |> Repo.insert()
   end
 
-  @spec populate_message_broadcast_contacts(MessageBroadcast.t(), boolean()) ::
+  @spec populate_message_broadcast_contacts(MessageBroadcast.t(), list(), boolean()) ::
           {:ok, any()} | {:error, any()}
-  defp populate_message_broadcast_contacts(message_broadcast, true) do
+  defp populate_message_broadcast_contacts(message_broadcast, group_ids, true) do
     contact_ids =
       from(cg in Glific.Groups.ContactGroup,
-        join: c in assoc(cg, :contact),
         select: cg.contact_id,
-        where:
-          c.id == cg.contact_id and
-            cg.group_id == ^message_broadcast.group_id
+        where: cg.group_id in ^group_ids
       )
+      |> distinct(true)
       |> Repo.all()
 
     contacts_not_in_flow =
@@ -404,21 +411,32 @@ defmodule Glific.Flows.Broadcast do
     INSERT INTO message_broadcast_contacts
     (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id)
 
-    (SELECT #{message_broadcast.id}, 'pending', #{message_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, contact_id
-      FROM contacts_groups left join contacts on contacts.id = contacts_groups.contact_id
-      WHERE group_id = #{message_broadcast.group_id} AND (status !=  'blocked') AND (contacts.optout_time is null) AND (contact_id in #{contacts_not_in_flow}))
+    (SELECT #{message_broadcast.id}, 'pending', #{message_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id
+    FROM contacts
+    WHERE (status !=  'blocked') AND (optout_time is null) AND id in #{contacts_not_in_flow})
+
     """
     |> Repo.query()
   end
 
-  defp populate_message_broadcast_contacts(message_broadcast, _exclusion) do
+  defp populate_message_broadcast_contacts(message_broadcast, group_ids, _exclusion) do
+    contact_ids =
+      from(cg in Glific.Groups.ContactGroup,
+        select: cg.contact_id,
+        where: cg.group_id in ^group_ids
+      )
+      |> distinct(true)
+      |> Repo.all()
+      |> then(&("(" <> Enum.join(&1, ", ") <> ")"))
+
     """
     INSERT INTO message_broadcast_contacts
     (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id)
 
-    (SELECT #{message_broadcast.id}, 'pending', #{message_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, contact_id
-      FROM contacts_groups left join contacts on contacts.id = contacts_groups.contact_id
-      WHERE group_id = #{message_broadcast.group_id} AND (status !=  'blocked') AND (contacts.optout_time is null))
+    (SELECT #{message_broadcast.id}, 'pending', #{message_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id
+      FROM contacts
+
+      WHERE (status !=  'blocked') AND (optout_time is null) AND id in #{contact_ids})
     """
     |> Repo.query()
   end

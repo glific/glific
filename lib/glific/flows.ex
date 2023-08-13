@@ -670,13 +670,11 @@ defmodule Glific.Flows do
   @doc """
   Start flow for contacts of a group
   """
-  @spec start_group_flow(Flow.t(), Group.t(), map(), Keyword.t()) :: {:ok, Flow.t()}
-  def start_group_flow(flow, groups, default_results \\ %{}, opts \\ []) do
+  @spec start_group_flow(Flow.t(), list(), map(), Keyword.t()) :: {:ok, Flow.t()}
+  def start_group_flow(flow, group_ids, default_results \\ %{}, opts \\ []) do
     # the flow returned is the expanded version
-    groups_org_ids = Enum.map(groups, fn(group) -> group.organization_id end)
-    org_id = hd(groups_org_ids)
-    {:ok, flow} = get_cached_flow(org_id, {:flow_id, flow.id, @status})
-    Broadcast.broadcast_flow_to_group(flow, groups, default_results, opts)
+    {:ok, flow} = get_cached_flow(flow.organization_id, {:flow_id, flow.id, @status})
+    Broadcast.broadcast_flow_to_group(flow, group_ids, default_results, opts)
     {:ok, flow}
   end
 

@@ -35,7 +35,7 @@ defmodule Glific.Triggers.Trigger do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
-          group_ids: list()| nil
+          group_ids: list() | nil
         }
 
   @required_fields [

@@ -135,12 +135,7 @@ defmodule Glific.Triggers do
       "Starting flow: #{flow.name} for trigger: #{trigger.name} of org_id: #{trigger.organization_id} with time #{trigger.next_trigger_at}"
     )
 
-    if !is_nil(trigger.group_ids) do
-      groups = Enum.map(trigger.group_ids, fn group_id ->
-        Groups.get_group!(group_id)
-      end)
-      Flows.start_group_flow(flow, groups)
-    end
+    Flows.start_group_flow(flow, trigger.group_ids)
   end
 
   @doc """
