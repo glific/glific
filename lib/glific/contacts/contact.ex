@@ -35,6 +35,7 @@ defmodule Glific.Contacts.Contact do
     :optin_message_id,
     :optout_time,
     :optout_method,
+    :first_message_number,
     :last_message_number,
     :last_message_at,
     :last_communication_at,
@@ -67,6 +68,7 @@ defmodule Glific.Contacts.Contact do
           optin_message_id: String.t() | nil,
           optout_time: :utc_datetime | nil,
           optout_method: String.t() | nil,
+          first_message_number: integer,
           last_message_number: integer,
           last_message_at: :utc_datetime | nil,
           last_communication_at: :utc_datetime | nil,
@@ -93,6 +95,7 @@ defmodule Glific.Contacts.Contact do
     field(:optin_method, :string)
     field(:optin_message_id, :string)
 
+    field(:first_message_number, :integer, default: 1)
     field(:last_message_number, :integer, default: 0)
 
     field(:optout_time, :utc_datetime)

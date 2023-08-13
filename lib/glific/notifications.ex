@@ -8,7 +8,7 @@ defmodule Glific.Notifications do
 
   alias Glific.{
     Communications.Mailer,
-    Mails.CriticalNotificationMail,
+    Mails.NotificationMail,
     Notifications.Notification,
     Partners,
     Repo
@@ -24,16 +24,40 @@ defmodule Glific.Notifications do
     |> Repo.insert()
     |> case do
       {:ok, notification} ->
-        if Glific.string_clean(attrs.severity) == "critical" do
-          handle_critical_notification(notification)
-        end
-
-        {:ok, notification}
+        handle_notification(notification, Glific.string_clean(attrs.severity))
 
       {:error, changeset} ->
         {:error, changeset}
     end
   end
+
+  @spec handle_notification(Notification.t(), String.t()) :: {:ok, Notification.t()}
+  defp handle_notification(notification, "critical") do
+    Partners.organization(notification.organization_id)
+    |> NotificationMail.critical_mail(notification.message)
+    |> Mailer.send(%{
+      category: "critical_notification",
+      organization_id: notification.organization_id
+    })
+
+    {:ok, notification}
+  end
+
+  defp handle_notification(notification, "warning") do
+    with organization <- Partners.organization(notification.organization_id),
+         true <- organization.setting["send_warning_mail"] do
+      organization
+      |> NotificationMail.warning_mail(notification.message)
+      |> Mailer.send(%{
+        category: "Warning",
+        organization_id: notification.organization_id
+      })
+    end
+
+    {:ok, notification}
+  end
+
+  defp handle_notification(notification, _severity), do: {:ok, notification}
 
   @doc """
   Update a Notification
@@ -108,15 +132,5 @@ defmodule Glific.Notifications do
       warning: "Warning",
       info: "Information"
     }
-  end
-
-  defp handle_critical_notification(notification) do
-    {:ok, _} =
-      Partners.organization(notification.organization_id)
-      |> CriticalNotificationMail.new_mail(notification.message)
-      |> Mailer.send(%{
-        category: "critical_notification",
-        organization_id: notification.organization_id
-      })
   end
 end

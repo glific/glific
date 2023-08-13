@@ -4,10 +4,7 @@ defmodule Glific.Erase do
   """
   import Ecto.Query
 
-  alias Glific.{
-    Repo,
-    Seeds.SeedsMigration
-  }
+  alias Glific.Repo
 
   require Logger
 
@@ -133,7 +130,7 @@ defmodule Glific.Erase do
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
   end
 
-  @limit 400
+  @limit 350
 
   @doc """
   Keep latest limited messages for a contact
@@ -143,17 +140,21 @@ defmodule Glific.Erase do
     Repo.put_process_state(org_id)
 
     contact_query = """
-    SELECT id, last_message_number
+    SELECT id,
+           last_message_number,
+           first_message_number,
+           last_message_number - first_message_number as cnt
     FROM contacts
     WHERE organization_id = #{org_id}
-      AND last_message_number > #{limit + 2}
-    ORDER BY last_message_number desc
+      AND first_message_number IS NOT NULL
+      AND last_message_number - first_message_number > #{limit + 2}
+    ORDER BY cnt desc
     LIMIT 200
     """
 
     Repo.query!(contact_query).rows
-    |> Enum.map(fn [contact_id, last_message_number] ->
-      clean_message_for_contact(contact_id, last_message_number, org_id, limit)
+    |> Enum.map(fn [contact_id | opts] ->
+      clean_message_for_contact(contact_id, org_id, limit, opts)
     end)
   end
 
@@ -164,12 +165,28 @@ defmodule Glific.Erase do
           non_neg_integer,
           non_neg_integer,
           non_neg_integer,
-          non_neg_integer
+          list()
         ) :: :ok
-  def clean_message_for_contact(contact_id, last_message_number, org_id, limit) do
+  def clean_message_for_contact(contact_id, org_id, limit, opts) do
+    [last_message_number, first_message_number, count] = opts
+
     message_to_delete = last_message_number - limit
 
-    if message_to_delete > 0 do
+    # make sure we keep a few messages around
+    if count > 3 &&
+         message_to_delete > 0 &&
+         message_to_delete > first_message_number + 3 do
+      delete_media_query = """
+      DELETE FROM messages_media mm
+      USING messages m
+      WHERE
+        m.media_id IS NOT NULL
+        AND mm.id = m.media_id
+        AND m.contact_id = #{contact_id}
+        AND m.organization_id = #{org_id}
+        AND m.message_number < #{message_to_delete}
+      """
+
       delete_message_query = """
       DELETE
       FROM messages
@@ -178,12 +195,22 @@ defmodule Glific.Erase do
       AND message_number < #{message_to_delete}
       """
 
+      update_contact_query = """
+      UPDATE contacts
+      SET first_message_number = #{message_to_delete}
+      WHERE id = #{contact_id}
+      AND organization_id = #{org_id}
+      """
+
       Logger.info(
         "Deleting messages for #{contact_id} where message number < #{message_to_delete}"
       )
 
-      Repo.query!(delete_message_query, [], timeout: 400_000, skip_organization_id: true)
-      SeedsMigration.fix_message_number_for_contact(contact_id)
+      [delete_media_query, delete_message_query, update_contact_query]
+      |> Enum.each(fn query ->
+        # Logger.info("QUERY: #{query}")
+        Repo.query!(query, [], timeout: 400_000, skip_organization_id: true)
+      end)
     end
 
     :ok

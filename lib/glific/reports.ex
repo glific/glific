@@ -237,7 +237,7 @@ defmodule Glific.Reports do
     |> where([q], q.period == "hour")
     |> Repo.all()
     |> Enum.reduce(%{}, fn hourly_stat, acc ->
-      Map.put(acc, hourly_stat.hour, Map.delete(hourly_stat, :hour))
+      Map.put(acc, round(hourly_stat.hour), Map.delete(hourly_stat, :hour))
     end)
   end
 
