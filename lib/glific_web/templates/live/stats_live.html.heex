@@ -53,7 +53,7 @@
       </button>
       <%= @contact_type_chart_svg %>
     </div>
-    <div id="messages-chart" class="card">
+    <div id="messages-chart" class="card m-2">
       <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
         <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:active_hour}>
           <%= GlificWeb.StatsLive.render_button_svg() %>
