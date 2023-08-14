@@ -88,6 +88,27 @@
   cursor: pointer;
 }
 
+.dropdown {
+  margin-top: -18px;
+}
+
+.dropbtn {
+  background: rgba(240, 247, 241, 1);
+  border-radius: 24px;
+}
+
+.dropdown-content {
+  display: none;
+  background-color: #fff;
+  width: 200px;
+  border: 1px solid rgba(187, 187, 187, 0.8);
+  border-radius: 5px;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
 .wrapper {
   @apply p-32 h-full;
   background: rgba(248, 250, 245, 1);

@@ -192,7 +192,7 @@ defmodule Glific.Reports do
     Enum.reduce(query_data, presets.date_map, fn %{count: count, date: date}, acc ->
       Map.put(acc, date, count)
     end)
-    |> Enum.map(fn {k, v} -> {Timex.format!(k, "{0D}-{0M}-{YYYY}"), v} end)
+    |> Enum.map(fn {k, v} -> {Timex.format!(k, "{0D}/{0M}/{YY}"), v} end)
   end
 
   @spec get_kpi_query(map(), String.t(), non_neg_integer()) :: String.t()
