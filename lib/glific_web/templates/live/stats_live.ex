@@ -137,16 +137,15 @@ defmodule GlificWeb.StatsLive do
   end
 
   defp make_series_bar_chart_dataset(data) do
-    Contex.Dataset.new(data, ["Hour", "Inbound", "Outbound"]) # |> IO.inspect(label: "BAR DATA")
+    Contex.Dataset.new(data, ["Hour", "Inbound", "Outbound"])
   end
 
   defp make_bar_chart_dataset(data, opts) do
-    IO.inspect(data)
-    Contex.Dataset.new(data, opts) # |> IO.inspect(label: "DATA")
+    Contex.Dataset.new(data, opts)
   end
 
   defp make_pie_chart_dataset(data) do
-    Contex.Dataset.new(data, ["Type", "Value"]) # |> IO.inspect(label: "PIE DATA")
+    Contex.Dataset.new(data, ["Type", "Value"])
   end
 
   @spec assign_chart_svg(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
