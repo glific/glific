@@ -120,14 +120,14 @@ defmodule GlificWeb.StatsLive do
              notification_chart_data: notification_chart_data,
              message_type_chart_data: message_type_chart_data,
              contact_pie_chart_data: contact_type_chart_data,
-             messages_chart_data: messages_chart_data
+            messages_chart_data: messages_chart_data
            }
          } = socket
        ) do
     socket
     |> assign(
-      contact_dataset: make_bar_chart_dataset(contact_chart_data),
-      conversation_dataset: make_bar_chart_dataset(conversation_chart_data),
+      contact_dataset: make_bar_chart_dataset(contact_chart_data, ["Date", "Daily Contacts"]),
+      conversation_dataset: make_bar_chart_dataset(conversation_chart_data, ["Hour", "Daily Conversations"]),
       optin_dataset: make_pie_chart_dataset(optin_chart_data),
       notification_dataset: make_pie_chart_dataset(notification_chart_data),
       message_dataset: make_pie_chart_dataset(message_type_chart_data),
@@ -137,15 +137,16 @@ defmodule GlificWeb.StatsLive do
   end
 
   defp make_series_bar_chart_dataset(data) do
-    Contex.Dataset.new(data, ["Hour", "Inbound", "Outbound"])
+    Contex.Dataset.new(data, ["Hour", "Inbound", "Outbound"]) # |> IO.inspect(label: "BAR DATA")
   end
 
-  defp make_bar_chart_dataset(data) do
-    Contex.Dataset.new(data)
+  defp make_bar_chart_dataset(data, opts) do
+    IO.inspect(data)
+    Contex.Dataset.new(data, opts) # |> IO.inspect(label: "DATA")
   end
 
   defp make_pie_chart_dataset(data) do
-    Contex.Dataset.new(data, ["Type", "Value"])
+    Contex.Dataset.new(data, ["Type", "Value"]) # |> IO.inspect(label: "PIE DATA")
   end
 
   @spec assign_chart_svg(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
@@ -184,7 +185,7 @@ defmodule GlificWeb.StatsLive do
   defp render_bar_chart(title, dataset) do
     opts = barchart_opts(title)
 
-    Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts)
+    Contex.Plot.new(dataset, Contex.BarChart, 700, 350, opts)
     |> Contex.Plot.to_svg()
   end
 
@@ -215,41 +216,42 @@ defmodule GlificWeb.StatsLive do
     |> raw()
   end
 
-  defp barchart_opts(title) do
+  defp barchart_opts(_title) do
     [
       colour_palette: @colour_palette,
-      data_labels: true,
-      title: title,
+      data_labels: false,
+      title: false,
       axis_label_rotation: 45,
+      legend_setting: :legend_bottom,
     ]
   end
 
-  defp series_barchart_opts(title) do
+  defp series_barchart_opts(_title) do
     [
       colour_palette: @colour_palette,
       mapping: %{category_col: "Hour", value_cols: ["Inbound", "Outbound"]},
-      data_labels: true,
-      title: title,
+      data_labels: false,
+      title: false,
       axis_label_rotation: 45,
       type: :grouped,
       padding: 20,
-      legend_setting: :legend_bottom
+      legend_setting: :legend_bottom,
     ]
   end
 
-  defp piechart_opts(title, category_col \\ "Type", value_col \\ "Value") do
+  defp piechart_opts(_title, category_col \\ "Type", value_col \\ "Value") do
     [
       mapping: %{category_col: category_col, value_col: value_col},
       colour_palette: @colour_palette,
-      legend_setting: :legend_bottom,
+      legend_setting: :legend_right,
       data_labels: false,
-      title: title
+      title: false,
     ]
   end
 
   defp render_pie_chart(title, dataset) do
     opts = piechart_opts(title)
-    plot = Contex.Plot.new(dataset, Contex.PieChart, 500, 400, opts)
+    plot = Contex.Plot.new(dataset, Contex.PieChart, 700, 400, opts)
     has_no_data = Enum.any?(dataset.data, fn {_label, value} -> is_nil(value) end)
 
     if has_no_data do
