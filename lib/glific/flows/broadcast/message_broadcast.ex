@@ -26,7 +26,7 @@ defmodule Glific.Flows.MessageBroadcast do
     :completed_at,
     :type,
     :message_params,
-    :default_results,
+    :default_results
   ]
 
   # we store one more than the number of messages specified here
@@ -75,10 +75,20 @@ defmodule Glific.Flows.MessageBroadcast do
   """
   @spec changeset(MessageBroadcast.t(), map()) :: Ecto.Changeset.t()
   def changeset(message_broadcast, attrs) do
+    group_id = Map.get(attrs, :group_id)
+
     message_broadcast
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:flow_id)
     |> foreign_key_constraint(:group_id)
+    |> update_group_ids(group_id)
+  end
+
+  defp update_group_ids(changeset, group_id) do
+    group_ids = Map.get(changeset.changes, :group_ids, [])
+    new_group_ids = [group_id | group_ids]
+
+    put_change(changeset, :group_ids, new_group_ids |> Enum.map(&String.to_integer/1))
   end
 end
