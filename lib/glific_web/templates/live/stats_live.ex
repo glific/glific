@@ -5,6 +5,7 @@ defmodule GlificWeb.StatsLive do
   use GlificWeb, :live_view
 
   alias Glific.Reports
+  @colour_palette ["129656", "93A29B", "EBEDEC", "B5D8C7"]
 
   @doc false
   @spec mount(any(), any(), any()) ::
@@ -27,6 +28,65 @@ defmodule GlificWeb.StatsLive do
   def handle_info({:get_stats, kpi}, socket) do
     org_id = get_org_id(socket)
     {:noreply, assign(socket, kpi, Reports.get_kpi(kpi, org_id))}
+  end
+
+  @doc false
+  @spec handle_event(any(), any(), Phoenix.LiveView.Socket.t()) ::
+          {:noreply, Phoenix.LiveView.Socket.t()}
+  def handle_event("export", %{"chart" => chart}, socket) do
+    org_id = get_org_id(socket)
+    data = get_export_data(String.to_atom(chart), org_id)
+    csv = Enum.map_join(data, "\n", &Enum.join(&1, ","))
+
+    {:noreply,
+     socket
+     |> push_event("download-file", %{
+       data: csv,
+       filename: chart <> ".csv"
+     })}
+  end
+
+  defp get_export_data(:optin, org_id) do
+    Reports.get_export_data(:optin, org_id)
+    |> List.insert_at(0, ["ID", "Name", "Phone", "Optin Status"])
+  end
+
+  defp get_export_data(:contacts, org_id) do
+    Reports.get_kpi_data(org_id, "contacts")
+    |> Enum.map(fn {date, count} -> [date, count] end)
+    |> List.insert_at(0, ["Date", "Number"])
+  end
+
+  defp get_export_data(:conversations, org_id) do
+    Reports.get_kpi_data(org_id, "messages_conversations")
+    |> Enum.map(fn {date, count} -> [date, count] end)
+    |> List.insert_at(0, ["Date", "Number"])
+  end
+
+  defp get_export_data(:notifications, org_id) do
+    Reports.get_export_data(:notifications, org_id)
+    |> List.insert_at(0, ["ID", "Category", "Severity"])
+  end
+
+  defp get_export_data(:messages, org_id) do
+    Reports.get_export_data(:messages, org_id)
+    |> List.insert_at(0, ["ID", "Inbound", "Outbound"])
+  end
+
+  defp get_export_data(:contact_type, org_id) do
+    Reports.get_export_data(:contact_type, org_id)
+    |> List.insert_at(0, ["ID", "Name", "Phone", "BSP Status"])
+  end
+
+  defp get_export_data(:active_hour, org_id) do
+    fetch_hourly_data(org_id)
+    |> Enum.map(fn {hour, inbound, outbound} -> [hour, inbound, outbound] end)
+    |> List.insert_at(0, ["Hour", "Inbound", "Outbound"])
+  end
+
+  defp get_export_data(:table, org_id) do
+    fetch_table_data(:broadcasts, org_id)
+    |> List.insert_at(0, ["Flow Name", "Group Name", "Started At", "Completed At"])
   end
 
   @spec assign_stats(Phoenix.LiveView.Socket.t(), atom()) :: Phoenix.LiveView.Socket.t()
@@ -117,7 +177,7 @@ defmodule GlificWeb.StatsLive do
   defp render_bar_chart("Most Active Hour" = title, dataset) do
     opts = series_barchart_opts(title)
 
-    Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts)
+    Contex.Plot.new(dataset, Contex.BarChart, 1600, 400, opts)
     |> Contex.Plot.to_svg()
   end
 
@@ -128,9 +188,36 @@ defmodule GlificWeb.StatsLive do
     |> Contex.Plot.to_svg()
   end
 
+  @doc false
+  @spec render_button_svg :: {:safe, any()}
+  def render_button_svg do
+    ~S"""
+    <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <mask
+        id="mask0_1136_7518"
+        style="mask-type:alpha"
+        maskUnits="userSpaceOnUse"
+        x="0"
+        y="0"
+        width="24"
+        height="25"
+      >
+        <rect width="24" height="24.0037" fill="#D9D9D9" />
+      </mask>
+      <g mask="url(#mask0_1136_7518)">
+        <path
+          d="M12 16.0019L7 11.0011L8.4 9.55086L11 12.1513V4H13V12.1513L15.6 9.55086L17 11.0011L12 16.0019ZM6 20.0025C5.45 20.0025 4.97917 19.8066 4.5875 19.4149C4.19583 19.0232 4 18.5523 4 18.0022V15.0017H6V18.0022H18V15.0017H20V18.0022C20 18.5523 19.8042 19.0232 19.4125 19.4149C19.0208 19.8066 18.55 20.0025 18 20.0025H6Z"
+          fill="#CCCCCC"
+        />
+      </g>
+    </svg>
+    """
+    |> raw()
+  end
+
   defp barchart_opts(title) do
     [
-      colour_palette: ["129656", "93A29B", "EBEDEC", "B5D8C7"],
+      colour_palette: @colour_palette,
       data_labels: true,
       title: title,
       axis_label_rotation: 45,
@@ -139,21 +226,21 @@ defmodule GlificWeb.StatsLive do
 
   defp series_barchart_opts(title) do
     [
-      colour_palette: ["129656", "93A29B", "EBEDEC", "B5D8C7"],
+      colour_palette: @colour_palette,
       mapping: %{category_col: "Hour", value_cols: ["Inbound", "Outbound"]},
       data_labels: true,
       title: title,
       axis_label_rotation: 45,
       type: :grouped,
       padding: 20,
-      legend_setting: :legend_bottom,
+      legend_setting: :legend_bottom
     ]
   end
 
   defp piechart_opts(title, category_col \\ "Type", value_col \\ "Value") do
     [
       mapping: %{category_col: category_col, value_col: value_col},
-      colour_palette: ["129656", "93A29B", "EBEDEC", "B5D8C7"],
+      colour_palette: @colour_palette,
       legend_setting: :legend_bottom,
       data_labels: false,
       title: title
@@ -251,9 +338,15 @@ defmodule GlificWeb.StatsLive do
   @doc false
   @spec fetch_hourly_data(non_neg_integer()) :: list()
   def fetch_hourly_data(org_id) do
-    result = Reports.get_messages_data(org_id) |> Enum.into(%{}, fn {k, v} -> {trunc(k), v} end)
-    hourly_list = Enum.into(0..23, %{}, fn key -> {key, %{inbound: 0, outbound: 0}} end)
-    Map.merge(result, hourly_list, fn _k, v1, _v2 -> v1 end)
-    |> Enum.map(fn {k, %{inbound: inbound, outbound: outbound}} -> {k, inbound, outbound} end)
+    Reports.get_messages_data(org_id)
+    |> Enum.map(fn {time, %{inbound: inbound, outbound: outbound}} ->
+      {get_time(time), inbound, outbound}
+    end)
   end
+
+  @spec get_time(non_neg_integer()) :: String.t()
+  defp get_time(0), do: "12AM"
+  defp get_time(12), do: "12PM"
+  defp get_time(time) when time < 12, do: "#{time}AM"
+  defp get_time(time), do: "#{time - 12}PM"
 end
