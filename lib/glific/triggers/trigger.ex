@@ -34,8 +34,7 @@ defmodule Glific.Triggers.Trigger do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil,
-          group_ids: list() | nil
+          updated_at: :utc_datetime | nil
         }
 
   @required_fields [
@@ -54,8 +53,7 @@ defmodule Glific.Triggers.Trigger do
     :is_repeating,
     :frequency,
     :days,
-    :hours,
-    :group_ids
+    :hours
   ]
 
   schema "triggers" do
@@ -68,7 +66,6 @@ defmodule Glific.Triggers.Trigger do
     field :frequency, {:array, :string}, default: []
     field :days, {:array, :integer}, default: []
     field :hours, {:array, :integer}, default: []
-    field :group_ids, {:array, :integer}, default: []
 
     field :is_active, :boolean, default: true
     field :is_repeating, :boolean, default: false
