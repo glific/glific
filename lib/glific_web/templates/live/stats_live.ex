@@ -176,9 +176,14 @@ defmodule GlificWeb.StatsLive do
 
   defp render_bar_chart("Most Active Hour" = title, dataset) do
     opts = series_barchart_opts(title)
+    has_no_data = [] == dataset.data
 
-    Contex.Plot.new(dataset, Contex.BarChart, 1600, 400, opts)
-    |> Contex.Plot.to_svg()
+    if has_no_data do
+      Jason.encode!(title <> ": No data")
+    else
+      Contex.Plot.new(dataset, Contex.BarChart, 1600, 400, opts)
+      |> Contex.Plot.to_svg()
+    end
   end
 
   defp render_bar_chart(title, dataset) do
