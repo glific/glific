@@ -16,12 +16,12 @@ defmodule Glific.Reports do
   }
 
   @doc false
-  @spec get_kpi(atom(), non_neg_integer()) :: integer()
-  def get_kpi(kpi, org_id) do
+  @spec get_kpi(atom(), non_neg_integer(), [{atom(), any()}]) :: integer()
+  def get_kpi(kpi, org_id, opts \\ []) do
     Repo.put_process_state(org_id)
 
     get_count_query(kpi)
-    |> add_timestamps(kpi)
+    |> add_timestamps(kpi, opts)
     |> where([q], q.organization_id == ^org_id)
     |> Repo.all()
     |> hd
@@ -127,8 +127,8 @@ defmodule Glific.Reports do
 
   defp get_count_query(:conversation_count), do: select(Stat, [q], sum(q.conversations))
 
-  @spec add_timestamps(Ecto.Query.t(), atom()) :: Ecto.Query.t()
-  defp add_timestamps(query, kpi)
+  @spec add_timestamps(Ecto.Query.t(), atom(), [{atom(), any()}]) :: Ecto.Query.t()
+  defp add_timestamps(query, kpi, _opts)
        when kpi in [
               :critical_notification_count,
               :warning_notification_count,
@@ -142,7 +142,7 @@ defmodule Glific.Reports do
     |> where([q], q.inserted_at >= ^date)
   end
 
-  defp add_timestamps(query, kpi)
+  defp add_timestamps(query, kpi, opts)
        when kpi in [
               :outbound_messages_count,
               :hsm_messages_count,
@@ -151,14 +151,21 @@ defmodule Glific.Reports do
               :flows_completed,
               :conversation_count
             ] do
-    day = Date.beginning_of_month(DateTime.utc_now())
+
+    duration = Keyword.get(opts, :duration, 30)
+
+    day = case duration do
+      "MONTHLY" -> Date.beginning_of_month(DateTime.utc_now())
+      "WEEKLY" -> shifted_time(NaiveDateTime.utc_now(), -7) |> NaiveDateTime.to_date()
+      "DAILY" -> shifted_time(NaiveDateTime.utc_now(), -1) |> NaiveDateTime.to_date()
+    end
 
     query
     |> where([q], q.period == "day")
     |> where([q], q.date >= ^day)
   end
 
-  defp add_timestamps(query, _kpi), do: query
+  defp add_timestamps(query, _kpi, _opts), do: query
 
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
@@ -180,11 +187,9 @@ defmodule Glific.Reports do
     iex> Glific.Reports.get_kpi_data(1, "optout")
     iex> Glific.Reports.get_kpi_data(1, "contact_type")
   """
-  @spec get_kpi_data(non_neg_integer(), String.t(), [{atom(), any()}]) :: list()
-  def get_kpi_data(org_id, table, opts \\ []) do
-    duration = Keyword.get(opts, :duration, 7)
-
-    presets = get_date_preset(NaiveDateTime.utc_now(), duration)
+  @spec get_kpi_data(non_neg_integer(), String.t()) :: list()
+  def get_kpi_data(org_id, table) do
+    presets = get_date_preset()
     Repo.put_process_state(org_id)
 
     query_data =
@@ -194,7 +199,9 @@ defmodule Glific.Reports do
     Enum.reduce(query_data, presets.date_map, fn %{count: count, date: date}, acc ->
       Map.put(acc, date, count)
     end)
-    |> Enum.map(fn {k, v} -> {Timex.format!(k, "{0D}-{0M}-{YYYY}"), v} end)
+    |> Enum.map(fn {k, v} -> {k, v} end)
+    |> Enum.sort_by(fn {date, _} -> date end, NaiveDateTime)
+    |> Enum.map(fn {date, v} -> {Timex.format!(date, "{0D}-{0M}-{YYYY}"), v} end)
   end
 
   @spec get_kpi_query(map(), String.t(), non_neg_integer()) :: String.t()
@@ -280,13 +287,18 @@ defmodule Glific.Reports do
     |> Repo.all()
   end
 
-  def get_date_preset(time \\ NaiveDateTime.utc_now(), duration \\ 7) do
+  @doc """
+  Returns date Today and Last day as NaiveDateTime and date map with values as 0
+  """
+  @spec get_date_preset(NaiveDateTime.t(), integer) :: map()
+  def get_date_preset(time \\ NaiveDateTime.utc_now(), days \\ 7) do
     today = shifted_time(time, 1)
 
-    last_day = shifted_time(time, -(duration-1))
+    last_day = shifted_time(time, -days)
 
+    # from -1..-days, since we get data one date later than actual
     date_map =
-      Enum.reduce(0..(duration-1), %{}, fn day, acc ->
+      Enum.reduce(1..days, %{}, fn day, acc ->
         time
         |> shifted_time(-day)
         |> then(&Map.put(acc, &1, 0))
@@ -323,8 +335,11 @@ defmodule Glific.Reports do
     |> select([q], [q.id, q.name, q.phone, q.bsp_status])
   end
 
+  @doc """
+  Returns NaiveDatetime shifted by no. of days
+  """
   @spec shifted_time(NaiveDateTime.t(), integer()) :: NaiveDateTime.t()
-  defp shifted_time(time, days) do
+  def shifted_time(time, days) do
     time
     |> Timex.beginning_of_day()
     |> Timex.shift(days: days)

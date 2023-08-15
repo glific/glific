@@ -182,14 +182,18 @@ defmodule GlificWeb.StatsLive do
     )
   end
 
-  defp render_bar_chart("Most Active Hour" = title, dataset) do
+ @doc """
+  Render bar chart from dataset, returns SVG
+  """
+  @spec render_bar_chart(String.t(), Contex.Dataset.t()) :: {:safe, [any()]}
+  def render_bar_chart("Most Active Hour" = title, dataset) do
     opts = series_barchart_opts(title)
 
     Contex.Plot.new(dataset, Contex.BarChart, 1600, 400, opts)
     |> Contex.Plot.to_svg()
   end
 
-  defp render_bar_chart(title, dataset) do
+  def render_bar_chart(title, dataset) do
     opts = barchart_opts(title)
 
     Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts)
@@ -313,7 +317,7 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  defp fetch_count_data(:notification_chart_data, org_id) do
+  def fetch_count_data(:notification_chart_data, org_id) do
     critical = Reports.get_kpi(:critical_notification_count, org_id)
     warning = Reports.get_kpi(:warning_notification_count, org_id)
     information = Reports.get_kpi(:information_notification_count, org_id)
@@ -325,7 +329,7 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  defp fetch_count_data(:message_type_chart_data, org_id) do
+  def fetch_count_data(:message_type_chart_data, org_id) do
     inbound = Reports.get_kpi(:inbound_messages_count, org_id)
     outbound = Reports.get_kpi(:outbound_messages_count, org_id)
 
@@ -335,7 +339,7 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  defp fetch_count_data(:contact_type, org_id) do
+  def fetch_count_data(:contact_type, org_id) do
     Reports.get_contact_data(org_id)
     |> Enum.reduce([], fn [status, count], acc ->
       contact_status =

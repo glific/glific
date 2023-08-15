@@ -80,8 +80,8 @@
                 </p>
                 <p style="margin: 0;">
                   We hope this message finds you well. As part of our commitment to provide you with valuable insights
-                  into the performance of your Glific-powered WhatsApp chatbot, we're pleased to share the Weekly
-                  Chatbot Performance Report for the period [Date Range].
+                  into the performance of your Glific-powered WhatsApp chatbot, we're pleased to share the <%= @duration %>
+                  Chatbot Performance Report for the period <%= @date_range %>.
                 </p>
               </td>
             </tr>
@@ -154,7 +154,13 @@
                 </div>
               </td>
             </tr>
-
+             <tr>
+              <td style="background-color:#ffffff;text-align:right;padding:10px;padding-right:30px;">
+                <p style="margin:0;">
+                  <a href={@dashboard_link} target="_blank" style="text-decoration:none;">...view entire dashboard</a>
+                </p>
+              </td>
+            </tr>
             <tr>
               <td style="padding:30px;background-color:#ffffff;">
                 <p style="margin-top:0; margin-bottom: 30px;">
