@@ -103,7 +103,7 @@ defmodule GlificWeb.Schema.FlowTest do
   test "flows field returns list of flows filtered by status", %{manager: user} do
     # Create a new flow
     auth_query_gql_by(:create, user,
-      variables: %{"input" => %{"name" => "New Flow", "keywords" => "new"}}
+      variables: %{"input" => %{"name" => "New Flow", "keywords" => "new", "description" => "desc"}}
     )
 
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"status" => "draft"}})
@@ -120,7 +120,7 @@ defmodule GlificWeb.Schema.FlowTest do
     old_count = length(flows)
 
     auth_query_gql_by(:create, user,
-      variables: %{"input" => %{"name" => "New Flow", "keywords" => "new", "isPinned" => true}}
+      variables: %{"input" => %{"name" => "New Flow", "keywords" => "new", "description" => "desc", "isPinned" => true}}
     )
 
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"isPinned" => true}})
@@ -248,11 +248,12 @@ defmodule GlificWeb.Schema.FlowTest do
   test "create a flow and test possible scenarios and errors", %{manager: user} do
     name = "Flow Test Name"
     keywords = ["test_keyword", "test_keyword_2"]
+    description = "test description"
 
     result =
       auth_query_gql_by(:create, user,
         variables: %{
-          "input" => %{"name" => name, "keywords" => keywords}
+          "input" => %{"name" => name, "keywords" => keywords, "description" => description}
         }
       )
 
@@ -275,7 +276,8 @@ defmodule GlificWeb.Schema.FlowTest do
         variables: %{
           "input" => %{
             "name" => "name_2",
-            "keywords" => ["test_keyword"]
+            "keywords" => ["test_keyword"],
+            "description" => "desc_2"
           }
         }
       )
@@ -294,12 +296,13 @@ defmodule GlificWeb.Schema.FlowTest do
 
     name = "Flow Test Name"
     keywords = ["test_keyword"]
+    description = "test description"
 
     result =
       auth_query_gql_by(:update, user,
         variables: %{
           "id" => flow.id,
-          "input" => %{"name" => name, "keywords" => keywords}
+          "input" => %{"name" => name, "keywords" => keywords, "description" => description}
         }
       )
 
@@ -434,12 +437,13 @@ defmodule GlificWeb.Schema.FlowTest do
 
     name = "Flow Test Name"
     keywords = ["test_keyword"]
+    description = "test description"
 
     result =
       auth_query_gql_by(:copy, user,
         variables: %{
           "id" => flow.id,
-          "input" => %{"name" => name, "keywords" => keywords}
+          "input" => %{"name" => name, "keywords" => keywords, "description" => description}
         }
       )
 
