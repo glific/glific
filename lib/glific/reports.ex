@@ -154,15 +154,30 @@ defmodule Glific.Reports do
 
     duration = Keyword.get(opts, :duration, "WEEKLY")
 
-    day = case duration do
-      "MONTHLY" -> Date.beginning_of_month(DateTime.utc_now())
-      "WEEKLY" -> shifted_time(NaiveDateTime.utc_now(), -7) |> NaiveDateTime.to_date()
-      "DAILY" -> shifted_time(NaiveDateTime.utc_now(), -1) |> NaiveDateTime.to_date()
+    period = case duration do
+      "MONTHLY" -> "month"
+      "WEEKLY" -> "week"
+      "DAILY" -> "day"
+    end
+
+    day = shifted_time(NaiveDateTime.utc_now(),-1) |> NaiveDateTime.to_date()
+
+    start_day = case duration do
+      "MONTHLY" -> day |> Date.beginning_of_month()
+      "WEEKLY" -> day |> Date.beginning_of_week()
+      "DAILY" -> day
+    end
+
+    end_day = case duration do
+      "MONTHLY" -> day |> Date.end_of_month()
+      "WEEKLY" -> day |> Date.end_of_week()
+      "DAILY" -> day
     end
 
     query
-    |> where([q], q.period == "day")
-    |> where([q], q.date >= ^day)
+    |> where([q], q.period == ^period)
+    |> where([q], q.date >= ^start_day)
+    |> where([q], q.date <= ^end_day)
   end
 
   defp add_timestamps(query, _kpi, _opts), do: query
@@ -290,7 +305,7 @@ defmodule Glific.Reports do
   @doc """
   Returns date Today and Last day as NaiveDateTime and date map with values as 0
   """
-  @spec get_date_preset(NaiveDateTime.t(), integer) :: map()
+  @spec get_date_preset(NaiveDateTime.t(), non_neg_integer()) :: map()
   def get_date_preset(time \\ NaiveDateTime.utc_now(), days \\ 7) do
     today = shifted_time(time, 0)
 
