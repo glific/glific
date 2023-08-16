@@ -152,7 +152,7 @@ defmodule Glific.Reports do
               :conversation_count
             ] do
 
-    duration = Keyword.get(opts, :duration, 30)
+    duration = Keyword.get(opts, :duration, "WEEKLY")
 
     day = case duration do
       "MONTHLY" -> Date.beginning_of_month(DateTime.utc_now())
@@ -292,11 +292,11 @@ defmodule Glific.Reports do
   """
   @spec get_date_preset(NaiveDateTime.t(), integer) :: map()
   def get_date_preset(time \\ NaiveDateTime.utc_now(), days \\ 7) do
-    today = shifted_time(time, 1)
+    today = shifted_time(time, 0)
 
     last_day = shifted_time(time, -days)
 
-    # from -1..-days, since we get data one date later than actual
+    # from -1..-days
     date_map =
       Enum.reduce(1..days, %{}, fn day, acc ->
         time
