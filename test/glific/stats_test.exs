@@ -1,7 +1,10 @@
 defmodule Glific.StatsTest do
   use Glific.DataCase
 
-  alias Glific.{Seeds.SeedsDev, Stats}
+  alias Glific.{
+    Partners,
+    Seeds.SeedsDev,
+    Stats}
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -97,5 +100,11 @@ defmodule Glific.StatsTest do
     Stats.generate_stats([], false, time: time)
 
     assert Stats.count_stats(%{filter: %{organization_id: attrs.organization_id}}) > inital
+  end
+
+  test "mail_stats/2", attrs do
+    org = Partners.get_organization!(attrs.organization_id)
+
+    assert {:ok, %{message: _error}} = Stats.mail_stats(org)
   end
 end

@@ -546,10 +546,13 @@ defmodule Glific.Stats do
       template: "dashboard.html"
     ]
 
-    DashboardMail.new_mail(org, assigns, opts)
+    case DashboardMail.new_mail(org, assigns, opts)
     |> Mailer.send(%{
       category: "dashboard_report",
       organization_id: org.id
-    })
+    }) do
+      {:ok, %{id: _id}} -> {:ok, %{message: "Successfully sent mail to organization"}}
+      error -> {:ok, %{message: error}}
+    end
   end
 end
