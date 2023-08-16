@@ -3,7 +3,7 @@ defmodule Glific.Repo.Migrations.AddDescColumnInFlows do
 
   def change do
     alter table(:flows) do
-      add :description, :string
+      add :description, :text
     end
   end
 end
