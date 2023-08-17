@@ -1,4 +1,4 @@
-defmodule Glific.Repo.Migrations.AddGroupIdsColumn do
+defmodule Glific.Repo.Migrations.AddGroupIdsAndDescriptionColumnInFlows do
   use Ecto.Migration
 
   def change do
@@ -7,6 +7,9 @@ defmodule Glific.Repo.Migrations.AddGroupIdsColumn do
     end
     alter table(:message_broadcasts) do
       add :group_ids, {:array, :integer}, default: []
+    end
+    alter table(:flows) do
+      add :description, :text
     end
   end
 end
