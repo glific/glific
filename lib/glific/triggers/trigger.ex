@@ -86,8 +86,6 @@ defmodule Glific.Triggers.Trigger do
   """
   @spec changeset(Trigger.t(), map()) :: Ecto.Changeset.t()
   def changeset(trigger, attrs) do
-    group_id = Map.get(attrs, :group_id)
-
     trigger
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
@@ -96,14 +94,6 @@ defmodule Glific.Triggers.Trigger do
     |> foreign_key_constraint(:flow_id)
     |> foreign_key_constraint(:group_id)
     |> foreign_key_constraint(:organization_id)
-    |> update_group_ids(group_id)
-  end
-
-  defp update_group_ids(changeset, group_id) do
-    group_ids = Map.get(changeset.changes, :group_ids, [])
-    new_group_ids = [group_id | group_ids]
-
-    put_change(changeset, :group_ids, new_group_ids |> Enum.map(&String.to_integer/1))
   end
 
   # @doc false

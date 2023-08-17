@@ -103,7 +103,9 @@ defmodule GlificWeb.Schema.FlowTest do
   test "flows field returns list of flows filtered by status", %{manager: user} do
     # Create a new flow
     auth_query_gql_by(:create, user,
-      variables: %{"input" => %{"name" => "New Flow", "keywords" => "new", "description" => "desc"}}
+      variables: %{
+        "input" => %{"name" => "New Flow", "keywords" => "new", "description" => "desc"}
+      }
     )
 
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"status" => "draft"}})
@@ -120,7 +122,14 @@ defmodule GlificWeb.Schema.FlowTest do
     old_count = length(flows)
 
     auth_query_gql_by(:create, user,
-      variables: %{"input" => %{"name" => "New Flow", "keywords" => "new", "description" => "desc", "isPinned" => true}}
+      variables: %{
+        "input" => %{
+          "name" => "New Flow",
+          "keywords" => "new",
+          "description" => "desc",
+          "isPinned" => true
+        }
+      }
     )
 
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"isPinned" => true}})
