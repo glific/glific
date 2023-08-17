@@ -19,14 +19,15 @@ defmodule Glific.Flows.MessageBroadcast do
     Users.User
   }
 
-  @required_fields [:group_id, :message_id, :started_at, :organization_id, :group_ids]
+  @required_fields [:group_id, :message_id, :started_at, :organization_id]
   @optional_fields [
     :user_id,
     :flow_id,
     :completed_at,
     :type,
     :message_params,
-    :default_results
+    :default_results,
+    :group_ids
   ]
 
   # we store one more than the number of messages specified here
