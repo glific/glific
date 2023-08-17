@@ -9,15 +9,20 @@ defmodule Glific.Stats do
 
   alias Glific.{
     BigQuery.BigQueryWorker,
+    Communications.Mailer,
     Flows.FlowContext,
+    Mails.DashboardMail,
     Messages.Message,
     Messages.MessageConversation,
     Partners,
     Partners.Saas,
     Repo,
+    Reports,
     Stats.Stat,
     Users.User
   }
+
+  alias GlificWeb.StatsLive
 
   @doc """
   Create a Stat
@@ -58,13 +63,13 @@ defmodule Glific.Stats do
 
     Enum.reduce(filter, query, fn
       {:period, period}, query ->
-        from q in query, where: q.period == ^period
+        from(q in query, where: q.period == ^period)
 
       {:hour, hour}, query ->
-        from q in query, where: q.hour == ^hour
+        from(q in query, where: q.hour == ^hour)
 
       {:date, date}, query ->
-        from q in query, where: q.date == ^date
+        from(q in query, where: q.date == ^date)
 
       _, query ->
         query
@@ -474,5 +479,80 @@ defmodule Glific.Stats do
       users: max(s.users)
     })
     |> Repo.one()
+  end
+
+  @spec load_pie_svg([any()], String.t()) :: {:safe, [any()]}
+  defp load_pie_svg(data, title) do
+    data
+    |> StatsLive.make_pie_chart_dataset()
+    |> (&StatsLive.render_pie_chart(title, &1)).()
+  end
+
+  @spec load_bar_svg([any()], String.t()) :: {:safe, [any()]}
+  defp load_bar_svg(data, title) do
+    data
+    |> StatsLive.make_bar_chart_dataset()
+    |> (&StatsLive.render_bar_chart(title, &1)).()
+  end
+
+  @spec fetch_inbound_outbound(non_neg_integer(), String.t()) :: [tuple()]
+  defp fetch_inbound_outbound(org_id, duration) do
+    inbound = Reports.get_kpi(:inbound_messages_count, org_id, duration: duration)
+    outbound = Reports.get_kpi(:outbound_messages_count, org_id, duration: duration)
+
+    [
+      {"Inbound: #{inbound}", inbound},
+      {"Outbound: #{outbound}", outbound}
+    ]
+  end
+
+  defp get_date_range(duration) do
+    time = NaiveDateTime.utc_now()
+
+    from =
+      case duration do
+        "MONTHLY" -> Date.beginning_of_month(DateTime.utc_now())
+        "WEEKLY" -> Reports.shifted_time(time, -7) |> NaiveDateTime.to_date()
+        "DAILY" -> Reports.shifted_time(time, -1) |> NaiveDateTime.to_date()
+      end
+
+    till = Reports.shifted_time(time, -1) |> NaiveDateTime.to_date()
+
+    Timex.format!(from, "{0D}-{0M}-{YYYY}") <> " till " <> Timex.format!(till, "{0D}-{0M}-{YYYY}")
+  end
+
+  @doc """
+  Sends mail to organization with their stats
+  """
+  @spec mail_stats(Partners.Organization.t(), String.t()) :: {:ok, term} | {:error, term}
+  def mail_stats(org, duration \\ "WEEKLY") do
+    contacts = Reports.get_kpi_data(org.id, "contacts")
+    conversations = Reports.get_kpi_data(org.id, "messages_conversations")
+    optin = StatsLive.fetch_count_data(:optin_chart_data, org.id)
+    messages = fetch_inbound_outbound(org.id, duration)
+
+    assigns = %{
+      contact_chart_svg: load_bar_svg(contacts, "Contacts"),
+      conversation_chart_svg: load_bar_svg(conversations, "Conversations"),
+      optin_chart_svg: load_pie_svg(optin, "Contacts Optin Status"),
+      message_chart_svg: load_pie_svg(messages, "Messages"),
+      duration: duration,
+      date_range: get_date_range(duration),
+      dashboard_link: "https://#{org.shortcode}.tides.coloredcow.com/",
+      parent_org: org.parent_org
+    }
+
+    opts = [
+      template: "dashboard.html"
+    ]
+
+    case DashboardMail.new_mail(org, assigns, opts)
+         |> Mailer.send(%{
+           category: "dashboard_report",
+           organization_id: org.id
+         }) do
+      {:ok, %{id: _id}} -> {:ok, %{message: "Successfully sent mail to organization"}}
+      error -> {:ok, %{message: error}}
+    end
   end
 end
