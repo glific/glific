@@ -29,6 +29,7 @@ defmodule Glific.Partners do
     Providers.GupshupContacts,
     Repo,
     Settings.Language,
+    Stats,
     Users.User
   }
 
@@ -1307,5 +1308,42 @@ defmodule Glific.Partners do
         |> OrganizationData.changeset(%{json: data})
         |> Repo.update()
     end
+  end
+
+  @doc """
+  Update report_frequency field in settings column
+  """
+  @spec update_report_frequency(non_neg_integer(), String.t()) ::
+          tuple()
+  def update_report_frequency(org_id, frequency \\ "MONTHLY") do
+    Organization
+    |> where([o], o.organization_id == ^org_id)
+    |> update([o],
+      set: [
+        setting:
+          #coalesce function returns the first non null value, here if setting is null it creates empty object
+          fragment(
+            "jsonb_set(coalesce(setting, '{}'), array['report_frequency'::text], to_jsonb(?))",
+            type(^frequency, :string)
+          )
+      ]
+    )
+    |> Repo.update_all([])
+  end
+
+
+  @doc """
+  Cron handler for sending dashboard report mail
+  """
+  @spec send_dashboard_report(non_neg_integer(), map()) :: {:ok, any()} | {:error, String.t()}
+  def send_dashboard_report(org_id, %{frequency: frequency}) do
+      org = get_organization!(org_id)
+      %{setting: setting} = org
+
+      case setting do
+        %{"report_frequency" => ^frequency} -> Stats.mail_stats(org, frequency)
+        nil -> {:error, "Settings are nil"}
+        _ -> {:ok, "Mail not sent"}
+      end
   end
 end
