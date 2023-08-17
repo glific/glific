@@ -389,6 +389,7 @@ defmodule Glific.Flows.Broadcast do
   defp create_message_broadcast(attrs) do
     %MessageBroadcast{}
     |> MessageBroadcast.changeset(attrs)
+    |> Ecto.Changeset.put_change(:group_ids, [attrs[:group_id]])
     |> Repo.insert()
   end
 
