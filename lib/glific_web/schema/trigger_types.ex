@@ -56,6 +56,7 @@ defmodule GlificWeb.Schema.TriggerTypes do
   input_object :trigger_input do
     field :flow_id, :id
     field :group_id, :id
+    field :group_ids, list_of(:integer)
 
     field :is_active, :boolean
     field :is_repeating, :boolean
