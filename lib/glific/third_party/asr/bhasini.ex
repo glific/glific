@@ -38,7 +38,8 @@ defmodule Glific.ASR.Bhasini do
     }
 
     case Tesla.post("#{fields["base_url"]}getModelsPipeline", Jason.encode!(post_body),
-           headers: default_headers
+           headers: default_headers,
+           opts: [adapter: [recv_timeout: 300_000]]
          ) do
       {:ok, response} ->
         handle_response(response, content)
@@ -98,7 +99,7 @@ defmodule Glific.ASR.Bhasini do
       }
     }
 
-    case Tesla.post(callback_url, Jason.encode!(asr_post_body), headers: asr_headers) do
+    case Tesla.post(callback_url, Jason.encode!(asr_post_body), headers: asr_headers, opts: [adapter: [recv_timeout: 300_000]]) do
       {:ok, %Tesla.Env{status: 200, body: asr_response_body}} ->
         # Handle the new API response with status code 200
         Jason.decode!(asr_response_body)
