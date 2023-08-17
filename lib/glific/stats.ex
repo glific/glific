@@ -11,9 +11,9 @@ defmodule Glific.Stats do
     BigQuery.BigQueryWorker,
     Communications.Mailer,
     Flows.FlowContext,
+    Mails.DashboardMail,
     Messages.Message,
     Messages.MessageConversation,
-    Mails.DashboardMail,
     Partners,
     Partners.Saas,
     Repo,
@@ -497,8 +497,8 @@ defmodule Glific.Stats do
 
   @spec fetch_inbound_outbound(non_neg_integer(), String.t()) :: [tuple()]
   defp fetch_inbound_outbound(org_id, duration) do
-    inbound = Reports.get_kpi(:inbound_messages_count, org_id, [duration: duration])
-    outbound = Reports.get_kpi(:outbound_messages_count, org_id, [duration: duration])
+    inbound = Reports.get_kpi(:inbound_messages_count, org_id, duration: duration)
+    outbound = Reports.get_kpi(:outbound_messages_count, org_id, duration: duration)
 
     [
       {"Inbound: #{inbound}", inbound},
@@ -509,11 +509,12 @@ defmodule Glific.Stats do
   defp get_date_range(duration) do
     time = NaiveDateTime.utc_now()
 
-    from = case duration do
-      "MONTHLY" -> Date.beginning_of_month(DateTime.utc_now())
-      "WEEKLY" -> Reports.shifted_time(time, -7) |> NaiveDateTime.to_date()
-      "DAILY" -> Reports.shifted_time(time, -1) |> NaiveDateTime.to_date()
-    end
+    from =
+      case duration do
+        "MONTHLY" -> Date.beginning_of_month(DateTime.utc_now())
+        "WEEKLY" -> Reports.shifted_time(time, -7) |> NaiveDateTime.to_date()
+        "DAILY" -> Reports.shifted_time(time, -1) |> NaiveDateTime.to_date()
+      end
 
     till = Reports.shifted_time(time, -1) |> NaiveDateTime.to_date()
 
@@ -525,7 +526,6 @@ defmodule Glific.Stats do
   """
   @spec mail_stats(Partners.Organization.t(), String.t()) :: {:ok, term} | {:error, term}
   def mail_stats(org, duration \\ "WEEKLY") do
-
     contacts = Reports.get_kpi_data(org.id, "contacts")
     conversations = Reports.get_kpi_data(org.id, "messages_conversations")
     optin = StatsLive.fetch_count_data(:optin_chart_data, org.id)
@@ -547,10 +547,10 @@ defmodule Glific.Stats do
     ]
 
     case DashboardMail.new_mail(org, assigns, opts)
-    |> Mailer.send(%{
-      category: "dashboard_report",
-      organization_id: org.id
-    }) do
+         |> Mailer.send(%{
+           category: "dashboard_report",
+           organization_id: org.id
+         }) do
       {:ok, %{id: _id}} -> {:ok, %{message: "Successfully sent mail to organization"}}
       error -> {:ok, %{message: error}}
     end

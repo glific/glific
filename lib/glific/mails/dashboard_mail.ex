@@ -1,12 +1,13 @@
 defmodule Glific.Mails.DashboardMail do
   @moduledoc """
-  A montly report sent to organization
+  A monthly report sent to organization
   """
   alias Glific.{
     Communications.Mailer,
     Partners.Organization
   }
-  alias GlificWeb.{DashboardView}
+
+  alias GlificWeb.DashboardView
 
   @doc """
   Sends a mail to the organization with snippet of internal dashboard
@@ -19,6 +20,6 @@ defmodule Glific.Mails.DashboardMail do
 
     html_body = DashboardView.render_dashboard(template, assigns)
 
-    Mailer.common_send(org, subject, html_body, [is_html: true])
+    Mailer.common_send(org, subject, html_body, is_html: true)
   end
 end

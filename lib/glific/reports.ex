@@ -127,14 +127,17 @@ defmodule Glific.Reports do
 
   defp get_count_query(:conversation_count), do: select(Stat, [q], sum(q.conversations))
 
+  @spec get_day_range(String.t()) :: tuple()
   defp get_day_range(duration) do
     day = shifted_time(NaiveDateTime.utc_now(), -1) |> NaiveDateTime.to_date()
 
     case duration do
       "MONTHLY" ->
         {"month", Date.beginning_of_month(day), Date.end_of_month(day)}
+
       "WEEKLY" ->
         {"week", Date.beginning_of_week(day), Date.end_of_week(day)}
+
       "DAILY" ->
         {"day", day, day}
     end
@@ -164,7 +167,6 @@ defmodule Glific.Reports do
               :flows_completed,
               :conversation_count
             ] do
-
     duration = Keyword.get(opts, :duration, "WEEKLY")
 
     {period, start_day, end_day} = get_day_range(duration)

@@ -182,7 +182,7 @@ defmodule GlificWeb.StatsLive do
     )
   end
 
- @doc """
+  @doc """
   Render bar chart from dataset, returns SVG
   """
   @spec render_bar_chart(String.t(), Contex.Dataset.t()) :: {:safe, [any()]}

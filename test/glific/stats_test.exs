@@ -4,7 +4,8 @@ defmodule Glific.StatsTest do
   alias Glific.{
     Partners,
     Seeds.SeedsDev,
-    Stats}
+    Stats
+  }
 
   setup do
     default_provider = SeedsDev.seed_providers()

@@ -48,13 +48,8 @@ defmodule Glific.Communications.Mailer do
     {"Glific support", "mohit@coloredcow.in"}
   end
 
-  defp add_body(mail, body, false) do
-    text_body(mail, body)
-  end
-
-  defp add_body(mail, body, true) do
-    html_body(mail, body)
-  end
+  defp add_body(mail, body, false), do: text_body(mail, body)
+  defp add_body(mail, body, true), do: html_body(mail, body)
 
   @doc """
   This function creates a mail of type Swoosh.Email
