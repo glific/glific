@@ -696,17 +696,10 @@ defmodule Glific.Templates do
   end
 
   @doc """
-<<<<<<< HEAD
   get template form EEx based on  variables
   """
   @spec template(integer(), [any()]) :: binary
   def template(template_uuid, variables \\ []) do
-=======
-  get template form EEx based on variables
-  """
-  @spec template(integer(), String.t() | nil) :: binary
-  def template(template_uuid, variables \\ nil) do
->>>>>>> 6e20b5c1 (created generic temp expression)
     %{
       uuid: template_uuid,
       name: "Template",
