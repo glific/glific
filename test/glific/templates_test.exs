@@ -1328,7 +1328,7 @@ defmodule Glific.TemplatesTest do
                Templates.report_to_gupshup(org_id, temp_id, cc)
     end
 
-    test "template EEx form with variables should be JSON encoded" do
+    test "template EEx form without variables should be JSON encoded" do
       result = %{
         uuid: "uuid",
         name: "Template",
@@ -1337,6 +1337,18 @@ defmodule Glific.TemplatesTest do
       }
 
       assert Templates.template("uuid", []) == Jason.encode!(result)
+    end
+
+    test "template EEx form with variables should be JSON encoded" do
+      result = %{
+        uuid: "uuid",
+        name: "Template",
+        variables: ["variable"],
+        expression: nil
+      }
+
+      assert Templates.template("uuid", ["variable"]) == Jason.encode!(result)
+      IO.inspect(assert Templates.template("uuid", ["variable"]) == Jason.encode!(result))
     end
   end
 end
