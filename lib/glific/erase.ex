@@ -180,7 +180,7 @@ defmodule Glific.Erase do
       DELETE
       FROM messages_media
       WHERE id IN (
-        SELECT id
+        SELECT media_id
         FROM messages m
         WHERE
           m.media_id IS NOT NULL
