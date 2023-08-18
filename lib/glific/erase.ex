@@ -130,7 +130,7 @@ defmodule Glific.Erase do
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
   end
 
-  @limit 350
+  @limit 250
 
   @doc """
   Keep latest limited messages for a contact
@@ -177,14 +177,17 @@ defmodule Glific.Erase do
          message_to_delete > 0 &&
          message_to_delete > first_message_number + 3 do
       delete_media_query = """
-      DELETE FROM messages_media mm
-      USING messages m
-      WHERE
-        m.media_id IS NOT NULL
-        AND mm.id = m.media_id
-        AND m.contact_id = #{contact_id}
-        AND m.organization_id = #{org_id}
-        AND m.message_number < #{message_to_delete}
+      DELETE
+      FROM messages_media
+      WHERE id IN (
+        SELECT id
+        FROM messages m
+        WHERE
+          m.media_id IS NOT NULL
+          AND m.contact_id = #{contact_id}
+          AND m.organization_id = #{org_id}
+          AND m.message_number < #{message_to_delete}
+      )
       """
 
       delete_message_query = """
