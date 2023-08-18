@@ -1321,9 +1321,8 @@ defmodule Glific.Partners do
     |> update([o],
       set: [
         setting:
-          #coalesce function returns the first non null value, here if setting is null it creates empty object
           fragment(
-            "jsonb_set(coalesce(setting, '{}'), array['report_frequency'::text], to_jsonb(?))",
+            "jsonb_set(setting, array['report_frequency'::text], to_jsonb(?))",
             type(^frequency, :string)
           )
       ]
