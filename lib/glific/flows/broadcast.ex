@@ -410,9 +410,9 @@ defmodule Glific.Flows.Broadcast do
 
     """
     INSERT INTO message_broadcast_contacts
-    (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id)
+    (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id, group_ids)
 
-    (SELECT #{message_broadcast.id}, 'pending', #{message_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id
+    (SELECT #{message_broadcast.id}, 'pending', #{message_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id , #{message_broadcast.group_ids}
     FROM contacts
     WHERE (status !=  'blocked') AND (optout_time is null) AND id in #{contacts_not_in_flow})
 
@@ -432,9 +432,9 @@ defmodule Glific.Flows.Broadcast do
 
     """
     INSERT INTO message_broadcast_contacts
-    (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id)
+    (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id, group_ids)
 
-    (SELECT #{message_broadcast.id}, 'pending', #{message_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id
+    (SELECT #{message_broadcast.id}, 'pending', #{message_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id , #{message_broadcast.group_ids}
       FROM contacts
 
       WHERE (status !=  'blocked') AND (optout_time is null) AND id in #{contact_ids})
