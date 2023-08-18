@@ -293,6 +293,13 @@ defmodule Glific.Triggers do
 
   defp get_next_trigger_at(_attrs, start_at), do: start_at
 
+  @spec add_group_ids(map()) :: [integer]
+  defp add_group_ids(%{group_id: group_id} = _attrs) when is_binary(group_id) do
+    [String.to_integer(group_id)]
+  end
+
+  defp add_group_ids(_attrs), do: []
+
   @spec fix_attrs(map()) :: map()
   defp fix_attrs(attrs) do
     # compute start_at if not set
@@ -301,6 +308,7 @@ defmodule Glific.Triggers do
     attrs
     |> Map.put(:start_at, start_at)
     |> Map.put(:name, get_name(attrs))
+    |> Map.put(:group_ids, add_group_ids(attrs))
 
     # set the last_trigger_at value to nil whenever trigger is updated or new trigger is created
     |> Map.put(:last_trigger_at, Map.get(attrs, :last_trigger_at, nil))

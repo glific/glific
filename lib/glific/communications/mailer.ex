@@ -48,7 +48,12 @@ defmodule Glific.Communications.Mailer do
     {"Glific support", "mohit@coloredcow.in"}
   end
 
+  defp add_body(mail, body, false), do: text_body(mail, body)
+  defp add_body(mail, body, true), do: html_body(mail, body)
+
   @doc """
+  This function creates a mail of type Swoosh.Email
+
   All notification differ only in subject and content,
   Lets write a common function and centralize notification
   code
@@ -60,6 +65,8 @@ defmodule Glific.Communications.Mailer do
     send_to = Keyword.get(opts, :send_to, nil)
     in_cc = Keyword.get(opts, :in_cc, [])
     from_email = Keyword.get(opts, :from_email, sender())
+
+    is_html = Keyword.get(opts, :is_html, false)
 
     # Subject can not have a line break
     subject = String.replace(subject, "\n", "")
@@ -73,7 +80,7 @@ defmodule Glific.Communications.Mailer do
     |> from(from_email)
     |> cc(in_cc)
     |> subject(subject)
-    |> text_body(body)
+    |> add_body(body, is_html)
   end
 
   @spec get_team_email(Organization.t(), String.t() | nil, tuple | nil) :: tuple()
