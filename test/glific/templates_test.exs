@@ -1327,5 +1327,16 @@ defmodule Glific.TemplatesTest do
       assert {:error, "Already a template has been raised to Gupshup in last 24hrs"} =
                Templates.report_to_gupshup(org_id, temp_id, cc)
     end
+
+    test "template EEx form with variables should be JSON encoded" do
+      result = %{
+        uuid: "uuid",
+        name: "Template",
+        variables: [],
+        expression: nil
+      }
+
+      assert Templates.template("uuid", []) == Jason.encode!(result)
+    end
   end
 end
