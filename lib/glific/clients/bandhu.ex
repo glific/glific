@@ -111,7 +111,9 @@ defmodule Glific.Clients.Bandhu do
   def webhook(_, _fields), do: %{}
 
   @spec handle_response(map()) :: map()
-  defp handle_response(%{success: false} = response), do: response.message
+  defp handle_response(%{"success" => "false"} = response),
+    do: %{success: false, message: response["message"]}
+
   defp handle_response(response), do: response |> get_in(["data"]) |> hd
 
   @spec parse_bandhu_json(map()) :: map()
