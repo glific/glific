@@ -102,6 +102,7 @@ defmodule Glific.Clients.Bandhu do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
         |> handle_response()
+        |> Map.merge(%{success: true})
 
       {_status, _response} ->
         %{success: false, response: "Error response received"}
