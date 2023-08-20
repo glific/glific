@@ -201,22 +201,24 @@ defmodule Glific.BigQuery.BigQueryWorker do
     if action == "update" do
       insert_updated_records(table, table_last_updated_at, organization_id)
     else
-      insert_new_records(table, table_id, organization_id)
+      insert_new_records(table, table_id, table_last_updated_at, organization_id)
     end
 
     :ok
   end
 
-  @spec insert_new_records(binary, non_neg_integer, non_neg_integer) :: :ok
-  defp insert_new_records(table, table_id, organization_id) do
+  @spec insert_new_records(binary, non_neg_integer, DateTime.t(), non_neg_integer) :: :ok
+  defp insert_new_records(table, table_id, table_last_updated_at, organization_id) do
     max_id = insert_max_id(table, table_id, organization_id)
+    last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
 
     if max_id > table_id,
       do:
         queue_table_data(table, organization_id, %{
           min_id: table_id,
           max_id: max_id,
-          action: :insert
+          action: :insert,
+          last_updated_at: last_updated_at
         })
 
     :ok
