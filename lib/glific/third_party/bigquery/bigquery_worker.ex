@@ -888,15 +888,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
       context_message_id: row.context_message_id
     }
 
-  @spec make_job(list(), atom(), non_neg_integer, map()) :: :ok
+  @spec make_job(list(), atom(), non_neg_integer, map()) :: any
   defp make_job(data, table, organization_id, %{action: :insert} = attrs)
        when data in [%{}, nil, []] do
     table = Atom.to_string(table)
 
     if is_integer(attrs[:max_id]) == true,
       do: Jobs.update_bigquery_job(organization_id, table, %{table_id: attrs[:max_id]})
-
-    :ok
   end
 
   defp make_job(data, table, organization_id, %{action: :update} = attrs)
@@ -917,27 +915,24 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     table = Atom.to_string(table)
     max_id = attrs[:max_id]
-    last_updated_at = attrs[:last_updated_at]
 
-    case last_updated_at do
-      nil ->
+    last_updated_at =
+      if is_nil(attrs[:last_updated_at]) do
         Logger.error(
-          "last_updated_at is nil! for #{organization_id} and table: #{table}  Setting DB to one day older."
+          "last_updated_at is NIL for #{organization_id} and table: #{table}  Setting DB to one day older."
         )
 
-        previous_day = Timex.now() |> Timex.shift(days: -1)
-        _last_updated_at = Timex.to_datetime(previous_day)
-
-      _ ->
-        last_updated_at
-    end
+        Timex.now()
+        |> Timex.shift(days: -1)
+        |> Timex.to_datetime()
+      else
+        attrs[:last_updated_at]
+      end
 
     BigQuery.make_insert_query(data, table, organization_id,
       max_id: max_id,
       last_updated_at: last_updated_at
     )
-
-    :ok
   end
 
   @spec apply_action_clause(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
