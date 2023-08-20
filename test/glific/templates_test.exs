@@ -1348,7 +1348,6 @@ defmodule Glific.TemplatesTest do
       }
 
       assert Templates.template("uuid", ["variable"]) == Jason.encode!(result)
-      IO.inspect(assert Templates.template("uuid", ["variable"]) == Jason.encode!(result))
     end
   end
 end
