@@ -210,7 +210,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
   @spec insert_new_records(binary, non_neg_integer, DateTime.t() | nil, non_neg_integer) :: :ok
   defp insert_new_records(table, table_id, table_last_updated_at, organization_id) do
     max_id = insert_max_id(table, table_id, organization_id)
-    last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
 
     if max_id > table_id,
       do:
@@ -218,7 +217,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
           min_id: table_id,
           max_id: max_id,
           action: :insert,
-          last_updated_at: last_updated_at
+          last_updated_at: table_last_updated_at
         })
 
     :ok
