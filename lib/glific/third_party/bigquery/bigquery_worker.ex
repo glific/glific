@@ -919,10 +919,22 @@ defmodule Glific.BigQuery.BigQueryWorker do
     max_id = attrs[:max_id]
     last_updated_at = attrs[:last_updated_at]
 
+    case last_updated_at do
+      nil ->
+        Logger.error(
+          "last_updated_at is nil! for #{organization_id} and table: #{table}  Setting DB to one day older."
+        )
+
+        previous_day = Timex.now() |> Timex.shift(days: -1)
+        _last_updated_at = Timex.to_datetime(previous_day)
+
+      _ ->
+        last_updated_at
+    end
+
     BigQuery.make_insert_query(data, table, organization_id,
       max_id: max_id,
-      last_updated_at: if(!is_nil(last_updated_at), do: last_updated_at),
-      else: nil
+      last_updated_at: last_updated_at
     )
 
     :ok
