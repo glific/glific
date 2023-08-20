@@ -207,7 +207,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
-  @spec insert_new_records(binary, non_neg_integer, DateTime.t(), non_neg_integer) :: :ok
+  @spec insert_new_records(binary, non_neg_integer, DateTime.t() | nil, non_neg_integer) :: :ok
   defp insert_new_records(table, table_id, table_last_updated_at, organization_id) do
     max_id = insert_max_id(table, table_id, organization_id)
     last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
