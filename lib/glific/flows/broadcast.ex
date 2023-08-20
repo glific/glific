@@ -362,7 +362,7 @@ defmodule Glific.Flows.Broadcast do
   defp init_msg_broadcast(broadcast_attrs, group_message, group_ids, exclusion) do
     {:ok, message_broadcast} =
       broadcast_attrs
-      |> create_message_broadcast()
+      |> create_message_broadcast(group_ids)
 
     {:ok, _} =
       group_message
@@ -384,12 +384,12 @@ defmodule Glific.Flows.Broadcast do
     |> Repo.update_all(set: [processed_at: DateTime.utc_now(), status: status])
   end
 
-  @spec create_message_broadcast(map()) ::
+  @spec create_message_broadcast(map(), list()) ::
           {:ok, MessageBroadcast.t()} | {:error, Ecto.Changeset.t()}
-  defp create_message_broadcast(attrs) do
+  defp create_message_broadcast(attrs, group_ids) do
     %MessageBroadcast{}
     |> MessageBroadcast.changeset(attrs)
-    |> Ecto.Changeset.put_change(:group_ids, [attrs[:group_id]])
+    |> Ecto.Changeset.put_change(:group_ids, group_ids)
     |> Repo.insert()
   end
 
@@ -408,16 +408,24 @@ defmodule Glific.Flows.Broadcast do
       Flow.exclude_contacts_in_flow(contact_ids)
       |> then(&("(" <> Enum.join(&1, ", ") <> ")"))
 
-    """
-    INSERT INTO message_broadcast_contacts
-    (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id, group_ids)
+      query =
+        """
+        INSERT INTO message_broadcast_contacts
+        (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id, group_ids)
 
-    (SELECT #{message_broadcast.id}, 'pending', #{message_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id , #{message_broadcast.group_ids}
-    FROM contacts
-    WHERE (status !=  'blocked') AND (optout_time is null) AND id in #{contacts_not_in_flow})
+        (SELECT $1, 'pending', $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id, $3
+         FROM contacts
 
-    """
-    |> Repo.query()
+         WHERE (status != 'blocked') AND (optout_time is null) AND id in #{contacts_not_in_flow})
+        """
+
+      values = [
+        message_broadcast.id,
+        message_broadcast.organization_id,
+        group_ids
+      ]
+
+      Repo.query(query, values)
   end
 
   defp populate_message_broadcast_contacts(message_broadcast, group_ids, _exclusion) do
@@ -430,16 +438,24 @@ defmodule Glific.Flows.Broadcast do
       |> Repo.all()
       |> then(&("(" <> Enum.join(&1, ", ") <> ")"))
 
-    """
-    INSERT INTO message_broadcast_contacts
-    (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id, group_ids)
+      query =
+        """
+        INSERT INTO message_broadcast_contacts
+        (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id, group_ids)
 
-    (SELECT #{message_broadcast.id}, 'pending', #{message_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id , #{message_broadcast.group_ids}
-      FROM contacts
+        (SELECT $1, 'pending', $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id, $3
+         FROM contacts
 
-      WHERE (status !=  'blocked') AND (optout_time is null) AND id in #{contact_ids})
-    """
-    |> Repo.query()
+         WHERE (status != 'blocked') AND (optout_time is null) AND id in #{contact_ids})
+        """
+
+      values = [
+        message_broadcast.id,
+        message_broadcast.organization_id,
+        group_ids
+      ]
+
+      Repo.query(query, values)
   end
 
   @spec broadcast_stats_base_query(non_neg_integer()) :: String.t()
