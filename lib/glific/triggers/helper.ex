@@ -5,7 +5,7 @@ defmodule Glific.Triggers.Helper do
   """
 
   @doc """
-  Given a time and the frequency of occurence, compute the next
+  Given a time and the frequency of occurrence, compute the next
   time the event can potentially occur
   """
   @spec compute_next(map()) :: DateTime.t() | {:error, any()}
