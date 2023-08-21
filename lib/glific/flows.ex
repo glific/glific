@@ -38,25 +38,20 @@ defmodule Glific.Flows do
 
   """
   @spec list_flows(map()) :: [Flow.t()]
- def list_flows(args) do
+  def list_flows(args) do
     flows =
       Repo.list_filter_query(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
       |> AccessControl.check_access(:flow)
+      |> order_by([f], desc: f.updated_at)
       |> Repo.all()
 
-    pinned_flows = Enum.filter(flows, fn flow -> flow.is_pinned end)
-    unpinned_flows = Enum.reject(flows, fn flow -> flow.is_pinned end)
-
-    sorted_flows =
-      unpinned_flows
-      |> Enum.sort(fn a, b -> a.inserted_at > b.inserted_at end)
-
-    combined_flows = pinned_flows ++ sorted_flows
-
-    Enum.map(combined_flows, &(&1.id))
-    |>get_published_draft_dates()
-    |>merge_original(combined_flows)
-
+    flows
+    # get all the flow ids
+    |> Enum.map(fn f -> f.id end)
+    # get their published_draft dates
+    |> get_published_draft_dates()
+    # merge with the original list of flows
+    |> merge_original(flows)
   end
 
   @spec merge_original(map(), [Flow.t()]) :: [Flow.t()]
