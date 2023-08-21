@@ -54,7 +54,7 @@ oban_crontab = [
   # 21:00 Sat UTC is  02:30 Sun IST and hence low traffic
   {"0 21 * * SAT", Glific.Jobs.MinuteWorker, args: %{job: :weekly_tasks}},
   # We are sending report of previous week(MON to SUN)
-  {"0 0 * * MON", Glific.Jobs.MinuteWorker, args: %{job: :weekly_report}},
+  {"0 0 * * MON", Glific.Jobs.MinuteWorker, args: %{job: :weekly_report}}
   # {"0 0 1 * *", Glific.Jobs.MinuteWorker, args: %{job: :monthly_tasks}}
 ]
 
@@ -76,11 +76,11 @@ config :glific, Oban,
   queues: oban_queues,
   plugins: oban_plugins
 
+# Adding ssl_options to fix #3037. However I dont understand this or the implications
+# We will revisit it once we build a better understanding
 config :tesla,
-  adapter: Tesla.Adapter.Hackney,
-  ssl_options: [versions: [:"tlsv1.3"], middlebox_comp_mode: false]
-
-config :tesla, Tesla.Middleware.Logger, debug: true
+  adapter:
+    {Tesla.Adapter.Hackney, ssl_options: [{:middlebox_comp_mode, false}, {:verify, :verify_none}]}
 
 config :glific, :max_rate_limit_request, 60
 
