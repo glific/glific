@@ -694,4 +694,18 @@ defmodule Glific.Templates do
       error -> {:ok, %{message: error}}
     end
   end
+
+  @doc """
+  get template from EEx based on variables
+  """
+  @spec template(integer(), [String.t()]) :: binary
+  def template(template_uuid, variables \\ []) do
+    %{
+      uuid: template_uuid,
+      name: "Template",
+      variables: variables,
+      expression: nil
+    }
+    |> Jason.encode!()
+  end
 end
