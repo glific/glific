@@ -1331,19 +1331,18 @@ defmodule Glific.Partners do
     |> Repo.update_all([])
   end
 
-
   @doc """
   Cron handler for sending dashboard report mail
   """
   @spec send_dashboard_report(non_neg_integer(), map()) :: {:ok, any()} | {:error, String.t()}
   def send_dashboard_report(org_id, %{frequency: frequency}) do
-      org = get_organization!(org_id)
-      %{setting: setting} = org
+    org = get_organization!(org_id)
+    %{setting: setting} = org
 
-      case setting do
-        %{"report_frequency" => ^frequency} -> Stats.mail_stats(org, frequency)
-        nil -> {:error, "Settings are nil"}
-        _ -> {:ok, "Mail not sent"}
-      end
+    case setting do
+      %{"report_frequency" => ^frequency} -> Stats.mail_stats(org, frequency)
+      nil -> {:error, "Settings are nil"}
+      _ -> {:ok, "Mail not sent"}
+    end
   end
 end
