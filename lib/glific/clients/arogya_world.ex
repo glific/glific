@@ -302,27 +302,14 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
-  get template form EEx based on variables
+  get template form EEx based on  variables
   """
-  @spec template(integer(), String.t()) :: binary
-  def template(template_uuid, variables) do
+  @spec template(integer(), [any()]) :: binary
+  def template(template_uuid, variables \\ []) do
     %{
       uuid: template_uuid,
       name: "Template",
       variables: variables,
-      expression: nil
-    }
-    |> Jason.encode!()
-  end
-
-  @doc """
-  get template form EEx without variables
-  """
-  @spec template(integer()) :: binary
-  def template(template_uuid) do
-    %{
-      uuid: template_uuid,
-      name: "Template",
       expression: nil
     }
     |> Jason.encode!()
