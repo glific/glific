@@ -1097,5 +1097,13 @@ defmodule Glific.PartnersTest do
 
       assert credential.is_active == false
     end
+
+    test "send_dashboard_report/2 send mail to organization about their chatbot report",
+         %{organization_id: organization_id} = _attrs do
+
+          Partners.update_setting(organization_id, "report_frequency", "WEEKLY")
+
+          assert {:ok, %{message: _error}} = Partners.send_dashboard_report(organization_id, %{frequency: "WEEKLY"})
+    end
   end
 end
