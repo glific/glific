@@ -186,50 +186,54 @@ if Code.ensure_loaded?(Faker) do
 
       Repo.insert!(%Message{
         body: "Default message body",
-        flow: :inbound,
+        flow: :outbound,
         type: :text,
         bsp_message_id: Faker.String.base64(10),
         bsp_status: :enqueued,
         sender_id: sender.id,
         receiver_id: receiver.id,
         contact_id: receiver.id,
-        organization_id: organization.id
+        organization_id: organization.id,
+        inserted_at: DateTime.utc_now() |> DateTime.add(Enum.random(-1..-60*60))
       })
 
       Repo.insert!(%Message{
         body: "ZZZ message body for order test",
-        flow: :inbound,
+        flow: :outbound,
         type: :text,
         bsp_message_id: Faker.String.base64(10),
         bsp_status: :enqueued,
         sender_id: sender.id,
         receiver_id: receiver.id,
         contact_id: receiver.id,
-        organization_id: organization.id
+        organization_id: organization.id,
+        inserted_at: DateTime.utc_now() |> DateTime.add(Enum.random(-1..-60*60))
       })
 
       Repo.insert!(%Message{
         body: Shakespeare.hamlet(),
-        flow: :inbound,
+        flow: :outbound,
         type: :text,
         bsp_message_id: Faker.String.base64(10),
         bsp_status: :enqueued,
         sender_id: sender.id,
         receiver_id: receiver.id,
         contact_id: receiver.id,
-        organization_id: organization.id
+        organization_id: organization.id,
+        inserted_at: DateTime.utc_now() |> DateTime.add(Enum.random(-1..-60*60))
       })
 
       Repo.insert!(%Message{
         body: Shakespeare.hamlet(),
-        flow: :inbound,
+        flow: :outbound,
         type: :text,
         bsp_message_id: Faker.String.base64(10),
         bsp_status: :enqueued,
         sender_id: sender.id,
         receiver_id: receiver.id,
         contact_id: receiver.id,
-        organization_id: organization.id
+        organization_id: organization.id,
+        inserted_at: DateTime.utc_now() |> DateTime.add(Enum.random(-1..-60*60))
       })
 
       Repo.insert!(%Message{
@@ -241,7 +245,8 @@ if Code.ensure_loaded?(Faker) do
         sender_id: receiver.id,
         receiver_id: sender.id,
         contact_id: receiver.id,
-        organization_id: organization.id
+        organization_id: organization.id,
+        inserted_at: DateTime.utc_now() |> DateTime.add(Enum.random(-1..-60*60))
       })
 
       Repo.insert!(%Message{
@@ -253,7 +258,8 @@ if Code.ensure_loaded?(Faker) do
         sender_id: receiver.id,
         receiver_id: sender.id,
         contact_id: receiver.id,
-        organization_id: organization.id
+        organization_id: organization.id,
+        inserted_at: DateTime.utc_now() |> DateTime.add(Enum.random(-1..-60*60))
       })
 
       Repo.insert!(%Message{
@@ -265,7 +271,8 @@ if Code.ensure_loaded?(Faker) do
         sender_id: receiver.id,
         receiver_id: sender.id,
         contact_id: receiver.id,
-        organization_id: organization.id
+        organization_id: organization.id,
+        inserted_at: DateTime.utc_now() |> DateTime.add(Enum.random(-1..-60*60))
       })
 
       Repo.insert!(%Message{
@@ -277,7 +284,8 @@ if Code.ensure_loaded?(Faker) do
         sender_id: receiver2.id,
         receiver_id: sender.id,
         contact_id: receiver2.id,
-        organization_id: organization.id
+        organization_id: organization.id,
+        inserted_at: DateTime.utc_now() |> DateTime.add(Enum.random(-1..-60*60))
       })
 
       Repo.insert!(%Message{
@@ -289,7 +297,8 @@ if Code.ensure_loaded?(Faker) do
         sender_id: receiver3.id,
         receiver_id: sender.id,
         contact_id: receiver3.id,
-        organization_id: organization.id
+        organization_id: organization.id,
+        inserted_at: DateTime.utc_now() |> DateTime.add(Enum.random(-1..-60*60))
       })
 
       message =
@@ -302,7 +311,8 @@ if Code.ensure_loaded?(Faker) do
           sender_id: sender.id,
           receiver_id: receiver4.id,
           contact_id: receiver4.id,
-          organization_id: organization.id
+          organization_id: organization.id,
+          inserted_at: DateTime.utc_now() |> DateTime.add(Enum.random(-1..-60*60))
         })
 
       Repo.insert!(%Message{
@@ -316,8 +326,44 @@ if Code.ensure_loaded?(Faker) do
         contact_id: receiver4.id,
         organization_id: organization.id,
         context_id: message.bsp_message_id,
-        context_message_id: message.id
+        context_message_id: message.id,
+        inserted_at: DateTime.utc_now() |> DateTime.add(Enum.random(-1..-60*60))
       })
+
+      Enum.map(1..200, fn _ ->
+        random_receiver = Enum.random([receiver.id, receiver2.id, receiver3.id, receiver4.id])
+        %Message{
+        body: Shakespeare.hamlet(),
+        flow: :outbound,
+        type: :text,
+        bsp_message_id: Faker.String.base64(10),
+        bsp_status: :enqueued,
+        sender_id: sender.id,
+        receiver_id: random_receiver,
+        contact_id: random_receiver,
+        organization_id: organization.id,
+        inserted_at: DateTime.utc_now() |> DateTime.add(Enum.random(-1..-24*7*60*60))
+      }
+      |> Repo.insert!()
+      end)
+
+    Enum.map(1..200, fn _ ->
+      random_receiver = Enum.random([receiver.id, receiver2.id, receiver3.id, receiver4.id])
+      %Message{
+      body: Shakespeare.hamlet(),
+      flow: :inbound,
+      type: :text,
+      bsp_message_id: Faker.String.base64(10),
+      bsp_status: :enqueued,
+      sender_id: random_receiver,
+      receiver_id: sender.id,
+      contact_id: random_receiver,
+      organization_id: organization.id,
+      inserted_at: DateTime.utc_now() |> DateTime.add(Enum.random(-1..-24*7*60*60))
+    }
+    |> Repo.insert!()
+    end)
+
     end
 
     @doc false
@@ -1548,6 +1594,8 @@ if Code.ensure_loaded?(Faker) do
       seed_contact_history(organization)
 
       seed_user_roles(organization)
+
+      Glific.Stats.generate_stats()
     end
   end
 end
