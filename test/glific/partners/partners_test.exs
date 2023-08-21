@@ -1101,7 +1101,7 @@ defmodule Glific.PartnersTest do
     test "send_dashboard_report/2 send mail to organization about their chatbot report",
          %{organization_id: organization_id} = _attrs do
 
-          Partners.update_report_frequency(organization_id, "WEEKLY")
+          Partners.update_setting(organization_id, "report_frequency", "WEEKLY")
 
           assert {:ok, %{message: _error}} = Partners.send_dashboard_report(organization_id, %{frequency: "WEEKLY"})
     end
