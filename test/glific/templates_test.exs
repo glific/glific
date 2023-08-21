@@ -1328,7 +1328,7 @@ defmodule Glific.TemplatesTest do
                Templates.report_to_gupshup(org_id, temp_id, cc)
     end
 
-    test "template EEx form variables should be JSON encoded" do
+    test "template from EEx based on variables should be JSON encoded" do
       result = %{
         uuid: "uuid",
         name: "Template",
