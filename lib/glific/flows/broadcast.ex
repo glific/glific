@@ -69,7 +69,7 @@ defmodule Glific.Flows.Broadcast do
           {:ok, MessageBroadcast.t()} | {:error, String.t()}
   def broadcast_message_to_group(group_message, group_ids, message_params, default_results \\ %{}) do
     %{
-      group_id: group_ids,
+      group_id: hd(group_ids),
       message_id: group_message.id,
       started_at: DateTime.utc_now(),
       user_id: Repo.get_current_user().id,
