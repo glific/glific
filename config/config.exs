@@ -55,7 +55,7 @@ oban_crontab = [
   {"0 21 * * SAT", Glific.Jobs.MinuteWorker, args: %{job: :weekly_tasks}},
   # We are sending report of previous week(MON to SUN)
   {"0 0 * * MON", Glific.Jobs.MinuteWorker, args: %{job: :weekly_report}},
-  {"0 0 1 * *", Glific.Jobs.MinuteWorker, args: %{job: :monthly_tasks}}
+  # {"0 0 1 * *", Glific.Jobs.MinuteWorker, args: %{job: :monthly_tasks}}
 ]
 
 oban_engine = Oban.Pro.Queue.SmartEngine

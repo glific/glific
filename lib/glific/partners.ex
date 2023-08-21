@@ -1311,19 +1311,20 @@ defmodule Glific.Partners do
   end
 
   @doc """
-  Update report_frequency field in settings column
+  Update field in setting column
   """
-  @spec update_report_frequency(non_neg_integer(), String.t()) ::
+  @spec update_setting(non_neg_integer(), String.t(), String.t()) ::
           tuple()
-  def update_report_frequency(org_id, frequency \\ "MONTHLY") do
+  def update_setting(org_id, key, value) do
     Organization
     |> where([o], o.organization_id == ^org_id)
     |> update([o],
       set: [
         setting:
           fragment(
-            "jsonb_set(setting, array['report_frequency'::text], to_jsonb(?))",
-            type(^frequency, :string)
+            "jsonb_set(setting, array[?::text], to_jsonb(?))",
+            ^key,
+            type(^value, :string)
           )
       ]
     )
