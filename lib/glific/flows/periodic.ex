@@ -93,11 +93,17 @@ defmodule Glific.Flows.Periodic do
     org = Glific.Partners.organization(state[:organization_id])
     flow_config = org.out_of_office
 
+    default_flow_each_time = Map.get(org.setting, "default_flow_each_time", false)
+
     cond do
       is_nil(flow_id) ->
         {state, false}
 
+      #when is this part getting executed can't find any code which is updating field run_each_time
       not is_nil(flow_config) && flow_config.run_each_time == true ->
+        init_common_flow(state, flow_id, message)
+
+      default_flow_each_time ->
         init_common_flow(state, flow_id, message)
 
       !Flows.flow_activated(flow_id, message.contact_id, since) ->
