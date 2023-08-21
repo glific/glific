@@ -187,6 +187,7 @@ defmodule Glific.Erase do
           AND m.contact_id = #{contact_id}
           AND m.organization_id = #{org_id}
           AND m.message_number < #{message_to_delete}
+          and m.flow = 'inbound'
       )
       """
 
