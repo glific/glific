@@ -73,7 +73,11 @@ config :glific, Oban,
   queues: oban_queues,
   plugins: oban_plugins
 
-config :tesla, adapter: Tesla.Adapter.Hackney
+config :tesla,
+  adapter: Tesla.Adapter.Hackney,
+  ssl_options: [versions: [:"tlsv1.3"], middlebox_comp_mode: false]
+
+config :tesla, Tesla.Middleware.Logger, debug: true
 
 config :glific, :max_rate_limit_request, 60
 
