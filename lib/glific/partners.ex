@@ -1313,7 +1313,7 @@ defmodule Glific.Partners do
   @doc """
   Update field in setting column
   """
-  @spec update_setting(non_neg_integer(), String.t(), String.t()) ::
+  @spec update_setting(non_neg_integer(), String.t(), any()) ::
           tuple()
   def update_setting(org_id, key, value) do
     Organization
@@ -1322,9 +1322,9 @@ defmodule Glific.Partners do
       set: [
         setting:
           fragment(
-            "jsonb_set(setting, array[?::text], to_jsonb(?))",
+            "jsonb_set(setting, array[?::text], ?)",
             ^key,
-            type(^value, :string)
+            ^value
           )
       ]
     )
