@@ -696,9 +696,9 @@ defmodule Glific.Templates do
   end
 
   @doc """
-  get template form EEx based on  variables
+  get template from EEx based on variables
   """
-  @spec template(integer(), [any()]) :: binary
+  @spec template(integer(), [String.t()]) :: binary
   def template(template_uuid, variables \\ []) do
     %{
       uuid: template_uuid,
