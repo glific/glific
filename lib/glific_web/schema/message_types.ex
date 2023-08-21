@@ -280,5 +280,21 @@ defmodule GlificWeb.Schema.MessageTypes do
 
       resolve(&Resolvers.Messages.publish_message/3)
     end
+
+    field :update_message_status, :message do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(fn message, _, _ -> {:ok, message} end)
+    end
+
+    field :sent_group_message, :message do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(fn message, _, _ -> {:ok, message} end)
+    end
   end
 end
