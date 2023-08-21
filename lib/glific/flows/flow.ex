@@ -479,14 +479,14 @@ defmodule Glific.Flows.Flow do
       Flows.start_contact_flow(flow.id, contact, %{"parent" => context.results})
     end)
 
-    action.groups
-    |> Enum.each(fn group ->
-      group = Repo.get_by(Group, %{id: group["uuid"]})
+    group_ids = action.groups
+    |> Enum.map(fn group ->
+      String.to_integer(group["uuid"])
+    end)
 
-      Flows.start_group_flow(flow, group, %{"parent" => context.results},
+      Flows.start_group_flow(flow, group_ids, %{"parent" => context.results},
         exclusions: action.exclusions
       )
-    end)
 
     {:ok, context, []}
   end
