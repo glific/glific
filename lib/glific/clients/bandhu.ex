@@ -97,9 +97,9 @@ defmodule Glific.Clients.Bandhu do
   def webhook("housing_sql", fields) do
     header = [{"Content-Type", "application/json"}]
 
-    # cleaned_fields = clean_fields(fields)
+    cleaned_fields = clean_fields(fields)
 
-    Tesla.post(@housing_url, Jason.encode!(fields), headers: header)
+    Tesla.post(@housing_url, Jason.encode!(cleaned_fields), headers: header)
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
@@ -143,11 +143,16 @@ defmodule Glific.Clients.Bandhu do
   @spec clean_fields(map()) :: map()
   defp clean_fields(fields) do
     Enum.reduce(fields, %{}, fn {key, value}, acc ->
-      if String.match?(value, ~r/@results\..*?\.#{key}/),
+      if do_clean_fields(key, value),
         do: Map.put(acc, key, ""),
         else: Map.put(acc, key, value)
     end)
   end
+
+  defp do_clean_fields(key, value) when is_binary(value),
+    do: String.match?(value, ~r/@results\..*?\.#{key}/)
+
+  defp do_clean_fields(_key, _value), do: false
 
   defp format_profile_message(profiles) do
     profiles
