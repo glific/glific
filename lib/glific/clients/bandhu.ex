@@ -149,6 +149,7 @@ defmodule Glific.Clients.Bandhu do
     end)
   end
 
+  @spec do_clean_fields(String.t(), String.t()) :: boolean()
   defp do_clean_fields(key, value) when is_binary(value),
     do: String.match?(value, ~r/@results\..*?\.#{key}/)
 
