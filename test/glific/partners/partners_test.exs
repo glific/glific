@@ -1104,8 +1104,8 @@ defmodule Glific.PartnersTest do
       assert {:ok, %Organization{} = organization} =
         Partners.update_organization(organization, %{setting: %{report_frequency: "WEEKLY"}})
 
-      # assert {:ok, %{message: _error}} =
-      IO.inspect Partners.send_dashboard_report(organization.id, %{frequency: "WEEKLY"})
+      assert {:ok, %{message: _error}} =
+        Partners.send_dashboard_report(organization.id, %{frequency: "WEEKLY"})
     end
   end
 end
