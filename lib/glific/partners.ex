@@ -1316,7 +1316,7 @@ defmodule Glific.Partners do
   @spec send_dashboard_report(non_neg_integer(), map()) :: {:ok, any()} | {:error, String.t()}
   def send_dashboard_report(org_id, %{frequency: frequency}) do
     org = get_organization!(org_id)
-    %{setting: setting} = org
+    setting = org.setting
 
     case setting.report_frequency do
       ^frequency -> Stats.mail_stats(org, frequency)

@@ -8,19 +8,25 @@ defmodule Glific.Partners.Setting do
   import Ecto.Changeset
 
   @optional_fields [
+    :low_balance_threshold,
     :report_frequency,
-    :run_flow_each_time
+    :run_flow_each_time,
+    :send_warning_mail
   ]
 
   @type t() :: %__MODULE__{
+    low_balance_threshold: non_neg_integer() | nil,
     report_frequency: String.t() | nil,
-    run_flow_each_time: boolean() | nil
+    run_flow_each_time: boolean() | nil,
+    send_warning_mail: boolean() | nil
   }
 
   @primary_key false
   embedded_schema do
+    field :low_balance_threshold, :integer
     field :report_frequency, :string
     field :run_flow_each_time, :boolean, default: false
+    field :send_warning_mail, :boolean, default: false
   end
 
   @doc """
