@@ -4,7 +4,7 @@ defmodule Glific.Repo.Migrations.AddSettingColumnInOrganization do
   def up do
     alter table(:organizations) do
       add(:parent_org, :varchar)
-      add(:setting, :jsonb)
+      add(:setting, :jsonb, default: "{}")
     end
   end
 
