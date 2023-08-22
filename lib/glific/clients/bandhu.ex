@@ -7,7 +7,7 @@ defmodule Glific.Clients.Bandhu do
 
   alias Glific.Clients.CommonWebhook
 
-  @housing_url "https://housing.bandhumember.work/api/housing/create_sql_query_from_json"
+  @housing_url "https://housing.bandhumember.work/api/housing/create_sql_glific_query"
   @housing_params [
     :language_code,
     :city_name,
@@ -117,7 +117,7 @@ defmodule Glific.Clients.Bandhu do
   defp handle_response(%{"success" => "false"} = response),
     do: %{success: false, message: response["message"]}
 
-  defp handle_response(response), do: response |> get_in(["data"]) |> hd
+  defp handle_response(response), do: response
 
   @spec parse_bandhu_json(map()) :: map()
   defp parse_bandhu_json(%{success: true} = json) do
