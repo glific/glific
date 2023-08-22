@@ -180,13 +180,14 @@ defmodule Glific.Erase do
       DELETE
       FROM messages_media
       WHERE id IN (
-        SELECT id
+        SELECT media_id
         FROM messages m
         WHERE
           m.media_id IS NOT NULL
           AND m.contact_id = #{contact_id}
           AND m.organization_id = #{org_id}
           AND m.message_number < #{message_to_delete}
+          and m.flow = 'inbound'
       )
       """
 
