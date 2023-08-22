@@ -408,24 +408,24 @@ defmodule Glific.Flows.Broadcast do
       Flow.exclude_contacts_in_flow(contact_ids)
       |> then(&("(" <> Enum.join(&1, ", ") <> ")"))
 
-      query =
-        """
-        INSERT INTO message_broadcast_contacts
-        (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id, group_ids)
+    query =
+      """
+      INSERT INTO message_broadcast_contacts
+      (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id, group_ids)
 
-        (SELECT $1, 'pending', $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id, $3
-         FROM contacts
+      (SELECT $1, 'pending', $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id, $3
+       FROM contacts
 
-         WHERE (status != 'blocked') AND (optout_time is null) AND id in #{contacts_not_in_flow})
-        """
+       WHERE (status != 'blocked') AND (optout_time is null) AND id in #{contacts_not_in_flow})
+      """
 
-      values = [
-        message_broadcast.id,
-        message_broadcast.organization_id,
-        group_ids
-      ]
+    values = [
+      message_broadcast.id,
+      message_broadcast.organization_id,
+      group_ids
+    ]
 
-      Repo.query(query, values)
+    Repo.query(query, values)
   end
 
   defp populate_message_broadcast_contacts(message_broadcast, group_ids, _exclusion) do
@@ -438,24 +438,24 @@ defmodule Glific.Flows.Broadcast do
       |> Repo.all()
       |> then(&("(" <> Enum.join(&1, ", ") <> ")"))
 
-      query =
-        """
-        INSERT INTO message_broadcast_contacts
-        (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id, group_ids)
+    query =
+      """
+      INSERT INTO message_broadcast_contacts
+      (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id, group_ids)
 
-        (SELECT $1, 'pending', $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id, $3
-         FROM contacts
+      (SELECT $1, 'pending', $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id, $3
+       FROM contacts
 
-         WHERE (status != 'blocked') AND (optout_time is null) AND id in #{contact_ids})
-        """
+       WHERE (status != 'blocked') AND (optout_time is null) AND id in #{contact_ids})
+      """
 
-      values = [
-        message_broadcast.id,
-        message_broadcast.organization_id,
-        group_ids
-      ]
+    values = [
+      message_broadcast.id,
+      message_broadcast.organization_id,
+      group_ids
+    ]
 
-      Repo.query(query, values)
+    Repo.query(query, values)
   end
 
   @spec broadcast_stats_base_query(non_neg_integer()) :: String.t()
