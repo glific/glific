@@ -264,7 +264,7 @@ defmodule GlificWeb.Schema.TriggerTest do
             "startTime" => start_time,
             "endDate" => end_date,
             "isActive" => true,
-            "isRepeating" => false,
+            "isRepeating" => true,
             "frequency" => "hourly"
           }
         }
@@ -295,6 +295,56 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert {:ok, query_data} = result
     message = get_in(query_data, [:data, "createTrigger", "errors", Access.at(0), "message"])
     assert message =~ "Frequency: Cannot create Trigger with invalid days"
+
+    ## Creating a weekly trigger with valid attrs should start from the first active day and not today
+    start_date =
+      DateTime.utc_now()
+      |> Timex.format!("%Y-%m-%d", :strftime)
+
+    start_time =
+      DateTime.utc_now()
+      |> Timex.shift(minutes: 10)
+      |> DateTime.to_time()
+      |> Time.to_iso8601()
+
+    end_date =
+      DateTime.utc_now()
+      |> Timex.shift(days: 15)
+      |> Timex.format!("%Y-%m-%d", :strftime)
+
+    # setting active day as day three days from today
+    day =
+      DateTime.utc_now()
+      |> Timex.shift(days: 3)
+      |> Date.day_of_week()
+
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "days" => [day],
+            "hours" => [],
+            "flowId" => flow.id,
+            "groupId" => group.id,
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => true,
+            "frequency" => "weekly"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    trigger_id = get_in(query_data, [:data, "createTrigger", "trigger", "id"])
+
+    trigger = Triggers.get_trigger!(trigger_id)
+    next_trigger_at_date = trigger.next_trigger_at |> DateTime.to_date()
+
+    # next_trigger_at should be 3 days from now of newly created trigger i.e. first active day of trigger
+    assert DateTime.utc_now() |> Timex.shift(days: 3) |> DateTime.to_date() ==
+             next_trigger_at_date
   end
 
   test "create a trigger with time prior to current timestamp should raise an error",

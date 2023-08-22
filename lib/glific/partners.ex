@@ -29,6 +29,7 @@ defmodule Glific.Partners do
     Providers.GupshupContacts,
     Repo,
     Settings.Language,
+    Stats,
     Users.User
   }
 
@@ -1306,6 +1307,42 @@ defmodule Glific.Partners do
         organization_data
         |> OrganizationData.changeset(%{json: data})
         |> Repo.update()
+    end
+  end
+
+  @doc """
+  Update field in setting column
+  """
+  @spec update_setting(non_neg_integer(), String.t(), any()) ::
+          tuple()
+  def update_setting(org_id, key, value) do
+    Organization
+    |> where([o], o.organization_id == ^org_id)
+    |> update([o],
+      set: [
+        setting:
+          fragment(
+            "jsonb_set(setting, array[?::text], ?)",
+            ^key,
+            ^value
+          )
+      ]
+    )
+    |> Repo.update_all([])
+  end
+
+  @doc """
+  Cron handler for sending dashboard report mail
+  """
+  @spec send_dashboard_report(non_neg_integer(), map()) :: {:ok, any()} | {:error, String.t()}
+  def send_dashboard_report(org_id, %{frequency: frequency}) do
+    org = get_organization!(org_id)
+    %{setting: setting} = org
+
+    case setting do
+      %{"report_frequency" => ^frequency} -> Stats.mail_stats(org, frequency)
+      nil -> {:error, "Settings are nil"}
+      _ -> {:ok, "Mail not sent"}
     end
   end
 end

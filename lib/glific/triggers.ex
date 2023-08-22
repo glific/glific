@@ -288,7 +288,11 @@ defmodule Glific.Triggers do
        when not is_nil(next_trigger_at),
        do: next_trigger_at
 
-  defp get_next_trigger_at(_attrs, start_at), do: start_at
+  defp get_next_trigger_at(attrs, start_at) do
+    attrs
+    |> Map.put(:next_trigger_at, start_at)
+    |> Helper.compute_next()
+  end
 
   @spec fix_attrs(map()) :: map()
   defp fix_attrs(attrs) do
