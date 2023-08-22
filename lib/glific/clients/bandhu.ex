@@ -97,6 +97,8 @@ defmodule Glific.Clients.Bandhu do
   def webhook("housing_sql", fields) do
     header = [{"Content-Type", "application/json"}]
 
+    # cleaned_fields = clean_fields(fields)
+
     Tesla.post(@housing_url, Jason.encode!(fields), headers: header)
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
@@ -135,6 +137,15 @@ defmodule Glific.Clients.Bandhu do
   defp add_presets(parsed_response) do
     Enum.reduce(@housing_params, parsed_response, fn housing_param, response ->
       Map.put_new(response, housing_param, "")
+    end)
+  end
+
+  @spec clean_fields(map()) :: map()
+  defp clean_fields(fields) do
+    Enum.reduce(fields, %{}, fn {key, value}, acc ->
+      if String.match?(value, ~r/@results\..*?\.#{key}/),
+        do: Map.put(acc, key, ""),
+        else: Map.put(acc, key, value)
     end)
   end
 
