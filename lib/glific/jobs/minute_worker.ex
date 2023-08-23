@@ -99,6 +99,7 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&Glific.Clients.daily_tasks/1, nil, [])
         Partners.perform_all(&Billing.update_usage/2, %{time: DateTime.utc_now()}, [])
         Partners.perform_all(&Glific.Sheets.sync_organization_sheets/1, nil, [])
+        # Partners.perform_all(&Partners.send_dashboard_report/2, %{frequency: "DAILY"}, [])
         Erase.perform_daily()
         # We dont want to clog this process
         # so lets unlink it
@@ -115,6 +116,9 @@ defmodule Glific.Jobs.MinuteWorker do
       "weekly_tasks" ->
         Partners.perform_all(&Glific.Clients.weekly_tasks/1, nil, [])
         Erase.perform_weekly()
+
+      "weekly_report" ->
+        Partners.perform_all(&Partners.send_dashboard_report/2, %{frequency: "WEEKLY"}, [])
 
       "delete_tasks" ->
         # lets do this first, before we delete any records, so we have a better picture
@@ -139,6 +143,9 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "update_hsms" ->
         Partners.perform_all(&Templates.sync_hsms_from_bsp/1, nil, [])
+
+      # "monthly_tasks" ->
+      #   Partners.perform_all(&Partners.send_dashboard_report/2, %{frequency: "MONTHLY"}, [])
 
       _ ->
         raise ArgumentError, message: "This job is not handled"

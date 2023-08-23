@@ -7843,7 +7843,7 @@ ALTER TABLE ONLY public.messages
 --
 
 ALTER TABLE ONLY public.messages
-    ADD CONSTRAINT messages_media_id_fkey FOREIGN KEY (media_id) REFERENCES public.messages_media(id) ON DELETE CASCADE;
+    ADD CONSTRAINT messages_media_id_fkey FOREIGN KEY (media_id) REFERENCES public.messages_media(id) ON DELETE SET NULL;;
 
 
 --

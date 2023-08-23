@@ -3,54 +3,74 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/flatpickr">
 </script>
-<!--
-Commented out the filter code. Will add this once the functionality is ready
-
-<div class="flex content-center justify-center" id="date-filters" phx-update="ignore">
-  <input
-    id="start_date"
-    phx-hook="dateInput"
-    class="mr-3 flatpickr flatpickr-input active"
-    type="text"
-    placeholder="Select Start Date.."
-    readonly="readonly"
-  />
-
-  <input
-    id="end_date"
-    phx-hook="dateInput"
-    class="flatpickr flatpickr-input active"
-    type="text"
-    placeholder="Select End Date.."
-    readonly="readonly"
-  />
-</div>
--->
 <div>
-  <div class="flex content-center justify-center flex-wrap" id="charts">
+  <div class="flex content-center justify-center flex-wrap" id="charts" phx-hook="download">
     <div id="contact-chart" class="card">
+      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
+        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:contacts}>
+          <%= GlificWeb.StatsLive.render_button_svg() %>
+        </.link>
+      </button>
       <%= @contact_chart_svg %>
     </div>
     <div id="conversation-chart" class="card">
+      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
+        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:conversations}>
+          <%= GlificWeb.StatsLive.render_button_svg() %>
+        </.link>
+      </button>
       <%= @conversation_chart_svg %>
     </div>
     <div id="optin-chart" class="card">
+      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
+        <.link id="export-link1" href="#" phx-click="export" phx-value-chart={:optin}>
+          <%= GlificWeb.StatsLive.render_button_svg() %>
+        </.link>
+      </button>
       <%= @optin_chart_svg %>
     </div>
     <div id="notification-chart" class="card">
+      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
+        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:notifications}>
+          <%= GlificWeb.StatsLive.render_button_svg() %>
+        </.link>
+      </button>
       <%= @notification_chart_svg %>
     </div>
     <div id="notification-chart" class="card">
+      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
+        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:messages}>
+          <%= GlificWeb.StatsLive.render_button_svg() %>
+        </.link>
+      </button>
       <%= @message_chart_svg %>
     </div>
     <div id="notification-chart" class="card">
+      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
+        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:contact_type}>
+          <%= GlificWeb.StatsLive.render_button_svg() %>
+        </.link>
+      </button>
       <%= @contact_type_chart_svg %>
+    </div>
+    <div id="messages-chart" class="card m-2">
+      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
+        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:active_hour}>
+          <%= GlificWeb.StatsLive.render_button_svg() %>
+        </.link>
+      </button>
+      <%= @messages_chart_svg %>
     </div>
   </div>
 </div>
 
 <div class="flex content-center justify-center flex-wrap">
   <div class="table-container">
+    <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
+      <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:table}>
+        <%= GlificWeb.StatsLive.render_button_svg() %>
+      </.link>
+    </button>
     <div
       id="broadcast-table"
       class="table"

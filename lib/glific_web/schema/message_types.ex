@@ -281,14 +281,8 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(&Resolvers.Messages.publish_message/3)
     end
 
-    field :cleared_messages, :contact do
-      arg(:organization_id, non_null(:id))
-
-      config(&Schema.config_fun/2)
-
-      resolve(fn contact, _, _ -> {:ok, contact} end)
-    end
-
+    # the below two are null ops but used by frontend, not exactly
+    # sure how they work, but will comment when i remember
     field :update_message_status, :message do
       arg(:organization_id, non_null(:id))
 

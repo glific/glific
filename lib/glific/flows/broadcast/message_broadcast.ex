@@ -26,7 +26,8 @@ defmodule Glific.Flows.MessageBroadcast do
     :completed_at,
     :type,
     :message_params,
-    :default_results
+    :default_results,
+    :group_ids
   ]
 
   # we store one more than the number of messages specified here
@@ -49,7 +50,8 @@ defmodule Glific.Flows.MessageBroadcast do
           message_params: map() | nil,
           default_results: map() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          group_ids: list() | nil
         }
 
   schema "message_broadcasts" do
@@ -58,6 +60,7 @@ defmodule Glific.Flows.MessageBroadcast do
     field(:type, :string, default: "flow")
     field(:message_params, :map, default: %{})
     field(:default_results, :map, default: %{})
+    field :group_ids, {:array, :integer}, default: []
 
     belongs_to(:flow, Flow)
     belongs_to(:group, Group)
