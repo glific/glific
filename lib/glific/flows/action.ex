@@ -192,7 +192,6 @@ defmodule Glific.Flows.Action do
 
   @spec process(map(), map(), Node.t(), map()) :: {Action.t(), map()}
   defp process(json, uuid_map, node, attrs) do
-    IO.inspect(node)
     action =
       Map.merge(
         %Action{
@@ -472,8 +471,6 @@ defmodule Glific.Flows.Action do
 
   def validate(%{type: type} = action, errors, flow)
       when type in @wait_for do
-      IO.inspect(type)
-      IO.inspect( action.wait_time )
     # ensure that any downstream messages from this action are of type HSM
     # if wait time > 24 hours!
     if action.wait_time >= 24 * 60 * 60 &&
@@ -483,18 +480,6 @@ defmodule Glific.Flows.Action do
            errors,
        else: errors
   end
-
-  # @spec validate(Action.t(), Keyword.t(), map()) :: Keyword.t()
-  # def validate(%{type: type, router: %{"wait" => %{"timeout" => %{"seconds" => seconds}}}} = action, errors, flow)
-  #       when type in @wait_for do
-  #   if seconds > 86400 do
-  #     type_of_next_message(flow, action) == :session,
-  #      do:
-  #        [{Message, "The next message after a long wait for time should be an HSM template"}] ++
-  #          errors,
-  #      else: errors
-  #   end
-  # end
 
   def validate(%{type: "set_contact_language"} = action, errors, _flow) do
     if is_nil(action.text) || action.text == "",
