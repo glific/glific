@@ -1176,26 +1176,48 @@ if Code.ensure_loaded?(Faker) do
         inbound = Enum.random(1..30)
         outbound = Enum.random(1..50)
         total = inbound + outbound
+
         Repo.insert!(%Stat{
           period: "hour",
           date: DateTime.utc_now() |> DateTime.to_date(),
-          contacts: 20,
-          active: 0,
-          optin: 18,
-          optout: 17,
+          contacts: Enum.random(0..20),
+          active: Enum.random(0..5),
+          optin: Enum.random(1..10),
+          optout: Enum.random(1..5),
           messages: total,
           inbound: inbound,
           outbound: outbound,
-          hsm: 20,
-          flows_started: 25,
-          flows_completed: 10,
-          users: 7,
+          hsm: Enum.random(1..10),
+          flows_started: Enum.random(1..25),
+          flows_completed: Enum.random(1..10),
+          users: Enum.random(1..5),
           hour: hour,
           organization_id: organization.id,
-          conversations: 0,
-          inserted_at: DateTime.utc_now() |> DateTime.add(-hour, :hour) |> DateTime.truncate(:second)
+          conversations: Enum.random(1..10),
+          inserted_at:
+            DateTime.utc_now() |> DateTime.add(-hour, :hour) |> DateTime.truncate(:second)
         })
       end)
+
+      Repo.insert!(%Stat{
+        period: "day",
+        date: DateTime.utc_now() |> DateTime.to_date(),
+        contacts: 20,
+        active: 0,
+        optin: 18,
+        optout: 17,
+        messages: 201,
+        inbound: 120,
+        outbound: 81,
+        hsm: 20,
+        flows_started: 25,
+        flows_completed: 10,
+        users: 7,
+        hour: 0,
+        organization_id: organization.id,
+        conversations: 0,
+        inserted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
     end
 
     @doc false
