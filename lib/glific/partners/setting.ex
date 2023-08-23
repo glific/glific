@@ -23,8 +23,8 @@ defmodule Glific.Partners.Setting do
 
   @primary_key false
   embedded_schema do
-    field :low_balance_threshold, :integer
-    field :report_frequency, :string
+    field :low_balance_threshold, :integer, default: 10
+    field :report_frequency, :string, default: "WEEKLY"
     field :run_flow_each_time, :boolean, default: false
     field :send_warning_mail, :boolean, default: false
   end
