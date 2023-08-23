@@ -67,7 +67,7 @@ defmodule Glific.Flows.Action do
   @required_fields_interactive_template [:name | @required_field_common]
   @required_fields_set_results [:name, :category, :value | @required_field_common]
 
-  @wait_for ["wait_for_time", "wait_for_result", "wait_for_response"]
+  @wait_for ["wait_for_time", "wait_for_result"]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,

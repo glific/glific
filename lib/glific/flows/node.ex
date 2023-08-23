@@ -245,7 +245,7 @@ defmodule Glific.Flows.Node do
     count > @node_max_count
   end
 
-  @wait_for ["wait_for_time", "wait_for_result", "wait_for_response"]
+  @wait_for ["wait_for_time", "wait_for_result"]
 
   @doc """
   Execute a node, given a message stream.
