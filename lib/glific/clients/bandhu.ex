@@ -7,7 +7,7 @@ defmodule Glific.Clients.Bandhu do
 
   alias Glific.Clients.CommonWebhook
 
-  @housing_url "https://housing.bandhumember.work/api/housing/create_sql_query_from_json"
+  @housing_url "https://housing.bandhumember.work/api/housing/create_sql_glific_query"
   @housing_params [
     :language_code,
     :city_name,
@@ -97,7 +97,9 @@ defmodule Glific.Clients.Bandhu do
   def webhook("housing_sql", fields) do
     header = [{"Content-Type", "application/json"}]
 
-    Tesla.post(@housing_url, Jason.encode!(fields), headers: header)
+    cleaned_fields = clean_fields(fields)
+
+    Tesla.post(@housing_url, Jason.encode!(cleaned_fields), headers: header)
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
@@ -115,7 +117,7 @@ defmodule Glific.Clients.Bandhu do
   defp handle_response(%{"success" => "false"} = response),
     do: %{success: false, message: response["message"]}
 
-  defp handle_response(response), do: response |> get_in(["data"]) |> hd
+  defp handle_response(response), do: response
 
   @spec parse_bandhu_json(map()) :: map()
   defp parse_bandhu_json(%{success: true} = json) do
@@ -137,6 +139,21 @@ defmodule Glific.Clients.Bandhu do
       Map.put_new(response, housing_param, "")
     end)
   end
+
+  @spec clean_fields(map()) :: map()
+  defp clean_fields(fields) do
+    Enum.reduce(fields, %{}, fn {key, value}, acc ->
+      if do_clean_fields(key, value),
+        do: Map.put(acc, key, ""),
+        else: Map.put(acc, key, value)
+    end)
+  end
+
+  @spec do_clean_fields(String.t(), String.t()) :: boolean()
+  defp do_clean_fields(key, value) when is_binary(value),
+    do: String.match?(value, ~r/@results\..*?\.#{key}/)
+
+  defp do_clean_fields(_key, _value), do: false
 
   defp format_profile_message(profiles) do
     profiles
