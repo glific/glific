@@ -199,41 +199,37 @@ defmodule Glific.Reports do
     iex> Glific.Reports.get_kpi_data(1, "optout")
     iex> Glific.Reports.get_kpi_data(1, "contact_type")
   """
-  @spec get_kpi_data(non_neg_integer(), String.t()) :: list()
-  def get_kpi_data(org_id, table) do
-    presets = get_date_preset()
+  @spec get_kpi_data(non_neg_integer(), String.t(), map()) :: list()
+  def get_kpi_data(org_id, table, date_range) do
+    presets = get_date_preset(date_range)
     Repo.put_process_state(org_id)
 
     query_data =
       get_kpi_query(presets, table, org_id)
-      |> Repo.all()
+      |> Repo.all() |> IO.inspect(label: "QUERY RESULT")
 
     Enum.reduce(query_data, presets.date_map, fn %{count: count, date: date}, acc ->
       Map.put(acc, date, count)
     end)
-    |> Enum.map(fn {k, v} -> {k, v} end)
-    |> Enum.sort_by(fn {date, _} -> date end, NaiveDateTime)
     |> Enum.map(fn {date, v} -> {Timex.format!(date, "{0D}-{0M}-{YYYY}"), v} end)
+    |> Enum.sort()
+    |> IO.inspect(label: "FINAL RESULT")
   end
 
   @spec get_kpi_query(map(), String.t(), non_neg_integer()) :: String.t()
-  defp get_kpi_query(presets, "stats", org_id) do
-    """
-    SELECT date,
-    conversations
-    FROM stats
-    WHERE period = 'day'
-      AND date >= '#{presets.last_day}'
-      AND date <= '#{presets.today}'
-      AND organization_id = #{org_id}
-    """
+  def get_kpi_query(presets, "stats", org_id) do
+    start_date = presets.start_day |> Timex.to_date()
+    end_date = presets.end_day |> Timex.to_date()
+    from s in "stats",
+    where: s.period == "day" and s.date >= ^start_date and s.date <= ^end_date and s.organization_id == ^org_id,
+    select: %{date: s.date, count: s.conversations}
   end
 
-  defp get_kpi_query(presets, table, org_id) do
+  def get_kpi_query(presets, table, org_id) do
     from(
       t in table,
       where:
-        t.inserted_at > ^presets.last_day and t.inserted_at <= ^presets.today and
+        t.inserted_at > ^presets.start_day and t.inserted_at <= ^presets.end_day and
           t.organization_id == ^org_id,
       group_by: fragment("date_trunc('day', ?)", t.inserted_at),
       select: %{date: fragment("date_trunc('day', ?)", t.inserted_at), count: count(t.id)}
@@ -302,6 +298,7 @@ defmodule Glific.Reports do
   @doc """
   Returns date Today and Last day as NaiveDateTime and date map with values as 0
   """
+  """
   @spec get_date_preset(NaiveDateTime.t(), non_neg_integer()) :: map()
   def get_date_preset(time \\ NaiveDateTime.utc_now(), days \\ 7) do
     today = shifted_time(time, 0)
@@ -318,6 +315,38 @@ defmodule Glific.Reports do
 
     %{today: today, last_day: last_day, date_map: date_map}
   end
+  """
+
+  @spec get_date_preset(map()) :: map()
+  def get_date_preset(date_range) do
+    diff = NaiveDateTime.diff(date_range.end_day, date_range.start_day, :day)
+
+    date_map = Enum.into(0..diff, %{}, fn day ->
+      {date_range.start_day |> NaiveDateTime.add(day, :day), 0}
+    end)
+
+    %{
+      start_day: date_range.start_day,
+      date_map: date_map,
+      end_day: date_range.end_day
+    }
+  end
+
+  """
+  %{
+    today: ~N[2023-08-23 00:00:00.000000],
+    date_map: %{
+      ~N[2023-08-16 00:00:00.000000] => 0,
+      ~N[2023-08-17 00:00:00.000000] => 0,
+      ~N[2023-08-18 00:00:00.000000] => 0,
+      ~N[2023-08-19 00:00:00.000000] => 0,
+      ~N[2023-08-20 00:00:00.000000] => 0,
+      ~N[2023-08-21 00:00:00.000000] => 0,
+      ~N[2023-08-22 00:00:00.000000] => 0
+    },
+    last_day: ~N[2023-08-16 00:00:00.000000]
+  }
+  """
 
   @doc false
   @spec get_export_data(atom(), non_neg_integer()) :: list()

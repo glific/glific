@@ -288,9 +288,10 @@ defmodule GlificWeb.StatsLive do
   @doc false
   @spec get_chart_data(non_neg_integer()) :: list()
   def get_chart_data(org_id) do
+    date_range = %{end_day: NaiveDateTime.utc_now() |> Timex.beginning_of_day(), start_day: NaiveDateTime.utc_now() |> NaiveDateTime.add(-14, :day) |> Timex.beginning_of_day()}
     [
-      contact_chart_data: Reports.get_kpi_data(org_id, "contacts"),
-      conversation_chart_data: Reports.get_kpi_data(org_id, "messages_conversations"),
+      contact_chart_data: Reports.get_kpi_data(org_id, "contacts", date_range),
+      conversation_chart_data: Reports.get_kpi_data(org_id, "stats", date_range),
       optin_chart_data: fetch_count_data(:optin_chart_data, org_id),
       notification_chart_data: fetch_count_data(:notification_chart_data, org_id),
       message_type_chart_data: fetch_count_data(:message_type_chart_data, org_id),
