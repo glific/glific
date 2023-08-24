@@ -44,20 +44,14 @@ defmodule Glific.Flows do
       |> AccessControl.check_access(:flow)
       |> Repo.all()
 
-      flows
-      |> Enum.map(fn f -> f.id end)
-      |> get_published_draft_dates()|>IO.inspect()
-      |> Map.to_list()
-      |> Enum.sort(fn ({_k1, v1}, {_k2, v2}) ->
-        case {v1[:last_changed_at], v2[:last_changed_at]} do
-        {nil, nil} -> false
-        {nil, _} -> false
-        {_, nil} -> true
-        {a, b} -> a >= b
-       end
-      end)|>IO.inspect()
-      |> merge_original(flows)
-
+    flows
+    # get all the flow ids
+    |> Enum.map(fn f -> f.id end)
+    # get their published_draft dates
+    |> get_published_draft_dates()
+    # merge with the original list of flows
+    |> merge_original(flows)
+    |> Enum.sort_by(& &1.last_published_at, {:desc, DateTime})
   end
 
   @spec merge_original(map(), [Flow.t()]) :: [Flow.t()]
