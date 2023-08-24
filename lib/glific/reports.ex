@@ -213,7 +213,7 @@ defmodule Glific.Reports do
       Map.put(acc, date, count)
     end)
     |> Enum.sort_by(fn {date, _} -> date end, NaiveDateTime)
-    |> Enum.map(fn {date, v} -> {Timex.format!(date, "{0D}/{0M}/{YY}"), v} end)
+    |> Enum.map(fn {date, count} -> {Timex.format!(date, "{0D}/{0M}/{YY}"), count} end)
   end
 
   @spec get_kpi_query(map(), String.t(), non_neg_integer()) :: String.t()
