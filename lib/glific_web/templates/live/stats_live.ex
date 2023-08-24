@@ -120,14 +120,15 @@ defmodule GlificWeb.StatsLive do
              notification_chart_data: notification_chart_data,
              message_type_chart_data: message_type_chart_data,
              contact_pie_chart_data: contact_type_chart_data,
-            messages_chart_data: messages_chart_data
+             messages_chart_data: messages_chart_data
            }
          } = socket
        ) do
     socket
     |> assign(
       contact_dataset: make_bar_chart_dataset(contact_chart_data, ["Date", "Daily Contacts"]),
-      conversation_dataset: make_bar_chart_dataset(conversation_chart_data, ["Hour", "Daily Conversations"]),
+      conversation_dataset:
+        make_bar_chart_dataset(conversation_chart_data, ["Hour", "Daily Conversations"]),
       optin_dataset: make_pie_chart_dataset(optin_chart_data),
       notification_dataset: make_pie_chart_dataset(notification_chart_data),
       message_dataset: make_pie_chart_dataset(message_type_chart_data),
@@ -241,7 +242,7 @@ defmodule GlificWeb.StatsLive do
       data_labels: false,
       title: false,
       axis_label_rotation: 45,
-      legend_setting: :legend_bottom,
+      legend_setting: :legend_bottom
     ]
   end
 
@@ -254,7 +255,7 @@ defmodule GlificWeb.StatsLive do
       axis_label_rotation: 45,
       type: :grouped,
       padding: 20,
-      legend_setting: :legend_bottom,
+      legend_setting: :legend_bottom
     ]
   end
 
@@ -264,7 +265,7 @@ defmodule GlificWeb.StatsLive do
       colour_palette: @colour_palette,
       legend_setting: :legend_right,
       data_labels: false,
-      title: false,
+      title: false
     ]
   end
 
