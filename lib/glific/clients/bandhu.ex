@@ -8,7 +8,31 @@ defmodule Glific.Clients.Bandhu do
   alias Glific.Clients.CommonWebhook
 
   @housing_url "https://housing.bandhumember.work/api/housing/create_sql_query_from_json"
-
+  @housing_params [
+    :language_code,
+    :city_name,
+    :area_name,
+    :price_monthly_max,
+    :price_monthly_min,
+    :deposit,
+    :brokerage,
+    :rooms,
+    :sleeping_spaces,
+    :max_guests,
+    :guest_type,
+    :housing_type,
+    :diet,
+    :shift_in,
+    :stay_until,
+    :electricity,
+    :electricity_type,
+    :toilet,
+    :kitchen,
+    :bathroom,
+    :part_of_house,
+    :latitude,
+    :longitude
+  ]
   @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
@@ -77,8 +101,8 @@ defmodule Glific.Clients.Bandhu do
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
-        |> get_in(["data"])
-        |> hd
+        |> handle_response()
+        |> Map.merge(%{success: true})
 
       {_status, _response} ->
         %{success: false, response: "Error response received"}
@@ -86,6 +110,12 @@ defmodule Glific.Clients.Bandhu do
   end
 
   def webhook(_, _fields), do: %{}
+
+  @spec handle_response(map()) :: map()
+  defp handle_response(%{"success" => "false"} = response),
+    do: %{success: false, message: response["message"]}
+
+  defp handle_response(response), do: response |> get_in(["data"]) |> hd
 
   @spec parse_bandhu_json(map()) :: map()
   defp parse_bandhu_json(%{success: true} = json) do
