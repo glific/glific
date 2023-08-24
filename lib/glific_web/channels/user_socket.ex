@@ -15,7 +15,7 @@ defmodule GlificWeb.UserSocket do
     user_id = params["userId"]
     token = params["authToken"]
 
-    %Plug.Conn{secret_key_base: socket.endpoint.config(:secret_key_base)}
+    %Plug.Conn{}
     |> APIAuthPlug.get_credentials(token, @pow_config)
     |> case do
       nil ->
@@ -38,7 +38,4 @@ defmodule GlificWeb.UserSocket do
         {:ok, %{name: user.name}, socket}
     end
   end
-
-  # This function will be called when there was no authentication information
-  def handle_init(_params, _socket), do: :error
 end
