@@ -51,7 +51,8 @@ defmodule Glific.Flows do
     |> get_published_draft_dates()
     # merge with the original list of flows
     |> merge_original(flows)
-    |> Enum.sort_by(& &1.last_published_at, {:desc, DateTime})
+    |> Enum.sort_by(& &1.last_changed_at, {:desc, DateTime})
+    |> IO.inspect()
   end
 
   @spec merge_original(map(), [Flow.t()]) :: [Flow.t()]
@@ -75,9 +76,13 @@ defmodule Glific.Flows do
   end
 
   defp update_dates(row, value) do
-    if row.status == "published",
-      do: Map.put(value, :last_published_at, row.last_changed_at),
-      else: Map.put(value, :last_changed_at, row.last_changed_at)
+    if row.status == "published" do
+      value
+      |> Map.put(:last_published_at, row.last_changed_at)
+      |> Map.put(:last_changed_at, row.last_changed_at)
+    else
+      Map.put(value, :last_changed_at, row.last_changed_at)
+    end
   end
 
   @spec add_dates(list()) :: map()
