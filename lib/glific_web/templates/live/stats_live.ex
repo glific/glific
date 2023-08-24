@@ -140,11 +140,19 @@ defmodule GlificWeb.StatsLive do
     Contex.Dataset.new(data, ["Hour", "Inbound", "Outbound"])
   end
 
-  defp make_bar_chart_dataset(data, opts) do
-    Contex.Dataset.new(data, opts)
+  @doc """
+  Create Bar chart dataset from rows of data
+  """
+  @spec make_bar_chart_dataset([any()]) :: Contex.Dataset.t()
+  def make_bar_chart_dataset(data) do
+    Contex.Dataset.new(data)
   end
 
-  defp make_pie_chart_dataset(data) do
+  @doc """
+  Create Pie chart dataset from rows of data
+  """
+  @spec make_pie_chart_dataset([any()]) :: Contex.Dataset.t()
+  def make_pie_chart_dataset(data) do
     Contex.Dataset.new(data, ["Type", "Value"])
   end
 
@@ -174,7 +182,11 @@ defmodule GlificWeb.StatsLive do
     )
   end
 
-  defp render_bar_chart("Most Active Hour" = title, dataset) do
+  @doc """
+  Render bar chart from dataset, returns SVG
+  """
+  @spec render_bar_chart(String.t(), Contex.Dataset.t()) :: {:safe, [any()]}
+  def render_bar_chart("Most Active Hour" = title, dataset) do
     opts = series_barchart_opts(title)
 
     if Enum.empty?(dataset.data) do
@@ -185,7 +197,7 @@ defmodule GlificWeb.StatsLive do
     end
   end
 
-  defp render_bar_chart(title, dataset) do
+  def render_bar_chart(title, dataset) do
     opts = barchart_opts(title)
 
     Contex.Plot.new(dataset, Contex.BarChart, 700, 350, opts)
@@ -252,10 +264,15 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  defp render_pie_chart(title, dataset) do
+  @doc """
+  Render pie chart from dataset, returns SVG
+  """
+  @spec render_pie_chart(String.t(), Contex.Dataset.t()) :: {:safe, [any()]}
+  def render_pie_chart(title, dataset) do
     opts = piechart_opts(title)
     plot = Contex.Plot.new(dataset, Contex.PieChart, 700, 400, opts)
-    has_no_data = Enum.any?(dataset.data, fn {_label, value} -> is_nil(value) end)
+    has_no_data = Enum.any?(dataset.data, fn {_label, value} -> is_nil(value) end) or
+                  Enum.all?(dataset.data, fn {_label, value} -> value==0 end)
 
     if has_no_data do
       Jason.encode!(title <> ": No data")
@@ -290,8 +307,11 @@ defmodule GlificWeb.StatsLive do
     Reports.get_broadcast_data(org_id)
   end
 
+  @doc """
+  Fetch optin chart count data
+  """
   @spec fetch_count_data(atom(), non_neg_integer()) :: list()
-  defp fetch_count_data(:optin_chart_data, org_id) do
+  def fetch_count_data(:optin_chart_data, org_id) do
     opted_in = Reports.get_kpi(:opted_in_contacts_count, org_id)
     opted_out = Reports.get_kpi(:opted_out_contacts_count, org_id)
     non_opted = Reports.get_kpi(:non_opted_contacts_count, org_id)
@@ -303,7 +323,7 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  defp fetch_count_data(:notification_chart_data, org_id) do
+  def fetch_count_data(:notification_chart_data, org_id) do
     critical = Reports.get_kpi(:critical_notification_count, org_id)
     warning = Reports.get_kpi(:warning_notification_count, org_id)
     information = Reports.get_kpi(:information_notification_count, org_id)
@@ -315,7 +335,7 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  defp fetch_count_data(:message_type_chart_data, org_id) do
+  def fetch_count_data(:message_type_chart_data, org_id) do
     inbound = Reports.get_kpi(:inbound_messages_count, org_id)
     outbound = Reports.get_kpi(:outbound_messages_count, org_id)
 
@@ -325,7 +345,7 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  defp fetch_count_data(:contact_type, org_id) do
+  def fetch_count_data(:contact_type, org_id) do
     Reports.get_contact_data(org_id)
     |> Enum.reduce([], fn [status, count], acc ->
       contact_status =

@@ -38,7 +38,8 @@ defmodule Glific.Flows.Flow do
     :is_pinned,
     :respond_other,
     :respond_no_response,
-    :tag_id
+    :tag_id,
+    :description
   ]
 
   @type t :: %__MODULE__{
@@ -67,11 +68,13 @@ defmodule Glific.Flows.Flow do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          description: String.t() | nil
         }
 
   schema "flows" do
     field(:name, :string)
+    field(:description, :string)
 
     # this is the flow editor version number
     field(:version_number, :string)

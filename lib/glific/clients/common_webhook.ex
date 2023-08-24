@@ -107,6 +107,27 @@ defmodule Glific.Clients.CommonWebhook do
     )
   end
 
+    def webhook("get_buttons", fields) do
+    buttons =
+      fields["buttons_data"]
+      |> String.split("|")
+      |> Enum.with_index()
+      |> Enum.map(fn {answer, index} -> {"button_#{index + 1}", String.trim(answer)} end)
+      |> Enum.into(%{})
+
+    %{
+      buttons: buttons,
+      button_count: length(Map.keys(buttons)),
+      is_valid: true
+    }
+  end
+
+  def webhook("check_response", fields) do
+    %{
+      response: String.equivalent?(fields["correct_response"], fields["user_response"])
+    }
+  end
+
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
   defp get_contact_language(contact_id) do

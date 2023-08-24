@@ -447,6 +447,46 @@ defmodule Glific.PartnersTest do
       assert flow_keywords_map["published"]["outofoffice"] == nil
     end
 
+    test "update_organization/2 update setting column of organization" do
+      organization = Fixtures.organization_fixture()
+
+      #With invalid fields
+      update_org_attrs =
+        @update_org_attrs
+        |> Map.merge(%{
+          setting: %{
+            something: true,
+            lorem: "TRUE",
+          }
+        })
+
+      assert {:ok, %Organization{} = organization} =
+        Partners.update_organization(organization, update_org_attrs)
+
+      assert is_map_key(organization.setting, :something) == false
+      assert is_map_key(organization.setting, :lorem) == false
+
+      #with valid fields
+      update_org_attrs =
+        @update_org_attrs
+        |> Map.merge(%{
+          setting: %{
+            report_frequency: "MONTHLY",
+            run_flow_each_time: true,
+            low_balance_threshold: 20,
+            send_warning_mail: true
+          }
+        })
+
+      assert {:ok, %Organization{} = organization} =
+        Partners.update_organization(organization, update_org_attrs)
+
+      assert organization.setting.report_frequency == "MONTHLY"
+      assert organization.setting.run_flow_each_time == true
+      assert organization.setting.low_balance_threshold == 20
+      assert organization.setting.send_warning_mail == true
+    end
+
     test "delete_organization/1 deletes the organization" do
       organization = Fixtures.organization_fixture()
       assert {:ok, %Organization{}} = Partners.delete_organization(organization)
@@ -1096,6 +1136,16 @@ defmodule Glific.PartnersTest do
                "Disabling shortcode 1. Multiple credentials found for same shortcode"
 
       assert credential.is_active == false
+    end
+
+    test "send_dashboard_report/2 send mail to organization about their chatbot report" do
+      organization = Fixtures.organization_fixture()
+
+      assert {:ok, %Organization{} = organization} =
+        Partners.update_organization(organization, %{setting: %{report_frequency: "WEEKLY"}})
+
+      assert {:ok, %{message: _error}} =
+        Partners.send_dashboard_report(organization.id, %{frequency: "WEEKLY"})
     end
   end
 end

@@ -37,6 +37,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :last_published_at, :datetime
     field :last_changed_at, :datetime
     field :is_background, :boolean
+    field :description, :string
 
     field :roles, list_of(:access_role) do
       resolve(dataloader(Repo, use_parent: true))
@@ -59,6 +60,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :add_role_ids, list_of(:id)
     field :delete_role_ids, list_of(:id)
     field :is_pinned, :boolean
+    field :description, :string
   end
 
   @desc "Filtering options for flows"

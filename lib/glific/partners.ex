@@ -29,6 +29,7 @@ defmodule Glific.Partners do
     Providers.GupshupContacts,
     Repo,
     Settings.Language,
+    Stats,
     Users.User
   }
 
@@ -1306,6 +1307,27 @@ defmodule Glific.Partners do
         organization_data
         |> OrganizationData.changeset(%{json: data})
         |> Repo.update()
+    end
+  end
+
+  @doc """
+  Cron handler for sending dashboard report mail
+  """
+  @spec send_dashboard_report(non_neg_integer(), map()) :: {:ok, any()} | {:error, String.t()}
+  def send_dashboard_report(org_id, %{frequency: frequency}) do
+    org = organization(org_id)
+
+    case org.setting.report_frequency do
+      ^frequency ->
+        Stats.mail_stats(org, frequency)
+
+      nil ->
+        Logger.info("Internal Dashboard Report mail frequency is not set")
+        {:error, %{message: "mail frequency is not set"}}
+
+      _ ->
+        Logger.info("Failed to send Internal Dashboard Report mail")
+        {:ok, %{message: "Failed to send Internal Dashboard Report mail"}}
     end
   end
 end
