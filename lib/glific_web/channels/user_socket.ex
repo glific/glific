@@ -11,12 +11,16 @@ defmodule GlificWeb.UserSocket do
   @pow_config otp_app: :glific
 
   @impl true
-  def handle_init(%{"authToken" => token}, socket) do
+  def handle_init(params, socket) do
+    user_id = params["userId"]
+    token = params["authToken"]
+
     %Plug.Conn{secret_key_base: socket.endpoint.config(:secret_key_base)}
     |> APIAuthPlug.get_credentials(token, @pow_config)
     |> case do
       nil ->
-        :error
+        Logger.info("Connecting to socket failed: user_id: '#{user_id}'")
+        {:error, %{message: "Connection closed"}, socket}
 
       {user, metadata} ->
         Logger.info("Verifying tokens: user_id: '#{user.id}'")
