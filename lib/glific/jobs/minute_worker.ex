@@ -83,7 +83,7 @@ defmodule Glific.Jobs.MinuteWorker do
     :ok
   end
 
-  defp perform(%Oban.Job{args: %{"job" => job}} = _args, services)
+  defp perform(%Oban.Job{args: %{"job" => job}} = _args, _services)
        when job in ["weekly_report", "weekly_tasks"] do
     case job do
       "weekly_report" ->
