@@ -107,7 +107,7 @@ defmodule Glific.Clients.CommonWebhook do
     )
   end
 
-    def webhook("get_buttons", fields) do
+  def webhook("get_buttons", fields) do
     buttons =
       fields["buttons_data"]
       |> String.split("|")

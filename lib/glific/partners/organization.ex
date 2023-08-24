@@ -11,10 +11,10 @@ defmodule Glific.Partners.Organization do
   alias Glific.{
     Contacts.Contact,
     Enums.OrganizationStatus,
-    Partners.Setting,
     Partners.OrganizationSettings.OutOfOffice,
     Partners.OrganizationSettings.RegxFlow,
     Partners.Provider,
+    Partners.Setting,
     Repo,
     Settings.Language
   }
