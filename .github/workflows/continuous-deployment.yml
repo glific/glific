@@ -2,7 +2,7 @@ name: Continuous Deployment
 
 on:
   push:
-    # branches: [ master, v1.0]
+    branches: [master, v1.0]
 
 jobs:
   deploy:
@@ -25,13 +25,13 @@ jobs:
           python-version: "3.10"
 
       # configure the gigalixir-actions with our credentials and app name
-      - uses: mhanberg/gigalixir-action@v0.6.2
-        with:
-          GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
-          GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
-          GIGALIXIR_APP: ${{ secrets.GIGALIXIR_APPNAME }}
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          MIGRATIONS: false
+      # - uses: mhanberg/gigalixir-action@v0.6.2
+      #   with:
+      #     GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
+      #     GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
+      #     GIGALIXIR_APP: ${{ secrets.GIGALIXIR_APPNAME }}
+      #     SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     MIGRATIONS: false
 
       # Remove unattended-upgrades
       - name: remove unattended-upgrades
