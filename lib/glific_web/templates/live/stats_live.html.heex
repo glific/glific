@@ -11,7 +11,7 @@
         <div class="download-btn">
           <p class="font-bold">Daily Contacts</p>
           <button class="text-gray-800 font-semibold">
-            <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:contacts}>
+            <.link phx-click="export" phx-value-chart={:contacts}>
               <%= GlificWeb.StatsLive.render_button_svg() %>
             </.link>
           </button>
@@ -24,7 +24,7 @@
         <div class="download-btn">
           <p class="font-bold">Daily Conversations</p>
           <button class="text-gray-800 font-semibold">
-            <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:conversations}>
+            <.link phx-click="export" phx-value-chart={:conversations}>
               <%= GlificWeb.StatsLive.render_button_svg() %>
             </.link>
           </button>
@@ -37,7 +37,7 @@
         <div class="download-btn">
           <p class="font-bold">Most Active Hour</p>
           <button class="text-gray-800 font-semibold">
-            <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:active_hour}>
+            <.link phx-click="export" phx-value-chart={:active_hour}>
               <%= GlificWeb.StatsLive.render_button_svg() %>
             </.link>
           </button>
@@ -52,7 +52,7 @@
         <div class="download-btn">
           <p class="font-bold">Opted-in, Opted-out & Non-Opted</p>
           <button class="text-gray-800 font-semibold">
-            <.link id="export-link1" href="#" phx-click="export" phx-value-chart={:optin}>
+            <.link phx-click="export" phx-value-chart={:optin}>
               <%= GlificWeb.StatsLive.render_button_svg() %>
             </.link>
           </button>
@@ -65,7 +65,7 @@
         <div class="download-btn">
           <p class="font-bold">Notifications</p>
           <button class="text-gray-800 font-semibold">
-            <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:notifications}>
+            <.link phx-click="export" phx-value-chart={:notifications}>
               <%= GlificWeb.StatsLive.render_button_svg() %>
             </.link>
           </button>
@@ -78,7 +78,7 @@
         <div class="download-btn">
           <p class="font-bold">Inbound & Outbound Messages</p>
           <button class="text-gray-800 font-semibold">
-            <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:messages}>
+            <.link phx-click="export" phx-value-chart={:messages}>
               <%= GlificWeb.StatsLive.render_button_svg() %>
             </.link>
           </button>
@@ -91,7 +91,7 @@
         <div class="download-btn">
           <p class="font-bold">Contact in Sessions</p>
           <button class="text-gray-800 font-semibold">
-            <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:contact_type}>
+            <.link phx-click="export" phx-value-chart={:contact_type}>
               <%= GlificWeb.StatsLive.render_button_svg() %>
             </.link>
           </button>
@@ -108,7 +108,7 @@
       <div class="download-btn table-hd bg-white p-4">
         <p class="text-md text-gray-500 font-bold">Broadcasts</p>
         <button class="text-gray-800 font-semibold">
-          <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:table}>
+          <.link phx-click="export" phx-value-chart={:table}>
             <%= GlificWeb.StatsLive.render_button_svg() %>
           </.link>
         </button>
