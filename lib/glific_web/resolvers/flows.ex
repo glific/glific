@@ -12,7 +12,6 @@ defmodule GlificWeb.Resolvers.Flows do
     Flows.Flow,
     Flows.FlowContext,
     Flows.FlowCount,
-    Groups.Group,
     Repo,
     State
   }

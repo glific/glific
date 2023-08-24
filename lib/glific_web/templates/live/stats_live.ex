@@ -270,8 +270,10 @@ defmodule GlificWeb.StatsLive do
   def render_pie_chart(title, dataset) do
     opts = piechart_opts(title)
     plot = Contex.Plot.new(dataset, Contex.PieChart, 500, 400, opts)
-    has_no_data = Enum.any?(dataset.data, fn {_label, value} -> is_nil(value) end) or
-                  Enum.all?(dataset.data, fn {_label, value} -> value==0 end)
+
+    has_no_data =
+      Enum.any?(dataset.data, fn {_label, value} -> is_nil(value) end) or
+        Enum.all?(dataset.data, fn {_label, value} -> value == 0 end)
 
     if has_no_data do
       Jason.encode!(title <> ": No data")

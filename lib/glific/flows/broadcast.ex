@@ -27,17 +27,11 @@ defmodule Glific.Flows.Broadcast do
   The one simple public interface to broadcast a group
   """
   @spec broadcast_flow_to_group(Flow.t(), list(), map(), Keyword.t()) ::
-  @spec broadcast_flow_to_group(Flow.t(), list(), map(), Keyword.t()) ::
           {:ok, MessageBroadcast.t()} | {:error, String.t()}
-  def broadcast_flow_to_group(flow, group_ids, default_results \\ %{}, opts \\ []) do
   def broadcast_flow_to_group(flow, group_ids, default_results \\ %{}, opts \\ []) do
     # lets set up the state and then call our helper friend to split group into smaller chunks
     # of contacts
     exclusion = Keyword.get(opts, :exclusions, false)
-
-    group_messages =
-      Enum.map(group_ids, fn group_id ->
-        {:ok, group} = Repo.fetch_by(Group, %{id: group_id})
 
     group_messages =
       Enum.map(group_ids, fn group_id ->

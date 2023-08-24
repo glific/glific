@@ -19,7 +19,6 @@ defmodule Glific.Flows.Flow do
     Flows.FlowRevision,
     Flows.Localization,
     Flows.Node,
-    Groups.Group,
     Partners.Organization,
     Repo,
     Tags.Tag
