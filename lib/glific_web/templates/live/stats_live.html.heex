@@ -3,201 +3,258 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/flatpickr">
 </script>
-<div>
-  <div class="flex content-center justify-center flex-wrap" id="charts" phx-hook="download">
-    <div id="contact-chart" class="card">
-      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
-        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:contacts}>
-          <%= GlificWeb.StatsLive.render_button_svg() %>
-        </.link>
-      </button>
-      <%= @contact_chart_svg %>
+
+<div class="wrapper">
+  <div id="charts" phx-hook="download">
+    <div class="flex content-center justify-center flex-wrap py-150">
+      <div id="contact-chart" class="bar-chart">
+        <div class="download-btn">
+          <p class="font-bold">Daily Contacts</p>
+          <button class="text-gray-800 font-semibold">
+            <.link phx-click="export" phx-value-chart={:contacts}>
+              <%= GlificWeb.StatsLive.render_button_svg() %>
+            </.link>
+          </button>
+        </div>
+        <div class="p-8 h-full">
+          <%= @contact_chart_svg %>
+        </div>
+      </div>
+      <div id="conversation-chart" class="bar-chart">
+        <div class="download-btn">
+          <p class="font-bold">Daily Conversations</p>
+          <button class="text-gray-800 font-semibold">
+            <.link phx-click="export" phx-value-chart={:conversations}>
+              <%= GlificWeb.StatsLive.render_button_svg() %>
+            </.link>
+          </button>
+        </div>
+        <div class="p-8 h-full">
+          <%= @conversation_chart_svg %>
+        </div>
+      </div>
+      <div id="messages-chart" class="series-bar-chart">
+        <div class="download-btn">
+          <p class="font-bold">Most Active Hour</p>
+          <button class="text-gray-800 font-semibold">
+            <.link phx-click="export" phx-value-chart={:active_hour}>
+              <%= GlificWeb.StatsLive.render_button_svg() %>
+            </.link>
+          </button>
+        </div>
+        <div class="p-8 h-full">
+          <%= @messages_chart_svg %>
+        </div>
+      </div>
     </div>
-    <div id="conversation-chart" class="card">
-      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
-        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:conversations}>
-          <%= GlificWeb.StatsLive.render_button_svg() %>
-        </.link>
-      </button>
-      <%= @conversation_chart_svg %>
-    </div>
-    <div id="optin-chart" class="card">
-      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
-        <.link id="export-link1" href="#" phx-click="export" phx-value-chart={:optin}>
-          <%= GlificWeb.StatsLive.render_button_svg() %>
-        </.link>
-      </button>
-      <%= @optin_chart_svg %>
-    </div>
-    <div id="notification-chart" class="card">
-      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
-        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:notifications}>
-          <%= GlificWeb.StatsLive.render_button_svg() %>
-        </.link>
-      </button>
-      <%= @notification_chart_svg %>
-    </div>
-    <div id="notification-chart" class="card">
-      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
-        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:messages}>
-          <%= GlificWeb.StatsLive.render_button_svg() %>
-        </.link>
-      </button>
-      <%= @message_chart_svg %>
-    </div>
-    <div id="notification-chart" class="card">
-      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
-        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:contact_type}>
-          <%= GlificWeb.StatsLive.render_button_svg() %>
-        </.link>
-      </button>
-      <%= @contact_type_chart_svg %>
-    </div>
-    <div id="messages-chart" class="card m-2">
-      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
-        <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:active_hour}>
-          <%= GlificWeb.StatsLive.render_button_svg() %>
-        </.link>
-      </button>
-      <%= @messages_chart_svg %>
+    <div class="flex content-center justify-center flex-wrap py-150">
+      <div id="optin-chart" class="pie-chart">
+        <div class="download-btn">
+          <p class="font-bold">Opted-in, Opted-out & Non-Opted</p>
+          <button class="text-gray-800 font-semibold">
+            <.link phx-click="export" phx-value-chart={:optin}>
+              <%= GlificWeb.StatsLive.render_button_svg() %>
+            </.link>
+          </button>
+        </div>
+        <div class="p-4 h-full">
+          <%= @optin_chart_svg %>
+        </div>
+      </div>
+      <div id="notification-chart" class="pie-chart">
+        <div class="download-btn">
+          <p class="font-bold">Notifications</p>
+          <button class="text-gray-800 font-semibold">
+            <.link phx-click="export" phx-value-chart={:notifications}>
+              <%= GlificWeb.StatsLive.render_button_svg() %>
+            </.link>
+          </button>
+        </div>
+        <div class="p-4 h-full">
+          <%= @notification_chart_svg %>
+        </div>
+      </div>
+      <div id="message-chart" class="pie-chart">
+        <div class="download-btn">
+          <p class="font-bold">Inbound & Outbound Messages</p>
+          <button class="text-gray-800 font-semibold">
+            <.link phx-click="export" phx-value-chart={:messages}>
+              <%= GlificWeb.StatsLive.render_button_svg() %>
+            </.link>
+          </button>
+        </div>
+        <div class="p-4 h-full">
+          <%= @message_chart_svg %>
+        </div>
+      </div>
+      <div id="contact-pie-chart" class="pie-chart">
+        <div class="download-btn">
+          <p class="font-bold">Contact in Sessions</p>
+          <button class="text-gray-800 font-semibold">
+            <.link phx-click="export" phx-value-chart={:contact_type}>
+              <%= GlificWeb.StatsLive.render_button_svg() %>
+            </.link>
+          </button>
+        </div>
+        <div class="p-4 h-full">
+          <%= @contact_type_chart_svg %>
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="flex content-center justify-center flex-wrap">
-  <div class="table-container">
-    <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow">
-      <.link id="export-link2" href="#" phx-click="export" phx-value-chart={:table}>
-        <%= GlificWeb.StatsLive.render_button_svg() %>
-      </.link>
-    </button>
-    <div
-      id="broadcast-table"
-      class="table"
-      phx-hook="table"
-      data-table-data={Jason.encode!(@broadcast_data)}
-      data-table-headers={Jason.encode!(@broadcast_headers)}
-      phx-update="ignore"
-    >
+  <div class="flex content-center justify-center flex-wrap">
+    <div class="table-container">
+      <div class="download-btn table-hd bg-white p-4">
+        <p class="text-md text-gray-500 font-bold">Broadcasts</p>
+        <button class="text-gray-800 font-semibold">
+          <.link phx-click="export" phx-value-chart={:table}>
+            <%= GlificWeb.StatsLive.render_button_svg() %>
+          </.link>
+        </button>
+      </div>
+      <div
+        id="broadcast-table"
+        class="table"
+        phx-hook="table"
+        data-table-data={Jason.encode!(@broadcast_data)}
+        data-table-headers={Jason.encode!(@broadcast_headers)}
+        phx-update="ignore"
+      >
+      </div>
     </div>
   </div>
-</div>
 
-<div class="flex content-center justify-center flex-wrap">
-  <a class="card">
-    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-      Monthly Conversations
-    </h5>
-    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
-      <%= @conversation_count %>
-    </p>
-  </a>
+  <div class="card-container">
+    <div class="card-section">
+      <div class="flex flex-wrap">
+        <a class="card">
+          <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <%= @conversation_count %>
+          </h3>
+          <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
+            Monthly Conversations
+          </p>
+        </a>
 
-  <a class="card">
-    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-      Contacts In Flows
-    </h5>
-    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
-      <%= @active_flow_count %>
-    </p>
-  </a>
+        <a class="card">
+          <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <%= @active_flow_count %>
+          </h3>
+          <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
+            Contacts In Flows
+          </p>
+        </a>
 
-  <a class="card">
-    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-      Monthly Flows Started
-    </h5>
-    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
-      <%= @flows_started %>
-    </p>
-  </a>
+        <a class="card">
+          <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <%= @flows_started %>
+          </h3>
+          <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
+            Monthly Flows Started
+          </p>
+        </a>
 
-  <a class="card">
-    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-      Monthly Flows Completed
-    </h5>
-    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
-      <%= @flows_completed %>
-    </p>
-  </a>
+        <a class="card">
+          <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <%= @flows_completed %>
+          </h3>
+          <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
+            Monthly Flows Completed
+          </p>
+        </a>
+      </div>
+    </div>
 
-  <a class="card">
-    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-      Total Valid Contacts
-    </h5>
-    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
-      <%= @valid_contact_count %>
-    </p>
-  </a>
+    <div class="card-section">
+      <span class="text-xl text-gray-500 font-medium">Contacts</span>
+      <div class="flex flex-wrap">
+        <a class="card">
+          <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <%= @valid_contact_count %>
+          </h3>
+          <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
+            Total Valid Contacts
+          </p>
+        </a>
 
-  <a class="card">
-    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-      Total Invalid Contacts
-    </h5>
-    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
-      <%= @invalid_contact_count %>
-    </p>
-  </a>
+        <a class="card">
+          <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <%= @invalid_contact_count %>
+          </h3>
+          <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
+            Total Invalid Contacts
+          </p>
+        </a>
 
-  <a class="card">
-    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-      Opted In Contacts
-    </h5>
-    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
-      <%= @opted_in_contacts_count %>
-    </p>
-  </a>
+        <a class="card">
+          <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <%= @opted_in_contacts_count %>
+          </h3>
+          <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
+            Opted In Contacts
+          </p>
+        </a>
 
-  <a class="card">
-    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-      Opted Out Contacts
-    </h5>
-    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
-      <%= @opted_out_contacts_count %>
-    </p>
-  </a>
+        <a class="card">
+          <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <%= @opted_out_contacts_count %>
+          </h3>
+          <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
+            Opted Out Contacts
+          </p>
+        </a>
 
-  <a class="card">
-    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-      Monthly Error Messages
-    </h5>
-    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
-      <%= @monthly_error_count %>
-    </p>
-  </a>
+        <a class="card">
+          <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <%= @non_opted_contacts_count %>
+          </h3>
+          <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
+            Non Opted Contacts
+          </p>
+        </a>
+      </div>
+    </div>
 
-  <a class="card">
-    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-      Non Opted Contacts
-    </h5>
-    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
-      <%= @non_opted_contacts_count %>
-    </p>
-  </a>
+    <div class="card-section">
+      <span class="text-xl text-gray-500 font-medium">Messages</span>
+      <div class="flex flex-wrap">
+        <a class="card">
+          <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <%= @monthly_error_count %>
+          </h3>
+          <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
+            Error Messages
+          </p>
+        </a>
 
-  <a class="card">
-    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-      Monthly Incoming Messages
-    </h5>
-    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
-      <%= @inbound_messages_count %>
-    </p>
-  </a>
+        <a class="card">
+          <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <%= @inbound_messages_count %>
+          </h3>
+          <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
+            Incoming Messages
+          </p>
+        </a>
 
-  <a class="card">
-    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-      Monthly Outgoing Messages
-    </h5>
-    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
-      <%= @outbound_messages_count %>
-    </p>
-  </a>
+        <a class="card">
+          <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <%= @outbound_messages_count %>
+          </h3>
+          <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
+            Outgoing Messages
+          </p>
+        </a>
 
-  <a class="card">
-    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-      Monthly HSM Messages
-    </h5>
-    <p class="font-normal text-xl text-center text-gray-700 dark:text-gray-400">
-      <%= @hsm_messages_count %>
-    </p>
-  </a>
+        <a class="card">
+          <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <%= @hsm_messages_count %>
+          </h3>
+          <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
+            HSM Messages
+          </p>
+        </a>
+      </div>
+    </div>
+  </div>
 </div>
