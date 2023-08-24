@@ -1,9 +1,8 @@
 name: Continuous Deployment
 
-
 on:
   push:
-    branches: [ master, v1.0]
+    # branches: [ master, v1.0]
 
 jobs:
   deploy:
@@ -23,8 +22,8 @@ jobs:
       # setup  python
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
-              
+          python-version: "3.10"
+
       # configure the gigalixir-actions with our credentials and app name
       - uses: mhanberg/gigalixir-action@v0.6.2
         with:
