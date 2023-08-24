@@ -1311,38 +1311,23 @@ defmodule Glific.Partners do
   end
 
   @doc """
-  Update field in setting column
-  """
-  @spec update_setting(non_neg_integer(), String.t(), any()) ::
-          tuple()
-  def update_setting(org_id, key, value) do
-    Organization
-    |> where([o], o.organization_id == ^org_id)
-    |> update([o],
-      set: [
-        setting:
-          fragment(
-            "jsonb_set(setting, array[?::text], ?)",
-            ^key,
-            ^value
-          )
-      ]
-    )
-    |> Repo.update_all([])
-  end
-
-  @doc """
   Cron handler for sending dashboard report mail
   """
   @spec send_dashboard_report(non_neg_integer(), map()) :: {:ok, any()} | {:error, String.t()}
   def send_dashboard_report(org_id, %{frequency: frequency}) do
-    org = get_organization!(org_id)
-    %{setting: setting} = org
+    org = organization(org_id)
 
-    case setting do
-      %{"report_frequency" => ^frequency} -> Stats.mail_stats(org, frequency)
-      nil -> {:error, "Settings are nil"}
-      _ -> {:ok, "Mail not sent"}
+    case org.setting.report_frequency do
+      ^frequency ->
+        Stats.mail_stats(org, frequency)
+
+      nil ->
+        Logger.info("Internal Dashboard Report mail frequency is not set")
+        {:error, %{message: "mail frequency is not set"}}
+
+      _ ->
+        Logger.info("Failed to send Internal Dashboard Report mail")
+        {:ok, %{message: "Failed to send Internal Dashboard Report mail"}}
     end
   end
 end

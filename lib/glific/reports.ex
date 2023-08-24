@@ -130,13 +130,14 @@ defmodule Glific.Reports do
   @spec get_day_range(String.t()) :: tuple()
   defp get_day_range(duration) do
     day = shifted_time(NaiveDateTime.utc_now(), -1) |> NaiveDateTime.to_date()
+    last_7 = shifted_time(NaiveDateTime.utc_now(), -7) |> NaiveDateTime.to_date()
 
     case duration do
       "MONTHLY" ->
         {"month", Date.beginning_of_month(day), Date.end_of_month(day)}
 
       "WEEKLY" ->
-        {"week", Date.beginning_of_week(day), Date.end_of_week(day)}
+        {"day", last_7, day}
 
       "DAILY" ->
         {"day", day, day}
@@ -211,7 +212,6 @@ defmodule Glific.Reports do
     Enum.reduce(query_data, presets.date_map, fn %{count: count, date: date}, acc ->
       Map.put(acc, date, count)
     end)
-    |> Enum.map(fn {k, v} -> {k, v} end)
     |> Enum.sort_by(fn {date, _} -> date end, NaiveDateTime)
     |> Enum.map(fn {date, v} -> {Timex.format!(date, "{0D}-{0M}-{YYYY}"), v} end)
   end

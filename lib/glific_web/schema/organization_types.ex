@@ -46,6 +46,11 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:default_flow_id, :id)
   end
 
+  object :setting do
+    field(:report_frequency, :string)
+    field(:run_flow_each_time, :boolean)
+  end
+
   object :organization do
     field(:id, :id)
     field(:name, :string)
@@ -67,7 +72,10 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field(:out_of_office, :out_of_office)
 
+    field(:setting, :setting)
+
     field(:newcontact_flow_id, :id)
+
     field(:optin_flow_id, :id)
 
     field(:is_active, :boolean)
@@ -147,6 +155,11 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:default_flow_id, :id)
   end
 
+  input_object :setting_input do
+    field(:report_frequency, :string)
+    field(:run_flow_each_time, :boolean)
+  end
+
   input_object :delete_organization_input do
     field(:delete_organization_id, :id)
     field(:is_confirmed, :boolean)
@@ -162,6 +175,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:default_language_id, :id)
 
     field(:out_of_office, :out_of_office_input)
+    field(:setting, :setting_input)
 
     field(:newcontact_flow_id, :id)
     field(:optin_flow_id, :id)
