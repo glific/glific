@@ -206,18 +206,17 @@ defmodule Glific.Reports do
 
     query_data =
       get_kpi_query(presets, table, org_id)
-      |> Repo.all() |> IO.inspect(label: "QUERY RESULT")
+      |> Repo.all()
 
     Enum.reduce(query_data, presets.date_map, fn %{count: count, date: date}, acc ->
       Map.put(acc, date, count)
     end)
     |> Enum.map(fn {date, v} -> {Timex.format!(date, "{0D}-{0M}-{YYYY}"), v} end)
     |> Enum.sort()
-    |> IO.inspect(label: "FINAL RESULT")
   end
 
   @spec get_kpi_query(map(), String.t(), non_neg_integer()) :: String.t()
-  def get_kpi_query(presets, "stats", org_id) do
+  defp get_kpi_query(presets, "stats", org_id) do
     start_date = presets.start_day |> Timex.to_date()
     end_date = presets.end_day |> Timex.to_date()
     from s in "stats",
@@ -225,7 +224,7 @@ defmodule Glific.Reports do
     select: %{date: s.date, count: s.conversations}
   end
 
-  def get_kpi_query(presets, table, org_id) do
+  defp get_kpi_query(presets, table, org_id) do
     from(
       t in table,
       where:
@@ -295,28 +294,6 @@ defmodule Glific.Reports do
     |> Repo.all()
   end
 
-  @doc """
-  Returns date Today and Last day as NaiveDateTime and date map with values as 0
-  """
-  """
-  @spec get_date_preset(NaiveDateTime.t(), non_neg_integer()) :: map()
-  def get_date_preset(time \\ NaiveDateTime.utc_now(), days \\ 7) do
-    today = shifted_time(time, 0)
-
-    last_day = shifted_time(time, -days)
-
-    # from -1..-days
-    date_map =
-      Enum.reduce(1..days, %{}, fn day, acc ->
-        time
-        |> shifted_time(-day)
-        |> then(&Map.put(acc, &1, 0))
-      end)
-
-    %{today: today, last_day: last_day, date_map: date_map}
-  end
-  """
-
   @spec get_date_preset(map()) :: map()
   def get_date_preset(date_range) do
     diff = NaiveDateTime.diff(date_range.end_day, date_range.start_day, :day)
@@ -331,22 +308,6 @@ defmodule Glific.Reports do
       end_day: date_range.end_day
     }
   end
-
-  """
-  %{
-    today: ~N[2023-08-23 00:00:00.000000],
-    date_map: %{
-      ~N[2023-08-16 00:00:00.000000] => 0,
-      ~N[2023-08-17 00:00:00.000000] => 0,
-      ~N[2023-08-18 00:00:00.000000] => 0,
-      ~N[2023-08-19 00:00:00.000000] => 0,
-      ~N[2023-08-20 00:00:00.000000] => 0,
-      ~N[2023-08-21 00:00:00.000000] => 0,
-      ~N[2023-08-22 00:00:00.000000] => 0
-    },
-    last_day: ~N[2023-08-16 00:00:00.000000]
-  }
-  """
 
   @doc false
   @spec get_export_data(atom(), non_neg_integer()) :: list()

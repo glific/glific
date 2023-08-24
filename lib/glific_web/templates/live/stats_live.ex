@@ -35,7 +35,8 @@ defmodule GlificWeb.StatsLive do
           {:noreply, Phoenix.LiveView.Socket.t()}
   def handle_event("export", %{"chart" => chart}, socket) do
     org_id = get_org_id(socket)
-    data = get_export_data(String.to_atom(chart), org_id)
+    date_range = socket.assigns.range
+    data = get_export_data(String.to_atom(chart), org_id, date_range)
     csv = Enum.map_join(data, "\n", &Enum.join(&1, ","))
 
     {:noreply,
@@ -46,45 +47,56 @@ defmodule GlificWeb.StatsLive do
      })}
   end
 
-  defp get_export_data(:optin, org_id) do
+  def handle_event("filter", %{"number" => number}, socket) do
+    date_range = %{end_day: NaiveDateTime.utc_now() |> Timex.beginning_of_day(),
+                  start_day: NaiveDateTime.utc_now() |> NaiveDateTime.add(-String.to_integer(number), :day) |> Timex.beginning_of_day()}
+    assign(socket, range: date_range)
+    assign_stats(socket, :filter)
+    {:noreply,
+    assign(socket, range: date_range)
+    |> assign_stats(:filter)
+  }
+  end
+
+  defp get_export_data(:contacts, org_id, date_range) do
+    Reports.get_kpi_data(org_id, "contacts", date_range)
+    |> Enum.map(fn {date, count} -> [date, count] end)
+    |> List.insert_at(0, ["Date", "Number"])
+  end
+
+  defp get_export_data(:conversations, org_id, date_range) do
+    Reports.get_kpi_data(org_id, "stats", date_range)
+    |> Enum.map(fn {date, count} -> [date, count] end)
+    |> List.insert_at(0, ["Date", "Number"])
+  end
+
+  defp get_export_data(:optin, org_id, _) do
     Reports.get_export_data(:optin, org_id)
     |> List.insert_at(0, ["ID", "Name", "Phone", "Optin Status"])
   end
 
-  defp get_export_data(:contacts, org_id) do
-    Reports.get_kpi_data(org_id, "contacts")
-    |> Enum.map(fn {date, count} -> [date, count] end)
-    |> List.insert_at(0, ["Date", "Number"])
-  end
-
-  defp get_export_data(:conversations, org_id) do
-    Reports.get_kpi_data(org_id, "messages_conversations")
-    |> Enum.map(fn {date, count} -> [date, count] end)
-    |> List.insert_at(0, ["Date", "Number"])
-  end
-
-  defp get_export_data(:notifications, org_id) do
+  defp get_export_data(:notifications, org_id, _) do
     Reports.get_export_data(:notifications, org_id)
     |> List.insert_at(0, ["ID", "Category", "Severity"])
   end
 
-  defp get_export_data(:messages, org_id) do
+  defp get_export_data(:messages, org_id, _) do
     Reports.get_export_data(:messages, org_id)
     |> List.insert_at(0, ["ID", "Inbound", "Outbound"])
   end
 
-  defp get_export_data(:contact_type, org_id) do
+  defp get_export_data(:contact_type, org_id, _) do
     Reports.get_export_data(:contact_type, org_id)
     |> List.insert_at(0, ["ID", "Name", "Phone", "BSP Status"])
   end
 
-  defp get_export_data(:active_hour, org_id) do
+  defp get_export_data(:active_hour, org_id, _) do
     fetch_hourly_data(org_id)
     |> Enum.map(fn {hour, inbound, outbound} -> [hour, inbound, outbound] end)
     |> List.insert_at(0, ["Hour", "Inbound", "Outbound"])
   end
 
-  defp get_export_data(:table, org_id) do
+  defp get_export_data(:table, org_id, _) do
     fetch_table_data(:broadcasts, org_id)
     |> List.insert_at(0, ["Flow Name", "Group Name", "Started At", "Completed At"])
   end
@@ -92,11 +104,13 @@ defmodule GlificWeb.StatsLive do
   @spec assign_stats(Phoenix.LiveView.Socket.t(), atom()) :: Phoenix.LiveView.Socket.t()
   defp assign_stats(socket, :init) do
     stats = Enum.map(Reports.kpi_list(), &{&1, "loading.."})
-
+    default_range = %{end_day: NaiveDateTime.utc_now() |> Timex.beginning_of_day(),
+                      start_day: NaiveDateTime.utc_now() |> NaiveDateTime.add(-7, :day) |> Timex.beginning_of_day()}
     org_id = get_org_id(socket)
 
     assign(socket, Keyword.merge(stats, page_title: "Glific Dashboard"))
-    |> assign(get_chart_data(org_id))
+    |> assign(range: default_range)
+    |> assign(get_chart_data(org_id, default_range))
     |> assign_dataset()
     |> assign_chart_svg()
   end
@@ -104,8 +118,16 @@ defmodule GlificWeb.StatsLive do
   defp assign_stats(socket, :call) do
     Enum.each(Reports.kpi_list(), &send(self(), {:get_stats, &1}))
     org_id = get_org_id(socket)
+    date_range = socket.assigns.range
+    assign(socket, get_chart_data(org_id, date_range))
+    |> assign_dataset()
+    |> assign_chart_svg()
+  end
 
-    assign(socket, get_chart_data(org_id))
+  defp assign_stats(socket, :filter) do
+    org_id = get_org_id(socket)
+    date_range = socket.assigns.range
+    assign(socket, get_chart_data(org_id, date_range))
     |> assign_dataset()
     |> assign_chart_svg()
   end
@@ -286,9 +308,8 @@ defmodule GlificWeb.StatsLive do
   end
 
   @doc false
-  @spec get_chart_data(non_neg_integer()) :: list()
-  def get_chart_data(org_id) do
-    date_range = %{end_day: NaiveDateTime.utc_now() |> Timex.beginning_of_day(), start_day: NaiveDateTime.utc_now() |> NaiveDateTime.add(-14, :day) |> Timex.beginning_of_day()}
+  @spec get_chart_data(non_neg_integer(), map()) :: list()
+  def get_chart_data(org_id, date_range) do
     [
       contact_chart_data: Reports.get_kpi_data(org_id, "contacts", date_range),
       conversation_chart_data: Reports.get_kpi_data(org_id, "stats", date_range),
