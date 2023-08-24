@@ -25,13 +25,11 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
           enabled_days: [EnabledDay.t()] | [],
           flow_id: non_neg_integer | nil,
           default_flow_id: non_neg_integer | nil,
-          run_each_time: boolean()
         }
 
   @primary_key false
   embedded_schema do
     field :enabled, :boolean
-    field :run_each_time, :boolean, default: false
 
     field :start_time, :time
     field :end_time, :time
