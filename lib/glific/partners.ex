@@ -1315,13 +1315,19 @@ defmodule Glific.Partners do
   """
   @spec send_dashboard_report(non_neg_integer(), map()) :: {:ok, any()} | {:error, String.t()}
   def send_dashboard_report(org_id, %{frequency: frequency}) do
-    org = get_organization!(org_id)
-    setting = org.setting
+    org = organization(org_id)
 
-    case setting.report_frequency do
-      ^frequency -> Stats.mail_stats(org, frequency)
-      nil -> {:error, %{message: "Settings are nil"}}
-      _ -> {:ok, %{message: "Mail not sent"}}
+    case org.setting.report_frequency do
+      ^frequency ->
+        Stats.mail_stats(org, frequency)
+
+      nil ->
+        Logger.info("Internal Dashboard Report mail frequency is not set")
+        {:error, %{message: "mail frequency is not set"}}
+
+      _ ->
+        Logger.info("Failed to send Internal Dashboard Report mail")
+        {:ok, %{message: "Failed to send Internal Dashboard Report mail"}}
     end
   end
 end

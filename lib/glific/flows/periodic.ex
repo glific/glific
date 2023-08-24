@@ -16,7 +16,8 @@ defmodule Glific.Flows.Periodic do
   alias Glific.{
     Flows,
     Flows.FlowContext,
-    Messages.Message
+    Messages.Message,
+    Partners
   }
 
   @periodic_flows [
@@ -90,15 +91,14 @@ defmodule Glific.Flows.Periodic do
   @spec common_flow(map(), String.t(), Message.t(), DateTime.t()) :: {map(), boolean}
   defp common_flow(state, flow_name, message, since) do
     flow_id = get_in(state, [:flows, "published", flow_name])
-    org = Glific.Partners.organization(state[:organization_id])
-    setting = org.setting
+    org = Partners.organization(state[:organization_id])
 
     cond do
       is_nil(flow_id) ->
         {state, false}
 
-      #Runs default flow or out of office every time (not just once in 24hrs)
-      setting.run_flow_each_time == true ->
+      # Runs default flow or out of office every time (not just once in 24hrs)
+      org.setting.run_flow_each_time == true ->
         init_common_flow(state, flow_id, message)
 
       !Flows.flow_activated(flow_id, message.contact_id, since) ->
