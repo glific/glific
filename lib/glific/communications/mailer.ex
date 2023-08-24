@@ -83,15 +83,19 @@ defmodule Glific.Communications.Mailer do
     |> add_body(body, is_html)
   end
 
-  @spec get_team_email(Organization.t(), String.t() | nil, String.t() | nil) :: String.t()
-  defp get_team_email(org, nil, _send_to), do: org.email
+  @spec get_team_email(Organization.t(), String.t() | nil, tuple | nil) :: tuple()
+  defp get_team_email(org, nil, nil), do: {org.name, org.email}
+
+  defp get_team_email(_org, team, send_to) when team in [nil, ""], do: send_to
 
   defp get_team_email(org, team, _send_to) do
-  case Map.fetch(org.team_emails, team) do
-    {:ok, email} -> email
-    :error -> nil
+    case Map.get(org.team_emails, team) do
+      nil ->
+        {org.name, org.email}
+      email ->
+        {team, email}
+    end
   end
- end
 
   defp capture_log(
          {:ok, results},

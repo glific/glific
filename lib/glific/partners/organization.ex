@@ -147,7 +147,7 @@ defmodule Glific.Partners.Organization do
     field(:last_communication_at, :utc_datetime)
 
     field(:fields, :map, default: %{})
-    field(:team_emails, :map)
+    field(:team_emails, :map, default: %{})
 
     # lets add support for suspending orgs briefly
     field(:is_suspended, :boolean, default: false)
