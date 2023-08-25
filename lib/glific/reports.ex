@@ -350,7 +350,6 @@ defmodule Glific.Reports do
   def save_bookmark_data(bookmark_params, org_id) do
     Repo.put_process_state(org_id)
     new_setting = Map.merge(get_bookmark_data(org_id), %{bookmark_params["name"] => bookmark_params["link"]})
-    IO.inspect(new_setting)
     Organization
       |> where([q], q.organization_id == ^org_id)
       |> update(set: [setting: fragment(
