@@ -51,11 +51,15 @@ defmodule Glific.Flows.Wait do
   """
   @spec validate(Wait.t(), Keyword.t(), map()) :: Keyword.t()
   def validate(wait, errors, _flow) do
-    if wait.seconds >= 86400,
-      do:
-        [{Message, "The next message after a long wait for time should be an HSM template"}] ++
-          errors,
-      else: errors
+    if is_nil(wait.seconds) do
+      errors
+    else
+      if wait.seconds >= 86_400,
+        do:
+          [{Message, "The next message after a long wait for time should be an HSM template"}] ++
+            errors,
+        else: errors
+    end
   end
 
   @doc """
