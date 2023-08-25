@@ -13,6 +13,7 @@ if Code.ensure_loaded?(Faker) do
       Flows.FlowLabel,
       Flows.FlowResult,
       Flows.FlowRevision,
+      Flows.MessageBroadcast,
       Groups,
       Groups.Group,
       Messages.Message,
@@ -1177,9 +1178,14 @@ if Code.ensure_loaded?(Faker) do
         outbound = Enum.random(1..50)
         total = inbound + outbound
 
+        date =
+          DateTime.utc_now()
+          |> Timex.shift(days: Enum.random(-1..-5))
+          |> DateTime.to_date()
+
         Repo.insert!(%Stat{
           period: "hour",
-          date: DateTime.utc_now() |> DateTime.to_date(),
+          date: date,
           contacts: Enum.random(0..20),
           active: Enum.random(0..5),
           optin: Enum.random(1..10),
@@ -1201,7 +1207,7 @@ if Code.ensure_loaded?(Faker) do
 
       Repo.insert!(%Stat{
         period: "day",
-        date: DateTime.utc_now() |> DateTime.to_date(),
+        date: DateTime.utc_now() |> DateTime.add(-3, :day) |> DateTime.to_date(),
         contacts: 20,
         active: 0,
         optin: 18,
@@ -1531,6 +1537,36 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    def seed_broadcast(organization) do
+      [flow_1, flow_2 | _] = Glific.Flows.list_flows(%{organization_id: organization.id})
+      [group | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
+
+      [message | _] =
+        Glific.Messages.list_messages(%{filter: %{organization_id: organization.id}})
+
+      [user | _] = Users.list_users(%{filter: %{organization_id: organization.id}})
+
+      Repo.insert!(%MessageBroadcast{
+        flow_id: flow_1.id,
+        group_id: group.id,
+        message_id: message.id,
+        user_id: user.id,
+        organization_id: organization.id,
+        started_at: DateTime.utc_now() |> DateTime.add(-3, :hour) |> DateTime.truncate(:second),
+        completed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+
+      Repo.insert!(%MessageBroadcast{
+        flow_id: flow_2.id,
+        group_id: group.id,
+        message_id: message.id,
+        user_id: user.id,
+        organization_id: organization.id,
+        started_at: DateTime.utc_now() |> DateTime.add(-2, :hour) |> DateTime.truncate(:second),
+        completed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+    end
+
     @doc """
     Function to populate some basic data that we need for the system to operate. We will
     split this function up into multiple different ones for test, dev and production
@@ -1578,6 +1614,8 @@ if Code.ensure_loaded?(Faker) do
       seed_user_roles(organization)
 
       seed_stats(organization)
+
+      seed_broadcast(organization)
     end
   end
 end
