@@ -56,7 +56,7 @@ defmodule Glific.Flows.Wait do
     else
       if wait.seconds >= 86_400,
         do:
-          [{Message, "The next message after a long wait for time should be an HSM template"}] ++
+          [{Message, "The next message after a long no response should be an HSM template"}] ++
             errors,
         else: errors
     end
