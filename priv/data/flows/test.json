@@ -119,9 +119,7 @@
   "name": "Test Workflow",
   "type": "messaging",
   "uuid": "defda715-c520-499d-851e-4428be87def6",
-  "vars": [
-    "defda715-c520-499d-851e-4428be87def6"
-  ],
+  "vars": ["defda715-c520-499d-851e-4428be87def6"],
   "nodes": [
     {
       "uuid": "1826c405-38f8-4d4e-a7d3-400c4d5ba1dc",
@@ -182,25 +180,19 @@
           {
             "type": "has_any_word",
             "uuid": "5d5b8be6-22f7-4d0c-ab3d-689f3b7806b2",
-            "arguments": [
-              "1"
-            ],
+            "arguments": ["1"],
             "category_uuid": "7b6ac2eb-7605-48e7-ab4e-97356e5da6cc"
           },
           {
             "type": "has_any_word",
             "uuid": "75ee6b84-ee9d-44f3-a11f-7e67fc6b6be5",
-            "arguments": [
-              "2"
-            ],
+            "arguments": ["2"],
             "category_uuid": "b8847dc0-b3fc-4560-b919-84b055f2e3b4"
           },
           {
             "type": "has_any_word",
             "uuid": "fc05a8cf-f9eb-4b41-816a-647a9de7e4ad",
-            "arguments": [
-              "newcontact"
-            ],
+            "arguments": ["newcontact"],
             "category_uuid": "0b8c1825-0dd7-45d8-ab50-df1be11534f7"
           },
           {
@@ -301,17 +293,13 @@
           {
             "type": "has_only_text",
             "uuid": "57d7b2db-02b4-418f-b221-60a8cee82c2f",
-            "arguments": [
-              "completed"
-            ],
+            "arguments": ["completed"],
             "category_uuid": "921e5e99-eb80-4002-842d-878f4214a3c4"
           },
           {
             "type": "has_only_text",
             "uuid": "a66aa31a-89cc-4db2-95ad-9433aed82555",
-            "arguments": [
-              "expired"
-            ],
+            "arguments": ["expired"],
             "category_uuid": "84e0f04c-0eaf-49b2-9b57-8fa50284d41c"
           }
         ],
@@ -419,17 +407,13 @@
           {
             "type": "has_only_text",
             "uuid": "5a4a41d8-56b7-447e-83ee-8f98deb62217",
-            "arguments": [
-              "completed"
-            ],
+            "arguments": ["completed"],
             "category_uuid": "10c04292-12f6-4664-9be3-09a70e29a751"
           },
           {
             "type": "has_only_text",
             "uuid": "6bbeaa02-9bd1-4956-9413-a02ec1e3a575",
-            "arguments": [
-              "expired"
-            ],
+            "arguments": ["expired"],
             "category_uuid": "f96f80cb-20c8-4c2c-b37d-033b3679010a"
           }
         ],
@@ -567,9 +551,7 @@
           {
             "type": "has_any_word",
             "uuid": "071a20ea-bdd6-4982-b275-d64bf300b965",
-            "arguments": [
-              "help"
-            ],
+            "arguments": ["help"],
             "category_uuid": "0d61ec76-ec05-4ae2-afbf-a2e55851847b"
           },
           {

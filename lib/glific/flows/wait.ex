@@ -59,7 +59,7 @@ defmodule Glific.Flows.Wait do
         [{Message, "The next message after a long no response should be an HSM template"}] ++
           errors
 
-      _ ->
+      true ->
         errors
     end
   end
