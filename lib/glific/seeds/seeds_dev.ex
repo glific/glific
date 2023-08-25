@@ -13,6 +13,7 @@ if Code.ensure_loaded?(Faker) do
       Flows.FlowLabel,
       Flows.FlowResult,
       Flows.FlowRevision,
+      Flows.MessageBroadcast,
       Groups,
       Groups.Group,
       Messages.Message,
@@ -1170,11 +1171,11 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
-    @spec seed_stats(Organization.t()) :: nil
+    @spec seed_stats(Organization.t()) :: list()
     def seed_stats(organization) do
       Repo.insert!(%Stat{
         period: "day",
-        date: DateTime.utc_now() |> DateTime.to_date(),
+        date: DateTime.utc_now() |> DateTime.add(-3, :day) |> DateTime.to_date(),
         contacts: 20,
         active: 0,
         optin: 18,
@@ -1188,8 +1189,41 @@ if Code.ensure_loaded?(Faker) do
         users: 7,
         hour: 0,
         organization_id: organization.id,
-        conversations: 0
+        conversations: 0,
+        inserted_at: DateTime.utc_now() |> DateTime.truncate(:second)
       })
+
+      Enum.map(1..24, fn hour ->
+        inbound = Enum.random(1..30)
+        outbound = Enum.random(1..50)
+        total = inbound + outbound
+
+        date =
+          DateTime.utc_now()
+          |> Timex.shift(days: Enum.random(-1..-5))
+          |> DateTime.to_date()
+
+        Repo.insert!(%Stat{
+          period: "hour",
+          date: date,
+          contacts: Enum.random(0..20),
+          active: Enum.random(0..5),
+          optin: Enum.random(1..10),
+          optout: Enum.random(1..5),
+          messages: total,
+          inbound: inbound,
+          outbound: outbound,
+          hsm: Enum.random(1..10),
+          flows_started: Enum.random(1..25),
+          flows_completed: Enum.random(1..10),
+          users: Enum.random(1..5),
+          hour: hour,
+          organization_id: organization.id,
+          conversations: Enum.random(1..10),
+          inserted_at:
+            DateTime.utc_now() |> DateTime.add(-hour, :hour) |> DateTime.truncate(:second)
+        })
+      end)
     end
 
     @doc false
@@ -1503,6 +1537,38 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    @doc false
+    @spec seed_broadcast(Organization.t() | nil) :: MessageBroadcast.t()
+    def seed_broadcast(organization) do
+      [flow_1, flow_2 | _] = Glific.Flows.list_flows(%{organization_id: organization.id})
+      [group | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
+
+      [message | _] =
+        Glific.Messages.list_messages(%{filter: %{organization_id: organization.id}})
+
+      [user | _] = Users.list_users(%{filter: %{organization_id: organization.id}})
+
+      Repo.insert!(%MessageBroadcast{
+        flow_id: flow_1.id,
+        group_id: group.id,
+        message_id: message.id,
+        user_id: user.id,
+        organization_id: organization.id,
+        started_at: DateTime.utc_now() |> DateTime.add(-3, :hour) |> DateTime.truncate(:second),
+        completed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+
+      Repo.insert!(%MessageBroadcast{
+        flow_id: flow_2.id,
+        group_id: group.id,
+        message_id: message.id,
+        user_id: user.id,
+        organization_id: organization.id,
+        started_at: DateTime.utc_now() |> DateTime.add(-2, :hour) |> DateTime.truncate(:second),
+        completed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+    end
+
     @doc """
     Function to populate some basic data that we need for the system to operate. We will
     split this function up into multiple different ones for test, dev and production
@@ -1548,6 +1614,10 @@ if Code.ensure_loaded?(Faker) do
       seed_contact_history(organization)
 
       seed_user_roles(organization)
+
+      seed_stats(organization)
+
+      seed_broadcast(organization)
     end
   end
 end

@@ -221,15 +221,6 @@
       <div class="flex flex-wrap">
         <a class="card">
           <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-            <%= @monthly_error_count %>
-          </h3>
-          <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
-            Error Messages
-          </p>
-        </a>
-
-        <a class="card">
-          <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
             <%= @inbound_messages_count %>
           </h3>
           <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
@@ -252,6 +243,15 @@
           </h3>
           <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
             HSM Messages
+          </p>
+        </a>
+
+        <a class="card">
+          <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <%= @monthly_error_count %>
+          </h3>
+          <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
+            Error Messages
           </p>
         </a>
       </div>
