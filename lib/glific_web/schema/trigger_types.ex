@@ -18,21 +18,17 @@ defmodule GlificWeb.Schema.TriggerTypes do
   object :trigger do
     field :id, :id
     field :name, :string
-
     field :start_at, :datetime
     field :end_date, :date
     field :is_active, :boolean
-
     field :is_repeating, :boolean
     field :frequency, :string
+
     field :days, list_of(:integer)
     field :hours, list_of(:integer)
+    field :groups, list_of(:string)
 
     field :flow, :flow do
-      resolve(dataloader(Repo))
-    end
-
-    field :group, :group do
       resolve(dataloader(Repo))
     end
 
@@ -48,9 +44,6 @@ defmodule GlificWeb.Schema.TriggerTypes do
 
     @desc "Match the name"
     field :name, :string
-
-    @desc "Match the group"
-    field :group, :string
   end
 
   input_object :trigger_input do

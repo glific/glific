@@ -72,6 +72,7 @@ defmodule Glific.Triggers.Trigger do
 
     field :is_active, :boolean, default: true
     field :is_repeating, :boolean, default: false
+    field(:groups, {:array, :string}, virtual: true)
 
     belongs_to :group, Group
     belongs_to :flow, Flow

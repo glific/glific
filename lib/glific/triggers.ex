@@ -12,6 +12,7 @@ defmodule Glific.Triggers do
     AccessControl.TriggerRole,
     Flows,
     Flows.Flow,
+    Groups.Group,
     Partners,
     Repo,
     Triggers,
@@ -213,7 +214,22 @@ defmodule Glific.Triggers do
 
   """
   @spec get_trigger!(integer) :: Trigger.t()
-  def get_trigger!(id), do: Repo.get!(Trigger, id)
+  def get_trigger!(id) do
+    with trigger <- Repo.get!(Trigger, id) do
+      append_group_labels(trigger)
+    end
+  end
+
+  @spec append_group_labels(Trigger.t()) :: Trigger.t()
+  defp append_group_labels(trigger) do
+    group_labels =
+      Group
+      |> where([g], g.id in ^trigger.group_ids)
+      |> select([g], g.label)
+      |> Repo.all()
+
+    Map.put(trigger, :groups, group_labels)
+  end
 
   @doc """
   Returns the list of triggers filtered by args
@@ -226,9 +242,14 @@ defmodule Glific.Triggers do
   """
   @spec list_triggers(map()) :: [Trigger.t()]
   def list_triggers(args) do
-    Repo.list_filter_query(args, Trigger, &Repo.opts_with_name/2, &filter_with/2)
-    |> AccessControl.check_access(:trigger)
-    |> Repo.all()
+    with triggers <-
+           Repo.list_filter_query(args, Trigger, &Repo.opts_with_name/2, &filter_with/2)
+           |> AccessControl.check_access(:trigger)
+           |> Repo.all() do
+      Enum.map(triggers, fn trigger ->
+        append_group_labels(trigger)
+      end)
+    end
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
