@@ -4,6 +4,54 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr">
 </script>
 
+<div class="header-wrapper"> 
+  <div class="date-filter">
+  </div>
+  <div class="bookmarks">
+    <div class="bookmark-icon m-2 relative" phx-click="show_bookmark">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <mask id="mask0_1136_7632" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+      <rect width="24" height="24" fill="#D9D9D9"/>
+      </mask>
+      <g mask="url(#mask0_1136_7632)">
+      <path d="M3 21.9962V8.18078C3 7.70588 3.19583 7.29933 3.5875 6.96114C3.97917 6.62295 4.45 6.45386 5 6.45386H15C15.55 6.45386 16.0208 6.62295 16.4125 6.96114C16.8042 7.29933 17 7.70588 17 8.18078V21.9962L10 19.4058L3 21.9962ZM5 19.3626L10 17.5062L15 19.3626V8.18078H5V19.3626ZM19 19.4058V4.72693H6V3H19C19.55 3 20.0208 3.1691 20.4125 3.50729C20.8042 3.84548 21 4.25202 21 4.72693V19.4058H19Z" fill="#717971"/>
+      </g>
+      </svg>
+    </div>
+    <div class="bookmark-dialog absolute rounded-xl shadow-md bg-white p-6 flex flex-direction-row ml-10 right-36">
+      <div class="bookmark field flex flex-col p-2 mr-4">
+        
+        <.form phx-submit="save_bookmark">
+        <div class="flex flex-col ">
+          <label for="name">Name:</label>
+          <input type="text" name="name" id="name"  />
+          </div>
+          <div class="flex flex-col mt-2">
+          <label for="link">Link:</label>
+          <input type="text" name="link" id="link" />
+          </div>
+          <input class="bg-green-500 mt-2" type="submit" value="Add Bookmark" />
+        </.form>
+      </div>
+      
+      <div class="h-62  border-gray-200 border"></div>
+      
+      <div class="bookmarks-list w-48 p-2 ml-4">
+        <span>Saved Dashboards</span>
+          <ul class="mt-2">
+            <%= for {key, value} <- @bookmarks do %>
+              <li class="h-8 p-1 border border-gray-200 mb-2 rounded-sm text-sm text-green-600">
+                <a href={URI.parse(value)}><%= key %></a> 
+                <%!-- <button class="text-gray-500" phx-click="update_bookmark" phx-value-url={value} phx-value-name={key}>Edit</button> --%>
+               <button class="text-gray-500" phx-click="delete_bookmark" phx-value-url={value} phx-value-name={key}>Delete</button>
+              </li>
+            <% end %>
+          </ul>
+      </div>
+     </div>
+  </div>
+</div> 
+
 <div class="wrapper">
   <div id="charts" phx-hook="download">
     <div class="flex content-center justify-center flex-wrap py-150">

@@ -46,6 +46,21 @@ defmodule GlificWeb.StatsLive do
      })}
   end
 
+  def handle_event("show_bookmark", _value, socket) do
+    org_id = get_org_id(socket)
+    {:noreply, assign(socket, bookmarks: Reports.get_bookmark_data(org_id))}
+  end
+
+  def handle_event("save_bookmark", bookmark_params, socket) do
+    org_id = get_org_id(socket)
+    {:noreply, assign(socket, bookmarks: Reports.save_bookmark_data(bookmark_params, org_id))}
+  end
+
+  def handle_event("delete_bookmark", bookmark_params, socket) do
+    org_id = get_org_id(socket)
+    {:noreply, assign(socket, bookmarks: Reports.delete_bookmark_data(bookmark_params, org_id))}
+  end
+
   defp get_export_data(:optin, org_id) do
     Reports.get_export_data(:optin, org_id)
     |> List.insert_at(0, ["ID", "Name", "Phone", "Optin Status"])
@@ -99,6 +114,7 @@ defmodule GlificWeb.StatsLive do
     |> assign(get_chart_data(org_id))
     |> assign_dataset()
     |> assign_chart_svg()
+    |> assign(bookmarks: Reports.get_bookmark_data(org_id))
   end
 
   defp assign_stats(socket, :call) do
@@ -108,6 +124,7 @@ defmodule GlificWeb.StatsLive do
     assign(socket, get_chart_data(org_id))
     |> assign_dataset()
     |> assign_chart_svg()
+    |> assign(bookmarks: Reports.get_bookmark_data(org_id))
   end
 
   @spec assign_dataset(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
