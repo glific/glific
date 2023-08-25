@@ -116,6 +116,12 @@
   width: 100%;
 }
 
+.header-wrapper {
+  margin-left: 150px;
+  margin-right: 150px;
+  float: right;
+}
+
 .center_form {
   display: flex;
   justify-content: center;

@@ -27,6 +27,7 @@ defmodule Glific.Partners.Setting do
     field :report_frequency, :string, default: "WEEKLY"
     field :run_flow_each_time, :boolean, default: false
     field :send_warning_mail, :boolean, default: false
+    field :bookmarks, :map
   end
 
   @doc """
