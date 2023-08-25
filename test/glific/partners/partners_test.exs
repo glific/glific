@@ -450,23 +450,23 @@ defmodule Glific.PartnersTest do
     test "update_organization/2 update setting column of organization" do
       organization = Fixtures.organization_fixture()
 
-      #With invalid fields
+      # With invalid fields
       update_org_attrs =
         @update_org_attrs
         |> Map.merge(%{
           setting: %{
             something: true,
-            lorem: "TRUE",
+            lorem: "TRUE"
           }
         })
 
       assert {:ok, %Organization{} = organization} =
-        Partners.update_organization(organization, update_org_attrs)
+               Partners.update_organization(organization, update_org_attrs)
 
       assert is_map_key(organization.setting, :something) == false
       assert is_map_key(organization.setting, :lorem) == false
 
-      #with valid fields
+      # with valid fields
       update_org_attrs =
         @update_org_attrs
         |> Map.merge(%{
@@ -479,7 +479,7 @@ defmodule Glific.PartnersTest do
         })
 
       assert {:ok, %Organization{} = organization} =
-        Partners.update_organization(organization, update_org_attrs)
+               Partners.update_organization(organization, update_org_attrs)
 
       assert organization.setting.report_frequency == "MONTHLY"
       assert organization.setting.run_flow_each_time == true
@@ -1142,10 +1142,12 @@ defmodule Glific.PartnersTest do
       organization = Fixtures.organization_fixture()
 
       assert {:ok, %Organization{} = organization} =
-        Partners.update_organization(organization, %{setting: %{report_frequency: "WEEKLY"}})
+               Partners.update_organization(organization, %{
+                 setting: %{report_frequency: "WEEKLY"}
+               })
 
       assert {:ok, %{message: _error}} =
-        Partners.send_dashboard_report(organization.id, %{frequency: "WEEKLY"})
+               Partners.send_dashboard_report(organization.id, %{frequency: "WEEKLY"})
     end
   end
 end

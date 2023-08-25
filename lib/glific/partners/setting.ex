@@ -15,11 +15,11 @@ defmodule Glific.Partners.Setting do
   ]
 
   @type t() :: %__MODULE__{
-    low_balance_threshold: non_neg_integer() | nil,
-    report_frequency: String.t() | nil,
-    run_flow_each_time: boolean() | nil,
-    send_warning_mail: boolean() | nil
-  }
+          low_balance_threshold: non_neg_integer() | nil,
+          report_frequency: String.t() | nil,
+          run_flow_each_time: boolean() | nil,
+          send_warning_mail: boolean() | nil
+        }
 
   @primary_key false
   embedded_schema do

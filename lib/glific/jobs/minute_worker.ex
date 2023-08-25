@@ -83,6 +83,20 @@ defmodule Glific.Jobs.MinuteWorker do
     :ok
   end
 
+  defp perform(%Oban.Job{args: %{"job" => job}} = _args, _services)
+       when job in ["weekly_report", "weekly_tasks"] do
+    case job do
+      "weekly_report" ->
+        Partners.perform_all(&Partners.send_dashboard_report/2, %{frequency: "WEEKLY"}, [])
+
+      "weekly_tasks" ->
+        Partners.perform_all(&Glific.Clients.weekly_tasks/1, nil, [])
+        Erase.perform_weekly()
+    end
+
+    :ok
+  end
+
   defp perform(%Oban.Job{args: %{"job" => job}} = _args, services)
        when job in [
               "daily_tasks",
@@ -113,13 +127,6 @@ defmodule Glific.Jobs.MinuteWorker do
       "tracker_tasks" ->
         Trackers.daily_tasks()
 
-      "weekly_tasks" ->
-        Partners.perform_all(&Glific.Clients.weekly_tasks/1, nil, [])
-        Erase.perform_weekly()
-
-      "weekly_report" ->
-        Partners.perform_all(&Partners.send_dashboard_report/2, %{frequency: "WEEKLY"}, [])
-
       "delete_tasks" ->
         # lets do this first, before we delete any records, so we have a better picture
         # of the DB we generate for all organizations, not the most recent ones
@@ -143,14 +150,12 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "update_hsms" ->
         Partners.perform_all(&Templates.sync_hsms_from_bsp/1, nil, [])
-
-      # "monthly_tasks" ->
-      #   Partners.perform_all(&Partners.send_dashboard_report/2, %{frequency: "MONTHLY"}, [])
-
-      _ ->
-        raise ArgumentError, message: "This job is not handled"
     end
 
     :ok
+  end
+
+  defp perform(%Oban.Job{args: %{"job" => job}} = _args, _services) do
+    raise ArgumentError, message: "This job #{job}is not handled"
   end
 end
