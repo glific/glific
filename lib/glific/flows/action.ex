@@ -67,7 +67,7 @@ defmodule Glific.Flows.Action do
   @required_fields_interactive_template [:name | @required_field_common]
   @required_fields_set_results [:name, :category, :value | @required_field_common]
 
-  #They fall under actions, thus not using "wait for response" with them, as that is a router.
+  # They fall under actions, thus not using "wait for response" with them, as that is a router.
   @wait_for ["wait_for_time", "wait_for_result"]
 
   @type t() :: %__MODULE__{
