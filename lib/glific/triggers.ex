@@ -220,8 +220,11 @@ defmodule Glific.Triggers do
     end
   end
 
+  @doc """
+  Adding Group labels for Trigger
+  """
   @spec append_group_labels(Trigger.t()) :: Trigger.t()
-  defp append_group_labels(trigger) do
+  def append_group_labels(trigger) do
     group_labels =
       Group
       |> where([g], g.id in ^trigger.group_ids)
