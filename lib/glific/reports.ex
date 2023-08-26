@@ -321,43 +321,74 @@ defmodule Glific.Reports do
     %{today: today, last_day: last_day, date_map: date_map}
   end
 
-  @doc false
+  defp extract_bookmarks(nil), do: %{}
+
+  defp extract_bookmarks(bookmark), do: bookmark
+
+  @doc "Get all saved bookmarks as map"
   @spec get_bookmark_data(non_neg_integer()) :: list()
   def get_bookmark_data(org_id) do
     Repo.put_process_state(org_id)
+
     Organization
-      |> select([q], q.setting["bookmarks"])
-      |> where([q], q.organization_id == ^org_id)
-      |> Repo.all()
-      |> hd
+    |> select([q], q.setting["bookmarks"])
+    |> where([q], q.organization_id == ^org_id)
+    |> Repo.all()
+    |> hd
+    |> extract_bookmarks()
   end
 
-  @doc false
+  @doc "Delete a bookmark"
   @spec delete_bookmark_data(map(), non_neg_integer()) :: list()
-  def delete_bookmark_data(bookmark_params, org_id) do
-    org = Repo.get(Organization, org_id)
-    bookmarks = Map.get(org.setting, :bookmarks, %{})
-    updated_bookmarks = Map.delete(bookmarks, bookmark_params["name"])
-    updated_setting = Map.put(org.setting, :bookmarks, updated_bookmarks)
+  def delete_bookmark_data(%{"name" => name}, org_id) do
+    # do we need this?
+    Repo.put_process_state(org_id)
+
     Organization
-      |> where([q], q.organization_id == ^org_id)
-      |> update(set: [setting: ^updated_setting])
-      |> Repo.update_all([])
+    |> where([o], o.organization_id == ^org_id)
+    |> update([o],
+      set: [
+        setting:
+          fragment(
+            "setting #- array['bookmarks', ?::text]",
+            ^name
+          )
+      ]
+    )
+    |> Repo.update_all([])
   end
 
-  @doc false
+  @doc "Add or Update a bookmark"
   @spec save_bookmark_data(map(), non_neg_integer()) :: list()
-  def save_bookmark_data(bookmark_params, org_id) do
+  def save_bookmark_data(%{"name" => name, "link" => link}, org_id)
+      when name != "" and link != "" do
+    # do we need this?
     Repo.put_process_state(org_id)
-    new_setting = Map.merge(get_bookmark_data(org_id), %{bookmark_params["name"] => bookmark_params["link"]})
+
     Organization
-      |> where([q], q.organization_id == ^org_id)
-      |> update(set: [setting: fragment(
-          "jsonb_set(setting, '{bookmarks}', setting->'bookmarks' || ?)",
-          ^new_setting
-        )])
-      |> Repo.update_all([])
+    |> where([o], o.organization_id == ^org_id)
+    |> update([o],
+      set: [
+        setting:
+          fragment(
+            """
+            CASE
+            WHEN setting->'bookmarks' IS NULL
+            THEN jsonb_insert(setting, array['bookmarks'], jsonb_build_object(?, ?))
+            ELSE jsonb_set(setting, array['bookmarks', ?::text], ?)
+            END
+            """,
+            type(^name, :string),
+            type(^link, :string),
+            ^name,
+            ^link
+          )
+      ]
+    )
+    |> Repo.update_all([])
   end
+
+  def save_bookmark_data(_, _), do: []
 
   @doc false
   @spec get_export_data(atom(), non_neg_integer()) :: list()

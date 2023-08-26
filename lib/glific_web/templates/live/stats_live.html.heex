@@ -4,11 +4,10 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr">
 </script>
 
-<div class="header-wrapper"> 
-  <div class="date-filter">
-  </div>
-  <div class="bookmarks">
-    <div class="bookmark-icon m-2 relative" phx-click="show_bookmark">
+<div class="w-full px-20 flex justify-between"> 
+  <div class="date-filter"></div>
+  <div class="bookmarks group">
+    <div class="bookmark-icon m-2" phx-click="show_bookmark">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <mask id="mask0_1136_7632" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
       <rect width="24" height="24" fill="#D9D9D9"/>
@@ -18,35 +17,48 @@
       </g>
       </svg>
     </div>
-    <div class="bookmark-dialog absolute rounded-xl shadow-md bg-white p-6 flex flex-direction-row ml-10 right-36">
-      <div class="bookmark field flex flex-col p-2 mr-4">
-        
-        <.form phx-submit="save_bookmark">
-        <div class="flex flex-col ">
-          <label for="name">Name:</label>
-          <input type="text" name="name" id="name"  />
+    <div class="bookmark-dialog absolute rounded-xl shadow-xl bg-white p-6 flex flex-direction-row ml-10  right-20 invisible group-hover:visible">
+      <div class="bookmark field flex flex-col p-2 mr-4 w-64">
+        <p class="font-semibold text-md">Bookmark</p>
+        <.form phx-submit="save_bookmark" for={%{}}>
+        <div class="flex flex-col mt-4">
+          <label for="name" class="text-xs">Name</label>
+          <input type="text" name="name" class="rounded-lg text-xs mt-1 w-full" id="name" placeholder="ex: Datastudio"/>
           </div>
           <div class="flex flex-col mt-2">
-          <label for="link">Link:</label>
-          <input type="text" name="link" id="link" />
+          <label for="link" class="text-xs">URL</label>
+          <input type="text" name="link" class="rounded-lg text-xs mt-1 w-full" id="link" placeholder="https://lookerstudio.google.com/"/>
           </div>
-          <input class="bg-green-500 mt-2" type="submit" value="Add Bookmark" />
+          <input class="bg-[#42aa78] hover:bg-[#4abd85] mt-2 w-full py-2 font-semibold text-sm rounded-full text-white hover:cursor-pointer mt-5" type="submit" value="Save" />
         </.form>
       </div>
       
-      <div class="h-62  border-gray-200 border"></div>
+      <div class="h-62 border-gray-200 border"></div>
       
       <div class="bookmarks-list w-48 p-2 ml-4">
-        <span>Saved Dashboards</span>
-          <ul class="mt-2">
+        <p class="font-semibold text-md">All bookmarks</p>
+          <%= if @bookmarks != %{} do %>
+          <ul class="mt-4">
             <%= for {key, value} <- @bookmarks do %>
-              <li class="h-8 p-1 border border-gray-200 mb-2 rounded-sm text-sm text-green-600">
-                <a href={URI.parse(value)}><%= key %></a> 
-                <%!-- <button class="text-gray-500" phx-click="update_bookmark" phx-value-url={value} phx-value-name={key}>Edit</button> --%>
-               <button class="text-gray-500" phx-click="delete_bookmark" phx-value-url={value} phx-value-name={key}>Delete</button>
+              <li class="h-8 p-1 rounded-sm text-sm flex justify-between font-semibold text-green-600 w-full">
+                <div>
+                  <a href={URI.parse(value)}><%= key %></a>
+                </div>
+                <div>
+                  <button class="text-gray-500 mr-auto" phx-click="delete_bookmark" phx-value-url={value} phx-value-name={key}>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                </div>
               </li>
             <% end %>
           </ul>
+          <% else %>
+            <div class="w-full h-full flex items-center justify-center">
+              <p class="text-xs">No bookmarks</p>
+            </div>
+          <% end %>
       </div>
      </div>
   </div>
