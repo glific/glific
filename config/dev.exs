@@ -52,8 +52,6 @@ config :glific, GlificWeb.Endpoint, http: [ip: {0, 0, 0, 0}, port: 4000]
 # watchers to your application. For example, we use it
 # with webpack to recompile .js and .css sources.
 config :glific, GlificWeb.Endpoint,
-  # EXPERIMENT TO get everyone to switch to https even for local development
-  # So we can record audio etc, which requires ssl
   https: [
     port: 4001,
     cipher_suite: :strong,
