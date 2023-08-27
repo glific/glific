@@ -94,7 +94,7 @@ defmodule Glific.Communications.Mailer do
         {org.name, org.email}
       email_list when is_list(email_list) ->
         Enum.map(email_list, fn email ->
-            {nil, email}
+            {team, email}
         end)
       email ->
         {team, email}
