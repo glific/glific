@@ -92,6 +92,10 @@ defmodule Glific.Communications.Mailer do
     case Map.get(org.team_emails, team) do
       nil ->
         {org.name, org.email}
+      email_list when is_list(email_list) ->
+        Enum.map(email_list, fn email ->
+            {nil, email}
+        end)
       email ->
         {team, email}
     end
