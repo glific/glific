@@ -5,10 +5,8 @@
 
 /* Alerts and form errors used by phx.new */
 .alert {
-  padding: 15px;
-  margin-bottom: 20px;
-  border: 1px solid transparent;
   border-radius: 4px;
+  box-shadow: 5px black;
 }
 .alert-info {
   color: #31708f;
@@ -48,15 +46,15 @@
   transition: opacity 1s ease-out;
 }
 
-.phx-disconnected{
+.phx-disconnected {
   cursor: wait;
 }
-.phx-disconnected *{
+.phx-disconnected * {
   pointer-events: none;
 }
 
 .phx-modal {
-  opacity: 1!important;
+  opacity: 1 !important;
   position: fixed;
   z-index: 1;
   left: 0;
@@ -64,8 +62,8 @@
   width: 100%;
   height: 100%;
   overflow: auto;
-  background-color: rgb(0,0,0);
-  background-color: rgba(0,0,0,0.4);
+  background-color: rgb(0, 0, 0);
+  background-color: rgba(0, 0, 0, 0.4);
 }
 
 .phx-modal-content {
@@ -90,62 +88,155 @@
   cursor: pointer;
 }
 
-.container {
-  @apply h-full
+.dropdown {
+  margin-top: -18px;
 }
+
+.dropbtn {
+  background: rgba(240, 247, 241, 1);
+  border-radius: 24px;
+}
+
+.dropdown-content {
+  display: none;
+  background-color: #fff;
+  width: 200px;
+  border: 1px solid rgba(187, 187, 187, 0.8);
+  border-radius: 5px;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.wrapper {
+  @apply p-32 h-full;
+  background: rgba(248, 250, 245, 1);
+  padding: 30px 0;
+  width: 100%;
+}
+
 .center_form {
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.card {
-  @apply block m-12 p-2 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
+.bar-chart {
+  @apply m-4 bg-white rounded-2xl border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
+  max-width: 542px;
+  color: rgba(113, 121, 113, 1);
+  font-size: 16px;
+  width: 100%;
 }
 
-.card .title {
-  @apply text-2xl tracking-tight font-bold;
+.pie-chart {
+  @apply m-4 bg-white rounded-2xl border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
+  max-width: 542px;
+  height: 264px;
+  color: rgba(113, 121, 113, 1);
+  font-size: 16px;
+  padding-bottom: 20px;
+  width: 100%;
 }
 
-.card .description {
-  @apply pt-4 text-lg font-medium;
+.series-bar-chart {
+  @apply m-4 p-4 w-full bg-white rounded-2xl border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
+  color: rgba(113, 121, 113, 1);
+  font-size: 16px;
+  max-width: 1124px;
 }
 
-.card .description a {
-  @apply underline text-blue-600;
+.pie-chart svg {
+  height: 100%;
+  width: 100%;
 }
 
+.download-btn {
+  border-bottom: 1px solid rgba(239, 239, 239, 1);
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.exc-tick {
+  stroke: grey;
+}
+
+.exc-tick line {
+  visibility: hidden;
+}
+
+.exc-tick text {
+  fill: rgba(85, 85, 85, 1);
+  stroke: none;
+  font-size: 16px;
+}
+
+.exc-domain {
+  stroke: rgb(207, 207, 207);
+}
+
+.exc-legend {
+  stroke: black;
+}
+
+.exc-legend text {
+  fill: rgba(119, 119, 119, 1);
+  stroke: none;
+  font-size: 1.4rem;
+  font-weight: 500;
+}
+
+/* Styling for broadcast table */
 .table-container {
-  height: 300px;
-  overflow-y: auto; 
+  @apply h-full w-full;
+  padding: 40px 150px;
+  min-width: 855px;
 }
 
 .table {
-  @apply block bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
-  width: 100%; 
-  table-layout: fixed; 
+  @apply block text-sm text-gray-500 bg-white rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
+  table-layout: fixed;
+}
+
+table {
+  width: 100%;
 }
 
 .table th,
 .table td {
-  @apply p-2 border;
+  @apply m-2;
+  border-top: 1px solid rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  max-width: 280px;
+  padding: 0 40px;
+  width: 27.6%;
+  height: 48px;
+  text-align: left;
 }
 
 .table th {
-  @apply bg-gray-200;
+  background: rgba(226, 241, 223, 1);
 }
 
-/* Alternate row colors for better readability */
-.table tr:nth-child(even) {
-  @apply bg-gray-100;
+.table-hd {
+  border-top: 1px solid rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
 }
 
-.btn {
-  @apply font-bold py-2 px-4 rounded;
+/* Styling for metric cards */
+.card-section {
+  width: 100%;
+  padding: 40px 150px;
+  border: rgba(239, 239, 239, 1) solid 1px;
 }
 
-.chart {
-  height: 400px;
+.card {
+  @apply block my-6 mr-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
+  padding: 32px 24px;
+  height: 140px;
+  width: 220px;
 }
-
-

@@ -14,6 +14,7 @@ defmodule Glific.Partners.Organization do
     Partners.OrganizationSettings.OutOfOffice,
     Partners.OrganizationSettings.RegxFlow,
     Partners.Provider,
+    Partners.Setting,
     Repo,
     Settings.Language
   }
@@ -45,8 +46,7 @@ defmodule Glific.Partners.Organization do
     :optin_flow_id,
     :is_suspended,
     :suspended_until,
-    :parent_org,
-    :setting
+    :parent_org
   ]
 
   @type t() :: %__MODULE__{
@@ -86,7 +86,7 @@ defmodule Glific.Partners.Organization do
           is_suspended: boolean() | false,
           suspended_until: DateTime.t() | nil,
           parent_org: String.t() | nil,
-          setting: map() | nil
+          setting: Setting.t() | nil
         }
 
   schema "organizations" do
@@ -96,8 +96,6 @@ defmodule Glific.Partners.Organization do
     field(:shortcode, :string)
 
     field(:email, :string)
-
-    field(:setting, :map)
 
     # we'll cache all the services here
     field(:services, :map, virtual: true, default: %{})
@@ -117,7 +115,7 @@ defmodule Glific.Partners.Organization do
     belongs_to(:default_language, Language)
 
     embeds_one(:out_of_office, OutOfOffice, on_replace: :update)
-
+    embeds_one(:setting, Setting, on_replace: :update)
     embeds_one(:regx_flow, RegxFlow, on_replace: :update)
 
     # id of flow which gets triggered when new contact joins or optin's
@@ -180,6 +178,7 @@ defmodule Glific.Partners.Organization do
     |> add_out_of_office_if_missing()
     |> cast_embed(:out_of_office, with: &OutOfOffice.out_of_office_changeset/2)
     |> cast_embed(:regx_flow, with: &RegxFlow.regx_flow_changeset/2)
+    |> cast_embed(:setting, with: &Setting.setting_changeset/2)
     |> validate_required(@required_fields)
     |> validate_inclusion(:timezone, Tzdata.zone_list())
     |> validate_active_languages()
