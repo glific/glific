@@ -13,8 +13,11 @@ defmodule GlificWeb.Resolvers.Triggers do
           {:ok, any} | {:error, any}
   def trigger(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, trigger} <-
-           Repo.fetch_by(Trigger, %{id: id, organization_id: user.organization_id}),
-         do: {:ok, %{trigger: trigger}}
+           Repo.fetch_by(Trigger, %{id: id, organization_id: user.organization_id}) do
+      trigger
+      |> Triggers.append_group_labels()
+      |> then(&{:ok, %{trigger: &1}})
+    end
   end
 
   @doc """
