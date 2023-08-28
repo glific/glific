@@ -1227,7 +1227,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
-    @spec seed_interactives(Organization.t() | nil) :: nil
+    @spec seed_interactives(Organization.t() | nil) :: InteractiveTemplate.t()
     def seed_interactives(organization \\ nil) do
       organization = get_organization(organization)
 
@@ -1413,7 +1413,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
-    @spec seed_optin_interactives(Organization.t() | nil) :: nil
+    @spec seed_optin_interactives(Organization.t() | nil) :: InteractiveTemplate.t()
     def seed_optin_interactives(organization \\ nil) do
       organization = get_organization(organization)
       [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
@@ -1458,7 +1458,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
-    @spec seed_contact_history(Organization.t()) :: nil
+    @spec seed_contact_history(Organization.t()) :: ContactHistory.t()
     def seed_contact_history(organization) do
       {:ok, contact} =
         Repo.fetch_by(
@@ -1573,7 +1573,7 @@ if Code.ensure_loaded?(Faker) do
     Function to populate some basic data that we need for the system to operate. We will
     split this function up into multiple different ones for test, dev and production
     """
-    @spec seed :: nil
+    @spec seed :: :ok
     def seed do
       organization = get_organization()
 
@@ -1618,6 +1618,8 @@ if Code.ensure_loaded?(Faker) do
       seed_stats(organization)
 
       seed_broadcast(organization)
+
+      :ok
     end
   end
 end
