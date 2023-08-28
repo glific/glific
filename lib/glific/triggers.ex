@@ -158,7 +158,7 @@ defmodule Glific.Triggers do
            |> Repo.insert() do
       if Map.has_key?(attrs, :add_role_ids),
         do: update_trigger_roles(attrs, trigger),
-        else: {:ok, trigger}
+        else: {:ok, append_group_labels(trigger)}
     end
   end
 
@@ -170,6 +170,7 @@ defmodule Glific.Triggers do
       |> TriggerRole.update_trigger_roles()
 
     trigger
+    |> append_group_labels
     |> Map.put(:roles, access_controls)
     |> then(&{:ok, &1})
   end
@@ -194,7 +195,7 @@ defmodule Glific.Triggers do
            |> Repo.update() do
       if Map.has_key?(attrs, :add_role_ids),
         do: update_trigger_roles(attrs, updated_trigger),
-        else: {:ok, updated_trigger}
+        else: {:ok, append_group_labels(updated_trigger)}
     end
   end
 
