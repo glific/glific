@@ -20,8 +20,6 @@ defmodule Glific.Triggers.Trigger do
           trigger_type: String.t() | nil,
           flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
-          # group_id: non_neg_integer | nil,
-          group: Group.t() | Ecto.Association.NotLoaded.t() | nil,
           start_at: DateTime.t() | nil,
           end_date: Date.t() | nil,
           last_trigger_at: DateTime.t() | nil,
