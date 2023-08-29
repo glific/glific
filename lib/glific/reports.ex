@@ -244,20 +244,28 @@ defmodule Glific.Reports do
   @doc false
   @spec get_messages_data(non_neg_integer()) :: map()
   def get_messages_data(org_id) do
+    timezone = Partners.organization_timezone(org_id)
     Repo.put_process_state(org_id)
 
     Stat
     |> select([q], %{
-      hour: fragment("date_part('hour', ?)", q.inserted_at),
+      hour: q.hour,
       inbound: sum(q.inbound),
       outbound: sum(q.outbound)
     })
-    |> group_by([q], fragment("date_part('hour', ?)", q.inserted_at))
+    |> group_by([q], q.hour)
     |> where([q], q.organization_id == ^org_id)
     |> where([q], q.period == "hour")
     |> Repo.all()
     |> Enum.reduce(%{}, fn hourly_stat, acc ->
-      Map.put(acc, round(hourly_stat.hour), Map.delete(hourly_stat, :hour))
+      time =
+        DateTime.utc_now()
+        |> Timex.shift(days: -1)
+        |> Timex.beginning_of_day()
+        |> Timex.Timezone.convert(timezone)
+        |> Timex.shift(hours: hourly_stat.hour)
+
+      Map.put(acc, Timex.format!(time, "{0h12}:{0m}{AM}"), Map.delete(hourly_stat, :hour))
     end)
   end
 
