@@ -516,7 +516,7 @@ defmodule GlificWeb.Schema.FlowTest do
       organization_id: attrs.organization_id
     })
 
-    {:ok, flow} = Flows.start_group_flow(flow, group)
+    {:ok, flow} = Flows.start_group_flow(flow, [group.id])
 
     assert {:ok, message_broadcast} =
              Repo.fetch_by(MessageBroadcast, %{
