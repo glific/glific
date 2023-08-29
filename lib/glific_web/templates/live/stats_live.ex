@@ -6,6 +6,32 @@ defmodule GlificWeb.StatsLive do
 
   alias Glific.Reports
   @colour_palette ["129656", "93A29B", "EBEDEC", "B5D8C7"]
+  @hourly_timestamps [
+    "12:30AM",
+    "01:30AM",
+    "02:30AM",
+    "03:30AM",
+    "04:30AM",
+    "05:30AM",
+    "06:30AM",
+    "07:30AM",
+    "08:30AM",
+    "09:30AM",
+    "10:30AM",
+    "11:30AM",
+    "12:30PM",
+    "01:30PM",
+    "02:30PM",
+    "03:30PM",
+    "04:30PM",
+    "05:30PM",
+    "06:30PM",
+    "07:30PM",
+    "08:30PM",
+    "09:30PM",
+    "10:30PM",
+    "11:30PM"
+  ]
 
   @doc false
   @spec mount(any(), any(), any()) ::
@@ -370,15 +396,11 @@ defmodule GlificWeb.StatsLive do
   @doc false
   @spec fetch_hourly_data(non_neg_integer()) :: list()
   def fetch_hourly_data(org_id) do
-    Reports.get_messages_data(org_id)
-    |> Enum.map(fn {time, %{inbound: inbound, outbound: outbound}} ->
-      {get_time(time), inbound, outbound}
+    hourly_data = Reports.get_messages_data(org_id)
+
+    Enum.reduce(@hourly_timestamps, [], fn time, acc ->
+      message_map = Map.get(hourly_data, time)
+      acc ++ [{time, message_map.inbound, message_map.outbound}]
     end)
   end
-
-  @spec get_time(non_neg_integer()) :: String.t()
-  defp get_time(0), do: "12AM"
-  defp get_time(12), do: "12PM"
-  defp get_time(time) when time < 12, do: "#{time}AM"
-  defp get_time(time), do: "#{time - 12}PM"
 end

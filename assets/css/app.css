@@ -192,7 +192,7 @@
 /* Styling for broadcast table */
 .table-container {
   @apply h-full w-full;
-  padding: 40px 150px;
+  padding: 40px 10px;
   min-width: 855px;
 }
 

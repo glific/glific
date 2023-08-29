@@ -8,9 +8,6 @@ query triggers($filter: TriggerFilter, $opts: Opts) {
       id
       name
     }
-    group {
-      id
-      label
-    }
+    groups
   }
 }
