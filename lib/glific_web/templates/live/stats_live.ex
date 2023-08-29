@@ -394,7 +394,6 @@ defmodule GlificWeb.StatsLive do
   end
 
   @doc false
-  # GlificWeb.StatsLive.fetch_hourly_data 1
   @spec fetch_hourly_data(non_neg_integer()) :: list()
   def fetch_hourly_data(org_id) do
     hourly_data = Reports.get_messages_data(org_id)

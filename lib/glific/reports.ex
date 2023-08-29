@@ -185,7 +185,7 @@ defmodule Glific.Reports do
   Returns last 7 days kpi data map with keys as date AND value as count
 
     ## Examples
-
+    iex> Glific.Reports.get_kpi_data(1, "messages_conversations")
     iex> Glific.Reports.get_kpi_data(1, "contacts")
       %{
         "04-01-2023" => 0,
@@ -196,10 +196,7 @@ defmodule Glific.Reports do
         "09-01-2023" => 3,
         "10-01-2023" => 10
       }
-    iex> Glific.Reports.get_kpi_data(1, "messages_conversations")
-    iex> Glific.Reports.get_kpi_data(1, "optin")
-    iex> Glific.Reports.get_kpi_data(1, "optout")
-    iex> Glific.Reports.get_kpi_data(1, "contact_type")
+
   """
   @spec get_kpi_data(non_neg_integer(), String.t()) :: list()
   def get_kpi_data(org_id, table) do
