@@ -9,10 +9,7 @@ fragment TriggerFields on TriggerResult {
       id
       name
     }
-    group {
-      id
-      label
-    }
+    groups
   }
 }
 

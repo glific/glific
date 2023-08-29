@@ -12,7 +12,6 @@ defmodule GlificWeb.Resolvers.Flows do
     Flows.Flow,
     Flows.FlowContext,
     Flows.FlowCount,
-    Groups.Group,
     Repo,
     State
   }
@@ -201,17 +200,17 @@ defmodule GlificWeb.Resolvers.Flows do
   @doc """
   Start a flow for all contacts of a group
   """
-  @spec start_group_flow(Absinthe.Resolution.t(), %{flow_id: integer, group_id: integer}, %{
+  @spec start_group_flow(Absinthe.Resolution.t(), %{flow_id: integer, group_id: String.t()}, %{
           context: map()
         }) ::
           {:ok, any} | {:error, any}
   def start_group_flow(_, %{flow_id: flow_id, group_id: group_id} = params, %{
-        context: %{current_user: user}
+        context: %{current_user: _user}
       }) do
+    group_id = [String.to_integer(group_id)]
+
     with {:ok, flow} <- Flows.fetch_flow(flow_id),
-         {:ok, group} <-
-           Repo.fetch_by(Group, %{id: group_id, organization_id: user.organization_id}),
-         {:ok, _flow} <- Flows.start_group_flow(flow, group, params[:default_results]) do
+         {:ok, _flow} <- Flows.start_group_flow(flow, group_id, params[:default_results]) do
       {:ok, %{success: true}}
     end
   end

@@ -37,7 +37,7 @@ defmodule GlificWeb.Schema.TriggerTest do
   test "trigger field returns list of triggers in various filters", %{staff: user} = attrs do
     trigger =
       Fixtures.trigger_fixture(attrs)
-      |> Repo.preload([:flow, :group])
+      |> Repo.preload([:flow])
 
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"name" => trigger.name}})
     assert {:ok, query_data} = result
@@ -47,14 +47,6 @@ defmodule GlificWeb.Schema.TriggerTest do
 
     result =
       auth_query_gql_by(:list, user, variables: %{"filter" => %{"flow" => trigger.flow.name}})
-
-    assert {:ok, query_data} = result
-
-    triggers = get_in(query_data, [:data, "triggers"])
-    assert length(triggers) > 0
-
-    result =
-      auth_query_gql_by(:list, user, variables: %{"filter" => %{"group" => trigger.group.label}})
 
     assert {:ok, query_data} = result
 
@@ -158,7 +150,7 @@ defmodule GlificWeb.Schema.TriggerTest do
           "input" => %{
             "days" => [],
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
@@ -197,7 +189,7 @@ defmodule GlificWeb.Schema.TriggerTest do
           "input" => %{
             "days" => [1, 2, 3, 4, 5],
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
@@ -210,11 +202,11 @@ defmodule GlificWeb.Schema.TriggerTest do
 
     assert {:ok, query_data} = result
     flow_name = get_in(query_data, [:data, "createTrigger", "trigger", "flow", "name"])
-    group_label = get_in(query_data, [:data, "createTrigger", "trigger", "group", "label"])
+    group_label = get_in(query_data, [:data, "createTrigger", "trigger", "groups"])
     frequency = get_in(query_data, [:data, "createTrigger", "trigger", "frequency"])
 
     assert flow_name == "Help Workflow"
-    assert group_label == "Optin contacts"
+    assert group_label == ["Optin contacts"]
     assert frequency == "monthly"
 
     ## Creating a monthly trigger without days should raise an error
@@ -223,7 +215,7 @@ defmodule GlificWeb.Schema.TriggerTest do
         variables: %{
           "input" => %{
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
@@ -245,7 +237,7 @@ defmodule GlificWeb.Schema.TriggerTest do
           "input" => %{
             "days" => [1, 2, 3, 42, 51],
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
@@ -267,7 +259,7 @@ defmodule GlificWeb.Schema.TriggerTest do
           "input" => %{
             "hours" => [1, 42, 51],
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
@@ -289,7 +281,7 @@ defmodule GlificWeb.Schema.TriggerTest do
           "input" => %{
             "days" => [6, 10],
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
@@ -333,7 +325,7 @@ defmodule GlificWeb.Schema.TriggerTest do
             "days" => [day],
             "hours" => [],
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
@@ -371,7 +363,7 @@ defmodule GlificWeb.Schema.TriggerTest do
         variables: %{
           "input" => %{
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
