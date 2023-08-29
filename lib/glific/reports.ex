@@ -11,6 +11,7 @@ defmodule Glific.Reports do
     Flows.MessageBroadcast,
     Messages.Message,
     Notifications.Notification,
+    Partners,
     Repo,
     Stats.Stat
   }
@@ -262,9 +263,12 @@ defmodule Glific.Reports do
 
   @doc """
     gets data for the broadcast table
+    Glific.Reports.get_broadcast_data(1)
   """
   @spec get_broadcast_data(non_neg_integer()) :: list()
   def get_broadcast_data(org_id) do
+    timezone = Partners.organization_timezone(org_id)
+
     MessageBroadcast
     |> join(:inner, [mb], flow in assoc(mb, :flow))
     |> join(:inner, [mb, flow], group in assoc(mb, :group))
@@ -279,12 +283,18 @@ defmodule Glific.Reports do
     |> limit(25)
     |> Repo.all()
     |> Enum.reduce([], fn message_broadcast, acc ->
-      started_at = Timex.format!(message_broadcast.started_at, "%d-%m-%Y %I:%M %p", :strftime)
+      started_at =
+        message_broadcast.started_at
+        |> Timex.Timezone.convert(timezone)
+        |> Timex.format!("%d-%m-%Y %I:%M %p", :strftime)
 
       completed_at =
         if is_nil(message_broadcast.completed_at),
           do: "Not Completed Yet",
-          else: Timex.format!(message_broadcast.completed_at, "%d-%m-%Y %I:%M %p", :strftime)
+          else:
+            message_broadcast.completed_at
+            |> Timex.Timezone.convert(timezone)
+            |> Timex.format!("%d-%m-%Y %I:%M %p", :strftime)
 
       acc ++
         [[message_broadcast.flow_name, message_broadcast.group_label, started_at, completed_at]]
