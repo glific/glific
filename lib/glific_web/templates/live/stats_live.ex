@@ -42,6 +42,7 @@ defmodule GlificWeb.StatsLive do
     end
 
     socket = assign_stats(socket, :init)
+    |> assign_default_bookmark()
     {:ok, socket}
   end
 
@@ -79,12 +80,17 @@ defmodule GlificWeb.StatsLive do
 
   def handle_event("save_bookmark", bookmark_params, socket) do
     org_id = get_org_id(socket)
+    assign_default_bookmark(socket)
     {:noreply, assign(socket, bookmarks: Reports.save_bookmark_data(bookmark_params, org_id))}
   end
 
   def handle_event("delete_bookmark", bookmark_params, socket) do
     org_id = get_org_id(socket)
     {:noreply, assign(socket, bookmarks: Reports.delete_bookmark_data(bookmark_params, org_id))}
+  end
+
+  def handle_event("edit_bookmark", bookmark_params, socket) do
+    {:noreply, assign(socket, default_bookmark: %{"name" => bookmark_params["name"], "link" => bookmark_params["link"]})}
   end
 
   defp get_export_data(:optin, org_id) do
@@ -128,6 +134,10 @@ defmodule GlificWeb.StatsLive do
   defp get_export_data(:table, org_id) do
     fetch_table_data(:broadcasts, org_id)
     |> List.insert_at(0, ["Flow Name", "Group Name", "Started At", "Completed At"])
+  end
+
+  defp assign_default_bookmark(socket) do
+    assign(socket, default_bookmark: %{"name"=>"", "link"=>""})
   end
 
   @spec assign_stats(Phoenix.LiveView.Socket.t(), atom()) :: Phoenix.LiveView.Socket.t()
