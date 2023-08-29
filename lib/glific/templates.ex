@@ -346,9 +346,23 @@ defmodule Glific.Templates do
       db_template_translations
       |> Enum.filter(fn db_template -> db_template.status == "APPROVED" end)
 
+    db_template_uuid =
+      db_templates
+      |> Map.values()
+      |> Enum.filter(fn db_template ->
+        db_template.shortcode == template["elementName"] and
+          db_template.language_id == template["language_id"] and
+          db_template.uuid != template["uuid"]
+      end)
+      |> Enum.map(fn db_template ->
+        Map.put(db_template, :uuid, template["uuid"])
+      end)
+
+
     with true <- template["status"] == "APPROVED",
          true <- length(db_template_translations) >= 1,
-         true <- length(approved_db_templates) >= 1 do
+         true <- length(approved_db_templates) >= 1,
+         true <- length(db_template_uuid) >=1 do
       approved_db_templates
       |> Enum.each(fn approved_db_template ->
         update_hsm_translation(template, approved_db_template, organization, languages)
