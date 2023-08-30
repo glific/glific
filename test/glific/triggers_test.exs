@@ -10,7 +10,8 @@ defmodule Glific.TriggersTest do
     Repo,
     Seeds.SeedsDev,
     Triggers,
-    Triggers.Trigger
+    Triggers.Trigger,
+    Triggers.TriggerLog
   }
 
   setup do
@@ -278,6 +279,46 @@ defmodule Glific.TriggersTest do
       Triggers.execute_triggers(attrs.organization_id)
       msg_count2 = Messages.count_messages(%{filter: attrs})
       assert msg_count2 > msg_count1
+    end
+  end
+  describe "trigger logs" do
+    test "create_trigger_log/1 creates a trigger log", attrs do
+      trigger = Fixtures.trigger_fixture(%{organization_id: attrs.organization_id})
+      flow_context = Fixtures.flow_context_fixture(%{organization_id: attrs.organization_id})
+
+      trigger_log_attrs = %{
+        trigger_id: trigger.id,
+        flow_context_id: flow_context.id,
+        started_at: Timex.shift(DateTime.utc_now(), days: -1),
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, trigger_log} = TriggerLog.create_trigger_log(trigger_log_attrs)
+      assert trigger_log.id
+      assert trigger_log.trigger_id == trigger.id
+      assert trigger_log.flow_context_id == flow_context.id
+      assert trigger_log.started_at
+    end
+
+    test "update_trigger_log/2 updates a trigger log", attrs do
+      trigger = Fixtures.trigger_fixture(%{organization_id: attrs.organization_id})
+      flow_context = Fixtures.flow_context_fixture(%{organization_id: attrs.organization_id})
+
+      trigger_log_attrs = %{
+        trigger_id: trigger.id,
+        flow_context_id: flow_context.id,
+        started_at: Timex.shift(DateTime.utc_now(), days: -1),
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, trigger_log} = TriggerLog.create_trigger_log(trigger_log_attrs)
+
+      updated_flow_context = Fixtures.flow_context_fixture(%{organization_id: attrs.organization_id})
+      updated_attrs = %{flow_context_id: updated_flow_context.id}  # Providing a valid value
+
+      {:ok, updated_trigger_log} = TriggerLog.update_trigger_log(trigger_log, updated_attrs)
+
+      assert Map.get(updated_trigger_log, :flow_context_id) == updated_flow_context.id
     end
   end
 end
