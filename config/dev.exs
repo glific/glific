@@ -3,16 +3,16 @@ import Config
 # setting the state of the environment for use within code base
 config :glific, :environment, :dev
 
-db_host = "127.0.0.1" |> to_charlist()
-cert_dir = "/Users/lobo/.postgresql"
+db_host = "127.0.0.1"
+cert_dir = "priv/cert/"
 
 decode_cert = fn cert ->
-  [{:Certificate, der, _}] = :public_key.pem_decode(cert |> File.read!())
+  [{_, der, _}] = :public_key.pem_decode(cert |> File.read!())
   der
 end
 
 decode_key = fn cert ->
-  [{:ECPrivateKey, key, :not_encrypted}] = :public_key.pem_decode(cert |> File.read!())
+  [{_, key, _}] = :public_key.pem_decode(cert |> File.read!())
   {:ECPrivateKey, key}
 end
 
@@ -28,7 +28,7 @@ ssl_opts =
       versions: [:"tlsv1.3"],
       key: decode_key.(client_key),
       cert: decode_cert.(client_cert),
-      server_name_indication: db_host,
+      server_name_indication: db_host |> to_charlist(),
       customize_hostname_check: [
         match_fun: fn a, b ->
           IO.inspect(a, label: "MATCH: #{b}")
