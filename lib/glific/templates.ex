@@ -358,18 +358,16 @@ defmodule Glific.Templates do
         Map.put(db_template, :uuid, template["uuid"])
       end)
 
-
     with true <- template["status"] == "APPROVED",
          true <- length(db_template_translations) >= 1,
-         true <- length(approved_db_templates) >= 1,
-         true <- length(db_template_uuid) >=1 do
+         true <- length(approved_db_templates) >= 1 do
       approved_db_templates
       |> Enum.each(fn approved_db_template ->
         update_hsm_translation(template, approved_db_template, organization, languages)
       end)
     end
 
-    do_update_hsm(template, db_templates)
+    do_update_hsm(template, db_templates, db_template_uuid)
   end
 
   @spec insert_hsm(map(), Organization.t(), map()) :: :ok
@@ -485,9 +483,9 @@ defmodule Glific.Templates do
 
   defp parse_template_button([content], 1), do: %{text: content, type: "QUICK_REPLY"}
 
-  @spec do_update_hsm(map(), map()) ::
+  @spec do_update_hsm(map(), map(), String.t()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
-  defp do_update_hsm(template, db_templates) do
+  defp do_update_hsm(template, db_templates, db_template_uuid) do
     current_template = db_templates[template["bsp_id"]]
 
     update_attrs =
@@ -497,6 +495,13 @@ defmodule Glific.Templates do
       else
         %{status: template["status"], category: template["category"]}
       end
+
+    case db_template_uuid do
+      nil ->
+        :ok
+      _ ->
+        Map.put(update_attrs, :uuid, db_template_uuid)
+    end
 
     db_templates[template["bsp_id"]]
     |> SessionTemplate.changeset(update_attrs)

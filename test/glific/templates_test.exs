@@ -924,43 +924,12 @@ defmodule Glific.TemplatesTest do
     end
 
     test "update_hsms/1 should update uuid of already existing HSM", attrs do
-      [hsm, hsm2 | _] =
+      [hsm | _rest] =
         Templates.list_session_templates(%{
           filter: %{organization_id: attrs.organization_id, is_hsm: true}
         })
+      updated_hsm = Repo.fetch_by(SessionTemplate, %{id: hsm.id})
 
-      Tesla.Mock.mock(fn
-        %{method: :get} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              Jason.encode!(%{
-                "status" => "success",
-                "templates" => [
-                  %{
-                    "id" => hsm.uuid,
-                    "modifiedOn" =>
-                      DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond)
-                  },
-                  %{
-                    "id" => hsm2.uuid,
-                    "modifiedOn" =>
-                      DateTime.to_unix(Timex.shift(hsm2.updated_at, hours: -1), :millisecond)
-                  }
-                ]
-              })
-          }
-      end)
-
-      Templates.sync_hsms_from_bsp(attrs.organization_id)
-      updated_hsm = Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
-
-      if hsm.uuid != elem(updated_hsm, 1).uuid do
-        Repo.update!(updated_hsm, %{uuid: hsm.uuid})
-      end
-      assert elem(updated_hsm, 1).uuid == hsm.uuid
-
-      modified_hsm_timestamp = DateTime.to_unix(Timex.shift(hsm.updated_at, hours: 1), :millisecond)
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
@@ -971,7 +940,8 @@ defmodule Glific.TemplatesTest do
                 "templates" => [
                   %{
                     "id" => elem(updated_hsm, 1).uuid,
-                    "modifiedOn" => modified_hsm_timestamp
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond)
                   }
                 ]
               })
@@ -979,11 +949,10 @@ defmodule Glific.TemplatesTest do
       end)
 
       Templates.sync_hsms_from_bsp(attrs.organization_id)
+      assert {:ok, %SessionTemplate{} = hsm} = Repo.fetch_by(SessionTemplate, %{id: hsm.id})
 
-      assert {:ok, %SessionTemplate{} = hsm} = Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
-      assert hsm.uuid == elem(updated_hsm, 1).uuid
+      assert elem(updated_hsm, 1).uuid == hsm.uuid
     end
-
 
     test "update_hsms/1 should update the existing hsm if new status is other than APPROVED",
          attrs do
