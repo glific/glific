@@ -116,6 +116,10 @@
   width: 100%;
 }
 
+.charts-wrapper {
+  margin: 0 150px;
+}
+
 .center_form {
   display: flex;
   justify-content: center;
@@ -124,7 +128,7 @@
 
 .bar-chart {
   @apply m-4 bg-white rounded-2xl border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
-  max-width: 542px;
+  max-width: 590px;
   color: rgba(113, 121, 113, 1);
   font-size: 16px;
   width: 100%;
@@ -132,19 +136,18 @@
 
 .pie-chart {
   @apply m-4 bg-white rounded-2xl border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
-  max-width: 542px;
   height: 264px;
   color: rgba(113, 121, 113, 1);
   font-size: 16px;
   padding-bottom: 20px;
-  width: 100%;
+  width: 590px;
 }
 
 .series-bar-chart {
   @apply m-4 p-4 w-full bg-white rounded-2xl border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
   color: rgba(113, 121, 113, 1);
   font-size: 16px;
-  max-width: 1124px;
+  width: 100%;
 }
 
 .pie-chart svg {
@@ -191,9 +194,10 @@
 
 /* Styling for broadcast table */
 .table-container {
-  @apply h-full w-full;
+  @apply h-full;
   padding: 40px 10px;
   min-width: 855px;
+  margin: 0 150px;
 }
 
 .table {
@@ -212,7 +216,7 @@ table {
   border-bottom: 1px solid rgba(0, 0, 0, 0.03);
   max-width: 280px;
   padding: 0 40px;
-  width: 27.6%;
+  width: 25%;
   height: 48px;
   text-align: left;
 }

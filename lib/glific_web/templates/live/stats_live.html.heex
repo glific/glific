@@ -5,8 +5,8 @@
 </script>
 
 <div class="wrapper">
-  <div id="charts" phx-hook="download">
-    <div class="flex content-center justify-center flex-wrap py-150">
+  <div id="charts" class="charts-wrapper" phx-hook="download">
+    <div class="flex content-center justify-center flex-wrap">
       <div id="contact-chart" class="bar-chart">
         <div class="download-btn">
           <p class="font-bold">Daily Contacts</p>
@@ -47,7 +47,7 @@
         </div>
       </div>
     </div>
-    <div class="flex content-center justify-center flex-wrap py-150">
+    <div class="flex content-center justify-center flex-wrap">
       <div id="optin-chart" class="pie-chart">
         <div class="download-btn">
           <p class="font-bold">Opted-in, Opted-out & Non-Opted</p>
@@ -103,7 +103,7 @@
     </div>
   </div>
 
-  <div class="flex content-center justify-center flex-wrap">
+  <div>
     <div class="table-container">
       <div class="download-btn table-hd bg-white p-4">
         <p class="text-md text-gray-500 font-bold">Broadcasts</p>
