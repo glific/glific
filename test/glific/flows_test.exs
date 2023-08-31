@@ -425,7 +425,7 @@ defmodule Glific.FLowsTest do
         organization_id: attrs.organization_id
       })
 
-      {:ok, flow} = Flows.start_group_flow(flow, group, default_results)
+      {:ok, flow} = Flows.start_group_flow(flow, [group.id], default_results)
 
       assert {:ok, message_broadcast} =
                Repo.fetch_by(MessageBroadcast, %{
@@ -508,7 +508,8 @@ defmodule Glific.FLowsTest do
       "The next message after a long wait for time should be an HSM template",
       "Could not find Sub Flow:",
       "Could not parse",
-      "\"newcontact\" has already been used as a keyword for a flow"
+      "\"newcontact\" has already been used as a keyword for a flow",
+      "The next message after a long no response should be an HSM template"
     ]
 
     Enum.any?(errors, &String.contains?(str, &1))

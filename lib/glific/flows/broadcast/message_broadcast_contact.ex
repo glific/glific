@@ -18,7 +18,7 @@ defmodule Glific.Flows.MessageBroadcastContact do
   }
 
   @required_fields [:message_broadcast_id, :contact_id, :organization_id]
-  @optional_fields [:status, :processed_at]
+  @optional_fields [:status, :processed_at, :group_ids]
 
   # we store one more than the number of messages specified here
 
@@ -33,12 +33,14 @@ defmodule Glific.Flows.MessageBroadcastContact do
           status: :string | nil,
           processed_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          group_ids: list() | nil
         }
 
   schema "message_broadcast_contacts" do
     field(:processed_at, :utc_datetime, default: nil)
     field(:status, :string, default: nil)
+    field :group_ids, {:array, :integer}, default: []
 
     belongs_to(:message_broadcast, MessageBroadcast)
     belongs_to(:contact, Contact)

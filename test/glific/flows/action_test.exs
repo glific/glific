@@ -1030,6 +1030,7 @@ defmodule Glific.Flows.ActionTest do
   end
 
   test "execute an action when type is start_session", attrs do
+    group = Fixtures.group_fixture()
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     # preload contact
@@ -1046,7 +1047,7 @@ defmodule Glific.Flows.ActionTest do
       uuid: "UUID 1",
       node_uuid: "Test UUID",
       type: "start_session",
-      groups: [],
+      groups: [%{"name" => "#{group.label}", "uuid" => "#{group.id}"}],
       contacts: [%{"name" => "NGO Admin", "uuid" => saas_admin_id}],
       create_contact: false,
       flow: %{

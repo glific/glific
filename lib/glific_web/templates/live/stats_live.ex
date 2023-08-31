@@ -6,6 +6,32 @@ defmodule GlificWeb.StatsLive do
 
   alias Glific.Reports
   @colour_palette ["129656", "93A29B", "EBEDEC", "B5D8C7"]
+  @hourly_timestamps [
+    "12:30AM",
+    "01:30AM",
+    "02:30AM",
+    "03:30AM",
+    "04:30AM",
+    "05:30AM",
+    "06:30AM",
+    "07:30AM",
+    "08:30AM",
+    "09:30AM",
+    "10:30AM",
+    "11:30AM",
+    "12:30PM",
+    "01:30PM",
+    "02:30PM",
+    "03:30PM",
+    "04:30PM",
+    "05:30PM",
+    "06:30PM",
+    "07:30PM",
+    "08:30PM",
+    "09:30PM",
+    "10:30PM",
+    "11:30PM"
+  ]
 
   @doc false
   @spec mount(any(), any(), any()) ::
@@ -148,8 +174,9 @@ defmodule GlificWeb.StatsLive do
        ) do
     socket
     |> assign(
-      contact_dataset: make_bar_chart_dataset(contact_chart_data),
-      conversation_dataset: make_bar_chart_dataset(conversation_chart_data),
+      contact_dataset: make_bar_chart_dataset(contact_chart_data, ["Date", "Daily Contacts"]),
+      conversation_dataset:
+        make_bar_chart_dataset(conversation_chart_data, ["Hour", "Daily Conversations"]),
       optin_dataset: make_pie_chart_dataset(optin_chart_data),
       notification_dataset: make_pie_chart_dataset(notification_chart_data),
       message_dataset: make_pie_chart_dataset(message_type_chart_data),
@@ -160,6 +187,10 @@ defmodule GlificWeb.StatsLive do
 
   defp make_series_bar_chart_dataset(data) do
     Contex.Dataset.new(data, ["Hour", "Inbound", "Outbound"])
+  end
+
+  defp make_bar_chart_dataset(data, opts) do
+    Contex.Dataset.new(data, opts)
   end
 
   @doc """
@@ -222,7 +253,7 @@ defmodule GlificWeb.StatsLive do
   def render_bar_chart(title, dataset) do
     opts = barchart_opts(title)
 
-    Contex.Plot.new(dataset, Contex.BarChart, 500, 400, opts)
+    Contex.Plot.new(dataset, Contex.BarChart, 700, 350, opts)
     |> Contex.Plot.to_svg()
   end
 
@@ -253,21 +284,22 @@ defmodule GlificWeb.StatsLive do
     |> raw()
   end
 
-  defp barchart_opts(title) do
+  defp barchart_opts(_title) do
     [
       colour_palette: @colour_palette,
-      data_labels: true,
-      title: title,
-      axis_label_rotation: 45
+      data_labels: false,
+      title: false,
+      axis_label_rotation: 45,
+      legend_setting: :legend_bottom
     ]
   end
 
-  defp series_barchart_opts(title) do
+  defp series_barchart_opts(_title) do
     [
       colour_palette: @colour_palette,
       mapping: %{category_col: "Hour", value_cols: ["Inbound", "Outbound"]},
-      data_labels: true,
-      title: title,
+      data_labels: false,
+      title: false,
       axis_label_rotation: 45,
       type: :grouped,
       padding: 20,
@@ -275,13 +307,13 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  defp piechart_opts(title, category_col \\ "Type", value_col \\ "Value") do
+  defp piechart_opts(_title, category_col \\ "Type", value_col \\ "Value") do
     [
       mapping: %{category_col: category_col, value_col: value_col},
       colour_palette: @colour_palette,
-      legend_setting: :legend_bottom,
+      legend_setting: :legend_right,
       data_labels: false,
-      title: title
+      title: false
     ]
   end
 
@@ -291,7 +323,7 @@ defmodule GlificWeb.StatsLive do
   @spec render_pie_chart(String.t(), Contex.Dataset.t()) :: {:safe, [any()]}
   def render_pie_chart(title, dataset) do
     opts = piechart_opts(title)
-    plot = Contex.Plot.new(dataset, Contex.PieChart, 500, 400, opts)
+    plot = Contex.Plot.new(dataset, Contex.PieChart, 700, 400, opts)
 
     has_no_data =
       Enum.any?(dataset.data, fn {_label, value} -> is_nil(value) end) or
@@ -386,15 +418,11 @@ defmodule GlificWeb.StatsLive do
   @doc false
   @spec fetch_hourly_data(non_neg_integer()) :: list()
   def fetch_hourly_data(org_id) do
-    Reports.get_messages_data(org_id)
-    |> Enum.map(fn {time, %{inbound: inbound, outbound: outbound}} ->
-      {get_time(time), inbound, outbound}
+    hourly_data = Reports.get_messages_data(org_id)
+
+    Enum.reduce(@hourly_timestamps, [], fn time, acc ->
+      message_map = Map.get(hourly_data, time)
+      acc ++ [{time, message_map.inbound, message_map.outbound}]
     end)
   end
-
-  @spec get_time(non_neg_integer()) :: String.t()
-  defp get_time(0), do: "12AM"
-  defp get_time(12), do: "12PM"
-  defp get_time(time) when time < 12, do: "#{time}AM"
-  defp get_time(time), do: "#{time - 12}PM"
 end
