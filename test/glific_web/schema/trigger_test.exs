@@ -158,7 +158,7 @@ defmodule GlificWeb.Schema.TriggerTest do
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => false,
-            "frequency" => "none"
+            "frequency" => ["none"]
           }
         }
       )
@@ -205,7 +205,7 @@ defmodule GlificWeb.Schema.TriggerTest do
       auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
-            "days" => [6,7,8,9],
+            "days" => [6, 7, 8, 9],
             "flowId" => flow.id,
             "groupIds" => [group.id],
             "startDate" => start_date,
@@ -213,7 +213,7 @@ defmodule GlificWeb.Schema.TriggerTest do
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => false,
-            "frequency" => "monthly"
+            "frequency" => ["monthly"]
           }
         }
       )
@@ -239,7 +239,7 @@ defmodule GlificWeb.Schema.TriggerTest do
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => false,
-            "frequency" => "monthly"
+            "frequency" => ["monthly"]
           }
         }
       )
@@ -261,7 +261,7 @@ defmodule GlificWeb.Schema.TriggerTest do
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => false,
-            "frequency" => "monthly"
+            "frequency" => ["monthly"]
           }
         }
       )
@@ -283,7 +283,7 @@ defmodule GlificWeb.Schema.TriggerTest do
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => true,
-            "frequency" => "hourly"
+            "frequency" => ["hourly"]
           }
         }
       )
@@ -305,7 +305,7 @@ defmodule GlificWeb.Schema.TriggerTest do
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => false,
-            "frequency" => "weekly"
+            "frequency" => ["weekly"]
           }
         }
       )
@@ -349,7 +349,7 @@ defmodule GlificWeb.Schema.TriggerTest do
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => true,
-            "frequency" => "weekly"
+            "frequency" => ["weekly"]
           }
         }
       )
@@ -387,7 +387,7 @@ defmodule GlificWeb.Schema.TriggerTest do
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => false,
-            "frequency" => "none"
+            "frequency" => ["none"]
           }
         }
       )
