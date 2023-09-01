@@ -309,6 +309,7 @@ defmodule Glific.Reports do
     |> Repo.all()
   end
 
+  @doc false
   @spec get_date_preset(map()) :: map()
   def get_date_preset(date_range) do
     diff = NaiveDateTime.diff(date_range.end_day, date_range.start_day, :day)

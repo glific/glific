@@ -116,6 +116,10 @@
   width: 100%;
 }
 
+.date-filter {
+  padding: 0 150px;
+}
+
 .center_form {
   display: flex;
   justify-content: center;

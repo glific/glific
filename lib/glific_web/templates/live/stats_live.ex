@@ -73,10 +73,11 @@ defmodule GlificWeb.StatsLive do
      })}
   end
 
-  def handle_event("filter", %{"number" => number}, socket) do
-    date_range = %{end_day: NaiveDateTime.utc_now() |> Timex.beginning_of_day(),
-                  start_day: NaiveDateTime.utc_now() |> NaiveDateTime.add(-String.to_integer(number), :day) |> Timex.beginning_of_day()}
-    assign(socket, range: date_range)
+  def handle_event("filter", dates, socket) do
+    date_range = Enum.reduce(dates, %{}, fn {key, value}, acc ->
+      {:ok, date} = NaiveDateTime.from_iso8601(value <> " 00:00:00")
+      Map.put(acc, String.to_atom(key), date)
+    end)
     assign_stats(socket, :filter)
     {:noreply,
     assign(socket, range: date_range)
