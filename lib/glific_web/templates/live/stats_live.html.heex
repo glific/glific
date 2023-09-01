@@ -18,7 +18,7 @@
       </svg>
     </div>
     <div class="bookmark-dialog absolute rounded-xl shadow-xl bg-white p-6 flex flex-direction-row ml-10  right-20 invisible group-hover:visible">
-      <div class="bookmark field flex flex-col p-2 mr-4 w-64">
+      <div phx-update="ignore" id="bookmark" class="bookmark field flex flex-col p-2 mr-4 w-64">
         <p class="font-semibold text-md">Bookmark</p>
         <.form phx-submit="save_bookmark" for={%{}}>
         <div class="flex flex-col mt-4">
