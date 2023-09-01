@@ -117,7 +117,7 @@
 }
 
 .charts-wrapper {
-  margin: 0 150px;
+  margin: 0 9rem;
 }
 
 .center_form {
@@ -127,32 +127,24 @@
 }
 
 .bar-chart {
-  @apply m-4 bg-white rounded-2xl border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
-  max-width: 590px;
+  @apply bg-white rounded-2xl border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
   color: rgba(113, 121, 113, 1);
-  font-size: 16px;
-  width: 100%;
+  width: 50%;
+  margin: 1rem;
 }
 
 .pie-chart {
-  @apply m-4 bg-white rounded-2xl border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
-  height: 264px;
+  @apply bg-white rounded-2xl border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
   color: rgba(113, 121, 113, 1);
-  font-size: 16px;
-  padding-bottom: 20px;
-  width: 590px;
+  width: 50%;
+  margin: 1rem;
 }
 
 .series-bar-chart {
-  @apply m-4 p-4 w-full bg-white rounded-2xl border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
+  @apply bg-white rounded-2xl border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
   color: rgba(113, 121, 113, 1);
   font-size: 16px;
-  width: 100%;
-}
-
-.pie-chart svg {
-  height: 100%;
-  width: 100%;
+  margin: 1rem;
 }
 
 .download-btn {
@@ -181,7 +173,8 @@
   stroke: rgb(207, 207, 207);
 }
 
-.exc-legend {
+.pie-chart .exc-legend {
+  transform: translate(-200px, 50px);
   stroke: black;
 }
 
@@ -193,13 +186,6 @@
 }
 
 /* Styling for broadcast table */
-.table-container {
-  @apply h-full;
-  padding: 40px 10px;
-  min-width: 855px;
-  margin: 0 150px;
-}
-
 .table {
   @apply block text-sm text-gray-500 bg-white rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700;
   table-layout: fixed;
@@ -234,7 +220,7 @@ table {
 /* Styling for metric cards */
 .card-section {
   width: 100%;
-  padding: 40px 150px;
+  padding: 2.5rem 10rem;
   border: rgba(239, 239, 239, 1) solid 1px;
 }
 
