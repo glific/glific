@@ -9,7 +9,7 @@
     <div class="my-auto">
       <p class="text-gray-500 font-medium">Analytics shown as per the selected date range</p>
     </div>
-    <.form phx-submit="filter" class="flex justify-end text-gray-500">
+    <.form phx-submit="filter" class="flex justify-end text-gray-500" for={%{}}>
       <div class="relative">
         <label for="start_day" class="text-xs absolute bg-white ml-2 px-1 bg-[#F8FAF5] -top-1 left-2">Start</label>
         <input type="date" name="start_day" id="start_day" phx-hook="dateRestrict" phx-update="ignore" class="rounded-full text-s bg-transparent"/>
