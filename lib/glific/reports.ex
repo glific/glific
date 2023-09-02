@@ -210,7 +210,7 @@ defmodule Glific.Reports do
     Enum.reduce(query_data, presets.date_map, fn %{count: count, date: date}, acc ->
       Map.put(acc, date, count)
     end)
-    |> Enum.map(fn {date, v} -> {Timex.format!(date, "{0D}-{0M}-{YYYY}"), v} end)
+    |> Enum.map(fn {date, v} -> {Timex.format!(date, "{0D}-{0M}-{YY}"), v} end)
     |> Enum.sort()
   end
 

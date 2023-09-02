@@ -5,26 +5,29 @@
 </script>
 
 <div class="wrapper">
-  <div class="date-filter">
-    <.form phx-submit="filter" class="p-5 flex justify-end">
+  <div class="mx-40 py-4 flex justify-between">
+    <div class="my-auto">
+      <p class="text-gray-500 font-medium">Analytics shown as per the selected date range</p>
+    </div>
+    <.form phx-submit="filter" class="flex justify-end text-gray-500">
       <div class="relative">
-        <label for="start_day" class="text-xs absolute bg-white ml-2 px-1 text-gray-800 bg-[#F8FAF5] -top-1">Start</label>
+        <label for="start_day" class="text-xs absolute bg-white ml-2 px-1 bg-[#F8FAF5] -top-1 left-2">Start</label>
         <input type="date" name="start_day" id="start_day" phx-hook="dateRestrict" phx-update="ignore" class="rounded-full text-s bg-transparent"/>
       </div>
-        <div class="h-[2px] w-4 bg-black mt-4 mx-2"></div>
+        <div class="h-[2px] w-4 bg-gray-500 mt-4 mx-2"></div>
       <div class="relative">
-        <label for="end_day" class="text-xs absolute bg-white ml-2 px-1 text-gray-800 bg-[#F8FAF5] -top-1">End</label>
+        <label for="end_day" class="text-xs absolute bg-white ml-2 px-1 bg-[#F8FAF5] -top-1 left-2">End</label>
         <input type="date" name="end_day" id="end_day" phx-hook="dateRestrict" phx-update="ignore" class="rounded-full text-s bg-transparent"/>
       </div>
-      <button class="p-2" type="submit">
+      <button class="p-2 color-gray-500" type="submit">
         <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="25" height="25" viewBox="0,0,256,256">
         <g fill="#6f786f" fill-rule="nonzero" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" font-family="none" font-weight="none" font-size="none" text-anchor="none" style="mix-blend-mode: normal"><g transform="scale(10.66667,10.66667)"><path d="M9,2c-3.85415,0 -7,3.14585 -7,7c0,3.85415 3.14585,7 7,7c1.748,0 3.34501,-0.65198 4.57422,-1.71875l0.42578,0.42578v1.29297l5.58594,5.58594c0.552,0.552 1.448,0.552 2,0c0.552,-0.552 0.552,-1.448 0,-2l-5.58594,-5.58594h-1.29297l-0.42578,-0.42578c1.06677,-1.22921 1.71875,-2.82622 1.71875,-4.57422c0,-3.85415 -3.14585,-7 -7,-7zM9,4c2.77327,0 5,2.22673 5,5c0,2.77327 -2.22673,5 -5,5c-2.77327,0 -5,-2.22673 -5,-5c0,-2.77327 2.22673,-5 5,-5z"></path></g></g>
         </svg>
       </button>
     </.form>
   </div>
-  <div id="charts" phx-hook="download">
-    <div class="flex content-center justify-center flex-wrap py-150">
+  <div id="charts" class="charts-wrapper" phx-hook="download">
+    <div class="flex content-center justify-center flex-row">
       <div id="contact-chart" class="bar-chart">
         <div class="download-btn">
           <p class="font-bold">Daily Contacts</p>
@@ -51,6 +54,7 @@
           <%= @conversation_chart_svg %>
         </div>
       </div>
+    </div><div>
       <div id="messages-chart" class="series-bar-chart">
         <div class="download-btn">
           <p class="font-bold">Most Active Hour</p>
@@ -65,7 +69,7 @@
         </div>
       </div>
     </div>
-    <div class="flex content-center justify-center flex-wrap py-150">
+    <div class="flex content-center justify-center flex-row">
       <div id="optin-chart" class="pie-chart">
         <div class="download-btn">
           <p class="font-bold">Opted-in, Opted-out & Non-Opted</p>
@@ -75,7 +79,7 @@
             </.link>
           </button>
         </div>
-        <div class="p-4 h-full">
+        <div class="p-6">
           <%= @optin_chart_svg %>
         </div>
       </div>
@@ -88,10 +92,12 @@
             </.link>
           </button>
         </div>
-        <div class="p-4 h-full">
+        <div class="p-4">
           <%= @notification_chart_svg %>
         </div>
       </div>
+    </div>
+    <div class="flex content-center justify-center flex-row">
       <div id="message-chart" class="pie-chart">
         <div class="download-btn">
           <p class="font-bold">Inbound & Outbound Messages</p>
@@ -101,7 +107,7 @@
             </.link>
           </button>
         </div>
-        <div class="p-4 h-full">
+        <div class="p-4">
           <%= @message_chart_svg %>
         </div>
       </div>
@@ -114,32 +120,30 @@
             </.link>
           </button>
         </div>
-        <div class="p-4 h-full">
+        <div class="p-4">
           <%= @contact_type_chart_svg %>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="flex content-center justify-center flex-wrap">
-    <div class="table-container">
-      <div class="download-btn table-hd bg-white p-4">
-        <p class="text-md text-gray-500 font-bold">Broadcasts</p>
-        <button class="text-gray-800 font-semibold">
-          <.link phx-click="export" phx-value-chart={:table}>
-            <%= GlificWeb.StatsLive.render_button_svg() %>
-          </.link>
-        </button>
-      </div>
-      <div
-        id="broadcast-table"
-        class="table"
-        phx-hook="table"
-        data-table-data={Jason.encode!(@broadcast_data)}
-        data-table-headers={Jason.encode!(@broadcast_headers)}
-        phx-update="ignore"
-      >
-      </div>
+  <div class="h-full mb-10 mt-4 mx-40">
+    <div class="download-btn table-hd bg-white p-4">
+      <p class="text-md text-gray-500 font-bold">Broadcasts</p>
+      <button class="text-gray-800 font-semibold">
+        <.link phx-click="export" phx-value-chart={:table}>
+          <%= GlificWeb.StatsLive.render_button_svg() %>
+        </.link>
+      </button>
+    </div>
+    <div
+      id="broadcast-table"
+      class="table"
+      phx-hook="table"
+      data-table-data={Jason.encode!(@broadcast_data)}
+      data-table-headers={Jason.encode!(@broadcast_headers)}
+      phx-update="ignore"
+    >
     </div>
   </div>
 
