@@ -281,6 +281,7 @@ defmodule Glific.TriggersTest do
       assert msg_count2 > msg_count1
     end
   end
+
   describe "trigger logs" do
     test "create_trigger_log/1 creates a trigger log", attrs do
       trigger = Fixtures.trigger_fixture(%{organization_id: attrs.organization_id})
@@ -313,8 +314,11 @@ defmodule Glific.TriggersTest do
 
       {:ok, trigger_log} = TriggerLog.create_trigger_log(trigger_log_attrs)
 
-      updated_flow_context = Fixtures.flow_context_fixture(%{organization_id: attrs.organization_id})
-      updated_attrs = %{flow_context_id: updated_flow_context.id}  # Providing a valid value
+      updated_flow_context =
+        Fixtures.flow_context_fixture(%{organization_id: attrs.organization_id})
+
+      # Providing a valid value
+      updated_attrs = %{flow_context_id: updated_flow_context.id}
 
       {:ok, updated_trigger_log} = TriggerLog.update_trigger_log(trigger_log, updated_attrs)
 

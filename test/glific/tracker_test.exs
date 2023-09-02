@@ -2,10 +2,10 @@ defmodule Glific.TrackersTest do
   use Glific.DataCase
 
   alias Glific.{
+    Repo,
     Seeds.SeedsDev,
     Trackers,
-    Trackers.Tracker,
-    Repo
+    Trackers.Tracker
   }
 
   setup do
