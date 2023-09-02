@@ -214,7 +214,7 @@ defmodule Glific.Reports do
     |> Enum.sort()
   end
 
-  @spec get_kpi_query(map(), String.t(), non_neg_integer()) :: String.t()
+  @spec get_kpi_query(map(), String.t(), non_neg_integer()) :: Ecto.Query.t()
   defp get_kpi_query(presets, "stats", org_id) do
     start_date = presets.start_day |> Timex.to_date()
     end_date = presets.end_day |> Timex.to_date()
