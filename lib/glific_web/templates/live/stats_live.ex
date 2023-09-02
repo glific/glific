@@ -74,15 +74,17 @@ defmodule GlificWeb.StatsLive do
   end
 
   def handle_event("filter", dates, socket) do
-    date_range = Enum.reduce(dates, %{}, fn {key, value}, acc ->
-      {:ok, date} = NaiveDateTime.from_iso8601(value <> " 00:00:00")
-      Map.put(acc, String.to_atom(key), date)
-    end)
+    date_range =
+      Enum.reduce(dates, %{}, fn {key, value}, acc ->
+        {:ok, date} = NaiveDateTime.from_iso8601(value <> " 00:00:00")
+        Map.put(acc, String.to_atom(key), date)
+      end)
+
     assign_stats(socket, :filter)
+
     {:noreply,
-    assign(socket, range: date_range)
-    |> assign_stats(:filter)
-  }
+     assign(socket, range: date_range)
+     |> assign_stats(:filter)}
   end
 
   defp get_export_data(:contacts, org_id, date_range) do
@@ -131,8 +133,13 @@ defmodule GlificWeb.StatsLive do
   @spec assign_stats(Phoenix.LiveView.Socket.t(), atom()) :: Phoenix.LiveView.Socket.t()
   defp assign_stats(socket, :init) do
     stats = Enum.map(Reports.kpi_list(), &{&1, "loading.."})
-    default_range = %{end_day: NaiveDateTime.utc_now() |> Timex.beginning_of_day(),
-                      start_day: NaiveDateTime.utc_now() |> NaiveDateTime.add(-7, :day) |> Timex.beginning_of_day()}
+
+    default_range = %{
+      end_day: NaiveDateTime.utc_now() |> Timex.beginning_of_day(),
+      start_day:
+        NaiveDateTime.utc_now() |> NaiveDateTime.add(-7, :day) |> Timex.beginning_of_day()
+    }
+
     org_id = get_org_id(socket)
 
     assign(socket, Keyword.merge(stats, page_title: "Glific Dashboard"))
@@ -146,6 +153,7 @@ defmodule GlificWeb.StatsLive do
     Enum.each(Reports.kpi_list(), &send(self(), {:get_stats, &1}))
     org_id = get_org_id(socket)
     date_range = socket.assigns.range
+
     assign(socket, get_chart_data(org_id, date_range))
     |> assign_dataset()
     |> assign_chart_svg()
@@ -154,6 +162,7 @@ defmodule GlificWeb.StatsLive do
   defp assign_stats(socket, :filter) do
     org_id = get_org_id(socket)
     date_range = socket.assigns.range
+
     assign(socket, get_chart_data(org_id, date_range))
     |> assign_dataset()
     |> assign_chart_svg()

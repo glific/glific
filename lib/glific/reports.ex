@@ -218,9 +218,12 @@ defmodule Glific.Reports do
   defp get_kpi_query(presets, "stats", org_id) do
     start_date = presets.start_day |> Timex.to_date()
     end_date = presets.end_day |> Timex.to_date()
+
     from s in "stats",
-    where: s.period == "day" and s.date >= ^start_date and s.date <= ^end_date and s.organization_id == ^org_id,
-    select: %{date: s.date, count: s.conversations}
+      where:
+        s.period == "day" and s.date >= ^start_date and s.date <= ^end_date and
+          s.organization_id == ^org_id,
+      select: %{date: s.date, count: s.conversations}
   end
 
   defp get_kpi_query(presets, table, org_id) do
@@ -314,9 +317,10 @@ defmodule Glific.Reports do
   def get_date_preset(date_range) do
     diff = NaiveDateTime.diff(date_range.end_day, date_range.start_day, :day)
 
-    date_map = Enum.into(0..diff, %{}, fn day ->
-      {date_range.start_day |> NaiveDateTime.add(day, :day), 0}
-    end)
+    date_map =
+      Enum.into(0..diff, %{}, fn day ->
+        {date_range.start_day |> NaiveDateTime.add(day, :day), 0}
+      end)
 
     %{
       start_day: date_range.start_day,

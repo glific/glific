@@ -526,8 +526,12 @@ defmodule Glific.Stats do
   """
   @spec mail_stats(Partners.Organization.t(), String.t()) :: {:ok, term} | {:error, term}
   def mail_stats(org, duration \\ "WEEKLY") do
-    date_range = %{end_day: NaiveDateTime.utc_now() |> Timex.beginning_of_day(),
-                   start_day: NaiveDateTime.utc_now() |> NaiveDateTime.add(-7, :day) |> Timex.beginning_of_day()}
+    date_range = %{
+      end_day: NaiveDateTime.utc_now() |> Timex.beginning_of_day(),
+      start_day:
+        NaiveDateTime.utc_now() |> NaiveDateTime.add(-7, :day) |> Timex.beginning_of_day()
+    }
+
     contacts = Reports.get_kpi_data(org.id, "contacts", date_range)
     conversations = Reports.get_kpi_data(org.id, "stats", date_range)
     optin = StatsLive.fetch_count_data(:optin_chart_data, org.id)
