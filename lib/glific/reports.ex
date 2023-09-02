@@ -11,6 +11,7 @@ defmodule Glific.Reports do
     Flows.MessageBroadcast,
     Messages.Message,
     Notifications.Notification,
+    Partners,
     Repo,
     Stats.Stat
   }
@@ -184,7 +185,7 @@ defmodule Glific.Reports do
   Returns last 7 days kpi data map with keys as date AND value as count
 
     ## Examples
-
+    iex> Glific.Reports.get_kpi_data(1, "messages_conversations")
     iex> Glific.Reports.get_kpi_data(1, "contacts")
       %{
         "04-01-2023" => 0,
@@ -195,10 +196,7 @@ defmodule Glific.Reports do
         "09-01-2023" => 3,
         "10-01-2023" => 10
       }
-    iex> Glific.Reports.get_kpi_data(1, "messages_conversations")
-    iex> Glific.Reports.get_kpi_data(1, "optin")
-    iex> Glific.Reports.get_kpi_data(1, "optout")
-    iex> Glific.Reports.get_kpi_data(1, "contact_type")
+
   """
   @spec get_kpi_data(non_neg_integer(), String.t()) :: list()
   def get_kpi_data(org_id, table) do
@@ -243,20 +241,28 @@ defmodule Glific.Reports do
   @doc false
   @spec get_messages_data(non_neg_integer()) :: map()
   def get_messages_data(org_id) do
+    timezone = Partners.organization_timezone(org_id)
     Repo.put_process_state(org_id)
 
     Stat
     |> select([q], %{
-      hour: fragment("date_part('hour', ?)", q.inserted_at),
+      hour: q.hour,
       inbound: sum(q.inbound),
       outbound: sum(q.outbound)
     })
-    |> group_by([q], fragment("date_part('hour', ?)", q.inserted_at))
+    |> group_by([q], q.hour)
     |> where([q], q.organization_id == ^org_id)
     |> where([q], q.period == "hour")
     |> Repo.all()
     |> Enum.reduce(%{}, fn hourly_stat, acc ->
-      Map.put(acc, round(hourly_stat.hour), Map.delete(hourly_stat, :hour))
+      time =
+        DateTime.utc_now()
+        |> Timex.shift(days: -1)
+        |> Timex.beginning_of_day()
+        |> Timex.Timezone.convert(timezone)
+        |> Timex.shift(hours: hourly_stat.hour)
+
+      Map.put(acc, Timex.format!(time, "{0h12}:{0m}{AM}"), Map.delete(hourly_stat, :hour))
     end)
   end
 
@@ -265,6 +271,8 @@ defmodule Glific.Reports do
   """
   @spec get_broadcast_data(non_neg_integer()) :: list()
   def get_broadcast_data(org_id) do
+    timezone = Partners.organization_timezone(org_id)
+
     MessageBroadcast
     |> join(:inner, [mb], flow in assoc(mb, :flow))
     |> join(:inner, [mb, flow], group in assoc(mb, :group))
@@ -279,12 +287,18 @@ defmodule Glific.Reports do
     |> limit(25)
     |> Repo.all()
     |> Enum.reduce([], fn message_broadcast, acc ->
-      started_at = Timex.format!(message_broadcast.started_at, "%d-%m-%Y %I:%M %p", :strftime)
+      started_at =
+        message_broadcast.started_at
+        |> Timex.Timezone.convert(timezone)
+        |> Timex.format!("%d-%m-%Y %I:%M %p", :strftime)
 
       completed_at =
         if is_nil(message_broadcast.completed_at),
           do: "Not Completed Yet",
-          else: Timex.format!(message_broadcast.completed_at, "%d-%m-%Y %I:%M %p", :strftime)
+          else:
+            message_broadcast.completed_at
+            |> Timex.Timezone.convert(timezone)
+            |> Timex.format!("%d-%m-%Y %I:%M %p", :strftime)
 
       acc ++
         [[message_broadcast.flow_name, message_broadcast.group_label, started_at, completed_at]]

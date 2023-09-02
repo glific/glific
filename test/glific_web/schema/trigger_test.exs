@@ -37,7 +37,7 @@ defmodule GlificWeb.Schema.TriggerTest do
   test "trigger field returns list of triggers in various filters", %{staff: user} = attrs do
     trigger =
       Fixtures.trigger_fixture(attrs)
-      |> Repo.preload([:flow, :group])
+      |> Repo.preload([:flow])
 
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"name" => trigger.name}})
     assert {:ok, query_data} = result
@@ -47,14 +47,6 @@ defmodule GlificWeb.Schema.TriggerTest do
 
     result =
       auth_query_gql_by(:list, user, variables: %{"filter" => %{"flow" => trigger.flow.name}})
-
-    assert {:ok, query_data} = result
-
-    triggers = get_in(query_data, [:data, "triggers"])
-    assert length(triggers) > 0
-
-    result =
-      auth_query_gql_by(:list, user, variables: %{"filter" => %{"group" => trigger.group.label}})
 
     assert {:ok, query_data} = result
 
@@ -146,11 +138,13 @@ defmodule GlificWeb.Schema.TriggerTest do
     [flow | _tail] = Glific.Flows.list_flows(%{organization_id: attrs.organization_id})
     [group | _tail] = Glific.Groups.list_groups(%{organization_id: attrs.organization_id})
 
-    start_time = Timex.shift(DateTime.utc_now(), days: 1)
-    {:ok, start_date} = Timex.format(start_time, "%Y-%m-%d", :strftime)
+    date = Timex.shift(DateTime.utc_now(), days: 1) |> DateTime.to_date()
+    {:ok, start_date} = Timex.format(date, "%Y-%m-%d", :strftime)
+
     end_time = Timex.shift(DateTime.utc_now(), days: 5)
     {:ok, end_date} = Timex.format(end_time, "%Y-%m-%d", :strftime)
-    start_time = "13:15:19"
+
+    start_time = "13:15:00"
 
     result =
       auth_query_gql_by(:create, user,
@@ -158,24 +152,30 @@ defmodule GlificWeb.Schema.TriggerTest do
           "input" => %{
             "days" => [],
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => false,
-            "frequency" => "none"
+            "frequency" => ["none"]
           }
         }
       )
 
     assert {:ok, query_data} = result
-
     flow_name = get_in(query_data, [:data, "createTrigger", "trigger", "flow", "name"])
     frequency = get_in(query_data, [:data, "createTrigger", "trigger", "frequency"])
+
+    {:ok, next_trigger_at, _} =
+      get_in(query_data, [:data, "createTrigger", "trigger", "next_trigger_at"])
+      |> DateTime.from_iso8601()
+
     assert flow_name == flow.name
     assert frequency == "none"
 
+    # next_trigger_at should be start_at as the frequency is none and isRepeating is false
+    assert next_trigger_at == DateTime.new!(date, Time.new!(13, 15, 0), "Etc/UTC")
     ## we are ignoring the end date's time
     assert get_in(query_data, [:data, "createTrigger", "trigger", "end_date"]) == end_date
 
@@ -191,30 +191,40 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert time == start_at
 
     ## Creating a monthly trigger with valid attrs should create a trigger
+    date =
+      DateTime.utc_now()
+      |> Date.beginning_of_month()
+      |> Timex.shift(months: 1)
+
+    {:ok, start_date} = Timex.format(date, "%Y-%m-%d", :strftime)
+
+    end_time = date |> Timex.shift(months: 1)
+    {:ok, end_date} = Timex.format(end_time, "%Y-%m-%d", :strftime)
+
     result =
       auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
-            "days" => [1, 2, 3, 4, 5],
+            "days" => [6, 7, 8, 9],
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => false,
-            "frequency" => "monthly"
+            "frequency" => ["monthly"]
           }
         }
       )
 
     assert {:ok, query_data} = result
     flow_name = get_in(query_data, [:data, "createTrigger", "trigger", "flow", "name"])
-    group_label = get_in(query_data, [:data, "createTrigger", "trigger", "group", "label"])
+    group_label = get_in(query_data, [:data, "createTrigger", "trigger", "groups"])
     frequency = get_in(query_data, [:data, "createTrigger", "trigger", "frequency"])
 
     assert flow_name == "Help Workflow"
-    assert group_label == "Optin contacts"
+    assert group_label == ["Optin contacts"]
     assert frequency == "monthly"
 
     ## Creating a monthly trigger without days should raise an error
@@ -223,13 +233,13 @@ defmodule GlificWeb.Schema.TriggerTest do
         variables: %{
           "input" => %{
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => false,
-            "frequency" => "monthly"
+            "frequency" => ["monthly"]
           }
         }
       )
@@ -245,13 +255,13 @@ defmodule GlificWeb.Schema.TriggerTest do
           "input" => %{
             "days" => [1, 2, 3, 42, 51],
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => false,
-            "frequency" => "monthly"
+            "frequency" => ["monthly"]
           }
         }
       )
@@ -267,13 +277,13 @@ defmodule GlificWeb.Schema.TriggerTest do
           "input" => %{
             "hours" => [1, 42, 51],
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => true,
-            "frequency" => "hourly"
+            "frequency" => ["hourly"]
           }
         }
       )
@@ -289,13 +299,13 @@ defmodule GlificWeb.Schema.TriggerTest do
           "input" => %{
             "days" => [6, 10],
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => false,
-            "frequency" => "weekly"
+            "frequency" => ["weekly"]
           }
         }
       )
@@ -333,13 +343,13 @@ defmodule GlificWeb.Schema.TriggerTest do
             "days" => [day],
             "hours" => [],
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => true,
-            "frequency" => "weekly"
+            "frequency" => ["weekly"]
           }
         }
       )
@@ -371,13 +381,13 @@ defmodule GlificWeb.Schema.TriggerTest do
         variables: %{
           "input" => %{
             "flowId" => flow.id,
-            "groupId" => group.id,
+            "groupIds" => [group.id],
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
             "isActive" => true,
             "isRepeating" => false,
-            "frequency" => "none"
+            "frequency" => ["none"]
           }
         }
       )

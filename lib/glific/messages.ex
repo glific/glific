@@ -741,7 +741,7 @@ defmodule Glific.Messages do
           |> create_group_message()
 
     {:ok, message_broadcast} =
-      Broadcast.broadcast_message_to_group(group_message, group, message_params)
+      Broadcast.broadcast_message_to_group(group_message, [group.id], message_params)
 
     {:ok, Broadcast.get_broadcast_contact_ids(message_broadcast)}
   end
