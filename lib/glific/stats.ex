@@ -526,10 +526,15 @@ defmodule Glific.Stats do
   """
   @spec mail_stats(Partners.Organization.t(), String.t()) :: {:ok, term} | {:error, term}
   def mail_stats(org, duration \\ "WEEKLY") do
+    # setting end_day as today
+    end_day = NaiveDateTime.utc_now() |> Timex.beginning_of_day()
+
+    # setting start_day as 7 days ago
+    start_day = NaiveDateTime.utc_now() |> NaiveDateTime.add(-7, :day) |> Timex.beginning_of_day()
+
     date_range = %{
-      end_day: NaiveDateTime.utc_now() |> Timex.beginning_of_day(),
-      start_day:
-        NaiveDateTime.utc_now() |> NaiveDateTime.add(-7, :day) |> Timex.beginning_of_day()
+      end_day: end_day,
+      start_day: start_day
     }
 
     contacts = Reports.get_kpi_data(org.id, "contacts", date_range)
