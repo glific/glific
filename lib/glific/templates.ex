@@ -354,19 +354,27 @@ defmodule Glific.Templates do
           db_template.uuid != template["uuid"]
       end)
       |> Enum.map(fn db_template ->
-        Map.put(db_template, :uuid, template["uuid"])
+        if is_nil(template["uuid"]) do
+          db_template
+        else
+          Map.put(db_template, :uuid, template["uuid"])
+        end
       end)
+
+    uuids =
+      db_template_uuid
+      |> Enum.map(&(&1.uuid))
 
     with true <- template["status"] == "APPROVED",
          true <- length(db_template_translations) >= 1,
          true <- length(approved_db_templates) >= 1 do
       approved_db_templates
       |> Enum.each(fn approved_db_template ->
-        update_hsm_translation(template, approved_db_template, organization, languages)
+        update_hsm_translation(template, approved_db_template, uuids, organization, languages)
       end)
     end
 
-    do_update_hsm(template, db_templates, db_template_uuid)
+    do_update_hsm(template, db_templates)
   end
 
   @spec insert_hsm(map(), Organization.t(), map()) :: :ok
@@ -482,9 +490,9 @@ defmodule Glific.Templates do
 
   defp parse_template_button([content], 1), do: %{text: content, type: "QUICK_REPLY"}
 
-  @spec do_update_hsm(map(), map(), map()) ::
+  @spec do_update_hsm(map(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
-  defp do_update_hsm(template, db_templates, db_template_uuid) do
+  defp do_update_hsm(template, db_templates) do
     current_template = db_templates[template["bsp_id"]]
 
     update_attrs =
@@ -494,13 +502,6 @@ defmodule Glific.Templates do
       else
         %{status: template["status"], category: template["category"]}
       end
-
-    case db_template_uuid do
-      nil ->
-        :ok
-      _ ->
-        Map.put(update_attrs, :uuid, db_template_uuid)
-    end
 
     db_templates[template["bsp_id"]]
     |> SessionTemplate.changeset(update_attrs)
@@ -548,9 +549,9 @@ defmodule Glific.Templates do
 
   defp change_template_status(status, _db_template, _bsp_template), do: %{status: status}
 
-  @spec update_hsm_translation(map(), SessionTemplate.t(), Organization.t(), map()) ::
+  @spec update_hsm_translation(map(), SessionTemplate.t(), [String.t()], Organization.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
-  defp update_hsm_translation(template, approved_db_template, organization, languages) do
+  defp update_hsm_translation(template, approved_db_template, uuids, organization, languages) do
     number_of_parameter = template_parameters_count(%{body: template["data"]})
 
     type =
