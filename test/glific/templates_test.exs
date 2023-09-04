@@ -928,7 +928,8 @@ defmodule Glific.TemplatesTest do
         Templates.list_session_templates(%{
           filter: %{organization_id: attrs.organization_id, is_hsm: true}
         })
-      updated_hsm = Repo.fetch_by(SessionTemplate, %{id: hsm.id})
+
+      new_uuid = "123"
 
       Tesla.Mock.mock(fn
         %{method: :get} ->
@@ -937,9 +938,11 @@ defmodule Glific.TemplatesTest do
             body:
               Jason.encode!(%{
                 "status" => "success",
+                "elementName" => hsm.shortcode,
+                "languageCode" => hsm.language_id,
                 "templates" => [
                   %{
-                    "id" => elem(updated_hsm, 1).uuid,
+                    "id" => new_uuid,
                     "modifiedOn" =>
                       DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond)
                   }
@@ -949,9 +952,11 @@ defmodule Glific.TemplatesTest do
       end)
 
       Templates.sync_hsms_from_bsp(attrs.organization_id)
-      assert {:ok, %SessionTemplate{} = hsm} = Repo.fetch_by(SessionTemplate, %{id: hsm.id})
 
-      assert elem(updated_hsm, 1).uuid == hsm.uuid
+      assert {:ok, %SessionTemplate{} = updated_hsm} =
+               Repo.fetch_by(SessionTemplate, %{id: hsm.id})
+
+      assert updated_hsm.uuid == new_uuid
     end
 
     test "update_hsms/1 should update the existing hsm if new status is other than APPROVED",

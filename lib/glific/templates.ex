@@ -351,7 +351,6 @@ defmodule Glific.Templates do
       |> Map.values()
       |> Enum.filter(fn db_template ->
         db_template.shortcode == template["elementName"] and
-          db_template.language_id == template["language_id"] and
           db_template.uuid != template["uuid"]
       end)
       |> Enum.map(fn db_template ->
@@ -483,7 +482,7 @@ defmodule Glific.Templates do
 
   defp parse_template_button([content], 1), do: %{text: content, type: "QUICK_REPLY"}
 
-  @spec do_update_hsm(map(), map(), String.t()) ::
+  @spec do_update_hsm(map(), map(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp do_update_hsm(template, db_templates, db_template_uuid) do
     current_template = db_templates[template["bsp_id"]]
