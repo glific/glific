@@ -91,7 +91,12 @@ defmodule GlificWeb.StatsLive do
   end
 
   def handle_event("edit_bookmark", bookmark_params, socket) do
-    {:noreply, assign(socket, default_bookmark: %{"prev_name" => bookmark_params["name"], "name" => bookmark_params["name"], "link" => bookmark_params["link"]})}
+    default_bookmark = %{
+      "prev_name" => bookmark_params["name"],
+      "name" => bookmark_params["name"],
+      "link" => bookmark_params["link"]
+    }
+    {:noreply, assign(socket, default_bookmark: default_bookmark)}
   end
 
   def handle_event("cancel_update", _bookmark_params, socket) do

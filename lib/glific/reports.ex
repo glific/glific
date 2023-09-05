@@ -11,11 +11,11 @@ defmodule Glific.Reports do
     Flows.MessageBroadcast,
     Messages.Message,
     Notifications.Notification,
-    Partners,
-    Repo,
     Organization,
-    Stats.Stat,
-    Partners.Organization
+    Partners,
+    Partners.Organization,
+    Repo,
+    Stats.Stat
   }
 
   @doc false
