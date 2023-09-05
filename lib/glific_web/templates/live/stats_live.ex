@@ -80,17 +80,32 @@ defmodule GlificWeb.StatsLive do
 
   def handle_event("save_bookmark", bookmark_params, socket) do
     org_id = get_org_id(socket)
-    assign_default_bookmark(socket)
-    {:noreply, assign(socket, bookmarks: Reports.save_bookmark_data(bookmark_params, org_id))}
+    Reports.save_bookmark_data(bookmark_params, org_id)
+    {:noreply, assign(socket, bookmarks: Reports.get_bookmark_data(org_id))}
   end
 
   def handle_event("delete_bookmark", bookmark_params, socket) do
     org_id = get_org_id(socket)
-    {:noreply, assign(socket, bookmarks: Reports.delete_bookmark_data(bookmark_params, org_id))}
+    Reports.delete_bookmark_data(bookmark_params, org_id)
+    {:noreply, assign(socket, bookmarks: Reports.get_bookmark_data(org_id))}
   end
 
   def handle_event("edit_bookmark", bookmark_params, socket) do
-    {:noreply, assign(socket, default_bookmark: %{"name" => bookmark_params["name"], "link" => bookmark_params["link"]})}
+    {:noreply, assign(socket, default_bookmark: %{"prev_name" => bookmark_params["name"], "name" => bookmark_params["name"], "link" => bookmark_params["link"]})}
+  end
+
+  def handle_event("cancel_update", _bookmark_params, socket) do
+    {:noreply, assign_default_bookmark(socket)}
+  end
+
+  def handle_event("update_bookmark", bookmark_params, socket) do
+    org_id = get_org_id(socket)
+    Reports.update_bookmark_data(bookmark_params, org_id)
+    {
+      :noreply,
+      assign_default_bookmark(socket)
+      |> assign(socket, bookmarks: Reports.get_bookmark_data(org_id))
+    }
   end
 
   defp get_export_data(:optin, org_id) do
@@ -137,7 +152,7 @@ defmodule GlificWeb.StatsLive do
   end
 
   defp assign_default_bookmark(socket) do
-    assign(socket, default_bookmark: %{"name"=>"", "link"=>""})
+    assign(socket, default_bookmark: %{"prev_name" => "", "name" => "", "link" => ""})
   end
 
   @spec assign_stats(Phoenix.LiveView.Socket.t(), atom()) :: Phoenix.LiveView.Socket.t()

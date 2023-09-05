@@ -372,7 +372,7 @@ defmodule Glific.Reports do
     |> Repo.update_all([])
   end
 
-  @doc "Add or Update a bookmark"
+  @doc "Add a bookmark"
   @spec save_bookmark_data(map(), non_neg_integer()) :: list()
   def save_bookmark_data(%{"name" => name, "link" => link}, org_id)
       when name != "" and link != "" do
@@ -403,6 +403,37 @@ defmodule Glific.Reports do
   end
 
   def save_bookmark_data(_, _), do: []
+
+  @doc "Update a bookmark"
+  @spec update_bookmark_data(map(), non_neg_integer()) :: list()
+  def update_bookmark_data(
+    %{
+      "name" => name,
+      "link" => link,
+      "prev_name" => prev_name
+    },
+    org_id)
+    when name != "" and link != "" and prev_name != "" do
+    # do we need this?
+    Repo.put_process_state(org_id)
+
+    Organization
+    |> where([o], o.organization_id == ^org_id)
+    |> update([o],
+      set: [
+        setting:
+          fragment(
+            "jsonb_set(setting #- array['bookmarks', ?::text], array['bookmarks', ?::text], ?)",
+            ^prev_name,
+            ^name,
+            ^link
+          )
+      ]
+    )
+    |> Repo.update_all([])
+  end
+
+  def update_bookmark_data(_, _), do: []
 
   @doc false
   @spec get_export_data(atom(), non_neg_integer()) :: list()

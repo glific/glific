@@ -18,10 +18,13 @@
       </svg>
     </div>
     <div class="bookmark-dialog absolute rounded-xl shadow-xl bg-white p-6 flex flex-direction-row ml-10  right-20 invisible group-hover:visible">
-      <div phx-update="ignore" id="bookmark" class="bookmark field flex flex-col p-2 mr-4 w-64">
+      <div id="bookmark" class="bookmark field flex flex-col p-2 mr-4 w-64">
         <p class="font-semibold text-md">Bookmark</p>
-        <.form phx-submit="save_bookmark" for={%{}}>
+        <.form phx-submit={if @default_bookmark["prev_name"]=="", do: "save_bookmark", else: "update_bookmark"} for={%{}}>
         <div class="flex flex-col mt-4">
+          <%= if @default_bookmark["prev_name"]!="" do %>
+            <input type="hidden" name="prev_name" value={@default_bookmark["prev_name"]} id="prev_name"/>
+          <% end %>
           <label for="name" class="text-xs">Name</label>
           <input type="text" value={@default_bookmark["name"]} name="name" class="rounded-lg text-xs mt-1 w-full" id="name" placeholder="ex: Datastudio"/>
           </div>
@@ -29,7 +32,14 @@
           <label for="link" class="text-xs">URL</label>
           <input type="text" name="link" value={@default_bookmark["link"]} class="rounded-lg text-xs mt-1 w-full" id="link" placeholder="https://lookerstudio.google.com/"/>
           </div>
-          <input class="bg-[#42aa78] hover:bg-[#4abd85] mt-2 w-full py-2 font-semibold text-sm rounded-full text-white hover:cursor-pointer mt-5" type="submit" value="Save" />
+          <%= if @default_bookmark["prev_name"]=="" do %>
+            <input class="bg-[#42aa78] hover:bg-[#4abd85] mt-2 w-full py-2 font-semibold text-sm rounded-full text-white hover:cursor-pointer mt-5" type="submit" value="Save" />
+          <% else %>
+            <div class="flex">
+              <input class="text-[#42aa78] border-2 border-[#42aa78] hover:text-white hover:bg-[#4abd85] mt-2 w-full py-2 font-semibold text-sm rounded-full text-white hover:cursor-pointer mt-5 mr-1" phx-click="cancel_update" type="button" value="Cancel" />
+              <input class="bg-[#42aa78] hover:bg-[#4abd85] mt-2 w-full py-2 font-semibold text-sm rounded-full text-white hover:cursor-pointer mt-5" type="submit" value="Update" />
+            </div>
+          <% end %>
         </.form>
       </div>
       
@@ -42,7 +52,7 @@
             <%= for {key, value} <- @bookmarks do %>
               <li class="p-2 mb-1 text-sm flex bg-gray-100 items-center rounded-xl justify-between font-semibold text-green-600 w-full">
                 <div>
-                  <a href={URI.parse(value)}><%= key %></a>
+                  <a href={URI.parse(value)} target="_blank"><%= key %></a>
                 </div>
                 <div>
                   <button class="text-gray-500 mr-auto" phx-click="edit_bookmark" phx-value-link={value} phx-value-name={key}>
