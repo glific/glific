@@ -929,7 +929,7 @@ defmodule Glific.TemplatesTest do
           filter: %{organization_id: attrs.organization_id, is_hsm: true}
         })
 
-      new_uuid = "123"
+      updated_uuid = Ecto.UUID.generate()
 
       Tesla.Mock.mock(fn
         %{method: :get} ->
@@ -942,7 +942,7 @@ defmodule Glific.TemplatesTest do
                 "languageCode" => hsm.language_id,
                 "templates" => [
                   %{
-                    "id" => new_uuid,
+                    "id" => updated_uuid,
                     "modifiedOn" =>
                       DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond)
                   }
@@ -956,7 +956,7 @@ defmodule Glific.TemplatesTest do
       assert {:ok, %SessionTemplate{} = updated_hsm} =
                Repo.fetch_by(SessionTemplate, %{id: hsm.id})
 
-      assert updated_hsm.uuid == new_uuid
+      assert updated_hsm.uuid == updated_uuid
     end
 
     test "update_hsms/1 should update the existing hsm if new status is other than APPROVED",
