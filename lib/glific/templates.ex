@@ -363,7 +363,7 @@ defmodule Glific.Templates do
 
     uuids =
       db_template_uuid
-      |> Enum.map(&(&1.uuid))
+      |> Enum.map(& &1.uuid)
 
     with true <- template["status"] == "APPROVED",
          true <- length(db_template_translations) >= 1,
@@ -499,8 +499,9 @@ defmodule Glific.Templates do
       if current_template.status != template["status"] do
         change_template_status(template["status"], current_template, template)
         |> Map.put(:category, template["category"])
+        |> Map.put(:uuid, template["id"])
       else
-        %{status: template["status"], category: template["category"]}
+        %{status: template["status"], category: template["category"], uuid: template["id"]}
       end
 
     db_templates[template["bsp_id"]]
