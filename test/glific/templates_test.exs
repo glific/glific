@@ -929,7 +929,10 @@ defmodule Glific.TemplatesTest do
           filter: %{organization_id: attrs.organization_id, is_hsm: true}
         })
 
+      IO.inspect(hsm)
       updated_uuid = Ecto.UUID.generate()
+
+      IO.inspect(updated_uuid)
 
       Tesla.Mock.mock(fn
         %{method: :get} ->
@@ -938,13 +941,15 @@ defmodule Glific.TemplatesTest do
             body:
               Jason.encode!(%{
                 "status" => "success",
-                "elementName" => hsm.shortcode,
-                "languageCode" => hsm.language_id,
                 "templates" => [
                   %{
+                    "elementName" => hsm.shortcode,
+                    "languageCode" => hsm.language_id,
                     "id" => updated_uuid,
+                    "data" => "Hi {{1}}, What is your status | [cold] | [warm]",
+                    "templateType" => "TEXT",
                     "modifiedOn" =>
-                      DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond)
+                      DateTime.to_unix(Timex.shift(hsm.updated_at, hours: 1), :millisecond)
                   }
                 ]
               })
