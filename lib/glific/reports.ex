@@ -201,17 +201,20 @@ defmodule Glific.Reports do
   @spec get_kpi_data(non_neg_integer(), String.t(), map()) :: list()
   def get_kpi_data(org_id, table, date_range) do
     presets = get_date_preset(date_range)
+    date_map = Enum.into(presets.date_map, %{}, fn {date, v} -> {Timex.format!(date, "{0D}-{0M}-{YY}"), v} end)
     Repo.put_process_state(org_id)
 
     query_data =
       get_kpi_query(presets, table, org_id)
       |> Repo.all()
+      |> Enum.map(fn %{date: date} = map ->
+          Map.put(map, :date, Timex.format!(date, "{0D}-{0M}-{YY}"))
+        end)
 
-    Enum.reduce(query_data, presets.date_map, fn %{count: count, date: date}, acc ->
+    Enum.reduce(query_data, date_map, fn %{count: count, date: date}, acc ->
       Map.put(acc, date, count)
     end)
-    |> Enum.map(fn {date, v} -> {Timex.format!(date, "{0D}-{0M}-{YY}"), v} end)
-    |> Enum.sort()
+    |> Enum.sort_by(fn {date, _} -> Date.from_iso8601!("20" <> date) end)
   end
 
   @spec get_kpi_query(map(), String.t(), non_neg_integer()) :: Ecto.Query.t()
