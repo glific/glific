@@ -346,31 +346,12 @@ defmodule Glific.Templates do
       db_template_translations
       |> Enum.filter(fn db_template -> db_template.status == "APPROVED" end)
 
-    db_template_uuid =
-      db_templates
-      |> Map.values()
-      |> Enum.filter(fn db_template ->
-        db_template.shortcode == template["elementName"] and
-          db_template.uuid != template["uuid"]
-      end)
-      |> Enum.map(fn db_template ->
-        if is_nil(template["uuid"]) do
-          db_template
-        else
-          Map.put(db_template, :uuid, template["uuid"])
-        end
-      end)
-
-    uuids =
-      db_template_uuid
-      |> Enum.map(& &1.uuid)
-
     with true <- template["status"] == "APPROVED",
          true <- length(db_template_translations) >= 1,
          true <- length(approved_db_templates) >= 1 do
       approved_db_templates
       |> Enum.each(fn approved_db_template ->
-        update_hsm_translation(template, approved_db_template, uuids, organization, languages)
+        update_hsm_translation(template, approved_db_template, organization, languages)
       end)
     end
 
@@ -550,9 +531,9 @@ defmodule Glific.Templates do
 
   defp change_template_status(status, _db_template, _bsp_template), do: %{status: status}
 
-  @spec update_hsm_translation(map(), SessionTemplate.t(), [String.t()], Organization.t(), map()) ::
+  @spec update_hsm_translation(map(), SessionTemplate.t(), Organization.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
-  defp update_hsm_translation(template, approved_db_template, uuids, organization, languages) do
+  defp update_hsm_translation(template, approved_db_template, organization, languages) do
     number_of_parameter = template_parameters_count(%{body: template["data"]})
 
     type =
