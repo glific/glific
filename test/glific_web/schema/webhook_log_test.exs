@@ -7,7 +7,7 @@ defmodule GlificWeb.Schema.WebhookLogTest do
   load_gql(:count, GlificWeb.Schema, "assets/gql/webhook_logs/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/webhook_logs/list.gql")
 
-  test "webhook_logs field returns list of webhook_logs", %{staff: user} = attrs do
+  test "webhook_logs field returns list of webhook_logs", %{manager: user} = attrs do
     wl = Fixtures.webhook_log_fixture(attrs)
 
     result = auth_query_gql_by(:list, user, variables: %{})
@@ -18,7 +18,8 @@ defmodule GlificWeb.Schema.WebhookLogTest do
     assert webhook_log["url"] == wl.url
   end
 
-  test "webhook_logs field returns list of webhook_logs in desc order", %{staff: user} = attrs do
+  test "webhook_logs field returns list of webhook_logs in desc order",
+       %{manager: user} = attrs do
     _wl_1 = Fixtures.webhook_log_fixture(attrs)
     :timer.sleep(1000)
     valid_attrs_2 = Map.merge(attrs, %{url: "test_url_2", status_code: 500})
@@ -33,7 +34,7 @@ defmodule GlificWeb.Schema.WebhookLogTest do
   end
 
   test "webhook_logs field returns list of webhook_logs in various filters",
-       %{staff: user} = attrs do
+       %{manager: user} = attrs do
     wl_1 = Fixtures.webhook_log_fixture(attrs)
     valid_attrs_2 = Map.merge(attrs, %{url: "test_url_2", status_code: 500})
     _wl_2 = Fixtures.webhook_log_fixture(valid_attrs_2)
@@ -57,7 +58,7 @@ defmodule GlificWeb.Schema.WebhookLogTest do
     assert get_in(webhook_log, ["statusCode"]) == wl_1.status_code
   end
 
-  test "webhook_logs field obeys limit and offset", %{staff: user} = attrs do
+  test "webhook_logs field obeys limit and offset", %{manager: user} = attrs do
     _wl_1 = Fixtures.webhook_log_fixture(attrs)
     valid_attrs_2 = Map.merge(attrs, %{url: "test_url_2", status_code: 500})
     _wl_2 = Fixtures.webhook_log_fixture(valid_attrs_2)
@@ -77,7 +78,7 @@ defmodule GlificWeb.Schema.WebhookLogTest do
     assert length(webhook_logs) == 1
   end
 
-  test "count returns the number of webhook_logs", %{staff: user} = attrs do
+  test "count returns the number of webhook_logs", %{manager: user} = attrs do
     _wl_1 = Fixtures.webhook_log_fixture(attrs)
     valid_attrs_2 = Map.merge(attrs, %{url: "test_url_2"})
     wl_2 = Fixtures.webhook_log_fixture(valid_attrs_2)

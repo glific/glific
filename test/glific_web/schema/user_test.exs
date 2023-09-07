@@ -36,7 +36,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert length(roles) >= 4
   end
 
-  test "users returns list of users", %{staff: user} do
+  test "users returns list of users", %{manager: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
 
@@ -51,7 +51,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert user["groups"] == []
   end
 
-  test "users returns list of users in asc order", %{staff: user} do
+  test "users returns list of users in asc order", %{manager: user} do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
@@ -63,7 +63,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert get_in(user, ["name"]) == "NGO Admin"
   end
 
-  test "users obeys limit and offset", %{staff: user} do
+  test "users obeys limit and offset", %{manager: user} do
     result =
       auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
 
@@ -80,7 +80,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert length(users) == users_count - 1
   end
 
-  test "count returns the number of users", %{staff: user} do
+  test "count returns the number of users", %{manager: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     organization_id = Fixtures.get_org_id()
 
@@ -100,7 +100,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert get_in(query_data, [:data, "countUsers"]) == 1
   end
 
-  test "user by id returns one user or nil", %{staff: user_auth} do
+  test "user by id returns one user or nil", %{manager: user_auth} do
     name = "NGO Staff"
     {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: user_auth.organization_id})
 
@@ -110,7 +110,7 @@ defmodule GlificWeb.Schema.UserTest do
     user = get_in(query_data, [:data, "user", "user"])
     assert user["name"] == name
     # isRestricted field should not be accessible by staff role
-    assert user["isRestricted"] == nil
+    assert user["isRestricted"] == false
 
     result = auth_query_gql_by(:by_id, user_auth, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
@@ -119,7 +119,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert message == "Resource not found"
   end
 
-  test "current user returns current user", %{staff: user_auth} do
+  test "current user returns current user", %{manager: user_auth} do
     result = auth_query_gql_by(:current, user_auth)
     assert {:ok, query_data} = result
 
@@ -127,7 +127,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert user == user_auth.name
   end
 
-  test "update current user with correct data", %{staff: user_auth} do
+  test "update current user with correct data", %{manager: user_auth} do
     name = "User Test Name New"
 
     result =
@@ -140,7 +140,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert user_result["name"] == name
   end
 
-  test "update current user password for different scenarios", %{staff: user} do
+  test "update current user password for different scenarios", %{manager: user} do
     user = user |> Repo.preload(:contact)
     Fixtures.otp_hsm_fixture()
 
@@ -258,5 +258,34 @@ defmodule GlificWeb.Schema.UserTest do
     user_result = get_in(query_data, [:data, "updateUser", "user"])
 
     assert user_result["groups"] == [%{"id" => "#{group_2.id}"}]
+  end
+
+  test "update a user of higher role should give an errors", %{manager: user_auth} do
+    {:ok, user} =
+      Repo.fetch_by(User, %{name: "NGO Admin", organization_id: user_auth.organization_id})
+
+    name = "User Test Name New"
+    roles = ["Admin"]
+
+    group = Fixtures.group_fixture()
+
+    result =
+      auth_query_gql_by(:update, user_auth,
+        variables: %{
+          "id" => user.id,
+          "input" => %{
+            "name" => name,
+            "roles" => roles,
+            "groupIds" => [group.id],
+            "isRestricted" => true
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    error = get_in(query_data, [:errors]) |> hd
+
+    assert error.message == "Does not have access to the user"
   end
 end

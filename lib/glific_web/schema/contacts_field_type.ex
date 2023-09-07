@@ -52,7 +52,7 @@ defmodule GlificWeb.Schema.ContactsFieldTypes do
     @desc "get the details of one contacs field"
     field :contacts_field, :contacts_field_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.ContactsField.contacts_field/3)
     end
 
@@ -60,14 +60,14 @@ defmodule GlificWeb.Schema.ContactsFieldTypes do
     field :contacts_fields, list_of(:contacts_field) do
       arg(:filter, :contacts_field_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.ContactsField.contacts_fields/3)
     end
 
     @desc "Get a count of all contacts fields filtered by various criteria"
     field :count_contacts_fields, :integer do
       arg(:filter, :contacts_field_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.ContactsField.count_contacts_fields/3)
     end
   end
@@ -75,28 +75,28 @@ defmodule GlificWeb.Schema.ContactsFieldTypes do
   object :contacts_field_mutations do
     field :create_contacts_field, :contacts_field_result do
       arg(:input, non_null(:contacts_field_input))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.ContactsField.create_contacts_field/3)
     end
 
     field :update_contacts_field, :contacts_field_result do
       arg(:id, non_null(:id))
       arg(:input, :contacts_field_input)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.ContactsField.update_contacts_field/3)
     end
 
     field :delete_contacts_field, :contacts_field_result do
       arg(:id, non_null(:id))
       arg(:delete_assoc, :boolean, default_value: false)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.ContactsField.delete_contacts_field/3)
     end
 
     field :merge_contacts_field, :contacts_field_result do
       arg(:id, non_null(:id))
       arg(:input, :contacts_field_input)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.ContactsField.merge_contacts_fields/3)
     end
   end

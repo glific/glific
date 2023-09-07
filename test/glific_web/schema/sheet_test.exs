@@ -31,7 +31,7 @@ defmodule GlificWeb.Schema.SheetTest do
     :ok
   end
 
-  test "count returns the number of sheets", %{staff: user} = attrs do
+  test "count returns the number of sheets", %{manager: user} = attrs do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countSheets"]) == 0
     Fixtures.sheet_fixture(attrs)
@@ -42,7 +42,7 @@ defmodule GlificWeb.Schema.SheetTest do
     assert get_in(query_data, [:data, "countSheets"]) == 1
   end
 
-  test "sheets field returns list of sheets", %{staff: user} = attrs do
+  test "sheets field returns list of sheets", %{manager: user} = attrs do
     Fixtures.sheet_fixture(attrs)
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
@@ -124,7 +124,7 @@ defmodule GlificWeb.Schema.SheetTest do
     end
   end
 
-  test "sheet id returns one sheet or nil", %{staff: user} = attrs do
+  test "sheet id returns one sheet or nil", %{manager: user} = attrs do
     Fixtures.sheet_fixture(attrs)
 
     label = "sample sheet"
