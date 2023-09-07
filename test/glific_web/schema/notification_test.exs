@@ -8,7 +8,7 @@ defmodule GlificWeb.Schema.NotificationTest do
   load_gql(:list, GlificWeb.Schema, "assets/gql/notifications/list.gql")
   load_gql(:mark_as_read, GlificWeb.Schema, "assets/gql/notifications/mark_as_read.gql")
 
-  test "notifications field returns list of notifications", %{staff: user} = attrs do
+  test "notifications field returns list of notifications", %{manager: user} = attrs do
     notify = Fixtures.notification_fixture(attrs)
     result = auth_query_gql_by(:list, user, variables: %{})
     assert {:ok, query_data} = result
@@ -20,7 +20,7 @@ defmodule GlificWeb.Schema.NotificationTest do
   end
 
   test "notifications field returns list of notifications in desc order",
-       %{staff: user} = attrs do
+       %{manager: user} = attrs do
     _notify_1 = Fixtures.notification_fixture(attrs)
     :timer.sleep(1000)
 
@@ -38,7 +38,7 @@ defmodule GlificWeb.Schema.NotificationTest do
   end
 
   test "notifications field returns list of notifications in various filters",
-       %{staff: user} = attrs do
+       %{manager: user} = attrs do
     notify_1 = Fixtures.notification_fixture(attrs)
 
     valid_attrs_2 =
@@ -75,7 +75,7 @@ defmodule GlificWeb.Schema.NotificationTest do
     assert length(notifications) > 0
   end
 
-  test "notifications field obeys limit and offset", %{staff: user} = attrs do
+  test "notifications field obeys limit and offset", %{manager: user} = attrs do
     _notify_1 = Fixtures.notification_fixture(attrs)
 
     valid_attrs_2 =
@@ -98,7 +98,7 @@ defmodule GlificWeb.Schema.NotificationTest do
     assert length(notifications) == 1
   end
 
-  test "count returns the number of notifications", %{staff: user} = attrs do
+  test "count returns the number of notifications", %{manager: user} = attrs do
     _notify_1 = Fixtures.notification_fixture(attrs)
     valid_attrs_2 = Map.merge(attrs, %{category: "test_category_2"})
     notify_2 = Fixtures.notification_fixture(valid_attrs_2)
@@ -121,7 +121,7 @@ defmodule GlificWeb.Schema.NotificationTest do
     assert get_in(query_data, [:data, "countNotifications"]) == 1
   end
 
-  test "mark all the notification as read", %{staff: user} = attrs do
+  test "mark all the notification as read", %{manager: user} = attrs do
     Enum.each(0..5, fn _ -> Fixtures.notification_fixture(attrs) end)
 
     unread_notification = Glific.Notifications.count_notifications(%{filter: %{is_read: false}})

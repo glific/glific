@@ -70,20 +70,20 @@ defmodule GlificWeb.Schema.TriggerTypes do
   object :trigger_queries do
     field :trigger, :trigger_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Triggers.trigger/3)
     end
 
     field :triggers, list_of(:trigger) do
       arg(:filter, :trigger_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Triggers.triggers/3)
     end
 
     field :count_triggers, :integer do
       arg(:filter, :trigger_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Triggers.count_triggers/3)
     end
   end

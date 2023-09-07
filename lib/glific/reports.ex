@@ -340,7 +340,7 @@ defmodule Glific.Reports do
   defp extract_bookmarks(bookmark), do: bookmark
 
   @doc "Get all saved bookmarks as map"
-  @spec get_bookmark_data(non_neg_integer()) :: list()
+  @spec get_bookmark_data(non_neg_integer()) :: map()
   def get_bookmark_data(org_id) do
     Repo.put_process_state(org_id)
 
