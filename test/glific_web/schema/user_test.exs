@@ -206,12 +206,66 @@ defmodule GlificWeb.Schema.UserTest do
     assert message == "Resource not found"
   end
 
-  test "update a user of higher role should give an errors", %{manager: user_auth} do
+  test "update a user and test possible scenarios and errors", %{manager: user_auth} do
     {:ok, user} =
       Repo.fetch_by(User, %{name: "NGO Staff", organization_id: user_auth.organization_id})
 
     name = "User Test Name New"
-    roles = ["staff, Admin"]
+    roles = ["Staff", "Admin"]
+
+    group = Fixtures.group_fixture()
+
+    result =
+      auth_query_gql_by(:update, user_auth,
+        variables: %{
+          "id" => user.id,
+          "input" => %{
+            "name" => name,
+            "roles" => roles,
+            "groupIds" => [group.id],
+            "isRestricted" => true
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    user_result = get_in(query_data, [:data, "updateUser", "user"])
+
+    assert user_result["name"] == name
+    assert user_result["roles"] == roles
+    assert user_result["groups"] == [%{"id" => "#{group.id}"}]
+    assert user_result["isRestricted"] == true
+
+    # update user groups
+    group_2 = Fixtures.group_fixture(%{label: "new group"})
+    roles = ["admin"]
+
+    result =
+      auth_query_gql_by(:update, user_auth,
+        variables: %{
+          "id" => user.id,
+          "input" => %{
+            "name" => name,
+            "roles" => roles,
+            "groupIds" => [group_2.id]
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    user_result = get_in(query_data, [:data, "updateUser", "user"])
+
+    assert user_result["groups"] == [%{"id" => "#{group_2.id}"}]
+  end
+
+  test "update a user of higher role should give an errors", %{manager: user_auth} do
+    {:ok, user} =
+      Repo.fetch_by(User, %{name: "NGO Admin", organization_id: user_auth.organization_id})
+
+    name = "User Test Name New"
+    roles = ["Admin"]
 
     group = Fixtures.group_fixture()
 

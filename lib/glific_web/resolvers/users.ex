@@ -80,7 +80,7 @@ defmodule GlificWeb.Resolvers.Users do
   def update_user(_, %{id: id, input: params}, %{context: %{current_user: current_user}}) do
     with {:ok, user} <-
            Repo.fetch_by(User, %{id: id, organization_id: current_user.organization_id}) do
-      case Authorize.is_valid_role?(current_user.roles, user.roles) do
+      case Authorize.is_valid_role?(current_user.roles, hd(user.roles)) do
         true ->
           {:ok, user} = Users.update_user(user, params)
 
