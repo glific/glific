@@ -80,24 +80,27 @@ defmodule GlificWeb.Resolvers.Users do
   def update_user(_, %{id: id, input: params}, %{context: %{current_user: current_user}}) do
     with {:ok, user} <-
            Repo.fetch_by(User, %{id: id, organization_id: current_user.organization_id}) do
-      case Authorize.is_valid_role?(current_user.roles, hd(user.roles)) do
-        true ->
-          {:ok, user} = Users.update_user(user, params)
-
-          if Map.has_key?(params, :group_ids) do
-            Groups.update_user_groups(%{
-              user_id: user.id,
-              group_ids: params.group_ids,
-              organization_id: user.organization_id
-            })
-          end
-
-          {:ok, %{user: user}}
-
-        _ ->
-          {:error, dgettext("errors", "Does not have access to the user")}
-      end
+      current_user.roles
+      |> Authorize.is_valid_role?(hd(user.roles))
+      |> do_update_user(user, params)
     end
+  end
+
+  defp do_update_user(false, _user, _params),
+    do: {:error, dgettext("errors", "Does not have access to the user")}
+
+  defp do_update_user(true, user, params) do
+    {:ok, user} = Users.update_user(user, params)
+
+    if Map.has_key?(params, :group_ids) do
+      Groups.update_user_groups(%{
+        user_id: user.id,
+        group_ids: params.group_ids,
+        organization_id: user.organization_id
+      })
+    end
+
+    {:ok, %{user: user}}
   end
 
   @doc false
