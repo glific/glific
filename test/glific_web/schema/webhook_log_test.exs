@@ -18,7 +18,8 @@ defmodule GlificWeb.Schema.WebhookLogTest do
     assert webhook_log["url"] == wl.url
   end
 
-  test "webhook_logs field returns list of webhook_logs in desc order", %{manager: user} = attrs do
+  test "webhook_logs field returns list of webhook_logs in desc order",
+       %{manager: user} = attrs do
     _wl_1 = Fixtures.webhook_log_fixture(attrs)
     :timer.sleep(1000)
     valid_attrs_2 = Map.merge(attrs, %{url: "test_url_2", status_code: 500})

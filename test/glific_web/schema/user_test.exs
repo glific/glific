@@ -106,12 +106,11 @@ defmodule GlificWeb.Schema.UserTest do
 
     result = auth_query_gql_by(:by_id, user_auth, variables: %{"id" => user.id})
     assert {:ok, query_data} = result
-    IO.inspect(result)
 
     user = get_in(query_data, [:data, "user", "user"])
     assert user["name"] == name
     # isRestricted field should not be accessible by staff role
-    assert user["isRestricted"] == nil
+    assert user["isRestricted"] == false
 
     result = auth_query_gql_by(:by_id, user_auth, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result

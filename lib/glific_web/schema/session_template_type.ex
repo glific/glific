@@ -187,7 +187,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     @desc "Get a count of all session_templates filtered by various criteria"
     field :count_session_templates, :integer do
       arg(:filter, :session_template_filter)
-      middleware(Authorize, :manager )
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Templates.count_session_templates/3)
     end
   end
