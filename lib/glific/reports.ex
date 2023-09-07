@@ -355,9 +355,6 @@ defmodule Glific.Reports do
   @doc "Delete a bookmark"
   @spec delete_bookmark_data(map(), non_neg_integer()) :: list()
   def delete_bookmark_data(%{"name" => name}, org_id) do
-    # do we need this?
-    Repo.put_process_state(org_id)
-
     Organization
     |> where([o], o.organization_id == ^org_id)
     |> update([o],
@@ -376,9 +373,6 @@ defmodule Glific.Reports do
   @spec save_bookmark_data(map(), non_neg_integer()) :: list()
   def save_bookmark_data(%{"name" => name, "link" => link}, org_id)
       when name != "" and link != "" do
-    # do we need this?
-    Repo.put_process_state(org_id)
-
     Organization
     |> where([o], o.organization_id == ^org_id)
     |> update([o],
@@ -407,16 +401,14 @@ defmodule Glific.Reports do
   @doc "Update a bookmark"
   @spec update_bookmark_data(map(), non_neg_integer()) :: list()
   def update_bookmark_data(
-    %{
-      "name" => name,
-      "link" => link,
-      "prev_name" => prev_name
-    },
-    org_id)
-    when name != "" and link != "" and prev_name != "" do
-    # do we need this?
-    Repo.put_process_state(org_id)
-
+        %{
+          "name" => name,
+          "link" => link,
+          "prev_name" => prev_name
+        },
+        org_id
+      )
+      when name != "" and link != "" and prev_name != "" do
     Organization
     |> where([o], o.organization_id == ^org_id)
     |> update([o],

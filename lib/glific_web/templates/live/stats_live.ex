@@ -41,8 +41,10 @@ defmodule GlificWeb.StatsLive do
       :timer.send_interval(3000, self(), :refresh)
     end
 
-    socket = assign_stats(socket, :init)
-    |> assign_default_bookmark()
+    socket =
+      assign_stats(socket, :init)
+      |> assign_default_bookmark()
+
     {:ok, socket}
   end
 
@@ -96,6 +98,7 @@ defmodule GlificWeb.StatsLive do
       "name" => bookmark_params["name"],
       "link" => bookmark_params["link"]
     }
+
     {:noreply, assign(socket, default_bookmark: default_bookmark)}
   end
 
@@ -106,6 +109,7 @@ defmodule GlificWeb.StatsLive do
   def handle_event("update_bookmark", bookmark_params, socket) do
     org_id = get_org_id(socket)
     Reports.update_bookmark_data(bookmark_params, org_id)
+
     {
       :noreply,
       assign_default_bookmark(socket)
@@ -348,7 +352,7 @@ defmodule GlificWeb.StatsLive do
   @spec render_pie_chart(String.t(), Contex.Dataset.t()) :: {:safe, [any()]}
   def render_pie_chart(title, dataset) do
     opts = piechart_opts(title)
-    plot = Contex.Plot.new(dataset, Contex.PieChart, 700, 400, opts)
+    plot = Contex.Plot.new(dataset, Contex.PieChart, 800, 400, opts)
 
     has_no_data =
       Enum.any?(dataset.data, fn {_label, value} -> is_nil(value) end) or

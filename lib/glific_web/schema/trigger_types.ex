@@ -19,6 +19,7 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :id, :id
     field :name, :string
     field :start_at, :datetime
+    field :next_trigger_at, :datetime
     field :end_date, :date
     field :is_active, :boolean
     field :is_repeating, :boolean
