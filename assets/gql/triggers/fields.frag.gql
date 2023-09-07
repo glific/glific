@@ -5,6 +5,7 @@ fragment TriggerFields on TriggerResult {
     end_date
     name
     frequency
+    next_trigger_at
     flow {
       id
       name

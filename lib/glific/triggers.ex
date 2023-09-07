@@ -313,9 +313,22 @@ defmodule Glific.Triggers do
        do: next_trigger_at
 
   defp get_next_trigger_at(attrs, start_at) do
-    attrs
-    |> Map.put(:next_trigger_at, start_at)
-    |> Helper.compute_next()
+    frequency = Map.get(attrs, :frequency, nil)
+
+    cond do
+      frequency in [["daily"], ["none"], ["hourly"]] ->
+        start_at
+
+      frequency in [["weekly"], ["monthly"]] ->
+        go_back = Timex.shift(start_at, days: -1)
+
+        attrs
+        |> Map.put(:next_trigger_at, go_back)
+        |> Helper.compute_next()
+
+      true ->
+        start_at
+    end
   end
 
   @spec fix_attrs(map()) :: map()

@@ -80,8 +80,8 @@
 </div> 
 
 <div class="wrapper">
-  <div id="charts" phx-hook="download">
-    <div class="flex content-center justify-center flex-wrap py-150">
+  <div id="charts" class="charts-wrapper" phx-hook="download">
+    <div class="flex content-center justify-center flex-row">
       <div id="contact-chart" class="bar-chart">
         <div class="download-btn">
           <p class="font-bold">Daily Contacts</p>
@@ -108,6 +108,8 @@
           <%= @conversation_chart_svg %>
         </div>
       </div>
+    </div>
+    <div>
       <div id="messages-chart" class="series-bar-chart">
         <div class="download-btn">
           <p class="font-bold">Most Active Hour</p>
@@ -122,7 +124,7 @@
         </div>
       </div>
     </div>
-    <div class="flex content-center justify-center flex-wrap py-150">
+    <div class="flex content-center justify-center flex-row">
       <div id="optin-chart" class="pie-chart">
         <div class="download-btn">
           <p class="font-bold">Opted-in, Opted-out & Non-Opted</p>
@@ -132,7 +134,7 @@
             </.link>
           </button>
         </div>
-        <div class="p-4 h-full">
+        <div class="p-6">
           <%= @optin_chart_svg %>
         </div>
       </div>
@@ -145,10 +147,12 @@
             </.link>
           </button>
         </div>
-        <div class="p-4 h-full">
+        <div class="p-4">
           <%= @notification_chart_svg %>
         </div>
       </div>
+    </div>
+    <div class="flex content-center justify-center flex-row">
       <div id="message-chart" class="pie-chart">
         <div class="download-btn">
           <p class="font-bold">Inbound & Outbound Messages</p>
@@ -158,7 +162,7 @@
             </.link>
           </button>
         </div>
-        <div class="p-4 h-full">
+        <div class="p-4">
           <%= @message_chart_svg %>
         </div>
       </div>
@@ -171,32 +175,30 @@
             </.link>
           </button>
         </div>
-        <div class="p-4 h-full">
+        <div class="p-4">
           <%= @contact_type_chart_svg %>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="flex content-center justify-center flex-wrap">
-    <div class="table-container">
-      <div class="download-btn table-hd bg-white p-4">
-        <p class="text-md text-gray-500 font-bold">Broadcasts</p>
-        <button class="text-gray-800 font-semibold">
-          <.link phx-click="export" phx-value-chart={:table}>
-            <%= GlificWeb.StatsLive.render_button_svg() %>
-          </.link>
-        </button>
-      </div>
-      <div
-        id="broadcast-table"
-        class="table"
-        phx-hook="table"
-        data-table-data={Jason.encode!(@broadcast_data)}
-        data-table-headers={Jason.encode!(@broadcast_headers)}
-        phx-update="ignore"
-      >
-      </div>
+  <div class="h-full mb-10 mt-4 mx-40">
+    <div class="download-btn table-hd bg-white p-4">
+      <p class="text-md text-gray-500 font-bold">Broadcasts</p>
+      <button class="text-gray-800 font-semibold">
+        <.link phx-click="export" phx-value-chart={:table}>
+          <%= GlificWeb.StatsLive.render_button_svg() %>
+        </.link>
+      </button>
+    </div>
+    <div
+      id="broadcast-table"
+      class="table"
+      phx-hook="table"
+      data-table-data={Jason.encode!(@broadcast_data)}
+      data-table-headers={Jason.encode!(@broadcast_headers)}
+      phx-update="ignore"
+    >
     </div>
   </div>
 

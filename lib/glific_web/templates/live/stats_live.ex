@@ -348,7 +348,7 @@ defmodule GlificWeb.StatsLive do
   @spec render_pie_chart(String.t(), Contex.Dataset.t()) :: {:safe, [any()]}
   def render_pie_chart(title, dataset) do
     opts = piechart_opts(title)
-    plot = Contex.Plot.new(dataset, Contex.PieChart, 700, 400, opts)
+    plot = Contex.Plot.new(dataset, Contex.PieChart, 800, 400, opts)
 
     has_no_data =
       Enum.any?(dataset.data, fn {_label, value} -> is_nil(value) end) or
