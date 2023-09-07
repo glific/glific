@@ -87,7 +87,7 @@ defmodule GlificWeb.Schema.UserTypes do
     @desc "get the details of one user"
     field :user, :user_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Users.user/3)
     end
 
@@ -95,20 +95,20 @@ defmodule GlificWeb.Schema.UserTypes do
     field :users, list_of(:user) do
       arg(:filter, :user_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Users.users/3)
     end
 
     @desc "Get a count of all users filtered by various criteria"
     field :count_users, :integer do
       arg(:filter, :user_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Users.count_users/3)
     end
 
     @desc "Get the details of current user"
     field :current_user, :user_result do
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Users.current_user/3)
     end
   end
@@ -116,7 +116,7 @@ defmodule GlificWeb.Schema.UserTypes do
   object :user_mutations do
     field :update_current_user, :user_result do
       arg(:input, non_null(:current_user_input))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Users.update_current_user/3)
     end
 

@@ -49,21 +49,21 @@ defmodule GlificWeb.Schema.NotificationTypes do
     field :notifications, list_of(:notification) do
       arg(:filter, :notification_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Notifications.notifications/3)
     end
 
     @desc "Get a count of all notifications filtered by various criteria"
     field :count_notifications, :integer do
       arg(:filter, :notification_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Notifications.count_notifications/3)
     end
   end
 
   object :notification_mutations do
     field :mark_notification_as_read, :boolean do
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Notifications.mark_notification_as_read/3)
     end
   end
