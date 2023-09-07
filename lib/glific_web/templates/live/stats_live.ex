@@ -109,7 +109,7 @@ defmodule GlificWeb.StatsLive do
     {
       :noreply,
       assign_default_bookmark(socket)
-      |> assign(socket, bookmarks: Reports.get_bookmark_data(org_id))
+      |> assign(bookmarks: Reports.get_bookmark_data(org_id))
     }
   end
 
