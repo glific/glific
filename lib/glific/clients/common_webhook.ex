@@ -81,6 +81,20 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  def webhook("openllm", fields) do
+    mp = Tesla.Multipart.add_field(Tesla.Multipart.new(), "prompt", fields["prompt"])
+
+    Tesla.post(fields["url"], mp, opts: [adapter: [recv_timeout: 100_000]])
+    |> case do
+      {:ok, %Tesla.Env{status: 201, body: body}} ->
+        Jason.decode!(body)
+        |> Map.take(["answer", "session_id"])
+
+      {_status, response} ->
+        %{success: false, response: "Invalid response #{response}"}
+    end
+  end
+
   def webhook("jugalbandi-voice", %{"query_text" => query_text} = fields),
     do: query_jugalbandi_api(fields, query_text: query_text)
 
