@@ -129,22 +129,6 @@ defmodule Glific.Reports do
   defp get_count_query(:conversation_count), do: select(Stat, [q], sum(q.conversations))
 
   @spec get_day_range(String.t(), map()) :: tuple()
-  # defp get_day_range(duration) do
-  #   day = shifted_time(NaiveDateTime.utc_now(), -1) |> NaiveDateTime.to_date()
-  #   last_7 = shifted_time(NaiveDateTime.utc_now(), -7) |> NaiveDateTime.to_date()
-
-  #   case duration do
-  #     "MONTHLY" ->
-  #       {"month", Date.beginning_of_month(day), Date.end_of_month(day)}
-
-  #     "WEEKLY" ->
-  #       {"day", last_7, day}
-
-  #     "DAILY" ->
-  #       {"day", day, day}
-  #   end
-  # end
-
   defp get_day_range(duration, date_range) do
     presets = get_date_preset(date_range)
     day = presets.start_day
