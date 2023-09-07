@@ -25,7 +25,9 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
     end
   end
 
-  # Check role with hierarchy
+  @doc """
+  Check role with hierarchy
+  """
   @spec is_valid_role?(list(), atom() | list()) :: boolean()
   def is_valid_role?(_, :any), do: true
   def is_valid_role?(roles, :glific_admin), do: is_valid_role?(roles, [:glific_admin])

@@ -3,6 +3,7 @@ defmodule GlificWeb.Resolvers.Users do
   User Resolver which sits between the GraphQL schema and Glific User Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
+  import GlificWeb.Gettext
 
   alias Glific.Repo
   alias Glific.{Groups, Users, Users.User}
@@ -94,7 +95,7 @@ defmodule GlificWeb.Resolvers.Users do
           {:ok, %{user: user}}
 
         _ ->
-          {:error, "Does not have access to the user"}
+          {:error, dgettext("errors", "Does not have access to the user")}
       end
     end
   end
