@@ -29,7 +29,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
     assert contacts_field["organization"]["name"] == "Glific"
   end
 
-  test "count returns the number of contact fields", %{staff: user} = attrs do
+  test "count returns the number of contact fields", %{manager: user} = attrs do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     initial_count = get_in(query_data, [:data, "countContactsFields"])
 
@@ -55,7 +55,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
     assert get_in(query_data, [:data, "countContactsFields"]) == 1
   end
 
-  test "contact fields returns list of contact fields", %{staff: user} = _attrs do
+  test "contact fields returns list of contact fields", %{manager: user} = _attrs do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
     contacts_fields = get_in(query_data, [:data, "contactsFields"])

@@ -41,7 +41,10 @@ defmodule GlificWeb.StatsLive do
       :timer.send_interval(3000, self(), :refresh)
     end
 
-    socket = assign_stats(socket, :init)
+    socket =
+      assign_stats(socket, :init)
+      |> assign_default_bookmark()
+
     {:ok, socket}
   end
 
@@ -85,6 +88,53 @@ defmodule GlificWeb.StatsLive do
     {:noreply,
      assign(socket, range: date_range)
      |> assign_stats(:filter)}
+  end
+  
+  def handle_event("show_bookmark", _value, socket) do
+    org_id = get_org_id(socket)
+    {:noreply, assign(socket, bookmarks: Reports.get_bookmark_data(org_id))}
+  end
+
+  def handle_event("save_bookmark", bookmark_params, socket) do
+    org_id = get_org_id(socket)
+    Reports.save_bookmark_data(bookmark_params, org_id)
+    {:noreply, assign(socket, bookmarks: Reports.get_bookmark_data(org_id))}
+  end
+
+  def handle_event("delete_bookmark", bookmark_params, socket) do
+    org_id = get_org_id(socket)
+    Reports.delete_bookmark_data(bookmark_params, org_id)
+    {:noreply, assign(socket, bookmarks: Reports.get_bookmark_data(org_id))}
+  end
+
+  def handle_event("edit_bookmark", bookmark_params, socket) do
+    default_bookmark = %{
+      "prev_name" => bookmark_params["name"],
+      "name" => bookmark_params["name"],
+      "link" => bookmark_params["link"]
+    }
+
+    {:noreply, assign(socket, default_bookmark: default_bookmark)}
+  end
+
+  def handle_event("cancel_update", _bookmark_params, socket) do
+    {:noreply, assign_default_bookmark(socket)}
+  end
+
+  def handle_event("update_bookmark", bookmark_params, socket) do
+    org_id = get_org_id(socket)
+    Reports.update_bookmark_data(bookmark_params, org_id)
+
+    {
+      :noreply,
+      assign_default_bookmark(socket)
+      |> assign(bookmarks: Reports.get_bookmark_data(org_id))
+    }
+  end
+
+  defp get_export_data(:optin, org_id) do
+    Reports.get_export_data(:optin, org_id)
+    |> List.insert_at(0, ["ID", "Name", "Phone", "Optin Status"])
   end
 
   defp get_export_data(:contacts, org_id, date_range) do
@@ -130,6 +180,10 @@ defmodule GlificWeb.StatsLive do
     |> List.insert_at(0, ["Flow Name", "Group Name", "Started At", "Completed At"])
   end
 
+  defp assign_default_bookmark(socket) do
+    assign(socket, default_bookmark: %{"prev_name" => "", "name" => "", "link" => ""})
+  end
+
   @spec assign_stats(Phoenix.LiveView.Socket.t(), atom()) :: Phoenix.LiveView.Socket.t()
   defp assign_stats(socket, :init) do
     stats = Enum.map(Reports.kpi_list(), &{&1, "loading.."})
@@ -147,6 +201,7 @@ defmodule GlificWeb.StatsLive do
     |> assign(get_chart_data(org_id, default_range))
     |> assign_dataset()
     |> assign_chart_svg()
+    |> assign(bookmarks: Reports.get_bookmark_data(org_id))
   end
 
   defp assign_stats(socket, :call) do
@@ -166,6 +221,7 @@ defmodule GlificWeb.StatsLive do
     assign(socket, get_chart_data(org_id, date_range))
     |> assign_dataset()
     |> assign_chart_svg()
+    |> assign(bookmarks: Reports.get_bookmark_data(org_id))
   end
 
   @spec assign_dataset(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()

@@ -4,6 +4,167 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr">
 </script>
 
+<div class="w-full px-20 flex justify-between">
+  <div class="date-filter"></div>
+  <div class="bookmarks group">
+    <div class="bookmark-icon m-2" phx-click="show_bookmark">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <mask
+          id="mask0_1136_7632"
+          style="mask-type:alpha"
+          maskUnits="userSpaceOnUse"
+          x="0"
+          y="0"
+          width="24"
+          height="24"
+        >
+          <rect width="24" height="24" fill="#D9D9D9" />
+        </mask>
+        <g mask="url(#mask0_1136_7632)">
+          <path
+            d="M3 21.9962V8.18078C3 7.70588 3.19583 7.29933 3.5875 6.96114C3.97917 6.62295 4.45 6.45386 5 6.45386H15C15.55 6.45386 16.0208 6.62295 16.4125 6.96114C16.8042 7.29933 17 7.70588 17 8.18078V21.9962L10 19.4058L3 21.9962ZM5 19.3626L10 17.5062L15 19.3626V8.18078H5V19.3626ZM19 19.4058V4.72693H6V3H19C19.55 3 20.0208 3.1691 20.4125 3.50729C20.8042 3.84548 21 4.25202 21 4.72693V19.4058H19Z"
+            fill="#717971"
+          />
+        </g>
+      </svg>
+    </div>
+    <div class="bookmark-dialog absolute rounded-xl shadow-xl bg-white p-6 flex flex-direction-row ml-10  right-20 invisible group-hover:visible">
+      <div id="bookmark" class="bookmark field flex flex-col p-2 mr-4 w-64">
+        <p class="font-semibold text-md">Bookmark</p>
+        <.form
+          phx-submit={
+            if @default_bookmark["prev_name"] == "", do: "save_bookmark", else: "update_bookmark"
+          }
+          for={%{}}
+        >
+          <div class="flex flex-col mt-4">
+            <%= if @default_bookmark["prev_name"]!="" do %>
+              <input
+                type="hidden"
+                name="prev_name"
+                value={@default_bookmark["prev_name"]}
+                id="prev_name"
+              />
+            <% end %>
+            <label for="name" class="text-xs">Name</label>
+            <input
+              type="text"
+              value={@default_bookmark["name"]}
+              name="name"
+              class="rounded-lg text-xs mt-1 w-full"
+              id="name"
+              placeholder="ex: Datastudio"
+            />
+          </div>
+          <div class="flex flex-col mt-2">
+            <label for="link" class="text-xs">URL</label>
+            <input
+              type="text"
+              name="link"
+              value={@default_bookmark["link"]}
+              class="rounded-lg text-xs mt-1 w-full"
+              id="link"
+              placeholder="https://lookerstudio.google.com/"
+            />
+          </div>
+          <%= if @default_bookmark["prev_name"]=="" do %>
+            <input
+              class="bg-[#42aa78] hover:bg-[#4abd85] mt-2 w-full py-2 font-semibold text-sm rounded-full text-white hover:cursor-pointer mt-5"
+              type="submit"
+              value="Save"
+            />
+          <% else %>
+            <div class="flex">
+              <input
+                class="text-[#42aa78] border-2 border-[#42aa78] hover:text-white hover:bg-[#4abd85] mt-2 w-full py-2 font-semibold text-sm rounded-full text-white hover:cursor-pointer mt-5 mr-1"
+                phx-click="cancel_update"
+                type="button"
+                value="Cancel"
+              />
+              <input
+                class="bg-[#42aa78] hover:bg-[#4abd85] mt-2 w-full py-2 font-semibold text-sm rounded-full text-white hover:cursor-pointer mt-5"
+                type="submit"
+                value="Update"
+              />
+            </div>
+          <% end %>
+        </.form>
+      </div>
+
+      <div class="h-62 border-gray-200 border"></div>
+
+      <div class="bookmarks-list w-56 p-2 ml-2">
+        <p class="font-semibold text-md">All bookmarks</p>
+        <%= if @bookmarks != %{} do %>
+          <ul class="mt-4">
+            <%= for {key, value} <- @bookmarks do %>
+              <li class="p-2 mb-1 text-sm flex bg-gray-100 items-center rounded-xl justify-between font-semibold text-green-600 w-full">
+                <div>
+                  <a href={URI.parse(value)} target="_blank"><%= key %></a>
+                </div>
+                <div>
+                  <button
+                    class="text-gray-500 mr-auto"
+                    phx-click="edit_bookmark"
+                    phx-value-link={value}
+                    phx-value-name={key}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke-width="1.5"
+                      stroke="currentColor"
+                      class="w-4 h-4"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    class="text-gray-500 mr-auto"
+                    phx-click="delete_bookmark"
+                    phx-value-link={value}
+                    phx-value-name={key}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke-width="1.5"
+                      stroke="currentColor"
+                      class="w-4 h-4"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <div class="w-full h-full flex items-center justify-center">
+            <p class="text-xs">No bookmarks</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="wrapper">
   <div class="mx-40 py-4 flex justify-between">
     <div class="my-auto">

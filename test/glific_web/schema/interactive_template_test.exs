@@ -23,7 +23,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/interactives/delete.gql")
   load_gql(:copy, GlificWeb.Schema, "assets/gql/interactives/copy.gql")
 
-  test "Interactive templates field returns list of interactives", %{staff: user} do
+  test "Interactive templates field returns list of interactives", %{manager: user} do
     {:ok, query_data} =
       auth_query_gql_by(:list, user,
         variables: %{"filter" => %{"term" => "Glific comes with all new features"}}
@@ -40,7 +40,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     assert res == "Are you excited for *Glific*?"
   end
 
-  test "Interactive templates field returns list of interactives filter by term", %{staff: user} do
+  test "Interactive templates field returns list of interactives filter by term", %{manager: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
     interactives = get_in(query_data, [:data, "interactiveTemplates"])
@@ -54,7 +54,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     assert res == "Interactive list"
   end
 
-  test "count returns the number of interactives", %{staff: user} do
+  test "count returns the number of interactives", %{manager: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countInteractiveTemplates"]) > 4
 
@@ -71,7 +71,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     assert get_in(query_data, [:data, "countInteractiveTemplates"]) == 1
   end
 
-  test "interactives field returns list of interactives in asc order", %{staff: user} do
+  test "interactives field returns list of interactives in asc order", %{manager: user} do
     Fixtures.interactive_fixture(%{organization_id: user.organization_id})
 
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
@@ -84,7 +84,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     assert get_in(interactive, ["label"]) == "Are you excited for *Glific*?"
   end
 
-  test "interactives field returns list of interactives in desc order", %{staff: user} do
+  test "interactives field returns list of interactives in desc order", %{manager: user} do
     Fixtures.interactive_fixture(%{organization_id: user.organization_id})
 
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "DESC"}})
@@ -97,7 +97,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     assert get_in(interactive, ["label"]) == "Role"
   end
 
-  test "interactive template by id returns one interactive or nil", %{staff: user} do
+  test "interactive template by id returns one interactive or nil", %{manager: user} do
     label = "Quick Reply Video"
 
     {:ok, interactive} =
@@ -120,7 +120,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     assert message == "Resource not found"
   end
 
-  test "create a interactive and test possible scenarios and errors", %{staff: user} do
+  test "create a interactive and test possible scenarios and errors", %{manager: user} do
     label = "Quick Reply Video"
 
     {:ok, interactive} =
@@ -180,7 +180,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     assert message =~ "has already been taken"
   end
 
-  test "update interactive and test possible scenarios and errors", %{staff: user} do
+  test "update interactive and test possible scenarios and errors", %{manager: user} do
     label = "Quick Reply Text"
 
     {:ok, interactive} =
@@ -215,7 +215,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     assert message =~ "has already been taken"
   end
 
-  test "delete an interactive", %{staff: user} do
+  test "delete an interactive", %{manager: user} do
     {:ok, interactive} =
       Repo.fetch_by(InteractiveTemplate, %{
         label: "Quick Reply Text",
