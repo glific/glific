@@ -335,8 +335,8 @@ defmodule Glific.Reports do
     %{today: today, last_day: last_day, date_map: date_map}
   end
 
+  @spec extract_bookmarks(map() | nil) :: map()
   defp extract_bookmarks(nil), do: %{}
-
   defp extract_bookmarks(bookmark), do: bookmark
 
   @doc "Get all saved bookmarks as map"
