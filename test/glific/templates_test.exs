@@ -931,7 +931,6 @@ defmodule Glific.TemplatesTest do
 
       updated_uuid = Ecto.UUID.generate()
 
-
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
