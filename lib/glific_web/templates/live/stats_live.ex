@@ -427,8 +427,6 @@ defmodule GlificWeb.StatsLive do
   Fetch optin chart count data
   """
   @spec fetch_count_data(atom(), non_neg_integer(), map() | nil) :: list()
-  def fetch_count_data(kpi, org_id, date_range)
-
   def fetch_count_data(:optin_chart_data, org_id, date_range) do
     opted_in = Reports.get_kpi(:opted_in_contacts_count, org_id, date_range)
     opted_out = Reports.get_kpi(:opted_out_contacts_count, org_id, date_range)

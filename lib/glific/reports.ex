@@ -19,12 +19,12 @@ defmodule Glific.Reports do
   }
 
   @doc false
-  @spec get_kpi(atom(), non_neg_integer(), map(), [{atom(), any()}]) :: integer()
-  def get_kpi(kpi, org_id, date_range \\ nil, opts \\ []) do
+  @spec get_kpi(atom(), non_neg_integer(), [{atom(), any()}], map()) :: integer()
+  def get_kpi(kpi, org_id, opts \\ [], date_range) do
     Repo.put_process_state(org_id)
 
     get_count_query(kpi)
-    |> add_timestamps(kpi, date_range, opts)
+    |> add_timestamps(kpi, opts, date_range)
     |> where([q], q.organization_id == ^org_id)
     |> Repo.all()
     |> hd || 0
@@ -149,7 +149,7 @@ defmodule Glific.Reports do
   end
 
   @spec add_timestamps(Ecto.Query.t(), atom(), [{atom(), any()}], map()) :: Ecto.Query.t()
-  defp add_timestamps(query, kpi, date_range, _opts)
+  defp add_timestamps(query, kpi, _opts, date_range)
        when kpi in [
               :critical_notification_count,
               :warning_notification_count,
@@ -174,7 +174,7 @@ defmodule Glific.Reports do
     |> where([q], q.inserted_at <= ^end_day)
   end
 
-  defp add_timestamps(query, kpi, date_range, opts)
+  defp add_timestamps(query, kpi, opts, date_range)
        when kpi in [
               :outbound_messages_count,
               :hsm_messages_count,

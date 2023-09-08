@@ -497,8 +497,8 @@ defmodule Glific.Stats do
 
   @spec fetch_inbound_outbound(non_neg_integer(), String.t(), map()) :: [tuple()]
   defp fetch_inbound_outbound(org_id, duration, date_range) do
-    inbound = Reports.get_kpi(:inbound_messages_count, org_id, date_range, duration: duration)
-    outbound = Reports.get_kpi(:outbound_messages_count, org_id, date_range, duration: duration)
+    inbound = Reports.get_kpi(:inbound_messages_count, org_id, [duration: duration], date_range)
+    outbound = Reports.get_kpi(:outbound_messages_count, org_id, [duration: duration], date_range)
 
     [
       {"Inbound: #{inbound}", inbound},
