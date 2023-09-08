@@ -371,7 +371,7 @@ if Code.ensure_loaded?(Faker) do
            {organization, en, utc_now},
            {name, phone, roles}
          ) do
-      password = "12345678"
+      password = "Secret12345678!"
 
       contact =
         Repo.insert!(%Contact{

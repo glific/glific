@@ -534,8 +534,8 @@ defmodule Glific.Fixtures do
       name: "some name",
       contact_id: contact_fixture(%{phone: phone}).id,
       phone: phone,
-      password: "secret1234",
-      password_confirmation: "secret1234",
+      password: "Secret1234!",
+      password_confirmation: "Secret1234!",
       roles: ["admin"],
       language_id: 1,
       # This should be static for all the user fixtures

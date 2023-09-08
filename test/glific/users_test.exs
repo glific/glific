@@ -8,7 +8,7 @@ defmodule Glific.UsersTest do
   }
 
   describe "users" do
-    @password "secret1234"
+    @password "Secret1234!"
 
     @valid_attrs %{
       name: "some name",
