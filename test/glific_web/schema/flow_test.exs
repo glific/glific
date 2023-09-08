@@ -50,7 +50,7 @@ defmodule GlificWeb.Schema.FlowTest do
     "assets/gql/flows/reset_flow_count.gql"
   )
 
-  test "flows field returns list of flows", %{staff: user} do
+  test "flows field returns list of flows", %{manager: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
 
@@ -66,7 +66,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert get_in(flow, ["id"]) > 0
   end
 
-  test "flows field returns list of filtered flows", %{staff: user} do
+  test "flows field returns list of filtered flows", %{manager: user} do
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"keyword" => "help"}})
     assert {:ok, query_data} = result
 
@@ -139,7 +139,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert length(flows) == old_count + 1
   end
 
-  test "flow field id returns one flow or nil", %{staff: user} do
+  test "flow field id returns one flow or nil", %{manager: user} do
     name = "Test Workflow"
     {:ok, flow} = Repo.fetch_by(Flow, %{name: name, organization_id: user.organization_id})
 
@@ -156,7 +156,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert message == "Resource not found"
   end
 
-  test "definition field returns one flow definition or nil", %{staff: user} do
+  test "definition field returns one flow definition or nil", %{manager: user} do
     [flow | _] = Flows.list_flows(%{filter: %{name: "activity"}})
 
     name = flow.name
@@ -211,7 +211,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert get_in(query_data, [:data, "publishFlow", "success"]) == true
   end
 
-  test "export flow and the import flow", %{staff: user} do
+  test "export flow and the import flow", %{manager: user} do
     [flow | _] = Flows.list_flows(%{filter: %{name: "New Contact Workflow"}})
 
     flow_id = flow.id
@@ -352,7 +352,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert message == "Resource not found"
   end
 
-  test "Start flow for a contact", %{staff: user} = attrs do
+  test "Start flow for a contact", %{manager: user} = attrs do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 
@@ -372,7 +372,7 @@ defmodule GlificWeb.Schema.FlowTest do
     # will add test for success with integration tests
   end
 
-  test "Resume flow for a contact", %{staff: user} = attrs do
+  test "Resume flow for a contact", %{manager: user} = attrs do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 
@@ -397,7 +397,7 @@ defmodule GlificWeb.Schema.FlowTest do
     # and then resume the flow
   end
 
-  test "Terminate all flows for a contact", %{staff: user} = attrs do
+  test "Terminate all flows for a contact", %{manager: user} = attrs do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 
@@ -413,7 +413,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert get_in(query_data, [:data, "terminateContactFlows", "success"]) == true
   end
 
-  test "Reset all the counts for a flows", %{staff: user} do
+  test "Reset all the counts for a flows", %{manager: user} do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 
@@ -424,7 +424,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert get_in(query_data, [:data, "resetFlowCount", "success"]) == true
   end
 
-  test "Start flow for contacts of a group", %{staff: user} do
+  test "Start flow for contacts of a group", %{manager: user} do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 
@@ -462,7 +462,7 @@ defmodule GlificWeb.Schema.FlowTest do
   end
 
   test "flow get returns a flow contact",
-       %{staff: staff, user: user} do
+       %{manager: staff, user: user} do
     State.reset()
 
     result = auth_query_gql_by(:flow_get, staff, variables: %{"id" => 1})

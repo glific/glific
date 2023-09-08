@@ -23,7 +23,7 @@ defmodule GlificWeb.Schema.TriggerTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/triggers/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/triggers/delete.gql")
 
-  test "triggers field returns list of triggers", %{staff: user} = attrs do
+  test "triggers field returns list of triggers", %{manager: user} = attrs do
     tr = Fixtures.trigger_fixture(attrs)
 
     result = auth_query_gql_by(:list, user, variables: %{})
@@ -34,7 +34,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert String.to_integer(trigger["flow"]["id"]) == tr.flow_id
   end
 
-  test "trigger field returns list of triggers in various filters", %{staff: user} = attrs do
+  test "trigger field returns list of triggers in various filters", %{manager: user} = attrs do
     trigger =
       Fixtures.trigger_fixture(attrs)
       |> Repo.preload([:flow])
@@ -54,7 +54,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert length(triggers) > 0
   end
 
-  test "triggers field returns list of triggers in desc order", %{staff: user} = attrs do
+  test "triggers field returns list of triggers in desc order", %{manager: user} = attrs do
     _tr_1 = Fixtures.trigger_fixture(attrs)
     time = Timex.shift(DateTime.utc_now(), days: 1)
     valid_attrs_2 = Map.merge(attrs, %{start_at: time})
@@ -68,7 +68,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert String.to_integer(trigger["flow"]["id"]) == tr_2.flow_id
   end
 
-  test "triggers field should return following limit and offset", %{staff: user} = attrs do
+  test "triggers field should return following limit and offset", %{manager: user} = attrs do
     _tr_1 = Fixtures.trigger_fixture(attrs)
     time = Timex.shift(DateTime.utc_now(), days: 1)
     valid_attrs_2 = Map.merge(attrs, %{start_at: time})
@@ -90,7 +90,7 @@ defmodule GlificWeb.Schema.TriggerTest do
   end
 
   test "triggers field returns list of triggers in various filters",
-       %{staff: user} = attrs do
+       %{manager: user} = attrs do
     time = Timex.shift(DateTime.utc_now(), days: 1)
     valid_attrs_2 = Map.merge(attrs, %{start_at: time})
     tr_2 = Fixtures.trigger_fixture(valid_attrs_2)
@@ -110,7 +110,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert Triggers.count_triggers(%{filter: attrs}) == logs_count + 1
   end
 
-  test "triggers id returns one triggers or nil", %{staff: user} = attrs do
+  test "triggers id returns one triggers or nil", %{manager: user} = attrs do
     trigger =
       Fixtures.trigger_fixture(attrs)
       |> Repo.preload(:flow)
