@@ -448,10 +448,9 @@ defmodule Glific.Reports do
   @spec get_export_data(atom(), non_neg_integer(), map()) :: list()
   def get_export_data(chart, org_id, date_range) do
     get_export_query(chart)
-    |> add_timestamps(chart, date_range, [])
+    |> add_timestamps(chart, [], date_range)
     |> where([q], q.organization_id == ^org_id)
     |> Repo.all()
-    |> hd
   end
 
   @spec get_export_query(atom()) :: Ecto.Query.t()
