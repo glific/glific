@@ -11,7 +11,9 @@ defmodule Glific.Reports do
     Flows.MessageBroadcast,
     Messages.Message,
     Notifications.Notification,
+    Organization,
     Partners,
+    Partners.Organization,
     Repo,
     Stats.Stat
   }
@@ -332,6 +334,98 @@ defmodule Glific.Reports do
 
     %{today: today, last_day: last_day, date_map: date_map}
   end
+
+  @spec extract_bookmarks(map() | nil) :: map()
+  defp extract_bookmarks(nil), do: %{}
+  defp extract_bookmarks(bookmark), do: bookmark
+
+  @doc "Get all saved bookmarks as map"
+  @spec get_bookmark_data(non_neg_integer()) :: map()
+  def get_bookmark_data(org_id) do
+    Repo.put_process_state(org_id)
+
+    Organization
+    |> select([q], q.setting["bookmarks"])
+    |> where([q], q.organization_id == ^org_id)
+    |> Repo.all()
+    |> hd
+    |> extract_bookmarks()
+  end
+
+  @doc "Delete a bookmark"
+  @spec delete_bookmark_data(map(), non_neg_integer()) :: list()
+  def delete_bookmark_data(%{"name" => name}, org_id) do
+    Organization
+    |> where([o], o.organization_id == ^org_id)
+    |> update([o],
+      set: [
+        setting:
+          fragment(
+            "setting #- array['bookmarks', ?::text]",
+            ^name
+          )
+      ]
+    )
+    |> Repo.update_all([])
+  end
+
+  @doc "Add a bookmark"
+  @spec save_bookmark_data(map(), non_neg_integer()) :: list()
+  def save_bookmark_data(%{"name" => name, "link" => link}, org_id)
+      when name != "" and link != "" do
+    Organization
+    |> where([o], o.organization_id == ^org_id)
+    |> update([o],
+      set: [
+        setting:
+          fragment(
+            """
+            CASE
+            WHEN setting->'bookmarks' IS NULL
+            THEN jsonb_insert(setting, array['bookmarks'], jsonb_build_object(?, ?))
+            ELSE jsonb_set(setting, array['bookmarks', ?::text], ?)
+            END
+            """,
+            type(^name, :string),
+            type(^link, :string),
+            ^name,
+            ^link
+          )
+      ]
+    )
+    |> Repo.update_all([])
+  end
+
+  def save_bookmark_data(_, _), do: []
+
+  @doc "Update a bookmark"
+  @spec update_bookmark_data(map(), non_neg_integer()) :: list()
+  def update_bookmark_data(
+        %{
+          "name" => name,
+          "link" => link,
+          "prev_name" => prev_name
+        },
+        org_id
+      )
+      when name != "" and link != "" and prev_name != "" do
+    Organization
+    |> where([o], o.organization_id == ^org_id)
+    |> update([o],
+      set: [
+        setting:
+          fragment(
+            "jsonb_set(setting #- array['bookmarks', ?::text], array['bookmarks', ?::text], ?)",
+            ^prev_name,
+            ^name,
+            ^link
+          )
+      ]
+    )
+    |> Repo.update_all([])
+  end
+
+  def update_bookmark_data(_, _), do: []
 
   @doc false
   @spec get_export_data(atom(), non_neg_integer()) :: list()

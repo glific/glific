@@ -50,20 +50,20 @@ defmodule GlificWeb.Schema.SheetTypes do
   object :sheet_queries do
     field :sheet, :sheet_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Sheets.sheet/3)
     end
 
     field :sheets, list_of(:sheet) do
       arg(:filter, :sheet_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Sheets.sheets/3)
     end
 
     field :count_sheets, :integer do
       arg(:filter, :sheet_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Sheets.count_sheets/3)
     end
   end
