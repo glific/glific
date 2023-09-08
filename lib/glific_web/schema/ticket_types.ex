@@ -84,14 +84,14 @@ defmodule GlificWeb.Schema.TicketTypes do
   object :ticket_mutations do
     field :create_ticket, :ticket_result do
       arg(:input, non_null(:ticket_input))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Tickets.create_ticket/3)
     end
 
     field :update_ticket, :ticket_result do
       arg(:id, non_null(:id))
       arg(:input, :ticket_input)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Tickets.update_ticket/3)
     end
 
