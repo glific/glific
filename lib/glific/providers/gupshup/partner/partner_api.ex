@@ -25,7 +25,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec fetch_app_details(non_neg_integer()) :: any()
   def fetch_app_details(org_id) do
-    organization = Partners.organization(org_id)
+    organization = Partners.organization(org_id) |> IO.inspect()
     gupshup_secrets = organization.services["bsp"].secrets
 
     post_request(
