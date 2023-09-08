@@ -360,6 +360,7 @@
       phx-hook="table"
       data-table-data={Jason.encode!(@broadcast_data)}
       data-table-headers={Jason.encode!(@broadcast_headers)}
+      phx-update="ignore"
     >
       <%= if Enum.empty?(@broadcast_data) do %>
         <p class="p-6">No data available</p>

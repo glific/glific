@@ -451,7 +451,7 @@ defmodule Glific.Reports do
     |> add_timestamps(chart, date_range, [])
     |> where([q], q.organization_id == ^org_id)
     |> Repo.all()
-    |> IO.inspect
+    |> hd
   end
 
   @spec get_export_query(atom()) :: Ecto.Query.t()
