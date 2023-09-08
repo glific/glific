@@ -929,10 +929,8 @@ defmodule Glific.TemplatesTest do
           filter: %{organization_id: attrs.organization_id, is_hsm: true}
         })
 
-      IO.inspect(hsm)
       updated_uuid = Ecto.UUID.generate()
 
-      IO.inspect(updated_uuid)
 
       Tesla.Mock.mock(fn
         %{method: :get} ->

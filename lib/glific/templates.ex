@@ -17,12 +17,31 @@ defmodule Glific.Templates do
     Partners.Organization,
     Partners.Provider,
     Repo,
-    Settings,
     Tags.Tag,
     Templates.SessionTemplate
   }
 
   require Logger
+
+  @language_map %{
+    "en" => 1,
+    "en_GB" => 1,
+    "en_US" => 1,
+    "hi" => 2,
+    "ta" => 3,
+    "kn" => 4,
+    "ml" => 5,
+    "te" => 6,
+    "gu" => 9,
+    "bn" => 10,
+    "pa" => 11,
+    "mr" => 12,
+    "ur" => 13,
+    "es" => 14,
+    "es_AR" => 14,
+    "es_ES" => 14,
+    "es_MX" => 14
+  }
 
   @doc """
   Returns the list of session_templates.
@@ -304,17 +323,18 @@ defmodule Glific.Templates do
   @doc false
   @spec update_hsms(list(), Organization.t()) :: :ok
   def update_hsms(templates, organization) do
-    languages =
-      Settings.list_languages()
-      |> Enum.map(fn language -> {language.locale, language.id} end)
-      |> Map.new()
+    languages = @language_map
 
     db_templates = hsm_template_uuid_map()
 
     Enum.each(templates, fn template ->
       cond do
         !Map.has_key?(db_templates, template["bsp_id"]) ->
-          insert_hsm(template, organization, languages)
+          if check_the_uuid_of_temp?(db_templates, templates, organization) == true do
+            update_uuid(template, organization)
+          else
+            insert_hsm(template, organization, languages)
+          end
 
         # this check is required,
         # as is_active field can be updated by graphql API,
@@ -325,6 +345,33 @@ defmodule Glific.Templates do
         true ->
           true
       end
+    end)
+  end
+
+  defp update_uuid(template, organization) do
+    language_id =
+      Map.get(@language_map, template["languageCode"], organization.default_language_id)
+
+    {:ok, session_template} =
+      SessionTemplate
+      |> Repo.fetch_by(%{language_id: language_id, shortcode: template["elementName"]})
+
+    session_template
+    |> SessionTemplate.changeset(%{uuid: template["bsp_id"]})
+    |> Repo.update()
+  end
+
+  defp check_the_uuid_of_temp?(db_templates, templates, organization) do
+    Enum.any?(templates, fn template ->
+      element_name = template["elementName"]
+      language_code = template["languageCode"]
+
+      language_id = Map.get(@language_map, language_code, organization.default_language_id)
+
+      # Check for a matching template
+      Enum.any?(db_templates, fn {_key, db_template} ->
+        db_template.shortcode == element_name && db_template.language_id == language_id
+      end)
     end)
   end
 
@@ -480,10 +527,11 @@ defmodule Glific.Templates do
       if current_template.status != template["status"] do
         change_template_status(template["status"], current_template, template)
         |> Map.put(:category, template["category"])
-        |> Map.put(:uuid, template["id"])
       else
-        %{status: template["status"], category: template["category"], uuid: template["id"]}
+        %{status: template["status"], category: template["category"]}
       end
+
+    update_attrs = Map.put(update_attrs, :uuid, template["id"])
 
     db_templates[template["bsp_id"]]
     |> SessionTemplate.changeset(update_attrs)
