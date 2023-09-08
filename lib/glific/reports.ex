@@ -19,12 +19,12 @@ defmodule Glific.Reports do
   }
 
   @doc false
-  @spec get_kpi(atom(), non_neg_integer(), [{atom(), any()}], map()) :: integer()
-  def get_kpi(kpi, org_id, opts \\ [], date_range) do
+  @spec get_kpi(atom(), non_neg_integer(), map(), [{atom(), any()}]) :: integer()
+  def get_kpi(kpi, org_id, date_range \\ nil, opts \\ []) do
     Repo.put_process_state(org_id)
 
     get_count_query(kpi)
-    |> add_timestamps(kpi, opts, date_range)
+    |> add_timestamps(kpi, date_range, opts)
     |> where([q], q.organization_id == ^org_id)
     |> Repo.all()
     |> hd || 0
@@ -149,7 +149,7 @@ defmodule Glific.Reports do
   end
 
   @spec add_timestamps(Ecto.Query.t(), atom(), [{atom(), any()}], map()) :: Ecto.Query.t()
-  defp add_timestamps(query, kpi, _opts, date_range)
+  defp add_timestamps(query, kpi, date_range, _opts)
        when kpi in [
               :critical_notification_count,
               :warning_notification_count,
@@ -161,7 +161,10 @@ defmodule Glific.Reports do
               :opted_in_contacts_count,
               :opted_out_contacts_count,
               :non_opted_contacts_count,
-              :bsp_status
+              :bsp_status,
+              :optin,
+              :notifications,
+              :contact_type
             ] do
     start_day = date_range.start_day
     end_day = date_range.end_day
@@ -171,17 +174,17 @@ defmodule Glific.Reports do
     |> where([q], q.inserted_at <= ^end_day)
   end
 
-  defp add_timestamps(query, kpi, opts, date_range)
+  defp add_timestamps(query, kpi, date_range, opts)
        when kpi in [
               :outbound_messages_count,
               :hsm_messages_count,
               :inbound_messages_count,
               :flows_started,
               :flows_completed,
-              :conversation_count
+              :conversation_count,
+              :messages
             ] do
     duration = Keyword.get(opts, :duration, "WEEKLY")
-
     {period, end_day, start_day} = get_day_range(duration, date_range)
 
     query
@@ -190,7 +193,7 @@ defmodule Glific.Reports do
     |> where([q], q.date <= ^end_day)
   end
 
-  defp add_timestamps(query, _kpi, _opts, _date_range), do: query
+  defp add_timestamps(query, _kpi, _date_range, _opts), do: query
 
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
@@ -284,14 +287,16 @@ defmodule Glific.Reports do
   @doc """
     gets data for the broadcast table
   """
-  @spec get_broadcast_data(non_neg_integer()) :: list()
-  def get_broadcast_data(org_id) do
+  @spec get_broadcast_data(non_neg_integer(), map()) :: list()
+  def get_broadcast_data(org_id, date_range) do
     timezone = Partners.organization_timezone(org_id)
 
     MessageBroadcast
     |> join(:inner, [mb], flow in assoc(mb, :flow))
     |> join(:inner, [mb, flow], group in assoc(mb, :group))
     |> where([mb], mb.organization_id == ^org_id)
+    |> where([mb], mb.inserted_at >= ^date_range.start_day)
+    |> where([mb], mb.inserted_at <= ^date_range.end_day)
     |> select([mb, flow, group], %{
       flow_name: flow.name,
       group_label: group.label,
@@ -440,9 +445,10 @@ defmodule Glific.Reports do
   def update_bookmark_data(_, _), do: []
 
   @doc false
-  @spec get_export_data(atom(), non_neg_integer()) :: list()
-  def get_export_data(chart, org_id) do
+  @spec get_export_data(atom(), non_neg_integer(), map()) :: list()
+  def get_export_data(chart, org_id, date_range) do
     get_export_query(chart)
+    |> add_timestamps(chart, date_range, [])
     |> where([q], q.organization_id == ^org_id)
     |> Repo.all()
   end

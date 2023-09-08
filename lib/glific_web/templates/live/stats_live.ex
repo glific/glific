@@ -89,7 +89,7 @@ defmodule GlificWeb.StatsLive do
      assign(socket, range: date_range)
      |> assign_stats(:filter)}
   end
-  
+
   def handle_event("show_bookmark", _value, socket) do
     org_id = get_org_id(socket)
     {:noreply, assign(socket, bookmarks: Reports.get_bookmark_data(org_id))}
@@ -149,23 +149,23 @@ defmodule GlificWeb.StatsLive do
     |> List.insert_at(0, ["Date", "Number"])
   end
 
-  defp get_export_data(:optin, org_id, _) do
-    Reports.get_export_data(:optin, org_id)
+  defp get_export_data(:optin, org_id, date_range) do
+    Reports.get_export_data(:optin, org_id, date_range)
     |> List.insert_at(0, ["ID", "Name", "Phone", "Optin Status"])
   end
 
-  defp get_export_data(:notifications, org_id, _) do
-    Reports.get_export_data(:notifications, org_id)
+  defp get_export_data(:notifications, org_id, date_range) do
+    Reports.get_export_data(:notifications, org_id, date_range)
     |> List.insert_at(0, ["ID", "Category", "Severity"])
   end
 
-  defp get_export_data(:messages, org_id, _) do
-    Reports.get_export_data(:messages, org_id)
+  defp get_export_data(:messages, org_id, date_range) do
+    Reports.get_export_data(:messages, org_id, date_range)
     |> List.insert_at(0, ["ID", "Inbound", "Outbound"])
   end
 
-  defp get_export_data(:contact_type, org_id, _) do
-    Reports.get_export_data(:contact_type, org_id)
+  defp get_export_data(:contact_type, org_id, date_range) do
+    Reports.get_export_data(:contact_type, org_id, date_range)
     |> List.insert_at(0, ["ID", "Name", "Phone", "BSP Status"])
   end
 
@@ -175,8 +175,8 @@ defmodule GlificWeb.StatsLive do
     |> List.insert_at(0, ["Hour", "Inbound", "Outbound"])
   end
 
-  defp get_export_data(:table, org_id, _) do
-    fetch_table_data(:broadcasts, org_id)
+  defp get_export_data(:table, org_id, date_range) do
+    fetch_table_data(:broadcasts, org_id, date_range)
     |> List.insert_at(0, ["Flow Name", "Group Name", "Started At", "Completed At"])
   end
 
@@ -417,21 +417,23 @@ defmodule GlificWeb.StatsLive do
       optin_chart_data: fetch_count_data(:optin_chart_data, org_id, date_range),
       notification_chart_data: fetch_count_data(:notification_chart_data, org_id, date_range),
       message_type_chart_data: fetch_count_data(:message_type_chart_data, org_id, date_range),
-      broadcast_data: fetch_table_data(:broadcasts, org_id),
+      broadcast_data: fetch_table_data(:broadcasts, org_id, date_range),
       broadcast_headers: ["Flow Name", "Group Name", "Started At", "Completed At"],
       contact_pie_chart_data: fetch_count_data(:contact_type, org_id, date_range),
       messages_chart_data: fetch_hourly_data(org_id, date_range)
     ]
   end
 
-  defp fetch_table_data(:broadcasts, org_id) do
-    Reports.get_broadcast_data(org_id)
+  defp fetch_table_data(:broadcasts, org_id, date_range) do
+    Reports.get_broadcast_data(org_id, date_range)
   end
 
   @doc """
   Fetch optin chart count data
   """
-  @spec fetch_count_data(atom(), non_neg_integer(), map()) :: list()
+  @spec fetch_count_data(atom(), non_neg_integer(), map() | nil) :: list()
+  def fetch_count_data(kpi, org_id, date_range \\ nil)
+
   def fetch_count_data(:optin_chart_data, org_id, date_range) do
     opted_in = Reports.get_kpi(:opted_in_contacts_count, org_id, date_range)
     opted_out = Reports.get_kpi(:opted_out_contacts_count, org_id, date_range)
