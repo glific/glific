@@ -70,7 +70,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         "user" => %{
           "phone" => receiver.phone,
           "name" => receiver.name,
-          "password" => "Secret1234567!",
+          "password" => "Secret12",
           "otp" => otp
         }
       }
@@ -80,7 +80,14 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json = json_response(conn, 500)
 
       assert json["error"]["status"] == 500
-      assert json["error"]["errors"] == %{"password" => ["should be at least 8 character(s)"]}
+
+      assert json["error"]["errors"] ==
+               %{
+                 "password" => [
+                   "Not enough special characters (only 0 instead of at least 1)",
+                   "Password is too short!"
+                 ]
+               }
     end
 
     test "with wrong otp", %{conn: conn} do

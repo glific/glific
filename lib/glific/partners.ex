@@ -550,9 +550,6 @@ defmodule Glific.Partners do
 
   @spec set_root_user(Organization.t()) :: Organization.t()
   defp set_root_user(organization) do
-    IO.inspect("#{organization.id}, #{organization.contact_id}", label: "Org Contact ID")
-    IO.inspect(Repo.query!("select id, contact_id from organizations").rows, label: "Orgs")
-    IO.inspect(Repo.query!("select contact_id, organization_id from users").rows, label: "Users")
     {:ok, root_user} = Repo.fetch_by(User, %{contact_id: organization.contact_id})
     Map.put(organization, :root_user, root_user)
   end
