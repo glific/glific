@@ -495,10 +495,10 @@ defmodule Glific.Stats do
     |> (&StatsLive.render_bar_chart(title, &1)).()
   end
 
-  @spec fetch_inbound_outbound(non_neg_integer(), String.t()) :: [tuple()]
-  defp fetch_inbound_outbound(org_id, duration) do
-    inbound = Reports.get_kpi(:inbound_messages_count, org_id, duration: duration)
-    outbound = Reports.get_kpi(:outbound_messages_count, org_id, duration: duration)
+  @spec fetch_inbound_outbound(non_neg_integer(), String.t(), map()) :: [tuple()]
+  defp fetch_inbound_outbound(org_id, duration, date_range) do
+    inbound = Reports.get_kpi(:inbound_messages_count, org_id, date_range, duration: duration)
+    outbound = Reports.get_kpi(:outbound_messages_count, org_id, date_range, duration: duration)
 
     [
       {"Inbound: #{inbound}", inbound},
@@ -539,8 +539,8 @@ defmodule Glific.Stats do
 
     contacts = Reports.get_kpi_data(org.id, "contacts", date_range)
     conversations = Reports.get_kpi_data(org.id, "stats", date_range)
-    optin = StatsLive.fetch_count_data(:optin_chart_data, org.id)
-    messages = fetch_inbound_outbound(org.id, duration)
+    optin = StatsLive.fetch_count_data(:optin_chart_data, org.id, date_range)
+    messages = fetch_inbound_outbound(org.id, duration, date_range)
 
     assigns = %{
       contact_chart_svg: load_bar_svg(contacts, "Contacts"),

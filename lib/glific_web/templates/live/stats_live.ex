@@ -132,8 +132,8 @@ defmodule GlificWeb.StatsLive do
     }
   end
 
-  defp get_export_data(:optin, org_id) do
-    Reports.get_export_data(:optin, org_id)
+  defp get_export_data(:optin, org_id, date_range) do
+    Reports.get_export_data(:optin, org_id, date_range)
     |> List.insert_at(0, ["ID", "Name", "Phone", "Optin Status"])
   end
 
@@ -147,11 +147,6 @@ defmodule GlificWeb.StatsLive do
     Reports.get_kpi_data(org_id, "stats", date_range)
     |> Enum.map(fn {date, count} -> [date, count] end)
     |> List.insert_at(0, ["Date", "Number"])
-  end
-
-  defp get_export_data(:optin, org_id, date_range) do
-    Reports.get_export_data(:optin, org_id, date_range)
-    |> List.insert_at(0, ["ID", "Name", "Phone", "Optin Status"])
   end
 
   defp get_export_data(:notifications, org_id, date_range) do
@@ -432,7 +427,7 @@ defmodule GlificWeb.StatsLive do
   Fetch optin chart count data
   """
   @spec fetch_count_data(atom(), non_neg_integer(), map() | nil) :: list()
-  def fetch_count_data(kpi, org_id, date_range \\ nil)
+  def fetch_count_data(kpi, org_id, date_range)
 
   def fetch_count_data(:optin_chart_data, org_id, date_range) do
     opted_in = Reports.get_kpi(:opted_in_contacts_count, org_id, date_range)
