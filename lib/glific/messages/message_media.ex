@@ -55,7 +55,7 @@ defmodule Glific.Messages.MessageMedia do
     field(:gcs_url, :string)
     field(:content_type, :string)
     field(:flow, MessageFlow)
-    field(:is_template_media, :boolean)
+    field(:is_template_media, :boolean, default: false)
 
     belongs_to(:organization, Organization)
 
