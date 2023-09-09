@@ -212,7 +212,6 @@ defmodule GlificWeb.StatsLive do
   defp assign_stats(socket, :filter) do
     org_id = get_org_id(socket)
     date_range = socket.assigns.range
-    IO.inspect("filter")
 
     assign(socket, get_chart_data(org_id, date_range))
     |> assign_dataset()
