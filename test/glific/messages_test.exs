@@ -450,7 +450,7 @@ defmodule Glific.MessagesTest do
           thumbnail: "some thumbnail",
           url: "some url",
           flow: :inbound,
-          provider_media_id: "some provider_media_id",
+          is_template_media: false,
           organization_id: attrs.organization_id
         })
 
@@ -1333,21 +1333,21 @@ defmodule Glific.MessagesTest do
       thumbnail: "some thumbnail",
       url: "some url",
       flow: :inbound,
-      provider_media_id: "some provider_media_id"
+      is_template_media: false
     }
     @update_attrs %{
       caption: "some updated caption",
       source_url: "some updated source_url",
       thumbnail: "some updated thumbnail",
       url: "some updated url",
-      provider_media_id: "some updated provider_media_id"
+      is_template_media: false
     }
     @invalid_attrs %{
       caption: nil,
       source_url: nil,
       thumbnail: nil,
       url: nil,
-      provider_media_id: nil
+      is_template_media: false
     }
 
     def message_media_fixture(attrs \\ %{}) do
@@ -1385,7 +1385,6 @@ defmodule Glific.MessagesTest do
       assert message_media.source_url == "some source_url"
       assert message_media.thumbnail == "some thumbnail"
       assert message_media.url == "some url"
-      assert message_media.provider_media_id == "some provider_media_id"
     end
 
     test "create_message_media/1 with invalid data returns error changeset" do
@@ -1402,7 +1401,6 @@ defmodule Glific.MessagesTest do
       assert message_media.source_url == "some updated source_url"
       assert message_media.thumbnail == "some updated thumbnail"
       assert message_media.url == "some updated url"
-      assert message_media.provider_media_id == "some updated provider_media_id"
     end
 
     test "update_message_media/2 with invalid data returns error changeset", attrs do
