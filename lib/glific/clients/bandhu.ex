@@ -88,6 +88,9 @@ defmodule Glific.Clients.Bandhu do
   def webhook("jugalbandi", fields), do: CommonWebhook.webhook("jugalbandi", fields)
   def webhook("jugalbandi-voice", fields), do: CommonWebhook.webhook("jugalbandi-voice", fields)
 
+  def webhook("speech_to_text_with_bhasini", fields),
+    do: CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
+
   def webhook("jugalbandi-json", fields) do
     CommonWebhook.webhook("jugalbandi", fields)
     |> parse_bandhu_json()
