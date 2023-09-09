@@ -357,14 +357,30 @@
     <div
       id="broadcast-table"
       class="table"
-      phx-hook="table"
-      data-table-data={Jason.encode!(@broadcast_data)}
-      data-table-headers={Jason.encode!(@broadcast_headers)}
-      phx-update="ignore"
     >
-      <%= if Enum.empty?(@broadcast_data) do %>
-        <p class="p-6">No data available</p>
-      <% end %>
+    <table>
+      <thead>
+        <tr>
+          <%= for header <- @broadcast_headers do %>
+            <th><%= header %></th>
+          <% end %>
+        </tr>
+      </thead>
+      <tbody>
+        <%= if Enum.empty?(@broadcast_data) do %>
+          <tr>
+              <td><p>No data available</p></td>
+          </tr>
+        <% end %>
+        <%= for item <- @broadcast_data do %>
+          <tr>
+            <%= for value <- item do %>
+              <td><%= value %></td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
     </div>
   </div>
 
