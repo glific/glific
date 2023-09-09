@@ -332,7 +332,7 @@ if Code.ensure_loaded?(Faker) do
         thumbnail: Faker.Avatar.image_url(),
         flow: :inbound,
         caption: "default caption",
-        provider_media_id: Faker.String.base64(10),
+        is_template_media: false,
         organization_id: organization.id
       })
 
@@ -342,7 +342,7 @@ if Code.ensure_loaded?(Faker) do
         thumbnail: Faker.Avatar.image_url(),
         flow: :inbound,
         caption: Faker.String.base64(10),
-        provider_media_id: Faker.String.base64(10),
+        is_template_media: false,
         organization_id: organization.id
       })
 
@@ -352,7 +352,7 @@ if Code.ensure_loaded?(Faker) do
         thumbnail: Faker.Avatar.image_url(),
         flow: :outbound,
         caption: Faker.String.base64(10),
-        provider_media_id: Faker.String.base64(10),
+        is_template_media: false,
         organization_id: organization.id
       })
 
@@ -362,7 +362,7 @@ if Code.ensure_loaded?(Faker) do
         thumbnail: Faker.Avatar.image_url(),
         flow: :outbound,
         caption: Faker.String.base64(10),
-        provider_media_id: Faker.String.base64(10),
+        is_template_media: false,
         organization_id: organization.id
       })
     end
