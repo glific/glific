@@ -74,7 +74,7 @@ defmodule Glific.Flows do
 
   defp update_dates(row, value) do
     if row.status == "published",
-      do: Map.put(:last_published_at, row.last_changed_at),
+      do: Map.put(value, :last_published_at, row.last_changed_at),
       else: Map.put(value, :last_changed_at, row.last_changed_at)
   end
 
