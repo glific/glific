@@ -50,7 +50,6 @@ defmodule Glific.Flows do
     |> get_published_draft_dates()
     # merge with the original list of flows
     |> merge_original(flows)
-    |> IO.inspect()
   end
 
   @spec merge_original(map(), [Flow.t()]) :: [Flow.t()]
