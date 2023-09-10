@@ -39,7 +39,7 @@ defmodule Glific.Flows do
   @spec list_flows(map()) :: [Flow.t()]
   def list_flows(args) do
     flows =
-      Repo.list_filter_query(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
+      Repo.list_filter_query(args, Flow, &opts_with_name/2, &filter_with/2)
       |> AccessControl.check_access(:flow)
       |> Repo.all()
 
@@ -50,7 +50,6 @@ defmodule Glific.Flows do
     |> get_published_draft_dates()
     # merge with the original list of flows
     |> merge_original(flows)
-    |> Enum.sort_by(& &1.last_changed_at, {:desc, DateTime})
     |> IO.inspect()
   end
 
@@ -105,6 +104,18 @@ defmodule Glific.Flows do
         %{}
       )
     )
+  end
+
+  @spec opts_with_name(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp opts_with_name(query, opts) do
+    query = Repo.opts_with_name(query, opts)
+
+    # add the flow revision table and introduce a sort by the latest revision
+    query
+    |> join(:left, [f], fr in FlowRevision, as: :fr, on: f.id == fr.flow_id)
+    |> where([_f, fr], fr.status == "published")
+    |> or_where([_f, fr], fr.revision_number == 0)
+    |> order_by([_f, fr], desc: fr.inserted_at)
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
