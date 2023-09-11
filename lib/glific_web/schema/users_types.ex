@@ -108,7 +108,7 @@ defmodule GlificWeb.Schema.UserTypes do
 
     @desc "Get the details of current user"
     field :current_user, :user_result do
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Users.current_user/3)
     end
   end
@@ -116,7 +116,7 @@ defmodule GlificWeb.Schema.UserTypes do
   object :user_mutations do
     field :update_current_user, :user_result do
       arg(:input, non_null(:current_user_input))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Users.update_current_user/3)
     end
 

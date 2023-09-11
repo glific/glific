@@ -57,6 +57,20 @@ defmodule Glific.Users.User do
     :confirmed_at
   ]
 
+  @password_opts [
+    length: [min: 10, max: 30, messages: [too_short: "Password is too short!"]],
+    character_set: [
+      # at least one lower case letter
+      lower_case: 1,
+      # at least one upper case letter
+      upper_case: 1,
+      # at least one number
+      numbers: 1,
+      # at least one special character
+      special: 1
+    ]
+  ]
+
   schema "users" do
     field(:name, :string)
     field(:roles, {:array, UserRoles}, default: [:none])
@@ -98,6 +112,7 @@ defmodule Glific.Users.User do
     |> glific_phone_field_changeset(attrs, @pow_config)
     |> current_password_changeset(attrs, @pow_config)
     |> password_changeset(attrs, @pow_config)
+    |> PasswordValidator.validate(:password, @password_opts)
     |> Changeset.unique_constraint(:contact_id)
   end
 
@@ -153,10 +168,7 @@ defmodule Glific.Users.User do
   defp validate_password(changeset, opts) do
     changeset
     |> validate_required([:password])
-    |> validate_length(:password, min: 6, max: 72)
-    # |> validate_format(:password, ~r/[a-z]/, message: "at least one lower case character")
-    # |> validate_format(:password, ~r/[A-Z]/, message: "at least one upper case character")
-    # |> validate_format(:password, ~r/[!?@#$%^&*_0-9]/, message: "at least one digit or punctuation character")
+    |> PasswordValidator.validate(:password, @password_opts)
     |> maybe_hash_password(opts)
   end
 

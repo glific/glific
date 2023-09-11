@@ -26,7 +26,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Users
   }
 
-  @password "secret1234"
+  @password "Secret1234!"
   @admin_phone "917834811114"
 
   defp admin_phone(1 = _organization_id), do: @admin_phone

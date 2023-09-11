@@ -119,21 +119,22 @@ defmodule Glific.Saas.Queries do
       organization_id: result.organization.id
     }
 
-    password = Ecto.UUID.generate()
+    password = (Ecto.UUID.generate() |> binary_part(16, 16)) <> "-ABC!"
 
     case Contacts.create_contact(attrs) do
       {:ok, contact} ->
-        Users.create_user(
-          Map.merge(attrs, %{
-            password: password,
-            confirm_password: password,
-            roles: ["admin"],
-            contact_id: contact.id,
-            last_login_at: DateTime.utc_now(),
-            last_login_from: "127.0.0.1",
-            organization_id: result.organization.id
-          })
-        )
+        {:ok, _user} =
+          Users.create_user(
+            Map.merge(attrs, %{
+              password: password,
+              confirm_password: password,
+              roles: ["admin"],
+              contact_id: contact.id,
+              last_login_at: DateTime.utc_now(),
+              last_login_from: "127.0.0.1",
+              organization_id: result.organization.id
+            })
+          )
 
         {:ok, organization} =
           Partners.update_organization(
