@@ -158,7 +158,8 @@ defmodule Glific.MixProject do
       {:glific_phil_columns, "~> 3.2"},
       {:glific_forked_waffle_gcs, "~> 0.1.1"},
       {:pow, git: "https://github.com/glific/pow.git"},
-      {:contex, "~> 0.5.0"}
+      {:contex, "~> 0.5.0"},
+      {:password_validator, "~> 0.5"}
     ]
   end
 

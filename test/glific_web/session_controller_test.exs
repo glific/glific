@@ -7,7 +7,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
     Users.User
   }
 
-  @password "secret1234"
+  @password "Secret1234!"
 
   @valid_params %{
     "user" => %{
