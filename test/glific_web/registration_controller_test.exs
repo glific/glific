@@ -12,7 +12,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     Users
   }
 
-  @password "secret1234"
+  @password "Secret1234!"
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -70,7 +70,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         "user" => %{
           "phone" => receiver.phone,
           "name" => receiver.name,
-          "password" => "1234567",
+          "password" => "Secret12",
           "otp" => otp
         }
       }
@@ -80,7 +80,14 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json = json_response(conn, 500)
 
       assert json["error"]["status"] == 500
-      assert json["error"]["errors"] == %{"password" => ["should be at least 8 character(s)"]}
+
+      assert json["error"]["errors"] ==
+               %{
+                 "password" => [
+                   "Not enough special characters (only 0 instead of at least 1)",
+                   "Password is too short!"
+                 ]
+               }
     end
 
     test "with wrong otp", %{conn: conn} do
@@ -234,8 +241,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
   end
 
   describe "reset_password/2" do
-    @password "secret12345"
-    @new_password "12345678"
+    @password "Secret12345!"
+    @new_password "Not12345678!"
 
     def user_fixture do
       # create a user for a contact
@@ -336,7 +343,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
   end
 
   describe "rate limit tests" do
-    @password "secret12345"
+    @password "Secret12345!"
     @max_unauth_requests 50
 
     test "with invalid request", %{conn: conn} do

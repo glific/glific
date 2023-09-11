@@ -923,6 +923,44 @@ defmodule Glific.TemplatesTest do
       assert hsm.is_active == true
     end
 
+    test "update_hsms/1 should update uuid of already existing HSM", attrs do
+      [hsm | _rest] =
+        Templates.list_session_templates(%{
+          filter: %{organization_id: attrs.organization_id, is_hsm: true}
+        })
+
+      updated_uuid = Ecto.UUID.generate()
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "elementName" => hsm.shortcode,
+                    "languageCode" => hsm.language_id,
+                    "id" => updated_uuid,
+                    "data" => "Hi {{1}}, What is your status | [cold] | [warm]",
+                    "templateType" => "TEXT",
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(hsm.updated_at, hours: 1), :millisecond)
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = updated_hsm} =
+               Repo.fetch_by(SessionTemplate, %{id: hsm.id})
+
+      assert updated_hsm.uuid == updated_uuid
+    end
+
     test "update_hsms/1 should update the existing hsm if new status is other than APPROVED",
          attrs do
       [hsm | _] =
