@@ -17,12 +17,31 @@ defmodule Glific.Templates do
     Partners.Organization,
     Partners.Provider,
     Repo,
-    Settings,
     Tags.Tag,
     Templates.SessionTemplate
   }
 
   require Logger
+
+  @language_map %{
+    "en" => 1,
+    "en_GB" => 1,
+    "en_US" => 1,
+    "hi" => 2,
+    "ta" => 3,
+    "kn" => 4,
+    "ml" => 5,
+    "te" => 6,
+    "gu" => 9,
+    "bn" => 10,
+    "pa" => 11,
+    "mr" => 12,
+    "ur" => 13,
+    "es" => 14,
+    "es_AR" => 14,
+    "es_ES" => 14,
+    "es_MX" => 14
+  }
 
   @doc """
   Returns the list of session_templates.
@@ -304,28 +323,71 @@ defmodule Glific.Templates do
   @doc false
   @spec update_hsms(list(), Organization.t()) :: :ok
   def update_hsms(templates, organization) do
-    languages =
-      Settings.list_languages()
-      |> Enum.map(fn language -> {language.locale, language.id} end)
-      |> Map.new()
-
     db_templates = hsm_template_uuid_map()
 
     Enum.each(templates, fn template ->
       cond do
         !Map.has_key?(db_templates, template["bsp_id"]) ->
-          insert_hsm(template, organization, languages)
+          db_templates
+          |> is_new_template?(templates, organization)
+          |> upsert_hsm(template, organization)
 
         # this check is required,
         # as is_active field can be updated by graphql API,
         # and should not be reverted back
         Map.has_key?(db_templates, template["bsp_id"]) ->
-          update_hsm(template, organization, languages)
+          update_hsm(template, organization, @language_map)
 
         true ->
           true
       end
     end)
+  end
+
+  @spec is_new_template?(map(), list(), Organization.t()) :: boolean()
+  defp is_new_template?(db_templates, templates, organization) do
+    Enum.any?(templates, fn template ->
+      element_name = template["elementName"]
+      language_code = template["languageCode"]
+
+      language_id = Map.get(@language_map, language_code, organization.default_language_id)
+
+      # Check for a matching template
+      Enum.any?(db_templates, fn {_key, db_template} ->
+        db_template.shortcode == element_name && db_template.language_id == language_id
+      end)
+    end)
+  end
+
+  @spec upsert_hsm(boolean(), list(), Organization.t()) :: :ok
+  defp upsert_hsm(true, template, organization) do
+    language_id =
+      Map.get(@language_map, template["languageCode"], organization.default_language_id)
+
+    {:ok, session_template} =
+      SessionTemplate
+      |> Repo.fetch_by(%{language_id: language_id, shortcode: template["elementName"]})
+
+    session_template
+    |> SessionTemplate.changeset(%{uuid: template["bsp_id"]})
+    |> Repo.update()
+
+    :ok
+  end
+
+  defp upsert_hsm(false, template, organization) do
+    example =
+      case Jason.decode(template["meta"] || "{}") do
+        {:ok, meta} ->
+          meta["example"] || "NA"
+
+        _ ->
+          "NA"
+      end
+
+    if example,
+      do: do_insert_hsm(template, organization, @language_map, example),
+      else: :ok
   end
 
   @spec update_hsm(map(), Organization.t(), map()) ::
@@ -356,22 +418,6 @@ defmodule Glific.Templates do
     end
 
     do_update_hsm(template, db_templates)
-  end
-
-  @spec insert_hsm(map(), Organization.t(), map()) :: :ok
-  defp insert_hsm(template, organization, languages) do
-    example =
-      case Jason.decode(template["meta"] || "{}") do
-        {:ok, meta} ->
-          meta["example"] || "NA"
-
-        _ ->
-          "NA"
-      end
-
-    if example,
-      do: do_insert_hsm(template, organization, languages, example),
-      else: :ok
   end
 
   @spec do_insert_hsm(map(), Organization.t(), map(), String.t()) :: :ok
@@ -483,6 +529,8 @@ defmodule Glific.Templates do
       else
         %{status: template["status"], category: template["category"]}
       end
+
+    update_attrs = Map.put(update_attrs, :uuid, template["id"])
 
     db_templates[template["bsp_id"]]
     |> SessionTemplate.changeset(update_attrs)

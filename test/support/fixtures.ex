@@ -591,7 +591,7 @@ defmodule Glific.Fixtures do
         thumbnail: Faker.Avatar.image_url(),
         flow: :inbound,
         caption: Faker.String.base64(10),
-        provider_media_id: Faker.String.base64(10),
+        is_template_media: false,
         organization_id: attrs.organization_id
       }
       |> Map.merge(attrs)
