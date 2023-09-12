@@ -202,8 +202,9 @@ defmodule GlificWeb.StatsLive do
   defp assign_stats(socket, :call) do
     Enum.each(Reports.kpi_list(), &send(self(), {:get_stats, &1}))
     org_id = get_org_id(socket)
+
     date_range = %{
-      end_day: socket.assigns.range.end_day |> Timex.end_of_day,
+      end_day: socket.assigns.range.end_day |> Timex.end_of_day(),
       start_day: socket.assigns.range.start_day
     }
 
@@ -214,8 +215,9 @@ defmodule GlificWeb.StatsLive do
 
   defp assign_stats(socket, :filter) do
     org_id = get_org_id(socket)
+
     date_range = %{
-      end_day: socket.assigns.range.end_day |> Timex.end_of_day,
+      end_day: socket.assigns.range.end_day |> Timex.end_of_day(),
       start_day: socket.assigns.range.start_day
     }
 
@@ -489,7 +491,9 @@ defmodule GlificWeb.StatsLive do
 
     Enum.reduce(@hourly_timestamps, [], fn time, acc ->
       message_map = Map.get(hourly_data, time, %{inbound: 0, outbound: 0})
-      acc ++ [{time, message_map.inbound, message_map.outbound}]
+      inbound = Map.get(message_map, :inbound, 0)
+      outbound = Map.get(message_map, :outbound, 0)
+      acc ++ [{time, inbound, outbound}]
     end)
   end
 end
