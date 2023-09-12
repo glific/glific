@@ -172,7 +172,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     @desc "get the details of one session_template"
     field :session_template, :session_template_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Templates.session_template/3)
     end
 
@@ -180,7 +180,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :session_templates, list_of(:session_template) do
       arg(:filter, :session_template_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Templates.session_templates/3)
     end
 

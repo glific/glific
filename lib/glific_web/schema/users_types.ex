@@ -87,7 +87,7 @@ defmodule GlificWeb.Schema.UserTypes do
     @desc "get the details of one user"
     field :user, :user_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Users.user/3)
     end
 
@@ -95,7 +95,7 @@ defmodule GlificWeb.Schema.UserTypes do
     field :users, list_of(:user) do
       arg(:filter, :user_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Users.users/3)
     end
 
