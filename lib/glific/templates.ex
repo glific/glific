@@ -329,7 +329,7 @@ defmodule Glific.Templates do
       cond do
         !Map.has_key?(db_templates, template["bsp_id"]) ->
           db_templates
-          |> is_new_template?(templates, organization)
+          |> is_existing_template?(template, organization)
           |> upsert_hsm(template, organization)
 
         # this check is required,
@@ -344,37 +344,19 @@ defmodule Glific.Templates do
     end)
   end
 
-  @spec is_new_template?(map(), list(), Organization.t()) :: boolean()
-  defp is_new_template?(db_templates, templates, organization) do
-    Enum.any?(templates, fn template ->
+  @spec is_existing_template?(map(), map(), Organization.t()) :: boolean()
+  defp is_existing_template?(db_templates, template, organization) do
+    Enum.any?(db_templates, fn {_bsp_id, db_template} ->
       element_name = template["elementName"]
       language_code = template["languageCode"]
 
       language_id = Map.get(@language_map, language_code, organization.default_language_id)
 
-      # Check for a matching template
-      Enum.any?(db_templates, fn {_key, db_template} ->
-        db_template.shortcode == element_name && db_template.language_id == language_id
-      end)
+      db_template.shortcode == element_name && db_template.language_id == language_id
     end)
   end
 
-  @spec upsert_hsm(boolean(), list(), Organization.t()) :: :ok
-  defp upsert_hsm(true, template, organization) do
-    language_id =
-      Map.get(@language_map, template["languageCode"], organization.default_language_id)
-
-    {:ok, session_template} =
-      SessionTemplate
-      |> Repo.fetch_by(%{language_id: language_id, shortcode: template["elementName"]})
-
-    session_template
-    |> SessionTemplate.changeset(%{uuid: template["bsp_id"]})
-    |> Repo.update()
-
-    :ok
-  end
-
+  @spec upsert_hsm(boolean(), map(), Organization.t()) :: :ok
   defp upsert_hsm(false, template, organization) do
     example =
       case Jason.decode(template["meta"] || "{}") do
@@ -388,6 +370,21 @@ defmodule Glific.Templates do
     if example,
       do: do_insert_hsm(template, organization, @language_map, example),
       else: :ok
+  end
+
+  defp upsert_hsm(true, template, organization) do
+    language_id =
+      Map.get(@language_map, template["languageCode"], organization.default_language_id)
+
+    {:ok, session_template} =
+      SessionTemplate
+      |> Repo.fetch_by(%{language_id: language_id, shortcode: template["elementName"]})
+
+    session_template
+    |> SessionTemplate.changeset(%{uuid: template["bsp_id"]})
+    |> Repo.update()
+
+    :ok
   end
 
   @spec update_hsm(map(), Organization.t(), map()) ::
