@@ -97,7 +97,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     @desc "get the details of one flow"
     field :flow, :flow_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.flow/3)
     end
 
@@ -105,7 +105,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :flows, list_of(:flow) do
       arg(:filter, :flow_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.flows/3)
     end
 
@@ -202,7 +202,7 @@ defmodule GlificWeb.Schema.FlowTypes do
 
     field :terminate_contact_flows, :common_flow_result do
       arg(:contact_id, non_null(:id))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.terminate_contact_flows/3)
     end
 
