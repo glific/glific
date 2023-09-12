@@ -184,7 +184,7 @@ defmodule GlificWeb.StatsLive do
     stats = Enum.map(Reports.kpi_list(), &{&1, "loading.."})
 
     default_range = %{
-      end_day: NaiveDateTime.utc_now() |> Timex.beginning_of_day(),
+      end_day: NaiveDateTime.utc_now() |> Timex.end_of_day(),
       start_day:
         NaiveDateTime.utc_now() |> NaiveDateTime.add(-7, :day) |> Timex.beginning_of_day()
     }
@@ -202,7 +202,10 @@ defmodule GlificWeb.StatsLive do
   defp assign_stats(socket, :call) do
     Enum.each(Reports.kpi_list(), &send(self(), {:get_stats, &1}))
     org_id = get_org_id(socket)
-    date_range = socket.assigns.range
+    date_range = %{
+      end_day: socket.assigns.range.end_day |> Timex.end_of_day,
+      start_day: socket.assigns.range.start_day
+    }
 
     assign(socket, get_chart_data(org_id, date_range))
     |> assign_dataset()
@@ -211,7 +214,10 @@ defmodule GlificWeb.StatsLive do
 
   defp assign_stats(socket, :filter) do
     org_id = get_org_id(socket)
-    date_range = socket.assigns.range
+    date_range = %{
+      end_day: socket.assigns.range.end_day |> Timex.end_of_day,
+      start_day: socket.assigns.range.start_day
+    }
 
     assign(socket, get_chart_data(org_id, date_range))
     |> assign_dataset()
