@@ -361,21 +361,6 @@ defmodule Glific.Templates do
 
   @spec upsert_hsm(boolean(), list(), Organization.t()) :: :ok
   defp upsert_hsm(true, template, organization) do
-    language_id =
-      Map.get(@language_map, template["languageCode"], organization.default_language_id)
-
-    {:ok, session_template} =
-      SessionTemplate
-      |> Repo.fetch_by(%{language_id: language_id, shortcode: template["elementName"]})
-
-    session_template
-    |> SessionTemplate.changeset(%{uuid: template["bsp_id"]})
-    |> Repo.update()
-
-    :ok
-  end
-
-  defp upsert_hsm(false, template, organization) do
     example =
       case Jason.decode(template["meta"] || "{}") do
         {:ok, meta} ->
@@ -388,6 +373,21 @@ defmodule Glific.Templates do
     if example,
       do: do_insert_hsm(template, organization, @language_map, example),
       else: :ok
+  end
+
+  defp upsert_hsm(false, template, organization) do
+    language_id =
+      Map.get(@language_map, template["languageCode"], organization.default_language_id)
+
+    {:ok, session_template} =
+      SessionTemplate
+      |> Repo.fetch_by(%{language_id: language_id, shortcode: template["elementName"]})
+
+    session_template
+    |> SessionTemplate.changeset(%{uuid: template["bsp_id"]})
+    |> Repo.update()
+
+    :ok
   end
 
   @spec update_hsm(map(), Organization.t(), map()) ::
