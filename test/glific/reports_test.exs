@@ -4,11 +4,19 @@ defmodule Glific.ReportsTest do
   alias Glific.Reports
 
   test "get_date_preset/3" do
-    assert %{today: _, last_day: _, date_map: _} = Reports.get_date_preset()
-  end
+    end_day = NaiveDateTime.utc_now() |> Timex.beginning_of_day()
 
-  test "shifted_time/2 Shift time by no. of days" do
-    assert %NaiveDateTime{} = Reports.shifted_time(NaiveDateTime.utc_now(), 2)
+    start_day =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.add(-7, :day)
+      |> Timex.beginning_of_day()
+
+    date_range = %{
+      end_day: end_day,
+      start_day: start_day
+    }
+
+    assert %{end_day: _, start_day: _, date_map: _} = Reports.get_date_preset(date_range)
   end
 
   test "get_bookmark_data/1 get all the bookmarks", %{organization_id: org_id} = _attrs do

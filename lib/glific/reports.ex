@@ -19,15 +19,15 @@ defmodule Glific.Reports do
   }
 
   @doc false
-  @spec get_kpi(atom(), non_neg_integer(), [{atom(), any()}]) :: integer()
-  def get_kpi(kpi, org_id, opts \\ []) do
+  @spec get_kpi(atom(), non_neg_integer(), [{atom(), any()}], map()) :: integer()
+  def get_kpi(kpi, org_id, opts \\ [], date_range) do
     Repo.put_process_state(org_id)
 
     get_count_query(kpi)
-    |> add_timestamps(kpi, opts)
+    |> add_timestamps(kpi, opts, date_range)
     |> where([q], q.organization_id == ^org_id)
     |> Repo.all()
-    |> hd
+    |> hd || 0
   end
 
   @doc false
@@ -130,10 +130,11 @@ defmodule Glific.Reports do
 
   defp get_count_query(:conversation_count), do: select(Stat, [q], sum(q.conversations))
 
-  @spec get_day_range(String.t()) :: tuple()
-  defp get_day_range(duration) do
-    day = shifted_time(NaiveDateTime.utc_now(), -1) |> NaiveDateTime.to_date()
-    last_7 = shifted_time(NaiveDateTime.utc_now(), -7) |> NaiveDateTime.to_date()
+  @spec get_day_range(String.t(), map()) :: tuple()
+  defp get_day_range(duration, date_range) do
+    presets = get_date_preset(date_range)
+    day = presets.start_day
+    last_7 = presets.end_day
 
     case duration do
       "MONTHLY" ->
@@ -147,33 +148,44 @@ defmodule Glific.Reports do
     end
   end
 
-  @spec add_timestamps(Ecto.Query.t(), atom(), [{atom(), any()}]) :: Ecto.Query.t()
-  defp add_timestamps(query, kpi, _opts)
+  @spec add_timestamps(Ecto.Query.t(), atom(), [{atom(), any()}], map()) :: Ecto.Query.t()
+  defp add_timestamps(query, kpi, _opts, date_range)
        when kpi in [
               :critical_notification_count,
               :warning_notification_count,
               :information_notification_count,
               :monthly_error_count,
-              :active_flow_count
+              :active_flow_count,
+              :valid_contact_count,
+              :invalid_contact_count,
+              :opted_in_contacts_count,
+              :opted_out_contacts_count,
+              :non_opted_contacts_count,
+              :bsp_status,
+              :optin,
+              :notifications,
+              :contact_type
             ] do
-    date = Timex.beginning_of_month(DateTime.utc_now())
+    start_day = date_range.start_day
+    end_day = date_range.end_day
 
     query
-    |> where([q], q.inserted_at >= ^date)
+    |> where([q], q.inserted_at >= ^start_day)
+    |> where([q], q.inserted_at <= ^end_day)
   end
 
-  defp add_timestamps(query, kpi, opts)
+  defp add_timestamps(query, kpi, opts, date_range)
        when kpi in [
               :outbound_messages_count,
               :hsm_messages_count,
               :inbound_messages_count,
               :flows_started,
               :flows_completed,
-              :conversation_count
+              :conversation_count,
+              :messages
             ] do
     duration = Keyword.get(opts, :duration, "WEEKLY")
-
-    {period, start_day, end_day} = get_day_range(duration)
+    {period, end_day, start_day} = get_day_range(duration, date_range)
 
     query
     |> where([q], q.period == ^period)
@@ -181,7 +193,7 @@ defmodule Glific.Reports do
     |> where([q], q.date <= ^end_day)
   end
 
-  defp add_timestamps(query, _kpi, _opts), do: query
+  defp add_timestamps(query, _kpi, _date_range, _opts), do: query
 
   @doc """
   Returns last 7 days kpi data map with keys as date AND value as count
@@ -200,40 +212,43 @@ defmodule Glific.Reports do
       }
 
   """
-  @spec get_kpi_data(non_neg_integer(), String.t()) :: list()
-  def get_kpi_data(org_id, table) do
-    presets = get_date_preset()
+  @spec get_kpi_data(non_neg_integer(), String.t(), map()) :: list()
+  def get_kpi_data(org_id, table, date_range) do
+    presets = get_date_preset(date_range)
+    date_map = Enum.into(presets.date_map, %{}, fn {date, v} -> {Timex.format!(date, "{0D}-{0M}-{YY}"), v} end)
     Repo.put_process_state(org_id)
 
     query_data =
       get_kpi_query(presets, table, org_id)
       |> Repo.all()
+      |> Enum.map(fn %{date: date} = map ->
+          Map.put(map, :date, Timex.format!(date, "{0D}-{0M}-{YY}"))
+        end)
 
-    Enum.reduce(query_data, presets.date_map, fn %{count: count, date: date}, acc ->
+    Enum.reduce(query_data, date_map, fn %{count: count, date: date}, acc ->
       Map.put(acc, date, count)
     end)
-    |> Enum.sort_by(fn {date, _} -> date end, NaiveDateTime)
-    |> Enum.map(fn {date, count} -> {Timex.format!(date, "{0D}/{0M}/{YY}"), count} end)
+    |> Enum.sort_by(fn {date, _} -> Date.from_iso8601!("20" <> date) end)
+
   end
 
-  @spec get_kpi_query(map(), String.t(), non_neg_integer()) :: String.t()
+  @spec get_kpi_query(map(), String.t(), non_neg_integer()) :: Ecto.Query.t()
   defp get_kpi_query(presets, "stats", org_id) do
-    """
-    SELECT date,
-    conversations
-    FROM stats
-    WHERE period = 'day'
-      AND date >= '#{presets.last_day}'
-      AND date <= '#{presets.today}'
-      AND organization_id = #{org_id}
-    """
+    start_date = presets.start_day |> Timex.to_date()
+    end_date = presets.end_day |> Timex.to_date()
+
+    from s in "stats",
+      where:
+        s.period == "day" and s.date >= ^start_date and s.date <= ^end_date and
+          s.organization_id == ^org_id,
+      select: %{date: s.date, count: s.conversations}
   end
 
   defp get_kpi_query(presets, table, org_id) do
     from(
       t in table,
       where:
-        t.inserted_at > ^presets.last_day and t.inserted_at <= ^presets.today and
+        t.inserted_at > ^presets.start_day and t.inserted_at <= ^presets.end_day and
           t.organization_id == ^org_id,
       group_by: fragment("date_trunc('day', ?)", t.inserted_at),
       select: %{date: fragment("date_trunc('day', ?)", t.inserted_at), count: count(t.id)}
@@ -241,8 +256,8 @@ defmodule Glific.Reports do
   end
 
   @doc false
-  @spec get_messages_data(non_neg_integer()) :: map()
-  def get_messages_data(org_id) do
+  @spec get_messages_data(non_neg_integer(), map()) :: map()
+  def get_messages_data(org_id, date_range) do
     timezone = Partners.organization_timezone(org_id)
     Repo.put_process_state(org_id)
 
@@ -255,6 +270,8 @@ defmodule Glific.Reports do
     |> group_by([q], q.hour)
     |> where([q], q.organization_id == ^org_id)
     |> where([q], q.period == "hour")
+    |> where([q], q.date >= ^date_range.start_day)
+    |> where([q], q.date <= ^date_range.end_day)
     |> Repo.all()
     |> Enum.reduce(%{}, fn hourly_stat, acc ->
       time =
@@ -263,7 +280,6 @@ defmodule Glific.Reports do
         |> Timex.beginning_of_day()
         |> Timex.Timezone.convert(timezone)
         |> Timex.shift(hours: hourly_stat.hour)
-
       Map.put(acc, Timex.format!(time, "{0h12}:{0m}{AM}"), Map.delete(hourly_stat, :hour))
     end)
   end
@@ -271,14 +287,16 @@ defmodule Glific.Reports do
   @doc """
     gets data for the broadcast table
   """
-  @spec get_broadcast_data(non_neg_integer()) :: list()
-  def get_broadcast_data(org_id) do
+  @spec get_broadcast_data(non_neg_integer(), map()) :: list()
+  def get_broadcast_data(org_id, date_range) do
     timezone = Partners.organization_timezone(org_id)
 
     MessageBroadcast
     |> join(:inner, [mb], flow in assoc(mb, :flow))
     |> join(:inner, [mb, flow], group in assoc(mb, :group))
     |> where([mb], mb.organization_id == ^org_id)
+    |> where([mb], mb.inserted_at >= ^date_range.start_day)
+    |> where([mb], mb.inserted_at <= ^date_range.end_day)
     |> select([mb, flow, group], %{
       flow_name: flow.name,
       group_label: group.label,
@@ -308,31 +326,30 @@ defmodule Glific.Reports do
   end
 
   @doc false
-  @spec get_contact_data(non_neg_integer()) :: list()
-  def get_contact_data(org_id) do
+  @spec get_contact_data(non_neg_integer(), map()) :: list()
+  def get_contact_data(org_id, date_range) do
     get_count_query(:bsp_status)
     |> where([q], q.organization_id == ^org_id)
+    |> where([q], q.inserted_at >= ^date_range.start_day)
+    |> where([q], q.inserted_at <= ^date_range.end_day)
     |> Repo.all()
   end
 
-  @doc """
-  Returns date Today and Last day as NaiveDateTime and date map with values as 0
-  """
-  @spec get_date_preset(NaiveDateTime.t(), non_neg_integer()) :: map()
-  def get_date_preset(time \\ NaiveDateTime.utc_now(), days \\ 7) do
-    today = shifted_time(time, 0)
+  @doc false
+  @spec get_date_preset(map()) :: map()
+  def get_date_preset(date_range) do
+    diff = NaiveDateTime.diff(date_range.end_day, date_range.start_day, :day)
 
-    last_day = shifted_time(time, -days)
-
-    # from -1..-days
     date_map =
-      Enum.reduce(1..days, %{}, fn day, acc ->
-        time
-        |> shifted_time(-day)
-        |> then(&Map.put(acc, &1, 0))
+      Enum.into(0..diff, %{}, fn day ->
+        {date_range.start_day |> NaiveDateTime.add(day, :day), 0}
       end)
 
-    %{today: today, last_day: last_day, date_map: date_map}
+    %{
+      start_day: date_range.start_day,
+      date_map: date_map,
+      end_day: date_range.end_day
+    }
   end
 
   @spec extract_bookmarks(map() | nil) :: map()
@@ -428,13 +445,15 @@ defmodule Glific.Reports do
   def update_bookmark_data(_, _), do: []
 
   @doc false
-  @spec get_export_data(atom(), non_neg_integer()) :: list()
-  def get_export_data(chart, org_id) do
+  @spec get_export_data(atom(), non_neg_integer(), map()) :: list()
+  def get_export_data(chart, org_id, date_range) do
     get_export_query(chart)
+    |> add_timestamps(chart, [], date_range)
     |> where([q], q.organization_id == ^org_id)
     |> Repo.all()
   end
 
+  @spec get_export_query(atom()) :: Ecto.Query.t()
   defp get_export_query(:optin) do
     Contact
     |> select([q], [q.id, q.name, q.phone, q.optin_status])

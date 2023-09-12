@@ -56,7 +56,7 @@ defmodule GlificWeb.StatsLive do
 
   def handle_info({:get_stats, kpi}, socket) do
     org_id = get_org_id(socket)
-    {:noreply, assign(socket, kpi, Reports.get_kpi(kpi, org_id))}
+    {:noreply, assign(socket, kpi, Reports.get_kpi(kpi, org_id, socket.assigns.range))}
   end
 
   @doc false
@@ -64,7 +64,8 @@ defmodule GlificWeb.StatsLive do
           {:noreply, Phoenix.LiveView.Socket.t()}
   def handle_event("export", %{"chart" => chart}, socket) do
     org_id = get_org_id(socket)
-    data = get_export_data(String.to_atom(chart), org_id)
+    date_range = socket.assigns.range
+    data = get_export_data(String.to_atom(chart), org_id, date_range)
     csv = Enum.map_join(data, "\n", &Enum.join(&1, ","))
 
     {:noreply,
@@ -73,6 +74,20 @@ defmodule GlificWeb.StatsLive do
        data: csv,
        filename: chart <> ".csv"
      })}
+  end
+
+  def handle_event("filter", dates, socket) do
+    date_range =
+      Enum.reduce(dates, %{}, fn {key, value}, acc ->
+        {:ok, date} = NaiveDateTime.from_iso8601(value <> " 00:00:00")
+        Map.put(acc, String.to_atom(key), date)
+      end)
+
+    assign_stats(socket, :filter)
+
+    {:noreply,
+     assign(socket, range: date_range)
+     |> assign_stats(:filter)}
   end
 
   def handle_event("show_bookmark", _value, socket) do
@@ -117,46 +132,46 @@ defmodule GlificWeb.StatsLive do
     }
   end
 
-  defp get_export_data(:optin, org_id) do
-    Reports.get_export_data(:optin, org_id)
+  defp get_export_data(:optin, org_id, date_range) do
+    Reports.get_export_data(:optin, org_id, date_range)
     |> List.insert_at(0, ["ID", "Name", "Phone", "Optin Status"])
   end
 
-  defp get_export_data(:contacts, org_id) do
-    Reports.get_kpi_data(org_id, "contacts")
+  defp get_export_data(:contacts, org_id, date_range) do
+    Reports.get_kpi_data(org_id, "contacts", date_range)
     |> Enum.map(fn {date, count} -> [date, count] end)
     |> List.insert_at(0, ["Date", "Number"])
   end
 
-  defp get_export_data(:conversations, org_id) do
-    Reports.get_kpi_data(org_id, "messages_conversations")
+  defp get_export_data(:conversations, org_id, date_range) do
+    Reports.get_kpi_data(org_id, "stats", date_range)
     |> Enum.map(fn {date, count} -> [date, count] end)
     |> List.insert_at(0, ["Date", "Number"])
   end
 
-  defp get_export_data(:notifications, org_id) do
-    Reports.get_export_data(:notifications, org_id)
+  defp get_export_data(:notifications, org_id, date_range) do
+    Reports.get_export_data(:notifications, org_id, date_range)
     |> List.insert_at(0, ["ID", "Category", "Severity"])
   end
 
-  defp get_export_data(:messages, org_id) do
-    Reports.get_export_data(:messages, org_id)
+  defp get_export_data(:messages, org_id, date_range) do
+    Reports.get_export_data(:messages, org_id, date_range)
     |> List.insert_at(0, ["ID", "Inbound", "Outbound"])
   end
 
-  defp get_export_data(:contact_type, org_id) do
-    Reports.get_export_data(:contact_type, org_id)
+  defp get_export_data(:contact_type, org_id, date_range) do
+    Reports.get_export_data(:contact_type, org_id, date_range)
     |> List.insert_at(0, ["ID", "Name", "Phone", "BSP Status"])
   end
 
-  defp get_export_data(:active_hour, org_id) do
-    fetch_hourly_data(org_id)
+  defp get_export_data(:active_hour, org_id, date_range) do
+    fetch_hourly_data(org_id, date_range)
     |> Enum.map(fn {hour, inbound, outbound} -> [hour, inbound, outbound] end)
     |> List.insert_at(0, ["Hour", "Inbound", "Outbound"])
   end
 
-  defp get_export_data(:table, org_id) do
-    fetch_table_data(:broadcasts, org_id)
+  defp get_export_data(:table, org_id, date_range) do
+    fetch_table_data(:broadcasts, org_id, date_range)
     |> List.insert_at(0, ["Flow Name", "Group Name", "Started At", "Completed At"])
   end
 
@@ -168,10 +183,17 @@ defmodule GlificWeb.StatsLive do
   defp assign_stats(socket, :init) do
     stats = Enum.map(Reports.kpi_list(), &{&1, "loading.."})
 
+    default_range = %{
+      end_day: NaiveDateTime.utc_now() |> Timex.end_of_day(),
+      start_day:
+        NaiveDateTime.utc_now() |> NaiveDateTime.add(-7, :day) |> Timex.beginning_of_day()
+    }
+
     org_id = get_org_id(socket)
 
     assign(socket, Keyword.merge(stats, page_title: "Glific Dashboard"))
-    |> assign(get_chart_data(org_id))
+    |> assign(range: default_range)
+    |> assign(get_chart_data(org_id, default_range))
     |> assign_dataset()
     |> assign_chart_svg()
     |> assign(bookmarks: Reports.get_bookmark_data(org_id))
@@ -180,8 +202,24 @@ defmodule GlificWeb.StatsLive do
   defp assign_stats(socket, :call) do
     Enum.each(Reports.kpi_list(), &send(self(), {:get_stats, &1}))
     org_id = get_org_id(socket)
+    date_range = %{
+      end_day: socket.assigns.range.end_day |> Timex.end_of_day,
+      start_day: socket.assigns.range.start_day
+    }
 
-    assign(socket, get_chart_data(org_id))
+    assign(socket, get_chart_data(org_id, date_range))
+    |> assign_dataset()
+    |> assign_chart_svg()
+  end
+
+  defp assign_stats(socket, :filter) do
+    org_id = get_org_id(socket)
+    date_range = %{
+      end_day: socket.assigns.range.end_day |> Timex.end_of_day,
+      start_day: socket.assigns.range.start_day
+    }
+
+    assign(socket, get_chart_data(org_id, date_range))
     |> assign_dataset()
     |> assign_chart_svg()
     |> assign(bookmarks: Reports.get_bookmark_data(org_id))
@@ -372,33 +410,33 @@ defmodule GlificWeb.StatsLive do
   end
 
   @doc false
-  @spec get_chart_data(non_neg_integer()) :: list()
-  def get_chart_data(org_id) do
+  @spec get_chart_data(non_neg_integer(), map()) :: list()
+  def get_chart_data(org_id, date_range) do
     [
-      contact_chart_data: Reports.get_kpi_data(org_id, "contacts"),
-      conversation_chart_data: Reports.get_kpi_data(org_id, "messages_conversations"),
-      optin_chart_data: fetch_count_data(:optin_chart_data, org_id),
-      notification_chart_data: fetch_count_data(:notification_chart_data, org_id),
-      message_type_chart_data: fetch_count_data(:message_type_chart_data, org_id),
-      broadcast_data: fetch_table_data(:broadcasts, org_id),
+      contact_chart_data: Reports.get_kpi_data(org_id, "contacts", date_range),
+      conversation_chart_data: Reports.get_kpi_data(org_id, "stats", date_range),
+      optin_chart_data: fetch_count_data(:optin_chart_data, org_id, date_range),
+      notification_chart_data: fetch_count_data(:notification_chart_data, org_id, date_range),
+      message_type_chart_data: fetch_count_data(:message_type_chart_data, org_id, date_range),
+      broadcast_data: fetch_table_data(:broadcasts, org_id, date_range),
       broadcast_headers: ["Flow Name", "Group Name", "Started At", "Completed At"],
-      contact_pie_chart_data: fetch_count_data(:contact_type, org_id),
-      messages_chart_data: fetch_hourly_data(org_id)
+      contact_pie_chart_data: fetch_count_data(:contact_type, org_id, date_range),
+      messages_chart_data: fetch_hourly_data(org_id, date_range)
     ]
   end
 
-  defp fetch_table_data(:broadcasts, org_id) do
-    Reports.get_broadcast_data(org_id)
+  defp fetch_table_data(:broadcasts, org_id, date_range) do
+    Reports.get_broadcast_data(org_id, date_range)
   end
 
   @doc """
   Fetch optin chart count data
   """
-  @spec fetch_count_data(atom(), non_neg_integer()) :: list()
-  def fetch_count_data(:optin_chart_data, org_id) do
-    opted_in = Reports.get_kpi(:opted_in_contacts_count, org_id)
-    opted_out = Reports.get_kpi(:opted_out_contacts_count, org_id)
-    non_opted = Reports.get_kpi(:non_opted_contacts_count, org_id)
+  @spec fetch_count_data(atom(), non_neg_integer(), map() | nil) :: list()
+  def fetch_count_data(:optin_chart_data, org_id, date_range) do
+    opted_in = Reports.get_kpi(:opted_in_contacts_count, org_id, date_range)
+    opted_out = Reports.get_kpi(:opted_out_contacts_count, org_id, date_range)
+    non_opted = Reports.get_kpi(:non_opted_contacts_count, org_id, date_range)
 
     [
       {"Opted In: #{opted_in}", opted_in},
@@ -407,10 +445,10 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  def fetch_count_data(:notification_chart_data, org_id) do
-    critical = Reports.get_kpi(:critical_notification_count, org_id)
-    warning = Reports.get_kpi(:warning_notification_count, org_id)
-    information = Reports.get_kpi(:information_notification_count, org_id)
+  def fetch_count_data(:notification_chart_data, org_id, date_range) do
+    critical = Reports.get_kpi(:critical_notification_count, org_id, date_range)
+    warning = Reports.get_kpi(:warning_notification_count, org_id, date_range)
+    information = Reports.get_kpi(:information_notification_count, org_id, date_range)
 
     [
       {"Critical: #{critical}", critical},
@@ -419,9 +457,9 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  def fetch_count_data(:message_type_chart_data, org_id) do
-    inbound = Reports.get_kpi(:inbound_messages_count, org_id)
-    outbound = Reports.get_kpi(:outbound_messages_count, org_id)
+  def fetch_count_data(:message_type_chart_data, org_id, date_range) do
+    inbound = Reports.get_kpi(:inbound_messages_count, org_id, date_range)
+    outbound = Reports.get_kpi(:outbound_messages_count, org_id, date_range)
 
     [
       {"Inbound: #{inbound}", inbound},
@@ -429,8 +467,8 @@ defmodule GlificWeb.StatsLive do
     ]
   end
 
-  def fetch_count_data(:contact_type, org_id) do
-    Reports.get_contact_data(org_id)
+  def fetch_count_data(:contact_type, org_id, date_range) do
+    Reports.get_contact_data(org_id, date_range)
     |> Enum.reduce([], fn [status, count], acc ->
       contact_status =
         case status do
@@ -445,12 +483,12 @@ defmodule GlificWeb.StatsLive do
   end
 
   @doc false
-  @spec fetch_hourly_data(non_neg_integer()) :: list()
-  def fetch_hourly_data(org_id) do
-    hourly_data = Reports.get_messages_data(org_id)
+  @spec fetch_hourly_data(non_neg_integer(), map()) :: list()
+  def fetch_hourly_data(org_id, date_range) do
+    hourly_data = Reports.get_messages_data(org_id, date_range)
 
     Enum.reduce(@hourly_timestamps, [], fn time, acc ->
-      message_map = Map.get(hourly_data, time)
+      message_map = Map.get(hourly_data, time, %{inbound: 0, outbound: 0})
       acc ++ [{time, message_map.inbound, message_map.outbound}]
     end)
   end

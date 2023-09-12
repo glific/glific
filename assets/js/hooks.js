@@ -1,41 +1,5 @@
 let Hooks = {};
 
-function createTable(element, headers, data) {
-  let table = document.createElement("table");
-  let thead = document.createElement("thead");
-  let tbody = document.createElement("tbody");
-
-  let headerRow = document.createElement("tr");
-  headers.forEach((header) => {
-    let th = document.createElement("th");
-    th.textContent = header;
-    headerRow.appendChild(th);
-  });
-  thead.appendChild(headerRow);
-
-  data.forEach((item) => {
-    let row = document.createElement("tr");
-    Object.values(item).forEach((value) => {
-      let td = document.createElement("td");
-      td.textContent = value;
-      row.appendChild(td);
-    });
-    tbody.appendChild(row);
-  });
-
-  table.appendChild(thead);
-  table.appendChild(tbody);
-  element.appendChild(table);
-}
-
-Hooks.table = {
-  mounted() {
-    let tableData = JSON.parse(this.el.dataset.tableData);
-    let tableHeaders = JSON.parse(this.el.dataset.tableHeaders);
-    createTable(this.el, tableHeaders, tableData);
-  },
-};
-
 Hooks.dateInput = {
   mounted() {
     flatpickr(this.el, {
@@ -57,14 +21,35 @@ Hooks.dateInput = {
 Hooks.download = {
   mounted() {
     this.handleEvent("download-file", (event) => {
-      var element = document.createElement('a');
-      element.setAttribute('href', 'data:csv/plain;charset=utf-8,%EF%BB%BF' + encodeURIComponent(event.data));
-      element.setAttribute('download', event.filename);
-      element.style.display = 'none';
+      var element = document.createElement("a");
+      element.setAttribute(
+        "href",
+        "data:csv/plain;charset=utf-8,%EF%BB%BF" +
+          encodeURIComponent(event.data)
+      );
+      element.setAttribute("download", event.filename);
+      element.style.display = "none";
       document.body.appendChild(element);
       element.click();
       document.body.removeChild(element);
     });
-  }
-}
+  },
+};
+
+Hooks.dateRestrict = {
+  mounted() {
+    let today = new Date().toISOString().split("T")[0];
+    document.getElementById("start_day").setAttribute("max", today);
+    document.getElementById("end_day").setAttribute("max", today);
+
+    this.el.addEventListener("change", (e) => {
+      let startInput = document.getElementById("start_day");
+      let endInput = document.getElementById("end_day");
+      if (e.target.name === "start_day") {
+        endInput.setAttribute("min", startInput.value);
+      }
+    });
+  },
+};
+
 export default Hooks;
