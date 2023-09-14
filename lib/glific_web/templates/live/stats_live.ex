@@ -320,7 +320,7 @@ defmodule GlificWeb.StatsLive do
   end
 
   def render_bar_chart(title, dataset) do
-    opts = barchart_opts(title)
+    opts = if length(dataset.data) >= 15, do: barchart_opts(title) ++ [show_x_axis: false], else: barchart_opts(title)
 
     Contex.Plot.new(dataset, Contex.BarChart, 700, 350, opts)
     |> Contex.Plot.to_svg()
@@ -359,7 +359,7 @@ defmodule GlificWeb.StatsLive do
       data_labels: false,
       title: false,
       axis_label_rotation: 45,
-      legend_setting: :legend_bottom
+      legend_setting: :legend_bottom,
     ]
   end
 
