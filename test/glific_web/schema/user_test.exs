@@ -288,4 +288,28 @@ defmodule GlificWeb.Schema.UserTest do
 
     assert error.message == "Does not have access to the user"
   end
+
+  test "assigning role to a first time user of should work", %{manager: user_auth} do
+    user = Fixtures.user_fixture(%{name: "New User", roles: ["none"]})
+    roles = ["manager"]
+
+    result =
+      auth_query_gql_by(:update, user_auth,
+        variables: %{
+          "id" => user.id,
+          "input" => %{
+            "roles" => roles
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    update_user = get_in(query_data, [:data, "updateUser", "user"])
+    assert update_user["roles"] == ["Manager"]
+
+    {:ok, db_user} =
+      Repo.fetch_by(User, %{name: user.name, organization_id: user_auth.organization_id})
+
+    assert db_user.roles == [:manager]
+  end
 end
