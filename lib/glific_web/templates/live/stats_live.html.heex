@@ -6,7 +6,6 @@
 
 <div class="w-full px-20 flex justify-between">
   <div class="date-filter"></div>
-  
 </div>
 
 <div class="wrapper">
@@ -117,7 +116,9 @@
             <p class="font-semibold text-md">Bookmark</p>
             <.form
               phx-submit={
-                if @default_bookmark["prev_name"] == "", do: "save_bookmark", else: "update_bookmark"
+                if @default_bookmark["prev_name"] == "",
+                  do: "save_bookmark",
+                  else: "update_bookmark"
               }
               for={%{}}
             >
@@ -354,33 +355,32 @@
         </.link>
       </button>
     </div>
-    <div
-      id="broadcast-table"
-      class="table"
-    >
-    <table>
-      <thead>
-        <tr>
-          <%= for header <- @broadcast_headers do %>
-            <th><%= header %></th>
-          <% end %>
-        </tr>
-      </thead>
-      <tbody>
-        <%= if Enum.empty?(@broadcast_data) do %>
+    <div id="broadcast-table" class="table">
+      <table>
+        <thead>
           <tr>
-              <td><p>No data available</p></td>
-          </tr>
-        <% end %>
-        <%= for item <- @broadcast_data do %>
-          <tr>
-            <%= for value <- item do %>
-              <td><%= value %></td>
+            <%= for header <- @broadcast_headers do %>
+              <th><%= header %></th>
             <% end %>
           </tr>
-        <% end %>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          <%= if Enum.empty?(@broadcast_data) do %>
+            <tr>
+              <td>
+                <p>No data available</p>
+              </td>
+            </tr>
+          <% end %>
+          <%= for item <- @broadcast_data do %>
+            <tr>
+              <%= for value <- item do %>
+                <td><%= value %></td>
+              <% end %>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
     </div>
   </div>
 
