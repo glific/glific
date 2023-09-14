@@ -377,12 +377,12 @@ defmodule Glific.Flows.ContactAction do
 
     db_url = from(m in MessageMedia, where: m.url == ^url) |> Repo.all()
 
-    case db_url do
-      [] ->
-        if is_nil(url) do
-          FlowContext.notification(context, "Could not send message to contact: Empty media URL")
-          {type, nil}
-        else
+    if is_nil(url) do
+      FlowContext.notification(context, "Could not send message to contact: Empty media URL")
+      {type, nil}
+    else
+      case db_url do
+        [] ->
           {:ok, message_media} =
             %{
               type: type,
@@ -396,10 +396,10 @@ defmodule Glific.Flows.ContactAction do
             |> Messages.create_message_media()
 
           {type, message_media.id}
-        end
 
-      _ ->
-        Logger.info("URL already exists in the database")
+        _ ->
+          Logger.info("URL already exists in the database")
+      end
     end
   end
 
