@@ -36,7 +36,7 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
   def is_valid_role?(roles, :manager),
     do: is_valid_role?(roles, [:glific_admin, :admin, :manager])
 
-  def is_valid_role?(roles, :staff),
+  def is_valid_role?(roles, role) when role in [:staff, :none],
     do: is_valid_role?(roles, [:glific_admin, :admin, :manager, :staff])
 
   def is_valid_role?(roles, role) when is_list(role), do: Enum.any?(roles, fn x -> x in role end)
