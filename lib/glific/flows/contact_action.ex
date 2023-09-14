@@ -10,13 +10,17 @@ defmodule Glific.Flows.ContactAction do
     Flows.Node,
     Messages,
     Messages.Message,
+    Messages.MessageMedia,
     Repo,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate
   }
 
+  require Logger
+
   alias Glific.Flows.{Action, FlowContext, Localization, MessageVarParser}
+  import Ecto.Query
 
   require Logger
   @min_delay 2
@@ -371,23 +375,31 @@ defmodule Glific.Flows.ContactAction do
 
     {_cid, message_vars} = resolve_cid(context, cid)
 
-    if is_nil(url) do
-      FlowContext.notification(context, "Could not send message to contact: Empty media URL")
-      {type, nil}
-    else
-      {:ok, message_media} =
-        %{
-          type: type,
-          url: url,
-          source_url: url,
-          thumbnail: url,
-          flow: :outbound,
-          caption: MessageVarParser.parse(caption, message_vars),
-          organization_id: context.organization_id
-        }
-        |> Messages.create_message_media()
+    db_url = from(m in MessageMedia, where: m.url == ^url) |> Repo.all()
 
-      {type, message_media.id}
+    case db_url do
+      [] ->
+        if is_nil(url) do
+          FlowContext.notification(context, "Could not send message to contact: Empty media URL")
+          {type, nil}
+        else
+          {:ok, message_media} =
+            %{
+              type: type,
+              url: url,
+              source_url: url,
+              thumbnail: url,
+              flow: :outbound,
+              caption: MessageVarParser.parse(caption, message_vars),
+              organization_id: context.organization_id
+            }
+            |> Messages.create_message_media()
+
+          {type, message_media.id}
+        end
+
+      _ ->
+        Logger.info("URL already exists in the database")
     end
   end
 
