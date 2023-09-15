@@ -821,9 +821,17 @@ defmodule Glific.Messages do
   """
   @spec create_message_media(map()) :: {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
   def create_message_media(attrs \\ %{}) do
-    %MessageMedia{}
-    |> MessageMedia.changeset(attrs)
-    |> Repo.insert()
+    db_url = from(m in MessageMedia, where: m.url == ^attrs.url) |> limit(1) |> Repo.one()
+
+    case db_url do
+      nil ->
+        %MessageMedia{}
+        |> MessageMedia.changeset(attrs)
+        |> Repo.insert()
+
+      _ ->
+        Logger.info("URL already exists in the database")
+    end
   end
 
   @doc """
