@@ -13,7 +13,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
     "user" => %{
       "phone" => "+919820198766",
       "name" => "Jane Doe",
-      "password" => @password
+      "password" => @password,
     }
   }
   @invalid_params %{
@@ -36,7 +36,8 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
         password: @password,
         password_confirmation: @password,
         contact_id: contact.id,
-        organization_id: organization_id
+        organization_id: organization_id,
+        last_login_at: DateTime.utc_now()
       })
       |> Repo.insert!()
 
@@ -52,6 +53,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
       assert json["data"]["access_token"]
       assert json["data"]["renewal_token"]
       assert json["data"]["token_expiry_time"]
+      assert json["data"]["last_login"]
     end
 
     test "with invalid params", %{conn: conn, organization_id: organization_id} do
