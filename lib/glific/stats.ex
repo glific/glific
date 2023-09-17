@@ -482,7 +482,7 @@ defmodule Glific.Stats do
     |> Repo.one()
   end
 
-  @spec clean_data(String.t()) :: {:safe, [any()]}
+  @spec clean_data(any()) :: {:safe, [any()]}
   defp clean_data(data)
   when is_binary(data)
   do
@@ -503,7 +503,7 @@ defmodule Glific.Stats do
 
   defp clean_data(svg), do: svg
 
-  @spec load_pie_svg([any()], String.t()) :: {:safe, [any()]}
+  @spec load_pie_svg([any()], String.t()) :: String.t()
   defp load_pie_svg(data, title) do
     data
     |> StatsLive.make_pie_chart_dataset()
@@ -512,7 +512,7 @@ defmodule Glific.Stats do
     |> convert_svg_to_base64()
   end
 
-  @spec load_bar_svg([any()], String.t(), [String.t()]) :: {:safe, [any()]}
+  @spec load_bar_svg([any()], String.t(), [String.t()]) :: String.t()
   defp load_bar_svg(data, title, opts) do
     data
     |> StatsLive.make_bar_chart_dataset(opts)

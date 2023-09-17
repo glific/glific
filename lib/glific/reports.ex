@@ -19,7 +19,7 @@ defmodule Glific.Reports do
   }
 
   @doc false
-  @spec get_kpi(atom(), non_neg_integer(), [{atom(), any()}], map()) :: integer()
+  @spec get_kpi(atom(), non_neg_integer(), map(), [{atom(), any()}]) :: integer()
   def get_kpi(kpi, org_id, date_range, opts \\ []) do
     Repo.put_process_state(org_id)
 
