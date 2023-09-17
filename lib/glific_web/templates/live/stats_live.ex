@@ -258,16 +258,12 @@ defmodule GlificWeb.StatsLive do
     Contex.Dataset.new(data, ["Hour", "Inbound", "Outbound"])
   end
 
-  defp make_bar_chart_dataset(data, opts) do
-    Contex.Dataset.new(data, opts)
-  end
-
   @doc """
   Create Bar chart dataset from rows of data
   """
-  @spec make_bar_chart_dataset([any()]) :: Contex.Dataset.t()
-  def make_bar_chart_dataset(data) do
-    Contex.Dataset.new(data)
+  @spec make_bar_chart_dataset([any()], [String.t()]) :: Contex.Dataset.t()
+  def make_bar_chart_dataset(data, opts) do
+    Contex.Dataset.new(data, opts)
   end
 
   @doc """

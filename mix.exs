@@ -159,7 +159,8 @@ defmodule Glific.MixProject do
       {:glific_forked_waffle_gcs, "~> 0.1.1"},
       {:pow, git: "https://github.com/glific/pow.git"},
       {:contex, "~> 0.5.0"},
-      {:password_validator, "~> 0.5"}
+      {:password_validator, "~> 0.5"},
+      {:resvg, "~> 0.3.0"}
     ]
   end
 
