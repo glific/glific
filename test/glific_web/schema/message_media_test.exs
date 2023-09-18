@@ -134,7 +134,6 @@ defmodule GlificWeb.Schema.MessageMediaTest do
       )
 
     assert {:ok, query_data} = result
-    IO.inspect(query_data)
 
     assert get_in(query_data, [:data, "createMessageMedia", "errors", Access.at(0), "message"]) =~
              "can't be blank"
