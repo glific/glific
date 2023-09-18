@@ -16,7 +16,6 @@ defmodule Glific.Flows.ContactAction do
     Templates.SessionTemplate
   }
 
-
   alias Glific.Flows.{Action, FlowContext, Localization, MessageVarParser}
 
   require Logger

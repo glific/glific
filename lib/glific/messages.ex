@@ -819,20 +819,32 @@ defmodule Glific.Messages do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_message_media(map()) :: {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_message_media(map()) :: {:ok, MessageMedia.t()} | {:error, %Ecto.Changeset{}}
+
   def create_message_media(attrs \\ %{}) do
-    db_url = from(m in MessageMedia, where: m.url == ^attrs.url) |> limit(1) |> Repo.one()
+    case Map.has_key?(attrs, :url) do
+      true ->
+        db_media = Repo.get_by(MessageMedia, url: attrs[:url])
 
-    case db_url do
-      nil ->
-        %MessageMedia{}
-        |> MessageMedia.changeset(attrs)
-        |> Repo.insert()
+        if is_nil(db_media) do
+          %MessageMedia{}
+          |> MessageMedia.changeset(attrs)
+          |> Repo.insert()
+        else
+          {:ok, db_media}
+        end
 
-      _ ->
-        Logger.info("URL already exists in the database")
+      false ->
+        {:error, "URL can't be blank"}
     end
   end
+
+  # @spec create_message_media(map()) :: {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
+  # def create_message_media(attrs \\ %{}) do
+  #   %MessageMedia{}
+  #   |> MessageMedia.changeset(attrs)
+  #   |> Repo.insert()
+  # end
 
   @doc """
   Updates a message media.
