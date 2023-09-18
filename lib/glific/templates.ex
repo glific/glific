@@ -682,8 +682,7 @@ defmodule Glific.Templates do
   def list_whatsapp_hsm_categories do
     [
       "UTILITY",
-      "MARKETING",
-      "AUTHENTICATION"
+      "MARKETING"
     ]
   end
 

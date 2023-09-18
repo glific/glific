@@ -11,7 +11,9 @@ defmodule GlificWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_glific_key",
-    signing_salt: "nE0doVhV"
+    signing_salt: "nE0doVhV",
+    same_site: "Strict",
+    secure: true
   ]
 
   socket("/socket", GlificWeb.UserSocket,

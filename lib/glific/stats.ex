@@ -495,10 +495,10 @@ defmodule Glific.Stats do
     |> (&StatsLive.render_bar_chart(title, &1)).()
   end
 
-  @spec fetch_inbound_outbound(non_neg_integer(), String.t()) :: [tuple()]
-  defp fetch_inbound_outbound(org_id, duration) do
-    inbound = Reports.get_kpi(:inbound_messages_count, org_id, duration: duration)
-    outbound = Reports.get_kpi(:outbound_messages_count, org_id, duration: duration)
+  @spec fetch_inbound_outbound(non_neg_integer(), String.t(), map()) :: [tuple()]
+  defp fetch_inbound_outbound(org_id, duration, date_range) do
+    inbound = Reports.get_kpi(:inbound_messages_count, org_id, [duration: duration], date_range)
+    outbound = Reports.get_kpi(:outbound_messages_count, org_id, [duration: duration], date_range)
 
     [
       {"Inbound: #{inbound}", inbound},
@@ -526,10 +526,21 @@ defmodule Glific.Stats do
   """
   @spec mail_stats(Partners.Organization.t(), String.t()) :: {:ok, term} | {:error, term}
   def mail_stats(org, duration \\ "WEEKLY") do
-    contacts = Reports.get_kpi_data(org.id, "contacts")
-    conversations = Reports.get_kpi_data(org.id, "messages_conversations")
-    optin = StatsLive.fetch_count_data(:optin_chart_data, org.id)
-    messages = fetch_inbound_outbound(org.id, duration)
+    # setting end_day as today
+    end_day = NaiveDateTime.utc_now() |> Timex.beginning_of_day()
+
+    # setting start_day as 7 days ago
+    start_day = NaiveDateTime.utc_now() |> NaiveDateTime.add(-7, :day) |> Timex.beginning_of_day()
+
+    date_range = %{
+      end_day: end_day,
+      start_day: start_day
+    }
+
+    contacts = Reports.get_kpi_data(org.id, "contacts", date_range)
+    conversations = Reports.get_kpi_data(org.id, "stats", date_range)
+    optin = StatsLive.fetch_count_data(:optin_chart_data, org.id, date_range)
+    messages = fetch_inbound_outbound(org.id, duration, date_range)
 
     assigns = %{
       contact_chart_svg: load_bar_svg(contacts, "Contacts"),
