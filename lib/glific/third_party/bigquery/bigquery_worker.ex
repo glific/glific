@@ -1077,7 +1077,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> where([f], f.status in ["published", "archived"])
       |> order_by([f], [f.inserted_at, f.id])
-      |> preload([flow: :tags])
+      |> preload([flow: [:tags]])
 
   defp get_query("flow_results", organization_id, attrs),
     do:
