@@ -819,7 +819,7 @@ defmodule Glific.Messages do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_message_media(map()) :: {:ok, MessageMedia.t()} | {:error, %Ecto.Changeset{}}
+  @spec create_message_media(map()) :: {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
 
   def create_message_media(attrs \\ %{}) do
     case Map.has_key?(attrs, :url) do
