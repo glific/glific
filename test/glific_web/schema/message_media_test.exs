@@ -127,8 +127,7 @@ defmodule GlificWeb.Schema.MessageMediaTest do
             "caption" => "My caption",
             "sourceUrl" =>
               "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg",
-            "thumbnail" =>
-              "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg"
+            "thumbnail" => "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg"
           }
         }
       )
