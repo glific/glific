@@ -51,6 +51,19 @@ defmodule Glific.Communications.Mailer do
   defp add_body(mail, body, false), do: text_body(mail, body)
   defp add_body(mail, body, true), do: html_body(mail, body)
 
+  defp inline_attachments(mail, opts) do
+    Enum.reduce([:contacts, :conversations, :optin, :messages], mail, fn key, acc ->
+      case Keyword.get(opts, key) do
+        nil -> acc
+        data -> attachment(acc, create_attachment(data, key))
+      end
+    end)
+  end
+
+  defp create_attachment(data, key) do
+    Swoosh.Attachment.new({:data, data}, filename: "#{key}.png", content_type: "image/png", type: :inline)
+  end
+
   @doc """
   This function creates a mail of type Swoosh.Email
 
@@ -81,6 +94,7 @@ defmodule Glific.Communications.Mailer do
     |> cc(in_cc)
     |> subject(subject)
     |> add_body(body, is_html)
+    |> inline_attachments(opts)
   end
 
   @spec get_team_email(Organization.t(), String.t() | nil, tuple | nil) :: tuple()

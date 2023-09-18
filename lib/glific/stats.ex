@@ -510,7 +510,7 @@ defmodule Glific.Stats do
     |> StatsLive.make_pie_chart_dataset()
     |> (&StatsLive.render_pie_chart(title, &1)).()
     |> clean_data()
-    |> convert_svg_to_base64()
+    |> convert_svg_to_binary()
   end
 
   @spec load_bar_svg([any()], String.t(), [String.t()]) :: String.t()
@@ -519,11 +519,11 @@ defmodule Glific.Stats do
     |> StatsLive.make_bar_chart_dataset(opts)
     |> (&StatsLive.render_bar_chart(title, &1)).()
     |> clean_data()
-    |> convert_svg_to_base64()
+    |> convert_svg_to_binary()
   end
 
-  @spec convert_svg_to_base64({atom(), any()}) :: String.t()
-  defp convert_svg_to_base64(svg) do
+  @spec convert_svg_to_binary({atom(), any()}) :: String.t()
+  defp convert_svg_to_binary(svg) do
     {:safe, svg_string} = svg
 
     filename = System.tmp_dir!() <> "/temp.png"
@@ -535,10 +535,8 @@ defmodule Glific.Stats do
     |> Resvg.svg_string_to_png(filename, resources_dir: System.tmp_dir!(), width: 1080)
 
     {:ok, file_content} = File.read(filename)
-    base64_data = Base.encode64(file_content)
     File.rm!(filename)
-
-    "data:image/png;base64," <> base64_data
+    file_content
   end
 
   @spec fetch_inbound_outbound(non_neg_integer(), String.t(), map()) :: [tuple()]
@@ -579,17 +577,23 @@ defmodule Glific.Stats do
   """
   @spec mail_stats(Partners.Organization.t(), String.t()) :: {:ok, term} | {:error, term}
   def mail_stats(org, duration \\ "WEEKLY") do
-    contacts = Reports.get_kpi_data(org.id, "contacts", get_day_range("WEEKLY"))
-    conversations = Reports.get_kpi_data(org.id, "stats", get_day_range("WEEKLY"))
-    optin = StatsLive.fetch_count_data(:optin_chart_data, org.id, get_day_range(duration))
-    messages = fetch_inbound_outbound(org.id, duration, get_day_range(duration))
+    contacts =
+      Reports.get_kpi_data(org.id, "contacts", get_day_range("WEEKLY"))
+      |> load_bar_svg("Contacts", ["Date", "Daily Contacts"])
+
+    conversations =
+      Reports.get_kpi_data(org.id, "stats", get_day_range("WEEKLY"))
+      |> load_bar_svg("Conversations", ["Hour", "Daily Conversations"])
+
+    optin =
+      StatsLive.fetch_count_data(:optin_chart_data, org.id, get_day_range(duration))
+      |> load_pie_svg("Contacts Optin Status")
+
+    messages =
+      fetch_inbound_outbound(org.id, duration, get_day_range(duration))
+      |> load_pie_svg("Messages")
 
     assigns = %{
-      contact_chart_svg: load_bar_svg(contacts, "Contacts", ["Date", "Daily Contacts"]),
-      conversation_chart_svg:
-        load_bar_svg(conversations, "Conversations", ["Hour", "Daily Conversations"]),
-      optin_chart_svg: load_pie_svg(optin, "Contacts Optin Status"),
-      message_chart_svg: load_pie_svg(messages, "Messages"),
       duration: duration,
       date_range: get_date_label(duration),
       dashboard_link: "https://#{org.shortcode}.tides.coloredcow.com/",
@@ -597,7 +601,11 @@ defmodule Glific.Stats do
     }
 
     opts = [
-      template: "dashboard.html"
+      template: "dashboard.html",
+      contacts: contacts,
+      conversations: conversations,
+      optin: optin,
+      messages: messages
     ]
 
     case DashboardMail.new_mail(org, assigns, opts)
