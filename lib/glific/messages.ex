@@ -829,7 +829,13 @@ defmodule Glific.Messages do
   end
 
   defp handle_multi_message_media(attrs) do
-    db_media = Repo.get_by(MessageMedia, url: attrs[:url])
+    db_media =
+      Repo.get_by(
+        MessageMedia,
+        url: attrs[:url],
+        organization_id: attrs[:organization_id]
+      )
+
     case db_media do
       nil -> insert_message_media(attrs)
       _ -> {:ok, db_media}
@@ -841,7 +847,6 @@ defmodule Glific.Messages do
     |> MessageMedia.changeset(attrs)
     |> Repo.insert()
   end
-
 
   @doc """
   Updates a message media.
