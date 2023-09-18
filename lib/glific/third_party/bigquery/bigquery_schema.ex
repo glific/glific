@@ -604,6 +604,12 @@ defmodule Glific.BigQuery.Schema do
         name: "revision",
         type: "STRING",
         mode: "REQUIRED"
+      },
+      %{
+        description: "Tag added to the flow",
+        name: "tag",
+        type: "STRING",
+        mode: "NULLABLE"
       }
     ]
   end
