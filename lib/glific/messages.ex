@@ -823,28 +823,25 @@ defmodule Glific.Messages do
 
   def create_message_media(attrs \\ %{}) do
     case Map.has_key?(attrs, :url) do
-      true ->
-        db_media = Repo.get_by(MessageMedia, url: attrs[:url])
-
-        if is_nil(db_media) do
-          %MessageMedia{}
-          |> MessageMedia.changeset(attrs)
-          |> Repo.insert()
-        else
-          {:ok, db_media}
-        end
-
-      false ->
-        {:error, "URL can't be blank"}
+      true -> handle_multi_message_media(attrs)
+      false -> insert_message_media(attrs)
     end
   end
 
-  # @spec create_message_media(map()) :: {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
-  # def create_message_media(attrs \\ %{}) do
-  #   %MessageMedia{}
-  #   |> MessageMedia.changeset(attrs)
-  #   |> Repo.insert()
-  # end
+  defp handle_multi_message_media(attrs) do
+    db_media = Repo.get_by(MessageMedia, url: attrs[:url])
+    case db_media do
+      nil -> insert_message_media(attrs)
+      _ -> {:ok, db_media}
+    end
+  end
+
+  defp insert_message_media(attrs) do
+    %MessageMedia{}
+    |> MessageMedia.changeset(attrs)
+    |> Repo.insert()
+  end
+
 
   @doc """
   Updates a message media.
