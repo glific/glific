@@ -107,9 +107,8 @@ defmodule Glific.Flows do
 
     # add the flow revision table and introduce a sort by the latest revision
     query
-    |> join(:left, [f], fr in FlowRevision, as: :fr, on: f.id == fr.flow_id)
-    |> where([_f, fr], fr.status == "published")
-    |> or_where([_f, fr], fr.revision_number == 0)
+    |> join(:inner, [f], fr in FlowRevision, as: :fr, on: f.id == fr.flow_id)
+    |> where([_f, fr], fr.revision_number == 0)
     |> order_by([_f, fr], desc: fr.inserted_at)
   end
 
