@@ -166,13 +166,14 @@ defmodule Glific.Reports do
               :conversation_count,
               :messages
             ] do
-
     duration = Keyword.get(opts, :duration, "WEEKLY")
-    period = case duration do
-      "MONTHLY" -> "month"
-      "WEEKLY" -> "day"
-      "DAILY" -> "day"
-    end
+
+    period =
+      case duration do
+        "MONTHLY" -> "month"
+        "WEEKLY" -> "day"
+        "DAILY" -> "day"
+      end
 
     query
     |> where([q], q.period == ^period)

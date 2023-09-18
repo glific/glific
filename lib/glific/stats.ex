@@ -484,19 +484,19 @@ defmodule Glific.Stats do
 
   @spec clean_data(any()) :: {:safe, [any()]}
   defp clean_data(data)
-  when is_binary(data)
-  do
-    data =  if String.contains?(data, "No data") do
-      [
-        """
-        <svg width="320" height="120" xmlns="http://www.w3.org/2000/svg">
-          <text x="160" y="70" font-size="20" text-anchor="middle">No Data</text>
-        </svg>
-        """
-      ]
-    else
-      [data]
-    end
+       when is_binary(data) do
+    data =
+      if String.contains?(data, "No data") do
+        [
+          """
+          <svg width="320" height="120" xmlns="http://www.w3.org/2000/svg">
+            <text x="160" y="70" font-size="20" text-anchor="middle">No Data</text>
+          </svg>
+          """
+        ]
+      else
+        [data]
+      end
 
     {:safe, data}
   end
