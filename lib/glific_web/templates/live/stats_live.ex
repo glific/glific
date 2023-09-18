@@ -388,7 +388,7 @@ defmodule GlificWeb.StatsLive do
   @doc """
   Render pie chart from dataset, returns SVG
   """
-  @spec render_pie_chart(String.t(), Contex.Dataset.t()) :: {:safe, [any()]}
+  @spec render_pie_chart(String.t(), Contex.Dataset.t()) :: {:safe, [any()]} | String.t()
   def render_pie_chart(title, dataset) do
     opts = piechart_opts(title)
     plot = Contex.Plot.new(dataset, Contex.PieChart, 800, 400, opts)

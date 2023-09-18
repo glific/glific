@@ -483,25 +483,26 @@ defmodule Glific.Stats do
   end
 
   @spec clean_data(any()) :: {:safe, [any()]}
-  defp clean_data(data)
-       when is_binary(data) do
-    data =
-      if String.contains?(data, "No data") do
-        [
-          """
-          <svg width="320" height="120" xmlns="http://www.w3.org/2000/svg">
-            <text x="160" y="70" font-size="20" text-anchor="middle">No Data</text>
-          </svg>
-          """
-        ]
-      else
-        [data]
-      end
-
-    {:safe, data}
+  defp clean_data(svg) when is_binary(svg) do
+    {
+      :safe,
+      [
+        """
+        <svg width="320" height="120" xmlns="http://www.w3.org/2000/svg">
+          <text x="160" y="70" font-size="20" text-anchor="middle">No Data</text>
+        </svg>
+        """
+      ]
+    }
   end
 
-  defp clean_data(svg), do: svg
+  defp clean_data({:safe, data}) do
+    if is_binary(data) do
+      {:safe, [data]}
+    else
+      {:safe, data}
+    end
+  end
 
   @spec load_pie_svg([any()], String.t()) :: String.t()
   defp load_pie_svg(data, title) do
