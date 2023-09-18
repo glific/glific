@@ -32,7 +32,7 @@ defmodule GlificWeb.API.V1.SessionController do
             access_token: conn.private[:api_access_token],
             token_expiry_time: conn.private[:api_token_expiry_time],
             renewal_token: conn.private[:api_renewal_token],
-            last_login: last_login_time
+            last_login_time: last_login_time
           }
         })
 
