@@ -19,7 +19,8 @@ defmodule Glific.Mails.DashboardMail do
     template = Keyword.get(opts, :template)
 
     html_body = DashboardView.render_dashboard(template, assigns)
+    opts = [{:is_html, true} | opts]
 
-    Mailer.common_send(org, subject, html_body, is_html: true)
+    Mailer.common_send(org, subject, html_body, opts)
   end
 end
