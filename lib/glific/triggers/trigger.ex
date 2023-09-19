@@ -175,17 +175,13 @@ defmodule Glific.Triggers.Trigger do
   defp do_validate_frequency(attrs), do: {:ok, attrs}
 
   defp validate_read_only_fields(changeset, attrs) do
-    @read_only_fields = [:phone, :status, :bspStatus]
-    modified_attrs = Map.take(attrs, @read_only_fields)
-
-    if Map.keys(modified_attrs) == [] do
+    if Map.has_key?(attrs, :is_active) do
       changeset
     else
       add_error(
         changeset,
-        Enum.map(@read_only_fields, fn field ->
-          {field, "Cannot modify read-only field"}
-        end)
+        :is_active,
+        "Can only modify is_active field"
       )
     end
   end
