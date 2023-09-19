@@ -19,8 +19,8 @@ defmodule Glific.Reports do
   }
 
   @doc false
-  @spec get_kpi(atom(), non_neg_integer(), [{atom(), any()}], map()) :: integer()
-  def get_kpi(kpi, org_id, opts \\ [], date_range) do
+  @spec get_kpi(atom(), non_neg_integer(), map(), [{atom(), any()}]) :: integer()
+  def get_kpi(kpi, org_id, date_range, opts \\ []) do
     Repo.put_process_state(org_id)
 
     get_count_query(kpi)
@@ -130,24 +130,6 @@ defmodule Glific.Reports do
 
   defp get_count_query(:conversation_count), do: select(Stat, [q], sum(q.conversations))
 
-  @spec get_day_range(String.t(), map()) :: tuple()
-  defp get_day_range(duration, date_range) do
-    presets = get_date_preset(date_range)
-    day = presets.start_day
-    last_7 = presets.end_day
-
-    case duration do
-      "MONTHLY" ->
-        {"month", Date.beginning_of_month(day), Date.end_of_month(day)}
-
-      "WEEKLY" ->
-        {"day", last_7, day}
-
-      "DAILY" ->
-        {"day", day, day}
-    end
-  end
-
   @spec add_timestamps(Ecto.Query.t(), atom(), [{atom(), any()}], map()) :: Ecto.Query.t()
   defp add_timestamps(query, kpi, _opts, date_range)
        when kpi in [
@@ -185,12 +167,18 @@ defmodule Glific.Reports do
               :messages
             ] do
     duration = Keyword.get(opts, :duration, "WEEKLY")
-    {period, end_day, start_day} = get_day_range(duration, date_range)
+
+    period =
+      case duration do
+        "MONTHLY" -> "month"
+        "WEEKLY" -> "day"
+        "DAILY" -> "day"
+      end
 
     query
     |> where([q], q.period == ^period)
-    |> where([q], q.date >= ^start_day)
-    |> where([q], q.date <= ^end_day)
+    |> where([q], q.date >= ^date_range.start_day)
+    |> where([q], q.date <= ^date_range.end_day)
   end
 
   defp add_timestamps(query, _kpi, _date_range, _opts), do: query
