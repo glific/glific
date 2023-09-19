@@ -13,7 +13,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
     "user" => %{
       "phone" => "+919820198766",
       "name" => "Jane Doe",
-      "password" => @password,
+      "password" => @password
     }
   }
   @invalid_params %{

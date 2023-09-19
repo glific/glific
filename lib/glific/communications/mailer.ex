@@ -61,7 +61,11 @@ defmodule Glific.Communications.Mailer do
   end
 
   defp create_attachment(data, key) do
-    Swoosh.Attachment.new({:data, data}, filename: "#{key}.png", content_type: "image/png", type: :inline)
+    Swoosh.Attachment.new({:data, data},
+      filename: "#{key}.png",
+      content_type: "image/png",
+      type: :inline
+    )
   end
 
   @doc """
