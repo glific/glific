@@ -836,16 +836,16 @@ defmodule Glific.Messages do
   @spec do_create_message_media(Ecto.Changeset.t(), map()) ::
           {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
   defp do_create_message_media(changeset, attrs) do
-    db_media =
-      Repo.get_by(
-        MessageMedia,
-        url: attrs.url,
-        organization_id: attrs.organization_id
-      )
+    message_media =
+      MessageMedia
+      |> where([mm], mm.url == ^attrs.url)
+      |> where([mm], mm.organization_id == ^attrs.organization_id)
+      |> limit(1)
+      |> Repo.one()
 
-    case db_media do
+    case message_media do
+      %MessageMedia{} = message_media -> {:ok, message_media}
       nil -> Repo.insert(changeset)
-      _ -> {:ok, db_media}
     end
   end
 
