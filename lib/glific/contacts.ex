@@ -268,25 +268,7 @@ defmodule Glific.Contacts do
       {:error, %Ecto.Changeset{}}
 
   """
-
-  # @spec update_contact(Contact.t(), map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  # def update_contact(%Contact{} = contact, attrs) do
-  #   if has_permission?(contact.id) do
-  #     if is_simulator_block?(contact, attrs) do
-  #       # just treat it as if we blocked the simulator
-  #       # but in reality, we don't block the simulator
-  #       {:ok, contact}
-  #     else
-  #       contact
-  #       |> Contact.changeset(attrs)
-  #       |> Repo.update()
-  #     end
-  #   else
-  #     raise "Permission denied"
-  #   end
-  # end
-
-  @spec update_contact(Contact.t(), map()) :: {:ok, Contact.t()} | {:error, String.t()}
+  @spec update_contact(Contact.t(), map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def update_contact(%Contact{} = contact, attrs) do
     if has_permission?(contact.id) do
       if is_simulator_block?(contact, attrs) do
@@ -294,31 +276,12 @@ defmodule Glific.Contacts do
         # but in reality, we don't block the simulator
         {:ok, contact}
       else
-        case check_read_only_fields(attrs) do
-          {:ok, modified_attrs} ->
-            contact
-            |> Contact.changeset(modified_attrs)
-            |> Repo.update()
-
-          {:error, error_message} ->
-            {:error, error_message}
-        end
+        contact
+        |> Contact.changeset(attrs)
+        |> Repo.update()
       end
     else
       raise "Permission denied"
-    end
-  end
-
-  @read_only_fields [:phone, :status, :bspStatus]
-
-  @spec check_read_only_fields(map()) :: {:ok, map()} | {:error, String.t()}
-  defp check_read_only_fields(attrs) do
-    modified_attrs = Map.take(attrs, @read_only_fields)
-
-    if Map.keys(modified_attrs) == [] do
-      {:ok, attrs}
-    else
-      {:error, "Cannot modify read-only fields"}
     end
   end
 
