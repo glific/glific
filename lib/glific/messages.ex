@@ -826,26 +826,29 @@ defmodule Glific.Messages do
     |> check_changeset(attrs)
   end
 
+  @spec check_changeset(Ecto.Changeset.t(), map()) ::
+          {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
   defp check_changeset(changeset, attrs) do
     has_no_errors =
       changeset
       |> Map.get(:error, [])
       |> Enum.empty?()
 
-    if has_no_errors, do: do_create_message_media(attrs), else: {:error, changeset}
+    if has_no_errors, do: do_create_message_media(changeset, attrs), else: {:error, changeset}
   end
 
-  @spec do_create_message_media(map()) :: {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
-  defp do_create_message_media(attrs) do
+  @spec do_create_message_media(Ecto.Changeset.t(), map()) ::
+          {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
+  defp do_create_message_media(changeset, attrs) do
     db_media =
       Repo.get_by(
         MessageMedia,
-        url: attrs[:url],
-        organization_id: attrs[:organization_id]
+        url: attrs.url,
+        organization_id: attrs.organization_id
       )
 
     case db_media do
-      nil -> Repo.insert(attrs)
+      nil -> Repo.insert(changeset, attrs)
       _ -> {:ok, db_media}
     end
   end
