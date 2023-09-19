@@ -55,28 +55,34 @@ defmodule Glific.Flows.Templating do
     Flows.check_required_fields(json, @required_fields)
     uuid = json["template"]["uuid"]
 
-    Glific.Repo.fetch_by(SessionTemplate, %{uuid: uuid})
-    |> case do
-      {:ok, template} ->
-        variables = if is_list(json["variables"]), do: json["variables"], else: []
-
-        templating = %Templating{
-          uuid: json["uuid"],
-          name: json["template"]["name"],
-          template: template,
-          variables: Enum.take(variables, template.number_parameters),
-          expression: nil,
-          localization: json["localization"]
-        }
-
-        {templating, Map.put(uuid_map, templating.uuid, {:templating, templating})}
-
-      error ->
-        Logger.error(
-          "Template not found, skipping templating. #{inspect(json)} and error #{inspect(error)}"
-        )
-
+    case uuid do
+      nil ->
+        Logger.error("UUID is nil, skipping templating. #{inspect(json)}")
         {nil, uuid_map}
+
+      _ ->
+        case Glific.Repo.fetch_by(SessionTemplate, %{uuid: uuid}) do
+          {:ok, template} ->
+            variables = if is_list(json["variables"]), do: json["variables"], else: []
+
+            templating = %Templating{
+              uuid: json["uuid"],
+              name: json["template"]["name"],
+              template: template,
+              variables: Enum.take(variables, template.number_parameters),
+              expression: nil,
+              localization: json["localization"]
+            }
+
+            {templating, Map.put(uuid_map, templating.uuid, {:templating, templating})}
+
+          error ->
+            Logger.error(
+              "Template not found, skipping templating. #{inspect(json)} and error #{inspect(error)}"
+            )
+
+            {nil, uuid_map}
+        end
     end
   end
 
