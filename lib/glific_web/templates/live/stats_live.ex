@@ -258,16 +258,12 @@ defmodule GlificWeb.StatsLive do
     Contex.Dataset.new(data, ["Hour", "Inbound", "Outbound"])
   end
 
-  defp make_bar_chart_dataset(data, opts) do
-    Contex.Dataset.new(data, opts)
-  end
-
   @doc """
   Create Bar chart dataset from rows of data
   """
-  @spec make_bar_chart_dataset([any()]) :: Contex.Dataset.t()
-  def make_bar_chart_dataset(data) do
-    Contex.Dataset.new(data)
+  @spec make_bar_chart_dataset([any()], [String.t()]) :: Contex.Dataset.t()
+  def make_bar_chart_dataset(data, opts) do
+    Contex.Dataset.new(data, opts)
   end
 
   @doc """
@@ -320,7 +316,10 @@ defmodule GlificWeb.StatsLive do
   end
 
   def render_bar_chart(title, dataset) do
-    opts = if length(dataset.data) >= 15, do: barchart_opts(title) ++ [show_x_axis: false], else: barchart_opts(title)
+    opts =
+      if length(dataset.data) >= 15,
+        do: barchart_opts(title) ++ [show_x_axis: false],
+        else: barchart_opts(title)
 
     Contex.Plot.new(dataset, Contex.BarChart, 700, 350, opts)
     |> Contex.Plot.to_svg()
@@ -359,7 +358,7 @@ defmodule GlificWeb.StatsLive do
       data_labels: false,
       title: false,
       axis_label_rotation: 45,
-      legend_setting: :legend_bottom,
+      legend_setting: :legend_bottom
     ]
   end
 
@@ -389,7 +388,7 @@ defmodule GlificWeb.StatsLive do
   @doc """
   Render pie chart from dataset, returns SVG
   """
-  @spec render_pie_chart(String.t(), Contex.Dataset.t()) :: {:safe, [any()]}
+  @spec render_pie_chart(String.t(), Contex.Dataset.t()) :: {:safe, [any()]} | String.t()
   def render_pie_chart(title, dataset) do
     opts = piechart_opts(title)
     plot = Contex.Plot.new(dataset, Contex.PieChart, 800, 400, opts)

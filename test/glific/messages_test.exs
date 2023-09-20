@@ -1387,8 +1387,10 @@ defmodule Glific.MessagesTest do
       assert message_media.url == "some url"
     end
 
-    test "create_message_media/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Messages.create_message_media(@invalid_attrs)
+    test "create_message_media/1 with invalid data returns error changeset", attrs do
+      assert {:error, %Ecto.Changeset{}} =
+               Map.merge(@invalid_attrs, %{organization_id: attrs.organization_id})
+               |> Messages.create_message_media()
     end
 
     test "update_message_media/2 with valid data updates the message_media", attrs do
