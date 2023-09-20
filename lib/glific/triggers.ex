@@ -189,6 +189,7 @@ defmodule Glific.Triggers do
   """
   @spec update_trigger(Trigger.t(), map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def update_trigger(%Trigger{} = trigger, attrs) do
+    IO.inspect(attrs)
     with {:ok, updated_trigger} <-
            trigger
            |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))

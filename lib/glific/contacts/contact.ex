@@ -43,11 +43,6 @@ defmodule Glific.Contacts.Contact do
     :fields,
     :active_profile_id
   ]
-  @read_only_fields [
-    :phone,
-    :status,
-    :bsp_status
-  ]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -132,18 +127,9 @@ defmodule Glific.Contacts.Contact do
     contact
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_read_only_fields(attrs)
     |> unique_constraint([:phone, :organization_id])
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:active_profile_id)
-  end
-
-  defp validate_read_only_fields(changeset, attrs) do
-    fields = Map.take(attrs, @read_only_fields)
-
-    if fields == [],
-      do: changeset,
-      else: add_error(changeset, :phone, "can't modify the read-only fields")
   end
 
   @doc false

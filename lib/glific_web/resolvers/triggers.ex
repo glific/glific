@@ -55,7 +55,8 @@ defmodule GlificWeb.Resolvers.Triggers do
   def update_trigger(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
     with {:ok, trigger} <-
            Repo.fetch_by(Trigger, %{id: id, organization_id: user.organization_id}),
-         {:ok, trigger} <- Triggers.update_trigger(trigger, params) do
+           cleaned_params <- clean_params(params),
+         {:ok, trigger} <- Triggers.update_trigger(trigger, cleaned_params) do
       {:ok, %{trigger: trigger}}
     else
       _ ->
@@ -63,6 +64,16 @@ defmodule GlificWeb.Resolvers.Triggers do
          dgettext("errors", "Trigger start_at should always be greater than current time")}
     end
   end
+
+  defp clean_params(params) do
+    case Map.keys(params) do
+      [:is_active] ->
+        {:ok, params}
+      _ ->
+        {:error, "Cannot modify read-only fields"}
+    end
+  end
+
 
   @doc false
   @spec delete_trigger(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::

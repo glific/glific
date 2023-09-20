@@ -90,7 +90,6 @@ defmodule Glific.Triggers.Trigger do
     |> validate_required(@required_fields)
     |> validate_start_at()
     |> validate_frequency()
-    |> validate_read_only_fields(attrs)
     |> foreign_key_constraint(:flow_id)
     |> foreign_key_constraint(:organization_id)
   end
@@ -173,16 +172,4 @@ defmodule Glific.Triggers.Trigger do
   end
 
   defp do_validate_frequency(attrs), do: {:ok, attrs}
-
-  defp validate_read_only_fields(changeset, attrs) do
-    if Map.has_key?(attrs, :is_active) do
-      changeset
-    else
-      add_error(
-        changeset,
-        :is_active,
-        "Can only modify is_active field"
-      )
-    end
-  end
 end
