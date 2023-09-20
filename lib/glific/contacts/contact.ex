@@ -133,21 +133,22 @@ defmodule Glific.Contacts.Contact do
     |> foreign_key_constraint(:active_profile_id)
   end
 
-
   defp validate_read_only_fields(changeset, attrs) do
     @read_only_fields = [:phone, :status, :bspStatus]
     modified_attrs = Map.take(attrs, @read_only_fields)
 
-    if Map.keys(modified_attrs) == [] do
-      changeset
-    else
-      Enum.reduce(@read_only_fields, changeset, fn field, acc_changeset ->
-        if Map.has_key?(modified_attrs, field) do
-          add_error(acc_changeset, field, "Cannot modify #{field}")
-        else
-          acc_changeset
-        end
-      end)
+    cond do
+      Map.keys(modified_attrs) == [] ->
+        changeset
+
+      true ->
+        Enum.reduce(@read_only_fields, changeset, fn field, acc_changeset ->
+          if Map.has_key?(modified_attrs, field) do
+            add_error(acc_changeset, field, "Cannot modify #{field}")
+          else
+            acc_changeset
+          end
+        end)
     end
   end
 
