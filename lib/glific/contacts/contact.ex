@@ -127,26 +127,29 @@ defmodule Glific.Contacts.Contact do
     contact
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    # |> validate_read_only_fields(attrs)
+    |> validate_read_only_fields(attrs)
     |> unique_constraint([:phone, :organization_id])
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:active_profile_id)
   end
 
-  # defp validate_read_only_fields(changeset, attrs) do
-  #   @read_only_fields = [:phone, :status, :bspStatus]
-  #   modified_attrs = Map.take(attrs, @read_only_fields)
 
-  #   if Map.keys(modified_attrs) == [] do
-  #     changeset
-  #   else
-  #     add_error(
-  #       changeset,
-  #       :phone,
-  #       "can't update the read only fields"
-  #     )
-  #   end
-  # end
+  defp validate_read_only_fields(changeset, attrs) do
+    @read_only_fields = [:phone, :status, :bspStatus]
+    modified_attrs = Map.take(attrs, @read_only_fields)
+
+    if Map.keys(modified_attrs) == [] do
+      changeset
+    else
+      Enum.reduce(@read_only_fields, changeset, fn field, acc_changeset ->
+        if Map.has_key?(modified_attrs, field) do
+          add_error(acc_changeset, field, "Cannot modify #{field}")
+        else
+          acc_changeset
+        end
+      end)
+    end
+  end
 
   @doc false
   @spec to_minimal_map(Contact.t()) :: map()
