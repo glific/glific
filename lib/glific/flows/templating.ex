@@ -12,6 +12,8 @@ defmodule Glific.Flows.Templating do
     Flows,
     Flows.FlowContext,
     Messages.Message,
+    Notifications,
+    Repo,
     Templates.SessionTemplate
   }
 
@@ -58,6 +60,17 @@ defmodule Glific.Flows.Templating do
     case uuid do
       nil ->
         Logger.error("UUID is nil, skipping templating. #{inspect(json)}")
+        {nil, uuid_map}
+
+        notification = %{
+          category: "Template",
+          message: "Template expression is null in the flow",
+          severity: Notifications.types().warning,
+          organization_id: Repo.get_organization_id(),
+          entity: %{template_type: json["template"]}
+        }
+
+        Notifications.create_notification(notification)
         {nil, uuid_map}
 
       _ ->
