@@ -175,7 +175,7 @@ defmodule GlificWeb.Schema.FlowTypes do
       arg(:flow_id, non_null(:id))
       arg(:contact_id, non_null(:id))
       arg(:default_results, :json)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.start_contact_flow/3)
     end
 
