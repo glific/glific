@@ -43,6 +43,11 @@ defmodule Glific.Contacts.Contact do
     :fields,
     :active_profile_id
   ]
+  @read_only_fields [
+    :phone,
+    :status,
+    :bsp_status
+  ]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -134,22 +139,11 @@ defmodule Glific.Contacts.Contact do
   end
 
   defp validate_read_only_fields(changeset, attrs) do
-    @read_only_fields = [:phone, :status, :bspStatus]
-    modified_attrs = Map.take(attrs, @read_only_fields)
+    fields = Map.take(attrs, @read_only_fields)
 
-    cond do
-      Map.keys(modified_attrs) == [] ->
-        changeset
-
-      true ->
-        Enum.reduce(@read_only_fields, changeset, fn field, acc_changeset ->
-          if Map.has_key?(modified_attrs, field) do
-            add_error(acc_changeset, field, "Cannot modify #{field}")
-          else
-            acc_changeset
-          end
-        end)
-    end
+    if fields == [],
+      do: changeset,
+      else: add_error(changeset, :phone, "can't modify the read-only fields")
   end
 
   @doc false
