@@ -65,6 +65,7 @@ defmodule GlificWeb.Resolvers.Contacts do
 
   @read_only_fields [:phone, :status, :bspStatus]
 
+  @spec clean_params(map()) :: {:ok, map()} | {:error, String.t()}
   defp clean_params(params) do
     read_only_params = Map.take(params, @read_only_fields)
 

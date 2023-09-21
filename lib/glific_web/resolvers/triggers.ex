@@ -65,6 +65,7 @@ defmodule GlificWeb.Resolvers.Triggers do
     end
   end
 
+  @spec clean_params(map()) :: {:ok, map()} | {:error, String.t()}
   defp clean_params(params) do
     case Map.keys(params) do
       [:is_active] ->
