@@ -1385,6 +1385,20 @@ defmodule Glific.MessagesTest do
       assert message_media.source_url == "some source_url"
       assert message_media.thumbnail == "some thumbnail"
       assert message_media.url == "some url"
+
+      assert {:ok, %MessageMedia{} = message_media} =
+               Messages.create_message_media(
+                 @valid_attrs
+                 |> Map.merge(%{
+                   organization_id: attrs.organization_id,
+                   caption: "updated caption"
+                 })
+               )
+
+      assert message_media.caption == "updated caption"
+      assert message_media.source_url == "some source_url"
+      assert message_media.thumbnail == "some thumbnail"
+      assert message_media.url == "some url"
     end
 
     test "create_message_media/1 with invalid data returns error changeset", attrs do
