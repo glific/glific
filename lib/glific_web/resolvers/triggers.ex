@@ -55,7 +55,7 @@ defmodule GlificWeb.Resolvers.Triggers do
   def update_trigger(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
     with {:ok, trigger} <-
            Repo.fetch_by(Trigger, %{id: id, organization_id: user.organization_id}),
-         {:ok, cleaned_params} <- clean_params(params),
+         {:ok, cleaned_params} <- validate_params(params),
          {:ok, trigger} <- Triggers.update_trigger(trigger, cleaned_params) do
       {:ok, %{trigger: trigger}}
     else
@@ -65,14 +65,14 @@ defmodule GlificWeb.Resolvers.Triggers do
     end
   end
 
-  @spec clean_params(map()) :: {:ok, map()} | {:error, String.t()}
-  defp clean_params(params) do
-    case Map.keys(params) do
-      [:is_active] ->
-        {:ok, params}
+  @spec validate_params(map()) :: {:ok, map()} | {:error, String.t()}
+  defp validate_params(params) do
+    param_keys = Map.keys(params)
 
-      _ ->
-        {:error, "Cannot modify read-only fields"}
+    if Enum.any?(param_keys, fn param_key -> param_key in [:is_active] end) do
+      {:error, "Cannot modify read-only fields"}
+    else
+      {:ok, params}
     end
   end
 

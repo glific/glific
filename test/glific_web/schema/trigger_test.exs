@@ -423,11 +423,6 @@ defmodule GlificWeb.Schema.TriggerTest do
     error_message = hd(query_data.errors).message
 
     assert error_message =~ "Trigger start_at should always be greater than current time"
-    # flow_name = get_in(query_data, [:data, "updateTrigger", "trigger", "flow", "name"])
-    # assert flow_name == trigger.flow.name
-
-    # assert get_in(query_data, [:data, "updateTrigger", "trigger", "end_date"]) ==
-    #          Date.to_string(trigger.end_date)
   end
 
   test "update a trigger with existing name and next_trigger_at", attrs do
