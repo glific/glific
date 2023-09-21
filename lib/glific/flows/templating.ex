@@ -12,6 +12,8 @@ defmodule Glific.Flows.Templating do
     Flows,
     Flows.FlowContext,
     Messages.Message,
+    Notifications,
+    Repo,
     Templates.SessionTemplate
   }
 
@@ -55,8 +57,18 @@ defmodule Glific.Flows.Templating do
     Flows.check_required_fields(json, @required_fields)
     uuid = json["template"]["uuid"]
 
-    Glific.Repo.fetch_by(SessionTemplate, %{uuid: uuid})
-    |> case do
+    do_process_template(uuid, json, uuid_map)
+  end
+
+  @spec do_process_template(nil | String.t(), map(), map()) ::
+          {nil, map()} | {Templating.t(), map()}
+  defp do_process_template(nil, json, uuid_map) do
+    Logger.error("UUID is nil, skipping templating. #{inspect(json)}")
+    create_flow_template_notification("Template expression is null in the flow", json, uuid_map)
+  end
+
+  defp do_process_template(uuid, json, uuid_map) do
+    case Glific.Repo.fetch_by(SessionTemplate, %{uuid: uuid}) do
       {:ok, template} ->
         variables = if is_list(json["variables"]), do: json["variables"], else: []
 
@@ -76,8 +88,26 @@ defmodule Glific.Flows.Templating do
           "Template not found, skipping templating. #{inspect(json)} and error #{inspect(error)}"
         )
 
-        {nil, uuid_map}
+        create_flow_template_notification(
+          "Template not found, skipping templating",
+          json,
+          uuid_map
+        )
     end
+  end
+
+  @spec create_flow_template_notification(String.t(), map(), map()) :: {nil, map()}
+  defp create_flow_template_notification(message, json, uuid_map) do
+    %{
+      category: "Template",
+      message: message,
+      severity: Notifications.types().warning,
+      organization_id: Repo.get_organization_id(),
+      entity: %{template_type: json["template"]}
+    }
+    |> Notifications.create_notification()
+
+    {nil, uuid_map}
   end
 
   @doc """
