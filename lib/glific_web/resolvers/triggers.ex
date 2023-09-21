@@ -58,7 +58,6 @@ defmodule GlificWeb.Resolvers.Triggers do
          {:ok, cleaned_params} <- clean_params(params),
          {:ok, trigger} <- Triggers.update_trigger(trigger, cleaned_params) do
       {:ok, %{trigger: trigger}}
-      IO.inspect(trigger)
     else
       _ ->
         {:error,
