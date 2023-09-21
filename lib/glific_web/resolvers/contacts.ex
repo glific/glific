@@ -57,7 +57,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   def update_contact(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}),
-           cleaned_params <- clean_params(params),
+         {:ok, cleaned_params} <- clean_params(params),
          {:ok, contact} <- Contacts.update_contact(contact, cleaned_params) do
       {:ok, %{contact: contact}}
     end
