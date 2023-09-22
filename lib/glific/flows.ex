@@ -602,6 +602,7 @@ defmodule Glific.Flows do
 
   @spec format_flow_errors(list()) :: list()
   defp format_flow_errors(errors) when is_list(errors) do
+    ## we can think about the warning based on keys
     Enum.reduce(errors, [], fn error, acc ->
       error_message = elem(error, 1)
       category = categorize_flow_error(error_message)
