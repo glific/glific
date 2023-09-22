@@ -549,7 +549,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     result =
       auth_query_gql_by(:update, user,
-        variables: %{"id" => contact.id, "input" => %{"name" => name, "phone" => phone}}
+        variables: %{"id" => contact.id, "input" => %{"name" => name}}
       )
 
     assert {:ok, query_data} = result
@@ -571,11 +571,13 @@ defmodule GlificWeb.Schema.ContactTest do
         }
       )
 
-    # ensure we cannot update an existing contact with the same phone
+    # ensure we cannot update an existing contact's phone
+
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:data, "updateContact", "errors", Access.at(0), "message"])
-    assert message =~ "has already been taken"
+    error_message = hd(query_data.errors).message
+
+    assert error_message =~ "Cannot modify read-only fields"
   end
 
   test "delete a contact", %{manager: user} do
