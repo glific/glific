@@ -436,7 +436,7 @@ defmodule Glific.Flows.Flow do
 
     if MapSet.subset?(flow_context_nodes, all_nodes),
       do: errors,
-      else: [flowContext: "Some of your users in the flow have their node deleted"] ++ errors
+      else: [flowContext: "Some of your users in the flow have their node deleted", category: "warning"] ++ errors
   end
 
   # add the appropriate where clause as needed
