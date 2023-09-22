@@ -602,10 +602,27 @@ defmodule Glific.Flows do
 
   @spec format_flow_errors(list()) :: list()
   defp format_flow_errors(errors) when is_list(errors) do
-    ## we can think about the warning based on keys
     Enum.reduce(errors, [], fn error, acc ->
-      [%{key: elem(error, 0), message: elem(error, 1)} | acc]
+      error_message = elem(error, 1)
+      category = categorize_flow_error(error_message)
+
+      [%{key: elem(error, 0), message: error_message, category: category} | acc]
     end)
+  end
+
+  defp categorize_flow_error(error_message) do
+    error_categories = %{
+      "Could not find Contact" => "critical",
+      "Your flow has dangling nodes" => "warning",
+      "Could not find Group:" => "critical",
+      "The next message after a long wait for time should be an HSM template" => "warning",
+      "Could not find Sub Flow:" => "critical",
+      "Could not parse" => "warning",
+      "\"newcontact\" has already been used as a keyword for a flow" => "critical",
+      "The next message after a long no response should be an HSM template" => "warning"
+    }
+
+    Map.get(error_categories, error_message, "unknown")
   end
 
   # Get version of last published flow revision
