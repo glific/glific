@@ -836,9 +836,12 @@ defmodule Glific.Messages do
   @spec do_create_message_media(Ecto.Changeset.t(), map()) ::
           {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
   defp do_create_message_media(changeset, attrs) do
+    caption = Map.get(attrs, :caption, nil)
+
     message_media =
       MessageMedia
       |> where([mm], mm.url == ^attrs.url)
+      |> add_caption(caption)
       |> where([mm], mm.organization_id == ^attrs.organization_id)
       |> limit(1)
       |> Repo.one()
@@ -847,6 +850,13 @@ defmodule Glific.Messages do
       %MessageMedia{} = message_media -> {:ok, message_media}
       nil -> Repo.insert(changeset)
     end
+  end
+
+  defp add_caption(query, caption) when is_nil(caption), do: query
+
+  defp add_caption(query, caption) do
+    query
+    |> where([mm], mm.caption == ^caption)
   end
 
   @doc """
