@@ -55,6 +55,7 @@ defmodule Glific.Flows do
   @spec merge_original(map(), [Flow.t()]) :: [Flow.t()]
   defp merge_original(dates, flows) do
     Enum.map(flows, fn f -> Map.merge(f, Map.get(dates, f.id, %{})) end)
+    |> Enum.uniq()
   end
 
   @spec get_published_draft_dates([non_neg_integer]) :: map()
