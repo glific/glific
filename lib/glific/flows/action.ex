@@ -427,7 +427,7 @@ defmodule Glific.Flows.Action do
   defp check_entity_exists(entity, errors, object) do
     case Repo.fetch_by(object, %{id: entity["uuid"]}) do
       {:ok, _} -> errors
-      _ -> [{object, "Could not find #{get_name(object)}: #{entity["name"]}"}] ++ errors
+      _ -> [{object, "Could not find #{get_name(object)}: #{entity["name"]}", "Critical"}] ++ errors
     end
   end
 
@@ -456,7 +456,7 @@ defmodule Glific.Flows.Action do
             check_entity_exists(entity, errors, object)
 
           _ ->
-            [{object, "Could not parse #{get_name(object)}"}] ++ errors
+            [{object, "Could not parse #{get_name(object)}", "Warning"}] ++ errors
         end
       end
     )
@@ -466,7 +466,7 @@ defmodule Glific.Flows.Action do
     # ensure that the flow exists
     case Repo.fetch_by(Flow, %{uuid: action.enter_flow_uuid}) do
       {:ok, _} -> errors
-      _ -> [{Flow, "Could not find Sub Flow: #{action.enter_flow_name}"}] ++ errors
+      _ -> [{Flow, "Could not find Sub Flow: #{action.enter_flow_name}", "Critical"}] ++ errors
     end
   end
 
@@ -477,14 +477,14 @@ defmodule Glific.Flows.Action do
     if action.wait_time >= 24 * 60 * 60 &&
          type_of_next_message(flow, action) == :session,
        do:
-         [{Message, "The next message after a long wait for time should be an HSM template"}] ++
+         [{Message, "The next message after a long wait for time should be an HSM template", "Warning"}] ++
            errors,
        else: errors
   end
 
   def validate(%{type: "set_contact_language"} = action, errors, _flow) do
     if is_nil(action.text) || action.text == "",
-      do: [{Message, "Language is a required field"}] ++ errors,
+      do: [{Message, "Language is a required field", "Warning"}] ++ errors,
       else: errors
   end
 
