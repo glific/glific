@@ -426,8 +426,11 @@ defmodule Glific.Flows.Action do
   @spec check_entity_exists(map(), Keyword.t(), atom()) :: Keyword.t()
   defp check_entity_exists(entity, errors, object) do
     case Repo.fetch_by(object, %{id: entity["uuid"]}) do
-      {:ok, _} -> errors
-      _ -> [{object, "Could not find #{get_name(object)}: #{entity["name"]}", "Critical"}] ++ errors
+      {:ok, _} ->
+        errors
+
+      _ ->
+        [{object, "Could not find #{get_name(object)}: #{entity["name"]}", "Critical"}] ++ errors
     end
   end
 
@@ -477,7 +480,10 @@ defmodule Glific.Flows.Action do
     if action.wait_time >= 24 * 60 * 60 &&
          type_of_next_message(flow, action) == :session,
        do:
-         [{Message, "The next message after a long wait for time should be an HSM template", "Warning"}] ++
+         [
+           {Message, "The next message after a long wait for time should be an HSM template",
+            "Warning"}
+         ] ++
            errors,
        else: errors
   end
