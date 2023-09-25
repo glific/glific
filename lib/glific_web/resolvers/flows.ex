@@ -70,9 +70,16 @@ defmodule GlificWeb.Resolvers.Flows do
 
   @doc false
   @spec import_flow(Absinthe.Resolution.t(), %{flow: map()}, %{context: map()}) ::
-          {:ok, %{success: boolean()}}
+          {:ok, %{success: boolean()} | {:error, any}}
   def import_flow(_, %{flow: flow}, %{context: %{current_user: user}}) do
-    {:ok, %{success: Flows.import_flow(flow, user.organization_id)}}
+    case Flows.import_flow(flow, user.organization_id) do
+      true ->
+        {:ok, %{success: true}}
+
+      false ->
+        errors = [%{key: "Keyword error", message: "The keyword already exists in another flow"}]
+        {:ok, %{success: false, error: errors}}
+    end
   end
 
   @doc false
