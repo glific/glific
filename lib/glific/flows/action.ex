@@ -456,7 +456,7 @@ defmodule Glific.Flows.Action do
             check_entity_exists(entity, errors, object)
 
           _ ->
-            [{object, "Could not parse #{get_name(object)}", "Warning"}] ++ errors
+            [{object, "Could not parse #{get_name(object)}", "Critical"}] ++ errors
         end
       end
     )
