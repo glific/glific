@@ -421,7 +421,7 @@ defmodule Glific.Flows.Flow do
 
     if MapSet.size(dangling) == 0,
       do: errors,
-      else: [dangling: "Your flow has dangling nodes"] ++ errors
+      else: [{dangling, "Your flow has dangling nodes", "Warning"}] ++ errors
   end
 
   @spec missing_flow_context_nodes(Keyword.t(), map(), MapSet.t()) :: Keyword.t()
@@ -436,7 +436,9 @@ defmodule Glific.Flows.Flow do
 
     if MapSet.subset?(flow_context_nodes, all_nodes),
       do: errors,
-      else: [flowContext: "Some of your users in the flow have their node deleted", category: "warning"] ++ errors
+      else:
+        [{FlowContext, "Some of your users in the flow have their node deleted", "Critical"}] ++
+          errors
   end
 
   # add the appropriate where clause as needed
