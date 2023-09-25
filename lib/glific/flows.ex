@@ -603,11 +603,9 @@ defmodule Glific.Flows do
 
   @spec format_flow_errors(list()) :: list()
   defp format_flow_errors(errors) when is_list(errors) do
-    IO.inspect(errors)
     ## we can think about the warning based on keys
     Enum.reduce(errors, [], fn error, acc ->
-      # category = elem(List.keyfind(errors, :category, 0), 1)
-      [%{key: elem(error, 0), message: elem(error, 1)} | acc]
+      [%{key: elem(error, 0), message: elem(error, 1), category: elem(error, 1)} | acc]
     end)
   end
 
