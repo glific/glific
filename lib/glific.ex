@@ -379,7 +379,7 @@ defmodule Glific do
           captcha_error =
             response_body
             |> Map.get("error-codes", "Token verification failed")
-            |> List.first()
+            |> parse_captcha_error()
 
           Logger.info("Failed to verify Google Captcha: #{captcha_error}")
           {:error, "Failed to verify Google Captcha: #{captcha_error}"}
@@ -390,6 +390,9 @@ defmodule Glific do
         {:error, "invalid response #{inspect(response)}"}
     end
   end
+
+  defp parse_captcha_error(error) when is_binary(error), do: error
+  defp parse_captcha_error(error), do: List.first(error)
 
   @doc """
   Adds a limit to restrict accessing data from big tables like messages, contacts
