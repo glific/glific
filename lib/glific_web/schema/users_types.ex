@@ -132,5 +132,11 @@ defmodule GlificWeb.Schema.UserTypes do
       middleware(Authorize, :manager)
       resolve(&Resolvers.Users.update_user/3)
     end
+
+    field :fetch_user_sessions, :integer do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Users.fetch_user_sessions/3)
+    end
   end
 end
