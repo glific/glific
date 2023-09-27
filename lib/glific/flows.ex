@@ -858,30 +858,48 @@ defmodule Glific.Flows do
     user = Repo.get_current_user()
     interactive_template_list = import_interactive_templates(import_flow, organization_id)
 
-    Enum.reduce(import_flow["flows"], {:ok, nil}, fn flow_revision, {:ok, _} ->
-      with {:ok, flow} <-
-             create_flow(%{
-               name: flow_revision["definition"]["name"],
-               # we are reusing existing UUIDs against the spirit of UUIDs
-               # however this allows us to support sub flows
-               uuid: flow_revision["definition"]["uuid"],
-               keywords: flow_revision["keywords"],
-               organization_id: organization_id
-             }),
-           {:ok, _flow_revision} <-
-             FlowRevision.create_flow_revision(%{
-               definition:
-                 clean_flow_definition(flow_revision["definition"], interactive_template_list),
-               flow_id: flow.id,
-               organization_id: flow.organization_id,
-               user_id: user.id
-             }) do
-        import_contact_field(import_flow, organization_id)
-        import_groups(import_flow, organization_id)
-        {:ok, flow}
-      end
-    end)
+    import_flow_list =
+      Enum.map(import_flow["flows"], fn flow_revision ->
+        with {:ok, flow} <-
+               create_flow(%{
+                 name: flow_revision["definition"]["name"],
+                 uuid: flow_revision["definition"]["uuid"],
+                 keywords: flow_revision["keywords"],
+                 organization_id: organization_id
+               }),
+             {:ok, _flow_revision} <-
+               FlowRevision.create_flow_revision(%{
+                 definition:
+                   clean_flow_definition(flow_revision["definition"], interactive_template_list),
+                 flow_id: flow.id,
+                 organization_id: flow.organization_id,
+                 user_id: user.id
+               }) do
+          import_contact_field(import_flow, organization_id)
+          import_groups(import_flow, organization_id)
+          {:ok, flow}
+        else
+          {:error, error} ->
+            field_errors = error.errors |> hd()
+            field_errors
+        end
+      end)
+
+    list_to_tuple(import_flow_list)
   end
+
+  def list_to_tuple(import_flow_list) when is_list(import_flow_list) do
+    tuple_list =
+      import_flow_list
+      |> Enum.map(fn
+        {:keywords, {message, _}} -> {:keywords, message}
+        _ -> nil
+      end)
+      |> Enum.reject(&is_nil/1)
+
+    {:ok, List.to_tuple(tuple_list)}
+  end
+
 
   @spec clean_flow_definition(map(), list()) :: map()
   defp clean_flow_definition(definition, interactive_template_list) do
