@@ -205,6 +205,20 @@ defmodule Glific.Users do
   end
 
   @doc """
+  Fetches active session for user
+
+  ## Examples
+
+      iex> fetch_user_session(user)
+      1
+
+  """
+  @spec fetch_user_session(User.t()) :: integer()
+  def fetch_user_session(%User{} = user) do
+    GlificWeb.APIAuthPlug.fetch_all_user_sessions(@pow_config, user)
+  end
+
+  @doc """
   Reset user password
   """
   @spec reset_user_password(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
