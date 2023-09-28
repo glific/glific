@@ -113,4 +113,20 @@ defmodule GlificWeb.APIAuthPlugTest do
     assert {_conn, nil} = APIAuthPlug.fetch(with_auth_header(conn, access_token), @pow_config)
     assert {_conn, nil} = APIAuthPlug.fetch(with_auth_header(conn, access_token2), @pow_config)
   end
+
+  test "fetch all existing sessions of a user", %{conn: conn, user: user} do
+    active_sessions = APIAuthPlug.fetch_all_user_sessions(@pow_config, user)
+    # number of active sessions at the start should be 0
+    assert active_sessions == 0
+
+    # logging in with user to increase the number of active session by 1
+    {_data, api_user} = APIAuthPlug.create(conn, user, @pow_config)
+    assert Map.has_key?(api_user, :fingerprint)
+    assert !is_nil(api_user.fingerprint)
+
+    updated_active_sessions = APIAuthPlug.fetch_all_user_sessions(@pow_config, user)
+
+    # number of active sessions should be one more than what initially were
+    assert active_sessions + 1 == updated_active_sessions
+  end
 end
