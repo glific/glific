@@ -877,11 +877,14 @@ defmodule Glific.Flows do
                }) do
           import_contact_field(import_flow, organization_id)
           import_groups(import_flow, organization_id)
-          {:ok, flow}
+          {"Flow '#{flow.name}' successfully imported."}
         else
           {:error, error} ->
-            field_errors = error.errors |> hd()
-            field_errors
+            flow_name = error.changes |> Map.get(:name)
+            keyword_errors = error.errors |> hd()
+            {:keywords, {message, _}} = keyword_errors
+
+            {flow_name, "#{message}"}
         end
       end)
 
@@ -889,17 +892,8 @@ defmodule Glific.Flows do
   end
 
   def list_to_tuple(import_flow_list) when is_list(import_flow_list) do
-    tuple_list =
-      import_flow_list
-      |> Enum.map(fn
-        {:keywords, {message, _}} -> {:keywords, message}
-        _ -> nil
-      end)
-      |> Enum.reject(&is_nil/1)
-
-    {:ok, List.to_tuple(tuple_list)}
+    List.to_tuple(import_flow_list)
   end
-
 
   @spec clean_flow_definition(map(), list()) :: map()
   defp clean_flow_definition(definition, interactive_template_list) do
