@@ -111,6 +111,13 @@ defmodule GlificWeb.Schema.UserTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Users.current_user/3)
     end
+
+    @desc "Get the count of sessions for a user"
+    field :fetch_user_sessions, :integer do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Users.fetch_user_sessions/3)
+    end
   end
 
   object :user_mutations do

@@ -107,7 +107,8 @@ defmodule Glific.Flows.Case do
       Enum.reduce(
         used_flow_keywords,
         errors,
-        &(&2 ++ [flowContext: "\"#{&1}\" has already been used as a keyword for a flow"])
+        &(&2 ++
+            [{FlowContext, "\"#{&1}\" has already been used as a keyword for a flow", "Critical"}])
       )
     end
   end
