@@ -34,6 +34,15 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :export_data, :json
   end
 
+  object :import_flow_result do
+    field :status, list_of(:import_flow_status)
+  end
+
+  object :import_flow_status do
+    field :flow_name, non_null(:string)
+    field :status, non_null(:string)
+  end
+
   object :flow do
     field :id, :id
     field :uuid, :uuid4
@@ -225,7 +234,7 @@ defmodule GlificWeb.Schema.FlowTypes do
       resolve(&Resolvers.Flows.start_group_flow/3)
     end
 
-    field :import_flow, :common_flow_result do
+    field :import_flow, :import_flow_result do
       arg(:flow, :json)
       middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.import_flow/3)
