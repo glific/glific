@@ -14,6 +14,9 @@ defmodule Glific.Tickets do
     Tickets.Ticket
   }
 
+  @beginning_of_day ~T[00:00:00.000]
+  @end_of_day ~T[23:59:59.000]
+
   @doc """
   Returns the list of tickets.
 
@@ -165,5 +168,62 @@ defmodule Glific.Tickets do
       {:error, _response} ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
+  end
+
+  @doc """
+
+  """
+  @spec fetch_support_tickets(map()) :: String.t()
+  def fetch_support_tickets(args) do
+    start_time = DateTime.new!(args.filter.start_date, @beginning_of_day, "Etc/UTC")
+    end_time = DateTime.new!(args.filter.end_date, @end_of_day, "Etc/UTC")
+
+    Ticket
+    |> where([m], m.inserted_at >= ^start_time)
+    |> where([m], m.inserted_at <= ^end_time)
+    |> Repo.all(skip_organization_id: true)
+    |> convert_to_csv_string()
+  end
+
+  @default_headers "body,status,inserted_at\n"
+  @minimal_map [
+    :body,
+    :status,
+    :inserted_at
+  ]
+
+  @doc false
+  @spec convert_to_csv_string([Ticket.t()]) :: String.t()
+  def convert_to_csv_string(ticket) do
+    ticket
+    |> Enum.reduce(@default_headers, fn ticket, acc ->
+      acc <> minimal_map(ticket) <> "\n"
+    end)
+  end
+
+  @spec minimal_map(Ticket.t()) :: String.t()
+  defp minimal_map(ticket) do
+    ticket
+    |> Map.take(@minimal_map)
+    |> convert_time()
+    |> parse_delimiter(:body)
+    |> Map.values()
+    |> Enum.reduce("", fn key, acc ->
+      acc <> if is_binary(key), do: "#{key},", else: "#{inspect(key)},"
+    end)
+  end
+
+  @doc false
+  @spec parse_delimiter(map(), atom()) :: map()
+  def parse_delimiter(data, key) do
+    data
+    |> Map.get(key)
+    |> then(&put_in(data[key], "\"#{&1}\""))
+  end
+
+  @spec convert_time(map()) :: map()
+  defp convert_time(ticket) do
+    ticket
+    |> Map.put(:inserted_at, Timex.format!(ticket.inserted_at, "{YYYY}-{0M}-{0D}"))
   end
 end
