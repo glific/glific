@@ -5,13 +5,17 @@ defmodule Glific.Tickets do
 
   import Ecto.Query, warn: false
 
+  alias Absinthe.Blueprint.Document.Fragment.Named.Use
+
   alias Glific.{
     Flows.Action,
     Flows.FlowContext,
     Flows.MessageVarParser,
     Messages,
     Repo,
-    Tickets.Ticket
+    Tickets.Ticket,
+    Contacts.Contact,
+    Users.User
   }
 
   @beginning_of_day ~T[00:00:00.000]
@@ -185,11 +189,14 @@ defmodule Glific.Tickets do
     |> convert_to_csv_string()
   end
 
-  @default_headers "body,status,inserted_at\n"
+  @default_headers "body,status,topic,inserted_at,opened_by,assigned_to\n"
   @minimal_map [
     :body,
     :status,
-    :inserted_at
+    :topic,
+    :inserted_at,
+    :contact_id,
+    :user_id
   ]
 
   @doc false
@@ -223,7 +230,14 @@ defmodule Glific.Tickets do
 
   @spec convert_time(map()) :: map()
   defp convert_time(ticket) do
+    contact_name = Repo.fetch(Contact, ticket.contact_id) |> elem(1) |> Map.get(:name)
+    user_name = Repo.fetch(User, ticket.user_id) |> elem(1) |> Map.get(:name)
+
     ticket
     |> Map.put(:inserted_at, Timex.format!(ticket.inserted_at, "{YYYY}-{0M}-{0D}"))
+    |> Map.put(:opened_by, contact_name)
+    |> Map.put(:assigned_to, user_name)
+    |> Map.delete(:contact_id)
+    |> Map.delete(:user_id)
   end
 end
