@@ -63,7 +63,7 @@ defmodule GlificWeb.Resolvers.Contacts do
     end
   end
 
-  @read_only_fields [:phone, :status, :bspStatus]
+  @read_only_fields [:phone, :bspStatus]
 
   @spec validate_params(map()) :: {:ok, map()} | {:error, String.t()}
   defp validate_params(params) do
