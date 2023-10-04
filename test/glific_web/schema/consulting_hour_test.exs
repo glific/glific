@@ -90,6 +90,8 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
         }
       )
 
+    IO.inspect(result)
+
     assert {:ok, query_data} = result
     consulting_hours = get_in(query_data, [:data, "fetchConsultingHours"])
     assert is_binary(consulting_hours) == true

@@ -5,8 +5,6 @@ defmodule Glific.Tickets do
 
   import Ecto.Query, warn: false
 
-  alias Absinthe.Blueprint.Document.Fragment.Named.Use
-
   alias Glific.{
     Flows.Action,
     Flows.FlowContext,
@@ -189,7 +187,7 @@ defmodule Glific.Tickets do
     |> convert_to_csv_string()
   end
 
-  @default_headers "body,status,topic,inserted_at,opened_by,assigned_to\n"
+  @default_headers "body,status,topic,inserted_at,contact_id,user_id\n"
   @minimal_map [
     :body,
     :status,
