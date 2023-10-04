@@ -1,3 +1,3 @@
-query FetchSupportTickets($filter: FetchSupportTickets) {
-  FetchSupportTickets(filter: $filter)
+query fetchSupportTickets($filter: FetchSupportTickets) {
+  fetchSupportTickets(filter: $filter)
 }

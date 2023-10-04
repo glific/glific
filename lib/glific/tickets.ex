@@ -187,7 +187,7 @@ defmodule Glific.Tickets do
     |> convert_to_csv_string()
   end
 
-  @default_headers "body,status,topic,inserted_at,contact_id,user_id\n"
+  @default_headers "body,status,topic,inserted_at,opened_by,assigned_to\n"
   @minimal_map [
     :body,
     :status,
@@ -211,6 +211,7 @@ defmodule Glific.Tickets do
     ticket
     |> Map.take(@minimal_map)
     |> convert_time()
+    |> IO.inspect()
     |> parse_delimiter(:body)
     |> Map.values()
     |> Enum.reduce("", fn key, acc ->
@@ -229,8 +230,7 @@ defmodule Glific.Tickets do
   @spec convert_time(map()) :: map()
   defp convert_time(ticket) do
     contact_name = Repo.fetch(Contact, ticket.contact_id) |> elem(1) |> Map.get(:name)
-    user_name = Repo.fetch(User, ticket.user_id) |> elem(1) |> Map.get(:name)
-
+    user_name = Repo.fetch(User, ticket.user_id)|> elem(1) |> Map.get(:name)
     ticket
     |> Map.put(:inserted_at, Timex.format!(ticket.inserted_at, "{YYYY}-{0M}-{0D}"))
     |> Map.put(:opened_by, contact_name)
