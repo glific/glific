@@ -22,7 +22,8 @@ defmodule Glific.Flows do
     Tags.Tag,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Users.User
   }
 
   alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
@@ -330,14 +331,13 @@ defmodule Glific.Flows do
     Flow.changeset(flow, attrs)
   end
 
-  defp get_user do
-    user = Repo.get_current_user()
+  defp get_user(nil) do
+    %{email: "unknown@glific.org", name: "Unknown Glific User"}
+  end
 
-    {email, name} =
-      if user,
-        do: {"#{user.phone}@glific.org", user.name},
-        else: {"unknown@glific.org", "Unknown Glific User"}
-
+  defp get_user(user_id) do
+    user = Repo.fetch(User, user_id) |> elem(1)
+    {email, name} = {"#{user.phone}@glific.org", user.name}
     %{email: email, name: name}
   end
 
@@ -352,6 +352,7 @@ defmodule Glific.Flows do
       |> where([fr, f], f.uuid == ^flow_uuid)
       |> select([fr, f], %FlowRevision{
         id: fr.id,
+        user_id: fr.user_id,
         inserted_at: fr.inserted_at,
         status: fr.status,
         revision_number: fr.revision_number,
@@ -361,6 +362,7 @@ defmodule Glific.Flows do
       |> limit(15)
       |> Repo.all()
 
+    # user_name = Repo.fetch(User, ticket.user_id)|> elem(1) |> Map.get(:name)
     # Instead of sorting this list we need to fetch the ordered items from the DB
     # We will optimize this more in the v0.4
     asset_list =
@@ -371,7 +373,7 @@ defmodule Glific.Flows do
         fn revision, acc ->
           [
             %{
-              user: get_user(),
+              user: get_user(revision.user_id),
               created_on: revision.inserted_at,
               id: revision.id,
               version: "13.0.0",
