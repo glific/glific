@@ -362,7 +362,6 @@ defmodule Glific.Flows do
       |> limit(15)
       |> Repo.all()
 
-    # user_name = Repo.fetch(User, ticket.user_id)|> elem(1) |> Map.get(:name)
     # Instead of sorting this list we need to fetch the ordered items from the DB
     # We will optimize this more in the v0.4
     asset_list =
