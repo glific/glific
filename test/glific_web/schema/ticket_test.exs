@@ -169,18 +169,18 @@ defmodule GlificWeb.Schema.TicketTest do
         status: "closed"
       })
 
-    _result =
+    result =
       auth_query_gql_by(:fetch, user,
         variables: %{
           "filter" => %{
-            "endDate" => "2023-10-05",
-            "startDate" => "2023-09-03"
+            "end_date" => Date.utc_today() |> Date.to_string(),
+            "start_date" => Date.utc_today() |> Timex.shift(days: -11) |> Date.to_string()
           }
         }
       )
 
     assert {:ok, query_data} = result
-    support_tickets = get_in(query_data, [:data, "FetchSupportTickets"])
+    support_tickets = get_in(query_data, [:data, "fetchSupportTickets"])
     assert is_binary(support_tickets) == true
   end
 end
