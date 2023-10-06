@@ -173,7 +173,7 @@ defmodule Glific.Tickets do
   end
 
   @doc """
-
+  Return the count of support ticket, using the same filter as list_supporting
   """
   @spec fetch_support_tickets(map()) :: String.t()
   def fetch_support_tickets(args) do
