@@ -178,9 +178,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     max_last_update =
       BigQuery.get_table_struct(table_name)
-      |> where([m], m.updated_at > ^table_last_updated_at)
+      |> where([tb], tb.updated_at > ^table_last_updated_at)
+      |> where(
+        [tb],
+        ## Adding clause so that we don't pick the newly inserted rows.
+        fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0
+      )
       |> add_organization_id(table_name, organization_id)
-      |> order_by([m], [m.updated_at, m.id])
+      |> order_by([tb], [tb.updated_at, tb.id])
       |> limit(@per_min_limit)
       |> Repo.aggregate(:max, :updated_at, timeout: 40_000)
 
