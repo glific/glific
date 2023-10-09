@@ -372,7 +372,7 @@ defmodule Glific.Flows do
         fn revision, acc ->
           [
             %{
-              user: name: revision.user_name,,
+              user: get_user(revision.user_id),
               created_on: revision.inserted_at,
               id: revision.id,
               version: "13.0.0",
