@@ -336,7 +336,7 @@ defmodule Glific.Flows do
   end
 
   defp get_user(user_id) do
-    user = Repo.fetch(User, user_id) |> elem(1)
+    user = Repo.fetch_by(User, %{id: user_id}) |> elem(1)
     {email, name} = {"#{user.phone}@glific.org", user.name}
     %{email: email, name: name}
   end
@@ -372,7 +372,7 @@ defmodule Glific.Flows do
         fn revision, acc ->
           [
             %{
-              user: get_user(revision.user_id),
+              user: name: revision.user_name,,
               created_on: revision.inserted_at,
               id: revision.id,
               version: "13.0.0",
