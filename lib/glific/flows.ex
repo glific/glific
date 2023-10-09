@@ -336,8 +336,7 @@ defmodule Glific.Flows do
   end
 
   defp get_user(user) do
-    {email, name} = {"#{user.phone}@glific.org", user.name}
-    %{email: email, name: name}
+    %{email: "#{user.phone}@glific.org", name: user.name}
   end
 
   @doc """
