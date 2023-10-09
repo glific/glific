@@ -4716,10 +4716,10 @@ ALTER SEQUENCE public.templates_tags_id_seq OWNED BY public.templates_tags.id;
 
 CREATE TABLE public.tickets (
     id bigint NOT NULL,
-    body character varying(255),
-    topic character varying(255),
-    status character varying(255),
-    remarks character varying(255),
+    body text,
+    topic text,
+    status text,
+    remarks text,
     contact_id bigint NOT NULL,
     user_id bigint,
     organization_id bigint NOT NULL,
