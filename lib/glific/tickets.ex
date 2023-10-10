@@ -6,13 +6,13 @@ defmodule Glific.Tickets do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts.Contact,
     Flows.Action,
     Flows.FlowContext,
     Flows.MessageVarParser,
     Messages,
     Repo,
     Tickets.Ticket,
-    Contacts.Contact,
     Users.User
   }
 
@@ -207,7 +207,7 @@ defmodule Glific.Tickets do
     end)
   end
 
-  @spec minimal_map(Ticket.t()) :: String.t()
+  @spec minimal_map(map()) :: String.t()
   defp minimal_map(ticket) do
     ticket
     |> convert_time()
