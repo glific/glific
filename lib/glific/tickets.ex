@@ -180,14 +180,6 @@ defmodule Glific.Tickets do
     start_time = DateTime.new!(args.filter.start_date, @beginning_of_day, "Etc/UTC")
     end_time = DateTime.new!(args.filter.end_date, @end_of_day, "Etc/UTC")
 
-    #   Ticket
-    #   |> where([m], m.inserted_at >= ^start_time)
-    #   |> where([m], m.inserted_at <= ^end_time)
-    #   |> Repo.all(skip_organization_id: true)
-    #   |> convert_to_csv_string()
-    #   |> IO.inspect()
-    # end
-
     Ticket
     |> join(:left, [t], c in Contact, as: :c, on: c.id == t.contact_id)
     |> join(:left, [t], u in User, as: :u, on: u.id == t.user_id)
@@ -227,7 +219,6 @@ defmodule Glific.Tickets do
 
   @spec convert_time(map()) :: map()
   defp convert_time(ticket) do
-    IO.inspect(ticket)
     ticket
     |> Map.put(:inserted_at, Timex.format!(ticket.inserted_at, "{YYYY}-{0M}-{0D}"))
   end
