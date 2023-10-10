@@ -572,8 +572,6 @@ defmodule Glific.Fixtures do
     end)
 
     session_template_fixture(%{
-      body: "common_otp",
-      label: "common_otp",
       body: """
       Hello {{1}},
 
@@ -583,9 +581,9 @@ defmodule Glific.Fixtures do
       is_hsm: true,
       category: "AUTHENTICATION",
       example: """
-      Hello {{1}},
+      Hello [Anil],
 
-      Please find the verification number is {{2}} for resetting your account.
+      Please find the verification number is [112233] for resetting your account.
       """,
       language_id: organization_fixture().default_language_id
     })
