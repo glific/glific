@@ -179,11 +179,13 @@ defmodule Glific.Tickets do
   def fetch_support_tickets(args) do
     start_time = DateTime.new!(args.filter.start_date, @beginning_of_day, "Etc/UTC")
     end_time = DateTime.new!(args.filter.end_date, @end_of_day, "Etc/UTC")
+    org_id = args.organization_id
 
     Ticket
     |> join(:left, [t], c in Contact, as: :c, on: c.id == t.contact_id)
     |> join(:left, [t], u in User, as: :u, on: u.id == t.user_id)
     |> where([t], t.inserted_at >= ^start_time and t.inserted_at <= ^end_time)
+    |> where([t], t.organization_id == ^org_id)
     |> select([t, c, u], %{
       body: t.body,
       status: t.status,
@@ -192,7 +194,7 @@ defmodule Glific.Tickets do
       opened_by: c.name,
       assigned_to: u.name
     })
-    |> Repo.all(skip_organization_id: true)
+    |> Repo.all()
     |> convert_to_csv_string()
   end
 
