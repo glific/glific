@@ -180,22 +180,31 @@ defmodule Glific.Tickets do
     start_time = DateTime.new!(args.filter.start_date, @beginning_of_day, "Etc/UTC")
     end_time = DateTime.new!(args.filter.end_date, @end_of_day, "Etc/UTC")
 
+    #   Ticket
+    #   |> where([m], m.inserted_at >= ^start_time)
+    #   |> where([m], m.inserted_at <= ^end_time)
+    #   |> Repo.all(skip_organization_id: true)
+    #   |> convert_to_csv_string()
+    #   |> IO.inspect()
+    # end
+
     Ticket
-    |> where([m], m.inserted_at >= ^start_time)
-    |> where([m], m.inserted_at <= ^end_time)
+    |> join(:left, [t], c in Contact, as: :c, on: c.id == t.contact_id)
+    |> join(:left, [t], u in User, as: :u, on: u.id == t.user_id)
+    |> where([t], t.inserted_at >= ^start_time and t.inserted_at <= ^end_time)
+    |> select([t, c, u], %{
+      body: t.body,
+      status: t.status,
+      topic: t.topic,
+      inserted_at: t.inserted_at,
+      opened_by: c.name,
+      assigned_to: u.name
+    })
     |> Repo.all(skip_organization_id: true)
     |> convert_to_csv_string()
   end
 
   @default_headers "body,status,topic,inserted_at,opened_by,assigned_to\n"
-  @minimal_map [
-    :body,
-    :status,
-    :topic,
-    :inserted_at,
-    :contact_id,
-    :user_id
-  ]
 
   @doc false
   @spec convert_to_csv_string([Ticket.t()]) :: String.t()
@@ -209,34 +218,17 @@ defmodule Glific.Tickets do
   @spec minimal_map(Ticket.t()) :: String.t()
   defp minimal_map(ticket) do
     ticket
-    |> Map.take(@minimal_map)
     |> convert_time()
-    |> IO.inspect()
-    |> parse_delimiter(:body)
     |> Map.values()
     |> Enum.reduce("", fn key, acc ->
       acc <> if is_binary(key), do: "#{key},", else: "#{inspect(key)},"
     end)
   end
 
-  @doc false
-  @spec parse_delimiter(map(), atom()) :: map()
-  def parse_delimiter(data, key) do
-    data
-    |> Map.get(key)
-    |> then(&put_in(data[key], "\"#{&1}\""))
-  end
-
   @spec convert_time(map()) :: map()
   defp convert_time(ticket) do
-    contact_name = Repo.fetch(Contact, ticket.contact_id) |> elem(1) |> Map.get(:name)
-    user_name = Repo.fetch(User, ticket.user_id) |> elem(1) |> Map.get(:name)
-
+    IO.inspect(ticket)
     ticket
     |> Map.put(:inserted_at, Timex.format!(ticket.inserted_at, "{YYYY}-{0M}-{0D}"))
-    |> Map.put(:opened_by, contact_name)
-    |> Map.put(:assigned_to, user_name)
-    |> Map.delete(:contact_id)
-    |> Map.delete(:user_id)
   end
 end
