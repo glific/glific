@@ -572,11 +572,21 @@ defmodule Glific.Fixtures do
     end)
 
     session_template_fixture(%{
-      body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+      body: "common_otp",
+      label: "common_otp",
+      body: """
+      Hello {{1}},
+
+      Please find the verification number is {{2}} for resetting your account.
+      """,
       shortcode: "common_otp",
       is_hsm: true,
       category: "AUTHENTICATION",
-      example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
+      example: """
+      Hello {{1}},
+
+      Please find the verification number is {{2}} for resetting your account.
+      """,
       language_id: organization_fixture().default_language_id
     })
   end
