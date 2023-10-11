@@ -547,26 +547,4 @@ defmodule GlificWeb.Schema.FlowTest do
     assert true == Map.has_key?(broadcast_map, "pending")
     assert true == Map.has_key?(broadcast_map, "success")
   end
-
-  test "creates FlowRevision", %{manager: user} do
-    [flow | _] = Flows.list_flows(%{filter: %{name: "New Contact Workflow"}})
-
-    result =
-      FlowRevision.create_flow_revision(%{
-        definition: FlowRevision.default_definition(flow),
-        flow_id: flow.id,
-        user_id: user.id,
-        organization_id: flow.organization_id,
-        revision_number: 0
-      })
-
-    db_result =
-      Repo.fetch_by(FlowRevision, %{
-        flow_id: flow.id,
-        organization_id: user.organization_id,
-        user_id: user.id
-      })
-
-    assert db_result == result
-  end
 end

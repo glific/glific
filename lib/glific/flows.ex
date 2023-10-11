@@ -331,14 +331,6 @@ defmodule Glific.Flows do
     Flow.changeset(flow, attrs)
   end
 
-  defp get_user(nil) do
-    %{email: "unknown@glific.org", name: "Unknown Glific User"}
-  end
-
-  defp get_user(user) do
-    %{email: "#{user.phone}@glific.org", name: user.name}
-  end
-
   @doc """
   Get a list of all the revisions based on a flow UUID
   """
@@ -348,14 +340,13 @@ defmodule Glific.Flows do
       FlowRevision
       |> join(:left, [fr], f in Flow, as: :f, on: f.id == fr.flow_id)
       |> join(:left, [fr, f], u in User, as: :u, on: u.id == fr.user_id)
-      |> where([fr, f], f.uuid == ^flow_uuid)
       |> select([fr, f, u], %{
         id: fr.id,
         inserted_at: fr.inserted_at,
         status: fr.status,
         revision_number: fr.revision_number,
         flow_id: fr.flow_id,
-        user: u
+        user_name: u.name
       })
       |> order_by([fr], desc: fr.id)
       |> limit(15)
@@ -369,11 +360,9 @@ defmodule Glific.Flows do
       |> Enum.reduce(
         [],
         fn revision, acc ->
-          user_info = get_user(revision.user)
-
           [
             %{
-              user: user_info,
+              user: get_user(revision.user_name),
               created_on: revision.inserted_at,
               id: revision.id,
               version: "13.0.0",
@@ -387,6 +376,10 @@ defmodule Glific.Flows do
 
     %{results: asset_list |> Enum.reverse()}
   end
+
+  @spec get_user(nil | String.t()) :: map()
+  defp get_user(nil), do: %{name: "Unknown Glific User"}
+  defp get_user(user_name), do: %{name: user_name}
 
   @doc """
   Get specific flow revision by number
