@@ -22,7 +22,8 @@ defmodule Glific.Flows do
     Tags.Tag,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Users.User
   }
 
   alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
@@ -330,17 +331,6 @@ defmodule Glific.Flows do
     Flow.changeset(flow, attrs)
   end
 
-  defp get_user do
-    user = Repo.get_current_user()
-
-    {email, name} =
-      if user,
-        do: {"#{user.phone}@glific.org", user.name},
-        else: {"unknown@glific.org", "Unknown Glific User"}
-
-    %{email: email, name: name}
-  end
-
   @doc """
   Get a list of all the revisions based on a flow UUID
   """
@@ -349,13 +339,14 @@ defmodule Glific.Flows do
     results =
       FlowRevision
       |> join(:left, [fr], f in Flow, as: :f, on: f.id == fr.flow_id)
-      |> where([fr, f], f.uuid == ^flow_uuid)
-      |> select([fr, f], %FlowRevision{
+      |> join(:left, [fr, f], u in User, as: :u, on: u.id == fr.user_id)
+      |> select([fr, f, u], %{
         id: fr.id,
         inserted_at: fr.inserted_at,
         status: fr.status,
         revision_number: fr.revision_number,
-        flow_id: fr.flow_id
+        flow_id: fr.flow_id,
+        user_name: u.name
       })
       |> order_by([fr], desc: fr.id)
       |> limit(15)
@@ -371,7 +362,7 @@ defmodule Glific.Flows do
         fn revision, acc ->
           [
             %{
-              user: get_user(),
+              user: get_user(revision.user_name),
               created_on: revision.inserted_at,
               id: revision.id,
               version: "13.0.0",
@@ -385,6 +376,10 @@ defmodule Glific.Flows do
 
     %{results: asset_list |> Enum.reverse()}
   end
+
+  @spec get_user(nil | String.t()) :: map()
+  defp get_user(nil), do: %{name: "Unknown Glific User"}
+  defp get_user(user_name), do: %{name: user_name}
 
   @doc """
   Get specific flow revision by number
