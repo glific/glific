@@ -76,10 +76,11 @@ defmodule GlificWeb.Resolvers.Tickets do
   update multiple tickets
   """
   @spec update_bulk_ticket(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
+          {:ok, map()} | {:error, map()}
+
   def update_bulk_ticket(_, %{input: params}, _) do
-    with {:ok, ticket} <- Tickets.update_bulk_ticket(params) do
-      {:ok, %{ticket: ticket}}
+    with true <- Tickets.update_bulk_ticket(params) do
+      {:ok, %{success: true, message: "Updated successfully"}}
     end
   end
 end

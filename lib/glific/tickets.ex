@@ -228,14 +228,16 @@ defmodule Glific.Tickets do
   @doc """
   Updating tickets in bulk
   """
-  @spec update_bulk_ticket(map()) :: {:ok, Ticket.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_bulk_ticket(map()) :: boolean
   def update_bulk_ticket(params) do
     update_ids = params |> Map.get(:update_ids, [])
 
     tickets = Repo.all(from(t in Ticket, where: t.id in ^update_ids))
 
-    Enum.reduce(tickets, {:ok, []}, fn ticket, {:ok, _acc} ->
+    Enum.reduce(tickets, :ok, fn ticket, _acc ->
       update_ticket(ticket, params)
     end)
+
+    true
   end
 end
