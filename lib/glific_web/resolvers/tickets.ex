@@ -62,4 +62,13 @@ defmodule GlificWeb.Resolvers.Tickets do
       Tickets.delete_ticket(ticket)
     end
   end
+
+  @doc """
+  Fetches support tickets between start_date and end_date
+  """
+  @spec fetch_support_tickets(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, String.t()}
+  def fetch_support_tickets(_, args, _) do
+    {:ok, Tickets.fetch_support_tickets(args)}
+  end
 end
