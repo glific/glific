@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateBulkTicket($input: BulkTicketInput) {
+  updateBulkTicket(input: $input) {
+    ...TicketFields
+
+    ...ErrorFields
+  }
+}
