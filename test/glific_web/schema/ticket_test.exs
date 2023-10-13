@@ -194,8 +194,10 @@ defmodule GlificWeb.Schema.TicketTest do
     result =
       auth_query_gql_by(:bulk_update, user,
         variables: %{
-          "id" => ticket.id,
-          "input" => %{"status" => "closed"}
+          "input" => %{
+            "update_ids" => [ticket.id],
+            "status" => "closed"
+          }
         }
       )
 
