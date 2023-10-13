@@ -46,34 +46,14 @@ defmodule Glific.Processor.ConsumerWorker do
   """
   @spec load_state(non_neg_integer) :: map()
   def load_state(organization_id) do
-    case Caches.fetch(organization_id, "consumer_worker_map", &load_consumer_worker_map/1) do
-      {:error, error} ->
-        raise(ArgumentError,
-          message: "Failed to retrieve consumer_worker_map, #{inspect(organization_id)}, #{error}"
-        )
-
-      {_, value} ->
-        value
-    end
-  end
-
-  @spec load_consumer_worker_map(tuple()) :: tuple()
-  defp load_consumer_worker_map(cache_key) do
-    # this is of the form {organization_id, "consumer_keyword_map}"
-    # we want the organization_id
-    organization_id = cache_key |> elem(0)
-
     {:ok, cache_reload_key} = Caches.get(organization_id, :cache_reload_key)
 
-    {
-      :commit,
-      %{
-        cache_reload_key: cache_reload_key,
-        organization_id: organization_id
-      }
-      |> Map.merge(ConsumerTagger.load_state(organization_id))
-      |> Map.merge(ConsumerFlow.load_state(organization_id))
+    %{
+      cache_reload_key: cache_reload_key,
+      organization_id: organization_id
     }
+    |> Map.merge(ConsumerTagger.load_state(organization_id))
+    |> Map.merge(ConsumerFlow.load_state(organization_id))
   end
 
   defp reload(state, organization_id),
