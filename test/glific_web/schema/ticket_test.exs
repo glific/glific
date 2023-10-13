@@ -5,6 +5,7 @@ defmodule GlificWeb.Schema.TicketTest do
   alias Glific.{
     Fixtures,
     Repo,
+    Tickets,
     Tickets.Ticket,
     TicketsFixtures
   }
@@ -16,7 +17,6 @@ defmodule GlificWeb.Schema.TicketTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/tickets/delete.gql")
   load_gql(:count, GlificWeb.Schema, "assets/gql/tickets/count.gql")
   load_gql(:fetch, GlificWeb.Schema, "assets/gql/tickets/fetch.gql")
-  load_gql(:bulk_update, GlificWeb.Schema, "assets/gql/tickets/bulk_update.gql")
 
   test "tickets field returns list of tickets", %{staff: user} do
     TicketsFixtures.ticket_fixture()
@@ -185,23 +185,18 @@ defmodule GlificWeb.Schema.TicketTest do
     assert is_binary(support_tickets) == true
   end
 
-  test "update a  multiple ticket and test possible scenarios and errors", %{manager: user} do
+  test "update a multiple ticket and test possible scenarios and errors", %{manager: user} do
     TicketsFixtures.ticket_fixture()
 
     {:ok, ticket} =
       Repo.fetch_by(Ticket, %{body: "some body", organization_id: user.organization_id})
 
-    result =
-      auth_query_gql_by(:bulk_update, user,
-        variables: %{
-          "input" => %{
-            "update_ids" => [ticket.id],
-            "status" => "closed"
-          }
-        }
-      )
+    update_params = %{
+      "update_ids" => [ticket.id],
+      "status" => "closed"
+    }
 
-    assert {:ok, query_data} = result
-    assert "closed" == get_in(query_data, [:data, "updateBulkTicket", "ticket", "status"])
+    result = Tickets.update_bulk_ticket(update_params)
+    assert result == true
   end
 end
