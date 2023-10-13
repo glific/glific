@@ -234,7 +234,7 @@ defmodule Glific.Tickets do
 
     tickets = Repo.all(from(t in Ticket, where: t.id in ^update_ids))
 
-    Enum.reduce(tickets, :ok, fn ticket, _acc ->
+    _result = Enum.reduce(tickets, :ok, fn ticket, _acc ->
       update_ticket(ticket, params)
     end)
 
