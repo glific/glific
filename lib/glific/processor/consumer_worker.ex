@@ -59,7 +59,7 @@ defmodule Glific.Processor.ConsumerWorker do
 
   @spec load_consumer_worker_map(tuple()) :: tuple()
   defp load_consumer_worker_map(cache_key) do
-    # this is of the form {organization_id, "consumer_keyword_map}"
+    # this is of the form {organization_id, "consumer_worker_map}"
     # we want the organization_id
     organization_id = cache_key |> elem(0)
 
