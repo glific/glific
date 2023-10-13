@@ -340,6 +340,7 @@ defmodule Glific.Flows do
       FlowRevision
       |> join(:left, [fr], f in Flow, as: :f, on: f.id == fr.flow_id)
       |> join(:left, [fr, f], u in User, as: :u, on: u.id == fr.user_id)
+      |> where([fr, f], f.uuid == ^flow_uuid)
       |> select([fr, f, u], %{
         id: fr.id,
         inserted_at: fr.inserted_at,
