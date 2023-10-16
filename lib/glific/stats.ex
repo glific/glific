@@ -482,64 +482,65 @@ defmodule Glific.Stats do
     |> Repo.one()
   end
 
-  @spec clean_data(any()) :: {:safe, [any()]}
-  defp clean_data(svg) when is_binary(svg) do
-    {
-      :safe,
-      [
-        """
-        <svg width="320" height="120" xmlns="http://www.w3.org/2000/svg">
-          <text x="160" y="70" font-size="20" text-anchor="middle">No Data</text>
-        </svg>
-        """
-      ]
-    }
-  end
+  # This is the old way of generating the dashboard with graphs
+  # @spec clean_data(any()) :: {:safe, [any()]}
+  # defp clean_data(svg) when is_binary(svg) do
+  #   {
+  #     :safe,
+  #     [
+  #       """
+  #       <svg width="320" height="120" xmlns="http://www.w3.org/2000/svg">
+  #         <text x="160" y="70" font-size="20" text-anchor="middle">No Data</text>
+  #       </svg>
+  #       """
+  #     ]
+  #   }
+  # end
 
-  defp clean_data({:safe, data}) do
-    if is_binary(data) do
-      {:safe, [data]}
-    else
-      {:safe, data}
-    end
-  end
+  # defp clean_data({:safe, data}) do
+  #   if is_binary(data) do
+  #     {:safe, [data]}
+  #   else
+  #     {:safe, data}
+  #   end
+  # end
 
-  @spec load_pie_svg([any()], String.t()) :: String.t()
-  defp load_pie_svg(data, title) do
-    data
-    |> StatsLive.make_pie_chart_dataset()
-    |> (&StatsLive.render_pie_chart(title, &1)).()
-    |> clean_data()
-    |> convert_svg_to_base64()
-  end
+  # @spec load_pie_svg([any()], String.t()) :: String.t()
+  # defp load_pie_svg(data, title) do
+  #   data
+  #   |> StatsLive.make_pie_chart_dataset()
+  #   |> (&StatsLive.render_pie_chart(title, &1)).()
+  #   |> clean_data()
+  #   |> convert_svg_to_base64()
+  # end
 
-  @spec load_bar_svg([any()], String.t(), [String.t()]) :: String.t()
-  defp load_bar_svg(data, title, opts) do
-    data
-    |> StatsLive.make_bar_chart_dataset(opts)
-    |> (&StatsLive.render_bar_chart(title, &1)).()
-    |> clean_data()
-    |> convert_svg_to_base64()
-  end
+  # @spec load_bar_svg([any()], String.t(), [String.t()]) :: String.t()
+  # defp load_bar_svg(data, title, opts) do
+  #   data
+  #   |> StatsLive.make_bar_chart_dataset(opts)
+  #   |> (&StatsLive.render_bar_chart(title, &1)).()
+  #   |> clean_data()
+  #   |> convert_svg_to_base64()
+  # end
 
-  @spec convert_svg_to_base64({atom(), any()}) :: String.t()
-  defp convert_svg_to_base64(svg) do
-    {:safe, svg_string} = svg
+  # @spec convert_svg_to_base64({atom(), any()}) :: String.t()
+  # defp convert_svg_to_base64(svg) do
+  #   {:safe, svg_string} = svg
 
-    filename = System.tmp_dir!() <> "/temp.png"
+  #   filename = System.tmp_dir!() <> "/temp.png"
 
-    # Can control the quality of the image by passing width:
-    svg_string
-    |> List.flatten()
-    |> Enum.join()
-    |> Resvg.svg_string_to_png(filename, resources_dir: System.tmp_dir!(), width: 1080)
+  #   # Can control the quality of the image by passing width:
+  #   svg_string
+  #   |> List.flatten()
+  #   |> Enum.join()
+  #   |> Resvg.svg_string_to_png(filename, resources_dir: System.tmp_dir!(), width: 1080)
 
-    {:ok, file_content} = File.read(filename)
-    base64_data = Base.encode64(file_content)
-    File.rm!(filename)
+  #   {:ok, file_content} = File.read(filename)
+  #   base64_data = Base.encode64(file_content)
+  #   File.rm!(filename)
 
-    "data:image/png;base64," <> base64_data
-  end
+  #   "data:image/png;base64," <> base64_data
+  # end
 
   @spec fetch_inbound_outbound(non_neg_integer(), String.t(), map()) :: [tuple()]
   defp fetch_inbound_outbound(org_id, duration, date_range) do
@@ -579,17 +580,29 @@ defmodule Glific.Stats do
   """
   @spec mail_stats(Partners.Organization.t(), String.t()) :: {:ok, term} | {:error, term}
   def mail_stats(org, duration \\ "WEEKLY") do
-    contacts = Reports.get_kpi_data(org.id, "contacts", get_day_range("WEEKLY"))
-    conversations = Reports.get_kpi_data(org.id, "stats", get_day_range("WEEKLY"))
+    contacts = Reports.get_kpi_data(org.id, "contacts", get_day_range(duration))
+    conversations = Reports.get_kpi_data(org.id, "stats", get_day_range(duration))
     optin = StatsLive.fetch_count_data(:optin_chart_data, org.id, get_day_range(duration))
     messages = fetch_inbound_outbound(org.id, duration, get_day_range(duration))
 
+    # This is the old way of generating the dashboard with graphs
+    # assigns = %{
+    #   contact_chart_svg: load_bar_svg(contacts, "Contacts", ["Date", "Daily Contacts"]),
+    #   conversation_chart_svg:
+    #     load_bar_svg(conversations, "Conversations", ["Hour", "Daily Conversations"]),
+    #   optin_chart_svg: load_pie_svg(optin, "Contacts Optin Status"),
+    #   message_chart_svg: load_pie_svg(messages, "Messages"),
+    #   duration: duration,
+    #   date_range: get_date_label(duration),
+    #   dashboard_link: "https://#{org.shortcode}.tides.coloredcow.com/",
+    #   parent_org: org.parent_org
+    # }
+
     assigns = %{
-      contact_chart_svg: load_bar_svg(contacts, "Contacts", ["Date", "Daily Contacts"]),
-      conversation_chart_svg:
-        load_bar_svg(conversations, "Conversations", ["Hour", "Daily Conversations"]),
-      optin_chart_svg: load_pie_svg(optin, "Contacts Optin Status"),
-      message_chart_svg: load_pie_svg(messages, "Messages"),
+      contacts: contacts |> Enum.reduce(0, fn {_, value}, acc -> value + acc end),
+      conversations: conversations |> Enum.reduce(0, fn {_, value}, acc -> value + acc end),
+      messages: messages,
+      optin: optin,
       duration: duration,
       date_range: get_date_label(duration),
       dashboard_link: "https://#{org.shortcode}.tides.coloredcow.com/",
