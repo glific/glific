@@ -86,6 +86,18 @@ defmodule GlificWeb.Resolvers.Users do
     end
   end
 
+  @doc """
+  Fetches active user sessions for a user
+  """
+  @spec fetch_user_sessions(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def fetch_user_sessions(_, %{id: id}, %{context: %{current_user: current_user}}) do
+    with {:ok, user} <-
+           Repo.fetch_by(User, %{id: id, organization_id: current_user.organization_id}) do
+      {:ok, Users.fetch_user_session(user)}
+    end
+  end
+
   defp do_update_user(false, _user, _params),
     do: {:error, dgettext("errors", "Does not have access to the user")}
 

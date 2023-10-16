@@ -42,6 +42,11 @@ defmodule GlificWeb.Schema.TicketTypes do
     field(:user_id, :id)
   end
 
+  input_object :fetch_support_tickets do
+    field :start_date, :date
+    field :end_date, :date
+  end
+
   @desc "Filtering options for tickets"
   input_object :ticket_filter do
     @desc "Match the body"
@@ -78,6 +83,13 @@ defmodule GlificWeb.Schema.TicketTypes do
       arg(:filter, :ticket_filter)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Tickets.count_tickets/3)
+    end
+
+    @desc "Fetches support tickets between start_date and end_date"
+    field :fetch_support_tickets, :string do
+      arg(:filter, :fetch_support_tickets)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Tickets.fetch_support_tickets/3)
     end
   end
 

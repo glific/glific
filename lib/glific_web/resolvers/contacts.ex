@@ -57,8 +57,22 @@ defmodule GlificWeb.Resolvers.Contacts do
   def update_contact(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}),
-         {:ok, contact} <- Contacts.update_contact(contact, params) do
+         {:ok, cleaned_params} <- validate_params(params),
+         {:ok, contact} <- Contacts.update_contact(contact, cleaned_params) do
       {:ok, %{contact: contact}}
+    end
+  end
+
+  @read_only_fields [:phone, :bspStatus]
+
+  @spec validate_params(map()) :: {:ok, map()} | {:error, String.t()}
+  defp validate_params(params) do
+    param_keys = Map.keys(params)
+
+    if Enum.any?(param_keys, fn param_key -> param_key in @read_only_fields end) do
+      {:error, "Cannot modify read-only fields"}
+    else
+      {:ok, params}
     end
   end
 

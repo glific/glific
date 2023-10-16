@@ -610,7 +610,11 @@ defmodule Glific.Stats do
     }
 
     opts = [
-      template: "dashboard.html"
+      template: "dashboard.html",
+      contacts: contacts,
+      conversations: conversations,
+      optin: optin,
+      messages: messages
     ]
 
     case DashboardMail.new_mail(org, assigns, opts)

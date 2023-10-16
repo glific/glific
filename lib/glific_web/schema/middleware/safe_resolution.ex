@@ -33,6 +33,10 @@ defmodule GlificWeb.Schema.Middleware.SafeResolution do
     exception ->
       error = Exception.format(:error, exception, __STACKTRACE__)
       Logger.error(error)
-      Resolution.put_result(resolution, {:error, error})
+
+      Resolution.put_result(
+        resolution,
+        {:error, "Glific Exception: " <> String.slice(error, 0..32)}
+      )
   end
 end

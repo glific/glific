@@ -41,7 +41,7 @@ npm-debug.log
 # Not using env files now
 .env
 .env.dev
-
+.env.test
 
 # Ignore the dialyzer cache files
 /priv/plts/
