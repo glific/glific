@@ -67,11 +67,15 @@ defmodule Glific.Caches do
   """
   @impl Glific.Caches.CacheBehaviour
   @spec remove(non_neg_integer, list()) :: any()
-  def remove(organization_id, keys),
-    do:
-      Enum.map(keys, fn key ->
-        {:ok, _} = Cachex.del(@cache_bucket, {organization_id, key})
-      end)
+  def remove(organization_id, keys) do
+    Enum.map(keys, fn key ->
+      {:ok, _} = Cachex.del(@cache_bucket, {organization_id, key})
+    end)
+
+    # 3153 - we need to reset the cache reload key here since the organization cache
+    # values has changed, and will require a reload
+    set_to_cache(organization_id, [], 0, [])
+  end
 
   @doc """
   Set a global value, ttl is in number of hours
