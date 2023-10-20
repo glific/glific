@@ -11,6 +11,7 @@ defmodule Glific.Tickets do
     Flows.FlowContext,
     Flows.MessageVarParser,
     Messages,
+    Notifications,
     Repo,
     Tickets.Ticket,
     Users.User
@@ -71,11 +72,30 @@ defmodule Glific.Tickets do
   @spec create_ticket(map()) :: {:ok, Ticket.t()} | {:error, Ecto.Changeset.t()}
   def create_ticket(attrs \\ %{}) do
     ticket_params = Map.put_new(attrs, :status, "open")
-
-    %Ticket{}
-    |> Ticket.changeset(ticket_params)
-    |> Repo.insert()
+      case %Ticket{}
+       |> Ticket.changeset(ticket_params)
+       |> Repo.insert() do
+      {:ok, ticket, _} ->
+        notification = create_ticket_notification("Ticket created", attrs)
+        {:ok, ticket, notification}
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
+
+  @spec create_ticket_notification(String.t(), map()) :: map()
+  defp create_ticket_notification(message, attrs) do
+    %{
+      category: "Ticket",
+      message: message,
+      severity: Notifications.types().info,
+      organization_id: attrs.organization_id,
+      entity: %{
+        query: attrs.body
+      }
+    }
+    |> Notifications.create_notification()
+end
 
   @doc """
   Updates a ticket.
