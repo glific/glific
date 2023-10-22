@@ -31,7 +31,8 @@ defmodule Glific.Tickets.Ticket do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          uuid: Ecto.UUID.t() | nil
         }
 
   schema "tickets" do
@@ -45,6 +46,7 @@ defmodule Glific.Tickets.Ticket do
     belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
+    field(:uuid, Ecto.UUID)
   end
 
   @doc false

@@ -127,6 +127,9 @@ defmodule Glific.Tickets do
       {:user_id, user_id}, query ->
         from(q in query, where: q.user_id == ^user_id)
 
+      {:uuid, uuid}, query ->
+        from(q in query, where: q.uuid == ^uuid)
+
       _, query ->
         query
     end)
