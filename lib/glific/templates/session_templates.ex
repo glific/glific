@@ -154,12 +154,12 @@ defmodule Glific.Templates.SessionTemplate do
 
   def update_changeset(%{is_hsm: true, status: "APPROVED"} = session_template, attrs) do
     session_template
-    |> cast(attrs, [:is_active, :label, :tag_id])
+    |> cast(attrs, [:is_active, :tag_id])
   end
 
   def update_changeset(%{is_hsm: true} = session_template, attrs) do
     session_template
-    |> cast(attrs, [:is_active, :label, :tag_id])
+    |> cast(attrs, [:is_active, :tag_id])
     |> add_error(
       :hsm,
       "HSM is not approved yet, it can't be modified"

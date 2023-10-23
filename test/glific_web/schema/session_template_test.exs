@@ -289,23 +289,6 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert message =~ "has already been taken"
   end
 
-  test "update a session template and test possible scenarios and errors", %{manager: user} do
-    label = "Default Template Label"
-
-    {:ok, session_template} =
-      Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
-
-    result =
-      auth_query_gql_by(:update, user,
-        variables: %{"id" => session_template.id, "input" => %{"label" => "New Test Label"}}
-      )
-
-    assert {:ok, query_data} = result
-    error_message = hd(query_data.errors).message
-
-    assert error_message =~ "Cannot modify read-only fields"
-  end
-
   test "delete an session_template", %{manager: user} do
     {:ok, session_template} =
       Repo.fetch_by(SessionTemplate, %{
