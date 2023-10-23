@@ -59,13 +59,13 @@ defmodule GlificWeb.Resolvers.Templates do
     end
   end
 
-  @read_only_fields [:label]
+  @read_only_field [:label]
 
   @spec validate_params(map()) :: {:ok, map()} | {:error, String.t()}
   defp validate_params(params) do
     param_keys = Map.keys(params)
 
-    if Enum.any?(param_keys, fn param_key -> param_key in @read_only_fields end) do
+    if Enum.any?(param_keys, fn param_key -> param_key in @read_only_field end) do
       {:error, "Cannot modify read-only fields"}
     else
       {:ok, params}
