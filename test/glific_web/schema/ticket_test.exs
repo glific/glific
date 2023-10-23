@@ -5,6 +5,7 @@ defmodule GlificWeb.Schema.TicketTest do
   alias Glific.{
     Fixtures,
     Repo,
+    Tickets,
     Tickets.Ticket,
     TicketsFixtures
   }
@@ -182,5 +183,20 @@ defmodule GlificWeb.Schema.TicketTest do
     assert {:ok, query_data} = result
     support_tickets = get_in(query_data, [:data, "fetchSupportTickets"])
     assert is_binary(support_tickets) == true
+  end
+
+  test "update a multiple ticket and test possible scenarios and errors", %{manager: user} do
+    TicketsFixtures.ticket_fixture()
+
+    {:ok, ticket} =
+      Repo.fetch_by(Ticket, %{body: "some body", organization_id: user.organization_id})
+
+    update_params = %{
+      "update_ids" => [ticket.id],
+      "status" => "closed"
+    }
+
+    result = Tickets.update_bulk_ticket(update_params)
+    assert result == true
   end
 end

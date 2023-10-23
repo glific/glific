@@ -244,4 +244,20 @@ end
     ticket
     |> Map.put(:inserted_at, Timex.format!(ticket.inserted_at, "{YYYY}-{0M}-{0D}"))
   end
+
+  @doc """
+  Updating tickets in bulk
+  """
+  @spec update_bulk_ticket(map()) :: boolean
+  def update_bulk_ticket(params) do
+    update_ids = params |> Map.get(:update_ids, [])
+
+    tickets = Repo.all(from(t in Ticket, where: t.id in ^update_ids))
+
+    _result = Enum.reduce(tickets, :ok, fn ticket, _acc ->
+      update_ticket(ticket, params)
+    end)
+
+    true
+  end
 end
