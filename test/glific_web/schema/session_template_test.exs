@@ -301,25 +301,9 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
       )
 
     assert {:ok, query_data} = result
+    error_message = hd(query_data.errors).message
 
-    label = get_in(query_data, [:data, "updateSessionTemplate", "sessionTemplate", "label"])
-    assert label == "New Test Label"
-
-    # Try to update a template with same label and language id
-    result =
-      auth_query_gql_by(:update, user,
-        variables: %{
-          "id" => session_template.id,
-          "input" => %{"label" => "Another Template Label"}
-        }
-      )
-
-    assert {:ok, query_data} = result
-
-    message =
-      get_in(query_data, [:data, "updateSessionTemplate", "errors", Access.at(0), "message"])
-
-    assert message =~ "has already been taken"
+    assert error_message =~ "Cannot modify read-only fields"
   end
 
   test "delete an session_template", %{manager: user} do

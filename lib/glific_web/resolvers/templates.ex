@@ -52,8 +52,9 @@ defmodule GlificWeb.Resolvers.Templates do
   def update_session_template(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
     with {:ok, session_template} <-
            Repo.fetch_by(SessionTemplate, %{id: id, organization_id: user.organization_id}),
-           {:ok, cleaned_params} <- validate_params(params),
-         {:ok, session_template} <- Templates.update_session_template(session_template, cleaned_params) do
+         {:ok, cleaned_params} <- validate_params(params),
+         {:ok, session_template} <-
+           Templates.update_session_template(session_template, cleaned_params) do
       {:ok, %{session_template: session_template}}
     end
   end
