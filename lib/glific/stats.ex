@@ -596,7 +596,8 @@ defmodule Glific.Stats do
     opts = [
       template: "dashboard.html",
       contacts: contacts |> load_bar_svg("Contacts", ["Date", "Daily Contacts"]),
-      conversations: conversations |> load_bar_svg("Conversations", ["Hour", "Daily Conversations"]),
+      conversations:
+        conversations |> load_bar_svg("Conversations", ["Hour", "Daily Conversations"]),
       optin: optin |> load_pie_svg("Contacts Optin Status"),
       messages: messages |> load_pie_svg("Messages")
     ]
