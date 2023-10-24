@@ -11,6 +11,7 @@ defmodule Glific.Tickets do
     Flows.FlowContext,
     Flows.MessageVarParser,
     Messages,
+    Notifications,
     Repo,
     Tickets.Ticket,
     Users.User
@@ -72,9 +73,29 @@ defmodule Glific.Tickets do
   def create_ticket(attrs \\ %{}) do
     ticket_params = Map.put_new(attrs, :status, "open")
 
+    with {:ok, ticket} <- do_create_ticket(ticket_params),
+         {:ok, _notification} <- create_ticket_notification(attrs) do
+      {:ok, ticket}
+    end
+  end
+
+  @spec do_create_ticket(map()) :: {:ok, Ticket.t()} | {:error, Ecto.Changeset.t()}
+  defp do_create_ticket(params) do
     %Ticket{}
-    |> Ticket.changeset(ticket_params)
+    |> Ticket.changeset(params)
     |> Repo.insert()
+  end
+
+  @spec create_ticket_notification(map()) :: map()
+  defp create_ticket_notification(attrs) do
+    %{
+      category: "Ticket",
+      message: "New Ticket created",
+      severity: Notifications.types().info,
+      organization_id: attrs.organization_id,
+      entity: %{query: attrs.body}
+    }
+    |> Notifications.create_notification()
   end
 
   @doc """
@@ -234,9 +255,10 @@ defmodule Glific.Tickets do
 
     tickets = Repo.all(from(t in Ticket, where: t.id in ^update_ids))
 
-    _result = Enum.reduce(tickets, :ok, fn ticket, _acc ->
-      update_ticket(ticket, params)
-    end)
+    _result =
+      Enum.reduce(tickets, :ok, fn ticket, _acc ->
+        update_ticket(ticket, params)
+      end)
 
     true
   end
