@@ -289,6 +289,63 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert message =~ "has already been taken"
   end
 
+  test "update a session template and test possible scenarios and errors when is_hsm is false", %{
+    manager: user
+  } do
+    label = "Default Template Label"
+
+    {:ok, session_template} =
+      Repo.fetch_by(SessionTemplate, %{
+        label: label,
+        organization_id: user.organization_id,
+        is_hsm: false
+      })
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => session_template.id,
+          "input" => %{
+            "label" => "New Test Label",
+            "category" => "UTILITY",
+            "body" => "new updated body"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    label = get_in(query_data, [:data, "updateSessionTemplate", "sessionTemplate", "label"])
+    assert label == "New Test Label"
+  end
+
+  test "update a session template and test possible scenarios and errors when is_hsm is true", %{
+    manager: user
+  } do
+    [hsm | _] =
+      Templates.list_session_templates(%{
+        filter: %{organization_id: user.organization_id, is_hsm: true}
+      })
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => hsm.id,
+          "input" => %{
+            "label" => "New Test Label",
+            "category" => "UTILITY",
+            "body" => "new updated body"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    message =
+      get_in(query_data, [:data, "updateSessionTemplate", "errors", Access.at(0), "message"])
+
+    assert message == "Hsm: HSM is not approved yet, it can't be modified"
+  end
+
   test "delete an session_template", %{manager: user} do
     {:ok, session_template} =
       Repo.fetch_by(SessionTemplate, %{
