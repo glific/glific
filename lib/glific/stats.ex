@@ -577,23 +577,16 @@ defmodule Glific.Stats do
   """
   @spec mail_stats(Partners.Organization.t(), String.t()) :: {:ok, term} | {:error, term}
   def mail_stats(org, duration \\ "WEEKLY") do
-    contacts =
-      Reports.get_kpi_data(org.id, "contacts", get_day_range("WEEKLY"))
-      |> load_bar_svg("Contacts", ["Date", "Daily Contacts"])
-
-    conversations =
-      Reports.get_kpi_data(org.id, "stats", get_day_range("WEEKLY"))
-      |> load_bar_svg("Conversations", ["Hour", "Daily Conversations"])
-
-    optin =
-      StatsLive.fetch_count_data(:optin_chart_data, org.id, get_day_range(duration))
-      |> load_pie_svg("Contacts Optin Status")
-
-    messages =
-      fetch_inbound_outbound(org.id, duration, get_day_range(duration))
-      |> load_pie_svg("Messages")
+    contacts = Reports.get_kpi_data(org.id, "contacts", get_day_range(duration))
+    conversations = Reports.get_kpi_data(org.id, "stats", get_day_range(duration))
+    optin = StatsLive.fetch_count_data(:optin_chart_data, org.id, get_day_range(duration))
+    messages = fetch_inbound_outbound(org.id, duration, get_day_range(duration))
 
     assigns = %{
+      contacts: contacts |> Enum.reduce(0, fn {_, value}, acc -> value + acc end),
+      conversations: conversations |> Enum.reduce(0, fn {_, value}, acc -> value + acc end),
+      messages: messages,
+      optin: optin,
       duration: duration,
       date_range: get_date_label(duration),
       dashboard_link: "https://#{org.shortcode}.tides.coloredcow.com/",
@@ -602,10 +595,11 @@ defmodule Glific.Stats do
 
     opts = [
       template: "dashboard.html",
-      contacts: contacts,
-      conversations: conversations,
-      optin: optin,
-      messages: messages
+      contacts: contacts |> load_bar_svg("Contacts", ["Date", "Daily Contacts"]),
+      conversations:
+        conversations |> load_bar_svg("Conversations", ["Hour", "Daily Conversations"]),
+      optin: optin |> load_pie_svg("Contacts Optin Status"),
+      messages: messages |> load_pie_svg("Messages")
     ]
 
     case DashboardMail.new_mail(org, assigns, opts)
