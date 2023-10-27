@@ -2,8 +2,8 @@ defmodule Glific.TicketsTest do
   use Glific.DataCase
 
   alias Glific.{
-    Tickets,
-    Notifications
+    Notifications,
+    Tickets
   }
 
   describe "tickets" do
