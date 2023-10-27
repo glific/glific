@@ -12,6 +12,7 @@ defmodule Glific.Tickets do
     Flows.MessageVarParser,
     Messages,
     Notifications,
+    Notifications.Notification,
     Repo,
     Tickets.Ticket,
     Users.User
@@ -86,7 +87,8 @@ defmodule Glific.Tickets do
     |> Repo.insert()
   end
 
-  @spec create_ticket_notification(map()) :: map()
+  @spec create_ticket_notification(map()) ::
+          {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
   defp create_ticket_notification(attrs) do
     %{
       category: "Ticket",
