@@ -527,7 +527,11 @@ defmodule Glific.Templates do
         %{status: template["status"], category: template["category"]}
       end
 
-    update_attrs = Map.put(update_attrs, :uuid, template["id"])
+    update_attrs =
+      case current_template.uuid do
+        nil -> Map.put(update_attrs, :uuid, template["id"])
+        _   -> Map.put(update_attrs, :uuid, current_template.uuid)
+      end
 
     db_templates[template["bsp_id"]]
     |> SessionTemplate.changeset(update_attrs)
