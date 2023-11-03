@@ -1384,4 +1384,36 @@ defmodule Glific.TemplatesTest do
       assert Templates.template("uuid", []) == Jason.encode!(result)
     end
   end
+
+  test "update_hsms/1 should not update UUID of already existing HSM template", attrs do
+    [hsm | _rest] =
+      Templates.list_session_templates(%{
+        filter: %{organization_id: attrs.organization_id, is_hsm: true}
+      })
+
+    existing_uuid = hsm.uuid
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "success",
+              "templates" => [
+                %{
+                  "id" => existing_uuid,
+                  "data" => "Hi {{1}}, What is your status | [cold] | [warm]",
+                  "templateType" => "TEXT"
+                }
+              ]
+            })
+        }
+    end)
+
+    assert {:ok, %SessionTemplate{} = updated_hsm} =
+      Repo.fetch_by(SessionTemplate, %{id: hsm.id})
+
+    assert updated_hsm.uuid == existing_uuid
+  end
 end
