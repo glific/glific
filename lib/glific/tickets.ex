@@ -6,13 +6,20 @@ defmodule Glific.Tickets do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts.Contact,
     Flows.Action,
     Flows.FlowContext,
     Flows.MessageVarParser,
     Messages,
+    Notifications,
+    Notifications.Notification,
     Repo,
-    Tickets.Ticket
+    Tickets.Ticket,
+    Users.User
   }
+
+  @beginning_of_day ~T[00:00:00.000]
+  @end_of_day ~T[23:59:59.000]
 
   @doc """
   Returns the list of tickets.
@@ -67,9 +74,30 @@ defmodule Glific.Tickets do
   def create_ticket(attrs \\ %{}) do
     ticket_params = Map.put_new(attrs, :status, "open")
 
+    with {:ok, ticket} <- do_create_ticket(ticket_params),
+         {:ok, _notification} <- create_ticket_notification(attrs) do
+      {:ok, ticket}
+    end
+  end
+
+  @spec do_create_ticket(map()) :: {:ok, Ticket.t()} | {:error, Ecto.Changeset.t()}
+  defp do_create_ticket(params) do
     %Ticket{}
-    |> Ticket.changeset(ticket_params)
+    |> Ticket.changeset(params)
     |> Repo.insert()
+  end
+
+  @spec create_ticket_notification(map()) ::
+          {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
+  defp create_ticket_notification(attrs) do
+    %{
+      category: "Ticket",
+      message: "New Ticket created",
+      severity: Notifications.types().info,
+      organization_id: attrs.organization_id,
+      entity: %{query: attrs.body}
+    }
+    |> Notifications.create_notification()
   end
 
   @doc """
@@ -165,5 +193,75 @@ defmodule Glific.Tickets do
       {:error, _response} ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
+  end
+
+  @doc """
+  Return the count of support ticket, using the same filter as list_supporting
+  """
+  @spec fetch_support_tickets(map()) :: String.t()
+  def fetch_support_tickets(args) do
+    start_time = DateTime.new!(args.filter.start_date, @beginning_of_day, "Etc/UTC")
+    end_time = DateTime.new!(args.filter.end_date, @end_of_day, "Etc/UTC")
+    org_id = args.organization_id
+
+    Ticket
+    |> join(:left, [t], c in Contact, as: :c, on: c.id == t.contact_id)
+    |> join(:left, [t], u in User, as: :u, on: u.id == t.user_id)
+    |> where([t], t.inserted_at >= ^start_time and t.inserted_at <= ^end_time)
+    |> where([t], t.organization_id == ^org_id)
+    |> select([t, c, u], %{
+      body: t.body,
+      status: t.status,
+      topic: t.topic,
+      inserted_at: t.inserted_at,
+      opened_by: c.name,
+      assigned_to: u.name
+    })
+    |> Repo.all()
+    |> convert_to_csv_string()
+  end
+
+  @default_headers "body,status,topic,inserted_at,opened_by,assigned_to\n"
+
+  @doc false
+  @spec convert_to_csv_string([Ticket.t()]) :: String.t()
+  def convert_to_csv_string(ticket) do
+    ticket
+    |> Enum.reduce(@default_headers, fn ticket, acc ->
+      acc <> minimal_map(ticket) <> "\n"
+    end)
+  end
+
+  @spec minimal_map(map()) :: String.t()
+  defp minimal_map(ticket) do
+    ticket
+    |> convert_time()
+    |> Map.values()
+    |> Enum.reduce("", fn key, acc ->
+      acc <> if is_binary(key), do: "#{key},", else: "#{inspect(key)},"
+    end)
+  end
+
+  @spec convert_time(map()) :: map()
+  defp convert_time(ticket) do
+    ticket
+    |> Map.put(:inserted_at, Timex.format!(ticket.inserted_at, "{YYYY}-{0M}-{0D}"))
+  end
+
+  @doc """
+  Updating tickets in bulk
+  """
+  @spec update_bulk_ticket(map()) :: boolean
+  def update_bulk_ticket(params) do
+    update_ids = params |> Map.get(:update_ids, [])
+
+    tickets = Repo.all(from(t in Ticket, where: t.id in ^update_ids))
+
+    _result =
+      Enum.reduce(tickets, :ok, fn ticket, _acc ->
+        update_ticket(ticket, params)
+      end)
+
+    true
   end
 end

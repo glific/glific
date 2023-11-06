@@ -21,6 +21,7 @@ defmodule GlificWeb.API.V1.SessionController do
     |> case do
       {:ok, conn} ->
         Logger.info("Logged in user: user_id: '#{conn.assigns[:current_user].id}'")
+        last_login_time = conn.assigns[:current_user].last_login_at
 
         update_last_login(conn.assigns[:current_user], conn)
 
@@ -30,7 +31,8 @@ defmodule GlificWeb.API.V1.SessionController do
           data: %{
             access_token: conn.private[:api_access_token],
             token_expiry_time: conn.private[:api_token_expiry_time],
-            renewal_token: conn.private[:api_renewal_token]
+            renewal_token: conn.private[:api_renewal_token],
+            last_login_time: last_login_time
           }
         })
 

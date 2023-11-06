@@ -1,7 +1,10 @@
 defmodule Glific.TicketsTest do
   use Glific.DataCase
 
-  alias Glific.Tickets
+  alias Glific.{
+    Notifications,
+    Tickets
+  }
 
   describe "tickets" do
     alias Glific.Tickets.Ticket
@@ -20,7 +23,9 @@ defmodule Glific.TicketsTest do
       assert Tickets.get_ticket!(ticket.id) == ticket
     end
 
-    test "create_ticket/1 with valid data creates a ticket" do
+    test "create_ticket/1 with valid data creates a ticket", attrs do
+      count = Notifications.count_notifications(%{filter: attrs})
+
       valid_attrs = %{
         body: "some body",
         topic: "some topic",
@@ -30,8 +35,11 @@ defmodule Glific.TicketsTest do
       }
 
       assert {:ok, %Ticket{} = ticket} = Tickets.create_ticket(valid_attrs)
+
+      updated_count = Notifications.count_notifications(%{filter: attrs})
       assert ticket.body == "some body"
       assert ticket.topic == "some topic"
+      assert updated_count == count + 1
     end
 
     test "create_ticket/1 with invalid data returns error changeset" do

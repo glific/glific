@@ -44,6 +44,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Repo,
     Stats.Stat,
     Trackers.Tracker,
+    Tickets.Ticket,
     Users.User
   }
 
@@ -83,7 +84,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         "flow_contexts",
         "profiles",
         "message_broadcasts",
-        "message_broadcast_contacts"
+        "message_broadcast_contacts",
+        "tickets"
       ]
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
@@ -178,9 +180,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     max_last_update =
       BigQuery.get_table_struct(table_name)
-      |> where([m], m.updated_at > ^table_last_updated_at)
+      |> where([tb], tb.updated_at > ^table_last_updated_at)
+      |> where(
+        [tb],
+        ## Adding clause so that we don't pick the newly inserted rows.
+        fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0
+      )
       |> add_organization_id(table_name, organization_id)
-      |> order_by([m], [m.updated_at, m.id])
+      |> order_by([tb], [tb.updated_at, tb.id])
       |> limit(@per_min_limit)
       |> Repo.aggregate(:max, :updated_at, timeout: 40_000)
 
@@ -683,6 +690,44 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
+  defp queue_table_data("tickets", organization_id, attrs) do
+    Logger.info(
+      "fetching tickets data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("tickets", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            body: row.body,
+            topic: row.topic,
+            status: row.status,
+            remarks: row.remarks,
+            contact_id: row.contact.id,
+            contact_name: row.contact.name,
+            contact_phone: row.contact.phone,
+            user_id: row.user.id,
+            user_name: row.user.name,
+            user_phone: row.user.phone,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :tickets, organization_id, attrs))
+
+    :ok
+  end
+
   defp queue_table_data(stat, organization_id, attrs) when stat in ["stats", "stats_all"] do
     Logger.info(
       "fetching #{stat} data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
@@ -1110,6 +1155,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow, :contact])
+
+  defp get_query("tickets", organization_id, attrs),
+    do:
+      Ticket
+      |> where([t], t.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([t], [t.inserted_at, t.id])
+      |> preload([:user, :contact])
 
   defp get_query("stats", organization_id, attrs),
     do:

@@ -5,6 +5,7 @@ defmodule GlificWeb.Schema.TicketTest do
   alias Glific.{
     Fixtures,
     Repo,
+    Tickets,
     Tickets.Ticket,
     TicketsFixtures
   }
@@ -15,6 +16,7 @@ defmodule GlificWeb.Schema.TicketTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/tickets/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/tickets/delete.gql")
   load_gql(:count, GlificWeb.Schema, "assets/gql/tickets/count.gql")
+  load_gql(:fetch, GlificWeb.Schema, "assets/gql/tickets/fetch.gql")
 
   test "tickets field returns list of tickets", %{staff: user} do
     TicketsFixtures.ticket_fixture()
@@ -151,5 +153,50 @@ defmodule GlificWeb.Schema.TicketTest do
       auth_query_gql_by(:count, user, variables: %{"filter" => %{"status" => "open"}})
 
     assert get_in(query_data, [:data, "countTickets"]) == 1
+  end
+
+  test "fetch support tickets field returns list of support ticket", %{user: user} = attrs do
+    _support_ticket_1 =
+      TicketsFixtures.ticket_fixture(%{
+        organization_id: attrs.organization_id,
+        body: "test body01",
+        topic: "test topic01"
+      })
+
+    _support_ticket_2 =
+      TicketsFixtures.ticket_fixture(%{
+        organization_id: attrs.organization_id,
+        body: "test body02",
+        status: "closed"
+      })
+
+    result =
+      auth_query_gql_by(:fetch, user,
+        variables: %{
+          "filter" => %{
+            "end_date" => Date.utc_today() |> Date.to_string(),
+            "start_date" => Date.utc_today() |> Timex.shift(days: -11) |> Date.to_string()
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    support_tickets = get_in(query_data, [:data, "fetchSupportTickets"])
+    assert is_binary(support_tickets) == true
+  end
+
+  test "update a multiple ticket and test possible scenarios and errors", %{manager: user} do
+    TicketsFixtures.ticket_fixture()
+
+    {:ok, ticket} =
+      Repo.fetch_by(Ticket, %{body: "some body", organization_id: user.organization_id})
+
+    update_params = %{
+      "update_ids" => [ticket.id],
+      "status" => "closed"
+    }
+
+    result = Tickets.update_bulk_ticket(update_params)
+    assert result == true
   end
 end

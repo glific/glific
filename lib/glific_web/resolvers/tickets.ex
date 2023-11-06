@@ -62,4 +62,25 @@ defmodule GlificWeb.Resolvers.Tickets do
       Tickets.delete_ticket(ticket)
     end
   end
+
+  @doc """
+  Fetches support tickets between start_date and end_date
+  """
+  @spec fetch_support_tickets(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, String.t()}
+  def fetch_support_tickets(_, args, _) do
+    {:ok, Tickets.fetch_support_tickets(args)}
+  end
+
+  @doc """
+  update multiple tickets
+  """
+  @spec update_bulk_ticket(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, map()} | {:error, map()}
+
+  def update_bulk_ticket(_, %{input: params}, _) do
+    with true <- Tickets.update_bulk_ticket(params) do
+      {:ok, %{success: true, message: "Updated successfully"}}
+    end
+  end
 end

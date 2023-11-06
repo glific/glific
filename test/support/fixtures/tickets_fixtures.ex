@@ -3,6 +3,7 @@ defmodule Glific.TicketsFixtures do
   This module defines test helpers for creating
   entities via the `Glific.Tickets` context.
   """
+
   alias Glific.Tickets.Ticket
 
   @doc """
@@ -17,7 +18,8 @@ defmodule Glific.TicketsFixtures do
         topic: "some topic",
         organization_id: 1,
         contact_id: 1,
-        status: "open"
+        status: "open",
+        user_id: 1
       })
       |> Glific.Tickets.create_ticket()
 

@@ -22,6 +22,7 @@ defmodule Glific.Stats do
     Users.User
   }
 
+  require Resvg
   alias GlificWeb.StatsLive
 
   @doc """
@@ -481,24 +482,67 @@ defmodule Glific.Stats do
     |> Repo.one()
   end
 
-  @spec load_pie_svg([any()], String.t()) :: {:safe, [any()]}
+  @spec clean_data(any()) :: {:safe, [any()]}
+  defp clean_data(svg) when is_binary(svg) do
+    {
+      :safe,
+      [
+        """
+        <svg width="320" height="120" xmlns="http://www.w3.org/2000/svg">
+          <text x="160" y="70" font-size="20" text-anchor="middle">No Data</text>
+        </svg>
+        """
+      ]
+    }
+  end
+
+  defp clean_data({:safe, data}) do
+    if is_binary(data) do
+      {:safe, [data]}
+    else
+      {:safe, data}
+    end
+  end
+
+  @spec load_pie_svg([any()], String.t()) :: String.t()
   defp load_pie_svg(data, title) do
     data
     |> StatsLive.make_pie_chart_dataset()
     |> (&StatsLive.render_pie_chart(title, &1)).()
+    |> clean_data()
+    |> convert_svg_to_binary()
   end
 
-  @spec load_bar_svg([any()], String.t()) :: {:safe, [any()]}
-  defp load_bar_svg(data, title) do
+  @spec load_bar_svg([any()], String.t(), [String.t()]) :: String.t()
+  defp load_bar_svg(data, title, opts) do
     data
-    |> StatsLive.make_bar_chart_dataset()
+    |> StatsLive.make_bar_chart_dataset(opts)
     |> (&StatsLive.render_bar_chart(title, &1)).()
+    |> clean_data()
+    |> convert_svg_to_binary()
+  end
+
+  @spec convert_svg_to_binary({atom(), any()}) :: String.t()
+  defp convert_svg_to_binary(svg) do
+    {:safe, svg_string} = svg
+
+    filename = System.tmp_dir!() <> "/temp.png"
+
+    # Can control the quality of the image by passing width:
+    svg_string
+    |> List.flatten()
+    |> Enum.join()
+    |> Resvg.svg_string_to_png(filename, resources_dir: System.tmp_dir!(), width: 1080)
+
+    {:ok, file_content} = File.read(filename)
+    File.rm!(filename)
+    file_content
   end
 
   @spec fetch_inbound_outbound(non_neg_integer(), String.t(), map()) :: [tuple()]
   defp fetch_inbound_outbound(org_id, duration, date_range) do
-    inbound = Reports.get_kpi(:inbound_messages_count, org_id, [duration: duration], date_range)
-    outbound = Reports.get_kpi(:outbound_messages_count, org_id, [duration: duration], date_range)
+    inbound = Reports.get_kpi(:inbound_messages_count, org_id, date_range, duration: duration)
+    outbound = Reports.get_kpi(:outbound_messages_count, org_id, date_range, duration: duration)
 
     [
       {"Inbound: #{inbound}", inbound},
@@ -506,18 +550,25 @@ defmodule Glific.Stats do
     ]
   end
 
-  defp get_date_range(duration) do
-    time = NaiveDateTime.utc_now()
+  @spec get_day_range(String.t()) :: map()
+  defp get_day_range(duration) do
+    now = NaiveDateTime.utc_now() |> NaiveDateTime.add(-1, :day)
+    end_day = now |> Timex.end_of_day()
 
-    from =
+    start_day =
       case duration do
-        "MONTHLY" -> Date.beginning_of_month(DateTime.utc_now())
-        "WEEKLY" -> Reports.shifted_time(time, -7) |> NaiveDateTime.to_date()
-        "DAILY" -> Reports.shifted_time(time, -1) |> NaiveDateTime.to_date()
+        "MONTHLY" -> now |> Timex.beginning_of_month()
+        "WEEKLY" -> now |> NaiveDateTime.add(-6, :day)
+        "DAILY" -> now
       end
+      |> Timex.beginning_of_day()
 
-    till = Reports.shifted_time(time, -1) |> NaiveDateTime.to_date()
+    %{start_day: start_day, end_day: end_day}
+  end
 
+  @spec get_date_label(String.t()) :: String.t()
+  defp get_date_label(duration) do
+    %{start_day: from, end_day: till} = get_day_range(duration)
     Timex.format!(from, "{0D}-{0M}-{YYYY}") <> " till " <> Timex.format!(till, "{0D}-{0M}-{YYYY}")
   end
 
@@ -526,35 +577,29 @@ defmodule Glific.Stats do
   """
   @spec mail_stats(Partners.Organization.t(), String.t()) :: {:ok, term} | {:error, term}
   def mail_stats(org, duration \\ "WEEKLY") do
-    # setting end_day as today
-    end_day = NaiveDateTime.utc_now() |> Timex.beginning_of_day()
-
-    # setting start_day as 7 days ago
-    start_day = NaiveDateTime.utc_now() |> NaiveDateTime.add(-7, :day) |> Timex.beginning_of_day()
-
-    date_range = %{
-      end_day: end_day,
-      start_day: start_day
-    }
-
-    contacts = Reports.get_kpi_data(org.id, "contacts", date_range)
-    conversations = Reports.get_kpi_data(org.id, "stats", date_range)
-    optin = StatsLive.fetch_count_data(:optin_chart_data, org.id, date_range)
-    messages = fetch_inbound_outbound(org.id, duration, date_range)
+    contacts = Reports.get_kpi_data(org.id, "contacts", get_day_range(duration))
+    conversations = Reports.get_kpi_data(org.id, "stats", get_day_range(duration))
+    optin = StatsLive.fetch_count_data(:optin_chart_data, org.id, get_day_range(duration))
+    messages = fetch_inbound_outbound(org.id, duration, get_day_range(duration))
 
     assigns = %{
-      contact_chart_svg: load_bar_svg(contacts, "Contacts"),
-      conversation_chart_svg: load_bar_svg(conversations, "Conversations"),
-      optin_chart_svg: load_pie_svg(optin, "Contacts Optin Status"),
-      message_chart_svg: load_pie_svg(messages, "Messages"),
+      contacts: contacts |> Enum.reduce(0, fn {_, value}, acc -> value + acc end),
+      conversations: conversations |> Enum.reduce(0, fn {_, value}, acc -> value + acc end),
+      messages: messages,
+      optin: optin,
       duration: duration,
-      date_range: get_date_range(duration),
+      date_range: get_date_label(duration),
       dashboard_link: "https://#{org.shortcode}.tides.coloredcow.com/",
       parent_org: org.parent_org
     }
 
     opts = [
-      template: "dashboard.html"
+      template: "dashboard.html",
+      contacts: contacts |> load_bar_svg("Contacts", ["Date", "Daily Contacts"]),
+      conversations:
+        conversations |> load_bar_svg("Conversations", ["Hour", "Daily Conversations"]),
+      optin: optin |> load_pie_svg("Contacts Optin Status"),
+      messages: messages |> load_pie_svg("Messages")
     ]
 
     case DashboardMail.new_mail(org, assigns, opts)

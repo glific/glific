@@ -331,6 +331,67 @@ defmodule Glific.Clients.KEF do
     }
   end
 
+  def webhook("check_is_topic_already_watched", fields) do
+    current_topic = String.trim(fields["current_topic"] || "")
+
+    already_watched_topics =
+      get_in(fields, ["contact", "fields", "watched_topics", "value"]) || ""
+
+    is_watched = current_topic in String.split(already_watched_topics, ", ")
+
+    %{
+      error: false,
+      is_watched: is_watched
+    }
+  end
+
+  def webhook("mark_video_topic_watched", fields) do
+    current_topic = String.trim(fields["current_topic"] || "")
+    contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
+
+    already_watched_topics =
+      get_in(fields, ["contact", "fields", "watched_topics", "value"]) || ""
+
+    already_watched_topics =
+      if already_watched_topics == "" do
+        current_topic
+      else
+        "#{already_watched_topics}, #{current_topic}"
+      end
+
+    Contacts.get_contact!(contact_id)
+    |> ContactField.do_add_contact_field(
+      "watched_topics",
+      "watched_topics",
+      already_watched_topics
+    )
+
+    %{
+      error: false,
+      message: "Topic #{current_topic} marked as watched"
+    }
+  end
+
+  def webhook("total_topics_watched", fields) do
+    contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
+
+    watched_topics = String.trim(fields["contact"]["fields"]["watched_topics"]["value"] || "")
+    watched_topics_list = String.split(watched_topics, ",")
+    number_of_topics_watched = length(watched_topics_list)
+
+    Contacts.get_contact!(contact_id)
+    |> ContactField.do_add_contact_field(
+      "number_of_topics_watched",
+      "number_of_topics_watched",
+      number_of_topics_watched
+    )
+
+    %{
+      error: false,
+      message: "Total topics watched #{number_of_topics_watched}"
+    }
+  end
+
   def webhook(_, _) do
     raise "Unknown webhook"
   end
