@@ -44,6 +44,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Repo,
     Stats.Stat,
     Trackers.Tracker,
+    Tickets.Ticket,
     Users.User
   }
 
@@ -83,7 +84,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         "flow_contexts",
         "profiles",
         "message_broadcasts",
-        "message_broadcast_contacts"
+        "message_broadcast_contacts",
+        "tickets"
       ]
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
@@ -686,6 +688,43 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
+  defp queue_table_data("tickets", organization_id, attrs) do
+    Logger.info(
+      "fetching tickets data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("tickets", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            body: row.body,
+            topic: row.topic,
+            status: row.flow.status,
+            remarks: row.remarks,
+            contact_id: row.contact.id,
+            contact_phone: row.contact.phone,
+            profile_id: row.profile_id,
+            user_id: row.user.id,
+            user_phone: row.user.phone,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :tickets, organization_id, attrs))
+
+    :ok
+  end
+
   defp queue_table_data(stat, organization_id, attrs) when stat in ["stats", "stats_all"] do
     Logger.info(
       "fetching #{stat} data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
@@ -1113,6 +1152,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow, :contact])
+
+  defp get_query("tickets", organization_id, attrs),
+    do:
+      Ticket
+      |> where([t], t.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([t], [t.inserted_at, t.id])
+      |> preload([:user, :contact])
 
   defp get_query("stats", organization_id, attrs),
     do:

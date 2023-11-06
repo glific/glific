@@ -609,7 +609,7 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
-  Schema for flow context schema
+  Schema for flow context table
   """
   @spec flow_context_schema :: list()
   def flow_context_schema do
@@ -759,6 +759,99 @@ defmodule Glific.BigQuery.Schema do
         name: "reason",
         type: "STRING",
         mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for ticket table
+  """
+  @spec ticket_schema :: list()
+  def ticket_schema do
+    [
+      %{
+        description: "Ticket ID",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Body of the ticket",
+        name: "body",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Topic of the ticket",
+        name: "topic",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Status of the ticket",
+        name: "status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Remarks on the ticket",
+        name: "remarks",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Contact ID of the ticket",
+        name: "contact_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Contact phone of the ticket",
+        name: "contact_phone",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Profile ID of the ticket",
+        name: "profile_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "User ID of the ticket",
+        name: "user_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "User phone of the ticket",
+        name: "user_phone",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the ticket was first created",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the ticket was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
       }
     ]
   end
