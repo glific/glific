@@ -812,25 +812,37 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "Contact ID of the ticket",
+        description: "Contact ID on the ticket",
         name: "contact_id",
         type: "INTEGER",
         mode: "REQUIRED"
       },
       %{
-        description: "Contact phone of the ticket",
+        description: "Contact name on the ticket",
+        name: "contact_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Contact phone on the ticket",
         name: "contact_phone",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        description: "User ID of the ticket",
+        description: "User ID on the ticket",
         name: "user_id",
         type: "INTEGER",
         mode: "REQUIRED"
       },
       %{
-        description: "User phone of the ticket",
+        description: "User name on the ticket",
+        name: "user_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "User phone on the ticket",
         name: "user_phone",
         type: "STRING",
         mode: "NULLABLE"

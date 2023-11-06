@@ -706,8 +706,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
             status: row.status,
             remarks: row.remarks,
             contact_id: row.contact.id,
+            contact_name: row.contact.name,
             contact_phone: row.contact.phone,
             user_id: row.user.id,
+            user_name: row.user.name,
             user_phone: row.user.phone,
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
