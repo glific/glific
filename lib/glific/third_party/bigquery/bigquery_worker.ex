@@ -542,7 +542,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             updated_at: format_date_with_millisecond(row.updated_at, organization_id),
             keywords: BigQuery.format_json(row.flow.keywords),
             status: row.status,
-            revision: BigQuery.format_json(row.definition)
+            revision: BigQuery.format_json(row.definition),
+            tag: if(!is_nil(row.flow.tag), do: row.flow.tag.label)
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
@@ -1120,7 +1121,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> where([f], f.status in ["published", "archived"])
       |> order_by([f], [f.inserted_at, f.id])
-      |> preload([:flow])
+      |> preload([:flow, flow: [:tag]])
 
   defp get_query("flow_results", organization_id, attrs),
     do:
