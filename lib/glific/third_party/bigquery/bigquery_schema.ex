@@ -824,12 +824,6 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "Profile ID of the ticket",
-        name: "profile_id",
-        type: "INTEGER",
-        mode: "REQUIRED"
-      },
-      %{
         description: "User ID of the ticket",
         name: "user_id",
         type: "INTEGER",
