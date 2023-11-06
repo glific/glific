@@ -533,7 +533,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
-        tag_name = get_tag_labels(row.flow.tags)
         [
           %{
             id: row.id,
@@ -544,7 +543,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             keywords: BigQuery.format_json(row.flow.keywords),
             status: row.status,
             revision: BigQuery.format_json(row.definition),
-            tag: tag_name
+            tag: if(!is_nil(row.flow.tag), do: row.flow.tag.label)
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
@@ -1122,7 +1121,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> where([f], f.status in ["published", "archived"])
       |> order_by([f], [f.inserted_at, f.id])
-      |> preload([flow: [:tags]])
+      |> preload([:flow, flow: [:tag]])
 
   defp get_query("flow_results", organization_id, attrs),
     do:
@@ -1191,12 +1190,4 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:organization])
-
-  # Function to get the tag names from the preloaded tags association
-  defp get_tag_labels(tags) do
-    case tags do
-      nil -> nil
-      tags_list -> Enum.map(tags_list, &(&1.label))
-    end
-  end
 end
