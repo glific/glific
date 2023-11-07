@@ -31,10 +31,8 @@ defmodule Glific.Tickets do
 
   """
   @spec list_tickets(map()) :: [Ticket.t()]
-  def list_tickets(args) do
-    IO.inspect(Repo.list_filter(args, Ticket, &Repo.opts_with_label/2, &filter_with/2))
-    Repo.list_filter(args, Ticket, &Repo.opts_with_label/2, &filter_with/2)
-  end
+  def list_tickets(args),
+    do: Repo.list_filter(args, Ticket, &Repo.opts_with_label/2, &filter_with/2)
 
   @doc """
   Return the count of tickets, using the same filter as list_tickets
