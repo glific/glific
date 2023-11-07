@@ -14,7 +14,8 @@ defmodule Glific.TemplatesTest do
   }
 
   setup do
-    SeedsDev.seed_organizations()
+    organization = SeedsDev.seed_organizations()
+    SeedsDev.hsm_templates(organization)
     :ok
   end
 
