@@ -839,7 +839,7 @@ defmodule Glific.BigQuery.Schema do
         description: "User ID on the ticket",
         name: "user_id",
         type: "INTEGER",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description: "User name on the ticket",
