@@ -43,8 +43,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Profiles.Profile,
     Repo,
     Stats.Stat,
-    Trackers.Tracker,
     Tickets.Ticket,
+    Trackers.Tracker,
     Users.User
   }
 

@@ -4,6 +4,7 @@ defmodule Glific.TemplatesTest do
   alias Glific.{
     Fixtures,
     Mails.MailLog,
+    Partners,
     Providers.Gupshup,
     Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
@@ -1385,35 +1386,44 @@ defmodule Glific.TemplatesTest do
     end
   end
 
-  test "update_hsms/1 should not update UUID of already existing HSM template", attrs do
-    [hsm | _rest] =
+  test "import_templates/1 should not update the uuid of already existing tempalate",
+       attrs do
+    enable_gupshup_enterprise(attrs)
+
+    data =
+      "\"TEMPLATEID\",\"NAME\",\"PREVIOUSCATEGORY\",\"CATEGORY\",\"LANGUAGE\",\"TYPE\",\"HEADER\",\"BODY\",\"FOOTER\",\"BUTTONTYPE\",\"NOOFBUTTONS\",\"BUTTON1\",\"BUTTON2\",\"BUTTON3\",\"QUALITYRATING\",\"REJECTIONREASON\",\"STATUS\",\"CREATEDON\",\"LASTUPDATEDON\"\n\"6516247\",\"bootcamp_new\",\"TRANSACTIONAL\",\"MARKETING\",\"en\",\"TEXT\",\"\",\"are you ready for upcoming bootcamp?\",\"\",\"CALL_TO_ACTION\",\"2\",\"{\"\"type\"\":\"\"PHONE_NUMBER\"\",\"\"phone_number\"\":\"\"+918979120220\"\",\"\"text\"\":\"\"call here\"\"}\",\"{\"\"type\"\":\"\"URL\"\",\"\"urlType\"\":\"\"STATIC\"\",\"\"url\"\":\"\"https://coloredcow.com/blogs/\"\",\"\"text\"\":\"\"visit here\"\"}\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-09-28\",\"2023-03-30 10:54:47\"\n\"6344689\",\"common_otp\",\"ACCOUNT_UPDATE\",\"AUTHENTICATION\",\"en\",\"TEXT\",\"\",\"Your OTP for {{1}} is {{2}}. This is valid for {{3}}.\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-03-10\",\"2023-04-27 03:05:41\"\n\"6379777\",\"multiline\",\"ACCOUNT_UPDATE\",\"MARKETING\",\"en\",\"TEXT\",\"\",\"Hi {{1}},\nWelcome to multi-line template testing\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-04-05\",\"2023-04-27 03:05:41\"\n\"6379781\",\"multiline_dailly_status\",\"ACCOUNT_UPDATE\",\"MARKETING\",\"en\",\"TEXT\",\"\",\"Hey there!\nHow is your day today?\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-04-05\",\"2023-04-27 03:05:41\"\n"
+
+    Template.import_templates(attrs.organization_id, data)
+
+    [hsm1 | _rest] =
       Templates.list_session_templates(%{
         filter: %{organization_id: attrs.organization_id, is_hsm: true}
       })
 
-    existing_uuid = hsm.uuid
+    # again importing the same template
+    Template.import_templates(attrs.organization_id, data)
 
-    Tesla.Mock.mock(fn
-      %{method: :get} ->
-        %Tesla.Env{
-          status: 200,
-          body:
-            Jason.encode!(%{
-              "status" => "success",
-              "templates" => [
-                %{
-                  "id" => existing_uuid,
-                  "data" => "Hi {{1}}, What is your status | [cold] | [warm]",
-                  "templateType" => "TEXT"
-                }
-              ]
-            })
-        }
-    end)
+    [hsm2 | _rest] =
+      Templates.list_session_templates(%{
+        filter: %{organization_id: attrs.organization_id, is_hsm: true}
+      })
 
-    assert {:ok, %SessionTemplate{} = updated_hsm} =
-      Repo.fetch_by(SessionTemplate, %{id: hsm.id})
+    assert hsm1.uuid == hsm2.uuid
+  end
 
-    assert updated_hsm.uuid == existing_uuid
+  defp enable_gupshup_enterprise(attrs) do
+    updated_attrs = %{
+      is_active: true,
+      organization_id: attrs.organization_id,
+      shortcode: "gupshup_enterprise"
+    }
+
+    {:ok, cred} =
+      Partners.get_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "gupshup_enterprise"
+      })
+
+    Partners.update_credential(cred, updated_attrs)
   end
 end
