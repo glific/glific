@@ -26,6 +26,7 @@ defmodule Glific.BigQuery do
     Profiles.Profile,
     Repo,
     Stats.Stat,
+    Tickets.Ticket,
     Trackers.Tracker
   }
 
@@ -46,6 +47,7 @@ defmodule Glific.BigQuery do
     "flow_counts" => :flow_count_schema,
     "messages_media" => :messages_media_schema,
     "flow_contexts" => :flow_context_schema,
+    "tickets" => :ticket_schema,
     "profiles" => :profile_schema,
     "contact_histories" => :contact_history_schema,
     "message_conversations" => :message_conversation_schema,
@@ -169,6 +171,7 @@ defmodule Glific.BigQuery do
     "flow_counts" => FlowCount,
     "messages_media" => MessageMedia,
     "flow_contexts" => Flows.FlowContext,
+    "tickets" => Ticket,
     "profiles" => Profile,
     "contact_histories" => ContactHistory,
     "message_conversations" => MessageConversation,
