@@ -124,14 +124,34 @@ defmodule GlificWeb.API.V1.RegistrationController do
     organization_id = conn.assigns[:organization_id]
     build_context(organization_id)
 
+    case registration do
+      "true" ->
+        handle_registration_otp(conn, organization_id, phone)
+
+      "false" ->
+        handle_non_registration_otp(conn, organization_id, phone)
+    end
+  end
+
+  defp handle_registration_otp(conn, organization_id, phone) do
     with {:ok, _contact} <- optin_contact(organization_id, phone),
          {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
-         true <- send_otp_allowed?(organization_id, phone, registration),
+         true <- send_otp_allowed?(organization_id, phone, "true"),
          {:ok, _otp} <- create_and_send_verification_code(contact) do
       json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
     else
       _ ->
-        send_otp_error(conn, "Cannot send the otp to #{phone}")
+        send_otp_error(conn, "Cannot send the OTP to #{phone}")
+    end
+  end
+
+  defp handle_non_registration_otp(conn, organization_id, phone) do
+    case Repo.fetch(Contact, phone) do
+      {:ok, _contact} ->
+        handle_registration_otp(conn, organization_id, phone)
+
+      _ ->
+        send_otp_error(conn, "Account with phone number #{phone} does not exist")
     end
   end
 
