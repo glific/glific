@@ -58,6 +58,18 @@ defmodule GlificWeb.Schema.TicketTest do
 
     tickets = get_in(query_data, [:data, "tickets"])
     assert length(tickets) == 1
+
+    name_or_phone_filter = "Adelle Cavin"
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{"filter" => %{"name_or_phone" => name_or_phone_filter}}
+      )
+
+    assert {:ok, query_data} = result
+
+    tickets = get_in(query_data, [:data, "tickets"])
+    assert length(tickets) == 1
   end
 
   test "ticket field id returns one ticket or nil", %{staff: user} do
