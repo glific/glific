@@ -113,6 +113,11 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&Glific.Clients.daily_tasks/1, nil, [])
         Partners.perform_all(&Billing.update_usage/2, %{time: DateTime.utc_now()}, [])
         Partners.perform_all(&Glific.Sheets.sync_organization_sheets/1, nil, [])
+
+        Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"],
+          only_recent: true
+        )
+
         # Partners.perform_all(&Partners.send_dashboard_report/2, %{frequency: "DAILY"}, [])
         Erase.perform_daily()
 
@@ -138,10 +143,6 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.unsuspend_organizations()
 
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], only_recent: true)
-
-        Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"],
-          only_recent: true
-        )
 
         Partners.perform_all(&Glific.Clients.hourly_tasks/1, nil, [])
 
