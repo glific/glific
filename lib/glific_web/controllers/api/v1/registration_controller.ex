@@ -134,14 +134,19 @@ defmodule GlificWeb.API.V1.RegistrationController do
   end
 
   defp handle_registration_otp(conn, organization_id, phone, registration) do
-    with {:ok, _contact} <- optin_contact(organization_id, phone),
-         {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
-         true <- send_otp_allowed?(organization_id, phone, registration),
-         {:ok, _otp} <- create_and_send_verification_code(contact) do
-      json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
-    else
-      _ ->
-        send_otp_error(conn, "Cannot send the otp to #{phone}")
+    case optin_contact(organization_id, phone) do
+      {:ok, contact} ->
+        with {:ok, _contact} <- can_send_otp_to_phone?(organization_id, phone),
+             true <- send_otp_allowed?(organization_id, phone, registration),
+             {:ok, _otp} <- create_and_send_verification_code(contact) do
+          json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
+        else
+          _ ->
+            send_otp_error(conn, "Cannot send the otp to #{phone}")
+        end
+
+      {:error, message} ->
+        send_otp_error(conn, message)
     end
   end
 
@@ -153,7 +158,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
         handle_registration_otp(conn, organization_id, phone, registration)
 
       _ ->
-        send_otp_error(conn, "Account with phone number #{phone} does not exist")
+        send_otp_error(conn, "Account with phone number #{phone} does not exists")
     end
   end
 
@@ -252,11 +257,17 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   @spec optin_contact(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, []}
   defp optin_contact(organization_id, phone) do
-    %{
-      phone: phone,
-      organization_id: organization_id,
-      method: "registration"
-    }
-    |> Contacts.optin_contact()
+    case Repo.fetch_by(Contact, %{phone: phone}) do
+      {:ok, existing_contact} ->
+        {:error, "Account with phone number #{phone} already exists"}
+
+      _ ->
+        %{
+          phone: phone,
+          organization_id: organization_id,
+          method: "registration"
+        }
+        |> Contacts.optin_contact()
+    end
   end
 end

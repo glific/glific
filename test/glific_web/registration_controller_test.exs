@@ -199,7 +199,9 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp), invalid_params)
 
       assert json = json_response(conn, 400)
-      assert get_in(json, ["error", "message"]) == "Account with phone number #{phone} does not exist"
+
+      assert get_in(json, ["error", "message"]) ==
+               "Account with phone number #{phone} does not exist"
     end
 
     test "send otp to optout contact will optin the contact again", %{conn: conn} do
