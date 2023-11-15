@@ -117,15 +117,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
     end
   end
 
-  # registration false
-  # 1 - check that user exists or not
-  # 2- if exists -> check contact -> if contact opted in ->  send otp
-  # 3- error message
-
-  # registration true
-  # 1- if user exist -> error message
-  # 2- create contact-> otp
-
   def send_otp(
         conn,
         %{"user" => %{"phone" => phone, "registration" => registration}} = _user_params
