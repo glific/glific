@@ -157,8 +157,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
       {:ok, _contact} ->
         handle_registration_otp(conn, organization_id, phone, registration)
 
-      _ ->
-        send_otp_error(conn, "Account with phone number #{phone} does not exists")
+      {:error, _} ->
+        send_otp_error(conn, "Account with phone number #{phone} does not exist")
     end
   end
 
@@ -258,7 +258,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @spec optin_contact(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, []}
   defp optin_contact(organization_id, phone) do
     case Repo.fetch_by(Contact, %{phone: phone}) do
-      {:ok, existing_contact} ->
+      {:ok, _existing_contact} ->
         {:error, "Account with phone number #{phone} already exists"}
 
       _ ->
