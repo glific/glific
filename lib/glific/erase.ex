@@ -13,8 +13,8 @@ defmodule Glific.Erase do
   """
   @spec perform_weekly() :: any
   def perform_weekly do
-    refresh_tables()
     clean_old_records()
+    refresh_tables()
   end
 
   @doc """
@@ -25,10 +25,7 @@ defmodule Glific.Erase do
     [
       "REINDEX TABLE global.oban_jobs"
     ]
-    |> Enum.each(
-      # need such a large timeout specifically to vacuum the messages
-      &Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true)
-    )
+    |> Enum.each(&Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true))
   end
 
   @doc """
@@ -60,7 +57,7 @@ defmodule Glific.Erase do
     ]
     |> Enum.each(
       # need such a large timeout specifically to vacuum the messages
-      &Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true)
+      &Repo.query!(&1, [], timeout: 1_000_000, skip_organization_id: true)
     )
   end
 

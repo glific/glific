@@ -882,15 +882,12 @@ defmodule Glific.Flows.FlowContext do
   Delete all the contexts which are completed before two days
   """
   @spec delete_completed_flow_contexts(non_neg_integer) :: :ok
-  def delete_completed_flow_contexts(back \\ 2) do
+  def delete_completed_flow_contexts(back \\ 3) do
     back_date = DateTime.utc_now() |> DateTime.add(-1 * back * 24 * 60 * 60, :second)
 
     """
     DELETE FROM flow_contexts
-    WHERE id = any (array(
-       SELECT id
-       FROM flow_contexts AS f0
-       WHERE f0.completed_at < '#{back_date}' AND F0.completed_at IS NOT NULL LIMIT 500));
+    WHERE completed_at < '#{back_date}' AND completed_at IS NOT NULL
     """
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
 
@@ -903,12 +900,12 @@ defmodule Glific.Flows.FlowContext do
   Delete all the contexts which are older than 7 days
   """
   @spec delete_old_flow_contexts(non_neg_integer) :: :ok
-  def delete_old_flow_contexts(back \\ 7) do
+  def delete_old_flow_contexts(back \\ 14) do
     deletion_date = DateTime.utc_now() |> DateTime.add(-1 * back * 24 * 60 * 60, :second)
 
     """
     DELETE FROM flow_contexts
-    WHERE id = any (array(SELECT id FROM flow_contexts AS f0 WHERE f0.inserted_at < '#{deletion_date}' LIMIT 500));
+    WHERE inserted_at < '#{deletion_date}'
     """
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
 
