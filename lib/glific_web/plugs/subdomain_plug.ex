@@ -41,6 +41,7 @@ if Code.ensure_loaded?(Plug) do
            %SubdomainPlugConfig{endpoint: endpoint}
          ) do
       root_host = endpoint.config(:url)[:host]
+      glific_subdomain = "glific.com"
 
       cond do
         host in ["0.0.0.0", "www.example.com", "glific.gigalixirapp.com"] ->
@@ -50,6 +51,11 @@ if Code.ensure_loaded?(Plug) do
         # we need a better long term solution soon
         host in ["localhost", root_host, "127.0.0.1"] ->
           "glific"
+
+        String.ends_with?(host, glific_subdomain) ->
+          host
+          |> String.replace(~r/.?#{glific_subdomain}/, "")
+          |> String.replace("api.", "")
 
         true ->
           host
