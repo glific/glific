@@ -57,7 +57,7 @@ defmodule Glific.Jobs.BSPBalanceWorker do
        when bsp_balance < threshold do
     # start sending a warning message when the balance is lower than $10
     # we can tweak this over time
-    go_back = if bsp_balance < 3, do: 24, else: 48
+    go_back = if bsp_balance < 3, do: 7 * 24, else: 14 * 24
 
     ## We need to check if we have already sent this notification in last go_back time
     category = "low_bsp_balance"
