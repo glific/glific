@@ -169,10 +169,10 @@ defmodule Glific.Flows.FlowContextTest do
     assert {:ok, _map} = FlowContext.step_forward(flow_context, message)
   end
 
-  test "delete_completed_flow_contexts will delete all contexts completed before two days" do
+  test "delete_completed_flow_contexts will delete all contexts completed before three days" do
     flow_context =
       flow_context_fixture(%{
-        completed_at: DateTime.utc_now() |> DateTime.add(-(2 * 24 * 60 * 60 + 1), :second)
+        completed_at: DateTime.utc_now() |> DateTime.add(-(3 * 24 * 60 * 60 + 1), :second)
       })
 
     FlowContext.delete_completed_flow_contexts()
