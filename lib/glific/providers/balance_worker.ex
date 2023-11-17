@@ -51,10 +51,10 @@ defmodule Glific.Jobs.BSPBalanceWorker do
 
   @spec send_low_balance_notification(integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
           nil | {:ok, any}
-  def send_low_balance_notification(bsp_balance, organization_id, nil, nil),
+  defp send_low_balance_notification(bsp_balance, organization_id, nil, nil),
     do: send_low_balance_notification(bsp_balance, organization_id, 10, 3)
 
-  def send_low_balance_notification(bsp_balance, organization_id, threshold, bsp_balance_limit)
+  defp send_low_balance_notification(bsp_balance, organization_id, threshold, bsp_balance_limit)
        when bsp_balance < threshold do
     # start sending a warning message when the balance is lower than $10
     # we can tweak this over time
@@ -77,5 +77,5 @@ defmodule Glific.Jobs.BSPBalanceWorker do
     end
   end
 
-  def send_low_balance_notification(_, _, _, _), do: nil
+  defp send_low_balance_notification(_, _, _, _), do: nil
 end
