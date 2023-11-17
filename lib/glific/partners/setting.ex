@@ -12,7 +12,7 @@ defmodule Glific.Partners.Setting do
     :report_frequency,
     :run_flow_each_time,
     :send_warning_mail,
-    :bsp_balance_limit
+    :critical_balance_threshold
   ]
 
   @type t() :: %__MODULE__{
@@ -21,7 +21,7 @@ defmodule Glific.Partners.Setting do
           run_flow_each_time: boolean() | nil,
           send_warning_mail: boolean() | nil,
           bookmarks: map() | nil,
-          bsp_balance_limit: non_neg_integer() | nil
+          critical_balance_threshold: non_neg_integer() | nil
         }
 
   @primary_key false
@@ -31,7 +31,7 @@ defmodule Glific.Partners.Setting do
     field :run_flow_each_time, :boolean, default: false
     field :send_warning_mail, :boolean, default: false
     field :bookmarks, :map, default: %{}
-    field :bsp_balance_limit, :integer, default: 3
+    field :critical_balance_threshold, :integer, default: 3
   end
 
   @doc """
