@@ -849,39 +849,40 @@ defmodule Glific.Flows do
   @doc """
   import a flow from json
   """
-  @spec import_flow(map(), non_neg_integer()) :: boolean()
+  @spec import_flow(map(), non_neg_integer()) :: list()
   def import_flow(import_flow, organization_id) do
     user = Repo.get_current_user()
     interactive_template_list = import_interactive_templates(import_flow, organization_id)
 
-    import_flow_list =
-      Enum.map(import_flow["flows"], fn flow_revision ->
-        with {:ok, flow} <-
-               create_flow(%{
-                 name: flow_revision["definition"]["name"],
-                 # we are reusing existing UUIDs against the spirit of UUIDs
-                 # however this allows us to support sub flows
-                 uuid: flow_revision["definition"]["uuid"],
-                 keywords: flow_revision["keywords"],
-                 organization_id: organization_id
-               }),
-             {:ok, _flow_revision} <-
-               FlowRevision.create_flow_revision(%{
-                 definition:
-                   clean_flow_definition(flow_revision["definition"], interactive_template_list),
-                 flow_id: flow.id,
-                 organization_id: flow.organization_id,
-                 user_id: user.id
-               }) do
-          import_contact_field(import_flow, organization_id)
-          import_groups(import_flow, organization_id)
-          true
-        else
-          _ -> false
-        end
-      end)
-
-    !Enum.member?(import_flow_list, false)
+    Enum.map(import_flow["flows"], fn flow_revision ->
+      with {:ok, flow} <-
+             create_flow(%{
+               name: flow_revision["definition"]["name"],
+               # we are reusing existing UUIDs against the spirit of UUIDs
+               # however this allows us to support sub flows
+               uuid: flow_revision["definition"]["uuid"],
+               keywords: flow_revision["keywords"],
+               organization_id: organization_id
+             }),
+           {:ok, _flow_revision} <-
+             FlowRevision.create_flow_revision(%{
+               definition:
+                 clean_flow_definition(flow_revision["definition"], interactive_template_list),
+               flow_id: flow.id,
+               organization_id: flow.organization_id,
+               user_id: user.id
+             }) do
+        import_contact_field(import_flow, organization_id)
+        import_groups(import_flow, organization_id)
+        %{flow_name: flow.name, status: "Successfully imported"}
+      else
+        {:error, error} ->
+          flow_name = error.changes |> Map.get(:name)
+          keyword_errors = error.errors |> hd()
+          {:keywords, {message, _}} = keyword_errors
+          %{flow_name: flow_name, status: message}
+      end
+    end)
   end
 
   @spec clean_flow_definition(map(), list()) :: map()
