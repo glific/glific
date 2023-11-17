@@ -113,17 +113,12 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&Glific.Clients.daily_tasks/1, nil, [])
         Partners.perform_all(&Billing.update_usage/2, %{time: DateTime.utc_now()}, [])
         Partners.perform_all(&Glific.Sheets.sync_organization_sheets/1, nil, [])
-        # Partners.perform_all(&Partners.send_dashboard_report/2, %{frequency: "DAILY"}, [])
-        Erase.perform_daily()
 
-      # We don't want to clog this process
-      # so lets unlink it
-      # Task.Supervisor.async_nolink(
-      #   Glific.TaskSupervisor,
-      #   fn ->
-      #     Partners.perform_all(&Erase.clean_messages/1, nil, [])
-      #   end
-      # )
+        Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"],
+          only_recent: true
+        )
+
+        Erase.perform_daily()
 
       "tracker_tasks" ->
         Trackers.daily_tasks()
@@ -138,10 +133,6 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.unsuspend_organizations()
 
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], only_recent: true)
-
-        Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"],
-          only_recent: true
-        )
 
         Partners.perform_all(&Glific.Clients.hourly_tasks/1, nil, [])
 
