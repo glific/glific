@@ -879,7 +879,7 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
-  Delete all the contexts which are completed before two days
+  Delete all the contexts which are completed before three days
   """
   @spec delete_completed_flow_contexts(non_neg_integer) :: :ok
   def delete_completed_flow_contexts(back \\ 3) do
@@ -897,7 +897,7 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
-  Delete all the contexts which are older than 7 days
+  Delete all the contexts which are older than 14 days
   """
   @spec delete_old_flow_contexts(non_neg_integer) :: :ok
   def delete_old_flow_contexts(back \\ 14) do
