@@ -58,7 +58,7 @@ oban_crontab = [
   # {"0 0 1 * *", Glific.Jobs.MinuteWorker, args: %{job: :monthly_tasks}}
 ]
 
-oban_engine = Oban.Pro.Queue.SmartEngine
+oban_engine = Oban.Pro.Engines.Smart
 
 oban_plugins = [
   # Prune jobs after 5 mins, gives us some time to go investigate if needed
