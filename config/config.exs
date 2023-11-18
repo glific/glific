@@ -65,7 +65,6 @@ oban_plugins = [
   {Oban.Pro.Plugins.DynamicPruner, mode: {:max_age, 5 * 60}, limit: 25_000},
   {Oban.Plugins.Cron, crontab: oban_crontab},
   Oban.Pro.Plugins.DynamicLifeline,
-  Oban.Web.Plugins.Stats,
   Oban.Plugins.Gossip
 ]
 
