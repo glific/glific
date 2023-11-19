@@ -21,6 +21,7 @@ defmodule Glific.Flows.Action do
     Profiles,
     Repo,
     Sheets,
+    Templates.InteractiveTemplate,
     Tickets
   }
 
@@ -488,10 +489,21 @@ defmodule Glific.Flows.Action do
        else: errors
   end
 
-  def validate(%{type: "set_contact_language"} = action, errors, _flow) do
-    if is_nil(action.text) || action.text == "",
-      do: [{Message, "Language is a required field", "Warning"}] ++ errors,
-      else: errors
+  def validate(%{type: "send_interactive_msg"} = action, errors, flow) do
+    if is_nil(action.interactive_template_expression) do
+      result =
+        Repo.fetch_by(
+          InteractiveTemplate,
+          %{id: action.interactive_template_id, organization_id: flow.organization_id}
+        )
+
+      case result do
+        {:ok, _} -> errors
+        _ -> [{Message, "An Interactive template does not exist", "Error"}] ++ errors
+      end
+    else
+      errors
+    end
   end
 
   # default validate, do nothing

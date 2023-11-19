@@ -188,19 +188,23 @@ defmodule Glific.Templates.InteractiveTemplates do
         interactive_content["content"]["type"]
       )
 
+  @spec meet_waba_title_spec(String.t()) :: String.t()
+  defp meet_waba_title_spec(str),
+    do: str |> String.slice(0..1024)
+
   @spec do_get_interactive_body(map(), String.t(), String.t()) :: String.t()
   defp do_get_interactive_body(interactive_content, "quick_reply", type)
        when type in ["image", "video"],
-       do: interactive_content["content"]["text"]
+       do: interactive_content["content"]["text"] |> meet_waba_title_spec()
 
   defp do_get_interactive_body(interactive_content, "quick_reply", "file"),
     do: interactive_content["content"]["url"]
 
   defp do_get_interactive_body(interactive_content, "quick_reply", "text"),
-    do: interactive_content["content"]["text"]
+    do: interactive_content["content"]["text"] |> meet_waba_title_spec()
 
   defp do_get_interactive_body(interactive_content, "list", _) when is_map(interactive_content),
-    do: interactive_content["body"]
+    do: interactive_content["body"] |> meet_waba_title_spec()
 
   defp do_get_interactive_body(_, _, _), do: ""
 
@@ -237,7 +241,11 @@ defmodule Glific.Templates.InteractiveTemplates do
     do: interactive_content
 
   @spec clean_string(String.t()) :: String.t()
-  defp clean_string(str), do: String.replace(str, ~r/[\p{P}\p{S}\p{C}]+/u, "")
+  defp clean_string(str, length \\ 60),
+    do:
+      str
+      |> String.replace(~r/[\p{P}\p{S}\p{C}]+/u, "")
+      |> String.slice(0..length)
 
   @doc """
   Cleaning interactive template title as per WhatsApp policy
@@ -259,7 +267,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   def clean_template_title(interactive_content), do: interactive_content
 
   @doc """
-   Get translated interactive template content
+  Get translated interactive template content
   """
   @spec translated_content(InteractiveTemplate.t(), non_neg_integer()) :: map() | nil
   def translated_content(interactive_template, language_id) do
@@ -319,7 +327,8 @@ defmodule Glific.Templates.InteractiveTemplates do
         params,
         attachment
       ) do
-    get_in(interactive_content, ["items"])
+    interactive_content
+    |> get_in(["items"])
     |> hd()
     |> Map.put("options", build_list_items(params))
     |> then(&Map.put(interactive_content, "items", [&1]))
@@ -345,7 +354,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     Enum.map(params, fn
       param when is_map(param) ->
         %{
-          "title" => param["label"],
+          "title" => param["label"] |> String.slice(0..20),
           "description" => "",
           "type" => "text",
           "id" => param["id"] || "",
@@ -354,7 +363,7 @@ defmodule Glific.Templates.InteractiveTemplates do
 
       param ->
         %{
-          "title" => param,
+          "title" => param |> String.slice(0..20),
           "description" => "",
           "type" => "text"
         }
