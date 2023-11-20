@@ -498,6 +498,12 @@ defmodule Glific.Flows.Action do
        else: errors
   end
 
+  def validate(%{type: "set_contact_language"} = action, errors, _flow) do
+    if is_nil(action.text) || action.text == "",
+      do: [{Message, "Language is a required field", "Warning"} | errors],
+      else: errors
+  end
+
   def validate(%{type: type, is_template: true} = action, errors, _flow)
       when type in @template_type do
     if action.templating == nil,
