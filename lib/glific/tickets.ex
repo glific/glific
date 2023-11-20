@@ -140,7 +140,6 @@ defmodule Glific.Tickets do
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
-    IO.inspect(filter)
     query = Repo.filter_with(query, filter)
 
     Enum.reduce(filter, query, fn
