@@ -188,7 +188,8 @@ CREATE TYPE public.import_contacts_type_enum AS ENUM (
 
 CREATE TYPE public.interactive_message_type_enum AS ENUM (
     'list',
-    'quick_reply'
+    'quick_reply',
+    'location_request_message'
 );
 
 
