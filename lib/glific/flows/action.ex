@@ -431,7 +431,7 @@ defmodule Glific.Flows.Action do
         errors
 
       _ ->
-        [{object, "Could not find #{get_name(object)}: #{entity["name"]}", "Critical"}] ++ errors
+        [{object, "Could not find #{get_name(object)}: #{entity["name"]}", "Critical"} | errors]
     end
   end
 
@@ -460,7 +460,7 @@ defmodule Glific.Flows.Action do
             check_entity_exists(entity, errors, object)
 
           _ ->
-            [{object, "Could not parse #{get_name(object)}", "Critical"}] ++ errors
+            [{object, "Could not parse #{get_name(object)}", "Critical"} | errors]
         end
       end
     )
@@ -470,7 +470,7 @@ defmodule Glific.Flows.Action do
     # ensure that the flow exists
     case Repo.fetch_by(Flow, %{uuid: action.enter_flow_uuid}) do
       {:ok, _} -> errors
-      _ -> [{Flow, "Could not find Sub Flow: #{action.enter_flow_name}", "Critical"}] ++ errors
+      _ -> [{Flow, "Could not find Sub Flow: #{action.enter_flow_name}", "Critical"} | errors]
     end
   end
 
@@ -483,10 +483,14 @@ defmodule Glific.Flows.Action do
        do:
          [
            {Message, "The next message after a long wait for time should be an HSM template",
-            "Warning"}
-         ] ++
-           errors,
+            "Warning"} | errors],
        else: errors
+  end
+
+  def validate(%{type: "send_msg", templating: nil}, errors, _flow), do: errors
+  def validate(%{type: "send_msg", templating: templating} = _action, errors, _flow) do
+    IO.inspect(templating, label: "TEMPLATING")
+    errors
   end
 
   def validate(%{type: "send_interactive_msg"} = action, errors, flow) do
@@ -499,7 +503,7 @@ defmodule Glific.Flows.Action do
 
       case result do
         {:ok, _} -> errors
-        _ -> [{Message, "An Interactive template does not exist", "Error"}] ++ errors
+        _ -> [{Message, "An Interactive template does not exist", "Error"} | errors]
       end
     else
       errors

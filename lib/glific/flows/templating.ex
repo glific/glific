@@ -25,7 +25,8 @@ defmodule Glific.Flows.Templating do
           template: SessionTemplate.t() | nil,
           variables: list(),
           expression: String.t() | nil,
-          localization: map()
+          localization: map(),
+          template_error: String.t() | nil
         }
 
   embedded_schema do
@@ -34,6 +35,7 @@ defmodule Glific.Flows.Templating do
     field :expression, :string
     field :localization, :map
     field :variables, {:array, :string}, default: []
+    field :template_error, :string, default: nil
     embeds_one :template, SessionTemplate
   end
 
@@ -111,7 +113,7 @@ defmodule Glific.Flows.Templating do
   end
 
   @doc """
-    We need to perform the execute in case template is an expression
+  We need to perform the execute in case template is an expression
   """
   @spec execute(Templating.t(), FlowContext.t(), [Message.t()]) :: Templating.t() | nil
   def execute(%{expression: expression} = _templating, context, _messages)
