@@ -22,7 +22,7 @@ defmodule Glific.Jobs.BSPBalanceWorker do
   def perform_periodic(organization_id) do
     organization = Repo.get!(Organization, organization_id)
     threshold = organization.setting.low_balance_threshold
-    bsp_balance_limit = organization.setting.critical_balance_threshold
+    critical_balance_threshold = organization.setting.critical_balance_threshold
 
     Logger.info("Checking BSP balance: organization_id: '#{organization_id}'")
 
@@ -31,7 +31,12 @@ defmodule Glific.Jobs.BSPBalanceWorker do
       {:ok, data} ->
         bsp_balance = data["balance"]
 
-        send_low_balance_notification(bsp_balance, organization_id, threshold, bsp_balance_limit)
+        send_low_balance_notification(
+          bsp_balance,
+          organization_id,
+          threshold,
+          critical_balance_threshold
+        )
 
         # We should move this to an embedded schema
         # and then fix the function in publish_data. Basically have a periodic
@@ -59,12 +64,17 @@ defmodule Glific.Jobs.BSPBalanceWorker do
   defp send_low_balance_notification(bsp_balance, organization_id, nil, nil),
     do: send_low_balance_notification(bsp_balance, organization_id, 10, 3)
 
-  defp send_low_balance_notification(bsp_balance, organization_id, threshold, bsp_balance_limit)
+  defp send_low_balance_notification(
+         bsp_balance,
+         organization_id,
+         threshold,
+         critical_balance_threshold
+       )
        when bsp_balance < threshold do
-    # start sending a warning message when the balance is lower than $10
+    # start sending a warning message when the balance is lower than a certain threshold default is $10
     # we can tweak this over time
-    # Checking if bsp_balance is less than the critical_balance_threshold, which by default is 3
-    go_back = if bsp_balance < bsp_balance_limit, do: 48, else: 7 * 24
+    # If the balance is below a certain threshold or it's critically low (below $3 by default), trigger a warning notification.
+    go_back = if bsp_balance < critical_balance_threshold, do: 48, else: 7 * 24
 
     ## We need to check if we have already sent this notification in last go_back time
     category = "low_bsp_balance"
