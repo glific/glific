@@ -43,6 +43,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Profiles.Profile,
     Repo,
     Stats.Stat,
+    Tickets.Ticket,
     Trackers.Tracker,
     Users.User
   }
@@ -83,7 +84,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         "flow_contexts",
         "profiles",
         "message_broadcasts",
-        "message_broadcast_contacts"
+        "message_broadcast_contacts",
+        "tickets"
       ]
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
@@ -540,7 +542,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             updated_at: format_date_with_millisecond(row.updated_at, organization_id),
             keywords: BigQuery.format_json(row.flow.keywords),
             status: row.status,
-            revision: BigQuery.format_json(row.definition)
+            revision: BigQuery.format_json(row.definition),
+            tag: if(!is_nil(row.flow.tag), do: row.flow.tag.label)
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
@@ -682,6 +685,44 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :flow_contexts, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("tickets", organization_id, attrs) do
+    Logger.info(
+      "fetching tickets data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("tickets", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            body: row.body,
+            topic: row.topic,
+            status: row.status,
+            remarks: row.remarks,
+            contact_id: row.contact.id,
+            contact_name: row.contact.name,
+            contact_phone: row.contact.phone,
+            user_id: if(!is_nil(row.user), do: row.user.id),
+            user_name: if(!is_nil(row.user), do: row.user.name),
+            user_phone: if(!is_nil(row.user), do: row.user.phone),
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :tickets, organization_id, attrs))
 
     :ok
   end
@@ -1080,7 +1121,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> where([f], f.status in ["published", "archived"])
       |> order_by([f], [f.inserted_at, f.id])
-      |> preload([:flow])
+      |> preload([:flow, flow: [:tag]])
 
   defp get_query("flow_results", organization_id, attrs),
     do:
@@ -1113,6 +1154,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow, :contact])
+
+  defp get_query("tickets", organization_id, attrs),
+    do:
+      Ticket
+      |> where([t], t.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([t], [t.inserted_at, t.id])
+      |> preload([:user, :contact])
 
   defp get_query("stats", organization_id, attrs),
     do:

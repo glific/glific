@@ -374,8 +374,8 @@ defmodule Glific.Clients.KEF do
 
   def webhook("total_topics_watched", fields) do
     contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
-    watched_topics = String.trim(fields["watched_topics"] || "")
 
+    watched_topics = String.trim(fields["contact"]["fields"]["watched_topics"]["value"] || "")
     watched_topics_list = String.split(watched_topics, ",")
     number_of_topics_watched = length(watched_topics_list)
 

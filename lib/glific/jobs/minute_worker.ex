@@ -121,14 +121,11 @@ defmodule Glific.Jobs.MinuteWorker do
         # Partners.perform_all(&Partners.send_dashboard_report/2, %{frequency: "DAILY"}, [])
         Erase.perform_daily()
 
-      # We don't want to clog this process
-      # so lets unlink it
-      # Task.Supervisor.async_nolink(
-      #   Glific.TaskSupervisor,
-      #   fn ->
-      #     Partners.perform_all(&Erase.clean_messages/1, nil, [])
-      #   end
-      # )
+        Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"],
+          only_recent: true
+        )
+
+        Erase.perform_daily()
 
       "tracker_tasks" ->
         Trackers.daily_tasks()

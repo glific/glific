@@ -200,7 +200,9 @@ defmodule GlificWeb.Schema.FlowTest do
     import_flow = data |> Jason.encode!()
     result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
     assert {:ok, query_data} = result
-    assert true = get_in(query_data, [:data, "importFlow", "success"])
+    import_status = get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
+    assert import_status["flowName"] == "Import Workflow"
+    assert import_status["status"] == "Successfully imported"
 
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Import Workflow", organization_id: user.organization_id})
@@ -244,7 +246,9 @@ defmodule GlificWeb.Schema.FlowTest do
     import_flow = data |> Jason.encode!()
     result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
     assert {:ok, query_data} = result
-    assert true = get_in(query_data, [:data, "importFlow", "success"])
+    import_status = get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
+    assert import_status["flowName"] == "New Contact Workflow"
+    assert import_status["status"] == "Successfully imported"
     [group | _] = Groups.list_groups(%{filter: %{label: "Optin contacts"}})
     assert group.label == "Optin contacts"
 
