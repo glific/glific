@@ -1,9 +1,8 @@
 mutation importFlow($flow: Json!) {
   importFlow(flow: $flow) {
-    errors {
-      key
-      message
+    status {
+      flowName
+      status
     }
-    success
   }
 }

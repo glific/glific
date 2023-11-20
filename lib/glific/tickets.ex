@@ -161,6 +161,7 @@ defmodule Glific.Tickets do
         query
         |> where([t], t.contact_id in subquery(sub_query))
 
+
       _, query ->
         query
     end)
