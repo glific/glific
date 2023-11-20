@@ -508,7 +508,7 @@ defmodule Glific.Flows.Action do
       when type in @template_type do
     if action.templating == nil,
       do: [
-        {Message, "A session template could not be found in the flow", "Error"}
+        {Message, "A session template could not be found in the flow", "Critical"}
         | errors
       ],
       else: errors
@@ -524,7 +524,7 @@ defmodule Glific.Flows.Action do
 
       case result do
         {:ok, _} -> errors
-        _ -> [{Message, "An Interactive template does not exist", "Error"} | errors]
+        _ -> [{Message, "An Interactive template does not exist", "Critical"} | errors]
       end
     else
       errors
