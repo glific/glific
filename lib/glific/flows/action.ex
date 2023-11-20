@@ -70,6 +70,7 @@ defmodule Glific.Flows.Action do
 
   # They fall under actions, thus not using "wait for response" with them, as that is a router.
   @wait_for ["wait_for_time", "wait_for_result"]
+  @template_type ["send_msg", "send_broadcast"]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
@@ -86,6 +87,7 @@ defmodule Glific.Flows.Action do
           profile_type: String.t() | nil,
           create_contact: boolean,
           exclusions: boolean,
+          is_template: boolean,
           flow: map() | nil,
           field: map() | nil,
           quick_replies: [String.t()],
@@ -150,6 +152,7 @@ defmodule Glific.Flows.Action do
 
     field(:create_contact, :boolean, default: false)
     field(:exclusions, :boolean, default: false)
+    field(:is_template, :boolean, default: false)
     field(:flow, :map)
 
     field(:quick_replies, {:array, :string}, default: [])
@@ -190,6 +193,19 @@ defmodule Glific.Flows.Action do
     field(:delay, :integer, default: 0)
 
     embeds_one(:enter_flow, Flow)
+  end
+
+  @spec do_templating(map(), map(), Node.t(), map()) :: {Action.t(), map()}
+  defp do_templating(json, uuid_map, node, attrs) do
+    {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
+    is_template = json["templating"] != nil && map_size(json["templating"]) > 0
+
+    attrs =
+      attrs
+      |> Map.put(:templating, templating)
+      |> Map.put(:is_template, is_template)
+
+    process(json, uuid_map, node, attrs)
   end
 
   @spec process(map(), map(), Node.t(), map()) :: {Action.t(), map()}
@@ -330,9 +346,7 @@ defmodule Glific.Flows.Action do
       contacts: json["contacts"]
     }
 
-    {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
-    attrs = Map.put(attrs, :templating, templating)
-    process(json, uuid_map, node, attrs)
+    do_templating(json, uuid_map, node, attrs)
   end
 
   def process(%{"type" => "send_interactive_msg"} = json, uuid_map, node) do
@@ -409,11 +423,7 @@ defmodule Glific.Flows.Action do
       attachments: process_attachments(json["attachments"])
     }
 
-    {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
-
-    attrs = Map.put(attrs, :templating, templating)
-
-    process(json, uuid_map, node, attrs)
+    do_templating(json, uuid_map, node, attrs)
   end
 
   @spec get_name(atom()) :: String.t()
@@ -480,17 +490,22 @@ defmodule Glific.Flows.Action do
     # if wait time > 24 hours!
     if action.wait_time >= 24 * 60 * 60 &&
          type_of_next_message(flow, action) == :session,
-       do:
-         [
-           {Message, "The next message after a long wait for time should be an HSM template",
-            "Warning"} | errors],
+       do: [
+         {Message, "The next message after a long wait for time should be an HSM template",
+          "Warning"}
+         | errors
+       ],
        else: errors
   end
 
-  def validate(%{type: "send_msg", templating: nil}, errors, _flow), do: errors
-  def validate(%{type: "send_msg", templating: templating} = _action, errors, _flow) do
-    IO.inspect(templating, label: "TEMPLATING")
-    errors
+  def validate(%{type: type, is_template: true} = action, errors, _flow)
+      when type in @template_type do
+    if action.templating == nil,
+      do: [
+        {Message, "A session template could not be found in the flow", "Error"}
+        | errors
+      ],
+      else: errors
   end
 
   def validate(%{type: "send_interactive_msg"} = action, errors, flow) do
