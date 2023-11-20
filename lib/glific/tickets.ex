@@ -32,7 +32,6 @@ defmodule Glific.Tickets do
   """
   @spec list_tickets(map()) :: [Ticket.t()]
   def list_tickets(args) do
-    IO.inspect(Repo.list_filter(args, Ticket, &Repo.opts_with_label/2, &filter_with/2))
     Repo.list_filter(args, Ticket, &Repo.opts_with_label/2, &filter_with/2)
   end
 
