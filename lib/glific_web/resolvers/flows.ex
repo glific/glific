@@ -70,9 +70,9 @@ defmodule GlificWeb.Resolvers.Flows do
 
   @doc false
   @spec import_flow(Absinthe.Resolution.t(), %{flow: map()}, %{context: map()}) ::
-          {:ok, %{success: boolean()}}
+          {:ok, any} | {:error, any}
   def import_flow(_, %{flow: flow}, %{context: %{current_user: user}}) do
-    {:ok, %{success: Flows.import_flow(flow, user.organization_id)}}
+    {:ok, %{status: Flows.import_flow(flow, user.organization_id)}}
   end
 
   @doc false

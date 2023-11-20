@@ -4,6 +4,7 @@ defmodule Glific.TemplatesTest do
   alias Glific.{
     Fixtures,
     Mails.MailLog,
+    Partners,
     Providers.Gupshup,
     Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
@@ -1383,5 +1384,54 @@ defmodule Glific.TemplatesTest do
 
       assert Templates.template("uuid", []) == Jason.encode!(result)
     end
+  end
+
+  test "import_templates/1 should not update the uuid of already existing template",
+       attrs do
+    enable_gupshup_enterprise(attrs)
+
+    data =
+      "\"TEMPLATEID\",\"NAME\",\"PREVIOUSCATEGORY\",\"CATEGORY\",\"LANGUAGE\",\"TYPE\",\"HEADER\",\"BODY\",\"FOOTER\",\"BUTTONTYPE\",\"NOOFBUTTONS\",\"BUTTON1\",\"BUTTON2\",\"BUTTON3\",\"QUALITYRATING\",\"REJECTIONREASON\",\"STATUS\",\"CREATEDON\",\"LASTUPDATEDON\"\n\"6379781\",\"multiline_daily_status\",\"ACCOUNT_UPDATE\",\"MARKETING\",\"en\",\"TEXT\",\"\",\"Hey there!\nHow is your day today?\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-04-05\",\"2023-04-27 03:05:41\"\n"
+
+    Template.import_templates(attrs.organization_id, data)
+
+    [hsm1 | _rest] =
+      Templates.list_session_templates(%{
+        filter: %{
+          organization_id: attrs.organization_id,
+          is_hsm: true,
+          shortcode: "multiline_daily_status"
+        }
+      })
+
+    # again importing the same template
+    Template.import_templates(attrs.organization_id, data)
+
+    [hsm2 | _rest] =
+      Templates.list_session_templates(%{
+        filter: %{
+          organization_id: attrs.organization_id,
+          is_hsm: true,
+          shortcode: "multiline_daily_status"
+        }
+      })
+
+    assert hsm1.uuid == hsm2.uuid
+  end
+
+  defp enable_gupshup_enterprise(attrs) do
+    updated_attrs = %{
+      is_active: true,
+      organization_id: attrs.organization_id,
+      shortcode: "gupshup_enterprise"
+    }
+
+    {:ok, cred} =
+      Partners.get_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "gupshup_enterprise"
+      })
+
+    Partners.update_credential(cred, updated_attrs)
   end
 end

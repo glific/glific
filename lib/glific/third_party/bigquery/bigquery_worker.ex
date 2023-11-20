@@ -43,8 +43,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Profiles.Profile,
     Repo,
     Stats.Stat,
-    Trackers.Tracker,
     Tickets.Ticket,
+    Trackers.Tracker,
     Users.User
   }
 
@@ -709,9 +709,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
             contact_id: row.contact.id,
             contact_name: row.contact.name,
             contact_phone: row.contact.phone,
-            user_id: row.user.id,
-            user_name: row.user.name,
-            user_phone: row.user.phone,
+            user_id: if(!is_nil(row.user), do: row.user.id),
+            user_name: if(!is_nil(row.user), do: row.user.name),
+            user_phone: if(!is_nil(row.user), do: row.user.phone),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }

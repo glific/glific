@@ -150,6 +150,21 @@ defmodule Glific.Tickets do
       {:user_id, user_id}, query ->
         from(q in query, where: q.user_id == ^user_id)
 
+      {:name_or_phone, name_or_phone}, query ->
+        sub_query =
+          from(c in Contact,
+            where: ilike(c.name, ^"%#{name_or_phone}%") or c.phone == ^name_or_phone,
+            select: c.id
+          )
+
+        query
+        |> where(
+          [c],
+          ilike(c.name, ^"%#{name_or_phone}%") or
+            c.phone == ^name_or_phone or
+            c.id in subquery(sub_query)
+        )
+
       _, query ->
         query
     end)
