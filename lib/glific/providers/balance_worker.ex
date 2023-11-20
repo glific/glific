@@ -64,6 +64,10 @@ defmodule Glific.Jobs.BSPBalanceWorker do
   defp send_low_balance_notification(bsp_balance, organization_id, nil, nil),
     do: send_low_balance_notification(bsp_balance, organization_id, 10, 3)
 
+  # start sending a warning message when the balance is lower than a certain threshold default
+  # is $10. We can tweak this over time
+  # If the balance is below a certain threshold or it's critically low (below $3 by default),
+  # trigger a warning notification.
   defp send_low_balance_notification(
          bsp_balance,
          organization_id,
@@ -71,9 +75,6 @@ defmodule Glific.Jobs.BSPBalanceWorker do
          critical_balance_threshold
        )
        when bsp_balance < threshold do
-    # start sending a warning message when the balance is lower than a certain threshold default is $10
-    # we can tweak this over time
-    # If the balance is below a certain threshold or it's critically low (below $3 by default), trigger a warning notification.
     go_back = if bsp_balance < critical_balance_threshold, do: 48, else: 7 * 24
 
     ## We need to check if we have already sent this notification in last go_back time
