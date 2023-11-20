@@ -31,8 +31,9 @@ defmodule Glific.Tickets do
 
   """
   @spec list_tickets(map()) :: [Ticket.t()]
-  def list_tickets(args),
-    do: Repo.list_filter(args, Ticket, &Repo.opts_with_label/2, &filter_with/2)
+  def list_tickets(args) do
+    Repo.list_filter(args, Ticket, &Repo.opts_with_label/2, &filter_with/2)
+  end
 
   @doc """
   Return the count of tickets, using the same filter as list_tickets
@@ -158,12 +159,8 @@ defmodule Glific.Tickets do
           )
 
         query
-        |> where(
-          [c],
-          ilike(c.name, ^"%#{name_or_phone}%") or
-            c.phone == ^name_or_phone or
-            c.id in subquery(sub_query)
-        )
+        |> where([t], t.contact_id in subquery(sub_query))
+
 
       _, query ->
         query
