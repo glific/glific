@@ -138,6 +138,7 @@ defmodule Glific.Tickets do
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
+    IO.inspect(filter)
     query = Repo.filter_with(query, filter)
 
     Enum.reduce(filter, query, fn
@@ -158,12 +159,7 @@ defmodule Glific.Tickets do
           )
 
         query
-        |> where(
-          [c],
-          ilike(c.name, ^"%#{name_or_phone}%") or
-            c.phone == ^name_or_phone or
-            c.id in subquery(sub_query)
-        )
+        |> where([t], t.contact_id in subquery(sub_query))
 
       _, query ->
         query
