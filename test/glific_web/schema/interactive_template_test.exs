@@ -94,7 +94,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     assert length(interactives) > 0
 
     [interactive | _] = interactives
-    assert get_in(interactive, ["label"]) == "Role"
+    assert get_in(interactive, ["label"]) == "Send Location"
   end
 
   test "interactive template by id returns one interactive or nil", %{manager: user} do

@@ -233,7 +233,8 @@ CREATE TYPE public.message_type_enum AS ENUM (
     'quick_reply',
     'text',
     'video',
-    'sticker'
+    'sticker',
+    'location_request_message'
 );
 
 

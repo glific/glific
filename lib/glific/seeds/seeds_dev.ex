@@ -1410,6 +1410,28 @@ if Code.ensure_loaded?(Faker) do
           "1" => interactive_content
         }
       })
+
+      interactive_content = %{
+        "type" => "location_request_message",
+        "body" => %{
+          "type" => "text",
+          "text" => "please share your location"
+        },
+        "action" => %{
+          "name" => "send_location"
+        }
+      }
+
+      Repo.insert!(%InteractiveTemplate{
+        label: "Send Location",
+        type: :location_request_message,
+        interactive_content: interactive_content,
+        organization_id: organization.id,
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content
+        }
+      })
     end
 
     @doc false
