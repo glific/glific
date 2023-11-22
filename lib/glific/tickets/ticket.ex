@@ -14,7 +14,7 @@ defmodule Glific.Tickets.Ticket do
     Users.User
   }
 
-  @required_fields [:body, :contact_id, :status, :organization_id]
+  @required_fields [:body, :contact_id, :status, :organization_id, :message_number]
   @optional_fields [:user_id, :topic, :remarks]
 
   @type t() :: %__MODULE__{
@@ -31,7 +31,8 @@ defmodule Glific.Tickets.Ticket do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          message_number: integer()
         }
 
   schema "tickets" do
@@ -39,6 +40,7 @@ defmodule Glific.Tickets.Ticket do
     field(:topic, :string)
     field(:status, :string)
     field(:remarks, :string)
+    field(:message_number, :integer, default: 0, read_after_writes: true)
 
     belongs_to(:contact, Contact)
     belongs_to(:user, User)
