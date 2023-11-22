@@ -528,7 +528,10 @@ defmodule Glific.FLowsTest do
       "Could not find Sub Flow:",
       "Could not parse",
       "\"newcontact\" has already been used as a keyword for a flow",
-      "The next message after a long no response should be an HSM template"
+      "The next message after a long no response should be an HSM template",
+      "An Interactive template does not exist",
+      "A session template could not be found in the flow",
+      "Language is a required field"
     ]
 
     Enum.any?(errors, &String.contains?(str, &1))
