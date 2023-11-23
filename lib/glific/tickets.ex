@@ -87,11 +87,11 @@ defmodule Glific.Tickets do
 
   @spec get_previous_message_number() :: {:ok, integer()} | {:error, String.t()}
   defp get_previous_message_number do
-    case Repo.one(from m in Message, order_by: [desc: m.message_number], limit: 1) do
+    case Repo.one(from m in Message, order_by: [desc: m.inserted_at], limit: 1) do
       %Message{message_number: number} ->
-        if is_nil(Repo.get_by(Message, %{message_number: number - 3})),
+        if is_nil(Repo.get_by(Message, %{message_number: number - 1})),
           do: {:ok, 0},
-          else: {:ok, number - 3}
+          else: {:ok, number - 1}
 
       nil ->
         {:ok, 0}
