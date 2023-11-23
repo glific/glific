@@ -72,9 +72,12 @@ defmodule Glific.Tickets do
       {:error, %Ecto.Changeset{}}
 
   """
+
   @spec create_ticket(map()) :: {:ok, Ticket.t()} | {:error, Ecto.Changeset.t()}
   def create_ticket(attrs \\ %{}) do
-    with {:ok, message_number} <- get_previous_message_number(),
+    contact_id = Map.get(attrs, :contact_id)
+
+    with {:ok, message_number} <- get_previous_message_number(contact_id),
          {:ok, ticket} <-
            do_create_ticket(
              Map.put_new(attrs, :status, "open")
@@ -85,16 +88,25 @@ defmodule Glific.Tickets do
     end
   end
 
-  @spec get_previous_message_number() :: {:ok, integer()} | {:error, String.t()}
-  defp get_previous_message_number do
-    case Repo.one(from m in Message, order_by: [desc: m.inserted_at], limit: 1) do
-      %Message{message_number: number} ->
-        if is_nil(Repo.get_by(Message, %{message_number: number - 1})),
-          do: {:ok, 0},
-          else: {:ok, number - 1}
+  @spec get_previous_message_number(non_neg_integer()) :: {:ok, integer()} | {:error, String.t()}
+  defp get_previous_message_number(contact_id) do
+    ticket_creation = DateTime.utc_now()
 
+    message_number =
+      Repo.one(
+        from m in Message,
+          where: m.contact_id == ^contact_id and m.inserted_at <= ^ticket_creation,
+          order_by: [desc: m.inserted_at],
+          select: m.message_number,
+          limit: 1
+      )
+
+    case message_number do
       nil ->
         {:ok, 0}
+
+      _ ->
+        {:ok, message_number - 1}
     end
   end
 
