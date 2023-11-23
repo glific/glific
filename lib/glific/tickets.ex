@@ -85,21 +85,21 @@ defmodule Glific.Tickets do
     end
   end
 
-  @spec get_previous_message_number() :: {:ok, integer()}
+  @spec get_previous_message_number() :: {:ok, integer()} | {:error, String.t()}
   defp get_previous_message_number do
     case Repo.one(from m in Message, order_by: [desc: m.message_number], limit: 1) do
       %Message{message_number: number} ->
-        if is_nil(Repo.get_by(Message, %{message_number: number - 3})) do
-          {:ok, 0}
-        else
-          {:ok, number - 3}
-        end
+        if is_nil(Repo.get_by(Message, %{message_number: number - 3})),
+          do: {:ok, 0},
+          else: {:ok, number - 3}
+
+      nil ->
+        {:ok, 0}
     end
   end
 
   @spec do_create_ticket(map()) :: {:ok, Ticket.t()} | {:error, Ecto.Changeset.t()}
   defp do_create_ticket(params) do
-
     %Ticket{}
     |> Ticket.changeset(params)
     |> Repo.insert()
