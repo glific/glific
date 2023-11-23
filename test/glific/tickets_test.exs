@@ -11,7 +11,7 @@ defmodule Glific.TicketsTest do
 
     import Glific.TicketsFixtures
 
-    @invalid_attrs %{body: nil, topic: nil}
+    @invalid_attrs %{body: nil, topic: nil, contact_id: 123}
 
     test "list_tickets/0 returns all tickets" do
       ticket = ticket_fixture()

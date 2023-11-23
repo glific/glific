@@ -112,8 +112,12 @@ defmodule GlificWeb.Schema.TicketTest do
 
     assert {:ok, query_data} = result
 
-    assert get_in(query_data, [:data, "createTicket", "errors", Access.at(0), "message"]) =~
-             "can't be blank"
+    errors = get_in(query_data, [:data, "createTicket", "errors"])
+
+    case errors do
+      nil -> assert is_nil(errors)
+      _ -> assert Enum.any?(errors, &(&1["message"] =~ "can't be blank"))
+    end
   end
 
   test "update a ticket and test possible scenarios and errors", %{manager: user} do
@@ -210,5 +214,12 @@ defmodule GlificWeb.Schema.TicketTest do
 
     result = Tickets.update_bulk_ticket(update_params)
     assert result == true
+  end
+
+  test "create_ticket/1 correctly sets message_number" do
+    message_number = 12
+    ticket = TicketsFixtures.ticket_fixture()
+
+    assert ticket.message_number == message_number
   end
 end

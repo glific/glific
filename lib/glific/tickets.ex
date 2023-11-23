@@ -102,11 +102,8 @@ defmodule Glific.Tickets do
       )
 
     case message_number do
-      nil ->
-        {:ok, 0}
-
-      _ ->
-        {:ok, message_number - 1}
+      nil -> {:ok, 0}
+      _ -> {:ok, message_number}
     end
   end
 

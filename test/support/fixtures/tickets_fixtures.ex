@@ -19,7 +19,8 @@ defmodule Glific.TicketsFixtures do
         organization_id: 1,
         contact_id: 1,
         status: "open",
-        user_id: 1
+        user_id: 1,
+        message_number: 12
       })
       |> Glific.Tickets.create_ticket()
 
