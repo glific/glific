@@ -908,6 +908,7 @@ defmodule Glific.MessagesTest do
       message = Messages.get_message!(message.id)
       assert false == is_nil(message.interactive_content)
       assert false == is_nil(message.interactive_template_id)
+      assert message.body == "please share your location"
     end
 
     test "create and send message interactive quick reply message with image should have message body as image caption",

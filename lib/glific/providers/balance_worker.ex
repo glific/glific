@@ -71,9 +71,9 @@ defmodule Glific.Jobs.BSPBalanceWorker do
          critical_balance_threshold
        )
        when bsp_balance < threshold do
-    # start sending a warning message when the balance is lower than a certain threshold default is $10
-    # we can tweak this over time
-    # If the balance is below a certain threshold or it's critically low (below $3 by default), trigger a warning notification.
+    #  start sending a warning message when the balance is lower than a certain threshold default is $10
+    #  we can tweak this over time
+    #  If the balance is below a critically threshold (below $3 by default), trigger mail more frequently.
     go_back = if bsp_balance < critical_balance_threshold, do: 48, else: 7 * 24
 
     ## We need to check if we have already sent this notification in last go_back time

@@ -265,7 +265,6 @@ defmodule Glific.Messages do
 
     if contact do
       attrs = Map.put(attrs, :receiver, contact)
-
       ## we need to clean this code in the future.
       attrs = check_for_interactive(attrs, contact.language_id)
 
