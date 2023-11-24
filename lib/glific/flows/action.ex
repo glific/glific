@@ -508,7 +508,7 @@ defmodule Glific.Flows.Action do
       when type in @template_type do
     if action.templating == nil,
       do: [
-        {Message, "A session template could not be found in the flow", "Critical"}
+        {Message, "A template could not be found in the flow", "Critical"}
         | errors
       ],
       else: errors
