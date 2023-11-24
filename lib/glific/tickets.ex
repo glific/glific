@@ -101,10 +101,7 @@ defmodule Glific.Tickets do
           limit: 1
       )
 
-    case message_number do
-      nil -> {:ok, 0}
-      _ -> {:ok, message_number}
-    end
+    {:ok, message_number}
   end
 
   @spec do_create_ticket(map()) :: {:ok, Ticket.t()} | {:error, Ecto.Changeset.t()}

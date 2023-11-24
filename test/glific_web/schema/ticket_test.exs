@@ -216,9 +216,22 @@ defmodule GlificWeb.Schema.TicketTest do
     assert result == true
   end
 
-  test "create_ticket/1 correctly sets message_number" do
-    message_number = 12
-    ticket = TicketsFixtures.ticket_fixture()
+  test "create_ticket/1 correctly sets message_number", %{manager: user} = _attrs do
+    message = Fixtures.message_fixture()
+    message_number = message.message_number
+    body = "new ticket"
+
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{"body" => body, "contact_id" => message.contact_id}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    created_ticket = get_in(query_data, [:data, "createTicket", "ticket"])
+
+    {:ok, ticket} = Repo.fetch(Ticket, created_ticket["id"])
 
     assert ticket.message_number == message_number
   end
