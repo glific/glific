@@ -491,8 +491,7 @@ defmodule Glific.Flows.Action do
     if action.wait_time >= 24 * 60 * 60 &&
          type_of_next_message(flow, action) == :session,
        do: [
-         {Message, "The next message after a long wait for time should be an HSM template",
-          "Warning"}
+         {Message, "The next message after a long wait for time should be a template", "Warning"}
          | errors
        ],
        else: errors

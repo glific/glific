@@ -524,11 +524,11 @@ defmodule Glific.FLowsTest do
       "Your flow has dangling nodes",
       "Could not find Contact:",
       "Could not find Group:",
-      "The next message after a long wait for time should be an HSM template",
+      "The next message after a long wait for time should be a template",
       "Could not find Sub Flow:",
       "Could not parse",
       "\"newcontact\" has already been used as a keyword for a flow",
-      "The next message after a long no response should be an HSM template",
+      "The next message after a long no response should be a template",
       "An Interactive template does not exist",
       "A template could not be found in the flow",
       "Language is a required field"
