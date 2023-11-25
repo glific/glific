@@ -200,12 +200,10 @@ defmodule Glific.Flows.Action do
     {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
     is_template = json["templating"] != nil && map_size(json["templating"]) > 0
 
-    attrs =
-      attrs
-      |> Map.put(:templating, templating)
-      |> Map.put(:is_template, is_template)
-
-    process(json, uuid_map, node, attrs)
+    attrs
+    |> Map.put(:templating, templating)
+    |> Map.put(:is_template, is_template)
+    |> then(&process(json, uuid_map, node, &1))
   end
 
   @spec process(map(), map(), Node.t(), map()) :: {Action.t(), map()}
