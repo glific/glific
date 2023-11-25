@@ -117,7 +117,7 @@ defmodule Glific.MixProject do
       {:tesla, "~> 1.5"},
       {:oban, "~> 2.13"},
       {:oban_web, "~> 2.9", repo: "oban", only: @oban_envs},
-      {:oban_pro, "~> 0.12", repo: "oban", only: @oban_envs},
+      {:oban_pro, "~> 1.1", repo: "oban", only: @oban_envs},
       {:faker, "~> 0.13"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.15", only: @test_envs},
