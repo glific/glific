@@ -11,6 +11,7 @@ defmodule Glific.Tickets do
     Flows.FlowContext,
     Flows.MessageVarParser,
     Messages,
+    Messages.Message,
     Notifications,
     Notifications.Notification,
     Repo,
@@ -71,14 +72,36 @@ defmodule Glific.Tickets do
       {:error, %Ecto.Changeset{}}
 
   """
+
   @spec create_ticket(map()) :: {:ok, Ticket.t()} | {:error, Ecto.Changeset.t()}
   def create_ticket(attrs \\ %{}) do
-    ticket_params = Map.put_new(attrs, :status, "open")
+    contact_id = Map.get(attrs, :contact_id)
 
-    with {:ok, ticket} <- do_create_ticket(ticket_params),
+    with {:ok, message_number} <- get_previous_message_number(contact_id),
+         {:ok, ticket} <-
+           attrs
+           |> Map.put_new(:status, "open")
+           |> Map.put_new(:message_number, message_number)
+           |> do_create_ticket(),
          {:ok, _notification} <- create_ticket_notification(attrs) do
       {:ok, ticket}
     end
+  end
+
+  @spec get_previous_message_number(non_neg_integer()) :: {:ok, integer()} | {:error, String.t()}
+  defp get_previous_message_number(contact_id) do
+    now = DateTime.utc_now()
+
+    message_number =
+      Repo.one(
+        from m in Message,
+          where: m.contact_id == ^contact_id and m.inserted_at <= ^now,
+          order_by: [desc: m.inserted_at],
+          select: m.message_number,
+          limit: 1
+      )
+
+    {:ok, message_number}
   end
 
   @spec do_create_ticket(map()) :: {:ok, Ticket.t()} | {:error, Ecto.Changeset.t()}
@@ -160,7 +183,6 @@ defmodule Glific.Tickets do
 
         query
         |> where([t], t.contact_id in subquery(sub_query))
-
 
       _, query ->
         query
