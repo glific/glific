@@ -28,9 +28,8 @@ config :glific, :environment, :test
 config :glific, Oban,
   prefix: "global",
   crontab: false,
-  queues: false,
   log: :debug,
-  plugins: false
+  testing: :manual
 
 config :glific,
   provider: Glific.Providers.Gupshup.Message,

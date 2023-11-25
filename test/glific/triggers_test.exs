@@ -1,6 +1,6 @@
 defmodule Glific.TriggersTest do
   use Glific.DataCase
-  use Oban.Testing, repo: Glific.Repo
+  use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
     Fixtures,
