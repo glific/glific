@@ -79,10 +79,10 @@ defmodule Glific.Tickets do
 
     with {:ok, message_number} <- get_previous_message_number(contact_id),
          {:ok, ticket} <-
-           do_create_ticket(
-             Map.put_new(attrs, :status, "open")
-             |> Map.put_new(:message_number, message_number)
-           ),
+           attrs
+           |> Map.put_new(:status, "open")
+           |> Map.put_new(:message_number, message_number)
+           |> do_create_ticket(),
          {:ok, _notification} <- create_ticket_notification(attrs) do
       {:ok, ticket}
     end
@@ -90,12 +90,12 @@ defmodule Glific.Tickets do
 
   @spec get_previous_message_number(non_neg_integer()) :: {:ok, integer()} | {:error, String.t()}
   defp get_previous_message_number(contact_id) do
-    ticket_creation = DateTime.utc_now()
+    now = DateTime.utc_now()
 
     message_number =
       Repo.one(
         from m in Message,
-          where: m.contact_id == ^contact_id and m.inserted_at <= ^ticket_creation,
+          where: m.contact_id == ^contact_id and m.inserted_at <= ^now,
           order_by: [desc: m.inserted_at],
           select: m.message_number,
           limit: 1

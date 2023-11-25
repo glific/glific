@@ -24,6 +24,7 @@ defmodule Glific.Tickets.Ticket do
           topic: String.t() | nil,
           status: String.t() | nil,
           remarks: String.t() | nil,
+          message_number: integer(),
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           user_id: non_neg_integer | nil,
@@ -31,8 +32,7 @@ defmodule Glific.Tickets.Ticket do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil,
-          message_number: integer()
+          updated_at: :utc_datetime | nil
         }
 
   schema "tickets" do
