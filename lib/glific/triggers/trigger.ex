@@ -20,8 +20,6 @@ defmodule Glific.Triggers.Trigger do
           trigger_type: String.t() | nil,
           flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
-          group_id: non_neg_integer | nil,
-          group: Group.t() | Ecto.Association.NotLoaded.t() | nil,
           start_at: DateTime.t() | nil,
           end_date: Date.t() | nil,
           last_trigger_at: DateTime.t() | nil,
@@ -72,6 +70,7 @@ defmodule Glific.Triggers.Trigger do
 
     field :is_active, :boolean, default: true
     field :is_repeating, :boolean, default: false
+    field(:groups, {:array, :string}, virtual: true)
 
     belongs_to :group, Group
     belongs_to :flow, Flow
@@ -92,7 +91,6 @@ defmodule Glific.Triggers.Trigger do
     |> validate_start_at()
     |> validate_frequency()
     |> foreign_key_constraint(:flow_id)
-    |> foreign_key_constraint(:group_id)
     |> foreign_key_constraint(:organization_id)
   end
 

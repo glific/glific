@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "5.5.1",
+      version: "5.6.7",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -117,7 +117,7 @@ defmodule Glific.MixProject do
       {:tesla, "~> 1.5"},
       {:oban, "~> 2.13"},
       {:oban_web, "~> 2.9", repo: "oban", only: @oban_envs},
-      {:oban_pro, "~> 0.12", repo: "oban", only: @oban_envs},
+      {:oban_pro, "~> 1.1", repo: "oban", only: @oban_envs},
       {:faker, "~> 0.13"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.15", only: @test_envs},
@@ -158,7 +158,9 @@ defmodule Glific.MixProject do
       {:glific_phil_columns, "~> 3.2"},
       {:glific_forked_waffle_gcs, "~> 0.1.1"},
       {:pow, git: "https://github.com/glific/pow.git"},
-      {:contex, "~> 0.5.0"}
+      {:contex, "~> 0.5.0"},
+      {:password_validator, "~> 0.5"},
+      {:resvg, "~> 0.3.0"}
     ]
   end
 

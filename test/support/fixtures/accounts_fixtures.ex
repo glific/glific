@@ -11,7 +11,7 @@ defmodule Glific.AccountsFixtures do
 
   @doc false
   @spec valid_user_password() :: String.t()
-  def valid_user_password, do: "hello world!"
+  def valid_user_password, do: "Hello World23!"
 
   @doc false
   @spec valid_user_attributes(map()) :: map()

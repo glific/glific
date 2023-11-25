@@ -88,7 +88,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
     @desc "Get a count of all interactives filtered by various criteria"
     field :count_interactive_templates, :integer do
       arg(:filter, :interactive_template_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.InteractiveTemplates.count_interactive_templates/3)
     end
   end
@@ -96,20 +96,20 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
   object :interactive_template_mutations do
     field :create_interactive_template, :interactive_template_result do
       arg(:input, non_null(:interactive_template_input))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.InteractiveTemplates.create_interactive_template/3)
     end
 
     field :update_interactive_template, :interactive_template_result do
       arg(:id, non_null(:id))
       arg(:input, :interactive_template_input)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.InteractiveTemplates.update_interactive_template/3)
     end
 
     field :delete_interactive_template, :interactive_template_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.InteractiveTemplates.delete_interactive_template/3)
     end
 

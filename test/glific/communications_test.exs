@@ -1,6 +1,6 @@
 defmodule Glific.CommunicationsTest do
   use Glific.DataCase, async: true
-  use Oban.Testing, repo: Glific.Repo
+  use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Faker.Phone
 
@@ -65,7 +65,7 @@ defmodule Glific.CommunicationsTest do
       thumbnail: "some thumbnail",
       url: "some url",
       flow: :outbound,
-      provider_media_id: "some provider_media_id"
+      is_template_media: false
     }
 
     defp foreign_key_constraint(attrs) do

@@ -53,6 +53,25 @@ defmodule Glific.FLowsTest do
       assert Enum.filter(flows, fn fl -> fl.name == flow.name end) == [flow]
     end
 
+    test "list_flows/0 with default is_pinned as args should return the searched flow", attrs do
+      flow = flow_fixture()
+      {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id})
+
+      revision
+      |> Map.take([:definition, :flow_id, :organization_id, :user_id])
+      |> Map.merge(%{revision_number: 1})
+      |> FlowRevision.create_flow_revision()
+
+      flows =
+        Flows.list_flows(%{
+          opts: %{order_with: "is_pinned"},
+          filter: %{name_or_keyword_or_tags: "testkeyword"},
+          organization_id: attrs.organization_id
+        })
+
+      assert Enum.count(flows) == 1
+    end
+
     test "list_flows/1 returns flows filtered by keyword", attrs do
       f0 = flow_fixture(@valid_attrs)
       _f1 = flow_fixture(@valid_more_attrs)
@@ -425,7 +444,7 @@ defmodule Glific.FLowsTest do
         organization_id: attrs.organization_id
       })
 
-      {:ok, flow} = Flows.start_group_flow(flow, group, default_results)
+      {:ok, flow} = Flows.start_group_flow(flow, [group.id], default_results)
 
       assert {:ok, message_broadcast} =
                Repo.fetch_by(MessageBroadcast, %{

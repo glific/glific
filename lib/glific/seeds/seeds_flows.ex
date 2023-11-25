@@ -12,7 +12,8 @@ defmodule Glific.Seeds.SeedsFlows do
     Repo,
     Seeds.SeedsDev,
     Settings,
-    Templates.InteractiveTemplate
+    Templates.InteractiveTemplate,
+    Users
   }
 
   @doc false
@@ -232,6 +233,7 @@ defmodule Glific.Seeds.SeedsFlows do
     uuid_map = Keyword.get(opts, :uuid_map, %{})
     id_map = Keyword.get(opts, :id_map, %{})
     label_map = Keyword.get(opts, :label_map, %{})
+    [user | _] = Users.list_users(%{filter: %{organization_id: organization.id}})
 
     definition =
       File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> file))
@@ -249,7 +251,8 @@ defmodule Glific.Seeds.SeedsFlows do
       flow_id: f.id,
       status: "published",
       version: 1,
-      organization_id: organization.id
+      organization_id: organization.id,
+      user_id: user.id
     })
   end
 

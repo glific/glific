@@ -264,7 +264,7 @@ install [Glific Frontend](https://github.com/glific/glific-frontend/)
 ### Front end credentials
 
 - Phone `917834811114`
-- Password `secret1234`
+- Password `Secret1234!`
 
 ## Optional - Using NGROK
 

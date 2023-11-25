@@ -54,14 +54,14 @@ defmodule GlificWeb.Schema.WebhookLogTypes do
     field :webhook_logs, list_of(:webhook_log) do
       arg(:filter, :webhook_log_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.WebhookLogs.webhook_logs/3)
     end
 
     @desc "Get a count of all webhook_logs filtered by various criteria"
     field :count_webhook_logs, :integer do
       arg(:filter, :webhook_log_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.WebhookLogs.count_webhook_logs/3)
     end
   end

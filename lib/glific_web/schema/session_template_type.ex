@@ -187,7 +187,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     @desc "Get a count of all session_templates filtered by various criteria"
     field :count_session_templates, :integer do
       arg(:filter, :session_template_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Templates.count_session_templates/3)
     end
   end
@@ -201,27 +201,27 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
 
     @desc "sync hsm with bsp"
     field :sync_hsm_template, :sync_hsm_templates do
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Templates.sync_hsm_template/3)
     end
 
     field :update_session_template, :session_template_result do
       arg(:id, non_null(:id))
       arg(:input, :session_template_input)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Templates.update_session_template/3)
     end
 
     field :edit_approved_template, :session_template_result do
       arg(:id, non_null(:id))
       arg(:input, :edit_approved_template_input)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Templates.edit_approved_template/3)
     end
 
     field :delete_session_template, :session_template_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Templates.delete_session_template/3)
     end
 
@@ -234,20 +234,20 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
 
     field :import_templates, :import_templates_result do
       arg(:data, :string)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Templates.import_templates/3)
     end
 
     field :bulk_apply_templates, :bulk_apply_templates_result do
       arg(:data, :string)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Templates.bulk_apply_templates/3)
     end
 
     field :report_to_gupshup, :report_to_gupshup_result do
       arg(:template_id, non_null(:id))
       arg(:cc, :json)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Templates.report_to_gupshup/3)
     end
   end

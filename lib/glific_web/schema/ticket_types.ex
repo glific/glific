@@ -42,6 +42,22 @@ defmodule GlificWeb.Schema.TicketTypes do
     field(:user_id, :id)
   end
 
+  input_object :bulk_ticket_input do
+    field(:status, :string)
+    field(:update_ids, list_of(:id))
+    field(:user_id, :id)
+  end
+
+  object :bulk_ticket_result do
+    field(:success, non_null(:boolean))
+    field(:message, non_null(:string))
+  end
+
+  input_object :fetch_support_tickets do
+    field :start_date, :date
+    field :end_date, :date
+  end
+
   @desc "Filtering options for tickets"
   input_object :ticket_filter do
     @desc "Match the body"
@@ -55,6 +71,9 @@ defmodule GlificWeb.Schema.TicketTypes do
 
     @desc "Match the user id"
     field(:user_id, :id)
+
+    @desc "Match the contact name or phone"
+    field(:name_or_phone, :string)
   end
 
   object :ticket_queries do
@@ -79,19 +98,26 @@ defmodule GlificWeb.Schema.TicketTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Tickets.count_tickets/3)
     end
+
+    @desc "Fetches support tickets between start_date and end_date"
+    field :fetch_support_tickets, :string do
+      arg(:filter, :fetch_support_tickets)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Tickets.fetch_support_tickets/3)
+    end
   end
 
   object :ticket_mutations do
     field :create_ticket, :ticket_result do
       arg(:input, non_null(:ticket_input))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Tickets.create_ticket/3)
     end
 
     field :update_ticket, :ticket_result do
       arg(:id, non_null(:id))
       arg(:input, :ticket_input)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Tickets.update_ticket/3)
     end
 
@@ -99,6 +125,12 @@ defmodule GlificWeb.Schema.TicketTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :manager)
       resolve(&Resolvers.Tickets.delete_ticket/3)
+    end
+
+    field :update_bulk_ticket, :bulk_ticket_result do
+      arg(:input, :bulk_ticket_input)
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Tickets.update_bulk_ticket/3)
     end
   end
 end

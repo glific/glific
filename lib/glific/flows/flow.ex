@@ -19,7 +19,6 @@ defmodule Glific.Flows.Flow do
     Flows.FlowRevision,
     Flows.Localization,
     Flows.Node,
-    Groups.Group,
     Partners.Organization,
     Repo,
     Tags.Tag
@@ -422,7 +421,7 @@ defmodule Glific.Flows.Flow do
 
     if MapSet.size(dangling) == 0,
       do: errors,
-      else: [dangling: "Your flow has dangling nodes"] ++ errors
+      else: [{dangling, "Your flow has dangling nodes", "Warning"}] ++ errors
   end
 
   @spec missing_flow_context_nodes(Keyword.t(), map(), MapSet.t()) :: Keyword.t()
@@ -437,7 +436,9 @@ defmodule Glific.Flows.Flow do
 
     if MapSet.subset?(flow_context_nodes, all_nodes),
       do: errors,
-      else: [flowContext: "Some of your users in the flow have their node deleted"] ++ errors
+      else:
+        [{FlowContext, "Some of your users in the flow have their node deleted", "Critical"}] ++
+          errors
   end
 
   # add the appropriate where clause as needed
@@ -479,14 +480,15 @@ defmodule Glific.Flows.Flow do
       Flows.start_contact_flow(flow.id, contact, %{"parent" => context.results})
     end)
 
-    action.groups
-    |> Enum.each(fn group ->
-      group = Repo.get_by(Group, %{id: group["uuid"]})
+    group_ids =
+      action.groups
+      |> Enum.map(fn group ->
+        String.to_integer(group["uuid"])
+      end)
 
-      Flows.start_group_flow(flow, group, %{"parent" => context.results},
-        exclusions: action.exclusions
-      )
-    end)
+    Flows.start_group_flow(flow, group_ids, %{"parent" => context.results},
+      exclusions: action.exclusions
+    )
 
     {:ok, context, []}
   end

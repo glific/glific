@@ -4,6 +4,7 @@ defmodule Glific.TemplatesTest do
   alias Glific.{
     Fixtures,
     Mails.MailLog,
+    Partners,
     Providers.Gupshup,
     Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
@@ -923,6 +924,44 @@ defmodule Glific.TemplatesTest do
       assert hsm.is_active == true
     end
 
+    test "update_hsms/1 should update uuid of already existing HSM", attrs do
+      [hsm | _rest] =
+        Templates.list_session_templates(%{
+          filter: %{organization_id: attrs.organization_id, is_hsm: true}
+        })
+
+      updated_uuid = Ecto.UUID.generate()
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "elementName" => hsm.shortcode,
+                    "languageCode" => hsm.language_id,
+                    "id" => updated_uuid,
+                    "data" => "Hi {{1}}, What is your status | [cold] | [warm]",
+                    "templateType" => "TEXT",
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(hsm.updated_at, hours: 1), :millisecond)
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = updated_hsm} =
+               Repo.fetch_by(SessionTemplate, %{id: hsm.id})
+
+      assert updated_hsm.uuid == updated_uuid
+    end
+
     test "update_hsms/1 should update the existing hsm if new status is other than APPROVED",
          attrs do
       [hsm | _] =
@@ -978,12 +1017,19 @@ defmodule Glific.TemplatesTest do
       end)
 
       Fixtures.session_template_fixture(%{
-        body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+        body: """
+        Hello {{1}},
+
+        Please find the verification number is {{2}} for resetting your account.
+        """,
         shortcode: "common_otp",
         is_hsm: true,
         category: "AUTHENTICATION",
-        example:
-          "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
+        example: """
+        Hello [Anil],
+
+        Please find the verification number is [112233] for resetting your account.
+        """,
         language_id: language_id,
         uuid: uuid,
         bsp_id: uuid
@@ -1338,5 +1384,54 @@ defmodule Glific.TemplatesTest do
 
       assert Templates.template("uuid", []) == Jason.encode!(result)
     end
+  end
+
+  test "import_templates/1 should not update the uuid of already existing template",
+       attrs do
+    enable_gupshup_enterprise(attrs)
+
+    data =
+      "\"TEMPLATEID\",\"NAME\",\"PREVIOUSCATEGORY\",\"CATEGORY\",\"LANGUAGE\",\"TYPE\",\"HEADER\",\"BODY\",\"FOOTER\",\"BUTTONTYPE\",\"NOOFBUTTONS\",\"BUTTON1\",\"BUTTON2\",\"BUTTON3\",\"QUALITYRATING\",\"REJECTIONREASON\",\"STATUS\",\"CREATEDON\",\"LASTUPDATEDON\"\n\"6379781\",\"multiline_daily_status\",\"ACCOUNT_UPDATE\",\"MARKETING\",\"en\",\"TEXT\",\"\",\"Hey there!\nHow is your day today?\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-04-05\",\"2023-04-27 03:05:41\"\n"
+
+    Template.import_templates(attrs.organization_id, data)
+
+    [hsm1 | _rest] =
+      Templates.list_session_templates(%{
+        filter: %{
+          organization_id: attrs.organization_id,
+          is_hsm: true,
+          shortcode: "multiline_daily_status"
+        }
+      })
+
+    # again importing the same template
+    Template.import_templates(attrs.organization_id, data)
+
+    [hsm2 | _rest] =
+      Templates.list_session_templates(%{
+        filter: %{
+          organization_id: attrs.organization_id,
+          is_hsm: true,
+          shortcode: "multiline_daily_status"
+        }
+      })
+
+    assert hsm1.uuid == hsm2.uuid
+  end
+
+  defp enable_gupshup_enterprise(attrs) do
+    updated_attrs = %{
+      is_active: true,
+      organization_id: attrs.organization_id,
+      shortcode: "gupshup_enterprise"
+    }
+
+    {:ok, cred} =
+      Partners.get_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "gupshup_enterprise"
+      })
+
+    Partners.update_credential(cred, updated_attrs)
   end
 end

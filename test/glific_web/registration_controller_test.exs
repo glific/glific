@@ -12,7 +12,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     Users
   }
 
-  @password "secret1234"
+  @password "Secret1234!"
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -70,7 +70,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         "user" => %{
           "phone" => receiver.phone,
           "name" => receiver.name,
-          "password" => "1234567",
+          "password" => "Secret12",
           "otp" => otp
         }
       }
@@ -80,7 +80,14 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json = json_response(conn, 500)
 
       assert json["error"]["status"] == 500
-      assert json["error"]["errors"] == %{"password" => ["should be at least 8 character(s)"]}
+
+      assert json["error"]["errors"] ==
+               %{
+                 "password" => [
+                   "Not enough special characters (only 0 instead of at least 1)",
+                   "Password is too short!"
+                 ]
+               }
     end
 
     test "with wrong otp", %{conn: conn} do
@@ -179,7 +186,24 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
 
       assert json = json_response(conn, 400)
-      assert get_in(json, ["error", "message"]) == "Cannot send the otp to #{phone}"
+
+      assert get_in(json, ["error", "message"]) ==
+               "Account with phone number #{phone} already exists"
+    end
+
+    test "send otp to the non existing contact should get an error message", %{conn: conn} do
+      phone = "912345375758"
+
+      invalid_params = %{
+        "user" => %{"phone" => phone, "registration" => "false"}
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp), invalid_params)
+
+      assert json = json_response(conn, 400)
+
+      assert get_in(json, ["error", "message"]) ==
+               "Account with phone number #{phone} does not exist"
     end
 
     test "send otp to optout contact will optin the contact again", %{conn: conn} do
@@ -193,9 +217,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
 
-      assert json = json_response(conn, 200)
-
-      assert get_in(json, ["error", "message"]) == nil
+      assert json = json_response(conn, 400)
+      assert get_in(json, ["error", "message"]) == "Cannot send the otp to #{receiver.phone}"
     end
 
     test "send otp with registration 'false' flag to existing user should succeed", %{conn: conn} do
@@ -228,14 +251,13 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
-
       assert _json = json_response(conn, 200)
     end
   end
 
   describe "reset_password/2" do
-    @password "secret12345"
-    @new_password "12345678"
+    @password "Secret12345!"
+    @new_password "Not12345678!"
 
     def user_fixture do
       # create a user for a contact
@@ -336,7 +358,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
   end
 
   describe "rate limit tests" do
-    @password "secret12345"
+    @password "Secret12345!"
     @max_unauth_requests 50
 
     test "with invalid request", %{conn: conn} do

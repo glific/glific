@@ -51,6 +51,23 @@ defmodule Glific.Communications.Mailer do
   defp add_body(mail, body, false), do: text_body(mail, body)
   defp add_body(mail, body, true), do: html_body(mail, body)
 
+  defp inline_attachments(mail, opts) do
+    Enum.reduce([:contacts, :conversations, :optin, :messages], mail, fn key, acc ->
+      case Keyword.get(opts, key) do
+        nil -> acc
+        data -> attachment(acc, create_attachment(data, key))
+      end
+    end)
+  end
+
+  defp create_attachment(data, key) do
+    Swoosh.Attachment.new({:data, data},
+      filename: "#{key}.png",
+      content_type: "image/png",
+      type: :inline
+    )
+  end
+
   @doc """
   This function creates a mail of type Swoosh.Email
 
@@ -81,18 +98,27 @@ defmodule Glific.Communications.Mailer do
     |> cc(in_cc)
     |> subject(subject)
     |> add_body(body, is_html)
+    |> inline_attachments(opts)
   end
 
   @spec get_team_email(Organization.t(), String.t() | nil, tuple | nil) :: tuple()
-  defp get_team_email(org, _team, nil), do: {org.name, org.email}
+  defp get_team_email(org, nil, nil), do: {org.name, org.email}
 
   defp get_team_email(_org, team, send_to) when team in [nil, ""], do: send_to
 
   defp get_team_email(org, team, _send_to) do
-    org.team_emails
-    |> Jason.decode!()
-    |> Map.get(team)
-    |> then(&{team, &1})
+    case Map.get(org.team_emails, team) do
+      nil ->
+        {org.name, org.email}
+
+      email_list when is_list(email_list) ->
+        Enum.map(email_list, fn email ->
+          {team, email}
+        end)
+
+      email ->
+        {team, email}
+    end
   end
 
   defp capture_log(

@@ -18,21 +18,18 @@ defmodule GlificWeb.Schema.TriggerTypes do
   object :trigger do
     field :id, :id
     field :name, :string
-
     field :start_at, :datetime
+    field :next_trigger_at, :datetime
     field :end_date, :date
     field :is_active, :boolean
-
     field :is_repeating, :boolean
     field :frequency, :string
+
     field :days, list_of(:integer)
     field :hours, list_of(:integer)
+    field :groups, list_of(:string)
 
     field :flow, :flow do
-      resolve(dataloader(Repo))
-    end
-
-    field :group, :group do
       resolve(dataloader(Repo))
     end
 
@@ -48,14 +45,10 @@ defmodule GlificWeb.Schema.TriggerTypes do
 
     @desc "Match the name"
     field :name, :string
-
-    @desc "Match the group"
-    field :group, :string
   end
 
   input_object :trigger_input do
     field :flow_id, :id
-    field :group_id, :id
     field :group_ids, list_of(:integer)
 
     field :is_active, :boolean
@@ -77,20 +70,20 @@ defmodule GlificWeb.Schema.TriggerTypes do
   object :trigger_queries do
     field :trigger, :trigger_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Triggers.trigger/3)
     end
 
     field :triggers, list_of(:trigger) do
       arg(:filter, :trigger_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Triggers.triggers/3)
     end
 
     field :count_triggers, :integer do
       arg(:filter, :trigger_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Triggers.count_triggers/3)
     end
   end

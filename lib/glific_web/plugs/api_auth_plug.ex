@@ -73,7 +73,7 @@ defmodule GlificWeb.APIAuthPlug do
     # Lets also preload the language object to the user, before we store
     user = user |> Repo.preload(:language)
 
-    # The store caches will use their default `:ttl` settting. To change the
+    # The store caches will use their default `:ttl` setting. To change the
     # `:ttl`, `Keyword.put(store_config, :ttl, :timer.minutes(10))` can be
     # passed in as the first argument instead of `store_config`.
     CredentialsCache.put(
@@ -178,6 +178,17 @@ defmodule GlificWeb.APIAuthPlug do
 
       Endpoint.broadcast("users_socket:" <> metadata[:renewal_token], "disconnect", %{})
     end)
+  end
+
+  @doc """
+  Fetches all active user sessions
+  """
+  @spec fetch_all_user_sessions(Config.t(), map()) :: integer()
+  def fetch_all_user_sessions(config, user) do
+    config
+    |> store_config
+    |> CredentialsCache.sessions(user)
+    |> Enum.count()
   end
 
   defp sign_token(conn, token, config) do

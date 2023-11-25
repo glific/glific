@@ -24,10 +24,10 @@ defmodule Glific.Messages.MessageMedia do
   # define all the optional fields for message media
   @optional_fields [
     :thumbnail,
-    :provider_media_id,
     :caption,
     :gcs_url,
-    :content_type
+    :content_type,
+    :is_template_media
   ]
 
   @type t() :: %__MODULE__{
@@ -38,13 +38,13 @@ defmodule Glific.Messages.MessageMedia do
           source_url: String.t() | nil,
           caption: String.t() | nil,
           thumbnail: String.t() | nil,
-          provider_media_id: String.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
           gcs_url: String.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          flow: String.t() | nil
+          flow: String.t() | nil,
+          is_template_media: boolean()
         }
 
   schema "messages_media" do
@@ -52,10 +52,10 @@ defmodule Glific.Messages.MessageMedia do
     field(:source_url, :string)
     field(:thumbnail, :string)
     field(:caption, :string)
-    field(:provider_media_id, :string)
     field(:gcs_url, :string)
     field(:content_type, :string)
     field(:flow, MessageFlow)
+    field(:is_template_media, :boolean, default: false)
 
     belongs_to(:organization, Organization)
 

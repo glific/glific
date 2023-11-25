@@ -15,7 +15,6 @@ defmodule Glific.Flows do
     Contacts.Contact,
     Flows.ContactField,
     Groups,
-    Groups.Group,
     Partners,
     Repo,
     Sheets,
@@ -23,7 +22,8 @@ defmodule Glific.Flows do
     Tags.Tag,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Users.User
   }
 
   alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
@@ -40,7 +40,7 @@ defmodule Glific.Flows do
   @spec list_flows(map()) :: [Flow.t()]
   def list_flows(args) do
     flows =
-      Repo.list_filter_query(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
+      Repo.list_filter_query(args, Flow, &opts_with_name/2, &filter_with/2)
       |> AccessControl.check_access(:flow)
       |> Repo.all()
 
@@ -56,6 +56,7 @@ defmodule Glific.Flows do
   @spec merge_original(map(), [Flow.t()]) :: [Flow.t()]
   defp merge_original(dates, flows) do
     Enum.map(flows, fn f -> Map.merge(f, Map.get(dates, f.id, %{})) end)
+    |> Enum.uniq()
   end
 
   @spec get_published_draft_dates([non_neg_integer]) :: map()
@@ -100,6 +101,17 @@ defmodule Glific.Flows do
         %{}
       )
     )
+  end
+
+  @spec opts_with_name(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp opts_with_name(query, opts) do
+    query = Repo.opts_with_name(query, opts)
+
+    # add the flow revision table and introduce a sort by the latest revision
+    query
+    |> join(:inner, [f], fr in FlowRevision, as: :fr, on: f.id == fr.flow_id)
+    |> where([_f, fr], fr.revision_number == 0)
+    |> order_by([_f, fr], desc: fr.inserted_at)
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
@@ -319,17 +331,6 @@ defmodule Glific.Flows do
     Flow.changeset(flow, attrs)
   end
 
-  defp get_user do
-    user = Repo.get_current_user()
-
-    {email, name} =
-      if user,
-        do: {"#{user.phone}@glific.org", user.name},
-        else: {"unknown@glific.org", "Unknown Glific User"}
-
-    %{email: email, name: name}
-  end
-
   @doc """
   Get a list of all the revisions based on a flow UUID
   """
@@ -338,13 +339,15 @@ defmodule Glific.Flows do
     results =
       FlowRevision
       |> join(:left, [fr], f in Flow, as: :f, on: f.id == fr.flow_id)
+      |> join(:left, [fr, f], u in User, as: :u, on: u.id == fr.user_id)
       |> where([fr, f], f.uuid == ^flow_uuid)
-      |> select([fr, f], %FlowRevision{
+      |> select([fr, f, u], %{
         id: fr.id,
         inserted_at: fr.inserted_at,
         status: fr.status,
         revision_number: fr.revision_number,
-        flow_id: fr.flow_id
+        flow_id: fr.flow_id,
+        user_name: u.name
       })
       |> order_by([fr], desc: fr.id)
       |> limit(15)
@@ -360,7 +363,7 @@ defmodule Glific.Flows do
         fn revision, acc ->
           [
             %{
-              user: get_user(),
+              user: get_user(revision.user_name),
               created_on: revision.inserted_at,
               id: revision.id,
               version: "13.0.0",
@@ -374,6 +377,10 @@ defmodule Glific.Flows do
 
     %{results: asset_list |> Enum.reverse()}
   end
+
+  @spec get_user(nil | String.t()) :: map()
+  defp get_user(nil), do: %{name: "Unknown Glific User"}
+  defp get_user(user_name), do: %{name: user_name}
 
   @doc """
   Get specific flow revision by number
@@ -594,7 +601,7 @@ defmodule Glific.Flows do
   defp format_flow_errors(errors) when is_list(errors) do
     ## we can think about the warning based on keys
     Enum.reduce(errors, [], fn error, acc ->
-      [%{key: elem(error, 0), message: elem(error, 1)} | acc]
+      [%{key: elem(error, 0), message: elem(error, 1), category: elem(error, 2)} | acc]
     end)
   end
 
@@ -670,11 +677,11 @@ defmodule Glific.Flows do
   @doc """
   Start flow for contacts of a group
   """
-  @spec start_group_flow(Flow.t(), Group.t(), map(), Keyword.t()) :: {:ok, Flow.t()}
-  def start_group_flow(flow, group, default_results \\ %{}, opts \\ []) do
+  @spec start_group_flow(Flow.t(), list(), map(), Keyword.t()) :: {:ok, Flow.t()}
+  def start_group_flow(flow, group_ids, default_results \\ %{}, opts \\ []) do
     # the flow returned is the expanded version
-    {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id, @status})
-    Broadcast.broadcast_flow_to_group(flow, group, default_results, opts)
+    {:ok, flow} = get_cached_flow(flow.organization_id, {:flow_id, flow.id, @status})
+    Broadcast.broadcast_flow_to_group(flow, group_ids, default_results, opts)
     {:ok, flow}
   end
 
@@ -842,39 +849,40 @@ defmodule Glific.Flows do
   @doc """
   import a flow from json
   """
-  @spec import_flow(map(), non_neg_integer()) :: boolean()
+  @spec import_flow(map(), non_neg_integer()) :: list()
   def import_flow(import_flow, organization_id) do
     user = Repo.get_current_user()
     interactive_template_list = import_interactive_templates(import_flow, organization_id)
 
-    import_flow_list =
-      Enum.map(import_flow["flows"], fn flow_revision ->
-        with {:ok, flow} <-
-               create_flow(%{
-                 name: flow_revision["definition"]["name"],
-                 # we are reusing existing UUIDs against the spirit of UUIDs
-                 # however this allows us to support sub flows
-                 uuid: flow_revision["definition"]["uuid"],
-                 keywords: flow_revision["keywords"],
-                 organization_id: organization_id
-               }),
-             {:ok, _flow_revision} <-
-               FlowRevision.create_flow_revision(%{
-                 definition:
-                   clean_flow_definition(flow_revision["definition"], interactive_template_list),
-                 flow_id: flow.id,
-                 organization_id: flow.organization_id,
-                 user_id: user.id
-               }) do
-          import_contact_field(import_flow, organization_id)
-          import_groups(import_flow, organization_id)
-          true
-        else
-          _ -> false
-        end
-      end)
-
-    !Enum.member?(import_flow_list, false)
+    Enum.map(import_flow["flows"], fn flow_revision ->
+      with {:ok, flow} <-
+             create_flow(%{
+               name: flow_revision["definition"]["name"],
+               # we are reusing existing UUIDs against the spirit of UUIDs
+               # however this allows us to support sub flows
+               uuid: flow_revision["definition"]["uuid"],
+               keywords: flow_revision["keywords"],
+               organization_id: organization_id
+             }),
+           {:ok, _flow_revision} <-
+             FlowRevision.create_flow_revision(%{
+               definition:
+                 clean_flow_definition(flow_revision["definition"], interactive_template_list),
+               flow_id: flow.id,
+               organization_id: flow.organization_id,
+               user_id: user.id
+             }) do
+        import_contact_field(import_flow, organization_id)
+        import_groups(import_flow, organization_id)
+        %{flow_name: flow.name, status: "Successfully imported"}
+      else
+        {:error, error} ->
+          flow_name = error.changes |> Map.get(:name)
+          keyword_errors = error.errors |> hd()
+          {:keywords, {message, _}} = keyword_errors
+          %{flow_name: flow_name, status: message}
+      end
+    end)
   end
 
   @spec clean_flow_definition(map(), list()) :: map()

@@ -119,10 +119,18 @@ defmodule Glific.Seeds.SeedsMigration do
       is_hsm: true,
       shortcode: "common_otp",
       label: "common_otp",
-      body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+      body: """
+      Hello {{1}},
+
+      Please find the verification number is {{2}} for resetting your account.
+      """,
       type: :text,
       category: "UTILITY",
-      example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
+      example: """
+      Hello [Anil],
+
+      Please find the verification number is [112233] for resetting your account.
+      """,
       is_active: true,
       is_source: false,
       language_id: 1,
@@ -323,7 +331,7 @@ defmodule Glific.Seeds.SeedsMigration do
 
   @spec create_saas_user(Contact.t()) :: User.t()
   defp create_saas_user(contact) do
-    password = Ecto.UUID.generate()
+    password = (Ecto.UUID.generate() |> binary_part(16, 16)) <> "-ABC!"
 
     {:ok, user} =
       Users.create_user(%{

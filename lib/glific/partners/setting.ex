@@ -11,14 +11,17 @@ defmodule Glific.Partners.Setting do
     :low_balance_threshold,
     :report_frequency,
     :run_flow_each_time,
-    :send_warning_mail
+    :send_warning_mail,
+    :critical_balance_threshold
   ]
 
   @type t() :: %__MODULE__{
           low_balance_threshold: non_neg_integer() | nil,
           report_frequency: String.t() | nil,
           run_flow_each_time: boolean() | nil,
-          send_warning_mail: boolean() | nil
+          send_warning_mail: boolean() | nil,
+          bookmarks: map() | nil,
+          critical_balance_threshold: non_neg_integer() | nil
         }
 
   @primary_key false
@@ -27,6 +30,8 @@ defmodule Glific.Partners.Setting do
     field :report_frequency, :string, default: "WEEKLY"
     field :run_flow_each_time, :boolean, default: false
     field :send_warning_mail, :boolean, default: false
+    field :bookmarks, :map, default: %{}
+    field :critical_balance_threshold, :integer, default: 3
   end
 
   @doc """

@@ -15,7 +15,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
 
   alias GlificWeb.Flows.FlowEditorController
 
-  @password "secret1234"
+  @password "Secret1234!"
   @valid_language_attrs %{
     label: "English",
     label_locale: "English",

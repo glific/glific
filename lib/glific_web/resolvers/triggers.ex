@@ -13,8 +13,11 @@ defmodule GlificWeb.Resolvers.Triggers do
           {:ok, any} | {:error, any}
   def trigger(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, trigger} <-
-           Repo.fetch_by(Trigger, %{id: id, organization_id: user.organization_id}),
-         do: {:ok, %{trigger: trigger}}
+           Repo.fetch_by(Trigger, %{id: id, organization_id: user.organization_id}) do
+      trigger
+      |> Triggers.append_group_labels()
+      |> then(&{:ok, %{trigger: &1}})
+    end
   end
 
   @doc """
@@ -52,12 +55,24 @@ defmodule GlificWeb.Resolvers.Triggers do
   def update_trigger(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
     with {:ok, trigger} <-
            Repo.fetch_by(Trigger, %{id: id, organization_id: user.organization_id}),
-         {:ok, trigger} <- Triggers.update_trigger(trigger, params) do
+         {:ok, cleaned_params} <- validate_params(params),
+         {:ok, trigger} <- Triggers.update_trigger(trigger, cleaned_params) do
       {:ok, %{trigger: trigger}}
     else
       _ ->
         {:error,
          dgettext("errors", "Trigger start_at should always be greater than current time")}
+    end
+  end
+
+  @spec validate_params(map()) :: {:ok, map()} | {:error, String.t()}
+  defp validate_params(params) do
+    param_keys = Map.keys(params)
+
+    if Enum.any?(param_keys, fn param_key -> param_key in [:is_active] end) do
+      {:error, "Cannot modify read-only fields"}
+    else
+      {:ok, params}
     end
   end
 

@@ -534,8 +534,8 @@ defmodule Glific.Fixtures do
       name: "some name",
       contact_id: contact_fixture(%{phone: phone}).id,
       phone: phone,
-      password: "secret1234",
-      password_confirmation: "secret1234",
+      password: "Secret1234!",
+      password_confirmation: "Secret1234!",
       roles: ["admin"],
       language_id: 1,
       # This should be static for all the user fixtures
@@ -572,11 +572,19 @@ defmodule Glific.Fixtures do
     end)
 
     session_template_fixture(%{
-      body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+      body: """
+      Hello {{1}},
+
+      Please find the verification number is {{2}} for resetting your account.
+      """,
       shortcode: "common_otp",
       is_hsm: true,
       category: "AUTHENTICATION",
-      example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
+      example: """
+      Hello [Anil],
+
+      Please find the verification number is [112233] for resetting your account.
+      """,
       language_id: organization_fixture().default_language_id
     })
   end
@@ -591,7 +599,7 @@ defmodule Glific.Fixtures do
         thumbnail: Faker.Avatar.image_url(),
         flow: :inbound,
         caption: Faker.String.base64(10),
-        provider_media_id: Faker.String.base64(10),
+        is_template_media: false,
         organization_id: attrs.organization_id
       }
       |> Map.merge(attrs)
@@ -689,7 +697,7 @@ defmodule Glific.Fixtures do
       valid_attrs
       |> Map.merge(attrs)
       |> Map.put(:flow_id, f1.id)
-      |> Map.put(:group_id, g1.id)
+      |> Map.put(:group_ids, [g1.id])
       |> Map.put(:organization_id, attrs.organization_id)
 
     {:ok, trigger} = Triggers.create_trigger(valid_attrs)

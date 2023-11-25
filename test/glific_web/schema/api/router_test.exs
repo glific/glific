@@ -8,7 +8,7 @@ defmodule GlificWeb.RouterTest do
     Users.User
   }
 
-  @password "secret1234"
+  @password "Secret1234!"
   @valid_params %{
     "user" => %{"phone" => "+919820198765", "name" => "Jane Doe", "password" => @password}
   }

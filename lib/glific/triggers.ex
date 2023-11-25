@@ -12,7 +12,7 @@ defmodule Glific.Triggers do
     AccessControl.TriggerRole,
     Flows,
     Flows.Flow,
-    Groups,
+    Groups.Group,
     Partners,
     Repo,
     Triggers,
@@ -135,10 +135,7 @@ defmodule Glific.Triggers do
       "Starting flow: #{flow.name} for trigger: #{trigger.name} of org_id: #{trigger.organization_id} with time #{trigger.next_trigger_at}"
     )
 
-    if !is_nil(trigger.group_id) do
-      group = Groups.get_group!(trigger.group_id)
-      Flows.start_group_flow(flow, group)
-    end
+    Flows.start_group_flow(flow, trigger.group_ids)
   end
 
   @doc """
@@ -161,7 +158,7 @@ defmodule Glific.Triggers do
            |> Repo.insert() do
       if Map.has_key?(attrs, :add_role_ids),
         do: update_trigger_roles(attrs, trigger),
-        else: {:ok, trigger}
+        else: {:ok, append_group_labels(trigger)}
     end
   end
 
@@ -173,6 +170,7 @@ defmodule Glific.Triggers do
       |> TriggerRole.update_trigger_roles()
 
     trigger
+    |> append_group_labels
     |> Map.put(:roles, access_controls)
     |> then(&{:ok, &1})
   end
@@ -197,7 +195,7 @@ defmodule Glific.Triggers do
            |> Repo.update() do
       if Map.has_key?(attrs, :add_role_ids),
         do: update_trigger_roles(attrs, updated_trigger),
-        else: {:ok, updated_trigger}
+        else: {:ok, append_group_labels(updated_trigger)}
     end
   end
 
@@ -216,7 +214,25 @@ defmodule Glific.Triggers do
 
   """
   @spec get_trigger!(integer) :: Trigger.t()
-  def get_trigger!(id), do: Repo.get!(Trigger, id)
+  def get_trigger!(id) do
+    with trigger <- Repo.get!(Trigger, id) do
+      append_group_labels(trigger)
+    end
+  end
+
+  @doc """
+  Adding Group labels for Trigger
+  """
+  @spec append_group_labels(Trigger.t()) :: Trigger.t()
+  def append_group_labels(trigger) do
+    group_labels =
+      Group
+      |> where([g], g.id in ^trigger.group_ids)
+      |> select([g], g.label)
+      |> Repo.all()
+
+    Map.put(trigger, :groups, group_labels)
+  end
 
   @doc """
   Returns the list of triggers filtered by args
@@ -229,9 +245,14 @@ defmodule Glific.Triggers do
   """
   @spec list_triggers(map()) :: [Trigger.t()]
   def list_triggers(args) do
-    Repo.list_filter_query(args, Trigger, &Repo.opts_with_name/2, &filter_with/2)
-    |> AccessControl.check_access(:trigger)
-    |> Repo.all()
+    with triggers <-
+           Repo.list_filter_query(args, Trigger, &Repo.opts_with_name/2, &filter_with/2)
+           |> AccessControl.check_access(:trigger)
+           |> Repo.all() do
+      Enum.map(triggers, fn trigger ->
+        append_group_labels(trigger)
+      end)
+    end
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
@@ -292,17 +313,23 @@ defmodule Glific.Triggers do
        do: next_trigger_at
 
   defp get_next_trigger_at(attrs, start_at) do
-    attrs
-    |> Map.put(:next_trigger_at, start_at)
-    |> Helper.compute_next()
-  end
+    frequency = Map.get(attrs, :frequency, nil)
 
-  @spec add_group_ids(map()) :: [integer]
-  defp add_group_ids(%{group_id: group_id} = _attrs) when is_binary(group_id) do
-    [String.to_integer(group_id)]
-  end
+    cond do
+      frequency in [["daily"], ["none"], ["hourly"]] ->
+        start_at
 
-  defp add_group_ids(_attrs), do: []
+      frequency in [["weekly"], ["monthly"]] ->
+        go_back = Timex.shift(start_at, days: -1)
+
+        attrs
+        |> Map.put(:next_trigger_at, go_back)
+        |> Helper.compute_next()
+
+      true ->
+        start_at
+    end
+  end
 
   @spec fix_attrs(map()) :: map()
   defp fix_attrs(attrs) do
@@ -312,7 +339,6 @@ defmodule Glific.Triggers do
     attrs
     |> Map.put(:start_at, start_at)
     |> Map.put(:name, get_name(attrs))
-    |> Map.put(:group_ids, add_group_ids(attrs))
 
     # set the last_trigger_at value to nil whenever trigger is updated or new trigger is created
     |> Map.put(:last_trigger_at, Map.get(attrs, :last_trigger_at, nil))
