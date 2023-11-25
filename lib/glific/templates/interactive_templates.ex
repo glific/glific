@@ -189,8 +189,10 @@ defmodule Glific.Templates.InteractiveTemplates do
       )
 
   @spec meet_waba_title_spec(String.t()) :: String.t()
-  defp meet_waba_title_spec(str),
-    do: str |> String.slice(0..1024)
+  defp meet_waba_title_spec(str), do: str |> String.slice(0..1024)
+
+  @spec meet_waba_button_spec(String.t()) :: String.t()
+  defp meet_waba_button_spec(str), do: str |> String.slice(0..20)
 
   @spec do_get_interactive_body(map(), String.t(), String.t()) :: String.t()
   defp do_get_interactive_body(interactive_content, "quick_reply", type)
@@ -354,7 +356,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     Enum.map(params, fn
       param when is_map(param) ->
         %{
-          "title" => param["label"] |> String.slice(0..20),
+          "title" => param["label"] |> meet_waba_button_spec(),
           "description" => "",
           "type" => "text",
           "id" => param["id"] || "",
@@ -363,7 +365,7 @@ defmodule Glific.Templates.InteractiveTemplates do
 
       param ->
         %{
-          "title" => param |> String.slice(0..20),
+          "title" => param |> meet_waba_button_spec(),
           "description" => "",
           "type" => "text"
         }
