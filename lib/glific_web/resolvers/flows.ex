@@ -90,7 +90,9 @@ defmodule GlificWeb.Resolvers.Flows do
   @spec flow_get(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def flow_get(_, params, %{context: %{current_user: user}}) do
-    with %Flow{} = flow <- State.get_flow(user, params.id, Map.get(params, :is_forced, false)) do
+    flow_id = Glific.parse_maybe_integer!(params.id)
+
+    with %Flow{} = flow <- State.get_flow(user, flow_id, Map.get(params, :is_forced, false)) do
       {:ok, %{flow: flow}}
     end
   end

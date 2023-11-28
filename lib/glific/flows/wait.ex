@@ -8,6 +8,7 @@ defmodule Glific.Flows.Wait do
 
   alias Glific.{
     Flows,
+    Flows.Flow,
     Flows.FlowContext,
     Flows.Router,
     Messages.Message
@@ -46,21 +47,40 @@ defmodule Glific.Flows.Wait do
     {wait, uuid_map}
   end
 
+  @spec type_of_next_message(Flow.t(), Wait.t()) :: atom()
+  defp type_of_next_message(flow, wait) do
+    # lets keep this simple for now, we'll just go follow the exit of this
+    # action to the next node
+
+    {:category, category} = flow.uuid_map[wait.category_uuid]
+    {:exit, exit} = flow.uuid_map[category.exit_uuid]
+
+    {:node, dest_node} = flow.uuid_map[exit.destination_node_uuid]
+    [action | _] = dest_node.actions
+
+    if is_nil(action.templating),
+      do: :session,
+      else: :hsm
+  rescue
+    # in case any of the uuids don't exist, we just trap the exception
+    _result -> :unknown
+  end
+
   @doc """
-  Validate a wait
+  Validate a wait, this is a no-op
   """
   @spec validate(Wait.t(), Keyword.t(), map()) :: Keyword.t()
-  def validate(wait, errors, _flow) do
+  def validate(wait, errors, flow) do
     cond do
       is_nil(wait.seconds) ->
         errors
 
-      wait.seconds >= 86_400 ->
+      wait.seconds >= 24 * 60 * 60 and
+          type_of_next_message(flow, wait) == :session ->
         [
-          {Message, "The next message after a long no response should be an HSM template",
-           "Warning"}
-        ] ++
-          errors
+          {Message, "The next message after a long no response should be a template", "Warning"}
+          | errors
+        ]
 
       true ->
         errors
