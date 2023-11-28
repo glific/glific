@@ -208,6 +208,10 @@ defmodule Glific.Templates.InteractiveTemplates do
   defp do_get_interactive_body(interactive_content, "list", _) when is_map(interactive_content),
     do: interactive_content["body"] |> meet_waba_title_spec()
 
+  defp do_get_interactive_body(interactive_content, "location_request_message", _)
+       when is_map(interactive_content),
+       do: interactive_content["body"]["text"]
+
   defp do_get_interactive_body(_, _, _), do: ""
 
   @doc """

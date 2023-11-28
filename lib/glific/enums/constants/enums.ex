@@ -57,11 +57,12 @@ defmodule Glific.Enums.Constants do
         :quick_reply,
         :text,
         :video,
-        :sticker
+        :sticker,
+        :location_request_message
       ]
 
       # the different possible types of interactive message
-      @interactive_message_type_const [:list, :quick_reply]
+      @interactive_message_type_const [:list, :quick_reply, :location_request_message]
 
       # the different possible types of import contact types
       @import_contacts_type_const [:file_path, :url, :data]

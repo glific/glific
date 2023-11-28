@@ -94,7 +94,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     assert length(interactives) > 0
 
     [interactive | _] = interactives
-    assert get_in(interactive, ["label"]) == "Role"
+    assert get_in(interactive, ["label"]) == "Send Location"
   end
 
   test "interactive template by id returns one interactive or nil", %{manager: user} do
@@ -178,6 +178,45 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
       get_in(query_data, [:data, "createInteractiveTemplate", "errors", Access.at(0), "message"])
 
     assert message =~ "has already been taken"
+  end
+
+  test "create a interactive with type as location_request_message", %{manager: user} do
+    label = "Quick Reply Video"
+
+    {:ok, interactive} =
+      Repo.fetch_by(InteractiveTemplate, %{label: label, organization_id: user.organization_id})
+
+    language_id = interactive.language_id
+
+    interactive_content = %{
+      "type" => "location_request_message",
+      "body" => %{
+        "type" => "text",
+        "text" => "please share your location"
+      },
+      "action" => %{
+        "name" => "send_location"
+      }
+    }
+
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "Request Location",
+            "type" => "LOCATION_REQUEST_MESSAGE",
+            "interactive_content" => Jason.encode!(interactive_content),
+            "languageId" => language_id
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    label =
+      get_in(query_data, [:data, "createInteractiveTemplate", "interactiveTemplate", "label"])
+
+    assert label == "Request Location"
   end
 
   test "update interactive and test possible scenarios and errors", %{manager: user} do
