@@ -2,6 +2,7 @@ defmodule Glific.TicketsTest do
   use Glific.DataCase
 
   alias Glific.{
+    Fixtures,
     Notifications,
     Tickets
   }
@@ -43,7 +44,12 @@ defmodule Glific.TicketsTest do
     end
 
     test "create_ticket/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Tickets.create_ticket(@invalid_attrs)
+      contact = Fixtures.contact_fixture()
+
+      assert {:error, %Ecto.Changeset{}} =
+               @invalid_attrs
+               |> Map.put(:contact_id, contact.id)
+               |> Tickets.create_ticket()
     end
 
     test "update_ticket/2 with valid data updates the ticket" do

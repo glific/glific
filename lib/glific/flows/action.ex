@@ -21,6 +21,7 @@ defmodule Glific.Flows.Action do
     Profiles,
     Repo,
     Sheets,
+    Templates.InteractiveTemplate,
     Tickets
   }
 
@@ -69,6 +70,7 @@ defmodule Glific.Flows.Action do
 
   # They fall under actions, thus not using "wait for response" with them, as that is a router.
   @wait_for ["wait_for_time", "wait_for_result"]
+  @template_type ["send_msg", "send_broadcast"]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
@@ -85,6 +87,7 @@ defmodule Glific.Flows.Action do
           profile_type: String.t() | nil,
           create_contact: boolean,
           exclusions: boolean,
+          is_template: boolean,
           flow: map() | nil,
           field: map() | nil,
           quick_replies: [String.t()],
@@ -149,6 +152,7 @@ defmodule Glific.Flows.Action do
 
     field(:create_contact, :boolean, default: false)
     field(:exclusions, :boolean, default: false)
+    field(:is_template, :boolean, default: false)
     field(:flow, :map)
 
     field(:quick_replies, {:array, :string}, default: [])
@@ -189,6 +193,17 @@ defmodule Glific.Flows.Action do
     field(:delay, :integer, default: 0)
 
     embeds_one(:enter_flow, Flow)
+  end
+
+  @spec do_templating(map(), map(), Node.t(), map()) :: {Action.t(), map()}
+  defp do_templating(json, uuid_map, node, attrs) do
+    {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
+    is_template = json["templating"] != nil && map_size(json["templating"]) > 0
+
+    attrs
+    |> Map.put(:templating, templating)
+    |> Map.put(:is_template, is_template)
+    |> then(&process(json, uuid_map, node, &1))
   end
 
   @spec process(map(), map(), Node.t(), map()) :: {Action.t(), map()}
@@ -329,9 +344,7 @@ defmodule Glific.Flows.Action do
       contacts: json["contacts"]
     }
 
-    {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
-    attrs = Map.put(attrs, :templating, templating)
-    process(json, uuid_map, node, attrs)
+    do_templating(json, uuid_map, node, attrs)
   end
 
   def process(%{"type" => "send_interactive_msg"} = json, uuid_map, node) do
@@ -408,11 +421,7 @@ defmodule Glific.Flows.Action do
       attachments: process_attachments(json["attachments"])
     }
 
-    {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
-
-    attrs = Map.put(attrs, :templating, templating)
-
-    process(json, uuid_map, node, attrs)
+    do_templating(json, uuid_map, node, attrs)
   end
 
   @spec get_name(atom()) :: String.t()
@@ -430,7 +439,7 @@ defmodule Glific.Flows.Action do
         errors
 
       _ ->
-        [{object, "Could not find #{get_name(object)}: #{entity["name"]}", "Critical"}] ++ errors
+        [{object, "Could not find #{get_name(object)}: #{entity["name"]}", "Critical"} | errors]
     end
   end
 
@@ -459,7 +468,7 @@ defmodule Glific.Flows.Action do
             check_entity_exists(entity, errors, object)
 
           _ ->
-            [{object, "Could not parse #{get_name(object)}", "Critical"}] ++ errors
+            [{object, "Could not parse #{get_name(object)}", "Critical"} | errors]
         end
       end
     )
@@ -469,7 +478,7 @@ defmodule Glific.Flows.Action do
     # ensure that the flow exists
     case Repo.fetch_by(Flow, %{uuid: action.enter_flow_uuid}) do
       {:ok, _} -> errors
-      _ -> [{Flow, "Could not find Sub Flow: #{action.enter_flow_name}", "Critical"}] ++ errors
+      _ -> [{Flow, "Could not find Sub Flow: #{action.enter_flow_name}", "Critical"} | errors]
     end
   end
 
@@ -479,19 +488,44 @@ defmodule Glific.Flows.Action do
     # if wait time > 24 hours!
     if action.wait_time >= 24 * 60 * 60 &&
          type_of_next_message(flow, action) == :session,
-       do:
-         [
-           {Message, "The next message after a long wait for time should be an HSM template",
-            "Warning"}
-         ] ++
-           errors,
+       do: [
+         {Message, "The next message after a long wait for time should be a template", "Warning"}
+         | errors
+       ],
        else: errors
   end
 
   def validate(%{type: "set_contact_language"} = action, errors, _flow) do
     if is_nil(action.text) || action.text == "",
-      do: [{Message, "Language is a required field", "Warning"}] ++ errors,
+      do: [{Message, "Language is a required field", "Warning"} | errors],
       else: errors
+  end
+
+  def validate(%{type: type, is_template: true} = action, errors, _flow)
+      when type in @template_type do
+    if action.templating == nil,
+      do: [
+        {Message, "A template could not be found in the flow", "Critical"}
+        | errors
+      ],
+      else: errors
+  end
+
+  def validate(%{type: "send_interactive_msg"} = action, errors, flow) do
+    if is_nil(action.interactive_template_expression) do
+      result =
+        Repo.fetch_by(
+          InteractiveTemplate,
+          %{id: action.interactive_template_id, organization_id: flow.organization_id}
+        )
+
+      case result do
+        {:ok, _} -> errors
+        _ -> [{Message, "An Interactive template does not exist", "Critical"} | errors]
+      end
+    else
+      errors
+    end
   end
 
   # default validate, do nothing

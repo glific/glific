@@ -52,14 +52,26 @@ defmodule Glific.Flows.ContactAction do
   def send_interactive_message(context, action, messages) do
     ## We might need to think how to send the interactive message to a group
     {context, action} = process_labels(context, action)
-    {cid, message_vars} = resolve_cid(context, nil)
+
     interactive_template_id = get_interactive_template_id(action, context)
 
-    {:ok, interactive_template} =
+    result =
       Repo.fetch_by(
         InteractiveTemplate,
         %{id: interactive_template_id, organization_id: context.organization_id}
       )
+
+    case result do
+      {:ok, interactive_template} ->
+        do_send_interactive_message(context, action, messages, interactive_template)
+
+      {:error, error} ->
+        error(context, error, %{}, "Could not find interactive template")
+    end
+  end
+
+  defp do_send_interactive_message(context, action, messages, interactive_template) do
+    {cid, message_vars} = resolve_cid(context, nil)
 
     {interactive_content, body, media_id} =
       interactive_template
@@ -102,7 +114,7 @@ defmodule Glific.Flows.ContactAction do
         message_broadcast_id: context.message_broadcast_id,
         send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
         is_optin_flow: Flows.is_optin_flow?(context.flow),
-        interactive_template_id: interactive_template_id,
+        interactive_template_id: interactive_template.id,
         interactive_content: interactive_content,
         media_id: media_id
       }
@@ -347,9 +359,14 @@ defmodule Glific.Flows.ContactAction do
     end
   end
 
-  @spec error(FlowContext.t(), any(), map()) :: {:ok, map(), any()}
-  defp error(context, error, attrs) do
-    message = "Error sending message, resetting context: #{inspect(error)}, #{inspect(attrs)}"
+  @spec error(FlowContext.t(), any(), map(), String.t() | nil) :: {:ok, map(), any()}
+  defp error(context, error, attrs, prefix \\ nil) do
+    prefix =
+      if is_nil(prefix),
+        do: "Error sending message",
+        else: prefix
+
+    message = "#{prefix}, resetting context: #{inspect(error)}, #{inspect(attrs)}"
 
     # returning for now, but resetting the context
     context = FlowContext.reset_all_contexts(context, message)
