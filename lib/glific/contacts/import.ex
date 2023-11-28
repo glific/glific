@@ -25,9 +25,10 @@ defmodule Glific.Contacts.Import do
          %{user: user, organization_id: organization_id} = contact_attrs,
          date_format
        ) do
+
     results =
       %{
-        name: data["name"],
+        name: get_updated_name(data["name"]),
         phone: data["phone"],
         organization_id: organization_id,
         collection: data["collection"],
@@ -53,6 +54,12 @@ defmodule Glific.Contacts.Import do
 
       true ->
         results
+    end
+  end
+
+  defp get_updated_name(name) do
+    if name != "" do
+      name
     end
   end
 
