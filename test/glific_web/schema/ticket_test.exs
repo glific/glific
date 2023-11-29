@@ -92,6 +92,9 @@ defmodule GlificWeb.Schema.TicketTest do
   end
 
   test "create a ticket and test possible scenarios and errors", %{manager: user} = attrs do
+    message = Fixtures.message_fixture()
+    message_number = message.message_number
+    IO.inspect(message_number)
     body = "new ticket"
     contact = Fixtures.contact_fixture(attrs)
 
@@ -106,6 +109,21 @@ defmodule GlificWeb.Schema.TicketTest do
 
     ticket_name = get_in(query_data, [:data, "createTicket", "ticket", "body"])
     assert ticket_name == body
+
+    #check for message_number
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{"body" => body, "contact_id" => message.contact_id}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    created_ticket = get_in(query_data, [:data, "createTicket", "ticket"])
+
+    {:ok, ticket} = Repo.fetch(Ticket, created_ticket["id"])
+
+    assert ticket.message_number == message_number
 
     # create message without required attributes
     result = auth_query_gql_by(:create, user, variables: %{"input" => %{}})
