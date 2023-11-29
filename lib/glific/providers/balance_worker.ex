@@ -75,7 +75,6 @@ defmodule Glific.Jobs.BSPBalanceWorker do
          critical_balance_threshold
        )
        when bsp_balance < threshold do
-
     #  start sending a warning mail when the balance is lower than a certain threshold default is $10
     #  we can tweak this over time
     #  If the balance is below a critically threshold (below $3 by default), trigger mail more frequently.
