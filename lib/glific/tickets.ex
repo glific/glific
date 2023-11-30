@@ -302,16 +302,14 @@ defmodule Glific.Tickets do
   @doc """
   Closing tickets in bulk on the basis of topic
   """
-  @spec bulk_closure_ticket(map()) :: boolean
-  def bulk_closure_ticket(params) do
+  @spec update_status_based_on_topic(map()) :: boolean
+  def update_status_based_on_topic(params) do
     topic = params |> Map.get(:topic, "")
-
     tickets = Repo.all(from(t in Ticket, where: t.topic == ^topic))
 
-    _result =
-      Enum.reduce(tickets, :ok, fn ticket, _acc ->
-        update_ticket(ticket, params)
-      end)
+    Enum.each(tickets, fn ticket ->
+      update_ticket(ticket, params)
+    end)
 
     true
   end
