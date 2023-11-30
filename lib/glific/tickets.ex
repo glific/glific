@@ -288,7 +288,6 @@ defmodule Glific.Tickets do
   @spec update_bulk_ticket(map()) :: boolean
   def update_bulk_ticket(params) do
     update_ids = params |> Map.get(:update_ids, [])
-    IO.inspect(update_ids)
 
     tickets = Repo.all(from(t in Ticket, where: t.id in ^update_ids))
 
