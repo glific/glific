@@ -93,6 +93,5 @@ defmodule GlificWeb.Resolvers.Tickets do
           {:ok, map()} | {:error, map()}
   def update_ticket_status_based_on_topic(_, %{input: params}, _) do
     Tickets.update_ticket_status_based_on_topic(params)
-    {:ok, %{success: true, message: "Updated successfully"}}
   end
 end

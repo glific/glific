@@ -312,6 +312,6 @@ defmodule Glific.Tickets do
       update_ticket(ticket, params)
     end)
 
-    true
+    {:ok, %{success: true, message: "Updated successfully"}}
   end
 end
