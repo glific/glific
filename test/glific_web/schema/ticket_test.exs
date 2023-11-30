@@ -247,7 +247,7 @@ defmodule GlificWeb.Schema.TicketTest do
       "status" => "closed"
     }
 
-    result = Tickets.bulk_closure_ticket(params)
+    result = Tickets.update_ticket_status_based_on_topic(params)
     assert result == true
   end
 end

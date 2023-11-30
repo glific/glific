@@ -48,7 +48,7 @@ defmodule GlificWeb.Schema.TicketTypes do
     field(:user_id, :id)
   end
 
-  input_object :update_status_based_on_topic do
+  input_object :update_ticket_status_based_on_topic do
     field(:status, :string)
     field(:topic, :string)
   end
@@ -138,10 +138,10 @@ defmodule GlificWeb.Schema.TicketTypes do
       resolve(&Resolvers.Tickets.update_bulk_ticket/3)
     end
 
-    field :update_status_based_on_topic, :bulk_ticket_result do
-      arg(:input, :update_status_based_on_topic)
+    field :update_ticket_status_based_on_topic, :bulk_ticket_result do
+      arg(:input, :update_ticket_status_based_on_topic)
       middleware(Authorize, :manager)
-      resolve(&Resolvers.Tickets.update_status_based_on_topic/3)
+      resolve(&Resolvers.Tickets.update_ticket_status_based_on_topic/3)
     end
   end
 end
