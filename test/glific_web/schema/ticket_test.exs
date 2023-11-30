@@ -248,7 +248,6 @@ defmodule GlificWeb.Schema.TicketTest do
     }
 
     result = Tickets.bulk_closure_ticket(params)
-    IO.inspect(result)
     assert result == true
   end
 end
