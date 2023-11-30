@@ -235,4 +235,22 @@ defmodule GlificWeb.Schema.TicketTest do
 
     assert ticket.message_number == message_number
   end
+
+  test "close multiple tickets and test possible scenarios and errors", %{manager: user} do
+    TicketsFixtures.ticket_fixture()
+
+    {:ok, ticket} =
+      Repo.fetch_by(Ticket, %{topic: "some topic", organization_id: user.organization_id})
+
+    IO.inspect(ticket)
+
+    params = %{
+      "topic" => [ticket.topic],
+      "status" => "closed"
+    }
+
+    result = Tickets.bulk_closure_ticket(params)
+    IO.inspect(result)
+    assert result == true
+  end
 end

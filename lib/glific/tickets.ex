@@ -288,6 +288,7 @@ defmodule Glific.Tickets do
   @spec update_bulk_ticket(map()) :: boolean
   def update_bulk_ticket(params) do
     update_ids = params |> Map.get(:update_ids, [])
+    IO.inspect(update_ids)
 
     tickets = Repo.all(from(t in Ticket, where: t.id in ^update_ids))
 
@@ -299,11 +300,16 @@ defmodule Glific.Tickets do
     true
   end
 
+  @doc """
+  Closing tickets in bulk on the basis of topic
+  """
+  @spec bulk_closure_ticket(map()) :: boolean
   def bulk_closure_ticket(params) do
-    topic = params |> Map.get(:topic)
+    topic = params |> Map.get(:topic, "")
+
     tickets = Repo.all(from(t in Ticket, where: t.topic == ^topic))
 
-    result =
+    _result =
       Enum.reduce(tickets, :ok, fn ticket, _acc ->
         update_ticket(ticket, params)
       end)
