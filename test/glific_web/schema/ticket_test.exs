@@ -242,8 +242,6 @@ defmodule GlificWeb.Schema.TicketTest do
     {:ok, ticket} =
       Repo.fetch_by(Ticket, %{topic: "some topic", organization_id: user.organization_id})
 
-    IO.inspect(ticket)
-
     params = %{
       "topic" => [ticket.topic],
       "status" => "closed"
