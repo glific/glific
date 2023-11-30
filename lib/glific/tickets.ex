@@ -298,4 +298,16 @@ defmodule Glific.Tickets do
 
     true
   end
+
+  def bulk_closure_ticket(params) do
+    topic = params |> Map.get(:topic)
+    tickets = Repo.all(from(t in Ticket, where: t.topic == ^topic))
+
+    result =
+      Enum.reduce(tickets, :ok, fn ticket, _acc ->
+        update_ticket(ticket, params)
+      end)
+
+    true
+  end
 end

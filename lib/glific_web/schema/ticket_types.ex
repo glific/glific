@@ -48,6 +48,11 @@ defmodule GlificWeb.Schema.TicketTypes do
     field(:user_id, :id)
   end
 
+  input_object :bulk_closure_ticket_input do
+    field(:status, :string)
+    field(:topic, :string)
+  end
+
   object :bulk_ticket_result do
     field(:success, non_null(:boolean))
     field(:message, non_null(:string))
@@ -131,6 +136,12 @@ defmodule GlificWeb.Schema.TicketTypes do
       arg(:input, :bulk_ticket_input)
       middleware(Authorize, :manager)
       resolve(&Resolvers.Tickets.update_bulk_ticket/3)
+    end
+
+    field :bulk_closure_ticket, :bulk_ticket_result do
+      arg(:input, :bulk_closure_ticket_input)
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Tickets.bulk_closure_ticket/3)
     end
   end
 end

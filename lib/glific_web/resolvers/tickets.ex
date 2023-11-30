@@ -83,4 +83,15 @@ defmodule GlificWeb.Resolvers.Tickets do
       {:ok, %{success: true, message: "Updated successfully"}}
     end
   end
+
+  @doc """
+  close multiple tickets on the basis of topic
+  """
+  @spec bulk_closure_ticket(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, map()} | {:error, map()}
+  def bulk_closure_ticket(_, %{input: params}, _) do
+    with true <- Tickets.bulk_closure_ticket(params) do
+      {:ok, %{success: true, message: "Updated successfully"}}
+    end
+  end
 end
