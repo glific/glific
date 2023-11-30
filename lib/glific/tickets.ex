@@ -307,7 +307,8 @@ defmodule Glific.Tickets do
     topic = params |> Map.get(:topic, "")
     tickets = Repo.all(from(t in Ticket, where: t.topic == ^topic))
 
-    Enum.each(tickets, fn ticket ->
+    tickets
+    |> Enum.each(fn ticket ->
       update_ticket(ticket, params)
     end)
 
