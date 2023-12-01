@@ -302,7 +302,7 @@ defmodule Glific.Tickets do
   @doc """
   Closing tickets in bulk on the basis of topic
   """
-  @spec update_ticket_status_based_on_topic(map()) :: boolean
+  @spec update_ticket_status_based_on_topic(map()) :: {:ok, map()}
   def update_ticket_status_based_on_topic(params) do
     topic = params |> Map.get(:topic, "")
     tickets = Repo.all(from(t in Ticket, where: t.topic == ^topic))

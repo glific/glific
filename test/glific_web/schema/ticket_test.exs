@@ -247,7 +247,9 @@ defmodule GlificWeb.Schema.TicketTest do
       "status" => "closed"
     }
 
-    result = Tickets.update_ticket_status_based_on_topic(params)
-    assert result == true
+    {:ok, result_map} = Tickets.update_ticket_status_based_on_topic(params)
+
+    message = result_map |> Map.get(:message)
+    assert message == "Updated successfully"
   end
 end
