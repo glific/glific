@@ -79,6 +79,9 @@ defmodule GlificWeb.Schema.TicketTypes do
 
     @desc "Match the contact name or phone"
     field(:name_or_phone, :string)
+
+    @desc "Match the topic"
+    field(:topic, :string)
   end
 
   object :ticket_queries do
