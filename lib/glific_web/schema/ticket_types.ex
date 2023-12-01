@@ -20,6 +20,7 @@ defmodule GlificWeb.Schema.TicketTypes do
     field(:topic, :string)
     field(:status, :string)
     field(:remarks, :string)
+    field(:message_number, :integer)
 
     field :contact, :contact do
       resolve(dataloader(Repo, use_parent: true))
