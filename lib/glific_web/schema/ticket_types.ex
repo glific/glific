@@ -49,6 +49,11 @@ defmodule GlificWeb.Schema.TicketTypes do
     field(:user_id, :id)
   end
 
+  input_object :update_ticket_status_based_on_topic do
+    field(:status, :string)
+    field(:topic, :string)
+  end
+
   object :bulk_ticket_result do
     field(:success, non_null(:boolean))
     field(:message, non_null(:string))
@@ -75,6 +80,9 @@ defmodule GlificWeb.Schema.TicketTypes do
 
     @desc "Match the contact name or phone"
     field(:name_or_phone, :string)
+
+    @desc "Match the topic"
+    field(:topic, :string)
   end
 
   object :ticket_queries do
@@ -132,6 +140,12 @@ defmodule GlificWeb.Schema.TicketTypes do
       arg(:input, :bulk_ticket_input)
       middleware(Authorize, :manager)
       resolve(&Resolvers.Tickets.update_bulk_ticket/3)
+    end
+
+    field :update_ticket_status_based_on_topic, :bulk_ticket_result do
+      arg(:input, :update_ticket_status_based_on_topic)
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Tickets.update_ticket_status_based_on_topic/3)
     end
   end
 end

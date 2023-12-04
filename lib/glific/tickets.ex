@@ -298,4 +298,20 @@ defmodule Glific.Tickets do
 
     true
   end
+
+  @doc """
+  Closing tickets in bulk on the basis of topic
+  """
+  @spec update_ticket_status_based_on_topic(map()) :: {:ok, map()}
+  def update_ticket_status_based_on_topic(params) do
+    topic = params |> Map.get(:topic, "")
+    tickets = Repo.all(from(t in Ticket, where: t.topic == ^topic))
+
+    tickets
+    |> Enum.each(fn ticket ->
+      update_ticket(ticket, params)
+    end)
+
+    {:ok, %{success: true, message: "Updated successfully"}}
+  end
 end
