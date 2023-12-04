@@ -5,7 +5,7 @@ defmodule Glific.Mails.ReportGupshupMail do
   alias Glific.{Communications.Mailer, Partners.Organization}
 
   @gupshup_support {"Gupshup Dev Support", "devsupport@gupshup.io"}
-  @sender {"Glific support", "mohit@coloredcow.in"}
+  @sender {"Glific support", "support@glific.org"}
 
   @doc """
   Sends a mail to the Gupshup support team whenever issue arises related to approval of the template
