@@ -182,6 +182,8 @@ defmodule Glific.Profiles do
   @spec handle_flow_action(atom() | nil, FlowContext.t(), Action.t()) ::
           {FlowContext.t(), Message.t()}
   def handle_flow_action(:switch_profile, context, action) do
+    IO.inspect("here is the pr")
+    IO.inspect(context.contact.active_profile_id)
     value = ContactField.parse_contact_field_value(context, action.value)
 
     with {:ok, contact} <- switch_profile(context.contact, value),
@@ -237,24 +239,24 @@ defmodule Glific.Profiles do
       type: ContactField.parse_contact_field_value(context, action.value["type"])
     }
 
-    if is_nil(context.contact.active_profile_id) do
-      {context, Messages.create_temp_message(context.organization_id, "Profile not found")}
-    else
-      update_profile = Repo.fetch(Profile, %{contact_id: context.contact.id})
+    case Repo.fetch_by(Profile, %{contact_id: context.contact.id}) do
+      {:ok, update_profile} ->
+        with {:ok, updated_profile} <- update_profile(update_profile, attrs) do
+          Contacts.capture_history(context.contact.id, :profile_updated, %{
+            event_label: "Updated profile #{updated_profile.name}",
+            event_meta: %{
+              method: "Updated profile via flow: #{context.flow.name}"
+            }
+          })
 
-      with {:ok, updated_profile} <- update_profile(update_profile, attrs) do
-        Contacts.capture_history(context.contact.id, :profile_updated, %{
-          event_label: "Updated profile #{updated_profile.name}",
-          event_meta: %{
-            method: "Updated profile via flow: #{context.flow.name}"
-          }
-        })
+          {context, Messages.create_temp_message(context.organization_id, "Success")}
+        else
+          {:error, _} ->
+            {context, Messages.create_temp_message(context.organization_id, "Failure")}
+        end
 
-        {context, Messages.create_temp_message(context.organization_id, "Success")}
-      else
-        _ ->
-          {context, Messages.create_temp_message(context.organization_id, "Failure")}
-      end
+      nil ->
+        {context, Messages.create_temp_message(context.organization_id, "Profile not found")}
     end
   end
 
