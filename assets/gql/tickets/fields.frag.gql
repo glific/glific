@@ -5,6 +5,7 @@ fragment TicketFields on TicketResult {
     topic
     status
     remarks
+    messageNumber
     contact {
       id
       name
