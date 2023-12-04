@@ -182,8 +182,6 @@ defmodule Glific.Profiles do
   @spec handle_flow_action(atom() | nil, FlowContext.t(), Action.t()) ::
           {FlowContext.t(), Message.t()}
   def handle_flow_action(:switch_profile, context, action) do
-    IO.inspect("here is the pr")
-    IO.inspect(context.contact.active_profile_id)
     value = ContactField.parse_contact_field_value(context, action.value)
 
     with {:ok, contact} <- switch_profile(context.contact, value),
