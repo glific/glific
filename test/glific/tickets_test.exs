@@ -85,5 +85,22 @@ defmodule Glific.TicketsTest do
       ticket = ticket_fixture()
       assert %Ecto.Changeset{} = Tickets.change_ticket(ticket)
     end
+
+    test "close multiple tickets and test possible scenarios and errors" do
+      _ticket = ticket_fixture()
+
+      {:ok, ticket} =
+        Repo.fetch_by(Ticket, %{topic: "some topic", organization_id: 1})
+
+      params = %{
+        "topic" => [ticket.topic],
+        "status" => "closed"
+      }
+
+      {:ok, result_map} = Tickets.update_ticket_status_based_on_topic(params)
+
+      message = result_map |> Map.get(:message)
+      assert message == "Updated successfully"
+    end
   end
 end

@@ -17,6 +17,7 @@ defmodule GlificWeb.Schema.TicketTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/tickets/delete.gql")
   load_gql(:count, GlificWeb.Schema, "assets/gql/tickets/count.gql")
   load_gql(:fetch, GlificWeb.Schema, "assets/gql/tickets/fetch.gql")
+  load_gql(:bulk_update, GlificWeb.Schema, "assets/gql/tickets/bulk_close.gql")
 
   test "tickets field returns list of tickets", %{staff: user} do
     TicketsFixtures.ticket_fixture()
@@ -236,5 +237,24 @@ defmodule GlificWeb.Schema.TicketTest do
     {:ok, ticket} = Repo.fetch(Ticket, created_ticket["id"])
 
     assert ticket.message_number == message_number
+  end
+
+  test "close multiple tickets and test possible scenarios and errors",
+       %{manager: user} = _attrs do
+    ticket = TicketsFixtures.ticket_fixture()
+
+    result =
+      auth_query_gql_by(:bulk_update, user,
+        variables: %{
+          "topic" => [ticket.topic],
+          "input" => %{"status" => "closed"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "updateTicketStatusBasedOnTopic", "message"])
+
+    assert message == "Updated successfully"
   end
 end

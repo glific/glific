@@ -1,0 +1,6 @@
+mutation UpdateTicketStatusBasedOnTopic($input: UpdateTicketStatusBasedOnTopic) {
+  updateTicketStatusBasedOnTopic(input: $input) {
+    message
+    success
+  }
+}
