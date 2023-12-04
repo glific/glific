@@ -239,19 +239,7 @@ defmodule Glific.Profiles do
 
     case Repo.fetch_by(Profile, %{contact_id: context.contact.id}) do
       {:ok, update_profile} ->
-        with {:ok, updated_profile} <- update_profile(update_profile, attrs) do
-          Contacts.capture_history(context.contact.id, :profile_updated, %{
-            event_label: "Updated profile #{updated_profile.name}",
-            event_meta: %{
-              method: "Updated profile via flow: #{context.flow.name}"
-            }
-          })
-
-          {context, Messages.create_temp_message(context.organization_id, "Success")}
-        else
-          {:error, _} ->
-            {context, Messages.create_temp_message(context.organization_id, "Failure")}
-        end
+        handle_update_result(update_profile, attrs, context)
 
       _ ->
         {context, Messages.create_temp_message(context.organization_id, "Profile not found")}
@@ -260,6 +248,27 @@ defmodule Glific.Profiles do
 
   def handle_flow_action(_profile_type, context, _action) do
     {context, Messages.create_temp_message(context.organization_id, "Failure")}
+  end
+
+  defp handle_update_result(update_profile, attrs, context) do
+    case update_profile(update_profile, attrs) do
+      {:ok, updated_profile} ->
+        capture_and_return(context, updated_profile, "Success")
+
+      {:error, _} ->
+        capture_and_return(context, update_profile, "Failure")
+    end
+  end
+
+  defp capture_and_return(context, profile, message) do
+    Contacts.capture_history(context.contact.id, :profile_updated, %{
+      event_label: "Updated profile #{profile.name}",
+      event_meta: %{
+        method: "Updated profile via flow: #{context.flow.name}"
+      }
+    })
+
+    {context, Messages.create_temp_message(context.organization_id, message)}
   end
 
   # Sync existing contact fields to the first profile to prevent data loss
