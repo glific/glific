@@ -40,8 +40,9 @@ defmodule Glific.Flows.Action do
 
   @contact_profile %{
     "Switch Profile" => :switch_profile,
-    "Create Profile" => :create_profile
-  }
+    "Create Profile" => :create_profile,
+    "update profile" => :update_profile
+    }
 
   @required_field_common [:uuid, :type]
   @required_fields_enter_flow [:flow | @required_field_common]
