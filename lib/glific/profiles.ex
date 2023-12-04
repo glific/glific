@@ -231,6 +231,33 @@ defmodule Glific.Profiles do
     end
   end
 
+  def handle_flow_action(:update_profile, context, action) do
+    attrs = %{
+      name: ContactField.parse_contact_field_value(context, action.value["name"]),
+      type: ContactField.parse_contact_field_value(context, action.value["type"])
+    }
+
+    if is_nil(context.contact.active_profile_id) do
+      {context, Messages.create_temp_message(context.organization_id, "Profile not found")}
+    else
+      update_profile = Repo.fetch(Profile, %{contact_id: context.contact.id})
+
+      with {:ok, updated_profile} <- update_profile(update_profile, attrs) do
+        Contacts.capture_history(context.contact.id, :profile_updated, %{
+          event_label: "Updated profile #{updated_profile.name}",
+          event_meta: %{
+            method: "Updated profile via flow: #{context.flow.name}"
+          }
+        })
+
+        {context, Messages.create_temp_message(context.organization_id, "Success")}
+      else
+        _ ->
+          {context, Messages.create_temp_message(context.organization_id, "Failure")}
+      end
+    end
+  end
+
   def handle_flow_action(_profile_type, context, _action) do
     {context, Messages.create_temp_message(context.organization_id, "Failure")}
   end
