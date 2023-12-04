@@ -255,7 +255,7 @@ defmodule Glific.Profiles do
             {context, Messages.create_temp_message(context.organization_id, "Failure")}
         end
 
-      nil ->
+      _ ->
         {context, Messages.create_temp_message(context.organization_id, "Profile not found")}
     end
   end
