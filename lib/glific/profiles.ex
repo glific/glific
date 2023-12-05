@@ -237,7 +237,7 @@ defmodule Glific.Profiles do
       type: ContactField.parse_contact_field_value(context, action.value["type"])
     }
 
-    case Repo.fetch_by(Profile, %{contact_id: context.contact.id}) do
+    case Repo.fetch_by(Profile, %{id: context.contact.active_profile_id}) do
       {:ok, update_profile} ->
         handle_update_result(update_profile, attrs, context)
 
