@@ -110,7 +110,7 @@ with your keys
 You must purchase a license.
 When purchasing, you must buy WEB+PRO.
 After purchasing,
-go to account and run this command in glific_backend:
+Go to account and run this command in glific_backend:
 
 ```bash
 mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
