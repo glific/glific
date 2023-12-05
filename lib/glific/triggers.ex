@@ -12,7 +12,9 @@ defmodule Glific.Triggers do
     AccessControl.TriggerRole,
     Flows,
     Flows.Flow,
+    Flows.FlowRevision,
     Groups.Group,
+    Messages.Message,
     Partners,
     Repo,
     Triggers,
@@ -152,13 +154,26 @@ defmodule Glific.Triggers do
   """
   @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def create_trigger(attrs) do
-    with {:ok, trigger} <-
-           %Trigger{}
-           |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))
-           |> Repo.insert() do
-      if Map.has_key?(attrs, :add_role_ids),
-        do: update_trigger_roles(attrs, trigger),
-        else: {:ok, append_group_labels(trigger)}
+    {:ok, flow} =
+      Repo.fetch_by(FlowRevision, %{flow_id: Map.get(attrs, :flow_id), status: "published"})
+
+    first_node = flow |> Map.get(:definition) |> Map.get("nodes") |> hd()
+
+    templating = hd(first_node["actions"]) |> Map.get("templating")
+
+    case templating do
+      nil ->
+        {:error, %{message: "The first message in a trigger should be an HSM template"}}
+
+      _ ->
+        with {:ok, trigger} <-
+               %Trigger{}
+               |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))
+               |> Repo.insert() do
+          if Map.has_key?(attrs, :add_role_ids),
+            do: update_trigger_roles(attrs, trigger),
+            else: {:ok, append_group_labels(trigger)}
+        end
     end
   end
 
