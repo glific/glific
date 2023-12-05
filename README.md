@@ -41,14 +41,14 @@ We tested and developed against the following versions:
 
 For Ubuntu users, you also need to install the `inotify-tools` package.
 
-We tested and developed against the following versions (please check .tool-versions in repository for the latest versons we are using):
+We tested and developed against the following versions (please check .tool-versions in the repository for the latest version we are using):
 
 ```bash
     - erlang : 25.3.2
     - elixir : 1.14.5-otp-25
 ```
 
-After installing asdf core, install the Erlang and Elixir plugins.
+After installing the asdf core, install the Erlang and Elixir plugins.
 
 ``` bash
 asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
@@ -85,7 +85,7 @@ You will need to do the following:
 
 - Create a [Gupshup Account](https://www.gupshup.io/developer/home)
 - Create an app and select [Access API](https://www.gupshup.io/whatsapp/create-app/access-api)
-- You can name it `NewNameHere` "GlificTest <-- Bot Name is already in use, then use anotherone"
+- You can name it `NewNameHere` "GlificTest <-- Bot Name is already in use, then use another one"
 - Run the following command `cp config/dev.secret.exs.txt config/dev.secret.exs` 
 - Now, in Gupshup, find your API Key: check the top right corner and click the profile picture or inside the curl sample message
 - Enter your APP name and API Key in the dev.secret.exs file using any text editor.
@@ -98,7 +98,7 @@ Oban is **required** before running mix
 for Glific to operate.
 
 **For contributors:**
-Please get in touch with the team on Discord and get a limited time key. Once they're provided to you, run: 
+Please get in touch with the team on Discord and get a limited-time key. Once they're provided to you, run: 
 
 ```bash
 mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
@@ -134,7 +134,7 @@ This is what an example of failing looks like:
     hexpm:oban  https://repo.hex.pm/repos/oban  SHA256:abc/edf/gef+aIWPc     abdedcqweasdj__KEY_AUTH__asdafasdf
     oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
 
-This is wrong. When you run mix deps.get as is, it will try to fetch from the public repository instead of the private and fail.
+This is wrong. When you run mix deps.get as is, it will try to fetch from the public repository instead of the private one and fail.
 Simply follow the instructions below to remove the public key:
 
 ```bash
@@ -230,7 +230,7 @@ Now you can visit [`https://glific.test:4001`](https://glific.test:4001) from yo
 - Copy the file: `cp config/.env.dev.txt config/.env.dev`.
   You may not need to edit the default values for DB URL and hostnames in this file if they look suitable for your needs.
 
-- Run this on command prompt:
+- Run this on the command prompt:
   ```
   cd <path-to-glific-backend>
   set /p=DUMMY < config\.env.dev
@@ -256,12 +256,12 @@ Now you can visit [`https://glific.test:4001`](https://glific.test:4001) from yo
 
 Now you can visit [`https://glific.test:4001`](https://glific.test:4001) from your browser.
 
-### 8. Frontend - Install glific frontend
+### 8. Front-end - Install glific front-end
 
 You cannot do much from the glific backend unless you are an API developer. To see Glific in its glory, please
 install [Glific Frontend](https://github.com/glific/glific-frontend/)
 
-### Front end credentials
+### Front-end credentials
 
 - Phone `917834811114`
 - Password `Secret1234!`
@@ -275,17 +275,17 @@ install [Glific Frontend](https://github.com/glific/glific-frontend/)
   - Remember the URL it assigns you, something like: `https://9f6a7c7822d2.ngrok.io`
 - Goto the [Settings Page](https://www.gupshup.io/whatsappassistant/#/settings)
 - On that page, Search for `Manage your Template messaging settings` and enable it
-- On same page, Search for `Callback URL / Link your Bot`
+- On the same page, Search for `Callback URL / Link your Bot`
 - Enter your callback URL that ngrok gave you, add: `/gupshup` to the end. Something like:
   `https://9f6a7c7822d2.ngrok.io/gupshup/`
 - Click `Set`. It should give you a `Callback set successfully` message. If not, check the above steps.
 
 ## Updating your instance
 
-For v0.x releases, we will be resetting the DB and not saving existing state. Run the following commands
-to update your codebase from the glific repository.
+For v0.x releases, we will be resetting the DB and not saving the existing state. Run the following commands
+to update your codebase from the Glific repository.
 
-- Ensure you are in the top level directory of the glific api code.
+- Ensure you are in the top-level directory of the Glific API code.
 - Get the latest code from master: `git switch master && git pull`
 - Ensure you have not modified any files in this directory, by running: `git status`
 - Run the setup command: `mix setup`
@@ -295,7 +295,7 @@ to update your codebase from the glific repository.
 - [User Guide](https://docs.glific.com)
 - [API docs (Postman) ](https://api.glific.com/)
 - [Code Documentation](https://hexdocs.pm/glific/5.1.6/readme.html)
-- [Recipes](https://github.com/glific/recipes) - Code smaples for some common use cases in glific.
+- [Recipes](https://github.com/glific/recipes) - Code samples for some common use cases in Glific.
 
 ## Learn more
 
