@@ -451,16 +451,16 @@ defmodule Glific.Flows.Flow do
       |> Enum.reduce([], fn node, uuids ->
         node.actions
         |> Enum.reduce([], fn action, acc ->
-          if action.type == "send_msg", do: acc ++ [action.uuid]
+          if action.type == "send_msg", do: acc ++ [action.uuid], else: uuids
         end)
         |> then(&(uuids ++ &1))
       end)
 
-    has_all_localized_nodes(errors, all_localization, localized_nodes)
+    has_missing_localization(errors, all_localization, localized_nodes)
   end
 
-  @spec has_all_localized_nodes(Keyword.t(), map(), list()) :: Keyword.t()
-  defp has_all_localized_nodes(errors, all_localization, localized_nodes) do
+  @spec has_missing_localization(Keyword.t(), map(), list()) :: Keyword.t()
+  defp has_missing_localization(errors, all_localization, localized_nodes) do
     all_localization
     |> Enum.reduce(errors, fn {language_local, localized_map}, errors ->
       Enum.all?(localized_nodes, fn localized_node ->
