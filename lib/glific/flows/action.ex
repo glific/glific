@@ -537,6 +537,7 @@ defmodule Glific.Flows.Action do
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
 
+  @spec check_the_next_node(map(), Keyword.t(), map()) :: Keyword.t()
   defp check_the_next_node(node, errors, flow) do
     [exit | _] = node.exits
 
@@ -558,7 +559,7 @@ defmodule Glific.Flows.Action do
 
   defp warning_message(errors) do
     [
-      {Message, "The next node after interactive should be wait for response.", "Warning"}
+      {Message, "The next node after interactive should be wait for response", "Warning"}
       | errors
     ]
   end
