@@ -512,6 +512,8 @@ defmodule Glific.Flows.Action do
   end
 
   def validate(%{type: "send_interactive_msg"} = action, errors, flow) do
+    {:node, node} = flow.uuid_map[action.node_uuid]
+
     if is_nil(action.interactive_template_expression) do
       result =
         Repo.fetch_by(
@@ -520,8 +522,12 @@ defmodule Glific.Flows.Action do
         )
 
       case result do
-        {:ok, _} -> errors
-        _ -> [{Message, "An Interactive template does not exist", "Critical"} | errors]
+        {:ok, _} ->
+          check_the_next_node(node, errors, flow)
+
+        _ ->
+          check_the_next_node(node, errors, flow) ++
+            [{Message, "An Interactive template does not exist", "Critical"} | errors]
       end
     else
       errors
@@ -530,6 +536,32 @@ defmodule Glific.Flows.Action do
 
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
+
+  defp check_the_next_node(node, errors, flow) do
+    [exit | _] = node.exits
+
+    case exit.destination_node_uuid do
+      nil ->
+        warning_message(errors)
+
+      _ ->
+        {:node, dest_node} = flow.uuid_map[exit.destination_node_uuid]
+
+        if dest_node.router == nil or
+             dest_node.router.wait == nil do
+          warning_message(errors)
+        else
+          errors
+        end
+    end
+  end
+
+  defp warning_message(errors) do
+    [
+      {Message, "The next node after interactive should be wait for response.", "Warning"}
+      | errors
+    ]
+  end
 
   defp check_object(Contact, action, _groups), do: action.contacts
 
