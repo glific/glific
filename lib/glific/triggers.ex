@@ -159,21 +159,35 @@ defmodule Glific.Triggers do
 
     first_node = flow |> Map.get(:definition) |> Map.get("nodes") |> hd()
 
-    templating = hd(first_node["actions"]) |> Map.get("templating")
+    action = hd(first_node["actions"])
+    type = Map.get(action, "type")
 
-    case templating do
-      nil ->
+    case type do
+      "send_interactive_msg" ->
         {:error, %{message: "The first message in a trigger should be an HSM template"}}
 
-      _ ->
-        with {:ok, trigger} <-
-               %Trigger{}
-               |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))
-               |> Repo.insert() do
-          if Map.has_key?(attrs, :add_role_ids),
-            do: update_trigger_roles(attrs, trigger),
-            else: {:ok, append_group_labels(trigger)}
+      "send_msg" ->
+        template = action |> Map.get("templating")
+
+        if template == nil do
+          {:error, %{message: "The first message in a trigger should be an HSM template"}}
+        else
+          do_create_trigger(attrs)
         end
+
+      _ ->
+        do_create_trigger(attrs)
+    end
+  end
+
+  defp do_create_trigger(attrs) do
+    with {:ok, trigger} <-
+           %Trigger{}
+           |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))
+           |> Repo.insert() do
+      if Map.has_key?(attrs, :add_role_ids),
+        do: update_trigger_roles(attrs, trigger),
+        else: {:ok, append_group_labels(trigger)}
     end
   end
 
