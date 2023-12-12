@@ -18,7 +18,7 @@ Understanding of middle to advanced level required: It is assumed that you're co
 2. Software dependency - Erlang / Elixir
 3. Backend - Download
 4. External service - Gupshup. <-- Get a Free trial to get API-key
-5. External service - Oban. <-- Needs 100 Euro per month
+5. External service - Oban. <-- Needs 100 Euro per month (patch available to work with free version)
 6. Backend - Install certificate
 7. Backend - Config
 8. Frontend
@@ -92,13 +92,14 @@ You will need to do the following:
 
 ### 5. External service - Oban Pro
 
-[Oban](https://getoban.pro) is a cron-like library.
-Glific depends 100% on job processing.
-Oban is **required** before running mix
-for Glific to operate.
+[Oban](https://getoban.pro) is a cron-like library. Glific depends 100% on job processing.
+Oban is **required** before running mix for Glific to operate.
 
-**For contributors:**
+**For contributors on social impact projects (including NGOs):**
 Please get in touch with the team on Discord and get a limited-time key. Once they're provided to you, run: 
+
+**For others, if you want to use the free Oban solution**
+People have created and contributed versions of the code to allow Glific to work with the free version of Oban: https://github.com/glific/glific/pull/2391
 
 ```bash
 mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
