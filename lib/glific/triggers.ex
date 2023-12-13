@@ -177,14 +177,14 @@ defmodule Glific.Triggers do
   end
 
   defp handle_message_type("send_interactive_msg", _action, _attrs) do
-    {:error, %{message: "The first message in a trigger should be an HSM template"}}
+    {:error, %{message: "The first send message node is not an HSM template"}}
   end
 
   defp handle_message_type("send_msg", action, attrs) do
     template = action |> Map.get("templating")
 
     if template == nil do
-      {:error, %{message: "The first message in a trigger should be an HSM template"}}
+      {:error, %{message: "The first send message node is not an HSM template"}}
     else
       do_create_trigger(attrs)
     end

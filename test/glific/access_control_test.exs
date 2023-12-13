@@ -7,6 +7,7 @@ defmodule Glific.AccessControlTest do
     AccessControl.Role,
     Fixtures,
     Flows,
+    Flows.Flow,
     Groups,
     Seeds.SeedsDev,
     Triggers,
@@ -327,15 +328,8 @@ defmodule Glific.AccessControlTest do
           organization_id: attrs.organization_id
         })
 
-      name = "New Test Workflow"
-
-      {:ok, flow} =
-        Flows.create_flow(%{
-          add_role_ids: [default_role_id],
-          delete_role_ids: [],
-          name: name,
-          organization_id: attrs.organization_id
-        })
+      flow_uuid = "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"
+      {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
 
       Triggers.create_trigger(%{
         add_role_ids: [default_role_id],
