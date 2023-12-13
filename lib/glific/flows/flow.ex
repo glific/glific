@@ -446,25 +446,90 @@ defmodule Glific.Flows.Flow do
 
   @spec missing_localization(Keyword.t(), map(), map()) :: Keyword.t()
   defp missing_localization(errors, flow, all_localization) do
-    localized_nodes =
+    localizable_nodes =
       flow.nodes
       |> Enum.reduce([], fn node, uuids ->
         node.actions
         |> Enum.reduce([], fn action, acc ->
-          if action.type == "send_msg", do: acc ++ [action.uuid], else: uuids
+          cond do
+            action.type == "send_msg" && is_nil(action.templating) ->
+              acc ++ [{"message", action.uuid}]
+
+            action.type == "send_msg" && !is_nil(action.templating) ->
+              available_translation_ids = Map.keys(action.templating.template.translations)
+
+              acc ++ [{"template", available_translation_ids}]
+
+            true ->
+              uuids
+          end
         end)
         |> then(&(uuids ++ &1))
       end)
 
-    has_missing_localization(errors, all_localization, localized_nodes)
+    localizable_nodes |> IO.inspect()
+
+    has_missing_localization(errors, all_localization, localizable_nodes)
+    |> has_missing_translated_template(localizable_nodes, all_localization)
+  end
+
+  def get_language_id_map_from_locals(locals) do
+    Language
+    |> where([l], l.locale in ^locals)
+    |> select([l], %{
+      id: l.id,
+      locale: l.locale,
+      label: l.label
+    })
+    |> Repo.all()
+  end
+
+  defp has_missing_translated_template(errors, localizable_nodes, all_localization) do
+    localizable_template_nodes =
+      localizable_nodes
+      |> Enum.filter(fn {type, _translation_ids} -> type == "template" end)
+
+    locale_list = Map.keys(all_localization)
+
+    language_map = get_language_id_map_from_locals(locale_list)
+
+    language_map_id_list = Enum.map(language_map, fn language -> language.id end)
+
+    localizable_template_nodes
+    |> Enum.reduce(errors, fn {_type, translation_ids}, acc ->
+      translation_ids = Enum.map(translation_ids, &String.to_integer/1)
+
+      if Enum.all?(language_map_id_list, fn language_map_id ->
+           language_map_id in translation_ids
+         end) do
+        acc
+      else
+        Enum.filter(language_map_id_list, fn language_map_id ->
+          !Enum.member?(translation_ids, language_map_id)
+        end)
+        |> Enum.reduce(acc, fn language_id, acc ->
+          language =
+            Enum.find(language_map, fn %{id: id} -> id == language_id end)
+
+          acc ++
+            [
+              {Localization,
+               "Some of the send message nodes with template are missing translations #{language.label}",
+               "Warning"}
+            ]
+        end)
+        |> IO.inspect()
+      end
+    end)
+    |> then(&(&1 ++ errors))
   end
 
   @spec has_missing_localization(Keyword.t(), map(), list()) :: Keyword.t()
-  defp has_missing_localization(errors, all_localization, localized_nodes) do
+  defp has_missing_localization(errors, all_localization, localizable_nodes) do
     all_localization
     |> Enum.reduce(errors, fn {language_local, localized_map}, errors ->
-      Enum.all?(localized_nodes, fn localized_node ->
-        Map.has_key?(localized_map, localized_node)
+      Enum.all?(localizable_nodes, fn {type, localized_node} ->
+        if type == "message", do: Map.has_key?(localized_map, localized_node), else: true
       end)
       |> then(fn localized ->
         if localized == false do
