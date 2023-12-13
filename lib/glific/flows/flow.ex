@@ -21,6 +21,7 @@ defmodule Glific.Flows.Flow do
     Flows.Node,
     Partners.Organization,
     Repo,
+    Settings.Language,
     Tags.Tag
   }
 
@@ -382,6 +383,7 @@ defmodule Glific.Flows.Flow do
       [Flow: "Flow is empty"]
     else
       all_nodes = flow_objects(flow, :node)
+      all_translation = flow.definition["localization"]
 
       flow.nodes
       |> Enum.reduce(
@@ -390,6 +392,7 @@ defmodule Glific.Flows.Flow do
       )
       |> dangling_nodes(flow, all_nodes)
       |> missing_flow_context_nodes(flow, all_nodes)
+      |> missing_localization(flow, all_translation)
     end
   end
 
@@ -439,6 +442,48 @@ defmodule Glific.Flows.Flow do
       else:
         [{FlowContext, "Some of your users in the flow have their node deleted", "Critical"}] ++
           errors
+  end
+
+  @spec missing_localization(Keyword.t(), map(), map()) :: Keyword.t()
+  defp missing_localization(errors, flow, all_localization) do
+    localized_nodes =
+      flow.nodes
+      |> Enum.reduce([], fn node, uuids ->
+        node.actions
+        |> Enum.reduce([], fn action, acc ->
+          if action.type == "send_msg", do: acc ++ [action.uuid], else: uuids
+        end)
+        |> then(&(uuids ++ &1))
+      end)
+
+    has_missing_localization(errors, all_localization, localized_nodes)
+  end
+
+  @spec has_missing_localization(Keyword.t(), map(), list()) :: Keyword.t()
+  defp has_missing_localization(errors, all_localization, localized_nodes) do
+    all_localization
+    |> Enum.reduce(errors, fn {language_local, localized_map}, errors ->
+      Enum.all?(localized_nodes, fn localized_node ->
+        Map.has_key?(localized_map, localized_node)
+      end)
+      |> then(fn localized ->
+        if localized == false do
+          language =
+            Language
+            |> where([l], l.locale == ^language_local)
+            |> Repo.one()
+
+          errors ++
+            [
+              {Localization,
+               "Some of the send message nodes are missing translations in #{language.label}",
+               "Warning"}
+            ]
+        else
+          errors
+        end
+      end)
+    end)
   end
 
   # add the appropriate where clause as needed

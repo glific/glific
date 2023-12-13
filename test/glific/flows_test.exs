@@ -531,7 +531,8 @@ defmodule Glific.FLowsTest do
       "The next message after a long no response should be a template",
       "An Interactive template does not exist",
       "A template could not be found in the flow",
-      "Language is a required field"
+      "Language is a required field",
+      "Some of the send message nodes are missing translations in Hindi"
     ]
 
     Enum.any?(errors, &String.contains?(str, &1))
