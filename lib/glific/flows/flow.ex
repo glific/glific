@@ -347,7 +347,7 @@ defmodule Glific.Flows.Flow do
   end
 
   @spec start_node(map()) :: Ecto.UUID.t() | nil
-  def start_node(json) do
+  defp start_node(json) do
     {node_uuid, _top, _left} =
       json["nodes"]
       |> Enum.reduce(
