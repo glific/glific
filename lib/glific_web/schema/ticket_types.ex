@@ -79,7 +79,7 @@ defmodule GlificWeb.Schema.TicketTypes do
     field(:user_id, :id)
 
     @desc "Match the contact name or phone"
-    field(:name_or_phone, :string)
+    field(:name_or_phone_or_body, :string)
 
     @desc "Match the topic"
     field(:topic, :string)
