@@ -176,6 +176,7 @@ defmodule Glific.Triggers do
     end
   end
 
+  @spec handle_message_type(String.t(), map(), map()) :: {:ok, Trigger.t()} | {:error, map()}
   defp handle_message_type("send_interactive_msg", _action, _attrs) do
     {:error, %{message: "The first send message node is not an HSM template"}}
   end
@@ -190,6 +191,7 @@ defmodule Glific.Triggers do
     end
   end
 
+  @spec handle_enter_flow(map(), map()) :: {:ok, Trigger.t()} | {:error, map()}
   defp handle_enter_flow(action, attrs) do
     flow_uuid = action |> Map.get("flow") |> Map.get("uuid")
     flow = Repo.one(from f0 in Flow, where: f0.uuid == ^flow_uuid, select: f0)
@@ -204,6 +206,7 @@ defmodule Glific.Triggers do
     handle_message_type(entered_type, entered_action, attrs)
   end
 
+  @spec do_create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   defp do_create_trigger(attrs) do
     with {:ok, trigger} <-
            %Trigger{}
