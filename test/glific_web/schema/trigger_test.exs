@@ -4,6 +4,7 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   alias Glific.{
     Fixtures,
+    Flows.Flow,
     Repo,
     Seeds.SeedsDev,
     Triggers
@@ -135,7 +136,8 @@ defmodule GlificWeb.Schema.TriggerTest do
   end
 
   test "create a trigger and test possible scenarios and errors", %{manager: user} = attrs do
-    [flow | _tail] = Glific.Flows.list_flows(%{organization_id: attrs.organization_id})
+    flow_uuid = "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"
+    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
     [group | _tail] = Glific.Groups.list_groups(%{organization_id: attrs.organization_id})
 
     date = Timex.shift(DateTime.utc_now(), days: 1) |> DateTime.to_date()
@@ -223,7 +225,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     group_label = get_in(query_data, [:data, "createTrigger", "trigger", "groups"])
     frequency = get_in(query_data, [:data, "createTrigger", "trigger", "frequency"])
 
-    assert flow_name == "Help Workflow"
+    assert flow_name == "Template Workflow"
     assert group_label == ["Optin contacts"]
     assert frequency == "monthly"
 
@@ -367,7 +369,8 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   test "create a trigger with time prior to current timestamp should raise an error",
        %{manager: user} = attrs do
-    [flow | _tail] = Glific.Flows.list_flows(%{organization_id: attrs.organization_id})
+    flow_uuid = "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"
+    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
     [group | _tail] = Glific.Groups.list_groups(%{organization_id: attrs.organization_id})
 
     start_time = Timex.shift(DateTime.utc_now(), days: -1)
