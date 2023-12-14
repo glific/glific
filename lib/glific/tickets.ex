@@ -246,8 +246,8 @@ defmodule Glific.Tickets do
     |> where([t], t.inserted_at >= ^start_time and t.inserted_at <= ^end_time)
     |> where([t], t.organization_id == ^org_id)
     |> select([t, c, u], %{
-      body: t.body,
       status: t.status,
+      body: t.body,
       topic: t.topic,
       inserted_at: t.inserted_at,
       opened_by: c.name,
@@ -257,7 +257,7 @@ defmodule Glific.Tickets do
     |> convert_to_csv_string()
   end
 
-  @default_headers "body,status,inserted_at,topic,opened_by,assigned_to\n"
+  @default_headers "status,body,inserted_at,topic,opened_by,assigned_to\n"
 
   @doc false
   @spec convert_to_csv_string([Ticket.t()]) :: String.t()

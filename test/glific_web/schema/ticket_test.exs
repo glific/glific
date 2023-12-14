@@ -200,8 +200,34 @@ defmodule GlificWeb.Schema.TicketTest do
       )
 
     assert {:ok, query_data} = result
-    support_tickets = get_in(query_data, [:data, "fetchSupportTickets"])
-    assert is_binary(support_tickets) == true
+    support_tickets_csv = get_in(query_data, [:data, "fetchSupportTickets"])
+    support_tickets = parse_csv(support_tickets_csv)
+
+    ticket = hd(support_tickets)
+    body = Map.get(ticket, "body")
+    topic = Map.get(ticket, "topic")
+
+    assert body == "test body01"
+    assert topic == "test topic01"
+  end
+
+  defp parse_csv(csv) do
+    lines = String.split(csv, "\n")
+
+    case lines do
+      [] ->
+        []
+
+      [header | tail] ->
+        header_fields = String.split(header, ",")
+
+        Enum.map(tail, fn line ->
+          values = String.split(line, ",")
+          values_map = Enum.zip(header_fields, values) |> Enum.into(%{})
+
+          values_map
+        end)
+    end
   end
 
   test "update a multiple ticket and test possible scenarios and errors", %{manager: user} do
