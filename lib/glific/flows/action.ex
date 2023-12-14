@@ -518,6 +518,8 @@ defmodule Glific.Flows.Action do
       errors
       |> check_missing_interactive_template(action, flow)
       |> check_the_next_node(node, flow)
+    else
+      check_the_next_node(errors, node, flow)
     end
   end
 
