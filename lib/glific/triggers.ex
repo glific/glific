@@ -12,6 +12,7 @@ defmodule Glific.Triggers do
     AccessControl.TriggerRole,
     Flows,
     Flows.Flow,
+    Flows.FlowRevision,
     Groups.Group,
     Partners,
     Repo,
@@ -150,8 +151,63 @@ defmodule Glific.Triggers do
       {:error, %Ecto.Changeset{}}
 
   """
+
   @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def create_trigger(attrs) do
+    {:ok, flow} =
+      Repo.fetch_by(FlowRevision, %{flow_id: Map.get(attrs, :flow_id), status: "published"})
+
+    first_node = flow |> Map.get(:definition) |> Map.get("nodes") |> hd()
+    action = hd(first_node["actions"])
+    type = Map.get(action, "type")
+
+    case type do
+      "send_interactive_msg" ->
+        handle_message_type(type, action, attrs)
+
+      "send_msg" ->
+        handle_message_type(type, action, attrs)
+
+      "enter_flow" ->
+        handle_enter_flow(action, attrs)
+
+      _ ->
+        do_create_trigger(attrs)
+    end
+  end
+
+  @spec handle_message_type(String.t(), map(), map()) :: {:ok, Trigger.t()} | {:error, map()}
+  defp handle_message_type("send_interactive_msg", _action, _attrs) do
+    {:error, %{message: "The first send message node is not an HSM template"}}
+  end
+
+  defp handle_message_type("send_msg", action, attrs) do
+    template = action |> Map.get("templating")
+
+    if template == nil do
+      {:error, %{message: "The first send message node is not an HSM template"}}
+    else
+      do_create_trigger(attrs)
+    end
+  end
+
+  @spec handle_enter_flow(map(), map()) :: {:ok, Trigger.t()} | {:error, map()}
+  defp handle_enter_flow(action, attrs) do
+    flow_uuid = action |> Map.get("flow") |> Map.get("uuid")
+    flow = Repo.one(from f0 in Flow, where: f0.uuid == ^flow_uuid, select: f0)
+
+    {:ok, entered_flow} =
+      Repo.fetch_by(FlowRevision, %{flow_id: flow.id, status: "published"})
+
+    entered_first_node = entered_flow |> Map.get(:definition) |> Map.get("nodes") |> hd()
+    entered_action = hd(entered_first_node["actions"])
+    entered_type = Map.get(entered_action, "type")
+
+    handle_message_type(entered_type, entered_action, attrs)
+  end
+
+  @spec do_create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
+  defp do_create_trigger(attrs) do
     with {:ok, trigger} <-
            %Trigger{}
            |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))
