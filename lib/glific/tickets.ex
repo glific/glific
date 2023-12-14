@@ -255,7 +255,7 @@ defmodule Glific.Tickets do
     |> convert_to_csv_string()
   end
 
-  @default_headers "body,status,topic,inserted_at,opened_by,assigned_to\n"
+  @default_headers "body,status,inserted_at,topic,opened_by,assigned_to\n"
 
   @doc false
   @spec convert_to_csv_string([Ticket.t()]) :: String.t()
