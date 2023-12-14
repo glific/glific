@@ -558,6 +558,7 @@ defmodule Glific.Flows.Action do
     end
   end
 
+  @spec warning_message(Keyword.t()) :: Keyword.t()
   defp warning_message(errors) do
     [
       {Message, "The next node after interactive should be wait for response", "Warning"}
