@@ -487,15 +487,14 @@ defmodule Glific.Flows.Flow do
   @spec has_missing_translated_template(Keyword.t(), list(), map()) :: Keyword.t()
   defp has_missing_translated_template(errors, localizable_nodes, all_localization) do
     localizable_template_nodes =
-      localizable_nodes
-      |> Enum.filter(fn {type, _translation_ids} -> type == "template" end)
+      Enum.filter(localizable_nodes, fn {type, _translation_ids} -> type == "template" end)
 
     locale_list = Map.keys(all_localization)
 
     language_map = get_language_id_map_from_locals(locale_list)
     language_map_ids = Enum.map(language_map, & &1.id)
 
-    Enum.reduce(localizable_template_nodes, errors, fn {_, translation_ids}, acc ->
+    Enum.reduce(localizable_template_nodes, [], fn {_, translation_ids}, acc ->
       translation_ids = translation_ids |> Enum.map(&String.to_integer/1)
 
       missing_ids = language_map_ids -- translation_ids
@@ -507,11 +506,15 @@ defmodule Glific.Flows.Flow do
           Enum.map(missing_ids, fn language_id ->
             language = Enum.find(language_map, &(&1.id == language_id))
 
-            {Localization,
-             "Some of the send message nodes with template are missing translations #{language.label}",
-             "Warning"}
+            [
+              "Some of the send message nodes with template are missing translations in #{language.label}"
+            ]
           end)
       end
+    end)
+    |> Enum.uniq()
+    |> Enum.reduce(errors, fn language_error, acc ->
+      acc ++ [{Localization, language_error, "Warning"}]
     end)
   end
 
