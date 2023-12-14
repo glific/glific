@@ -446,17 +446,27 @@ defmodule Glific.Flows.Flow do
 
   @spec missing_localization(Keyword.t(), map(), map()) :: Keyword.t()
   defp missing_localization(errors, flow, all_localization) do
-    localized_nodes =
-      flow.nodes
-      |> Enum.reduce([], fn node, uuids ->
-        node.actions
-        |> Enum.reduce([], fn action, acc ->
-          if action.type == "send_msg", do: acc ++ [action.uuid], else: uuids
-        end)
-        |> then(&(uuids ++ &1))
-      end)
+    no_of_nodes = Enum.count(flow.nodes)
 
-    has_missing_localization(errors, all_localization, localized_nodes)
+    if no_of_nodes > 15 do
+      errors ++
+        [
+          {Localization,
+           "Too big flow, translations will not be checked. Try making modular flows", "Warning"}
+        ]
+    else
+      localized_nodes =
+        flow.nodes
+        |> Enum.reduce([], fn node, uuids ->
+          node.actions
+          |> Enum.reduce([], fn action, acc ->
+            if action.type == "send_msg", do: acc ++ [action.uuid], else: uuids
+          end)
+          |> then(&(uuids ++ &1))
+        end)
+
+      has_missing_localization(errors, all_localization, localized_nodes)
+    end
   end
 
   @spec has_missing_localization(Keyword.t(), map(), list()) :: Keyword.t()
