@@ -144,7 +144,9 @@ defmodule Glific.TriggersTest do
         frequency: ["none"]
       }
 
-      assert {:error, %Ecto.Changeset{}} = Triggers.create_trigger(arc)
+      {:error, message} = Triggers.create_trigger(arc)
+      error_message = Map.get(message, :message)
+      assert error_message == "The first send message node is not an HSM template"
     end
 
     test "execute_triggers/2 should execute a trigger with last_trigger_at not nil", attrs do
