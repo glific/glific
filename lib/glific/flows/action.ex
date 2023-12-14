@@ -515,30 +515,29 @@ defmodule Glific.Flows.Action do
     {:node, node} = flow.uuid_map[action.node_uuid]
 
     if is_nil(action.interactive_template_expression) do
-      result =
-        Repo.fetch_by(
-          InteractiveTemplate,
-          %{id: action.interactive_template_id, organization_id: flow.organization_id}
-        )
-
-      case result do
-        {:ok, _} ->
-          check_the_next_node(node, errors, flow)
-
-        _ ->
-          check_the_next_node(node, errors, flow) ++
-            [{Message, "An Interactive template does not exist", "Critical"} | errors]
-      end
-    else
       errors
+      |> check_missing_interactive_template(action, flow)
+      |> check_the_next_node(node, flow)
     end
   end
 
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
 
-  @spec check_the_next_node(map(), Keyword.t(), map()) :: Keyword.t()
-  defp check_the_next_node(node, errors, flow) do
+  @spec check_the_next_node(Keyword.t(), Action.t(), map()) :: Keyword.t()
+  defp check_missing_interactive_template(errors, action, flow) do
+    Repo.fetch_by(
+      InteractiveTemplate,
+      %{id: action.interactive_template_id, organization_id: flow.organization_id}
+    )
+    |> case do
+      {:ok, _} -> errors
+      {:error, _} -> [{Message, "An Interactive template does not exist", "Critical"} | errors]
+    end
+  end
+
+  @spec check_the_next_node(Keyword.t(), map(), map()) :: Keyword.t()
+  defp check_the_next_node(errors, node, flow) do
     [exit | _] = node.exits
 
     case exit.destination_node_uuid do
