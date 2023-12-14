@@ -60,11 +60,11 @@ defmodule GlificWeb.Schema.TicketTest do
     tickets = get_in(query_data, [:data, "tickets"])
     assert length(tickets) == 1
 
-    name_or_phone_filter = "Adelle Cavin"
+    name_or_phone_or_body_filter = "Adelle Cavin"
 
     result =
       auth_query_gql_by(:list, user,
-        variables: %{"filter" => %{"name_or_phone" => name_or_phone_filter}}
+        variables: %{"filter" => %{"name_or_phone_or_body" => name_or_phone_or_body_filter}}
       )
 
     assert {:ok, query_data} = result
