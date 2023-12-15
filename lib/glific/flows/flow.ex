@@ -450,36 +450,62 @@ defmodule Glific.Flows.Flow do
       flow.nodes
       |> Enum.reduce([], fn node, uuids ->
         node.actions
-        |> Enum.reduce([], fn action, acc ->
+        |> Enum.reduce(uuids, fn action, acc ->
           if action.type == "send_msg", do: [action.uuid | acc], else: acc
         end)
-        |> then(&(uuids ++ &1))
       end)
 
     has_missing_localization(errors, all_localization, localizable_nodes)
   end
 
+  # lets transform the localization to a map
+  # whose key is the node uuid, and values are the languages it has
+  @spec make_localization_map(map()) :: map()
+  defp make_localization_map(all_localization) do
+    all_localization
+    |> Enum.reduce(
+      %{},
+      fn {language_local, localized_map}, new_localization ->
+        localized_map
+        |> Enum.reduce(
+          new_localization,
+          fn {uuid, _value}, acc ->
+            Map.update(
+              acc,
+              uuid,
+              [language_local],
+              fn v -> [language_local | v] end
+            )
+          end
+        )
+      end
+    )
+  end
+
   @spec has_missing_localization(Keyword.t(), map(), list()) :: Keyword.t()
   defp has_missing_localization(errors, all_localization, localizable_nodes) do
-    all_localization
-    |> Enum.reduce(errors, fn {language_local, localized_map}, errors ->
-      language =
-        Language
-        |> where([l], l.locale == ^language_local)
-        |> Repo.one()
+    # lets transform the localization to a map
+    # whose key is the node uuid, and
+    localization_map = make_localization_map(all_localization)
+    all_languages = Map.keys(all_localization)
+    # get language labels here in one query for all languages if you want
+    num_languages = length(all_languages)
 
-      Enum.reduce(localizable_nodes, errors, fn localizable_node, _acc ->
-        if Map.has_key?(localized_map, localizable_node) do
-          errors ++
-            [
-              {Localization,
-               "Node #{localizable_node} is missing translations in #{language.label}", "Warning"}
-            ]
+    localizable_nodes
+    |> Enum.reduce(
+      errors,
+      fn node_uuid, errors ->
+        node_languages = Map.get(localization_map, node_uuid, [])
+
+        if length(node_languages) != num_languages do
+          {Localization,
+           "Node #{node_uuid} is missing translations in #{all_languages -- node_languages}",
+           "Warning"}
         else
           errors
         end
-      end)
-    end)
+      end
+    )
   end
 
   # add the appropriate where clause as needed
