@@ -446,38 +446,34 @@ defmodule Glific.Flows.Flow do
 
   @spec missing_localization(Keyword.t(), map(), map()) :: Keyword.t()
   defp missing_localization(errors, flow, all_localization) do
-    localized_nodes =
+    localizable_nodes =
       flow.nodes
       |> Enum.reduce([], fn node, uuids ->
         node.actions
         |> Enum.reduce([], fn action, acc ->
-          if action.type == "send_msg", do: acc ++ [action.uuid], else: uuids
+          if action.type == "send_msg", do: [action.uuid | acc], else: acc
         end)
         |> then(&(uuids ++ &1))
       end)
 
-    has_missing_localization(errors, all_localization, localized_nodes)
+    has_missing_localization(errors, all_localization, localizable_nodes)
   end
 
   @spec has_missing_localization(Keyword.t(), map(), list()) :: Keyword.t()
-  defp has_missing_localization(errors, all_localization, localized_nodes) do
+  defp has_missing_localization(errors, all_localization, localizable_nodes) do
     all_localization
     |> Enum.reduce(errors, fn {language_local, localized_map}, errors ->
-      Enum.all?(localized_nodes, fn localized_node ->
-        Map.has_key?(localized_map, localized_node)
-      end)
-      |> then(fn localized ->
-        if localized == false do
-          language =
-            Language
-            |> where([l], l.locale == ^language_local)
-            |> Repo.one()
+      language =
+        Language
+        |> where([l], l.locale == ^language_local)
+        |> Repo.one()
 
+      Enum.reduce(localizable_nodes, errors, fn localizable_node, _acc ->
+        if Map.has_key?(localized_map, localizable_node) do
           errors ++
             [
               {Localization,
-               "Some of the send message nodes are missing translations in #{language.label}",
-               "Warning"}
+               "Node #{localizable_node} is missing translations in #{language.label}", "Warning"}
             ]
         else
           errors
