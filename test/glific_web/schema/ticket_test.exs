@@ -202,16 +202,17 @@ defmodule GlificWeb.Schema.TicketTest do
     assert {:ok, query_data} = result
     support_tickets = get_in(query_data, [:data, "fetchSupportTickets"])
 
-    assert String.starts_with?(
-             support_tickets,
-             "status,body,inserted_at,topic,opened_by,assigned_to\n"
-           )
+    expected_header = "status,body,inserted_at,topic,opened_by,assigned_to"
 
-    # Check each column
-    lines = String.split(support_tickets, ~r/\r?\n/)
-    header_values = Enum.at(lines, 0) |> String.split(",")
-    assert Enum.at(header_values, 0) == "status"
-    assert Enum.at(header_values, 1) == "body"
+    expected_tickets = [
+      "open,test body01,2023-12-15,test topic01,NGO Main Account,NGO Main Account,",
+      "closed,test body02,2023-12-15,some topic,NGO Main Account,NGO Main Account,",""
+    ]
+
+    [header | tickets] = String.split(support_tickets, "\n")
+    assert tickets == expected_tickets
+
+    assert header == expected_header
   end
 
   test "update a multiple ticket and test possible scenarios and errors", %{manager: user} do
