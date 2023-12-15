@@ -503,10 +503,13 @@ defmodule Glific.Flows.Flow do
 
           labels =
             missing
-            |> Enum.reduce([], fn locale, acc -> [acc | language_labels[locale]] end)
+            |> Enum.reduce([], fn locale, acc -> [language_labels[locale] | acc] end)
             |> Enum.join(", ")
 
-          {Localization, "Node #{node_uuid} is missing translations in #{labels}", "Warning"}
+          [
+            {Localization, "Node #{node_uuid} is missing translations in #{labels}", "Warning"}
+            | errors
+          ]
         else
           errors
         end
