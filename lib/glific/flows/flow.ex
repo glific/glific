@@ -21,7 +21,7 @@ defmodule Glific.Flows.Flow do
     Flows.Node,
     Partners.Organization,
     Repo,
-    Settings.Language,
+    Settings,
     Tags.Tag
   }
 
@@ -490,6 +490,7 @@ defmodule Glific.Flows.Flow do
     all_languages = Map.keys(all_localization)
     # get language labels here in one query for all languages if you want
     num_languages = length(all_languages)
+    language_labels = Settings.locale_label_map()
 
     localizable_nodes
     |> Enum.reduce(
@@ -498,9 +499,14 @@ defmodule Glific.Flows.Flow do
         node_languages = Map.get(localization_map, node_uuid, [])
 
         if length(node_languages) != num_languages do
-          {Localization,
-           "Node #{node_uuid} is missing translations in #{all_languages -- node_languages}",
-           "Warning"}
+          missing = all_languages -- node_languages
+
+          labels =
+            missing
+            |> Enum.reduce([], fn locale, acc -> [acc | language_labels[locale]] end)
+            |> Enum.join(", ")
+
+          {Localization, "Node #{node_uuid} is missing translations in #{labels}", "Warning"}
         else
           errors
         end
