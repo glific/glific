@@ -458,40 +458,6 @@ defmodule Glific.Flows.Flow do
     has_missing_localization(errors, all_localization, localizable_nodes)
   end
 
-  # lets transform the localization to a map
-  # whose key is the node uuid, and values are the languages it has
-  @spec make_localization_map(map()) :: map()
-  defp make_localization_map(all_localization) do
-    all_localization
-    # For all languages
-    |> Enum.reduce(
-      %{},
-      fn {language_local, localized_map}, new_localization ->
-        localized_map
-        # For all nodes that have a translation
-        |> Enum.reduce(
-          new_localization,
-          fn {uuid, _value}, acc ->
-            # add the language to the new_localization map for that node
-            Map.update(
-              acc,
-              uuid,
-              [language_local],
-              fn v -> [language_local | v] end
-            )
-          end
-        )
-      end
-    )
-  end
-
-  @spec make_labels(List.t(), List.t(), map()) :: String.t()
-  defp make_labels(all_languages, node_languages, language_labels) do
-    (all_languages -- node_languages)
-    |> Enum.reduce([], fn locale, acc -> [language_labels[locale] | acc] end)
-    |> Enum.join(", ")
-  end
-
   @spec has_missing_localization(Keyword.t(), map(), list()) :: Keyword.t()
   defp has_missing_localization(errors, all_localization, localizable_nodes) do
     localization_map = make_localization_map(all_localization)
@@ -519,6 +485,40 @@ defmodule Glific.Flows.Flow do
         end
       end
     )
+  end
+
+  # lets transform the localization to a map
+  # whose key is the node uuid, and values are the languages it has
+  @spec make_localization_map(map()) :: map()
+  defp make_localization_map(all_localization) do
+    all_localization
+    # For all languages
+    |> Enum.reduce(
+      %{},
+      fn {language_local, localization}, localization_map ->
+        localization
+        # For all nodes that have a translation
+        |> Enum.reduce(
+          localization_map,
+          fn {uuid, _value}, acc ->
+            # add the language to the localization_map for that node
+            Map.update(
+              acc,
+              uuid,
+              [language_local],
+              fn existing_language_local -> [language_local | existing_language_local] end
+            )
+          end
+        )
+      end
+    )
+  end
+
+  @spec make_labels(List.t(), List.t(), map()) :: String.t()
+  defp make_labels(all_languages, node_languages, language_labels) do
+    (all_languages -- node_languages)
+    |> Enum.reduce([], fn locale, acc -> [language_labels[locale] | acc] end)
+    |> Enum.join(", ")
   end
 
   # add the appropriate where clause as needed
