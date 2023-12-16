@@ -514,7 +514,7 @@ defmodule Glific.Flows.Flow do
     )
   end
 
-  @spec make_labels(List.t(), List.t(), map()) :: String.t()
+  @spec make_labels(list(), list(), map()) :: String.t()
   defp make_labels(all_languages, node_languages, language_labels) do
     (all_languages -- node_languages)
     |> Enum.reduce([], fn locale, acc -> [language_labels[locale] | acc] end)
