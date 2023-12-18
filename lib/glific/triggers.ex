@@ -157,28 +157,31 @@ defmodule Glific.Triggers do
     {:ok, flow} =
       Repo.fetch_by(FlowRevision, %{flow_id: Map.get(attrs, :flow_id), status: "published"})
 
-    action = flow |> Map.get(:definition) |> Map.get("nodes") |> hd() |> Map.get("actions")
+    action = flow_action(flow)
+
+    case action do
+      nil ->
+        do_create_trigger(attrs)
+
+      _ ->
+        handle_message_type(Map.get(action, "type"), action, attrs)
+    end
+  end
+
+  @spec flow_action(map()) :: nil | map()
+  defp flow_action(flow) do
+    start_node_uuid = Flow.start_node(flow.definition["_ui"])
+
+    action =
+      flow.definition["nodes"]
+      |> Enum.find_value(&(&1["uuid"] == start_node_uuid), & &1["actions"])
 
     case action do
       [] ->
-        do_create_trigger(attrs)
+        nil
 
-      [action | _rest] ->
-        type = Map.get(action, "type")
-
-        case type do
-          "send_interactive_msg" ->
-            handle_message_type(type, action, attrs)
-
-          "send_msg" ->
-            handle_message_type(type, action, attrs)
-
-          "enter_flow" ->
-            handle_enter_flow(action, attrs)
-
-          _ ->
-            do_create_trigger(attrs)
-        end
+      _ ->
+        hd(action)
     end
   end
 
@@ -197,26 +200,16 @@ defmodule Glific.Triggers do
     end
   end
 
-  @spec handle_enter_flow(map(), map()) :: {:ok, Trigger.t()} | {:error, map()}
-  defp handle_enter_flow(action, attrs) do
-    flow_uuid = action |> Map.get("flow") |> Map.get("uuid")
+  defp handle_message_type("enter_flow", enter_flow_action, attrs) do
+    flow_uuid = enter_flow_action |> Map.get("flow") |> Map.get("uuid")
     flow = Repo.one(from f0 in Flow, where: f0.uuid == ^flow_uuid, select: f0)
 
     {:ok, entered_flow} =
       Repo.fetch_by(FlowRevision, %{flow_id: flow.id, status: "published"})
 
-    entered_action =
-      entered_flow |> Map.get(:definition) |> Map.get("nodes") |> hd() |> Map.get("actions")
+    action = flow_action(entered_flow)
 
-    case entered_action do
-      [] ->
-        do_create_trigger(attrs)
-
-      [entered_action | _rest] ->
-        entered_type = Map.get(entered_action, "type")
-
-        handle_message_type(entered_type, entered_action, attrs)
-    end
+    handle_message_type(Map.get(action, "type"), action, attrs)
   end
 
   @spec do_create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
