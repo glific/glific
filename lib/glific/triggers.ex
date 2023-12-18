@@ -157,6 +157,11 @@ defmodule Glific.Triggers do
     {:ok, flow} =
       Repo.fetch_by(FlowRevision, %{flow_id: Map.get(attrs, :flow_id), status: "published"})
 
+    handle_action(flow, attrs, 0)
+  end
+
+  @spec handle_action(map(), map(), integer()) :: {:ok, Trigger.t()}
+  defp handle_action(flow, attrs, flow_count) do
     action = flow_action(flow)
 
     case action do
@@ -164,7 +169,7 @@ defmodule Glific.Triggers do
         do_create_trigger(attrs)
 
       _ ->
-        handle_message_type(Map.get(action, "type"), action, attrs)
+        handle_message_type(Map.get(action, "type"), action, attrs, flow_count)
     end
   end
 
@@ -185,12 +190,13 @@ defmodule Glific.Triggers do
     end
   end
 
-  @spec handle_message_type(String.t(), map(), map()) :: {:ok, Trigger.t()} | {:error, map()}
-  defp handle_message_type("send_interactive_msg", _action, _attrs) do
+  @spec handle_message_type(String.t(), map(), map(), integer()) ::
+          {:ok, Trigger.t()} | {:error, map()}
+  defp handle_message_type("send_interactive_msg", _action, _attrs, _flow_count) do
     {:error, %{message: "The first send message node is not an HSM template"}}
   end
 
-  defp handle_message_type("send_msg", action, attrs) do
+  defp handle_message_type("send_msg", action, attrs, _flow_count) do
     template = action |> Map.get("templating")
 
     if template == nil do
@@ -200,16 +206,18 @@ defmodule Glific.Triggers do
     end
   end
 
-  defp handle_message_type("enter_flow", enter_flow_action, attrs) do
-    flow_uuid = enter_flow_action |> Map.get("flow") |> Map.get("uuid")
-    flow = Repo.one(from f0 in Flow, where: f0.uuid == ^flow_uuid, select: f0)
+  defp handle_message_type("enter_flow", enter_flow_action, attrs, flow_count) do
+    if flow_count > 1 do
+      flow_uuid = enter_flow_action |> Map.get("flow") |> Map.get("uuid")
+      flow = Repo.one(from f0 in Flow, where: f0.uuid == ^flow_uuid, select: f0)
 
-    {:ok, entered_flow} =
-      Repo.fetch_by(FlowRevision, %{flow_id: flow.id, status: "published"})
+      {:ok, entered_flow} =
+        Repo.fetch_by(FlowRevision, %{flow_id: flow.id, status: "published"})
 
-    action = flow_action(entered_flow)
-
-    handle_message_type(Map.get(action, "type"), action, attrs)
+      handle_action(entered_flow, attrs, flow_count)
+    else
+      do_create_trigger(attrs)
+    end
   end
 
   @spec do_create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
