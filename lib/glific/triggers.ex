@@ -207,14 +207,14 @@ defmodule Glific.Triggers do
   end
 
   defp handle_message_type("enter_flow", enter_flow_action, attrs, flow_count) do
-    if flow_count > 1 do
+    if flow_count <= 1 do
       flow_uuid = enter_flow_action |> Map.get("flow") |> Map.get("uuid")
       flow = Repo.one(from f0 in Flow, where: f0.uuid == ^flow_uuid, select: f0)
 
       {:ok, entered_flow} =
         Repo.fetch_by(FlowRevision, %{flow_id: flow.id, status: "published"})
 
-      handle_action(entered_flow, attrs, flow_count)
+      handle_action(entered_flow, attrs, flow_count + 1)
     else
       do_create_trigger(attrs)
     end
