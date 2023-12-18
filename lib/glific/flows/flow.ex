@@ -21,7 +21,7 @@ defmodule Glific.Flows.Flow do
     Flows.Node,
     Partners.Organization,
     Repo,
-    Settings.Language,
+    Settings,
     Tags.Tag
   }
 
@@ -446,44 +446,79 @@ defmodule Glific.Flows.Flow do
 
   @spec missing_localization(Keyword.t(), map(), map()) :: Keyword.t()
   defp missing_localization(errors, flow, all_localization) do
-    localized_nodes =
+    localizable_nodes =
       flow.nodes
       |> Enum.reduce([], fn node, uuids ->
         node.actions
-        |> Enum.reduce([], fn action, acc ->
-          if action.type == "send_msg", do: acc ++ [action.uuid], else: uuids
+        |> Enum.reduce(uuids, fn action, acc ->
+          if action.type == "send_msg", do: [action.uuid | acc], else: acc
         end)
-        |> then(&(uuids ++ &1))
       end)
 
-    has_missing_localization(errors, all_localization, localized_nodes)
+    has_missing_localization(errors, all_localization, localizable_nodes)
   end
 
   @spec has_missing_localization(Keyword.t(), map(), list()) :: Keyword.t()
-  defp has_missing_localization(errors, all_localization, localized_nodes) do
-    all_localization
-    |> Enum.reduce(errors, fn {language_local, localized_map}, errors ->
-      Enum.all?(localized_nodes, fn localized_node ->
-        Map.has_key?(localized_map, localized_node)
-      end)
-      |> then(fn localized ->
-        if localized == false do
-          language =
-            Language
-            |> where([l], l.locale == ^language_local)
-            |> Repo.one()
+  defp has_missing_localization(errors, all_localization, localizable_nodes) do
+    localization_map = make_localization_map(all_localization)
+    all_languages = Map.keys(all_localization)
 
-          errors ++
-            [
-              {Localization,
-               "Some of the send message nodes are missing translations in #{language.label}",
-               "Warning"}
-            ]
+    # get language labels here in one query for all languages if you want
+    num_languages = length(all_languages)
+    language_labels = Settings.locale_label_map()
+
+    localizable_nodes
+    |> Enum.reduce(
+      errors,
+      fn node_uuid, errors ->
+        node_languages = Map.get(localization_map, node_uuid, [])
+
+        if length(node_languages) != num_languages do
+          labels = make_labels(all_languages, node_languages, language_labels)
+
+          [
+            {Localization, "Node #{node_uuid} is missing translations in #{labels}", "Warning"}
+            | errors
+          ]
         else
           errors
         end
-      end)
-    end)
+      end
+    )
+  end
+
+  # lets transform the localization to a map
+  # whose key is the node uuid, and values are the languages it has
+  @spec make_localization_map(map()) :: map()
+  defp make_localization_map(all_localization) do
+    all_localization
+    # For all languages
+    |> Enum.reduce(
+      %{},
+      fn {language_local, localization}, localization_map ->
+        localization
+        # For all nodes that have a translation
+        |> Enum.reduce(
+          localization_map,
+          fn {uuid, _value}, acc ->
+            # add the language to the localization_map for that node
+            Map.update(
+              acc,
+              uuid,
+              [language_local],
+              fn existing_language_local -> [language_local | existing_language_local] end
+            )
+          end
+        )
+      end
+    )
+  end
+
+  @spec make_labels(list(), list(), map()) :: String.t()
+  defp make_labels(all_languages, node_languages, language_labels) do
+    (all_languages -- node_languages)
+    |> Enum.reduce([], fn locale, acc -> [language_labels[locale] | acc] end)
+    |> Enum.join(", ")
   end
 
   # add the appropriate where clause as needed
