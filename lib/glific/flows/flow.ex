@@ -396,11 +396,14 @@ defmodule Glific.Flows.Flow do
     end
   end
 
+  @doc """
+  Get all the objects of a flow that are of a particular type
+  """
   @spec flow_objects(map(), atom()) :: MapSet.t()
-  defp flow_objects(flow, type) do
+  def flow_objects(flow, type) do
     flow.uuid_map
     |> Enum.filter(fn {_k, v} -> elem(v, 0) == type end)
-    |> Enum.map(fn {k, _v} -> k end)
+    |> Map.keys()
     |> MapSet.new()
   end
 
