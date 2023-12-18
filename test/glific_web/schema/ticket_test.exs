@@ -201,7 +201,15 @@ defmodule GlificWeb.Schema.TicketTest do
 
     assert {:ok, query_data} = result
     support_tickets = get_in(query_data, [:data, "fetchSupportTickets"])
-    assert is_binary(support_tickets) == true
+    time = Timex.format!(DateTime.utc_now(), "{YYYY}-{0M}-{0D}")
+    [header | tickets] = String.split(support_tickets, "\n")
+    assert header == "status,body,inserted_at,topic,opened_by,assigned_to"
+
+    assert tickets == [
+             "open,test body01,#{time},test topic01,NGO Main Account,NGO Main Account,",
+             "closed,test body02,#{time},some topic,NGO Main Account,NGO Main Account,",
+             ""
+           ]
   end
 
   test "update a multiple ticket and test possible scenarios and errors", %{manager: user} do
