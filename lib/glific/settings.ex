@@ -180,20 +180,8 @@ defmodule Glific.Settings do
   @doc """
   Get map of label to ids for easier lookup for json based flow validation
   """
-  @spec id_label_map() :: %{String.t() => String.t()}
-  def id_label_map do
-    Language
-    |> where([l], l.is_active == true)
-    |> select([:label, :id])
-    |> Repo.all()
-    |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.id, language.label) end)
-  end
-
-  @doc """
-  Get map of label to ids for easier lookup for json based flow validation
-  """
-  @spec get_language_id_map_from_locals(list()) :: list()
-  def get_language_id_map_from_locals(locals) do
+  @spec get_language_map(list()) :: list()
+  def get_language_map(locals) do
     Language
     |> where([l], l.locale in ^locals)
     |> select([l], %{

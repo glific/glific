@@ -548,8 +548,12 @@ defmodule Glific.Flows.Flow do
 
     locale_list = Map.keys(all_localization)
 
-    language_map = Settings.get_language_id_map_from_locals(locale_list)
-    language_map_ids = Enum.map(language_map, & &1.id)
+    language_map =
+      locale_list
+      |> Settings.get_language_map()
+      |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.id, language) end)
+
+    language_map_ids = Map.keys(language_map)
 
     Enum.reduce(localizable_template_nodes, [], fn {node_uuid, translation_ids}, acc ->
       translation_ids = translation_ids |> Enum.map(&String.to_integer/1)
@@ -560,7 +564,7 @@ defmodule Glific.Flows.Flow do
       else
         [
           Enum.map(missing_ids, fn language_id ->
-            language = Enum.find(language_map, &(&1.id == language_id))
+            language = Map.get(language_map, language_id)
 
             [
               "Node #{node_uuid} with template is missing translations in #{language.label}"
