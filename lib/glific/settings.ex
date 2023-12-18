@@ -181,7 +181,7 @@ defmodule Glific.Settings do
   Get map of language to ids for easier lookup for json based flow validation
   """
   @spec get_language_map() :: list()
-  def get_language_map() do
+  def get_language_map do
     Language
     |> select([l], %{
       id: l.id,
