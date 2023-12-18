@@ -346,6 +346,9 @@ defmodule Glific.Flows.Flow do
     end
   end
 
+  @doc """
+  Helper function to get the UUID of the first node in a flow
+  """
   @spec start_node(map()) :: Ecto.UUID.t() | nil
   def start_node(json) do
     {node_uuid, _top, _left} =
