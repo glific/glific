@@ -201,18 +201,15 @@ defmodule GlificWeb.Schema.TicketTest do
 
     assert {:ok, query_data} = result
     support_tickets = get_in(query_data, [:data, "fetchSupportTickets"])
-
-    expected_header = "status,body,inserted_at,topic,opened_by,assigned_to"
-
-    expected_tickets = [
-      "open,test body01,2023-12-15,test topic01,NGO Main Account,NGO Main Account,",
-      "closed,test body02,2023-12-15,some topic,NGO Main Account,NGO Main Account,",""
-    ]
-
+    time = Timex.format!(DateTime.utc_now(), "{YYYY}-{0M}-{0D}")
     [header | tickets] = String.split(support_tickets, "\n")
-    assert tickets == expected_tickets
+    assert header == "status,body,inserted_at,topic,opened_by,assigned_to"
 
-    assert header == expected_header
+    assert tickets == [
+             "open,test body01,#{time},test topic01,NGO Main Account,NGO Main Account,",
+             "closed,test body02,#{time},some topic,NGO Main Account,NGO Main Account,",
+             ""
+           ]
   end
 
   test "update a multiple ticket and test possible scenarios and errors", %{manager: user} do
