@@ -178,18 +178,18 @@ defmodule Glific.Settings do
   end
 
   @doc """
-  Get map of label to ids for easier lookup for json based flow validation
+  Get map of language to ids for easier lookup for json based flow validation
   """
-  @spec get_language_map(list()) :: list()
-  def get_language_map(locals) do
+  @spec get_language_map() :: list()
+  def get_language_map() do
     Language
-    |> where([l], l.locale in ^locals)
     |> select([l], %{
       id: l.id,
       locale: l.locale,
       label: l.label
     })
     |> Repo.all()
+    |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.id, language) end)
   end
 
   @doc """

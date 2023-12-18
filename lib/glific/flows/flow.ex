@@ -549,9 +549,12 @@ defmodule Glific.Flows.Flow do
     locale_list = Map.keys(all_localization)
 
     language_map =
-      locale_list
-      |> Settings.get_language_map()
-      |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.id, language) end)
+      Settings.get_language_map()
+      |> Enum.reduce(%{}, fn {language_key, language_value}, acc ->
+        if language_value.locale in locale_list,
+          do: Map.put(acc, language_key, language_value),
+          else: acc
+      end)
 
     language_map_ids = Map.keys(language_map)
 
