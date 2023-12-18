@@ -533,7 +533,8 @@ defmodule Glific.FLowsTest do
       "A template could not be found in the flow",
       "Language is a required field",
       "The next node after interactive should be wait for response",
-      "is missing translations in Hindi"
+      "is missing translations in Hindi",
+      "is missing template translations in Hindi"
     ]
 
     Enum.any?(errors, &String.contains?(str, &1))
