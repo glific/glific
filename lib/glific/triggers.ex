@@ -161,7 +161,7 @@ defmodule Glific.Triggers do
   end
 
   @spec handle_action(map(), map(), integer()) :: {:ok, Trigger.t()}
-  defp handle_action(flow, attrs, flow_count) do
+  defp handle_action(flow, attrs, nested_flow_level) do
     action = flow_action(flow)
 
     case action do
@@ -169,7 +169,7 @@ defmodule Glific.Triggers do
         do_create_trigger(attrs)
 
       _ ->
-        handle_message_type(Map.get(action, "type"), action, attrs, flow_count)
+        handle_message_type(Map.get(action, "type"), action, attrs, nested_flow_level)
     end
   end
 
@@ -192,11 +192,11 @@ defmodule Glific.Triggers do
 
   @spec handle_message_type(String.t(), map(), map(), integer()) ::
           {:ok, Trigger.t()} | {:error, map()}
-  defp handle_message_type("send_interactive_msg", _action, _attrs, _flow_count) do
+  defp handle_message_type("send_interactive_msg", _action, _attrs, _nested_flow_level) do
     {:error, %{message: "The first send message node is not an HSM template"}}
   end
 
-  defp handle_message_type("send_msg", action, attrs, _flow_count) do
+  defp handle_message_type("send_msg", action, attrs, _nested_flow_level) do
     template = action |> Map.get("templating")
 
     if template == nil do
@@ -206,15 +206,17 @@ defmodule Glific.Triggers do
     end
   end
 
-  defp handle_message_type("enter_flow", enter_flow_action, attrs, flow_count) do
-    if flow_count <= 1 do
+  defp handle_message_type("enter_flow", enter_flow_action, attrs, nested_flow_level) do
+    # nested_flow_level is the count of nested flows in enter_flow node
+    # Note: Checking only one level of nested flows
+    if nested_flow_level <= 1 do
       flow_uuid = enter_flow_action |> Map.get("flow") |> Map.get("uuid")
       flow = Repo.one(from f0 in Flow, where: f0.uuid == ^flow_uuid, select: f0)
 
       {:ok, entered_flow} =
         Repo.fetch_by(FlowRevision, %{flow_id: flow.id, status: "published"})
 
-      handle_action(entered_flow, attrs, flow_count + 1)
+      handle_action(entered_flow, attrs, nested_flow_level + 1)
     else
       do_create_trigger(attrs)
     end
