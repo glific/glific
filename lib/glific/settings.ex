@@ -178,6 +178,21 @@ defmodule Glific.Settings do
   end
 
   @doc """
+  Get map of language to ids for easier lookup for json based flow validation
+  """
+  @spec get_language_map() :: list()
+  def get_language_map do
+    Language
+    |> select([l], %{
+      id: l.id,
+      locale: l.locale,
+      label: l.label
+    })
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.id, language) end)
+  end
+
+  @doc """
   Get map of ids to locale for translation lookup
   """
   @spec get_language_id_local_map() :: map()

@@ -15,7 +15,7 @@
       },
       "1de225f7-d863-4a84-a393-c2e3a3f43dee": {
         "type": "execute_actions",
-        "position": { "top": 420, "left": 100 }
+        "position": { "top": 440, "left": 100 }
       },
       "33555b1e-008d-412d-a5b5-cec6d003731b": {
         "type": "execute_actions",
@@ -58,11 +58,11 @@
       },
       "a01ab1d6-49b8-4d88-90f2-0cb6cff26a93": {
         "type": "execute_actions",
-        "position": { "top": 520, "left": 80 }
+        "position": { "top": 540, "left": 80 }
       },
       "b1b379ee-3b7c-4ad2-bab5-630ea711cee6": {
         "type": "execute_actions",
-        "position": { "top": 180, "left": 940 }
+        "position": { "top": 160, "left": 1140 }
       },
       "f5539329-71de-49ef-88ec-df0b37b84582": {
         "type": "split_by_expression",
@@ -71,7 +71,7 @@
       },
       "f8407d51-749a-4686-906e-b8a96ff1a0f7": {
         "type": "execute_actions",
-        "position": { "top": 400, "left": 940 }
+        "position": { "top": 420, "left": 940 }
       }
     }
   },
@@ -577,12 +577,12 @@
           "labels": [],
           "all_urns": false,
           "templating": {
-            "uuid": "7c0cee0d-b668-496e-bbf7-bf1cc7d930ec",
+            "uuid": "913db613-5d8d-4c59-8674-159199059e02",
             "template": {
-              "name": "Movie Ticket",
-              "uuid": "32905118-9e03-4bf1-9edd-98323b4d3d38"
+              "name": "Translated Movie Ticket",
+              "uuid": "a1d810f4-b102-446c-968c-10ff2f5c129f"
             },
-            "variables": ["hi", "there"]
+            "variables": ["@contact.name", "@results.result_1"]
           },
           "attachments": [],
           "quick_replies": []
