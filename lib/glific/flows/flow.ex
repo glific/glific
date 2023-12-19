@@ -382,7 +382,7 @@ defmodule Glific.Flows.Flow do
     if flow.definition["nodes"] == [] do
       [Flow: "Flow is empty"]
     else
-      all_nodes = flow_objects(flow, :node)
+      all_nodes = flow_objects(flow, :node) |> IO.inspect()
       all_translation = flow.definition["localization"]
 
       flow.nodes
@@ -396,14 +396,11 @@ defmodule Glific.Flows.Flow do
     end
   end
 
-  @doc """
-  Get all the objects of a flow that are of a particular type
-  """
   @spec flow_objects(map(), atom()) :: MapSet.t()
-  def flow_objects(flow, type) do
+  defp flow_objects(flow, type) do
     flow.uuid_map
     |> Enum.filter(fn {_k, v} -> elem(v, 0) == type end)
-    |> Map.keys()
+    |> Enum.map(fn {k, _v} -> k end)
     |> MapSet.new()
   end
 
@@ -458,17 +455,17 @@ defmodule Glific.Flows.Flow do
         end)
       end)
 
-    has_missing_localization(errors, all_localization, localizable_nodes)
+    has_missing_localization(errors, all_localization, localizable_nodes, flow.organization_id)
   end
 
-  @spec has_missing_localization(Keyword.t(), map(), list()) :: Keyword.t()
-  defp has_missing_localization(errors, all_localization, localizable_nodes) do
+  @spec has_missing_localization(Keyword.t(), map(), list(), non_neg_integer()) :: Keyword.t()
+  defp has_missing_localization(errors, all_localization, localizable_nodes, organization_id) do
     localization_map = make_localization_map(all_localization)
     all_languages = Map.keys(all_localization)
 
     # get language labels here in one query for all languages if you want
     num_languages = length(all_languages)
-    language_labels = Settings.locale_label_map()
+    language_labels = Settings.locale_label_map(organization_id) |> IO.inspect(label: "HERE")
 
     localizable_nodes
     |> Enum.reduce(
