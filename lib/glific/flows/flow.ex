@@ -385,7 +385,7 @@ defmodule Glific.Flows.Flow do
     if flow.definition["nodes"] == [] do
       [Flow: "Flow is empty"]
     else
-      all_nodes = flow_objects(flow, :node) |> IO.inspect()
+      all_nodes = flow_objects(flow, :node)
       all_translation = flow.definition["localization"]
 
       flow.nodes
@@ -427,7 +427,7 @@ defmodule Glific.Flows.Flow do
 
     if MapSet.size(dangling) == 0,
       do: errors,
-      else: [{dangling, "Your flow has dangling nodes", "Warning"}] ++ errors
+      else: [{dangling, "Your flow has dangling nodes", "Warning"} | errors]
   end
 
   @spec missing_flow_context_nodes(Keyword.t(), map(), MapSet.t()) :: Keyword.t()
@@ -442,9 +442,10 @@ defmodule Glific.Flows.Flow do
 
     if MapSet.subset?(flow_context_nodes, all_nodes),
       do: errors,
-      else:
-        [{FlowContext, "Some of your users in the flow have their node deleted", "Critical"}] ++
-          errors
+      else: [
+        {FlowContext, "Some of your users in the flow have their node deleted", "Critical"}
+        | errors
+      ]
   end
 
   @spec missing_localization(Keyword.t(), map(), map()) :: Keyword.t()
@@ -456,12 +457,11 @@ defmodule Glific.Flows.Flow do
         |> Enum.reduce(uuids, fn action, acc ->
           cond do
             action.type == "send_msg" && is_nil(action.templating) ->
-              acc ++ [{"message", action.uuid}]
+              [{"message", action.uuid} | acc]
 
             action.type == "send_msg" && !is_nil(action.templating) ->
               available_translation_ids = Map.keys(action.templating.template.translations)
-
-              acc ++ [{"template", {action.uuid, available_translation_ids}}]
+              [{"template", {action.uuid, available_translation_ids}} | acc]
 
             true ->
               acc
@@ -584,7 +584,7 @@ defmodule Glific.Flows.Flow do
       end
     end)
     |> Enum.reduce(errors, fn language_error, acc ->
-      acc ++ [{Localization, language_error, "Warning"}]
+      [{Localization, language_error, "Warning"} | acc]
     end)
   end
 

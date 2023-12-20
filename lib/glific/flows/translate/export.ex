@@ -42,14 +42,14 @@ defmodule Glific.Flows.Translate.Export do
 
     localizable_nodes
     |> Enum.reduce(
-      [Map.values(language_labels)],
+      ["Type" | "UUID" | Map.values(language_labels)],
       fn {action_uuid, action_text}, export ->
         row =
           localization_map
           |> Map.get(action_uuid, %{})
           |> make_row(language_keys, action_text)
 
-        [row | export]
+        [["action" | action_uuid | row] | export]
       end
     )
     |> Enum.reverse()
