@@ -347,24 +347,31 @@ defmodule Glific.Flows.Flow do
   end
 
   @spec start_node(map()) :: Ecto.UUID.t() | nil
-  defp start_node(json) do
-    {node_uuid, _top, _left} =
-      json["nodes"]
-      |> Enum.reduce(
-        {nil, 1_000_000, 1_000_000},
-        fn {node_uuid, node}, {uuid, top, left} ->
-          pos_top = get_in(node, ["position", "top"])
-          pos_left = get_in(node, ["position", "left"])
+  def start_node(json) do
+    case is_map(json["nodes"]) do
+      true ->
+        {_node_uuid, _top, _left, type} =
+          json["nodes"]
+          |> Enum.reduce(
+            {nil, 1_000_000, 1_000_000, "not any type"},
+            fn {node_uuid, node}, {uuid, top, left, type} ->
+              pos_top = get_in(node, ["position", "top"])
+              pos_left = get_in(node, ["position", "left"])
+              current_type = get_in(node, ["type"])
 
-          if pos_top < top || (pos_top == top && pos_left < left) do
-            {node_uuid, pos_top, pos_left}
-          else
-            {uuid, top, left}
-          end
-        end
-      )
+              if pos_top < top || (pos_top == top && pos_left < left) do
+                {node_uuid, pos_top, pos_left, current_type}
+              else
+                {uuid, top, left, type}
+              end
+            end
+          )
 
-    node_uuid
+        type
+
+      _ ->
+        "node any type"
+    end
   end
 
   @doc """
