@@ -95,6 +95,12 @@ defmodule GlificWeb.Schema.TriggerTypes do
       resolve(&Resolvers.Triggers.create_trigger/3)
     end
 
+    field :check_trigger_warnings, :trigger_result do
+      arg(:input, non_null(:trigger_input))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Triggers.check_trigger_warnings/3)
+    end
+
     field :update_trigger, :trigger_result do
       arg(:id, non_null(:id))
       arg(:input, non_null(:trigger_input))
