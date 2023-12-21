@@ -555,5 +555,29 @@ defmodule GlificWeb.Schema.TriggerTest do
       get_in(query_data, [:data, "checkTriggerWarnings", "errors", Access.at(0), "message"])
 
     assert message == "The first message node is not an HSM template"
+
+    # when the first node is the node with valid type
+    flow_uuid = "5f3fd8c6-2ec3-4945-8e7c-314db8c04c31"
+    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
+
+    result =
+      auth_query_gql_by(:check_warning, user,
+        variables: %{
+          "input" => %{
+            "days" => [],
+            "flowId" => flow.id,
+            "groupIds" => [group.id],
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => ["none"]
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "checkTriggerWarnings", "errors"]) == nil
   end
 end

@@ -176,7 +176,7 @@ defmodule Glific.Triggers do
     end
   end
 
-  @spec handle_action(map(), map(), integer()) :: {:ok, Trigger.t()}
+  @spec handle_action(map(), map(), integer()) :: {:ok, atom()} | {:warning, String.t()}
   defp handle_action(flow, attrs, nested_flow_level) do
     action = flow_action(flow)
 
@@ -207,7 +207,7 @@ defmodule Glific.Triggers do
   end
 
   @spec handle_message_type(String.t(), map(), map(), integer()) ::
-          {:ok, Trigger.t()} | {:error, map()}
+          {:ok, atom()} | {:warning, String.t()}
   defp handle_message_type("send_interactive_msg", _action, _attrs, _nested_flow_level) do
     {:warning, "The first message node is not an HSM template"}
   end
@@ -218,7 +218,7 @@ defmodule Glific.Triggers do
     if template == nil do
       {:warning, "The first message node is not an HSM template"}
     else
-      {:ok, "no warnings"}
+      {:ok, :no_warnings}
     end
   end
 
@@ -234,8 +234,12 @@ defmodule Glific.Triggers do
 
       handle_action(entered_flow, attrs, nested_flow_level + 1)
     else
-      {:ok, attrs}
+      {:ok, :no_warnings}
     end
+  end
+
+  defp handle_message_type(_type, _action, _attrs, _nested_flow_level) do
+    {:ok, :no_warnings}
   end
 
   @spec update_trigger_roles(map(), Trigger.t()) :: {:ok, Trigger.t()}
