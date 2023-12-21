@@ -172,7 +172,6 @@ defmodule Glific.Triggers do
   def check_trigger_warnings(attrs) do
     case Repo.fetch_by(FlowRevision, %{flow_id: Map.get(attrs, :flow_id), status: "published"}) do
       {:ok, flow} -> handle_action(flow, attrs, 0)
-      _ -> {:ok, :no_warnings}
     end
   end
 
