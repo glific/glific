@@ -28,7 +28,9 @@ defmodule Glific.Flows.Translate.Import do
 
     [_header | rows] = csv
 
-    collect_by_language(rows, language_keys)
+    rows
+    |> collect_by_language(language_keys)
+    |> merge_with_latest_localization(flow)
   end
 
   defp collect_by_language(rows, language_keys) do
@@ -53,8 +55,26 @@ defmodule Glific.Flows.Translate.Import do
     |> Enum.reduce(
       %{},
       fn {k, v}, acc ->
+        # convert tuples to a map for json
         Map.put(acc, k, Map.new(v))
       end
     )
+  end
+
+  # the flow might have changed between when we exported the localization
+  # and imported it, so we merge the old with the new to pick up any remainder stuff
+  # Note that if a specific translation or text changed etc, we do not account for those
+  @spec merge_with_latest_localization(map(), map()) :: map()
+  defp merge_with_latest_localization(translations, current) do
+    current
+    |> Enum.reduce(
+      %{},
+      fn {curr_k, curr_v}, acc ->
+        # merge all the values from current that are not present in translations
+        Map.put(acc, curr_k, Map.merge(Map.get(translations, curr_k, %{}), curr_v))
+      end
+    )
+    # if there are languages missing, merge them also
+    |> Map.merge(translations)
   end
 end

@@ -30,6 +30,7 @@ defmodule Glific.Flows.Translate.Export do
       end)
     end)
     |> then(&add_missing_localization(all_localization, &1, flow.organization_id))
+    |> add_missing_translations()
   end
 
   @spec add_missing_localization(map(), list(), non_neg_integer()) :: Keyword.t()
@@ -42,7 +43,10 @@ defmodule Glific.Flows.Translate.Export do
 
     localizable_nodes
     |> Enum.reduce(
-      [["Type" | ["UUID" | Map.values(language_labels)]]],
+      [
+        ["Type" | ["UUID" | Map.values(language_labels)]],
+        ["Type" | ["UUID" | language_keys]]
+      ],
       fn {action_uuid, action_text}, export ->
         row =
           localization_map
@@ -92,4 +96,62 @@ defmodule Glific.Flows.Translate.Export do
       end
     )
   end
+
+  @spec add_missing_translations(list()) :: list()
+  defp add_missing_translations(translations) do
+    tuples =
+      translations
+      # lets skip the language keys row
+      |> tl()
+      # zip the rest
+      |> Enum.zip()
+      # skip type tuple
+      |> tl()
+      # skip uuid row
+      |> tl()
+
+    # lets assume the first tuple is the src
+    # the rest are destination
+    [src | dst_s] = tuples
+
+    # lets fill in all the destinations and return the same set of tuples
+    dst_s
+    |> Enum.reduce(
+      [src],
+      fn dst, acc ->
+        [translate(src, dst) | acc]
+      end
+    )
+    |> Enum.reverse()
+  end
+
+  @spec translate(tuple(), tuple()) :: tuple()
+  defp translate(src, dst) do
+    src
+    |> Tuple.to_list()
+    |> Enum.zip(Tuple.to_list(dst))
+    |> translate_all()
+    |> List.to_tuple()
+  end
+
+  @spec translate_all(list()) :: list()
+  defp translate_all(strings) do
+    [{src, dst} | rows] = strings
+
+    rows
+    |> Enum.reduce(
+      [dst],
+      fn row, acc ->
+        [translate_one(row, src, dst) | acc]
+      end
+    )
+    |> Enum.reverse()
+  end
+
+  @spec translate_one(tuple(), String.t(), String.t()) :: String.t()
+  defp translate_one({orig, ""}, src, dst) do
+    "#{dst} #{orig} #{src}"
+  end
+
+  defp translate_one({_orig, translation}, _src, _dst), do: "NOP: #{translation}"
 end
