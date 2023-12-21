@@ -52,7 +52,7 @@ defmodule GlificWeb.Resolvers.Triggers do
           {:ok, any} | {:error, any}
   def check_trigger_warnings(_, %{input: params}, _) do
     case Triggers.check_trigger_warnings(params) do
-      {:ok, result} when result == :no_warnings ->
+      {:ok, :no_warnings} ->
         {:ok, %{errors: nil}}
 
       {:warning, warning} ->
