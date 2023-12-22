@@ -30,7 +30,6 @@ defmodule Glific.Flows.Translate.Export do
       end)
     end)
     |> then(&add_missing_localization(all_localization, &1, flow.organization_id))
-    |> add_missing_translations()
   end
 
   @spec add_missing_localization(map(), list(), non_neg_integer()) :: Keyword.t()
@@ -51,7 +50,7 @@ defmodule Glific.Flows.Translate.Export do
         row =
           localization_map
           |> Map.get(action_uuid, %{})
-          |> make_row(language_keys, action_text)
+          |> make_row(language_labels, action_text)
 
         [["action" | [action_uuid | row]] | export]
       end
@@ -59,12 +58,26 @@ defmodule Glific.Flows.Translate.Export do
     |> Enum.reverse()
   end
 
-  defp make_row(action_languages, language_keys, default_text) do
-    language_keys
+  defp make_row(action_languages, language_labels, default_text) do
+    language_labels
+    |> Map.keys()
     |> Enum.reduce(
       [default_text],
       fn language, acc ->
-        if language == "en", do: acc, else: [Map.get(action_languages, language, "") | acc]
+        if language == "en" do
+          acc
+        else
+          translation = Map.get(action_languages, language, "")
+
+          if translation == "" do
+            [
+              translate_one(default_text, language_labels["en"], language_labels[language])
+              | acc
+            ]
+          else
+            ["#NOP: #{translation}" | acc]
+          end
+        end
       end
     )
     |> Enum.reverse()
@@ -97,61 +110,8 @@ defmodule Glific.Flows.Translate.Export do
     )
   end
 
-  @spec add_missing_translations(list()) :: list()
-  defp add_missing_translations(translations) do
-    tuples =
-      translations
-      # lets skip the language keys row
-      |> tl()
-      # zip the rest
-      |> Enum.zip()
-      # skip type tuple
-      |> tl()
-      # skip uuid row
-      |> tl()
-
-    # lets assume the first tuple is the src
-    # the rest are destination
-    [src | dst_s] = tuples
-
-    # lets fill in all the destinations and return the same set of tuples
-    dst_s
-    |> Enum.reduce(
-      [src],
-      fn dst, acc ->
-        [translate(src, dst) | acc]
-      end
-    )
-    |> Enum.reverse()
-  end
-
-  @spec translate(tuple(), tuple()) :: tuple()
-  defp translate(src, dst) do
-    src
-    |> Tuple.to_list()
-    |> Enum.zip(Tuple.to_list(dst))
-    |> translate_all()
-    |> List.to_tuple()
-  end
-
-  @spec translate_all(list()) :: list()
-  defp translate_all(strings) do
-    [{src, dst} | rows] = strings
-
-    rows
-    |> Enum.reduce(
-      [dst],
-      fn row, acc ->
-        [translate_one(row, src, dst) | acc]
-      end
-    )
-    |> Enum.reverse()
-  end
-
-  @spec translate_one(tuple(), String.t(), String.t()) :: String.t()
-  defp translate_one({orig, ""}, src, dst) do
+  @spec translate_one(String.t(), String.t(), String.t()) :: String.t()
+  defp translate_one(orig, src, dst) do
     "#{dst} #{orig} #{src}"
   end
-
-  defp translate_one({_orig, translation}, _src, _dst), do: "NOP: #{translation}"
 end
