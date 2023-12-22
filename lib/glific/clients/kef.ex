@@ -61,7 +61,7 @@ defmodule Glific.Clients.KEF do
         _ -> "Others"
       end
 
-    if flow_id == 13850 do
+    if flow_id == 13_850 do
       "stories_activities_campaign/#{media_subfolder}/#{phone}/" <> media["remote_name"]
     else
       "#{folder_structure}/#{media_subfolder}/#{phone}/" <> media["remote_name"]
