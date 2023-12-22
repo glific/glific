@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-mutation CheckTriggerWarnings($input: TriggerInput!) {
-  checkTriggerWarnings(input: $input) {
-    ...TriggerFields
-
-    ...ErrorFields
-  }
-}

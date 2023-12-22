@@ -11,7 +11,7 @@ defmodule GlificWeb.Schema.TriggerTypes do
   alias GlificWeb.Schema.Middleware.Authorize
 
   object :trigger_result do
-    field :trigger, :trigger
+    field :success, :boolean
     field :errors, list_of(:input_error)
   end
 
@@ -95,10 +95,10 @@ defmodule GlificWeb.Schema.TriggerTypes do
       resolve(&Resolvers.Triggers.create_trigger/3)
     end
 
-    field :check_trigger_warnings, :trigger_result do
+    field :validate_trigger, :trigger_result do
       arg(:input, non_null(:trigger_input))
       middleware(Authorize, :manager)
-      resolve(&Resolvers.Triggers.check_trigger_warnings/3)
+      resolve(&Resolvers.Triggers.validate_trigger/3)
     end
 
     field :update_trigger, :trigger_result do

@@ -48,15 +48,15 @@ defmodule GlificWeb.Resolvers.Triggers do
   end
 
   @doc false
-  @spec check_trigger_warnings(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+  @spec validate_trigger(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def check_trigger_warnings(_, %{input: params}, _) do
-    case Triggers.check_trigger_warnings(params) do
-      {:ok, :no_warnings} ->
-        {:ok, %{errors: nil}}
+  def validate_trigger(_, %{input: params}, _) do
+    case Triggers.validate_trigger(params) do
+      :ok ->
+        {:ok, %{success: true, errors: nil}}
 
       {:warning, warning} ->
-        {:ok, %{errors: [%{key: "warning", message: warning}]}}
+        {:ok, %{success: false, errors: [%{key: "warning", message: warning}]}}
     end
   end
 

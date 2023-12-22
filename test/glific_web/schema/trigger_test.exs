@@ -23,7 +23,7 @@ defmodule GlificWeb.Schema.TriggerTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/triggers/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/triggers/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/triggers/delete.gql")
-  load_gql(:check_warning, GlificWeb.Schema, "assets/gql/triggers/check_warning.gql")
+  load_gql(:validate, GlificWeb.Schema, "assets/gql/triggers/validate.gql")
 
   test "triggers field returns list of triggers", %{manager: user} = attrs do
     tr = Fixtures.trigger_fixture(attrs)
@@ -477,7 +477,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     start_time = "13:15:00"
 
     result =
-      auth_query_gql_by(:check_warning, user,
+      auth_query_gql_by(:validate, user,
         variables: %{
           "input" => %{
             "days" => [],
@@ -496,7 +496,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert {:ok, query_data} = result
 
     message =
-      get_in(query_data, [:data, "checkTriggerWarnings", "errors", Access.at(0), "message"])
+      get_in(query_data, [:data, "validateTrigger", "errors", Access.at(0), "message"])
 
     assert message == "The first message node is not an HSM template"
 
@@ -505,7 +505,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
 
     result =
-      auth_query_gql_by(:check_warning, user,
+      auth_query_gql_by(:validate, user,
         variables: %{
           "input" => %{
             "days" => [],
@@ -524,7 +524,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert {:ok, query_data} = result
 
     message =
-      get_in(query_data, [:data, "checkTriggerWarnings", "errors", Access.at(0), "message"])
+      get_in(query_data, [:data, "validateTrigger", "errors", Access.at(0), "message"])
 
     assert message == "The first message node is not an HSM template"
 
@@ -533,7 +533,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
 
     result =
-      auth_query_gql_by(:check_warning, user,
+      auth_query_gql_by(:validate, user,
         variables: %{
           "input" => %{
             "days" => [],
@@ -552,7 +552,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert {:ok, query_data} = result
 
     message =
-      get_in(query_data, [:data, "checkTriggerWarnings", "errors", Access.at(0), "message"])
+      get_in(query_data, [:data, "validateTrigger", "errors", Access.at(0), "message"])
 
     assert message == "The first message node is not an HSM template"
 
@@ -561,7 +561,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
 
     result =
-      auth_query_gql_by(:check_warning, user,
+      auth_query_gql_by(:validate, user,
         variables: %{
           "input" => %{
             "days" => [],
@@ -578,6 +578,6 @@ defmodule GlificWeb.Schema.TriggerTest do
       )
 
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "checkTriggerWarnings", "errors"]) == nil
+    assert get_in(query_data, [:data, "validateTrigger", "errors"]) == nil
   end
 end
