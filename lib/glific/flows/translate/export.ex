@@ -5,6 +5,7 @@ defmodule Glific.Flows.Translate.Export do
   """
 
   alias Glific.{
+    Flows.Translate.Translate,
     Settings
   }
 
@@ -112,6 +113,6 @@ defmodule Glific.Flows.Translate.Export do
 
   @spec translate_one(String.t(), String.t(), String.t()) :: String.t()
   defp translate_one(orig, src, dst) do
-    "#{dst} #{orig} #{src}"
+    Translate.translate_one(orig, src, dst)
   end
 end
