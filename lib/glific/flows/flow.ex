@@ -458,6 +458,11 @@ defmodule Glific.Flows.Flow do
             action.type == "send_msg" && is_nil(action.templating) ->
               acc ++ [{"message", action.uuid}]
 
+            # Skipping send_msg node where expression is being used
+            action.type == "send_msg" && !is_nil(action.templating) &&
+                !is_nil(action.templating.expression) ->
+              acc
+
             action.type == "send_msg" && !is_nil(action.templating) ->
               available_translation_ids = Map.keys(action.templating.template.translations)
 

@@ -301,6 +301,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
           %{
             uuid: template.uuid,
             name: template.label,
+            type: template.type,
             created_on: template.inserted_at,
             modified_on: template.updated_at,
             translations:
