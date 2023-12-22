@@ -5,10 +5,10 @@ defmodule Glific.OpenAI.ChatGPT do
 
   alias Glific.Partners
 
-  @endpoint "https://api.openai.com/v1/completions"
+  @endpoint "https://api.openai.com/v1/chat/completions"
 
   @default_params %{
-    "model" => "text-davinci-003",
+    "model" => "gpt-3.5-turbo-16k",
     "temperature" => 0.7,
     "max_tokens" => 250,
     "top_p" => 1,
@@ -21,7 +21,16 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec parse(non_neg_integer(), String.t()) :: tuple()
   def parse(org_id, question_text) do
-    data = @default_params |> Map.merge(%{"prompt" => question_text})
+    data =
+      @default_params
+      |> Map.merge(%{
+        "messages" => [
+          %{
+            "role" => "system",
+            "content" => question_text
+          }
+        ]
+      })
 
     client(org_id)
     |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 20_000]])
@@ -36,7 +45,7 @@ defmodule Glific.OpenAI.ChatGPT do
         {:error, "Got empty response #{inspect(body)}"}
 
       {:ok, %Tesla.Env{status: 200, body: %{"choices" => choices} = _body}} ->
-        {:ok, hd(choices)["text"]}
+        {:ok, hd(choices)["message"]["content"]}
 
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         {:error, "Got different response #{inspect(body)}"}
