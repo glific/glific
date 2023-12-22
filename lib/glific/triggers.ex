@@ -222,6 +222,8 @@ defmodule Glific.Triggers do
     end
   end
 
+  defp handle_message_type(_, _action, attrs, _nested_flow_level), do: do_create_trigger(attrs)
+
   @spec do_create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   defp do_create_trigger(attrs) do
     with {:ok, trigger} <-
