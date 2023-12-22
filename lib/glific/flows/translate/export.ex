@@ -76,7 +76,12 @@ defmodule Glific.Flows.Translate.Export do
               | acc
             ]
           else
-            ["#NOP: #{translation}" | acc]
+            [
+              translate_one(default_text, language_labels["en"], language_labels[language])
+              | acc
+            ]
+
+            # [translation| acc]
           end
         end
       end
@@ -113,6 +118,7 @@ defmodule Glific.Flows.Translate.Export do
 
   @spec translate_one(String.t(), String.t(), String.t()) :: String.t()
   defp translate_one(orig, src, dst) do
-    Translate.translate_one(orig, src, dst)
+    {:ok, result} = Translate.translate([orig], src, dst) |> IO.inspect(label: orig)
+    hd(result)
   end
 end
