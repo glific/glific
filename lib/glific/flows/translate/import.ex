@@ -10,6 +10,7 @@ defmodule Glific.Flows.Translate.Import do
   """
 
   alias Glific.{
+    Flows,
     Settings
   }
 
@@ -31,6 +32,7 @@ defmodule Glific.Flows.Translate.Import do
     rows
     |> collect_by_language(language_keys)
     |> merge_with_latest_localization(flow)
+    |> Flows.update_flow_localization(flow)
   end
 
   defp collect_by_language(rows, language_keys) do
@@ -64,17 +66,30 @@ defmodule Glific.Flows.Translate.Import do
   # the flow might have changed between when we exported the localization
   # and imported it, so we merge the old with the new to pick up any remainder stuff
   # Note that if a specific translation or text changed etc, we do not account for those
-  @spec merge_with_latest_localization(map(), map()) :: map()
-  defp merge_with_latest_localization(translations, current) do
-    current
+  @spec merge_with_latest_localization(map(), Flow.t()) :: map()
+  defp merge_with_latest_localization(translations, flow) do
+    flow.definition["localization"]
     |> Enum.reduce(
       %{},
       fn {curr_k, curr_v}, acc ->
         # merge all the values from current that are not present in translations
-        Map.put(acc, curr_k, Map.merge(Map.get(translations, curr_k, %{}), curr_v))
+        Map.put(
+          acc,
+          curr_k,
+          Map.merge(
+            Map.get(translations, curr_k, %{}),
+            curr_v,
+            # translations win, unless the translation does not exist
+            fn _k, t_v, c_v -> if map_size(t_v) == 0, do: c_v, else: t_v end
+          )
+        )
       end
     )
     # if there are languages missing, merge them also
-    |> Map.merge(translations)
+    # dont overwrite what currently exists
+    |> Map.merge(
+      translations,
+      fn _k, c_v, t_v -> if map_size(c_v) == 0, do: t_v, else: c_v end
+    )
   end
 end

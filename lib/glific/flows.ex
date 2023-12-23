@@ -731,6 +731,31 @@ defmodule Glific.Flows do
   end
 
   @doc """
+  Update the localization values in a flow definition. At some point in the immediate future
+  we will want to ensure we have locked the flow before we do this update
+  """
+  @spec update_flow_localization(map(), Flow.t()) ::
+          {:ok, FlowRevision.t()} | {:error, String.t()}
+  def update_flow_localization(localization, flow) do
+    user = Repo.get_current_user()
+
+    with {:ok, latest_flow_revision} <-
+           Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}) do
+      definition_copy =
+        latest_flow_revision.definition
+        |> Map.merge(%{"localization" => localization})
+
+      {:ok, _} =
+        FlowRevision.create_flow_revision(%{
+          definition: definition_copy,
+          flow_id: flow.id,
+          organization_id: flow.organization_id,
+          user_id: user.id
+        })
+    end
+  end
+
+  @doc """
   Create a map of keywords that map to flow ids for each
   active organization. Also cache this value including the outOfOffice
   shortcode

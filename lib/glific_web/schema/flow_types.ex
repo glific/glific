@@ -34,6 +34,10 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :export_data, :json
   end
 
+  object :export_flow_localization do
+    field :export_data, :string
+  end
+
   object :import_flow_result do
     field :status, list_of(:import_flow_status)
   end
@@ -143,6 +147,13 @@ defmodule GlificWeb.Schema.FlowTypes do
       resolve(&Resolvers.Flows.export_flow/3)
     end
 
+    @desc "Export flow localization so users can check and translate offline"
+    field :export_flow_localization, :export_flow_localization do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Flows.export_flow_localization/3)
+    end
+
     @desc "Get a flow for this user"
     field :flow_get, :flow_result do
       arg(:id, non_null(:id))
@@ -238,6 +249,19 @@ defmodule GlificWeb.Schema.FlowTypes do
       arg(:flow, :json)
       middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.import_flow/3)
+    end
+
+    field :import_flow_localization, :common_flow_result do
+      arg(:localization, :string)
+      arg(:flow_id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Flows.import_flow_localization/3)
+    end
+
+    field :inline_flow_localization, :common_flow_result do
+      arg(:flow_id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Flows.inline_flow_localization/3)
     end
   end
 end

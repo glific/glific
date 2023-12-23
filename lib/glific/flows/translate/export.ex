@@ -5,6 +5,7 @@ defmodule Glific.Flows.Translate.Export do
   """
 
   alias Glific.{
+    Flows.Translate.Import,
     Flows.Translate.Translate,
     Settings
   }
@@ -17,6 +18,17 @@ defmodule Glific.Flows.Translate.Export do
   @spec export_localization(map()) :: list()
   def export_localization(flow) do
     missing_localization(flow, flow.definition["localization"])
+  end
+
+  @doc """
+  Do the export and translation and modify the json in one action. Easier for us to debug
+  and for smaller NGOs to bypass the review step (not recommended)
+  """
+  @spec translate(map()) :: {:ok, any} | {:error, String.t()}
+  def translate(flow) do
+    flow
+    |> export_localization()
+    |> Import.import_localization(flow)
   end
 
   @spec missing_localization(map(), map()) :: list()
@@ -118,7 +130,8 @@ defmodule Glific.Flows.Translate.Export do
 
   @spec translate_one(String.t(), String.t(), String.t()) :: String.t()
   defp translate_one(orig, src, dst) do
-    {:ok, result} = Translate.translate([orig], src, dst) |> IO.inspect(label: orig)
+    result = ["OPENAI: #{orig}"]
+    # {:ok, result} = Translate.translate([orig], src, dst) |> IO.inspect(label: orig)
     hd(result)
   end
 end
