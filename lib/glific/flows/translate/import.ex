@@ -11,6 +11,7 @@ defmodule Glific.Flows.Translate.Import do
 
   alias Glific.{
     Flows,
+    Flows.Flow,
     Settings
   }
 
