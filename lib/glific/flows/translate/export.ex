@@ -130,8 +130,8 @@ defmodule Glific.Flows.Translate.Export do
 
   @spec translate_one(String.t(), String.t(), String.t()) :: String.t()
   defp translate_one(orig, src, dst) do
-    result = ["OPENAI: #{orig}"]
-    # {:ok, result} = Translate.translate([orig], src, dst) |> IO.inspect(label: orig)
+    # result = ["OPENAI: #{orig}"]
+    {:ok, result} = Translate.translate([orig], src, dst)
     hd(result)
   end
 end

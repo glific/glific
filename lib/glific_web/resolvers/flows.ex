@@ -14,7 +14,6 @@ defmodule GlificWeb.Resolvers.Flows do
     Flows.FlowCount,
     Flows.Translate.Export,
     Flows.Translate.Import,
-    Flows.Translate.Translate,
     Repo,
     State
   }
