@@ -253,13 +253,13 @@ defmodule GlificWeb.Schema.FlowTypes do
 
     field :import_flow_localization, :common_flow_result do
       arg(:localization, :string)
-      arg(:flow_id, non_null(:id))
+      arg(:id, non_null(:id))
       middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.import_flow_localization/3)
     end
 
     field :inline_flow_localization, :common_flow_result do
-      arg(:flow_id, non_null(:id))
+      arg(:id, non_null(:id))
       middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.inline_flow_localization/3)
     end

@@ -5,6 +5,7 @@ defmodule Glific.Flows.Translate.Export do
   """
 
   alias Glific.{
+    Flows.Flow,
     Flows.Translate.Import,
     Flows.Translate.Translate,
     Settings
@@ -15,7 +16,7 @@ defmodule Glific.Flows.Translate.Export do
   At some point, we might extend this to export it as a .po file
   Lets keep the csv generation very distict from the extraction
   """
-  @spec export_localization(map()) :: list()
+  @spec export_localization(Flow.t()) :: list()
   def export_localization(flow) do
     missing_localization(flow, flow.definition["localization"])
   end
@@ -130,8 +131,8 @@ defmodule Glific.Flows.Translate.Export do
 
   @spec translate_one(String.t(), String.t(), String.t()) :: String.t()
   defp translate_one(orig, src, dst) do
-    # result = ["OPENAI: #{orig}"]
-    {:ok, result} = Translate.translate([orig], src, dst)
+    result = ["OPENAI #{src}, #{dst}: #{orig}"]
+    # {:ok, result} = Translate.translate([orig], src, dst)
     hd(result)
   end
 end
