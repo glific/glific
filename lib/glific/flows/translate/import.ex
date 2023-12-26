@@ -22,18 +22,19 @@ defmodule Glific.Flows.Translate.Import do
   At some point, we might extend this to import it from a .po file
   Lets keep the csv part very distict from the json
   """
-  @spec import_localization(list(), map()) :: map()
+  @spec import_localization(list(), map()) :: any()
   def import_localization(csv, flow) do
     # get language labels here in one query for all languages if you want
     language_labels = Settings.locale_label_map(flow.organization_id)
     language_keys = Map.keys(language_labels)
 
-    [_header | rows] = csv
+    [_header_1 | [_header_2 | rows]] = csv
 
-    rows
-    |> collect_by_language(language_keys)
-    |> merge_with_latest_localization(flow)
-    |> Flows.update_flow_localization(flow)
+    {:ok, _revision} =
+      rows
+      |> collect_by_language(language_keys)
+      |> merge_with_latest_localization(flow)
+      |> Flows.update_flow_localization(flow)
   end
 
   defp collect_by_language(rows, language_keys) do

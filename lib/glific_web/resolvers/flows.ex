@@ -72,7 +72,7 @@ defmodule GlificWeb.Resolvers.Flows do
 
   @doc false
   @spec export_flow_localization(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
-          {:ok, %{export_data: map}}
+          {:ok, %{export_data: String.t()}}
   def export_flow_localization(_, %{id: flow_id}, %{context: %{current_user: user}}) do
     with {:ok, flow} <- Repo.fetch_by(Flow, %{id: flow_id, organization_id: user.organization_id}) do
       # load the flow
@@ -82,6 +82,7 @@ defmodule GlificWeb.Resolvers.Flows do
         |> Export.export_localization()
         |> CSV.encode(delimiter: "\n")
         |> Enum.join("")
+        |> Jason.encode!()
 
       {:ok, %{export_data: data}}
     end
@@ -95,7 +96,7 @@ defmodule GlificWeb.Resolvers.Flows do
   end
 
   @doc false
-  @spec import_flow_localization(Absinthe.Resolution.t(), %{flow: map()}, %{context: map()}) ::
+  @spec import_flow_localization(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def import_flow_localization(_, %{localization: data, id: flow_id}, %{
         context: %{current_user: user}
@@ -104,13 +105,16 @@ defmodule GlificWeb.Resolvers.Flows do
       flow = Flow.get_flow(user.organization_id, flow.uuid, "published")
 
       data
-      |> CSV.decode()
+      |> CSV.decode!()
+      |> Enum.into([])
       |> Import.import_localization(flow)
+
+      {:ok, %{success: true}}
     end
   end
 
   @doc false
-  @spec inline_flow_localization(Absinthe.Resolution.t(), %{flow: map()}, %{context: map()}) ::
+  @spec inline_flow_localization(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def inline_flow_localization(_, %{id: flow_id}, %{
         context: %{current_user: user}
