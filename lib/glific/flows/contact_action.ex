@@ -257,7 +257,7 @@ defmodule Glific.Flows.ContactAction do
 
     ## This is bit expansive and we will optimize it bit more
     # session_template =
-    if Flows.is_media_type?(type) and media_id != nil do
+    if Flows.media_type?(type) and media_id != nil do
       Messages.get_message_media!(media_id)
       |> Messages.update_message_media(%{caption: session_template.body})
     end
