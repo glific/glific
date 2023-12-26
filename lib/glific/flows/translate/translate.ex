@@ -21,5 +21,14 @@ defmodule Glific.Flows.Translate.Translate do
   def translate(strings, src, dst), do: impl().translate(strings, src, dst)
 
   # defp impl, do: Application.get_env(:glific, :adaptors)[:translators]
-  defp impl, do: Glific.Flows.Translate.OpenAI
+  defp impl, do: Glific.Flows.Translate.Simple
+
+  @doc """
+  Lets make a simple function to translate one string
+  """
+  @spec translate_one!(String.t(), String.t(), String.t()) :: String.t()
+  def translate_one!(orig, src, dst) do
+    {:ok, result} = translate([orig], src, dst)
+    hd(result)
+  end
 end

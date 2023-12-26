@@ -113,7 +113,7 @@ defmodule Glific.Flows.ContactAction do
         flow_id: context.flow_id,
         message_broadcast_id: context.message_broadcast_id,
         send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
-        is_optin_flow: Flows.is_optin_flow?(context.flow),
+        is_optin_flow: Flows.optin_flow?(context.flow),
         interactive_template_id: interactive_template.id,
         interactive_content: interactive_content,
         media_id: media_id
@@ -340,7 +340,7 @@ defmodule Glific.Flows.ContactAction do
       flow_id: context.flow_id,
       message_broadcast_id: context.message_broadcast_id,
       send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
-      is_optin_flow: Flows.is_optin_flow?(context.flow)
+      is_optin_flow: Flows.optin_flow?(context.flow)
     }
 
     attrs

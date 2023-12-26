@@ -78,7 +78,7 @@ defmodule GlificWeb.Resolvers.Flows do
       # load the flow
       data =
         user.organization_id
-        |> Glific.Flows.Flow.get_flow(flow.uuid, "published")
+        |> Flow.get_flow(flow.uuid, "published")
         |> Export.export_localization()
         |> CSV.encode(delimiter: "\n")
         |> Enum.join("")
@@ -101,7 +101,7 @@ defmodule GlificWeb.Resolvers.Flows do
         context: %{current_user: user}
       }) do
     with {:ok, flow} <- Repo.fetch_by(Flow, %{id: flow_id, organization_id: user.organization_id}) do
-      flow = Glific.Flows.Flow.get_flow(user.organization_id, flow.uuid, "published")
+      flow = Flow.get_flow(user.organization_id, flow.uuid, "published")
 
       data
       |> CSV.decode()
@@ -117,7 +117,7 @@ defmodule GlificWeb.Resolvers.Flows do
       }) do
     with {:ok, flow} <- Repo.fetch_by(Flow, %{id: flow_id, organization_id: user.organization_id}) do
       user.organization_id
-      |> Glific.Flows.Flow.get_flow(flow.uuid, "published")
+      |> Flow.get_flow(flow.uuid, "published")
       |> Export.translate()
 
       {:ok, %{success: true}}

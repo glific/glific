@@ -25,7 +25,7 @@ defmodule Glific.Flows.Translate.Export do
   Do the export and translation and modify the json in one action. Easier for us to debug
   and for smaller NGOs to bypass the review step (not recommended)
   """
-  @spec translate(map()) :: {:ok, any} | {:error, String.t()}
+  @spec translate(Flow.t()) :: {:ok, any} | {:error, String.t()}
   def translate(flow) do
     flow
     |> export_localization()
@@ -54,6 +54,19 @@ defmodule Glific.Flows.Translate.Export do
     language_labels = Settings.locale_label_map(organization_id)
     language_keys = Map.keys(language_labels)
 
+    # first collect all the strings that we need to translate
+    translations =
+      localizable_nodes
+      |> Enum.reduce(
+        %{},
+        fn {action_uuid, action_text}, export ->
+          localization_map
+          |> Map.get(action_uuid, %{})
+          |> collect_strings(language_labels, action_text, export)
+        end
+      )
+      |> translate_strings()
+
     localizable_nodes
     |> Enum.reduce(
       [
@@ -64,7 +77,7 @@ defmodule Glific.Flows.Translate.Export do
         row =
           localization_map
           |> Map.get(action_uuid, %{})
-          |> make_row(language_labels, action_text)
+          |> make_row(language_labels, action_text, translations)
 
         [["action" | [action_uuid | row]] | export]
       end
@@ -72,7 +85,47 @@ defmodule Glific.Flows.Translate.Export do
     |> Enum.reverse()
   end
 
-  defp make_row(action_languages, language_labels, default_text) do
+  defp collect_strings(action_languages, language_labels, default_text, collect) do
+    language_labels
+    |> Map.keys()
+    |> Enum.reduce(
+      collect,
+      fn language, acc ->
+        if language == "en" do
+          acc
+        else
+          translation = Map.get(action_languages, language, "")
+
+          if translation == "" do
+            Map.update(
+              acc,
+              {language_labels["en"], language_labels[language]},
+              [default_text],
+              fn curr -> [default_text | curr] end
+            )
+          else
+            acc
+          end
+        end
+      end
+    )
+  end
+
+  defp translate_strings(strings) do
+    strings
+    |> Enum.reduce(
+      %{},
+      fn {{src, dst}, values}, acc ->
+        {:ok, result} = Translate.translate(values, src, dst)
+
+        Enum.zip(values, result)
+        |> Map.new()
+        |> then(&Map.put(acc, {src, dst}, &1))
+      end
+    )
+  end
+
+  defp make_row(action_languages, language_labels, default_text, translations) do
     language_labels
     |> Map.keys()
     |> Enum.reduce(
@@ -85,22 +138,31 @@ defmodule Glific.Flows.Translate.Export do
 
           if translation == "" do
             [
-              translate_one(default_text, language_labels["en"], language_labels[language])
+              Map.get(
+                # first get all the translations for that specific
+                # src, dst pair
+                Map.get(
+                  translations,
+                  {language_labels["en"], language_labels[language]}
+                ),
+                default_text,
+                ""
+              )
               | acc
             ]
           else
-            [
-              translate_one(default_text, language_labels["en"], language_labels[language])
-              | acc
-            ]
-
-            # [translation| acc]
+            [translation | acc]
           end
         end
       end
     )
     |> Enum.reverse()
   end
+
+  defp get_non_null(%{"text" => value}), do: value
+  defp get_non_null(%{"name" => value}), do: value
+  defp get_non_null(%{"arguments" => value}), do: value
+  defp get_non_null(_translation), do: ""
 
   # lets transform the localization to a map
   # whose key is the node uuid, and values are the languages it has
@@ -117,22 +179,19 @@ defmodule Glific.Flows.Translate.Export do
           localization_map,
           fn {uuid, translation}, acc ->
             # add the language to the localization_map for that node
+            # the translation is either under
+            # "name" (categories), "arguments" (cases), "text" (send message)
+            trans = translation |> get_non_null |> hd
+
             Map.update(
               acc,
               uuid,
-              %{language_local => hd(Map.get(translation, "text"))},
-              fn existing -> Map.put(existing, language_local, translation) end
+              %{language_local => trans},
+              fn existing -> Map.put(existing, language_local, trans) end
             )
           end
         )
       end
     )
-  end
-
-  @spec translate_one(String.t(), String.t(), String.t()) :: String.t()
-  defp translate_one(orig, src, dst) do
-    result = ["OPENAI #{src}, #{dst}: #{orig}"]
-    # {:ok, result} = Translate.translate([orig], src, dst)
-    hd(result)
   end
 end

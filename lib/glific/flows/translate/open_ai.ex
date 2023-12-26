@@ -13,10 +13,13 @@ defmodule Glific.Flows.Translate.OpenAI do
   Translate a list of strings from language 'src' to language 'dst'
   Returns, either ok with the translated list in the same order,
   or error with a error message
-  Glific.Flows.Translate.Translate.translate_one(["thankyou for joining", "correct answer"], "english", "hindi")
+  Glific.Flows.Translate.Translate.translate_one(
+    ["thankyou for joining", "correct answer"],
+     "english",
+     "hindi")
   """
   @spec translate([String.t()], String.t(), String.t()) ::
-          {:ok, String.t()} | {:error, String.t()}
+          {:ok, [String.t()]} | {:error, String.t()}
   def translate(strings, src, dst) do
     length = Enum.count(strings)
     org_id = Repo.get_organization_id()

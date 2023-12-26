@@ -867,9 +867,9 @@ defmodule Glific.Flows do
   Check if the flow is optin flow. Currently we are
   checking based on the optin keyword only.
   """
-  @spec is_optin_flow?(Flow.t()) :: boolean()
-  def is_optin_flow?(nil), do: false
-  def is_optin_flow?(flow), do: Enum.member?(flow.keywords, @optin_flow_keyword)
+  @spec optin_flow?(Flow.t()) :: boolean()
+  def optin_flow?(nil), do: false
+  def optin_flow?(flow), do: Enum.member?(flow.keywords, @optin_flow_keyword)
 
   @doc """
   import a flow from json
@@ -1196,8 +1196,8 @@ defmodule Glific.Flows do
   @doc """
   Check if the type is a media type we handle in flows
   """
-  @spec is_media_type?(atom()) :: boolean()
-  def is_media_type?(type),
+  @spec media_type?(atom()) :: boolean()
+  def media_type?(type),
     do: type in [:audio, :document, :image, :video]
 
   @doc """
