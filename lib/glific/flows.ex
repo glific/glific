@@ -757,6 +757,9 @@ defmodule Glific.Flows do
         latest_flow_revision.definition
         |> Map.merge(%{"localization" => localization})
 
+      # lets ensure we clean up the caches
+      remove_flow_cache(flow)
+
       {:ok, _} =
         FlowRevision.create_flow_revision(%{
           definition: definition_copy,
