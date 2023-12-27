@@ -162,7 +162,7 @@ defmodule Glific.Flows.Translate.Export do
   defp get_non_null(%{"text" => value}), do: value
   defp get_non_null(%{"name" => value}), do: value
   defp get_non_null(%{"arguments" => value}), do: value
-  defp get_non_null(_translation), do: ""
+  defp get_non_null(_translation), do: nil
 
   # lets transform the localization to a map
   # whose key is the node uuid, and values are the languages it has
@@ -181,14 +181,17 @@ defmodule Glific.Flows.Translate.Export do
             # add the language to the localization_map for that node
             # the translation is either under
             # "name" (categories), "arguments" (cases), "text" (send message)
-            trans = translation |> get_non_null |> hd
+            trans = translation |> get_non_null
 
-            Map.update(
-              acc,
-              uuid,
-              %{language_local => trans},
-              fn existing -> Map.put(existing, language_local, trans) end
-            )
+            if trans,
+              do:
+                Map.update(
+                  acc,
+                  uuid,
+                  %{language_local => hd(trans)},
+                  fn existing -> Map.put(existing, language_local, hd(trans)) end
+                ),
+              else: acc
           end
         )
       end

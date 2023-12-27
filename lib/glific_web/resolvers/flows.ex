@@ -74,18 +74,16 @@ defmodule GlificWeb.Resolvers.Flows do
   @spec export_flow_localization(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, %{export_data: String.t()}}
   def export_flow_localization(_, %{id: flow_id}, %{context: %{current_user: user}}) do
-    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: flow_id, organization_id: user.organization_id}) do
-      # load the flow
-      data =
-        user.organization_id
-        |> Flow.get_flow(flow.uuid, "published")
-        |> Export.export_localization()
-        |> CSV.encode(delimiter: "\n")
-        |> Enum.join("")
-        |> Jason.encode!()
+    # load the flow
+    data =
+      user.organization_id
+      |> Flows.get_complete_flow(flow_id)
+      |> Export.export_localization()
+      |> CSV.encode(delimiter: "\n")
+      |> Enum.join("")
+      |> Jason.encode!()
 
-      {:ok, %{export_data: data}}
-    end
+    {:ok, %{export_data: data}}
   end
 
   @doc false
@@ -101,16 +99,16 @@ defmodule GlificWeb.Resolvers.Flows do
   def import_flow_localization(_, %{localization: data, id: flow_id}, %{
         context: %{current_user: user}
       }) do
-    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: flow_id, organization_id: user.organization_id}) do
-      flow = Flow.get_flow(user.organization_id, flow.uuid, "published")
+    flow =
+      user.organization_id
+      |> Flows.get_complete_flow(flow_id, "published")
 
-      data
-      |> CSV.decode!()
-      |> Enum.into([])
-      |> Import.import_localization(flow)
+    data
+    |> CSV.decode!()
+    |> Enum.into([])
+    |> Import.import_localization(flow)
 
-      {:ok, %{success: true}}
-    end
+    {:ok, %{success: true}}
   end
 
   @doc false
@@ -119,13 +117,11 @@ defmodule GlificWeb.Resolvers.Flows do
   def inline_flow_localization(_, %{id: flow_id}, %{
         context: %{current_user: user}
       }) do
-    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: flow_id, organization_id: user.organization_id}) do
-      user.organization_id
-      |> Flow.get_flow(flow.uuid, "published")
-      |> Export.translate()
+    user.organization_id
+    |> Flows.get_complete_flow(flow_id)
+    |> Export.translate()
 
-      {:ok, %{success: true}}
-    end
+    {:ok, %{success: true}}
   end
 
   @doc false

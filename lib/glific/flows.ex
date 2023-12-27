@@ -378,6 +378,17 @@ defmodule Glific.Flows do
     %{results: asset_list |> Enum.reverse()}
   end
 
+  @doc """
+  Helper function to get the flow along with the revision and processing
+  """
+  @spec get_complete_flow(non_neg_integer(), non_neg_integer(), String.t()) :: Flow.t()
+  def get_complete_flow(organization_id, flow_id, status \\ "published") do
+    {:ok, flow} = Repo.fetch_by(Flow, %{id: flow_id, organization_id: organization_id})
+
+    organization_id
+    |> Flow.get_flow(flow.uuid, status)
+  end
+
   @spec get_user(nil | String.t()) :: map()
   defp get_user(nil), do: %{name: "Unknown Glific User"}
   defp get_user(user_name), do: %{name: user_name}
