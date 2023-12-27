@@ -382,11 +382,12 @@ defmodule Glific.Flows do
   Helper function to get the flow along with the revision and processing
   """
   @spec get_complete_flow(non_neg_integer(), non_neg_integer(), String.t()) :: Flow.t()
-  def get_complete_flow(organization_id, flow_id, status \\ "published") do
+  def get_complete_flow(organization_id, flow_id, status \\ "draft") do
+    # note that draft gives us the most recent one (revision_number = 0), so it
+    # could be published also. this is what we want!
     {:ok, flow} = Repo.fetch_by(Flow, %{id: flow_id, organization_id: organization_id})
 
-    organization_id
-    |> Flow.get_flow(flow.uuid, status)
+    Flow.get_flow(organization_id, flow.uuid, status)
   end
 
   @spec get_user(nil | String.t()) :: map()

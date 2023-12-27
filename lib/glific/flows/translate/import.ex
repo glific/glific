@@ -49,7 +49,7 @@ defmodule Glific.Flows.Translate.Import do
         |> Enum.reduce(
           acc,
           fn {translation, lang_key}, acc ->
-            Map.update(acc, lang_key, [{uuid, translation}], fn value ->
+            Map.update(acc, lang_key, [{uuid, %{text: [translation]}}], fn value ->
               [{uuid, %{text: [translation]}} | value]
             end)
           end
