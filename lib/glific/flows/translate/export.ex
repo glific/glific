@@ -159,9 +159,10 @@ defmodule Glific.Flows.Translate.Export do
     |> Enum.reverse()
   end
 
-  defp get_non_null(%{"text" => value}), do: value
-  defp get_non_null(%{"name" => value}), do: value
-  defp get_non_null(%{"arguments" => value}), do: value
+  @spec get_non_null(map()) :: String.t() | nil
+  defp get_non_null(%{"text" => value}), do: hd(value)
+  defp get_non_null(%{"name" => value}), do: hd(value)
+  defp get_non_null(%{"arguments" => value}), do: hd(value)
   defp get_non_null(_translation), do: nil
 
   # lets transform the localization to a map
@@ -178,23 +179,28 @@ defmodule Glific.Flows.Translate.Export do
         |> Enum.reduce(
           localization_map,
           fn {uuid, translation}, acc ->
-            # add the language to the localization_map for that node
-            # the translation is either under
-            # "name" (categories), "arguments" (cases), "text" (send message)
-            trans = translation |> get_non_null
-
-            if trans,
-              do:
-                Map.update(
-                  acc,
-                  uuid,
-                  %{language_local => hd(trans)},
-                  fn existing -> Map.put(existing, language_local, hd(trans)) end
-                ),
-              else: acc
+            update_localization_map({uuid, translation}, acc, language_local)
           end
         )
       end
     )
+  end
+
+  @spec update_localization_map(tuple(), map(), String.t()) :: map()
+  defp update_localization_map({uuid, translation}, acc, language_local) do
+    # add the language to the localization_map for that node
+    # the translation is either under
+    # "name" (categories), "arguments" (cases), "text" (send message)
+    trans = get_non_null(translation)
+
+    if trans,
+      do:
+        Map.update(
+          acc,
+          uuid,
+          %{language_local => trans},
+          fn existing -> Map.put(existing, language_local, trans) end
+        ),
+      else: acc
   end
 end

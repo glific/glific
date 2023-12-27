@@ -146,6 +146,7 @@ config :tailwind,
   ]
 
 config :glific, Glific.Communications.Mailer, adapter: Swoosh.Adapters.AmazonSES
+config :glific, :adaptors, translators: Glific.Flows.Translate.Simple
 
 config :glific, secrets: []
 

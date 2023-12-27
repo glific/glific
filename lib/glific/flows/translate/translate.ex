@@ -21,7 +21,7 @@ defmodule Glific.Flows.Translate.Translate do
   def translate(strings, src, dst), do: impl().translate(strings, src, dst)
 
   # defp impl, do: Application.get_env(:glific, :adaptors)[:translators]
-  defp impl, do: Glific.Flows.Translate.Simple
+  defp impl, do: Application.get_env(:glific, :adaptors)[:translators]
 
   @doc """
   Lets make a simple function to translate one string
