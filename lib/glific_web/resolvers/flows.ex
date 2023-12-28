@@ -99,9 +99,7 @@ defmodule GlificWeb.Resolvers.Flows do
   def import_flow_localization(_, %{localization: data, id: flow_id}, %{
         context: %{current_user: user}
       }) do
-    flow =
-      user.organization_id
-      |> Flows.get_complete_flow(flow_id, "published")
+    flow = Flows.get_complete_flow(user.organization_id, flow_id)
 
     data
     |> CSV.decode!()
