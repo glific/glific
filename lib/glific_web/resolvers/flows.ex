@@ -81,7 +81,6 @@ defmodule GlificWeb.Resolvers.Flows do
       |> Export.export_localization()
       |> CSV.encode(delimiter: "\n")
       |> Enum.join("")
-      |> Jason.encode!()
 
     {:ok, %{export_data: data}}
   end
@@ -101,8 +100,11 @@ defmodule GlificWeb.Resolvers.Flows do
       }) do
     flow = Flows.get_complete_flow(user.organization_id, flow_id)
 
-    data
-    |> CSV.decode!()
+    {:ok, stream} = StringIO.open(data)
+
+    stream
+    |> IO.binstream(:line)
+    |> CSV.decode!(delimiter: "\n")
     |> Enum.into([])
     |> Import.import_localization(flow)
 
