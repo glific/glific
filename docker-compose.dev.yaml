@@ -24,16 +24,24 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      PSQL_HISTFILE: /root/log/.psql_history
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-
-  erlang:
+  glific:
     build:
       context: "."
       dockerfile: docker/Dockerfile
+      args:
+        SERVER_PORT: 4000
+        ELIXIR_VERSION: ${ELIXIR_VERSION}
+        ERLANG_VERSION: ${ERLANG_VERSION}
+        ALPINE_VERSION: ${ALPINE_VERSION}
+        NODE_VERSION: ${NODE_VERSION}
+        POSTGRES_VERSION: ${POSTGRES_VERSION}
+        FP: ${FP}
+        AUTH_KEY: ${AUTH_KEY}
     image: glific:latest
     ports:
       - "4000:4000"
