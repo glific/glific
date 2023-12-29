@@ -34,7 +34,7 @@ services:
     build:
       context: "."
       dockerfile: docker/Dockerfile
-    image: glific:v2
+    image: glific:latest
     ports:
       - "4000:4000"
       - "4001:4001"
