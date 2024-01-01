@@ -169,13 +169,10 @@ defmodule Glific.Triggers do
   """
   @spec validate_trigger(map()) :: :ok | {:warning, String.t()}
   def validate_trigger(attrs) do
-    case Repo.fetch_by(FlowRevision, %{flow_id: Map.get(attrs, :flow_id), status: "published"}) do
-      {:ok, flow} ->
-        handle_action(flow, attrs, 0)
+    {:ok, flow} =
+      Repo.fetch_by(FlowRevision, %{flow_id: Map.get(attrs, :flow_id), status: "published"})
 
-      {:error, _} ->
-        {:warning, "Flow Revision not found"}
-    end
+    handle_action(flow, attrs, 0)
   end
 
   @spec handle_action(map(), map(), integer()) :: :ok | {:warning, String.t()}

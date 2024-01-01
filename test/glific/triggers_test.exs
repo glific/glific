@@ -345,7 +345,7 @@ defmodule Glific.TriggersTest do
       frequency: ["none"]
     }
 
-    {:warning, message} = Triggers.check_trigger_warnings(arc)
+    {:warning, message} = Triggers.validate_trigger(arc)
     assert message == "The first message node is not an HSM template"
   end
 end
