@@ -14,7 +14,7 @@ defmodule Glific.Flows.Translate.Export do
   @doc """
   Export the localization json as a csv structure (list of lists).
   At some point, we might extend this to export it as a .po file
-  Lets keep the csv generation very distict from the extraction
+  Lets keep the csv generation very distinct from the extraction
   """
   @spec export_localization(Flow.t()) :: list()
   def export_localization(flow) do

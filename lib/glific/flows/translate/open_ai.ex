@@ -13,10 +13,11 @@ defmodule Glific.Flows.Translate.OpenAI do
   Translate a list of strings from language 'src' to language 'dst'
   Returns, either ok with the translated list in the same order,
   or error with a error message
-  Glific.Flows.Translate.Translate.translate_one(
-    ["thankyou for joining", "correct answer"],
-     "english",
-     "hindi")
+
+  ## Examples
+
+  iex> Glific.Flows.Translate.OpenAI.translate(["thankyou for joining", "correct answer"], "english", "hindi")
+    {:ok, ["hindi thankyou for joining english", "hindi correct answer english"]}
   """
   @spec translate([String.t()], String.t(), String.t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
@@ -50,6 +51,7 @@ defmodule Glific.Flows.Translate.OpenAI do
       System:
       """
     )
+    |> IO.inspect()
     |> case do
       {:ok, result} -> {:ok, Jason.decode!(result)}
       rest -> rest

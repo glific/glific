@@ -20,7 +20,7 @@ defmodule Glific.Flows.Translate.Import do
   json that fits into the floweditor json format
 
   At some point, we might extend this to import it from a .po file
-  Lets keep the csv part very distict from the json
+  Lets keep the csv part very distinct from the json
   """
   @spec import_localization(list(), map()) :: any()
   def import_localization(csv, flow) do
@@ -88,7 +88,7 @@ defmodule Glific.Flows.Translate.Import do
       end
     )
     # if there are languages missing, merge them also
-    # dont overwrite what currently exists
+    # don't overwrite what currently exists
     |> Map.merge(
       translations,
       fn _k, c_v, t_v -> if map_size(c_v) == 0, do: t_v, else: c_v end
