@@ -6,10 +6,7 @@ defmodule Glific.Flows.Translate.OpenAI do
   @open_ai_params %{"temperature" => 0, "max_tokens" => 12_000}
   @token_chunk_size 10_000
 
-  alias Glific.{
-    OpenAI.ChatGPT,
-    Repo
-  }
+  alias Glific.OpenAI.ChatGPT
 
   @doc """
   Translate a list of strings from language 'src' to language 'dst'
