@@ -194,7 +194,6 @@ Go to the glific_backend folder in the terminal console, and:
 ### 7. Backend - Config
 
 - Run: `cp config/.env.dev.txt config/.env.dev`
-- Run `source config/.env.dev`
 - Run `mix deps.get`
   if this fails try `mix local.hex --force` followed by `mix deps.get`
 
@@ -211,6 +210,7 @@ Go to the glific_backend folder in the terminal console, and:
  At this point, you may get an error saying `password authentication failed for user "postgres"`, in which case, you need to configure the postgres server properly:
 
 ```bash
+createuser postgres -s # needed for more recent versions of postgres on MacOSgit
 sudo -u postgres psql
 ALTER USER postgres WITH PASSWORD 'postgres';
 ```
@@ -283,13 +283,12 @@ install [Glific Frontend](https://github.com/glific/glific-frontend/)
 
 ## Updating your instance
 
-For v0.x releases, we will be resetting the DB and not saving the existing state. Run the following commands
-to update your codebase from the Glific repository.
+Run the following commands to update your codebase from the Glific repository.
 
 - Ensure you are in the top-level directory of the Glific API code.
 - Get the latest code from master: `git switch master && git pull`
 - Ensure you have not modified any files in this directory, by running: `git status`
-- Run the setup command: `mix setup`
+- Run the setup command: `mix deps.get, compile, ecto.migrate`
 
 ## Documentation
 
