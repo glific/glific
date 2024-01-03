@@ -21,9 +21,8 @@ defmodule Glific.Flows.Translate.OpenAI do
   @spec translate([String.t()], String.t(), String.t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
   def translate(strings, src, dst) do
-    strings = chunk(strings)
-
     strings
+    |> chunk()
     |> Enum.reduce([], &[do_translate(&1, src, dst) | &2])
     |> Enum.flat_map(& &1)
     |> Enum.reverse()
@@ -38,7 +37,7 @@ defmodule Glific.Flows.Translate.OpenAI do
 
     prompt =
       """
-      I'm going to give you a template for your output. CAPTALIZED WORDS are my placeholders.
+      I'm going to give you a template for your output. CAPITALIZED WORDS are my placeholders.
       Please preserve the overall formatting of my template to convert list of strings from #{src} to #{dst}
 
       ***["CONVERTED_TEXT_1", "CONVERTED_TEXT_2","CONVERTED_TEXT_3"]***

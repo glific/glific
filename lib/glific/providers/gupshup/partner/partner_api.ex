@@ -208,11 +208,12 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   defp headers(:app_token, opts) do
     org_id = Keyword.get(opts, :org_id)
 
-    with {:ok, %{partner_app_token: partner_app_token}} <- get_partner_app_token(org_id) do
-      [{"token", partner_app_token}, {"Authorization", partner_app_token}]
-    else
-      # in case we cant find the app token, log an error, but return an []
+    case get_partner_app_token(org_id) do
+      {:ok, %{partner_app_token: partner_app_token}} ->
+        [{"token", partner_app_token}, {"Authorization", partner_app_token}]
+
       error ->
+        # in case we cant find the app token, log an error, but return a empty list so we proceed
         Logger.error("Could not fetch partner app token: #{inspect(error)}")
         []
     end
