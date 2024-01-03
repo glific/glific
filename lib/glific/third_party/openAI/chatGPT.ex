@@ -19,10 +19,11 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
 
   """
-  @spec parse(non_neg_integer(), String.t()) :: tuple()
-  def parse(org_id, question_text) do
+  @spec parse(non_neg_integer(), String.t(), map()) :: tuple()
+  def parse(org_id, question_text, params \\ %{}) do
     data =
       @default_params
+      |> Map.merge(params)
       |> Map.merge(%{
         "messages" => [
           %{
