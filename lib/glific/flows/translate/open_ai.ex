@@ -33,12 +33,11 @@ defmodule Glific.Flows.Translate.OpenAI do
     |> then(&{:ok, &1})
   end
 
-  # Making API call to openai to translate list of string from src language to dst
+  # Making API call to open ai to translate list of string from src language to dst
   @spec do_translate([String.t()], String.t(), String.t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
   defp do_translate(strings, src, dst) do
     length = Enum.count(strings)
-    org_id = Repo.get_organization_id()
 
     prompt =
       """
@@ -57,8 +56,8 @@ defmodule Glific.Flows.Translate.OpenAI do
       System: ["வரவேற்பு", "சரியான பதில், தொடருங்கள்", "நீங்கள் 1 புள்ளியை வென்றீர்கள்"]
       """
 
-    ChatGPT.parse(
-      org_id,
+    Glific.get_open_ai_key()
+    |> ChatGPT.parse(
       """
       #{prompt}
       User: #{strings}

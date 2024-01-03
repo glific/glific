@@ -17,10 +17,10 @@ defmodule Glific.OpenAI.ChatGPT do
   }
 
   @doc """
-
+  API call to GPT
   """
-  @spec parse(non_neg_integer(), String.t(), map()) :: tuple()
-  def parse(org_id, question_text, params \\ %{}) do
+  @spec parse(String.t(), String.t(), map()) :: tuple()
+  def parse(api_key, question_text, params \\ %{}) do
     data =
       @default_params
       |> Map.merge(params)
@@ -33,7 +33,13 @@ defmodule Glific.OpenAI.ChatGPT do
         ]
       })
 
-    client(org_id)
+    middleware = [
+      Tesla.Middleware.JSON,
+      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]}
+    ]
+
+    middleware
+    |> Tesla.client()
     |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 20_000]])
     |> handle_response()
   end
@@ -57,18 +63,12 @@ defmodule Glific.OpenAI.ChatGPT do
   end
 
   @doc """
-    Get the tesla client with existing configurations.
+    Get the API key with existing configurations.
   """
-  @spec client(non_neg_integer()) :: Tesla.Client.t()
-  def client(org_id) do
+  @spec get_api_key(non_neg_integer()) :: String.t()
+  def get_api_key(org_id) do
     {:ok, %{api_key: api_key}} = credentials(org_id)
-
-    middleware = [
-      Tesla.Middleware.JSON,
-      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]}
-    ]
-
-    Tesla.client(middleware)
+    api_key
   end
 
   @spec credentials(non_neg_integer()) :: tuple()
