@@ -4,7 +4,7 @@ defmodule Glific.Flows.Translate.OpenAI do
   """
   @behaviour Glific.Flows.Translate.Translate
   @open_ai_params %{"temperature" => 0, "max_tokens" => 12_000}
-  @token_chunk_size 10_000
+  @token_chunk_size 200
 
   alias Glific.OpenAI.ChatGPT
 
@@ -25,7 +25,6 @@ defmodule Glific.Flows.Translate.OpenAI do
     |> chunk()
     |> Enum.reduce([], &[do_translate(&1, src, dst) | &2])
     |> Enum.flat_map(& &1)
-    |> Enum.reverse()
     |> then(&{:ok, &1})
   end
 
@@ -82,13 +81,8 @@ defmodule Glific.Flows.Translate.OpenAI do
     cond do
       # Replacing long text with default message that translation not available
       string_size > @token_chunk_size ->
-        new_acc =
-          case chunk do
-            [] -> acc
-            _ -> [Enum.reverse(chunk) | acc]
-          end
-
-        do_chunk(tail, [], 0, [["translation not available for long messages"] | new_acc])
+        total_size = current_size + 6
+        do_chunk(tail, ["translation not available for long messages" | chunk], total_size, acc)
 
       # Splitting chunks based on total size
       current_size + string_size > @token_chunk_size ->
