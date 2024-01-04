@@ -40,7 +40,7 @@ defmodule Glific.OpenAI.ChatGPT do
 
     middleware
     |> Tesla.client()
-    |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 20_000]])
+    |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 120_000]])
     |> handle_response()
   end
 
