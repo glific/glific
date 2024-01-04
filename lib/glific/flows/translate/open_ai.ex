@@ -21,6 +21,7 @@ defmodule Glific.Flows.Translate.OpenAI do
   @spec translate([String.t()], String.t(), String.t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
   def translate(strings, src, dst) do
+
     strings
     |> chunk()
     |> Enum.reduce([], &[do_translate(&1, src, dst) | &2])
@@ -37,7 +38,7 @@ defmodule Glific.Flows.Translate.OpenAI do
 
     prompt =
       """
-      I'm going to give you a template for your output. CAPITALIZED WORDS are my placeholders.
+      I'm going to give you a template for your output. CAPTALIZED WORDS are my placeholders.
       Please preserve the overall formatting of my template to convert list of strings from #{src} to #{dst}
 
       ***["CONVERTED_TEXT_1", "CONVERTED_TEXT_2","CONVERTED_TEXT_3"]***
@@ -70,23 +71,30 @@ defmodule Glific.Flows.Translate.OpenAI do
 
   # Chunking list of strings based on the size
   @spec chunk([String.t()]) :: [String.t()]
-  defp chunk(strings), do: do_chunk(strings, [], 0, [])
+  def chunk(strings), do: do_chunk(strings, [], 0, [])
 
   @spec do_chunk([String.t()], list(), non_neg_integer(), list()) :: [String.t()]
-  defp do_chunk([], chunk, _, acc), do: Enum.reverse([chunk | acc])
+  defp do_chunk([], chunk, _, acc), do: Enum.reverse([Enum.reverse(chunk) | acc])
 
   defp do_chunk([head | tail], chunk, current_size, acc) do
     string_size = Gpt3Tokenizer.token_count(head)
 
     cond do
-      # here we are ignoring long texts which have token count more than threshold
+      # Replacing long text with default message that translation not available
       string_size > @token_chunk_size ->
-        do_chunk(tail, [], current_size, acc)
+        new_acc =
+          case chunk do
+            [] -> acc
+            _ -> [Enum.reverse(chunk) | acc]
+          end
 
-      # based on total size we are determining if we can do translation in single call or multiple calls
+        do_chunk(tail, [], 0, [["translation not available for long messages"] | new_acc])
+
+      # Splitting chunks based on total size
       current_size + string_size > @token_chunk_size ->
-        do_chunk([head | tail], [], 0, [chunk | acc])
+        do_chunk([head | tail], [], 0, [Enum.reverse(chunk) | acc])
 
+      # Default case: add head to chunk and continue
       true ->
         do_chunk(tail, [head | chunk], current_size + string_size, acc)
     end
