@@ -44,8 +44,8 @@ For Ubuntu users, you also need to install the `inotify-tools` package.
 We tested and developed against the following versions (please check .tool-versions in the repository for the latest version we are using):
 
 ```bash
-    - erlang : 25.3.2
-    - elixir : 1.14.5-otp-25
+    - erlang : 26.1.2
+    - elixir : 1.15.7-otp-26
 ```
 
 After installing the asdf core, install the Erlang and Elixir plugins.
@@ -57,10 +57,10 @@ asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
 
 If you want to install the specific versions that were used for developing and testing:
 ``` bash
-asdf install erlang 25.3.2
-asdf install elixir 1.14.5-otp-25
-asdf global erlang 25.3.2
-asdf global 1.14.5-otp-25
+asdf install erlang 26.1.2
+asdf install elixir 1.15.7-otp-26
+asdf global erlang 26.1.2
+asdf global elixir 1.15.7-otp-26
 ```
 
 If you get any warnings for missing packages, just install them using apt and try again.
@@ -166,9 +166,10 @@ Go to the glific_backend folder in the terminal console, and:
 - Check port 4001 `sudo lsof -n -i:4001 | grep LISTEN` should return nothing.
 - Check hosts file `grep glific /etc/hosts`
 
-      if it returns nothing, add these 2 lines to the hosts file:
+      if it returns nothing, add these 3 lines to the hosts file:
       127.0.0.1 glific.test 
       127.0.0.1 api.glific.test
+      127.0.0.1 postgres
       
      
 
@@ -186,7 +187,7 @@ Go to the glific_backend folder in the terminal console, and:
 - Check hosts file by`type %SystemRoot%\System32\drivers\etc\hosts | findstr glific`
 
       if returns nothing
-      add these two lines in your hosts file
+      add these three lines in your hosts file
       127.0.0.1 glific.test
       127.0.0.1 api.glific.test
       127.0.0.1 postgres
