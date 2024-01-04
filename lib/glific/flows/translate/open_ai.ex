@@ -21,7 +21,6 @@ defmodule Glific.Flows.Translate.OpenAI do
   @spec translate([String.t()], String.t(), String.t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
   def translate(strings, src, dst) do
-
     strings
     |> chunk()
     |> Enum.reduce([], &[do_translate(&1, src, dst) | &2])
@@ -74,6 +73,7 @@ defmodule Glific.Flows.Translate.OpenAI do
   def chunk(strings), do: do_chunk(strings, [], 0, [])
 
   @spec do_chunk([String.t()], list(), non_neg_integer(), list()) :: [String.t()]
+  defp do_chunk([], [], _, acc), do: Enum.reverse(acc)
   defp do_chunk([], chunk, _, acc), do: Enum.reverse([Enum.reverse(chunk) | acc])
 
   defp do_chunk([head | tail], chunk, current_size, acc) do
