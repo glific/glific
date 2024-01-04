@@ -38,7 +38,7 @@ defmodule Glific.Flows.Translate.OpenAI do
 
     prompt =
       """
-      I'm going to give you a template for your output. CAPTALIZED WORDS are my placeholders.
+      I'm going to give you a template for your output. CAPITALIZED WORDS are my placeholders.
       Please preserve the overall formatting of my template to convert list of strings from #{src} to #{dst}
 
       ***["CONVERTED_TEXT_1", "CONVERTED_TEXT_2","CONVERTED_TEXT_3"]***
