@@ -27,7 +27,7 @@ defmodule Glific.Flows.Translate.OpenAITest do
   test "translate/3 should chunk a list of strings based on length" do
     {:ok, translated_text} =
       OpenAI.translate(
-        ["Thank you for introducing yourself to us", "Welcome to our NGO Chatbot"],
+        ["Welcome to our NGO Chatbot", "Thank you for introducing yourself to us"],
         "english",
         "hindi"
       )
