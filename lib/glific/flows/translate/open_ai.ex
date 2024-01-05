@@ -7,6 +7,7 @@ defmodule Glific.Flows.Translate.OpenAI do
   @token_chunk_size 200
 
   alias Glific.OpenAI.ChatGPT
+  require Logger
 
   @doc """
   Translate a list of strings from language 'src' to language 'dst'
@@ -24,6 +25,7 @@ defmodule Glific.Flows.Translate.OpenAI do
     strings
     |> chunk()
     |> Enum.reduce([], &[do_translate(&1, src, dst) | &2])
+    |> IO.inspect()
     |> Enum.flat_map(& &1)
     |> then(&{:ok, &1})
   end
@@ -37,7 +39,7 @@ defmodule Glific.Flows.Translate.OpenAI do
     prompt =
       """
       I'm going to give you a template for your output. CAPITALIZED WORDS are my placeholders.
-      Please preserve the overall formatting of my template to convert list of strings from #{src} to #{dst}
+      Please preserve the overall formatting of my template to convert list of strings from #{src} to #{dst}.Each comma separated strings can be multi-lined where linebreak can be \n or \n\n. Keep the translated message also multi-lined
 
       ***["CONVERTED_TEXT_1", "CONVERTED_TEXT_2","CONVERTED_TEXT_3"]***
 
@@ -62,8 +64,12 @@ defmodule Glific.Flows.Translate.OpenAI do
       @open_ai_params
     )
     |> case do
-      {:ok, result} -> Jason.decode!(result)
-      rest -> rest
+      {:ok, result} ->
+        Jason.decode!(result)
+
+      {:error, error} ->
+        Logger.error("Error translating: #{error} String: #{strings}")
+        ["Could not translate, Try again"]
     end
   end
 
