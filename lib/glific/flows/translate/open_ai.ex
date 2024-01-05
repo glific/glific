@@ -25,7 +25,6 @@ defmodule Glific.Flows.Translate.OpenAI do
     strings
     |> chunk()
     |> Enum.reduce([], &[do_translate(&1, src, dst) | &2])
-    |> IO.inspect()
     |> Enum.flat_map(& &1)
     |> then(&{:ok, &1})
   end

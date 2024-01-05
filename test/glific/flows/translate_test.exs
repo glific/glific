@@ -41,7 +41,7 @@ defmodule Glific.Flows.TranslateTest do
     )
   end
 
-  test "ensure that impport updates the localization structure", attrs do
+  test "ensure that import updates the localization structure", attrs do
     flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
     assert map_size(flow.definition["localization"]) == 1
     assert map_size(flow.definition["localization"]["hi"]) == 1
