@@ -166,8 +166,7 @@ defmodule Glific.Settings do
   end
 
   @doc """
-  Get map of locale to labels for easier lookup for json based flow validation
-  for a specific organization
+  Get map of locale to labels for easier lookup for json based flow validation for a specific organization
   """
   @spec locale_label_map(non_neg_integer) :: %{String.t() => String.t()}
   def locale_label_map(organization_id) do

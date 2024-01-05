@@ -3,8 +3,40 @@ defmodule Glific.Flows.Translate.OpenAITest do
 
   alias Glific.Flows.Translate.OpenAI
 
+  setup do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            "choices" => [
+              %{
+                "message" => %{
+                  "content" =>
+                    "[\"हमारे एनजीओ चैटबॉट में आपका स्वागत है\", \"हमें अपने बारे में परिचय देने के लिए धन्यवाद\" ]"
+                }
+              }
+            ]
+          }
+        }
+    end)
+
+    :ok
+  end
+
+  test "translate/3 should chunk a list of strings based on length" do
+    {:ok, translated_text} =
+      OpenAI.translate(
+        ["Thank you for introducing yourself to us", "Welcome to our NGO Chatbot"],
+        "english",
+        "hindi"
+      )
+
+    assert translated_text == ["हमारे एनजीओ चैटबॉट में आपका स्वागत है", "हमें अपने बारे में परिचय देने के लिए धन्यवाद"]
+  end
+
   test "chunk/1 should chunk a list of strings based on length" do
-    long_text = Faker.String.base64(18000)
+    long_text = Faker.Lorem.sentence(250)
 
     # when long text is at the middle
     response = [
