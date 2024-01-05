@@ -72,7 +72,9 @@ defmodule Glific.Flows.Translate.OpenAI do
     end
   end
 
-  # Chunking list of strings based on the size
+  @doc """
+  Chunking list of strings based on the size
+  """
   @spec chunk([String.t()]) :: [String.t()]
   def chunk(strings), do: do_chunk(strings, [], 0, [])
 
