@@ -24,8 +24,7 @@ defmodule Glific.Flows.ActionTest do
   }
 
   setup do
-    default_provider = SeedsDev.seed_providers()
-    organization = SeedsDev.seed_organizations(default_provider)
+    organization = SeedsDev.seed_organizations()
     SeedsDev.seed_contacts()
     SeedsDev.seed_interactives(organization)
     :ok

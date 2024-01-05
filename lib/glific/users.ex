@@ -89,9 +89,9 @@ defmodule Glific.Users do
 
   # special type of comparison to allow for nils, we permit comparing with
   # nil (and treat it as not being updated), since we don't update these values
-  @spec is_updated?(any, any) :: boolean
-  defp is_updated?(_original, nil = _new), do: false
-  defp is_updated?(original, new), do: original != new
+  @spec updated?(any, any) :: boolean
+  defp updated?(_original, nil = _new), do: false
+  defp updated?(original, new), do: original != new
 
   @doc """
   Updates a user.
@@ -116,7 +116,7 @@ defmodule Glific.Users do
     # lets invalidate the tokens and socket for this user
     # we do this ONLY if either the role or is_restricted has changed
     if validate_add_role_ids?(attrs) ||
-         is_updated?(user.is_restricted, attrs[:is_restricted]) ||
+         updated?(user.is_restricted, attrs[:is_restricted]) ||
          validate_delete_role_ids?(attrs) do
       GlificWeb.APIAuthPlug.delete_all_user_sessions(@pow_config, user)
     end

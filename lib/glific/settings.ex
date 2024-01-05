@@ -166,14 +166,13 @@ defmodule Glific.Settings do
   end
 
   @doc """
-  Get map of locale to labels for easier lookup for json based flow validation
+  Get map of locale to labels for easier lookup for json based flow validation for a specific organization
   """
-  @spec locale_label_map() :: %{String.t() => String.t()}
-  def locale_label_map do
-    Language
-    |> where([l], l.is_active == true)
-    |> select([:locale, :label])
-    |> Repo.all()
+  @spec locale_label_map(non_neg_integer) :: %{String.t() => String.t()}
+  def locale_label_map(organization_id) do
+    organization_id
+    |> Glific.Partners.organization()
+    |> Map.get(:languages)
     |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.locale, language.label) end)
   end
 

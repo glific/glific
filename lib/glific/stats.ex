@@ -125,8 +125,8 @@ defmodule Glific.Stats do
     nil
   end
 
-  @spec is_empty?(map()) :: boolean
-  defp is_empty?(stat) do
+  @spec empty?(map()) :: boolean
+  defp empty?(stat) do
     keys = [
       :contacts,
       :active,
@@ -148,23 +148,23 @@ defmodule Glific.Stats do
   @spec reject_empty(map()) :: list()
   def reject_empty(map) do
     map
-    |> Enum.reject(fn {_k, v} -> is_empty?(v) end)
+    |> Enum.reject(fn {_k, v} -> empty?(v) end)
     |> Enum.into(%{})
     |> Map.values()
   end
 
-  @spec is_daily?(DateTime.t()) :: boolean
-  defp is_daily?(time), do: time.hour == 23
+  @spec daily?(DateTime.t()) :: boolean
+  defp daily?(time), do: time.hour == 23
 
-  @spec is_weekly?(DateTime.t(), Date.t()) :: boolean
-  defp is_weekly?(time, date) do
-    is_daily?(time) &&
+  @spec weekly?(DateTime.t(), Date.t()) :: boolean
+  defp weekly?(time, date) do
+    daily?(time) &&
       Date.day_of_week(date) == 7
   end
 
-  @spec is_monthly?(DateTime.t(), Date.t()) :: boolean
-  defp is_monthly?(time, date) do
-    is_daily?(time) && time.day == Date.days_in_month(date)
+  @spec monthly?(DateTime.t(), Date.t()) :: boolean
+  defp monthly?(time, date) do
+    daily?(time) && time.day == Date.days_in_month(date)
   end
 
   @spec empty_stats(map(), list(), tuple()) :: map()
@@ -254,7 +254,7 @@ defmodule Glific.Stats do
     time = Keyword.get(opts, :time)
     date = Keyword.get(opts, :date, DateTime.to_date(time))
 
-    if Keyword.get(opts, :day, true) && is_daily?(time) do
+    if Keyword.get(opts, :day, true) && daily?(time) do
       start = Timex.beginning_of_day(time)
       finish = Timex.end_of_day(time)
 
@@ -271,7 +271,7 @@ defmodule Glific.Stats do
     time = Keyword.get(opts, :time)
     date = Keyword.get(opts, :date, DateTime.to_date(time))
 
-    if Keyword.get(opts, :week, true) && is_weekly?(time, date) do
+    if Keyword.get(opts, :week, true) && weekly?(time, date) do
       start = Timex.beginning_of_week(time)
       finish = Timex.end_of_week(time)
       summary = Keyword.get(opts, :summary, true)
@@ -323,7 +323,7 @@ defmodule Glific.Stats do
     time = Keyword.get(opts, :time)
     date = Keyword.get(opts, :date, DateTime.to_date(time))
 
-    if Keyword.get(opts, :month, true) && is_monthly?(time, date) do
+    if Keyword.get(opts, :month, true) && monthly?(time, date) do
       start = Timex.beginning_of_month(time)
       finish = Timex.end_of_month(time)
       summary = Keyword.get(opts, :summary, true)

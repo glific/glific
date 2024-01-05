@@ -119,7 +119,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
       })
       |> Map.merge(@common_params)
       |> Map.merge(@default_send_template_params)
-      |> is_button_template(attrs["has_buttons"])
+      |> button_template?(attrs["has_buttons"])
       |> then(
         &gupshup_post(@gupshup_enterprise_url, &1, %{
           "userid" => credentials.hsm_user_id,
@@ -138,7 +138,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
       attrs
       |> Map.merge(@common_params)
       |> Map.merge(%{"method" => "SendMediaMessage"})
-      |> is_button_template(attrs["has_buttons"])
+      |> button_template?(attrs["has_buttons"])
       |> then(
         &gupshup_post(@gupshup_enterprise_url, &1, %{
           "userid" => credentials.hsm_user_id,
@@ -148,9 +148,9 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
     end
   end
 
-  @spec is_button_template(map(), boolean()) :: map()
-  defp is_button_template(attrs, false), do: attrs
-  defp is_button_template(attrs, true), do: Map.merge(attrs, @button_template_params)
+  @spec button_template?(map(), boolean()) :: map()
+  defp button_template?(attrs, false), do: attrs
+  defp button_template?(attrs, true), do: Map.merge(attrs, @button_template_params)
 
   @doc """
   Sending message to contact
