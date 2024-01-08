@@ -1,0 +1,42 @@
+meta {
+  name: Delete a Flow
+  type: graphql
+  seq: 6
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation updateFlow($id: ID!, $input:FlowInput!) {
+    updateFlow(id: $id, input: $input) {
+      flow {
+        id
+        name
+        keywords
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": "1975",
+    "input": {
+      "name": "updated name",
+      "keywords": ["testing"]
+    }
+  }
+}

@@ -1,0 +1,27 @@
+meta {
+  name: Create a new user
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_url}}/v1/registration
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+      "user": {
+          "name": "Test User",
+          "phone": "911234554321",
+          "password": "Secret1234!",
+          "otp": "321721"
+      }
+  }
+}

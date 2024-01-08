@@ -1,0 +1,28 @@
+meta {
+  name: Count all Flows
+  type: graphql
+  seq: 3
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query countFlows($filter: FlowFilter) {
+    countFlows(filter: $filter)
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": 1
+  }
+}

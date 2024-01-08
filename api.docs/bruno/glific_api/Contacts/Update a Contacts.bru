@@ -1,0 +1,49 @@
+meta {
+  name: Update a Contacts
+  type: graphql
+  seq: 8
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation updateContact($id: ID!, $input:ContactInput!) {
+    updateContact(id: $id, input: $input) {
+      contact {
+        id
+        name
+        bspStatus
+        status
+        fields
+        settings
+        language{
+          label
+        }
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": "5",
+    "input": {
+      "name": "This is a updated contact for this example",
+      "fields": "{\"name\":{\"value\":\"Vikrant Wadekar\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:38.298593Z\"},\"age_group\":{\"value\":\"19 or above\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:46.623892Z\"}}",
+      "languageId": 2
+    }
+  }
+}

@@ -1,0 +1,43 @@
+meta {
+  name: Update groups to be added and groups to be deleted to a Contact
+  type: graphql
+  seq: 3
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation updateContactGroups($input: ContactGroupsInput!) {
+    updateContactGroups(input: $input) {
+      contactGroups {
+        id
+        group {
+          label
+        }
+        contact {
+          name
+        }
+      }
+      numberDeleted
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "contactId": 2,
+      "addGroupIds": [1],
+      "deleteGroupIds": [2, 3]
+    }
+  }
+}

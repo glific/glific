@@ -1,0 +1,30 @@
+meta {
+  name: Count all Saved Searches
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query countSavedSearches($filter: SavedSearchFilter) {
+    countSavedSearches(filter: $filter)
+  }
+}
+
+body:graphql:vars {
+  {
+    "filter": {
+      "label": "Conversations read but not replied"
+    }
+  }
+}

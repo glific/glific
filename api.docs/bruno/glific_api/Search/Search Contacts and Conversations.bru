@@ -1,0 +1,65 @@
+meta {
+  name: Search Contacts and Conversations
+  type: graphql
+  seq: 1
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query search(  $saveSearchInput: SaveSearchInput,
+    $searchFilter: SearchFilter!, $contactOpts: Opts!, $messageOpts: Opts!) {
+  
+    search(filter: $searchFilter, saveSearchInput: $saveSearchInput, contactOpts: $contactOpts, messageOpts: $messageOpts) {
+  
+      messages {
+        id,
+        body,
+        tags{
+          label
+        }
+      }
+  
+      contact {
+        name
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "saveSearchInput": {
+        "label": "Save with this name",
+        "shortcode": "SaveName"
+    },
+  
+    "searchFilter": {
+      "includeTags": ["17"],
+      "includeGroups": ["1"],
+      "includeUsers": ["1"],
+      "term": "def",
+      "dateRange": {
+        "to": "2020-08-10",
+        "from": "2020-08-12"
+      }
+    },
+    "messageOpts": {
+      "limit": 3,
+      "order": "ASC"
+    },
+    "contactOpts": {
+      "order": "DESC",
+      "limit": 1
+    }
+  }
+}

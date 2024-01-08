@@ -1,0 +1,44 @@
+meta {
+  name: Get All Flows
+  type: graphql
+  seq: 1
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query flows($filter: FlowFilter, $opts: Opts) {
+    flows(filter: $filter, opts: $opts) {
+      id
+      uuid
+      name
+      versionNumber
+      flowType
+      keywords
+      lastPublishedAt
+      lastChangedAt
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "opts": {
+      "limit": 2,
+      "offset": 0,
+      "order": "ASC"
+    },
+    "filter": {
+      "name": "Workflow"
+    }
+  }
+}

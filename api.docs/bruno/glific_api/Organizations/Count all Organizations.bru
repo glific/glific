@@ -1,0 +1,30 @@
+meta {
+  name: Count all Organizations
+  type: graphql
+  seq: 4
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query countOrganizations($filter: OrganizationFilter) {
+    countOrganizations(filter: $filter)
+  }
+}
+
+body:graphql:vars {
+  {
+    "filter": {
+      "language": "Hindi"
+    }
+  }
+}

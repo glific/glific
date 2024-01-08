@@ -1,0 +1,44 @@
+meta {
+  name: Update a Message
+  type: graphql
+  seq: 5
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation updateMessage($id: ID!, $input:MessageInput!) {
+    updateMessage(id: $id, input: $input) {
+      message {
+        id
+        body
+        sender {
+          id
+          name
+        }
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": "26",
+    "input": {
+      "body": "It is the east, and Juliet is the sun."
+    }
+  }
+}
