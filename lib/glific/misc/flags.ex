@@ -185,6 +185,16 @@ defmodule Glific.Flags do
     do: FunWithFlags.enabled?(:is_ticketing_enabled, for: %{organization_id: organization.id})
 
   @doc """
+  Get auto translation value for organization flag
+  """
+  @spec get_auto_translation_enabled(map()) :: boolean
+  def get_auto_translation_enabled(organization),
+    do:
+      FunWithFlags.enabled?(:is_auto_translation_enabled,
+        for: %{organization_id: organization.id}
+      )
+
+  @doc """
   Get contact profile value for organization flag
   """
   @spec get_contact_profile_enabled(map()) :: boolean
@@ -201,6 +211,18 @@ defmodule Glific.Flags do
       organization,
       :is_ticketing_enabled,
       get_ticketing_enabled(organization)
+    )
+  end
+
+  @doc """
+  Set fun_with_flag toggle for auto translation for an organization
+  """
+  @spec set_auto_translation_enabled(map()) :: map()
+  def set_auto_translation_enabled(organization) do
+    Map.put(
+      organization,
+      :is_auto_translation_enabled,
+      get_auto_translation_enabled(organization)
     )
   end
 
@@ -264,7 +286,8 @@ defmodule Glific.Flags do
       :is_contact_profile_enabled,
       :flow_uuid_display,
       :roles_and_permission,
-      :is_ticketing_enabled
+      :is_ticketing_enabled,
+      :is_auto_translate_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(
