@@ -48,7 +48,7 @@ defmodule Glific.Providers.Gupshup.Worker do
            organization.services["bsp"].keys["bsp_limit"]
          ) do
       {:ok, _} ->
-        if Contacts.is_simulator_contact?(payload["destination"]) do
+        if Contacts.simulator_contact?(payload["destination"]) do
           Worker.process_simulator(message)
         else
           process_gupshup(organization.id, payload, message, attrs)

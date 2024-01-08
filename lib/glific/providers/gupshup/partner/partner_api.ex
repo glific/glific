@@ -10,6 +10,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   }
 
   use Tesla
+  require Logger
 
   alias Plug.Conn.Query
   alias Tesla.Multipart
@@ -207,8 +208,14 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   defp headers(:app_token, opts) do
     org_id = Keyword.get(opts, :org_id)
 
-    with {:ok, %{partner_app_token: partner_app_token}} <- get_partner_app_token(org_id) do
-      [{"token", partner_app_token}, {"Authorization", partner_app_token}]
+    case get_partner_app_token(org_id) do
+      {:ok, %{partner_app_token: partner_app_token}} ->
+        [{"token", partner_app_token}, {"Authorization", partner_app_token}]
+
+      error ->
+        # in case we cant find the app token, log an error, but return a empty list so we proceed
+        Logger.error("Could not fetch partner app token: #{inspect(error)}")
+        []
     end
   end
 
@@ -228,7 +235,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @spec post_request(String.t(), map(), Keyword.t()) :: tuple()
   defp post_request(url, data, opts) do
-    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
+    req_headers =
+      headers(Keyword.get(opts, :token_type, :app_token), opts)
 
     post(url, data, headers: req_headers)
     |> case do
@@ -256,7 +264,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @spec get_request(String.t(), Keyword.t()) :: tuple()
   defp get_request(url, opts) do
-    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
+    req_headers =
+      headers(Keyword.get(opts, :token_type, :app_token), opts)
 
     get(url, headers: req_headers)
     |> case do

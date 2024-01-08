@@ -146,7 +146,7 @@ defmodule Glific.TriggersTest do
 
       {:error, message} = Triggers.create_trigger(arc)
       error_message = Map.get(message, :message)
-      assert error_message == "The first send message node is not an HSM template"
+      assert error_message == nil
     end
 
     test "execute_triggers/2 should execute a trigger with last_trigger_at not nil", attrs do
@@ -326,5 +326,26 @@ defmodule Glific.TriggersTest do
 
       assert Map.get(updated_trigger_log, :flow_context_id) == updated_flow_context.id
     end
+  end
+
+  test "check_trigger_warnings/1 with incorrect node should returns error", attrs do
+    [flow | _tail] = Flows.list_flows(%{organization_id: attrs.organization_id})
+    [group | _tail] = Groups.list_groups(%{organization_id: attrs.organization_id})
+
+    arc = %{
+      days: [],
+      end_date: Timex.shift(Date.utc_today(), days: 2),
+      flow_id: flow.id,
+      group_id: group.id,
+      is_active: false,
+      is_repeating: false,
+      organization_id: 1,
+      start_date: Timex.shift(Date.utc_today(), days: -1),
+      start_time: Time.utc_now(),
+      frequency: ["none"]
+    }
+
+    {:warning, message} = Triggers.validate_trigger(arc)
+    assert message == "The first message node is not an HSM template"
   end
 end

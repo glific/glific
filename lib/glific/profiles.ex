@@ -212,7 +212,7 @@ defmodule Glific.Profiles do
     }
 
     attrs
-    |> is_first_profile(context)
+    |> first_profile?(context)
     |> create_profile()
     |> case do
       {:ok, profile} ->
@@ -236,8 +236,8 @@ defmodule Glific.Profiles do
   end
 
   # Sync existing contact fields to the first profile to prevent data loss
-  @spec is_first_profile(map(), FlowContext.t()) :: map()
-  defp is_first_profile(attrs, context) do
+  @spec first_profile?(map(), FlowContext.t()) :: map()
+  defp first_profile?(attrs, context) do
     profile_count =
       Repo.one(from(p in Profile, select: count("*"), where: p.contact_id == ^attrs.contact_id))
 

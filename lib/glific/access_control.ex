@@ -260,21 +260,21 @@ defmodule Glific.AccessControl do
 
     with true <- Flags.get_roles_and_permission(organization),
          user <- Repo.preload(user, [:access_roles]),
-         true <- is_organization_role?(user) do
+         true <- organization_role?(user) do
       do_check_access(entity_list, entity_type, user)
     else
       _ -> entity_list
     end
   end
 
-  @spec is_organization_role?(User.t() | nil) :: boolean()
-  defp is_organization_role?(%{access_roles: access_roles} = _user) do
+  @spec organization_role?(User.t() | nil) :: boolean()
+  defp organization_role?(%{access_roles: access_roles} = _user) do
     !Enum.any?(access_roles, fn access_role ->
       access_role.label in ["Admin", "Manager", "Staff"]
     end)
   end
 
-  defp is_organization_role?(nil), do: false
+  defp organization_role?(nil), do: false
 
   @doc """
   Common function to filtering entity objects based on user role, fun_with_flag flag and entity type
