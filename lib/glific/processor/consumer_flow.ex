@@ -33,7 +33,7 @@ defmodule Glific.Processor.ConsumerFlow do
   def process_message({message, state}, body) do
     # check if draft keyword, if so bypass ignore keywords
     # and start draft flow, issue #621
-    is_draft = is_draft_keyword?(state, body)
+    is_draft = draft_keyword?(state, body)
 
     if is_draft,
       do:
@@ -77,7 +77,7 @@ defmodule Glific.Processor.ConsumerFlow do
         flow_params = {:flow_id, flow_id, @final_phrase}
         start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
 
-      is_flow_keyword?(state, body) ->
+      flow_keyword?(state, body) ->
         flow_params = {:flow_keyword, body, @final_phrase}
         start_new_flow(message, body, state, flow_params: flow_params)
 
@@ -88,12 +88,12 @@ defmodule Glific.Processor.ConsumerFlow do
         start_new_flow(message, message.body, state, opts)
 
       # making sure that user is not in any flow.
-      is_context_nil?(context) && match_with_regex?(state.regx_flow, message.body) ->
+      context_nil?(context) && match_with_regex?(state.regx_flow, message.body) ->
         flow_id = Glific.parse_maybe_integer!(state.regx_flow.flow_id)
         flow_params = {:flow_id, flow_id, @final_phrase}
         start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
 
-      is_context_nil?(context) ->
+      context_nil?(context) ->
         state = Periodic.run_flows(state, message)
         {message, state}
 
@@ -167,10 +167,10 @@ defmodule Glific.Processor.ConsumerFlow do
     {message, state}
   end
 
-  @spec is_draft_keyword?(map(), String.t()) :: boolean()
-  defp is_draft_keyword?(_state, nil), do: false
+  @spec draft_keyword?(map(), String.t()) :: boolean()
+  defp draft_keyword?(_state, nil), do: false
 
-  defp is_draft_keyword?(state, body) do
+  defp draft_keyword?(state, body) do
     if String.starts_with?(body, @draft_phrase) and
          Map.has_key?(
            state.flow_keywords["draft"],
@@ -187,7 +187,7 @@ defmodule Glific.Processor.ConsumerFlow do
 
   defp start_optin_flow?(contact, active_context, body),
     do:
-      if(Flows.is_optin_flow?(active_context.flow),
+      if(Flows.optin_flow?(active_context.flow),
         do: false,
         else: start_optin_flow?(contact, nil, body)
       )
@@ -229,8 +229,8 @@ defmodule Glific.Processor.ConsumerFlow do
     Map.get(state, :newcontact, false) && !is_nil(state.flow_keywords["org_default_new_contact"])
   end
 
-  @spec is_flow_keyword?(map(), String.t()) :: boolean()
-  defp is_flow_keyword?(state, body) do
+  @spec flow_keyword?(map(), String.t()) :: boolean()
+  defp flow_keyword?(state, body) do
     Map.has_key?(state.flow_keywords["published"], body)
   end
 
@@ -256,7 +256,7 @@ defmodule Glific.Processor.ConsumerFlow do
     end
   end
 
-  @spec is_context_nil?(FlowContext.t() | nil) :: boolean()
+  @spec context_nil?(FlowContext.t() | nil) :: boolean()
   ## not sure why this is giving dialyzer error. Ignoring for now
-  defp is_context_nil?(context), do: is_nil(context)
+  defp context_nil?(context), do: is_nil(context)
 end

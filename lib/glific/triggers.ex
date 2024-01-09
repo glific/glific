@@ -154,19 +154,34 @@ defmodule Glific.Triggers do
 
   @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def create_trigger(attrs) do
+    with {:ok, trigger} <-
+           %Trigger{}
+           |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))
+           |> Repo.insert() do
+      if Map.has_key?(attrs, :add_role_ids),
+        do: update_trigger_roles(attrs, trigger),
+        else: {:ok, append_group_labels(trigger)}
+    end
+  end
+
+  @doc """
+  This function is to check the warning while creating the trigger
+  """
+  @spec validate_trigger(map()) :: :ok | {:warning, String.t()}
+  def validate_trigger(attrs) do
     {:ok, flow} =
       Repo.fetch_by(FlowRevision, %{flow_id: Map.get(attrs, :flow_id), status: "published"})
 
     handle_action(flow, attrs, 0)
   end
 
-  @spec handle_action(map(), map(), integer()) :: {:ok, Trigger.t()}
+  @spec handle_action(map(), map(), integer()) :: :ok | {:warning, String.t()}
   defp handle_action(flow, attrs, nested_flow_level) do
     action = flow_action(flow)
 
     case action do
       nil ->
-        do_create_trigger(attrs)
+        :ok
 
       _ ->
         handle_message_type(Map.get(action, "type"), action, attrs, nested_flow_level)
@@ -191,18 +206,18 @@ defmodule Glific.Triggers do
   end
 
   @spec handle_message_type(String.t(), map(), map(), integer()) ::
-          {:ok, Trigger.t()} | {:error, map()}
+          {:ok, atom()} | {:warning, String.t()}
   defp handle_message_type("send_interactive_msg", _action, _attrs, _nested_flow_level) do
-    {:error, %{message: "The first send message node is not an HSM template"}}
+    {:warning, "The first message node is not an HSM template"}
   end
 
-  defp handle_message_type("send_msg", action, attrs, _nested_flow_level) do
+  defp handle_message_type("send_msg", action, _attrs, _nested_flow_level) do
     template = action |> Map.get("templating")
 
     if template == nil do
-      {:error, %{message: "The first send message node is not an HSM template"}}
+      {:warning, "The first message node is not an HSM template"}
     else
-      do_create_trigger(attrs)
+      :ok
     end
   end
 
@@ -218,22 +233,12 @@ defmodule Glific.Triggers do
 
       handle_action(entered_flow, attrs, nested_flow_level + 1)
     else
-      do_create_trigger(attrs)
+      :ok
     end
   end
 
-  defp handle_message_type(_, _action, attrs, _nested_flow_level), do: do_create_trigger(attrs)
-
-  @spec do_create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
-  defp do_create_trigger(attrs) do
-    with {:ok, trigger} <-
-           %Trigger{}
-           |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))
-           |> Repo.insert() do
-      if Map.has_key?(attrs, :add_role_ids),
-        do: update_trigger_roles(attrs, trigger),
-        else: {:ok, append_group_labels(trigger)}
-    end
+  defp handle_message_type(_type, _action, _attrs, _nested_flow_level) do
+    :ok
   end
 
   @spec update_trigger_roles(map(), Trigger.t()) :: {:ok, Trigger.t()}

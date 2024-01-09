@@ -82,7 +82,7 @@ defmodule Glific.Flows.Node do
     node =
       node
       |> Map.put(:exits, exits)
-      |> Map.put(:is_terminal, is_terminal?(exits))
+      |> Map.put(:is_terminal, terminal?(exits))
 
     {node, uuid_map} =
       if Map.has_key?(json, "router") do
@@ -103,8 +103,8 @@ defmodule Glific.Flows.Node do
     {node, uuid_map}
   end
 
-  @spec is_terminal?(list()) :: boolean()
-  defp is_terminal?(exits),
+  @spec terminal?(list()) :: boolean()
+  defp terminal?(exits),
     do:
       exits
       |> Enum.all?(fn e -> is_nil(e.destination_node_uuid) end)

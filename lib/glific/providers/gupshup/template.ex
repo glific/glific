@@ -256,12 +256,12 @@ defmodule Glific.Providers.Gupshup.Template do
 
   @spec validate_dropdowns(map()) :: {:ok, map()} | {String.t(), String.t()}
   defp validate_dropdowns(template) do
-    with true <- is_valid_language?(template["Language"]),
-         true <- is_valid_category?(template["Category"]),
+    with true <- valid_language?(template["Language"]),
+         true <- valid_category?(template["Category"]),
          true <- has_valid_buttons?(template["Has Buttons"], template),
-         true <- is_valid_shortcode?(template["Element Name"]),
-         true <- is_valid_media?(template["Attachment Type"], template["Attachment URL"]),
-         true <- is_valid_message?(template["Message"], template["Sample Message"]) do
+         true <- valid_shortcode?(template["Element Name"]),
+         true <- valid_media?(template["Attachment Type"], template["Attachment URL"]),
+         true <- valid_message?(template["Message"], template["Sample Message"]) do
       {:ok, template}
     else
       {_, error} ->
@@ -269,36 +269,36 @@ defmodule Glific.Providers.Gupshup.Template do
     end
   end
 
-  @spec is_valid_language?(String.t()) :: true | {:error, String.t()}
-  defp is_valid_language?(language) when language in @languages, do: true
-  defp is_valid_language?(_language), do: {:error, "Invalid Language"}
+  @spec valid_language?(String.t()) :: true | {:error, String.t()}
+  defp valid_language?(language) when language in @languages, do: true
+  defp valid_language?(_language), do: {:error, "Invalid Language"}
 
-  @spec is_valid_category?(String.t()) :: true | {:error, String.t()}
-  defp is_valid_category?(category) do
+  @spec valid_category?(String.t()) :: true | {:error, String.t()}
+  defp valid_category?(category) do
     if category in Templates.list_whatsapp_hsm_categories(),
       do: true,
       else: {:error, "Invalid Category"}
   end
 
-  @spec is_valid_shortcode?(String.t()) :: true | {:error, String.t()}
-  defp is_valid_shortcode?(shortcode) do
+  @spec valid_shortcode?(String.t()) :: true | {:error, String.t()}
+  defp valid_shortcode?(shortcode) do
     if String.match?(shortcode, ~r/^[a-z0-9_]*$/),
       do: true,
       else: {:error, "Invalid Element Name"}
   end
 
-  @spec is_valid_media?(String.t(), String.t()) :: true | {:error, String.t()}
-  defp is_valid_media?(type, url) when type in ["image", "video", "document"] do
+  @spec valid_media?(String.t(), String.t()) :: true | {:error, String.t()}
+  defp valid_media?(type, url) when type in ["image", "video", "document"] do
     %{is_valid: is_valid} = Messages.validate_media(url, type)
     if is_valid, do: true, else: {:error, "Invalid Attachment URL"}
   end
 
-  defp is_valid_media?(type, _url) when type == "", do: true
+  defp valid_media?(type, _url) when type == "", do: true
 
-  defp is_valid_media?(_type, _url), do: {:error, "Invalid Attachment Type"}
+  defp valid_media?(_type, _url), do: {:error, "Invalid Attachment Type"}
 
-  @spec is_valid_message?(String.t(), String.t()) :: true | {:error, String.t()}
-  defp is_valid_message?(body, sample_msg) do
+  @spec valid_message?(String.t(), String.t()) :: true | {:error, String.t()}
+  defp valid_message?(body, sample_msg) do
     body =
       body
       |> String.replace("{{", "[")
@@ -333,9 +333,9 @@ defmodule Glific.Providers.Gupshup.Template do
         end
 
       "QUICK_REPLY" ->
-        if is_empty?(template["Quick Reply 1 Title"]) &&
-             is_empty?(template["Quick Reply 2 Title"]) &&
-             is_empty?(template["Quick Reply 3 Title"]) == true do
+        if empty?(template["Quick Reply 1 Title"]) &&
+             empty?(template["Quick Reply 2 Title"]) &&
+             empty?(template["Quick Reply 3 Title"]) == true do
           {:error, "Quick Reply Button Titles are empty"}
         else
           true
@@ -348,8 +348,8 @@ defmodule Glific.Providers.Gupshup.Template do
 
   defp has_valid_buttons?(_has_buttons, _template), do: {:error, "Invalid Buttons"}
 
-  @spec is_empty?(String.t()) :: boolean()
-  defp is_empty?(button) do
+  @spec empty?(String.t()) :: boolean()
+  defp empty?(button) do
     button
     |> String.trim()
     |> String.length()

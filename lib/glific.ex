@@ -416,4 +416,12 @@ defmodule Glific do
   def add_limit(%{opts: opts} = args), do: Map.put(args, :opts, Map.put(opts, :limit, 25))
 
   def add_limit(args), do: Map.put(args, :opts, Map.put(%{}, :limit, 25))
+
+  @doc """
+  Get default OpenAI keys
+  """
+  @spec get_open_ai_key() :: String.t()
+  def get_open_ai_key do
+    Application.get_env(:glific, :open_ai)
+  end
 end

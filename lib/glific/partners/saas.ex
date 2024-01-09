@@ -49,7 +49,7 @@ defmodule Glific.Partners.Saas do
   end
 
   @doc """
-  Standard changeset pattern we use for all datat types
+  Standard changeset pattern we use for all data types
   """
   @spec changeset(Saas.t(), map()) :: Ecto.Changeset.t()
   def changeset(saas, attrs) do
@@ -97,7 +97,7 @@ defmodule Glific.Partners.Saas do
     do: saas_field(name, :tax_rates) |> Map.values()
 
   @doc """
-  Partner API credentials for Guphsup
+  Partner API credentials for Gupshup
   """
   @spec isv_credentials(String.t()) :: map()
   def isv_credentials(name \\ "Tides"),

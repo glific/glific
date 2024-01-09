@@ -271,7 +271,7 @@ defmodule Glific.Contacts do
   @spec update_contact(Contact.t(), map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def update_contact(%Contact{} = contact, attrs) do
     if has_permission?(contact.id) do
-      if is_simulator_block?(contact, attrs) do
+      if simulator_block?(contact, attrs) do
         # just treat it as if we blocked the simulator
         # but in reality, we don't block the simulator
         {:ok, contact}
@@ -286,9 +286,9 @@ defmodule Glific.Contacts do
   end
 
   # We do not want to block the simulator
-  @spec is_simulator_block?(Contact.t(), map()) :: boolean
-  defp is_simulator_block?(contact, attrs) do
-    if is_simulator_contact?(contact.phone) &&
+  @spec simulator_block?(Contact.t(), map()) :: boolean
+  defp simulator_block?(contact, attrs) do
+    if simulator_contact?(contact.phone) &&
          attrs[:status] == :blocked,
        do: true,
        else: false
@@ -312,10 +312,10 @@ defmodule Glific.Contacts do
       has_permission?(contact.id) == false ->
         raise("Permission denied")
 
-      is_org_root_contact?(contact) == true ->
+      org_root_contact?(contact) == true ->
         {:error, "Sorry, this is your chatbot number and hence cannot be deleted."}
 
-      is_simulator_contact?(contact.phone) == true ->
+      simulator_contact?(contact.phone) == true ->
         {:error, "Sorry, this is simulator number and hence cannot be deleted."}
 
       true ->
@@ -347,8 +347,8 @@ defmodule Glific.Contacts do
   @doc """
   Checks if the contact passed in argument is organization root contact or not
   """
-  @spec is_org_root_contact?(Contact.t()) :: boolean()
-  def is_org_root_contact?(contact) do
+  @spec org_root_contact?(Contact.t()) :: boolean()
+  def org_root_contact?(contact) do
     Partners.organization(contact.organization_id).contact_id == contact.id
   end
 
@@ -450,8 +450,8 @@ defmodule Glific.Contacts do
   We set the last message number in the contact.
   So if this is a first message then we can assume that this is a new contact.
   """
-  @spec is_new_contact(integer()) :: boolean()
-  def is_new_contact(contact_id) do
+  @spec new_contact?(integer()) :: boolean()
+  def new_contact?(contact_id) do
     contact = get_contact!(contact_id)
     contact.last_message_number <= 1
   end
@@ -539,7 +539,7 @@ defmodule Glific.Contacts do
   """
   @spec contact_opted_out(String.t(), non_neg_integer, DateTime.t(), String.t()) :: :ok | :error
   def contact_opted_out(phone, organization_id, utc_time, method \\ "Glific Flows") do
-    if is_simulator_contact?(phone) do
+    if simulator_contact?(phone) do
       :ok
     else
       case Repo.get_by(Contact, %{phone: phone}) do
@@ -761,11 +761,11 @@ defmodule Glific.Contacts do
   @doc """
   check if contact is blocked or not
   """
-  @spec is_contact_blocked?(Contact.t()) :: boolean()
-  def is_contact_blocked?(contact) do
+  @spec contact_blocked?(Contact.t()) :: boolean()
+  def contact_blocked?(contact) do
     cond do
       contact.status == :blocked -> true
-      is_simulator_contact?(contact.phone) -> false
+      simulator_contact?(contact.phone) -> false
       Clients.blocked?(contact.phone, contact.organization_id) -> true
       true -> false
     end
@@ -918,8 +918,8 @@ defmodule Glific.Contacts do
   @doc """
   Lets centralize the code to detect simulator messages and interaction
   """
-  @spec is_simulator_contact?(String.t()) :: boolean
-  def is_simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
+  @spec simulator_contact?(String.t()) :: boolean
+  def simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
 
   @doc """
   create new contact history record.

@@ -86,8 +86,8 @@ defmodule Glific.BigQuery do
     Returns the status if the bigquery is enabled for
     organization.
   """
-  @spec is_active?(non_neg_integer()) :: boolean()
-  def is_active?(org_id) do
+  @spec active?(non_neg_integer()) :: boolean()
+  def active?(org_id) do
     organization = Partners.organization(org_id)
     not is_nil(organization.services["bigquery"])
   end

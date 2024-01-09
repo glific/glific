@@ -44,8 +44,8 @@ For Ubuntu users, you also need to install the `inotify-tools` package.
 We tested and developed against the following versions (please check .tool-versions in the repository for the latest version we are using):
 
 ```bash
-    - erlang : 25.3.2
-    - elixir : 1.14.5-otp-25
+    - erlang : 26.1.2
+    - elixir : 1.15.7-otp-26
 ```
 
 After installing the asdf core, install the Erlang and Elixir plugins.
@@ -57,10 +57,10 @@ asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
 
 If you want to install the specific versions that were used for developing and testing:
 ``` bash
-asdf install erlang 25.3.2
-asdf install elixir 1.14.5-otp-25
-asdf global erlang 25.3.2
-asdf global 1.14.5-otp-25
+asdf install erlang 26.1.2
+asdf install elixir 1.15.7-otp-26
+asdf global erlang 26.1.2
+asdf global elixir 1.15.7-otp-26
 ```
 
 If you get any warnings for missing packages, just install them using apt and try again.
@@ -166,9 +166,10 @@ Go to the glific_backend folder in the terminal console, and:
 - Check port 4001 `sudo lsof -n -i:4001 | grep LISTEN` should return nothing.
 - Check hosts file `grep glific /etc/hosts`
 
-      if it returns nothing, add these 2 lines to the hosts file:
+      if it returns nothing, add these 3 lines to the hosts file:
       127.0.0.1 glific.test 
       127.0.0.1 api.glific.test
+      127.0.0.1 postgres
       
      
 
@@ -186,7 +187,7 @@ Go to the glific_backend folder in the terminal console, and:
 - Check hosts file by`type %SystemRoot%\System32\drivers\etc\hosts | findstr glific`
 
       if returns nothing
-      add these two lines in your hosts file
+      add these three lines in your hosts file
       127.0.0.1 glific.test
       127.0.0.1 api.glific.test
       127.0.0.1 postgres
@@ -194,7 +195,6 @@ Go to the glific_backend folder in the terminal console, and:
 ### 7. Backend - Config
 
 - Run: `cp config/.env.dev.txt config/.env.dev`
-- Run `source config/.env.dev`
 - Run `mix deps.get`
   if this fails try `mix local.hex --force` followed by `mix deps.get`
 
@@ -211,6 +211,7 @@ Go to the glific_backend folder in the terminal console, and:
  At this point, you may get an error saying `password authentication failed for user "postgres"`, in which case, you need to configure the postgres server properly:
 
 ```bash
+createuser postgres -s # needed for more recent versions of postgres on MacOSgit
 sudo -u postgres psql
 ALTER USER postgres WITH PASSWORD 'postgres';
 ```
@@ -283,13 +284,12 @@ install [Glific Frontend](https://github.com/glific/glific-frontend/)
 
 ## Updating your instance
 
-For v0.x releases, we will be resetting the DB and not saving the existing state. Run the following commands
-to update your codebase from the Glific repository.
+Run the following commands to update your codebase from the Glific repository.
 
 - Ensure you are in the top-level directory of the Glific API code.
 - Get the latest code from master: `git switch master && git pull`
 - Ensure you have not modified any files in this directory, by running: `git status`
-- Run the setup command: `mix setup`
+- Run the setup command: `mix deps.get, compile, ecto.migrate`
 
 ## Documentation
 

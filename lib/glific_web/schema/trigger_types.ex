@@ -15,6 +15,11 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :validate_trigger_result do
+    field :success, :boolean
+    field :errors, list_of(:input_error)
+  end
+
   object :trigger do
     field :id, :id
     field :name, :string
@@ -93,6 +98,12 @@ defmodule GlificWeb.Schema.TriggerTypes do
       arg(:input, non_null(:trigger_input))
       middleware(Authorize, :manager)
       resolve(&Resolvers.Triggers.create_trigger/3)
+    end
+
+    field :validate_trigger, :validate_trigger_result do
+      arg(:input, non_null(:trigger_input))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Triggers.validate_trigger/3)
     end
 
     field :update_trigger, :trigger_result do

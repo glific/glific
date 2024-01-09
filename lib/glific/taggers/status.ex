@@ -9,6 +9,6 @@ defmodule Glific.Taggers.Status do
     do: Glific.Tags.status_map(attrs)
 
   @doc false
-  @spec is_new_contact(Glific.Messages.Message.t()) :: boolean()
-  def is_new_contact(message), do: message.message_number <= 1
+  @spec new_contact?(Glific.Messages.Message.t()) :: boolean()
+  def new_contact?(message), do: message.message_number <= 1
 end

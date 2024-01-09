@@ -31,7 +31,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @spec new_contact_tagger({atom() | Message.t(), map()}) :: {Message.t(), map()}
   defp new_contact_tagger({message, state}) do
-    if Status.is_new_contact(message) do
+    if Status.new_contact?(message) do
       {message, state |> Map.put(:tagged, true) |> Map.put(:newcontact, true)}
     else
       {message, state}
