@@ -161,7 +161,8 @@ defmodule Glific.MixProject do
       {:pow, git: "https://github.com/glific/pow.git"},
       {:contex, "~> 0.5.0"},
       {:password_validator, "~> 0.5"},
-      {:resvg, "~> 0.3.0"}
+      {:resvg, "~> 0.3.0"},
+      {:httpoison, "~> 1.8"}
     ]
   end
 
