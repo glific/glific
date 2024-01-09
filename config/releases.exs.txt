@@ -63,3 +63,5 @@ stripe_ids: [
 config :stripity_stripe,
   api_key: System.get_env("STRIPE_API_KEY"),
   signing_secret: System.get_env("STRIPE_SIGNING_SECRET")
+
+config :glific, open_ai: System.get_env("OPEN_AI_KEY")

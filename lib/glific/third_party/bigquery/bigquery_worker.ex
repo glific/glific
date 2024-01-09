@@ -56,7 +56,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   """
   @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(org_id) do
-    if BigQuery.is_active?(org_id) do
+    if BigQuery.active?(org_id) do
       Logger.info("Found bigquery credentials for org_id: #{org_id}")
 
       Jobs.get_bigquery_jobs(org_id)
@@ -365,7 +365,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
-        if Contacts.is_simulator_contact?(row.phone),
+        if Contacts.simulator_contact?(row.phone),
           do: acc,
           else: [
             # We are sending nil, as setting is a record type and need to structure the data first(like field)
@@ -567,7 +567,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
-        if Contacts.is_simulator_contact?(row.contact.phone),
+        if Contacts.simulator_contact?(row.contact.phone),
           do: acc,
           else: [
             %{

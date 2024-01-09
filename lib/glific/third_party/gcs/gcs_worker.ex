@@ -323,7 +323,7 @@ defmodule Glific.GCS.GcsWorker do
 
     organization_id = message_media.organization_id
 
-    if BigQuery.is_active?(organization_id) do
+    if BigQuery.active?(organization_id) do
       BigQueryWorker.queue_message_media_data([message_media], organization_id, %{
         action: :update,
         max_id: nil,

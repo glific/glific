@@ -1077,7 +1077,7 @@ defmodule Glific.Clients.Stir do
     Enum.reduce(answers, [], fn {key, value}, acc ->
       if answer_state == "all_true" || value not in ["67-100"] do
         key =
-          if is_dam_dmpc_activity?(priority, fields) and key in ["s3", "s4"],
+          if dam_dmpc_activity?(priority, fields) and key in ["s3", "s4"],
             do: "s4",
             else: key
 
@@ -1094,7 +1094,7 @@ defmodule Glific.Clients.Stir do
     end)
   end
 
-  defp is_dam_dmpc_activity?("safety", fields) do
+  defp dam_dmpc_activity?("safety", fields) do
     activty =
       get_in(fields, ["contact", "fields", "activity", "value"])
       |> clean_string()
@@ -1102,7 +1102,7 @@ defmodule Glific.Clients.Stir do
     String.contains?(activty, ["dam", "dmpc"])
   end
 
-  defp is_dam_dmpc_activity?(_priority, _activity), do: false
+  defp dam_dmpc_activity?(_priority, _activity), do: false
 
   @spec option_b_answer_state(map(), map()) :: String.t()
   defp option_b_answer_state(p1_answers, p2_answers) do
@@ -1249,7 +1249,7 @@ defmodule Glific.Clients.Stir do
     with {:error, _} <- has_a_date(contact.fields, "registration_completed_at"),
          {:ok, registration_started_at} <- has_a_date(contact.fields, "registration_started_at"),
          true <-
-           Timex.diff(Timex.today(), registration_started_at, :days) |> is_reminder_day?(type) do
+           Timex.diff(Timex.today(), registration_started_at, :days) |> reminder_day?(type) do
       {:reminder_set, set_reminder(contact, type)}
     else
       _ -> {:reminder_not_set, results}
@@ -1263,7 +1263,7 @@ defmodule Glific.Clients.Stir do
            has_a_date(contact.fields, "registration_completed_at"),
          true <-
            Timex.diff(Timex.today(), contact.last_message_at, :days)
-           |> is_reminder_day?(type) do
+           |> reminder_day?(type) do
       {:reminder_set, set_reminder(contact, type)}
     else
       _ -> {:reminder_not_set, results}
@@ -1277,7 +1277,7 @@ defmodule Glific.Clients.Stir do
         has_a_date(contact.fields, "last_survey_submission_at")
         date = submission_check_date(contact.fields)
 
-        if Timex.diff(Timex.today(), date, :days) |> is_reminder_day?(type) do
+        if Timex.diff(Timex.today(), date, :days) |> reminder_day?(type) do
           {:reminder_set, set_reminder(contact, type)}
         else
           {:reminder_not_set, results}
@@ -1313,10 +1313,10 @@ defmodule Glific.Clients.Stir do
     end
   end
 
-  @spec is_reminder_day?(integer(), atom()) :: boolean()
-  defp is_reminder_day?(0, _type), do: false
+  @spec reminder_day?(integer(), atom()) :: boolean()
+  defp reminder_day?(0, _type), do: false
 
-  defp is_reminder_day?(days, type),
+  defp reminder_day?(days, type),
     do: rem(days, @reminders[type][:days]) == 0
 
   @spec set_reminder(Contacts.Contact.t(), atom()) :: map()

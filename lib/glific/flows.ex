@@ -378,6 +378,18 @@ defmodule Glific.Flows do
     %{results: asset_list |> Enum.reverse()}
   end
 
+  @doc """
+  Helper function to get the flow along with the revision and processing
+  """
+  @spec get_complete_flow(non_neg_integer(), non_neg_integer(), String.t()) :: Flow.t()
+  def get_complete_flow(organization_id, flow_id, status \\ "draft") do
+    # note that draft gives us the most recent one (revision_number = 0), so it
+    # could be published also. this is what we want!
+    {:ok, flow} = Repo.fetch_by(Flow, %{id: flow_id, organization_id: organization_id})
+
+    Flow.get_flow(organization_id, flow.uuid, status)
+  end
+
   @spec get_user(nil | String.t()) :: map()
   defp get_user(nil), do: %{name: "Unknown Glific User"}
   defp get_user(user_name), do: %{name: user_name}
@@ -731,6 +743,34 @@ defmodule Glific.Flows do
   end
 
   @doc """
+  Update the localization values in a flow definition. At some point in the immediate future
+  we will want to ensure we have locked the flow before we do this update
+  """
+  @spec update_flow_localization(map(), Flow.t()) ::
+          {:ok, FlowRevision.t()} | {:error, String.t()}
+  def update_flow_localization(localization, flow) do
+    user = Repo.get_current_user()
+
+    with {:ok, latest_flow_revision} <-
+           Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}) do
+      definition_copy =
+        latest_flow_revision.definition
+        |> Map.merge(%{"localization" => localization})
+
+      # lets ensure we clean up the caches
+      remove_flow_cache(flow)
+
+      {:ok, _} =
+        FlowRevision.create_flow_revision(%{
+          definition: definition_copy,
+          flow_id: flow.id,
+          organization_id: flow.organization_id,
+          user_id: user.id
+        })
+    end
+  end
+
+  @doc """
   Create a map of keywords that map to flow ids for each
   active organization. Also cache this value including the outOfOffice
   shortcode
@@ -842,9 +882,9 @@ defmodule Glific.Flows do
   Check if the flow is optin flow. Currently we are
   checking based on the optin keyword only.
   """
-  @spec is_optin_flow?(Flow.t()) :: boolean()
-  def is_optin_flow?(nil), do: false
-  def is_optin_flow?(flow), do: Enum.member?(flow.keywords, @optin_flow_keyword)
+  @spec optin_flow?(Flow.t()) :: boolean()
+  def optin_flow?(nil), do: false
+  def optin_flow?(flow), do: Enum.member?(flow.keywords, @optin_flow_keyword)
 
   @doc """
   import a flow from json
@@ -1171,8 +1211,8 @@ defmodule Glific.Flows do
   @doc """
   Check if the type is a media type we handle in flows
   """
-  @spec is_media_type?(atom()) :: boolean()
-  def is_media_type?(type),
+  @spec media_type?(atom()) :: boolean()
+  def media_type?(type),
     do: type in [:audio, :document, :image, :video]
 
   @doc """

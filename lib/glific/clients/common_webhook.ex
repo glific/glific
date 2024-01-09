@@ -27,7 +27,8 @@ defmodule Glific.Clients.CommonWebhook do
         parsed_msg: "Could not parsed"
       }
     else
-      ChatGPT.parse(org_id, question_text)
+      ChatGPT.get_api_key(org_id)
+      |> ChatGPT.parse(question_text)
       |> case do
         {:ok, text} ->
           %{

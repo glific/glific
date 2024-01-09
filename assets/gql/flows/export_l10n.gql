@@ -1,0 +1,5 @@
+query exportFlowLocalization($id: ID!) {
+  exportFlowLocalization(id: $id) {
+    export_data
+  }
+}

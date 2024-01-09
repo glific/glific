@@ -112,15 +112,15 @@ defmodule Glific.Clients.MukkaMaar do
   defp set_message_category(contact, _list, 1), do: check_nudge_category(contact, "type 3")
 
   defp set_message_category(contact, [_current_flow, %{flow_id: flow_id} = _flow_stucked_on], 2) do
-    msg_context_category = if is_registered?(contact, flow_id), do: "type 2", else: "type 1"
+    msg_context_category = if registered?(contact, flow_id), do: "type 2", else: "type 1"
     check_nudge_category(contact, msg_context_category)
   end
 
-  @spec is_registered?(map(), pos_integer()) :: boolean()
-  defp is_registered?(_contact, flow_stucked_on) when flow_stucked_on in @registration_flow_id,
+  @spec registered?(map(), pos_integer()) :: boolean()
+  defp registered?(_contact, flow_stucked_on) when flow_stucked_on in @registration_flow_id,
     do: false
 
-  defp is_registered?(contact, _flow_stucked_on) do
+  defp registered?(contact, _flow_stucked_on) do
     sex = get_in(contact, [:fields, "sex", "value"])
     firstname = get_in(contact, [:fields, "first_name", "value"])
     lastname = get_in(contact, [:fields, "last_name", "value"])
