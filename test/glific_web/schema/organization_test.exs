@@ -450,6 +450,11 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert services["fun_with_flags"] == true
     assert services["bigquery"] == true
     assert services["google_cloud_storage"] == false
+    assert services["ticketing_enabled"] == false
+    assert services["roles_and_permission"] == false
+    assert services["flow_uuid_display"] == false
+    assert services["contact_profile_enabled"] == false
+    assert services["auto_translation_enabled"] == false
   end
 
   test "update an organization with organization settings", %{user: user} do
