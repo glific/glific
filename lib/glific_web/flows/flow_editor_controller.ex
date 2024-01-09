@@ -154,6 +154,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     {:ok, flow_label} =
       FlowLabel.create_flow_label(%{
         name: params["name"],
+        type: params["type"],
         organization_id: conn.assigns[:organization_id]
       })
 
