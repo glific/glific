@@ -23,5 +23,11 @@
 1. Set up the environment or import your existing Postman environment.
 2. Variables `api_url` and `auth_token` need to be set up as per your system.
 
+### 3. Collaborating using Bruno
+
+1. To create a new request or modify an existing one, simply use the Bruno desktop app. 
+
+2. Once you've made the necessary changes in the Bruno app, don't forget to push them to Github like you normally would. This ensures that all your updates become visible in the repository for everyone to access and collaborate on.
+
 
 
