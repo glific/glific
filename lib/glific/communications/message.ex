@@ -200,7 +200,7 @@ defmodule Glific.Communications.Message do
       |> Map.put(:organization_id, organization_id)
       |> Contacts.maybe_create_contact()
 
-    if Contacts.is_contact_blocked?(contact),
+    if Contacts.contact_blocked?(contact),
       do: :ok,
       else: do_receive_message(contact, message_params, type)
   end
@@ -307,7 +307,7 @@ defmodule Glific.Communications.Message do
   # check if the contact is simulator and send another subscription only for it
   @spec publish_simulator(Message.t() | nil, atom()) :: Message.t() | nil
   defp publish_simulator(message, type) when type in [:sent_message, :received_message] do
-    if Contacts.is_simulator_contact?(message.contact.phone) do
+    if Contacts.simulator_contact?(message.contact.phone) do
       message_type =
         if type == :sent_message,
           do: :sent_simulator_message,

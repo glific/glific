@@ -115,6 +115,9 @@ defmodule GlificWeb.APIAuthPlugTest do
   end
 
   test "fetch all existing sessions of a user", %{conn: conn, user: user} do
+    # deleting all previously active sessions
+    APIAuthPlug.delete_all_user_sessions(@pow_config, user)
+
     active_sessions = APIAuthPlug.fetch_all_user_sessions(@pow_config, user)
     # number of active sessions at the start should be 0
     assert active_sessions == 0

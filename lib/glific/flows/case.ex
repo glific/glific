@@ -281,7 +281,7 @@ defmodule Glific.Flows.Case do
     do: msg.type == :location
 
   defp do_execute(%{type: "has_media"}, _context, msg),
-    do: Flows.is_media_type?(msg.type)
+    do: Flows.media_type?(msg.type)
 
   defp do_execute(%{type: "has_audio"}, _context, msg),
     do: msg.type == :audio

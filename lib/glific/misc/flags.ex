@@ -151,24 +151,26 @@ defmodule Glific.Flags do
   """
   @spec get_flow_uuid_display(map()) :: boolean
   def get_flow_uuid_display(organization) do
-    id = organization.id
+    app_env = Application.get_env(:glific, :environment)
 
     cond do
-      FunWithFlags.enabled?(:flow_uuid_display, for: %{organization_id: id}) ->
+      FunWithFlags.enabled?(:flow_uuid_display, for: %{organization_id: organization.id}) ->
         true
 
-      # the below 2 conditions are just for testing and prototyping purposes
-      # we'll get rid of them when we start using this actively
-      Application.get_env(:glific, :environment) == :prod && id == 2 ->
-        true
-
-      Application.get_env(:glific, :environment) != :prod && id == 1 ->
+      trusted_env?(app_env, organization.id) ->
         true
 
       true ->
         false
     end
   end
+
+  # the below 2 conditions are just for testing and prototyping purposes
+  # we'll get rid of them when we start using this actively
+  @spec trusted_env?(atom(), non_neg_integer()) :: boolean
+  defp trusted_env?(:dev, 1), do: true
+  defp trusted_env?(:prod, 2), do: true
+  defp trusted_env?(_env, _id), do: false
 
   @doc """
   Get role and permission value for organization flag
@@ -181,8 +183,41 @@ defmodule Glific.Flags do
   Get ticketing value for organization flag
   """
   @spec get_ticketing_enabled(map()) :: boolean
-  def get_ticketing_enabled(organization),
-    do: FunWithFlags.enabled?(:is_ticketing_enabled, for: %{organization_id: organization.id})
+  def get_ticketing_enabled(organization) do
+    app_env = Application.get_env(:glific, :environment)
+
+    cond do
+      FunWithFlags.enabled?(:is_ticketing_enabled, for: %{organization_id: organization.id}) ->
+        true
+
+      trusted_env?(app_env, organization.id) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  @doc """
+  Get auto translation value for organization flag
+  """
+  @spec get_auto_translation_enabled(map()) :: boolean
+  def get_auto_translation_enabled(organization) do
+    app_env = Application.get_env(:glific, :environment)
+
+    cond do
+      FunWithFlags.enabled?(:is_auto_translation_enabled,
+        for: %{organization_id: organization.id}
+      ) ->
+        true
+
+      trusted_env?(app_env, organization.id) ->
+        true
+
+      true ->
+        false
+    end
+  end
 
   @doc """
   Get contact profile value for organization flag
@@ -201,6 +236,18 @@ defmodule Glific.Flags do
       organization,
       :is_ticketing_enabled,
       get_ticketing_enabled(organization)
+    )
+  end
+
+  @doc """
+  Set fun_with_flag toggle for auto translation for an organization
+  """
+  @spec set_auto_translation_enabled(map()) :: map()
+  def set_auto_translation_enabled(organization) do
+    Map.put(
+      organization,
+      :is_auto_translation_enabled,
+      get_auto_translation_enabled(organization)
     )
   end
 
@@ -264,7 +311,8 @@ defmodule Glific.Flags do
       :is_contact_profile_enabled,
       :flow_uuid_display,
       :roles_and_permission,
-      :is_ticketing_enabled
+      :is_ticketing_enabled,
+      :is_auto_translate_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(

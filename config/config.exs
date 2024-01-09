@@ -12,7 +12,7 @@ config :glific,
   global_schema: "global"
 
 # Configures Elixir's Logger
-config :logger, :console,
+config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id, :user_id, :org_id]
 
@@ -146,6 +146,7 @@ config :tailwind,
   ]
 
 config :glific, Glific.Communications.Mailer, adapter: Swoosh.Adapters.AmazonSES
+config :glific, :adaptors, translators: Glific.Flows.Translate.Simple
 
 config :glific, secrets: []
 

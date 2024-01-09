@@ -1180,7 +1180,7 @@ defmodule Glific.Messages do
 
   @spec reset_contact_fields(Contact.t()) :: nil
   defp reset_contact_fields(contact) do
-    simulator = Contacts.is_simulator_contact?(contact.phone)
+    simulator = Contacts.simulator_contact?(contact.phone)
 
     values = %{
       last_message_number: 0,

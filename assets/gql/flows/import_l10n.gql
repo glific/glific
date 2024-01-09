@@ -1,0 +1,5 @@
+mutation importFlowLocalization($localization: String!, $id: ID!) {
+  importFlowLocalization(localization: $localization, id: $id) {
+    success
+  }
+}

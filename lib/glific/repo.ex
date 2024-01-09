@@ -390,7 +390,7 @@ defmodule Glific.Repo do
         opts[:schema_migration] ||
         opts[:prefix] == "global" ||
         query.from.prefix == "global" ||
-          is_sub_query?(query) ->
+          sub_query?(query) ->
         {query, opts}
 
       organization_id = opts[:organization_id] ->
@@ -402,9 +402,9 @@ defmodule Glific.Repo do
   end
 
   # lets ignore all sub queries
-  @spec is_sub_query?(Ecto.Query.t()) :: boolean()
-  defp is_sub_query?(%{from: %{source: %Ecto.SubQuery{}}} = _query), do: true
-  defp is_sub_query?(_query), do: false
+  @spec sub_query?(Ecto.Query.t()) :: boolean()
+  defp sub_query?(%{from: %{source: %Ecto.SubQuery{}}} = _query), do: true
+  defp sub_query?(_query), do: false
 
   @organization_key {__MODULE__, :organization_id}
   @user_key {__MODULE__, :user}
