@@ -7,11 +7,11 @@ defmodule Glific.Groups.WhatsappGroup do
 
   def get_whatsapp_group_details do
     # Define the cURL
-    url = "https://api.maytapi.com/api/0cc85749-9c6f-4671-997d-a3bb95933058/40478/getGroups"
+    url = "https://api.maytapi.com/api/0cc85749-9c6f-4671-997d-a3bb95933058/[phone_id]/getGroups"
 
     headers = [
       {"accept", "application/json"},
-      {"x-maytapi-key", "001ed56d-59e6-4aee-8a50-2a833635fcfe"}
+      {"x-maytapi-key", "001ed56d-59e6-4aee-8a50-2a833635xxxx"}
     ]
 
     with {:ok, %HTTPoison.Response{status_code: 200, body: body}} <- HTTPoison.get(url, headers),
