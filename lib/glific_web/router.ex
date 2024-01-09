@@ -105,6 +105,11 @@ defmodule GlificWeb.Router do
     forward("/gupshup-enterprise", Providers.Gupshup.Enterprise.Plugs.Shunt)
   end
 
+  # maytapi webhook
+  scope "/", GlificWeb do
+    forward("/maytapi", Providers.Maytapi.Plugs.Shunt)
+  end
+
   # """
   # Third party webhook except BSPs. Ideally we should have merge the BSPs also in this scope.
   # But since the BSP is a primary webhooks for this application We kept it separated.

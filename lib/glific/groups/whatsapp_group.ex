@@ -1,26 +1,32 @@
 defmodule Glific.Groups.WhatsappGroup do
-  require HTTPoison
 
   alias Glific.{
     Groups
   }
 
+  @spec get_whatsapp_group_details() :: list() | {:error, any()}
   def get_whatsapp_group_details do
-    # Define the cURL
-    url = "https://api.maytapi.com/api/0cc85749-9c6f-4671-997d-a3bb95933058/[phone_id]/getGroups"
+    #the id and token will come from the maytapi account
+    phone_id = 40478
+    product_id = "0cc85749-9c6f-4671-997d-a3bb95933058"
+    token = "001ed56d-59e6-4aee-8a50-2a833635fcfe"
+
+    # cURL to get groups
+    url = "https://api.maytapi.com/api/#{product_id}/#{phone_id}/getGroups"
 
     headers = [
       {"accept", "application/json"},
-      {"x-maytapi-key", "001ed56d-59e6-4aee-8a50-2a833635xxxx"}
+      {"x-maytapi-key", token}
     ]
 
-    with {:ok, %HTTPoison.Response{status_code: 200, body: body}} <- HTTPoison.get(url, headers),
+
+    with {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 <- Tesla.get(url, headers: headers),
          {:ok, decoded} <- Jason.decode(body) do
       get_group_names(decoded)
       |> insert_whatsapp_groups()
     else
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        {:error, "failed: #{reason}"}
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
+        {:error, body}
     end
   end
 
