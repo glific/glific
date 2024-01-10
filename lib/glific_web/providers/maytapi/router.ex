@@ -16,8 +16,6 @@ defmodule GlificWeb.Providers.Maytapi.Router do
       post("/voice", MessageController, :audio)
       post("/document", MessageController, :document)
       post("/location", MessageController, :location)
-      post("/button", MessageController, :button)
-      post("/interactive", MessageController, :interactive)
     end
 
     scope "/message-event" do
