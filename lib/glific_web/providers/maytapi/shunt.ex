@@ -25,7 +25,7 @@ defmodule GlificWeb.Providers.Maytapi.Plugs.Shunt do
 
   @doc false
   @spec call(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
-  def call(%Conn{params: %{"type" => payload_type}} = conn, opts) do
+  def call(%Conn{params: %{"message" => %{"type" => payload_type}}} = conn, opts) do
     organization = build_context(conn)
 
     path =
@@ -47,7 +47,7 @@ defmodule GlificWeb.Providers.Maytapi.Plugs.Shunt do
       ["maytapi"] ++
         if Glific.safe_string_to_atom(organization.status) == :active,
           do: ["message-event", "handler"],
-          else: ["not_active_or_approved"]
+          else: ["not_active"]
 
     conn
     |> change_path_info(path)

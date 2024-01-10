@@ -22,4 +22,16 @@ defmodule Glific.Providers.Maytapi.Message do
   def receive_text(params) do
     IO.inspect(params)
   end
+
+  def receive_media(params) do
+    IO.inspect(params)
+  end
+
+  def receive_interactive(params) do
+    IO.inspect(params)
+  end
+
+  def receive_location(params) do
+    IO.inspect(params)
+  end
 end

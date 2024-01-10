@@ -31,4 +31,82 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
 
     handler(conn, params, "text handler")
   end
+
+  @doc """
+  Callback for maytapi image type
+  """
+  @spec image(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def image(conn, params), do: media(conn, params, :image)
+
+  @doc """
+  Callback for maytapi file type
+  """
+  @spec file(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def file(conn, params), do: media(conn, params, :document)
+
+  @doc """
+  Callback for maytapi audio type
+  """
+  @spec audio(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def audio(conn, params), do: media(conn, params, :audio)
+
+  @doc """
+  Callback for maytapi video type
+  """
+  @spec video(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def video(conn, params), do: media(conn, params, :video)
+
+  @doc """
+  Callback for maytapi sticker image
+  """
+  @spec sticker(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def sticker(conn, params), do: media(conn, params, :sticker)
+
+  @doc false
+  # Handle maytapi media message and convert them into Glific Message struct
+  @spec media(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
+  defp media(conn, params, type) do
+    params
+    |> Maytapi.Message.receive_media()
+    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> Communications.Message.receive_message(type)
+
+    handler(conn, params, "media handler")
+  end
+
+  @doc """
+  Callback for interactive quick reply type
+  """
+  @spec quick_reply(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def quick_reply(conn, params), do: interactive(conn, params, :quick_reply)
+
+  @doc """
+  Callback for interactive list
+  """
+  @spec list(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def list(conn, params), do: interactive(conn, params, :list)
+
+  @doc false
+  # Handle maytapi interactive message and convert them into Glific Message struct
+  @spec interactive(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
+  defp interactive(conn, params, type) do
+    params
+    |> Maytapi.Message.receive_interactive()
+    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> Communications.Message.receive_message(type)
+
+    handler(conn, params, "interactive handler")
+  end
+
+  @doc false
+  # Handle Maytapi location message and convert them into Glific Message struct
+  @spec location(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def location(conn, params) do
+    params
+    |> Maytapi.Message.receive_location()
+    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> Communications.Message.receive_message(:location)
+
+    handler(conn, params, "location handler")
+  end
 end
