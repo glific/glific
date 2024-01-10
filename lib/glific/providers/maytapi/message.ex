@@ -42,4 +42,22 @@ defmodule Glific.Providers.Maytapi.Message do
       }
     }
   end
+
+  @doc false
+  @spec receive_media(map()) :: map()
+  def receive_media(params) do
+    payload = params["message"]
+
+    %{
+      bsp_message_id: payload["id"],
+      caption: payload["caption"],
+      url: payload["url"],
+      content_type: payload["type"],
+      source_url: payload["url"],
+      sender: %{
+        phone: params["user"]["phone"],
+        name: params["user"]["name"]
+      }
+    }
+  end
 end
