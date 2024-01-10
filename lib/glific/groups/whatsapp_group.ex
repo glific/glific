@@ -5,7 +5,6 @@ defmodule Glific.Groups.WhatsappGroup do
 
   alias Glific.{
     Groups,
-    Maytapi,
     Providers.Maytapi.ApiClient
   }
 

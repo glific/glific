@@ -16,11 +16,10 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   def maytapi_get(url, token),
     do:
       get(url,
-        headers:
-          headers = [
-            {"accept", "application/json"},
-            {"x-maytapi-key", token}
-          ]
+        headers: [
+          {"accept", "application/json"},
+          {"x-maytapi-key", token}
+        ]
       )
 
   @doc false
@@ -34,7 +33,7 @@ defmodule Glific.Providers.Maytapi.ApiClient do
         {:error, "Maytapi is not active"}
 
       credentials ->
-        credentials.secrets
+        {:ok, credentials.secrets}
     end
   end
 
@@ -49,13 +48,14 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   """
   @spec get_whatsapp_group_details(non_neg_integer()) :: list() | {:error, any()}
   def get_whatsapp_group_details(org_id) do
-    secrets = Maytapi.fetch_credentials(org_id)
-    phone_id = secrets["phone_id"]
-    product_id = secrets["product_id"]
-    token = secrets["token"]
+    with {:ok, secrets} <- fetch_credentials(org_id) do
+      phone_id = secrets["phone_id"]
+      product_id = secrets["product_id"]
+      token = secrets["token"]
 
-    url = @maytapi_url <> "/#{product_id}/#{phone_id}/getGroups"
+      url = @maytapi_url <> "/#{product_id}/#{phone_id}/getGroups"
 
-    maytapi_get(url, token)
+      maytapi_get(url, token)
+    end
   end
 end

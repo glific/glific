@@ -19,6 +19,7 @@ defmodule Glific.Partners do
     Flows,
     Flows.Flow,
     GCS,
+    Groups.WhatsappGroup,
     Notifications,
     Partners.Credential,
     Partners.Organization,
@@ -927,8 +928,8 @@ defmodule Glific.Partners do
     {:ok, credential}
   end
 
-  defp credential_update_callback(_organization, credential, "maytapi") do
-    IO.inspect(credential)
+  defp credential_update_callback(organization, credential, "maytapi") do
+    WhatsappGroup.get_whatsapp_group_details(organization.id)
     {:ok, credential}
   end
 
