@@ -18,4 +18,8 @@ defmodule Glific.Providers.Maytapi.Message do
 
     ApiClient.send_message(org_id, payload)
   end
+
+  def receive_text(params) do
+    IO.inspect(params)
+  end
 end

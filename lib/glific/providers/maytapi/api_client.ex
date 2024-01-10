@@ -25,8 +25,8 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   @doc """
   Making Tesla post call and adding api key in header
   """
-  @spec gupshup_post(String.t(), any(), String.t()) :: Tesla.Env.result()
-  def gupshup_post(url, payload, token),
+  @spec maytapi_post(String.t(), any(), String.t()) :: Tesla.Env.result()
+  def maytapi_post(url, payload, token),
     do:
       post(url, payload,
         headers: [
@@ -77,7 +77,7 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   """
   @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result() | any()
   def send_message(org_id, payload) do
-    with {:ok, secrets} <- get_credentials(org_id) do
+    with {:ok, secrets} <- fetch_credentials(org_id) do
       phone_id = secrets["phone_id"]
       product_id = secrets["product_id"]
       token = secrets["token"]

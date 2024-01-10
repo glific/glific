@@ -19,5 +19,12 @@ defmodule GlificWeb.Providers.Maytapi.Router do
       post("/button", MessageController, :button)
       post("/interactive", MessageController, :interactive)
     end
+
+    scope "/message-event" do
+      post("/handler", MessageEventController, :handler)
+      post("/*unknown", DefaultController, :unknown)
+    end
+
+    post("/*unknown", DefaultController, :unknown)
   end
 end

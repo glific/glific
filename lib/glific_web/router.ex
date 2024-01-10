@@ -103,10 +103,6 @@ defmodule GlificWeb.Router do
   scope "/", GlificWeb do
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
     forward("/gupshup-enterprise", Providers.Gupshup.Enterprise.Plugs.Shunt)
-  end
-
-  # maytapi webhook
-  scope "/", GlificWeb do
     forward("/maytapi", Providers.Maytapi.Plugs.Shunt)
   end
 
