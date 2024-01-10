@@ -5,7 +5,8 @@ defmodule Glific.Groups.WhatsappGroup do
 
   alias Glific.{
     Groups,
-    Maytapi
+    Maytapi,
+    Providers.Maytapi.ApiClient
   }
 
   @doc """
@@ -19,21 +20,8 @@ defmodule Glific.Groups.WhatsappGroup do
   """
   @spec get_whatsapp_group_details(non_neg_integer()) :: list() | {:error, any()}
   def get_whatsapp_group_details(org_id) do
-    secrets = Maytapi.fetch_credentials(org_id)
-    phone_id = secrets["phone_id"]
-    product_id = secrets["product_id"]
-    token = secrets["token"]
-
-    # cURL to get groups
-    url = "https://api.maytapi.com/api/#{product_id}/#{phone_id}/getGroups"
-
-    headers = [
-      {"accept", "application/json"},
-      {"x-maytapi-key", token}
-    ]
-
     with {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 <-
-           Tesla.get(url, headers: headers),
+           ApiClient.get_whatsapp_group_details(org_id),
          {:ok, decoded} <- Jason.decode(body) do
       get_group_names(decoded)
       |> insert_whatsapp_groups()
