@@ -929,7 +929,7 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(organization, credential, "maytapi") do
-    WhatsappGroup.get_whatsapp_group_details(organization.id)
+    WhatsappGroup.list_wa_groups(organization.id)
     {:ok, credential}
   end
 

@@ -23,7 +23,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
   """
   @spec text(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def text(conn, params) do
-
     params
     |> Maytapi.Message.receive_text()
     |> Map.put(:organization_id, conn.assigns[:organization_id])

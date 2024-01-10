@@ -19,19 +19,27 @@ defmodule Glific.Providers.Maytapi.Message do
     ApiClient.send_message(org_id, payload)
   end
 
+  @doc false
+  @spec receive_text(payload :: map()) :: map()
   def receive_text(params) do
-    IO.inspect(params)
-  end
+    payload = params["message"]
 
-  def receive_media(params) do
-    IO.inspect(params)
-  end
+    # lets ensure that we have a phone number
+    # sometime the gupshup payload has a blank payload
+    # or maybe a simulator or some test code
+    if params["user"]["phone"] in [nil, ""] do
+      error = "Phone number is blank, #{inspect(payload)}"
+      Glific.log_error(error)
+      raise(RuntimeError, message: error)
+    end
 
-  def receive_interactive(params) do
-    IO.inspect(params)
-  end
-
-  def receive_location(params) do
-    IO.inspect(params)
+    %{
+      bsp_message_id: payload["id"],
+      body: payload["text"],
+      sender: %{
+        phone: params["user"]["phone"],
+        name: params["user"]["name"]
+      }
+    }
   end
 end

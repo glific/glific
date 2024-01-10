@@ -9,18 +9,18 @@ defmodule Glific.Groups.WhatsappGroup do
   }
 
   @doc """
-  Fetches group using mytapi API and sync it in Glific
+  Fetches group using maytapi API and sync it in Glific
 
   ## Examples
 
-      iex> get_whatsapp_group_details()
+      iex> list_wa_groups()
       [%Group{}, ...]
 
   """
-  @spec get_whatsapp_group_details(non_neg_integer()) :: list() | {:error, any()}
-  def get_whatsapp_group_details(org_id) do
+  @spec list_wa_groups(non_neg_integer()) :: list() | {:error, any()}
+  def list_wa_groups(org_id) do
     with {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 <-
-           ApiClient.get_whatsapp_group_details(org_id),
+           ApiClient.list_wa_groups(org_id),
          {:ok, decoded} <- Jason.decode(body) do
       get_group_names(decoded)
       |> insert_whatsapp_groups()

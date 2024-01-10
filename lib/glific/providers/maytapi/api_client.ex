@@ -55,12 +55,12 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
   ## Examples
 
-      iex> get_whatsapp_group_details()
+      iex> list_wa_groups()
       [%Group{}, ...]
 
   """
-  @spec get_whatsapp_group_details(non_neg_integer()) :: list() | {:error, any()}
-  def get_whatsapp_group_details(org_id) do
+  @spec list_wa_groups(non_neg_integer()) :: list() | {:error, any()}
+  def list_wa_groups(org_id) do
     with {:ok, secrets} <- fetch_credentials(org_id) do
       phone_id = secrets["phone_id"]
       product_id = secrets["product_id"]
