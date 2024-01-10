@@ -23,3 +23,8 @@ body:json {
       }
   }
 }
+
+script:post-response {
+  let ans = res.getBody();
+  bru.setEnvVar("auth_token",ans.data.access_token);
+}
