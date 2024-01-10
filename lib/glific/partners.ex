@@ -927,6 +927,11 @@ defmodule Glific.Partners do
     {:ok, credential}
   end
 
+  defp credential_update_callback(_organization, credential, "maytapi") do
+    IO.inspect(credential)
+    {:ok, credential}
+  end
+
   defp credential_update_callback(_organization, credential, _provider), do: {:ok, credential}
 
   @doc """
