@@ -4,27 +4,56 @@ defmodule Glific.Flows.Translate.OpenAITest do
   alias Glific.Flows.Translate.OpenAI
 
   setup do
-    Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            "choices" => [
-              %{
-                "message" => %{
-                  "content" =>
-                    "[\"हमारे एनजीओ चैटबॉट में आपका स्वागत है\", \"हमें अपने बारे में परिचय देने के लिए धन्यवाद\" ]"
+    Tesla.Mock.mock(fn env ->
+      cond do
+        String.contains?(env.body, "Welcome to our NGO Chatbot") ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "choices" => [
+                %{
+                  "message" => %{
+                    "content" => "हमारे एनजीओ चैटबॉट में आपका स्वागत है"
+                  }
                 }
-              }
-            ]
+              ]
+            }
           }
-        }
+
+        String.contains?(env.body, "Thank you for introducing yourself to us") ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "choices" => [
+                %{
+                  "message" => %{
+                    "content" => "हमें अपने बारे में परिचय देने के लिए धन्यवाद"
+                  }
+                }
+              ]
+            }
+          }
+
+        true ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "choices" => [
+                %{
+                  "message" => %{
+                    "content" => "बड़े संदेशों के लिए अनुवाद उपलब्ध नहीं है।"
+                  }
+                }
+              ]
+            }
+          }
+      end
     end)
 
     :ok
   end
 
-  test "translate/3 should chunk a list of strings based on length" do
+  test "translate/3 should translate list of strings" do
     {:ok, translated_text} =
       OpenAI.translate(
         ["Welcome to our NGO Chatbot", "Thank you for introducing yourself to us"],
@@ -33,6 +62,14 @@ defmodule Glific.Flows.Translate.OpenAITest do
       )
 
     assert translated_text == ["हमारे एनजीओ चैटबॉट में आपका स्वागत है", "हमें अपने बारे में परिचय देने के लिए धन्यवाद"]
+
+    # when long text is also part of list
+    long_text = Faker.Lorem.sentence(250)
+
+    {:ok, translated_text} =
+      OpenAI.translate(["Welcome to our NGO Chatbot", long_text], "english", "hindi")
+
+    assert translated_text == ["हमारे एनजीओ चैटबॉट में आपका स्वागत है", "बड़े संदेशों के लिए अनुवाद उपलब्ध नहीं है।"]
   end
 
   test "check_large_strings/1 should replace long strings with warning" do
