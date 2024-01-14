@@ -1,0 +1,47 @@
+meta {
+  name: Create and send Message
+  type: graphql
+  seq: 8
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createAndSendMessage($input: MessageInput!) {
+    createAndSendMessage(input: $input) {
+      message {
+        id
+        body
+        receiver {
+          id
+          name
+        }
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "body": "Test message",
+      "flow": "OUTBOUND",
+      "type": "TEXT",
+      "senderId": 1,
+      "receiverId": 2
+    }
+  }
+}

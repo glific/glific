@@ -1,0 +1,34 @@
+meta {
+  name: Delete a Messages of a contact
+  type: graphql
+  seq: 7
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation clearMessages($contactId: ID!) {
+    clearMessages(contactId: $contactId) {
+      success
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "contactId": "26"
+  }
+}

@@ -1,0 +1,36 @@
+meta {
+  name: Resume flow for a contact
+  type: graphql
+  seq: 9
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation resumeContactFlow($flowId: ID!, $contactId: ID!, $result: JSON!) {
+    resumeContactFlow(flowId: $flowId, contactId: $contactId, result: $result) {
+      success
+      errors {
+          key
+          message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "flowId": "1",
+    "contactId": "2"
+    "result": {"one": 1, "two": 2, "three": 3}
+  }
+}

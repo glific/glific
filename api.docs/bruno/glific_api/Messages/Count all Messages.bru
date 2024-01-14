@@ -1,0 +1,30 @@
+meta {
+  name: Count all Messages
+  type: graphql
+  seq: 3
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query countMessages($filter: MessageFilter) {
+    countMessages(filter: $filter)
+  }
+}
+
+body:graphql:vars {
+  {
+    "filter": {
+      "body": "hello"
+    }
+  }
+}

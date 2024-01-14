@@ -1,0 +1,34 @@
+meta {
+  name: Publish a Flow
+  type: graphql
+  seq: 7
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation publishFlow($uuid: UUID4!) {
+    publishFlow(uuid: $uuid) {
+      success
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "uuid": "3fa22108-f464-41e5-81d9-d8a298854429"
+  }
+}

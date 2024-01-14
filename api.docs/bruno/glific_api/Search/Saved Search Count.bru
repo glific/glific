@@ -1,0 +1,29 @@
+meta {
+  name: Saved Search Count
+  type: graphql
+  seq: 4
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query savedSearchCount($id: ID!, $term: String) {
+    savedSearchCount(id: $id, term: $term)
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "id": 4
+  }
+}

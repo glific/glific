@@ -1,0 +1,22 @@
+meta {
+  name: Subscription for Wallet Balance
+  type: graphql
+  seq: 11
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  subscription organization_subscriptions {
+    bsp_balance(organizationId: "1")
+  }
+}

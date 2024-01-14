@@ -1,0 +1,48 @@
+meta {
+  name: Update a Tag
+  type: graphql
+  seq: 5
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation updateTag($id: ID!, $input:TagInput!) {
+    updateTag(id: $id, input: $input) {
+      tag {
+        id
+        label
+        language {
+          id
+          label
+        }
+        description
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": "26",
+    "input": {
+      "label": "This is a update tag for this example",
+      "description": "This is a updated cool description",
+      "languageId": "2"
+    }
+  }
+  
+}

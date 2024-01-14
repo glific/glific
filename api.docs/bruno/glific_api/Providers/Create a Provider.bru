@@ -1,0 +1,40 @@
+meta {
+  name: Create a Provider
+  type: graphql
+  seq: 5
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createProvider($input:ProviderInput!) {
+    createProvider(input: $input) {
+      provider {
+        id
+        name
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "name": "new_provider"
+    }
+  }
+}

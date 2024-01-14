@@ -1,0 +1,30 @@
+meta {
+  name: Count All Contact History
+  type: graphql
+  seq: 17
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query countContactHistory($filter: ContactsHistoryFilter) {
+    countContactHistory(filter: $filter)
+  }
+}
+
+body:graphql:vars {
+  {
+    "filter": {
+      "contact_id": 1
+    }
+  }
+}

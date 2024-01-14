@@ -1,0 +1,46 @@
+meta {
+  name: Delete Organization with status as inactive
+  type: graphql
+  seq: 3
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation deleteInactiveOrganization($deleteOrganizationID: ID!, $isConfirmed: Boolean) {}
+    deleteInactiveOrganization(
+      deleteOrganizationID: $deleteOrganizationID,
+      isConfirmed: $isConfirmed) {
+      organization {
+        email
+        isActive
+        isApproved
+        name
+        shortcode
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": "1",
+    "input": {
+      "isConfirmed": true,
+      "deleteOrganizationId": 1
+    }
+  }
+}

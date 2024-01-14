@@ -1,0 +1,35 @@
+meta {
+  name: Get All Languages
+  type: graphql
+  seq: 1
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query messagesMedia($opts: Opts) {
+    messagesMedia(filter: $filter, opts:$opts) {
+      id
+      url
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "opts": {
+      "order": "ASC",
+      "limit": 10,
+      "offset": 0
+    }
+  }
+}

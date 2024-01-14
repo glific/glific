@@ -1,0 +1,29 @@
+meta {
+  name: Import Contacts API
+  type: graphql
+  seq: 1
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation importContacts($group_label : String, $data : String) {
+    importContacts(group_label: $group_label, data: $data) {
+        status
+  
+        errors {
+        key
+        message
+      }
+    }
+  }
+}

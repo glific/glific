@@ -1,0 +1,31 @@
+meta {
+  name: Upload a buffer
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation uploadBlob($media: String!, $extension: String!) {
+    uploadBlob(media: $media, extension: $extension)
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "media": "W29iamVjdCBCbG9iXQ==",
+      "extension": "wav"
+    }
+  }
+}
