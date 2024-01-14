@@ -95,7 +95,14 @@ defmodule Glific.Saas.Queries do
       timezone: "Asia/Kolkata",
       is_active: false,
       is_approved: false,
-      status: :inactive
+      status: :inactive,
+      parent_org: params["name"],
+      setting: %{"send_warning_mail" => false, "run_flow_each_time" => false},
+      team_emails: %{
+        "finance" => params["email"],
+        "analytics" => params["email"],
+        "chatbot_design" => params["email"]
+      }
     }
 
     case Partners.create_organization(attrs) do
