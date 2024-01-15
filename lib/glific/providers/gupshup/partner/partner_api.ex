@@ -93,13 +93,12 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-  Enable or disable template messaging for an app.
+  Enable template messaging for an app.
   """
-  @spec enable_disable_template_messaging(non_neg_integer(), boolean()) :: {:ok, map()} | {:error, any}
-  def enable_disable_template_messaging(org_id, is_hsm_enabled) do
-
+  @spec enable_template_messaging(non_neg_integer()) :: {:ok, map()} | {:error, any}
+  def enable_template_messaging(org_id) do
     url = app_url(org_id) <> "/appPreference"
-    data = %{"isHSMEnabled" => to_string(is_hsm_enabled)}
+    data = %{"isHSMEnabled" => "true"}
 
     case put_request(url, data, org_id: org_id) do
       {:ok, response} ->
