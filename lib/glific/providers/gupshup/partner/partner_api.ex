@@ -105,7 +105,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:ok, response}
 
       {:error, error} ->
-        {:error, "Error during enable/disable template messaging: #{inspect(error)}"}
+        {:error, "Error during enable template messaging: #{inspect(error)}"}
     end
   end
 
