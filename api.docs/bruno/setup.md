@@ -12,10 +12,9 @@
 
 ```plaintext
 1. Open Bruno.
-2. Click on "Import Collection".
-3. Choose "Bruno Collection".
-4. Choose file `/api.docs/bruno/glific_api` in the glific backend repository.
-5. Click "Import" to add the collection to your Bruno workspace.
+2. Click on "Open Collection".
+3. Choose file /api.docs/bruno/glific_api` in the glific backend repository.
+4. The collection is added to your Bruno workspace.
 ```
 
 ### 2. Setting up Bruno Environment
