@@ -2,6 +2,7 @@ defmodule Glific.Flows.Translate.OpenAITest do
   use Glific.DataCase
 
   alias Glific.Flows.Translate.OpenAI
+  alias Glific.Flows.Translate.Translate
 
   setup do
     Tesla.Mock.mock(fn env ->
@@ -104,5 +105,27 @@ defmodule Glific.Flows.Translate.OpenAITest do
 
     assert response ==
              OpenAI.check_large_strings([long_text, "thankyou for joining", "correct answer"])
+  end
+
+  test "translate/3 test the possible errors" do
+    Tesla.Mock.mock(fn _env ->
+      {:error, "Mocked translation error"}
+    end)
+
+    string = ["Some text to translate"]
+    src = "english"
+    dst = "hindi"
+
+    assert {:ok, translated_text} = OpenAI.translate(string, src, dst)
+    assert translated_text == [["Could not translate, Try again"]]
+  end
+
+  test "translate_one!/3 to test the single string" do
+    string = "here is the string to test"
+    src = "english"
+    dst = "hindi"
+
+    translated_text = Translate.translate_one!(string, src, dst)
+    assert translated_text == "hindi here is the string to test english"
   end
 end
