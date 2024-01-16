@@ -24,7 +24,7 @@ defmodule Glific.Flows.Translate.OpenAI do
   def translate(strings, src, dst) do
     strings
     |> check_large_strings()
-    |> Task.async_stream(fn text -> do_translate(text, src, dst) end)
+    |> Task.async_stream(fn text -> do_translate(text, src, dst) end, timeout: 300_000)
     |> Enum.reduce([], fn {:ok, translated_text}, acc -> [translated_text | acc] end)
     |> then(&{:ok, &1})
   end
