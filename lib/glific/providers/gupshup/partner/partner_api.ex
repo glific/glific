@@ -140,6 +140,16 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @doc """
+  For setting callback URL
+  """
+  @spec set_callback_url(String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
+  def set_callback_url(org_id, callback_url) do
+    url = app_url(org_id) <> "/callbackUrl"
+    data = %{"callbackUrl" => callback_url}
+    put_request(url, data, org_id: org_id)
+  end
+
   @global_organization_id 0
   @spec get_partner_token :: {:ok, map()} | {:error, any}
   defp get_partner_token do
