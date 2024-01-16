@@ -99,14 +99,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   def enable_template_messaging(org_id) do
     url = app_url(org_id) <> "/appPreference"
     data = %{"isHSMEnabled" => "true"}
-
-    case put_request(url, data, org_id: org_id) do
-      {:ok, response} ->
-        {:ok, response}
-
-      {:error, error} ->
-        {:error, "Error during enable template messaging: #{inspect(error)}"}
-    end
+    put_request(url, data, org_id: org_id)
   end
 
   @doc """
