@@ -109,7 +109,7 @@ defmodule Glific.Flows.Translate.OpenAITest do
 
   test "translate/3 test the possible errors" do
     Tesla.Mock.mock(fn _env ->
-      {:error, "Mocked translation error"}
+      {:error, "Could not translate, Try again"}
     end)
 
     string = ["Some text to translate"]
