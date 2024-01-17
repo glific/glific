@@ -128,6 +128,17 @@ defmodule Glific.PartnersTest do
       assert %{"balance" => 0.787, "status" => "success"} == data
     end
 
+    test "enable template messaging for an app" do
+      organization = Fixtures.organization_fixture()
+      Tesla.Mock.mock(fn
+        %{method: :put, url: "partner.gupshup.io/partner/app/:organization.id/appPreference"} ->
+          %Tesla.Env{status: 202, body: "{\"status\":\"success\"}"}
+      end)
+
+      {:ok, result} = Glific.Providers.Gupshup.PartnerAPI.enable_template_messaging(organization.id)
+      assert %{"status" => "success"} == result
+    end
+
     test "delete_provider/1 deletes the provider" do
       provider = provider_fixture()
       assert {:ok, %Provider{}} = Partners.delete_provider(provider)
