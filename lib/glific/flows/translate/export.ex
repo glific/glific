@@ -118,6 +118,7 @@ defmodule Glific.Flows.Translate.Export do
     |> Task.async_stream(
       fn {{src, dst}, values} -> {src, dst, values, Translate.translate(values, src, dst)} end,
       timeout: 300_000,
+      max_concurrency: 2,
       # send {:exit, :timeout} so it can be handled
       on_timeout: :kill_task
     )
