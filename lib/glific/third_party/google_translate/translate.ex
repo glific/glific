@@ -16,6 +16,7 @@ defmodule Glific.GoogleTranslate.Translate do
   @doc """
   API call to google translate
   """
+  @spec parse(String.t(), String.t(), String.t(), String.t(), map(), String.t()) :: tuple()
   def parse(api_key, question_text, source_lang, target_lang, params \\ %{}, format \\ "text") do
     data =
       @default_params
@@ -27,8 +28,6 @@ defmodule Glific.GoogleTranslate.Translate do
         "format" => format
       })
 
-    IO.inspect(data)
-
     middleware = [
       Tesla.Middleware.JSON,
       {Tesla.Middleware.Headers,
@@ -38,7 +37,6 @@ defmodule Glific.GoogleTranslate.Translate do
     middleware
     |> Tesla.client()
     |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 120_000]])
-    |> IO.inspect()
     |> handle_response()
   end
 
@@ -47,7 +45,11 @@ defmodule Glific.GoogleTranslate.Translate do
     response
     |> case do
       {:ok, %Tesla.Env{status: 200, body: %{"data" => %{"translations" => translations}}}} ->
-        {:ok, translations |> Enum.map(& &1["translatedText"])}
+        translated_texts =
+          translations
+          |> Enum.map(fn translation -> translation["translatedText"] end)
+
+        {:ok, hd(translated_texts)}
 
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         {:error, "Unexpected response format: #{inspect(body)}"}

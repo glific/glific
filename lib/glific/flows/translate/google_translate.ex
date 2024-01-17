@@ -9,7 +9,6 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
   alias Glific.GoogleTranslate.Translate
   require Logger
 
-
   @doc """
   Translate a list of strings from language 'src' to language 'dst'
   Returns, either ok with the translated list in the same order,
@@ -18,7 +17,7 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
   ## Examples
 
   iex> Glific.Flows.Translate.GoogleTranslate.translate(["thankyou for joining", "correct answer"], "en", "hi")
-    {:ok, ["hindi thankyou for joining english", "hindi correct answer english"]}
+    {:ok,["शामिल होने के लिए धन्यवाद","सही जवाब"]}
   """
   @spec translate([String.t()], String.t(), String.t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
@@ -30,10 +29,10 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
   end
 
   # Making API call to google translate to translate list of string from src language to dst
-  @spec do_translate([String.t()], String.t(), String.t()) :: [String.t()] | {:error, String.t()}
+  @spec do_translate(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
   defp do_translate(strings, src, dst) do
-    api_key = "AIzaSyCvRM-GQMS3XoUpmTM2EVjpMoLO0G3Ix9c"
-    Translate.parse(api_key, strings, src, dst, @google_translate_params)
+    Glific.get_google_translate_key()
+    |> Translate.parse(strings, src, dst, @google_translate_params)
     |> case do
       {:ok, result} ->
         result
