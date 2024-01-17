@@ -1,0 +1,43 @@
+meta {
+  name: Send HSM Message
+  type: graphql
+  seq: 12
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation sendHsmMessage($templateId: ID!, $receiverId: ID!, $parameters: [String]) {
+    sendHsmMessage(templateId: $templateId, receiverId: $receiverId, parameters: $parameters) {
+      message{
+        id
+        body
+        isHsm
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "templateId": 34,
+    "receiverId": 5,
+    "parameters": [
+      "100",
+      "30 Oct"
+    ]
+  }
+}

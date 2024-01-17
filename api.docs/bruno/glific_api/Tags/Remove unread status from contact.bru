@@ -1,0 +1,28 @@
+meta {
+  name: Remove unread status from contact
+  type: graphql
+  seq: 7
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation markContactMessagesAsRead($contactId : Gid!) {
+    markContactMessagesAsRead(contactId: $contactId)
+  }
+}
+
+body:graphql:vars {
+  {
+    "contactId": "26"
+  }
+}

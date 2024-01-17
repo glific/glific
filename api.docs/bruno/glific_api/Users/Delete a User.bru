@@ -1,0 +1,33 @@
+meta {
+  name: Delete a User
+  type: graphql
+  seq: 9
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation deleteUser($id: ID!) {
+    deleteUser(id: $id) {
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": "2"
+  }
+}

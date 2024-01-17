@@ -1,0 +1,28 @@
+meta {
+  name: Reset flow counts for a specific flow
+  type: graphql
+  seq: 17
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation resetFlowCount($flowId: ID!) {
+    resetFlowCount(flowId: $flowId) {
+      errors {
+        key
+        value
+      }
+      success
+    }
+  }
+}

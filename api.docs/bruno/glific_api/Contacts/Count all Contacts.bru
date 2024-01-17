@@ -1,0 +1,30 @@
+meta {
+  name: Count all Contacts
+  type: graphql
+  seq: 6
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query countContacts($filter: ContactFilter) {
+    countContacts(filter: $filter)
+  }
+}
+
+body:graphql:vars {
+  {
+    "filter": {
+      "status": "VALID"
+    }
+  }
+}

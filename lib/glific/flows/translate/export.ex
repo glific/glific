@@ -85,6 +85,7 @@ defmodule Glific.Flows.Translate.Export do
     |> Enum.reverse()
   end
 
+  @spec collect_strings(map(), map(), String.t(), map()) :: Keyword.t()
   defp collect_strings(action_languages, language_labels, default_text, collect) do
     language_labels
     |> Map.keys()
@@ -111,20 +112,31 @@ defmodule Glific.Flows.Translate.Export do
     )
   end
 
+  @spec translate_strings(map()) :: map()
   defp translate_strings(strings) do
     strings
-    |> Enum.reduce(
-      %{},
-      fn {{src, dst}, values}, acc ->
-        {:ok, result} = Translate.translate(values, src, dst)
-
-        Enum.zip(values, result)
-        |> Map.new()
-        |> then(&Map.put(acc, {src, dst}, &1))
-      end
+    |> Task.async_stream(
+      fn {{src, dst}, values} -> {src, dst, values, Translate.translate(values, src, dst)} end,
+      timeout: 300_000,
+      max_concurrency: 2,
+      # send {:exit, :timeout} so it can be handled
+      on_timeout: :kill_task
     )
+    |> Enum.reduce(%{}, fn response, acc ->
+      handle_async_response(response, acc)
+    end)
   end
 
+  @spec handle_async_response(tuple(), map()) :: map()
+  defp handle_async_response({:ok, {src, dst, values, {:ok, result}}}, acc) do
+    Enum.zip(values, result)
+    |> Map.new()
+    |> then(&Map.put(acc, {src, dst}, &1))
+  end
+
+  defp handle_async_response({:exit, :timeout}, acc), do: acc
+
+  @spec make_row(map(), map(), String.t(), map()) :: list()
   defp make_row(action_languages, language_labels, default_text, translations) do
     language_labels
     |> Map.keys()

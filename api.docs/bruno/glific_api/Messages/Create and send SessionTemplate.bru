@@ -1,0 +1,50 @@
+meta {
+  name: Create and send SessionTemplate
+  type: graphql
+  seq: 9
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createAndSendMessage($input: MessageInput!) {
+    createAndSendMessage(input: $input) {
+      message {
+        id
+        body
+        receiver {
+          id
+          name
+        }
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "flow": "OUTBOUND",
+      "type": "TEXT",
+      "senderId": 1,
+      "receiverId": 11,
+      "isHsm": true,
+      "params": ["Fifty", "Next Week"],
+      "templateId": 32
+  
+    }
+  }
+}

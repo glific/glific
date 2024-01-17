@@ -1,0 +1,39 @@
+meta {
+  name: Create Group
+  type: graphql
+  seq: 5
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createGroup($input: GroupInput!) {
+    createGroup(input: $input) {
+      group {
+        id
+        label
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "label": "My First Group"
+    }
+  }
+}

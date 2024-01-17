@@ -1,0 +1,22 @@
+meta {
+  name: Subscription for Collection Count
+  type: graphql
+  seq: 12
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  subscription organization_subscriptions {
+    collection_count(organizationId: "1")
+  }
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Check for attachment support for the given user
+  type: graphql
+  seq: 8
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query attachmentsEnabled {
+    attachmentsEnabled
+  }
+}

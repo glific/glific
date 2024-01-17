@@ -1,0 +1,41 @@
+meta {
+  name: Create and send Session Message to contacts of a collection
+  type: graphql
+  seq: 11
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createAndSendMessageToGroup($input: MessageInput!, $groupId: ID!) {
+    createAndSendMessageToGroup(input: $input, groupId: $groupId) {
+      success
+      contactIds
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "body": "Test message",
+      "flow": "OUTBOUND",
+      "type": "TEXT",
+      "senderId": 1
+    },
+    "groupId": 1
+  }
+}

@@ -1,0 +1,40 @@
+meta {
+  name: Get a Group by ID
+  type: graphql
+  seq: 3
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query group($id: ID!) {
+    group(id: $id) {
+      group {
+        id
+        label
+        isRestricted
+        contacts{
+          name
+        }
+        users{
+          name
+        }
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+      "id": 1
+  }
+}
