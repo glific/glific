@@ -1,0 +1,53 @@
+meta {
+  name: Get a specific Contact by ID
+  type: graphql
+  seq: 3
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query contact($id: ID!) {
+    contact(id: $id) {
+      contact {
+        id
+        name
+        optinTime
+        optoutTime
+        phone
+        bspStatus
+        status
+        tags {
+          id
+          label
+        }
+        lastMessageAt
+        language {
+          label
+        }
+        fields
+        settings
+        history {
+          eventType
+          eventLabel
+          eventMeta
+        }
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": 5
+  }
+}

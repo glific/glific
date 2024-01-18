@@ -1,0 +1,33 @@
+meta {
+  name: Delete a Contact
+  type: graphql
+  seq: 11
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation deleteContact($id: ID!) {
+    deleteContact(id: $id) {
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": "26"
+  }
+}

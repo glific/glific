@@ -1,0 +1,35 @@
+meta {
+  name: Get All Blocked Contacts
+  type: graphql
+  seq: 5
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query contacts($filter: ContactFilter, $opts: Opts) {
+    contacts(filter: $filter, opts:$opts) {
+      id
+      phone
+      status
+    }
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "filter": {
+      "status": "BLOCKED"
+    }
+  }
+}

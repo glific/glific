@@ -1,0 +1,40 @@
+meta {
+  name: Update a Saved Search
+  type: graphql
+  seq: 6
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation updateSavedSearch($id: ID!, $input:SavedSearchInput!) {
+    updateSavedSearch(id: $id, input: $input) {
+      savedSearch {
+        id
+        label
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": "26",
+    "input": {
+      "label": "This is a updated saved search"
+    }
+  }
+}

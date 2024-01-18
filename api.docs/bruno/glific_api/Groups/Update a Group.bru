@@ -1,0 +1,42 @@
+meta {
+  name: Update a Group
+  type: graphql
+  seq: 6
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation updateGroup($id: ID!, $input: GroupInput!) {
+    updateGroup(id: $id, input: $input) {
+      group {
+        id
+        label
+        isRestricted
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": 2,
+      "input": {
+      "label": "My First Updated non-Restricted Group",
+      "isRestricted": false
+    }
+  }
+}

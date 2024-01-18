@@ -50,6 +50,9 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   object :setting do
     field(:report_frequency, :string)
     field(:run_flow_each_time, :boolean)
+    field(:low_balance_threshold, :string)
+    field(:critical_balance_threshold, :string)
+    field(:send_warning_mail, :boolean)
   end
 
   object :organization do
@@ -160,6 +163,9 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   input_object :setting_input do
     field(:report_frequency, :string)
     field(:run_flow_each_time, :boolean)
+    field(:low_balance_threshold, :string)
+    field(:critical_balance_threshold, :string)
+    field(:send_warning_mail, :boolean)
   end
 
   input_object :delete_organization_input do

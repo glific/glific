@@ -1,0 +1,35 @@
+meta {
+  name: Start flow for a group contacts
+  type: graphql
+  seq: 10
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation startGroupFlow($flowId: ID!, $groupId: ID!) {
+    startGroupFlow(flowId: $flowId, groupId: $groupId) {
+      success
+      errors {
+          key
+          message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "flowId": "1",
+    "groupId": "1"
+  }
+}

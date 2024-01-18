@@ -1,0 +1,44 @@
+meta {
+  name: Send Media HSM Message
+  type: graphql
+  seq: 14
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createAndSendMessage($templateId: ID!, $mediaId: ID!, $receiverId: ID!, $parameters: [String]) {
+    createAndSendMessage(templateId: $templateId, mediaId: $mediaId, receiverId: $receiverId, parameters: $parameters) {
+      message{
+        id
+        body
+        isHsm
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "templateId": 34,
+    "mediaId": 3,
+    "receiverId": 5,
+    "parameters": [
+      "100",
+      "30 Oct"
+    ]
+  }
+}

@@ -312,7 +312,7 @@ defmodule Glific.Flags do
       :flow_uuid_display,
       :roles_and_permission,
       :is_ticketing_enabled,
-      :is_auto_translate_enabled
+      :is_auto_translation_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(

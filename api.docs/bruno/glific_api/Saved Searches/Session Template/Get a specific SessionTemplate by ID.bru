@@ -1,0 +1,41 @@
+meta {
+  name: Get a specific SessionTemplate by ID
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query sessionTemplate($id: ID!) {
+    sessionTemplate(id: $id) {
+      sessionTemplate {
+        id
+        body
+        label
+        shortcode
+        translation
+        type
+        language {
+          id
+          label
+        }
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": 1
+  }
+}

@@ -1,0 +1,33 @@
+meta {
+  name: Delete a Tag
+  type: graphql
+  seq: 6
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation deleteTag($id: ID!) {
+    deleteTag(id: $id) {
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": "3"
+  }
+}

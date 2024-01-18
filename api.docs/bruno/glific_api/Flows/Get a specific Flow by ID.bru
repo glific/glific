@@ -1,0 +1,33 @@
+meta {
+  name: Get a specific Flow by ID
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query flow($id: ID!) {
+    flow(id: $id) {
+      flow {
+        id
+        name
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": 1
+  }
+}

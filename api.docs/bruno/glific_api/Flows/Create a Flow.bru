@@ -1,0 +1,47 @@
+meta {
+  name: Create a Flow
+  type: graphql
+  seq: 4
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation ($input: FlowInput!) {
+    createFlow(input: $input) {
+      flow {
+        id
+        name
+        keywords
+        isActive
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "keywords": [
+        "tests",
+        "testing"
+      ],
+      "name": "test workflow",
+      "isActive": true
+    }
+  }
+}
