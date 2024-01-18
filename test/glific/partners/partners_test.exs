@@ -7,6 +7,7 @@ defmodule Glific.PartnersTest do
     Fixtures,
     Notifications.Notification,
     Partners,
+    Seeds.SeedsDev,
     Partners.Credential,
     Partners.Provider,
     Repo
@@ -126,6 +127,21 @@ defmodule Glific.PartnersTest do
       organization = Fixtures.organization_fixture()
       {:ok, data} = Partners.get_bsp_balance(organization.id)
       assert %{"balance" => 0.787, "status" => "success"} == data
+    end
+
+    test "set_callback_url/2 for setting callback URL" do
+      Tesla.Mock.mock(fn
+        %{method: :put} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"status\":\"success\"}"
+          }
+      end)
+
+      org = SeedsDev.seed_organizations()
+      callback_url = "https://webhook.site/"
+      {:ok, data} = Glific.Providers.Gupshup.PartnerAPI.set_callback_url(org.id, callback_url)
+      assert %{"status" => "success"} == data
     end
 
     test "delete_provider/1 deletes the provider" do
