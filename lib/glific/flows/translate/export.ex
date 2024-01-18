@@ -33,7 +33,7 @@ defmodule Glific.Flows.Translate.Export do
   end
 
   @spec missing_localization(map(), map(), boolean()) :: list()
-  defp missing_localization(flow, all_localization, add_translation \\ true) do
+  defp missing_localization(flow, all_localization, add_translation) do
     flow.nodes
     |> Enum.reduce([], fn node, uuids ->
       node.actions
@@ -53,7 +53,7 @@ defmodule Glific.Flows.Translate.Export do
          all_localization,
          localizable_nodes,
          organization_id,
-         add_translation \\ true
+         add_translation
        ) do
     localization_map = make_localization_map(all_localization)
 
@@ -73,7 +73,6 @@ defmodule Glific.Flows.Translate.Export do
         end
       )
       |> translate_strings(add_translation)
-      |> IO.inspect()
 
     localizable_nodes
     |> Enum.reduce(
