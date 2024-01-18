@@ -93,6 +93,16 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
+  Enable template messaging for an app.
+  """
+  @spec enable_template_messaging(non_neg_integer()) :: tuple()
+  def enable_template_messaging(org_id) do
+    url = app_url(org_id) <> "/appPreference"
+    data = %{"isHSMEnabled" => "true"}
+    put_request(url, data, org_id: org_id)
+  end
+
+  @doc """
   Remove hsm template from the WABA.
   """
   @spec delete_hsm_template(non_neg_integer, binary) :: tuple()
