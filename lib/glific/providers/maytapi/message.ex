@@ -3,9 +3,10 @@ defmodule Glific.Providers.Maytapi.Message do
   Message API layer between application and Maytapi
   """
 
-  alias Providers.Maytapi.ApiClient
+  alias Glific.Providers.Maytapi.ApiClient
 
   @doc false
+  @spec send_text(non_neg_integer, map()) :: any()
   def send_text(org_id, attrs) do
     send_message(org_id, attrs)
   end
