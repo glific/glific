@@ -14,18 +14,17 @@ defmodule Glific.GoogleTranslate.Translate do
   }
 
   @doc """
-  API call to google translate
+  API call to Google Translate.
   """
-  @spec parse(String.t(), String.t(), String.t(), String.t(), map(), String.t()) :: tuple()
-  def parse(api_key, question_text, source_lang, target_lang, params \\ %{}, format \\ "text") do
+  @spec parse(String.t(), String.t(), map(), map()) :: tuple()
+  def parse(api_key, question_text, languages, params \\ %{}) do
     data =
       @default_params
       |> Map.merge(params)
       |> Map.merge(%{
         "q" => question_text,
-        "source" => source_lang,
-        "target" => target_lang,
-        "format" => format
+        "source" => languages["source"],
+        "target" => languages["target"]
       })
 
     middleware = [

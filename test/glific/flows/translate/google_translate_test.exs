@@ -88,20 +88,12 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
     assert response == [["Could not translate, Try again"]]
   end
 
-  test "check_large_strings/1 returns original list when all strings are within token limit" do
+  test "check_large_strings/1 handles mix of short and long strings" do
+    #heck_large_strings/1 returns original list when all strings are within token limit
     strings = ["HelloWorld", "Nice to meet you"]
     result = GoogleTranslate.check_large_strings(strings)
     assert result == ["Nice to meet you", "HelloWorld"]
-  end
 
-  test "check_large_strings/1 replaces long strings exceeding token threshold with warning" do
-    long_text = Faker.Lorem.sentence(250)
-    strings = ["Hello", long_text, "World"]
-    result = GoogleTranslate.check_large_strings(strings)
-    assert result == ["World", "translation not available for long messages", "Hello"]
-  end
-
-  test "check_large_strings/1 handles mix of short and long strings" do
     # when long text is at the beginning
     short_text = "Hello"
     long_text = Faker.Lorem.sentence(250)
