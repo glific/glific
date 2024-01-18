@@ -153,7 +153,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
   For setting callback URL
   """
-  @spec set_callback_url(String.t(), String.t()) :: tuple()
+  @spec set_callback_url(non_neg_integer(), String.t()) :: tuple()
   def set_callback_url(org_id, callback_url) do
     url = app_url(org_id) <> "/callbackUrl"
     data = %{"callbackUrl" => callback_url}

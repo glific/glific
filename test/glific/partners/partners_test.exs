@@ -131,6 +131,7 @@ defmodule Glific.PartnersTest do
 
     test "enable template messaging for an app" do
       org = SeedsDev.seed_organizations()
+
       Tesla.Mock.mock(fn
         %{method: :put} ->
           %Tesla.Env{
