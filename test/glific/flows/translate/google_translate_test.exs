@@ -2,6 +2,7 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
   use Glific.DataCase, async: false
 
   alias Glific.Flows.Translate.GoogleTranslate
+  alias Glific.Flows.Translate.Translate
 
   import Tesla.Mock
 
@@ -85,20 +86,20 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
     dst = "hindi"
 
     {:ok, response} = GoogleTranslate.translate(string, src, dst)
-    assert response == [["Could not translate, Try again"]]
+    assert response == ["बड़े संदेशों के लिए अनुवाद उपलब्ध नहीं है"]
   end
 
   test "check_large_strings/1 handles mix of short and long strings" do
     #heck_large_strings/1 returns original list when all strings are within token limit
     strings = ["HelloWorld", "Nice to meet you"]
-    result = GoogleTranslate.check_large_strings(strings)
+    result = Translate.check_large_strings(strings)
     assert result == ["Nice to meet you", "HelloWorld"]
 
     # when long text is at the beginning
     short_text = "Hello"
     long_text = Faker.Lorem.sentence(250)
     strings = [long_text, short_text, "World"]
-    result = GoogleTranslate.check_large_strings(strings)
+    result = Translate.check_large_strings(strings)
     assert result == ["World", "Hello", "translation not available for long messages"]
   end
 end
