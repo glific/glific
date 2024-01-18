@@ -26,6 +26,7 @@ defmodule Glific.Flows.Translate.OpenAI do
     |> check_large_strings()
     |> Task.async_stream(fn text -> do_translate(text, src, dst) end,
       timeout: 300_000,
+      max_concurrency: 15,
       # send {:exit, :timeout} so it can be handled
       on_timeout: :kill_task
     )
@@ -72,7 +73,7 @@ defmodule Glific.Flows.Translate.OpenAI do
 
       {:error, error} ->
         Logger.error("Error translating: #{error} String: #{strings}")
-        ["Could not translate, Try again"]
+        ""
     end
   end
 
