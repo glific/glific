@@ -7,6 +7,7 @@ defmodule Glific.Flows.Translate.OpenAI do
   @token_chunk_size 200
 
   alias Glific.OpenAI.ChatGPT
+  alias Glific.Flows.Translate.Translate
   require Logger
 
   @doc """
@@ -23,7 +24,7 @@ defmodule Glific.Flows.Translate.OpenAI do
           {:ok, [String.t()]} | {:error, String.t()}
   def translate(strings, src, dst) do
     strings
-    |> check_large_strings()
+    |> Translate.check_large_strings()
     |> Task.async_stream(fn text -> do_translate(text, src, dst) end,
       timeout: 300_000,
       max_concurrency: 15,

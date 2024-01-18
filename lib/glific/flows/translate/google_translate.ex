@@ -4,9 +4,8 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
   """
   @behaviour Glific.Flows.Translate.Translate
   @google_translate_params %{"temperature" => 0, "max_tokens" => 12_000}
-  @token_chunk_size 200
 
-  alias Glific.GoogleTranslate.Translate
+  alias Glific.Flows.Translate.Translate
   require Logger
 
   @doc """
@@ -23,16 +22,30 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
           {:ok, [String.t()]} | {:error, String.t()}
   def translate(strings, src, dst) do
     strings
-    |> check_large_strings()
-    |> Enum.reduce([], &[do_translate(&1, src, dst) | &2])
+    |> Translate.check_large_strings()
+    |> Task.async_stream(fn text -> do_translate(text, src, dst) end,
+      timeout: 300_000,
+      # send {:exit, :timeout} so it can be handled
+      on_timeout: :kill_task
+    )
+    |> Enum.reduce([], fn response, acc ->
+      handle_async_response(response, acc)
+    end)
     |> then(&{:ok, &1})
   end
+
+  # add the translated string into list of string if translated successfully
+  # add the empty string into list of string if translation timed out so it can be translated in next go
+  # This way successfully translated string will be updated in first go and leftover will be translated in second go
+  @spec handle_async_response(tuple(), [String.t()]) :: [String.t()]
+  defp handle_async_response({:ok, translated_text}, acc), do: [translated_text | acc]
+  defp handle_async_response({:exit, :timeout}, acc), do: ["" | acc]
 
   # Making API call to google translate to translate list of string from src language to dst
   @spec do_translate(String.t(), String.t(), String.t()) :: String.t() | {:error, String.t()}
   defp do_translate(strings, src, dst) do
     Glific.get_google_translate_key()
-    |> Translate.parse(strings, src, dst, @google_translate_params)
+    |> Glific.GoogleTranslate.Translate.parse(strings, src, dst, @google_translate_params)
     |> case do
       {:ok, result} ->
         result
@@ -41,24 +54,5 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
         Logger.error("Error translating: #{error} String: #{strings}")
         ["Could not translate, Try again"]
     end
-  end
-
-  @doc """
-  Cleanup up string list replacing long text exceeding token threshold with warning
-  This reverses the order of string which is reversed again in next function
-  """
-  @spec check_large_strings([String.t()]) :: [String.t()]
-  def check_large_strings(strings) do
-    strings
-    |> Enum.reduce([], fn string, acc ->
-      # we ca use the gptTokenizer to count the token
-      string_size = Gpt3Tokenizer.token_count(string)
-
-      if string_size > @token_chunk_size do
-        ["translation not available for long messages" | acc]
-      else
-        [string | acc]
-      end
-    end)
   end
 end
