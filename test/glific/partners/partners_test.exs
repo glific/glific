@@ -7,10 +7,11 @@ defmodule Glific.PartnersTest do
     Fixtures,
     Notifications.Notification,
     Partners,
-    Seeds.SeedsDev,
     Partners.Credential,
     Partners.Provider,
-    Repo
+    Providers.Gupshup.PartnerAPI,
+    Repo,
+    Seeds.SeedsDev
   }
 
   describe "provider" do
@@ -140,7 +141,7 @@ defmodule Glific.PartnersTest do
           }
       end)
 
-      {:ok, result} = Glific.Providers.Gupshup.PartnerAPI.enable_template_messaging(org.id)
+      {:ok, result} = PartnerAPI.enable_template_messaging(org.id)
       assert %{"status" => "success"} == result
     end
 
@@ -155,7 +156,7 @@ defmodule Glific.PartnersTest do
 
       org = SeedsDev.seed_organizations()
       callback_url = "https://webhook.site/"
-      {:ok, data} = Glific.Providers.Gupshup.PartnerAPI.set_callback_url(org.id, callback_url)
+      {:ok, data} = PartnerAPI.set_callback_url(org.id, callback_url)
       assert %{"status" => "success"} == data
     end
 
