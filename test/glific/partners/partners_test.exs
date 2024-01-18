@@ -7,6 +7,7 @@ defmodule Glific.PartnersTest do
     Fixtures,
     Notifications.Notification,
     Partners,
+    Seeds.SeedsDev,
     Partners.Credential,
     Partners.Provider,
     Repo
@@ -129,13 +130,16 @@ defmodule Glific.PartnersTest do
     end
 
     test "enable template messaging for an app" do
-      organization = Fixtures.organization_fixture()
+      org = SeedsDev.seed_organizations()
       Tesla.Mock.mock(fn
-        %{method: :put, url: "partner.gupshup.io/partner/app/:organization.id/appPreference"} ->
-          %Tesla.Env{status: 202, body: "{\"status\":\"success\"}"}
+        %{method: :put} ->
+          %Tesla.Env{
+            status: 202,
+            body: "{\"status\":\"success\"}"
+          }
       end)
 
-      {:ok, result} = Glific.Providers.Gupshup.PartnerAPI.enable_template_messaging(organization.id)
+      {:ok, result} = Glific.Providers.Gupshup.PartnerAPI.enable_template_messaging(org.id)
       assert %{"status" => "success"} == result
     end
 
