@@ -20,6 +20,10 @@
         # phone number that we are using for external api
         add :phone, :string, null: false
 
+        # other ids that that provider uses in the url (maytapi)
+        add :phone_id, :string
+        add :product_id, :string
+
         add :is_active, :boolean,
           default: true,
           comment: "Whether the phone number is currently active"

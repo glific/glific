@@ -452,8 +452,14 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           description: "Third party application to send message to WhatsApp group",
           group: nil,
           is_required: false,
-          keys: %{},
-          secrets: %{
+          keys: %{
+            phone: %{
+              type: :string,
+              label: "Phone Number",
+              default: nil,
+              is_required: true,
+              view_only: false
+            },
             phone_id: %{
               type: :string,
               label: "Phone ID",
@@ -466,9 +472,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               default: nil,
               view_only: false
             },
+          },
+          secrets: %{
             token: %{
               type: :string,
               label: "Token",
+              is_required: true,
               default: nil,
               view_only: false
             }

@@ -17,6 +17,8 @@ defmodule Glific.WAGroup.WAManagedPhone do
     :label,
     :phone,
     :api_token,
+    :phone_id,
+    :product_id,
     :provider_id,
     :organization_id
   ]
@@ -30,6 +32,8 @@ defmodule Glific.WAGroup.WAManagedPhone do
           id: non_neg_integer | nil,
           label: String.t() | nil,
           phone: String.t() | nil,
+          phone_id: String.t() | nil,
+          product_id: String.t() | nil,
           is_active: boolean,
           api_token: binary | nil,
           provider_id: non_neg_integer | nil,
@@ -44,6 +48,11 @@ defmodule Glific.WAGroup.WAManagedPhone do
     field :label, :string
     field :phone, :string
     field :is_active, :boolean, default: false
+
+    # these are associated with the whatsapp api provider
+    # using maytapi as template
+    field :phone_id, :string
+    field :product_id, :string
     field :api_token, Glific.Encrypted.Binary
 
     belongs_to(:provider, Provider)

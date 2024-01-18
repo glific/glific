@@ -15,6 +15,8 @@ defmodule Glific.WAGroupsFixtures do
         is_active: true,
         label: "some label",
         phone: "some phone",
+        phone_id: "some random string identifier",
+        product_id: "another random string identifier",
         organization_id: 1,
         provider_id: 1
       })

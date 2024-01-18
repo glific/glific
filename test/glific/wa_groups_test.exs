@@ -25,6 +25,8 @@ defmodule Glific.WAGroupsTest do
         label: "some label",
         phone: "some phone",
         is_active: true,
+        phone_id: "phone id 1",
+        product_id: "product id 1",
         api_token: "some api_token",
         organization_id: 1,
         provider_id: 1
