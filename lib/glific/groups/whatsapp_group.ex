@@ -28,6 +28,7 @@ defmodule Glific.Groups.WhatsappGroup do
     else
       {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
         {:error, body}
+
       {:error, message} ->
         {:error, inspect(message)}
     end
