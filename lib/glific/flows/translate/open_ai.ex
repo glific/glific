@@ -17,16 +17,31 @@ defmodule Glific.Flows.Translate.OpenAI do
   ## Examples
 
   iex> Glific.Flows.Translate.OpenAI.translate(["thankyou for joining", "correct answer"], "english", "hindi")
-    {:ok, ["hindi thankyou for joining english", "hindi correct answer english"]}
+    {:ok, ["शामिल होने के लिए धन्यवाद", "सही जवाब"]}
   """
   @spec translate([String.t()], String.t(), String.t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
   def translate(strings, src, dst) do
     strings
     |> check_large_strings()
-    |> Enum.reduce([], &[do_translate(&1, src, dst) | &2])
+    |> Task.async_stream(fn text -> do_translate(text, src, dst) end,
+      timeout: 300_000,
+      max_concurrency: 15,
+      # send {:exit, :timeout} so it can be handled
+      on_timeout: :kill_task
+    )
+    |> Enum.reduce([], fn response, acc ->
+      handle_async_response(response, acc)
+    end)
     |> then(&{:ok, &1})
   end
+
+  # add the translated string into list of string if translated successfully
+  # add the empty string into list of string if translation timed out so it can be translated in next go
+  # This way successfully translated string will be updated in first go and leftover will be translated in second go
+  @spec handle_async_response(tuple(), [String.t()]) :: [String.t()]
+  defp handle_async_response({:ok, translated_text}, acc), do: [translated_text | acc]
+  defp handle_async_response({:exit, :timeout}, acc), do: ["" | acc]
 
   # Making API call to open ai to translate list of string from src language to dst
   @spec do_translate([String.t()], String.t(), String.t()) :: [String.t()] | {:error, String.t()}
@@ -58,7 +73,7 @@ defmodule Glific.Flows.Translate.OpenAI do
 
       {:error, error} ->
         Logger.error("Error translating: #{error} String: #{strings}")
-        ["Could not translate, Try again"]
+        ""
     end
   end
 

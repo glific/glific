@@ -129,6 +129,20 @@ defmodule Glific.PartnersTest do
       assert %{"balance" => 0.787, "status" => "success"} == data
     end
 
+    test "enable template messaging for an app" do
+      org = SeedsDev.seed_organizations()
+      Tesla.Mock.mock(fn
+        %{method: :put} ->
+          %Tesla.Env{
+            status: 202,
+            body: "{\"status\":\"success\"}"
+          }
+      end)
+
+      {:ok, result} = Glific.Providers.Gupshup.PartnerAPI.enable_template_messaging(org.id)
+      assert %{"status" => "success"} == result
+    end
+
     test "set_callback_url/2 for setting callback URL" do
       Tesla.Mock.mock(fn
         %{method: :put} ->
