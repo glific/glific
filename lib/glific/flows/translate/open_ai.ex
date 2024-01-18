@@ -6,8 +6,8 @@ defmodule Glific.Flows.Translate.OpenAI do
   @open_ai_params %{"temperature" => 0, "max_tokens" => 12_000}
   @token_chunk_size 200
 
-  alias Glific.OpenAI.ChatGPT
   alias Glific.Flows.Translate.Translate
+  alias Glific.OpenAI.ChatGPT
   require Logger
 
   @doc """

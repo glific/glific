@@ -90,7 +90,7 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
   end
 
   test "check_large_strings/1 handles mix of short and long strings" do
-    #heck_large_strings/1 returns original list when all strings are within token limit
+    # heck_large_strings/1 returns original list when all strings are within token limit
     strings = ["HelloWorld", "Nice to meet you"]
     result = Translate.check_large_strings(strings)
     assert result == ["Nice to meet you", "HelloWorld"]
