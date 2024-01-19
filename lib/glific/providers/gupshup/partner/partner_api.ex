@@ -160,6 +160,19 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     put_request(url, data, org_id: org_id)
   end
 
+  @doc """
+  Setting Business Profile Details
+  """
+  @spec set_business_profile(integer(), map()) :: tuple()
+  def set_business_profile(org_id, params \\ %{}) do
+    url = app_url(org_id) <> "/business/profile"
+    body_params =
+      params
+      |> Enum.reject(fn {_, value} -> value == nil end)
+    put_request(url, body_params, org_id: org_id)
+  end
+
+
   @global_organization_id 0
   @spec get_partner_token :: {:ok, map()} | {:error, any}
   defp get_partner_token do
