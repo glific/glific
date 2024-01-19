@@ -93,6 +93,24 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
+    App Link Using API key
+  """
+  @spec app_link(non_neg_integer()) :: any()
+  def app_link(org_id) do
+    organization = Partners.organization(org_id)
+    gupshup_secrets = organization.services["bsp"].secrets
+
+    post_request(
+      @partner_url <> "/api/appLink",
+      %{
+        apiKey: gupshup_secrets["api_key"],
+        appName: gupshup_secrets["app_name"]
+      },
+      token_type: :partner_token
+    )
+  end
+
+  @doc """
   Enable template messaging for an app.
   """
   @spec enable_template_messaging(non_neg_integer()) :: tuple()
