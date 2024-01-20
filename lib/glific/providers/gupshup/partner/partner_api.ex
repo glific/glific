@@ -171,7 +171,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
     case Tesla.get(client, resource_url, follow_redirect: true) do
       {:ok, %Tesla.Env{body: body}} ->
-        file_format = get_file_format(resource_url)
+        file_format = MIME.from_path(resource_url)
 
         file_id = Ecto.UUID.generate()
         :ok = File.write!("priv/data/file_#{file_id}.#{file_format}", body)
@@ -360,10 +360,4 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec app_url(non_neg_integer()) :: String.t()
   defp app_url(org_id),
     do: @app_url <> app_id!(org_id)
-
-  @spec get_file_format(String.t()) :: String.t()
-  defp get_file_format(resource_url) do
-    String.split(resource_url, ".")
-    |> List.last()
-  end
 end
