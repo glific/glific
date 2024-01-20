@@ -74,9 +74,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec get_media_handle_id(non_neg_integer, binary, any) :: String.t()
   def get_media_handle_id(org_id, url, _type \\ "") do
+    {:ok, path} = get_resource_local_path(url)
+
     data =
       Multipart.new()
-      |> Multipart.add_field("file", url)
+      |> Multipart.add_field("file", path)
       |> Multipart.add_field("file_type", MIME.from_path(url))
 
     (app_url(org_id) <> "/upload/media")
@@ -169,7 +171,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
     case Tesla.get(client, resource_url, follow_redirect: true) do
       {:ok, %Tesla.Env{body: body}} ->
-        file_format = get_file_format(resource_url)
+        file_format = MIME.from_path(resource_url)
 
         file_id = Ecto.UUID.generate()
         :ok = File.write!("priv/data/file_#{file_id}.#{file_format}", body)
