@@ -171,11 +171,14 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
     case Tesla.get(client, resource_url, follow_redirect: true) do
       {:ok, %Tesla.Env{body: body}} ->
-        file_format = MIME.from_path(resource_url)
+        file_format =
+          MIME.from_path(resource_url)
+          |> String.split("/")
+          |> List.last()
 
         file_id = Ecto.UUID.generate()
         :ok = File.write!("priv/data/file_#{file_id}.#{file_format}", body)
-        {:ok, "data/file_#{file_id}.#{file_format}"}
+        {:ok, Path.join([:code.priv_dir(:glific)], "data/file_#{file_id}.#{file_format}")}
 
       {:error, err} ->
         Logger.error("Error downloading file due to #{inspect(err)}")
