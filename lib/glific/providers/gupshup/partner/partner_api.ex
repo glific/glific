@@ -173,7 +173,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
         file_id = Ecto.UUID.generate()
         :ok = File.write!("priv/data/file_#{file_id}.#{file_format}", body)
-        {:ok, "priv/data/file_#{file_id}.#{file_format}"}
+        {:ok, "data/file_#{file_id}.#{file_format}"}
 
       {:error, err} ->
         Logger.error("Error downloading file due to #{inspect(err)}")
