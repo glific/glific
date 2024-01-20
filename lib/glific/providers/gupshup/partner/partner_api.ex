@@ -177,8 +177,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
           |> List.last()
 
         file_id = Ecto.UUID.generate()
-        :ok = File.write!("priv/data/file_#{file_id}.#{file_format}", body)
-        {:ok, Path.join([:code.priv_dir(:glific)], "data/file_#{file_id}.#{file_format}")}
+        :ok = File.write!("#{file_id}.#{file_format}", body)
+        {:ok, "#{file_id}.#{file_format}"}
 
       {:error, err} ->
         Logger.error("Error downloading file due to #{inspect(err)}")
