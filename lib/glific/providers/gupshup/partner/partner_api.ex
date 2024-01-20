@@ -74,9 +74,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec get_media_handle_id(non_neg_integer, binary, any) :: String.t()
   def get_media_handle_id(org_id, url, _type \\ "") do
+    {:ok, path} = get_resource_local_path(url)
+
     data =
       Multipart.new()
-      |> Multipart.add_field("file", url)
+      |> Multipart.add_field("file", path)
       |> Multipart.add_field("file_type", MIME.from_path(url))
 
     (app_url(org_id) <> "/upload/media")
