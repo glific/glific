@@ -160,6 +160,27 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     put_request(url, data, org_id: org_id)
   end
 
+  @doc """
+  Downloads the resource from the given url and returns the local path
+  """
+  @spec get_resource_local_path(String.t()) :: {:ok, String.t()} | {:error, term()}
+  def get_resource_local_path(resource_url) do
+    client = Tesla.client([])
+
+    case Tesla.get(client, resource_url, follow_redirect: true) do
+      {:ok, %Tesla.Env{body: body}} ->
+        file_format = get_file_format(resource_url)
+
+        file_id = Ecto.UUID.generate()
+        :ok = File.write!("priv/data/file_#{file_id}.#{file_format}", body)
+        {:ok, "priv/data/file_#{file_id}.#{file_format}"}
+
+      {:error, err} ->
+        Logger.error("Error downloading file due to #{inspect(err)}")
+        {:error, "#{inspect(err)}"}
+    end
+  end
+
   @global_organization_id 0
   @spec get_partner_token :: {:ok, map()} | {:error, any}
   defp get_partner_token do
@@ -337,4 +358,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec app_url(non_neg_integer()) :: String.t()
   defp app_url(org_id),
     do: @app_url <> app_id!(org_id)
+
+  @spec get_file_format(String.t()) :: String.t()
+  defp get_file_format(resource_url) do
+    String.split(resource_url, ".")
+    |> List.last()
+  end
 end
