@@ -16,9 +16,9 @@ defmodule Glific.Flows.Translate.Export do
   At some point, we might extend this to export it as a .po file
   Lets keep the csv generation very distinct from the extraction
   """
-  @spec export_localization(Flow.t()) :: list()
-  def export_localization(flow) do
-    missing_localization(flow, flow.definition["localization"])
+  @spec export_localization(Flow.t(), boolean()) :: list()
+  def export_localization(flow, add_translation \\ true) do
+    missing_localization(flow, flow.definition["localization"], add_translation)
   end
 
   @doc """
@@ -28,12 +28,12 @@ defmodule Glific.Flows.Translate.Export do
   @spec translate(Flow.t()) :: {:ok, any} | {:error, String.t()}
   def translate(flow) do
     flow
-    |> export_localization()
+    |> export_localization(true)
     |> Import.import_localization(flow)
   end
 
-  @spec missing_localization(map(), map()) :: list()
-  defp missing_localization(flow, all_localization) do
+  @spec missing_localization(map(), map(), boolean()) :: list()
+  defp missing_localization(flow, all_localization, add_translation) do
     flow.nodes
     |> Enum.reduce([], fn node, uuids ->
       node.actions
@@ -43,11 +43,18 @@ defmodule Glific.Flows.Translate.Export do
           else: acc
       end)
     end)
-    |> then(&add_missing_localization(all_localization, &1, flow.organization_id))
+    |> then(
+      &add_missing_localization(all_localization, &1, flow.organization_id, add_translation)
+    )
   end
 
-  @spec add_missing_localization(map(), list(), non_neg_integer()) :: Keyword.t()
-  defp add_missing_localization(all_localization, localizable_nodes, organization_id) do
+  @spec add_missing_localization(map(), list(), non_neg_integer(), boolean()) :: Keyword.t()
+  defp add_missing_localization(
+         all_localization,
+         localizable_nodes,
+         organization_id,
+         add_translation
+       ) do
     localization_map = make_localization_map(all_localization)
 
     # get language labels here in one query for all languages if you want
@@ -65,7 +72,7 @@ defmodule Glific.Flows.Translate.Export do
           |> collect_strings(language_labels, action_text, export)
         end
       )
-      |> translate_strings()
+      |> translate_strings(add_translation)
 
     localizable_nodes
     |> Enum.reduce(
@@ -112,8 +119,20 @@ defmodule Glific.Flows.Translate.Export do
     )
   end
 
-  @spec translate_strings(map()) :: map()
-  defp translate_strings(strings) do
+  @spec translate_strings(map(), boolean()) :: map()
+  defp translate_strings(strings, false) do
+    strings
+    |> Enum.reduce(
+      %{},
+      fn {{src, dst}, values}, acc ->
+        Enum.zip(values, [""])
+        |> Map.new()
+        |> then(&Map.put(acc, {src, dst}, &1))
+      end
+    )
+  end
+
+  defp translate_strings(strings, true) do
     strings
     |> Task.async_stream(
       fn {{src, dst}, values} -> {src, dst, values, Translate.translate(values, src, dst)} end,

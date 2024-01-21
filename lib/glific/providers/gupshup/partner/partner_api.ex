@@ -74,9 +74,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec get_media_handle_id(non_neg_integer, binary, any) :: String.t()
   def get_media_handle_id(org_id, url, _type \\ "") do
+    {:ok, path} = get_resource_local_path(url)
+
     data =
       Multipart.new()
-      |> Multipart.add_field("file", url)
+      |> Multipart.add_field("file", path)
       |> Multipart.add_field("file_type", MIME.from_path(url))
 
     (app_url(org_id) <> "/upload/media")
@@ -90,6 +92,16 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:error, error} ->
         raise(error)
     end
+  end
+
+  @doc """
+  Enable template messaging for an app.
+  """
+  @spec enable_template_messaging(non_neg_integer()) :: tuple()
+  def enable_template_messaging(org_id) do
+    url = app_url(org_id) <> "/appPreference"
+    data = %{"isHSMEnabled" => "true"}
+    put_request(url, data, org_id: org_id)
   end
 
   @doc """
@@ -137,6 +149,40 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
       {:error, error} ->
         {:error, error}
+    end
+  end
+
+  @doc """
+  For setting callback URL
+  """
+  @spec set_callback_url(non_neg_integer(), String.t()) :: tuple()
+  def set_callback_url(org_id, callback_url) do
+    url = app_url(org_id) <> "/callbackUrl"
+    data = %{"callbackUrl" => callback_url}
+    put_request(url, data, org_id: org_id)
+  end
+
+  @doc """
+  Downloads the resource from the given url and returns the local path
+  """
+  @spec get_resource_local_path(String.t()) :: {:ok, String.t()} | {:error, term()}
+  def get_resource_local_path(resource_url) do
+    client = Tesla.client([])
+
+    case Tesla.get(client, resource_url, follow_redirect: true) do
+      {:ok, %Tesla.Env{body: body}} ->
+        file_format =
+          MIME.from_path(resource_url)
+          |> String.split("/")
+          |> List.last()
+
+        file_id = Ecto.UUID.generate()
+        :ok = File.write!("#{file_id}.#{file_format}", body)
+        {:ok, "#{file_id}.#{file_format}"}
+
+      {:error, err} ->
+        Logger.error("Error downloading file due to #{inspect(err)}")
+        {:error, "#{inspect(err)}"}
     end
   end
 

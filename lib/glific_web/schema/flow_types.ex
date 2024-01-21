@@ -150,6 +150,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     @desc "Export flow localization so users can check and translate offline"
     field :export_flow_localization, :export_flow_localization do
       arg(:id, non_null(:id))
+      arg(:add_translation, :boolean)
       middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.export_flow_localization/3)
     end

@@ -73,12 +73,15 @@ defmodule GlificWeb.Resolvers.Flows do
   @doc false
   @spec export_flow_localization(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, %{export_data: String.t()}}
-  def export_flow_localization(_, %{id: flow_id}, %{context: %{current_user: user}}) do
+  def export_flow_localization(_, %{id: flow_id} = args, %{
+        context: %{current_user: user}
+      }) do
+    add_translation = Map.get(args, :add_translation, true)
     # load the flow
     data =
       user.organization_id
       |> Flows.get_complete_flow(flow_id)
-      |> Export.export_localization()
+      |> Export.export_localization(add_translation)
       |> CSV.encode(delimiter: "\n")
       |> Enum.join("")
 
