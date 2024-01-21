@@ -853,7 +853,6 @@ defmodule Glific.Partners do
   @doc """
   Updates an organization's credential
   """
-
   @spec update_credential(Credential.t(), map()) ::
           {:ok, Credential.t()} | {:error, any}
   def update_credential(%Credential{} = credential, attrs) do

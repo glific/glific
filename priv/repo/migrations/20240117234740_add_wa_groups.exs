@@ -46,13 +46,13 @@
 
     defp messages do
       alter table(:messages) do
-        add :message_origin, :string, comment: "one of WABA, WA"
+        add :message_type, :string, comment: "one of WABA, WA"
       end
     end
 
     defp contacts do
       alter table(:contacts) do
-        add :contact_origin, :string, comment: "one of WABA, WA, WABA+WA"
+        add :contact_type, :string, comment: "one of WABA, WA, WABA+WA"
       end
     end
 
