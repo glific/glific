@@ -78,7 +78,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
     data =
       Multipart.new()
-      |> Multipart.add_field("file", path)
+      |> Multipart.add_file(path, name: "file")
       |> Multipart.add_field("file_type", MIME.from_path(url))
 
     (app_url(org_id) <> "/upload/media")
@@ -284,7 +284,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     req_headers =
       headers(Keyword.get(opts, :token_type, :app_token), opts)
 
+    IO.inspect(data)
+
     post(url, data, headers: req_headers)
+    |> IO.inspect()
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}
