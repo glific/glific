@@ -78,7 +78,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
     data =
       Multipart.new()
-      |> Multipart.add_field("file", path)
+      |> Multipart.add_file(path, name: "file")
       |> Multipart.add_field("file_type", MIME.from_path(url))
 
     (app_url(org_id) <> "/upload/media")
