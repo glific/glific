@@ -72,8 +72,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
    Get gupshup media handle id based on giving org id and the url
   """
-  @spec get_media_handle_id(non_neg_integer, binary, any) :: String.t()
-  def get_media_handle_id(org_id, url, _type \\ "") do
+  @spec get_media_handle_id(non_neg_integer, binary) :: :ok
+  def get_media_handle_id(org_id, url) do
     {:ok, path} = get_resource_local_path(url)
 
     data =
@@ -92,6 +92,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:error, error} ->
         raise(error)
     end
+
+    :ok
   end
 
   @doc """
@@ -167,9 +169,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec get_resource_local_path(String.t()) :: {:ok, String.t()} | {:error, term()}
   def get_resource_local_path(resource_url) do
-    client = Tesla.client([])
-
-    case Tesla.get(client, resource_url, follow_redirect: true) do
+    case Tesla.get(resource_url) do
       {:ok, %Tesla.Env{body: body}} ->
         file_format =
           MIME.from_path(resource_url)
