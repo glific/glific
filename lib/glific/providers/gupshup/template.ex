@@ -50,10 +50,12 @@ defmodule Glific.Providers.Gupshup.Template do
 
     with {:ok, app_id} <- PartnerAPI.app_id(attrs.organization_id),
          {:ok, _app_id} <- validate_app_id(app_id),
+         body when is_map(body) <- body(attrs, organization),
          {:ok, %{"template" => template} = _response} <-
            PartnerAPI.apply_for_template(
              attrs.organization_id,
-             body(attrs, organization)
+             # we don't need media_url for further processing
+             Map.delete(body, :media_url)
            ) do
       attrs
       |> Map.merge(%{
@@ -65,6 +67,7 @@ defmodule Glific.Providers.Gupshup.Template do
       })
       |> append_buttons(attrs)
       |> Templates.do_create_session_template()
+      |> tap(fn _resp -> PartnerAPI.delete_local_resource(body[:media_url], attrs.shortcode) end)
     else
       {:error, error} ->
         Logger.error(error)
@@ -423,7 +426,7 @@ defmodule Glific.Providers.Gupshup.Template do
 
   defp attach_media_params(template_payload, %{type: :text} = _attrs), do: template_payload
 
-  defp attach_media_params(template_payload, %{type: _type} = attrs) do
+  defp attach_media_params(template_payload, %{type: _type, shortcode: short_code} = attrs) do
     media_id = Glific.parse_maybe_integer!(attrs[:message_media_id])
     {:ok, media} = Repo.fetch_by(MessageMedia, %{id: media_id})
 
@@ -431,13 +434,15 @@ defmodule Glific.Providers.Gupshup.Template do
       PartnerAPI.get_media_handle_id(
         attrs.organization_id,
         media.url,
+        short_code,
         Atom.to_string(attrs.type)
       )
 
     template_payload
     |> Map.merge(%{
       enableSample: true,
-      exampleMedia: media_handle_id
+      exampleMedia: media_handle_id,
+      media_url: media.url
     })
   end
 

@@ -72,9 +72,13 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
    Get gupshup media handle id based on giving org id and the url
   """
-  @spec get_media_handle_id(non_neg_integer, binary, any) :: String.t()
-  def get_media_handle_id(org_id, url, _type \\ "") do
-    {:ok, path} = get_resource_local_path(url)
+  @spec get_media_handle_id(non_neg_integer, binary, String.t(), any) :: String.t()
+  def get_media_handle_id(org_id, url, media_name, _type \\ "") do
+    path =
+      case get_resource_local_path(url, media_name) do
+        {:ok, path} -> path
+        {:error, err} -> raise(err)
+      end
 
     data =
       Multipart.new()
@@ -165,25 +169,31 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
   Downloads the resource from the given url and returns the local path
   """
-  @spec get_resource_local_path(String.t()) :: {:ok, String.t()} | {:error, term()}
-  def get_resource_local_path(resource_url) do
+  @spec get_resource_local_path(String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
+  def get_resource_local_path(resource_url, media_name) do
     client = Tesla.client([])
 
     case Tesla.get(client, resource_url, follow_redirect: true) do
       {:ok, %Tesla.Env{body: body}} ->
-        file_format =
-          MIME.from_path(resource_url)
-          |> String.split("/")
-          |> List.last()
-
-        file_id = Ecto.UUID.generate()
-        :ok = File.write!("#{file_id}.#{file_format}", body)
-        {:ok, "#{file_id}.#{file_format}"}
+        file_name = get_filename_from_resource_url(resource_url, media_name)
+        :ok = File.write!(file_name, body)
+        {:ok, file_name}
 
       {:error, err} ->
         Logger.error("Error downloading file due to #{inspect(err)}")
         {:error, "#{inspect(err)}"}
     end
+  end
+
+  @doc """
+  Deletes the file, that has been downloaded locally by the `get_resource_local_path/2`
+  """
+  @spec delete_local_resource(non_neg_integer(), String.t()) :: :ok | {:error, term()}
+  def delete_local_resource(nil, _media_name), do: :ok
+
+  def delete_local_resource(resource_url, media_name) do
+    get_filename_from_resource_url(resource_url, media_name)
+    |> File.rm()
   end
 
   @global_organization_id 0
@@ -363,4 +373,14 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec app_url(non_neg_integer()) :: String.t()
   defp app_url(org_id),
     do: @app_url <> app_id!(org_id)
+
+  @spec get_filename_from_resource_url(String.t(), String.t()) :: String.t()
+  defp get_filename_from_resource_url(resource_url, media_name) do
+    file_format =
+      MIME.from_path(resource_url)
+      |> String.split("/")
+      |> List.last()
+
+    "template-asset-#{media_name}.#{file_format}"
+  end
 end
