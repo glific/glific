@@ -434,8 +434,7 @@ defmodule Glific.Providers.Gupshup.Template do
       PartnerAPI.get_media_handle_id(
         attrs.organization_id,
         media.url,
-        short_code,
-        Atom.to_string(attrs.type)
+        short_code
       )
 
     template_payload
