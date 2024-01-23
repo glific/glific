@@ -72,11 +72,13 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
    Get gupshup media handle id based on giving org id and the url
   """
-  @spec get_media_handle_id(non_neg_integer, binary, any) :: String.t()
-  def get_media_handle_id(org_id, url, _type \\ "") do
+  @spec get_media_handle_id(non_neg_integer, binary) :: :ok
+  def get_media_handle_id(org_id, url) do
+    {:ok, path} = get_resource_local_path(url)
+
     data =
       Multipart.new()
-      |> Multipart.add_field("file", url)
+      |> Multipart.add_file(path, name: "file")
       |> Multipart.add_field("file_type", MIME.from_path(url))
 
     (app_url(org_id) <> "/upload/media")
@@ -90,6 +92,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:error, error} ->
         raise(error)
     end
+
+    :ok
   end
 
   @doc """
@@ -158,6 +162,28 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     url = app_url(org_id) <> "/callbackUrl"
     data = %{"callbackUrl" => callback_url}
     put_request(url, data, org_id: org_id)
+  end
+
+  @doc """
+  Downloads the resource from the given url and returns the local path
+  """
+  @spec get_resource_local_path(String.t()) :: {:ok, String.t()} | {:error, term()}
+  def get_resource_local_path(resource_url) do
+    case Tesla.get(resource_url) do
+      {:ok, %Tesla.Env{body: body}} ->
+        file_format =
+          MIME.from_path(resource_url)
+          |> String.split("/")
+          |> List.last()
+
+        file_id = Ecto.UUID.generate()
+        :ok = File.write!("#{file_id}.#{file_format}", body)
+        {:ok, "#{file_id}.#{file_format}"}
+
+      {:error, err} ->
+        Logger.error("Error downloading file due to #{inspect(err)}")
+        {:error, "#{inspect(err)}"}
+    end
   end
 
   @global_organization_id 0
