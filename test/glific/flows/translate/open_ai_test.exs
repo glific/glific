@@ -1,11 +1,13 @@
 defmodule Glific.Flows.Translate.OpenAITest do
-  use Glific.DataCase
+  use Glific.DataCase, async: false
 
   alias Glific.Flows.Translate.OpenAI
   alias Glific.Flows.Translate.Translate
 
+  import Tesla.Mock
+
   setup do
-    Tesla.Mock.mock(fn env ->
+    mock_global(fn env ->
       cond do
         String.contains?(env.body, "Welcome to our NGO Chatbot") ->
           %Tesla.Env{
