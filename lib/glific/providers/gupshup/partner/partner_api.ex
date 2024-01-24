@@ -161,7 +161,20 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-  Setting Business Profile Details
+  Setting Business Profile Details.
+  Following parameters can be updated in the given form:
+  params = %{
+  addLine1: "123",
+  addLine2: "panvel",
+  city: "mumbai",
+  state: "maharashtra",
+  pinCode: 123,
+  country: "india",
+  vertical: "saloon",
+  website1: "123.com",
+  website2: "123.com",
+  desc: "see desc",
+  profileEmail: "123@gmail.com"}
   """
   @spec set_business_profile(integer(), map()) :: tuple()
   def set_business_profile(org_id, params \\ %{}) do
