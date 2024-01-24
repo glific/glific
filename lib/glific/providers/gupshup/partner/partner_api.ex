@@ -72,13 +72,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
    Get gupshup media handle id based on giving org id and the url. media_name is used as a label for the resource
   """
-  @spec get_media_handle_id(non_neg_integer, binary, String.t()) :: :ok
-  def get_media_handle_id(org_id, url, media_name) do
-    path =
-      case get_resource_local_path(url, media_name) do
-        {:ok, path} -> path
-        {:error, err} -> raise(err)
-      end
+  @spec get_media_handle_id(non_neg_integer, binary) :: String.t() | term()
+  def get_media_handle_id(org_id, url) do
+    {:ok, path} = get_resource_local_path(url)
 
     data =
       Multipart.new()
@@ -96,8 +92,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:error, error} ->
         raise(error)
     end
-
-    :ok
   end
 
   @doc """
