@@ -25,3 +25,61 @@ body:json {
       }
   }
 }
+
+docs {
+  ## API Documentation: Create a New User
+  
+  ### Description
+  This API is used to create a new user by submitting registration details including name, phone number, password, and OTP (One-Time Password).
+  
+  ### Base URL
+  `{{api_url}}`
+  
+  ### URL
+  `/v1/registration`
+  
+  ### Parameters
+  - `name` (DataType: String) - The name of the new user.
+  - `phone` (DataType: String) - The phone number of the new user.
+  - `password` (DataType: String) - The password for the new user.
+  - `otp` (DataType: String) - The OTP (One-Time Password) for phone number verification.
+  
+  ### Request Example
+  ```json
+  POST {{api_url}}/v1/registration
+  Content-Type: application/json
+  Accept: application/json
+  
+  {
+      "user": {
+          "name": "Test User",
+          "phone": "911234554321",
+          "password": "Secret1234!",
+          "otp": "321721"
+      }
+  }
+  ```
+  
+  ## Response
+  The API response may include user details upon successful registration.
+  
+  ## Error Codes
+  - `401 Unauthorized`: Invalid credentials or OTP.
+  - `400 Bad Request`: Malformed request or missing parameters.
+  
+  ## Use Cases
+  1. **Use Case 1: Successful Registration**
+     A new user provides valid registration details, including a correct OTP. The API responds, creating a new user account.
+  
+  2. **Use Case 2: Invalid OTP**
+     If the user provides an incorrect OTP, the API responds with a 401 Unauthorized error.
+  
+  ## FAQ
+  
+  - **Q:** What happens if registration fails?
+    **A:** If registration fails, check the error response for details. Common issues include an invalid OTP or missing parameters.
+  
+  - **Q:** Is the password encrypted in transit?
+    **A:** Yes, the registration API typically ensures that data, including passwords, is transmitted securely over HTTPS.
+  
+}

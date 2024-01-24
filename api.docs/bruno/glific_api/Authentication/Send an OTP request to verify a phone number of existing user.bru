@@ -23,3 +23,56 @@ body:json {
       }
   }
 }
+
+docs {
+  # API Documentation: Send OTP for Phone Number Verification (Existing User)
+  
+  ## Description
+  This API is used to send an OTP (One-Time Password) request to verify the phone number of an existing user. It is part of the phone number verification process during user login.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  `/v1/session`
+  
+  ## Parameters
+  - `phone` (DataType: String) - The existing user's phone number.
+  - `password` (DataType: String) - The existing user's password.
+  
+  ## Request Example
+  ```json
+  POST {{api_url}}/v1/session
+  Content-Type: application/json
+  Accept: application/json
+  
+  {
+      "user": {
+          "phone": "917834811114",
+          "password": "Secret1234!"
+      }
+  }
+  ```
+  
+  ## Response
+  The API does not return an OTP directly in the response. Instead, it initiates the OTP request process.
+  
+  ## Error Codes
+  - `401 Unauthorized`: Invalid credentials.
+  
+  ## Use Cases
+  1. **Use Case 1: OTP Request Sent for Existing User**
+     An existing user initiates an OTP request by providing valid credentials. The API responds, triggering the OTP delivery process.
+  
+  2. **Use Case 2: Invalid Credentials**
+     If the existing user provides incorrect credentials, the API responds with a 401 Unauthorized error.
+  
+  ## FAQ
+  
+  - **Q:** What happens if I don't receive the OTP?
+    **A:** If you don't receive the OTP, you can request a new one or check if the provided phone number is correct.
+  
+  - **Q:** Can I resend the OTP?
+    **A:** Yes, you can resend the OTP by initiating the same API request again.
+  
+}
