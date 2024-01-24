@@ -188,7 +188,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
   Deletes the file, that has been downloaded locally by the `get_resource_local_path/2`
   """
-  @spec delete_local_resource(non_neg_integer(), String.t()) :: :ok | {:error, term()}
+  @spec delete_local_resource(non_neg_integer(), String.t()) :: :ok | {:error, atom()}
   def delete_local_resource(nil, _media_name), do: :ok
 
   def delete_local_resource(resource_url, media_name) do
