@@ -79,7 +79,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:ok, path} -> path
         {:error, err} -> raise(err)
       end
-      IO.inspect path
+
     data =
       Multipart.new()
       |> Multipart.add_file(path, name: "file")

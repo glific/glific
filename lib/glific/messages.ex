@@ -1276,6 +1276,7 @@ defmodule Glific.Messages do
         |> Map.put_new("content-type", "")
         |> Map.put_new("content-length", 0)
         |> do_validate_media(type, url, @size_limit[type])
+
       _ ->
         %{is_valid: false, message: "This media URL is invalid"}
     end
