@@ -360,6 +360,86 @@ defmodule Glific.TemplatesTest do
       assert session_template.language_id == language.id
     end
 
+    @tag :image_test
+    test "create_session_template/1 for HSM data should submit it for approval with attribute type image", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            headers: %{
+              "content-type" => "image",
+              "content-length" => "1232"
+            }
+          }
+      end)
+
+      data =
+        "Language,Title,Message,Sample Message,Element Name,Category,Attachment Type,Attachment URL,Has Buttons,Button Type,CTA Button 1 Type,CTA Button 1 Title,CTA Button 1 Value,CTA Button 2 Type,CTA Button 2 Title,CTA Button 2 Value,Quick Reply 1 Title,Quick Reply 2 Title,Quick Reply 3 Title\r\nEnglish,Signup Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",welcome_arogya,UTILITY,image,https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg,FALSE,,,,,,,,,,"
+
+      {:ok, %{csv_rows: _csv_rows}} =
+        Gupshup.Template.bulk_apply_templates(attrs.organization_id, data)
+
+      whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9b94e53b4b"
+
+      body =
+        Jason.encode!(%{
+          "status" => "success",
+          "token" => "new_partner_token",
+          "template" => %{
+            "category" => "UTILITY",
+            "createdOn" => 1_595_904_220_495,
+            "data" => "Your train ticket no. {{1}}",
+            "elementName" => "Hi [Akhilesh]",
+            "id" => whatspp_hsm_uuid,
+            "languageCode" => "en",
+            "languagePolicy" => "deterministic",
+            "master" => true,
+            "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
+            "modifiedOn" => 1_595_904_220_495,
+            "status" => "PENDING",
+            "templateType" => "IMAGE",
+            # "vertical" => "ACTION_BUTTON"
+          }
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: body
+          }
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})
+          }
+      end)
+
+      language = language_fixture()
+
+      attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :image,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:ok, %SessionTemplate{} = session_template} =
+               Templates.create_session_template(attrs)
+
+      assert session_template.shortcode == "ticket_update_status"
+      assert session_template.is_hsm == true
+      assert session_template.status == "PENDING"
+      assert session_template.uuid == whatspp_hsm_uuid
+      assert session_template.language_id == language.id
+    end
+
     test "create_session_template/1 for HSM button template should submit it for approval",
          attrs do
       whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9c94e53b4b"

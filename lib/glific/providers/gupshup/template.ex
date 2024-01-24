@@ -128,6 +128,7 @@ defmodule Glific.Providers.Gupshup.Template do
 
     processed_templates
     |> filter_valid_templates()
+    |> IO.inspect()
     |> TemplateWorker.make_job(organization_id)
 
     csv_rows =
@@ -196,7 +197,6 @@ defmodule Glific.Providers.Gupshup.Template do
         organization_id: org_id
       }
       |> Messages.create_message_media()
-
     {media_type, _url} = Messages.get_media_type_from_url(csv_template["Attachment URL"])
 
     template
