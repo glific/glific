@@ -175,6 +175,21 @@ defmodule Glific.PartnersTest do
       assert %{"status" => "success"} == data
     end
 
+    test "test app link using api key" do
+      org = SeedsDev.seed_organizations()
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"partnerId\":49,\"status\":\"success\"}"
+          }
+      end)
+
+      {:ok, result} = PartnerAPI.app_link(org.id)
+      assert %{"partnerId" => 49, "status" => "success"} == result
+    end
+
     test "delete_provider/1 deletes the provider" do
       provider = provider_fixture()
       assert {:ok, %Provider{}} = Partners.delete_provider(provider)

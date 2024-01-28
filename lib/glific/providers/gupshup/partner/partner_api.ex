@@ -72,11 +72,13 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
    Get gupshup media handle id based on giving org id and the url
   """
-  @spec get_media_handle_id(non_neg_integer, binary, any) :: String.t()
-  def get_media_handle_id(org_id, url, _type \\ "") do
+  @spec get_media_handle_id(non_neg_integer, binary) :: String.t() | term()
+  def get_media_handle_id(org_id, url) do
+    {:ok, path} = get_resource_local_path(url)
+
     data =
       Multipart.new()
-      |> Multipart.add_field("file", url)
+      |> Multipart.add_file(path, name: "file")
       |> Multipart.add_field("file_type", MIME.from_path(url))
 
     (app_url(org_id) <> "/upload/media")
@@ -90,6 +92,24 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:error, error} ->
         raise(error)
     end
+  end
+
+  @doc """
+    App Link Using API key
+  """
+  @spec app_link(non_neg_integer()) :: any()
+  def app_link(org_id) do
+    organization = Partners.organization(org_id)
+    gupshup_secrets = organization.services["bsp"].secrets
+
+    post_request(
+      @partner_url <> "/api/appLink",
+      %{
+        apiKey: gupshup_secrets["api_key"],
+        appName: gupshup_secrets["app_name"]
+      },
+      token_type: :partner_token
+    )
   end
 
   @doc """
@@ -163,7 +183,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
   Setting Business Profile Details.
   Following parameters can be updated in the given form:
-  params = %{
+
   addLine1: "123",
   addLine2: "panvel",
   city: "mumbai",
@@ -174,7 +194,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   website1: "123.com",
   website2: "123.com",
   desc: "see desc",
-  profileEmail: "123@gmail.com"}
+  profileEmail: "123@gmail.com"
   """
   @spec set_business_profile(integer(), map()) :: tuple()
   def set_business_profile(org_id, params \\ %{}) do
@@ -185,6 +205,26 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     put_request(url, body_params, org_id: org_id)
   end
 
+  Downloads the resource from the given url and returns the local path
+  """
+  @spec get_resource_local_path(String.t()) :: {:ok, String.t()} | {:error, term()}
+  def get_resource_local_path(resource_url) do
+    case Tesla.get(resource_url) do
+      {:ok, %Tesla.Env{body: body}} ->
+        file_format =
+          MIME.from_path(resource_url)
+          |> String.split("/")
+          |> List.last()
+
+        file_id = Ecto.UUID.generate()
+        :ok = File.write!("#{file_id}.#{file_format}", body)
+        {:ok, "#{file_id}.#{file_format}"}
+
+      {:error, err} ->
+        Logger.error("Error downloading file due to #{inspect(err)}")
+        {:error, "#{inspect(err)}"}
+    end
+  end
 
   @global_organization_id 0
   @spec get_partner_token :: {:ok, map()} | {:error, any}
