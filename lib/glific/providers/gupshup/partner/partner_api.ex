@@ -199,12 +199,15 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec set_business_profile(integer(), map()) :: tuple()
   def set_business_profile(org_id, params \\ %{}) do
     url = app_url(org_id) <> "/business/profile"
+
     body_params =
       params
       |> Enum.reject(fn {_, value} -> value == nil end)
+
     put_request(url, body_params, org_id: org_id)
   end
 
+  @doc """
   Downloads the resource from the given url and returns the local path
   """
   @spec get_resource_local_path(String.t()) :: {:ok, String.t()} | {:error, term()}
