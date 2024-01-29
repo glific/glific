@@ -694,10 +694,10 @@ defmodule Glific.Templates do
   """
   @spec report_to_gupshup(non_neg_integer(), non_neg_integer(), map()) ::
           {:ok, any} | {:error, any}
-  def report_to_gupshup(org_id, template_id, cc \\ %{}) do
+  def report_to_gupshup(org_id, template_id, cc) do
     org = Partners.organization(org_id)
 
-    cc = Map.to_list(cc)
+    cc = Map.values(cc)
 
     phone =
       Contact
