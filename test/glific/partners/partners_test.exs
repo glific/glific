@@ -130,6 +130,21 @@ defmodule Glific.PartnersTest do
       assert %{"balance" => 0.787, "status" => "success"} == data
     end
 
+    test "set business profile" do
+      org = SeedsDev.seed_organizations()
+
+      Tesla.Mock.mock(fn
+        %{method: :put} ->
+          %Tesla.Env{
+            status: 202,
+            body: "{\"status\":\"success\"}"
+          }
+      end)
+
+      {:ok, result} = PartnerAPI.set_business_profile(org.id, %{city: "mumbai"})
+      assert %{"status" => "success"} == result
+    end
+
     test "enable template messaging for an app" do
       org = SeedsDev.seed_organizations()
 
