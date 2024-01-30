@@ -181,6 +181,34 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
+  Setting Business Profile Details.
+  Following parameters can be updated in the given form:
+  %{
+  addLine1: "123",
+  addLine2: "panvel",
+  city: "mumbai",
+  state: "maharashtra",
+  pinCode: 123,
+  country: "india",
+  vertical: "saloon",
+  website1: "123.com",
+  website2: "123.com",
+  desc: "see desc",
+  profileEmail: "123@gmail.com"}
+  """
+  @spec set_business_profile(integer(), map()) :: tuple()
+  def set_business_profile(org_id, params \\ %{}) do
+    url = app_url(org_id) <> "/business/profile"
+
+    body_params =
+      Enum.reduce(params, %{}, fn {key, value}, acc ->
+        if value == nil, do: acc, else: Map.put(acc, key, value)
+      end)
+
+    put_request(url, body_params, org_id: org_id)
+  end
+
+  @doc """
   Downloads the resource from the given url and returns the local path
   """
   @spec get_resource_local_path(String.t()) :: {:ok, String.t()} | {:error, term()}
