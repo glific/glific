@@ -1,0 +1,43 @@
+meta {
+  name: Optin a Contact
+  type: graphql
+  seq: 13
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation optinContact($phone: String!, $name: String) {
+    optinContact(phone: $phone, name: $name) {
+      contact {
+        id
+        phone
+        name
+        lastMessageAt
+        optinTime
+        bspStatus
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "phone": "917834811119",
+    "name": "contact name"
+  }
+}

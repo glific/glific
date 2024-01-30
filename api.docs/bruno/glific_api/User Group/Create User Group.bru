@@ -1,0 +1,47 @@
+meta {
+  name: Create User Group
+  type: graphql
+  seq: 1
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createUserGroup($input: UserGroupInput!) {
+    createUserGroup(input: $input) {
+      userGroup {
+        id
+        user {
+          id
+          name
+        }
+        group {
+          id
+          label
+        }
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "userId": 2,
+      "groupId": 1
+    }
+  }
+}

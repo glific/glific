@@ -355,7 +355,7 @@ defmodule Glific.Flows.Router do
 
     results =
       cond do
-        Flows.is_media_type?(msg.type) ->
+        Flows.media_type?(msg.type) ->
           json =
             msg.media
             |> Map.take([:id, :source_url, :url, :caption])

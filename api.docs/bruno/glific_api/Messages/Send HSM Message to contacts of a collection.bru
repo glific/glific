@@ -1,0 +1,40 @@
+meta {
+  name: Send HSM Message to contacts of a collection
+  type: graphql
+  seq: 13
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation sendHsmMessageToGroup($templateId: ID!, $groupId: ID!, $parameters: [String]) {
+    sendHsmMessage(templateId: $templateId, groupId: $groupId, parameters: $parameters) {
+      success
+      contactIds
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "templateId": 34,
+    "groupId": 5,
+    "parameters": [
+      "100",
+      "30 Oct"
+    ]
+  }
+}

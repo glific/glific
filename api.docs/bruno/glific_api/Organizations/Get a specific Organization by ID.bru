@@ -1,0 +1,39 @@
+meta {
+  name: Get a specific Organization by ID
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query organization($id: ID) {
+    organization(id: $id) {
+      organization {
+        id
+        name
+        isActive
+        timezone
+        defaultLanguage {
+          id
+          label
+        }
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": 2
+  }
+}

@@ -1,0 +1,47 @@
+meta {
+  name: Create and send Scheduled Message
+  type: graphql
+  seq: 10
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createAndSendMessage($input: MessageInput!) {
+    createAndSendMessage(input: $input) {
+      message {
+        id
+        body
+        insertedAt
+        sendAt
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "body": "This message should reach at 21:00 (India)",
+      "flow": "OUTBOUND",
+      "receiverId": 7,
+      "sendAt": "2020-07-10T03:30:00Z",
+      "senderId": 1,
+      "type": "TEXT"
+    }
+  }
+}

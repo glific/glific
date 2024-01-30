@@ -1,0 +1,25 @@
+meta {
+  name: Send an OTP request to verify a phone number of existing user
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{api_url}}/v1/session
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+      "user": {
+          "phone": "917834811114",
+          "password": "Secret1234!"
+      }
+  }
+}

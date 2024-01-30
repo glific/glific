@@ -3,116 +3,75 @@
     "nodes": {
       "1826c405-38f8-4d4e-a7d3-400c4d5ba1dc": {
         "type": "execute_actions",
-        "position": {
-          "top": 20,
-          "left": 180
-        }
+        "position": { "top": 20, "left": 180 }
       },
       "1a9d6fcc-c920-4d12-a198-3c82fd531040": {
         "type": "execute_actions",
-        "position": {
-          "top": 560,
-          "left": 400
-        }
+        "position": { "top": 560, "left": 400 }
       },
       "1cede315-fcef-4edf-a38a-125f2223b66d": {
         "type": "execute_actions",
-        "position": {
-          "top": 400,
-          "left": 420
-        }
+        "position": { "top": 400, "left": 420 }
       },
       "1de225f7-d863-4a84-a393-c2e3a3f43dee": {
         "type": "execute_actions",
-        "position": {
-          "top": 420,
-          "left": 100
-        }
+        "position": { "top": 440, "left": 100 }
+      },
+      "33555b1e-008d-412d-a5b5-cec6d003731b": {
+        "type": "execute_actions",
+        "position": { "top": 780, "left": 280 }
       },
       "3b15e405-8863-452a-9d96-d9609986bc66": {
         "type": "execute_actions",
-        "position": {
-          "top": 300,
-          "left": 20
-        }
+        "position": { "top": 300, "left": 20 }
       },
       "4c93f93c-0677-42c1-ab8f-fda7023bc0e8": {
         "type": "wait_for_response",
-        "config": {
-          "cases": {}
-        },
-        "position": {
-          "top": 40,
-          "left": 600
-        }
+        "config": { "cases": {} },
+        "position": { "top": 40, "left": 600 }
       },
       "5b3f4a08-b7f5-4a81-991d-ff63cb0f3964": {
         "type": "execute_actions",
-        "position": {
-          "top": 820,
-          "left": 640
-        }
+        "position": { "top": 820, "left": 640 }
       },
       "667bff37-fb11-4ce6-a196-fa11b286233c": {
         "type": "execute_actions",
-        "position": {
-          "top": 280,
-          "left": 420
-        }
+        "position": { "top": 280, "left": 420 }
       },
       "6882967b-2777-4774-9a90-b14614cbb3d5": {
         "type": "split_by_subflow",
         "config": {},
-        "position": {
-          "top": 400,
-          "left": 680
-        }
+        "position": { "top": 400, "left": 680 }
       },
       "6bf22f36-a365-4fc8-ad95-87084989fbdd": {
         "type": "split_by_subflow",
         "config": {},
-        "position": {
-          "top": 220,
-          "left": 700
-        }
+        "position": { "top": 220, "left": 700 }
       },
       "8966125b-6dd9-4b9a-b540-9d796e22f65b": {
         "type": "execute_actions",
-        "position": {
-          "top": 200,
-          "left": 200
-        }
+        "position": { "top": 200, "left": 200 }
+      },
+      "9e93d5eb-c808-408e-8e16-80ad7f31af33": {
+        "type": "execute_actions",
+        "position": { "top": 1020, "left": 280 }
       },
       "a01ab1d6-49b8-4d88-90f2-0cb6cff26a93": {
         "type": "execute_actions",
-        "position": {
-          "top": 520,
-          "left": 80
-        }
+        "position": { "top": 540, "left": 80 }
       },
       "b1b379ee-3b7c-4ad2-bab5-630ea711cee6": {
         "type": "execute_actions",
-        "position": {
-          "top": 180,
-          "left": 940
-        }
+        "position": { "top": 160, "left": 1140 }
       },
       "f5539329-71de-49ef-88ec-df0b37b84582": {
         "type": "split_by_expression",
-        "config": {
-          "cases": {}
-        },
-        "position": {
-          "top": 680,
-          "left": 920
-        }
+        "config": { "cases": {} },
+        "position": { "top": 680, "left": 920 }
       },
       "f8407d51-749a-4686-906e-b8a96ff1a0f7": {
         "type": "execute_actions",
-        "position": {
-          "top": 400,
-          "left": 940
-        }
+        "position": { "top": 420, "left": 940 }
       }
     }
   },
@@ -155,9 +114,7 @@
           "uuid": "31fe1720-cf5b-4862-a98b-8096d1f01469",
           "destination_uuid": "6bf22f36-a365-4fc8-ad95-87084989fbdd"
         },
-        {
-          "uuid": "fd8ce994-2c42-49d4-ab4b-07bedb111bcb"
-        },
+        { "uuid": "fd8ce994-2c42-49d4-ab4b-07bedb111bcb" },
         {
           "uuid": "754a48fe-47c2-482e-b6a2-b1c65d5321a4",
           "destination_uuid": null
@@ -378,12 +335,7 @@
           "type": "send_broadcast",
           "uuid": "e57d70d7-2da3-45bd-a147-953b491fce1d",
           "groups": [],
-          "contacts": [
-            {
-              "name": "SaaS Admin",
-              "uuid": "7"
-            }
-          ],
+          "contacts": [{ "name": "SaaS Admin", "uuid": "7" }],
           "attachments": [],
           "legacy_vars": []
         }
@@ -474,13 +426,7 @@
         {
           "type": "add_contact_groups",
           "uuid": "f29028db-1320-4832-b0ac-4a438f26ffbf",
-          "groups": [
-            {
-              "name": "Default Group",
-              "type": "group",
-              "uuid": "1"
-            }
-          ]
+          "groups": [{ "name": "Default Group", "type": "group", "uuid": "1" }]
         }
       ]
     },
@@ -498,12 +444,7 @@
           "type": "send_broadcast",
           "uuid": "7c3a2b24-2893-4a27-8f58-f1a9d94ed107",
           "groups": [],
-          "contacts": [
-            {
-              "name": "NGO Staff",
-              "uuid": "12"
-            }
-          ],
+          "contacts": [{ "name": "NGO Staff", "uuid": "12" }],
           "attachments": [],
           "legacy_vars": []
         }
@@ -538,12 +479,8 @@
           "uuid": "5e8cbd47-84f9-4eca-9f89-62cf0958ab9a",
           "destination_uuid": "5b3f4a08-b7f5-4a81-991d-ff63cb0f3964"
         },
-        {
-          "uuid": "dc6108f6-d93b-4218-83ab-0885340dd5e8"
-        },
-        {
-          "uuid": "dc5dcf7a-5da2-400b-a2e8-e0b0f352ad50"
-        }
+        { "uuid": "dc6108f6-d93b-4218-83ab-0885340dd5e8" },
+        { "uuid": "dc5dcf7a-5da2-400b-a2e8-e0b0f352ad50" }
       ],
       "router": {
         "type": "switch",
@@ -584,11 +521,32 @@
       "actions": []
     },
     {
+      "uuid": "33555b1e-008d-412d-a5b5-cec6d003731b",
+      "exits": [
+        {
+          "uuid": "bd353b8e-0031-424c-a964-3784d370adae",
+          "destination_uuid": "9e93d5eb-c808-408e-8e16-80ad7f31af33"
+        }
+      ],
+      "actions": [
+        {
+          "id": 11,
+          "name": "Are you excited for *Glific*?",
+          "text": "{\"content\":{\"header\":\"Are you excited for *Glific*?\",\"text\":\"Glific comes with all new features\",\"type\":\"text\"},\"options\":[{\"title\":\"yes\",\"type\":\"text\"},{\"title\":\"no\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+          "type": "send_interactive_msg",
+          "uuid": "fbe89505-8ba8-4b1a-9d6a-7e659d6b38b5",
+          "labels": [],
+          "attachment_url": "",
+          "attachment_type": ""
+        }
+      ]
+    },
+    {
       "uuid": "5b3f4a08-b7f5-4a81-991d-ff63cb0f3964",
       "exits": [
         {
           "uuid": "d58c89a4-dd28-4a1c-9bd9-7eb7338c3c61",
-          "destination_uuid": null
+          "destination_uuid": "33555b1e-008d-412d-a5b5-cec6d003731b"
         }
       ],
       "actions": [
@@ -602,10 +560,45 @@
           "quick_replies": []
         }
       ]
+    },
+    {
+      "uuid": "9e93d5eb-c808-408e-8e16-80ad7f31af33",
+      "exits": [
+        {
+          "uuid": "09bad6f0-1c0d-4fec-be38-459e0df9ed22",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "text": "",
+          "type": "send_msg",
+          "uuid": "3edc4952-e63c-424c-bac6-a32fcb6d07f0",
+          "labels": [],
+          "all_urns": false,
+          "templating": {
+            "uuid": "913db613-5d8d-4c59-8674-159199059e02",
+            "template": {
+              "name": "Translated Movie Ticket",
+              "uuid": "a1d810f4-b102-446c-968c-10ff2f5c129f"
+            },
+            "variables": ["@contact.name", "@results.result_1"]
+          },
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
     }
   ],
   "language": "base",
-  "localization": {},
+  "localization": {
+    "hi": {
+      "fb500222-04db-4c0f-9781-36bf081e4926": {
+        "text": ["नमस्ते"],
+        "attachments": []
+      }
+    }
+  },
   "spec_version": "13.2.0",
   "expire_after_minutes": 10080
 }

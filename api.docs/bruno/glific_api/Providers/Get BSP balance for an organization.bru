@@ -1,0 +1,22 @@
+meta {
+  name: Get BSP balance for an organization
+  type: graphql
+  seq: 4
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query provider_queries {
+    bspbalance
+  }
+}

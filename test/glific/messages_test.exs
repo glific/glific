@@ -886,6 +886,31 @@ defmodule Glific.MessagesTest do
       assert is_nil(message.media_id) == false
     end
 
+    test "create and send interactive message with type as location_request_message should send message",
+         %{organization_id: organization_id} = attrs do
+      label = "Send Location"
+
+      {:ok, interactive_template} =
+        Repo.fetch_by(
+          InteractiveTemplate,
+          %{label: label, organization_id: organization_id}
+        )
+
+      valid_attrs = %{
+        body: nil,
+        flow: :outbound,
+        interactive_template_id: interactive_template.id,
+        type: :location_request_message
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert false == is_nil(message.interactive_content)
+      assert false == is_nil(message.interactive_template_id)
+      assert message.body == "please share your location"
+    end
+
     test "create and send message interactive quick reply message with image should have message body as image caption",
          %{organization_id: organization_id} = attrs do
       label = "Quick Reply Image"

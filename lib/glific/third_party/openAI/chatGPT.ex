@@ -5,10 +5,10 @@ defmodule Glific.OpenAI.ChatGPT do
 
   alias Glific.Partners
 
-  @endpoint "https://api.openai.com/v1/completions"
+  @endpoint "https://api.openai.com/v1/chat/completions"
 
   @default_params %{
-    "model" => "text-davinci-003",
+    "model" => "gpt-3.5-turbo-16k",
     "temperature" => 0.7,
     "max_tokens" => 250,
     "top_p" => 1,
@@ -17,14 +17,30 @@ defmodule Glific.OpenAI.ChatGPT do
   }
 
   @doc """
-
+  API call to GPT
   """
-  @spec parse(non_neg_integer(), String.t()) :: tuple()
-  def parse(org_id, question_text) do
-    data = @default_params |> Map.merge(%{"prompt" => question_text})
+  @spec parse(String.t(), String.t(), map()) :: tuple()
+  def parse(api_key, question_text, params \\ %{}) do
+    data =
+      @default_params
+      |> Map.merge(params)
+      |> Map.merge(%{
+        "messages" => [
+          %{
+            "role" => "system",
+            "content" => question_text
+          }
+        ]
+      })
 
-    client(org_id)
-    |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 20_000]])
+    middleware = [
+      Tesla.Middleware.JSON,
+      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]}
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 120_000]])
     |> handle_response()
   end
 
@@ -36,7 +52,7 @@ defmodule Glific.OpenAI.ChatGPT do
         {:error, "Got empty response #{inspect(body)}"}
 
       {:ok, %Tesla.Env{status: 200, body: %{"choices" => choices} = _body}} ->
-        {:ok, hd(choices)["text"]}
+        {:ok, hd(choices)["message"]["content"]}
 
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         {:error, "Got different response #{inspect(body)}"}
@@ -47,18 +63,12 @@ defmodule Glific.OpenAI.ChatGPT do
   end
 
   @doc """
-    Get the tesla client with existing configurations.
+    Get the API key with existing configurations.
   """
-  @spec client(non_neg_integer()) :: Tesla.Client.t()
-  def client(org_id) do
+  @spec get_api_key(non_neg_integer()) :: String.t()
+  def get_api_key(org_id) do
     {:ok, %{api_key: api_key}} = credentials(org_id)
-
-    middleware = [
-      Tesla.Middleware.JSON,
-      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]}
-    ]
-
-    Tesla.client(middleware)
+    api_key
   end
 
   @spec credentials(non_neg_integer()) :: tuple()

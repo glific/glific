@@ -1,0 +1,44 @@
+meta {
+  name: Update a Contact with tags to be added and tags to be deleted
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation updateContactTags($input: ContactTagsInput!) {
+    updateContactTags(input: $input) {
+      contactTags {
+        id
+        contact {
+          name
+        }
+        tag {
+          label
+        }
+      }
+      numberDeleted
+    }
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "contactId": 2,
+      "addTagIds": [3, 6],
+      "deleteTagIds": [7, 8]
+    }
+  }
+}

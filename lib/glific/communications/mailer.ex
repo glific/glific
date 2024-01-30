@@ -45,7 +45,7 @@ defmodule Glific.Communications.Mailer do
   """
   @spec glific_support() :: tuple()
   def glific_support do
-    {"Glific support", "mohit@coloredcow.in"}
+    {"Glific support", "support@glific.org"}
   end
 
   defp add_body(mail, body, false), do: text_body(mail, body)

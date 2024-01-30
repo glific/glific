@@ -1,0 +1,44 @@
+meta {
+  name: Get All Contact History
+  type: graphql
+  seq: 16
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query ContactHistory($filter: ContactsHistoryFilter, $opts: Opts) {
+      contactHistory(filter: $filter, opts: $opts) {
+        eventDatetime
+        eventLabel
+        eventMeta
+        eventType
+        id
+        insertedAt
+        updatedAt
+      }
+    }
+  
+}
+
+body:graphql:vars {
+  {
+    "opts": {
+      "order": "ASC",
+      "limit": 10,
+      "offset": 0
+    },
+    "filter": {
+      "contactId": 1
+    }
+  }
+}

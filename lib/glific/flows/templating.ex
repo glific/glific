@@ -111,7 +111,7 @@ defmodule Glific.Flows.Templating do
   end
 
   @doc """
-    We need to perform the execute in case template is an expression
+  We need to perform the execute in case template is an expression
   """
   @spec execute(Templating.t(), FlowContext.t(), [Message.t()]) :: Templating.t() | nil
   def execute(%{expression: expression} = _templating, context, _messages)

@@ -1,0 +1,37 @@
+meta {
+  name: UnBlock a Contact
+  type: graphql
+  seq: 10
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation updateContact($id: ID!, $input:ContactInput!) {
+    updateContact(id: $id, input: $input) {
+      contact {
+        id
+        phone
+        status
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": "5",
+    "input": {
+      "status": "VALID"
+    }
+  }
+}

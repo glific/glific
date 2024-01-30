@@ -1,0 +1,33 @@
+meta {
+  name: Delete an Organization
+  type: graphql
+  seq: 7
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation deleteOrganization($id: ID!) {
+    deleteOrganization(id: $id) {
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": "3"
+  }
+}

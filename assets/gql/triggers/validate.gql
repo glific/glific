@@ -1,0 +1,9 @@
+mutation ValidateTrigger($input: TriggerInput!) {
+  validateTrigger(input: $input) {
+    errors {
+      key
+      message
+    }
+    success
+  }
+}

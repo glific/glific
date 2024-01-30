@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "5.6.7",
+      version: "5.8.0",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -82,7 +82,7 @@ defmodule Glific.MixProject do
     [
       {:phoenix, "~> 1.7"},
       {:phoenix_ecto, "~> 4.1"},
-      {:phoenix_html, "~> 3.0"},
+      {:phoenix_html, "~> 3.3"},
       {:phoenix_live_reload, "~> 1.4", only: [:dev | @test_envs]},
       {:phoenix_pubsub, "~> 2.0"},
       {:phoenix_live_view, "~> 0.18"},
@@ -112,7 +112,7 @@ defmodule Glific.MixProject do
       {:absinthe, "~> 1.7"},
       {:absinthe_plug, "~> 1.5"},
       {:absinthe_phoenix, "~> 2.0"},
-      {:dataloader, "~> 1.0"},
+      {:dataloader, "~> 2.0"},
       {:hackney, "~> 1.17"},
       {:tesla, "~> 1.5"},
       {:oban, "~> 2.13"},
@@ -131,13 +131,14 @@ defmodule Glific.MixProject do
       {:slugify, "~> 1.3"},
       {:cachex, "~> 3.6"},
       {:fun_with_flags, "~> 1.9"},
-      {:fun_with_flags_ui, "~> 0.8"},
+      {:fun_with_flags_ui, "~> 1.0"},
       {:passwordless_auth, "~> 0.3.0"},
       {:appsignal_phoenix, "~> 2.3"},
       {:poolboy, "~> 1.5"},
       {:cloak_ecto, "~> 1.2"},
       {:google_api_big_query, "~> 0.47"},
       {:google_api_dialogflow, "~> 0.62"},
+      {:gpt3_tokenizer, "~> 0.1.0"},
       {:absinthe_graphql_ws, "~> 0.3"},
       {:google_api_sheets, "~> 0.29"},
       {:waffle, "~> 1.1"},
@@ -147,7 +148,7 @@ defmodule Glific.MixProject do
       {:apiac_filter_ip_whitelist, "~> 1.0"},
       {:ex_phone_number, "~> 0.3"},
       {:tzdata, "~> 1.1"},
-      {:stripity_stripe, "~> 2.17"},
+      {:stripity_stripe, "~> 2.3"},
       {:stripe_mock, "~> 0.1", only: @test_envs},
       {:remote_ip, "~> 1.0"},
       {:exvcr, "~> 0.13", only: @test_envs},
@@ -160,7 +161,8 @@ defmodule Glific.MixProject do
       {:pow, git: "https://github.com/glific/pow.git"},
       {:contex, "~> 0.5.0"},
       {:password_validator, "~> 0.5"},
-      {:resvg, "~> 0.3.0"}
+      {:resvg, "~> 0.3.0"},
+      {:google_api_translate, "~> 0.15"}
     ]
   end
 

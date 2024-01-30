@@ -1,0 +1,34 @@
+meta {
+  name: Get a specific Saved Search by ID
+  type: graphql
+  seq: 3
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query savedSearch($id: ID!) {
+    savedSearch(id: $id) {
+      savedSearch {
+        id
+        label
+        count
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": 2
+  }
+}

@@ -1,0 +1,30 @@
+meta {
+  name: Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_url}}/v1/session
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+      "user": {
+          "phone": "917834811114",
+          "password": "Secret1234!"
+      }
+  }
+}
+
+script:post-response {
+  let ans = res.getBody();
+  bru.setEnvVar("auth_token",ans.data.access_token);
+}

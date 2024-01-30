@@ -1,0 +1,41 @@
+meta {
+  name: Get a specific Contact by phone
+  type: graphql
+  seq: 4
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query contactByPhone($phone: String!) {
+    contactByPhone(phone: $phone) {
+      contact {
+        id
+        name
+        optinTime
+        optoutTime
+        phone
+        bspStatus
+        status
+        lastMessageAt
+        fields
+        settings
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "phone": "919876543210"
+  }
+}

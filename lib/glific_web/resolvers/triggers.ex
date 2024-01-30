@@ -47,6 +47,19 @@ defmodule GlificWeb.Resolvers.Triggers do
     end
   end
 
+  @doc false
+  @spec validate_trigger(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def validate_trigger(_, %{input: params}, _) do
+    case Triggers.validate_trigger(params) do
+      :ok ->
+        {:ok, %{success: true, errors: nil}}
+
+      {:warning, warning} ->
+        {:ok, %{success: false, errors: [%{key: "warning", message: warning}]}}
+    end
+  end
+
   @doc """
   Update a trigger
   """

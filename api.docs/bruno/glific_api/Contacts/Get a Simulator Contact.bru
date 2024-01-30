@@ -1,0 +1,25 @@
+meta {
+  name: Get a Simulator Contact
+  type: graphql
+  seq: 14
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query simulatorGet() {
+    simulatorGet {
+      id
+      name
+    }
+  }
+}

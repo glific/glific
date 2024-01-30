@@ -24,6 +24,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:roles_and_permission, :boolean)
     field(:contact_profile_enabled, :boolean)
     field(:ticketing_enabled, :boolean)
+    field(:auto_translation_enabled, :boolean)
     field(:errors, list_of(:input_error))
   end
 
@@ -49,6 +50,9 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   object :setting do
     field(:report_frequency, :string)
     field(:run_flow_each_time, :boolean)
+    field(:low_balance_threshold, :string)
+    field(:critical_balance_threshold, :string)
+    field(:send_warning_mail, :boolean)
   end
 
   object :organization do
@@ -117,6 +121,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:is_roles_and_permission, :boolean)
     field(:is_contact_profile_enabled, :boolean)
     field(:is_ticketing_enabled, :boolean)
+    field(:is_auto_translation_enabled, :boolean)
 
     field(:inserted_at, :datetime)
 
@@ -158,6 +163,9 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   input_object :setting_input do
     field(:report_frequency, :string)
     field(:run_flow_each_time, :boolean)
+    field(:low_balance_threshold, :string)
+    field(:critical_balance_threshold, :string)
+    field(:send_warning_mail, :boolean)
   end
 
   input_object :delete_organization_input do

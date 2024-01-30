@@ -39,6 +39,8 @@ defmodule Glific.Clients.KEF do
   """
   @spec gcs_file_name(map()) :: String.t()
   def gcs_file_name(media) do
+    flow_id = media["flow_id"]
+
     {:ok, contact} =
       Repo.fetch_by(Contacts.Contact, %{
         id: media["contact_id"],
@@ -59,7 +61,11 @@ defmodule Glific.Clients.KEF do
         _ -> "Others"
       end
 
-    "#{folder_structure}/#{media_subfolder}/#{phone}/" <> media["remote_name"]
+    if flow_id == 13_850 do
+      "stories_activities_campaign/#{media_subfolder}/#{phone}/" <> media["remote_name"]
+    else
+      "#{folder_structure}/#{media_subfolder}/#{phone}/" <> media["remote_name"]
+    end
   end
 
   @spec get_folder_structure(map(), String.t(), map()) :: String.t()

@@ -1,0 +1,63 @@
+meta {
+  name: Search for a multiple section based on term
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query searchMulti( $searchFilter: SearchFilter!, $contactOpts: Opts!, $messageOpts: Opts!) {
+  
+    searchMulti(filter: $searchFilter, contactOpts: $contactOpts, messageOpts: $messageOpts) {
+      contacts {
+          body
+          contact {
+              name
+          }
+        }
+        messages {
+          body
+          contact {
+              name
+          }
+        }
+  
+        tags {
+          body
+          contact {
+              name
+          }
+  
+          tag {
+            label
+          }
+        }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "searchFilter": {
+      "term": "def"
+    },
+    "messageOpts": {
+      "limit": 3,
+      "order": "ASC"
+    },
+    "contactOpts": {
+      "order": "DESC",
+      "limit": 1
+    }
+  }
+}

@@ -58,7 +58,12 @@
     "lib/glific/providers/airtel",
     "lib/glific/tags/contact_tags.ex",
     "lib/glific/metrics.ex",
-    "lib/glific/reports.ex"
+    "lib/glific/reports.ex",
+    "lib/glific_web/resolvers/media.ex",
+    "lib/glific_web/resolvers/conversations.ex",
+    "lib/glific_web/controllers/exotel_controller.ex",
+    "lib/glific_web/controllers/api/v1/onboard_controller.ex",
+    "lib/glific/password_migration.ex"
   ],
   "coverage_options": {
     "treat_no_relevant_lines_as_covered": true,

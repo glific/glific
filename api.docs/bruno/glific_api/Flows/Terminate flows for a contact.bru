@@ -1,0 +1,28 @@
+meta {
+  name: Terminate flows for a contact
+  type: graphql
+  seq: 16
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation terminateContactFlows($contactId: ID!) {
+    terminateContactFlows(contactId: $contactId) {
+      errors {
+        key
+        value
+      }
+      success
+    }
+  }
+}

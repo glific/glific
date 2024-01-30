@@ -1,0 +1,29 @@
+meta {
+  name: Subscription for Sent Group Message
+  type: graphql
+  seq: 17
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  subscription {
+    sent_group_message() {
+      id
+      body
+      flow
+      type
+      status
+      group_id
+    }
+  }
+}

@@ -1,0 +1,31 @@
+meta {
+  name: Count all Users
+  type: graphql
+  seq: 5
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query countUsers($filter: UserFilter) {
+    countUsers(filter: $filter)
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "filter": {
+      "name": "John"
+    }
+  }
+}

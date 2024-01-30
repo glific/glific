@@ -154,7 +154,7 @@ defmodule Glific.Settings do
   end
 
   @doc """
-  Get map of localte to ids for easier lookup for json based flow editor
+  Get map of locale to ids for easier lookup for json based flow editor
   """
   @spec locale_id_map() :: %{String.t() => integer}
   def locale_id_map do
@@ -163,6 +163,32 @@ defmodule Glific.Settings do
     |> select([:id, :locale])
     |> Repo.all()
     |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.locale, language.id) end)
+  end
+
+  @doc """
+  Get map of locale to labels for easier lookup for json based flow validation for a specific organization
+  """
+  @spec locale_label_map(non_neg_integer) :: %{String.t() => String.t()}
+  def locale_label_map(organization_id) do
+    organization_id
+    |> Glific.Partners.organization()
+    |> Map.get(:languages)
+    |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.locale, language.label) end)
+  end
+
+  @doc """
+  Get map of language to ids for easier lookup for json based flow validation
+  """
+  @spec get_language_map() :: list()
+  def get_language_map do
+    Language
+    |> select([l], %{
+      id: l.id,
+      locale: l.locale,
+      label: l.label
+    })
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.id, language) end)
   end
 
   @doc """

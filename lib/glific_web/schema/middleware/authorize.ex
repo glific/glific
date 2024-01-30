@@ -16,7 +16,7 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
   @spec call(Absinthe.Resolution.t(), term()) :: Absinthe.Resolution.t()
   def call(resolution, role) do
     with %{roles: roles} <- resolution.context.current_user,
-         true <- is_valid_role?(roles, role) do
+         true <- valid_role?(roles, role) do
       resolution
     else
       _ ->
@@ -28,17 +28,17 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
   @doc """
   Check role with hierarchy
   """
-  @spec is_valid_role?(list(), atom() | list()) :: boolean()
-  def is_valid_role?(_, :any), do: true
-  def is_valid_role?(roles, :glific_admin), do: is_valid_role?(roles, [:glific_admin])
-  def is_valid_role?(roles, :admin), do: is_valid_role?(roles, [:glific_admin, :admin])
+  @spec valid_role?(list(), atom() | list()) :: boolean()
+  def valid_role?(_, :any), do: true
+  def valid_role?(roles, :glific_admin), do: valid_role?(roles, [:glific_admin])
+  def valid_role?(roles, :admin), do: valid_role?(roles, [:glific_admin, :admin])
 
-  def is_valid_role?(roles, :manager),
-    do: is_valid_role?(roles, [:glific_admin, :admin, :manager])
+  def valid_role?(roles, :manager),
+    do: valid_role?(roles, [:glific_admin, :admin, :manager])
 
-  def is_valid_role?(roles, role) when role in [:staff, :none],
-    do: is_valid_role?(roles, [:glific_admin, :admin, :manager, :staff])
+  def valid_role?(roles, role) when role in [:staff, :none],
+    do: valid_role?(roles, [:glific_admin, :admin, :manager, :staff])
 
-  def is_valid_role?(roles, role) when is_list(role), do: Enum.any?(roles, fn x -> x in role end)
-  def is_valid_role?(_, _), do: false
+  def valid_role?(roles, role) when is_list(role), do: Enum.any?(roles, fn x -> x in role end)
+  def valid_role?(_, _), do: false
 end

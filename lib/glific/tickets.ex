@@ -174,15 +174,17 @@ defmodule Glific.Tickets do
       {:user_id, user_id}, query ->
         from(q in query, where: q.user_id == ^user_id)
 
-      {:name_or_phone, name_or_phone}, query ->
+      {:name_or_phone_or_body, name_or_phone_or_body}, query ->
         sub_query =
           from(c in Contact,
-            where: ilike(c.name, ^"%#{name_or_phone}%") or c.phone == ^name_or_phone,
+            where:
+              ilike(c.name, ^"%#{name_or_phone_or_body}%") or c.phone == ^name_or_phone_or_body,
             select: c.id
           )
 
         query
-        |> where([t], t.contact_id in subquery(sub_query))
+        |> where([t], ilike(t.body, ^"%#{name_or_phone_or_body}%"))
+        |> or_where([t], t.contact_id in subquery(sub_query))
 
       _, query ->
         query
@@ -244,8 +246,8 @@ defmodule Glific.Tickets do
     |> where([t], t.inserted_at >= ^start_time and t.inserted_at <= ^end_time)
     |> where([t], t.organization_id == ^org_id)
     |> select([t, c, u], %{
-      body: t.body,
       status: t.status,
+      body: t.body,
       topic: t.topic,
       inserted_at: t.inserted_at,
       opened_by: c.name,
@@ -255,7 +257,7 @@ defmodule Glific.Tickets do
     |> convert_to_csv_string()
   end
 
-  @default_headers "body,status,topic,inserted_at,opened_by,assigned_to\n"
+  @default_headers "status,body,inserted_at,topic,opened_by,assigned_to\n"
 
   @doc false
   @spec convert_to_csv_string([Ticket.t()]) :: String.t()
@@ -297,5 +299,21 @@ defmodule Glific.Tickets do
       end)
 
     true
+  end
+
+  @doc """
+  Closing tickets in bulk on the basis of topic
+  """
+  @spec update_ticket_status_based_on_topic(map()) :: {:ok, map()}
+  def update_ticket_status_based_on_topic(params) do
+    topic = params |> Map.get(:topic, "")
+    tickets = Repo.all(from(t in Ticket, where: t.topic == ^topic))
+
+    tickets
+    |> Enum.each(fn ticket ->
+      update_ticket(ticket, params)
+    end)
+
+    {:ok, %{success: true, message: "Updated successfully"}}
   end
 end

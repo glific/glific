@@ -329,7 +329,7 @@ defmodule Glific.Templates do
       cond do
         !Map.has_key?(db_templates, template["bsp_id"]) ->
           db_templates
-          |> is_existing_template?(template, organization)
+          |> existing_template?(template, organization)
           |> upsert_hsm(template, organization)
 
         # this check is required,
@@ -344,8 +344,8 @@ defmodule Glific.Templates do
     end)
   end
 
-  @spec is_existing_template?(map(), map(), Organization.t()) :: boolean()
-  defp is_existing_template?(db_templates, template, organization) do
+  @spec existing_template?(map(), map(), Organization.t()) :: boolean()
+  defp existing_template?(db_templates, template, organization) do
     Enum.any?(db_templates, fn {_bsp_id, db_template} ->
       element_name = template["elementName"]
       language_code = template["languageCode"]

@@ -1,0 +1,5 @@
+mutation inlineFlowLocalization($id: ID!) {
+  inlineFlowLocalization(id: $id) {
+    success
+  }
+}

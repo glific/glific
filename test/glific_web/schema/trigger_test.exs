@@ -4,6 +4,7 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   alias Glific.{
     Fixtures,
+    Flows.Flow,
     Repo,
     Seeds.SeedsDev,
     Triggers
@@ -22,6 +23,7 @@ defmodule GlificWeb.Schema.TriggerTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/triggers/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/triggers/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/triggers/delete.gql")
+  load_gql(:validate, GlificWeb.Schema, "assets/gql/triggers/validate.gql")
 
   test "triggers field returns list of triggers", %{manager: user} = attrs do
     tr = Fixtures.trigger_fixture(attrs)
@@ -135,7 +137,8 @@ defmodule GlificWeb.Schema.TriggerTest do
   end
 
   test "create a trigger and test possible scenarios and errors", %{manager: user} = attrs do
-    [flow | _tail] = Glific.Flows.list_flows(%{organization_id: attrs.organization_id})
+    flow_uuid = "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"
+    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
     [group | _tail] = Glific.Groups.list_groups(%{organization_id: attrs.organization_id})
 
     date = Timex.shift(DateTime.utc_now(), days: 1) |> DateTime.to_date()
@@ -223,7 +226,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     group_label = get_in(query_data, [:data, "createTrigger", "trigger", "groups"])
     frequency = get_in(query_data, [:data, "createTrigger", "trigger", "frequency"])
 
-    assert flow_name == "Help Workflow"
+    assert flow_name == "Template Workflow"
     assert group_label == ["Optin contacts"]
     assert frequency == "monthly"
 
@@ -367,7 +370,8 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   test "create a trigger with time prior to current timestamp should raise an error",
        %{manager: user} = attrs do
-    [flow | _tail] = Glific.Flows.list_flows(%{organization_id: attrs.organization_id})
+    flow_uuid = "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"
+    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
     [group | _tail] = Glific.Groups.list_groups(%{organization_id: attrs.organization_id})
 
     start_time = Timex.shift(DateTime.utc_now(), days: -1)
@@ -456,5 +460,124 @@ defmodule GlificWeb.Schema.TriggerTest do
 
     message = get_in(query_data, [:data, "deleteTrigger", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
+  end
+
+  test "create trigger with incorrect nodes should give an error", %{manager: user} = attrs do
+    # when the first node is send_msg
+    flow_uuid = "3fa22108-f464-41e5-81d9-d8a298854429"
+    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
+    [group | _tail] = Glific.Groups.list_groups(%{organization_id: attrs.organization_id})
+
+    date = Timex.shift(DateTime.utc_now(), days: 1) |> DateTime.to_date()
+    {:ok, start_date} = Timex.format(date, "%Y-%m-%d", :strftime)
+
+    end_time = Timex.shift(DateTime.utc_now(), days: 5)
+    {:ok, end_date} = Timex.format(end_time, "%Y-%m-%d", :strftime)
+
+    start_time = "13:15:00"
+
+    result =
+      auth_query_gql_by(:validate, user,
+        variables: %{
+          "input" => %{
+            "days" => [],
+            "flowId" => flow.id,
+            "groupIds" => [group.id],
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => ["none"]
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    message =
+      get_in(query_data, [:data, "validateTrigger", "errors", Access.at(0), "message"])
+
+    assert message == "The first message node is not an HSM template"
+
+    # when the first node is send_interactive_msg
+    flow_uuid = "b87dafcf-a316-4da6-b1f4-2714a199aab7"
+    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
+
+    result =
+      auth_query_gql_by(:validate, user,
+        variables: %{
+          "input" => %{
+            "days" => [],
+            "flowId" => flow.id,
+            "groupIds" => [group.id],
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => ["none"]
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    message =
+      get_in(query_data, [:data, "validateTrigger", "errors", Access.at(0), "message"])
+
+    assert message == "The first message node is not an HSM template"
+
+    # when the first node is enter_flow
+    flow_uuid = "6fe8fda9-2df6-4694-9fd6-45b9e724f545"
+    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
+
+    result =
+      auth_query_gql_by(:validate, user,
+        variables: %{
+          "input" => %{
+            "days" => [],
+            "flowId" => flow.id,
+            "groupIds" => [group.id],
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => ["none"]
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    message =
+      get_in(query_data, [:data, "validateTrigger", "errors", Access.at(0), "message"])
+
+    assert message == "The first message node is not an HSM template"
+
+    # when the first node is the node with valid type
+    flow_uuid = "5f3fd8c6-2ec3-4945-8e7c-314db8c04c31"
+    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
+
+    result =
+      auth_query_gql_by(:validate, user,
+        variables: %{
+          "input" => %{
+            "days" => [],
+            "flowId" => flow.id,
+            "groupIds" => [group.id],
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => ["none"]
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "validateTrigger", "errors"]) == nil
   end
 end

@@ -1,0 +1,47 @@
+meta {
+  name: Create Contact Group
+  type: graphql
+  seq: 1
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createContactGroup($input: ContactGroupInput!) {
+    createContactGroup(input: $input) {
+      contactGroup {
+        id
+        contact {
+          id
+          name
+        }
+        group {
+          id
+          label
+        }
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "contactId": 2,
+      "groupId": 1
+    }
+  }
+}

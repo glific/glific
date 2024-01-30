@@ -165,6 +165,9 @@ defmodule Glific.Partners.Organization do
     # A virtual field for now to conditionally enable ticketing feature for an organization
     field(:is_ticketing_enabled, :boolean, default: false, virtual: true)
 
+    # A virtual field for now to conditionally enable auto translation feature for an organization
+    field(:is_auto_translation_enabled, :boolean, default: false, virtual: true)
+
     timestamps(type: :utc_datetime)
   end
 

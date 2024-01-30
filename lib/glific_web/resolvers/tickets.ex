@@ -83,4 +83,15 @@ defmodule GlificWeb.Resolvers.Tickets do
       {:ok, %{success: true, message: "Updated successfully"}}
     end
   end
+
+  @doc """
+  close multiple tickets on the basis of topic
+  """
+  @spec update_ticket_status_based_on_topic(Absinthe.Resolution.t(), %{input: map()}, %{
+          context: map()
+        }) ::
+          {:ok, map()} | {:error, map()}
+  def update_ticket_status_based_on_topic(_, %{input: params}, _) do
+    Tickets.update_ticket_status_based_on_topic(params)
+  end
 end

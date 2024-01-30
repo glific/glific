@@ -12,6 +12,8 @@ defmodule GlificWeb.Resolvers.Flows do
     Flows.Flow,
     Flows.FlowContext,
     Flows.FlowCount,
+    Flows.Translate.Export,
+    Flows.Translate.Import,
     Repo,
     State
   }
@@ -69,10 +71,60 @@ defmodule GlificWeb.Resolvers.Flows do
   end
 
   @doc false
+  @spec export_flow_localization(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, %{export_data: String.t()}}
+  def export_flow_localization(_, %{id: flow_id} = args, %{
+        context: %{current_user: user}
+      }) do
+    add_translation = Map.get(args, :add_translation, true)
+    # load the flow
+    data =
+      user.organization_id
+      |> Flows.get_complete_flow(flow_id)
+      |> Export.export_localization(add_translation)
+      |> CSV.encode(delimiter: "\n")
+      |> Enum.join("")
+
+    {:ok, %{export_data: data}}
+  end
+
+  @doc false
   @spec import_flow(Absinthe.Resolution.t(), %{flow: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def import_flow(_, %{flow: flow}, %{context: %{current_user: user}}) do
     {:ok, %{status: Flows.import_flow(flow, user.organization_id)}}
+  end
+
+  @doc false
+  @spec import_flow_localization(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def import_flow_localization(_, %{localization: data, id: flow_id}, %{
+        context: %{current_user: user}
+      }) do
+    flow = Flows.get_complete_flow(user.organization_id, flow_id)
+
+    {:ok, stream} = StringIO.open(data)
+
+    stream
+    |> IO.binstream(:line)
+    |> CSV.decode!(delimiter: "\n")
+    |> Enum.into([])
+    |> Import.import_localization(flow)
+
+    {:ok, %{success: true}}
+  end
+
+  @doc false
+  @spec inline_flow_localization(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def inline_flow_localization(_, %{id: flow_id}, %{
+        context: %{current_user: user}
+      }) do
+    user.organization_id
+    |> Flows.get_complete_flow(flow_id)
+    |> Export.translate()
+
+    {:ok, %{success: true}}
   end
 
   @doc false
@@ -90,7 +142,9 @@ defmodule GlificWeb.Resolvers.Flows do
   @spec flow_get(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def flow_get(_, params, %{context: %{current_user: user}}) do
-    with %Flow{} = flow <- State.get_flow(user, params.id, Map.get(params, :is_forced, false)) do
+    flow_id = Glific.parse_maybe_integer!(params.id)
+
+    with %Flow{} = flow <- State.get_flow(user, flow_id, Map.get(params, :is_forced, false)) do
       {:ok, %{flow: flow}}
     end
   end

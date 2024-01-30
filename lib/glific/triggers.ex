@@ -12,6 +12,7 @@ defmodule Glific.Triggers do
     AccessControl.TriggerRole,
     Flows,
     Flows.Flow,
+    Flows.FlowRevision,
     Groups.Group,
     Partners,
     Repo,
@@ -150,6 +151,7 @@ defmodule Glific.Triggers do
       {:error, %Ecto.Changeset{}}
 
   """
+
   @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def create_trigger(attrs) do
     with {:ok, trigger} <-
@@ -160,6 +162,83 @@ defmodule Glific.Triggers do
         do: update_trigger_roles(attrs, trigger),
         else: {:ok, append_group_labels(trigger)}
     end
+  end
+
+  @doc """
+  This function is to check the warning while creating the trigger
+  """
+  @spec validate_trigger(map()) :: :ok | {:warning, String.t()}
+  def validate_trigger(attrs) do
+    {:ok, flow} =
+      Repo.fetch_by(FlowRevision, %{flow_id: Map.get(attrs, :flow_id), status: "published"})
+
+    handle_action(flow, attrs, 0)
+  end
+
+  @spec handle_action(map(), map(), integer()) :: :ok | {:warning, String.t()}
+  defp handle_action(flow, attrs, nested_flow_level) do
+    action = flow_action(flow)
+
+    case action do
+      nil ->
+        :ok
+
+      _ ->
+        handle_message_type(Map.get(action, "type"), action, attrs, nested_flow_level)
+    end
+  end
+
+  @spec flow_action(map()) :: nil | map()
+  defp flow_action(flow) do
+    start_node_uuid = Flow.start_node(flow.definition["_ui"])
+
+    action =
+      flow.definition["nodes"]
+      |> Enum.find_value(&(&1["uuid"] == start_node_uuid), & &1["actions"])
+
+    case action do
+      [] ->
+        nil
+
+      _ ->
+        hd(action)
+    end
+  end
+
+  @spec handle_message_type(String.t(), map(), map(), integer()) ::
+          {:ok, atom()} | {:warning, String.t()}
+  defp handle_message_type("send_interactive_msg", _action, _attrs, _nested_flow_level) do
+    {:warning, "The first message node is not an HSM template"}
+  end
+
+  defp handle_message_type("send_msg", action, _attrs, _nested_flow_level) do
+    template = action |> Map.get("templating")
+
+    if template == nil do
+      {:warning, "The first message node is not an HSM template"}
+    else
+      :ok
+    end
+  end
+
+  defp handle_message_type("enter_flow", enter_flow_action, attrs, nested_flow_level) do
+    # nested_flow_level is the count of nested flows in enter_flow node
+    # Note: Checking only one level of nested flows
+    if nested_flow_level <= 1 do
+      flow_uuid = enter_flow_action |> Map.get("flow") |> Map.get("uuid")
+      flow = Repo.one(from f0 in Flow, where: f0.uuid == ^flow_uuid, select: f0)
+
+      {:ok, entered_flow} =
+        Repo.fetch_by(FlowRevision, %{flow_id: flow.id, status: "published"})
+
+      handle_action(entered_flow, attrs, nested_flow_level + 1)
+    else
+      :ok
+    end
+  end
+
+  defp handle_message_type(_type, _action, _attrs, _nested_flow_level) do
+    :ok
   end
 
   @spec update_trigger_roles(map(), Trigger.t()) :: {:ok, Trigger.t()}
