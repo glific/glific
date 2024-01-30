@@ -30,7 +30,7 @@ script:post-response {
 }
 
 docs {
-  # API Documentation: Login API
+  # Login API
   
   ## Description
   The Login API is designed to authenticate users by providing their phone number and password. It generates an authentication token upon successful login, allowing access to protected resources.
@@ -42,8 +42,11 @@ docs {
   `/v1/session`
   
   ## Parameters
-  - `phone` (DataType: String) - The user's phone number.
-  - `password` (DataType: String) - The user's password.
+  
+  | Parameter | DataType | Description             |
+  |-----------|----------|-------------------------|
+  | `phone`   | String   | The user's phone number.|
+  | `password`| String   | The user's password.    |
   
   ## Request Example
   ```json
@@ -72,8 +75,10 @@ docs {
   2. **Use Case 2: Invalid Credentials**
      If the user provides incorrect credentials, the API responds with a 401 Unauthorized error.
   
-  ## FAQ
-  - **Q:** How long is the authentication token valid?
-    **A:** The token has a limited validity period for security reasons. Check the token expiration details in the response.
+  ## Frequently Asked Questions (FAQs)
+  
+  ### 1. Token Validity
+  **Q:** How long is the authentication token valid?  
+  **A:** The token has a limited validity period for security reasons. Check the token expiration details in the response.
   
 }
