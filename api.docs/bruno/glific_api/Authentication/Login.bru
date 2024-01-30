@@ -18,8 +18,8 @@ headers {
 body:json {
   {
       "user": {
-          "phone": "917834811114",
-          "password": "Secret1234!"
+          "phone": "919985820958",
+          "password": "Secretd234!"
       }
   }
 }
@@ -50,16 +50,11 @@ docs {
   
   ## Request Example
   ```json
-  POST {{api_url}}/v1/session
-  Content-Type: application/json
-  Accept: application/json
+  curl -X POST {{api_url}}/api/v1/session \
+      -H "Content-Type: application/json" \
+      -H "Accept: application/json" \
+      -d '{"user": {"phone": "917834811114", "password": "Secret1234!"}}'
   
-  {
-      "user": {
-          "phone": "917834811114",
-          "password": "Secret1234!"
-      }
-  }
   ```
   
   ## Response
@@ -69,11 +64,13 @@ docs {
   - 401 Unauthorized: Invalid credentials.
   
   ## Use Cases
-  1. **Use Case 1: Successful Login**
-     A user enters valid credentials, and the API returns an authentication token, granting access to protected resources.
   
-  2. **Use Case 2: Invalid Credentials**
-     If the user provides incorrect credentials, the API responds with a 401 Unauthorized error.
+  ### Use Case 1: Successful Login
+  A user enters valid credentials, and the API returns an authentication token, granting access to protected resources.
+  
+  ### Use Case 2: Invalid Credentials
+  If the user provides incorrect credentials, the API responds with a 401 Unauthorized error.
+  
   
   ## Frequently Asked Questions (FAQs)
   
