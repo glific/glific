@@ -183,7 +183,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
   Setting Business Profile Details.
   Following parameters can be updated in the given form:
-
+  %{
   addLine1: "123",
   addLine2: "panvel",
   city: "mumbai",
@@ -194,15 +194,16 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   website1: "123.com",
   website2: "123.com",
   desc: "see desc",
-  profileEmail: "123@gmail.com"
+  profileEmail: "123@gmail.com"}
   """
   @spec set_business_profile(integer(), map()) :: tuple()
   def set_business_profile(org_id, params \\ %{}) do
     url = app_url(org_id) <> "/business/profile"
 
     body_params =
-      params
-      |> Enum.reject(fn {_, value} -> value == nil end)
+      Enum.reduce(params, %{}, fn {key, value}, acc ->
+        if value == nil, do: acc, else: Map.put(acc, key, value)
+      end)
 
     put_request(url, body_params, org_id: org_id)
   end
