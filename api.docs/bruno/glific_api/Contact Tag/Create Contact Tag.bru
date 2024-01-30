@@ -49,3 +49,81 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  ## API Documentation: Create Contact Tag
+  
+  ### Description
+  This GraphQL API is used to create a contact tag by associating a tag with a specific contact.
+  
+  ### Base URL
+  `{{api_url}}`
+  
+  ### URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ### Parameters
+  - `input` (Type: ContactTagInput) - An input object containing the `contactId` and `tagId`.
+  
+  ### Request Example
+  ```graphql
+  POST {{api_url}}
+  Authorization: {{auth_token}}
+  Content-Type: application/json
+  
+  mutation createContactTag($input: ContactTagInput!) {
+    createContactTag(input: $input) {
+      contactTag {
+        id
+        contact {
+          id
+          name
+        }
+        tag {
+          id
+          label
+          parent {
+            id
+            label
+          }
+        }
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+  ```
+  
+  ###Request Variables
+  ```json
+  {
+    "input": {
+      "contactId": 2,
+      "tagId": 20
+    }
+  }
+  ```
+  
+  ### Response
+  The API response includes details of the created contact tag or any errors encountered during the process.
+  
+  ### Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ### Use Cases
+  1. **Use Case 1: Successful Contact Tag Creation**
+     A contact is successfully associated with a tag, and the API responds with the details of the created contact tag.
+  
+  2. **Use Case 2: Error Handling**
+     If there are errors during the contact tag creation, the API responds with error details in the `errors` field.
+  
+  ### FAQ
+  - **Q:** Can I associate multiple tags with a contact in a single request?
+    **A:** Depending on the GraphQL schema, you may be able to provide an array of `ContactTagInput` for bulk association.
+  
+  - **Q:** What are the possible error messages in the `errors` field?
+    **A:** The `errors` field provides specific details about any issues encountered, including the key and message.
+  
+}
