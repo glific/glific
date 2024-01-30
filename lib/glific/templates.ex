@@ -697,6 +697,7 @@ defmodule Glific.Templates do
   def report_to_gupshup(org_id, template_id, cc \\ %{}) do
     org = Partners.organization(org_id)
 
+    #getting the email values only
     cc = Map.values(cc)
 
     phone =
