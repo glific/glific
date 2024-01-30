@@ -199,14 +199,35 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  Get auto translation value for organization flag
+  Get auto translation via openAI value for organization flag
   """
-  @spec get_auto_translation_enabled(map()) :: boolean
-  def get_auto_translation_enabled(organization) do
+  @spec get_auto_translation_enabled_for_open_ai(map()) :: boolean
+  def get_auto_translation_enabled_for_open_ai(organization) do
     app_env = Application.get_env(:glific, :environment)
 
     cond do
-      FunWithFlags.enabled?(:is_auto_translation_enabled,
+      FunWithFlags.enabled?(:is_auto_translation_enabled_for_open_ai,
+        for: %{organization_id: organization.id}
+      ) ->
+        true
+
+      trusted_env?(app_env, organization.id) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  @doc """
+  Get google translation value for organization flag
+  """
+  @spec get_auto_translation_enabled_for_google_trans(map()) :: boolean
+  def get_auto_translation_enabled_for_google_trans(organization) do
+    app_env = Application.get_env(:glific, :environment)
+
+    cond do
+      FunWithFlags.enabled?(:is_auto_translation_enabled_for_google_trans,
         for: %{organization_id: organization.id}
       ) ->
         true
@@ -242,12 +263,24 @@ defmodule Glific.Flags do
   @doc """
   Set fun_with_flag toggle for auto translation for an organization
   """
-  @spec set_auto_translation_enabled(map()) :: map()
-  def set_auto_translation_enabled(organization) do
+  @spec set_auto_translation_enabled_for_open_ai(map()) :: map()
+  def set_auto_translation_enabled_for_open_ai(organization) do
     Map.put(
       organization,
-      :is_auto_translation_enabled,
-      get_auto_translation_enabled(organization)
+      :is_auto_translation_enabled_for_open_ai,
+      get_auto_translation_enabled_for_open_ai(organization)
+    )
+  end
+
+  @doc """
+  Set fun_with_flag toggle for google translation for an organization
+  """
+  @spec set_auto_translation_enabled_for_google_trans(map()) :: map()
+  def set_auto_translation_enabled_for_google_trans(organization) do
+    Map.put(
+      organization,
+      :is_auto_translation_enabled_for_google_trans,
+      get_auto_translation_enabled_for_google_trans(organization)
     )
   end
 
@@ -312,7 +345,8 @@ defmodule Glific.Flags do
       :flow_uuid_display,
       :roles_and_permission,
       :is_ticketing_enabled,
-      :is_auto_translation_enabled
+      :is_auto_translation_enabled_for_open_ai,
+      :is_auto_translation_enabled_for_google_trans
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(

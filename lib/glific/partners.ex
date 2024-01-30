@@ -469,7 +469,8 @@ defmodule Glific.Partners do
       |> Flags.set_roles_and_permission()
       |> Flags.set_contact_profile_enabled()
       |> Flags.set_ticketing_enabled()
-      |> Flags.set_auto_translation_enabled()
+      |> Flags.set_auto_translation_enabled_for_open_ai()
+      |> Flags.set_auto_translation_enabled_for_google_trans()
 
     Caches.set(
       @global_organization_id,
@@ -1170,7 +1171,10 @@ defmodule Glific.Partners do
       "roles_and_permission" => Flags.get_roles_and_permission(organization),
       "contact_profile_enabled" => Flags.get_contact_profile_enabled(organization),
       "ticketing_enabled" => Flags.get_ticketing_enabled(organization),
-      "auto_translation_enabled" => Flags.get_auto_translation_enabled(organization)
+      "auto_translate_for_open_ai_enabled" =>
+        Flags.get_auto_translation_enabled_for_open_ai(organization),
+      "auto_translate_for_google_translate_enabled" =>
+        Flags.get_auto_translation_enabled_for_google_trans(organization)
     }
   end
 
