@@ -4,10 +4,13 @@ defmodule Glific.Flows.Translate.Export do
   to export out of the json flow and to import back into the json flow
   """
 
+
   alias Glific.{
     Flows.Flow,
     Flows.Translate.Import,
     Flows.Translate.Translate,
+    Partners.Organization,
+    Repo,
     Settings
   }
 
@@ -72,7 +75,7 @@ defmodule Glific.Flows.Translate.Export do
           |> collect_strings(language_labels, action_text, export)
         end
       )
-      |> translate_strings(add_translation)
+      |> translate_strings(add_translation, organization_id)
 
     localizable_nodes
     |> Enum.reduce(
@@ -119,8 +122,8 @@ defmodule Glific.Flows.Translate.Export do
     )
   end
 
-  @spec translate_strings(map(), boolean()) :: map()
-  defp translate_strings(strings, false) do
+  @spec translate_strings(map(), boolean(), non_neg_integer()) :: map()
+  defp translate_strings(strings, false, _organization_id) do
     strings
     |> Enum.reduce(
       %{},
@@ -132,10 +135,14 @@ defmodule Glific.Flows.Translate.Export do
     )
   end
 
-  defp translate_strings(strings, true) do
+  defp translate_strings(strings, true, organization_id) do
+    {:ok, organization} = Repo.fetch_by(Organization, %{organization_id: organization_id})
+
     strings
     |> Task.async_stream(
-      fn {{src, dst}, values} -> {src, dst, values, Translate.translate(values, src, dst)} end,
+      fn {{src, dst}, values} ->
+        {src, dst, values, Translate.translate(values, src, dst, organization)}
+      end,
       timeout: 300_000,
       max_concurrency: 2,
       # send {:exit, :timeout} so it can be handled

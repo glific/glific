@@ -62,8 +62,6 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
 
   @spec do_translate(String.t(), map()) :: String.t() | {:error, String.t()}
   defp do_translate(strings, languages) do
-    IO.inspect(strings)
-    IO.inspect(languages)
     api_key = Glific.get_google_translate_key()
 
     Glific.GoogleTranslate.Translate.parse(api_key, strings, languages)

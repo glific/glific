@@ -16,19 +16,41 @@ defmodule Glific.Flows.Translate.Translate do
   API interface for all modules to call the translate function. We'll use Elixir Config for this
   during deployment. For now, we have only one translator
   """
-  @spec translate([String.t()], String.t(), String.t()) ::
+  @spec translate([String.t()], String.t(), String.t(), map()) ::
           {:ok, [String.t()]} | {:error, String.t()}
-  def translate(strings, src, dst), do: impl().translate(strings, src, dst)
+  def translate(strings, src, dst, organization) do
+    impl(organization).translate(strings, src, dst)
+  end
 
-  # defp impl, do: Application.get_env(:glific, :adaptors)[:translators]
-  defp impl, do: Application.get_env(:glific, :adaptors)[:translators]
+  defp impl(organization) do
+    cond do
+      get_auto_translation_enabled_for_google_trans(organization) ->
+        Glific.Flows.Translate.GoogleTranslate
+
+      get_auto_translation_enabled_for_open_ai(organization) ->
+        Glific.Flows.Translate.OpenAI
+
+      true ->
+        # Default or fallback translator
+        Application.get_env(:glific, :adaptors)[:translators]
+    end
+  end
+
+  defp get_auto_translation_enabled_for_google_trans(organization) do
+    # Retrieve the flag value from the organization
+    Map.get(organization, :is_auto_translation_enabled_for_google_trans, false)
+  end
+
+  defp get_auto_translation_enabled_for_open_ai(organization) do
+    Map.get(organization, :is_auto_translation_enabled_for_open_ai, false)
+  end
 
   @doc """
   Lets make a simple function to translate one string
   """
-  @spec translate_one!(String.t(), String.t(), String.t()) :: String.t()
-  def translate_one!(orig, src, dst) do
-    {:ok, result} = translate([orig], src, dst)
+  @spec translate_one!(String.t(), String.t(), String.t(), map()) :: String.t()
+  def translate_one!(orig, src, dst, organization) do
+    {:ok, result} = translate([orig], src, dst, organization)
     hd(result)
   end
 
