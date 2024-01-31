@@ -1,4 +1,5 @@
 defmodule Glific.TemplatesTest do
+  alias Glific.Messages.MessageMedia
   use Glific.DataCase
 
   alias Glific.{
@@ -358,6 +359,189 @@ defmodule Glific.TemplatesTest do
       assert session_template.status == "PENDING"
       assert session_template.uuid == whatspp_hsm_uuid
       assert session_template.language_id == language.id
+    end
+
+    @tag :image_submit
+    test "create_session_template/1 for HSM data with image url, should submit it for approval",
+         attrs do
+      whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9b94e53b4b"
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            headers: %{
+              "content-type" => "image",
+              "content-length" => "1232"
+            }
+          }
+      end)
+
+      data =
+        "Language,Title,Message,Sample Message,Element Name,Category,Attachment Type,Attachment URL,Has Buttons,Button Type,CTA Button 1 Type,CTA Button 1 Title,CTA Button 1 Value,CTA Button 2 Type,CTA Button 2 Title,CTA Button 2 Value,Quick Reply 1 Title,Quick Reply 2 Title,Quick Reply 3 Title\r\nEnglish,Activity,\"Hi {{1}},\nLook at this image.\",\"Hi [Akhilesh],\nLook at this image.\",activity,UTILITY,image,https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample101.jpg,FALSE,,,,,,,,,,"
+
+      {:ok, %{csv_rows: _csv_rows}} =
+        Gupshup.Template.bulk_apply_templates(attrs.organization_id, data)
+
+      %{id: msg_id} =
+        MessageMedia
+        |> where(
+          [msg],
+          msg.url == "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample101.jpg"
+        )
+        |> Repo.one()
+
+      body =
+        Jason.encode!(%{
+          "status" => "success",
+          "token" => "new_partner_token",
+          "template" => %{
+            "category" => "ACCOUNT_UPDATE",
+            "createdOn" => 1_595_904_220_495,
+            "data" => "Your train ticket no. {{1}}",
+            "elementName" => "ticket_update_status",
+            "id" => whatspp_hsm_uuid,
+            "languageCode" => "en",
+            "languagePolicy" => "deterministic",
+            "master" => true,
+            "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
+            "modifiedOn" => 1_595_904_220_495,
+            "status" => "PENDING",
+            "templateType" => "TEXT",
+            "vertical" => "ACTION_BUTTON"
+          },
+          "handleId" => %{"message" => "some_handle"}
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: body
+          }
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})
+          }
+      end)
+
+      language = language_fixture()
+
+      attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :image,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id,
+        message_media_id: msg_id
+      }
+
+      assert {:ok, %SessionTemplate{} = session_template} =
+               Templates.create_session_template(attrs)
+
+      assert session_template.shortcode == "ticket_update_status"
+      assert session_template.is_hsm == true
+      assert session_template.status == "PENDING"
+      assert session_template.uuid == whatspp_hsm_uuid
+      assert session_template.language_id == language.id
+    end
+
+    @tag :image_submit
+    test "create_session_template/1 for HSM data with image url but get_media_handle_id raises error ",
+         attrs do
+      whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9b94e53b4b"
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            headers: %{
+              "content-type" => "image",
+              "content-length" => "1232"
+            }
+          }
+      end)
+
+      data =
+        "Language,Title,Message,Sample Message,Element Name,Category,Attachment Type,Attachment URL,Has Buttons,Button Type,CTA Button 1 Type,CTA Button 1 Title,CTA Button 1 Value,CTA Button 2 Type,CTA Button 2 Title,CTA Button 2 Value,Quick Reply 1 Title,Quick Reply 2 Title,Quick Reply 3 Title\r\nEnglish,Activity,\"Hi {{1}},\nLook at this image.\",\"Hi [Akhilesh],\nLook at this image.\",activity,UTILITY,image,https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg,FALSE,,,,,,,,,,"
+
+      {:ok, %{csv_rows: _csv_rows}} =
+        Gupshup.Template.bulk_apply_templates(attrs.organization_id, data)
+
+      %{id: msg_id} =
+        MessageMedia
+        |> where(
+          [msg],
+          msg.url == "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg"
+        )
+        |> Repo.one()
+
+      # get_media_handle_id raises because the body doesnt have correct response
+      body =
+        Jason.encode!(%{
+          "status" => "success",
+          "token" => "new_partner_token",
+          "template" => %{
+            "category" => "ACCOUNT_UPDATE",
+            "createdOn" => 1_595_904_220_495,
+            "data" => "Your train ticket no. {{1}}",
+            "elementName" => "ticket_update_status",
+            "id" => whatspp_hsm_uuid,
+            "languageCode" => "en",
+            "languagePolicy" => "deterministic",
+            "master" => true,
+            "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
+            "modifiedOn" => 1_595_904_220_495,
+            "status" => "PENDING",
+            "templateType" => "TEXT",
+            "vertical" => "ACTION_BUTTON"
+          }
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: body
+          }
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})
+          }
+      end)
+
+      language = language_fixture()
+
+      attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :image,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id,
+        message_media_id: msg_id
+      }
+
+      resp =
+        try do
+          Templates.create_session_template(attrs)
+        rescue
+          _ ->
+            "Invalid response"
+        end
+
+      assert resp == "Invalid response"
     end
 
     test "create_session_template/1 for HSM button template should submit it for approval",
