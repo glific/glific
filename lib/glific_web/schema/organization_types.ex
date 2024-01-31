@@ -24,7 +24,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:roles_and_permission, :boolean)
     field(:contact_profile_enabled, :boolean)
     field(:ticketing_enabled, :boolean)
-    field(:auto_translation_enabled, :boolean)
+    field(:is_auto_translation_enabled_for_open_ai, :boolean)
+    field(:is_auto_translation_enabled_for_google_trans, :boolean)
     field(:errors, list_of(:input_error))
   end
 
