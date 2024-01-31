@@ -454,6 +454,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert services["roles_and_permission"] == false
     assert services["flow_uuid_display"] == false
     assert services["contact_profile_enabled"] == false
+    assert services["auto_translation_enabled_for_open_ai"] == false
+    assert services["auto_translation_enabled_for_google_trans"] == false
   end
 
   test "update an organization with organization settings", %{user: user} do

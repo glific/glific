@@ -31,7 +31,6 @@ defmodule Glific.Flows.Translate.Translate do
         Glific.Flows.Translate.OpenAI
 
       true ->
-        # Default or fallback translator
         Application.get_env(:glific, :adaptors)[:translators]
     end
   end
