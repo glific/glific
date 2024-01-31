@@ -110,14 +110,15 @@ defmodule Glific.Flows.Translate.OpenAITest do
   end
 
   test "translate/3 test the possible errors" do
-    Tesla.Mock.mock(fn env ->
-      case env.body do
-        "Some text to translate" ->
-          %Tesla.Env{status: 200, body: "ok!"}
-
-        _ ->
-          %Tesla.Env{status: 404, body: "NotFound"}
-      end
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 500,
+        body: %{
+          "error" => %{
+            "message" => "invalid response"
+          }
+        }
+      }
     end)
 
     string = ["Some text to translate"]
@@ -125,7 +126,7 @@ defmodule Glific.Flows.Translate.OpenAITest do
     dst = "hindi"
 
     {:ok, response} = OpenAI.translate(string, src, dst)
-    assert response == [["Could not translate, Try again"]]
+    assert response == ["बड़े संदेशों के लिए अनुवाद उपलब्ध नहीं है।"]
   end
 
   test "translate_one!/3 to test the single string" do
