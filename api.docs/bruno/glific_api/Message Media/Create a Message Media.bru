@@ -1,0 +1,41 @@
+meta {
+  name: Create a Message Media
+  type: graphql
+  seq: 5
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createMessageMedia($input:MessageMediaInput!) {
+    createMessageMedia(input: $input) {
+      messageMedia {
+        id
+        url
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "url": "http://robohash.org/set_set3/bgset_bg1/ClrvA",
+      "source_url": "http://robohash.org/set_set3/bgset_bg1/ClrvA",
+      "caption": "This is a caption"
+    }
+  }
+}

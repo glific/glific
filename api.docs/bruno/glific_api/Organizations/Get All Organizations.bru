@@ -1,0 +1,48 @@
+meta {
+  name: Get All Organizations
+  type: graphql
+  seq: 1
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query organizations($filter: OrganizationFilter, $opts: Opts) {
+    organizations(filter: $filter, opts: $opts) {
+      id
+      name
+      defaultLanguage {
+        id
+        label
+      }
+      activeLanguages {
+        id
+        label
+      }
+      isActive
+      timezone
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "opts": {
+      "limit": 10,
+      "offset": 1,
+      "order": "ASC"
+    },
+    "filter": {
+      "defaultLanguage": "Hindi"
+    }
+  }
+}

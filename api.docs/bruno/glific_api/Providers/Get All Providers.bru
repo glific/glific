@@ -1,0 +1,44 @@
+meta {
+  name: Get All Providers
+  type: graphql
+  seq: 1
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query providers($filter: ProviderFilter, $opts: Opts) {
+    providers(filter: $filter, opts: $opts) {
+      id
+      name
+      shortcode
+      keys
+      secrets
+      group
+      description
+      isRequired
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "opts": {
+      "limit": 10,
+      "offset": 1,
+      "order": "ASC"
+    },
+    "filter": {
+      "name": "Default"
+    }
+  }
+}

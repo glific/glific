@@ -1,0 +1,46 @@
+meta {
+  name: Create a Session Template
+  type: graphql
+  seq: 5
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createSessionTemplate($input:SessionTemplateInput!) {
+    createSessionTemplate(input: $input) {
+      sessionTemplate {
+        id
+        body
+        label
+        shortcode
+        type
+      }
+      errors{
+              key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "body": "Test template",
+      "label": "Test label",
+      "languageId": 1,
+      "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",
+      "type": "TEXT"
+    }
+  }
+}

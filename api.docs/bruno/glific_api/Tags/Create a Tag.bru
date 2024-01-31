@@ -1,0 +1,47 @@
+meta {
+  name: Create a Tag
+  type: graphql
+  seq: 4
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createTag($input:TagInput!) {
+    createTag(input: $input) {
+      tag {
+        id
+        label
+        language {
+          id
+          label
+        }
+        description
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "label": "This is a new tag for this example",
+      "shortcode": "new-tag",
+      "description": "This is a cool description",
+      "languageId": "1"
+    }
+  }
+}

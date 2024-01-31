@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "5.7.3",
+      version: "5.8.0",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -161,7 +161,8 @@ defmodule Glific.MixProject do
       {:pow, git: "https://github.com/glific/pow.git"},
       {:contex, "~> 0.5.0"},
       {:password_validator, "~> 0.5"},
-      {:resvg, "~> 0.3.0"}
+      {:resvg, "~> 0.3.0"},
+      {:google_api_translate, "~> 0.15"}
     ]
   end
 

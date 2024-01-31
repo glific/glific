@@ -1,0 +1,44 @@
+meta {
+  name: Update a Group with users to be added and users to be deleted
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation updateGroupUsers($input: GroupUsersInput!) {
+    updateGroupUsers(input: $input) {
+      groupUsers {
+        id
+        group {
+          label
+        }
+        user {
+          name
+        }
+      }
+      numberDeleted
+    }
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "groupId": 2,
+      "addUserIds": [1, 2],
+      "deleteUserIds": [3, 8]
+    }
+  }
+}

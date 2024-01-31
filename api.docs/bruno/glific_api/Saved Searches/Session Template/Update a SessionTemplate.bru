@@ -1,0 +1,45 @@
+meta {
+  name: Update a SessionTemplate
+  type: graphql
+  seq: 6
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation updateSessionTemplate($id: ID!, $input:SessionTemplateInput!) {
+    updateSessionTemplate(id: $id, input: $input) {
+      sessionTemplate {
+        id
+        body
+        label
+        shortcode
+        translation
+        type
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "id": "1",
+    "input": {
+      "body": "Test template"
+    }
+  }
+}

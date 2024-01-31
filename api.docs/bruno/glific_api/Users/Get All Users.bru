@@ -1,0 +1,43 @@
+meta {
+  name: Get All Users
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query users($filter: UserFilter, $opts: Opts) {
+    users(filter: $filter, opts:$opts) {
+      id
+      name
+      phone
+      roles
+      groups {
+        label
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "filter": {
+      "name": "Doe"
+    },
+    "opts": {
+      "order": "ASC",
+      "limit": 10,
+      "offset": 0
+    }
+  }
+}

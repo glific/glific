@@ -1,0 +1,22 @@
+meta {
+  name: Subscription for Simulator release Copy
+  type: graphql
+  seq: 14
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  subscription organization_subscriptions {
+    simulator_release(organizationId: "1")
+  }
+}

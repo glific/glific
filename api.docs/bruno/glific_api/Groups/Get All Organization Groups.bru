@@ -1,0 +1,42 @@
+meta {
+  name: Get All Organization Groups
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query organization_groups($filter: GroupFilter, $opts: Opts, $id: Id) {
+    organization_groups(filter: $filter, opts: $opts, id:$id) {
+      id
+      label
+      isRestricted
+      contactsCount
+      usersCount
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "opts": {
+      "order": "ASC",
+      "limit": 10,
+      "offset": 0
+    },
+    "filter": {
+      "label": "Group"
+    },
+    "id": "1"
+  }
+}
