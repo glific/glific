@@ -4,7 +4,6 @@ defmodule Glific.Flows.Translate.Export do
   to export out of the json flow and to import back into the json flow
   """
 
-
   alias Glific.{
     Flows.Flow,
     Flows.Translate.Import,
