@@ -45,20 +45,13 @@ docs {
   
   ## Request Example
   ```bash
-  curl - X POST {{api_url}}
-  Authorization: {{auth_token}}
-  Content-Type: application/json
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "subscription { deletedContactTag { contact { id } tag { id } } }"
+      }'
   
-  subscription {
-    deletedContactTag {
-      contact {
-        id
-      }
-      tag {
-        id
-      }
-    }
-  }
   ```
   
   ## Response
