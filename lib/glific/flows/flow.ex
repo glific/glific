@@ -617,14 +617,13 @@ defmodule Glific.Flows.Flow do
               |> Map.get(action_uuid)
               |> String.slice(-4, 4)
 
-            [
-              "Node #{node_uuid} with template is missing translations in #{language.label}"
-            ]
+            "Node #{node_uuid} with template is missing translations in #{language.label}"
           end)
           | acc
         ]
       end
     end)
+    |> Enum.flat_map(fn node_error -> node_error end)
     |> Enum.reduce(errors, fn language_error, acc ->
       [{Localization, language_error, "Warning"} | acc]
     end)
