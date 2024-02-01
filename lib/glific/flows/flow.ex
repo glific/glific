@@ -492,7 +492,8 @@ defmodule Glific.Flows.Flow do
     )
     |> has_missing_translated_template(
       localizable_nodes_list,
-      all_localization
+      all_localization,
+      action_to_node_map
     )
   end
 
@@ -576,8 +577,13 @@ defmodule Glific.Flows.Flow do
     |> Enum.join(", ")
   end
 
-  @spec has_missing_translated_template(Keyword.t(), list(), map()) :: Keyword.t()
-  defp has_missing_translated_template(errors, localizable_nodes_list, all_localization) do
+  @spec has_missing_translated_template(Keyword.t(), list(), map(), map()) :: Keyword.t()
+  defp has_missing_translated_template(
+         errors,
+         localizable_nodes_list,
+         all_localization,
+         action_to_node_map
+       ) do
     localizable_template_nodes =
       Enum.reduce(localizable_nodes_list, [], fn {type, uuid_tuple}, acc ->
         if type == "template", do: [uuid_tuple | acc], else: acc
@@ -595,7 +601,7 @@ defmodule Glific.Flows.Flow do
 
     language_map_ids = Map.keys(language_map)
 
-    Enum.reduce(localizable_template_nodes, [], fn {node_uuid, translation_ids}, acc ->
+    Enum.reduce(localizable_template_nodes, [], fn {action_uuid, translation_ids}, acc ->
       translation_ids = translation_ids |> Enum.map(&String.to_integer/1)
       missing_ids = language_map_ids -- translation_ids
 
@@ -605,6 +611,11 @@ defmodule Glific.Flows.Flow do
         [
           Enum.map(missing_ids, fn language_id ->
             language = Map.get(language_map, language_id)
+
+            node_uuid =
+              action_to_node_map
+              |> Map.get(action_uuid)
+              |> String.slice(-4, 4)
 
             [
               "Node #{node_uuid} with template is missing translations in #{language.label}"
