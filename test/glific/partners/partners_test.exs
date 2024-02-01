@@ -1214,7 +1214,6 @@ defmodule Glific.PartnersTest do
   end
 
   describe "get_resource_local_path/2" do
-    @tag :resource
     test "successfull file download to local" do
       Tesla.Mock.mock(fn
         %{method: :get} ->
@@ -1230,7 +1229,6 @@ defmodule Glific.PartnersTest do
       File.rm("template-asset-sample.png")
     end
 
-    @tag :resource
     test "file download to local failed" do
       Tesla.Mock.mock(fn
         %{method: :get} ->
@@ -1242,7 +1240,6 @@ defmodule Glific.PartnersTest do
   end
 
   describe "delete_local_resource/1" do
-    @tag :resource
     test "successfull file delete from local" do
       Tesla.Mock.mock(fn
         %{method: :get} ->
@@ -1258,7 +1255,6 @@ defmodule Glific.PartnersTest do
       assert :ok = PartnerAPI.delete_local_resource("sample.png", "sample")
     end
 
-    @tag :resource
     test "local file deletion failed" do
       assert {:error, :enoent} = PartnerAPI.delete_local_resource("sample2.png", "sample2")
     end

@@ -361,7 +361,6 @@ defmodule Glific.TemplatesTest do
       assert session_template.language_id == language.id
     end
 
-    @tag :image_submit
     test "create_session_template/1 for HSM data with image url, should submit it for approval",
          attrs do
       whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9b94e53b4b"
@@ -452,7 +451,6 @@ defmodule Glific.TemplatesTest do
       assert session_template.language_id == language.id
     end
 
-    @tag :image_submit
     test "create_session_template/1 for HSM data with image url but get_media_handle_id raises error ",
          attrs do
       whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9b94e53b4b"
