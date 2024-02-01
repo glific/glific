@@ -424,4 +424,12 @@ defmodule Glific do
   def get_open_ai_key do
     Application.get_env(:glific, :open_ai)
   end
+
+  @doc """
+  Get default googleTranslate keys
+  """
+  @spec get_google_translate_key() :: String.t()
+  def get_google_translate_key do
+    Application.get_env(:glific, :google_translate)
+  end
 end

@@ -130,6 +130,21 @@ defmodule Glific.PartnersTest do
       assert %{"balance" => 0.787, "status" => "success"} == data
     end
 
+    test "set business profile" do
+      org = SeedsDev.seed_organizations()
+
+      Tesla.Mock.mock(fn
+        %{method: :put} ->
+          %Tesla.Env{
+            status: 202,
+            body: "{\"status\":\"success\"}"
+          }
+      end)
+
+      {:ok, result} = PartnerAPI.set_business_profile(org.id, %{city: "mumbai"})
+      assert %{"status" => "success"} == result
+    end
+
     test "enable template messaging for an app" do
       org = SeedsDev.seed_organizations()
 
@@ -158,6 +173,21 @@ defmodule Glific.PartnersTest do
       callback_url = "https://webhook.site/"
       {:ok, data} = PartnerAPI.set_callback_url(org.id, callback_url)
       assert %{"status" => "success"} == data
+    end
+
+    test "test app link using api key" do
+      org = SeedsDev.seed_organizations()
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"partnerId\":49,\"status\":\"success\"}"
+          }
+      end)
+
+      {:ok, result} = PartnerAPI.app_link(org.id)
+      assert %{"partnerId" => 49, "status" => "success"} == result
     end
 
     test "delete_provider/1 deletes the provider" do
