@@ -28,54 +28,62 @@ body:json {
 }
 
 docs {
-  ## API Documentation: Renew an Existing Session
+  # API Documentation: Renew an Existing Session
   
-  ### Description
+  # Description
   This API is used to renew an existing user session by providing a valid access token and renewal token.
   
-  ### Base URL
+  # Base URL
   `{{api_url}}`
   
-  ### URL
+  # URL
   `/v1/session/renew`
   
-  ### Parameters
-  - `access_token` (DataType: String) - The current access token associated with the existing session.
-  - `renewal_token` (DataType: String) - The renewal token associated with the existing session.
+  # Parameters
   
-  ### Request Example
-  ```json
-  POST {{api_url}}/v1/session/renew
-  Content-Type: application/json
-  Accept: application/json
+  | Parameter        | DataType | Description                                         |
+  |------------------|----------|-----------------------------------------------------|
+  | `access_token`   | String   | The current access token associated with the session.|
+  | `renewal_token`  | String   | The renewal token associated with the session.       |
   
-  {
-      "data": {
+  # Request Example
+  ```bash
+  curl -X POST {{api_url}}/v1/session/renew \
+      -H "Content-Type: application/json" \
+      -H "Accept: application/json" \
+      -d '{
           "data": {
-              "access_token": "AUTH_TOKEN",
-              "token_expiry_time": "2020-07-13T16:22:53.678465Z",
-              "renewal_token": "RENEW_TOKEN"
+              "data": {
+                  "access_token": "AUTH_TOKEN",
+                  "token_expiry_time": "2020-07-13T16:22:53.678465Z",
+                  "renewal_token": "RENEW_TOKEN"
+              }
           }
-      }
-  }
+      }'
+  
   ```
   
-  ## Response
+  # Response
   The API response includes details of the renewed user session upon successful renewal.
   
-  ## Error Codes
+  # Error Codes
   - `401 Unauthorized`: Invalid access token or renewal token.
   - `400 Bad Request`: Malformed request or missing parameters.
   
-  ## Use Cases
+  # Use Cases
   1. **Use Case 1: Successful Session Renewal**
+  
      An existing user provides a valid access token and renewal token. The API responds, renewing the user session.
   
   2. **Use Case 2: Invalid Tokens**
+  
      If the user provides invalid access or renewal tokens, the API responds with a 401 Unauthorized error.
   
-  ## FAQ
-  - **Q:** How often should I renew the session?
-    **A:** The session renewal is typically done before the access token expires. Check the token expiry time in the response.
+  # FAQ
+  
+  ### 1. Renewal
+  **Q:** How often should I renew the session?
+  
+  **A:** The session renewal is typically done before the access token expires. Check the token expiry time in the response.
   
 }

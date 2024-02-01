@@ -37,21 +37,22 @@ docs {
   `/v1/session`
   
   ## Parameters
-  - `phone` (DataType: String) - The existing user's phone number.
-  - `password` (DataType: String) - The existing user's password.
+  | Parameter   | DataType | Description               |
+  |-------------|----------|---------------------------|
+  | `phone`     | String   | The user's phone number.  |
+  | `password`  | String   | The user's password.      |
   
   ## Request Example
-  ```json
-  POST {{api_url}}/v1/session
-  Content-Type: application/json
-  Accept: application/json
-  
-  {
-      "user": {
-          "phone": "917834811114",
-          "password": "Secret1234!"
-      }
-  }
+  ```bash
+  curl -X POST {{api_url}}/v1/session \
+      -H "Content-Type: application/json" \
+      -H "Accept: application/json" \
+      -d '{
+          "user": {
+              "phone": "917834811114",
+              "password": "Secret1234!"
+          }
+      }'
   ```
   
   ## Response
@@ -62,17 +63,22 @@ docs {
   
   ## Use Cases
   1. **Use Case 1: OTP Request Sent for Existing User**
+  
      An existing user initiates an OTP request by providing valid credentials. The API responds, triggering the OTP delivery process.
   
   2. **Use Case 2: Invalid Credentials**
+  
      If the existing user provides incorrect credentials, the API responds with a 401 Unauthorized error.
   
   ## FAQ
   
-  - **Q:** What happens if I don't receive the OTP?
-    **A:** If you don't receive the OTP, you can request a new one or check if the provided phone number is correct.
+  ### 1. OTP
+  **Q:** What happens if I don't receive the OTP?
   
-  - **Q:** Can I resend the OTP?
-    **A:** Yes, you can resend the OTP by initiating the same API request again.
+  **A:** If you don't receive the OTP, you can request a new one or check if the provided phone number is correct.
+  
+  **Q:** Can I resend the OTP?
+  
+  **A:** Yes, you can resend the OTP by initiating the same API request again.
   
 }

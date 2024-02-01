@@ -29,22 +29,23 @@ body:graphql {
 }
 
 docs {
-  ## API Documentation: Subscription for Create Contact Tag
+  # API Documentation: Subscription for Create Contact Tag
   
-  ### Description
+  ## Description
   This GraphQL subscription is used to receive real-time notifications when a new contact tag is created.
   
-  ### Base URL
+  ## Base URL
   `{{api_url}}`
   
-  ### URL
+  ## URL
   (No specific URL for GraphQL subscriptions, as it is typically handled by a single endpoint.)
   
-  ### Parameters
+  ## Parameters
   - None for subscriptions.
   
-  ### Request Example
-  ```graphql
+  ## Request Example
+  ```bash
+  curl -X
   POST {{api_url}}
   Authorization: {{auth_token}}
   Content-Type: application/json
@@ -61,18 +62,25 @@ docs {
   }
   ```
   
-  ### Response
+  ## Response
   The subscription response includes details of the created contact tag, specifically the associated contact and tag IDs.
   
-  ### Use Cases
+  ## Use Cases
   1. **Use Case 1: Real-time Notification**
+  
      Subscribing to this endpoint allows you to receive real-time notifications whenever a new contact tag is created.
   
-  ### FAQ
+  ## FAQ
+  
+  ### 1. Response
+  
   - **Q:** What data is included in the subscription response?
+  
     **A:** The subscription response includes the IDs of the associated contact and tag for the newly created contact tag.
   
+  ### 2. Real- Time Notifications
   - **Q:** How do I handle real-time notifications in my application?
+  
     **A:** You can integrate a WebSocket or other real-time communication mechanism to receive and process the subscription responses in your application.
   
   

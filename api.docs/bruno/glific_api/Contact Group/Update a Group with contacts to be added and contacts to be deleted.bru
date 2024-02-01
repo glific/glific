@@ -43,7 +43,7 @@ body:graphql:vars {
 }
 
 docs {
-  ## API Documentation: Update Group with Contacts
+  # API Documentation: Update Group with Contacts
   
   ## Description
   This GraphQL API is used to update a group by adding and deleting contacts.
@@ -55,28 +55,27 @@ docs {
   (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
   
   ## Parameters
-  - `input` (Type: GroupContactsInput) - An input object containing the `groupId`, `addContactIds`, and `deleteContactIds`.
+  
+  | Parameter | Type                  | Description                                              |
+  |-----------|-----------------------|----------------------------------------------------------|
+  | `input`   | GroupContactsInput    | An input object containing the `groupId`, `addContactIds`, and `deleteContactIds`.|
   
   ## Request Example
-  ```graphql
-  POST {{api_url}}
-  Authorization: {{auth_token}}
-  Content-Type: application/json
-  
-  mutation updateGroupContacts($input: GroupContactsInput!) {
-    updateGroupContacts(input: $input) {
-      groupContacts {
-        id
-        group {
-          label
-        }
-        contact {
-          name
-        }
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation updateGroupContacts($input: GroupContactsInput!) { updateGroupContacts(input: $input) { groupContacts { id group { label } contact { name } } numberDeleted } }",
+          "variables": {
+              "input": {
+                  "groupId": 2,
+                  "addContactIds": [1, 2],
+                  "deleteContactIds": [3, 8]
+              }
+          }
       }
-      numberDeleted
-    }
-  }
+  
   ```
   
   ## Request Variables
@@ -98,17 +97,25 @@ docs {
   
   ## Use Cases
   1. **Use Case 1: Successful Group Update**
+  
      Contacts are successfully added and deleted from the group, and the API responds with the updated group details.
   
   2. **Use Case 2: Error Handling**
+  
      If there are errors during the group update, the API responds with error details in the `errors` field.
   
   ## FAQ
-  - **Q:** Can I add and delete contacts in a single request?
-    **A:** Yes, you can provide both `addContactIds` and `deleteContactIds` in the same request for simultaneous addition and deletion.
   
-  - **Q:** What is the meaning of `numberDeleted` in the response?
-    **A:** `numberDeleted` indicates the count of contacts successfully deleted from the group during the update.
+  ### 1. Single Request
+  **Q:** Can I add and delete contacts in a single request?
+  
+  **A:** Yes, you can provide both `addContactIds` and `deleteContactIds` in the same request for simultaneous addition and deletion.
+  
+  ### 2. numberDeleted
+  
+  **Q:** What is the meaning of `numberDeleted` in the response?
+  
+  **A:** `numberDeleted` indicates the count of contacts successfully deleted from the group during the update.
   
   
 }
