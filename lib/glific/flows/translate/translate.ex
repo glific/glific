@@ -24,11 +24,11 @@ defmodule Glific.Flows.Translate.Translate do
 
   defp impl(organization) do
     cond do
-      get_auto_translation_enabled_for_google_trans(organization) ->
-        Glific.Flows.Translate.GoogleTranslate
-
       get_auto_translation_enabled_for_open_ai(organization) ->
         Glific.Flows.Translate.OpenAI
+
+      get_auto_translation_enabled_for_google_trans(organization) ->
+        Glific.Flows.Translate.GoogleTranslate
 
       true ->
         Application.get_env(:glific, :adaptors)[:translators]

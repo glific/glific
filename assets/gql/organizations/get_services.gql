@@ -8,8 +8,7 @@ query organizationServices {
     roles_and_permission
     flow_uuid_display
     contact_profile_enabled
-    auto_translation_enabled_for_open_ai
-    auto_translation_enabled_for_google_trans
+    auto_translation_enabled
     errors {
       key
       message
