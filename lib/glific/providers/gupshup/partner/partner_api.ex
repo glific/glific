@@ -70,31 +70,27 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-   Get gupshup media handle id based on giving org id and the url. media_name is used as a label for the resource
+   Get Gupshup media handle id based on giving org id and the URL. media_name is used as a label for the resource
   """
   @spec get_media_handle_id(non_neg_integer, binary, String.t()) :: String.t() | term()
   def get_media_handle_id(org_id, url, media_name) do
-    path =
-      case get_resource_local_path(url, media_name) do
-        {:ok, path} -> path
-        {:error, err} -> raise(err)
+    with {:ok, path} <- get_resource_local_path(url, media_name) do
+      data =
+        Multipart.new()
+        |> Multipart.add_file(path, name: "file")
+        |> Multipart.add_field("file_type", MIME.from_path(url))
+
+      (app_url(org_id) <> "/upload/media")
+      |> post_request(data,
+        org_id: org_id
+      )
+      |> case do
+        {:ok, %{"status" => "success", "handleId" => %{"message" => handle_id}} = _res} ->
+          handle_id
+
+        {:error, error} ->
+          raise(error)
       end
-
-    data =
-      Multipart.new()
-      |> Multipart.add_file(path, name: "file")
-      |> Multipart.add_field("file_type", MIME.from_path(url))
-
-    (app_url(org_id) <> "/upload/media")
-    |> post_request(data,
-      org_id: org_id
-    )
-    |> case do
-      {:ok, %{"status" => "success", "handleId" => %{"message" => handle_id}} = _res} ->
-        handle_id
-
-      {:error, error} ->
-        raise(error)
     end
   end
 
@@ -236,7 +232,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   def delete_local_resource(nil, _media_name), do: :ok
 
   def delete_local_resource(resource_url, media_name) do
-    get_filename_from_resource_url(resource_url, media_name)
+    resource_url
+    |> get_filename_from_resource_url(media_name)
     |> File.rm()
   end
 
