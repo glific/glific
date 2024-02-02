@@ -15,7 +15,14 @@ config :glific, Glific.Repo,
   pool_size: env!("POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
   prepare: :named,
-  parameters: [plan_cache_mode: "force_custom_plan"]
+  parameters: [plan_cache_mode: "force_custom_plan"],
+  ssl: true,
+  ssl_opts: [
+    verify: :verify_peer,
+    cacertfile: Path.expand("../", __DIR__) <> env!("CACERT_PATH"),
+    keyfile: Path.expand("../", __DIR__) <> env!("CERT_KEY_PATH"),
+    certfile: Path.expand("../", __DIR__) <> env!("CERT_PATH")
+  ]
 
 check_origin = [env!("REQUEST_ORIGIN", :string!), env!("REQUEST_ORIGIN_WILDCARD", :string!)]
 
