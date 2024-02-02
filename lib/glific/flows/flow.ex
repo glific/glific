@@ -513,14 +513,7 @@ defmodule Glific.Flows.Flow do
 
     localization_map =
       all_localization
-      |> make_localization_map()
-      |> Enum.reduce(%{}, fn {node, localization_label}, acc ->
-        if node in localizable_nodes do
-          Map.put(acc, node, localization_label)
-        else
-          acc
-        end
-      end)
+      |> make_localization_map(localizable_nodes)
 
     all_languages =
       localization_map
@@ -559,8 +552,8 @@ defmodule Glific.Flows.Flow do
 
   # lets transform the localization to a map
   # whose key is the node uuid, and values are the languages it has
-  @spec make_localization_map(map()) :: map()
-  defp make_localization_map(all_localization) do
+  @spec make_localization_map(map(), map()) :: map()
+  defp make_localization_map(all_localization, localizable_nodes) do
     all_localization
     # For all languages
     |> Enum.reduce(
@@ -582,6 +575,19 @@ defmodule Glific.Flows.Flow do
         )
       end
     )
+    |> remove_deleted_node_localization(localizable_nodes)
+  end
+
+  @spec remove_deleted_node_localization(map(), list()) :: map()
+  defp remove_deleted_node_localization(localization_map, localizable_nodes) do
+    localization_map
+    |> Enum.reduce(%{}, fn {node, localization_label}, acc ->
+      if node in localizable_nodes do
+        Map.put(acc, node, localization_label)
+      else
+        acc
+      end
+    end)
   end
 
   @spec make_labels(list(), list(), map()) :: String.t()
