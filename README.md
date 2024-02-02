@@ -275,12 +275,13 @@ install [Glific Frontend](https://github.com/glific/glific-frontend/)
   - Start the backend server: `mix phx.server`
   - `$ ngrok http 4000 --host-header=glific.test:4000` (do this in a new window))
   - Remember the URL it assigns you, something like: `https://9f6a7c7822d2.ngrok.io`
-- Goto the [Settings Page](https://www.gupshup.io/whatsappassistant/#/settings)
+- Goto the app settings section, [Dashboard](https://www.gupshup.io/whatsapp/dashboard/?lang=en) -> {{your_appname}} -> Settings.
 - On that page, Search for `Manage your Template messaging settings` and enable it
-- On the same page, Search for `Callback URL / Link your Bot`
+- Goto app webhooks section, [Dashboard](https://www.gupshup.io/whatsapp/dashboard/?lang=en) -> {{your_appname}} -> Webhooks.
 - Enter your callback URL that ngrok gave you, add: `/gupshup` to the end. Something like:
-  `https://9f6a7c7822d2.ngrok.io/gupshup/`
+  `https://9f6a7c7822d2.ngrok.io/gupshup/`.
 - Click `Set`. It should give you a `Callback set successfully` message. If not, check the above steps.
+- Save the number `+917834811114` on whatsapp and send a message `PROXY {{your_appname}}`.
 
 ## Updating your instance
 
