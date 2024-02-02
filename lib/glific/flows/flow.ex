@@ -532,17 +532,20 @@ defmodule Glific.Flows.Flow do
         node_languages = Map.get(localization_map, action_uuid, [])
 
         if length(node_languages) != num_languages do
-          labels = make_labels(all_languages, node_languages, language_labels)
-
           node_uuid =
             action_to_node_map
             |> Map.get(action_uuid)
             |> String.slice(-4, 4)
 
-          [
-            {Localization, "Node #{node_uuid} is missing translations in #{labels}", "Warning"}
-            | errors
-          ]
+          (all_languages -- node_languages)
+          |> Enum.reduce(errors, fn locale, acc ->
+            [
+              {Localization,
+               "Node #{node_uuid} is missing translations in #{language_labels[locale]}",
+               "Warning"}
+              | acc
+            ]
+          end)
         else
           errors
         end
@@ -593,13 +596,6 @@ defmodule Glific.Flows.Flow do
         acc
       end
     end)
-  end
-
-  @spec make_labels(list(), list(), map()) :: String.t()
-  defp make_labels(all_languages, node_languages, language_labels) do
-    (all_languages -- node_languages)
-    |> Enum.reduce([], fn locale, acc -> [language_labels[locale] | acc] end)
-    |> Enum.join(", ")
   end
 
   @spec has_missing_translated_template(Keyword.t(), list(), map(), map()) :: Keyword.t()
