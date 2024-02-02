@@ -474,7 +474,11 @@ defmodule Glific.Flows.Flow do
               acc
 
             action.type == "send_msg" && !is_nil(action.templating) ->
-              available_translation_ids = Map.keys(action.templating.template.translations)
+              language_id = Integer.to_string(action.templating.template.language_id)
+
+              available_translation_ids =
+                Map.keys(action.templating.template.translations) ++ [language_id]
+
               [{"template", {action.uuid, available_translation_ids}} | acc]
 
             true ->
@@ -605,6 +609,8 @@ defmodule Glific.Flows.Flow do
          all_localization,
          action_to_node_map
        ) do
+    IO.inspect(localizable_nodes_list)
+
     localizable_template_nodes =
       Enum.reduce(localizable_nodes_list, [], fn {type, uuid_tuple}, acc ->
         if type == "template", do: [uuid_tuple | acc], else: acc
@@ -633,7 +639,12 @@ defmodule Glific.Flows.Flow do
 
     language_map_ids = Map.keys(language_map)
 
+    IO.inspect(localizable_template_nodes)
+
     Enum.reduce(localizable_template_nodes, [], fn {action_uuid, translation_ids}, acc ->
+      IO.inspect(action_uuid)
+      IO.inspect(translation_ids)
+
       translation_ids = translation_ids |> Enum.map(&String.to_integer/1)
       missing_ids = language_map_ids -- translation_ids
 
