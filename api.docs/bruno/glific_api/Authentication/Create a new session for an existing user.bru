@@ -23,3 +23,66 @@ body:json {
       }
   }
 }
+
+docs {
+  # Create a New Session for an Existing User
+  
+  ## Description
+  This API is used to create a new session for an existing user by providing valid login credentials.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  `/v1/session`
+  
+  ## Parameters
+  
+  | Parameter   | DataType | Description                        |
+  |-------------|----------|------------------------------------|
+  | `phone`     | String   | The phone number of the existing user.|
+  | `password`  | String   | The password for the existing user.   |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}}/v1/session \
+      -H "Content-Type: application/json" \
+      -H "Accept: application/json" \
+      -d '{
+          "user": {
+              "phone": "917834811114",
+              "password": "Secret1234!"
+          }
+      }'
+  
+  ```
+  
+  ## Response
+  The API response includes details of the user session upon successful login.
+  
+  ## Error Codes
+  - `401 Unauthorized`: Invalid credentials.
+  
+  ## Use Cases
+  1. **Use Case 1: Successful Session Creation**
+  
+     An existing user provides valid login credentials. The API responds, creating a new session for the user.
+  
+  2. **Use Case 2: Invalid Credentials**
+  
+     If the existing user provides incorrect credentials, the API responds with a 401 Unauthorized error.
+  
+  ## FAQ
+  
+  ### 1. Phone Number for Creation
+  **Q:** Can I use any phone number for session creation?
+  
+  **A:** Yes, you can use any valid phone number associated with an existing user.
+  
+  ### 2. Failure
+  **Q:** What happens if the session creation fails?
+  
+  **A:** If session creation fails, check the error response for details. Common issues include invalid credentials.
+  
+  
+}

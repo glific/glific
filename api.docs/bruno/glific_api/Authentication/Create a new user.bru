@@ -25,3 +25,65 @@ body:json {
       }
   }
 }
+
+docs {
+  # Send OTP for Phone Number Verification (Existing User)
+  
+  ## Description
+  This API is used to send an OTP (One-Time Password) request to verify the phone number of an existing user. It is part of the phone number verification process during user login.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  `/v1/session`
+  
+  ## Parameters
+  
+  | Parameter   | DataType | Description                       |
+  |-------------|----------|-----------------------------------|
+  | `phone`     | String   | The existing user's phone number.  |
+  | `password`  | String   | The existing user's password.      |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}}/v1/session \
+      -H "Content-Type: application/json" \
+      -H "Accept: application/json" \
+      -d '{
+          "user": {
+              "phone": "917834811114",
+              "password": "Secret1234!"
+          }
+      }'
+  ```
+  
+  ## Response
+  The API response may include user details upon successful registration.
+  
+  ## Error Codes
+  - `401 Unauthorized`: Invalid credentials or OTP.
+  - `400 Bad Request`: Malformed request or missing parameters.
+  
+  ## Use Cases
+  1. **Use Case 1: Successful Registration**
+  
+     A new user provides valid registration details, including a correct OTP. The API responds, creating a new user account.
+  
+  2. **Use Case 2: Invalid OTP**
+  
+     If the user provides an incorrect OTP, the API responds with a 401 Unauthorized error.
+  
+  ## FAQ
+  
+  ### 1. Registration Fail
+  **Q:** What happens if registration fails?
+  
+  **A:** If registration fails, check the error response for details. Common issues include an invalid OTP or missing parameters.
+  
+  ### 2. Encryption
+  **Q:** Is the password encrypted in transit?
+  
+  **A:** Yes, the registration API typically ensures that data, including passwords, is transmitted securely over HTTPS.
+  
+}

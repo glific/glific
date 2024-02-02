@@ -42,3 +42,70 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Update a Contact with Tags
+  
+  ## Description
+  This GraphQL API is used to update a contact by adding and deleting tags associated with it.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter | Type                | Description                                       |
+  |-----------|---------------------|---------------------------------------------------|
+  | `input`   | ContactTagsInput    | An input object containing the `contactId`, `addTagIds`, and `deleteTagIds`.|
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation updateContactTags($input: ContactTagsInput!) { updateContactTags(input: $input) { contactTags { id contact { name } tag { label } } numberDeleted } }",
+          "variables": {
+              "input": {
+                  "contactId": 2,
+                  "addTagIds": [3, 6],
+                  "deleteTagIds": [7, 8]
+              }
+          }
+      } 
+  
+  ```
+  
+  ### Response
+  The API response includes details of the updated contact with added and deleted tags.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Successful Update**
+  
+     Tags are successfully added and deleted for the contact, and the API responds with the updated contact details.
+  
+  2. **Use Case 2: Error Handling**
+  
+     If there are errors during the update, the API responds with error details in the `errors` field.
+  
+  ## FAQ
+  
+  ### 1. Single Request
+  
+  **Q:** Can I add and delete tags in a single request?
+  
+    **A:** Yes, you can provide both `addTagIds` and `deleteTagIds` in the same request for simultaneous addition and deletion.
+  
+  ### 1. numberDeleted
+  
+  **Q:** What is the meaning of `numberDeleted` in the response?
+  
+    **A:** `numberDeleted` indicates the count of tags successfully deleted for the contact during the update.
+  
+}

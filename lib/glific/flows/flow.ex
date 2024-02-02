@@ -388,6 +388,15 @@ defmodule Glific.Flows.Flow do
       all_nodes = flow_objects(flow, :node)
       all_translation = flow.definition["localization"]
 
+      action_to_node_map =
+        flow.definition["nodes"]
+        |> Enum.reduce(%{}, fn node, action_to_node_map ->
+          node["actions"]
+          |> Enum.map(fn action -> action["uuid"] end)
+          |> Enum.reduce(%{}, fn action, acc -> Map.put(acc, action, node["uuid"]) end)
+          |> Map.merge(action_to_node_map)
+        end)
+
       flow.nodes
       |> Enum.reduce(
         [],
@@ -395,7 +404,7 @@ defmodule Glific.Flows.Flow do
       )
       |> dangling_nodes(flow, all_nodes)
       |> missing_flow_context_nodes(flow, all_nodes)
-      |> missing_localization(flow, all_translation)
+      |> missing_localization(flow, all_translation, action_to_node_map)
     end
   end
 
@@ -448,8 +457,8 @@ defmodule Glific.Flows.Flow do
       ]
   end
 
-  @spec missing_localization(Keyword.t(), map(), map()) :: Keyword.t()
-  defp missing_localization(errors, flow, all_localization) do
+  @spec missing_localization(Keyword.t(), map(), map(), map()) :: Keyword.t()
+  defp missing_localization(errors, flow, all_localization, action_to_node_map) do
     localizable_nodes_list =
       flow.nodes
       |> Enum.reduce([], fn node, uuids ->
@@ -475,22 +484,49 @@ defmodule Glific.Flows.Flow do
       end)
 
     errors
-    |> has_missing_localization(localizable_nodes_list, all_localization, flow.organization_id)
+    |> has_missing_localization(
+      localizable_nodes_list,
+      all_localization,
+      flow.organization_id,
+      action_to_node_map
+    )
     |> has_missing_translated_template(
       localizable_nodes_list,
-      all_localization
+      all_localization,
+      action_to_node_map
     )
   end
 
-  @spec has_missing_localization(Keyword.t(), list(), map(), non_neg_integer()) :: Keyword.t()
-  defp has_missing_localization(errors, localizable_nodes_list, all_localization, organization_id) do
+  @spec has_missing_localization(Keyword.t(), list(), map(), non_neg_integer(), map()) ::
+          Keyword.t()
+  defp has_missing_localization(
+         errors,
+         localizable_nodes_list,
+         all_localization,
+         organization_id,
+         action_to_node_map
+       ) do
     localizable_nodes =
       Enum.reduce(localizable_nodes_list, [], fn {type, node_uuid}, acc ->
         if type == "message", do: [node_uuid | acc], else: acc
       end)
 
-    localization_map = make_localization_map(all_localization)
-    all_languages = Map.keys(all_localization)
+    localization_map =
+      all_localization
+      |> make_localization_map()
+      |> Enum.reduce(%{}, fn {node, localization_label}, acc ->
+        if node in localizable_nodes do
+          Map.put(acc, node, localization_label)
+        else
+          acc
+        end
+      end)
+
+    all_languages =
+      localization_map
+      |> Map.values()
+      |> Enum.flat_map(fn language_label -> language_label end)
+      |> Enum.uniq()
 
     # get language labels here in one query for all languages if you want
     num_languages = length(all_languages)
@@ -499,11 +535,16 @@ defmodule Glific.Flows.Flow do
     localizable_nodes
     |> Enum.reduce(
       errors,
-      fn node_uuid, errors ->
-        node_languages = Map.get(localization_map, node_uuid, [])
+      fn action_uuid, errors ->
+        node_languages = Map.get(localization_map, action_uuid, [])
 
         if length(node_languages) != num_languages do
           labels = make_labels(all_languages, node_languages, language_labels)
+
+          node_uuid =
+            action_to_node_map
+            |> Map.get(action_uuid)
+            |> String.slice(-4, 4)
 
           [
             {Localization, "Node #{node_uuid} is missing translations in #{labels}", "Warning"}
@@ -550,8 +591,13 @@ defmodule Glific.Flows.Flow do
     |> Enum.join(", ")
   end
 
-  @spec has_missing_translated_template(Keyword.t(), list(), map()) :: Keyword.t()
-  defp has_missing_translated_template(errors, localizable_nodes_list, all_localization) do
+  @spec has_missing_translated_template(Keyword.t(), list(), map(), map()) :: Keyword.t()
+  defp has_missing_translated_template(
+         errors,
+         localizable_nodes_list,
+         all_localization,
+         action_to_node_map
+       ) do
     localizable_template_nodes =
       Enum.reduce(localizable_nodes_list, [], fn {type, uuid_tuple}, acc ->
         if type == "template", do: [uuid_tuple | acc], else: acc
@@ -569,7 +615,7 @@ defmodule Glific.Flows.Flow do
 
     language_map_ids = Map.keys(language_map)
 
-    Enum.reduce(localizable_template_nodes, [], fn {node_uuid, translation_ids}, acc ->
+    Enum.reduce(localizable_template_nodes, [], fn {action_uuid, translation_ids}, acc ->
       translation_ids = translation_ids |> Enum.map(&String.to_integer/1)
       missing_ids = language_map_ids -- translation_ids
 
@@ -580,14 +626,18 @@ defmodule Glific.Flows.Flow do
           Enum.map(missing_ids, fn language_id ->
             language = Map.get(language_map, language_id)
 
-            [
-              "Node #{node_uuid} with template is missing translations in #{language.label}"
-            ]
+            node_uuid =
+              action_to_node_map
+              |> Map.get(action_uuid)
+              |> String.slice(-4, 4)
+
+            "Node #{node_uuid} with template is missing translations in #{language.label}"
           end)
           | acc
         ]
       end
     end)
+    |> Enum.flat_map(fn node_error -> node_error end)
     |> Enum.reduce(errors, fn language_error, acc ->
       [{Localization, language_error, "Warning"} | acc]
     end)

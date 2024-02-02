@@ -35,3 +35,73 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Block a Contact
+  
+  ## Description
+  This GraphQL API is used to block a contact by updating its status.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter | Type           | Description                                            |
+  |-----------|----------------|--------------------------------------------------------|
+  | `id`      | ID!            | The ID of the contact to be blocked.                    |
+  | `input`   | ContactInput!  | Input parameters, including the new status (e.g., "BLOCKED").|
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation updateContact($id: ID!, $input: ContactInput!) { updateContact(id: $id, input: $input) { contact { id phone status } } }",
+          "variables": {
+              "id": "5",
+              "input": {
+                  "status": "BLOCKED"
+              }
+          }
+      }
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "id": "5",
+    "input": {
+      "status": "BLOCKED"
+    }
+  }
+  ```
+  
+  ## Response
+  The API response includes details of the updated contact with the new status.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Block a Contact**
+  
+     Update the status of a contact to "BLOCKED."
+  
+  ## FAQ
+  
+  ### 1. Unblock
+   **Q:** How do I unblock a contact?
+   
+    **A:** You can update the contact status to "ACTIVE" or another appropriate status.
+  
+  ### 2. Multiple
+   **Q:** Can I block multiple contacts in a single request?
+   
+    **A:** No, this mutation is designed for a single contact. To block multiple contacts, make individual requests.
+  
+}
