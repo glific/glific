@@ -511,8 +511,22 @@ defmodule Glific.Flows.Flow do
         if type == "message", do: [node_uuid | acc], else: acc
       end)
 
-    localization_map = make_localization_map(all_localization)
-    all_languages = Map.keys(all_localization)
+    localization_map =
+      all_localization
+      |> make_localization_map()
+      |> Enum.reduce(%{}, fn {node, localization_label}, acc ->
+        if node in localizable_nodes do
+          Map.put(acc, node, localization_label)
+        else
+          acc
+        end
+      end)
+
+    all_languages =
+      localization_map
+      |> Map.values()
+      |> Enum.flat_map(fn language_label -> language_label end)
+      |> Enum.uniq()
 
     # get language labels here in one query for all languages if you want
     num_languages = length(all_languages)
