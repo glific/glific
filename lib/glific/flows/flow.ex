@@ -563,14 +563,19 @@ defmodule Glific.Flows.Flow do
         # For all nodes that have a translation
         |> Enum.reduce(
           localization_map,
-          fn {uuid, _value}, acc ->
-            # add the language to the localization_map for that node
-            Map.update(
-              acc,
-              uuid,
-              [language_local],
-              fn existing_language_local -> [language_local | existing_language_local] end
-            )
+          fn {uuid, value}, acc ->
+            if Map.get(value, "text", false) do
+              # add the language to the localization_map for that node
+              Map.update(
+                acc,
+                uuid,
+                [language_local],
+                fn existing_language_local -> [language_local | existing_language_local] end
+              )
+            else
+              # skipping nodes where localisation was saved but text was deleted
+              acc
+            end
           end
         )
       end
