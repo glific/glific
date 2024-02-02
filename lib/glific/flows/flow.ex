@@ -552,7 +552,7 @@ defmodule Glific.Flows.Flow do
 
   # lets transform the localization to a map
   # whose key is the node uuid, and values are the languages it has
-  @spec make_localization_map(map(), map()) :: map()
+  @spec make_localization_map(map(), list()) :: map()
   defp make_localization_map(all_localization, localizable_nodes) do
     all_localization
     # For all languages
@@ -609,7 +609,18 @@ defmodule Glific.Flows.Flow do
         if type == "template", do: [uuid_tuple | acc], else: acc
       end)
 
-    locale_list = Map.keys(all_localization)
+    # checking in message nodes as templates can have multiple translation but for a specific flow only one is needed
+    localizable_message_nodes =
+      Enum.reduce(localizable_nodes_list, [], fn {type, node_uuid}, acc ->
+        if type == "message", do: [node_uuid | acc], else: acc
+      end)
+
+    locale_list =
+      all_localization
+      |> make_localization_map(localizable_message_nodes)
+      |> Map.values()
+      |> Enum.flat_map(fn language_label -> language_label end)
+      |> Enum.uniq()
 
     language_map =
       Settings.get_language_map()
