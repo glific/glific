@@ -18,8 +18,8 @@ headers {
 body:json {
   {
       "user": {
-          "phone": "917834811114",
-          "password": "Secret1234!"
+          "phone": "919985820958",
+          "password": "Secretd234!"
       }
   }
 }
@@ -27,4 +27,56 @@ body:json {
 script:post-response {
   let ans = res.getBody();
   bru.setEnvVar("auth_token",ans.data.access_token);
+}
+
+docs {
+  # Login API
+  
+  ## Description
+  The Login API is designed to authenticate users by providing their phone number and password. It generates an authentication token upon successful login, allowing access to protected resources.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  `/v1/session`
+  
+  ## Parameters
+  
+  | Parameter | DataType | Description             |
+  |-----------|----------|-------------------------|
+  | `phone`   | String   | The user's phone number.|
+  | `password`| String   | The user's password.    |
+  
+  ## Request Example
+  ```json
+  curl -X POST {{api_url}}/api/v1/session \
+      -H "Content-Type: application/json" \
+      -H "Accept: application/json" \
+      -d '{"user": {"phone": "917834811114", "password": "Secret1234!"}}'
+  
+  ```
+  
+  ## Response
+  The response structure includes an authentication token upon successful login.
+  
+  ## Error Codes
+  - 401 Unauthorized: Invalid credentials.
+  
+  ## Use Cases
+  
+  ### Use Case 1: Successful Login
+  A user enters valid credentials, and the API returns an authentication token, granting access to protected resources.
+  
+  ### Use Case 2: Invalid Credentials
+  If the user provides incorrect credentials, the API responds with a 401 Unauthorized error.
+  
+  
+  ## Frequently Asked Questions (FAQs)
+  
+  ### 1. Token Validity
+  **Q:** How long is the authentication token valid?  
+  
+  **A:** The token has a limited validity period for security reasons. Check the token expiration details in the response.
+  
 }
