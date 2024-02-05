@@ -38,9 +38,8 @@ defmodule Glific.Groups.WhatsappGroup do
     Enum.map(groups, fn group -> group["name"] end)
   end
 
-  @doc false
   @spec create_whatsapp_groups(list(), non_neg_integer) :: list()
-  def create_whatsapp_groups(group_names, org_id) do
+  defp create_whatsapp_groups(group_names, org_id) do
     Enum.map(
       group_names,
       fn group_name ->
