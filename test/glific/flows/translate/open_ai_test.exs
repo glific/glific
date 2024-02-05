@@ -39,14 +39,7 @@ defmodule Glific.Flows.Translate.OpenAITest do
 
         # This condition is to mock when autotranslate timeout
         String.contains?(env.body, "Error to translate text") ->
-          %Tesla.Env{
-            status: 500,
-            body: %{
-              "error" => %{
-                "message" => "invalid response"
-              }
-            }
-          }
+          {:error, :timeout}
 
         true ->
           %Tesla.Env{
