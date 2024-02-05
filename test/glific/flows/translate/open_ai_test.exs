@@ -2,6 +2,7 @@ defmodule Glific.Flows.Translate.OpenAITest do
   use Glific.DataCase, async: false
 
   alias Glific.Flows.Translate.OpenAI
+  alias Glific.Flows.Translate.Translate
 
   import Tesla.Mock
 
@@ -35,6 +36,10 @@ defmodule Glific.Flows.Translate.OpenAITest do
               ]
             }
           }
+
+        # This condition is to mock when autotranslate timeout
+        String.contains?(env.body, "Error to translate text") ->
+          {:error, :timeout}
 
         true ->
           %Tesla.Env{
@@ -106,5 +111,24 @@ defmodule Glific.Flows.Translate.OpenAITest do
 
     assert response ==
              OpenAI.check_large_strings([long_text, "thankyou for joining", "correct answer"])
+  end
+
+  test "translate/3 test the possible errors" do
+    # This will basically fail
+    string = ["Error to translate text"]
+    src = "english"
+    dst = "hindi"
+
+    {:ok, response} = OpenAI.translate(string, src, dst)
+    assert response == [""]
+  end
+
+  test "translate_one!/3 to test the single string" do
+    string = "here is the string to test"
+    src = "english"
+    dst = "hindi"
+
+    translated_text = Translate.translate_one!(string, src, dst)
+    assert translated_text == "hindi here is the string to test english"
   end
 end
