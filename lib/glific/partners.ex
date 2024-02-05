@@ -467,10 +467,10 @@ defmodule Glific.Partners do
       |> set_languages()
       |> Flags.set_flow_uuid_display()
       |> Flags.set_roles_and_permission()
-      |> Flags.set_contact_profile_enabled()
-      |> Flags.set_ticketing_enabled()
       |> Flags.set_auto_translation_enabled_for_open_ai()
       |> Flags.set_auto_translation_enabled_for_google_trans()
+      |> Flags.set_contact_profile_enabled()
+      |> Flags.set_ticketing_enabled()
 
     Caches.set(
       @global_organization_id,
