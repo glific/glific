@@ -40,3 +40,71 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Update a Flow
+  
+  ## Description
+  This GraphQL API is used to update the details of a specific flow identified by its ID.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter | Description                                       |
+  |-----------|---------------------------------------------------|
+  | `id`      | The ID of the flow to be updated.                 |
+  | `input`   | The updated information for the flow.             |
+  | `name`    | (Optional) The new name for the flow.             |
+  | `keywords`| (Optional) The updated list of keywords for flow. |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation updateFlow($id: ID!, $input:FlowInput!) { updateFlow(id: $id, input: $input) { flow { id name keywords } errors { key message } } }",
+          "variables": {
+              "id": "FLOW_ID",
+              "input": {
+                  "name": "updated name",
+                  "keywords": ["testing"]
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "id": "FLOW_ID",
+    "input": {
+      "name": "updated name",
+      "keywords": ["testing"]
+    }
+  }
+  ```
+  
+  
+  ## Response
+  The API response includes details of the updated flow, including its ID, name, and keywords, if the update was successful. Any encountered errors during the update process are also provided.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Update a Flow**
+     - Update the details of a specific flow, such as its name and keywords.
+  
+  ## FAQ
+  
+  ### Errors
+  1. **What errors can occur during flow update?**
+     - Errors encountered during the update process are provided in the `errors` field of the response. These errors typically include details such as a specific key and its corresponding error message.
+  
+}

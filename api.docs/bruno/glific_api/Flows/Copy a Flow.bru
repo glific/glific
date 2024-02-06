@@ -39,3 +39,61 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Copy a Flow
+  
+  ## Description
+  This GraphQL API is used to copy a flow with a new name.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  None
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation copyFlow($id: ID!, $input:FlowInput!) { copyFlow(id: $id, input: $input) { flow { id name keywords } errors { key message } } }",
+          "variables": {
+              "id": "1",
+              "input": {
+                  "name": "new name"
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "id": "1",
+    "input": {
+      "name": "new name"
+    }
+  }
+  ```
+  
+  ## Response
+  The API response includes the details of the copied flow, including its ID, name, and keywords.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Copy a Flow**
+     - Copy a flow with a new name.
+  
+  ## FAQ
+  
+  ### Necessity
+  1. **Why would I need to copy a flow?**
+     - Copying a flow allows you to reuse existing flow logic as a template for new flows, saving time and effort in development.
+}

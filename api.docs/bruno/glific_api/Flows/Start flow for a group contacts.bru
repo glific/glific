@@ -33,3 +33,58 @@ body:graphql:vars {
     "groupId": "1"
   }
 }
+
+docs {
+  # Start Flow for a Group of Contacts
+  
+  ## Description
+  This GraphQL API is used to start a flow for a group of contacts by providing the flow ID and group ID.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  | Parameter | Description                        |
+  |-----------|------------------------------------|
+  | `flowId`  | The ID of the flow to start.       |
+  | `groupId` | The ID of the group to start flow. |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation startGroupFlow($flowId: ID!, $groupId: ID!) { startGroupFlow(flowId: $flowId, groupId: $groupId) { success errors { key message } } }",
+          "variables": {
+              "flowId": "FLOW_ID",
+              "groupId": "GROUP_ID"
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "flowId": "FLOW_ID",
+    "groupId": "GROUP_ID"
+  }
+  ```
+  
+  ## Response
+  The API response indicates whether the flow was successfully started for the specified group of contacts.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Start Flow for Group**
+     - Start a flow for a group of contacts by providing the flow ID and group ID.
+  
+  ## FAQ
+  None
+  
+}

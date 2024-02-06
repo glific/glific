@@ -42,3 +42,68 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  ## Get All Flows
+  
+  ## Description
+  This GraphQL API is used to retrieve details of all flows based on specified filters and options.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  None
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "query flows($filter: FlowFilter, $opts: Opts) { flows(filter: $filter, opts: $opts) { id uuid name versionNumber flowType keywords lastPublishedAt lastChangedAt } }",
+          "variables": {
+              "opts": {
+                  "limit": 2,
+                  "offset": 0,
+                  "order": "ASC"
+              },
+              "filter": {
+                  "name": "Workflow"
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "opts": {
+      "limit": 2,
+      "offset": 0,
+      "order": "ASC"
+    },
+    "filter": {
+      "name": "Workflow"
+    }
+  }
+  ```
+  ## Response
+  The API response includes details of all flows based on the specified filters and options, including their ID, UUID, name, version number, flow type, keywords, last published timestamp, and last changed timestamp.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Get All Flows**
+     - Retrieve details of all flows based on specified filters and options.
+  
+  ## FAQ
+  
+  ### Flows Query
+  1. **How can I retrieve details of all flows?**
+     - You can retrieve details of all flows by using the `flows` query and specifying any desired filters and options.
+}

@@ -40,3 +40,64 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Delete a Flow
+  
+  ## Description
+  This GraphQL API is used to delete a flow identified by its ID.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  None
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation updateFlow($id: ID!, $input:FlowInput!) { updateFlow(id: $id, input: $input) { flow { id name keywords } errors { key message } } }",
+          "variables": {
+              "id": "1975",
+              "input": {
+                  "name": "updated name",
+                  "keywords": ["testing"]
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "id": "1975",
+    "input": {
+      "name": "updated name",
+      "keywords": ["testing"]
+    }
+  }
+  ```
+  
+  ## Response
+  The API response includes details of the updated flow, including its ID, name, and keywords.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Delete a Flow**
+     - Update a flow with new name and keywords.
+  
+  ## FAQ
+  
+  ### Deleting a flow
+  1. **How can I delete a flow?**
+     - Deleting a flow is not directly supported by this API. Instead, you can update the flow's status or remove it from visibility using other GraphQL mutations provided by your API.
+  
+}

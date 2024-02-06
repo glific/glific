@@ -32,3 +32,56 @@ body:graphql:vars {
     "id": 10
   }
 }
+
+docs {
+  # Export a Flow
+  
+  ## Description
+  This GraphQL API is used to export a flow identified by its ID.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  None
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation exportFlow($id: ID!) { publishFlow(id: $id) { export_data errors { key message } } }",
+          "variables": {
+              "id": 10
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "id": 10
+  }
+  ```
+  
+  ## Response
+  The API response includes the exported data of the flow.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Export a Flow**
+     - Export a flow identified by its ID.
+  
+  ## FAQ
+  
+  ### Exporting a flow
+  1. **How do I export a flow?**
+     - You can export a flow by providing its ID to the `publishFlow` mutation. The exported data will be included in the response.
+  
+}

@@ -33,3 +33,86 @@ body:graphql:vars {
     "contactId": "2"
   }
 }
+
+docs {
+  # Start Flow for a Contact
+  
+  ## Description
+  This GraphQL API is used to start a flow for a specific contact.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter   | Type    | Description                                |
+  |-------------|---------|--------------------------------------------|
+  | `flowId`    | ID      | The ID of the flow to be started.          |
+  | `contactId` | ID      | The ID of the contact for which the flow will be started. |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation startContactFlow($flowId: ID!, $contactId: ID!) { startContactFlow(flowId: $flowId, contactId: $contactId) { success errors { key message } } }",
+          "variables": {
+              "flowId": "1",
+              "contactId": "2"
+          }
+      }'
+  ```
+  ## Request Variables
+  ```json
+  {
+    "flowId": "1",
+    "contactId": "2"
+  }
+  ```
+  
+  ## Response
+  
+  ### Success Response
+  ```json
+  {
+    "data": {
+      "startContactFlow": {
+        "success": true,
+        "errors": []
+      }
+    }
+  }
+  ```
+  
+  ### Error Response
+  ```json
+  {
+    "data": {
+      "startContactFlow": {
+        "success": false,
+        "errors": [
+          {
+            "key": "ERROR_KEY",
+            "message": "Error message details."
+          }
+        ]
+      }
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Start Flow for a Contact**
+     - Start a flow for a specific contact identified by its ID.
+  
+  ## FAQ
+  None
+  
+}

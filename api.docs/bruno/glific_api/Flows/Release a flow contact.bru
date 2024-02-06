@@ -23,3 +23,52 @@ body:graphql {
     }
   }
 }
+
+docs {
+  # Release a Flow Contact
+  
+  ## Description
+  This GraphQL API is used to retrieve details of a flow by providing its ID.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  - `id`: The ID of the flow to retrieve details for.
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "query flowGet($id: ID!) { flowGet(id: $id) { id name } }",
+          "variables": {
+              "id": "FLOW_ID"
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "id": "FLOW_ID"
+  }
+  ```
+  
+  ## Response
+  The API response includes the details of the specified flow, such as its ID and name.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Retrieve Flow Details**
+     - Retrieve details of a flow by providing its ID.
+  
+  ## FAQ
+  None
+}
