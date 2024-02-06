@@ -6,7 +6,8 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
 
   alias Glific.{
     Flows.Translate.Translate,
-    Settings
+    Partners,
+    Repo
   }
 
   require Logger
@@ -18,23 +19,16 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
 
   ## Examples
 
-      iex> Glific.Flows.Translate.GoogleTranslate.translate(["thank you for joining", "correct answer"], "en", "hi")
+      iex> Glific.Flows.Translate.GoogleTranslate.translate(["thank you for joining", "correct answer"], "English", "Hindi")
       {:ok, ["शामिल होने के लिए धन्यवाद", "सही जवाब"]}
   """
   @spec translate([String.t()], String.t(), String.t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
   def translate(strings, src, dst) do
-    organization_id = Glific.Repo.get_organization_id()
+    language_code = locale_label_map()
 
-    language_labels = Settings.locale_label_map(organization_id)
-
-    reversed_language_labels =
-      Enum.reduce(language_labels, %{}, fn {key, value}, acc ->
-        Map.put(acc, value, key)
-      end)
-
-    src_lang_code = Map.get(reversed_language_labels, src, src)
-    tar_lang_code = Map.get(reversed_language_labels, dst, dst)
+    src_lang_code = Map.get(language_code, src, src)
+    tar_lang_code = Map.get(language_code, dst, dst)
 
     languages = %{"source" => src_lang_code, "target" => tar_lang_code}
 
@@ -70,5 +64,13 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
         Logger.error("Error translating: #{error} String: #{strings}")
         ["Could not translate, Try again"]
     end
+  end
+
+  @spec locale_label_map :: %{String.t() => String.t()}
+  defp locale_label_map do
+    Repo.get_organization_id()
+    |> Partners.organization()
+    |> Map.get(:languages)
+    |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.label, language.locale) end)
   end
 end
