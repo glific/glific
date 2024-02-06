@@ -36,7 +36,7 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
     src_lang_code = Map.get(reversed_language_labels, src, src)
     tar_lang_code = Map.get(reversed_language_labels, dst, dst)
 
-    languages = %{"source" => src_lang_code, "target" => tar_lang_code} |> IO.inspect()
+    languages = %{"source" => src_lang_code, "target" => tar_lang_code}
 
     strings
     |> Translate.check_large_strings()
