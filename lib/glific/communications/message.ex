@@ -187,7 +187,7 @@ defmodule Glific.Communications.Message do
   end
 
   @doc """
-  Callback when we receive a message from whats app
+  Callback when we receive a message from whatsapp
   """
   @spec receive_message(map(), atom()) :: :ok | {:error, String.t()}
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do

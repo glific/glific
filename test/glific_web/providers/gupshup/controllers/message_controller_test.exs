@@ -115,6 +115,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert_raise RuntimeError, fn -> post(conn, "/gupshup", message_params) end
     end
 
+    @tag :gup
     test "Incoming text message should be stored in the database",
          %{conn: conn, message_params: message_params} do
       conn = post(conn, "/gupshup", message_params)
