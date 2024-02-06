@@ -24,7 +24,8 @@ defmodule Glific.Reports do
   def get_kpi(kpi, org_id, date_range, opts \\ []) do
     Repo.put_process_state(org_id)
 
-    get_count_query(kpi, org_id)
+    get_count_query(kpi)
+    |> remove_default_contacts(org_id, kpi)
     |> add_timestamps(kpi, opts, date_range)
     |> where([q], q.organization_id == ^org_id)
     |> Repo.all()
@@ -51,100 +52,104 @@ defmodule Glific.Reports do
     ]
   end
 
-  @spec remove_default_contacts(Ecto.Query.t(), non_neg_integer()) :: Ecto.Query.t()
-  defp remove_default_contacts(query, org_id) do
+  @spec remove_default_contacts(Ecto.Query.t(), non_neg_integer(), atom()) :: Ecto.Query.t()
+  defp remove_default_contacts(query, org_id, kpi)
+       when kpi in [
+              :valid_contact_count,
+              :invalid_contact_count,
+              :opted_in_contacts_count,
+              :opted_out_contacts_count,
+              :non_opted_contacts_count,
+              :bsp_status
+            ] do
     org = Partners.get_organization!(org_id)
 
     query
-    |> where([q], not like(q.phone, ^("#{Contacts.simulator_phone_prefix}%")))
+    |> where([q], not like(q.phone, ^"#{Contacts.simulator_phone_prefix()}%"))
     |> where([q], q.id != ^org.contact_id)
   end
 
-  @spec get_count_query(atom(), non_neg_integer()) :: Ecto.Query.t()
-  defp get_count_query(:valid_contact_count, org_id) do
+  defp remove_default_contacts(query, _, _), do: query
+
+  @spec get_count_query(atom()) :: Ecto.Query.t()
+  defp get_count_query(:valid_contact_count) do
     Contact
     |> select([q], count(q.id))
     |> where([q], q.status == "valid")
-    |> remove_default_contacts(org_id)
   end
 
-  defp get_count_query(:invalid_contact_count, org_id) do
+  defp get_count_query(:invalid_contact_count) do
     Contact
     |> select([q], count(q.id))
     |> where([q], q.status == "invalid")
-    |> remove_default_contacts(org_id)
   end
 
-  defp get_count_query(:opted_in_contacts_count, org_id) do
+  defp get_count_query(:opted_in_contacts_count) do
     Contact
     |> select([q], count(q.id))
     |> where([q], not is_nil(q.optin_time))
-    |> remove_default_contacts(org_id)
   end
 
-  defp get_count_query(:opted_out_contacts_count, org_id) do
+  defp get_count_query(:opted_out_contacts_count) do
     Contact
     |> select([q], count(q.id))
     |> where([q], not is_nil(q.optout_time))
-    |> remove_default_contacts(org_id)
   end
 
-  defp get_count_query(:non_opted_contacts_count, org_id) do
+  defp get_count_query(:non_opted_contacts_count) do
     Contact
     |> select([q], count(q.id))
     |> where([q], is_nil(q.optin_time))
     |> where([q], is_nil(q.optout_time))
-    |> remove_default_contacts(org_id)
   end
 
-  defp get_count_query(:bsp_status, org_id) do
+  defp get_count_query(:bsp_status) do
     Contact
     |> group_by([c], c.bsp_status)
     |> select([c], [c.bsp_status, count(c.id)])
-    |> remove_default_contacts(org_id)
   end
 
-  defp get_count_query(:monthly_error_count, _org_id) do
+  defp get_count_query(:monthly_error_count) do
     Message
     |> select([q], count(q.id))
     |> where([q], fragment("? != '{}'", q.errors))
   end
 
-  defp get_count_query(:critical_notification_count, _org_id) do
+  defp get_count_query(:critical_notification_count) do
     Notification
     |> select([q], count(q.id))
     |> where([q], q.severity == "Critical")
   end
 
-  defp get_count_query(:warning_notification_count, _org_id) do
+  defp get_count_query(:warning_notification_count) do
     Notification
     |> select([q], count(q.id))
     |> where([q], q.severity == "Warning")
   end
 
-  defp get_count_query(:information_notification_count, _org_id) do
+  defp get_count_query(:information_notification_count) do
     Notification
     |> select([q], count(q.id))
     |> where([q], q.severity == "Information")
   end
 
-  defp get_count_query(:active_flow_count, _org_id) do
+  defp get_count_query(:active_flow_count) do
     FlowContext
     |> select([q], count(q.id))
     |> where([q], is_nil(q.completed_at))
   end
 
-  defp get_count_query(:inbound_messages_count, _org_id), do: select(Stat, [q], sum(q.inbound))
+  defp get_count_query(:inbound_messages_count), do: select(Stat, [q], sum(q.inbound))
 
-  defp get_count_query(:outbound_messages_count, _org_id), do: select(Stat, [q], sum(q.outbound))
+  defp get_count_query(:outbound_messages_count), do: select(Stat, [q], sum(q.outbound))
 
-  defp get_count_query(:hsm_messages_count, _org_id), do: select(Stat, [q], sum(q.hsm))
+  defp get_count_query(:hsm_messages_count), do: select(Stat, [q], sum(q.hsm))
 
-  defp get_count_query(:flows_started, _org_id), do: select(Stat, [q], sum(q.flows_started))
+  defp get_count_query(:flows_started), do: select(Stat, [q], sum(q.flows_started))
 
-  defp get_count_query(:flows_completed, _org_id), do: select(Stat, [q], sum(q.flows_completed))
+  defp get_count_query(:flows_completed), do: select(Stat, [q], sum(q.flows_completed))
 
-  defp get_count_query(:conversation_count, _org_id), do: select(Stat, [q], sum(q.conversations))
+  defp get_count_query(:conversation_count), do: select(Stat, [q], sum(q.conversations))
 
   @spec add_timestamps(Ecto.Query.t(), atom(), [{atom(), any()}], map()) :: Ecto.Query.t()
   defp add_timestamps(query, kpi, _opts, date_range)
@@ -337,7 +342,7 @@ defmodule Glific.Reports do
   @doc false
   @spec get_contact_data(non_neg_integer(), map()) :: list()
   def get_contact_data(org_id, date_range) do
-    get_count_query(:bsp_status, org_id)
+    get_count_query(:bsp_status)
     |> where([q], q.organization_id == ^org_id)
     |> where([q], q.inserted_at >= ^date_range.start_day)
     |> where([q], q.inserted_at <= ^date_range.end_day)
