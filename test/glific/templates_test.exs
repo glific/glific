@@ -7,6 +7,7 @@ defmodule Glific.TemplatesTest do
     Mails.MailLog,
     Partners,
     Providers.Gupshup,
+    Providers.Gupshup.PartnerAPI,
     Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
     Settings,
@@ -540,6 +541,12 @@ defmodule Glific.TemplatesTest do
         end
 
       assert resp == "Invalid response"
+
+      # need explicit cleanup, since the test raises error (and should be), so auto cleanup won't happen
+      PartnerAPI.delete_local_resource(
+        "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg",
+        attrs.shortcode
+      )
     end
 
     test "create_session_template/1 for HSM button template should submit it for approval",

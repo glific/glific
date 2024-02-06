@@ -56,3 +56,5 @@ npm-debug.log
 
 # don't commit mnesia files
 /Mnesia*
+
+template-asset*
