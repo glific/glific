@@ -224,7 +224,9 @@ defmodule Glific.Flags do
   """
   @spec get_auto_translation_enabled_for_google_trans(map()) :: boolean
   def get_auto_translation_enabled_for_google_trans(organization) do
-    FunWithFlags.enabled?(:is_auto_translation_enabled_for_google_trans, for: %{organization_id: organization.id})
+    FunWithFlags.enabled?(:is_auto_translation_enabled_for_google_trans,
+      for: %{organization_id: organization.id}
+    )
   end
 
   @doc """
