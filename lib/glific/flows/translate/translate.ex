@@ -7,8 +7,8 @@ defmodule Glific.Flows.Translate.Translate do
   """
 
   alias Glific.{
-    Flows.Translate.OpenAI,
-    Flows.Translate.GoogleTranslate
+    Flows.Translate.GoogleTranslate,
+    Flows.Translate.OpenAI
   }
 
   @doc """
