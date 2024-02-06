@@ -6,6 +6,11 @@ defmodule Glific.Flows.Translate.Translate do
   translation API provider is
   """
 
+  alias Glific.{
+    Flows.Translate.OpenAI,
+    Flows.Translate.GoogleTranslate
+  }
+
   @doc """
   Lets define the behavior callback that everyone should follow
   """
@@ -25,10 +30,10 @@ defmodule Glific.Flows.Translate.Translate do
   defp impl(organization) do
     cond do
       get_auto_translation_enabled_for_open_ai(organization) ->
-        Glific.Flows.Translate.OpenAI
+        OpenAI
 
       get_auto_translation_enabled_for_google_trans(organization) ->
-        Glific.Flows.Translate.GoogleTranslate
+        GoogleTranslate
 
       true ->
         Application.get_env(:glific, :adaptors)[:translators]
