@@ -29,10 +29,10 @@ defmodule Glific.Flows.Translate.Translate do
 
   defp impl(organization) do
     cond do
-      get_auto_translation_enabled_for_open_ai(organization) ->
+      get_open_ai_auto_translation_enabled(organization) ->
         OpenAI
 
-      get_auto_translation_enabled_for_google_trans(organization) ->
+      get_google_auto_translation_enabled(organization) ->
         GoogleTranslate
 
       true ->
@@ -40,13 +40,13 @@ defmodule Glific.Flows.Translate.Translate do
     end
   end
 
-  defp get_auto_translation_enabled_for_google_trans(organization) do
+  defp get_google_auto_translation_enabled(organization) do
     # Retrieve the flag value from the organization
-    Map.get(organization, :is_auto_translation_enabled_for_google_trans, false)
+    Map.get(organization, :is_google_auto_translation_enabled, false)
   end
 
-  defp get_auto_translation_enabled_for_open_ai(organization) do
-    Map.get(organization, :is_auto_translation_enabled_for_open_ai, false)
+  defp get_open_ai_auto_translation_enabled(organization) do
+    Map.get(organization, :is_open_ai_auto_translation_enabled, false)
   end
 
   @doc """
