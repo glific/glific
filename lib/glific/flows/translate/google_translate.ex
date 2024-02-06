@@ -4,25 +4,12 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
   """
   @behaviour Glific.Flows.Translate.Translate
 
-  alias Glific.Flows.Translate.Translate
-  require Logger
-
-  @language_codes %{
-    "English" => "en",
-    "Hindi" => "hi",
-    "Tamil" => "ta",
-    "Kannada" => "kn",
-    "Malayalam" => "ml",
-    "Telugu" => "te",
-    "Odia" => "or",
-    "Assamese" => "as",
-    "Gujarati" => "gu",
-    "Bengali" => "bn",
-    ~c"Punjabi" => "pa",
-    "Marathi" => "mr",
-    "Urdu" => "ur",
-    "Spanish" => "es"
+  alias Glific.{
+    Flows.Translate.Translate,
+    Settings
   }
+
+  require Logger
 
   @doc """
   Translate a list of strings from language 'src' to language 'dst'.
@@ -37,9 +24,19 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
   @spec translate([String.t()], String.t(), String.t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
   def translate(strings, src, dst) do
-    src_lang_code = Map.get(@language_codes, src, src)
-    tar_lang_code = Map.get(@language_codes, dst, dst)
-    languages = %{"source" => src_lang_code, "target" => tar_lang_code}
+    organization_id = Glific.Repo.get_organization_id()
+
+    language_labels = Settings.locale_label_map(organization_id)
+
+    reversed_language_labels =
+      Enum.reduce(language_labels, %{}, fn {key, value}, acc ->
+        Map.put(acc, value, key)
+      end)
+
+    src_lang_code = Map.get(reversed_language_labels, src, src)
+    tar_lang_code = Map.get(reversed_language_labels, dst, dst)
+
+    languages = %{"source" => src_lang_code, "target" => tar_lang_code} |> IO.inspect()
 
     strings
     |> Translate.check_large_strings()
