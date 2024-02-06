@@ -34,7 +34,12 @@ defmodule Glific.Flows.Translate.Translate do
         OpenAI.translate(strings, src, dst)
 
       GoogleTranslate ->
-        language_code = Settings.locale_label_map(organization.id)
+        language = Settings.locale_label_map(organization.id)
+
+        language_code =
+          Enum.reduce(language, %{}, fn {key, value}, acc ->
+            Map.put(acc, value, key)
+          end)
 
         src_lang_code = Map.get(language_code, src, src)
         dst_lang_code = Map.get(language_code, dst, dst)
@@ -43,8 +48,6 @@ defmodule Glific.Flows.Translate.Translate do
       _ ->
         Simple.translate(strings, src, dst)
     end
-
-    impl(organization).translate(strings, src, dst)
   end
 
   defp impl(organization) do
