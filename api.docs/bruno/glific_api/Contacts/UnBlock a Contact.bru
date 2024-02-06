@@ -35,3 +35,60 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # UnBlock a Contact
+  
+  ## Description
+  This GraphQL API is used to unblock a contact.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  None
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation updateContact($id: ID!, $input:ContactInput!) { updateContact(id: $id, input: $input) { contact { id phone status } } }",
+          "variables": {
+              "id": "5",
+              "input": {
+                  "status": "VALID"
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "id": "5",
+    "input": {
+      "status": "VALID"
+    }
+  }
+  ```
+  
+  ## Response
+  The API response includes the details of the contact after unblocking, including its ID, phone number, and status.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: UnBlock a Contact**
+     - Unblock a contact.
+  
+  ## FAQ
+  1. **Why would I unblock a contact?**
+     - You might unblock a contact to restore their ability to receive communication or access certain services, particularly if their previous block was temporary or due to a misunderstanding.
+  
+}

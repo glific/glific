@@ -47,3 +47,67 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Create a Contact
+  
+  ## Description
+  This GraphQL API is used to create a new contact with specified details.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter | Type        | Description                         |
+  |-----------|-------------|-------------------------------------|
+  | `input`   | ContactInput| Input data for creating a contact.   |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation createContact($input: ContactInput!) { createContact(input: $input) { contact { id name optinTime optoutTime phone bspStatus status tags { id label } } errors { key message } } }",
+          "variables": {
+              "input": {
+                  "name": "This is a new contact for this example",
+                  "phone": "9876543232"
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "input": {
+      "name": "This is a new contact for this example",
+      "phone": "9876543232"
+    }
+  }
+  ```
+  ## Response
+  The API response includes the details of the created contact and any encountered errors.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Create a Contact**
+     - Create a new contact with specified details.
+  
+  ## FAQ
+  1. **Input Data**
+     - **Q:** What data do I need to provide to create a contact?
+     - **A:** Use the `input` parameter with the required fields for creating a contact.
+  
+  2. **Error Handling**
+     - **Q:** How are errors handled during contact creation?
+     - **A:** Check the `errors` field in the response for any encountered errors.
+  
+}

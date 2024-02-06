@@ -43,3 +43,64 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Other Filters on Contacts
+  
+  ## Description
+  This GraphQL API allows you to apply additional filters to retrieve contacts based on specific criteria, such as including certain groups or tags.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter | Type           | Description                                                              |
+  |-----------|----------------|--------------------------------------------------------------------------|
+  | `filter`  | ContactFilter  | Filters to apply for contact retrieval.                                  |
+  | `opts`    | Opts           | Options for ordering, limiting, and offsetting results.                  |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "query contacts($filter: ContactFilter, $opts: Opts) { contacts(filter: $filter, opts: $opts) { id name groups { id } tags { id } } }",
+          "variables": {
+              "filter": {
+                  "includeGroups": [1, 2],
+                  "includeTags": [1]
+              }
+          }
+      }'
+  ```
+  ## Request Variables
+  ```json
+  {
+    "filter": {
+      "includeGroups": [1, 2],
+      "includeTags": [1]
+    }
+  }
+  ```
+  
+  ## Response
+  The API response includes details of contacts that meet the specified filter criteria, including their ID, name, and associated groups and tags.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Filter Contacts by Groups and Tags**
+     - Retrieve contacts that belong to specific groups and have certain tags included.
+  
+  ## FAQ
+  1. **Why would I filter contacts by groups and tags?**
+     - Filtering contacts by groups and tags allows for more targeted and personalized communication, ensuring that messages are delivered to the right audience based on their interests or characteristics.
+  
+  
+}

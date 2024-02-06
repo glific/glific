@@ -28,3 +28,67 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Count All Contact History
+  
+  ## Description
+  This GraphQL API is used to retrieve the count of contact history based on specified filters.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter | Type                    | Description                                |
+  |-----------|-------------------------|--------------------------------------------|
+  | `filter`  | ContactsHistoryFilter  | Filters to apply for counting contact history.|
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "query countContactHistory($filter: ContactsHistoryFilter) { countContactHistory(filter: $filter) }",
+          "variables": {
+              "filter": {
+                  "contact_id": 1
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "filter": {
+      "contact_id": 1
+    }
+  }
+  ```
+  
+  ## Response
+  The API response includes the count of contact history based on the specified filter.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Count Contact History**
+     - Retrieve the count of contact history based on specified filters.
+  
+  **FAQ**
+  1. **Filter Contact History**
+     - **Q:** How can I filter contact history?
+     - **A:** Use the `filter` parameter to specify conditions for counting contact history.
+  
+  2. **Authorization**
+     - **Q:** Do I need to authenticate for this operation?
+     - **A:** No authentication is required (`auth: none`) for this operation.
+  
+  
+}

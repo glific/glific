@@ -33,3 +33,62 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Get All Blocked Contacts
+  
+  ## Description
+  This GraphQL API is used to retrieve all blocked contacts.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter | Type           | Description                                    |
+  |-----------|----------------|------------------------------------------------|
+  | `filter`  | ContactFilter  | Filters to apply for contact retrieval.        |
+  | `opts`    | Opts           | Options for ordering, limiting, and offsetting results.|
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "query contacts($filter: ContactFilter, $opts: Opts) { contacts(filter: $filter, opts: $opts) { id phone status } }",
+          "variables": {
+              "filter": {
+                  "status": "BLOCKED"
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  
+  ```json
+  {
+    "filter": {
+      "status": "BLOCKED"
+    }
+  }
+  ```
+  
+  ## Response
+  The API response includes details of all blocked contacts, including their ID, phone number, and status.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Get All Blocked Contacts**
+     - Retrieve details of all blocked contacts.
+  
+  ## FAQ
+  None
+  
+}
