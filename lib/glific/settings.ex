@@ -5,6 +5,7 @@ defmodule Glific.Settings do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Partners,
     Repo,
     Settings.Language
   }
@@ -174,7 +175,7 @@ defmodule Glific.Settings do
   @spec locale_label_map(non_neg_integer) :: %{String.t() => String.t()}
   def locale_label_map(organization_id) do
     organization_id
-    |> Glific.Partners.organization()
+    |> Partners.organization()
     |> Map.get(:languages)
     |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.locale, language.label) end)
   end
@@ -220,10 +221,9 @@ defmodule Glific.Settings do
   """
   @spec get_language_code(non_neg_integer) :: %{String.t() => String.t()}
   def get_language_code(organization_id) do
-    _language_locale =
-      locale_label_map(organization_id)
-      |> Enum.reduce(%{}, fn {key, value}, acc ->
-        Map.put(acc, value, key)
-      end)
+    organization_id
+    |> Partners.organization()
+    |> Map.get(:languages)
+    |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.label, language.locale) end)
   end
 end
