@@ -913,11 +913,12 @@ defmodule Glific.Partners do
 
       if credential.is_active do
         GupshupContacts.fetch_opted_in_contacts(credential)
+
         set_bsp_app_id(organization, "gupshup")
+      else
+        {:ok, credential}
       end
     end
-
-    {:ok, credential}
   end
 
   defp credential_update_callback(organization, credential, "gupshup_enterprise") do
@@ -1207,9 +1208,9 @@ defmodule Glific.Partners do
   Set BSP APP id whenever we update the bsp credentials.
   """
   @spec set_bsp_app_id(Organization.t(), String.t()) :: any()
-  def set_bsp_app_id(org, "gupshup" = shortcode) do
+  def set_bsp_app_id(org, "gupshup") do
     # restricting this function  for BSP only
-    {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: shortcode, group: "bsp"})
+    {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup", group: "bsp"})
 
     {:ok, bsp_cred} =
       Repo.fetch_by(Credential, %{provider_id: provider.id, organization_id: org.id})
@@ -1220,15 +1221,20 @@ defmodule Glific.Partners do
     updated_secrets = Map.put(bsp_cred.secrets, "app_id", app_id)
     attrs = %{secrets: updated_secrets, organization_id: org.id}
 
-    {:ok, _credential} =
+    {:ok, credential} =
       bsp_cred
       |> Credential.changeset(attrs)
       |> Repo.update()
 
     remove_organization_cache(org.id, org.shortcode)
+    {:ok, credential}
   end
 
-  def set_bsp_app_id(org, _shortcode), do: org
+  def set_bsp_app_id(org, shortcode) do
+    {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: shortcode, group: "bsp"})
+
+    Repo.fetch_by(Credential, %{provider_id: provider.id, organization_id: org.id})
+  end
 
   @doc """
   Get a List for org data
