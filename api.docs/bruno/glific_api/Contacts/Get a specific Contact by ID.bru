@@ -92,6 +92,47 @@ docs {
   
   ## Response
   The API response includes details of the specific contact, such as ID, name, opt-in time, opt-out time, phone number, status, tags, last message timestamp, language, custom fields, settings, and contact history.
+  ```json
+  {
+    "data": {
+      "contact": {
+        "contact": {
+          "fields": "{\"name\":{\"value\":\"default\",\"type\":\"string\",\"inserted_at\":\"2020-08-28T15:34:49.192659Z\"},\"age_group\":{\"value\":\"19 or above\",\"type\":\"string\",\"inserted_at\":\"2020-08-28T15:34:55.657740Z\"}}",
+          "id": "5",
+          "language": {
+            "label": "Hindi"
+          },
+          "lastMessageAt": "2020-08-28T13:15:19Z",
+          "name": "Default receiver",
+          "optinTime": "2020-08-28T13:15:19Z",
+          "optoutTime": null,
+          "phone": "917834811231",
+          "bspStatus": "SESSION_AND_HSM",
+          "settings": null,
+          "status": "VALID",
+          "tags": [],
+          "history": [
+            {
+              "eventLabel": "All contact flows are ended.",
+              "eventMeta": "{}",
+              "eventType": "contact_flow_ended_all"
+            },
+            {
+              "eventLabel": "Flow (Contact History Flows) started for the contact",
+              "eventMeta": "{\"flow_name\":\"Contact History Flows\",\"flow_id\":14,\"context_id\":6}",
+              "eventType": "contact_flow_started"
+            },
+            {
+              "eventLabel": "Value for new_field is updated to Value 1",
+              "eventMeta": "{\"value\":\"Value 1\",\"old_value\":{\"value\":\"value 2\",\"type\":\"string\",\"label\":\"new_field\",\"inserted_at\":\"2021-12-02T09:12:12.007578Z\"},\"new_value\":\"Value 1\",\"label\":\"new_field\",\"field\":\"new_field\"}",
+              "eventType": "contact_fields_updated"
+            }
+          ]
+        }
+      }
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.

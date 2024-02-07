@@ -63,6 +63,23 @@ docs {
   | `filter`  | ContactFilter  | Filters to apply for contact retrieval.                                  |
   | `opts`    | Opts           | Options for ordering, limiting, and offsetting results.                  |
   
+  ## Filtering Options
+  
+  | Parameter      | Type            | Description                                   |
+  | -------------- | --------------- | --------------------------------------------- |
+  | `includeGroups`  | [ID]            | List of group IDs to include in the results.  |
+  | `includeTags`    | [ID]            | List of tag IDs to include in the results.    |
+  
+  ## Opts Parameters
+  
+  | Parameter | Type            | Description                                                    |
+  | --------- | --------------- | -------------------------------------------------------------- |
+  | `limit`     | Int             | The maximum number of results to return.                      |
+  | `offset`    | Int             | The offset from where to start returning results.             |
+  | `order`     | SortOrder       | The sorting order for the results (`ASC` or `DESC`).           |
+  | `orderWith` | String          | Field to order the results by.                                |
+  
+  
   ## Request Example
   ```bash
   curl -X POST {{api_url}} \
@@ -90,6 +107,47 @@ docs {
   
   ## Response
   The API response includes details of contacts that meet the specified filter criteria, including their ID, name, and associated groups and tags.
+  ```json
+  {
+    "data": {
+      "contacts": [
+        {
+          "groups": [
+            {
+              "id": "1"
+            },
+            {
+              "id": "2"
+            }
+          ],
+          "id": "1",
+          "name": "Glific Admin",
+          "phone": "917834811114",
+          "tags": [
+            {
+              "id": "1"
+            }
+          ]
+        },
+        {
+          "groups": [
+            {
+              "id": "1"
+            }
+          ],
+          "id": "2",
+          "name": "Default receiver",
+          "phone": "917834811231",
+          "tags": [
+            {
+              "id": "1"
+            }
+          ]
+        }
+      ]
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
@@ -99,8 +157,7 @@ docs {
      - Retrieve contacts that belong to specific groups and have certain tags included.
   
   ## FAQ
-  1. **Why would I filter contacts by groups and tags?**
-     - Filtering contacts by groups and tags allows for more targeted and personalized communication, ensuring that messages are delivered to the right audience based on their interests or characteristics.
+  None
   
   
 }

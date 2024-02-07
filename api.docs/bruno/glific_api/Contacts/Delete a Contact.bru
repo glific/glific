@@ -72,9 +72,34 @@ docs {
   
   ## Response
   The API response includes any encountered errors during the deletion process.
+  ```json
+  {
+    "data": {
+      "deleteContact": {
+        "errors": null
+      }
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  In case of errors, all the above functions return an error object like the below
+  
+  ```json
+  {
+    "data": {
+      "deleteContact": {
+        "errors": [
+          {
+            "key": "Elixir.Glific.Contacts.Contact 26",
+            "message": "Resource not found"
+          }
+        ]
+      }
+    }
+  }
+  ```
   
   ## Use Cases
   1. **Use Case 1: Delete a Contact**

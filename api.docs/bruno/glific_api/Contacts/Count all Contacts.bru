@@ -47,6 +47,20 @@ docs {
   |-----------|----------------|--------------------------------------------|
   | `filter`  | ContactFilter  | Filters to apply for counting contacts.    |
   
+  ## Filtering Options for Contacts
+  
+  | Field           | Type                      | Description                                              |
+  | --------------- | ------------------------- | -------------------------------------------------------- |
+  | `bspStatus`     | ContactProviderStatusEnum | Filter by the status of the contact provider.           |
+  | `dateRange`     | DateRangeInput            | Filter by a range of dates.                             |
+  | `includeGroups` | [ID]                      | Include contacts belonging to specified groups.         |
+  | `includeTags`   | [ID]                      | Include contacts with specified tags.                   |
+  | `name`          | String                    | Filter by contact name.                                 |
+  | `phone`         | String                    | Filter by contact phone number.                         |
+  | `status`        | ContactStatusEnum         | Filter by contact status.                               |
+  | `term`          | String                    | Filter by a search term.                                |
+  
+  
   ## Request Example
   ```bash
   curl -X POST {{api_url}} \
@@ -73,6 +87,13 @@ docs {
   
   ## Response
   The API response includes the count of contacts based on the specified filter.
+  ```json
+  {
+    "data": {
+      "countContacts": 6
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
@@ -84,10 +105,7 @@ docs {
   ## FAQ
   1. **Filter Contacts**
      - **Q:** How can I filter contacts?
-     - **A:** Use the `filter` parameter to specify conditions for counting contacts.
+     - **A:** Use the `filter` parameter to specify conditions for counting contacts. You can see the table for all filtering options.
   
-  2. **Authorization**
-     - **Q:** Do I need to authenticate for this operation?
-     - **A:** No authentication is required (`auth: none`) for this operation.
   
 }

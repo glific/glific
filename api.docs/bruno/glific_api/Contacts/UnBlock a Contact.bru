@@ -79,6 +79,20 @@ docs {
   
   ## Response
   The API response includes the details of the contact after unblocking, including its ID, phone number, and status.
+  ```json
+  {
+    "data": {
+      "updateContact": {
+        "contact": {
+          "name": "This is a updated contact for this example",
+          "phone": "7739920221",
+          "status": "VALID"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.

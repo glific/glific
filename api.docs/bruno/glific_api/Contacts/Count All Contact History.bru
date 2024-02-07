@@ -47,6 +47,16 @@ docs {
   |-----------|-------------------------|--------------------------------------------|
   | `filter`  | ContactsHistoryFilter  | Filters to apply for counting contact history.|
   
+  ## Filtering Options for Contacts History
+  
+  | Field        | Type  | Description                                    |
+  | ------------ | ----- | ---------------------------------------------- |
+  | `contactId`  | ID    | Filter by the unique identifier of the contact. |
+  | `eventLabel` | String| Filter by the label associated with the event. |
+  | `eventType`  | String| Filter by the type of event.                   |
+  | `profileId`  | ID    | Filter by the unique identifier of the profile associated with the event. |
+  
+  
   ## Request Example
   ```bash
   curl -X POST {{api_url}} \
@@ -73,6 +83,13 @@ docs {
   
   ## Response
   The API response includes the count of contact history based on the specified filter.
+  ```json
+  {
+    "data": {
+      "countContactHistory": 3
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
@@ -85,10 +102,6 @@ docs {
   1. **Filter Contact History**
      - **Q:** How can I filter contact history?
      - **A:** Use the `filter` parameter to specify conditions for counting contact history.
-  
-  2. **Authorization**
-     - **Q:** Do I need to authenticate for this operation?
-     - **A:** No authentication is required (`auth: none`) for this operation.
   
   
 }

@@ -53,6 +53,24 @@ docs {
   | `filter`  | ContactFilter  | Filters to apply for contact retrieval.        |
   | `opts`    | Opts           | Options for ordering, limiting, and offsetting results.|
   
+  ## Filter Options for Contacts
+  
+  | Field          | Type                        | Description                                       |
+  | -------------- | --------------------------- | ------------------------------------------------- |
+  | `status `        | ContactStatusEnum           | Filter by contact status. Should be set to `BLOCKED` here.                      |
+                      
+  
+  ## Options for Contacts Query
+  
+  | Field          | Type       | Default | Description                                     |
+  | -------------- | ---------- | ------- | ----------------------------------------------- |
+  | `limit `         | Int        |         | The maximum number of contacts to return.       |
+  | `offset  `       | Int        | 0       | The offset from where to start returning.       |
+  | `order `         | SortOrder  | "ASC"   | The sorting order for the results.              |
+  | `orderWith `     | String     |         | Specify a field to order the results by.        |
+  
+  
+  
   ## Request Example
   ```bash
   curl -X POST {{api_url}} \
@@ -80,6 +98,19 @@ docs {
   
   ## Response
   The API response includes details of all blocked contacts, including their ID, phone number, and status.
+  ```json
+  {
+    "data": {
+      "contacts": [
+        {
+          "id": "5",
+          "phone": "7739920221",
+          "status": "BLOCKED"
+        }
+      ]
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.

@@ -66,6 +66,20 @@ docs {
   |-----------|-------------|-------------------------------------|
   | `input`   | ContactInput| Input data for creating a contact.   |
   
+  ## Input Fields
+  
+  | Field           | Type                      | Description                                         |
+  | --------------- | ------------------------- | --------------------------------------------------- |
+  |`activeProfileId`| ID                        | The ID of the active profile associated with the contact. |
+  |`bspStatus`      | ContactProviderStatusEnum | The status of the contact provider.                |
+  |`fields`         | Json                      | Additional fields associated with the contact.      |
+  | `languageId`    | ID                        | The ID of the language associated with the contact. |
+  |`name`          | String                    | The name of the contact.                            |
+  | `phone`         | String                    | The phone number of the contact.                    |
+  | `settings `       | Json                      | Settings associated with the contact.               |
+  | `status `         | ContactStatusEnum         | The status of the contact.                          |
+  
+  
   ## Request Example
   ```bash
   curl -X POST {{api_url}} \
@@ -93,6 +107,25 @@ docs {
   ```
   ## Response
   The API response includes the details of the created contact and any encountered errors.
+  ```json
+  {
+    "data": {
+      "createContact": {
+        "contact": {
+          "id": "15",
+          "name": null,
+          "optinTime": null,
+          "optoutTime": null,
+          "phone": "9876543232",
+          "bspStatus": "SESSION",
+          "status": null,
+          "tags": []
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
@@ -104,7 +137,7 @@ docs {
   ## FAQ
   1. **Input Data**
      - **Q:** What data do I need to provide to create a contact?
-     - **A:** Use the `input` parameter with the required fields for creating a contact.
+     - **A:** Use the `input` parameter with the required fields for creating a contact. The input table has all fields.
   
   2. **Error Handling**
      - **Q:** How are errors handled during contact creation?

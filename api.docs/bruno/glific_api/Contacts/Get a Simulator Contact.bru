@@ -50,6 +50,24 @@ docs {
   ```
   ## Response
   The API response includes the details of the simulator contact, such as ID and name.
+  ```json
+  {
+    "data": {
+      "simulatorGet": {
+        "id": "2",
+        "name": "Simulator"
+      }
+    }
+  }
+  
+  OR if no simulator is available
+  
+  {
+    "data": {
+      "simulatorGet": null
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
