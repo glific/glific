@@ -198,6 +198,7 @@ defmodule Glific.Communications.Message do
     {:ok, contact} =
       message_params.sender
       |> Map.put(:organization_id, organization_id)
+      |> Map.put(:provider, message_params[:provider])
       |> Contacts.maybe_create_contact()
 
     if Contacts.contact_blocked?(contact),

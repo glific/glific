@@ -269,6 +269,7 @@ defmodule Glific.Contacts do
 
   """
   @spec update_contact(Contact.t(), map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+
   def update_contact(%Contact{} = contact, attrs) do
     if has_permission?(contact.id) do
       if simulator_block?(contact, attrs) do
@@ -421,11 +422,13 @@ defmodule Glific.Contacts do
         end
 
       contact ->
-        if contact.name != sender.name do
-          # the contact name has changed, so we need to update it
-          update_contact(contact, %{name: sender.name})
-        else
-          {:ok, contact}
+        # If either the sender name have changed or the provider is maytapi we need to update the contact
+        case get_contact_update_attrs(contact, sender) do
+          nil ->
+            {:ok, contact}
+
+          attrs ->
+            update_contact(contact, attrs)
         end
     end
   end
@@ -997,4 +1000,19 @@ defmodule Glific.Contacts do
         query
     end)
   end
+
+  @spec get_contact_update_attrs(Contact.t(), map()) :: map() | nil
+  def get_contact_update_attrs(
+        %Contact{} = _contact,
+        %{name: sender_name, provider: "maytapi"} = _sender
+      ) do
+    %{name: sender_name, contact_type: "WABA+WA"}
+  end
+
+  def get_contact_update_attrs(%Contact{name: name} = _contact, %{name: sender_name} = _sender)
+      when name != sender_name do
+    %{name: sender_name}
+  end
+
+  def get_contact_update_attrs(%Contact{}, _), do: nil
 end

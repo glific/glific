@@ -145,6 +145,115 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
                get_in(message_params, ["payload", "sender", "phone"])
     end
 
+    @tag :gup
+    test "Updating the contacts due to sender contact already existing", %{
+      conn: conn,
+      message_params: message_params
+    } do
+      conn_bak = conn
+      # handling a message from gupshup, so that the phone number will be already existing
+      # in contacts table.
+      conn = post(conn, "/gupshup", message_params)
+      assert conn.halted
+      bsp_message_id = get_in(message_params, ["payload", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:receiver, :sender, :media])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
+      assert message.sender.last_message_at != nil
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(message_params, ["payload", "sender", "phone"])
+
+      # second message by same sender with same name via gupshup, so no updates
+      conn = assign(conn_bak, :organization_id, 1)
+
+      message_params =
+        message_params
+        |> put_in(["payload", "type"], "text")
+        |> put_in(["payload", "id"], Faker.String.base64(36))
+
+      conn = post(conn, "/gupshup", message_params)
+      assert conn.halted
+      bsp_message_id = get_in(message_params, ["payload", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
+      assert message.sender.last_message_at != nil
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(message_params, ["payload", "sender", "phone"])
+
+      assert message.contact.contact_type == "WABA"
+
+      # third message by same sender with different name via gupshup, so name updates
+      conn = assign(conn_bak, :organization_id, 1)
+
+      message_params =
+        message_params
+        |> put_in(["payload", "type"], "text")
+        |> put_in(["payload", "id"], Faker.String.base64(36))
+        |> put_in(["payload", "sender", "name"], "Sumit")
+
+      conn = post(conn, "/gupshup", message_params)
+      assert conn.halted
+      bsp_message_id = get_in(message_params, ["payload", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
+      assert message.sender.last_message_at != nil
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(message_params, ["payload", "sender", "phone"])
+
+      assert message.contact.contact_type == "WABA"
+      assert message.contact.name == "Sumit"
+    end
+
     test "Incoming text for blocked contact will not be store in the database",
          %{conn: conn, message_params: message_params} do
       bsp_message_id = Ecto.UUID.generate()
