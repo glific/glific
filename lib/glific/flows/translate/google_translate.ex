@@ -53,7 +53,7 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
 
       {:error, error} ->
         Logger.error("Error translating: #{error} String: #{strings}")
-        ["Could not translate, Try again"]
+        ""
     end
   end
 end
