@@ -28,7 +28,7 @@ docs {
   # Release a Flow Contact
   
   ## Description
-  This GraphQL API is used to retrieve details of a flow by providing its ID.
+  This GraphQL API is releases a flow for the logged in user if one exists. The system also releases the flow when it has been idle for more than 10 minutes and there is a request for a flow.
   
   ## Base URL
   `{{api_url}}`
@@ -37,7 +37,9 @@ docs {
   (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
   
   ## Parameters
-  - `id`: The ID of the flow to retrieve details for.
+  | Parameter | Type                               | Default  | Description |
+  | --------- | ---------------------------------- | -------- | ----------- |
+  | `id`       | ID       | required |    Id of flow to be released.         |
   
   ## Request Example
   ```bash
@@ -45,7 +47,11 @@ docs {
       -H "Authorization: {{auth_token}}" \
       -H "Content-Type: application/json" \
       -d '{
-          "query": "query flowGet($id: ID!) { flowGet(id: $id) { id name } }",
+          "query": "query flowRelease {
+    flowRelease {
+      id
+    }
+  }",
           "variables": {
               "id": "FLOW_ID"
           }
@@ -60,14 +66,20 @@ docs {
   ```
   
   ## Response
-  The API response includes the details of the specified flow, such as its ID and name.
+  ```json
+  {
+    "data": {
+      "flowRelease": null
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
   
   ## Use Cases
-  1. **Use Case 1: Retrieve Flow Details**
-     - Retrieve details of a flow by providing its ID.
+  1. **Use Case 1: Release a Flow**
+     - Releases a flow for the logged in user if one exists. 
   
   ## FAQ
   None

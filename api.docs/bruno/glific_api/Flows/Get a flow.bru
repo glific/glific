@@ -37,7 +37,10 @@ docs {
   (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
   
   ## Parameters
-  None
+  | Parameter | Type                               | Default  | Description |
+  | --------- | ---------------------------------- | -------- | ----------- |
+  | `id`       | ID       | required |    Id of flow to be fetched.         |
+  
   
   ## Request Example
   ```bash
@@ -60,6 +63,24 @@ docs {
   ```
   ## Response
   The API response includes details of the retrieved flow, such as its ID and name.
+  ```json
+  {
+    "data": {
+      "flowGet": {
+        "id": "2",
+        "name": "Activity"
+      }
+    }
+  }
+  
+  OR if no flow is available
+  
+  {
+    "data": {
+      "flowGet": null
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.

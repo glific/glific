@@ -46,7 +46,9 @@ docs {
   (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
   
   ## Parameters
-  None
+   Parameter | Type                  | Default  | Description |
+  | --------- | --------------------- | -------- | ----------- |
+  |` id `       |ID | required |    ID of flow to be published.         |
   
   ## Request Example
   ```bash
@@ -70,6 +72,35 @@ docs {
   
   ## Response
   The API response indicates whether the flow was successfully published or not. It includes a boolean value `success` and, in case of errors, an array of error objects containing `key` and `message` fields.
+  ```json
+  {
+    "data": {
+      "publishFlow": {
+        "errors": null,
+        "success": true
+      }
+    }
+  }
+  ```
+  
+  In case of errors, all the above functions return an error object like the below
+  
+  ```json
+  {
+    "data": {
+      "publishFlow": {
+        "errors": [
+          {
+            "key": "Flow UUID: 9a2788e1-26cd-44d0-8868-d8f0552a08a6",
+            "message": "Resource not found"
+          }
+        ],
+        "success": null
+      }
+    }
+  }
+  ```
+  
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.

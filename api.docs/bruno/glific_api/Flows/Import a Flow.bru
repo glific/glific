@@ -48,7 +48,9 @@ docs {
   (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
   
   ## Parameters
-  None
+  | Parameter | Type                     | Default  | Description |
+  | --------- | ------------------------ | -------- | ----------- |
+  | `flow   `    | Json| required | JSON representation of flow to be imported.            |
   
   ## Request Example
   ```bash
@@ -72,6 +74,16 @@ docs {
   
   ## Response
   The API response indicates whether the flow was successfully imported or not. It includes a boolean value `success` and, in case of errors, an array of error objects containing `key` and `message` fields.
+  ```json
+  {
+    "data": {
+      "importFlow": {
+        "errors": null,
+        "success": false
+      }
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.

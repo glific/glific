@@ -54,7 +54,9 @@ docs {
   (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
   
   ## Parameters
-  None
+  | Parameter | Type                  | Default  | Description |
+  | --------- | --------------------- | -------- | ----------- |
+  |` id `       | ID | required |      Id of flow to be deleted       |
   
   ## Request Example
   ```bash
@@ -86,6 +88,34 @@ docs {
   
   ## Response
   The API response includes details of the updated flow, including its ID, name, and keywords.
+  ```json
+  {
+    "data": {
+      "deleteFlow": {
+        "errors": null,
+        "flow": null
+      }
+    }
+  }
+  ```
+  
+  In case of errors, all the above functions return an error object like the below
+  
+  ```json
+  {
+    "data": {
+      "deleteFlow": {
+        "errors": [
+          {
+            "key": "Elixir.Glific.Flows.Flow 3",
+            "message": "Resource not found"
+          }
+        ],
+        "flow": null
+      }
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
@@ -96,8 +126,5 @@ docs {
   
   ## FAQ
   
-  ### Deleting a flow
-  1. **How can I delete a flow?**
-     - Deleting a flow is not directly supported by this API. Instead, you can update the flow's status or remove it from visibility using other GraphQL mutations provided by your API.
-  
+  None
 }

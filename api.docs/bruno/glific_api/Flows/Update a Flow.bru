@@ -62,6 +62,22 @@ docs {
   | `name`    | (Optional) The new name for the flow.             |
   | `keywords`| (Optional) The updated list of keywords for flow. |
   
+  ## Input Parameters in the flow
+  
+  | Input Field       | Type       | Description                                                   |
+  | ----------------- | ---------- | ------------------------------------------------------------- |
+  | `addRoleIds`      | [ID]       | IDs of roles to add to the flow.                              |
+  | `deleteRoleIds`   | [ID]       | IDs of roles to remove from the flow.                          |
+  | `description`     | String     | Description of the flow.                                      |
+  | `ignoreKeywords`  | Boolean    | Whether to ignore keywords in the flow.                       |
+  | `isActive`        | Boolean    | Whether the flow is active.                                   |
+  | `isBackground`    | Boolean    | Whether the flow runs in the background.                      |
+  | `isPinned`        | Boolean    | Whether the flow is pinned.                                   |
+  | `keywords`        | [String]   | Keywords associated with the flow.                            |
+  | `name`            | String     | Name of the flow.                                             |
+  | `tagId`           | ID         | ID of the tag associated with the flow (enclosed in ``).      |
+  
+  
   ## Request Example
   ```bash
   curl -X POST {{api_url}} \
@@ -93,6 +109,38 @@ docs {
   
   ## Response
   The API response includes details of the updated flow, including its ID, name, and keywords, if the update was successful. Any encountered errors during the update process are also provided.
+  ```json
+  {
+    "data": {
+      "updateFlow": {
+        "errors": null,
+        "flow": {
+          "id": "1",
+          "name": "updated name",
+          "keywords": ["test", "testing"]
+        }
+      }
+    }
+  }
+  ```
+  
+  In case of errors, above functions return an error object like the below
+  
+  ```json
+  {
+    "data": {
+      "updateFlow": {
+        "errors": [
+          {
+            "key": "keywords",
+            "message": "global keywords [test, testing] are already taken"
+          }
+        ],
+        "flow": null
+      }
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.

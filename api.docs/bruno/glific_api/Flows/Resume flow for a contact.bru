@@ -81,6 +81,35 @@ docs {
   
   ## Response
   The API response includes information about the success of the operation and any encountered errors.
+  ```json
+  {
+    "data": {
+      "startContactFlow": {
+        "errors": null,
+        "success": true
+      }
+    }
+  }
+  ```
+  
+  In case of errors, all the above functions return an error object like the below
+  
+  ```json
+  {
+    "data": {
+      "startContactFlow": {
+        "errors": [
+          {
+            "key": "contact",
+            "message": "does not have any active flows awaiting results."
+          }
+        ],
+        "success": null
+      }
+    }
+  }
+  ```
+  
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
