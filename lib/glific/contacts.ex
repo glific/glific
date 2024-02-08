@@ -227,6 +227,25 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  Gets a single contact by phone number.
+
+  ## Examples
+
+      iex> get_contact_by_phone!("9876543210_1")
+      %Contact{}
+
+      iex> get_contact("123")
+      nil
+  """
+  @spec get_contact_by_phone(String.t()) :: Contact.t()
+  def get_contact_by_phone(phone) do
+    Contact
+    |> where([c], c.phone == ^phone)
+    |> Repo.add_permission(&Contacts.add_permission/2)
+    |> Repo.one()
+  end
+
+  @doc """
   Creates a contact.
 
   ## Examples
@@ -422,13 +441,11 @@ defmodule Glific.Contacts do
         end
 
       contact ->
-        # If either the sender name have changed or the provider is maytapi we need to update the contact
-        case get_contact_update_attrs(contact, sender) do
-          nil ->
-            {:ok, contact}
-
-          attrs ->
-            update_contact(contact, attrs)
+        if contact.name != sender.name do
+          # the contact name has changed, so we need to update it
+          update_contact(contact, %{name: sender.name})
+        else
+          {:ok, contact}
         end
     end
   end
@@ -1000,19 +1017,4 @@ defmodule Glific.Contacts do
         query
     end)
   end
-
-  @spec get_contact_update_attrs(Contact.t(), map()) :: map() | nil
-  def get_contact_update_attrs(
-        %Contact{} = _contact,
-        %{name: sender_name, provider: "maytapi"} = _sender
-      ) do
-    %{name: sender_name, contact_type: "WABA+WA"}
-  end
-
-  def get_contact_update_attrs(%Contact{name: name} = _contact, %{name: sender_name} = _sender)
-      when name != sender_name do
-    %{name: sender_name}
-  end
-
-  def get_contact_update_attrs(%Contact{}, _), do: nil
 end

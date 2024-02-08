@@ -190,7 +190,37 @@ defmodule Glific.Communications.Message do
   Callback when we receive a message from whatsapp
   """
   @spec receive_message(map(), atom()) :: :ok | {:error, String.t()}
-  def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
+  def receive_message(message_params, type \\ :text)
+
+  def receive_message(
+        %{organization_id: organization_id, provider: "maytapi"} = message_params,
+        type
+      ) do
+    Logger.info(
+      "Received group message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{message_params.bsp_message_id}'"
+    )
+
+    # The idea is to call the `do_receive_message` with a common map instead of Contact.
+    message_params.sender
+    |> Map.put(:organization_id, organization_id)
+
+    # prepare the sender from here and pass it to update_contact
+    # get contact, if not nil, then if type is WABA, then update it to WABA+WA
+    case Contacts.get_contact_by_phone(message_params.sender.phone) do
+      %Contact{contact_type: "WABA"} = contact ->
+        Contacts.update_contact(contact, %{contact_type: "WABA+WA"})
+
+      _ ->
+        :ok
+    end
+
+    :ok
+    # creates a wa_managed_phone
+
+    # pass a map that's useful for do_receive_message
+  end
+
+  def receive_message(%{organization_id: organization_id} = message_params, type) do
     Logger.info(
       "Received message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{message_params.bsp_message_id}'"
     )
