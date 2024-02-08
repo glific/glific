@@ -44,6 +44,7 @@ defmodule Glific.Groups.WhatsappGroup do
       group_names,
       fn group_name ->
         Groups.create_group(%{label: group_name, group_type: "WA", organization_id: org_id})
+        group_name
       end
     )
   end

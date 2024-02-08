@@ -6,6 +6,14 @@ defmodule Glific.Flows.Translate.Translate do
   translation API provider is
   """
 
+  alias Glific.{
+    Flags,
+    Flows.Translate.GoogleTranslate,
+    Flows.Translate.OpenAI,
+    Flows.Translate.Simple,
+    Settings
+  }
+
   @doc """
   Lets define the behavior callback that everyone should follow
   """
@@ -16,19 +24,46 @@ defmodule Glific.Flows.Translate.Translate do
   API interface for all modules to call the translate function. We'll use Elixir Config for this
   during deployment. For now, we have only one translator
   """
-  @spec translate([String.t()], String.t(), String.t()) ::
+  @spec translate([String.t()], String.t(), String.t(), map()) ::
           {:ok, [String.t()]} | {:error, String.t()}
-  def translate(strings, src, dst), do: impl().translate(strings, src, dst)
+  def translate(strings, src, dst, organization) do
+    translation_engine = impl(organization)
 
-  # defp impl, do: Application.get_env(:glific, :adaptors)[:translators]
-  defp impl, do: Application.get_env(:glific, :adaptors)[:translators]
+    case translation_engine do
+      OpenAI ->
+        OpenAI.translate(strings, src, dst)
+
+      GoogleTranslate ->
+        language_code = Settings.get_language_code(organization.id)
+
+        src_lang_code = Map.get(language_code, src, src)
+        dst_lang_code = Map.get(language_code, dst, dst)
+        GoogleTranslate.translate(strings, src_lang_code, dst_lang_code)
+
+      _ ->
+        Simple.translate(strings, src, dst)
+    end
+  end
+
+  defp impl(organization) do
+    cond do
+      Flags.get_open_ai_auto_translation_enabled(organization) ->
+        OpenAI
+
+      Flags.get_google_auto_translation_enabled(organization) ->
+        GoogleTranslate
+
+      true ->
+        Application.get_env(:glific, :adaptors)[:translators]
+    end
+  end
 
   @doc """
   Lets make a simple function to translate one string
   """
-  @spec translate_one!(String.t(), String.t(), String.t()) :: String.t()
-  def translate_one!(orig, src, dst) do
-    {:ok, result} = translate([orig], src, dst)
+  @spec translate_one!(String.t(), String.t(), String.t(), map()) :: String.t()
+  def translate_one!(orig, src, dst, organization) do
+    {:ok, result} = translate([orig], src, dst, organization)
     hd(result)
   end
 

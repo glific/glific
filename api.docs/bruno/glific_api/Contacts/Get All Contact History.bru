@@ -42,3 +42,123 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Get All Contact History
+  
+  ## Description
+  This GraphQL API is used to retrieve all contact history events based on specified filters and options.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter | Type                  | Description                                     |
+  |-----------|-----------------------|-------------------------------------------------|
+  | `filter`  | ContactsHistoryFilter| Filters to apply for contact history retrieval. |
+  | `opts`    | Opts                  | Options for ordering, limiting, and offsetting results.|
+  
+  ## Filtering options for contacts history.
+  
+  | Field      | Type    | Description                                      |
+  | ---------- | ------- | ------------------------------------------------ |
+  |`contactId` | ID      | Filter by the unique identifier of the contact. |
+  |`eventLabel` | String  | Filter by the label associated with the event.  |
+  |`eventType`  | String  | Filter by the type of event.                    |
+  |`profileId`  | ID      | Filter by the unique identifier of the profile associated with the event. |
+  
+  ## Options for sorting, limiting, and offsetting results.
+  
+  | Field     | Type       | Default | Description                                                                              |
+  | --------- | ---------- | ------- | ---------------------------------------------------------------------------------------- |
+  |`limit`    | Int        |         | The maximum number of results to return.                                                 |
+  |`offset `  | Int        | 0       | The offset from where to start returning results.                                         |
+  |`order`    | SortOrder  | "ASC"   | The sorting order for the results (`ASC` for ascending, `DESC` for descending).           |
+  |`orderWith`| String     |         | Specify a field to order the results by.                                                  |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "query ContactHistory($filter: ContactsHistoryFilter, $opts: Opts) { contactHistory(filter: $filter, opts: $opts) { eventDatetime eventLabel eventMeta eventType id insertedAt updatedAt } }",
+          "variables": {
+              "opts": {
+                  "order": "ASC",
+                  "limit": 10,
+                  "offset": 0
+              },
+              "filter": {
+                  "contactId": 1
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "opts": {
+      "order": "ASC",
+      "limit": 10,
+      "offset": 0
+    },
+    "filter": {
+      "contactId": 1
+    }
+  }
+  ```
+  ## Response
+  The API response includes details of all contact history events based on the specified filters and options, including event datetime, label, metadata, type, ID, insertion datetime, and update datetime.
+  ```json
+  {
+    "data": {
+      "contactHistory": [
+        {
+          "eventDatetime": "2021-12-07T12:12:50Z",
+          "eventLabel": "All contact flows are ended.",
+          "eventMeta": "{}",
+          "eventType": "contact_flow_ended_all",
+          "id": "106",
+          "insertedAt": "2021-12-07T12:12:51.000000Z",
+          "updatedAt": "2021-12-07T12:12:51.000000Z"
+        },
+        {
+          "eventDatetime": "2021-12-07T12:12:50Z",
+          "eventLabel": "Flow Started",
+          "eventMeta": "{\"flow\":{\"uuid\":\"3fa22108-f464-41e5-81d9-d8a298854429\",\"name\":\"Help Workflow\",\"id\":1},\"context_id\":70}",
+          "eventType": "contact_flow_started",
+          "id": "107",
+          "insertedAt": "2021-12-07T12:12:51.000000Z",
+          "updatedAt": "2021-12-07T12:12:51.000000Z"
+        },
+        {
+          "eventDatetime": "2021-12-07T12:12:50Z",
+          "eventLabel": "Flow Ended:",
+          "eventMeta": "{\"flow\":{\"uuid\":\"3fa22108-f464-41e5-81d9-d8a298854429\",\"name\":\"Help Workflow\",\"id\":1},\"context_id\":70}",
+          "eventType": "contact_flow_ended",
+          "id": "108",
+          "insertedAt": "2021-12-07T12:12:51.000000Z",
+          "updatedAt": "2021-12-07T12:12:51.000000Z"
+        }
+      ]
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Get All Contact History**
+     - Retrieve details of all contact history events based on specified filters and options.
+  
+  ## FAQ
+  None
+  
+}

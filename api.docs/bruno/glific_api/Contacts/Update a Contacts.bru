@@ -47,3 +47,83 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Update a Contact
+  
+  ## Description
+  This GraphQL API is used to update a contact's information.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  None
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation updateContact($id: ID!, $input:ContactInput!) { updateContact(id: $id, input: $input) { contact { id name bspStatus status fields settings language { label } } errors { key message } } }",
+          "variables": {
+              "id": "5",
+              "input": {
+                  "name": "This is a updated contact for this example",
+                  "fields": "{\"name\":{\"value\":\"Vikrant Wadekar\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:38.298593Z\"},\"age_group\":{\"value\":\"19 or above\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:46.623892Z\"}}",
+                  "languageId": 2
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "id": "5",
+    "input": {
+      "name": "This is a updated contact for this example",
+      "fields": "{\"name\":{\"value\":\"Vikrant Wadekar\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:38.298593Z\"},\"age_group\":{\"value\":\"19 or above\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:46.623892Z\"}}",
+      "languageId": 2
+    }
+  }
+  ```
+  
+  ## Response
+  The API response includes the details of the updated contact, including its ID, name, BSP status, status, custom fields, settings, and language label.
+  ```json
+  {
+    "data": {
+      "updateContact": {
+        "contact": {
+          "fields": "{\"name\":{\"value\":\"default\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:38.298593Z\"},\"age_group\":{\"value\":\"19 or above\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:46.623892Z\"}}",
+          "id": "5",
+          "language": {
+            "label": "English"
+          },
+          "name": "This is a updated contact for this example",
+          "bspStatus": "SESSION_AND_HSM",
+          "settings": null,
+          "status": "VALID"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Update a Contact**
+     - Update a contact's information.
+  
+  ## FAQ
+  None
+  
+}
