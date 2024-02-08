@@ -207,8 +207,8 @@ defmodule Glific.Communications.Message do
     message_params = message_params
     |> Map.put(:organization_id, organization_id)
     |> Map.put(:label, "test_label")
-    |> Map.put(:provider_id, 1) # gupshup i guess
-    |> Map.put(:api_token, "enc_token")
+    |> Map.put(:provider_id, 1) # provider id of maytapi?
+    |> Map.put(:api_token, "enc_token") # api_token of maytapi?
 
     # get contact, if not nil, then if type is WABA, then update it to WABA+WA
     case Contacts.get_contact_by_phone(message_params.sender.phone) do
@@ -219,6 +219,7 @@ defmodule Glific.Communications.Message do
         :ok
     end
 
+    # TODO Don't we need an upsert here?
     # creates a wa_managed_phone
     {:ok, _wa_managed_phone} = WAGroups.create_wa_managed_phone(message_params)
     # IO.inspect(wa_managed_phone)
@@ -246,6 +247,7 @@ defmodule Glific.Communications.Message do
   defp do_receive_message(contact, %{organization_id: organization_id} = message_params, type) do
     {:ok, contact} = Contacts.set_session_status(contact, :session)
 
+    # TODO: what will be the sender_id
     metadata = %{
       type: type,
       sender_id: contact.id,
@@ -261,6 +263,8 @@ defmodule Glific.Communications.Message do
         bsp_status: :delivered,
         status: :received
       })
+
+    # TODO: DO we need a different label for telemetry
 
     # publish a telemetry event about the message being received
     :telemetry.execute(
