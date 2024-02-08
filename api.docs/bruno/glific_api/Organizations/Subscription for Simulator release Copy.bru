@@ -20,3 +20,44 @@ body:graphql {
     simulator_release(organizationId: "1")
   }
 }
+
+docs {
+  # Subscription for Simulator Release
+  
+  ## Description
+  This GraphQL API is used to subscribe to updates on simulator releases for a specific organization.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Request Body
+  ```graphql
+  subscription organization_subscriptions {
+    simulator_release(organizationId: "1")
+  }
+  ```
+  
+  ## Response
+  The API response includes updates on simulator releases for the specified organization.
+  ```json
+  {
+    "data": {
+      "simulator_release": "{\"simulator_release\":{\"user_id\":1}"
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL subscription responses.
+  
+  ## Use Cases
+  1. **Use Case 1: Real-time Monitoring of Simulator Releases**
+     - Subscribe to simulator release updates to monitor new simulator releases for the organization in real-time.
+  
+  ## FAQ
+  1. **What information is included in the subscription response for simulator releases?**
+     - The subscription response includes JSON with "simulator_release" as name and array with key as user_id and value as id of user.
+}

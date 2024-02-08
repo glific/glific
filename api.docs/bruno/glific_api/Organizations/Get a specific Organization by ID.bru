@@ -37,3 +37,74 @@ body:graphql:vars {
     "id": 2
   }
 }
+
+docs {
+  # Get a Specific Organization by ID
+  
+  ## Description
+  This GraphQL API is used to retrieve details of a specific organization identified by its ID.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter  | Description                                    |
+  |------------|------------------------------------------------|
+  | `id`       | (Required) The ID of the organization to fetch. |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "query organization($id: ID) { organization(id: $id) { organization { id name isActive timezone defaultLanguage { id label } } } }",
+          "variables": {
+              "id": 2
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "id": 2
+  }
+  ```
+  
+  ## Response
+  The API response includes details of the specific organization identified by its ID, such as its name, activity status, timezone, and default language.
+  ```json
+  {
+    "data": {
+      "organization": {
+        "organization": {
+          "defaultLanguage": {
+            "id": "1",
+            "label": "Hindi"
+          },
+          "id": "1",
+          "name": "Default Organization",
+          "isActive": true,
+          "timezone": "Asia/Kolkata"
+        }
+      }
+    }
+  }
+  ```
+  
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Get a Specific Organization by ID**
+     - Retrieve details of a specific organization identified by its ID.
+  
+  ## FAQ
+  None
+}

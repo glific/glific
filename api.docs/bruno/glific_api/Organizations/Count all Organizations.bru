@@ -28,3 +28,77 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Count all Organizations
+  
+  ## Description
+  This GraphQL API is used to count all organizations based on specified filters.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  | Parameter  | Description                                             |
+  |------------|---------------------------------------------------------|
+  | `filter`   | (Optional) Filter criteria to apply to the organizations. |
+  
+  ## Filtering Options for Organizations
+  
+  | Input Field     | Type   | Description                                     |
+  | --------------- | ------ | ----------------------------------------------- |
+  | `defaultLanguage` | String | Filter by the default language of the organization. |
+  | `email`           | String | Filter by the email address of the organization.    |
+  | `name`            | String | Filter by the name of the organization.            |
+  | `provider`        | String | Filter by the provider of the organization.        |
+  | `shortcode`       | String | Filter by the shortcode of the organization.       |
+  
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "query countOrganizations($filter: OrganizationFilter) { countOrganizations(filter: $filter) }",
+          "variables": {
+              "filter": {
+                  "language": "Hindi"
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+      "filter": {
+          "language": "Hindi"
+      }
+  }
+  ```
+  
+  ## Response
+  The API response includes the count of all organizations based on the specified filter criteria.
+  ```json
+  {
+    "data": {
+      "countOrganizations": 2
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Count all Organizations**
+     - Retrieve the total count of organizations based on specified filter conditions.
+  
+  ## FAQ
+  1. **What filter criteria can I use to count organizations?**
+     - You can use various filter criteria provided in the filter table above.
+}
