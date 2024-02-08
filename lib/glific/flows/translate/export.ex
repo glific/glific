@@ -166,10 +166,10 @@ defmodule Glific.Flows.Translate.Export do
     language_labels
     |> Map.keys()
     |> Enum.reduce(
-      [default_text],
+      [],
       fn language, acc ->
         if language == "en" do
-          acc
+          [default_text | acc]
         else
           translation = Map.get(action_languages, language, "")
 
