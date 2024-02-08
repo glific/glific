@@ -5,6 +5,7 @@ defmodule Glific.Communications.Message do
   import Ecto.Query
   require Logger
 
+  alias Glific.WAGroups
   alias Glific.{
     Communications,
     Contacts,
@@ -201,10 +202,14 @@ defmodule Glific.Communications.Message do
     )
 
     # The idea is to call the `do_receive_message` with a common map instead of Contact.
-    message_params.sender
-    |> Map.put(:organization_id, organization_id)
 
-    # prepare the sender from here and pass it to update_contact
+    # TODO: label,  provider_id, api_token is dummy, change after the pipeline is working
+    message_params = message_params
+    |> Map.put(:organization_id, organization_id)
+    |> Map.put(:label, "test_label")
+    |> Map.put(:provider_id, 1) # gupshup i guess
+    |> Map.put(:api_token, "enc_token")
+
     # get contact, if not nil, then if type is WABA, then update it to WABA+WA
     case Contacts.get_contact_by_phone(message_params.sender.phone) do
       %Contact{contact_type: "WABA"} = contact ->
@@ -214,10 +219,11 @@ defmodule Glific.Communications.Message do
         :ok
     end
 
-    :ok
     # creates a wa_managed_phone
-
+    {:ok, _wa_managed_phone} = WAGroups.create_wa_managed_phone(message_params)
+    # IO.inspect(wa_managed_phone)
     # pass a map that's useful for do_receive_message
+    :ok
   end
 
   def receive_message(%{organization_id: organization_id} = message_params, type) do

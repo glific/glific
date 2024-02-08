@@ -40,7 +40,10 @@ defmodule Glific.Providers.Maytapi.Message do
       sender: %{
         phone: params["user"]["phone"],
         name: params["user"]["name"]
-      }
+      },
+      phone: params["receiver"],
+      phone_id: to_string(params["phone_id"]),
+      product_id: params["product_id"]
     }
   end
 

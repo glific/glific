@@ -41,6 +41,8 @@ defmodule Glific.WAGroups do
   @spec get_wa_managed_phone!(non_neg_integer()) :: WAManagedPhone.t()
   def get_wa_managed_phone!(id), do: Repo.get!(WAManagedPhone, id)
 
+  # TODO Do we need a combined unique constraint?
+
   @doc """
   Creates a wa_managed_phone.
 
@@ -57,7 +59,11 @@ defmodule Glific.WAGroups do
   def create_wa_managed_phone(attrs \\ %{}) do
     %WAManagedPhone{}
     |> WAManagedPhone.changeset(attrs)
-    |> Repo.insert()
+    |> Repo.insert(
+      on_conflict: {:replace, [:updated_at]},
+      conflict_target: [:phone],
+      returning: true
+    )
   end
 
   @doc """
