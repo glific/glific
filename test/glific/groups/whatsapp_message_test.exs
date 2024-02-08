@@ -39,15 +39,15 @@ defmodule Glific.Groups.WhatsappMessageTest do
     :ok
   end
 
-  test "sends a text message and receives status", attrs do
-    params = %{phone: "8979627508", message: "hi"}
+  test "send_text/2 sends a text message", attrs do
+    params = %{phone: "9829627508", message: "hi"}
 
     result = Message.send_text(attrs.organization_id, params)
     assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
     assert response_body == "{\"data\": \"Message sent successfully\"}"
   end
 
-  test "processes received text message correctly" do
+  test "receive_text/1 receive text message correctly" do
     params = %{
       "message" => %{"id" => "1", "text" => "Hello, World!"},
       "user" => %{"phone" => "1234567890", "name" => "John Doe"}
@@ -62,7 +62,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     assert Message.receive_text(params) == expected_result
   end
 
-  test "processes received media message correctly" do
+  test "receive_media/1 received media message" do
     params = %{
       "message" => %{
         "id" => "2",
