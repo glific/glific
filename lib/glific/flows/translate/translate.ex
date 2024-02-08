@@ -7,8 +7,11 @@ defmodule Glific.Flows.Translate.Translate do
   """
 
   alias Glific.{
+    Flags,
     Flows.Translate.GoogleTranslate,
-    Flows.Translate.OpenAI
+    Flows.Translate.OpenAI,
+    Flows.Translate.Simple,
+    Settings
   }
 
   @doc """
@@ -24,29 +27,35 @@ defmodule Glific.Flows.Translate.Translate do
   @spec translate([String.t()], String.t(), String.t(), map()) ::
           {:ok, [String.t()]} | {:error, String.t()}
   def translate(strings, src, dst, organization) do
-    impl(organization).translate(strings, src, dst)
+    translation_engine = impl(organization)
+
+    case translation_engine do
+      OpenAI ->
+        OpenAI.translate(strings, src, dst)
+
+      GoogleTranslate ->
+        language_code = Settings.get_language_code(organization.id)
+
+        src_lang_code = Map.get(language_code, src, src)
+        dst_lang_code = Map.get(language_code, dst, dst)
+        GoogleTranslate.translate(strings, src_lang_code, dst_lang_code)
+
+      _ ->
+        Simple.translate(strings, src, dst)
+    end
   end
 
   defp impl(organization) do
     cond do
-      get_auto_translation_enabled_for_open_ai(organization) ->
+      Flags.get_open_ai_auto_translation_enabled(organization) ->
         OpenAI
 
-      get_auto_translation_enabled_for_google_trans(organization) ->
+      Flags.get_google_auto_translation_enabled(organization) ->
         GoogleTranslate
 
       true ->
         Application.get_env(:glific, :adaptors)[:translators]
     end
-  end
-
-  defp get_auto_translation_enabled_for_google_trans(organization) do
-    # Retrieve the flag value from the organization
-    Map.get(organization, :is_auto_translation_enabled_for_google_trans, false)
-  end
-
-  defp get_auto_translation_enabled_for_open_ai(organization) do
-    Map.get(organization, :is_auto_translation_enabled_for_open_ai, false)
   end
 
   @doc """

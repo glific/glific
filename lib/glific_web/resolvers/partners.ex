@@ -338,9 +338,9 @@ defmodule GlificWeb.Resolvers.Partners do
              id: id,
              organization_id: current_user.organization_id
            }),
-         {:ok, credential} <-
+         {:ok, updated_credential} <-
            Partners.update_credential(credential, params) do
-      {:ok, %{credential: credential}}
+      {:ok, %{credential: updated_credential}}
     end
   end
 end
