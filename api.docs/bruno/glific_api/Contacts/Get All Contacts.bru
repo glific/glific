@@ -72,6 +72,29 @@ docs {
   | `filter`  | ContactFilter  | Filters to apply for contact retrieval.                |
   | `opts`    | Opts           | Options for ordering, limiting, and offsetting results.|
   
+  ## Filter Options for Contacts
+  
+  | Field          | Type                        | Description                                       |
+  | -------------- | --------------------------- | ------------------------------------------------- |
+  | `bspStatus`      | ContactProviderStatusEnum   | Filter by the status of the contact provider.    |
+  | `dateRange `     | DateRangeInput              | Filter by a range of dates.                      |
+  | `includeGroups`  | [ID]                        | Include contacts belonging to specified groups.  |
+  | `includeTags`    | [ID]                        | Include contacts with specified tags.            |
+  | `name  `         | String                      | Filter by contact name.                          |
+  | `phone`          | String                      | Filter by contact phone number.                  |
+  | `status  `       | ContactStatusEnum           | Filter by contact status.                        |
+  |` term `          | String                      | Filter by a search term.                         |
+  
+  ## Options for Contacts Query
+  
+  | Field          | Type       | Default | Description                                     |
+  | -------------- | ---------- | ------- | ----------------------------------------------- |
+  |` limit `         | Int        |         | The maximum number of contacts to return.       |
+  |` offset   `      | Int        | 0       | The offset from where to start returning.       |
+  |` order `         | SortOrder  | "ASC"   | The sorting order for the results.              |
+  | `orderWith `     | String     |         | Specify a field to order the results by.        |
+  
+  
   ## Request Example
   ```bash
   curl -X POST {{api_url}} \
@@ -109,6 +132,28 @@ docs {
   
   ## Response
   The API response includes details of the retrieved contacts based on the specified filters and options.
+  ```json
+  {
+    "data": {
+      "contacts": [
+        {
+          "groups": [],
+          "id": "2",
+          "name": "Default Receiver",
+          "optinTime": null,
+          "optoutTime": null,
+          "optinMethod": null,
+          "optoutMethod": null,
+          "phone": "917834811231",
+          "maskedPhone": "9178******31",
+          "bspStatus": "SESSION_AND_HSM",
+          "status": "VALID",
+          "tags": []
+        }
+      ]
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
