@@ -45,3 +45,119 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Create a Flow
+  
+  ## Description
+  This GraphQL API is used to create a new flow with specified details.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  | Parameter | Type                               | Default  | Description |
+  | --------- | ---------------------------------- | -------- | ----------- |
+  |` input `    | FlowInput | required |  Includes input to create flow.           |
+  
+  ## Input Parameters in the flow
+  
+  | Input Field       | Type       | Description                                                   |
+  | ----------------- | ---------- | ------------------------------------------------------------- |
+  | `addRoleIds`      | [ID]       | IDs of roles to add to the flow.                              |
+  | `deleteRoleIds`   | [ID]       | IDs of roles to remove from the flow.                          |
+  | `description`     | String     | Description of the flow.                                      |
+  | `ignoreKeywords`  | Boolean    | Whether to ignore keywords in the flow.                       |
+  | `isActive`        | Boolean    | Whether the flow is active.                                   |
+  | `isBackground`    | Boolean    | Whether the flow runs in the background.                      |
+  | `isPinned`        | Boolean    | Whether the flow is pinned.                                   |
+  | `keywords`        | [String]   | Keywords associated with the flow.                            |
+  | `name`            | String     | Name of the flow.                                             |
+  | `tagId`           | ID         | ID of the tag associated with the flow (enclosed in ``).      |
+  
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation ($input: FlowInput!) { createFlow(input: $input) { flow { id name keywords isActive } errors { key message } } }",
+          "variables": {
+              "input": {
+                  "keywords": [
+                      "tests",
+                      "testing"
+                  ],
+                  "name": "test workflow",
+                  "isActive": true
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "input": {
+      "keywords": [
+        "tests",
+        "testing"
+      ],
+      "name": "test workflow",
+      "isActive": true
+    }
+  }
+  ```
+  
+  ## Response
+  The API response includes details of the created flow, including its ID, name, keywords, and status.
+  ```json
+  {
+    "data": {
+      "createFlow": {
+        "errors": null,
+        "flow": {
+          "id": "12",
+          "keywords": ["tests", "testing"],
+          "name": "test workflow"
+        }
+      }
+    }
+  }
+  ```
+  
+  In case of errors, above functions return an error object like the below
+  
+  ```json
+  {
+    "data": {
+      "createFlow": {
+        "errors": [
+          {
+            "key": "name",
+            "message": "can't be blank"
+          }
+        ],
+        "flow": null
+      }
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Create a Flow**
+     - Create a new flow with specified details.
+  
+  ## FAQ
+  
+  ### Keyword Specification
+  1. **How do I specify keywords for the new flow?**
+     - Provide a list of keywords in the `keywords` field of the request variables.
+}
