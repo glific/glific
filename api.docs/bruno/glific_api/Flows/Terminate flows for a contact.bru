@@ -26,3 +26,65 @@ body:graphql {
     }
   }
 }
+
+docs {
+  # Terminate Flows for a Contact
+  
+  ## Description
+  This GraphQL API is used to terminate all active flows for a specific contact by providing the contact ID.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter   | Description                              |
+  |-------------|------------------------------------------|
+  | `contactId` | The ID of the contact to terminate flows. |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation terminateContactFlows($contactId: ID!) { terminateContactFlows(contactId: $contactId) { errors { key value } success } }",
+          "variables": {
+              "contactId": "CONTACT_ID"
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "contactId": "CONTACT_ID"
+  }
+  ```
+  
+  ## Response
+  The API response indicates whether the termination of flows for the specified contact was successful.
+  ```json
+  {
+    "success": true,
+    "errors": null
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Terminate Flows for a Contact**
+     - Terminate all active flows for a specific contact by providing the contact ID.
+  
+  ## FAQ
+  
+  ### Errors
+  1. **What errors can occur during flow termination?**
+     - Possible errors during flow termination are provided in the `errors` field of the response. These errors typically include details such as a specific key and its corresponding error message.
+  
+}
