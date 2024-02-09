@@ -40,3 +40,119 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Update a Flow
+  
+  ## Description
+  This GraphQL API is used to update the details of a specific flow identified by its ID.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter | Description                                       |
+  |-----------|---------------------------------------------------|
+  | `id`      | The ID of the flow to be updated.                 |
+  | `input`   | The updated information for the flow.             |
+  | `name`    | (Optional) The new name for the flow.             |
+  | `keywords`| (Optional) The updated list of keywords for flow. |
+  
+  ## Input Parameters in the flow
+  
+  | Input Field       | Type       | Description                                                   |
+  | ----------------- | ---------- | ------------------------------------------------------------- |
+  | `addRoleIds`      | [ID]       | IDs of roles to add to the flow.                              |
+  | `deleteRoleIds`   | [ID]       | IDs of roles to remove from the flow.                          |
+  | `description`     | String     | Description of the flow.                                      |
+  | `ignoreKeywords`  | Boolean    | Whether to ignore keywords in the flow.                       |
+  | `isActive`        | Boolean    | Whether the flow is active.                                   |
+  | `isBackground`    | Boolean    | Whether the flow runs in the background.                      |
+  | `isPinned`        | Boolean    | Whether the flow is pinned.                                   |
+  | `keywords`        | [String]   | Keywords associated with the flow.                            |
+  | `name`            | String     | Name of the flow.                                             |
+  | `tagId`           | ID         | ID of the tag associated with the flow (enclosed in ``).      |
+  
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation updateFlow($id: ID!, $input:FlowInput!) { updateFlow(id: $id, input: $input) { flow { id name keywords } errors { key message } } }",
+          "variables": {
+              "id": "FLOW_ID",
+              "input": {
+                  "name": "updated name",
+                  "keywords": ["testing"]
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "id": "FLOW_ID",
+    "input": {
+      "name": "updated name",
+      "keywords": ["testing"]
+    }
+  }
+  ```
+  
+  
+  ## Response
+  The API response includes details of the updated flow, including its ID, name, and keywords, if the update was successful. Any encountered errors during the update process are also provided.
+  ```json
+  {
+    "data": {
+      "updateFlow": {
+        "errors": null,
+        "flow": {
+          "id": "1",
+          "name": "updated name",
+          "keywords": ["test", "testing"]
+        }
+      }
+    }
+  }
+  ```
+  
+  In case of errors, above functions return an error object like the below
+  
+  ```json
+  {
+    "data": {
+      "updateFlow": {
+        "errors": [
+          {
+            "key": "keywords",
+            "message": "global keywords [test, testing] are already taken"
+          }
+        ],
+        "flow": null
+      }
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Update a Flow**
+     - Update the details of a specific flow, such as its name and keywords.
+  
+  ## FAQ
+  
+  ### Errors
+  1. **What errors can occur during flow update?**
+     - Errors encountered during the update process are provided in the `errors` field of the response. These errors typically include details such as a specific key and its corresponding error message.
+  
+}

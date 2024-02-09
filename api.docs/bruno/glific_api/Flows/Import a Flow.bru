@@ -34,3 +34,67 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Import a Flow
+  
+  ## Description
+  This GraphQL API is used to import a flow using its JSON representation.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  | Parameter | Type                     | Default  | Description |
+  | --------- | ------------------------ | -------- | ----------- |
+  | `flow   `    | Json| required | JSON representation of flow to be imported.            |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation ($flow: JSON!) { importFlow(flow: $flow){ success errors { key message } } }",
+          "variables": {
+              "flow": "{\"flows\":[{\"keywords\":[\"hello\"],\"definition\":{\"vars\":[\"a941004f-adc8-43f2-b819-68eec8d1e912\"],\"uuid\":\"a941004f-adc8-43f2-b819-68eec8d1e912\",\"type\":\"messaging\",\"spec_version\":\"13.1.0\",\"revision\":1,\"nodes\":[{\"uuid\":\"59c67035-59ab-47fa-a1fd-a50978aa78c5\",\"exits\":[{\"uuid\":\"49d2775d-a658-4c74-be10-b7d605b4ea6f\",\"destination_uuid\":null}],\"actions\":[{\"uuid\":\"4d4dc0f1-9056-4bf1-a58e-df26b861088e\",\"type\":\"send_msg\",\"text\":\"hehlo\",\"quick_replies\":[],\"attachments\":[]}]}],\"name\":\"hello\",\"localization\":{},\"language\":\"base\",\"expire_after_minutes\":10080,\"_ui\":{\"nodes\":{\"59c67035-59ab-47fa-a1fd-a50978aa78c5\":{\"type\":\"execute_actions\",\"position\":{\"top\":0,\"left\":0}}}}}}],\"contact_field\":[],\"collections\":[]}"
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "flow": "{\"flows\":[{\"keywords\":[\"hello\"],\"definition\":{\"vars\":[\"a941004f-adc8-43f2-b819-68eec8d1e912\"],\"uuid\":\"a941004f-adc8-43f2-b819-68eec8d1e912\",\"type\":\"messaging\",\"spec_version\":\"13.1.0\",\"revision\":1,\"nodes\":[{\"uuid\":\"59c67035-59ab-47fa-a1fd-a50978aa78c5\",\"exits\":[{\"uuid\":\"49d2775d-a658-4c74-be10-b7d605b4ea6f\",\"destination_uuid\":null}],\"actions\":[{\"uuid\":\"4d4dc0f1-9056-4bf1-a58e-df26b861088e\",\"type\":\"send_msg\",\"text\":\"hehlo\",\"quick_replies\":[],\"attachments\":[]}]}],\"name\":\"hello\",\"localization\":{},\"language\":\"base\",\"expire_after_minutes\":10080,\"_ui\":{\"nodes\":{\"59c67035-59ab-47fa-a1fd-a50978aa78c5\":{\"type\":\"execute_actions\",\"position\":{\"top\":0,\"left\":0}}}}}}],\"contact_field\":[],\"collections\":[]}"
+  }
+  ```
+  
+  ## Response
+  The API response indicates whether the flow was successfully imported or not. It includes a boolean value `success` and, in case of errors, an array of error objects containing `key` and `message` fields.
+  ```json
+  {
+    "data": {
+      "importFlow": {
+        "errors": null,
+        "success": false
+      }
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Import a Flow**
+     - Import a flow using its JSON representation.
+  
+  ## FAQ
+  
+  ### Import using JSON representation
+  1. **How can I import a flow using its JSON representation?**
+     - You can import a flow by using the `importFlow` mutation and providing the flow's JSON representation as the input parameter.
+}
