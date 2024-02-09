@@ -26,7 +26,7 @@ defmodule Glific.Providers.Maytapi.Message do
     payload = params["message"]
 
     # lets ensure that we have a phone number
-    # sometime the gupshup payload has a blank payload
+    # sometime the maytapi payload has a blank payload
     # or maybe a simulator or some test code
     if params["user"]["phone"] in [nil, ""] do
       error = "Phone number is blank, #{inspect(payload)}"
