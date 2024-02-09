@@ -10,9 +10,9 @@ defmodule Glific.WAManagedPhonesTest do
 
     @invalid_attrs %{label: nil, phone: nil, is_active: nil, api_token: nil}
 
-    test "list_wa_managed_phones/0 returns all wa_managed_phones" do
+    test "list_wa_managed_phones/0 returns all wa_managed_phones", attrs do
       wa_managed_phone = wa_managed_phone_fixture()
-      assert WAManagedPhones.list_wa_managed_phones() == [wa_managed_phone]
+      assert WAManagedPhones.list_wa_managed_phones(%{org_id: attrs.org_id}) == [wa_managed_phone]
     end
 
     test "get_wa_managed_phone!/1 returns the wa_managed_phone with given id" do

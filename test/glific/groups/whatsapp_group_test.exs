@@ -39,7 +39,7 @@ defmodule Glific.Groups.WhatsappGroupTest do
     assert ["Expenses", "Movie Plan", "Developer Group"] ==
              WhatsappGroup.list_wa_groups(attrs.organization_id)
 
-    # when we try to enter redudandant groups again.
+    # when we try to enter redundant groups again.
     Tesla.Mock.mock(fn _env ->
       %Tesla.Env{
         status: 200,

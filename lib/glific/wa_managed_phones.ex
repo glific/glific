@@ -6,11 +6,11 @@ defmodule Glific.WAManagedPhones do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Providers.Maytapi.ApiClient,
     Repo,
     WAGroup.WAManagedPhone
   }
 
-  @spec list_wa_managed_phones() :: [WAManagedPhone.t()]
   @doc """
   Returns the list of wa_managed_phones.
 
@@ -20,8 +20,11 @@ defmodule Glific.WAManagedPhones do
       [%WAManagedPhone{}, ...]
 
   """
-  def list_wa_managed_phones do
-    Repo.all(WAManagedPhone)
+  @spec list_wa_managed_phones(map()) :: [WAManagedPhone.t()]
+  def list_wa_managed_phones(args) do
+    args
+    |> Repo.list_filter_query(WAManagedPhone, &Repo.opts_with_name/2, &Repo.filter_with/2)
+    |> Repo.all()
   end
 
   @doc """
@@ -110,5 +113,40 @@ defmodule Glific.WAManagedPhones do
   @spec change_wa_managed_phone(WAManagedPhone.t(), map()) :: Ecto.Changeset.t()
   def change_wa_managed_phone(%WAManagedPhone{} = wa_managed_phone, attrs \\ %{}) do
     WAManagedPhone.changeset(wa_managed_phone, attrs)
+  end
+
+  @doc """
+  fetches WhatsApp enabled phone added in Maytapi account
+  """
+  @spec fetch_wa_managed_phones(non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
+  def fetch_wa_managed_phones(org_id) do
+    with {:ok, secrets} <- ApiClient.fetch_credentials(org_id),
+         {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 <-
+           ApiClient.list_wa_managed_phones(org_id),
+         {:ok, wa_managed_phones} <- Jason.decode(body) do
+      Enum.each(wa_managed_phones, fn wa_managed_phone ->
+        params =
+          %{
+            label: wa_managed_phone["name"],
+            phone: wa_managed_phone["number"],
+            phone_id: wa_managed_phone["id"],
+            api_token: secrets["token"],
+            product_id: secrets["product_id"],
+            organization_id: org_id
+          }
+
+        case Repo.get_by(WAManagedPhone, %{phone: wa_managed_phone["number"]}) do
+          nil ->
+            create_wa_managed_phone(params)
+
+          _ ->
+            :ok
+        end
+
+        {:ok, "success"}
+      end)
+    else
+      _ -> {:error, "error"}
+    end
   end
 end
