@@ -467,9 +467,10 @@ defmodule Glific.Partners do
       |> set_languages()
       |> Flags.set_flow_uuid_display()
       |> Flags.set_roles_and_permission()
+      |> Flags.set_open_ai_auto_translation_enabled()
+      |> Flags.set_auto_translation_enabled_for_google_trans()
       |> Flags.set_contact_profile_enabled()
       |> Flags.set_ticketing_enabled()
-      |> Flags.set_auto_translation_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -912,11 +913,12 @@ defmodule Glific.Partners do
 
       if credential.is_active do
         GupshupContacts.fetch_opted_in_contacts(credential)
+
         set_bsp_app_id(organization, "gupshup")
+      else
+        {:ok, credential}
       end
     end
-
-    {:ok, credential}
   end
 
   defp credential_update_callback(organization, credential, "gupshup_enterprise") do
@@ -1170,7 +1172,9 @@ defmodule Glific.Partners do
       "roles_and_permission" => Flags.get_roles_and_permission(organization),
       "contact_profile_enabled" => Flags.get_contact_profile_enabled(organization),
       "ticketing_enabled" => Flags.get_ticketing_enabled(organization),
-      "auto_translation_enabled" => Flags.get_auto_translation_enabled(organization)
+      "auto_translation_enabled" =>
+        Flags.get_open_ai_auto_translation_enabled(organization) or
+          Flags.get_google_auto_translation_enabled(organization)
     }
   end
 
@@ -1204,9 +1208,9 @@ defmodule Glific.Partners do
   Set BSP APP id whenever we update the bsp credentials.
   """
   @spec set_bsp_app_id(Organization.t(), String.t()) :: any()
-  def set_bsp_app_id(org, "gupshup" = shortcode) do
+  def set_bsp_app_id(org, "gupshup") do
     # restricting this function  for BSP only
-    {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: shortcode, group: "bsp"})
+    {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup", group: "bsp"})
 
     {:ok, bsp_cred} =
       Repo.fetch_by(Credential, %{provider_id: provider.id, organization_id: org.id})
@@ -1217,15 +1221,20 @@ defmodule Glific.Partners do
     updated_secrets = Map.put(bsp_cred.secrets, "app_id", app_id)
     attrs = %{secrets: updated_secrets, organization_id: org.id}
 
-    {:ok, _credential} =
+    {:ok, credential} =
       bsp_cred
       |> Credential.changeset(attrs)
       |> Repo.update()
 
     remove_organization_cache(org.id, org.shortcode)
+    {:ok, credential}
   end
 
-  def set_bsp_app_id(org, _shortcode), do: org
+  def set_bsp_app_id(org, shortcode) do
+    {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: shortcode, group: "bsp"})
+
+    Repo.fetch_by(Credential, %{provider_id: provider.id, organization_id: org.id})
+  end
 
   @doc """
   Get a List for org data

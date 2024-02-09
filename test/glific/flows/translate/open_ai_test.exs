@@ -1,8 +1,11 @@
 defmodule Glific.Flows.Translate.OpenAITest do
   use Glific.DataCase, async: false
 
-  alias Glific.Flows.Translate.OpenAI
-  alias Glific.Flows.Translate.Translate
+  alias Glific.{
+    Flows.Translate.OpenAI,
+    Flows.Translate.Translate,
+    Seeds.SeedsDev
+  }
 
   import Tesla.Mock
 
@@ -127,8 +130,9 @@ defmodule Glific.Flows.Translate.OpenAITest do
     string = "here is the string to test"
     src = "english"
     dst = "hindi"
+    organization = SeedsDev.seed_organizations()
 
-    translated_text = Translate.translate_one!(string, src, dst)
+    translated_text = Translate.translate_one!(string, src, dst, organization)
     assert translated_text == "hindi here is the string to test english"
   end
 end

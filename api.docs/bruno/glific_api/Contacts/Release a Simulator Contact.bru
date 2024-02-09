@@ -22,3 +22,52 @@ body:graphql {
     }
   }
 }
+
+docs {
+  # Release a Simulator Contact
+  
+  ## Description
+  This GraphQL API is used to release a simulator contact. The system also releases the simulator when it has been idle for more than 10 minutes and there is a request for a simulator
+  
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  None
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "query simulatorRelease { simulatorRelease { id } }"
+      }
+    ```
+    
+  ## Response
+  The API response includes the ID of the released simulator contact.
+  ```json
+  {
+    "data": {
+      "simulatorRelease": null
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Release a Simulator Contact**
+     - Release a simulator contact.
+  
+  ## FAQ
+  None
+  
+  
+}

@@ -41,3 +41,96 @@ body:graphql:vars {
     "name": "contact name"
   }
 }
+
+docs {
+  # Optin a Contact
+  
+  ## Description
+  This GraphQL API is used to opt-in a contact using their phone number and optionally providing their name.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter | Type   | Description                       |
+  |-----------|--------|-----------------------------------|
+  | `phone`   | String | Phone number of the contact.      |
+  | `name`    | String | (Optional) Name of the contact.   |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation optinContact($phone: String!, $name: String) { optinContact(phone: $phone, name: $name) { contact { id phone name lastMessageAt optinTime bspStatus } errors { key message } } }",
+          "variables": {
+              "phone": "917834811119",
+              "name": "contact name"
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "phone": "917834811119",
+    "name": "contact name"
+  }
+  ```
+  
+  ## Response
+  
+  ### Success Response (JSON)
+  ```json
+  {
+    "data": {
+      "optinContact": {
+        "contact": {
+          "id": "CONTACT_ID",
+          "phone": "917834811119",
+          "name": "contact name",
+          "lastMessageAt": "2024-02-06T10:15:30Z",
+          "optinTime": "2024-02-06T10:15:30Z",
+          "bspStatus": "ACTIVE"
+        },
+        "errors": []
+      }
+    }
+  }
+  ```
+  
+  ### Error Response (JSON)
+  ```json
+  {
+    "data": {
+      "optinContact": {
+        "contact": null,
+        "errors": [
+          {
+            "key": "ERROR_KEY",
+            "message": "Error message details."
+          }
+        ]
+      }
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Optin a Contact**
+     - Opt-in a contact using their phone number and optionally providing their name.
+  
+  ## FAQ
+  1. **Why would I opt-in a contact?**
+     - Opting in a contact allows you to receive their consent for communication, ensuring compliance with regulations and fostering a positive user experience.
+  
+  
+}
