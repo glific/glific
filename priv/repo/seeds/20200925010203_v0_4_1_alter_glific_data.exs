@@ -139,7 +139,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
 
     add_maytapi()
 
-    add_maytapi()
   end
 
   defp add_dialogflow do
