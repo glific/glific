@@ -26,8 +26,9 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
     params
     |> Maytapi.Message.receive_text()
     |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> Map.put(:provider, "maytapi")
+    |> Map.put(:message_type, "WA")
     |> update_sender_details()
-    # TODO: prolly we dont need to have this provider key, try to have the all required data from the controller itself
     |> Communications.Message.receive_message()
 
     handler(conn, params, "text handler")
@@ -77,7 +78,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
 
   @spec update_sender_details(map()) :: map()
   defp update_sender_details(message_params) do
-    put_in(message_params, [:sender, :contact_type], "WABA+WA")
+    put_in(message_params, [:sender, :contact_type], "WA")
     |> put_in([:sender, :provider], "maytapi")
   end
 end

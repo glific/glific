@@ -1,16 +1,11 @@
 defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
   use GlificWeb.ConnCase
 
-  # TODO: Tests for checking the message_type and contact_type
-  # TODO: Test for updating contacts
-  # TODO: Handle "we should not create a contact" if maytapi
-
   alias Glific.{
     Messages.Message,
     Repo,
     Seeds.SeedsDev
   }
-
 
   @message_request_params %{
     "app" => "Glific Mock App",
@@ -34,7 +29,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
   @text_message_webhook %{
     "product_id" => "5351f38b-c0ae-49c4-9e43-427cb901b0f7",
-    "phone_id" => 42908,
+    "phone_id" => 42_908,
     "message" => %{
       "type" => "text",
       "text" => "It's like a mini-sprint- Almost half of the team is there",
@@ -55,7 +50,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     "reply" =>
       "https =>//api.maytapi.com/api/5351f38b-c0ae-49c4-9e43-427cb901b0f5/42906/sendMessage",
     "productId" => "5351f38b-c0ae-49c4-9e43-427cb901b0f7",
-    "phoneId" => 42908
+    "phoneId" => 42_908
   }
 
   setup do
@@ -132,7 +127,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
                get_in(@text_message_webhook, ["user", "phone"])
 
       # contact_type and message_type should be updated for wa groups
-      assert message.contact.contact_type == "WABA+WA"
+      assert message.contact.contact_type == "WA"
       assert message.message_type == "WA"
     end
 

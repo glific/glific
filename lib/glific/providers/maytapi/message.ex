@@ -40,8 +40,7 @@ defmodule Glific.Providers.Maytapi.Message do
       sender: %{
         phone: params["user"]["phone"],
         name: params["user"]["name"]
-      },
-      message_type: "WA"
+      }
     }
   end
 

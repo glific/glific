@@ -186,47 +186,6 @@ defmodule Glific.Communications.Message do
     fetch_and_publish_message_status(bsp_message_id)
   end
 
-  # @doc """
-  # Callback when we receive a message from whatsapp
-  # """
-  # @spec receive_message(map(), atom()) :: :ok | {:error, String.t()}
-  # def receive_message(message_params, type \\ :text)
-
-  # def receive_message(
-  #       %{organization_id: organization_id, provider: "maytapi"} = message_params,
-  #       type
-  #     ) do
-  #   Logger.info(
-  #     "Received group message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{message_params.bsp_message_id}'"
-  #   )
-
-  #   # The idea is to call the `do_receive_message` with a common map instead of Contact.
-
-  #   # TODO: label,  provider_id, api_token is dummy, change after the pipeline is working
-  #   message_params = message_params
-  #   |> Map.put(:organization_id, organization_id)
-  #   |> Map.put(:label, "test_label")
-  #   |> Map.put(:provider_id, 1) # provider id of maytapi?
-  #   |> Map.put(:api_token, "enc_token") # api_token of maytapi?
-
-  #   # get contact, if not nil, then if type is WABA, then update it to WABA+WA
-  #   case Contacts.get_contact_by_phone(message_params.sender.phone) do
-  #     %Contact{contact_type: "WABA"} = contact ->
-  #       Contacts.update_contact(contact, %{contact_type: "WABA+WA"})
-
-  #     _ ->
-  #       :ok
-  #   end
-
-  #   # TODO Don't we need an upsert here?
-  #   # creates a wa_managed_phone
-  #   # when user add credentials
-  #   {:ok, _wa_managed_phone} = WAGroups.create_wa_managed_phone(message_params)
-  #   # IO.inspect(wa_managed_phone)
-  #   # pass a map that's useful for do_receive_message
-  #   :ok
-  # end
-
   @doc """
   Callback when we receive a message from whats app
   """
@@ -266,11 +225,9 @@ defmodule Glific.Communications.Message do
         status: :received
       })
 
-    # TODO: DO we need a different label for telemetry
-
     # publish a telemetry event about the message being received
     :telemetry.execute(
-      [:glific, :message, :received],
+      get_receive_msg_telemetry_event(message_params),
       # currently we are not measuring latency
       %{duration: 1},
       metadata
@@ -464,4 +421,11 @@ defmodule Glific.Communications.Message do
   end
 
   defp process_errors(_message, _errors, _code), do: nil
+
+  @spec get_receive_msg_telemetry_event(map()) :: list()
+  defp get_receive_msg_telemetry_event(%{provider: "maytapi"} = _message_params) do
+    [:glific, :wa_message, :received]
+  end
+
+  defp get_receive_msg_telemetry_event(_), do: [:glific, :message, :received]
 end

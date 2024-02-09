@@ -2,11 +2,10 @@ defmodule Glific.WAGroupsTest do
   use Glific.DataCase
 
   alias Glific.WAGroups
+  import Glific.WAManagedPhonesFixtures
 
   describe "wa_managed_phones" do
     alias Glific.WAGroup.WAManagedPhone
-
-    import Glific.WAGroupsFixtures
 
     @invalid_attrs %{label: nil, phone: nil, is_active: nil, api_token: nil}
 
