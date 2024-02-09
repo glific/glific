@@ -20,3 +20,45 @@ body:graphql {
     attachmentsEnabled
   }
 }
+
+docs {
+  # Check for Attachment Support
+  
+  ## Description
+  This GraphQL API is used to check if attachment support is enabled for the given user.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Request Body
+  ```json
+  {
+    "query": "query attachmentsEnabled { attachmentsEnabled }"
+  }
+  ```
+  ## Response
+  The API response includes a boolean value indicating whether attachment support is enabled for the given user.
+  ```json
+  {
+    "data": {
+      "attachmentsEnabled": true
+    }
+  }
+  ```
+  
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the response field for the attachmentsEnabled value.
+  
+  ## Use Cases
+  1. **Use Case 1: Check Attachment Support**
+     - Determine whether the user has attachment support enabled to decide whether to allow file uploads or not.
+  
+  ## FAQ
+  None
+  
+  
+}

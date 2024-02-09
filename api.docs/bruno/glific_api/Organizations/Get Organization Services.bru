@@ -29,3 +29,65 @@ body:graphql {
     }
   }
 }
+
+docs {
+  # Get Organization Services
+  
+  ## Description
+  This GraphQL API is used to retrieve the services available for an organization.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  (No specific parameters required for this request.)
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "query organizationServices() {
+    bigquery
+    dialogflow
+    googleCloudStorage
+    funWithFlags
+    flowUuidDisplay
+    errors {
+      key
+      message
+    }
+  }"
+      }'
+  ```
+  
+  ## Response
+  The API response includes details of the services available for the organization, such as BigQuery, Dialogflow, Google Cloud Storage, Fun with Flags, and Flow UUID Display.
+  ```json
+  {
+    "data": {
+      "organizationServices": {
+        "bigquery": true,
+        "dialogflow": false,
+        "funWithFlags": true,
+        "flowUuidDisplay": false,
+        "googleCloudStorage": true
+      }
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Get Organization Services**
+     - Retrieve details of the services available for the organization.
+  
+  ## FAQ
+  None provided at the moment.
+}
