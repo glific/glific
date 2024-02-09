@@ -6,13 +6,11 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
   # TODO: Handle "we should not create a contact" if maytapi
 
   alias Glific.{
-    Contacts.Contact,
     Messages.Message,
     Repo,
     Seeds.SeedsDev
   }
 
-  import Ecto.Query
 
   @message_request_params %{
     "app" => "Glific Mock App",
@@ -105,41 +103,37 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     end
 
     @tag :maytapi_msg_controller
-    test "Incoming text message should be stored in the database", %{conn: conn} do
+    test "Incoming text message should be stored in the database, new contact", %{conn: conn} do
       conn = post(conn, "/maytapi", @text_message_webhook)
       assert conn.halted
 
-      # The phone number is new, but we dont add a new contact for wa groups
-      assert nil ==
-               Contact
-               |> where([contact], contact.phone == ^@text_message_webhook["user"]["phone"])
-               |> Repo.one()
+      bsp_message_id = get_in(@text_message_webhook, ["message", "id"])
 
-      # TODO uncomment when the do_receive_message impl is done
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
 
-      # bsp_message_id = get_in(@text_message_webhook, ["message", "id"])
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
 
-      # {:ok, message} =
-      #   Repo.fetch_by(Message, %{
-      #     bsp_message_id: bsp_message_id,
-      #     organization_id: conn.assigns[:organization_id]
-      #   })
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
 
-      # message = Repo.preload(message, [:receiver, :sender, :media])
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
 
-      # # Provider message id should be updated
-      # assert message.bsp_status == :delivered
-      # assert message.flow == :inbound
+      assert message.sender.last_message_at != nil
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
 
-      # # ensure the message has been received by the mock
-      # assert_receive :received_message_to_process
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(@text_message_webhook, ["user", "phone"])
 
-      # assert message.sender.last_message_at != nil
-      # assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
-
-      # # Sender should be stored into the db
-      # assert message.sender.phone ==
-      #          get_in(@text_message_webhook, ["user", "phone"])
+      # contact_type and message_type should be updated for wa groups
+      assert message.contact.contact_type == "WABA+WA"
+      assert message.message_type == "WA"
     end
 
     @tag :maytapi_msg_controller
@@ -187,38 +181,31 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       assert conn.halted
 
-      assert %Contact{contact_type: "WABA+WA"} =
-               Contact
-               |> where([contact], contact.phone == ^@text_message_webhook["user"]["phone"])
-               |> Repo.one()
+      bsp_message_id = get_in(text_webhook_params, ["message", "id"])
 
-      # TODO uncomment when the do_receive_message impl is done
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
 
-      # bsp_message_id = get_in(text_webhook_params, ["message", "id"])
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
 
-      # {:ok, message} =
-      #   Repo.fetch_by(Message, %{
-      #     bsp_message_id: bsp_message_id,
-      #     organization_id: conn.assigns[:organization_id]
-      #   })
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
 
-      # message = Repo.preload(message, [:receiver, :sender, :media, :contact])
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
 
-      # # Provider message id should be updated
-      # assert message.bsp_status == :delivered
-      # assert message.flow == :inbound
+      assert message.sender.last_message_at != nil
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
 
-      # # ensure the message has been received by the mock
-      # assert_receive :received_message_to_process
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(text_webhook_params, ["user", "phone"])
 
-      # assert message.sender.last_message_at != nil
-      # assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
-
-      # # Sender should be stored into the db
-      # assert message.sender.phone ==
-      #          get_in(text_webhook_params, ["user", "phone"])
-
-      # assert message.contact.contact_type == "WABA+WA"
+      assert message.contact.contact_type == "WABA+WA"
     end
   end
 end

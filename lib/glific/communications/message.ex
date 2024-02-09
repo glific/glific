@@ -5,7 +5,6 @@ defmodule Glific.Communications.Message do
   import Ecto.Query
   require Logger
 
-  alias Glific.WAGroups
   alias Glific.{
     Communications,
     Contacts,
@@ -187,47 +186,52 @@ defmodule Glific.Communications.Message do
     fetch_and_publish_message_status(bsp_message_id)
   end
 
+  # @doc """
+  # Callback when we receive a message from whatsapp
+  # """
+  # @spec receive_message(map(), atom()) :: :ok | {:error, String.t()}
+  # def receive_message(message_params, type \\ :text)
+
+  # def receive_message(
+  #       %{organization_id: organization_id, provider: "maytapi"} = message_params,
+  #       type
+  #     ) do
+  #   Logger.info(
+  #     "Received group message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{message_params.bsp_message_id}'"
+  #   )
+
+  #   # The idea is to call the `do_receive_message` with a common map instead of Contact.
+
+  #   # TODO: label,  provider_id, api_token is dummy, change after the pipeline is working
+  #   message_params = message_params
+  #   |> Map.put(:organization_id, organization_id)
+  #   |> Map.put(:label, "test_label")
+  #   |> Map.put(:provider_id, 1) # provider id of maytapi?
+  #   |> Map.put(:api_token, "enc_token") # api_token of maytapi?
+
+  #   # get contact, if not nil, then if type is WABA, then update it to WABA+WA
+  #   case Contacts.get_contact_by_phone(message_params.sender.phone) do
+  #     %Contact{contact_type: "WABA"} = contact ->
+  #       Contacts.update_contact(contact, %{contact_type: "WABA+WA"})
+
+  #     _ ->
+  #       :ok
+  #   end
+
+  #   # TODO Don't we need an upsert here?
+  #   # creates a wa_managed_phone
+  #   # when user add credentials
+  #   {:ok, _wa_managed_phone} = WAGroups.create_wa_managed_phone(message_params)
+  #   # IO.inspect(wa_managed_phone)
+  #   # pass a map that's useful for do_receive_message
+  #   :ok
+  # end
+
   @doc """
-  Callback when we receive a message from whatsapp
+  Callback when we receive a message from whats app
   """
   @spec receive_message(map(), atom()) :: :ok | {:error, String.t()}
-  def receive_message(message_params, type \\ :text)
-
-  def receive_message(
-        %{organization_id: organization_id, provider: "maytapi"} = message_params,
-        type
-      ) do
-    Logger.info(
-      "Received group message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{message_params.bsp_message_id}'"
-    )
-
-    # The idea is to call the `do_receive_message` with a common map instead of Contact.
-
-    # TODO: label,  provider_id, api_token is dummy, change after the pipeline is working
-    message_params = message_params
-    |> Map.put(:organization_id, organization_id)
-    |> Map.put(:label, "test_label")
-    |> Map.put(:provider_id, 1) # provider id of maytapi?
-    |> Map.put(:api_token, "enc_token") # api_token of maytapi?
-
-    # get contact, if not nil, then if type is WABA, then update it to WABA+WA
-    case Contacts.get_contact_by_phone(message_params.sender.phone) do
-      %Contact{contact_type: "WABA"} = contact ->
-        Contacts.update_contact(contact, %{contact_type: "WABA+WA"})
-
-      _ ->
-        :ok
-    end
-
-    # TODO Don't we need an upsert here?
-    # creates a wa_managed_phone
-    {:ok, _wa_managed_phone} = WAGroups.create_wa_managed_phone(message_params)
-    # IO.inspect(wa_managed_phone)
-    # pass a map that's useful for do_receive_message
-    :ok
-  end
-
-  def receive_message(%{organization_id: organization_id} = message_params, type) do
+  def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
     Logger.info(
       "Received message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{message_params.bsp_message_id}'"
     )
@@ -235,7 +239,6 @@ defmodule Glific.Communications.Message do
     {:ok, contact} =
       message_params.sender
       |> Map.put(:organization_id, organization_id)
-      |> Map.put(:provider, message_params[:provider])
       |> Contacts.maybe_create_contact()
 
     if Contacts.contact_blocked?(contact),
@@ -247,7 +250,6 @@ defmodule Glific.Communications.Message do
   defp do_receive_message(contact, %{organization_id: organization_id} = message_params, type) do
     {:ok, contact} = Contacts.set_session_status(contact, :session)
 
-    # TODO: what will be the sender_id
     metadata = %{
       type: type,
       sender_id: contact.id,
