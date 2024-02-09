@@ -19,6 +19,7 @@ defmodule Glific.Partners do
     Flows,
     Flows.Flow,
     GCS,
+    Groups.WhatsappGroup,
     Notifications,
     Partners.Credential,
     Partners.Organization,
@@ -853,7 +854,6 @@ defmodule Glific.Partners do
   @doc """
   Updates an organization's credential
   """
-
   @spec update_credential(Credential.t(), map()) ::
           {:ok, Credential.t()} | {:error, any}
   def update_credential(%Credential{} = credential, attrs) do
@@ -926,6 +926,11 @@ defmodule Glific.Partners do
       update_organization(organization, %{bsp_id: credential.provider.id})
     end
 
+    {:ok, credential}
+  end
+
+  defp credential_update_callback(organization, credential, "maytapi") do
+    WhatsappGroup.list_wa_groups(organization.id)
     {:ok, credential}
   end
 
