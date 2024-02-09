@@ -98,7 +98,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     assert Message.receive_media(params) == expected_result
   end
 
-  test "send_text/2 test possible error", attrs do
+  test "send_text/2 failed, wrong product id", attrs do
     mock_maytapi_response(200, %{
       "success" => false,
       "message" => "Product id is wrong! Please check your Account information."
