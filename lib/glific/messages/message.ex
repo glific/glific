@@ -27,6 +27,7 @@ defmodule Glific.Messages.Message do
           id: non_neg_integer | nil,
           uuid: Ecto.UUID.t() | nil,
           type: String.t() | atom() | nil,
+          message_type: String.t() | nil,
           is_hsm: boolean | nil,
           template: SessionTemplate.t() | Ecto.Association.NotLoaded.t() | nil,
           flow: String.t() | nil,
@@ -83,6 +84,7 @@ defmodule Glific.Messages.Message do
   ]
   @optional_fields [
     :uuid,
+    :message_type,
     :body,
     :flow_label,
     :clean_body,
@@ -112,6 +114,7 @@ defmodule Glific.Messages.Message do
   schema "messages" do
     field(:uuid, Ecto.UUID)
     field(:body, :string)
+    field(:message_type, :string, default: "WABA")
     field(:flow_label, :string)
     field(:flow, MessageFlow)
     field(:type, MessageType)

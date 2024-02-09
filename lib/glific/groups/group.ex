@@ -21,7 +21,8 @@ defmodule Glific.Groups.Group do
     :description,
     :organization_id,
     :last_message_number,
-    :last_communication_at
+    :last_communication_at,
+    :group_type
   ]
 
   @type t() :: %__MODULE__{
@@ -34,6 +35,7 @@ defmodule Glific.Groups.Group do
           last_communication_at: :utc_datetime | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          group_type: String.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -41,6 +43,7 @@ defmodule Glific.Groups.Group do
   schema "groups" do
     field :label, :string
     field :description, :string
+    field :group_type, :string
     field :is_restricted, :boolean, default: false
 
     field :last_message_number, :integer, default: 0
