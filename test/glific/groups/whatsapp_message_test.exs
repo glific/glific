@@ -2,10 +2,9 @@ defmodule Glific.Groups.WhatsappMessageTest do
   use Glific.DataCase, async: false
   use ExUnit.Case
 
-  alias Glific.Providers.Maytapi.Message
-
   alias Glific.{
     Partners,
+    Providers.Maytapi.Message,
     Seeds.SeedsDev
   }
 
@@ -25,30 +24,31 @@ defmodule Glific.Groups.WhatsappMessageTest do
       is_active: true
     })
 
-    Tesla.Mock.mock(fn
-      %{
-        method: :post,
-        url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/42093/sendMessage"
-      } ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            "success" => true,
-            "data" => %{
-              "chatId" => "78341114@c.us",
-              "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"
-            }
-          }
-        }
-    end)
-
     :ok
   end
 
-  test "send_text/2 sends a text message", attrs do
-    params = %{phone: "9829627508", message: "hi"}
+  defp mock_maytapi_response(status, body) do
+    Tesla.Mock.mock(fn
+      %Tesla.Env{
+        method: :post,
+        url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/42093/sendMessage"
+      } ->
+        {:ok, %Tesla.Env{status: status, body: body}}
+    end)
+  end
 
+  test "send_text/2 sends a text message successfully", attrs do
+    mock_maytapi_response(200, %{
+      "success" => true,
+      "data" => %{
+        "chatId" => "78341114@c.us",
+        "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"
+      }
+    })
+
+    params = %{phone: "9829627508", message: "hi"}
     result = Message.send_text(attrs.organization_id, params)
+
     assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
 
     assert response_body == %{
@@ -96,5 +96,22 @@ defmodule Glific.Groups.WhatsappMessageTest do
     }
 
     assert Message.receive_media(params) == expected_result
+  end
+
+  test "send_text/2 test possible error", attrs do
+    mock_maytapi_response(200, %{
+      "success" => false,
+      "message" => "Product id is wrong! Please check your Account information."
+    })
+
+    params = %{phone: "9829627508", message: "hi"}
+    result = Message.send_text(attrs.organization_id, params)
+
+    assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
+
+    assert response_body == %{
+             "success" => false,
+             "message" => "Product id is wrong! Please check your Account information."
+           }
   end
 end
