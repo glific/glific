@@ -1,4 +1,4 @@
-defmodule Glific.WAGroups do
+defmodule Glific.WAManagedPhones do
   @moduledoc """
   The WAGroup context.
   """

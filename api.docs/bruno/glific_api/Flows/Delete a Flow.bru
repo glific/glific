@@ -40,3 +40,91 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Delete a Flow
+  
+  ## Description
+  This GraphQL API is used to delete a flow identified by its ID.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  | Parameter | Type                  | Default  | Description |
+  | --------- | --------------------- | -------- | ----------- |
+  |` id `       | ID | required |      Id of flow to be deleted       |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation updateFlow($id: ID!, $input:FlowInput!) { updateFlow(id: $id, input: $input) { flow { id name keywords } errors { key message } } }",
+          "variables": {
+              "id": "1975",
+              "input": {
+                  "name": "updated name",
+                  "keywords": ["testing"]
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "id": "1975",
+    "input": {
+      "name": "updated name",
+      "keywords": ["testing"]
+    }
+  }
+  ```
+  
+  ## Response
+  The API response includes details of the updated flow, including its ID, name, and keywords.
+  ```json
+  {
+    "data": {
+      "deleteFlow": {
+        "errors": null,
+        "flow": null
+      }
+    }
+  }
+  ```
+  
+  In case of errors, all the above functions return an error object like the below
+  
+  ```json
+  {
+    "data": {
+      "deleteFlow": {
+        "errors": [
+          {
+            "key": "Elixir.Glific.Flows.Flow 3",
+            "message": "Resource not found"
+          }
+        ],
+        "flow": null
+      }
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Delete a Flow**
+     - Update a flow with new name and keywords.
+  
+  ## FAQ
+  
+  None
+}

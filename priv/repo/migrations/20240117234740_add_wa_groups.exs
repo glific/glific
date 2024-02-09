@@ -1,4 +1,4 @@
-  defmodule Glific.Repo.Migrations.AddWAGroups do
+  defmodule Glific.Repo.Migrations.AddWAManagedPhones do
     use Ecto.Migration
 
     @global_schema Application.compile_env!(:glific, :global_schema)

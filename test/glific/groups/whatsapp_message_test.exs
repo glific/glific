@@ -32,7 +32,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
       } ->
         %Tesla.Env{
           status: 200,
-          body: "{\"data\": \"Message sent successfully\"}"
+          body: %{"success"=>true,"data"=>%{"chatId"=>"78341114@c.us","msgId"=>"a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"}}
         }
     end)
 
@@ -44,7 +44,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
 
     result = Message.send_text(attrs.organization_id, params)
     assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
-    assert response_body == "{\"data\": \"Message sent successfully\"}"
+    assert response_body == %{"success"=>true,"data"=>%{"chatId"=>"78341114@c.us","msgId"=>"a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"}}
   end
 
   test "receive_text/1 receive text message correctly" do

@@ -32,3 +32,87 @@ body:graphql:vars {
     "uuid": "3fa22108-f464-41e5-81d9-d8a298854429"
   }
 }
+
+docs {
+  # Publish a Flow
+  
+  ## Description
+  This GraphQL API is used to publish a flow by providing its UUID.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+   Parameter | Type                  | Default  | Description |
+  | --------- | --------------------- | -------- | ----------- |
+  |` id `       |ID | required |    ID of flow to be published.         |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation publishFlow($uuid: UUID4!) { publishFlow(uuid: $uuid) { success errors { key message } } }",
+          "variables": {
+              "uuid": "3fa22108-f464-41e5-81d9-d8a298854429"
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "uuid": "3fa22108-f464-41e5-81d9-d8a298854429"
+  }
+  ```
+  
+  ## Response
+  The API response indicates whether the flow was successfully published or not. It includes a boolean value `success` and, in case of errors, an array of error objects containing `key` and `message` fields.
+  ```json
+  {
+    "data": {
+      "publishFlow": {
+        "errors": null,
+        "success": true
+      }
+    }
+  }
+  ```
+  
+  In case of errors, all the above functions return an error object like the below
+  
+  ```json
+  {
+    "data": {
+      "publishFlow": {
+        "errors": [
+          {
+            "key": "Flow UUID: 9a2788e1-26cd-44d0-8868-d8f0552a08a6",
+            "message": "Resource not found"
+          }
+        ],
+        "success": null
+      }
+    }
+  }
+  ```
+  
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Publish a Flow**
+     - Publish a flow by providing its UUID.
+  
+  ## FAQ
+  
+  ### Publish using UUID
+  1. **How can I publish a flow using its UUID?**
+     - You can publish a flow by using the `publishFlow` mutation and providing the flow's UUID as the input parameter.
+  
+}
