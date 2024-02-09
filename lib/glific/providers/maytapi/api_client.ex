@@ -4,10 +4,15 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   """
 
   alias Glific.Partners
+  alias Plug.Conn.Query
 
   @maytapi_url "https://api.maytapi.com/api"
 
   use Tesla
+
+  plug(Tesla.Middleware.FormUrlencoded,
+    encode: &Query.encode/1
+  )
 
   @spec headers(String.t()) :: list()
   defp headers(token),
