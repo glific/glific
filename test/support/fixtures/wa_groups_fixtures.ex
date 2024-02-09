@@ -1,4 +1,4 @@
-defmodule Glific.WAGroupsFixtures do
+defmodule Glific.WAManagedPhonesFixtures do
   @moduledoc """
   This module defines test helpers for creating
   entities via the `Glific.WAGroup` context.
@@ -21,7 +21,7 @@ defmodule Glific.WAGroupsFixtures do
         organization_id: 1,
         provider_id: 1
       })
-      |> Glific.WAGroups.create_wa_managed_phone()
+      |> Glific.WAManagedPhones.create_wa_managed_phone()
 
     wa_managed_phone
   end

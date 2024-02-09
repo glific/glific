@@ -27,8 +27,9 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   Making Tesla post call and adding api key in header
   """
   @spec maytapi_post(String.t(), any(), String.t()) :: Tesla.Env.result()
-  def maytapi_post(url, payload, token),
-    do: post(url, payload, headers: headers(token))
+  def maytapi_post(url, payload, token) do
+    post(url, payload, headers: headers(token))
+  end
 
   @doc false
   @spec fetch_credentials(non_neg_integer) :: nil | {:ok, any} | {:error, any}
@@ -41,7 +42,8 @@ defmodule Glific.Providers.Maytapi.ApiClient do
         {:error, "Maytapi is not active"}
 
       credentials ->
-        {:ok, credentials.secrets}
+        merged_credentials = Map.merge(credentials.secrets, credentials.keys)
+        {:ok, merged_credentials}
     end
   end
 
@@ -78,7 +80,6 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       token = secrets["token"]
 
       url = @maytapi_url <> "/#{product_id}/#{phone_id}/sendMessage"
-
       maytapi_post(url, payload, token)
     end
   end
