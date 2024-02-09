@@ -5,6 +5,8 @@ defmodule Glific.Communications.Message do
   import Ecto.Query
   require Logger
 
+  alias Glific.Groups.Group
+
   alias Glific.{
     Communications,
     Contacts,
@@ -213,7 +215,8 @@ defmodule Glific.Communications.Message do
       type: type,
       sender_id: contact.id,
       receiver_id: Partners.organization_contact_id(organization_id),
-      organization_id: contact.organization_id
+      organization_id: contact.organization_id,
+      group_id: get_group_id(message_params)
     }
 
     message_params =
@@ -245,7 +248,7 @@ defmodule Glific.Communications.Message do
   defp receive_text(message_params) do
     message_params
     |> Messages.create_message()
-    |> publish_data(:received_message)
+    |> publish_data(get_received_msg_publish_event(message_params))
     |> process_message()
   end
 
@@ -428,4 +431,22 @@ defmodule Glific.Communications.Message do
   end
 
   defp get_receive_msg_telemetry_event(_), do: [:glific, :message, :received]
+
+  @spec get_received_msg_publish_event(map()) :: :wa_received_message | :received_message
+  defp get_received_msg_publish_event(%{provider: "maytapi"} = _message_params),
+    do: :wa_received_message
+
+  defp get_received_msg_publish_event(_), do: :received_message
+
+  @spec get_group_id(map()) :: non_neg_integer() | nil
+  defp get_group_id(%{provider: "maytapi"} = message_params) do
+    with %Group{id: id} <-
+           Repo.get_by(Group, %{label: message_params.group_name},
+             organization_id: message_params.organization_id
+           ) do
+      id
+    end
+  end
+
+  defp get_group_id(_), do: nil
 end

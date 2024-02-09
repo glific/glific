@@ -28,6 +28,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
     |> Map.put(:organization_id, conn.assigns[:organization_id])
     |> Map.put(:provider, "maytapi")
     |> Map.put(:message_type, "WA")
+    |> Map.put(:group_name, params["conversation_name"])
     |> update_sender_details()
     |> Communications.Message.receive_message()
 

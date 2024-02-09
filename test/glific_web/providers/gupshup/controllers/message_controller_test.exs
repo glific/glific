@@ -115,7 +115,6 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert_raise RuntimeError, fn -> post(conn, "/gupshup", message_params) end
     end
 
-    @tag :gup
     test "Incoming text message should be stored in the database",
          %{conn: conn, message_params: message_params} do
       conn = post(conn, "/gupshup", message_params)
@@ -145,7 +144,6 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
                get_in(message_params, ["payload", "sender", "phone"])
     end
 
-    @tag :gup
     test "Updating the contacts due to sender contact already existing", %{
       conn: conn,
       message_params: message_params
