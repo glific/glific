@@ -1,11 +1,13 @@
 defmodule Glific.WAManagedPhonesTest do
   use Glific.DataCase
 
-  alias Glific.WAManagedPhones
+  alias Glific.{
+    Partners,
+    WAGroup.WAManagedPhone,
+    WAManagedPhones
+  }
 
   describe "wa_managed_phones" do
-    alias Glific.WAGroup.WAManagedPhone
-
     import Glific.WAManagedPhonesFixtures
 
     @invalid_attrs %{label: nil, phone: nil, is_active: nil, api_token: nil}
@@ -87,6 +89,30 @@ defmodule Glific.WAManagedPhonesTest do
     test "change_wa_managed_phone/1 returns a wa_managed_phone changeset", attrs do
       wa_managed_phone = wa_managed_phone_fixture(%{org_id: attrs.organization_id})
       assert %Ecto.Changeset{} = WAManagedPhones.change_wa_managed_phone(wa_managed_phone)
+    end
+
+    test "list_wa_groups/1 fetch groups using Maytapi API", attrs do
+      Partners.create_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "maytapi",
+        keys: %{},
+        secrets: %{
+          "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+          "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+        },
+        is_active: true
+      })
+
+      Tesla.Mock.mock(fn _env ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            "[{\"id\":43090,\"number\":\"918979120220\",\"status\":\"active\",\"type\":\"whatsapp\",\"name\":\"\",\"data\":{},\"multi_device\":true}]"
+        }
+      end)
+
+      WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
+      assert :ok == WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
     end
   end
 end
