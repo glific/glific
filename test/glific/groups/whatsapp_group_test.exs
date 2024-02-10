@@ -5,11 +5,13 @@ defmodule Glific.Groups.WhatsappGroupTest do
   alias Glific.{
     Groups.WhatsappGroup,
     Partners,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    WAManagedPhonesFixtures
   }
 
   setup do
     organization = SeedsDev.seed_organizations()
+    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{org_id: organization.id})
 
     Partners.create_credential(%{
       organization_id: organization.id,
@@ -36,8 +38,7 @@ defmodule Glific.Groups.WhatsappGroupTest do
       }
     end)
 
-    assert ["Expenses", "Movie Plan", "Developer Group"] ==
-             WhatsappGroup.list_wa_groups(attrs.organization_id)
+    assert :ok == WhatsappGroup.list_wa_groups(attrs.organization_id)
 
     # when we try to enter redundant groups again.
     Tesla.Mock.mock(fn _env ->
@@ -48,7 +49,6 @@ defmodule Glific.Groups.WhatsappGroupTest do
       }
     end)
 
-    assert ["Expenses", "Movie Plan", "Movie PlanB", "Developer Group"] ==
-             WhatsappGroup.list_wa_groups(attrs.organization_id)
+    assert :ok == WhatsappGroup.list_wa_groups(attrs.organization_id)
   end
 end

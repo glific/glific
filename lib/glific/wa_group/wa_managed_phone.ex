@@ -16,7 +16,6 @@ defmodule Glific.WAGroup.WAManagedPhone do
     :phone,
     :api_token,
     :phone_id,
-    :product_id,
     :organization_id
   ]
 
