@@ -31,7 +31,8 @@ defmodule Glific.Partners do
     Repo,
     Settings.Language,
     Stats,
-    Users.User
+    Users.User,
+    WAManagedPhones
   }
 
   # We cache organization info under this id since when we want to retrieve
@@ -930,6 +931,7 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(organization, credential, "maytapi") do
+    WAManagedPhones.fetch_wa_managed_phones(organization.id)
     WhatsappGroup.list_wa_groups(organization.id)
     {:ok, credential}
   end

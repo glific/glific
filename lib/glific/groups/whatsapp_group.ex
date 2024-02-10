@@ -5,22 +5,26 @@ defmodule Glific.Groups.WhatsappGroup do
 
   alias Glific.{
     Groups,
-    Providers.Maytapi.ApiClient
+    Providers.Maytapi.ApiClient,
+    WAManagedPhones
   }
 
   @doc """
   Fetches group using maytapi API and sync it in Glific
-
-  ## Examples
-
-      iex> list_wa_groups()
-      [%Group{}, ...]
-
   """
-  @spec list_wa_groups(non_neg_integer()) :: list() | {:error, any()}
+  @spec list_wa_groups(non_neg_integer()) :: :ok
   def list_wa_groups(org_id) do
+    wa_managed_phones = WAManagedPhones.list_wa_managed_phones(%{org_id: org_id})
+
+    Enum.each(wa_managed_phones, fn wa_managed_phone ->
+      do_list_wa_groups(org_id, wa_managed_phone.phone_id)
+    end)
+  end
+
+  @spec do_list_wa_groups(non_neg_integer(), non_neg_integer()) :: list() | {:error, any()}
+  defp do_list_wa_groups(org_id, phone_id) do
     with {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 <-
-           ApiClient.list_wa_groups(org_id),
+           ApiClient.list_wa_groups(org_id, phone_id),
          {:ok, decoded} <- Jason.decode(body) do
       decoded
       |> get_group_names()

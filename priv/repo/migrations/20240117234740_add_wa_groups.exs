@@ -15,13 +15,13 @@
 
     defp wa_managed_phones do
       create table(:wa_managed_phones) do
-        add :label, :string, null: false, comment: "Identification for this phone"
+        add :label, :string, comment: "Identification for this phone"
 
         # phone number that we are using for external api
         add :phone, :string, null: false
 
         # other ids that that provider uses in the url (maytapi)
-        add :phone_id, :string
+        add :phone_id, :integer
         add :product_id, :string
 
         add :is_active, :boolean,
@@ -32,7 +32,7 @@
         add :api_token, :binary
 
         # foreign key to provider, so we know the relevant apis to call to send/receive messages
-        add :provider_id, references(:providers, on_delete: :delete_all, prefix: @global_schema), null: false
+        add :provider_id, references(:providers, on_delete: :delete_all, prefix: @global_schema), null: true
 
         # foreign key to organization restricting scope of this table to this organization only
         add :organization_id, references(:organizations, on_delete: :delete_all), null: false
