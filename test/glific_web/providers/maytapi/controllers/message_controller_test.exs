@@ -6,7 +6,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     Messages.Message,
     Partners,
     Repo,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    WAManagedPhones
   }
 
   @message_request_params %{
@@ -98,15 +99,31 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       is_active: true
     })
 
-    Tesla.Mock.mock(fn _env ->
-      %Tesla.Env{
-        status: 200,
-        body:
-          "{\"count\":79,\"data\":[{\"admins\":[\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363213149844251@g.us\",\"name\":\"Tech4Dev Team\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\",\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363203450035277@g.us\",\"name\":\"Movie Plan\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363218884368888@g.us\",\"name\":\"Developer Group\",\"participants\":[\"917834811114@c.us\"]}],\"limit\":500,\"success\":true,\"total\":79}"
-      }
+    Tesla.Mock.mock(fn
+      %{
+        method: :get,
+        url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/42093/getGroups"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            "{\"count\":79,\"data\":[{\"admins\":[\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363213149844251@g.us\",\"name\":\"Tech4Dev Team\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\",\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363203450035277@g.us\",\"name\":\"Movie Plan\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363218884368888@g.us\",\"name\":\"Developer Group\",\"participants\":[\"917834811114@c.us\"]}],\"limit\":500,\"success\":true,\"total\":79}"
+        }
+
+      %{
+        method: :get,
+        url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/listPhones"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            "[{\"id\":42093,\"number\":\"917834811114\",\"status\":\"active\",\"type\":\"whatsapp\",\"name\":\"\",\"data\":{},\"multi_device\":true}]"
+        }
     end)
 
-    assert ["Tech4Dev Team", "Movie Plan", "Developer Group"] ==
+    assert :ok == WAManagedPhones.fetch_wa_managed_phones(organization.id)
+
+    assert :ok ==
              WhatsappGroup.list_wa_groups(organization.id)
 
     SeedsDev.seed_tag()
