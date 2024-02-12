@@ -455,32 +455,19 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           is_required: false,
           keys: %{},
           secrets: %{
-              phone: %{
-                type: :string,
-                label: "Phone Number",
-                default: nil,
-                is_required: true,
-                view_only: false
-              },
-              phone_id: %{
-                type: :string,
-                label: "Phone ID",
-                default: nil,
-                view_only: false
-              },
               product_id: %{
                 type: :string,
                 label: "Product ID",
                 default: nil,
                 view_only: false
               },
-            token: %{
-              type: :string,
-              label: "Token",
-              is_required: true,
-              default: nil,
-              view_only: false
-            }
+              token: %{
+                type: :string,
+                label: "Token",
+                is_required: true,
+                default: nil,
+                view_only: false
+              }
           }
         })
   end
