@@ -75,3 +75,6 @@ config :glific,
 
 config :glific,
   open_ai: env!("OPEN_AI_KEY", :string!, "This is not a secret")
+
+config :glific,
+  google_translate: env!("GOOGLE_TRANSLATE_KEY", :string!, "This is not a secret")
