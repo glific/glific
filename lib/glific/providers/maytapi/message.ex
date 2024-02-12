@@ -6,29 +6,29 @@ defmodule Glific.Providers.Maytapi.Message do
   alias Glific.Providers.Maytapi.ApiClient
 
   @doc false
-  @spec send_text(non_neg_integer, map()) :: any()
-  def send_text(org_id, attrs) do
-    send_message(org_id, attrs)
+  @spec send_text(non_neg_integer, map(), non_neg_integer()) :: any()
+  def send_text(org_id, attrs, phone_id) do
+    send_message(org_id, attrs, phone_id)
   end
 
-  defp send_message(org_id, attrs) do
+  defp send_message(org_id, attrs, phone_id) do
     payload =
       %{"type" => "text"}
       |> Map.put("to_number", attrs.phone)
       |> Map.put("message", attrs.message)
 
-    ApiClient.send_message(org_id, payload)
+    ApiClient.send_message(org_id, payload, phone_id)
   end
 
   @doc false
-  @spec send_text_in_group(non_neg_integer, map()) :: any()
-  def send_text_in_group(org_id, attrs) do
+  @spec send_text_in_group(non_neg_integer, map(), non_neg_integer()) :: any()
+  def send_text_in_group(org_id, attrs, phone_id) do
     payload =
       %{"type" => "text"}
       |> Map.put("to_number", attrs.group_id)
       |> Map.put("message", attrs.message)
 
-    ApiClient.send_message(org_id, payload)
+    ApiClient.send_message(org_id, payload, phone_id)
   end
 
   @doc false

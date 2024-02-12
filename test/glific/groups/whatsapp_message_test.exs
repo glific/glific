@@ -16,8 +16,6 @@ defmodule Glific.Groups.WhatsappMessageTest do
       shortcode: "maytapi",
       keys: %{},
       secrets: %{
-        "phone" => "917834811114",
-        "phone_id" => "42093",
         "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
         "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
       },
@@ -26,6 +24,8 @@ defmodule Glific.Groups.WhatsappMessageTest do
 
     :ok
   end
+
+  @phone_id 42_093
 
   defp mock_maytapi_response(status, body) do
     Tesla.Mock.mock(fn
@@ -47,7 +47,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     })
 
     params = %{phone: "9829627508", message: "hi"}
-    result = Message.send_text(attrs.organization_id, params)
+    result = Message.send_text(attrs.organization_id, params, @phone_id)
 
     assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
 
@@ -105,13 +105,36 @@ defmodule Glific.Groups.WhatsappMessageTest do
     })
 
     params = %{phone: "9829627508", message: "hi"}
-    result = Message.send_text(attrs.organization_id, params)
+    result = Message.send_text(attrs.organization_id, params, @phone_id)
 
     assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
 
     assert response_body == %{
              "success" => false,
              "message" => "Product id is wrong! Please check your Account information."
+           }
+  end
+
+  test "send_text_in_group/3 sends a text message in a whatsapp group successfully", attrs do
+    mock_maytapi_response(200, %{
+      "success" => true,
+      "data" => %{
+        "chatId" => "120363238104@g.us",
+        "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"
+      }
+    })
+
+    params = %{group_id: "120363238104@g.us", message: "hi"}
+    result = Message.send_text_in_group(attrs.organization_id, params, @phone_id)
+
+    assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
+
+    assert response_body == %{
+             "success" => true,
+             "data" => %{
+               "chatId" => "120363238104@g.us",
+               "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"
+             }
            }
   end
 end
