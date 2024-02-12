@@ -59,6 +59,7 @@
     defp groups do
       alter table(:groups) do
         add :group_type, :string, comment: "one of WABA or WA (cannot be both)"
+        add :bsp_id, :string, comment: "unique group id as per BSP"
       end
     end
   end
