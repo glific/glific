@@ -21,6 +21,17 @@ defmodule Glific.Providers.Maytapi.Message do
   end
 
   @doc false
+  @spec send_text_in_group(non_neg_integer, map()) :: any()
+  def send_text_in_group(org_id, attrs) do
+    payload =
+      %{"type" => "text"}
+      |> Map.put("to_number", attrs.group_id)
+      |> Map.put("message", attrs.message)
+
+    ApiClient.send_message(org_id, payload)
+  end
+
+  @doc false
   @spec receive_text(payload :: map()) :: map()
   def receive_text(params) do
     payload = params["message"]
