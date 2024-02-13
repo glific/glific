@@ -441,7 +441,7 @@ defmodule Glific.Communications.Message do
   @spec get_group_id(map()) :: non_neg_integer() | nil
   defp get_group_id(%{provider: "maytapi"} = message_params) do
     with %Group{id: id} <-
-           Repo.get_by(Group, %{label: message_params.group_name},
+           Repo.get_by(Group, %{bsp_id: message_params.group_id},
              organization_id: message_params.organization_id
            ) do
       id
