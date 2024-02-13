@@ -264,7 +264,7 @@ defmodule Glific.Communications.Message do
       message_params
       |> Map.put(:media_id, message_media.id)
       |> Messages.create_message()
-      |> publish_data(:received_message)
+      |> publish_data(get_received_msg_publish_event(message_params))
       |> process_message()
 
     :ok

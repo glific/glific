@@ -66,6 +66,6 @@ defmodule Glific.Providers.Maytapi.Message do
     Glific.log_error(error)
     raise(RuntimeError, message: error)
   end
-  defp validate_phone_number(_, _), do: :ok
 
+  defp validate_phone_number(_, _), do: :ok
 end
