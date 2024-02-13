@@ -148,17 +148,16 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       conn: conn,
       message_params: message_params
     } do
-      conn_bak = conn
       # handling a message from gupshup, so that the phone number will be already existing
       # in contacts table.
-      conn = post(conn, "/gupshup", message_params)
-      assert conn.halted
+      gupshup_conn = post(conn, "/gupshup", message_params)
+      assert gupshup_conn.halted
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
         Repo.fetch_by(Message, %{
           bsp_message_id: bsp_message_id,
-          organization_id: conn.assigns[:organization_id]
+          organization_id: gupshup_conn.assigns[:organization_id]
         })
 
       message = Repo.preload(message, [:receiver, :sender, :media])
@@ -178,21 +177,19 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
                get_in(message_params, ["payload", "sender", "phone"])
 
       # second message by same sender with same name via gupshup, so no updates
-      conn = assign(conn_bak, :organization_id, 1)
-
       message_params =
         message_params
         |> put_in(["payload", "type"], "text")
         |> put_in(["payload", "id"], Faker.String.base64(36))
 
-      conn = post(conn, "/gupshup", message_params)
-      assert conn.halted
+      gupshup_conn = post(conn, "/gupshup", message_params)
+      assert gupshup_conn.halted
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
         Repo.fetch_by(Message, %{
           bsp_message_id: bsp_message_id,
-          organization_id: conn.assigns[:organization_id]
+          organization_id: gupshup_conn.assigns[:organization_id]
         })
 
       message = Repo.preload(message, [:receiver, :sender, :media, :contact])
@@ -214,22 +211,20 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.contact.contact_type == "WABA"
 
       # third message by same sender with different name via gupshup, so name updates
-      conn = assign(conn_bak, :organization_id, 1)
-
       message_params =
         message_params
         |> put_in(["payload", "type"], "text")
         |> put_in(["payload", "id"], Faker.String.base64(36))
         |> put_in(["payload", "sender", "name"], "Sumit")
 
-      conn = post(conn, "/gupshup", message_params)
-      assert conn.halted
+      gupshup_conn = post(conn, "/gupshup", message_params)
+      assert gupshup_conn.halted
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
         Repo.fetch_by(Message, %{
           bsp_message_id: bsp_message_id,
-          organization_id: conn.assigns[:organization_id]
+          organization_id: gupshup_conn.assigns[:organization_id]
         })
 
       message = Repo.preload(message, [:receiver, :sender, :media, :contact])

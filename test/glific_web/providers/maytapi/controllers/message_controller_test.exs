@@ -35,7 +35,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     "phone_id" => 42_908,
     "message" => %{
       "type" => "text",
-      "text" => "It's like a mini-sprint- Almost half of the team is there",
+      "text" => "test message",
       "id" => "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_919642961343@c.us",
       "_serialized" => "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_919642961343@c.us",
       "fromMe" => false
@@ -46,7 +46,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       "phone" => "919917443994"
     },
     "conversation" => "120363213149844251@g.us",
-    "conversation_name" => "Tech4Dev Team",
+    "conversation_name" => "Default Group name",
     "receiver" => "919917443955",
     "timestamp" => 1_707_216_634,
     "type" => "message",
@@ -61,7 +61,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     "phone_id" => 42_908,
     "message" => %{
       "type" => "text",
-      "text" => "It's like a mini-sprint- Almost half of the team is there",
+      "text" => "test message",
       "id" => "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_919642961343@c.us",
       "_serialized" => "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_919642961343@c.us",
       "fromMe" => false
