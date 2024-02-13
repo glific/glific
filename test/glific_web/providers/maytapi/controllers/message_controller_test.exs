@@ -76,7 +76,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       "name" => "name_a",
       "phone" => "919917443994"
     },
-    "conversation" => "120363027326493365@g.us",
+    "conversation" => "120363213149844251@g.us",
     "conversation_name" => "Tech4Dev Team",
     "receiver" => "919917443955",
     "timestamp" => 1_707_216_553,
@@ -365,7 +365,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert_raise RuntimeError, fn -> post(conn, "/maytapi", media_msg_webhook) end
     end
 
-    test "Incoming text message should be stored in the database, new contact", %{conn: conn} do
+    test "Incoming media message should be stored in the database, new contact", %{conn: conn} do
       conn = post(conn, "/maytapi", @media_message_webhook)
       assert conn.halted
 
@@ -396,7 +396,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
       assert message.message_type == "WA"
-      assert message.group.label == "Tech4Dev Team"
+      assert message.group.bsp_id == "120363213149844251@g.us"
     end
 
     test "Updating the contact_type to WABA+WA due to sender contact already existing", %{
@@ -468,13 +468,13 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
                get_in(text_webhook_params, ["user", "phone"])
 
       assert message.contact.contact_type == "WABA+WA"
-      assert message.group.label == "Tech4Dev Team"
+      assert message.group.bsp_id == "120363213149844251@g.us"
     end
 
-    test "Incoming text message should be stored in the database, but group doesnt exist", %{
+    test "Incoming media message should be stored in the database, but group doesnt exist", %{
       conn: conn
     } do
-      invalid_resp = @media_message_webhook |> Map.put("conversation_name", "Tech4d invalid")
+      invalid_resp = @media_message_webhook |> Map.put("conversation", "1203632131498442")
       conn = post(conn, "/maytapi", invalid_resp)
       assert conn.halted
 
