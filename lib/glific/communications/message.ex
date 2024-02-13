@@ -11,11 +11,12 @@ defmodule Glific.Communications.Message do
     Communications,
     Contacts,
     Contacts.Contact,
+    Groups,
     Mails.BalanceAlertMail,
     Messages,
     Messages.Message,
     Partners,
-    Repo
+    Repo,
   }
 
   @doc false
@@ -440,11 +441,22 @@ defmodule Glific.Communications.Message do
 
   @spec get_group_id(map()) :: non_neg_integer() | nil
   defp get_group_id(%{provider: "maytapi"} = message_params) do
-    with %Group{id: id} <-
-           Repo.get_by(Group, %{bsp_id: message_params.group_id},
-             organization_id: message_params.organization_id
-           ) do
-      id
+    case Repo.get_by(Group, %{bsp_id: message_params.group_id},
+           organization_id: message_params.organization_id
+         ) do
+      %Group{id: id} ->
+        id
+
+      nil ->
+        {:ok, %Group{id: id}} =
+          Groups.create_group(%{
+            label: message_params.group_name,
+            group_type: "WA",
+            organization_id: message_params.organization_id,
+            bsp_id: message_params.group_id
+          })
+
+        id
     end
   end
 

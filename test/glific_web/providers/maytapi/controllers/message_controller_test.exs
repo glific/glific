@@ -56,7 +56,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     "phoneId" => 42_908
   }
 
-  @text_message_webhook_invalid_group %{
+  @text_message_webhook_new_group %{
     "product_id" => "5351f38b-c0ae-49c4-9e43-427cb901b0f7",
     "phone_id" => 42_908,
     "message" => %{
@@ -72,7 +72,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       "phone" => "919917443994"
     },
     "conversation" => "120363027326493365@g.us",
-    "conversation_name" => "Tech4Dev Team invalid",
+    "conversation_name" => "Tech4Dev Team new",
     "receiver" => "919917443955",
     "timestamp" => 1_707_216_634,
     "type" => "message",
@@ -271,13 +271,14 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.group.bsp_id == "120363213149844251@g.us"
     end
 
-    test "Incoming text message should be stored in the database, but group doesnt exist", %{
-      conn: conn
-    } do
-      conn = post(conn, "/maytapi", @text_message_webhook_invalid_group)
+    test "Incoming text message should be stored in the database, but group doesnt exist, so creates group",
+         %{
+           conn: conn
+         } do
+      conn = post(conn, "/maytapi", @text_message_webhook_new_group)
       assert conn.halted
 
-      bsp_message_id = get_in(@text_message_webhook_invalid_group, ["message", "id"])
+      bsp_message_id = get_in(@text_message_webhook_new_group, ["message", "id"])
 
       {:ok, message} =
         Repo.fetch_by(Message, %{
@@ -285,7 +286,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
@@ -299,12 +300,13 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       # Sender should be stored into the db
       assert message.sender.phone ==
-               get_in(@text_message_webhook_invalid_group, ["user", "phone"])
+               get_in(@text_message_webhook_new_group, ["user", "phone"])
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
       assert message.message_type == "WA"
-      assert message.group_id == nil
+      assert !is_nil(message.group_id)
+      assert message.group.bsp_id == "120363027326493365@g.us"
     end
   end
 end
