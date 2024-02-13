@@ -14,7 +14,7 @@ defmodule Glific.Groups.WhatsappGroup do
   """
   @spec list_wa_groups(non_neg_integer()) :: :ok
   def list_wa_groups(org_id) do
-    wa_managed_phones = WAManagedPhones.list_wa_managed_phones(%{org_id: org_id})
+    wa_managed_phones = WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
 
     Enum.each(wa_managed_phones, fn wa_managed_phone ->
       do_list_wa_groups(org_id, wa_managed_phone.phone_id)
