@@ -7,8 +7,8 @@ defmodule Glific.WAManagedPhonesFixtures do
   @doc """
   Generate a wa_managed_phone.
   """
-  @spec wa_managed_phone_fixture(%{org_id: non_neg_integer()}) :: Glific.WAGroup.WAManagedPhone.t()
-  def wa_managed_phone_fixture(attrs \\ %{}) do
+  @spec wa_managed_phone_fixture(map()) :: Glific.WAGroup.WAManagedPhone.t()
+  def wa_managed_phone_fixture(attrs) do
     {:ok, wa_managed_phone} =
       attrs
       |> Enum.into(%{
