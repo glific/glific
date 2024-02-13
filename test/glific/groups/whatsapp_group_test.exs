@@ -12,7 +12,7 @@ defmodule Glific.Groups.WhatsappGroupTest do
 
   setup do
     organization = SeedsDev.seed_organizations()
-    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{org_id: organization.id})
+    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: organization.id})
 
     Partners.create_credential(%{
       organization_id: organization.id,

@@ -13,15 +13,17 @@ defmodule Glific.WAManagedPhonesTest do
     @invalid_attrs %{label: nil, phone: nil, is_active: nil, api_token: nil}
 
     test "list_wa_managed_phones/0 returns all wa_managed_phones", attrs do
-      wa_managed_phone = wa_managed_phone_fixture(%{org_id: attrs.organization_id})
+      wa_managed_phone =
+        wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
 
-      assert WAManagedPhones.list_wa_managed_phones(%{org_id: attrs.organization_id}) == [
-               wa_managed_phone
-             ]
+      assert WAManagedPhones.list_wa_managed_phones(%{organization_id: attrs.organization_id}) ==
+               [
+                 wa_managed_phone
+               ]
     end
 
     test "get_wa_managed_phone!/1 returns the wa_managed_phone with given id", attrs do
-      wa_managed_phone = wa_managed_phone_fixture(%{org_id: attrs.organization_id})
+      wa_managed_phone = wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
       assert WAManagedPhones.get_wa_managed_phone!(wa_managed_phone.id) == wa_managed_phone
     end
 
@@ -50,7 +52,7 @@ defmodule Glific.WAManagedPhonesTest do
     end
 
     test "update_wa_managed_phone/2 with valid data updates the wa_managed_phone", attrs do
-      wa_managed_phone = wa_managed_phone_fixture(%{org_id: attrs.organization_id})
+      wa_managed_phone = wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
 
       update_attrs = %{
         label: "some updated label",
@@ -69,7 +71,7 @@ defmodule Glific.WAManagedPhonesTest do
     end
 
     test "update_wa_managed_phone/2 with invalid data returns error changeset", attrs do
-      wa_managed_phone = wa_managed_phone_fixture(%{org_id: attrs.organization_id})
+      wa_managed_phone = wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
 
       assert {:error, %Ecto.Changeset{}} =
                WAManagedPhones.update_wa_managed_phone(wa_managed_phone, @invalid_attrs)
@@ -78,7 +80,7 @@ defmodule Glific.WAManagedPhonesTest do
     end
 
     test "delete_wa_managed_phone/1 deletes the wa_managed_phone", attrs do
-      wa_managed_phone = wa_managed_phone_fixture(%{org_id: attrs.organization_id})
+      wa_managed_phone = wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
       assert {:ok, %WAManagedPhone{}} = WAManagedPhones.delete_wa_managed_phone(wa_managed_phone)
 
       assert_raise Ecto.NoResultsError, fn ->
@@ -87,7 +89,7 @@ defmodule Glific.WAManagedPhonesTest do
     end
 
     test "change_wa_managed_phone/1 returns a wa_managed_phone changeset", attrs do
-      wa_managed_phone = wa_managed_phone_fixture(%{org_id: attrs.organization_id})
+      wa_managed_phone = wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
       assert %Ecto.Changeset{} = WAManagedPhones.change_wa_managed_phone(wa_managed_phone)
     end
 
