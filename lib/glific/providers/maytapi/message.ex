@@ -8,6 +8,7 @@ defmodule Glific.Providers.Maytapi.Message do
   alias Glific.Partners
 
   alias Glific.{
+    Contacts.Contact,
     Providers.Maytapi.ApiClient,
     Repo,
     WAGroup.WAManagedPhone
@@ -94,4 +95,12 @@ defmodule Glific.Providers.Maytapi.Message do
   end
 
   defp validate_phone_number(_phone, _payload), do: :ok
+
+  @spec get_sender_id(map()) :: non_neg_integer()
+  defp get_sender_id(attrs) do
+    Contact
+    |> where([g], g.phone == ^attrs.phone)
+    |> select([g], g.id)
+    |> Repo.one!()
+  end
 end
