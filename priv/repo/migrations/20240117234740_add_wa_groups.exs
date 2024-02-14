@@ -36,12 +36,15 @@
 
         # foreign key to organization restricting scope of this table to this organization only
         add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+        add :contact_id, references(:contacts, on_delete: :delete_all), null: false
 
         timestamps(type: :utc_datetime_usec)
       end
 
       create unique_index(:wa_managed_phones, :organization_id)
       create unique_index(:wa_managed_phones, :phone)
+      create unique_index(:wa_managed_phones, :contact_id)
+
     end
 
     defp messages do

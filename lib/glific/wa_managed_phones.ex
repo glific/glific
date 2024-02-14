@@ -6,6 +6,7 @@ defmodule Glific.WAManagedPhones do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts,
     Providers.Maytapi.ApiClient,
     Repo,
     WAGroup.WAManagedPhone
@@ -115,6 +116,8 @@ defmodule Glific.WAManagedPhones do
     WAManagedPhone.changeset(wa_managed_phone, attrs)
   end
 
+  # TODO Can't we use bulk insert?
+
   @doc """
   fetches WhatsApp enabled phone added in Maytapi account
   """
@@ -125,22 +128,24 @@ defmodule Glific.WAManagedPhones do
            ApiClient.list_wa_managed_phones(org_id),
          {:ok, wa_managed_phones} <- Jason.decode(body) do
       Enum.each(wa_managed_phones, fn wa_managed_phone ->
+        phone = wa_managed_phone["number"]
+
         params =
           %{
             label: wa_managed_phone["name"],
-            phone: wa_managed_phone["number"],
+            phone: phone,
             phone_id: wa_managed_phone["id"],
             api_token: secrets["token"],
             product_id: secrets["product_id"],
             organization_id: org_id
           }
 
-        case Repo.get_by(WAManagedPhone, %{phone: wa_managed_phone["number"]}) do
-          nil ->
-            create_wa_managed_phone(params)
-
-          _ ->
-            :ok
+        with {:ok, contact} <- Contacts.maybe_create_contact(%{phone: phone}) |> IO.inspect(),
+             nil <- Repo.get_by(WAManagedPhone, %{phone: phone}) do
+          Map.put(params, :contact_id, contact.id)
+          |> create_wa_managed_phone()
+        else
+          _ -> :ok
         end
 
         {:ok, "success"}

@@ -8,6 +8,7 @@ defmodule Glific.WAGroup.WAManagedPhone do
   import Ecto.Changeset
 
   alias Glific.{
+    Contacts.Contact,
     Partners.Organization,
     WAGroup.WAManagedPhone
   }
@@ -34,6 +35,8 @@ defmodule Glific.WAGroup.WAManagedPhone do
           api_token: binary | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          contact_id: non_neg_integer | nil,
+          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime_usec | nil,
           updated_at: :utc_datetime_usec | nil
         }
@@ -49,7 +52,7 @@ defmodule Glific.WAGroup.WAManagedPhone do
     field :api_token, Glific.Encrypted.Binary
 
     belongs_to(:organization, Organization)
-
+    belongs_to(:contact, Contact)
     timestamps(type: :utc_datetime_usec)
   end
 
@@ -59,5 +62,6 @@ defmodule Glific.WAGroup.WAManagedPhone do
     wa_managed_phone
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint(:contact_id)
   end
 end
