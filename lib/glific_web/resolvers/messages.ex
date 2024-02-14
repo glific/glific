@@ -4,15 +4,17 @@ defmodule GlificWeb.Resolvers.Messages do
   one or more calls to resolve the incoming queries.
   """
 
+  alias Glific.Providers
+
   alias Glific.{
     Contacts.Contact,
     Groups.Group,
     Messages,
     Messages.Message,
     Messages.MessageMedia,
+    Providers.Maytapi.Message,
     Repo,
-    Users.User,
-    Providers.Maytapi.Message
+    Users.User
   }
 
   @doc """
@@ -241,9 +243,15 @@ defmodule GlificWeb.Resolvers.Messages do
     end
   end
 
+  @doc false
+  @spec send_message_in_wa_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
   def send_message_in_wa_group(_, %{input: input_params}, %{context: %{current_user: user}}) do
-    with {:ok, message} <- Glific.Providers.Maytapi.Message.send_text_in_group(user.organization_id, input_params) do
+    with {:ok, message} <-
+           Providers.Maytapi.Message.send_text_in_group(user.organization_id, input_params) do
       {:ok, %{message: message}}
+    else
+      {:error, reason} -> {:error, %{error: reason}}
     end
   end
 end
