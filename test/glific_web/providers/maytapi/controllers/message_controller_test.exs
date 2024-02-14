@@ -72,7 +72,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       "phone" => "919917443994"
     },
     "conversation" => "120363027326493365@g.us",
-    "conversation_name" => "Default Group name new",
+    "conversation_name" => "Group B",
     "receiver" => "919917443955",
     "timestamp" => 1_707_216_634,
     "type" => "message",

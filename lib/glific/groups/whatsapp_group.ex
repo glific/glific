@@ -5,7 +5,9 @@ defmodule Glific.Groups.WhatsappGroup do
 
   alias Glific.{
     Groups,
+    Groups.Group,
     Providers.Maytapi.ApiClient,
+    Repo,
     WAManagedPhones
   }
 
@@ -19,6 +21,28 @@ defmodule Glific.Groups.WhatsappGroup do
     Enum.each(wa_managed_phones, fn wa_managed_phone ->
       do_list_wa_groups(org_id, wa_managed_phone.phone_id)
     end)
+  end
+
+  @doc """
+  Fetches the group id (creates a new group, if group doesn't exist)
+  """
+  @spec create_or_get_group_id(non_neg_integer(), String.t(), String.t()) :: non_neg_integer()
+  def create_or_get_group_id(org_id, bsp_id, label) do
+    case Repo.get_by(Group, %{bsp_id: bsp_id}, organization_id: org_id) do
+      %Group{id: id} ->
+        id
+
+      nil ->
+        {:ok, %Group{id: id}} =
+          Groups.create_group(%{
+            label: label,
+            group_type: "WA",
+            organization_id: org_id,
+            bsp_id: bsp_id
+          })
+
+        id
+    end
   end
 
   @spec do_list_wa_groups(non_neg_integer(), non_neg_integer()) :: list() | {:error, any()}

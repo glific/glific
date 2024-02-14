@@ -5,13 +5,11 @@ defmodule Glific.Communications.Message do
   import Ecto.Query
   require Logger
 
-  alias Glific.Groups.Group
-
   alias Glific.{
     Communications,
     Contacts,
     Contacts.Contact,
-    Groups,
+    Groups.WhatsappGroup,
     Mails.BalanceAlertMail,
     Messages,
     Messages.Message,
@@ -211,13 +209,14 @@ defmodule Glific.Communications.Message do
   @spec do_receive_message(Contact.t(), map(), atom()) :: :ok | {:error, String.t()}
   defp do_receive_message(contact, %{organization_id: organization_id} = message_params, type) do
     {:ok, contact} = Contacts.set_session_status(contact, :session)
+    group_id = get_group_id(message_params)
 
     metadata = %{
       type: type,
       sender_id: contact.id,
       receiver_id: Partners.organization_contact_id(organization_id),
       organization_id: contact.organization_id,
-      group_id: create_or_get_group_id(message_params)
+      group_id: group_id
     }
 
     message_params =
@@ -442,26 +441,14 @@ defmodule Glific.Communications.Message do
 
   defp get_received_msg_publish_event(_), do: :received_message
 
-  @spec create_or_get_group_id(map()) :: non_neg_integer() | nil
-  defp create_or_get_group_id(%{provider: "maytapi"} = message_params) do
-    case Repo.get_by(Group, %{bsp_id: message_params.group_id},
-           organization_id: message_params.organization_id
-         ) do
-      %Group{id: id} ->
-        id
-
-      nil ->
-        {:ok, %Group{id: id}} =
-          Groups.create_group(%{
-            label: message_params.group_name,
-            group_type: "WA",
-            organization_id: message_params.organization_id,
-            bsp_id: message_params.group_id
-          })
-
-        id
-    end
+  @spec get_group_id(map()) :: non_neg_integer() | nil
+  defp get_group_id(%{provider: "maytapi"} = message_params) do
+    WhatsappGroup.create_or_get_group_id(
+      message_params.organization_id,
+      message_params.group_id,
+      message_params.group_name
+    )
   end
 
-  defp create_or_get_group_id(_), do: nil
+  defp get_group_id(_), do: nil
 end
