@@ -3,15 +3,19 @@ defmodule Glific.Providers.Maytapi.Message do
   Message API layer between application and Maytapi
   """
 
-  alias Glific.Providers.Maytapi.ApiClient
+  import Ecto.Query, warn: false
+
+  alias Glific.{
+    Providers.Maytapi.ApiClient,
+    Repo,
+    WAGroup.WAManagedPhone
+  }
 
   @doc false
-  @spec send_text(non_neg_integer, map(), non_neg_integer()) :: any()
-  def send_text(org_id, attrs, phone_id) do
-    send_message(org_id, attrs, phone_id)
-  end
+  @spec send_text(non_neg_integer, map()) :: any()
+  def send_text(org_id, attrs) do
+    phone_id = get_phone_id(attrs)
 
-  defp send_message(org_id, attrs, phone_id) do
     payload =
       %{"type" => "text"}
       |> Map.put("to_number", attrs.phone)
@@ -21,11 +25,13 @@ defmodule Glific.Providers.Maytapi.Message do
   end
 
   @doc false
-  @spec send_text_in_group(non_neg_integer, map(), non_neg_integer()) :: any()
-  def send_text_in_group(org_id, attrs, phone_id) do
+  @spec send_text_in_group(non_neg_integer, map()) :: any()
+  def send_text_in_group(org_id, attrs) do
+    phone_id = get_phone_id(attrs)
+
     payload =
       %{"type" => "text"}
-      |> Map.put("to_number", attrs.group_id)
+      |> Map.put("to_number", attrs.bsp_id)
       |> Map.put("message", attrs.message)
 
     ApiClient.send_message(org_id, payload, phone_id)
@@ -71,5 +77,13 @@ defmodule Glific.Providers.Maytapi.Message do
         name: params["user"]["name"]
       }
     }
+  end
+
+  @spec get_phone_id(map()) :: non_neg_integer()
+  defp get_phone_id(attrs) do
+    WAManagedPhone
+    |> where([g], g.phone == ^attrs.phone)
+    |> select([g], g.phone_id)
+    |> Repo.one!()
   end
 end

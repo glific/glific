@@ -15,8 +15,9 @@ defmodule Glific.WAManagedPhonesFixtures do
         api_token: "some api_token",
         is_active: true,
         label: "some label",
-        phone: "some phone",
-        phone_id: 242,
+        phone: "9829627508",
+        phone_id: 42_093,
+        organization_id: attrs.org_id,
         provider_id: 1
       })
       |> Glific.WAManagedPhones.create_wa_managed_phone()

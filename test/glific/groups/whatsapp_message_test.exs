@@ -5,7 +5,8 @@ defmodule Glific.Groups.WhatsappMessageTest do
   alias Glific.{
     Partners,
     Providers.Maytapi.Message,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    WAManagedPhonesFixtures
   }
 
   setup do
@@ -25,8 +26,6 @@ defmodule Glific.Groups.WhatsappMessageTest do
     :ok
   end
 
-  @phone_id 42_093
-
   defp mock_maytapi_response(status, body) do
     Tesla.Mock.mock(fn
       %Tesla.Env{
@@ -38,6 +37,8 @@ defmodule Glific.Groups.WhatsappMessageTest do
   end
 
   test "send_text/2 sends a text message successfully", attrs do
+    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{org_id: attrs.organization_id})
+
     mock_maytapi_response(200, %{
       "success" => true,
       "data" => %{
@@ -47,7 +48,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     })
 
     params = %{phone: "9829627508", message: "hi"}
-    result = Message.send_text(attrs.organization_id, params, @phone_id)
+    result = Message.send_text(attrs.organization_id, params)
 
     assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
 
@@ -99,13 +100,15 @@ defmodule Glific.Groups.WhatsappMessageTest do
   end
 
   test "send_text/2 failed, wrong product id", attrs do
+    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{org_id: attrs.organization_id})
+
     mock_maytapi_response(200, %{
       "success" => false,
       "message" => "Product id is wrong! Please check your Account information."
     })
 
     params = %{phone: "9829627508", message: "hi"}
-    result = Message.send_text(attrs.organization_id, params, @phone_id)
+    result = Message.send_text(attrs.organization_id, params)
 
     assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
 
@@ -116,6 +119,8 @@ defmodule Glific.Groups.WhatsappMessageTest do
   end
 
   test "send_text_in_group/3 sends a text message in a whatsapp group successfully", attrs do
+    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{org_id: attrs.organization_id})
+
     mock_maytapi_response(200, %{
       "success" => true,
       "data" => %{
@@ -124,8 +129,8 @@ defmodule Glific.Groups.WhatsappMessageTest do
       }
     })
 
-    params = %{group_id: "120363238104@g.us", message: "hi"}
-    result = Message.send_text_in_group(attrs.organization_id, params, @phone_id)
+    params = %{bsp_id: "120363238104@g.us", message: "hi", phone: "9829627508"}
+    result = Message.send_text_in_group(attrs.organization_id, params)
 
     assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
 
