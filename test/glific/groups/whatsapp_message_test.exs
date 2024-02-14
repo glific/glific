@@ -7,6 +7,8 @@ defmodule Glific.Groups.WhatsappMessageTest do
     Providers.Maytapi.Message,
     Seeds.SeedsDev,
     WAManagedPhonesFixtures
+    Seeds.SeedsDev,
+    WAManagedPhonesFixtures
   }
 
   setup do
