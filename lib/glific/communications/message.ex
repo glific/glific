@@ -16,7 +16,7 @@ defmodule Glific.Communications.Message do
     Messages,
     Messages.Message,
     Partners,
-    Repo,
+    Repo
   }
 
   @doc false
@@ -217,7 +217,7 @@ defmodule Glific.Communications.Message do
       sender_id: contact.id,
       receiver_id: Partners.organization_contact_id(organization_id),
       organization_id: contact.organization_id,
-      group_id: get_group_id(message_params)
+      group_id: create_or_get_group_id(message_params)
     }
 
     message_params =
@@ -442,8 +442,8 @@ defmodule Glific.Communications.Message do
 
   defp get_received_msg_publish_event(_), do: :received_message
 
-  @spec get_group_id(map()) :: non_neg_integer() | nil
-  defp get_group_id(%{provider: "maytapi"} = message_params) do
+  @spec create_or_get_group_id(map()) :: non_neg_integer() | nil
+  defp create_or_get_group_id(%{provider: "maytapi"} = message_params) do
     case Repo.get_by(Group, %{bsp_id: message_params.group_id},
            organization_id: message_params.organization_id
          ) do
@@ -463,5 +463,5 @@ defmodule Glific.Communications.Message do
     end
   end
 
-  defp get_group_id(_), do: nil
+  defp create_or_get_group_id(_), do: nil
 end
