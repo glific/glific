@@ -229,9 +229,10 @@ defmodule Glific.Communications.Message do
         status: :received
       })
 
+    message_event = get_receive_msg_telemetry_event(message_params)
     # publish a telemetry event about the message being received
     :telemetry.execute(
-      get_receive_msg_telemetry_event(message_params),
+      message_event,
       # currently we are not measuring latency
       %{duration: 1},
       metadata
@@ -247,9 +248,11 @@ defmodule Glific.Communications.Message do
   # handler for receiving the text message
   @spec receive_text(map()) :: :ok
   defp receive_text(message_params) do
+    message_event = get_received_msg_publish_event(message_params)
+
     message_params
     |> Messages.create_message()
-    |> publish_data(get_received_msg_publish_event(message_params))
+    |> publish_data(message_event)
     |> process_message()
   end
 
