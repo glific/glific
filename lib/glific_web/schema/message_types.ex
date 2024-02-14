@@ -161,6 +161,12 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :params, list_of(:string)
   end
 
+  input_object :wa_message_input do
+    field :message, :string
+    field :phone, :string
+    field :bsp_id, :string
+  end
+
   object :message_queries do
     @desc "get the details of one message"
     field :message, :message_result do
@@ -245,6 +251,12 @@ defmodule GlificWeb.Schema.MessageTypes do
       arg(:contact_id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.clear_messages/3)
+    end
+
+    field :send_message_in_wa_group, :message_result do
+      arg(:input, non_null(:wa_message_input))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Messages.send_message_in_wa_group/3)
     end
   end
 

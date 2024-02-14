@@ -11,7 +11,8 @@ defmodule GlificWeb.Resolvers.Messages do
     Messages.Message,
     Messages.MessageMedia,
     Repo,
-    Users.User
+    Users.User,
+    Providers.Maytapi.Message
   }
 
   @doc """
@@ -237,6 +238,12 @@ defmodule GlificWeb.Resolvers.Messages do
     case args do
       %{message: message} -> {:ok, message}
       message -> {:ok, message}
+    end
+  end
+
+  def send_message_in_wa_group(_, %{input: input_params}, %{context: %{current_user: user}}) do
+    with {:ok, message} <- Glific.Providers.Maytapi.Message.send_text_in_group(user.organization_id, input_params) do
+      {:ok, %{message: message}}
     end
   end
 end
