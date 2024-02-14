@@ -50,7 +50,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     })
 
     params = %{phone: "9829627508", message: "hi"}
-    result = Message.send_text(attrs.organization_id, params)
+    {:ok, message} = Message.send_text(attrs.organization_id, params)
 
     assert message.body == "hi"
     assert message.status == :sent
@@ -125,7 +125,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     })
 
     params = %{bsp_id: "120363238104@g.us", message: "hi", phone: "9829627508"}
-    result = Message.send_text_in_group(attrs.organization_id, params)
+    {:ok, message} = Message.send_text_in_group(attrs.organization_id, params)
 
     assert message.body == "hi"
     assert message.status == :sent

@@ -8,7 +8,7 @@ defmodule Glific.Providers.Maytapi.Message do
   alias Glific.Partners
 
   alias Glific.{
-    Contacts.Contact,
+    Messages,
     Providers.Maytapi.ApiClient,
     Repo,
     WAGroup.WAManagedPhone
