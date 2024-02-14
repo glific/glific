@@ -5,7 +5,10 @@ defmodule Glific.Providers.Maytapi.Message do
 
   import Ecto.Query, warn: false
 
+  alias Glific.Partners
+
   alias Glific.{
+    Contacts.Contact,
     Providers.Maytapi.ApiClient,
     Repo,
     WAGroup.WAManagedPhone
@@ -34,7 +37,22 @@ defmodule Glific.Providers.Maytapi.Message do
       |> Map.put("to_number", attrs.bsp_id)
       |> Map.put("message", attrs.message)
 
-    ApiClient.send_message(org_id, payload, phone_id)
+    case ApiClient.send_message(org_id, payload, phone_id) do
+      {:ok, response} ->
+        message_attrs =
+          %{
+            body: attrs.message,
+            status: "sent",
+            type: "text",
+            receiver_id: Partners.organization_contact_id(org_id),
+            organization_id: org_id,
+            sender_id: get_sender_id(attrs),
+            bsp_message_id: attrs.bsp_id,
+            message_type: "WABA+WA",
+            bsp_status: "sent"
+          }
+          |> Glific.Messages.create_message()
+    end
   end
 
   @doc false
@@ -84,6 +102,14 @@ defmodule Glific.Providers.Maytapi.Message do
     WAManagedPhone
     |> where([g], g.phone == ^attrs.phone)
     |> select([g], g.phone_id)
+    |> Repo.one!()
+  end
+
+  @spec get_sender_id(map()) :: non_neg_integer()
+  defp get_sender_id(attrs) do
+    Contact
+    |> where([g], g.phone == ^attrs.phone)
+    |> select([g], g.id)
     |> Repo.one!()
   end
 end
