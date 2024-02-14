@@ -5,12 +5,11 @@ defmodule Glific.Communications.Message do
   import Ecto.Query
   require Logger
 
-  alias Glific.Groups.Group
-
   alias Glific.{
     Communications,
     Contacts,
     Contacts.Contact,
+    Groups.WhatsappGroup,
     Mails.BalanceAlertMail,
     Messages,
     Messages.Message,
@@ -210,13 +209,14 @@ defmodule Glific.Communications.Message do
   @spec do_receive_message(Contact.t(), map(), atom()) :: :ok | {:error, String.t()}
   defp do_receive_message(contact, %{organization_id: organization_id} = message_params, type) do
     {:ok, contact} = Contacts.set_session_status(contact, :session)
+    group_id = get_group_id(message_params)
 
     metadata = %{
       type: type,
       sender_id: contact.id,
       receiver_id: Partners.organization_contact_id(organization_id),
       organization_id: contact.organization_id,
-      group_id: get_group_id(message_params)
+      group_id: group_id
     }
 
     message_params =
@@ -228,9 +228,10 @@ defmodule Glific.Communications.Message do
         status: :received
       })
 
+    message_event = get_receive_msg_telemetry_event(message_params)
     # publish a telemetry event about the message being received
     :telemetry.execute(
-      get_receive_msg_telemetry_event(message_params),
+      message_event,
       # currently we are not measuring latency
       %{duration: 1},
       metadata
@@ -246,9 +247,11 @@ defmodule Glific.Communications.Message do
   # handler for receiving the text message
   @spec receive_text(map()) :: :ok
   defp receive_text(message_params) do
+    message_event = get_received_msg_publish_event(message_params)
+
     message_params
     |> Messages.create_message()
-    |> publish_data(get_received_msg_publish_event(message_params))
+    |> publish_data(message_event)
     |> process_message()
   end
 
@@ -440,12 +443,11 @@ defmodule Glific.Communications.Message do
 
   @spec get_group_id(map()) :: non_neg_integer() | nil
   defp get_group_id(%{provider: "maytapi"} = message_params) do
-    with %Group{id: id} <-
-           Repo.get_by(Group, %{bsp_id: message_params.group_id},
-             organization_id: message_params.organization_id
-           ) do
-      id
-    end
+    WhatsappGroup.create_or_get_group_id(
+      message_params.organization_id,
+      message_params.group_id,
+      message_params.group_name
+    )
   end
 
   defp get_group_id(_), do: nil

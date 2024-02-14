@@ -9,18 +9,16 @@ defmodule Glific.WAManagedPhonesFixtures do
   """
   @spec wa_managed_phone_fixture(map()) :: Glific.WAGroup.WAManagedPhone.t()
   def wa_managed_phone_fixture(attrs \\ %{}) do
-    params = %{
-      api_token: "some api_token",
-      is_active: true,
-      label: "some label",
-      phone: "some phone",
-      phone_id: 242,
-      provider_id: 1
-    }
-
     {:ok, wa_managed_phone} =
-      params
-      |> Map.merge(attrs)
+      attrs
+      |> Enum.into(%{
+        api_token: "some api_token",
+        is_active: true,
+        label: "some label",
+        phone: "some phone",
+        phone_id: 242,
+        provider_id: 1
+      })
       |> Glific.WAManagedPhones.create_wa_managed_phone()
 
     wa_managed_phone
