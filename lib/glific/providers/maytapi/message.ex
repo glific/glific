@@ -5,7 +5,10 @@ defmodule Glific.Providers.Maytapi.Message do
 
   import Ecto.Query, warn: false
 
+  alias Glific.Partners
+
   alias Glific.{
+    Contacts.Contact,
     Providers.Maytapi.ApiClient,
     Repo,
     WAGroup.WAManagedPhone
