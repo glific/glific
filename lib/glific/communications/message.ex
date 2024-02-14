@@ -5,6 +5,8 @@ defmodule Glific.Communications.Message do
   import Ecto.Query
   require Logger
 
+  alias Glific.Groups.Group
+
   alias Glific.{
     Communications,
     Contacts,
@@ -213,7 +215,8 @@ defmodule Glific.Communications.Message do
       type: type,
       sender_id: contact.id,
       receiver_id: Partners.organization_contact_id(organization_id),
-      organization_id: contact.organization_id
+      organization_id: contact.organization_id,
+      group_id: get_group_id(message_params)
     }
 
     message_params =
@@ -225,9 +228,10 @@ defmodule Glific.Communications.Message do
         status: :received
       })
 
+    message_event = get_receive_msg_telemetry_event(message_params)
     # publish a telemetry event about the message being received
     :telemetry.execute(
-      [:glific, :message, :received],
+      message_event,
       # currently we are not measuring latency
       %{duration: 1},
       metadata
@@ -243,9 +247,11 @@ defmodule Glific.Communications.Message do
   # handler for receiving the text message
   @spec receive_text(map()) :: :ok
   defp receive_text(message_params) do
+    message_event = get_received_msg_publish_event(message_params)
+
     message_params
     |> Messages.create_message()
-    |> publish_data(:received_message)
+    |> publish_data(message_event)
     |> process_message()
   end
 
@@ -421,4 +427,29 @@ defmodule Glific.Communications.Message do
   end
 
   defp process_errors(_message, _errors, _code), do: nil
+
+  @spec get_receive_msg_telemetry_event(map()) :: list()
+  defp get_receive_msg_telemetry_event(%{provider: "maytapi"} = _message_params) do
+    [:glific, :wa_message, :received]
+  end
+
+  defp get_receive_msg_telemetry_event(_), do: [:glific, :message, :received]
+
+  @spec get_received_msg_publish_event(map()) :: :wa_received_message | :received_message
+  defp get_received_msg_publish_event(%{provider: "maytapi"} = _message_params),
+    do: :wa_received_message
+
+  defp get_received_msg_publish_event(_), do: :received_message
+
+  @spec get_group_id(map()) :: non_neg_integer() | nil
+  defp get_group_id(%{provider: "maytapi"} = message_params) do
+    with %Group{id: id} <-
+           Repo.get_by(Group, %{bsp_id: message_params.group_id},
+             organization_id: message_params.organization_id
+           ) do
+      id
+    end
+  end
+
+  defp get_group_id(_), do: nil
 end
