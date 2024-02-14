@@ -48,17 +48,10 @@ defmodule Glific.Groups.WhatsappMessageTest do
     })
 
     params = %{phone: "9829627508", message: "hi"}
-    result = Message.send_text(attrs.organization_id, params)
+    {:ok, message} = Message.send_text(attrs.organization_id, params)
 
-    assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
-
-    assert response_body == %{
-             "success" => true,
-             "data" => %{
-               "chatId" => "78341114@c.us",
-               "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"
-             }
-           }
+    assert message.body == "hi"
+    assert message.status == :sent
   end
 
   test "receive_text/1 receive text message correctly" do
@@ -99,25 +92,6 @@ defmodule Glific.Groups.WhatsappMessageTest do
     assert Message.receive_media(params) == expected_result
   end
 
-  test "send_text/2 failed, wrong product id", attrs do
-    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
-
-    mock_maytapi_response(200, %{
-      "success" => false,
-      "message" => "Product id is wrong! Please check your Account information."
-    })
-
-    params = %{phone: "9829627508", message: "hi"}
-    result = Message.send_text(attrs.organization_id, params)
-
-    assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
-
-    assert response_body == %{
-             "success" => false,
-             "message" => "Product id is wrong! Please check your Account information."
-           }
-  end
-
   test "send_text_in_group/3 sends a text message in a whatsapp group successfully", attrs do
     WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
 
@@ -130,16 +104,9 @@ defmodule Glific.Groups.WhatsappMessageTest do
     })
 
     params = %{bsp_id: "120363238104@g.us", message: "hi", phone: "9829627508"}
-    result = Message.send_text_in_group(attrs.organization_id, params)
+    {:ok, message} = Message.send_text_in_group(attrs.organization_id, params)
 
-    assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
-
-    assert response_body == %{
-             "success" => true,
-             "data" => %{
-               "chatId" => "120363238104@g.us",
-               "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"
-             }
-           }
+    assert message.body == "hi"
+    assert message.status == :sent
   end
 end

@@ -8,7 +8,7 @@ defmodule Glific.Providers.Maytapi.Message do
   alias Glific.Partners
 
   alias Glific.{
-    Contacts.Contact,
+    Messages,
     Providers.Maytapi.ApiClient,
     Repo,
     WAGroup.WAManagedPhone
@@ -24,7 +24,9 @@ defmodule Glific.Providers.Maytapi.Message do
       |> Map.put("to_number", attrs.phone)
       |> Map.put("message", attrs.message)
 
-    ApiClient.send_message(org_id, payload, phone_id)
+    with {:ok, _response} <- ApiClient.send_message(org_id, payload, phone_id) do
+      create_message_after_send(org_id, attrs)
+    end
   end
 
   @doc false
@@ -37,21 +39,8 @@ defmodule Glific.Providers.Maytapi.Message do
       |> Map.put("to_number", attrs.bsp_id)
       |> Map.put("message", attrs.message)
 
-    case ApiClient.send_message(org_id, payload, phone_id) do
-      {:ok, response} ->
-        message_attrs =
-          %{
-            body: attrs.message,
-            status: "sent",
-            type: "text",
-            receiver_id: Partners.organization_contact_id(org_id),
-            organization_id: org_id,
-            sender_id: get_sender_id(attrs),
-            bsp_message_id: attrs.bsp_id,
-            message_type: "WABA+WA",
-            bsp_status: "sent"
-          }
-          |> Glific.Messages.create_message()
+    with {:ok, _response} <- ApiClient.send_message(org_id, payload, phone_id) do
+      create_message_after_send(org_id, attrs)
     end
   end
 
@@ -105,11 +94,20 @@ defmodule Glific.Providers.Maytapi.Message do
     |> Repo.one!()
   end
 
-  @spec get_sender_id(map()) :: non_neg_integer()
-  defp get_sender_id(attrs) do
-    Contact
-    |> where([g], g.phone == ^attrs.phone)
-    |> select([g], g.id)
-    |> Repo.one!()
+  @spec create_message_after_send(non_neg_integer(), map()) :: any()
+  defp create_message_after_send(org_id, attrs) do
+    message_attrs =
+      %{
+        body: attrs.message,
+        status: "sent",
+        type: "text",
+        receiver_id: Partners.organization_contact_id(org_id),
+        organization_id: org_id,
+        sender_id: Partners.organization_contact_id(org_id),
+        message_type: "WABA+WA",
+        bsp_status: "sent"
+      }
+
+    Messages.create_message(message_attrs)
   end
 end

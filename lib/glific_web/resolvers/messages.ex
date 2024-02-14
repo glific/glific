@@ -4,8 +4,6 @@ defmodule GlificWeb.Resolvers.Messages do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.Providers
-
   alias Glific.{
     Contacts.Contact,
     Groups.Group,
@@ -248,7 +246,7 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, any} | {:error, any}
   def send_message_in_wa_group(_, %{input: input_params}, %{context: %{current_user: user}}) do
     with {:ok, message} <-
-           Providers.Maytapi.Message.send_text_in_group(user.organization_id, input_params) do
+          Message.send_text_in_group(user.organization_id, input_params) do
       {:ok, %{message: message}}
     else
       {:error, reason} -> {:error, %{error: reason}}
