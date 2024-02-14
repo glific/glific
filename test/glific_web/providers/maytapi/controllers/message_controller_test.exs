@@ -77,7 +77,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       "phone" => "919917443994"
     },
     "conversation" => "120363213149844251@g.us",
-    "conversation_name" => "Tech4Dev Team",
+    "conversation_name" => "Group C",
     "receiver" => "919917443955",
     "timestamp" => 1_707_216_553,
     "type" => "message",
@@ -473,14 +473,17 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.group.bsp_id == "120363213149844251@g.us"
     end
 
-    test "Incoming media message should be stored in the database, but group doesnt exist", %{
-      conn: conn
-    } do
-      invalid_resp = @media_message_webhook |> Map.put("conversation", "1203632131498442")
-      conn = post(conn, "/maytapi", invalid_resp)
+    test "Incoming media message should be stored in the database, but group doesnt exist, so creates group",
+         %{
+           conn: conn
+         } do
+      media_message_new_group =
+        @media_message_webhook |> Map.put("conversation", "120363027326493365@g.us")
+
+      conn = post(conn, "/maytapi", media_message_new_group)
       assert conn.halted
 
-      bsp_message_id = get_in(invalid_resp, ["message", "id"])
+      bsp_message_id = get_in(media_message_new_group, ["message", "id"])
 
       {:ok, message} =
         Repo.fetch_by(Message, %{
@@ -488,7 +491,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
@@ -502,12 +505,12 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       # Sender should be stored into the db
       assert message.sender.phone ==
-               get_in(invalid_resp, ["user", "phone"])
+               get_in(media_message_new_group, ["user", "phone"])
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
       assert message.message_type == "WA"
-      assert message.group_id == nil
+      assert message.group.bsp_id == "120363027326493365@g.us"
     end
   end
 end
