@@ -6,7 +6,6 @@ defmodule Glific.Groups.WhatsappMessageTest do
     Partners,
     Providers.Maytapi.Message,
     Seeds.SeedsDev,
-    Seeds.SeedsDev,
     WAManagedPhonesFixtures
   }
 
@@ -37,8 +36,8 @@ defmodule Glific.Groups.WhatsappMessageTest do
     end)
   end
 
-  test "send_message/2 sends a text message successfully", attrs do
-    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+  test "send_text/2 sends a text message successfully", attrs do
+    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{org_id: attrs.organization_id})
 
     mock_maytapi_response(200, %{
       "success" => true,
