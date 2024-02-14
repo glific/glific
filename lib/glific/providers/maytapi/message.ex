@@ -8,7 +8,7 @@ defmodule Glific.Providers.Maytapi.Message do
   alias Glific.Partners
 
   alias Glific.{
-    Contacts.Contact,
+    Messages,
     Providers.Maytapi.ApiClient,
     Repo,
     WAGroup.WAManagedPhone
@@ -100,7 +100,24 @@ defmodule Glific.Providers.Maytapi.Message do
   defp get_sender_id(attrs) do
     Contact
     |> where([g], g.phone == ^attrs.phone)
-    |> select([g], g.id)
+    |> select([g], g.phone_id)
     |> Repo.one!()
+  end
+
+  @spec create_message_after_send(non_neg_integer(), map()) :: any()
+  defp create_message_after_send(org_id, attrs) do
+    message_attrs =
+      %{
+        body: attrs.message,
+        status: "sent",
+        type: "text",
+        receiver_id: Partners.organization_contact_id(org_id),
+        organization_id: org_id,
+        sender_id: Partners.organization_contact_id(org_id),
+        message_type: "WABA+WA",
+        bsp_status: "sent"
+      }
+
+    Messages.create_message(message_attrs)
   end
 end
