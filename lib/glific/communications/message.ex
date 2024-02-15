@@ -263,11 +263,13 @@ defmodule Glific.Communications.Message do
       |> Map.put_new(:flow, :inbound)
       |> Messages.create_message_media()
 
+    message_event = get_received_msg_publish_event(message_params)
+
     {:ok, _message} =
       message_params
       |> Map.put(:media_id, message_media.id)
       |> Messages.create_message()
-      |> publish_data(:received_message)
+      |> publish_data(message_event)
       |> process_message()
 
     :ok
