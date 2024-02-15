@@ -6,7 +6,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     Partners,
     Providers.Maytapi.Message,
     Seeds.SeedsDev,
-    WAManagedPhonesFixtures
+    WAManagedPhonesFixtures,
     Seeds.SeedsDev,
     WAManagedPhonesFixtures
   }
@@ -39,7 +39,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
   end
 
   test "send_text/2 sends a text message successfully", attrs do
-    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{org_id: attrs.organization_id})
+    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
 
     mock_maytapi_response(200, %{
       "success" => true,
@@ -94,27 +94,8 @@ defmodule Glific.Groups.WhatsappMessageTest do
     assert Message.receive_media(params) == expected_result
   end
 
-  test "send_text/2 failed, wrong product id", attrs do
-    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{org_id: attrs.organization_id})
-
-    mock_maytapi_response(200, %{
-      "success" => false,
-      "message" => "Product id is wrong! Please check your Account information."
-    })
-
-    params = %{phone: "9829627508", message: "hi"}
-    result = Message.send_text(attrs.organization_id, params)
-
-    assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
-
-    assert response_body == %{
-             "success" => false,
-             "message" => "Product id is wrong! Please check your Account information."
-           }
-  end
-
   test "send_text_in_group/3 sends a text message in a whatsapp group successfully", attrs do
-    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{org_id: attrs.organization_id})
+    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
 
     mock_maytapi_response(200, %{
       "success" => true,

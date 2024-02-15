@@ -17,7 +17,7 @@ defmodule Glific.WAManagedPhonesFixtures do
         label: "some label",
         phone: "9829627508",
         phone_id: 42_093,
-        organization_id: attrs.org_id,
+        organization_id: attrs.organization_id,
         provider_id: 1
       })
       |> Glific.WAManagedPhones.create_wa_managed_phone()
