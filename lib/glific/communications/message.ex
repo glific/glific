@@ -9,11 +9,7 @@ defmodule Glific.Communications.Message do
     Communications,
     Contacts,
     Contacts.Contact,
-<<<<<<< HEAD
-    Groups.WhatsappGroup,
-=======
     Groups,
->>>>>>> master
     Mails.BalanceAlertMail,
     Messages,
     Messages.Message,

@@ -25,7 +25,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
   def text(conn, params) do
     params
     |> Maytapi.Message.receive_text()
-    |> update_message_params(conn.assigns[:organization_id],params)
+    |> update_message_params(conn.assigns[:organization_id], params)
     |> Communications.Message.receive_message()
 
     handler(conn, params, "text handler")
@@ -75,11 +75,11 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
 
   @spec update_message_params(map(), non_neg_integer(), map()) :: map()
   defp update_message_params(message_payload, org_id, params) do
-    message_params
+    message_payload
     |> Map.put(:organization_id, org_id)
     |> Map.put(:provider, "maytapi")
     |> Map.put(:message_type, "WA")
-    |> Map.put(:group_id,  params["conversation"])
+    |> Map.put(:group_id, params["conversation"])
     |> Map.put(:group_name, params["conversation_name"])
     |> update_sender_details()
   end
