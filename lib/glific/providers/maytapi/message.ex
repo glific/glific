@@ -61,11 +61,11 @@ defmodule Glific.Providers.Maytapi.Message do
   # sometime the maytapi payload has a blank payload
   # or maybe a simulator or some test code
   @spec validate_phone_number(String.t(), map()) :: :ok | RuntimeError
-  defp validate_phone_number(ph_num, payload) when ph_num in [nil, ""] do
+  defp validate_phone_number(phone, payload) when phone in [nil, ""] do
     error = "Phone number is blank, #{inspect(payload)}"
     Glific.log_error(error)
     raise(RuntimeError, message: error)
   end
 
-  defp validate_phone_number(_, _), do: :ok
+  defp validate_phone_number(_phone, _payload), do: :ok
 end
