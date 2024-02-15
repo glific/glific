@@ -38,10 +38,10 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
   def image(conn, params), do: media(conn, params, :image)
 
   @doc """
-  Callback for maytapi file type
+  Callback for maytapi document type
   """
-  @spec file(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def file(conn, params), do: media(conn, params, :document)
+  @spec document(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def document(conn, params), do: media(conn, params, :document)
 
   @doc """
   Callback for maytapi audio type

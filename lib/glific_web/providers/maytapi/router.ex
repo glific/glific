@@ -16,6 +16,9 @@ defmodule GlificWeb.Providers.Maytapi.Router do
       post("/voice", MessageController, :audio)
       post("/document", MessageController, :document)
       post("/location", MessageController, :location)
+      post("/sticker", MessageController, :sticker)
+      # ptt is type for voice messages created through whatsapp
+      post("/ptt", MessageController, :audio)
     end
 
     scope "/message-event" do
