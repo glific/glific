@@ -25,12 +25,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
   def text(conn, params) do
     params
     |> Maytapi.Message.receive_text()
-    |> Map.put(:organization_id, conn.assigns[:organization_id])
-    |> Map.put(:provider, "maytapi")
-    |> Map.put(:message_type, "WA")
-    |> Map.put(:group_id, params["conversation"])
-    |> Map.put(:group_name, params["conversation_name"])
-    |> update_sender_details()
+    |> update_message_params(conn.assigns[:organization_id], params)
     |> Communications.Message.receive_message()
 
     handler(conn, params, "text handler")
@@ -43,10 +38,10 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
   def image(conn, params), do: media(conn, params, :image)
 
   @doc """
-  Callback for maytapi file type
+  Callback for maytapi document type
   """
-  @spec file(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def file(conn, params), do: media(conn, params, :document)
+  @spec document(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def document(conn, params), do: media(conn, params, :document)
 
   @doc """
   Callback for maytapi audio type
@@ -72,10 +67,21 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
   defp media(conn, params, type) do
     params
     |> Maytapi.Message.receive_media()
-    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> update_message_params(conn.assigns[:organization_id], params)
     |> Communications.Message.receive_message(type)
 
     handler(conn, params, "media handler")
+  end
+
+  @spec update_message_params(map(), non_neg_integer(), map()) :: map()
+  defp update_message_params(message_payload, org_id, params) do
+    message_payload
+    |> Map.put(:organization_id, org_id)
+    |> Map.put(:provider, "maytapi")
+    |> Map.put(:message_type, "WA")
+    |> Map.put(:group_id, params["conversation"])
+    |> Map.put(:group_name, params["conversation_name"])
+    |> update_sender_details()
   end
 
   @spec update_sender_details(map()) :: map()
