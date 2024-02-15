@@ -31,3 +31,81 @@ body:graphql:vars {
     "id": "3"
   }
 }
+
+docs {
+  # Delete an Organization
+  
+  ## Description
+  This GraphQL API is used to delete an existing organization.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  | Parameter       | Description                                          |
+  |-----------------|------------------------------------------------------|
+  |` id  `            | ID of the organization to be deleted.               |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation deleteOrganization($id: ID!) { deleteOrganization(id: $id) { errors { key message } } }",
+          "variables": {
+              "id": "3"
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+      "id": "3"
+  }
+  ```
+  
+  ## Response
+  The API response includes an array of errors, if any occurred during the deletion process. Each error object contains a key and a message.
+  ```json
+  {
+    "data": {
+      "deleteOrganization": {
+        "errors": null
+      }
+    }
+  }
+  ```
+  
+  In case of errors, all the above functions return an error object like the below
+  
+  ```json
+  {
+    "data": {
+      "deleteOrganization": {
+        "errors": [
+          {
+            "key": "Elixir.Glific.Partners.Organization 3",
+            "message": "Resource not found"
+          }
+        ]
+      }
+    }
+  }
+  ```
+  
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Delete an Organization**
+     - Permanently remove an organization from the system.
+  
+  ## FAQ
+  None
+}

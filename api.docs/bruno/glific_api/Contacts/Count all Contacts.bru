@@ -28,3 +28,84 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Count all Contacts
+  
+  ## Description
+  This GraphQL API is used to retrieve the count of contacts based on specified filters.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter | Type           | Description                                |
+  |-----------|----------------|--------------------------------------------|
+  | `filter`  | ContactFilter  | Filters to apply for counting contacts.    |
+  
+  ## Filtering Options for Contacts
+  
+  | Field           | Type                      | Description                                              |
+  | --------------- | ------------------------- | -------------------------------------------------------- |
+  | `bspStatus`     | ContactProviderStatusEnum | Filter by the status of the contact provider.           |
+  | `dateRange`     | DateRangeInput            | Filter by a range of dates.                             |
+  | `includeGroups` | [ID]                      | Include contacts belonging to specified groups.         |
+  | `includeTags`   | [ID]                      | Include contacts with specified tags.                   |
+  | `name`          | String                    | Filter by contact name.                                 |
+  | `phone`         | String                    | Filter by contact phone number.                         |
+  | `status`        | ContactStatusEnum         | Filter by contact status.                               |
+  | `term`          | String                    | Filter by a search term.                                |
+  
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "query countContacts($filter: ContactFilter) { countContacts(filter: $filter) }",
+          "variables": {
+              "filter": {
+                  "status": "VALID"
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "filter": {
+      "status": "VALID"
+    }
+  }
+  ```
+  
+  ## Response
+  The API response includes the count of contacts based on the specified filter.
+  ```json
+  {
+    "data": {
+      "countContacts": 6
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Count Contacts**
+     - Retrieve the count of contacts based on specified filters.
+  
+  ## FAQ
+  1. **Filter Contacts**
+     - **Q:** How can I filter contacts?
+     - **A:** Use the `filter` parameter to specify conditions for counting contacts. You can see the table for all filtering options.
+  
+  
+}

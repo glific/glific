@@ -6,6 +6,7 @@ defmodule Glific.Reports do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Flows.FlowContext,
     Flows.MessageBroadcast,
@@ -24,6 +25,7 @@ defmodule Glific.Reports do
     Repo.put_process_state(org_id)
 
     get_count_query(kpi)
+    |> remove_default_contacts(org_id, kpi)
     |> add_timestamps(kpi, opts, date_range)
     |> where([q], q.organization_id == ^org_id)
     |> Repo.all()
@@ -49,6 +51,25 @@ defmodule Glific.Reports do
       :hsm_messages_count
     ]
   end
+
+  @spec remove_default_contacts(Ecto.Query.t(), non_neg_integer(), atom()) :: Ecto.Query.t()
+  defp remove_default_contacts(query, org_id, kpi)
+       when kpi in [
+              :valid_contact_count,
+              :invalid_contact_count,
+              :opted_in_contacts_count,
+              :opted_out_contacts_count,
+              :non_opted_contacts_count,
+              :bsp_status
+            ] do
+    org = Partners.get_organization!(org_id)
+
+    query
+    |> where([q], not like(q.phone, ^"#{Contacts.simulator_phone_prefix()}%"))
+    |> where([q], q.id != ^org.contact_id)
+  end
+
+  defp remove_default_contacts(query, _, _), do: query
 
   @spec get_count_query(atom()) :: Ecto.Query.t()
   defp get_count_query(:valid_contact_count) do

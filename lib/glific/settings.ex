@@ -3,8 +3,12 @@ defmodule Glific.Settings do
   The Settings context. This includes language for now.
   """
   import Ecto.Query, warn: false
-  alias Glific.Repo
-  alias Glific.Settings.Language
+
+  alias Glific.{
+    Partners,
+    Repo,
+    Settings.Language
+  }
 
   @doc """
   Returns the list of languages.
@@ -171,7 +175,7 @@ defmodule Glific.Settings do
   @spec locale_label_map(non_neg_integer) :: %{String.t() => String.t()}
   def locale_label_map(organization_id) do
     organization_id
-    |> Glific.Partners.organization()
+    |> Partners.organization()
     |> Map.get(:languages)
     |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.locale, language.label) end)
   end
@@ -210,5 +214,16 @@ defmodule Glific.Settings do
     |> where([l], l.is_active == true)
     |> where([l], ilike(l.label, ^"#{term}%") or ilike(l.locale, ^"#{term}%"))
     |> Repo.all()
+  end
+
+  @doc """
+  Get the language shortcode as value
+  """
+  @spec get_language_code(non_neg_integer) :: %{String.t() => String.t()}
+  def get_language_code(organization_id) do
+    organization_id
+    |> Partners.organization()
+    |> Map.get(:languages)
+    |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.label, language.locale) end)
   end
 end

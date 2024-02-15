@@ -5,27 +5,16 @@ defmodule Glific.GoogleTranslate.Translate do
 
   @endpoint "https://translation.googleapis.com/language/translate/v2"
 
-  @default_params %{
-    "temperature" => 0.7,
-    "max_tokens" => 250,
-    "top_p" => 1,
-    "frequency_penalty" => 0,
-    "presence_penalty" => 0
-  }
-
   @doc """
   API call to Google Translate.
   """
-  @spec parse(String.t(), String.t(), map(), map()) :: tuple()
-  def parse(api_key, question_text, languages, params \\ %{}) do
-    data =
-      @default_params
-      |> Map.merge(params)
-      |> Map.merge(%{
-        "q" => question_text,
-        "source" => languages["source"],
-        "target" => languages["target"]
-      })
+  @spec parse(String.t(), String.t(), map()) :: tuple()
+  def parse(api_key, question_text, languages) do
+    data = %{
+      "q" => question_text,
+      "source" => languages["source"],
+      "target" => languages["target"]
+    }
 
     middleware = [
       Tesla.Middleware.JSON,

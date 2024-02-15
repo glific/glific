@@ -34,3 +34,90 @@ body:graphql:vars {
     "result": {"one": 1, "two": 2, "three": 3}
   }
 }
+
+docs {
+  # Resume Flow for a Contact
+  
+  ## Description
+  This GraphQL API is used to resume a flow for a specific contact with the provided result.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter   | Type    | Description                                |
+  |-------------|---------|--------------------------------------------|
+  | `flowId`    | ID      | The ID of the flow to be resumed.          |
+  | `contactId` | ID      | The ID of the contact for which the flow will be resumed. |
+  | `result`    | JSON    | The result object containing information needed for resuming the flow. |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation resumeContactFlow($flowId: ID!, $contactId: ID!, $result: JSON!) { resumeContactFlow(flowId: $flowId, contactId: $contactId, result: $result) { success errors { key message } } }",
+          "variables": {
+              "flowId": "FLOW_ID",
+              "contactId": "CONTACT_ID",
+              "result": {"one": 1, "two": 2, "three": 3}
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "flowId": "FLOW_ID",
+    "contactId": "CONTACT_ID",
+    "result": {"one": 1, "two": 2, "three": 3}
+  }
+  ```
+  
+  ## Response
+  The API response includes information about the success of the operation and any encountered errors.
+  ```json
+  {
+    "data": {
+      "startContactFlow": {
+        "errors": null,
+        "success": true
+      }
+    }
+  }
+  ```
+  
+  In case of errors, all the above functions return an error object like the below
+  
+  ```json
+  {
+    "data": {
+      "startContactFlow": {
+        "errors": [
+          {
+            "key": "contact",
+            "message": "does not have any active flows awaiting results."
+          }
+        ],
+        "success": null
+      }
+    }
+  }
+  ```
+  
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Resume Flow for a Contact**
+     - Resume a flow for a specific contact with the provided result.
+  
+  ## FAQ
+  None
+}

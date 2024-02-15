@@ -30,3 +30,66 @@ body:graphql:vars {
     "id": "1975"
   }
 }
+
+docs {
+  # Get Contact's Location
+  
+  ## Description
+  This GraphQL API is used to retrieve the location of a specific contact identified by its ID.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter | Type | Description                                  |
+  |-----------|------|----------------------------------------------|
+  | `id`      | ID   | ID of the contact to retrieve location for.  |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "query contactLocation($id: ID!) { contactLocation(id: $id) { latitude longitude } }",
+          "variables": {
+              "id": "1975"
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "id": "1975"
+  }
+  ```
+  
+  ## Response
+  The API response includes the latitude and longitude of the contact's location.
+  ```json
+  {
+    "data": {
+      "contactLocation": {
+        "latitude": -30.879910476061603,
+        "longitude": 156.21478312951263
+      }
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Get Contact's Location**
+     - Retrieve the location of a specific contact identified by its ID.
+  
+  ## FAQ
+  1. **What will the response look like?**
+     - The API response includes the latitude and longitude of the contact's location.
+}
