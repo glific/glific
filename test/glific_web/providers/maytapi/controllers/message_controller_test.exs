@@ -660,4 +660,345 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.contact.contact_type == "WA"
     end
   end
+
+  describe "media" do
+    setup do
+      message_payload = %{
+        "text" => "Inbound Message"
+      }
+
+      message_params =
+        @message_request_params
+        |> put_in(["payload", "type"], "text")
+        |> put_in(["payload", "id"], Faker.String.base64(36))
+        |> put_in(["payload", "payload"], message_payload)
+
+      %{message_params: message_params}
+    end
+
+    test "Incoming media message without phone should raise exception", %{conn: conn} do
+      media_msg_webhook = Map.delete(@media_message_webhook, "user")
+      assert_raise RuntimeError, fn -> post(conn, "/maytapi", media_msg_webhook) end
+
+      media_msg_webhook = put_in(@media_message_webhook, ["user", "phone"], nil)
+      assert_raise RuntimeError, fn -> post(conn, "/maytapi", media_msg_webhook) end
+
+      media_msg_webhook = put_in(@media_message_webhook, ["user", "phone"], "")
+      assert_raise RuntimeError, fn -> post(conn, "/maytapi", media_msg_webhook) end
+    end
+
+    test "Incoming media message should be stored in the database, new contact", %{conn: conn} do
+      conn = post(conn, "/maytapi", @media_message_webhook)
+      assert conn.halted
+
+      bsp_message_id = get_in(@media_message_webhook, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
+      assert message.sender.last_message_at != nil
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(@media_message_webhook, ["user", "phone"])
+
+      # contact_type and message_type should be updated for wa groups
+      assert message.contact.contact_type == "WA"
+      assert message.message_type == "WA"
+      assert message.group.bsp_id == "120363213149844251@g.us"
+    end
+
+    test "Incoming media message should be stored in the database where media is a file", %{
+      conn: conn
+    } do
+      media_message_payload =
+        put_in(@media_message_webhook, ["message", "type"], "document")
+        |> put_in(["message", "mime"], "application/pdf")
+        |> put_in(["message", "filename"], "file.pdf")
+        |> put_in(["message", "url"], "https://cdnydm.com/wh/x7Yr1HQYy_m9RZ_xcJ6dw.pdf")
+
+      conn = post(conn, "/maytapi", media_message_payload)
+      assert conn.halted
+
+      bsp_message_id = get_in(media_message_payload, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
+      assert message.sender.last_message_at != nil
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(media_message_payload, ["user", "phone"])
+
+      # contact_type and message_type should be updated for wa groups
+      assert message.contact.contact_type == "WA"
+      assert message.message_type == "WA"
+      assert message.group.bsp_id == "120363213149844251@g.us"
+      assert message.media.content_type == "document"
+    end
+
+    test "Incoming media message should be stored in the database where media is a sticker", %{
+      conn: conn
+    } do
+      media_message_payload =
+        put_in(@media_message_webhook, ["message", "type"], "sticker")
+        |> put_in(["message", "mime"], "image/webp")
+        |> put_in(["message", "filename"], "sticker.webp")
+        |> put_in(["message", "url"], "https://cdnydm.com/wh/x7Yr1HQYy_m9RZ_xcJ6dw.webp")
+
+      conn = post(conn, "/maytapi", media_message_payload)
+      assert conn.halted
+
+      bsp_message_id = get_in(media_message_payload, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
+      assert message.sender.last_message_at != nil
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(media_message_payload, ["user", "phone"])
+
+      # contact_type and message_type should be updated for wa groups
+      assert message.contact.contact_type == "WA"
+      assert message.message_type == "WA"
+      assert message.group.bsp_id == "120363213149844251@g.us"
+      assert message.media.content_type == "sticker"
+    end
+
+    test "Incoming media message should be stored in the database where media is a whatsapp audio",
+         %{conn: conn} do
+      media_message_payload =
+        put_in(@media_message_webhook, ["message", "type"], "ptt")
+        |> put_in(["message", "mime"], "audio/ogg")
+        |> put_in(["message", "filename"], "audio.oga")
+        |> put_in(["message", "url"], "https://cdnydm.com/wh/x7Yr1HQYy_m9RZ_xcJ6dw.oga")
+
+      conn = post(conn, "/maytapi", media_message_payload)
+      assert conn.halted
+
+      bsp_message_id = get_in(media_message_payload, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
+      assert message.sender.last_message_at != nil
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(media_message_payload, ["user", "phone"])
+
+      # contact_type and message_type should be updated for wa groups
+      assert message.contact.contact_type == "WA"
+      assert message.message_type == "WA"
+      assert message.group.bsp_id == "120363213149844251@g.us"
+      assert message.media.content_type == "ptt"
+    end
+
+    test "Incoming media message should be stored in the database where media is a uploaded audio",
+         %{conn: conn} do
+      media_message_payload =
+        put_in(@media_message_webhook, ["message", "type"], "audio")
+        |> put_in(["message", "mime"], "audio/acc")
+        |> put_in(["message", "filename"], "audio.us")
+        |> put_in(["message", "url"], "https://cdnydm.com/wh/x7Yr1HQYy_m9RZ_xcJ6dw.us")
+
+      conn = post(conn, "/maytapi", media_message_payload)
+      assert conn.halted
+
+      bsp_message_id = get_in(media_message_payload, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
+      assert message.sender.last_message_at != nil
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(media_message_payload, ["user", "phone"])
+
+      # contact_type and message_type should be updated for wa groups
+      assert message.contact.contact_type == "WA"
+      assert message.message_type == "WA"
+      assert message.group.bsp_id == "120363213149844251@g.us"
+      assert message.media.content_type == "audio"
+    end
+
+    test "Updating the contact_type to WABA+WA due to sender contact already existing", %{
+      conn: conn,
+      message_params: message_params
+    } do
+      # handling a message from gupshup, so that the phone number will be already existing
+      # in contacts table.
+      gupshup_conn = post(conn, "/gupshup", message_params)
+      assert gupshup_conn.halted
+      bsp_message_id = get_in(message_params, ["payload", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: gupshup_conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:receiver, :sender, :media])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
+      assert message.sender.last_message_at != nil
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(message_params, ["payload", "sender", "phone"])
+
+      # handling text message from maytapi
+
+      text_webhook_params =
+        @media_message_webhook
+        |> put_in(["user", "phone"], get_in(message_params, ["payload", "sender", "phone"]))
+
+      gupshup_conn = post(conn, "/maytapi", text_webhook_params)
+
+      assert gupshup_conn.halted
+
+      bsp_message_id = get_in(text_webhook_params, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: gupshup_conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
+      assert message.sender.last_message_at != nil
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(text_webhook_params, ["user", "phone"])
+
+      assert message.contact.contact_type == "WABA+WA"
+      assert message.group.bsp_id == "120363213149844251@g.us"
+    end
+
+    test "Incoming media message should be stored in the database, but group doesnt exist, so creates group",
+         %{
+           conn: conn
+         } do
+      media_message_new_group =
+        @media_message_webhook |> Map.put("conversation", "120363027326493365@g.us")
+
+      conn = post(conn, "/maytapi", media_message_new_group)
+      assert conn.halted
+
+      bsp_message_id = get_in(media_message_new_group, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
+      assert message.sender.last_message_at != nil
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(media_message_new_group, ["user", "phone"])
+
+      # contact_type and message_type should be updated for wa groups
+      assert message.contact.contact_type == "WA"
+      assert message.message_type == "WA"
+      assert message.group.bsp_id == "120363027326493365@g.us"
+    end
+  end
 end
