@@ -104,7 +104,7 @@ defmodule Glific.Providers.Maytapi.Message do
         receiver_id: Partners.organization_contact_id(org_id),
         organization_id: org_id,
         sender_id: Partners.organization_contact_id(org_id),
-        message_type: "WABA+WA",
+        message_type: "WA",
         bsp_status: "sent"
       }
 
