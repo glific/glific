@@ -10,7 +10,6 @@ defmodule GlificWeb.Resolvers.Messages do
     Messages,
     Messages.Message,
     Messages.MessageMedia,
-
     Repo,
     Users.User
   }
@@ -245,11 +244,12 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec send_message_in_wa_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def send_message_in_wa_group(_, %{input: input_params}, %{context: %{current_user: user}}) do
-    with {:ok, message} <-
-      Glific.Providers.Maytapi.Message.send_text_in_group(user.organization_id, input_params) do
-      {:ok, %{message: message}}
-    else
-      {:error, reason} -> {:error, %{error: reason}}
+    case Glific.Providers.Maytapi.Message.send_text_in_group(user.organization_id, input_params) do
+      {:ok, message} ->
+        {:ok, %{message: message}}
+
+      {:error, reason} ->
+        {:error, %{error: reason}}
     end
   end
 end
