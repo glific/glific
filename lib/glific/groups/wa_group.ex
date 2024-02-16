@@ -6,6 +6,8 @@ defmodule Glific.Groups.WAGroup do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias __MODULE__
+
   alias Glific.{
     Partners.Organization,
     WAGroup.WAManagedPhone
@@ -39,7 +41,7 @@ defmodule Glific.Groups.WAGroup do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(Group.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(WAGroup.t(), map()) :: Ecto.Changeset.t()
   def changeset(contact, attrs) do
     contact
     |> cast(attrs, @required_fields)
