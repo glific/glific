@@ -25,14 +25,7 @@ defmodule Glific.Providers.Maytapi.Message do
   def receive_text(params) do
     payload = params["message"]
 
-    # lets ensure that we have a phone number
-    # sometime the maytapi payload has a blank payload
-    # or maybe a simulator or some test code
-    if params["user"]["phone"] in [nil, ""] do
-      error = "Phone number is blank, #{inspect(payload)}"
-      Glific.log_error(error)
-      raise(RuntimeError, message: error)
-    end
+    :ok = validate_phone_number(params["user"]["phone"], payload)
 
     %{
       bsp_message_id: payload["id"],
@@ -49,6 +42,8 @@ defmodule Glific.Providers.Maytapi.Message do
   def receive_media(params) do
     payload = params["message"]
 
+    :ok = validate_phone_number(params["user"]["phone"], payload)
+
     %{
       bsp_message_id: payload["id"],
       caption: payload["caption"],
@@ -61,4 +56,16 @@ defmodule Glific.Providers.Maytapi.Message do
       }
     }
   end
+
+  # lets ensure that we have a phone number
+  # sometime the maytapi payload has a blank payload
+  # or maybe a simulator or some test code
+  @spec validate_phone_number(String.t(), map()) :: :ok | RuntimeError
+  defp validate_phone_number(phone, payload) when phone in [nil, ""] do
+    error = "Phone number is blank, #{inspect(payload)}"
+    Glific.log_error(error)
+    raise(RuntimeError, message: error)
+  end
+
+  defp validate_phone_number(_phone, _payload), do: :ok
 end
