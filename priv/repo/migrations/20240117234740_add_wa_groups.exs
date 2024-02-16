@@ -28,13 +28,6 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
         default: true,
         comment: "Whether the phone number is currently active"
 
-      # we will keep the token encrypted
-      add :api_token, :binary
-
-      # foreign key to provider, so we know the relevant apis to call to send/receive messages
-      add :provider_id, references(:providers, on_delete: :delete_all, prefix: @global_schema),
-        null: true
-
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
 
@@ -142,6 +135,7 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:wa_managed_phone_id, :bsp_id, :organization_id)
+    create unique_index(:wa_groups, :organization_id)
+    create unique_index(:wa_groups, :bsp_id)
   end
 end
