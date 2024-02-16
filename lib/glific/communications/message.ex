@@ -449,7 +449,6 @@ defmodule Glific.Communications.Message do
       Groups.maybe_create_group(%{
         organization_id: message_params.organization_id,
         label: message_params.group_name,
-        group_type: message_params.message_type,
         bsp_id: message_params.group_id
       })
 
