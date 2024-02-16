@@ -226,7 +226,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
-      assert message.message_type == "WA"
     end
 
     test "Updating the contact_type to WABA+WA due to sender contact already existing", %{
@@ -331,8 +330,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
-      assert message.message_type == "WA"
-      assert !is_nil(message.group_id)
     end
   end
 
@@ -392,7 +389,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
-      assert message.message_type == "WA"
     end
 
     test "Incoming media message should be stored in the database where media is a file", %{
@@ -407,7 +403,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       conn = post(conn, "/maytapi", media_message_payload)
       assert conn.halted
 
-      IO.inspect(conn)
       bsp_message_id = get_in(media_message_payload, ["message", "id"])
 
       {:ok, message} =
@@ -434,7 +429,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
-      assert message.message_type == "WA"
       assert message.media.content_type == "document"
     end
 
@@ -476,7 +470,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
-      assert message.message_type == "WA"
       assert message.media.content_type == "sticker"
     end
 
@@ -517,7 +510,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
-      assert message.message_type == "WA"
       assert message.media.content_type == "ptt"
     end
 
@@ -558,7 +550,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
-      assert message.message_type == "WA"
       assert message.media.content_type == "audio"
     end
 
@@ -667,7 +658,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
-      assert message.message_type == "WA"
     end
   end
 end

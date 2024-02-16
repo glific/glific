@@ -132,5 +132,8 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
 
       timestamps(type: :utc_datetime)
     end
+
+    create index(:wa_groups, [:wa_managed_phone_id, :organization_id])
+    create unique_index(:wa_groups, [:bsp_id, :wa_managed_phone_id, :organization_id])
   end
 end

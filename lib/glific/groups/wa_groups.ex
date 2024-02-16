@@ -50,7 +50,7 @@ defmodule Glific.Groups.WhatsappGroup do
     Enum.map(
       groups,
       fn group ->
-        create_wa_group(%{
+        maybe_create_group(%{
           label: group.name,
           organization_id: org_id,
           bsp_id: group.bsp_id,
@@ -117,7 +117,11 @@ defmodule Glific.Groups.WhatsappGroup do
   """
   @spec maybe_create_group(map()) :: {:ok, WAGroup.t()} | {:error, Ecto.Changeset.t()}
   def maybe_create_group(params) do
-    case Repo.get_by(WAGroup, %{bsp_id: params.bsp_id, organization_id: params.organization_id}) do
+    case Repo.get_by(WAGroup, %{
+           bsp_id: params.bsp_id,
+           organization_id: params.organization_id,
+           wa_managed_phone_id: params.wa_managed_phone_id
+         }) do
       %WAGroup{} = group ->
         {:ok, group}
 
