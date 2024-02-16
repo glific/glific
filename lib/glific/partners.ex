@@ -472,6 +472,7 @@ defmodule Glific.Partners do
       |> Flags.set_open_ai_auto_translation_enabled()
       |> Flags.set_auto_translation_enabled_for_google_trans()
       |> Flags.set_contact_profile_enabled()
+      |> Flags.set_whatsapp_group_enabled()
       |> Flags.set_ticketing_enabled()
 
     Caches.set(
@@ -1179,6 +1180,7 @@ defmodule Glific.Partners do
       "roles_and_permission" => Flags.get_roles_and_permission(organization),
       "contact_profile_enabled" => Flags.get_contact_profile_enabled(organization),
       "ticketing_enabled" => Flags.get_ticketing_enabled(organization),
+      "whatsapp_group_enabled" => Flags.get_whatsapp_group_enabled(organization),
       "auto_translation_enabled" =>
         Flags.get_open_ai_auto_translation_enabled(organization) or
           Flags.get_google_auto_translation_enabled(organization)
