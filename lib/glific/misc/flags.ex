@@ -264,7 +264,7 @@ defmodule Glific.Flags do
   def set_whatsapp_group_enabled(organization) do
     Map.put(
       organization,
-      :is_ticketing_enabled,
+      :is_whatsapp_group_enabled,
       get_whatsapp_group_enabled(organization)
     )
   end
