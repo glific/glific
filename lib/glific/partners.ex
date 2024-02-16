@@ -933,7 +933,7 @@ defmodule Glific.Partners do
 
   defp credential_update_callback(organization, credential, "maytapi") do
     WAManagedPhones.fetch_wa_managed_phones(organization.id)
-    WhatsappGroup.list_wa_groups(organization.id)
+    WhatsappGroup.fetch_wa_groups(organization.id)
     {:ok, credential}
   end
 
