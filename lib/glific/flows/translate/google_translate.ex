@@ -3,9 +3,9 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
   Code to translate using google translate as the translation engine.
   """
   @behaviour Glific.Flows.Translate.Translate
-  @google_translate_params %{"temperature" => 0, "max_tokens" => 12_000}
 
   alias Glific.Flows.Translate.Translate
+
   require Logger
 
   @doc """
@@ -15,7 +15,7 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
 
   ## Examples
 
-      iex> Glific.Flows.Translate.GoogleTranslate.translate(["thank you for joining", "correct answer"], "en", "hi")
+      iex> Glific.Flows.Translate.GoogleTranslate.translate(["thank you for joining", "correct answer"], "English", "Hindi")
       {:ok, ["शामिल होने के लिए धन्यवाद", "सही जवाब"]}
   """
   @spec translate([String.t()], String.t(), String.t()) ::
@@ -25,7 +25,7 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
 
     strings
     |> Translate.check_large_strings()
-    |> Task.async_stream(fn text -> do_translate(text, languages, @google_translate_params) end,
+    |> Task.async_stream(fn text -> do_translate(text, languages) end,
       timeout: 300_000,
       on_timeout: :kill_task
     )
@@ -42,18 +42,18 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
   defp handle_async_response({:ok, translated_text}, acc), do: [translated_text | acc]
   defp handle_async_response({:exit, :timeout}, acc), do: ["" | acc]
 
-  @spec do_translate(String.t(), map(), map()) :: String.t() | {:error, String.t()}
-  defp do_translate(strings, languages, params) do
+  @spec do_translate(String.t(), map()) :: String.t() | {:error, String.t()}
+  defp do_translate(strings, languages) do
     api_key = Glific.get_google_translate_key()
 
-    Glific.GoogleTranslate.Translate.parse(api_key, strings, languages, params)
+    Glific.GoogleTranslate.Translate.parse(api_key, strings, languages)
     |> case do
       {:ok, result} ->
         result
 
       {:error, error} ->
         Logger.error("Error translating: #{error} String: #{strings}")
-        ["Could not translate, Try again"]
+        ""
     end
   end
 end

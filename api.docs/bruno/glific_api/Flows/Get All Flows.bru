@@ -42,3 +42,124 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  ## Get All Flows
+  
+  ## Description
+  This GraphQL API is used to retrieve details of all flows based on specified filters and options.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  | Parameter | Type                                 | Default | Description                         |
+  | --------- | ------------------------------------ | ------- | ----------------------------------- |
+  | `filter`    | FlowFilter | nil     | filter the list                     |
+  | `opts `     | Opts           | nil     | limit / offset / sort order options |
+  
+  ## Filtering Options for Flows
+  
+  | Field                 | Type    | Description                                                       |
+  | --------------------- | ------- | ----------------------------------------------------------------- |
+  | `isActive`            | Boolean | Filter by whether the flow is active.                             |
+  | `isBackground`        | Boolean | Filter by whether the flow runs in the background.                |
+  | `isPinned`            | Boolean | Filter by whether the flow is pinned.                             |
+  | `keyword`             | String  | Filter by a keyword.                                              |
+  | `name`                | String  | Filter by the name of the flow.                                   |
+  | `nameOrKeywordOrTags` | String  | Filter by the name, keyword, or tags associated with the flow.    |
+  | `status`              | String  | Filter by the status of the flow.                                 |
+  | `tagIds`              | [Int]   | Filter by the IDs of tags associated with the flow.               |
+  | `uuid`                | UUID4   | Filter by the UUID of the flow.                                   |
+  
+  ## Options for Flows Query
+  
+  | Field       | Type       | Default | Description                                                               |
+  | ----------- | ---------- | ------- | ------------------------------------------------------------------------- |
+  | `limit`     | Int        |         | The maximum number of results to return.                                 |
+  | `offset`    | Int        | 0       | The offset from where to start returning results.                        |
+  | `order`     | SortOrder  | "ASC"   | The sorting order for the results (`ASC` for ascending, `DESC` for descending). |
+  | `orderWith` | String     |         | Specify a field to order the results by.                                 |
+  
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "query flows($filter: FlowFilter, $opts: Opts) { flows(filter: $filter, opts: $opts) { id uuid name versionNumber flowType keywords lastPublishedAt lastChangedAt } }",
+          "variables": {
+              "opts": {
+                  "limit": 2,
+                  "offset": 0,
+                  "order": "ASC"
+              },
+              "filter": {
+                  "name": "Workflow"
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "opts": {
+      "limit": 2,
+      "offset": 0,
+      "order": "ASC"
+    },
+    "filter": {
+      "name": "Workflow"
+    }
+  }
+  ```
+  ## Response
+  The API response includes details of all flows based on the specified filters and options, including their ID, UUID, name, version number, flow type, keywords, last published timestamp, and last changed timestamp.
+  ```json
+  {
+    "data": {
+      "flows": [
+        {
+          "flowType": "MESSAGE",
+          "id": "1",
+          "keywords": ["help", "मदद"],
+          "name": "Help Workflow",
+          "uuid": "3fa22108-f464-41e5-81d9-d8a298854429",
+          "lastChangedAt": "2021-03-25T10:03:26Z",
+          "lastPublishedAt": "2021-03-25T10:03:26Z",
+          "versionNumber": "13.1.0"
+        },
+        {
+          "flowType": "MESSAGE",
+          "id": "2",
+          "keywords": ["language"],
+          "name": "Language Workflow",
+          "uuid": "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
+          "lastChangedAt": "2021-03-25T10:03:26Z",
+          "lastPublishedAt": "2021-03-25T10:03:26Z",
+          "versionNumber": "13.1.0"
+        }
+      ]
+    }
+  }
+  ```
+  
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Get All Flows**
+     - Retrieve details of all flows based on specified filters and options.
+  
+  ## FAQ
+  
+  ### Flows Query
+  1. **How can I retrieve details of all flows?**
+     - You can retrieve details of all flows by using the `flows` query and specifying any desired filters and options.
+}

@@ -199,16 +199,14 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  Get auto translation value for organization flag
+  Get whatsapp group value for organization flag
   """
-  @spec get_auto_translation_enabled(map()) :: boolean
-  def get_auto_translation_enabled(organization) do
+  @spec get_whatsapp_group_enabled(map()) :: boolean
+  def get_whatsapp_group_enabled(organization) do
     app_env = Application.get_env(:glific, :environment)
 
     cond do
-      FunWithFlags.enabled?(:is_auto_translation_enabled,
-        for: %{organization_id: organization.id}
-      ) ->
+      FunWithFlags.enabled?(:is_whatsapp_group_enabled, for: %{organization_id: organization.id}) ->
         true
 
       trusted_env?(app_env, organization.id) ->
@@ -217,6 +215,26 @@ defmodule Glific.Flags do
       true ->
         false
     end
+  end
+
+  @doc """
+  Get OpenAI auto translation value for organization flag
+  """
+  @spec get_open_ai_auto_translation_enabled(map()) :: boolean
+  def get_open_ai_auto_translation_enabled(organization) do
+    FunWithFlags.enabled?(:is_open_ai_auto_translation_enabled,
+      for: %{organization_id: organization.id}
+    )
+  end
+
+  @doc """
+  Get Google auto translation value for organization flag
+  """
+  @spec get_google_auto_translation_enabled(map()) :: boolean
+  def get_google_auto_translation_enabled(organization) do
+    FunWithFlags.enabled?(:is_google_auto_translation_enabled,
+      for: %{organization_id: organization.id}
+    )
   end
 
   @doc """
@@ -240,14 +258,38 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  Set fun_with_flag toggle for auto translation for an organization
+  Set fun_with_flag toggle for whatsapp group for an organization
   """
-  @spec set_auto_translation_enabled(map()) :: map()
-  def set_auto_translation_enabled(organization) do
+  @spec set_whatsapp_group_enabled(map()) :: map()
+  def set_whatsapp_group_enabled(organization) do
     Map.put(
       organization,
-      :is_auto_translation_enabled,
-      get_auto_translation_enabled(organization)
+      :is_whatsapp_group_enabled,
+      get_whatsapp_group_enabled(organization)
+    )
+  end
+
+  @doc """
+  Set fun_with_flag toggle for OpenAI auto translation for an organization
+  """
+  @spec set_open_ai_auto_translation_enabled(map()) :: map()
+  def set_open_ai_auto_translation_enabled(organization) do
+    Map.put(
+      organization,
+      :is_open_ai_auto_translation_enabled,
+      get_open_ai_auto_translation_enabled(organization)
+    )
+  end
+
+  @doc """
+  Set fun_with_flag toggle for Google auto translation for an organization
+  """
+  @spec set_auto_translation_enabled_for_google_trans(map()) :: map()
+  def set_auto_translation_enabled_for_google_trans(organization) do
+    Map.put(
+      organization,
+      :is_google_auto_translation_enabled,
+      get_google_auto_translation_enabled(organization)
     )
   end
 
@@ -312,7 +354,9 @@ defmodule Glific.Flags do
       :flow_uuid_display,
       :roles_and_permission,
       :is_ticketing_enabled,
-      :is_auto_translation_enabled
+      :is_open_ai_auto_translation_enabled,
+      :is_google_auto_translation_enabled,
+      :is_whatsapp_group_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(

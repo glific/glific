@@ -52,8 +52,8 @@ docs {
   
   | Parameter | Type           | Description                                            |
   |-----------|----------------|--------------------------------------------------------|
-  | `id`      | ID!            | The ID of the contact to be blocked.                    |
-  | `input`   | ContactInput!  | Input parameters, including the new status (e.g., "BLOCKED").|
+  | `id`      | ID            | The ID of the contact to be blocked.                    |
+  | `input`   | ContactInput   | Input parameters, including the new status (e.g., "BLOCKED").|
   
   ## Request Example
   ```bash
@@ -83,6 +83,20 @@ docs {
   
   ## Response
   The API response includes details of the updated contact with the new status.
+  ```json
+  {
+    "data": {
+      "updateContact": {
+        "contact": {
+          "name": "This is a updated contact for this example",
+          "phone": "7739920221",
+          "status": "BLOCKED"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
   
   ## Error Codes
   No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
@@ -97,11 +111,7 @@ docs {
   ### 1. Unblock
    **Q:** How do I unblock a contact?
    
-    **A:** You can update the contact status to "ACTIVE" or another appropriate status.
+    **A:** You can update the contact status to "VALID" or use Unblock Contact API.
   
-  ### 2. Multiple
-   **Q:** Can I block multiple contacts in a single request?
-   
-    **A:** No, this mutation is designed for a single contact. To block multiple contacts, make individual requests.
   
 }

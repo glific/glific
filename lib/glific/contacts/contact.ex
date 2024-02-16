@@ -24,6 +24,7 @@ defmodule Glific.Contacts.Contact do
   ]
   @optional_fields [
     :name,
+    :contact_type,
     :bsp_status,
     :status,
     :is_org_read,
@@ -50,6 +51,7 @@ defmodule Glific.Contacts.Contact do
           name: String.t() | nil,
           phone: String.t() | nil,
           masked_phone: String.t() | nil,
+          contact_type: String.t() | nil,
           status: ContactStatus | nil,
           bsp_status: ContactProviderStatus | nil,
           is_org_read: boolean,
@@ -82,6 +84,7 @@ defmodule Glific.Contacts.Contact do
     field(:name, :string)
     field(:phone, :string)
     field(:masked_phone, :string, virtual: true)
+    field(:contact_type, :string, default: "WABA")
 
     field(:status, ContactStatus)
     field(:bsp_status, ContactProviderStatus)

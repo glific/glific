@@ -26,3 +26,54 @@ body:graphql {
     }
   }
 }
+
+docs {
+  # Reset Flow Counts for a Specific Flow
+  
+  ## Description
+  This GraphQL API is used to reset the counts associated with a specific flow.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  | Parameter | Description                                |
+  |-----------|--------------------------------------------|
+  | `flowId ` | The ID of the flow for which counts need to be reset. |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation resetFlowCount($flowId: ID!) { resetFlowCount(flowId: $flowId) { errors { key value } success } }",
+          "variables": {
+              "flowId": "FLOW_ID"
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+    "flowId": "FLOW_ID"
+  }
+  ```
+  
+  ## Response
+  The API response includes information about the success of the operation and any encountered errors.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Reset Flow Counts**
+     - Reset the counts associated with a specific flow.
+  
+  ## FAQ
+  None
+}

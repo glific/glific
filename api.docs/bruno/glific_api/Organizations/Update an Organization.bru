@@ -88,3 +88,168 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Update an Organization
+  
+  ## Description
+  This GraphQL API is used to update an existing organization.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  | Parameter       | Description                                          |
+  |-----------------|------------------------------------------------------|
+  |` id  `            | ID of the organization to be updated.               |
+  | `input `          | Object containing updated details of the organization.|
+  
+  ## Input Parameters
+  | Input Field          | Type                | Description                                                   |
+  | -------------------- | ------------------- | ------------------------------------------------------------- |
+  | `activeLanguageIds` | [ID]                | IDs of active languages associated with the organization.     |
+  | `bspId`              | ID                  | ID of the BSP associated with the organization.               |
+  | `contactId`          | ID                  | ID of the contact associated with the organization.           |
+  | `defaultLanguageId` | ID                  | ID of the default language for the organization.              |
+  | `email`              | String              | Email address of the organization.                            |
+  | `fields`             | Json                | Additional fields associated with the organization.           |
+  | `isActive`           | Boolean             | Whether the organization is active.                           |
+  | `lastCommunicationAt`| DateTime            | Date and time of the last communication with the organization.|
+  | `name`               | String              | Name of the organization.                                     |
+  | `newContactFlowId`   | ID                  | ID of the new contact flow associated with the organization.   |
+  | `optinFlowId`        | ID                  | ID of the opt-in flow associated with the organization.        |
+  | `outOfOffice`        | OutOfOfficeInput    | Out of office settings for the organization.                  |
+  | `sessionLimit`       | Int                 | Maximum number of sessions allowed for the organization.       |
+  | `setting`            | SettingInput        | Settings for the organization.                                |
+  | `shortcode`          | String              | Shortcode of the organization.                                 |
+  | `signaturePhrase`    | String              | Signature phrase for the organization.                         |
+  | `status`             | OrganizationStatusEnum | Status of the organization.                                  |
+  | `timezone`           | String              | Timezone of the organization.                                 |
+  
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation updateOrganization($id: ID!, $input: OrganizationInput!) { updateOrganization(id: $id, input: $input) { organization { id name shortcode sessionLimit outOfOffice { enabled startTime endTime flowId enabledDays { id enabled } } } errors { key message } } }",
+          "variables": {
+              "id": "1",
+              "input": {
+                  "name": "updated organization display name",
+                  "sessionLimit": 180,
+                  "outOfOffice": {
+                      "enabled": true,
+                      "enabledDays": [
+                          {"enabled": true, "id": 1},
+                          {"enabled": true, "id": 2},
+                          {"enabled": true, "id": 3},
+                          {"enabled": true, "id": 4},
+                          {"enabled": true, "id": 5},
+                          {"enabled": false, "id": 6},
+                          {"enabled": false, "id": 7}
+                      ],
+                      "endTime": "T19:00:00",
+                      "flowId": 1,
+                      "startTime": "T09:00:00"
+                  }
+              }
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ```json
+  {
+      "id": "1",
+      "input": {
+          "name": "updated organization display name",
+          "sessionLimit": 180,
+          "outOfOffice": {
+              "enabled": true,
+              "enabledDays": [
+                  {"enabled": true, "id": 1},
+                  {"enabled": true, "id": 2},
+                  {"enabled": true, "id": 3},
+                  {"enabled": true, "id": 4},
+                  {"enabled": true, "id": 5},
+                  {"enabled": false, "id": 6},
+                  {"enabled": false, "id": 7}
+              ],
+              "endTime": "T19:00:00",
+              "flowId": 1,
+              "startTime": "T09:00:00"
+          }
+      }
+  }
+  ```
+  
+  ## Response
+  The API response includes the details of the updated organization, including its ID, name, shortcode, session limit, and out-of-office settings.
+  ```json
+  {
+    "data": {
+      "updateOrganization": {
+        "errors": null,
+        "organization": {
+          "name": "updated organization display name",
+          "id": "1",
+          "name": "Glific",
+          "sessionLimit": 180,
+          "outOfOffice": {
+            "enabled": true,
+            "enabledDays": [
+              {
+                "enabled": true,
+                "id": 1
+              },
+              {
+                "enabled": true,
+                "id": 2
+              },
+              {
+                "enabled": true,
+                "id": 3
+              },
+              {
+                "enabled": true,
+                "id": 4
+              },
+              {
+                "enabled": true,
+                "id": 5
+              },
+              {
+                "enabled": false,
+                "id": 6
+              },
+              {
+                "enabled": false,
+                "id": 7
+              }
+            ],
+            "endTime": "19:00:00",
+            "flowId": "1",
+            "startTime": "9:00:00"
+          }
+        }
+      }
+    }
+  }
+  ```
+  
+  Enabled days Ids represets weekdays starting from 1 for Monday.
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Update Organization Details**
+     - Update the display name, session limit, and out-of-office settings for an organization.
+  
+  ## FAQ
+  None
+}

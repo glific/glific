@@ -64,6 +64,14 @@ docs {
   |-----------|---------------------|---------------------------------------------------|
   | `input`   | ContactGroupInput   | An input object containing the `contactId` and `groupId`.|
   
+  ## ContactGroupInput Object
+  
+  | Field      | Type   | Description                       |
+  |------------|--------|-----------------------------------|
+  | `contactId`| Integer| ID of the contact to be associated with the group.|
+  | `groupId`  | Integer| ID of the group to which the contact will be associated.|
+  
+  
   ## Request Example
   ```bash
   curl -X POST {{api_url}} \
