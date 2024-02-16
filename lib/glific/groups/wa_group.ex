@@ -28,7 +28,6 @@ defmodule Glific.Groups.WAGroup do
 
   schema "wa_groups" do
     field :label, :string
-    field :description, :string
     field :bsp_id, :string
 
     belongs_to :wa_managed_phone, WAManagedPhone
@@ -45,6 +44,6 @@ defmodule Glific.Groups.WAGroup do
     contact
     |> cast(attrs, @required_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint([:label, :bsp_id, :wa_managed_phone_id, :organization_id])
+    |> unique_constraint([:label, :wa_managed_phone_id, :organization_id])
   end
 end

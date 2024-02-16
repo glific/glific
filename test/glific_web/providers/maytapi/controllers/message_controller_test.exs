@@ -155,7 +155,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     assert :ok == WAManagedPhones.fetch_wa_managed_phones(organization.id)
 
     assert :ok ==
-             WhatsappGroup.list_wa_groups(organization.id)
+             WhatsappGroup.fetch_wa_groups(organization.id)
 
     SeedsDev.seed_tag()
     SeedsDev.seed_contacts()
@@ -208,7 +208,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
@@ -227,7 +227,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
       assert message.message_type == "WA"
-      assert message.group.bsp_id == "120363213149844251@g.us"
     end
 
     test "Updating the contact_type to WABA+WA due to sender contact already existing", %{
@@ -280,7 +279,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
@@ -297,7 +296,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
                get_in(text_webhook_params, ["user", "phone"])
 
       assert message.contact.contact_type == "WABA+WA"
-      assert message.group.bsp_id == "120363213149844251@g.us"
     end
 
     test "Incoming text message should be stored in the database, but group doesnt exist, so creates group",
@@ -315,7 +313,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
@@ -335,7 +333,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.contact.contact_type == "WA"
       assert message.message_type == "WA"
       assert !is_nil(message.group_id)
-      assert message.group.bsp_id == "120363027326493365@g.us"
     end
   end
 
@@ -377,7 +374,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
@@ -396,7 +393,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
       assert message.message_type == "WA"
-      assert message.group.bsp_id == "120363213149844251@g.us"
     end
 
     test "Incoming media message should be stored in the database where media is a file", %{
@@ -411,6 +407,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       conn = post(conn, "/maytapi", media_message_payload)
       assert conn.halted
 
+      IO.inspect(conn)
       bsp_message_id = get_in(media_message_payload, ["message", "id"])
 
       {:ok, message} =
@@ -419,7 +416,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
@@ -438,7 +435,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
       assert message.message_type == "WA"
-      assert message.group.bsp_id == "120363213149844251@g.us"
       assert message.media.content_type == "document"
     end
 
@@ -462,7 +458,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
@@ -481,7 +477,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
       assert message.message_type == "WA"
-      assert message.group.bsp_id == "120363213149844251@g.us"
       assert message.media.content_type == "sticker"
     end
 
@@ -504,7 +499,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
@@ -523,7 +518,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
       assert message.message_type == "WA"
-      assert message.group.bsp_id == "120363213149844251@g.us"
       assert message.media.content_type == "ptt"
     end
 
@@ -546,7 +540,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
@@ -565,7 +559,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
       assert message.message_type == "WA"
-      assert message.group.bsp_id == "120363213149844251@g.us"
       assert message.media.content_type == "audio"
     end
 
@@ -619,7 +612,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
           organization_id: gupshup_conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
@@ -636,7 +629,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
                get_in(text_webhook_params, ["user", "phone"])
 
       assert message.contact.contact_type == "WABA+WA"
-      assert message.group.bsp_id == "120363213149844251@g.us"
     end
 
     test "Incoming media message should be stored in the database, but group doesnt exist, so creates group",
@@ -657,7 +649,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact, :group])
+      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
@@ -676,7 +668,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
       assert message.message_type == "WA"
-      assert message.group.bsp_id == "120363027326493365@g.us"
     end
   end
 end

@@ -9,7 +9,7 @@ defmodule Glific.Communications.Message do
     Communications,
     Contacts,
     Contacts.Contact,
-    Groups,
+    Groups.WhatsappGroup,
     Mails.BalanceAlertMail,
     Messages,
     Messages.Message,
@@ -446,7 +446,7 @@ defmodule Glific.Communications.Message do
   @spec get_group_id(map()) :: non_neg_integer() | nil
   defp get_group_id(%{provider: "maytapi"} = message_params) do
     {:ok, group} =
-      Groups.maybe_create_group(%{
+      WhatsappGroup.maybe_create_group(%{
         organization_id: message_params.organization_id,
         label: message_params.group_name,
         bsp_id: message_params.group_id

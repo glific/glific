@@ -1,8 +1,6 @@
 defmodule Glific.Repo.Migrations.AddWAManagedPhones do
   use Ecto.Migration
 
-  @global_schema Application.compile_env!(:glific, :global_schema)
-
   def change do
     contacts()
 
@@ -134,8 +132,5 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
 
       timestamps(type: :utc_datetime)
     end
-
-    create unique_index(:wa_groups, :organization_id)
-    create unique_index(:wa_groups, :bsp_id)
   end
 end

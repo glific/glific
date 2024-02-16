@@ -29,9 +29,7 @@ defmodule Glific.Groups.WhatsappGroup do
          {:ok, decoded} <- Jason.decode(body) do
       decoded
       |> get_group_details(wa_managed_phone)
-      |> IO.inspect()
       |> create_whatsapp_groups(org_id)
-      |> IO.inspect()
     else
       {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
         {:error, body}
@@ -113,4 +111,18 @@ defmodule Glific.Groups.WhatsappGroup do
   """
   @spec get_wa_group!(non_neg_integer()) :: WAGroup.t()
   def get_wa_group!(id), do: Repo.get!(WAGroup, id)
+
+  @doc """
+  Fetches a group with given bsp_id and organization_id (Creates a group if doesnt exist)
+  """
+  @spec maybe_create_group(map()) :: {:ok, WAGroup.t()} | {:error, Ecto.Changeset.t()}
+  def maybe_create_group(params) do
+    case Repo.get_by(WAGroup, %{bsp_id: params.bsp_id, organization_id: params.organization_id}) do
+      %WAGroup{} = group ->
+        {:ok, group}
+
+      nil ->
+        create_wa_group(params)
+    end
+  end
 end
