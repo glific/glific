@@ -14,7 +14,6 @@ defmodule Glific.WAGroup.WAManagedPhone do
 
   @required_fields [
     :phone,
-    :api_token,
     :phone_id,
     :organization_id
   ]
@@ -31,7 +30,6 @@ defmodule Glific.WAGroup.WAManagedPhone do
           phone: String.t() | nil,
           phone_id: non_neg_integer() | nil,
           is_active: boolean,
-          api_token: binary | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime_usec | nil,
@@ -46,7 +44,6 @@ defmodule Glific.WAGroup.WAManagedPhone do
     # these are associated with the whatsapp api provider
     # using maytapi as template
     field :phone_id, :integer
-    field :api_token, Glific.Encrypted.Binary
 
     belongs_to(:organization, Organization)
 

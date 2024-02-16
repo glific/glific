@@ -445,18 +445,4 @@ defmodule Glific.Groups do
 
     :ok
   end
-
-  @doc """
-  Fetches a group with given bsp_id and organization_id (Creates a group if doesnt exist)
-  """
-  @spec maybe_create_group(map()) :: {:ok, Group.t()} | {:error, Ecto.Changeset.t()}
-  def maybe_create_group(params) do
-    case Repo.get_by(Group, %{bsp_id: params.bsp_id, organization_id: params.organization_id}) do
-      %Group{} = group ->
-        {:ok, group}
-
-      nil ->
-        Groups.create_group(params)
-    end
-  end
 end

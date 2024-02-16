@@ -12,7 +12,6 @@ defmodule Glific.WAManagedPhonesFixtures do
     {:ok, wa_managed_phone} =
       attrs
       |> Enum.into(%{
-        api_token: "some api_token",
         is_active: true,
         label: "some label",
         phone: "9829627508",
