@@ -14,23 +14,14 @@ defmodule Glific.Providers.Maytapi.Message do
   }
 
   @doc false
-  @spec send_text(non_neg_integer, map()) :: any()
+  @spec send_text(non_neg_integer(), map()) :: any()
   def send_text(org_id, attrs) do
-    phone_id = get_phone_id(attrs)
-
-    payload =
-      %{"type" => "text"}
-      |> Map.put("to_number", attrs.phone)
-      |> Map.put("message", attrs.message)
-
-    with {:ok, _response} <- ApiClient.send_message(org_id, payload, phone_id) do
-      create_message_after_send(org_id, attrs)
-    end
+    send_text_in_group(org_id, attrs)
   end
 
   @doc false
-  @spec send_text_in_group(non_neg_integer, map()) :: any()
-  def send_text_in_group(org_id, attrs) do
+  @spec send_text_in_group(non_neg_integer(), map()) :: any()
+  defp send_text_in_group(org_id, attrs) do
     phone_id = get_phone_id(attrs)
 
     payload =
@@ -89,7 +80,7 @@ defmodule Glific.Providers.Maytapi.Message do
   end
 
   defp create_message_after_send(org_id, attrs) do
-    _message_attrs =
+    message =
       %{
         body: attrs.message,
         status: "sent",
@@ -101,7 +92,12 @@ defmodule Glific.Providers.Maytapi.Message do
         bsp_status: "sent"
       }
       |> Glific.Messages.create_message()
+
+    {:ok, contact} = Repo.fetch_by(WAManagedPhone, %{phone: attrs.phone})
+
+    Glific.Communications.MessageMaytapi.send_message(message, contact)
   end
+
 
   # lets ensure that we have a phone number
   # sometime the maytapi payload has a blank payload

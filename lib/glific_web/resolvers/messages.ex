@@ -244,7 +244,7 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec send_message_in_wa_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def send_message_in_wa_group(_, %{input: input_params}, %{context: %{current_user: user}}) do
-    case Glific.Providers.Maytapi.Message.send_text_in_group(user.organization_id, input_params) do
+    case Glific.Providers.Maytapi.Message.send_text(user.organization_id, input_params) do
       {:ok, message} ->
         {:ok, %{message: message}}
 

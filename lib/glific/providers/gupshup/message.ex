@@ -231,7 +231,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @spec format_sender(Message.t()) :: map()
-  defp format_sender(message) do
+  def format_sender(message) do
     organization = Partners.organization(message.organization_id)
 
     %{
@@ -243,13 +243,13 @@ defmodule Glific.Providers.Gupshup.Message do
   @max_size 4096
   @doc false
   @spec check_size(map()) :: map()
-  defp check_size(%{text: text} = attrs) do
+  def check_size(%{text: text} = attrs) do
     if String.length(text) < @max_size,
       do: attrs,
       else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
   end
 
-  defp check_size(%{caption: caption} = attrs) do
+  def check_size(%{caption: caption} = attrs) do
     if String.length(caption) < @max_size,
       do: attrs,
       else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
