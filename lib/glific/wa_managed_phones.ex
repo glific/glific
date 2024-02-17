@@ -130,7 +130,6 @@ defmodule Glific.WAManagedPhones do
             label: wa_managed_phone["name"],
             phone: wa_managed_phone["number"],
             phone_id: wa_managed_phone["id"],
-            api_token: secrets["token"],
             product_id: secrets["product_id"],
             organization_id: org_id
           }

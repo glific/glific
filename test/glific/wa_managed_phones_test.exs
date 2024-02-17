@@ -10,7 +10,7 @@ defmodule Glific.WAManagedPhonesTest do
   describe "wa_managed_phones" do
     import Glific.WAManagedPhonesFixtures
 
-    @invalid_attrs %{label: nil, phone: nil, is_active: nil, api_token: nil}
+    @invalid_attrs %{label: nil, phone: nil, is_active: nil}
 
     test "list_wa_managed_phones/0 returns all wa_managed_phones", attrs do
       wa_managed_phone =
@@ -33,7 +33,6 @@ defmodule Glific.WAManagedPhonesTest do
         phone: "some phone",
         is_active: true,
         phone_id: 242,
-        api_token: "some api_token",
         organization_id: 1,
         provider_id: 1
       }
@@ -44,7 +43,6 @@ defmodule Glific.WAManagedPhonesTest do
       assert wa_managed_phone.label == "some label"
       assert wa_managed_phone.phone == "some phone"
       assert wa_managed_phone.is_active == true
-      assert wa_managed_phone.api_token == "some api_token"
     end
 
     test "create_wa_managed_phone/1 with invalid data returns error changeset" do
@@ -57,8 +55,7 @@ defmodule Glific.WAManagedPhonesTest do
       update_attrs = %{
         label: "some updated label",
         phone: "some updated phone",
-        is_active: false,
-        api_token: "some updated api_token"
+        is_active: false
       }
 
       assert {:ok, %WAManagedPhone{} = wa_managed_phone} =
@@ -67,7 +64,6 @@ defmodule Glific.WAManagedPhonesTest do
       assert wa_managed_phone.label == "some updated label"
       assert wa_managed_phone.phone == "some updated phone"
       assert wa_managed_phone.is_active == false
-      assert wa_managed_phone.api_token == "some updated api_token"
     end
 
     test "update_wa_managed_phone/2 with invalid data returns error changeset", attrs do
