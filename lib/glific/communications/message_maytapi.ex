@@ -3,11 +3,9 @@ defmodule Glific.Communications.MessageMaytapi do
   The Message Communication Context, which encapsulates and manages tags and the related join tables.
   """
 
-  import Ecto.Query
   require Logger
 
   alias Glific.{
-    Communications,
     Messages,
     Messages.Message,
     Repo
@@ -34,7 +32,7 @@ defmodule Glific.Communications.MessageMaytapi do
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message(map(), map()) :: {:ok, Message.t()} | {:error, String.t()}
+  # @spec send_message(, map()) :: {:ok, Message.t()} | {:error, String.t()}
   def send_message({:ok, %Message{} = message}, attrs \\ %{}) do
     message = Repo.preload(message, [:receiver, :sender, :media])
 

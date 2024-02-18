@@ -1,22 +1,22 @@
 defmodule Glific.Providers.Maytapi.WaWorker do
-@moduledoc """
+  @moduledoc """
   A worker to handle send message in whatsapp group processes
   """
 
-use Oban.Worker,
-queue: :wa_group,
-max_attempts: 2,
-priority: 0
+  use Oban.Worker,
+    queue: :wa_group,
+    max_attempts: 2,
+    priority: 0
 
-@doc """
+  @doc """
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-  # @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:snooze, pos_integer()}
-  def perform(%Oban.Job{args: %{"message" => message}} = job) do
-    IO.inspect(message)
+  def perform(
+        %Oban.Job{args: %{"message" => message, "payload" => payload, "attrs" => attrs}} = job
+      ) do
+    IO.inspect(message, label: "Message")
+    IO.inspect(payload, label: "Payload")
+    IO.inspect(attrs, label: "Attributes")
   end
-
-
-
 end

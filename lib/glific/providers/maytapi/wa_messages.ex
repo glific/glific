@@ -1,7 +1,8 @@
 defmodule Glific.Providers.Maytapi.WaMessages do
+  alias Glific.Messages.Message
+
   alias Glific.{
-    Providers.Gupshup.Message,
-    Partners,
+    Providers.Gupshup.Message
   }
 
   @doc false
@@ -13,7 +14,7 @@ defmodule Glific.Providers.Maytapi.WaMessages do
     }
   end
 
-  @channel  "whatsapp"
+  @channel "whatsapp"
   @doc false
   def send_text(message, attrs \\ %{}) do
     %{type: :text, text: message.body}
@@ -42,12 +43,18 @@ defmodule Glific.Providers.Maytapi.WaMessages do
     Map.take(attrs, [:params, :is_hsm])
   end
 
-  # @spec create_oban_job(Message.t(), map(), map()) ::
-  #         {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_oban_job(Message.t(), map(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   defp create_oban_job(message, request_body, attrs) do
     attrs = to_minimal_map(attrs)
     worker_module = Glific.Providers.Maytapi.WaWorker
-    worker_args = %{message: to_minimal_map(message), payload: request_body, attrs: attrs}
+
+    worker_args =
+      %{
+        message: Glific.Messages.Message.to_minimal_map(message),
+        payload: request_body,
+        attrs: attrs
+      }
 
     worker_module.new(worker_args, scheduled_at: message.send_at)
     |> Oban.insert()
