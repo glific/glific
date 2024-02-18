@@ -37,7 +37,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     end)
   end
 
-  test "send_text/2 sends a text message successfully", attrs do
+  test "send_message/2 sends a text message successfully", attrs do
     WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
 
     mock_maytapi_response(200, %{
@@ -49,7 +49,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     })
 
     params = %{phone: "9829627508", message: "hi"}
-    {:ok, message} = Message.send_text(attrs.organization_id, params)
+    {:ok, message} = Message.send_message(attrs.organization_id, params)
 
     assert message.body == "hi"
     assert message.status == :sent
@@ -93,7 +93,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     assert Message.receive_media(params) == expected_result
   end
 
-  test "send_text_in_group/3 sends a text message in a whatsapp group successfully", attrs do
+  test "send_text_in_wa_group/3 sends a text message in a whatsapp group successfully", attrs do
     WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
 
     mock_maytapi_response(200, %{
@@ -105,7 +105,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     })
 
     params = %{bsp_id: "120363238104@g.us", message: "hi", phone: "9829627508"}
-    {:ok, message} = Message.send_text_in_group(attrs.organization_id, params)
+    {:ok, message} = Message.send_text_in_wa_group(attrs.organization_id, params)
 
     assert message.body == "hi"
     assert message.status == :sent

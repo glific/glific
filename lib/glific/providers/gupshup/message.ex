@@ -231,7 +231,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @spec format_sender(Message.t()) :: map()
-  def format_sender(message) do
+  defp format_sender(message) do
     organization = Partners.organization(message.organization_id)
 
     %{

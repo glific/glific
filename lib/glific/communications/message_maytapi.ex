@@ -31,7 +31,6 @@ defmodule Glific.Communications.MessageMaytapi do
     location_request_message: :send_interactive
   }
 
-  @spec send_message({:ok, Glific.Messages.Message.t()}) :: any()
   @doc """
   Send message to receiver using define provider.
   """

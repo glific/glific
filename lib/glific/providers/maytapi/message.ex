@@ -14,14 +14,14 @@ defmodule Glific.Providers.Maytapi.Message do
   }
 
   @doc false
-  @spec send_text(non_neg_integer(), map()) :: any()
-  def send_text(org_id, attrs) do
-    send_text_in_group(org_id, attrs)
+  @spec send_message(non_neg_integer(), map()) :: any()
+  def send_message(org_id, attrs) do
+    send_message_in_wa_group(org_id, attrs)
   end
 
   @doc false
-  @spec send_text_in_group(non_neg_integer(), map()) :: any()
-  defp send_text_in_group(org_id, attrs) do
+  @spec send_message_in_wa_group(non_neg_integer(), map()) :: any()
+  defp send_message_in_wa_group(org_id, attrs) do
     phone_id = get_phone_id(attrs)
 
     payload =
