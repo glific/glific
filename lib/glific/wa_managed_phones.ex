@@ -140,10 +140,11 @@ defmodule Glific.WAManagedPhones do
             organization_id: org_id
           }
 
-        with {:ok, contact} <- Contacts.maybe_create_contact(%{phone: phone}) |> IO.inspect(),
-             nil <- Repo.get_by(WAManagedPhone, %{phone: phone}) do
-          Map.put(params, :contact_id, contact.id)
-          |> create_wa_managed_phone()
+        # with {:ok, contact} <- Contacts.maybe_create_contact(%{phone: phone}) |> IO.inspect(),
+
+        with nil <- Repo.get_by(WAManagedPhone, %{phone: phone}) do
+          # Map.put(params, :contact_id, contact.id)
+           create_wa_managed_phone()
         else
           _ -> :ok
         end
