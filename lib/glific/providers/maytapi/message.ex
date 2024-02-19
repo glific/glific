@@ -8,6 +8,7 @@ defmodule Glific.Providers.Maytapi.Message do
   alias Glific.Partners
 
   alias Glific.{
+    Communications.MessageMaytapi,
     Repo,
     WAGroup.WAManagedPhone
   }
@@ -15,7 +16,23 @@ defmodule Glific.Providers.Maytapi.Message do
   @doc false
   @spec create_and_send_message(non_neg_integer(), map()) :: any()
   def create_and_send_message(org_id, attrs) do
-    do_send_message(org_id, attrs)
+    message =
+      %{
+        body: attrs.message,
+        status: "sent",
+        type: "text",
+        receiver_id: Partners.organization_contact_id(org_id),
+        organization_id: org_id,
+        sender_id: Partners.organization_contact_id(org_id),
+        message_type: "WA",
+        bsp_status: "sent",
+        bsp_message_id: attrs.wa_group_id
+      }
+      |> Glific.Messages.create_message()
+
+    {:ok, contact} = Repo.fetch_by(WAManagedPhone, %{phone: attrs.wa_managed_phone})
+
+    MessageMaytapi.send_message(message, contact)
   end
 
   @doc false
@@ -53,34 +70,6 @@ defmodule Glific.Providers.Maytapi.Message do
         name: params["user"]["name"]
       }
     }
-  end
-
-  # @spec get_phone_id(map()) :: non_neg_integer()
-  # defp get_phone_id(attrs) do
-  #   WAManagedPhone
-  #   |> where([g], g.phone == ^attrs.phone)
-  #   |> select([g], g.phone_id)
-  #   |> Repo.one!()
-  # end
-
-  defp do_send_message(org_id, attrs) do
-    message =
-      %{
-        body: attrs.message,
-        status: "sent",
-        type: "text",
-        receiver_id: Partners.organization_contact_id(org_id),
-        organization_id: org_id,
-        sender_id: Partners.organization_contact_id(org_id),
-        message_type: "WA",
-        bsp_status: "sent",
-        bsp_message_id: attrs.bsp_id,
-      }
-      |> Glific.Messages.create_message()
-
-    {:ok, contact} = Repo.fetch_by(WAManagedPhone, %{phone: attrs.phone})
-
-    Glific.Communications.MessageMaytapi.send_message(message, contact)
   end
 
   # lets ensure that we have a phone number

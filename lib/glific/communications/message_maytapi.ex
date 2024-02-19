@@ -42,7 +42,7 @@ defmodule Glific.Communications.MessageMaytapi do
 
     with {:ok, _} <-
            apply(
-             Glific.Providers.Maytapi.WaMessages,
+            Glific.Providers.Maytapi.WAMessages,
              @type_to_token[message.type],
              [message, attrs]
            ) do

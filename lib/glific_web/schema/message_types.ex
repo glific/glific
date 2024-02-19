@@ -163,8 +163,8 @@ defmodule GlificWeb.Schema.MessageTypes do
 
   input_object :wa_message_input do
     field :message, :string
-    field :phone, :string
-    field :bsp_id, :string
+    field :wa_managed_phone, :string
+    field :wa_group_id, :string
   end
 
   object :message_queries do

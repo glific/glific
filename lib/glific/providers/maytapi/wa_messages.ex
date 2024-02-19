@@ -1,4 +1,4 @@
-defmodule Glific.Providers.Maytapi.WaMessages do
+defmodule Glific.Providers.Maytapi.WAMessages do
   alias Glific.Messages.Message
 
   @doc false
