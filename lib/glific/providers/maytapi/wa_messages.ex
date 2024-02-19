@@ -6,15 +6,16 @@ defmodule Glific.Providers.Maytapi.WaMessages do
   }
 
   @doc false
-  @spec format_sender(Message.t()) :: map()
-  defp format_sender(message) do
+  @spec format_sender(Message.t(), map()) :: map()
+  defp format_sender(message, attrs) do
     %{
-      "source" => message.sender.phone,
-      "src.name" => "wa_group"
+      "to_number" => message.bsp_message_id,
+      "message" => message.body,
+      "type" => message.type,
+      "phone" => attrs.phone
     }
   end
 
-  @channel "whatsapp"
   @doc false
   def send_text(message, attrs \\ %{}) do
     %{type: :text, text: message.body}
@@ -27,12 +28,10 @@ defmodule Glific.Providers.Maytapi.WaMessages do
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
-  defp send_message(payload, message, attrs) do
+  defp send_message(_payload, message, attrs) do
     request_body =
-      %{"channel" => @channel}
-      |> Map.merge(format_sender(message))
-      |> Map.put(:destination, message.receiver.phone)
-      |> Map.put("message", Jason.encode!(payload))
+      format_sender(message, attrs)
+      |> Map.put("phone_id", attrs.phone_id)
 
     create_oban_job(message, request_body, attrs)
   end
@@ -55,7 +54,6 @@ defmodule Glific.Providers.Maytapi.WaMessages do
         payload: request_body,
         attrs: attrs
       }
-
     worker_module.new(worker_args, schedule_in: 1)
     |> Oban.insert()
   end

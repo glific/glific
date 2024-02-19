@@ -163,7 +163,7 @@ defmodule GlificWeb.Schema.MessageTypes do
 
   input_object :wa_message_input do
     field :message, :string
-    field :sender_phone, :string
+    field :phone, :string
     field :bsp_id, :string
   end
 
