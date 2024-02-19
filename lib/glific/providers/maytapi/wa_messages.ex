@@ -1,10 +1,6 @@
 defmodule Glific.Providers.Maytapi.WaMessages do
   alias Glific.Messages.Message
 
-  alias Glific.{
-    Providers.Gupshup.Message
-  }
-
   @doc false
   @spec format_sender(Message.t(), map()) :: map()
   defp format_sender(message, attrs) do
@@ -19,7 +15,7 @@ defmodule Glific.Providers.Maytapi.WaMessages do
   @doc false
   def send_text(message, attrs \\ %{}) do
     %{type: :text, text: message.body}
-    |> Message.check_size()
+    |> Glific.Providers.Gupshup.Message.check_size()
     |> send_message(message, attrs)
   end
 
@@ -33,28 +29,21 @@ defmodule Glific.Providers.Maytapi.WaMessages do
       format_sender(message, attrs)
       |> Map.put("phone_id", attrs.phone_id)
 
-    create_oban_job(message, request_body, attrs)
+    create_oban_job(message, request_body)
   end
 
-  @doc false
-  @spec to_minimal_map(map()) :: map()
-  defp to_minimal_map(attrs) do
-    Map.take(attrs, [:params, :is_hsm])
-  end
-
-  @spec create_oban_job(Message.t(), map(), map()) ::
+  @spec create_oban_job(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  defp create_oban_job(message, request_body, attrs) do
-    attrs = to_minimal_map(attrs)
+  defp create_oban_job(message, request_body) do
     worker_module = Glific.Providers.Maytapi.WaWorker
 
     worker_args =
       %{
         message: Glific.Messages.Message.to_minimal_map(message),
-        payload: request_body,
-        attrs: attrs
+        payload: request_body
       }
-    worker_module.new(worker_args, schedule_in: 1)
+
+    worker_module.new(worker_args, scheduled_at: message.send_at)
     |> Oban.insert()
   end
 end

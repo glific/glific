@@ -15,9 +15,7 @@ defmodule Glific.Providers.Maytapi.WaWorker do
     Partners,
     Partners.Organization,
     Providers.Worker,
-    WAGroup.WAManagedPhone,
-    Repo,
-    Providers.Gupshup.ResponseHandler
+    Providers.Maytapi.ResponseHandler
   }
 
   @doc """
@@ -38,7 +36,7 @@ defmodule Glific.Providers.Maytapi.WaWorker do
   @spec perform(Oban.Job.t(), Organization.t()) ::
           :ok | {:error, String.t()} | {:snooze, pos_integer()}
   defp perform(
-         %Oban.Job{args: %{"payload" => payload}},
+         %Oban.Job{args: %{"message" => message, "payload" => payload}},
          organization
        ) do
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
@@ -50,20 +48,19 @@ defmodule Glific.Providers.Maytapi.WaWorker do
            organization.services["bsp"].keys["bsp_limit"]
          ) do
       {:ok, _} ->
-        phone_id = payload["phone_id"]
-        process_maytapi(organization.id, payload, phone_id)
+        process_maytapi(organization.id, payload, message)
 
       _ ->
         Worker.default_send_rate_handler()
     end
   end
 
-  @spec process_maytapi(non_neg_integer(), map(), non_neg_integer()) ::
+  @spec process_maytapi(non_neg_integer(), map(), map()) ::
           {:ok, Message.t()} | {:error, String.t()}
-  defp process_maytapi(org_id, payload, phone_id) do
-    case ApiClient.send_message(org_id, payload, phone_id) do
-      {:ok, response} -> {:ok, response}
-      _ -> {:error, "error while sending message"}
-    end
+  defp process_maytapi(org_id, payload, message) do
+    phone_id = payload["phone_id"]
+
+    ApiClient.send_message(org_id, payload, phone_id)
+    |> ResponseHandler.handle_response(message)
   end
 end
