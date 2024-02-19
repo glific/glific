@@ -12,11 +12,8 @@ defmodule Glific.Providers.Maytapi.WaWorker do
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-  def perform(
-        %Oban.Job{args: %{"message" => message, "payload" => payload, "attrs" => attrs}} = job
-      ) do
-    IO.inspect(message, label: "Message")
-    IO.inspect(payload, label: "Payload")
-    IO.inspect(attrs, label: "Attributes")
+  def perform(job) do
+    IO.inspect(job, label: "inspecting oban")
+    :ok
   end
 end

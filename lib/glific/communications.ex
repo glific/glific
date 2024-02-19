@@ -21,7 +21,7 @@ defmodule Glific.Communications do
   @spec provider_worker(non_neg_integer) :: atom()
   def provider_worker(organization_id) do
     bsp_credential = Partners.organization(organization_id).services["bsp"]
-    ("Elixir." <> bsp_credential.keys["worker"]) |> Glific.safe_string_to_atom() |> IO.inspect()
+    ("Elixir." <> bsp_credential.keys["worker"]) |> Glific.safe_string_to_atom()
   end
 
   @doc """

@@ -56,7 +56,7 @@ defmodule Glific.Providers.Maytapi.WaMessages do
         attrs: attrs
       }
 
-    worker_module.new(worker_args, scheduled_at: message.send_at)
+    worker_module.new(worker_args, schedule_in: 1)
     |> Oban.insert()
   end
 end
