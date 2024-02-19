@@ -65,23 +65,14 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
       add :errors, :map, comment: "Options : Sent, Delivered or Read"
       add :message_number, :bigint, comment: "Messaging number for a WhatsApp group"
 
-      add :sender_id, references(:contacts, on_delete: :delete_all),
-        null: false,
-        comment: "Contact number of the sender of the message"
-
-      add :receiver_id, references(:contacts, on_delete: :delete_all),
-        null: false,
-        comment: "Contact number of the receiver of the message"
-
       add :contact_id, references(:contacts, on_delete: :delete_all),
         null: false,
         comment:
-          "Either sender contact number or receiver contact number; created to quickly let us know who the beneficiary is"
+          "contact id of beneficiary if the message is received or contact id of WA managed phone if the message is send"
 
       add :wa_managed_phone_id, references(:wa_managed_phones, on_delete: :delete_all),
         null: false,
-        comment:
-          "Either sender contact number or receiver contact number; created to quickly let us know who the beneficiary is"
+        comment: "WA managed phone id of the number linked to Maytapi account"
 
       add :media_id, references(:messages_media, on_delete: :delete_all),
         null: true,
@@ -93,7 +84,9 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
 
       add :sent_at, :utc_datetime, comment: "Timestamp when message was sent from queue worker"
 
-      add :wa_group_id, references(:wa_groups, on_delete: :delete_all), null: false
+      add :wa_group_id, references(:wa_groups, on_delete: :delete_all),
+        null: false,
+        comment: "ID of WA group,  message is sent/received from"
 
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all),
