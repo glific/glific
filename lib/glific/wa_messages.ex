@@ -1,4 +1,4 @@
-defmodule Glific.WaMessages do
+defmodule Glific.WAMessages do
   @moduledoc """
   Whatsapp messages context
   """
@@ -6,17 +6,17 @@ defmodule Glific.WaMessages do
   alias Glific.Flows.MessageVarParser
   alias Glific.Messages
   alias Glific.Repo
-  alias Glific.WaGroup.WaMessage
+  alias Glific.WaGroup.WAMessage
 
   @doc """
   Creates a message.
   ## Examples
       iex> create_message(%{field: value})
-      {:ok, %Message{}}
+      {:ok, %WAMessage{}}
       iex> create_message(%{field: bad_value})
       {:error, %Ecto.Changeset{}}
   """
-  @spec create_message(map()) :: {:ok, WaMessage.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_message(map()) :: {:ok, WAMessage.t()} | {:error, Ecto.Changeset.t()}
   def create_message(attrs) do
     attrs =
       %{flow: :inbound, status: :enqueued}
@@ -24,8 +24,8 @@ defmodule Glific.WaMessages do
       |> parse_message_vars()
       |> put_clean_body()
 
-    %WaMessage{}
-    |> WaMessage.changeset(attrs)
+    %WAMessage{}
+    |> WAMessage.changeset(attrs)
     |> Repo.insert(
       returning: [:message_number, :uuid, :context_message_id],
       timeout: 45_000

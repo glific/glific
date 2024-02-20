@@ -1,4 +1,4 @@
-defmodule Glific.WaGroup.WaMessage do
+defmodule Glific.WaGroup.WAMessage do
   @moduledoc false
   use Ecto.Schema
 
@@ -10,7 +10,7 @@ defmodule Glific.WaGroup.WaMessage do
     Groups.WAGroup,
     Messages.MessageMedia,
     Partners.Organization,
-    WaGroup.WaMessage,
+    WaGroup.WAMessage,
     WAGroup.WAManagedPhone
   }
 
@@ -24,6 +24,7 @@ defmodule Glific.WaGroup.WaMessage do
           flow: String.t() | nil,
           label: String.t() | nil,
           status: String.t() | nil,
+          body: String.t() | nil,
           bsp_status: String.t() | nil,
           bsp_id: String.t() | nil,
           errors: map() | nil,
@@ -36,10 +37,9 @@ defmodule Glific.WaGroup.WaMessage do
           media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          body: String.t() | nil,
           context_id: String.t() | nil,
           context_message_id: non_neg_integer | nil,
-          context_message: WaMessage.t() | Ecto.Association.NotLoaded.t() | nil,
+          context_message: WAMessage.t() | Ecto.Association.NotLoaded.t() | nil,
           message_broadcast_id: non_neg_integer | nil,
           message_broadcast: MessageBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
           wa_managed_phone_id: non_neg_integer | nil,
@@ -92,17 +92,15 @@ defmodule Glific.WaGroup.WaMessage do
     belongs_to(:contact, Contact)
     belongs_to(:wa_managed_phone, WAManagedPhone)
     belongs_to(:media, MessageMedia)
-
     belongs_to(:wa_group, WAGroup)
     belongs_to(:organization, Organization)
+    belongs_to(:message_broadcast, MessageBroadcast, foreign_key: :message_broadcast_id)
+    belongs_to(:context_message, WAMessage, foreign_key: :context_message_id)
 
     timestamps(type: :utc_datetime_usec)
-
-    belongs_to(:message_broadcast, MessageBroadcast, foreign_key: :message_broadcast_id)
-    belongs_to(:context_message, WaMessage, foreign_key: :context_message_id)
   end
 
-  @spec changeset(WaMessage.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(WAMessage.t(), map()) :: Ecto.Changeset.t()
   def changeset(message, attrs) do
     message
     |> cast(attrs, @required_fields ++ @optional_fields, empty_values: [[], nil])

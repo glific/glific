@@ -62,7 +62,7 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
         comment:
           "Whatsapp connection status; current options are : processing, valid, invalid & failed"
 
-      add :bsp_id, :string, comment: "Message Id from provider"
+      add :bsp_id, :string, comment: "Message ID from provider"
 
       add :errors, :map, comment: "Options : Sent, Delivered or Read"
       add :message_number, :bigint, comment: "Messaging number for a WhatsApp group"
@@ -96,7 +96,7 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
         comment: "Unique organization ID"
 
       timestamps(type: :utc_datetime_usec)
-      add :context_id, :text, comment: "Id of the message context"
+      add :context_id, :text, comment: "ID of the message context"
       add :context_message_id, references(:wa_messages, on_delete: :delete_all)
 
       add :message_broadcast_id, references(:message_broadcasts, on_delete: :delete_all)
