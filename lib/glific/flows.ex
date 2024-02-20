@@ -673,8 +673,8 @@ defmodule Glific.Flows do
     end
   end
 
-  @spec process_wa_group_flow([WAGroup.t()], Flow.t()) :: {:ok, Flow.t()}
-  defp process_wa_group_flow(wa_groups, flow) do
+  @spec process_wa_group_flow(Flow.t(), [WAGroup.t()]) :: {:ok, Flow.t()}
+  defp process_wa_group_flow(flow, wa_groups) do
     if flow.is_active do
       Broadcast.broadcast_wa_groups(flow, wa_groups)
       {:ok, flow}

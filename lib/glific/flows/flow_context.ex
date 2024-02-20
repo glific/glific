@@ -21,6 +21,7 @@ defmodule Glific.Flows.FlowContext do
     Flows.MessageBroadcast,
     Flows.MessageVarParser,
     Flows.Node,
+    Groups.WAGroup,
     Messages,
     Messages.Message,
     Notifications,
@@ -630,6 +631,37 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
+  Seed the context and set the wake up time as needed
+  """
+  @spec seed_wa_group_context(Flow.t(), WAGroup.t(), String.t(), Keyword.t()) ::
+          {:ok, FlowContext.t()} | {:error, Ecto.Changeset.t()}
+  def seed_wa_group_context(flow, wa_group, status, opts \\ []) do
+    delay = Keyword.get(opts, :delay, 0)
+
+    Logger.info("Seeding flow: id: '#{flow.id}', wa_group_id: '#{wa_group.id}'")
+
+    node = flow.start_node
+
+    {:ok, context} =
+      create_flow_context(%{
+        wa_group_id: wa_group.id,
+        node_uuid: node.uuid,
+        flow_uuid: flow.uuid,
+        status: status,
+        node: node,
+        flow_id: flow.id,
+        flow: flow,
+        organization_id: flow.organization_id,
+        uuid_map: flow.uuid_map,
+        delay: delay
+      })
+
+    context
+    |> Repo.preload([:flow, :contact])
+    |> then(&{:ok, &1})
+  end
+
+  @doc """
   Start a new context, if there is an existing context, blow it away
   """
   @spec init_context(Flow.t(), Contact.t(), String.t(), Keyword.t() | []) ::
@@ -678,6 +710,18 @@ defmodule Glific.Flows.FlowContext do
     context
     |> load_context(flow)
     # lets do the first steps and start executing it till we need a message
+    |> execute([])
+  end
+
+  @doc """
+  Start a new context, if there is an existing context, blow it away
+  """
+  @spec init_wa_group_context(Flow.t(), WAGroup.t(), String.t(), Keyword.t() | []) ::
+          {:ok | :wait, FlowContext.t(), [String.t()]} | {:error, String.t()}
+  def init_wa_group_context(flow, wa_group, status, opts \\ []) do
+    {:ok, context} = seed_wa_group_context(flow, wa_group, status, opts)
+
+    context
     |> execute([])
   end
 

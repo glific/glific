@@ -362,7 +362,7 @@ defmodule Glific.Flows.Broadcast do
         wa_groups,
         fn wa_group ->
           Repo.put_process_state(wa_group.organization_id)
-          FlowContext.init_context(flow, wa_group, @status, opts)
+          FlowContext.init_wa_group_context(flow, wa_group, @status, opts)
           :ok
         end,
         ordered: false,
