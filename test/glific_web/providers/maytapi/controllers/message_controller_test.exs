@@ -228,6 +228,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.contact.contact_type == "WA"
     end
 
+    @tag :schm
     test "Updating the contact_type to WABA+WA due to sender contact already existing", %{
       conn: conn,
       message_params: message_params
