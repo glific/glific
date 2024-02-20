@@ -4,7 +4,8 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
 
   alias Glific.{
     Partners,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    WAManagedPhonesFixtures
   }
 
   setup do
@@ -46,7 +47,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
     })
 
     message =
-      Glific.WAManagedPhonesFixtures.wa_managed_phone_fixture(%{
+      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{
         organization_id: user.organization_id
       })
 

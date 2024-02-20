@@ -1,5 +1,18 @@
 defmodule Glific.Providers.Maytapi.WAMessages do
+  @moduledoc """
+  Message API layer between application and maytapi
+  """
+
   alias Glific.Messages.Message
+
+  @doc false
+  @spec send_text(Message.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
+  def send_text(message, attrs \\ %{}) do
+    %{type: :text, text: message.body}
+    |> Glific.Providers.Gupshup.Message.check_size()
+    |> send_message(message, attrs)
+  end
 
   @doc false
   @spec format_sender(Message.t(), map()) :: map()
@@ -10,13 +23,6 @@ defmodule Glific.Providers.Maytapi.WAMessages do
       "type" => message.type,
       "phone" => attrs.phone
     }
-  end
-
-  @doc false
-  def send_text(message, attrs \\ %{}) do
-    %{type: :text, text: message.body}
-    |> Glific.Providers.Gupshup.Message.check_size()
-    |> send_message(message, attrs)
   end
 
   @doc false
@@ -32,6 +38,7 @@ defmodule Glific.Providers.Maytapi.WAMessages do
     create_oban_job(message, request_body)
   end
 
+  @doc false
   @spec create_oban_job(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   defp create_oban_job(message, request_body) do

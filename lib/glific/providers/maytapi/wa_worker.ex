@@ -11,11 +11,11 @@ defmodule Glific.Providers.Maytapi.WaWorker do
 
   alias Glific.{
     Messages.Message,
-    Providers.Maytapi.ApiClient,
     Partners,
     Partners.Organization,
-    Providers.Worker,
-    Providers.Maytapi.ResponseHandler
+    Providers.Maytapi.ApiClient,
+    Providers.Maytapi.ResponseHandler,
+    Providers.Worker
   }
 
   @doc """

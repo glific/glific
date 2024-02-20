@@ -256,7 +256,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :send_message_in_wa_group, :message_result do
       arg(:input, non_null(:wa_message_input))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Messages.send_message_in_wa_group/3)
+      resolve(&Resolvers.Messages.send_message_in_WA_group/3)
     end
   end
 
