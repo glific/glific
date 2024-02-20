@@ -15,6 +15,7 @@ defmodule Glific.Flows do
     Contacts.Contact,
     Flows.ContactField,
     Groups,
+    Groups.WAGroup,
     Partners,
     Repo,
     Sheets,
@@ -655,12 +656,28 @@ defmodule Glific.Flows do
   @status "published"
 
   @doc """
+  Start flow for a WA group
+  """
+  @spec start_wa_group_flow(non_neg_integer(), non_neg_integer()) ::
+          {:ok, Flow.t()} | {:error, String.t()}
+
+  def start_wa_group_flow(flow_id, wa_group_id) do
+    case get_cached_flow(wa_group.organization_id, {:flow_id, flow_id, @status}) do
+      {:ok, flow} ->
+        process_contact_flow([contact], flow, default_results)
+
+      {:error, _error} ->
+        {:error, ["Flow", dgettext("errors", "Flow not found")]}
+    end
+  end
+
+  @doc """
   Start flow for a contact and cache the result
   """
   @spec start_contact_flow(Flow.t() | integer, Contact.t(), map()) ::
           {:ok, Flow.t()} | {:error, String.t()}
 
-  def start_contact_flow(f, c, default_results \\ %{})
+  def start_contact_flow(flow_id, contact, default_results \\ %{})
 
   def start_contact_flow(flow_id, %Contact{} = contact, default_results)
       when is_integer(flow_id) do

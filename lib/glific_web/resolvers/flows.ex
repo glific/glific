@@ -14,6 +14,7 @@ defmodule GlificWeb.Resolvers.Flows do
     Flows.FlowCount,
     Flows.Translate.Export,
     Flows.Translate.Import,
+    Groups.WAGroup,
     Repo,
     State
   }
@@ -204,6 +205,27 @@ defmodule GlificWeb.Resolvers.Flows do
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
          {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
          {:ok, _flow} <- Flows.start_contact_flow(flow_id, contact, params[:default_results]) do
+      {:ok, %{success: true}}
+    end
+  end
+
+  @doc """
+  Start a flow for a WhatsApp group
+  """
+  @spec start_wa_group_flow(
+          Absinthe.Resolution.t(),
+          %{flow_id: integer | String.t(), wa_group_id: integer},
+          %{
+            context: map()
+          }
+        ) ::
+          {:ok, any} | {:error, any}
+  def start_wa_group_flow(_, %{flow_id: flow_id, wa_group_id: wa_group_id} = params, %{
+        context: %{current_user: user}
+      }) do
+    with {:ok, wa_group_id} <- Glific.parse_maybe_integer(wa_group_id),
+         {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
+         {:ok, _flow} <- Flows.start_wa_group_flow(flow_id, wa_group_id) do
       {:ok, %{success: true}}
     end
   end
