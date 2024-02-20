@@ -2,6 +2,8 @@ defmodule Glific.WAGroup.WAMessage do
   @moduledoc false
   use Ecto.Schema
 
+  alias __MODULE__
+
   alias Glific.{
     Contacts.Contact,
     Flows.MessageBroadcast,
@@ -113,7 +115,7 @@ defmodule Glific.WAGroup.WAMessage do
 
   @doc false
   # if message type is not text then it should have media id
-  @spec changeset(Ecto.Changeset.t(), Message.t()) :: Ecto.Changeset.t()
+  @spec changeset(Ecto.Changeset.t(), WAMessage.t()) :: Ecto.Changeset.t()
   defp validate_media(changeset, message) do
     type = changeset.changes[:type]
     media_id = changeset.changes[:media_id] || message.media_id
