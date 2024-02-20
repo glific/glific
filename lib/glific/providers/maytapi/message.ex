@@ -36,7 +36,8 @@ defmodule Glific.Providers.Maytapi.Message do
         bsp_status: "sent",
         wa_group_id: get_group_id(attrs),
         wa_managed_phone_id: get_wa_managed_phone_id(attrs),
-        bsp_id: attrs.wa_group_id
+        bsp_id: attrs.wa_group_id,
+        send_at: DateTime.utc_now()
       }
       |> WAMessages.create_message()
 

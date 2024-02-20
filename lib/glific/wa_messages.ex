@@ -32,7 +32,8 @@ defmodule Glific.WAMessages do
     )
   end
 
-  @spec update_message(WAMessage.t(), map()) :: {:ok, WAMessage.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_message(WAMessage.t(), map()) ::
+          {:ok, WAMessage.t()} | {:error, Ecto.Changeset.t()}
   def update_message(%WAMessage{} = message, attrs) do
     message
     |> WAMessage.changeset(attrs)
