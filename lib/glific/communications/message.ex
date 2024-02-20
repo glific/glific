@@ -5,6 +5,8 @@ defmodule Glific.Communications.Message do
   import Ecto.Query
   require Logger
 
+  alias Glific.WaMessages
+  alias Glific.Messages.WaMessage
   alias Glific.{
     Communications,
     Contacts,
@@ -206,26 +208,8 @@ defmodule Glific.Communications.Message do
   end
 
   @spec do_receive_message(Contact.t(), map(), atom()) :: :ok | {:error, String.t()}
-  defp do_receive_message(contact, %{organization_id: organization_id} = message_params, type) do
-    {:ok, contact} = Contacts.set_session_status(contact, :session)
-    group_id = get_group_id(message_params)
-
-    metadata = %{
-      type: type,
-      sender_id: contact.id,
-      receiver_id: Partners.organization_contact_id(organization_id),
-      organization_id: contact.organization_id,
-      group_id: group_id
-    }
-
-    message_params =
-      message_params
-      |> Map.merge(metadata)
-      |> Map.merge(%{
-        flow: :inbound,
-        bsp_status: :delivered,
-        status: :received
-      })
+  defp do_receive_message(contact, %{organization_id: _organization_id} = message_params, type) do
+    {metadata, message_params} = create_message_changeset(contact, message_params, type)
 
     message_event = get_receive_msg_telemetry_event(message_params)
     # publish a telemetry event about the message being received
@@ -249,7 +233,7 @@ defmodule Glific.Communications.Message do
     message_event = get_received_msg_publish_event(message_params)
 
     message_params
-    |> Messages.create_message()
+    |> create_message()
     |> publish_data(message_event)
     |> process_message()
   end
@@ -455,4 +439,55 @@ defmodule Glific.Communications.Message do
   # end
 
   defp get_group_id(_), do: nil
+
+  @spec create_message_changeset(Contact.t(), map(), atom()) :: tuple()
+  defp create_message_changeset(contact, %{provider: "maytapi"} = message_params, type) do
+    {:ok, contact} = Contacts.set_session_status(contact, :session)
+    # group_id = get_group_id(message_params)
+
+    metadata = %{
+      type: type,
+      contact_id: contact.id,
+      organization_id: contact.organization_id,
+      group_id: nil
+    }
+
+    message_params = message_params
+      |> Map.merge(metadata)
+      |> Map.merge(%{
+        flow: :inbound,
+        bsp_status: :delivered,
+        status: :received
+      })
+    {message_params, metadata}
+  end
+
+  defp create_message_changeset(contact, message_params, type) do
+    {:ok, contact} = Contacts.set_session_status(contact, :session)
+
+    metadata = %{
+      type: type,
+      sender_id: contact.id,
+      receiver_id: Partners.organization_contact_id(message_params.organization_id),
+      organization_id: contact.organization_id,
+    }
+
+      message_params = message_params
+      |> Map.merge(metadata)
+      |> Map.merge(%{
+        flow: :inbound,
+        bsp_status: :delivered,
+        status: :received
+      })
+      {message_params, metadata}
+  end
+
+  @spec create_message(map()) :: {:ok, Message.t() | WaMessage.t()} | {:error, term()}
+  defp create_message(%{provider: "maytapi"} = message_params) do
+    WaMessages.create_message(message_params)
+  end
+
+  defp create_message(message_params) do
+    Messages.create_message(message_params)
+  end
 end
