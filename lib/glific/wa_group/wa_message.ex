@@ -1,8 +1,6 @@
-defmodule Glific.WaGroup.WAMessage do
+defmodule Glific.WAGroup.WAMessage do
   @moduledoc false
   use Ecto.Schema
-
-  alias Glific.Enums.{MessageFlow, MessageStatus, MessageType}
 
   alias Glific.{
     Contacts.Contact,
@@ -10,9 +8,11 @@ defmodule Glific.WaGroup.WAMessage do
     Groups.WAGroup,
     Messages.MessageMedia,
     Partners.Organization,
-    WaGroup.WAMessage,
-    WAGroup.WAManagedPhone
+    WAGroup.WAManagedPhone,
+    WAGroup.WAMessage
   }
+
+  alias Glific.Enums.{MessageFlow, MessageStatus, MessageType}
 
   import Ecto.Changeset
 

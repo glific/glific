@@ -6,7 +6,7 @@ defmodule Glific.WAMessages do
   alias Glific.Flows.MessageVarParser
   alias Glific.Messages
   alias Glific.Repo
-  alias Glific.WaGroup.WAMessage
+  alias Glific.WAGroup.WAMessage
 
   @doc """
   Creates a message.
