@@ -18,7 +18,7 @@ defmodule Glific.Providers.Maytapi.WAMessages do
   @spec format_sender(Message.t(), map()) :: map()
   defp format_sender(message, attrs) do
     %{
-      "to_number" => message.bsp_message_id,
+      "to_number" => message.wa_group_id,
       "message" => message.body,
       "type" => message.type,
       "phone" => attrs.phone

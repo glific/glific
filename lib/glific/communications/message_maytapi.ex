@@ -6,9 +6,8 @@ defmodule Glific.Communications.MessageMaytapi do
   require Logger
 
   alias Glific.{
-    Messages,
-    Messages.Message,
-    Repo
+    WAGroup.WAMessage,
+    WAMessages
   }
 
   @doc false
@@ -32,12 +31,10 @@ defmodule Glific.Communications.MessageMaytapi do
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message({:ok, Message.t()}, map()) :: {:ok, Message.t()} | {:error, String.t()}
-  def send_message({:ok, %Message{} = message}, attrs \\ %{}) do
-    message = Repo.preload(message, [:receiver, :sender, :media])
-
+  @spec send_message({:ok, WAMessage.t()}, map()) :: {:ok, WAMessage.t()} | {:error, String.t()}
+  def send_message({:ok, %WAMessage{} = message}, attrs \\ %{}) do
     Logger.info(
-      "Sending message: type: '#{message.type}', contact_id: '#{message.receiver.id}', message_id: '#{message.id}'"
+      "Sending message: type: '#{message.type}', contact_id: '#{message.contact_id}', message_id: '#{message.id}'"
     )
 
     with {:ok, _} <-
@@ -52,8 +49,7 @@ defmodule Glific.Communications.MessageMaytapi do
         %{duration: 1},
         %{
           type: message.type,
-          sender_id: message.sender_id,
-          receiver_id: message.receiver_id,
+          contact_id: message.contact_id,
           organization_id: message.organization_id
         }
       )
@@ -63,12 +59,9 @@ defmodule Glific.Communications.MessageMaytapi do
       log_error(message, "Could not send message to contact: Check maytapi Setting")
   end
 
-  @spec log_error(Message.t(), String.t()) :: {:error, String.t()}
+  @spec log_error(WAMessage.t(), String.t()) :: {:error, String.t()}
   defp log_error(message, reason) do
-    message = Repo.preload(message, [:receiver])
-    Messages.notify(message, reason)
-
-    {:ok, _} = Messages.update_message(message, %{status: :error})
+    {:ok, _} = WAMessages.update_message(message, %{status: :error})
     {:error, reason}
   end
 end
