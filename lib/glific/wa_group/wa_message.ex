@@ -1,18 +1,20 @@
-defmodule Glific.Messages.WaMessage do
+defmodule Glific.WAGroup.WAMessage do
   @moduledoc false
   use Ecto.Schema
 
-  alias Glific.Enums.{MessageFlow, MessageStatus, MessageType}
+  alias __MODULE__
 
   alias Glific.{
-    Messages.WaMessage,
-    Groups.WAGroup,
-    WAGroup.WAManagedPhone,
     Contacts.Contact,
+    Flows.MessageBroadcast,
+    Groups.WAGroup,
     Messages.MessageMedia,
     Partners.Organization,
-    Flows.MessageBroadcast
+    WAGroup.WAManagedPhone,
+    WAGroup.WAMessage
   }
+
+  alias Glific.Enums.{MessageFlow, MessageStatus, MessageType}
 
   import Ecto.Changeset
 
@@ -24,8 +26,9 @@ defmodule Glific.Messages.WaMessage do
           flow: String.t() | nil,
           label: String.t() | nil,
           status: String.t() | nil,
+          body: String.t() | nil,
           bsp_status: String.t() | nil,
-          bsp_message_id: String.t() | nil,
+          bsp_id: String.t() | nil,
           errors: map() | nil,
           message_number: integer(),
           contact_id: non_neg_integer | nil,
@@ -36,10 +39,9 @@ defmodule Glific.Messages.WaMessage do
           media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          body: String.t() | nil,
           context_id: String.t() | nil,
           context_message_id: non_neg_integer | nil,
-          context_message: WaMessage.t() | Ecto.Association.NotLoaded.t() | nil,
+          context_message: WAMessage.t() | Ecto.Association.NotLoaded.t() | nil,
           message_broadcast_id: non_neg_integer | nil,
           message_broadcast: MessageBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
           wa_managed_phone_id: non_neg_integer | nil,
@@ -59,7 +61,7 @@ defmodule Glific.Messages.WaMessage do
     :wa_group_id,
     :bsp_status,
     :body,
-    :bsp_message_id
+    :bsp_id
   ]
   @optional_fields [
     :uuid,
@@ -87,33 +89,33 @@ defmodule Glific.Messages.WaMessage do
     field(:send_at, :utc_datetime)
     field(:sent_at, :utc_datetime)
     field(:context_id, :string)
-    field(:bsp_message_id, :string)
+    field(:bsp_id, :string)
 
     belongs_to(:contact, Contact)
     belongs_to(:wa_managed_phone, WAManagedPhone)
     belongs_to(:media, MessageMedia)
-
     belongs_to(:wa_group, WAGroup)
     belongs_to(:organization, Organization)
+    belongs_to(:message_broadcast, MessageBroadcast, foreign_key: :message_broadcast_id)
+    belongs_to(:context_message, WAMessage, foreign_key: :context_message_id)
 
     timestamps(type: :utc_datetime_usec)
-
-    belongs_to(:message_broadcast, MessageBroadcast, foreign_key: :message_broadcast_id)
-    belongs_to(:context_message, WaMessage, foreign_key: :context_message_id)
   end
 
-  @spec changeset(WaMessage.t(), map()) :: Ecto.Changeset.t()
+  @doc """
+  Standard changeset pattern we use for all data types
+  """
+  @spec changeset(WAMessage.t(), map()) :: Ecto.Changeset.t()
   def changeset(message, attrs) do
     message
     |> cast(attrs, @required_fields ++ @optional_fields, empty_values: [[], nil])
     |> validate_required(@required_fields)
     |> validate_media(message)
-    |> unique_constraint([:bsp_message_id, :organization_id])
   end
 
   @doc false
   # if message type is not text then it should have media id
-  @spec changeset(Ecto.Changeset.t(), Message.t()) :: Ecto.Changeset.t()
+  @spec changeset(Ecto.Changeset.t(), WAMessage.t()) :: Ecto.Changeset.t()
   defp validate_media(changeset, message) do
     type = changeset.changes[:type]
     media_id = changeset.changes[:media_id] || message.media_id

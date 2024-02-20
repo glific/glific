@@ -1,26 +1,22 @@
-defmodule Glific.WaMessages do
+defmodule Glific.WAMessages do
   @moduledoc """
   Whatsapp messages context
   """
-  # TODO: We are sharing some functions from Messages, we could put all in a common place?
-  alias Glific.Messages
   alias Glific.Contacts
-  alias Glific.Messages.WaMessage
   alias Glific.Flows.MessageVarParser
+  alias Glific.Messages
   alias Glific.Repo
+  alias Glific.WAGroup.WAMessage
+
   @doc """
   Creates a message.
-
   ## Examples
-
       iex> create_message(%{field: value})
-      {:ok, %Message{}}
-
+      {:ok, %WAMessage{}}
       iex> create_message(%{field: bad_value})
       {:error, %Ecto.Changeset{}}
-
   """
-  @spec create_message(map()) :: {:ok, WaMessage.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_message(map()) :: {:ok, WAMessage.t()} | {:error, Ecto.Changeset.t()}
   def create_message(attrs) do
     attrs =
       %{flow: :inbound, status: :enqueued}
@@ -28,8 +24,8 @@ defmodule Glific.WaMessages do
       |> parse_message_vars()
       |> put_clean_body()
 
-    %WaMessage{}
-    |> WaMessage.changeset(attrs)
+    %WAMessage{}
+    |> WAMessage.changeset(attrs)
     |> Repo.insert(
       returning: [:message_number, :uuid, :context_message_id],
       timeout: 45_000
@@ -47,7 +43,6 @@ defmodule Glific.WaMessages do
     |> parse_media_message_fields(message_vars)
   end
 
-  # TODO: could share from Messages
   @spec parse_text_message_fields(map(), map()) :: map()
   defp parse_text_message_fields(attrs, message_vars) do
     if is_binary(attrs[:body]) do
@@ -63,7 +58,6 @@ defmodule Glific.WaMessages do
     end
   end
 
-  # TODO: could share from Messages
   @spec parse_media_message_fields(map(), map()) :: map()
   defp parse_media_message_fields(attrs, message_vars) do
     ## if message media is present change the variables in caption
@@ -79,8 +73,6 @@ defmodule Glific.WaMessages do
     attrs
   end
 
-
-  # TODO: could share from Messages
   @spec put_clean_body(map()) :: map()
   # sometimes we get no body, so we need to ensure we set to null for text type
   # Issue #2798
