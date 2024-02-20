@@ -3,6 +3,8 @@ defmodule Glific.Groups.WhatsappGroup do
   Whatsapp groups context.
   """
 
+  import Ecto.Query, warn: false
+
   alias Glific.{
     Groups.WAGroup,
     Providers.Maytapi.ApiClient,
@@ -111,6 +113,27 @@ defmodule Glific.Groups.WhatsappGroup do
   """
   @spec get_wa_group!(non_neg_integer()) :: WAGroup.t()
   def get_wa_group!(id), do: Repo.get!(WAGroup, id)
+
+  @doc """
+  Gets a wa_groups from list of IDs.
+
+  Raises `Ecto.NoResultsError` if the Wa managed phone does not exist.
+
+  ## Examples
+
+      iex> get_wa_groups!([123])
+      [%WAGroup{}]
+
+      iex> get_wa_groups!([456])
+      ** (Ecto.NoResultsError)
+
+  """
+  @spec get_wa_groups!([non_neg_integer()]) :: WAGroup.t()
+  def get_wa_groups!(ids) do
+    WAGroup
+    |> where([wag], wag.id in ^ids)
+    |> Repo.all()
+  end
 
   @doc """
   Fetches a group with given bsp_id and organization_id (Creates a group if doesnt exist)

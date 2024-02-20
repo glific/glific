@@ -14,7 +14,6 @@ defmodule GlificWeb.Resolvers.Flows do
     Flows.FlowCount,
     Flows.Translate.Export,
     Flows.Translate.Import,
-    Groups.WAGroup,
     Repo,
     State
   }
@@ -214,18 +213,15 @@ defmodule GlificWeb.Resolvers.Flows do
   """
   @spec start_wa_group_flow(
           Absinthe.Resolution.t(),
-          %{flow_id: integer | String.t(), wa_group_id: integer},
-          %{
-            context: map()
-          }
-        ) ::
-          {:ok, any} | {:error, any}
-  def start_wa_group_flow(_, %{flow_id: flow_id, wa_group_id: wa_group_id} = params, %{
+          %{flow_id: integer, wa_group_id: integer},
+          %{context: map()}
+        ) :: {:ok, any} | {:error, any}
+  def start_wa_group_flow(_, %{flow_id: flow_id, wa_group_id: wa_group_id}, %{
         context: %{current_user: user}
       }) do
     with {:ok, wa_group_id} <- Glific.parse_maybe_integer(wa_group_id),
          {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
-         {:ok, _flow} <- Flows.start_wa_group_flow(flow_id, wa_group_id) do
+         {:ok, _flow} <- Flows.start_wa_group_flow(flow_id, wa_group_id, user.organization_id) do
       {:ok, %{success: true}}
     end
   end

@@ -16,6 +16,7 @@ defmodule Glific.Flows do
     Flows.ContactField,
     Groups,
     Groups.WAGroup,
+    Groups.WhatsappGroup,
     Partners,
     Repo,
     Sheets,
@@ -658,16 +659,27 @@ defmodule Glific.Flows do
   @doc """
   Start flow for a WA group
   """
-  @spec start_wa_group_flow(non_neg_integer(), non_neg_integer()) ::
+  @spec start_wa_group_flow(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
           {:ok, Flow.t()} | {:error, String.t()}
 
-  def start_wa_group_flow(flow_id, wa_group_id) do
-    case get_cached_flow(wa_group.organization_id, {:flow_id, flow_id, @status}) do
+  def start_wa_group_flow(flow_id, wa_group_id, organization_id) do
+    case get_cached_flow(organization_id, {:flow_id, flow_id, @status}) do
       {:ok, flow} ->
-        process_contact_flow([contact], flow, default_results)
+        wa_groups = WhatsappGroup.get_wa_groups!([wa_group_id])
+        process_wa_group_flow(flow, wa_groups)
 
       {:error, _error} ->
         {:error, ["Flow", dgettext("errors", "Flow not found")]}
+    end
+  end
+
+  @spec process_wa_group_flow([WAGroup.t()], Flow.t()) :: {:ok, Flow.t()}
+  defp process_wa_group_flow(wa_groups, flow) do
+    if flow.is_active do
+      Broadcast.broadcast_wa_groups(flow, wa_groups)
+      {:ok, flow}
+    else
+      {:error, ["Flow", dgettext("errors", "Flow is not active")]}
     end
   end
 

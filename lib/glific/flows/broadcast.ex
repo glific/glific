@@ -16,6 +16,7 @@ defmodule Glific.Flows.Broadcast do
     Flows.MessageBroadcast,
     Flows.MessageBroadcastContact,
     Groups.Group,
+    Groups.WAGroup,
     Messages,
     Partners,
     Repo
@@ -91,6 +92,21 @@ defmodule Glific.Flows.Broadcast do
 
     unprocessed_group_broadcast(org_id)
     |> process_broadcast_group()
+  end
+
+  @doc """
+  We are using this function from the flows.
+  """
+  @spec broadcast_wa_groups(Flow.t(), list()) :: :ok
+  def broadcast_wa_groups(flow, wa_groups) do
+    Repo.put_process_state(flow.organization_id)
+    opts = opts(flow.organization_id)
+
+    broadcast_for_wa_groups(
+      %{flow: flow, type: :wa_group},
+      wa_groups,
+      opts
+    )
   end
 
   @doc """
@@ -262,6 +278,27 @@ defmodule Glific.Flows.Broadcast do
   end
 
   # """
+  # Lets start a flow for a bunch of wa_groups in parallel
+  # """
+  @spec broadcast_for_wa_groups(map(), list(WAGroup.t()), Keyword.t()) :: :ok
+  defp broadcast_for_wa_groups(attrs, wa_groups, opts) do
+    wa_groups
+    |> Enum.chunk_every(opts[:bsp_limit])
+    |> Enum.with_index()
+    |> Enum.each(fn {chunk_list, delay_offset} ->
+      task_opts = [
+        {:delay, opts[:delay] + delay_offset},
+        {:message_broadcast_id, opts[:message_broadcast_id]},
+        {:default_results, opts[:default_results]}
+      ]
+
+      wa_group_tasks(attrs.flow, chunk_list, task_opts)
+    end)
+
+    :ok
+  end
+
+  # """
   # Lets start a bunch of contacts on a flow in parallel
   # """
   @spec broadcast_for_contacts(map(), list(Contact.t()), Keyword.t()) :: :ok
@@ -307,6 +344,25 @@ defmodule Glific.Flows.Broadcast do
                response #{inspect(response)}")
           end
 
+          :ok
+        end,
+        ordered: false,
+        timeout: 5_000,
+        on_timeout: :kill_task
+      )
+
+    Stream.run(stream)
+  end
+
+  @spec wa_group_tasks(Flow.t(), [WAGroup.t()], Keyword.t()) :: :ok
+  defp wa_group_tasks(flow, wa_groups, opts) do
+    stream =
+      Task.Supervisor.async_stream_nolink(
+        Glific.Broadcast.Supervisor,
+        wa_groups,
+        fn wa_group ->
+          Repo.put_process_state(wa_group.organization_id)
+          FlowContext.init_context(flow, wa_group, @status, opts)
           :ok
         end,
         ordered: false,
