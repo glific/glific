@@ -36,22 +36,36 @@ defmodule Glific.Groups.WhatsappMessageTest do
     end)
   end
 
-  test "send_text/2 sends a text message successfully", attrs do
-    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{org_id: attrs.organization_id})
+  test "create_and_send_message/3 sends a text message in a whatsapp group successfully", attrs do
+    wa_managed_phone =
+      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+
+    _wa_group =
+      WAManagedPhonesFixtures.wa_group_fixture(%{
+        organization_id: attrs.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
 
     mock_maytapi_response(200, %{
       "success" => true,
       "data" => %{
-        "chatId" => "78341114@c.us",
+        "chatId" => "120363238104@g.us",
         "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"
       }
     })
 
-    params = %{phone: "9829627508", message: "hi"}
-    {:ok, message} = Message.send_message(attrs.organization_id, params)
+    user = attrs |> Map.put(:name, "NGO user")
 
-    assert message.body == "hi"
-    assert message.status == :sent
+    params = %{
+      wa_group_id: "120363238104@g.us",
+      message: "hi",
+      wa_managed_phone: "9829627508"
+    }
+
+    {:ok, response} = Message.create_and_send_message(user, params)
+    message = response.args["message"]
+    assert message["body"] == params.message
+    assert message["bsp_status"] == "sent"
   end
 
   test "receive_text/1 receive text message correctly" do
@@ -90,23 +104,5 @@ defmodule Glific.Groups.WhatsappMessageTest do
     }
 
     assert Message.receive_media(params) == expected_result
-  end
-
-  test "send_text_in_wa_group/3 sends a text message in a whatsapp group successfully", attrs do
-    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
-
-    mock_maytapi_response(200, %{
-      "success" => true,
-      "data" => %{
-        "chatId" => "120363238104@g.us",
-        "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"
-      }
-    })
-
-    params = %{bsp_id: "120363238104@g.us", message: "hi", phone: "9829627508"}
-    {:ok, message} = Message.send_text_in_wa_group(attrs.organization_id, params)
-
-    assert message.body == "hi"
-    assert message.status == :sent
   end
 end

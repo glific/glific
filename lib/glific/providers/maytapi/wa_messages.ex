@@ -55,7 +55,7 @@ defmodule Glific.Providers.Maytapi.WAMessages do
 
     worker_args =
       %{
-        message: Glific.WAGroup.WAMessage.to_minimal_map(message),
+        message: WAMessage.to_minimal_map(message),
         payload: request_body
       }
 

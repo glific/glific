@@ -241,15 +241,12 @@ defmodule GlificWeb.Resolvers.Messages do
   end
 
   @doc false
-  @spec send_message_in_WA_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
-          {:ok, %{message: String.t()}} | {:error, %{message: String.t()}}
-  def send_message_in_WA_group(_, %{input: params}, %{context: %{current_user: user}}) do
+  @spec send_message_in_wa_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def send_message_in_wa_group(_, %{input: params}, %{context: %{current_user: user}}) do
     case Glific.Providers.Maytapi.Message.create_and_send_message(user, params) do
-      :ok ->
-        {:ok, %{message: "sent sucessfully"}}
-
-      _ ->
-        {:error, %{message: "error occured"}}
+      {:ok, _} -> {:ok, %{message: "successful"}}
+      {:error, error} -> {:error, error}
     end
   end
 end

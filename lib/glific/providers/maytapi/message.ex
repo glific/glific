@@ -10,10 +10,10 @@ defmodule Glific.Providers.Maytapi.Message do
   alias Glific.{
     Communications.MessageMaytapi,
     Contacts,
+    Groups.WAGroup,
     Repo,
     WAGroup.WAManagedPhone,
-    WAMessages,
-    Groups.WAGroup
+    WAMessages
   }
 
   @doc false
