@@ -8,7 +8,7 @@ defmodule Glific.Providers.Maytapi.Message do
   alias Glific.Partners
 
   alias Glific.{
-    Communications.MessageMaytapi,
+    Communications.GroupMessage,
     Contacts,
     Groups.WAGroup,
     Repo,
@@ -41,7 +41,7 @@ defmodule Glific.Providers.Maytapi.Message do
       }
       |> WAMessages.create_message()
 
-    MessageMaytapi.send_message(message, contact)
+    GroupMessage.send_message(message, contact)
   end
 
   @doc false

@@ -35,7 +35,6 @@ defmodule Glific.WAManagedPhonesFixtures do
   """
   @spec wa_group_fixture(map()) :: WhatsappGroup.t()
   def wa_group_fixture(attrs) do
-
     {:ok, wa_group} =
       attrs
       |> Enum.into(%{

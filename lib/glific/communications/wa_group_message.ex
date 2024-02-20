@@ -1,4 +1,4 @@
-defmodule Glific.Communications.MessageMaytapi do
+defmodule Glific.Communications.GroupMessage do
   @moduledoc """
   The Message Communication Context, which encapsulates and manages tags and the related join tables.
   """
