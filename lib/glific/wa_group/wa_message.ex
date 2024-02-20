@@ -100,6 +100,9 @@ defmodule Glific.WAGroup.WAMessage do
     timestamps(type: :utc_datetime_usec)
   end
 
+  @doc """
+  Standard changeset pattern we use for all data types
+  """
   @spec changeset(WAMessage.t(), map()) :: Ecto.Changeset.t()
   def changeset(message, attrs) do
     message
