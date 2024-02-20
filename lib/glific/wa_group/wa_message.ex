@@ -5,13 +5,13 @@ defmodule Glific.WaGroup.WaMessage do
   alias Glific.Enums.{MessageFlow, MessageStatus, MessageType}
 
   alias Glific.{
-    WaGroup.WaMessage,
-    Groups.WAGroup,
-    WAGroup.WAManagedPhone,
     Contacts.Contact,
+    Flows.MessageBroadcast,
+    Groups.WAGroup,
     Messages.MessageMedia,
     Partners.Organization,
-    Flows.MessageBroadcast
+    WaGroup.WaMessage,
+    WAGroup.WAManagedPhone
   }
 
   import Ecto.Changeset

@@ -2,12 +2,11 @@ defmodule Glific.WaMessages do
   @moduledoc """
   Whatsapp messages context
   """
-  # TODO: We are sharing some functions from Messages, we could put all in a common place?
-  alias Glific.Messages
   alias Glific.Contacts
-  alias Glific.WaGroup.WaMessage
   alias Glific.Flows.MessageVarParser
+  alias Glific.Messages
   alias Glific.Repo
+  alias Glific.WaGroup.WaMessage
 
   @doc """
   Creates a message.
@@ -44,7 +43,6 @@ defmodule Glific.WaMessages do
     |> parse_media_message_fields(message_vars)
   end
 
-  # TODO: could share from Messages
   @spec parse_text_message_fields(map(), map()) :: map()
   defp parse_text_message_fields(attrs, message_vars) do
     if is_binary(attrs[:body]) do
@@ -60,7 +58,6 @@ defmodule Glific.WaMessages do
     end
   end
 
-  # TODO: could share from Messages
   @spec parse_media_message_fields(map(), map()) :: map()
   defp parse_media_message_fields(attrs, message_vars) do
     ## if message media is present change the variables in caption
@@ -76,7 +73,6 @@ defmodule Glific.WaMessages do
     attrs
   end
 
-  # TODO: could share from Messages
   @spec put_clean_body(map()) :: map()
   # sometimes we get no body, so we need to ensure we set to null for text type
   # Issue #2798
