@@ -36,7 +36,8 @@ defmodule Glific.Groups.WhatsappMessageTest do
     end)
   end
 
-  test "create_and_send_message/3 sends a text message in a whatsapp group successfully", attrs do
+  test "create_and_send_wa_message/3 sends a text message in a whatsapp group successfully",
+       attrs do
     wa_managed_phone =
       WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
 
@@ -66,6 +67,29 @@ defmodule Glific.Groups.WhatsappMessageTest do
     message = response.args["message"]
     assert message["body"] == params.message
     assert message["bsp_status"] == "sent"
+  end
+
+  test "create_and_send_wa_message/2 should return error when characters limit is reached when sending text message",
+       attrs do
+    wa_managed_phone =
+      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+
+    _wa_group =
+      WAManagedPhonesFixtures.wa_group_fixture(%{
+        organization_id: attrs.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    user = attrs |> Map.put(:name, "NGO user")
+
+    params = %{
+      wa_group_id: "120363238104@g.us",
+      message: Faker.Lorem.sentence(6000),
+      wa_managed_phone: "9829627508"
+    }
+
+    {:error, error_msg} = Message.create_and_send_wa_message(user, params)
+    assert error_msg == "Message size greater than 6000 characters"
   end
 
   test "receive_text/1 receive text message correctly" do
