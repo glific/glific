@@ -81,6 +81,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
     |> Map.put(:message_type, "WA")
     |> Map.put(:group_id, params["conversation"])
     |> Map.put(:group_name, params["conversation_name"])
+    |> Map.put(:receiver, params["receiver"])
     |> update_sender_details()
   end
 

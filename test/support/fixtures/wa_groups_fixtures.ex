@@ -4,28 +4,30 @@ defmodule Glific.WAManagedPhonesFixtures do
   entities via the `Glific.WAGroup` context.
   """
 
-  @doc """
-  Generate a wa_managed_phone.
-  """
-
   alias Glific.{
+    Contacts,
     Groups.WAGroup,
     Groups.WhatsappGroup,
     WAGroup.WAManagedPhone,
     WAManagedPhones
   }
 
+  @doc """
+  Generate a wa_managed_phone.
+  """
   @spec wa_managed_phone_fixture(map()) :: WAManagedPhone.t()
   def wa_managed_phone_fixture(attrs) do
+    {:ok, contact} = Contacts.maybe_create_contact(Map.put(attrs, :phone, "917834811231"))
+
     {:ok, wa_managed_phone} =
       attrs
       |> Enum.into(%{
         is_active: true,
         label: "some label",
         phone: "9829627508",
-        phone_id: 42_093,
-        organization_id: attrs.organization_id,
-        provider_id: 1
+        phone_id: 242,
+        provider_id: 1,
+        contact_id: contact.id
       })
       |> WAManagedPhones.create_wa_managed_phone()
 
@@ -33,7 +35,7 @@ defmodule Glific.WAManagedPhonesFixtures do
   end
 
   @doc """
-  Generate a wa_managed_phone.
+  Generate a wa_group.
   """
   @spec wa_group_fixture(map()) :: WAGroup.t()
   def wa_group_fixture(attrs) do

@@ -23,9 +23,13 @@ defmodule GlificWeb.Providers.Maytapi.Plugs.Shunt do
     organization
   end
 
+  # we only want to process messages received by the numbers excluding wa_managed_phones.
   @doc false
   @spec call(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
-  def call(%Conn{params: %{"message" => %{"type" => payload_type}}} = conn, opts) do
+  def call(
+        %Conn{params: %{"message" => %{"type" => payload_type, "fromMe" => false}}} = conn,
+        opts
+      ) do
     organization = build_context(conn)
 
     path =

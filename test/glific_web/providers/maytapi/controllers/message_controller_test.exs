@@ -48,7 +48,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     },
     "conversation" => "120363213149844251@g.us",
     "conversation_name" => "Default Group name",
-    "receiver" => "919917443955",
+    "receiver" => "917834811114",
     "timestamp" => 1_707_216_634,
     "type" => "message",
     "reply" =>
@@ -79,7 +79,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     },
     "conversation" => "120363213149844251@g.us",
     "conversation_name" => "Group C",
-    "receiver" => "919917443955",
+    "receiver" => "917834811114",
     "timestamp" => 1_707_216_553,
     "type" => "message",
     "reply" =>
@@ -105,7 +105,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     },
     "conversation" => "120363027326493365@g.us",
     "conversation_name" => "Group B",
-    "receiver" => "919917443955",
+    "receiver" => "917834811114",
     "timestamp" => 1_707_216_634,
     "type" => "message",
     "reply" =>
@@ -217,6 +217,12 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
+    end
+
+    test "Incoming text message from the sender itself should be ignored", %{conn: conn} do
+      from_self_message = put_in(@text_message_webhook, ["message", "fromMe"], true)
+      conn = post(conn, "/maytapi", from_self_message)
+      assert conn.resp_body == "null"
     end
 
     test "Updating the contact_type to WABA+WA due to sender contact already existing", %{
