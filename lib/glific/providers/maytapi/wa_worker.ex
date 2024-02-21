@@ -1,4 +1,4 @@
-defmodule Glific.Providers.Maytapi.WaWorker do
+defmodule Glific.Providers.Maytapi.WAWorker do
   @moduledoc """
   A worker to handle send message in whatsapp group processes
   """

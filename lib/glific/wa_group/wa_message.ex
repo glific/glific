@@ -56,8 +56,7 @@ defmodule Glific.WAGroup.WAMessage do
     :flow,
     :contact_id,
     :organization_id,
-    :bsp_status,
-    :bsp_id
+    :bsp_status
   ]
   @optional_fields [
     :body,

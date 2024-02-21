@@ -245,8 +245,10 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, any} | {:error, any}
   def send_message_in_wa_group(_, %{input: params}, %{context: %{current_user: user}}) do
     case Glific.Providers.Maytapi.Message.create_and_send_wa_message(user, params) do
-      {:ok, _} -> {:ok, %{message: "successful"}}
+      {:ok, _} -> {:ok, true}
       {:error, error} -> {:error, error}
     end
+
+    {:ok, true}
   end
 end

@@ -163,8 +163,8 @@ defmodule GlificWeb.Schema.MessageTypes do
 
   input_object :wa_message_input do
     field :message, :string
-    field :wa_managed_phone, :string
-    field :wa_group_id, :string
+    field :wa_managed_phone_id, :id
+    field :wa_group_id, :id
   end
 
   object :message_queries do
@@ -253,7 +253,7 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(&Resolvers.Messages.clear_messages/3)
     end
 
-    field :send_message_in_wa_group, :message_result do
+    field :send_message_in_wa_group, :boolean do
       arg(:input, non_null(:wa_message_input))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.send_message_in_wa_group/3)

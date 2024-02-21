@@ -32,7 +32,7 @@ defmodule Glific.Communications.GroupMessage do
   Send message to receiver using define provider.
   """
   @spec send_message({:ok, WAMessage.t()}, map()) :: {:ok, WAMessage.t()} | {:error, String.t()}
-  def send_message({:ok, %WAMessage{} = message}, attrs \\ %{}) do
+  def send_message({:ok, %WAMessage{} = message}, attrs) do
     Logger.info(
       "Sending message: type: '#{message.type}', contact_id: '#{message.contact_id}', message_id: '#{message.id}'"
     )

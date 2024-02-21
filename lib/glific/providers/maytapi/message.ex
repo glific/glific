@@ -7,39 +7,41 @@ defmodule Glific.Providers.Maytapi.Message do
 
   alias Glific.{
     Communications.GroupMessage,
-    Contacts,
-    Groups.WAGroup,
-    Repo,
-    WAGroup.WAManagedPhone,
+    Groups.WhatsappGroup,
+    WAManagedPhones,
     WAMessages
   }
 
   @doc false
   @spec create_and_send_wa_message(map(), map()) :: any()
   def create_and_send_wa_message(user, attrs) do
-    {:ok, contact} = Repo.fetch_by(WAManagedPhone, phone: attrs.wa_managed_phone)
+    wa_phone =
+      attrs.wa_managed_phone_id
+      |> WAManagedPhones.get_wa_managed_phone!()
 
-    contact
-    |> Map.put(:name, user.name)
-    |> Map.drop([:__meta__, :__struct__])
-    |> Contacts.maybe_create_contact()
+    wa_group =
+      attrs.wa_managed_phone_id
+      |> WhatsappGroup.get_wa_group!()
 
     message =
       %{
         body: attrs.message,
         type: "text",
-        contact_id: Partners.organization_contact_id(user.organization_id),
+        contact_id: wa_phone.contact_id,
         organization_id: user.organization_id,
         message_type: "WA",
         bsp_status: "sent",
-        wa_group_id: get_group_id(attrs),
-        wa_managed_phone_id: get_wa_managed_phone_id(attrs),
-        bsp_id: attrs.wa_group_id,
+        wa_group_id: wa_group.id,
+        wa_managed_phone_id: wa_phone.id,
         send_at: DateTime.utc_now()
       }
       |> WAMessages.create_message()
 
-    GroupMessage.send_message(message, contact)
+    GroupMessage.send_message(message, %{
+      wa_group_bsp_id: wa_group.bsp_id,
+      phone_id: wa_phone.phone_id,
+      phone: wa_phone.phone
+    })
   end
 
   @doc false
@@ -77,22 +79,6 @@ defmodule Glific.Providers.Maytapi.Message do
         name: params["user"]["name"]
       }
     }
-  end
-
-  @spec get_group_id(map()) :: non_neg_integer()
-  defp get_group_id(attrs) do
-    WAGroup
-    |> where([g], g.bsp_id == ^attrs.wa_group_id)
-    |> select([g], g.id)
-    |> Repo.one!()
-  end
-
-  @spec get_wa_managed_phone_id(map()) :: non_neg_integer()
-  defp get_wa_managed_phone_id(attrs) do
-    WAManagedPhone
-    |> where([wg], wg.phone == ^attrs.wa_managed_phone)
-    |> select([wg], wg.id)
-    |> Repo.one!()
   end
 
   # lets ensure that we have a phone number

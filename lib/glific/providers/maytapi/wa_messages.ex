@@ -8,7 +8,7 @@ defmodule Glific.Providers.Maytapi.WAMessages do
   @doc false
   @spec send_text(WAMessage.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
-  def send_text(message, attrs \\ %{}) do
+  def send_text(message, attrs) do
     %{type: :text, text: message.body}
     |> check_size()
     |> send_message(message, attrs)
@@ -18,7 +18,7 @@ defmodule Glific.Providers.Maytapi.WAMessages do
   @spec format_sender(WAMessage.t(), map()) :: map()
   defp format_sender(message, attrs) do
     %{
-      "to_number" => message.bsp_id,
+      "to_number" => attrs.wa_group_bsp_id,
       "message" => message.body,
       "type" => message.type,
       "phone" => attrs.phone
@@ -51,7 +51,7 @@ defmodule Glific.Providers.Maytapi.WAMessages do
   @spec create_oban_job(WAMessage.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   defp create_oban_job(message, request_body) do
-    worker_module = Glific.Providers.Maytapi.WaWorker
+    worker_module = Glific.Providers.Maytapi.WAWorker
 
     worker_args =
       %{
