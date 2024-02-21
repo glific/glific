@@ -3,21 +3,37 @@ defmodule Glific.Providers.Maytapi.Message do
   Message API layer between application and Maytapi
   """
 
-  alias Glific.Providers.Maytapi.ApiClient
+  import Ecto.Query, warn: false
+
+  alias Glific.{
+    Communications.GroupMessage,
+    Groups.WAGroup,
+    WAGroup.WAManagedPhone,
+    WAMessages
+  }
 
   @doc false
-  @spec send_text(non_neg_integer, map()) :: any()
-  def send_text(org_id, attrs) do
-    send_message(org_id, attrs)
-  end
+  @spec create_and_send_wa_message(WAManagedPhone.t(), WAGroup.t(), map()) :: any()
+  def create_and_send_wa_message(wa_phone, wa_group, attrs) do
+    message =
+      %{
+        body: attrs.message,
+        type: "text",
+        contact_id: wa_phone.contact_id,
+        organization_id: wa_phone.organization_id,
+        message_type: "WA",
+        bsp_status: "sent",
+        wa_group_id: wa_group.id,
+        wa_managed_phone_id: wa_phone.id,
+        send_at: DateTime.utc_now()
+      }
+      |> WAMessages.create_message()
 
-  defp send_message(org_id, attrs) do
-    payload =
-      %{"type" => "text"}
-      |> Map.put("to_number", attrs.phone)
-      |> Map.put("message", attrs.message)
-
-    ApiClient.send_message(org_id, payload)
+    GroupMessage.send_message(message, %{
+      wa_group_bsp_id: wa_group.bsp_id,
+      phone_id: wa_phone.phone_id,
+      phone: wa_phone.phone
+    })
   end
 
   @doc false

@@ -42,8 +42,6 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
 
   defp wa_messages do
     create table(:wa_messages) do
-      add :label, :string, comment: "Identification for this phone"
-
       add :uuid, :uuid,
         null: true,
         comment: "Uniquely generated message UUID, primarily needed for the flow editor"
