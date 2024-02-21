@@ -222,6 +222,12 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.contact.contact_type == "WA"
     end
 
+    test "Incoming text message from the sender itself should be ignored", %{conn: conn} do
+      from_self_message = put_in(@text_message_webhook, ["message", "fromMe"], true)
+      conn = post(conn, "/maytapi", from_self_message)
+      assert conn.resp_body == "null"
+    end
+
     test "Updating the contact_type to WABA+WA due to sender contact already existing", %{
       conn: conn,
       message_params: message_params

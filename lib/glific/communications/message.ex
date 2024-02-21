@@ -9,11 +9,13 @@ defmodule Glific.Communications.Message do
     Communications,
     Contacts,
     Contacts.Contact,
+    Groups.WhatsappGroup,
     Mails.BalanceAlertMail,
     Messages,
     Messages.Message,
     Partners,
     Repo,
+    WAGroup.WAManagedPhone,
     WAGroup.WAMessage,
     WAMessages
   }
