@@ -44,7 +44,7 @@ defmodule Glific.Communications.GroupMessage do
              [message, attrs]
            ) do
       :telemetry.execute(
-        [:glific, :message, :sent],
+        [:glific, :wa_message, :sent],
         # currently we are not measuring latency
         %{duration: 1},
         %{
