@@ -222,7 +222,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.contact.contact_type == "WA"
     end
 
-    @tag :schem
     test "Updating the contact_type to WABA+WA due to sender contact already existing", %{
       conn: conn,
       message_params: message_params
@@ -399,7 +398,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.media.content_type == "document"
     end
 
-    @tag :medd
     test "Incoming media message should be stored in the database where media is a sticker", %{
       conn: conn
     } do
@@ -500,7 +498,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.media.content_type == "audio"
     end
 
-    @tag :upda
     test "Updating the contact_type to WABA+WA due to sender contact already existing", %{
       conn: conn,
       message_params: message_params
