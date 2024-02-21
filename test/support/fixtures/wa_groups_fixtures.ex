@@ -35,7 +35,7 @@ defmodule Glific.WAManagedPhonesFixtures do
   @doc """
   Generate a wa_managed_phone.
   """
-  @spec wa_group_fixture(map()) :: WhatsappGroup.t()
+  @spec wa_group_fixture(map()) :: WAGroup.t()
   def wa_group_fixture(attrs) do
     {:ok, wa_group} =
       attrs
