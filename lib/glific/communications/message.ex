@@ -5,9 +5,6 @@ defmodule Glific.Communications.Message do
   import Ecto.Query
   require Logger
 
-  alias Glific.WAGroup.WAMessage
-  alias Glific.WAMessages
-
   alias Glific.{
     Communications,
     Contacts,
@@ -16,7 +13,9 @@ defmodule Glific.Communications.Message do
     Messages,
     Messages.Message,
     Partners,
-    Repo
+    Repo,
+    WAGroup.WAMessage,
+    WAMessages
   }
 
   @doc false
@@ -211,7 +210,7 @@ defmodule Glific.Communications.Message do
   end
 
   @spec do_receive_message(Contact.t(), map(), atom()) :: :ok | {:error, String.t()}
-  defp do_receive_message(contact, %{organization_id: _organization_id} = message_params, type) do
+  defp do_receive_message(contact, message_params, type) do
     {:ok, contact} = Contacts.set_session_status(contact, :session)
 
     metadata = create_message_metadata(contact, message_params, type)
