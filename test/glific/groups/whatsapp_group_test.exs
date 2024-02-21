@@ -28,7 +28,6 @@ defmodule Glific.Groups.WhatsappGroupTest do
     :ok
   end
 
-  @tag :con
   test "fetch_wa_managed_phones/1 fetch whatsapp linked phones to maytapi account", attrs do
     Tesla.Mock.mock(fn _env ->
       %Tesla.Env{

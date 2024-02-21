@@ -90,7 +90,6 @@ defmodule Glific.WAManagedPhonesTest do
       assert %Ecto.Changeset{} = WAManagedPhones.change_wa_managed_phone(wa_managed_phone)
     end
 
-    @tag :contact
     test "list_wa_groups/1 fetch groups using Maytapi API", attrs do
       Partners.create_credential(%{
         organization_id: attrs.organization_id,

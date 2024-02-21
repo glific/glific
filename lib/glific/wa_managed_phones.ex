@@ -134,7 +134,8 @@ defmodule Glific.WAManagedPhones do
             phone: phone,
             phone_id: wa_managed_phone["id"],
             product_id: secrets["product_id"],
-            organization_id: org_id
+            organization_id: org_id,
+            contact_type: "WA"
           }
 
         with {:ok, contact} <- Contacts.maybe_create_contact(params),
