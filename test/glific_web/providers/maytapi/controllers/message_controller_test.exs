@@ -215,9 +215,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      # assert_receive :received_message_to_process
-
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
     end
@@ -565,9 +562,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # Provider message id should be updated
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
-
-      # ensure the message has been received by the mock
-      # assert_receive :received_message_to_process
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"

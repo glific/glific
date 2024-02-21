@@ -481,11 +481,8 @@ defmodule Glific.Communications.Message do
   end
 
   @spec create_message(map()) :: {:ok, message()} | {:error, term()}
-  defp create_message(%{provider: :maytapi} = message_params) do
-    WAMessages.create_message(message_params)
-  end
+  defp create_message(%{provider: :maytapi} = message_params),
+    do: WAMessages.create_message(message_params)
 
-  defp create_message(message_params) do
-    Messages.create_message(message_params)
-  end
+  defp create_message(message_params), do: Messages.create_message(message_params)
 end
