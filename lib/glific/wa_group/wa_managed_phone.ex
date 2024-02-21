@@ -16,7 +16,8 @@ defmodule Glific.WAGroup.WAManagedPhone do
   @required_fields [
     :phone,
     :phone_id,
-    :organization_id
+    :organization_id,
+    :contact_id
   ]
 
   @optional_fields [
@@ -33,8 +34,8 @@ defmodule Glific.WAGroup.WAManagedPhone do
           is_active: boolean,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          # contact_id: non_neg_integer | nil,
-          # contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          contact_id: non_neg_integer | nil,
+          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime_usec | nil,
           updated_at: :utc_datetime_usec | nil
         }
@@ -49,7 +50,7 @@ defmodule Glific.WAGroup.WAManagedPhone do
     field :phone_id, :integer
 
     belongs_to(:organization, Organization)
-    # belongs_to(:contact, Contact)
+    belongs_to(:contact, Contact)
     timestamps(type: :utc_datetime_usec)
   end
 

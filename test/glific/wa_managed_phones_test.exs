@@ -34,7 +34,8 @@ defmodule Glific.WAManagedPhonesTest do
         is_active: true,
         phone_id: 242,
         organization_id: 1,
-        provider_id: 1
+        provider_id: 1,
+        contact_id: 1
       }
 
       assert {:ok, %WAManagedPhone{} = wa_managed_phone} =
@@ -89,6 +90,7 @@ defmodule Glific.WAManagedPhonesTest do
       assert %Ecto.Changeset{} = WAManagedPhones.change_wa_managed_phone(wa_managed_phone)
     end
 
+    @tag :contact
     test "list_wa_groups/1 fetch groups using Maytapi API", attrs do
       Partners.create_credential(%{
         organization_id: attrs.organization_id,

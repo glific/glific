@@ -116,8 +116,6 @@ defmodule Glific.WAManagedPhones do
     WAManagedPhone.changeset(wa_managed_phone, attrs)
   end
 
-  # TODO Can't we use bulk insert?
-
   @doc """
   fetches WhatsApp enabled phone added in Maytapi account
   """
@@ -139,13 +137,14 @@ defmodule Glific.WAManagedPhones do
             organization_id: org_id
           }
 
-        # with {:ok, contact} <- Contacts.maybe_create_contact(%{phone: phone}) |> IO.inspect(),
-
-        with nil <- Repo.get_by(WAManagedPhone, %{phone: phone}) do
-          # Map.put(params, :contact_id, contact.id)
-           create_wa_managed_phone()
-        else
-          _ -> :ok
+        with {:ok, contact} <- Contacts.maybe_create_contact(params),
+             nil <-
+               Repo.get_by(WAManagedPhone, %{
+                 phone: phone,
+                 organization_id: params.organization_id
+               }) do
+          Map.put(params, :contact_id, contact.id)
+          |> create_wa_managed_phone()
         end
 
         {:ok, "success"}
