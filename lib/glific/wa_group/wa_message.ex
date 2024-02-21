@@ -60,6 +60,7 @@ defmodule Glific.WAGroup.WAMessage do
   ]
   @optional_fields [
     :body,
+    :bsp_id,
     :wa_managed_phone_id,
     :wa_group_id,
     :uuid,

@@ -3,6 +3,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
   alias Glific.{
     Groups.WhatsappGroup,
+    Groups.WAGroup,
     Messages.Message,
     Partners,
     Repo,
@@ -198,10 +199,14 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     end
 
     test "Incoming text message should be stored in the database, new contact", %{conn: conn} do
-      conn = post(conn, "/maytapi", @text_message_webhook)
+      message_params =
+        @text_message_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+
+      conn = post(conn, "/maytapi", message_params)
       assert conn.halted
 
-      bsp_message_id = get_in(@text_message_webhook, ["message", "id"])
+      bsp_message_id = get_in(message_params, ["message", "id"])
 
       {:ok, message} =
         Repo.fetch_by(WAMessage, %{
@@ -220,7 +225,11 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     end
 
     test "Incoming text message from the sender itself should be ignored", %{conn: conn} do
-      from_self_message = put_in(@text_message_webhook, ["message", "fromMe"], true)
+      from_self_message =
+        @text_message_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+        |> put_in(["message", "fromMe"], true)
+
       conn = post(conn, "/maytapi", from_self_message)
       assert conn.resp_body == "null"
     end
@@ -261,6 +270,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       text_webhook_params =
         @text_message_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
         |> put_in(["user", "phone"], get_in(message_params, ["payload", "sender", "phone"]))
 
       gupshup_conn = post(conn, "/maytapi", text_webhook_params)
@@ -288,10 +298,14 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
          %{
            conn: conn
          } do
-      conn = post(conn, "/maytapi", @text_message_webhook_new_group)
+      text_message_webhook_new_group =
+        @text_message_webhook_new_group
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+
+      conn = post(conn, "/maytapi", text_message_webhook_new_group)
       assert conn.halted
 
-      bsp_message_id = get_in(@text_message_webhook_new_group, ["message", "id"])
+      bsp_message_id = get_in(text_message_webhook_new_group, ["message", "id"])
 
       {:ok, message} =
         Repo.fetch_by(WAMessage, %{
@@ -307,6 +321,16 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
+      group_bsp_id = get_in(text_message_webhook_new_group, ["conversation"])
+      payload_group_name = get_in(text_message_webhook_new_group, ["conversation_name"])
+
+      {:ok, wa_group} =
+        Repo.fetch_by(WAGroup, %{
+          bsp_id: group_bsp_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      assert wa_group.label == payload_group_name
     end
   end
 
@@ -337,10 +361,14 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     end
 
     test "Incoming media message should be stored in the database, new contact", %{conn: conn} do
-      conn = post(conn, "/maytapi", @media_message_webhook)
+      media_message_webhook =
+        @media_message_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+
+      conn = post(conn, "/maytapi", media_message_webhook)
       assert conn.halted
 
-      bsp_message_id = get_in(@media_message_webhook, ["message", "id"])
+      bsp_message_id = get_in(media_message_webhook, ["message", "id"])
 
       {:ok, message} =
         Repo.fetch_by(WAMessage, %{
@@ -366,6 +394,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
         |> put_in(["message", "mime"], "application/pdf")
         |> put_in(["message", "filename"], "file.pdf")
         |> put_in(["message", "url"], "https://cdnydm.com/wh/x7Yr1HQYy_m9RZ_xcJ6dw.pdf")
+        |> put_in(["message", "id"], Ecto.UUID.generate())
 
       conn = post(conn, "/maytapi", media_message_payload)
       assert conn.halted
@@ -394,6 +423,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     } do
       media_message_payload =
         put_in(@media_message_webhook, ["message", "type"], "sticker")
+        |> put_in(["message", "id"], Ecto.UUID.generate())
         |> put_in(["message", "mime"], "image/webp")
         |> put_in(["message", "filename"], "sticker.webp")
         |> put_in(["message", "url"], "https://cdnydm.com/wh/x7Yr1HQYy_m9RZ_xcJ6dw.webp")
@@ -424,6 +454,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
          %{conn: conn} do
       media_message_payload =
         put_in(@media_message_webhook, ["message", "type"], "ptt")
+        |> put_in(["message", "id"], Ecto.UUID.generate())
         |> put_in(["message", "mime"], "audio/ogg")
         |> put_in(["message", "filename"], "audio.oga")
         |> put_in(["message", "url"], "https://cdnydm.com/wh/x7Yr1HQYy_m9RZ_xcJ6dw.oga")
@@ -454,6 +485,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
          %{conn: conn} do
       media_message_payload =
         put_in(@media_message_webhook, ["message", "type"], "audio")
+        |> put_in(["message", "id"], Ecto.UUID.generate())
         |> put_in(["message", "mime"], "audio/acc")
         |> put_in(["message", "filename"], "audio.us")
         |> put_in(["message", "url"], "https://cdnydm.com/wh/x7Yr1HQYy_m9RZ_xcJ6dw.us")
@@ -544,7 +576,9 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
            conn: conn
          } do
       media_message_new_group =
-        @media_message_webhook |> Map.put("conversation", "120363027326493365@g.us")
+        @media_message_webhook
+        |> Map.put("conversation", "120363027326493365@g.us")
+        |> put_in(["message", "id"], Ecto.UUID.generate())
 
       conn = post(conn, "/maytapi", media_message_new_group)
       assert conn.halted
@@ -565,6 +599,17 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
+
+      group_bsp_id = get_in(media_message_new_group, ["conversation"])
+      payload_group_name = get_in(media_message_new_group, ["conversation_name"])
+
+      {:ok, wa_group} =
+        Repo.fetch_by(WAGroup, %{
+          bsp_id: group_bsp_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      assert wa_group.label == payload_group_name
     end
   end
 end
