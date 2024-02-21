@@ -34,7 +34,8 @@ defmodule Glific.WAManagedPhonesTest do
         is_active: true,
         phone_id: 242,
         organization_id: 1,
-        provider_id: 1
+        provider_id: 1,
+        contact_id: 1
       }
 
       assert {:ok, %WAManagedPhone{} = wa_managed_phone} =

@@ -29,6 +29,10 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
 
+      add :contact_id, references(:contacts, on_delete: :delete_all),
+        null: false,
+        comment: "contact id wa_managed_phone"
+
       timestamps(type: :utc_datetime_usec)
     end
 
@@ -95,11 +99,11 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
         null: false,
         comment: "Unique organization ID"
 
-      timestamps(type: :utc_datetime_usec)
       add :context_id, :text, comment: "ID of the message context"
       add :context_message_id, references(:wa_messages, on_delete: :delete_all)
 
       add :message_broadcast_id, references(:message_broadcasts, on_delete: :delete_all)
+      timestamps(type: :utc_datetime_usec)
     end
   end
 

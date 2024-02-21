@@ -9,11 +9,13 @@ defmodule Glific.Communications.Message do
     Communications,
     Contacts,
     Contacts.Contact,
+    Groups.WhatsappGroup,
     Mails.BalanceAlertMail,
     Messages,
     Messages.Message,
     Partners,
     Repo,
+    WAGroup.WAManagedPhone,
     WAGroup.WAMessage,
     WAMessages
   }
@@ -444,20 +446,29 @@ defmodule Glific.Communications.Message do
   defp get_received_msg_publish_event(_), do: :received_message
 
   @spec create_message_metadata(Contact.t(), map(), atom()) :: map()
-  defp create_message_metadata(contact, %{provider: :maytapi} = _message_params, type) do
-    # Will fix this when we create contact for wa_managed_phone
-    # {:ok, group} =
-    #   WhatsappGroup.maybe_create_group(%{
-    #     organization_id: message_params.organization_id,
-    #     label: message_params.group_name,
-    #     bsp_id: message_params.group_id
-    #   })
+  defp create_message_metadata(contact, %{provider: :maytapi} = message_params, type) do
+    # should we create wa_managed_phone if doesn't exist?, ideally those would be created/updated
+    # when we update credentials
+    %WAManagedPhone{id: wa_managed_phone_id} =
+      Repo.get_by(WAManagedPhone, %{
+        organization_id: message_params.organization_id,
+        phone: message_params.receiver
+      })
+
+    {:ok, group} =
+      WhatsappGroup.maybe_create_group(%{
+        organization_id: message_params.organization_id,
+        wa_managed_phone_id: wa_managed_phone_id,
+        bsp_id: message_params.group_id,
+        label: message_params.group_name
+      })
 
     %{
       type: type,
       contact_id: contact.id,
       organization_id: contact.organization_id,
-      group_id: nil
+      wa_group_id: group.id,
+      wa_managed_phone_id: wa_managed_phone_id
     }
   end
 
