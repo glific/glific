@@ -1,7 +1,6 @@
 defmodule Glific.WAGroup.WAMessage do
   @moduledoc false
   use Ecto.Schema
-
   alias __MODULE__
 
   alias Glific.{
@@ -57,13 +56,13 @@ defmodule Glific.WAGroup.WAMessage do
     :flow,
     :contact_id,
     :organization_id,
-    :wa_managed_phone_id,
-    :wa_group_id,
     :bsp_status,
-    :body,
     :bsp_id
   ]
   @optional_fields [
+    :body,
+    :wa_managed_phone_id,
+    :wa_group_id,
     :uuid,
     :label,
     :status,
@@ -71,6 +70,7 @@ defmodule Glific.WAGroup.WAMessage do
     :context_message_id,
     :message_broadcast_id,
     :errors,
+    :media_id,
     :send_at,
     :sent_at,
     :updated_at

@@ -7,6 +7,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     Partners,
     Repo,
     Seeds.SeedsDev,
+    WAGroup.WAMessage,
     WAManagedPhones
   }
 
@@ -203,26 +204,16 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       bsp_message_id = get_in(@text_message_webhook, ["message", "id"])
 
       {:ok, message} =
-        Repo.fetch_by(Message, %{
-          bsp_message_id: bsp_message_id,
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
+      message = Repo.preload(message, [:media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
-
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
-
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
-
-      # Sender should be stored into the db
-      assert message.sender.phone ==
-               get_in(@text_message_webhook, ["user", "phone"])
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
@@ -273,26 +264,16 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       bsp_message_id = get_in(text_webhook_params, ["message", "id"])
 
       {:ok, message} =
-        Repo.fetch_by(Message, %{
-          bsp_message_id: bsp_message_id,
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
+      message = Repo.preload(message, [:media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
-
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
-
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
-
-      # Sender should be stored into the db
-      assert message.sender.phone ==
-               get_in(text_webhook_params, ["user", "phone"])
 
       assert message.contact.contact_type == "WABA+WA"
     end
@@ -307,26 +288,16 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       bsp_message_id = get_in(@text_message_webhook_new_group, ["message", "id"])
 
       {:ok, message} =
-        Repo.fetch_by(Message, %{
-          bsp_message_id: bsp_message_id,
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
+      message = Repo.preload(message, [:media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
-
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
-
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
-
-      # Sender should be stored into the db
-      assert message.sender.phone ==
-               get_in(@text_message_webhook_new_group, ["user", "phone"])
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
@@ -366,26 +337,16 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       bsp_message_id = get_in(@media_message_webhook, ["message", "id"])
 
       {:ok, message} =
-        Repo.fetch_by(Message, %{
-          bsp_message_id: bsp_message_id,
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
+      message = Repo.preload(message, [:media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
-
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
-
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
-
-      # Sender should be stored into the db
-      assert message.sender.phone ==
-               get_in(@media_message_webhook, ["user", "phone"])
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
@@ -406,26 +367,16 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       bsp_message_id = get_in(media_message_payload, ["message", "id"])
 
       {:ok, message} =
-        Repo.fetch_by(Message, %{
-          bsp_message_id: bsp_message_id,
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
+      message = Repo.preload(message, [:media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
-
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
-
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
-
-      # Sender should be stored into the db
-      assert message.sender.phone ==
-               get_in(media_message_payload, ["user", "phone"])
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
@@ -447,26 +398,16 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       bsp_message_id = get_in(media_message_payload, ["message", "id"])
 
       {:ok, message} =
-        Repo.fetch_by(Message, %{
-          bsp_message_id: bsp_message_id,
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
+      message = Repo.preload(message, [:media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
-
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
-
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
-
-      # Sender should be stored into the db
-      assert message.sender.phone ==
-               get_in(media_message_payload, ["user", "phone"])
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
@@ -487,26 +428,16 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       bsp_message_id = get_in(media_message_payload, ["message", "id"])
 
       {:ok, message} =
-        Repo.fetch_by(Message, %{
-          bsp_message_id: bsp_message_id,
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
+      message = Repo.preload(message, [:media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
-
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
-
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
-
-      # Sender should be stored into the db
-      assert message.sender.phone ==
-               get_in(media_message_payload, ["user", "phone"])
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
@@ -527,26 +458,16 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       bsp_message_id = get_in(media_message_payload, ["message", "id"])
 
       {:ok, message} =
-        Repo.fetch_by(Message, %{
-          bsp_message_id: bsp_message_id,
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
+      message = Repo.preload(message, [:media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
-
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
-
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
-
-      # Sender should be stored into the db
-      assert message.sender.phone ==
-               get_in(media_message_payload, ["user", "phone"])
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
@@ -598,26 +519,16 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       bsp_message_id = get_in(text_webhook_params, ["message", "id"])
 
       {:ok, message} =
-        Repo.fetch_by(Message, %{
-          bsp_message_id: bsp_message_id,
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
           organization_id: gupshup_conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
+      message = Repo.preload(message, [:media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
-
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
-
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
-
-      # Sender should be stored into the db
-      assert message.sender.phone ==
-               get_in(text_webhook_params, ["user", "phone"])
 
       assert message.contact.contact_type == "WABA+WA"
     end
@@ -635,26 +546,16 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       bsp_message_id = get_in(media_message_new_group, ["message", "id"])
 
       {:ok, message} =
-        Repo.fetch_by(Message, %{
-          bsp_message_id: bsp_message_id,
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
 
-      message = Repo.preload(message, [:receiver, :sender, :media, :contact])
+      message = Repo.preload(message, [:media, :contact])
 
       # Provider message id should be updated
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
-
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
-
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
-
-      # Sender should be stored into the db
-      assert message.sender.phone ==
-               get_in(media_message_new_group, ["user", "phone"])
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"

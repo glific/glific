@@ -52,7 +52,7 @@ defmodule Glific.Providers.Maytapi.Message do
     :ok = validate_phone_number(params["user"]["phone"], payload)
 
     %{
-      bsp_message_id: payload["id"],
+      bsp_id: payload["id"],
       body: payload["text"],
       sender: %{
         phone: params["user"]["phone"],
@@ -69,7 +69,7 @@ defmodule Glific.Providers.Maytapi.Message do
     :ok = validate_phone_number(params["user"]["phone"], payload)
 
     %{
-      bsp_message_id: payload["id"],
+      bsp_id: payload["id"],
       caption: payload["caption"],
       url: payload["url"],
       content_type: payload["type"],

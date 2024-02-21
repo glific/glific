@@ -99,7 +99,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     }
 
     expected_result = %{
-      bsp_message_id: "1",
+      bsp_id: "1",
       body: "Hello, World!",
       sender: %{phone: "1234567890", name: "John Doe"}
     }
@@ -119,7 +119,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     }
 
     expected_result = %{
-      bsp_message_id: "2",
+      bsp_id: "2",
       caption: "A photo",
       url: "http://example.com/photo.jpg",
       content_type: "image",
