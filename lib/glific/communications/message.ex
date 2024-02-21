@@ -447,7 +447,8 @@ defmodule Glific.Communications.Message do
 
   @spec create_message_metadata(Contact.t(), map(), atom()) :: map()
   defp create_message_metadata(contact, %{provider: :maytapi} = message_params, type) do
-    # should we create wa_managed_phone if doesn't exist?
+    # should we create wa_managed_phone if doesn't exist?, ideally those would be created/updated
+    # when we update credentials
     %WAManagedPhone{id: wa_managed_phone_id} =
       Repo.get_by(WAManagedPhone, %{
         organization_id: message_params.organization_id,
@@ -481,11 +482,8 @@ defmodule Glific.Communications.Message do
   end
 
   @spec create_message(map()) :: {:ok, message()} | {:error, term()}
-  defp create_message(%{provider: :maytapi} = message_params) do
-    WAMessages.create_message(message_params)
-  end
+  defp create_message(%{provider: :maytapi} = message_params),
+    do: WAMessages.create_message(message_params)
 
-  defp create_message(message_params) do
-    Messages.create_message(message_params)
-  end
+  defp create_message(message_params), do: Messages.create_message(message_params)
 end
