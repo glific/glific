@@ -20,7 +20,7 @@ defmodule Glific.Providers.Maytapi.Message do
       |> WAManagedPhones.get_wa_managed_phone!()
 
     wa_group =
-      attrs.wa_managed_phone_id
+      attrs.wa_group_id
       |> WhatsappGroup.get_wa_group!()
 
     message =

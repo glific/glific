@@ -42,7 +42,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     wa_managed_phone =
       WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
 
-    _wa_group =
+    wa_group =
       WAManagedPhonesFixtures.wa_group_fixture(%{
         organization_id: attrs.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
@@ -59,9 +59,9 @@ defmodule Glific.Groups.WhatsappMessageTest do
     user = attrs |> Map.put(:name, "NGO user")
 
     params = %{
-      wa_group_id: "120363238104@g.us",
+      wa_group_id: wa_group.id,
       message: "hi",
-      wa_managed_phone: "9829627508"
+      wa_managed_phone_id: wa_managed_phone.id
     }
 
     {:ok, response} = Message.create_and_send_wa_message(user, params)
@@ -75,7 +75,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     wa_managed_phone =
       WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
 
-    _wa_group =
+    wa_group =
       WAManagedPhonesFixtures.wa_group_fixture(%{
         organization_id: attrs.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
@@ -84,9 +84,9 @@ defmodule Glific.Groups.WhatsappMessageTest do
     user = attrs |> Map.put(:name, "NGO user")
 
     params = %{
-      wa_group_id: "120363238104@g.us",
+      wa_group_id: wa_group.id,
       message: Faker.Lorem.sentence(6000),
-      wa_managed_phone: "9829627508"
+      wa_managed_phone_id: wa_managed_phone.id
     }
 
     {:error, error_msg} = Message.create_and_send_wa_message(user, params)
