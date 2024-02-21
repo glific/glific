@@ -22,7 +22,7 @@ defmodule GlificWeb.Schema.MessageTypes do
   end
 
   object :wa_message_result do
-    field :message, :message
+    field :wa_message, :message
     field :errors, list_of(:input_error)
   end
 
