@@ -37,7 +37,7 @@ defmodule Glific.Communications.GroupMessage do
       "Sending message: type: '#{message.type}', contact_id: '#{message.contact_id}', message_id: '#{message.id}'"
     )
 
-    with {:ok, response} <-
+    with {:ok, _} <-
            apply(
              Glific.Providers.Maytapi.WAMessages,
              @type_to_token[message.type],
@@ -54,7 +54,7 @@ defmodule Glific.Communications.GroupMessage do
         }
       )
 
-      {:ok, response}
+      {:ok, message}
     end
   rescue
     _ ->

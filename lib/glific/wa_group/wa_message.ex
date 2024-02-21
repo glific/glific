@@ -23,7 +23,6 @@ defmodule Glific.WAGroup.WAMessage do
           uuid: Ecto.UUID.t() | nil,
           type: String.t() | atom() | nil,
           flow: String.t() | nil,
-          label: String.t() | nil,
           status: String.t() | nil,
           body: String.t() | nil,
           bsp_status: String.t() | nil,
@@ -64,7 +63,6 @@ defmodule Glific.WAGroup.WAMessage do
     :wa_managed_phone_id,
     :wa_group_id,
     :uuid,
-    :label,
     :status,
     :context_id,
     :context_message_id,
@@ -77,7 +75,6 @@ defmodule Glific.WAGroup.WAMessage do
   ]
 
   schema "wa_messages" do
-    field(:label, :string)
     field(:uuid, Ecto.UUID)
     field(:body, :string)
     field(:type, MessageType)

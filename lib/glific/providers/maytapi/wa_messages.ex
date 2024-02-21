@@ -3,7 +3,10 @@ defmodule Glific.Providers.Maytapi.WAMessages do
   Message API layer between application and maytapi
   """
 
-  alias Glific.WAGroup.WAMessage
+  alias Glific.{
+    Providers.Maytapi.WAWorker,
+    WAGroup.WAMessage
+  }
 
   @doc false
   @spec send_text(WAMessage.t(), map()) ::
@@ -51,15 +54,13 @@ defmodule Glific.Providers.Maytapi.WAMessages do
   @spec create_oban_job(WAMessage.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   defp create_oban_job(message, request_body) do
-    worker_module = Glific.Providers.Maytapi.WAWorker
-
     worker_args =
       %{
         message: WAMessage.to_minimal_map(message),
         payload: request_body
       }
 
-    worker_module.new(worker_args, scheduled_at: message.send_at)
+    WAWorker.new(worker_args, scheduled_at: message.send_at)
     |> Oban.insert()
   end
 end

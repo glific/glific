@@ -7,28 +7,20 @@ defmodule Glific.Providers.Maytapi.Message do
 
   alias Glific.{
     Communications.GroupMessage,
-    Groups.WhatsappGroup,
-    WAManagedPhones,
+    Groups.WAGroup,
+    WAGroup.WAManagedPhone,
     WAMessages
   }
 
   @doc false
-  @spec create_and_send_wa_message(map(), map()) :: any()
-  def create_and_send_wa_message(user, attrs) do
-    wa_phone =
-      attrs.wa_managed_phone_id
-      |> WAManagedPhones.get_wa_managed_phone!()
-
-    wa_group =
-      attrs.wa_group_id
-      |> WhatsappGroup.get_wa_group!()
-
+  @spec create_and_send_wa_message(WAManagedPhone.t(), WAGroup.t(), map()) :: any()
+  def create_and_send_wa_message(wa_phone, wa_group, attrs) do
     message =
       %{
         body: attrs.message,
         type: "text",
         contact_id: wa_phone.contact_id,
-        organization_id: user.organization_id,
+        organization_id: wa_phone.organization_id,
         message_type: "WA",
         bsp_status: "sent",
         wa_group_id: wa_group.id,

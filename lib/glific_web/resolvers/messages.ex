@@ -7,11 +7,14 @@ defmodule GlificWeb.Resolvers.Messages do
   alias Glific.{
     Contacts.Contact,
     Groups.Group,
+    Groups.WAGroup,
     Messages,
     Messages.Message,
     Messages.MessageMedia,
+    Providers.Maytapi,
     Repo,
-    Users.User
+    Users.User,
+    WAGroup.WAManagedPhone
   }
 
   @doc """
@@ -243,12 +246,22 @@ defmodule GlificWeb.Resolvers.Messages do
   @doc false
   @spec send_message_in_wa_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def send_message_in_wa_group(_, %{input: params}, %{context: %{current_user: user}}) do
-    case Glific.Providers.Maytapi.Message.create_and_send_wa_message(user, params) do
-      {:ok, _} -> {:ok, true}
-      {:error, error} -> {:error, error}
+  def send_message_in_wa_group(
+        _,
+        %{input: %{wa_managed_phone_id: wa_managed_phone_id, wa_group_id: wa_group_id} = params},
+        %{context: %{current_user: user}}
+      ) do
+    with {:ok, wa_phone} <-
+           Repo.fetch_by(WAManagedPhone, %{
+             id: wa_managed_phone_id,
+             organization_id: user.organization_id
+           }),
+         {:ok, wa_group} <-
+           Repo.fetch_by(WAGroup, %{
+             id: wa_group_id,
+             organization_id: user.organization_id
+           }) do
+      Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, params)
     end
-
-    {:ok, true}
   end
 end

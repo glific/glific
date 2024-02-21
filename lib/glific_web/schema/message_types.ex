@@ -21,6 +21,11 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :wa_message_result do
+    field :message, :message
+    field :errors, list_of(:input_error)
+  end
+
   object :group_message_result do
     field :success, :boolean
     field :contact_ids, list_of(:id)
@@ -105,6 +110,38 @@ defmodule GlificWeb.Schema.MessageTypes do
     end
 
     field :tags, list_of(:tag) do
+      resolve(dataloader(Repo, use_parent: true))
+    end
+  end
+
+  object :wa_message do
+    field :id, :id
+    field :body, :string
+    field :type, :message_type_enum
+    field :flow, :message_flow_enum
+    field :message_number, :integer
+    field :bsp_id, :string
+    field :bsp_status, :message_status_enum
+    field :send_at, :datetime
+    field :status, :string
+    field :errors, :json
+
+    # expose the date we processed this message since external clients need it
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+
+    field :wa_group_id, :integer
+    field :context_id, :string
+
+    field :context_message, :wa_message do
+      resolve(dataloader(Repo, use_parent: true))
+    end
+
+    field :contact, :contact do
+      resolve(dataloader(Repo, use_parent: true))
+    end
+
+    field :media, :message_media do
       resolve(dataloader(Repo, use_parent: true))
     end
   end
@@ -253,7 +290,7 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(&Resolvers.Messages.clear_messages/3)
     end
 
-    field :send_message_in_wa_group, :boolean do
+    field :send_message_in_wa_group, :wa_message_result do
       arg(:input, non_null(:wa_message_input))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.send_message_in_wa_group/3)
