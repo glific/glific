@@ -44,7 +44,7 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
         null: true,
         comment: "Uniquely generated message UUID, primarily needed for the flow editor"
 
-      add :body, :text, null: false, comment: "Body of the message"
+      add :body, :text, comment: "Body of the message"
 
       add :type, :message_type_enum,
         comment:
@@ -73,7 +73,7 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
           "contact id of beneficiary if the message is received or contact id of WA managed phone if the message is send"
 
       add :wa_managed_phone_id, references(:wa_managed_phones, on_delete: :delete_all),
-        null: false,
+        null: true,
         comment: "WA managed phone id of the number linked to Maytapi account"
 
       add :media_id, references(:messages_media, on_delete: :delete_all),
@@ -87,7 +87,7 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
       add :sent_at, :utc_datetime, comment: "Timestamp when message was sent from queue worker"
 
       add :wa_group_id, references(:wa_groups, on_delete: :delete_all),
-        null: false,
+        null: true,
         comment: "ID of WA group,  message is sent/received from"
 
       # foreign key to organization restricting scope of this table to this organization only
