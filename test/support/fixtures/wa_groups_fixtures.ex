@@ -9,7 +9,9 @@ defmodule Glific.WAManagedPhonesFixtures do
   """
 
   alias Glific.{
+    Groups.WAGroup,
     Groups.WhatsappGroup,
+    WAGroup.WAManagedPhone,
     WAManagedPhones
   }
 
