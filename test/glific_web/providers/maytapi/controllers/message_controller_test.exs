@@ -2,8 +2,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
   use GlificWeb.ConnCase
 
   alias Glific.{
-    Groups.WhatsappGroup,
     Groups.WAGroup,
+    Groups.WhatsappGroup,
     Messages.Message,
     Partners,
     Repo,
