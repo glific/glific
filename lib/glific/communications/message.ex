@@ -5,11 +5,13 @@ defmodule Glific.Communications.Message do
   import Ecto.Query
   require Logger
 
+  alias Glific.WAGroup.WAMessage
+  alias Glific.WAMessages
+
   alias Glific.{
     Communications,
     Contacts,
     Contacts.Contact,
-    Groups,
     Mails.BalanceAlertMail,
     Messages,
     Messages.Message,
@@ -22,6 +24,8 @@ defmodule Glific.Communications.Message do
     quote do
     end
   end
+
+  @type message :: Message.t() | WAMessage.t()
 
   @type_to_token %{
     text: :send_text,
@@ -193,7 +197,7 @@ defmodule Glific.Communications.Message do
   @spec receive_message(map(), atom()) :: :ok | {:error, String.t()}
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
     Logger.info(
-      "Received message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{message_params.bsp_message_id}'"
+      "Received message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{message_params[:bsp_message_id] || message_params[:bsp_id]}'"
     )
 
     {:ok, contact} =
@@ -207,17 +211,10 @@ defmodule Glific.Communications.Message do
   end
 
   @spec do_receive_message(Contact.t(), map(), atom()) :: :ok | {:error, String.t()}
-  defp do_receive_message(contact, %{organization_id: organization_id} = message_params, type) do
+  defp do_receive_message(contact, %{organization_id: _organization_id} = message_params, type) do
     {:ok, contact} = Contacts.set_session_status(contact, :session)
-    group_id = get_group_id(message_params)
 
-    metadata = %{
-      type: type,
-      sender_id: contact.id,
-      receiver_id: Partners.organization_contact_id(organization_id),
-      organization_id: contact.organization_id,
-      group_id: group_id
-    }
+    metadata = create_message_metadata(contact, message_params, type)
 
     message_params =
       message_params
@@ -250,7 +247,7 @@ defmodule Glific.Communications.Message do
     message_event = get_received_msg_publish_event(message_params)
 
     message_params
-    |> Messages.create_message()
+    |> create_message()
     |> publish_data(message_event)
     |> process_message()
   end
@@ -268,7 +265,7 @@ defmodule Glific.Communications.Message do
     {:ok, _message} =
       message_params
       |> Map.put(:media_id, message_media.id)
-      |> Messages.create_message()
+      |> create_message()
       |> publish_data(message_event)
       |> process_message()
 
@@ -293,8 +290,8 @@ defmodule Glific.Communications.Message do
   end
 
   # preload the context message if it exists, so frontend can do the right thing
-  @spec publish_data(Message.t() | {:ok, Message.t()} | {:error, any()}, atom()) ::
-          Message.t() | nil
+  @spec publish_data(message() | {:ok, message()} | {:error, any()}, atom()) ::
+          message() | nil
   defp publish_data({:error, error}, _data_type) do
     error("Create message error", error)
   end
@@ -313,7 +310,7 @@ defmodule Glific.Communications.Message do
   end
 
   # check if the contact is simulator and send another subscription only for it
-  @spec publish_simulator(Message.t() | nil, atom()) :: Message.t() | nil
+  @spec publish_simulator(message() | nil, atom()) :: message() | nil
   defp publish_simulator(message, type) when type in [:sent_message, :received_message] do
     if Contacts.simulator_contact?(message.contact.phone) do
       message_type =
@@ -350,8 +347,12 @@ defmodule Glific.Communications.Message do
     nil
   end
 
-  @spec process_message(Message.t() | nil) :: any
+  @spec process_message(message() | nil) :: any
   defp process_message(nil), do: :ok
+  # just skipping the message processing for WA group for now, since at consumer_worker:103, we
+  # try to preload the message with location, language etc, but rn we are not dealing with location
+  # nor do we care about running default flows
+  defp process_message(%WAMessage{}), do: {:ok, nil}
 
   defp process_message(message) do
     # lets transfer the organization id and current user to the poolboy worker
@@ -431,30 +432,51 @@ defmodule Glific.Communications.Message do
   defp process_errors(_message, _errors, _code), do: nil
 
   @spec get_receive_msg_telemetry_event(map()) :: list()
-  defp get_receive_msg_telemetry_event(%{provider: "maytapi"} = _message_params) do
+  defp get_receive_msg_telemetry_event(%{provider: :maytapi} = _message_params) do
     [:glific, :wa_message, :received]
   end
 
   defp get_receive_msg_telemetry_event(_), do: [:glific, :message, :received]
 
   @spec get_received_msg_publish_event(map()) :: :wa_received_message | :received_message
-  defp get_received_msg_publish_event(%{provider: "maytapi"} = _message_params),
+  defp get_received_msg_publish_event(%{provider: :maytapi} = _message_params),
     do: :wa_received_message
 
   defp get_received_msg_publish_event(_), do: :received_message
 
-  @spec get_group_id(map()) :: non_neg_integer() | nil
-  defp get_group_id(%{provider: "maytapi"} = message_params) do
-    {:ok, group} =
-      Groups.maybe_create_group(%{
-        organization_id: message_params.organization_id,
-        label: message_params.group_name,
-        group_type: message_params.message_type,
-        bsp_id: message_params.group_id
-      })
+  @spec create_message_metadata(Contact.t(), map(), atom()) :: map()
+  defp create_message_metadata(contact, %{provider: :maytapi} = _message_params, type) do
+    # Will fix this when we create contact for wa_managed_phone
+    # {:ok, group} =
+    #   WhatsappGroup.maybe_create_group(%{
+    #     organization_id: message_params.organization_id,
+    #     label: message_params.group_name,
+    #     bsp_id: message_params.group_id
+    #   })
 
-    group.id
+    %{
+      type: type,
+      contact_id: contact.id,
+      organization_id: contact.organization_id,
+      group_id: nil
+    }
   end
 
-  defp get_group_id(_), do: nil
+  defp create_message_metadata(contact, message_params, type) do
+    %{
+      type: type,
+      sender_id: contact.id,
+      receiver_id: Partners.organization_contact_id(message_params.organization_id),
+      organization_id: contact.organization_id
+    }
+  end
+
+  @spec create_message(map()) :: {:ok, message()} | {:error, term()}
+  defp create_message(%{provider: :maytapi} = message_params) do
+    WAMessages.create_message(message_params)
+  end
+
+  defp create_message(message_params) do
+    Messages.create_message(message_params)
+  end
 end

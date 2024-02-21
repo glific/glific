@@ -3,7 +3,7 @@ defmodule Glific.Groups.WhatsappGroupTest do
   use ExUnit.Case
 
   alias Glific.{
-    Groups.Group,
+    Groups.WAGroup,
     Groups.WhatsappGroup,
     Partners,
     Seeds.SeedsDev,
@@ -38,15 +38,15 @@ defmodule Glific.Groups.WhatsappGroupTest do
       }
     end)
 
-    assert :ok == WhatsappGroup.list_wa_groups(attrs.organization_id)
+    assert :ok == WhatsappGroup.fetch_wa_groups(attrs.organization_id)
 
-    assert {:ok, group} = Repo.fetch_by(Group, %{label: "Expenses"})
+    assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "Expenses"})
     assert group.label == "Expenses"
     assert group.bsp_id == "120363213149844251@g.us"
-    assert {:ok, group} = Repo.fetch_by(Group, %{label: "Movie Plan"})
+    assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "Movie Plan"})
     assert group.label == "Movie Plan"
     assert group.bsp_id == "120363203450035277@g.us"
-    assert {:ok, group} = Repo.fetch_by(Group, %{label: "Developer Group"})
+    assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "Developer Group"})
     assert group.label == "Developer Group"
     assert group.bsp_id == "120363218884368888@g.us"
 
@@ -59,17 +59,17 @@ defmodule Glific.Groups.WhatsappGroupTest do
       }
     end)
 
-    assert :ok == WhatsappGroup.list_wa_groups(attrs.organization_id)
-    assert {:ok, group} = Repo.fetch_by(Group, %{label: "Expenses"})
+    assert :ok == WhatsappGroup.fetch_wa_groups(attrs.organization_id)
+    assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "Expenses"})
     assert group.label == "Expenses"
     assert group.bsp_id == "120363213149844251@g.us"
-    assert {:ok, group} = Repo.fetch_by(Group, %{label: "Movie Plan"})
+    assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "Movie Plan"})
     assert group.label == "Movie Plan"
     assert group.bsp_id == "120363203450035277@g.us"
-    assert {:ok, group} = Repo.fetch_by(Group, %{label: "Developer Group"})
+    assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "Developer Group"})
     assert group.label == "Developer Group"
     assert group.bsp_id == "120363218884368888@g.us"
-    assert {:ok, group} = Repo.fetch_by(Group, %{label: "Movie PlanB"})
+    assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "Movie PlanB"})
     assert group.label == "Movie PlanB"
     assert group.bsp_id == "120363218884368889@g.us"
   end

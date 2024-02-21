@@ -138,7 +138,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     add_google_sheet()
 
     add_maytapi()
-
   end
 
   defp add_dialogflow do
@@ -455,19 +454,19 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           is_required: false,
           keys: %{},
           secrets: %{
-              product_id: %{
-                type: :string,
-                label: "Product ID",
-                default: nil,
-                view_only: false
-              },
-              token: %{
-                type: :string,
-                label: "Token",
-                is_required: true,
-                default: nil,
-                view_only: false
-              }
+            product_id: %{
+              type: :string,
+              label: "Product ID",
+              default: nil,
+              view_only: false
+            },
+            token: %{
+              type: :string,
+              label: "Token",
+              is_required: true,
+              default: nil,
+              view_only: false
+            }
           }
         })
   end
