@@ -62,7 +62,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
       wa_managed_phone: "9829627508"
     }
 
-    {:ok, response} = Message.create_and_send_message(user, params)
+    {:ok, response} = Message.create_and_send_wa_message(user, params)
     message = response.args["message"]
     assert message["body"] == params.message
     assert message["bsp_status"] == "sent"

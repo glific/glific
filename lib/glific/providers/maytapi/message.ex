@@ -17,8 +17,8 @@ defmodule Glific.Providers.Maytapi.Message do
   }
 
   @doc false
-  @spec create_and_send_message(map(), map()) :: any()
-  def create_and_send_message(user, attrs) do
+  @spec create_and_send_wa_message(map(), map()) :: any()
+  def create_and_send_wa_message(user, attrs) do
     {:ok, contact} = Repo.fetch_by(WAManagedPhone, phone: attrs.wa_managed_phone)
 
     contact
