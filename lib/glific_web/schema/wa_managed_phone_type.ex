@@ -39,12 +39,6 @@ defmodule GlificWeb.Schema.WAManagedPhoneTypes do
 
     @desc "Match the phone"
     field :phone, :string
-
-    @desc "Match the phone_id"
-    field :phone, :integer
-
-    @desc "is_active flag"
-    field :is_active, :boolean
   end
 
   object :wa_managed_phone_queries do

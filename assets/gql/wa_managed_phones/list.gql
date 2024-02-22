@@ -1,0 +1,7 @@
+query wa_managed_phones($filter: WaManagedPhoneFilter, $opts: Opts) {
+  wa_managed_phones(filter: $filter, opts: $opts) {
+    id
+    label
+    phone
+  }
+}
