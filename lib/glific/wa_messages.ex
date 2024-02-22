@@ -32,6 +32,15 @@ defmodule Glific.WAMessages do
     )
   end
 
+  @doc false
+  @spec update_message(WAMessage.t(), map()) ::
+          {:ok, WAMessage.t()} | {:error, Ecto.Changeset.t()}
+  def update_message(%WAMessage{} = message, attrs) do
+    message
+    |> WAMessage.changeset(attrs)
+    |> Repo.update()
+  end
+
   @spec parse_message_vars(map()) :: map()
   defp parse_message_vars(attrs) do
     message_vars =
