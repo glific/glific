@@ -108,6 +108,12 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
   defp contacts do
     alter table(:contacts) do
       add :contact_type, :string, comment: "one of WABA, WA, WABA+WA"
+
+      add :wa_last_communication_at, :utc_datetime,
+        comment: "Timestamp of the most recent communication in wa_group"
+
+      add :wa_last_message_number, :integer,
+        comment: "The max message number recd or sent by this contact in wa_group"
     end
   end
 
