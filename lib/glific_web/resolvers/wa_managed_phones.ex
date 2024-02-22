@@ -5,8 +5,8 @@ defmodule GlificWeb.Resolvers.WAManagedPhones do
   """
 
   alias Glific.{
-    WAManagedPhones,
-    WAGroup.WAManagedPhone
+    WAGroup.WAManagedPhone,
+    WAManagedPhones
   }
 
   @doc """
