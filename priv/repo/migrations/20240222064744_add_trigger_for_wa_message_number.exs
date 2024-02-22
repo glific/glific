@@ -18,8 +18,8 @@ defmodule Glific.Repo.Migrations.AddTriggerForWaMessageNumber do
       CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
       IF (TG_OP = 'INSERT') THEN
         now := (CURRENT_TIMESTAMP at time zone 'utc');
-          SELECT wa_last_message_number INTO var_message_number
-          FROM contacts WHERE organization_id = NEW.organization_id AND id = NEW.contact_id LIMIT 1;
+          SELECT last_message_number INTO var_message_number
+          FROM wa_groups WHERE organization_id = NEW.organization_id AND id = NEW.wa_group_id LIMIT 1;
           var_message_number = var_message_number + 1;
           IF (NEW.flow = 'inbound') THEN
             IF (NEW.context_id IS NOT NULL) THEN
@@ -28,18 +28,18 @@ defmodule Glific.Repo.Migrations.AddTriggerForWaMessageNumber do
               WHERE bsp_id = NEW.context_id;
               NEW.context_message_id = var_context_id;
             END IF;
-            UPDATE contacts SET
-                wa_last_communication_at = now,
-                wa_last_message_number = var_message_number,
+            UPDATE wa_groups SET
+                last_communication_at = now,
+                last_message_number = var_message_number,
                 updated_at = now
-                WHERE id = NEW.contact_id;
+                WHERE id = NEW.wa_group_id;
           ELSE
-            UPDATE contacts
+            UPDATE wa_groups
               SET
-                wa_last_communication_at = now,
-                wa_last_message_number = var_message_number,
+                last_communication_at = now,
+                last_message_number = var_message_number,
                 updated_at = now
-              WHERE id = NEW.contact_id;
+              WHERE id = NEW.wa_group_id;
           END IF;
           NEW.message_number = var_message_number;
         RETURN NEW;
