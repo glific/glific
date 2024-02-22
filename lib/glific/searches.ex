@@ -372,6 +372,56 @@ defmodule Glific.Searches do
     end
   end
 
+  @doc """
+  Full text whatsapp group search interface via Postgres
+  """
+  # @spec search(map(), boolean) :: [Conversation.t()] | integer
+  @spec wa_search(map(), boolean) :: String.t()
+  def wa_search(args, count \\ false)
+
+  def wa_search(args, _count) do
+    # save the search if needed
+    Logger.info("Searches.wa_Search/2 with : args: #{inspect(args)}")
+    # do_save_search(args)
+
+    # args =
+    #   args
+    #   |> check_filter_for_save_search()
+    #   |> update_args_for_count(count)
+
+    # is_status? =
+    #   is_nil(args.filter[:id]) &&
+    #     is_nil(args.filter[:ids]) &&
+    #     !is_nil(args.filter[:status])
+
+    # contact_ids =
+    #   cond do
+    #     args.filter[:id] != nil ->
+    #       filter_active_contacts_of_organization(args.filter.id)
+
+    #     args.filter[:ids] != nil ->
+    #       filter_active_contacts_of_organization(args.filter.ids)
+
+    #     args.filter[:status] != nil ->
+    #       filter_status_contacts_of_organization(args.filter.status, args.contact_opts)
+
+    #     true ->
+    #       search_query(args.filter[:term], args)
+    #   end
+    #   |> Repo.all(timeout: @search_timeout)
+    #   |> get_contact_ids(is_status?)
+
+    # # if we don't have any contact ids at this stage
+    # # it means that the user did not have permission
+    # if contact_ids == [] do
+    #   if count, do: 0, else: []
+    # else
+    #   put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
+    #   |> Conversations.list_conversations(count)
+    # end
+    %{status: "success"}
+  end
+
   # codebeat:enable[ABC]
 
   @spec get_contact_ids(list(), boolean | nil) :: list()

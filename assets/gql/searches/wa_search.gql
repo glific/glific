@@ -1,0 +1,37 @@
+query waSearch(
+    $waGroupOpts: Opts!,
+    $waMessageOpts: Opts!,
+    $filter: SearchFilter!
+  ) {
+    waSearch(waGroupOpts: $waGroupOpts, waMessageOpts: $waMessageOpts, filter: $filter) {
+        status
+    #   contact {
+    #     id
+    #     name
+    #     phone
+    #     lastMessageAt
+    #     isOrgRead
+    #     isOrgReplied
+    #     isContactReplied
+    #   }
+    #   messages {
+    #     id
+    #     body
+    #     flow
+    #     type
+    #     tags {
+    #       label
+    #     }
+    #     user {
+    #       id
+    #     }
+    #   }
+    #   group {
+    #     id
+    #     label
+    #     messages {
+    #       body
+    #     }
+    #   }
+    }
+}
