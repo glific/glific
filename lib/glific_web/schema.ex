@@ -54,6 +54,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.RoleTypes)
   import_types(__MODULE__.SheetTypes)
   import_types(__MODULE__.TicketTypes)
+  import_types(__MODULE__.WAManagedPhoneTypes)
 
   query do
     import_fields(:profile_queries)

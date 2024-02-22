@@ -29,6 +29,13 @@ defmodule Glific.WAManagedPhones do
   end
 
   @doc """
+  Return the count of wa_managed_phones, using the same filter as list_wa_managed_phones
+  """
+  @spec count_wa_managed_phones(map()) :: integer
+  def count_wa_managed_phones(args),
+    do: Repo.count_filter(args, WAManagedPhone, &Repo.filter_with/2)
+
+  @doc """
   Gets a single wa_managed_phone.
 
   Raises `Ecto.NoResultsError` if the Wa managed phone does not exist.
