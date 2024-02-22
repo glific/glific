@@ -113,6 +113,7 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
         comment: "Timestamp of the most recent communication in wa_group"
 
       add :wa_last_message_number, :integer,
+        default: 0,
         comment: "The max message number recd or sent by this contact in wa_group"
     end
   end
