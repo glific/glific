@@ -24,9 +24,16 @@ defmodule Glific.WAManagedPhones do
   @spec list_wa_managed_phones(map()) :: [WAManagedPhone.t()]
   def list_wa_managed_phones(args) do
     args
-    |> Repo.list_filter_query(WAManagedPhone, &Repo.opts_with_name/2, &Repo.filter_with/2)
+    |> Repo.list_filter_query(WAManagedPhone, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)
     |> Repo.all()
   end
+
+  @doc """
+  Return the count of wa_managed_phones, using the same filter as list_wa_managed_phones
+  """
+  @spec count_wa_managed_phones(map()) :: integer
+  def count_wa_managed_phones(args),
+    do: Repo.count_filter(args, WAManagedPhone, &Repo.filter_with/2)
 
   @doc """
   Gets a single wa_managed_phone.
