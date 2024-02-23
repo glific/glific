@@ -7,7 +7,8 @@ defmodule Glific.Communications.GroupMessage do
 
   alias Glific.{
     WAGroup.WAMessage,
-    WAMessages
+    WAMessages,
+    Repo
   }
 
   @doc false
@@ -31,8 +32,10 @@ defmodule Glific.Communications.GroupMessage do
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message({:ok, WAMessage.t()}, map()) :: {:ok, WAMessage.t()} | {:error, String.t()}
-  def send_message({:ok, %WAMessage{} = message}, attrs) do
+  @spec send_message(WAMessage.t(), map()) :: {:ok, WAMessage.t()} | {:error, String.t()}
+  def send_message(message, attrs) do
+    message = Repo.preload(message, :media)
+
     Logger.info(
       "Sending message: type: '#{message.type}', contact_id: '#{message.contact_id}', message_id: '#{message.id}'"
     )

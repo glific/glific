@@ -200,6 +200,9 @@ defmodule GlificWeb.Schema.MessageTypes do
 
   input_object :wa_message_input do
     field :message, :string
+    field :type, :message_type_enum
+
+    field :media_id, :id
     field :wa_managed_phone_id, :id
     field :wa_group_id, :id
   end
