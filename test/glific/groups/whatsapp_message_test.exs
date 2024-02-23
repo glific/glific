@@ -3,12 +3,12 @@ defmodule Glific.Groups.WhatsappMessageTest do
   use ExUnit.Case
 
   alias Glific.{
+    Fixtures,
     Partners,
     Providers.Maytapi.Message,
     Seeds.SeedsDev,
     Seeds.SeedsDev,
-    WAManagedPhonesFixtures,
-    Fixtures
+    WAManagedPhonesFixtures
   }
 
   setup do
@@ -99,7 +99,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
 
     {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
     assert wa_message.type == :image
-    assert is_nil(message.media_id) == false
+    assert is_nil(wa_message.media_id) == false
   end
 
   test "create_and_send_wa_message/2 should return error when characters limit is reached when sending text message",

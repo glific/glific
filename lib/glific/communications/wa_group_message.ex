@@ -33,6 +33,7 @@ defmodule Glific.Communications.GroupMessage do
   @spec send_message(WAMessage.t(), map()) :: {:ok, WAMessage.t()} | {:error, String.t()}
   def send_message(message, attrs) do
     message = Repo.preload(message, :media)
+
     Logger.info(
       "Sending message: type: '#{message.type}', contact_id: '#{message.contact_id}', message_id: '#{message.id}'"
     )
