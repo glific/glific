@@ -6,9 +6,6 @@ defmodule Glific.Searches do
   import Ecto.Query, warn: false
   require Logger
 
-  alias Glific.WAConversations
-  alias Glific.WAGroup.WAMessage
-  alias Glific.Groups.WAGroup
   alias __MODULE__
 
   alias Glific.{
@@ -19,12 +16,15 @@ defmodule Glific.Searches do
     Groups,
     Groups.ContactGroup,
     Groups.UserGroup,
+    Groups.WAGroup,
     Messages.Message,
     Repo,
     Search.Full,
     Searches.SavedSearch,
     Searches.Search,
-    Users.User
+    Users.User,
+    WAConversations,
+    WAGroup.WAMessage
   }
 
   @search_timeout 30_000
@@ -378,11 +378,8 @@ defmodule Glific.Searches do
   @doc """
   Full text whatsapp group search interface via Postgres
   """
-  # @spec search(map(), boolean) :: [Conversation.t()] | integer
-  @spec wa_search(map(), boolean) :: String.t()
-  def wa_search(args, count \\ false)
-
-  def wa_search(args, count) do
+  @spec wa_search(map()) :: [WAConversation.t()]
+  def wa_search(args) do
     Logger.info("Searches.wa_Search/2 with : args: #{inspect(args)}")
 
     wa_group_ids =
@@ -390,7 +387,7 @@ defmodule Glific.Searches do
       |> Repo.all(timeout: @search_timeout)
 
     put_in(args, [Access.key(:filter, %{}), :ids], wa_group_ids)
-    |> WAConversations.list_conversations(count)
+    |> WAConversations.list_conversations()
   end
 
   # codebeat:enable[ABC]
@@ -561,9 +558,7 @@ defmodule Glific.Searches do
     wa_basic_query(args)
     |> add_wa_group_opts(args.wa_group_opts)
     |> select([wa_grp: wa_grp], wa_grp.id)
-
-    # We will reset below function later
-    # |> Full.run(term, args)
+    |> Full.run(term, args)
   end
 
   @spec wa_basic_query(map()) :: Ecto.Query.t()

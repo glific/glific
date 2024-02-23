@@ -13,11 +13,11 @@ defmodule Glific.WAConversations do
   @doc """
   Returns the last M conversations, each conversation not more than N messages
   """
-  @spec list_conversations(map(), boolean) :: list() | integer
-  def list_conversations(args, count \\ false) do
+  @spec list_conversations(map()) :: list() | integer
+  def list_conversations(args) do
     args
     |> Map.put(:ids, get_message_ids(args.wa_group_opts, args.wa_message_opts, args))
-    |> WAMessages.list_conversations(count)
+    |> WAMessages.list_conversations()
   rescue
     ex ->
       Logger.error("Search threw a Error: #{inspect(ex)}")

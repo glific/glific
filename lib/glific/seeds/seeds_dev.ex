@@ -3,9 +3,6 @@ if Code.ensure_loaded?(Faker) do
     @moduledoc """
     Script for populating the database. We can call this from tests and/or /priv/repo
     """
-    alias Glific.WAGroup.WAMessage
-    alias Glific.Groups.WAGroup
-    alias Glific.WAGroup.WAManagedPhone
 
     alias Glific.{
       AccessControl,
@@ -20,6 +17,7 @@ if Code.ensure_loaded?(Faker) do
       Flows.MessageBroadcast,
       Groups,
       Groups.Group,
+      Groups.WAGroup,
       Messages.Message,
       Messages.MessageMedia,
       Notifications,
@@ -35,7 +33,9 @@ if Code.ensure_loaded?(Faker) do
       Tags.Tag,
       Templates.InteractiveTemplate,
       Templates.SessionTemplate,
-      Users
+      Users,
+      WAGroup.WAManagedPhone,
+      WAGroup.WAMessage
     }
 
     alias Faker.Lorem.Shakespeare
@@ -1595,6 +1595,7 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    @doc false
     @spec seed_wa_managed_phones(Organization.t() | nil) :: {integer(), nil}
     def seed_wa_managed_phones(organization \\ nil) do
       organization = get_organization(organization)
@@ -1638,6 +1639,7 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert_all(WAManagedPhone, wa_managed_phone_entries)
     end
 
+    @doc false
     @spec seed_wa_groups(Organization.t() | nil) :: {integer(), nil}
     def seed_wa_groups(organization \\ nil) do
       organization = get_organization(organization)
@@ -1672,6 +1674,7 @@ if Code.ensure_loaded?(Faker) do
           %{
             inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
             updated_at: DateTime.utc_now() |> DateTime.truncate(:second),
+            last_communication_at: DateTime.utc_now() |> DateTime.truncate(:second),
             organization_id: organization.id
           }
           |> Map.merge(wa_group_entry)
@@ -1681,6 +1684,7 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert_all(WAGroup, wa_group_entries)
     end
 
+    @doc false
     @spec seed_wa_messages(Organization.t() | nil) :: {integer(), nil}
     def seed_wa_messages(organization \\ nil) do
       organization = get_organization(organization)
@@ -1724,7 +1728,19 @@ if Code.ensure_loaded?(Faker) do
           contact_id: contact_2.id,
           status: "received",
           wa_managed_phone_id: wa_managed_phone_1.id,
-          wa_group_id: wa_group_1.id
+          wa_group_id: wa_group_1.id,
+          body: "hello there"
+        },
+        %{
+          type: "text",
+          bsp_id: "true_1203630273264933665@g.us",
+          flow: "inbound",
+          bsp_status: "received",
+          contact_id: contact_2.id,
+          status: "received",
+          wa_managed_phone_id: wa_managed_phone_1.id,
+          wa_group_id: wa_group_1.id,
+          body: "hello there again"
         },
         %{
           type: "text",
@@ -1734,7 +1750,8 @@ if Code.ensure_loaded?(Faker) do
           contact_id: contact_2.id,
           status: "sent",
           wa_managed_phone_id: wa_managed_phone_2.id,
-          wa_group_id: wa_group_2.id
+          wa_group_id: wa_group_2.id,
+          body: "hello there again again"
         }
       ]
 

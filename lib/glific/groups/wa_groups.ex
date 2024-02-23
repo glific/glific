@@ -54,7 +54,8 @@ defmodule Glific.Groups.WhatsappGroup do
           label: group.name,
           organization_id: org_id,
           bsp_id: group.bsp_id,
-          wa_managed_phone_id: group.wa_managed_phone_id
+          wa_managed_phone_id: group.wa_managed_phone_id,
+          last_communication_at: DateTime.utc_now()
         })
       end
     )

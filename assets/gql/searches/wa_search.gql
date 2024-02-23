@@ -1,14 +1,13 @@
 query waSearch(
     $waGroupOpts: Opts!,
-    $waMessageOpts: Opts!,
-    $filter: SearchFilter!
+    $waMessageOpts: Opts!
   ) {
-    waSearch(waGroupOpts: $waGroupOpts, waMessageOpts: $waMessageOpts, filter: $filter) {
+    waSearch(waGroupOpts: $waGroupOpts, waMessageOpts: $waMessageOpts) {
         wa_group {
             id
             label
             bsp_id
-            lasy_communication_at
+            last_communication_at
         }
         wa_messages {
             id
