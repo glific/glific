@@ -18,27 +18,82 @@ defmodule Glific.Providers.Maytapi.WAMessages do
   end
 
   @doc false
+  @spec send_image(WAMessage.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_image(message, attrs \\ %{}) do
     message_media = message.media
 
-    payload =
-      %{
-        message: message_media.source_url,
-        type: "image"
-      }
-      |> Map.put_new(:text, message_media.caption || "")
-      |> check_size_of_caption()
+    %{
+      message: message_media.source_url,
+      type: :image
+    }
+    |> Map.put_new(:text, message_media.caption || "")
+    |> check_size_of_caption()
+    |> send_message(message, attrs)
+  end
 
-    send_message(payload, message, attrs)
+  @doc false
+  @spec send_audio(WAMessage.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
+  def send_audio(message, attrs \\ %{}) do
+    message_media = message.media
+
+    %{
+      type: :media,
+      message: message_media.source_url
+    }
+    |> send_message(message, attrs)
+  end
+
+  @doc false
+  @spec send_video(WAMessage.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
+  def send_video(message, attrs \\ %{}) do
+    message_media = message.media
+
+    %{
+      message: message_media.source_url,
+      type: :media
+    }
+    |> Map.put_new(:text, message_media.caption || "")
+    |> check_size_of_caption()
+    |> send_message(message, attrs)
+  end
+
+  @doc false
+  @spec send_document(WAMessage.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
+  def send_document(message, attrs \\ %{}) do
+    message_media = message.media
+
+    %{
+      type: :media,
+      message: message_media.source_url
+    }
+    |> Map.put_new(:text, message_media.caption || "")
+    |> check_size_of_caption()
+    |> send_message(message, attrs)
+  end
+
+  @doc false
+  @spec send_sticker(WAMessage.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
+  def send_sticker(message, attrs \\ %{}) do
+    message_media = message.media
+
+    %{
+      type: :sticker,
+      message: message_media.url
+    }
+    |> send_message(message, attrs)
   end
 
   @doc false
   @spec format_sender(WAMessage.t(), map()) :: map()
-  defp format_sender(message, attrs) do
+  defp format_sender(_message, attrs) do
     %{
       "to_number" => attrs.wa_group_bsp_id,
-      "phone" => attrs.phone,
-      "type" => message.type
+      "phone" => attrs.phone
     }
   end
 
@@ -66,10 +121,11 @@ defmodule Glific.Providers.Maytapi.WAMessages do
     request_body =
       format_sender(message, attrs)
       |> Map.put("phone_id", attrs.phone_id)
+      |> Map.put("type", payload.type)
       |> Map.put("message", payload.message)
 
     if Map.has_key?(payload, :text) && payload.text != "" do
-      request_body = Map.put(request_body, "text", payload.text)
+      Map.put(request_body, "text", payload.text)
     end
 
     create_oban_job(message, request_body)

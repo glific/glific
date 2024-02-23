@@ -24,8 +24,6 @@ defmodule Glific.Communications.GroupMessage do
     video: :send_video,
     document: :send_document,
     sticker: :send_sticker,
-    list: :send_interactive,
-    quick_reply: :send_interactive,
     location_request_message: :send_interactive
   }
 
