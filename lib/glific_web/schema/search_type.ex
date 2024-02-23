@@ -35,9 +35,8 @@ defmodule GlificWeb.Schema.SearchTypes do
   end
 
   object :wa_conversation do
-    # field :wa_group, :wa_group
-    # field :messages, list_of(:message)
-    field :status, :string
+    field :wa_group, :wa_group
+    field :wa_messages, list_of(:wa_message)
   end
 
   input_object :saved_search_filter do
@@ -203,7 +202,7 @@ defmodule GlificWeb.Schema.SearchTypes do
 
   object :wa_search_queries do
     @desc "Search for whatsapp group conversation"
-    field :wa_search, :wa_conversation do
+    field :wa_search, list_of(:wa_conversation) do
       arg(:filter, non_null(:search_filter))
       arg(:wa_message_opts, non_null(:opts))
       arg(:wa_group_opts, non_null(:opts))

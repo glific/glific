@@ -3,6 +3,10 @@ if Code.ensure_loaded?(Faker) do
     @moduledoc """
     Script for populating the database. We can call this from tests and/or /priv/repo
     """
+    alias Glific.WAGroup.WAMessage
+    alias Glific.Groups.WAGroup
+    alias Glific.WAGroup.WAManagedPhone
+
     alias Glific.{
       AccessControl,
       AccessControl.Role,
@@ -1591,6 +1595,163 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    @spec seed_wa_managed_phones(Organization.t() | nil) :: {integer(), nil}
+    def seed_wa_managed_phones(organization \\ nil) do
+      organization = get_organization(organization)
+
+      {:ok, contact_1} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "NGO Main Account", organization_id: organization.id}
+        )
+
+      {:ok, contact_2} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Default receiver", organization_id: organization.id}
+        )
+
+      wa_managed_phones = [
+        %{
+          phone: "917834811231",
+          phone_id: 4633,
+          contact_id: contact_1.id
+        },
+        %{
+          phone: "917834811232",
+          phone_id: 4634,
+          contact_id: contact_2.id
+        }
+      ]
+
+      wa_managed_phone_entries =
+        for wa_managed_phone_entry <- wa_managed_phones do
+          %{
+            inserted_at: DateTime.utc_now(),
+            updated_at: DateTime.utc_now(),
+            organization_id: organization.id
+          }
+          |> Map.merge(wa_managed_phone_entry)
+        end
+
+      # seed wa_managed_phones
+      Repo.insert_all(WAManagedPhone, wa_managed_phone_entries)
+    end
+
+    @spec seed_wa_groups(Organization.t() | nil) :: {integer(), nil}
+    def seed_wa_groups(organization \\ nil) do
+      organization = get_organization(organization)
+
+      {:ok, wa_managed_phone_1} =
+        Repo.fetch_by(
+          WAManagedPhone,
+          %{phone_id: 4633, organization_id: organization.id}
+        )
+
+      {:ok, wa_managed_phone_2} =
+        Repo.fetch_by(
+          WAManagedPhone,
+          %{phone_id: 4634, organization_id: organization.id}
+        )
+
+      wa_groups = [
+        %{
+          label: "Group A",
+          bsp_id: "120363027326493365@g.us",
+          wa_managed_phone_id: wa_managed_phone_1.id
+        },
+        %{
+          label: "Group B",
+          bsp_id: "120363027326493364@g.us",
+          wa_managed_phone_id: wa_managed_phone_2.id
+        }
+      ]
+
+      wa_group_entries =
+        for wa_group_entry <- wa_groups do
+          %{
+            inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
+            updated_at: DateTime.utc_now() |> DateTime.truncate(:second),
+            organization_id: organization.id
+          }
+          |> Map.merge(wa_group_entry)
+        end
+
+      # seed wa_groups
+      Repo.insert_all(WAGroup, wa_group_entries)
+    end
+
+    @spec seed_wa_messages(Organization.t() | nil) :: {integer(), nil}
+    def seed_wa_messages(organization \\ nil) do
+      organization = get_organization(organization)
+
+      {:ok, contact_2} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Default receiver", organization_id: organization.id}
+        )
+
+      {:ok, wa_managed_phone_1} =
+        Repo.fetch_by(
+          WAManagedPhone,
+          %{phone_id: 4633, organization_id: organization.id}
+        )
+
+      {:ok, wa_managed_phone_2} =
+        Repo.fetch_by(
+          WAManagedPhone,
+          %{phone_id: 4634, organization_id: organization.id}
+        )
+
+      {:ok, wa_group_1} =
+        Repo.fetch_by(
+          WAGroup,
+          %{label: "Group A", organization_id: organization.id}
+        )
+
+      {:ok, wa_group_2} =
+        Repo.fetch_by(
+          WAGroup,
+          %{label: "Group B", organization_id: organization.id}
+        )
+
+      wa_messages = [
+        %{
+          type: "text",
+          bsp_id: "true_120363027326493365@g.us",
+          flow: "inbound",
+          bsp_status: "received",
+          contact_id: contact_2.id,
+          status: "received",
+          wa_managed_phone_id: wa_managed_phone_1.id,
+          wa_group_id: wa_group_1.id
+        },
+        %{
+          type: "text",
+          bsp_id: "true_120363027326493366@g.us",
+          flow: "outbound",
+          bsp_status: "delivered",
+          contact_id: contact_2.id,
+          status: "sent",
+          wa_managed_phone_id: wa_managed_phone_2.id,
+          wa_group_id: wa_group_2.id
+        }
+      ]
+
+      wa_messages_entries =
+        for wa_messages_entry <- wa_messages do
+          %{
+            inserted_at: DateTime.utc_now(),
+            updated_at: DateTime.utc_now(),
+            organization_id: organization.id
+          }
+          |> Map.merge(wa_messages_entry)
+        end
+
+      # seed wa_messages
+      Repo.insert_all(WAMessage, wa_messages_entries)
+    end
+
     @doc """
     Function to populate some basic data that we need for the system to operate. We will
     split this function up into multiple different ones for test, dev and production
@@ -1641,6 +1802,11 @@ if Code.ensure_loaded?(Faker) do
 
       seed_broadcast(organization)
 
+      seed_wa_managed_phones(organization)
+
+      seed_wa_groups(organization)
+
+      seed_wa_messages(organization)
       :ok
     end
   end

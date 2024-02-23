@@ -6,6 +6,9 @@ defmodule Glific.Searches do
   import Ecto.Query, warn: false
   require Logger
 
+  alias Glific.WAConversations
+  alias Glific.WAGroup.WAMessage
+  alias Glific.Groups.WAGroup
   alias __MODULE__
 
   alias Glific.{
@@ -379,47 +382,15 @@ defmodule Glific.Searches do
   @spec wa_search(map(), boolean) :: String.t()
   def wa_search(args, count \\ false)
 
-  def wa_search(args, _count) do
-    # save the search if needed
+  def wa_search(args, count) do
     Logger.info("Searches.wa_Search/2 with : args: #{inspect(args)}")
-    # do_save_search(args)
 
-    # args =
-    #   args
-    #   |> check_filter_for_save_search()
-    #   |> update_args_for_count(count)
+    wa_group_ids =
+      wa_search_query(args.filter[:term], args)
+      |> Repo.all(timeout: @search_timeout)
 
-    # is_status? =
-    #   is_nil(args.filter[:id]) &&
-    #     is_nil(args.filter[:ids]) &&
-    #     !is_nil(args.filter[:status])
-
-    # contact_ids =
-    #   cond do
-    #     args.filter[:id] != nil ->
-    #       filter_active_contacts_of_organization(args.filter.id)
-
-    #     args.filter[:ids] != nil ->
-    #       filter_active_contacts_of_organization(args.filter.ids)
-
-    #     args.filter[:status] != nil ->
-    #       filter_status_contacts_of_organization(args.filter.status, args.contact_opts)
-
-    #     true ->
-    #       search_query(args.filter[:term], args)
-    #   end
-    #   |> Repo.all(timeout: @search_timeout)
-    #   |> get_contact_ids(is_status?)
-
-    # # if we don't have any contact ids at this stage
-    # # it means that the user did not have permission
-    # if contact_ids == [] do
-    #   if count, do: 0, else: []
-    # else
-    #   put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
-    #   |> Conversations.list_conversations(count)
-    # end
-    %{status: "success"}
+    put_in(args, [Access.key(:filter, %{}), :ids], wa_group_ids)
+    |> WAConversations.list_conversations(count)
   end
 
   # codebeat:enable[ABC]
@@ -583,5 +554,57 @@ defmodule Glific.Searches do
     |> add_term(Map.get(args, :term))
     |> convert_to_atom()
     |> put_in([:filter, :organization_id], saved_search.organization_id)
+  end
+
+  @spec wa_search_query(String.t(), map()) :: Ecto.Query.t()
+  defp wa_search_query(term, args) do
+    wa_basic_query(args)
+    |> add_wa_group_opts(args.wa_group_opts)
+    |> select([wa_grp: wa_grp], wa_grp.id)
+
+    # We will reset below function later
+    # |> Full.run(term, args)
+  end
+
+  @spec wa_basic_query(map()) :: Ecto.Query.t()
+  defp wa_basic_query(args) do
+    query = from(wa_grp in WAGroup, as: :wa_grp)
+
+    query
+    |> add_wa_message_clause(args)
+    |> order_by([wa_grp: wa_grp], desc: wa_grp.last_communication_at, desc: wa_grp.id)
+    |> group_by([wa_grp: wa_grp], wa_grp.id)
+    |> Repo.add_permission(&Searches.add_permission/2)
+  end
+
+  @spec add_wa_message_clause(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp add_wa_message_clause(query, %{filter: filters} = _args)
+       when is_map(filters) do
+    if map_size(filters) > 1 do
+      query
+      |> join(:left, [wa_grp: wa_grp], wa_msg in WAMessage,
+        as: :wa_msg,
+        on: wa_grp.id == wa_msg.wa_group_id
+      )
+    else
+      query
+    end
+  end
+
+  defp add_wa_message_clause(query, _args),
+    do: query
+
+  @spec add_wa_group_opts(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp add_wa_group_opts(query, %{limit: limit, offset: offset}) do
+    query
+    |> limit(^limit)
+    |> offset(^offset)
+    |> order_by([wa_grp], desc: wa_grp.last_communication_at)
+  end
+
+  defp add_wa_group_opts(query, _opts) do
+    # always order in descending order of most recent communications
+    query
+    |> order_by([wa_grp], desc: wa_grp.last_communication_at)
   end
 end

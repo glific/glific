@@ -4,34 +4,22 @@ query waSearch(
     $filter: SearchFilter!
   ) {
     waSearch(waGroupOpts: $waGroupOpts, waMessageOpts: $waMessageOpts, filter: $filter) {
-        status
-    #   contact {
-    #     id
-    #     name
-    #     phone
-    #     lastMessageAt
-    #     isOrgRead
-    #     isOrgReplied
-    #     isContactReplied
-    #   }
-    #   messages {
-    #     id
-    #     body
-    #     flow
-    #     type
-    #     tags {
-    #       label
-    #     }
-    #     user {
-    #       id
-    #     }
-    #   }
-    #   group {
-    #     id
-    #     label
-    #     messages {
-    #       body
-    #     }
-    #   }
+        wa_group {
+            id
+            label
+            bsp_id
+            lasy_communication_at
+        }
+        wa_messages {
+            id
+            body
+            flow
+            type
+            contact {
+                id
+                name
+                phone
+            }
+      }
     }
 }

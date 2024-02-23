@@ -60,17 +60,17 @@ defmodule GlificWeb.Schema.GroupTypes do
     end
   end
 
-  # object :wa_group do
-  #   field :id, :id
-  #   field :label, :string
-  #   field :bsp_id, :string
+  object :wa_group do
+    field :id, :id
+    field :label, :string
+    field :bsp_id, :string
 
-  #   field :last_communication_at, :datetime
+    field :last_communication_at, :datetime
 
-  #   field :wa_managed_phones, list_of(:wa_managed_phones) do
-  #     resolve(dataloader(Repo))
-  #   end
-  # end
+    field :wa_managed_phone, :wa_managed_phone do
+      resolve(dataloader(Repo))
+    end
+  end
 
   @desc "Filtering options for groups"
   input_object :group_filter do
