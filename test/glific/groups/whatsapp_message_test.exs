@@ -88,7 +88,11 @@ defmodule Glific.Groups.WhatsappMessageTest do
     })
 
     # sending image
-    message_media = Fixtures.message_media_fixture(%{organization_id: attrs.organization_id})
+    message_media =
+      Fixtures.message_media_fixture(%{
+        organization_id: attrs.organization_id,
+        caption: "image caption"
+      })
 
     params = %{
       wa_group_id: wa_group.id,
@@ -100,6 +104,89 @@ defmodule Glific.Groups.WhatsappMessageTest do
     {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
     assert wa_message.type == :image
     assert is_nil(wa_message.media_id) == false
+
+    # sending audio
+    message_media = Fixtures.message_media_fixture(%{organization_id: attrs.organization_id})
+
+    params = %{
+      wa_group_id: wa_group.id,
+      wa_managed_phone_id: wa_managed_phone.id,
+      media_id: message_media.id,
+      type: :audio
+    }
+
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    assert wa_message.type == :audio
+    assert is_nil(wa_message.media_id) == false
+
+    # sending video
+    message_media =
+      Fixtures.message_media_fixture(%{
+        organization_id: attrs.organization_id,
+        caption: "video caption"
+      })
+
+    params = %{
+      wa_group_id: wa_group.id,
+      wa_managed_phone_id: wa_managed_phone.id,
+      media_id: message_media.id,
+      type: :video
+    }
+
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    assert wa_message.type == :video
+    assert is_nil(wa_message.media_id) == false
+
+    # sending document
+    message_media =
+      Fixtures.message_media_fixture(%{
+        organization_id: attrs.organization_id,
+        caption: "document caption"
+      })
+
+    params = %{
+      wa_group_id: wa_group.id,
+      wa_managed_phone_id: wa_managed_phone.id,
+      media_id: message_media.id,
+      type: :document
+    }
+
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    assert wa_message.type == :document
+    assert is_nil(wa_message.media_id) == false
+
+    # sending sticker
+    message_media = Fixtures.message_media_fixture(%{organization_id: attrs.organization_id})
+
+    params = %{
+      wa_group_id: wa_group.id,
+      wa_managed_phone_id: wa_managed_phone.id,
+      media_id: message_media.id,
+      type: :sticker
+    }
+
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    assert wa_message.type == :sticker
+    assert is_nil(wa_message.media_id) == false
+
+    # check the caption limit
+    message_media =
+      Fixtures.message_media_fixture(%{
+        organization_id: attrs.organization_id,
+        caption: Faker.Lorem.sentence(6000)
+      })
+
+    params = %{
+      wa_group_id: wa_group.id,
+      wa_managed_phone_id: wa_managed_phone.id,
+      media_id: message_media.id,
+      type: :image
+    }
+
+    {:error, error_message} =
+      Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+
+    assert error_message == "Message size greater than 6000 characters"
   end
 
   test "create_and_send_wa_message/2 should return error when characters limit is reached when sending text message",
