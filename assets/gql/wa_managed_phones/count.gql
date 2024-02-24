@@ -1,0 +1,3 @@
+query count_wa_managed_phones($filter: WaManagedPhoneFilter) {
+  countWaManagedPhones(filter: $filter)
+}

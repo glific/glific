@@ -5,7 +5,9 @@ defmodule Glific.Groups.WhatsappMessageTest do
   alias Glific.{
     Partners,
     Providers.Maytapi.Message,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    Seeds.SeedsDev,
+    WAManagedPhonesFixtures
   }
 
   setup do
@@ -16,8 +18,6 @@ defmodule Glific.Groups.WhatsappMessageTest do
       shortcode: "maytapi",
       keys: %{},
       secrets: %{
-        "phone" => "917834811114",
-        "phone_id" => "42093",
         "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
         "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
       },
@@ -37,27 +37,55 @@ defmodule Glific.Groups.WhatsappMessageTest do
     end)
   end
 
-  test "send_text/2 sends a text message successfully", attrs do
+  test "create_and_send_wa_message/3 sends a text message in a whatsapp group successfully",
+       attrs do
+    wa_managed_phone =
+      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+
+    wa_group =
+      WAManagedPhonesFixtures.wa_group_fixture(%{
+        organization_id: attrs.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
     mock_maytapi_response(200, %{
       "success" => true,
       "data" => %{
-        "chatId" => "78341114@c.us",
+        "chatId" => "120363238104@g.us",
         "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"
       }
     })
 
-    params = %{phone: "9829627508", message: "hi"}
-    result = Message.send_text(attrs.organization_id, params)
+    params = %{
+      wa_group_id: wa_group.id,
+      message: "hi",
+      wa_managed_phone_id: wa_managed_phone.id
+    }
 
-    assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    assert wa_message.body == params.message
+    assert wa_message.bsp_status == :sent
+  end
 
-    assert response_body == %{
-             "success" => true,
-             "data" => %{
-               "chatId" => "78341114@c.us",
-               "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"
-             }
-           }
+  test "create_and_send_wa_message/2 should return error when characters limit is reached when sending text message",
+       attrs do
+    wa_managed_phone =
+      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+
+    wa_group =
+      WAManagedPhonesFixtures.wa_group_fixture(%{
+        organization_id: attrs.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    params = %{
+      wa_group_id: wa_group.id,
+      message: Faker.Lorem.sentence(6000),
+      wa_managed_phone_id: wa_managed_phone.id
+    }
+
+    {:error, error_msg} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    assert error_msg == "Message size greater than 6000 characters"
   end
 
   test "receive_text/1 receive text message correctly" do
@@ -67,7 +95,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     }
 
     expected_result = %{
-      bsp_message_id: "1",
+      bsp_id: "1",
       body: "Hello, World!",
       sender: %{phone: "1234567890", name: "John Doe"}
     }
@@ -87,7 +115,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     }
 
     expected_result = %{
-      bsp_message_id: "2",
+      bsp_id: "2",
       caption: "A photo",
       url: "http://example.com/photo.jpg",
       content_type: "image",
@@ -96,22 +124,5 @@ defmodule Glific.Groups.WhatsappMessageTest do
     }
 
     assert Message.receive_media(params) == expected_result
-  end
-
-  test "send_text/2 failed, wrong product id", attrs do
-    mock_maytapi_response(200, %{
-      "success" => false,
-      "message" => "Product id is wrong! Please check your Account information."
-    })
-
-    params = %{phone: "9829627508", message: "hi"}
-    result = Message.send_text(attrs.organization_id, params)
-
-    assert {:ok, %Tesla.Env{status: 200, body: response_body}} = result
-
-    assert response_body == %{
-             "success" => false,
-             "message" => "Product id is wrong! Please check your Account information."
-           }
   end
 end

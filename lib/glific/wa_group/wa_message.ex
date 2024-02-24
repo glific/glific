@@ -1,7 +1,6 @@
 defmodule Glific.WAGroup.WAMessage do
   @moduledoc false
   use Ecto.Schema
-
   alias __MODULE__
 
   alias Glific.{
@@ -24,7 +23,6 @@ defmodule Glific.WAGroup.WAMessage do
           uuid: Ecto.UUID.t() | nil,
           type: String.t() | atom() | nil,
           flow: String.t() | nil,
-          label: String.t() | nil,
           status: String.t() | nil,
           body: String.t() | nil,
           bsp_status: String.t() | nil,
@@ -57,27 +55,26 @@ defmodule Glific.WAGroup.WAMessage do
     :flow,
     :contact_id,
     :organization_id,
-    :wa_managed_phone_id,
-    :wa_group_id,
-    :bsp_status,
-    :body,
-    :bsp_id
+    :bsp_status
   ]
   @optional_fields [
+    :body,
+    :bsp_id,
+    :wa_managed_phone_id,
+    :wa_group_id,
     :uuid,
-    :label,
     :status,
     :context_id,
     :context_message_id,
     :message_broadcast_id,
     :errors,
+    :media_id,
     :send_at,
     :sent_at,
     :updated_at
   ]
 
   schema "wa_messages" do
-    field(:label, :string)
     field(:uuid, Ecto.UUID)
     field(:body, :string)
     field(:type, MessageType)
@@ -101,6 +98,24 @@ defmodule Glific.WAGroup.WAMessage do
 
     timestamps(type: :utc_datetime_usec)
   end
+
+  @doc """
+  Convert message structure to map
+  """
+  @spec to_minimal_map(WAMessage.t()) :: map()
+  def to_minimal_map(message) do
+    message
+    |> Map.take([:id | @required_fields ++ @optional_fields])
+    |> Map.put(:source_url, source_url(message))
+  end
+
+  @spec source_url(WAMessage.t()) :: String.t()
+  defp source_url(message),
+    do:
+      if(!message.media || match?(%Ecto.Association.NotLoaded{}, message.media),
+        do: nil,
+        else: message.media.source_url
+      )
 
   @doc """
   Standard changeset pattern we use for all data types

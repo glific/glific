@@ -77,16 +77,17 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
   defp update_message_params(message_payload, org_id, params) do
     message_payload
     |> Map.put(:organization_id, org_id)
-    |> Map.put(:provider, "maytapi")
+    |> Map.put(:provider, :maytapi)
     |> Map.put(:message_type, "WA")
     |> Map.put(:group_id, params["conversation"])
     |> Map.put(:group_name, params["conversation_name"])
+    |> Map.put(:receiver, params["receiver"])
     |> update_sender_details()
   end
 
   @spec update_sender_details(map()) :: map()
   defp update_sender_details(message_params) do
     put_in(message_params, [:sender, :contact_type], "WA")
-    |> put_in([:sender, :provider], "maytapi")
+    |> put_in([:sender, :provider], :maytapi)
   end
 end

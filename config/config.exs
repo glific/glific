@@ -35,7 +35,8 @@ oban_queues = [
   gcs: 10,
   gupshup: 10,
   webhook: 10,
-  broadcast: 5
+  broadcast: 5,
+  wa_group: 5
 ]
 
 oban_crontab = [

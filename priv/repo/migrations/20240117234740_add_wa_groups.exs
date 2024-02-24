@@ -29,22 +29,23 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
 
+      add :contact_id, references(:contacts, on_delete: :delete_all),
+        null: false,
+        comment: "contact id wa_managed_phone"
+
       timestamps(type: :utc_datetime_usec)
     end
 
-    create unique_index(:wa_managed_phones, :organization_id)
-    create unique_index(:wa_managed_phones, :phone)
+    create unique_index(:wa_managed_phones, [:phone, :organization_id])
   end
 
   defp wa_messages do
     create table(:wa_messages) do
-      add :label, :string, comment: "Identification for this phone"
-
       add :uuid, :uuid,
         null: true,
         comment: "Uniquely generated message UUID, primarily needed for the flow editor"
 
-      add :body, :text, null: false, comment: "Body of the message"
+      add :body, :text, comment: "Body of the message"
 
       add :type, :message_type_enum,
         comment:
@@ -73,7 +74,7 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
           "contact id of beneficiary if the message is received or contact id of WA managed phone if the message is send"
 
       add :wa_managed_phone_id, references(:wa_managed_phones, on_delete: :delete_all),
-        null: false,
+        null: true,
         comment: "WA managed phone id of the number linked to Maytapi account"
 
       add :media_id, references(:messages_media, on_delete: :delete_all),
@@ -87,7 +88,7 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
       add :sent_at, :utc_datetime, comment: "Timestamp when message was sent from queue worker"
 
       add :wa_group_id, references(:wa_groups, on_delete: :delete_all),
-        null: false,
+        null: true,
         comment: "ID of WA group,  message is sent/received from"
 
       # foreign key to organization restricting scope of this table to this organization only
@@ -95,11 +96,11 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
         null: false,
         comment: "Unique organization ID"
 
-      timestamps(type: :utc_datetime_usec)
       add :context_id, :text, comment: "ID of the message context"
       add :context_message_id, references(:wa_messages, on_delete: :delete_all)
 
       add :message_broadcast_id, references(:message_broadcasts, on_delete: :delete_all)
+      timestamps(type: :utc_datetime_usec)
     end
   end
 
@@ -123,6 +124,13 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
         comment: "Unique organization ID"
+
+      add :last_communication_at, :utc_datetime,
+        comment: "Timestamp of the most recent communication in wa_group"
+
+      add :last_message_number, :integer,
+        default: 0,
+        comment: "The max message number recd or sent by this contact in wa_group"
 
       timestamps(type: :utc_datetime)
     end

@@ -1,0 +1,8 @@
+mutation SendMessageInWaGroup($input: WaMessageInput!) {
+  sendMessageInWaGroup(input: $input) {
+    errors {
+      key
+      message
+    }
+  }
+}

@@ -21,6 +21,11 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :wa_message_result do
+    field :wa_message, :message
+    field :errors, list_of(:input_error)
+  end
+
   object :group_message_result do
     field :success, :boolean
     field :contact_ids, list_of(:id)
@@ -109,6 +114,38 @@ defmodule GlificWeb.Schema.MessageTypes do
     end
   end
 
+  object :wa_message do
+    field :id, :id
+    field :body, :string
+    field :type, :message_type_enum
+    field :flow, :message_flow_enum
+    field :message_number, :integer
+    field :bsp_id, :string
+    field :bsp_status, :message_status_enum
+    field :send_at, :datetime
+    field :status, :string
+    field :errors, :json
+
+    # expose the date we processed this message since external clients need it
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+
+    field :wa_group_id, :integer
+    field :context_id, :string
+
+    field :context_message, :wa_message do
+      resolve(dataloader(Repo, use_parent: true))
+    end
+
+    field :contact, :contact do
+      resolve(dataloader(Repo, use_parent: true))
+    end
+
+    field :media, :message_media do
+      resolve(dataloader(Repo, use_parent: true))
+    end
+  end
+
   @desc "Filtering options for messages"
   input_object :message_filter do
     @desc "Match the name body"
@@ -159,6 +196,12 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :template_id, :integer
     field :interactive_template_id, :integer
     field :params, list_of(:string)
+  end
+
+  input_object :wa_message_input do
+    field :message, :string
+    field :wa_managed_phone_id, :id
+    field :wa_group_id, :id
   end
 
   object :message_queries do
@@ -245,6 +288,12 @@ defmodule GlificWeb.Schema.MessageTypes do
       arg(:contact_id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.clear_messages/3)
+    end
+
+    field :send_message_in_wa_group, :wa_message_result do
+      arg(:input, non_null(:wa_message_input))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Messages.send_message_in_wa_group/3)
     end
   end
 

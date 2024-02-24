@@ -91,10 +91,9 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   @doc """
   Sending message to contact
   """
-  @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result()
-  def send_message(org_id, payload) do
+  @spec send_message(non_neg_integer(), map(), non_neg_integer()) :: Tesla.Env.result()
+  def send_message(org_id, payload, phone_id) do
     with {:ok, secrets} <- fetch_credentials(org_id) do
-      phone_id = secrets["phone_id"]
       product_id = secrets["product_id"]
       token = secrets["token"]
 
