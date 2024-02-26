@@ -9,6 +9,8 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
     wa_groups()
 
     wa_messages()
+
+    contact_wa_groups()
   end
 
   defp wa_managed_phones do
@@ -131,5 +133,28 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
 
     create index(:wa_groups, [:wa_managed_phone_id, :organization_id])
     create unique_index(:wa_groups, [:bsp_id, :wa_managed_phone_id, :organization_id])
+  end
+
+  defp contact_wa_groups do
+    create table(:contacts_wa_groups) do
+      add :wa_group_id, references(:wa_groups, on_delete: :delete_all),
+        null: false,
+        comment: "WA group the WhatsApp group is linked to"
+
+      add :contact_id, references(:contacts, on_delete: :delete_all),
+        null: false,
+        comment:
+          "contact id of beneficiary if the message is received or contact id of WA managed group if the message is send"
+
+      # foreign key to organization restricting scope of this table to this organization only
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment: "Unique organization ID"
+
+      timestamps(type: :utc_datetime)
+    end
+
+    create index(:contacts_wa_groups, [:wa_group_id, :contact_id])
+    create unique_index(:contacts_wa_groups, [:organization_id])
   end
 end

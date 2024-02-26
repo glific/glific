@@ -10,6 +10,7 @@ defmodule Glific.Contacts.Contact do
     Enums.ContactProviderStatus,
     Enums.ContactStatus,
     Groups.Group,
+    Groups.WAGroup,
     Partners.Organization,
     Profiles.Profile,
     Settings.Language,
@@ -118,6 +119,7 @@ defmodule Glific.Contacts.Contact do
     many_to_many(:tags, Tag, join_through: "contacts_tags", on_replace: :delete)
 
     many_to_many(:groups, Group, join_through: "contacts_groups", on_replace: :delete)
+    many_to_many(:wa_groups, WAGroup, join_through: "contacts_wa_groups", on_replace: :delete)
 
     timestamps(type: :utc_datetime_usec)
   end

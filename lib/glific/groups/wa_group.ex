@@ -10,7 +10,8 @@ defmodule Glific.Groups.WAGroup do
 
   alias Glific.{
     Partners.Organization,
-    WAGroup.WAManagedPhone
+    WAGroup.WAManagedPhone,
+    Contacts.Contact
   }
 
   @required_fields [:label, :wa_managed_phone_id, :organization_id, :bsp_id]
@@ -34,6 +35,8 @@ defmodule Glific.Groups.WAGroup do
 
     belongs_to :wa_managed_phone, WAManagedPhone
     belongs_to :organization, Organization
+
+    many_to_many :contacts, Contact, join_through: "contacts_wa_groups", on_replace: :delete
 
     timestamps(type: :utc_datetime)
   end
