@@ -2,14 +2,14 @@ query waSearch(
     $waGroupOpts: Opts!,
     $waMessageOpts: Opts!
   ) {
-    waSearch(waGroupOpts: $waGroupOpts, waMessageOpts: $waMessageOpts) {
+    search: waSearch(waGroupOpts: $waGroupOpts, waMessageOpts: $waMessageOpts) {
         wa_group {
             id
             label
             bsp_id
             last_communication_at
         }
-        wa_messages {
+        messages: wa_messages {
             id
             body
             flow

@@ -24,10 +24,10 @@ defmodule GlificWeb.Schema.WaSearchTest do
         }
       )
 
-    assert {:ok, %{data: %{"waSearch" => searches}} = _query_data} = result
+    assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
     [conv | _] = searches
     assert Enum.count(searches) == 1
-    assert Enum.count(conv["wa_messages"]) == 1
+    assert Enum.count(conv["messages"]) == 1
 
     result =
       auth_query_gql_by(:wa_search, user,
@@ -37,7 +37,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
         }
       )
 
-    assert {:ok, %{data: %{"waSearch" => searches}} = _query_data} = result
+    assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
     [_conv | _] = searches
     assert Enum.count(searches) == 2
 
@@ -50,7 +50,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
         }
       )
 
-    assert {:ok, %{data: %{"waSearch" => searches}} = _query_data} = result
+    assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
     [_conv | _] = searches
     assert Enum.count(searches) == 2
   end
