@@ -1614,13 +1614,13 @@ if Code.ensure_loaded?(Faker) do
 
       wa_managed_phones = [
         %{
-          phone: "917834811231",
-          phone_id: 4633,
+          phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+          phone_id: Enum.random(1000..9999),
           contact_id: contact_1.id
         },
         %{
-          phone: "917834811232",
-          phone_id: 4634,
+          phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+          phone_id: Enum.random(1000..9999),
           contact_id: contact_2.id
         }
       ]
@@ -1644,27 +1644,40 @@ if Code.ensure_loaded?(Faker) do
     def seed_wa_groups(organization \\ nil) do
       organization = get_organization(organization)
 
+      {:ok, contact_1} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "NGO Main Account", organization_id: organization.id}
+        )
+
+      {:ok, contact_2} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Default receiver", organization_id: organization.id}
+        )
+
       {:ok, wa_managed_phone_1} =
         Repo.fetch_by(
           WAManagedPhone,
-          %{phone_id: 4633, organization_id: organization.id}
+          %{contact_id: contact_1.id, organization_id: organization.id}
         )
 
       {:ok, wa_managed_phone_2} =
         Repo.fetch_by(
           WAManagedPhone,
-          %{phone_id: 4634, organization_id: organization.id}
+          %{contact_id: contact_2.id, organization_id: organization.id}
         )
+
 
       wa_groups = [
         %{
-          label: "Group A",
-          bsp_id: "120363027326493365@g.us",
+          label: Faker.Team.name(),
+          bsp_id: (:rand.uniform(1_000_000_000_000_000_000) |> to_string()) <> "@g.us",
           wa_managed_phone_id: wa_managed_phone_1.id
         },
         %{
-          label: "Group B",
-          bsp_id: "120363027326493364@g.us",
+          label: Faker.Team.name(),
+          bsp_id: (:rand.uniform(1_000_000_000_000_000_000) |> to_string()) <> "@g.us",
           wa_managed_phone_id: wa_managed_phone_2.id
         }
       ]
@@ -1689,6 +1702,12 @@ if Code.ensure_loaded?(Faker) do
     def seed_wa_messages(organization \\ nil) do
       organization = get_organization(organization)
 
+      {:ok, contact_1} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "NGO Main Account", organization_id: organization.id}
+        )
+
       {:ok, contact_2} =
         Repo.fetch_by(
           Contact,
@@ -1698,60 +1717,60 @@ if Code.ensure_loaded?(Faker) do
       {:ok, wa_managed_phone_1} =
         Repo.fetch_by(
           WAManagedPhone,
-          %{phone_id: 4633, organization_id: organization.id}
+          %{contact_id: contact_1.id, organization_id: organization.id}
         )
 
       {:ok, wa_managed_phone_2} =
         Repo.fetch_by(
           WAManagedPhone,
-          %{phone_id: 4634, organization_id: organization.id}
+          %{contact_id: contact_2.id, organization_id: organization.id}
         )
 
       {:ok, wa_group_1} =
         Repo.fetch_by(
           WAGroup,
-          %{label: "Group A", organization_id: organization.id}
+          %{wa_managed_phone_id: wa_managed_phone_1.id, organization_id: organization.id}
         )
 
       {:ok, wa_group_2} =
         Repo.fetch_by(
           WAGroup,
-          %{label: "Group B", organization_id: organization.id}
+          %{wa_managed_phone_id: wa_managed_phone_2.id, organization_id: organization.id}
         )
 
       wa_messages = [
         %{
           type: "text",
-          bsp_id: "true_120363027326493365@g.us",
+          bsp_id: Faker.String.base64(10),
           flow: "inbound",
           bsp_status: "received",
           contact_id: contact_2.id,
           status: "received",
           wa_managed_phone_id: wa_managed_phone_1.id,
           wa_group_id: wa_group_1.id,
-          body: "hello there"
+          body: Shakespeare.hamlet()
         },
         %{
           type: "text",
-          bsp_id: "true_1203630273264933665@g.us",
+          bsp_id: Faker.String.base64(10),
           flow: "inbound",
           bsp_status: "received",
           contact_id: contact_2.id,
           status: "received",
           wa_managed_phone_id: wa_managed_phone_1.id,
           wa_group_id: wa_group_1.id,
-          body: "hello there again"
+          body: Shakespeare.hamlet()
         },
         %{
           type: "text",
-          bsp_id: "true_120363027326493366@g.us",
+          bsp_id: Faker.String.base64(10),
           flow: "outbound",
           bsp_status: "delivered",
           contact_id: contact_2.id,
           status: "sent",
           wa_managed_phone_id: wa_managed_phone_2.id,
           wa_group_id: wa_group_2.id,
-          body: "hello there again again"
+          body: Shakespeare.hamlet()
         }
       ]
 
