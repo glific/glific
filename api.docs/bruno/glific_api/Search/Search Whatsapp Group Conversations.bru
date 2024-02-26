@@ -16,15 +16,15 @@ headers {
 }
 
 body:graphql {
-  query waSearch($waGroupOpts: Opts!, $waMessageOpts: Opts!) {
-    waSearch(waGroupOpts: $waGroupOpts, waMessageOpts: $waMessageOpts) {
-      wa_group {
+  query waSearch($waGroupOpts: Opts!, $waMessageOpts: Opts!, $filter: WaSearchFilter!) {
+    waSearch(waGroupOpts: $waGroupOpts, waMessageOpts: $waMessageOpts, filter: $filter) {
+      search: wa_group {
               id
               label
               bsp_id
               last_communication_at
           }
-      wa_messages {
+      messages: wa_messages {
           id
           body
           flow
@@ -46,6 +46,7 @@ body:graphql:vars {
     },
     "waGroupOpts": {
       "limit": 1
-    }
+    },
+    "filter": {}
   }
 }

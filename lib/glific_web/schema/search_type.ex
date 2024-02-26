@@ -114,6 +114,15 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :group_label, :string
   end
 
+  @desc "Filtering options for wa_search"
+  input_object :wa_search_filter do
+    @desc "Match one group ID"
+    field :id, :gid
+
+    @desc "Match multiple group ids"
+    field :ids, list_of(:gid)
+  end
+
   object :search_queries do
     @desc "Search for conversations"
     field :search, list_of(:conversation) do
@@ -205,6 +214,7 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :wa_search, list_of(:wa_conversation) do
       arg(:wa_message_opts, non_null(:opts))
       arg(:wa_group_opts, non_null(:opts))
+      arg(:filter, non_null(:wa_search_filter))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Searches.wa_search/3)
     end

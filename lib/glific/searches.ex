@@ -380,10 +380,19 @@ defmodule Glific.Searches do
   """
   @spec wa_search(map()) :: [WAConversation.t()]
   def wa_search(args) do
-    Logger.info("Searches.wa_Search/2 with : args: #{inspect(args)}")
+    Logger.info("Searches.wa_Search/1 with : args: #{inspect(args)}")
 
     wa_group_ids =
-      wa_search_query(args.filter[:term], args)
+      cond do
+        args.filter[:id] != nil ->
+          filter_groups_of_organization(args.filter.id)
+
+        args.filter[:ids] != nil ->
+          filter_groups_of_organization(args.filter.ids)
+
+        true ->
+          wa_search_query(args.filter[:term], args)
+      end
       |> Repo.all(timeout: @search_timeout)
 
     put_in(args, [Access.key(:filter, %{}), :ids], wa_group_ids)
@@ -601,5 +610,22 @@ defmodule Glific.Searches do
     # always order in descending order of most recent communications
     query
     |> order_by([wa_grp], desc: wa_grp.last_communication_at)
+  end
+
+  @spec filter_groups_of_organization(non_neg_integer() | [non_neg_integer()]) ::
+          Ecto.Query.t()
+  defp filter_groups_of_organization(group_id)
+       when is_integer(group_id) do
+    filter_groups_of_organization([group_id])
+  end
+
+  defp filter_groups_of_organization(group_ids)
+       when is_list(group_ids) do
+    query = from(wa_grp in WAGroup, as: :wa_grp)
+
+    query
+    |> where([wa_grp], wa_grp.id in ^group_ids)
+    |> select([wa_grp], wa_grp.id)
+    |> Repo.add_permission(&Searches.add_permission/2)
   end
 end

@@ -1668,7 +1668,6 @@ if Code.ensure_loaded?(Faker) do
           %{contact_id: contact_2.id, organization_id: organization.id}
         )
 
-
       wa_groups = [
         %{
           label: Faker.Team.name(),

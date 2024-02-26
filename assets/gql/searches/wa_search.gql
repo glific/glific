@@ -1,8 +1,9 @@
 query waSearch(
     $waGroupOpts: Opts!,
-    $waMessageOpts: Opts!
+    $waMessageOpts: Opts!,
+    $filter: WaSearchFilter!
   ) {
-    search: waSearch(waGroupOpts: $waGroupOpts, waMessageOpts: $waMessageOpts) {
+    search: waSearch(waGroupOpts: $waGroupOpts, waMessageOpts: $waMessageOpts, filter: $filter) {
         wa_group {
             id
             label
