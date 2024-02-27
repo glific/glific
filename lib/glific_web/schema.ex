@@ -54,6 +54,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.RoleTypes)
   import_types(__MODULE__.SheetTypes)
   import_types(__MODULE__.TicketTypes)
+  import_types(__MODULE__.ContactWaGroupTypes)
 
   query do
     import_fields(:profile_queries)
@@ -107,6 +108,8 @@ defmodule GlificWeb.Schema do
     import_fields(:access_role_queries)
 
     import_fields(:contact_group_queries)
+
+    import_fields(:contact_wa_group_queries)
 
     import_fields(:sheet_queries)
 
