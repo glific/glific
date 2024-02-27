@@ -6,6 +6,7 @@ defmodule Glific.Communications.GroupMessage do
   require Logger
 
   alias Glific.{
+    Repo,
     WAGroup.WAMessage,
     WAMessages
   }
@@ -23,16 +24,16 @@ defmodule Glific.Communications.GroupMessage do
     video: :send_video,
     document: :send_document,
     sticker: :send_sticker,
-    list: :send_interactive,
-    quick_reply: :send_interactive,
     location_request_message: :send_interactive
   }
 
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message({:ok, WAMessage.t()}, map()) :: {:ok, WAMessage.t()} | {:error, String.t()}
-  def send_message({:ok, %WAMessage{} = message}, attrs) do
+  @spec send_message(WAMessage.t(), map()) :: {:ok, WAMessage.t()} | {:error, String.t()}
+  def send_message(message, attrs) do
+    message = Repo.preload(message, :media)
+
     Logger.info(
       "Sending message: type: '#{message.type}', contact_id: '#{message.contact_id}', message_id: '#{message.id}'"
     )
