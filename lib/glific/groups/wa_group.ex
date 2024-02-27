@@ -44,8 +44,8 @@ defmodule Glific.Groups.WAGroup do
   Standard changeset pattern we use for all data types
   """
   @spec changeset(WAGroup.t(), map()) :: Ecto.Changeset.t()
-  def changeset(contact, attrs) do
-    contact
+  def changeset(wa_group, attrs) do
+    wa_group
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:label, :wa_managed_phone_id, :organization_id])

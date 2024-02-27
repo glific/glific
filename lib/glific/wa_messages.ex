@@ -50,7 +50,7 @@ defmodule Glific.WAMessages do
   Given a list of wa_message ids builds a wa_conversation list with most recent conversations
   at the beginning of the list
   """
-  @spec list_conversations(map()) :: [Conversation.t()] | integer
+  @spec list_conversations(map()) :: [WAConversation.t()] | integer
   def list_conversations(args) do
     args
     |> Enum.reduce(
@@ -123,7 +123,7 @@ defmodule Glific.WAMessages do
 
   defp put_clean_body(attrs), do: attrs
 
-  @spec do_list_conversations(any()) :: [Conversation.t()]
+  @spec do_list_conversations(any()) :: [WAConversation.t()]
   defp do_list_conversations(query) do
     query
     |> preload([:contact, :wa_group, :media])
@@ -133,7 +133,7 @@ defmodule Glific.WAMessages do
 
   # given all the messages related to multiple wa_groups, group them
   # by wa_group_id into conversation objects
-  @spec make_conversations([WAMessage.t()]) :: [Conversation.t()]
+  @spec make_conversations([WAMessage.t()]) :: [WAConversation.t()]
   defp make_conversations(messages) do
     # now format the results,
     {wa_group_messages, _processed_groups, wa_group_order} =

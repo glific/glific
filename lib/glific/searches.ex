@@ -12,6 +12,7 @@ defmodule Glific.Searches do
     Contacts.Contact,
     Conversations,
     Conversations.Conversation,
+    Conversations.WAConversation,
     ConversationsGroup,
     Groups,
     Groups.ContactGroup,
