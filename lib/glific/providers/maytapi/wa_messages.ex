@@ -89,8 +89,8 @@ defmodule Glific.Providers.Maytapi.WAMessages do
   end
 
   @doc false
-  @spec format_sender(WAMessage.t(), map()) :: map()
-  defp format_sender(_message, attrs) do
+  @spec format_sender(map()) :: map()
+  defp format_sender(attrs) do
     %{
       "to_number" => attrs.wa_group_bsp_id,
       "phone" => attrs.phone
@@ -119,7 +119,7 @@ defmodule Glific.Providers.Maytapi.WAMessages do
 
   defp send_message(payload, message, attrs) do
     request_body =
-      format_sender(message, attrs)
+      format_sender(attrs)
       |> Map.put("phone_id", attrs.phone_id)
       |> Map.put("type", payload.type)
       |> Map.put("message", payload.message)
