@@ -176,6 +176,8 @@ defmodule GlificWeb.Schema do
     import_fields(:sheet_mutations)
 
     import_fields(:ticket_mutations)
+
+    import_fields(:contact_wa_group_mutations)
   end
 
   subscription do

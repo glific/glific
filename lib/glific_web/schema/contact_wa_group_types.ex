@@ -31,8 +31,8 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
 
   input_object :wa_group_contacts_input do
     field :wa_group_id, non_null(:id)
-    field :add_contact_ids, non_null(list_of(:id))
-    field :delete_contact_ids, non_null(list_of(:id))
+    field :add_wa_contact_ids, non_null(list_of(:id))
+    field :delete_wa_contact_ids, non_null(list_of(:id))
   end
 
   object :wa_group_contacts do
@@ -43,7 +43,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
   input_object :contact_wa_groups_input do
     field :contact_id, non_null(:id)
     field :add_wa_group_ids, non_null(list_of(:id))
-    field :delete_group_ids, non_null(list_of(:id))
+    field :delete_wa_group_ids, non_null(list_of(:id))
   end
 
   object :contact_wa_groups do
@@ -70,6 +70,20 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
       arg(:opts, :opts)
       middleware(Authorize, :staff)
       resolve(&Resolvers.WaGroup.contact_wa_groups/3)
+    end
+  end
+
+  object :contact_wa_group_mutations do
+    field :create_contact_wa_group, :contact_wa_group_result do
+      arg(:input, non_null(:contact_wa_group_input))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.WaGroup.create_contact_wa_group/3)
+    end
+
+    field :update_wa_group_contacts, :wa_group_contacts do
+      arg(:input, non_null(:wa_group_contacts_input))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.WaGroup.update_wa_group_contacts/3)
     end
   end
 end

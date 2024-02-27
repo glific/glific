@@ -155,6 +155,5 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
     end
 
     create index(:contacts_wa_groups, [:wa_group_id, :contact_id])
-    create unique_index(:contacts_wa_groups, [:organization_id])
   end
 end
