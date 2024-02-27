@@ -15,10 +15,11 @@ defmodule Glific.Providers.Maytapi.Message do
   @doc false
   @spec create_and_send_wa_message(WAManagedPhone.t(), WAGroup.t(), map()) :: any()
   def create_and_send_wa_message(wa_phone, wa_group, attrs) do
-    message =
-      %{
-        body: attrs.message,
-        type: "text",
+    {:ok, message} =
+      attrs
+      |> Map.put_new(:type, :text)
+      |> Map.merge(%{
+        body: Map.get(attrs, :message),
         contact_id: wa_phone.contact_id,
         organization_id: wa_phone.organization_id,
         message_type: "WA",
@@ -26,7 +27,7 @@ defmodule Glific.Providers.Maytapi.Message do
         wa_group_id: wa_group.id,
         wa_managed_phone_id: wa_phone.id,
         send_at: DateTime.utc_now()
-      }
+      })
       |> WAMessages.create_message()
 
     GroupMessage.send_message(message, %{
