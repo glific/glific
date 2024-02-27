@@ -50,20 +50,12 @@ defmodule Glific.Clients.CommonWebhook do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     prompt = fields["prompt"]
 
-    OpenLLM.get_api_key(org_id)
-    |> OpenLLM.parse(prompt)
-    |> case do
-      {:ok, text} ->
-        %{
-          success: true,
-          parsed_msg: text
-        }
-
-      {_, error} ->
-        %{
-          success: false,
-          parsed_msg: error
-        }
+    with {:ok, %{api_key: api_key, api_url: api_url}} <- OpenLLM.get_credentials(org_id),
+         {:ok, text} <- OpenLLM.parse(api_key, api_url, prompt) do
+      %{success: true, parsed_msg: text}
+    else
+      {:error, error} ->
+        %{success: false, error: error}
     end
   end
 

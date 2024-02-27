@@ -5,11 +5,10 @@ defmodule Glific.OpenLLM do
   alias Glific.Partners
 
   @doc """
-  API call to GPT
-  Glific.OpenLLM.parse("sk_ABC123", "What is sbic curriculum", %{})
+  API call to OpenLLM
   """
-  @spec parse(String.t(), String.t()) :: tuple()
-  def parse(api_key, prompt) do
+  @spec parse(String.t(), String.t(), String.t()) :: tuple()
+  def parse(api_key, api_url, prompt) do
     data = %{"prompt" => prompt}
 
     middleware = [
@@ -20,7 +19,7 @@ defmodule Glific.OpenLLM do
     middleware
     |> Tesla.client()
     |> Tesla.post(
-      "https://6f2e-2401-4900-81f1-15d2-8137-ec1-6836-ca9a.ngrok-free.app/api/chat",
+      api_url,
       data,
       opts: [adapter: [recv_timeout: 120_000]]
     )
@@ -40,16 +39,10 @@ defmodule Glific.OpenLLM do
   end
 
   @doc """
-    Get the API key with existing configurations.
+    Get the credentials for Open LLM with existing configurations.
   """
-  @spec get_api_key(non_neg_integer()) :: String.t()
-  def get_api_key(org_id) do
-    {:ok, %{api_key: api_key}} = credentials(org_id)
-    api_key
-  end
-
-  @spec credentials(non_neg_integer()) :: tuple()
-  defp credentials(org_id) do
+  @spec get_credentials(non_neg_integer()) :: String.t()
+  def get_credentials(org_id) do
     organization = Partners.organization(org_id)
 
     organization.services["open_llm"]
@@ -58,7 +51,7 @@ defmodule Glific.OpenLLM do
         {:error, "Secret not found."}
 
       credentials ->
-        {:ok, %{api_key: credentials.secrets["api_key"]}}
+        {:ok, %{api_key: credentials.secrets["api_key"], api_url: credentials.secrets["api_url"]}}
     end
   end
 end
