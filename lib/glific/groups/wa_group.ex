@@ -6,9 +6,8 @@ defmodule Glific.Groups.WAGroup do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias __MODULE__
-
   alias Glific.{
+    Groups.WAGroup,
     Partners.Organization,
     WAGroup.WAManagedPhone
   }

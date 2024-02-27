@@ -1,7 +1,14 @@
 defmodule GlificWeb.Schema.WaSearchTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
-  alias Glific.Seeds.SeedsDev
+
+  alias Glific.{
+    Groups.WAGroup,
+    Repo,
+    Seeds.SeedsDev
+  }
+
+  import Ecto.Query
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -58,19 +65,25 @@ defmodule GlificWeb.Schema.WaSearchTest do
     assert Enum.count(searches) == 2
   end
 
+  @tag :wa_search
   test "wa_search with group filter ids", %{staff: user} do
+    [id1, id2] =
+      WAGroup
+      |> where([grp], grp.organization_id == 1)
+      |> select([grp], grp.id)
+      |> Repo.all()
+
     # with available id filters
     result =
       auth_query_gql_by(:wa_search, user,
         variables: %{
           "waGroupOpts" => %{},
           "waMessageOpts" => %{"limit" => 1},
-          "filter" => %{"id" => "1"}
+          "filter" => %{"id" => to_string(id1)}
         }
       )
 
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
-    [_conv | _] = searches
     assert Enum.count(searches) == 1
 
     # without available id filters
@@ -92,7 +105,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
         variables: %{
           "waGroupOpts" => %{},
           "waMessageOpts" => %{"limit" => 1},
-          "filter" => %{"ids" => ["1", "2"]}
+          "filter" => %{"ids" => [to_string(id1), to_string(id2)]}
         }
       )
 
