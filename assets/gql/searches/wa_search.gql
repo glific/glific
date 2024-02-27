@@ -8,7 +8,7 @@ query waSearch(
             id
             label
             bsp_id
-            last_communication_at
+            lastMessageAt: last_communication_at
         }
         messages: wa_messages {
             id
@@ -19,6 +19,9 @@ query waSearch(
                 id
                 name
                 phone
+            }
+            wa_managed_phone {
+                id
             }
       }
     }
