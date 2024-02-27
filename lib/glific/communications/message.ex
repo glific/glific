@@ -441,7 +441,7 @@ defmodule Glific.Communications.Message do
 
   @spec get_received_msg_publish_event(map()) :: :wa_received_message | :received_message
   defp get_received_msg_publish_event(%{provider: :maytapi} = _message_params),
-    do: :wa_received_message
+    do: :received_wa_group_message
 
   defp get_received_msg_publish_event(_), do: :received_message
 
