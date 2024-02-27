@@ -44,7 +44,6 @@ defmodule Glific.WAManagedPhonesFixtures do
       |> Enum.into(%{
         label: "some label",
         bsp_id: "120363238104@g.us",
-        wa_managed_phone: "9829627508",
         wa_managed_phone_id: attrs.wa_managed_phone_id,
         organization_id: attrs.organization_id
       })
