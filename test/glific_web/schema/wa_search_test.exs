@@ -65,7 +65,6 @@ defmodule GlificWeb.Schema.WaSearchTest do
     assert Enum.count(searches) == 2
   end
 
-  @tag :wa_search
   test "wa_search with group filter ids", %{staff: user} do
     [id1, id2] =
       WAGroup
