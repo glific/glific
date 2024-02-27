@@ -73,7 +73,7 @@ defmodule Glific.Groups.WAGroups do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_wa_group(any()) :: any()
+  @spec create_wa_group(map()) :: {:ok, WAGroup.t()} | {:error, Ecto.Changeset.t()}
   def create_wa_group(attrs \\ %{}) do
     %WAGroup{}
     |> WAGroup.changeset(attrs)
