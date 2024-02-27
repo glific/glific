@@ -38,8 +38,7 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
       timestamps(type: :utc_datetime_usec)
     end
 
-    create unique_index(:wa_managed_phones, :organization_id)
-    create unique_index(:wa_managed_phones, :phone)
+    create unique_index(:wa_managed_phones, [:phone, :organization_id])
   end
 
   defp wa_messages do
@@ -127,6 +126,13 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
         comment: "Unique organization ID"
+
+      add :last_communication_at, :utc_datetime,
+        comment: "Timestamp of the most recent communication in wa_group"
+
+      add :last_message_number, :integer,
+        default: 0,
+        comment: "The max message number recd or sent by this contact in wa_group"
 
       timestamps(type: :utc_datetime)
     end
