@@ -117,6 +117,8 @@ defmodule GlificWeb.Schema do
     import_fields(:ticket_queries)
 
     import_fields(:wa_managed_phone_queries)
+
+    import_fields(:wa_search_queries)
   end
 
   mutation do

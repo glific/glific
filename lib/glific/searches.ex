@@ -12,16 +12,20 @@ defmodule Glific.Searches do
     Contacts.Contact,
     Conversations,
     Conversations.Conversation,
+    Conversations.WAConversation,
     ConversationsGroup,
     Groups,
     Groups.ContactGroup,
     Groups.UserGroup,
+    Groups.WAGroup,
     Messages.Message,
     Repo,
     Search.Full,
     Searches.SavedSearch,
     Searches.Search,
-    Users.User
+    Users.User,
+    WAConversations,
+    WAGroup.WAMessage
   }
 
   @search_timeout 30_000
@@ -372,6 +376,30 @@ defmodule Glific.Searches do
     end
   end
 
+  @doc """
+  Full text whatsapp group search interface via Postgres
+  """
+  @spec wa_search(map()) :: [WAConversation.t()]
+  def wa_search(args) do
+    Logger.info("Searches.wa_Search/1 with : args: #{inspect(args)}")
+
+    wa_group_ids =
+      cond do
+        args.filter[:id] != nil ->
+          filter_groups_of_organization(args.filter.id)
+
+        args.filter[:ids] != nil ->
+          filter_groups_of_organization(args.filter.ids)
+
+        true ->
+          wa_search_query(args.filter[:term], args)
+      end
+      |> Repo.all(timeout: @search_timeout)
+
+    put_in(args, [Access.key(:filter, %{}), :ids], wa_group_ids)
+    |> WAConversations.list_conversations()
+  end
+
   # codebeat:enable[ABC]
 
   @spec get_contact_ids(list(), boolean | nil) :: list()
@@ -533,5 +561,72 @@ defmodule Glific.Searches do
     |> add_term(Map.get(args, :term))
     |> convert_to_atom()
     |> put_in([:filter, :organization_id], saved_search.organization_id)
+  end
+
+  @spec wa_search_query(String.t(), map()) :: Ecto.Query.t()
+  defp wa_search_query(term, args) do
+    wa_basic_query(args)
+    |> add_wa_group_opts(args.wa_group_opts)
+    |> select([wa_grp: wa_grp], wa_grp.id)
+    |> Full.run(term, args)
+  end
+
+  @spec wa_basic_query(map()) :: Ecto.Query.t()
+  defp wa_basic_query(args) do
+    query = from(wa_grp in WAGroup, as: :wa_grp)
+
+    query
+    |> add_wa_message_clause(args)
+    |> order_by([wa_grp: wa_grp], desc: wa_grp.last_communication_at, desc: wa_grp.id)
+    |> group_by([wa_grp: wa_grp], wa_grp.id)
+    |> Repo.add_permission(&Searches.add_permission/2)
+  end
+
+  @spec add_wa_message_clause(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp add_wa_message_clause(query, %{filter: filters} = _args)
+       when is_map(filters) do
+    if map_size(filters) > 1 do
+      query
+      |> join(:left, [wa_grp: wa_grp], wa_msg in WAMessage,
+        as: :wa_msg,
+        on: wa_grp.id == wa_msg.wa_group_id
+      )
+    else
+      query
+    end
+  end
+
+  defp add_wa_message_clause(query, _args),
+    do: query
+
+  @spec add_wa_group_opts(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp add_wa_group_opts(query, %{limit: limit, offset: offset}) do
+    query
+    |> limit(^limit)
+    |> offset(^offset)
+    |> order_by([wa_grp], desc: wa_grp.last_communication_at)
+  end
+
+  defp add_wa_group_opts(query, _opts) do
+    # always order in descending order of most recent communications
+    query
+    |> order_by([wa_grp], desc: wa_grp.last_communication_at)
+  end
+
+  @spec filter_groups_of_organization(non_neg_integer() | [non_neg_integer()]) ::
+          Ecto.Query.t()
+  defp filter_groups_of_organization(group_id)
+       when is_integer(group_id) do
+    filter_groups_of_organization([group_id])
+  end
+
+  defp filter_groups_of_organization(group_ids)
+       when is_list(group_ids) do
+    query = from(wa_grp in WAGroup, as: :wa_grp)
+
+    query
+    |> where([wa_grp], wa_grp.id in ^group_ids)
+    |> select([wa_grp], wa_grp.id)
+    |> Repo.add_permission(&Searches.add_permission/2)
   end
 end

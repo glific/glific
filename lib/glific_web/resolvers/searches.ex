@@ -105,4 +105,11 @@ defmodule GlificWeb.Resolvers.Searches do
           {:ok, [Conversation.t()] | integer}
   def saved_search_count(_, params, context),
     do: {:ok, Searches.saved_search_count(Helper.add_org_filter(params, context))}
+
+  @doc false
+  @spec wa_search(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, [any]}
+  def wa_search(_, params, context) do
+    {:ok, Searches.wa_search(Helper.add_org_filter(params, context))}
+  end
 end

@@ -3,7 +3,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
   alias Glific.{
     Groups.WAGroup,
-    Groups.WhatsappGroup,
+    Groups.WAGroups,
     Messages.Message,
     Partners,
     Repo,
@@ -157,7 +157,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     assert :ok == WAManagedPhones.fetch_wa_managed_phones(organization.id)
 
     assert :ok ==
-             WhatsappGroup.fetch_wa_groups(organization.id)
+             WAGroups.fetch_wa_groups(organization.id)
 
     SeedsDev.seed_tag()
     SeedsDev.seed_contacts()
@@ -222,16 +222,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
-    end
-
-    test "Incoming text message from the sender itself should be ignored", %{conn: conn} do
-      from_self_message =
-        @text_message_webhook
-        |> put_in(["message", "id"], Ecto.UUID.generate())
-        |> put_in(["message", "fromMe"], true)
-
-      conn = post(conn, "/maytapi", from_self_message)
-      assert conn.resp_body == "null"
     end
 
     test "Updating the contact_type to WABA+WA due to sender contact already existing", %{

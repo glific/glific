@@ -2,11 +2,16 @@ defmodule Glific.WAMessages do
   @moduledoc """
   Whatsapp messages context
   """
-  alias Glific.Contacts
-  alias Glific.Flows.MessageVarParser
-  alias Glific.Messages
-  alias Glific.Repo
-  alias Glific.WAGroup.WAMessage
+  alias Glific.{
+    Contacts,
+    Conversations.WAConversation,
+    Flows.MessageVarParser,
+    Messages,
+    Repo,
+    WAGroup.WAMessage
+  }
+
+  import Ecto.Query
 
   @doc """
   Creates a message.
@@ -39,6 +44,28 @@ defmodule Glific.WAMessages do
     message
     |> WAMessage.changeset(attrs)
     |> Repo.update()
+  end
+
+  @doc """
+  Given a list of wa_message ids builds a wa_conversation list with most recent conversations
+  at the beginning of the list
+  """
+  @spec list_conversations(map()) :: [WAConversation.t()] | integer
+  def list_conversations(args) do
+    args
+    |> Enum.reduce(
+      WAMessage,
+      fn
+        {:ids, ids}, query ->
+          query
+          |> where([m], m.id in ^ids)
+          |> order_by([m], desc: m.inserted_at)
+
+        _, query ->
+          query
+      end
+    )
+    |> do_list_conversations()
   end
 
   @spec parse_message_vars(map()) :: map()
@@ -95,4 +122,58 @@ defmodule Glific.WAMessages do
     do: Map.put(attrs, :clean_body, Glific.string_clean(body))
 
   defp put_clean_body(attrs), do: attrs
+
+  @spec do_list_conversations(any()) :: [WAConversation.t()]
+  defp do_list_conversations(query) do
+    query
+    |> preload([:contact, :wa_group, :media])
+    |> Repo.all()
+    |> make_conversations()
+  end
+
+  # given all the messages related to multiple wa_groups, group them
+  # by wa_group_id into conversation objects
+  @spec make_conversations([WAMessage.t()]) :: [WAConversation.t()]
+  defp make_conversations(messages) do
+    # now format the results,
+    {wa_group_messages, _processed_groups, wa_group_order} =
+      Enum.reduce(
+        messages,
+        {%{}, %{}, []},
+        fn m, {conversations, processed_groups, wa_group_order} ->
+          conversations = add(m, conversations)
+
+          # We need to do this to maintain the sort order when returning
+          # the results. The first time we see a group, we add them to
+          # the wa_group_order and processed map (using a map for faster lookups)
+          if Map.has_key?(processed_groups, m.wa_group_id) do
+            {conversations, processed_groups, wa_group_order}
+          else
+            {
+              conversations,
+              Map.put(processed_groups, m.wa_group_id, true),
+              [m.wa_group | wa_group_order]
+            }
+          end
+        end
+      )
+
+    Enum.reduce(
+      wa_group_order,
+      [],
+      fn wa_group, acc ->
+        [WAConversation.new(wa_group, Enum.reverse(wa_group_messages[wa_group])) | acc]
+      end
+    )
+  end
+
+  @spec add(map(), map()) :: map()
+  defp add(element, map) do
+    Map.update(
+      map,
+      element.wa_group,
+      [element],
+      &[element | &1]
+    )
+  end
 end

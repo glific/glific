@@ -1,10 +1,10 @@
-defmodule Glific.Groups.WhatsappGroupTest do
+defmodule Glific.Groups.WAGroupsTest do
   use Glific.DataCase, async: false
   use ExUnit.Case
 
   alias Glific.{
     Groups.WAGroup,
-    Groups.WhatsappGroup,
+    Groups.WAGroups,
     Partners,
     Seeds.SeedsDev,
     WAManagedPhonesFixtures
@@ -37,7 +37,7 @@ defmodule Glific.Groups.WhatsappGroupTest do
       }
     end)
 
-    assert :ok == WhatsappGroup.fetch_wa_groups(attrs.organization_id)
+    assert :ok == WAGroups.fetch_wa_groups(attrs.organization_id)
 
     assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "Expenses"})
     assert group.label == "Expenses"
@@ -58,7 +58,7 @@ defmodule Glific.Groups.WhatsappGroupTest do
       }
     end)
 
-    assert :ok == WhatsappGroup.fetch_wa_groups(attrs.organization_id)
+    assert :ok == WAGroups.fetch_wa_groups(attrs.organization_id)
     assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "Expenses"})
     assert group.label == "Expenses"
     assert group.bsp_id == "120363213149844251@g.us"
