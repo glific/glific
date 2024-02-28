@@ -101,6 +101,17 @@ defmodule GlificWeb.Resolvers.Searches do
   end
 
   @doc false
+  @spec wa_search_multi(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, Search.t()}
+  def wa_search_multi(_, params, context) do
+    {:ok,
+     Searches.wa_search_multi(
+       params.filter[:term],
+       Helper.add_org_filter(params, context)
+     )}
+  end
+
+  @doc false
   @spec saved_search_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [Conversation.t()] | integer}
   def saved_search_count(_, params, context),

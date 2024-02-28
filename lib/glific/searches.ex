@@ -443,6 +443,31 @@ defmodule Glific.Searches do
     Search.new(contacts, messages, tags, labels)
   end
 
+  @doc """
+  Search across multiple messages and wa_group table, and return a multiple context
+  result back to the frontend. First step in emulating a whatsapp
+  search
+  """
+  @spec wa_search_multi(String.t(), map()) :: Search.t()
+  def wa_search_multi(term, args) do
+    Logger.info("WASearch Multi: term: '#{term}'")
+    org_id = Repo.get_organization_id()
+
+    search_item_tasks = [
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+        get_filtered_wa_groups_with_term(term, args)
+      end),
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+        get_filtered_wa_messages_with_term(term, args)
+      end)
+    ]
+
+    [wa_groups, wa_messages] = Task.await_many(search_item_tasks, @search_timeout + 1_000)
+    %{wa_groups: wa_groups, wa_messages: wa_messages}
+  end
+
   @spec filtered_query(map()) :: Ecto.Query.t()
   defp filtered_query(args) do
     {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
@@ -482,6 +507,36 @@ defmodule Glific.Searches do
     filtered_query(args)
     |> where([m: m], ilike(m.body, ^"%#{term}%"))
     |> order_by([m: m], desc: m.message_number)
+    |> Repo.all(timeout: @search_timeout)
+  end
+
+  @spec get_filtered_wa_messages_with_term(String.t(), map()) :: list()
+  defp get_filtered_wa_messages_with_term(term, args) do
+    {limit, offset} = {args.wa_message_opts.limit, args.wa_message_opts.offset}
+
+    query = from(wam in WAMessage, as: :wam)
+
+    query
+    |> order_by([wam: wam], desc: wam.inserted_at, desc: wam.id)
+    |> Repo.add_permission(&Searches.add_permission/2)
+    |> where([wam: wam], ilike(wam.body, ^"%#{term}%"))
+    |> limit(^limit)
+    |> offset(^offset)
+    |> Repo.all(timeout: @search_timeout)
+  end
+
+  @spec get_filtered_wa_groups_with_term(String.t(), map()) :: list()
+  defp get_filtered_wa_groups_with_term(term, args) do
+    {limit, offset} = {args.wa_group_opts.limit, args.wa_group_opts.offset}
+
+    query = from(wag in WAGroup, as: :wag)
+
+    query
+    |> order_by([wag: wag], desc: wag.last_communication_at, desc: wag.id)
+    |> Repo.add_permission(&Searches.add_permission/2)
+    |> where([wag: wag], ilike(wag.label, ^"%#{term}%"))
+    |> limit(^limit)
+    |> offset(^offset)
     |> Repo.all(timeout: @search_timeout)
   end
 
@@ -626,8 +681,8 @@ defmodule Glific.Searches do
           {:ids, ids} ->
             {true, query |> where([wa_grp], wa_grp.id in ^ids)}
 
-          {:wa_phone_ids, phone_ids} ->
-            {true, query |> where([wa_grp], wa_grp.wa_managed_phone_id in ^phone_ids)}
+          {:wa_phone_ids, wa_phone_ids} ->
+            {true, query |> where([wa_grp], wa_grp.wa_managed_phone_id in ^wa_phone_ids)}
 
           _ ->
             {has_filter, query}
