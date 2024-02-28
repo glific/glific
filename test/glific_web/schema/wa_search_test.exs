@@ -1,4 +1,5 @@
 defmodule GlificWeb.Schema.WaSearchTest do
+  alias Glific.WAGroup.WAManagedPhone
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
@@ -72,6 +73,12 @@ defmodule GlificWeb.Schema.WaSearchTest do
       |> select([grp], grp.id)
       |> Repo.all()
 
+    [wa_id1, _wa_id2] =
+      WAManagedPhone
+      |> where([ph], ph.organization_id == 1)
+      |> select([ph], ph.id)
+      |> Repo.all()
+
     # with available id filters
     result =
       auth_query_gql_by(:wa_search, user,
@@ -111,5 +118,34 @@ defmodule GlificWeb.Schema.WaSearchTest do
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
     [_conv | _] = searches
     assert Enum.count(searches) == 2
+
+    # with available phone_id filters
+    result =
+      auth_query_gql_by(:wa_search, user,
+        variables: %{
+          "waGroupOpts" => %{},
+          "waMessageOpts" => %{"limit" => 10},
+          "filter" => %{"wa_phone_ids" => [to_string(wa_id1)]}
+        }
+      )
+
+    assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
+    [conv | _] = searches
+    assert Enum.count(conv) == 2
+
+    # with id and wa_phone_id filter
+    result =
+      auth_query_gql_by(:wa_search, user,
+        variables: %{
+          "waGroupOpts" => %{},
+          "waMessageOpts" => %{"limit" => 10},
+          "filter" => %{"id" => to_string(id1), "wa_phone_ids" => [to_string(wa_id1)]}
+        }
+      )
+
+    assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
+    [conv | _] = searches
+    assert Enum.count(searches) == 1
+    assert Enum.count(conv) == 2
   end
 end

@@ -34,6 +34,10 @@ body:graphql {
               name
               phone
           }
+
+          wa_managed_phone {
+              id
+          }
       }
     }
   }
@@ -47,6 +51,6 @@ body:graphql:vars {
     "waGroupOpts": {
       "limit": 1
     },
-    "filter": {}
+    "filter": {"waPhoneIds": ["1", "2"], "ids": ["1"]}
   }
 }
