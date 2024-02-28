@@ -8,6 +8,7 @@ defmodule Glific.WAManagedPhonesFixtures do
     Contacts,
     Groups.WAGroup,
     Groups.WAGroups,
+    Repo,
     WAGroup.WAManagedPhone,
     WAManagedPhones,
     WAMessages
@@ -54,11 +55,19 @@ defmodule Glific.WAManagedPhonesFixtures do
   end
 
   @doc """
+  temp function for test to get wa_managed_phone
+  """
+  @spec get_wa_managed_phone :: integer
+  def get_wa_managed_phone do
+    WAManagedPhone |> Ecto.Query.first() |> Repo.one(skip_organization_id: true)
+  end
+
+  @doc """
   Generate a wa_message.
   """
   @spec wa_message_fixture(map()) :: WAGroup.t()
   def wa_message_fixture(attrs) do
-    wa_managed_phone = wa_managed_phone_fixture(attrs)
+    wa_managed_phone = get_wa_managed_phone()
 
     {:ok, wa_message} =
       attrs

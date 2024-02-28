@@ -12,7 +12,7 @@ query waSearch(
       id
       label
       bsp_id
-      lastMessageAt
+      lastCommunicationAt
     }
     messages: wa_messages {
       id

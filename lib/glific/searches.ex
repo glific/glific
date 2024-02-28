@@ -684,6 +684,9 @@ defmodule Glific.Searches do
           {:wa_phone_ids, wa_phone_ids} ->
             {true, query |> where([wa_grp], wa_grp.wa_managed_phone_id in ^wa_phone_ids)}
 
+          {:term, term} ->
+            {true, query |> where([wa_grp], ilike(wa_grp.label, ^"%#{term}%"))}
+
           _ ->
             {has_filter, query}
         end

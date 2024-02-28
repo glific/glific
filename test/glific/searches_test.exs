@@ -125,6 +125,7 @@ defmodule Glific.SearchesTest do
 
     test "wa_search_multi/2 returns the search result and exclude when contact is blocked",
          attrs do
+      WAManagedPhonesFixtures.wa_managed_phone_fixture(attrs)
       wa_message = WAManagedPhonesFixtures.wa_message_fixture(attrs)
 
       args = %{
