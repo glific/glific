@@ -3,7 +3,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
   alias Glific.{
     Groups.WAGroup,
-    Groups.WhatsappGroup,
+    Groups.WAGroups,
     Messages.Message,
     Partners,
     Repo,
@@ -157,7 +157,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     assert :ok == WAManagedPhones.fetch_wa_managed_phones(organization.id)
 
     assert :ok ==
-             WhatsappGroup.fetch_wa_groups(organization.id)
+             WAGroups.fetch_wa_groups(organization.id)
 
     SeedsDev.seed_tag()
     SeedsDev.seed_contacts()

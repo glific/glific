@@ -7,7 +7,7 @@ defmodule Glific.WAManagedPhonesFixtures do
   alias Glific.{
     Contacts,
     Groups.WAGroup,
-    Groups.WhatsappGroup,
+    Groups.WAGroups,
     WAGroup.WAManagedPhone,
     WAManagedPhones
   }
@@ -47,7 +47,7 @@ defmodule Glific.WAManagedPhonesFixtures do
         wa_managed_phone_id: attrs.wa_managed_phone_id,
         organization_id: attrs.organization_id
       })
-      |> WhatsappGroup.create_wa_group()
+      |> WAGroups.create_wa_group()
 
     wa_group
   end
