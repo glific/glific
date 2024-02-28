@@ -9,9 +9,9 @@ defmodule Glific.Groups.WAGroup do
   alias __MODULE__
 
   alias Glific.{
+    Contacts.Contact,
     Partners.Organization,
-    WAGroup.WAManagedPhone,
-    Contacts.Contact
+    WAGroup.WAManagedPhone
   }
 
   @required_fields [:label, :wa_managed_phone_id, :organization_id, :bsp_id]

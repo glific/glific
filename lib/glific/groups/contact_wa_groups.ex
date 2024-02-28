@@ -5,8 +5,8 @@ defmodule Glific.Groups.ContactWaGroups do
 
   alias Glific.{
     Groups.ContactWAGroup,
-    Repo,
-    Groups.ContactWaGroups
+    Groups.ContactWaGroups,
+    Repo
   }
 
   use Ecto.Schema

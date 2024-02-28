@@ -40,12 +40,6 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
     field :wa_group_contacts, list_of(:contact_wa_group)
   end
 
-  input_object :contact_wa_groups_input do
-    field :contact_id, non_null(:id)
-    field :add_wa_group_ids, non_null(list_of(:id))
-    field :delete_wa_group_ids, non_null(list_of(:id))
-  end
-
   object :contact_wa_groups do
     field :number_deleted, :integer
     field :contact_wa_groups, list_of(:contact_wa_group)
@@ -64,12 +58,12 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
   end
 
   object :contact_wa_group_queries do
-    @desc "Get a list of all messages filtered by various criteria"
-    field :contact_wa_groups, list_of(:contact_wa_group) do
+    @desc "Get a list of all the contact associated with the contact"
+    field :wa_groups_contact, list_of(:contact_wa_group) do
       arg(:filter, :contact_wa_group_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.WaGroup.contact_wa_groups/3)
+      resolve(&Resolvers.WaGroup.wa_groups_contact/3)
     end
   end
 
