@@ -101,8 +101,7 @@ defmodule GlificWeb.Resolvers.Searches do
   end
 
   @doc false
-  @spec wa_search_multi(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, Search.t()}
+  @spec wa_search_multi(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, map()}
   def wa_search_multi(_, params, context) do
     {:ok,
      Searches.wa_search_multi(

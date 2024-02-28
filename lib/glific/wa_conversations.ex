@@ -1,6 +1,6 @@
 defmodule Glific.WAConversations do
   @moduledoc """
-  The main Glific abstraction for Whatsapp groups that exposes the data in a stuctured manner as a set
+  The main Glific abstraction for Whatsapp groups that exposes the data in a structured manner as a set
   of conversations.
   """
 

@@ -7,6 +7,7 @@ defmodule Glific.Searches do
   require Logger
 
   alias __MODULE__
+  Conversations.WAConversation
 
   alias Glific.{
     Contacts.Contact,
@@ -448,7 +449,7 @@ defmodule Glific.Searches do
   result back to the frontend. First step in emulating a whatsapp
   search
   """
-  @spec wa_search_multi(String.t(), map()) :: Search.t()
+  @spec wa_search_multi(String.t(), map()) :: map()
   def wa_search_multi(term, args) do
     Logger.info("WASearch Multi: term: '#{term}'")
     org_id = Repo.get_organization_id()
