@@ -132,6 +132,10 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
         default: 0,
         comment: "The max message number recd or sent by this contact in wa_group"
 
+      add :is_org_read, :boolean,
+        default: true,
+        comment: "Has a staff read the messages sent in this wa_group"
+
       timestamps(type: :utc_datetime)
     end
 

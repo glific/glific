@@ -3,6 +3,7 @@ if Code.ensure_loaded?(Faker) do
     @moduledoc """
     Script for populating the database. We can call this from tests and/or /priv/repo
     """
+
     alias Glific.{
       AccessControl,
       AccessControl.Role,
@@ -16,6 +17,7 @@ if Code.ensure_loaded?(Faker) do
       Flows.MessageBroadcast,
       Groups,
       Groups.Group,
+      Groups.WAGroup,
       Messages.Message,
       Messages.MessageMedia,
       Notifications,
@@ -31,7 +33,9 @@ if Code.ensure_loaded?(Faker) do
       Tags.Tag,
       Templates.InteractiveTemplate,
       Templates.SessionTemplate,
-      Users
+      Users,
+      WAGroup.WAManagedPhone,
+      WAGroup.WAMessage
     }
 
     alias Faker.Lorem.Shakespeare
@@ -1591,6 +1595,198 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    @doc false
+    @spec seed_wa_managed_phones(Organization.t() | nil) :: {integer(), nil}
+    def seed_wa_managed_phones(organization \\ nil) do
+      organization = get_organization(organization)
+
+      {:ok, contact_1} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "NGO Main Account", organization_id: organization.id}
+        )
+
+      {:ok, contact_2} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Default receiver", organization_id: organization.id}
+        )
+
+      wa_managed_phones = [
+        %{
+          phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+          phone_id: Enum.random(1000..9999),
+          contact_id: contact_1.id
+        },
+        %{
+          phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+          phone_id: Enum.random(1000..9999),
+          contact_id: contact_2.id
+        }
+      ]
+
+      wa_managed_phone_entries =
+        for wa_managed_phone_entry <- wa_managed_phones do
+          %{
+            inserted_at: DateTime.utc_now(),
+            updated_at: DateTime.utc_now(),
+            organization_id: organization.id
+          }
+          |> Map.merge(wa_managed_phone_entry)
+        end
+
+      # seed wa_managed_phones
+      Repo.insert_all(WAManagedPhone, wa_managed_phone_entries)
+    end
+
+    @doc false
+    @spec seed_wa_groups(Organization.t() | nil) :: {integer(), nil}
+    def seed_wa_groups(organization \\ nil) do
+      organization = get_organization(organization)
+
+      {:ok, contact_1} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "NGO Main Account", organization_id: organization.id}
+        )
+
+      {:ok, contact_2} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Default receiver", organization_id: organization.id}
+        )
+
+      {:ok, wa_managed_phone_1} =
+        Repo.fetch_by(
+          WAManagedPhone,
+          %{contact_id: contact_1.id, organization_id: organization.id}
+        )
+
+      {:ok, wa_managed_phone_2} =
+        Repo.fetch_by(
+          WAManagedPhone,
+          %{contact_id: contact_2.id, organization_id: organization.id}
+        )
+
+      wa_groups = [
+        %{
+          label: Faker.Team.name(),
+          bsp_id: (:rand.uniform(1_000_000_000_000_000_000) |> to_string()) <> "@g.us",
+          wa_managed_phone_id: wa_managed_phone_1.id
+        },
+        %{
+          label: Faker.Team.name(),
+          bsp_id: (:rand.uniform(1_000_000_000_000_000_000) |> to_string()) <> "@g.us",
+          wa_managed_phone_id: wa_managed_phone_2.id
+        }
+      ]
+
+      wa_group_entries =
+        for wa_group_entry <- wa_groups do
+          %{
+            inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
+            updated_at: DateTime.utc_now() |> DateTime.truncate(:second),
+            last_communication_at: DateTime.utc_now() |> DateTime.truncate(:second),
+            organization_id: organization.id
+          }
+          |> Map.merge(wa_group_entry)
+        end
+
+      # seed wa_groups
+      Repo.insert_all(WAGroup, wa_group_entries)
+    end
+
+    @doc false
+    @spec seed_wa_messages(Organization.t() | nil) :: {integer(), nil}
+    def seed_wa_messages(organization \\ nil) do
+      organization = get_organization(organization)
+
+      {:ok, contact_1} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "NGO Main Account", organization_id: organization.id}
+        )
+
+      {:ok, contact_2} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Default receiver", organization_id: organization.id}
+        )
+
+      {:ok, wa_managed_phone_1} =
+        Repo.fetch_by(
+          WAManagedPhone,
+          %{contact_id: contact_1.id, organization_id: organization.id}
+        )
+
+      {:ok, wa_managed_phone_2} =
+        Repo.fetch_by(
+          WAManagedPhone,
+          %{contact_id: contact_2.id, organization_id: organization.id}
+        )
+
+      {:ok, wa_group_1} =
+        Repo.fetch_by(
+          WAGroup,
+          %{wa_managed_phone_id: wa_managed_phone_1.id, organization_id: organization.id}
+        )
+
+      {:ok, wa_group_2} =
+        Repo.fetch_by(
+          WAGroup,
+          %{wa_managed_phone_id: wa_managed_phone_2.id, organization_id: organization.id}
+        )
+
+      wa_messages = [
+        %{
+          type: "text",
+          bsp_id: Faker.String.base64(10),
+          flow: "inbound",
+          bsp_status: "received",
+          contact_id: contact_2.id,
+          status: "received",
+          wa_managed_phone_id: wa_managed_phone_1.id,
+          wa_group_id: wa_group_1.id,
+          body: Shakespeare.hamlet()
+        },
+        %{
+          type: "text",
+          bsp_id: Faker.String.base64(10),
+          flow: "inbound",
+          bsp_status: "received",
+          contact_id: contact_2.id,
+          status: "received",
+          wa_managed_phone_id: wa_managed_phone_1.id,
+          wa_group_id: wa_group_1.id,
+          body: Shakespeare.hamlet()
+        },
+        %{
+          type: "text",
+          bsp_id: Faker.String.base64(10),
+          flow: "outbound",
+          bsp_status: "delivered",
+          contact_id: contact_2.id,
+          status: "sent",
+          wa_managed_phone_id: wa_managed_phone_2.id,
+          wa_group_id: wa_group_2.id,
+          body: Shakespeare.hamlet()
+        }
+      ]
+
+      wa_messages_entries =
+        for wa_messages_entry <- wa_messages do
+          %{
+            inserted_at: DateTime.utc_now(),
+            updated_at: DateTime.utc_now(),
+            organization_id: organization.id
+          }
+          |> Map.merge(wa_messages_entry)
+        end
+
+      # seed wa_messages
+      Repo.insert_all(WAMessage, wa_messages_entries)
+    end
+
     @doc """
     Function to populate some basic data that we need for the system to operate. We will
     split this function up into multiple different ones for test, dev and production
@@ -1641,6 +1837,11 @@ if Code.ensure_loaded?(Faker) do
 
       seed_broadcast(organization)
 
+      seed_wa_managed_phones(organization)
+
+      seed_wa_groups(organization)
+
+      seed_wa_messages(organization)
       :ok
     end
   end

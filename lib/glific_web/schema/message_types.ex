@@ -140,6 +140,10 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(dataloader(Repo, use_parent: true))
     end
 
+    field :wa_managed_phone, :wa_managed_phone do
+      resolve(dataloader(Repo, use_parent: true))
+    end
+
     field :media, :message_media do
       resolve(dataloader(Repo, use_parent: true))
     end

@@ -7,9 +7,11 @@ defmodule Glific.WAManagedPhonesFixtures do
   alias Glific.{
     Contacts,
     Groups.WAGroup,
-    Groups.WhatsappGroup,
+    Groups.WAGroups,
+    Repo,
     WAGroup.WAManagedPhone,
-    WAManagedPhones
+    WAManagedPhones,
+    WAMessages
   }
 
   @doc """
@@ -44,12 +46,43 @@ defmodule Glific.WAManagedPhonesFixtures do
       |> Enum.into(%{
         label: "some label",
         bsp_id: "120363238104@g.us",
-        wa_managed_phone: "9829627508",
         wa_managed_phone_id: attrs.wa_managed_phone_id,
         organization_id: attrs.organization_id
       })
-      |> WhatsappGroup.create_wa_group()
+      |> WAGroups.create_wa_group()
 
     wa_group
+  end
+
+  @doc """
+  temp function for test to get wa_managed_phone
+  """
+  @spec get_wa_managed_phone :: integer
+  def get_wa_managed_phone do
+    WAManagedPhone |> Ecto.Query.first() |> Repo.one(skip_organization_id: true)
+  end
+
+  @doc """
+  Generate a wa_message.
+  """
+  @spec wa_message_fixture(map()) :: WAGroup.t()
+  def wa_message_fixture(attrs) do
+    wa_managed_phone = get_wa_managed_phone()
+
+    {:ok, wa_message} =
+      attrs
+      |> Enum.into(%{
+        body: Faker.Lorem.sentence(),
+        flow: :inbound,
+        type: :text,
+        bsp_id: Faker.String.base64(10),
+        contact_id: wa_managed_phone.contact_id,
+        bsp_status: :enqueued,
+        wa_managed_phone_id: wa_managed_phone.id,
+        organization_id: attrs.organization_id
+      })
+      |> WAMessages.create_message()
+
+    wa_message
   end
 end
