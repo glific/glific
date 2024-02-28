@@ -7,9 +7,9 @@ defmodule Glific.OpenLLM do
   @doc """
   API call to OpenLLM
   """
-  @spec parse(String.t(), String.t(), String.t()) :: tuple()
-  def parse(api_key, api_url, prompt) do
-    data = %{"prompt" => prompt}
+  @spec parse(String.t(), String.t(), map()) :: tuple()
+  def parse(api_key, api_url, params) do
+    data = set_params(params)
 
     middleware = [
       Tesla.Middleware.JSON,
@@ -26,12 +26,21 @@ defmodule Glific.OpenLLM do
     |> handle_response()
   end
 
+  @spec set_params(map()) :: map()
+  defp set_params(%{prompt: prompt, session_id: session_id}) when is_nil(session_id),
+    do: %{"prompt" => prompt}
+
+  defp set_params(%{prompt: prompt, session_id: session_id}),
+    do: %{"prompt" => prompt, "session_id" => session_id}
+
   @spec handle_response(tuple()) :: tuple()
   defp handle_response(response) do
     response
     |> case do
-      {:ok, %Tesla.Env{status: 201, body: %{"answer" => answer}}} ->
-        {:success, answer}
+      {:ok, %Tesla.Env{status: 201, body: body}} ->
+        body
+        |> Map.put(:success, true)
+        |> then(&{:ok, &1})
 
       {_status, response} ->
         {:error, "invalid response #{inspect(response)}"}
