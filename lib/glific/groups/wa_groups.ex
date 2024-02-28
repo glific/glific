@@ -2,13 +2,20 @@ defmodule Glific.Groups.WAGroups do
   @moduledoc """
   Whatsapp groups context.
   """
+  import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts,
+    Groups.ContactWaGroups,
     Groups.WAGroup,
     Providers.Maytapi.ApiClient,
     Repo,
     WAManagedPhones
   }
+
+  defp phone_number(phone_number) do
+    String.split(phone_number, "@") |> List.first()
+  end
 
   @doc """
   Fetches group using maytapi API and sync it in Glific
@@ -27,9 +34,12 @@ defmodule Glific.Groups.WAGroups do
     with {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 <-
            ApiClient.list_wa_groups(org_id, wa_managed_phone.phone_id),
          {:ok, decoded} <- Jason.decode(body) do
-      decoded
-      |> get_group_details(wa_managed_phone)
-      |> create_whatsapp_groups(org_id)
+      group_details =
+        decoded
+        |> get_group_details(wa_managed_phone)
+
+      create_whatsapp_groups(group_details, org_id)
+      sync_wa_groups_with_contacts(group_details, org_id)
     else
       {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
         {:error, body}
@@ -41,8 +51,42 @@ defmodule Glific.Groups.WAGroups do
 
   defp get_group_details(%{"data" => groups}, wa_managed_phone) when is_list(groups) do
     Enum.map(groups, fn group ->
-      %{name: group["name"], bsp_id: group["id"], wa_managed_phone_id: wa_managed_phone.id}
+      %{
+        name: group["name"],
+        bsp_id: group["id"],
+        wa_managed_phone_id: wa_managed_phone.id,
+        participants: group["participants"] || []
+      }
     end)
+  end
+
+  @spec sync_wa_groups_with_contacts(list(), non_neg_integer()) :: :ok
+  defp sync_wa_groups_with_contacts(group_details, org_id) do
+    Enum.each(group_details, fn group ->
+      wa_group_id = wa_group_id(group.bsp_id)
+
+      Enum.each(group.participants, fn participant_phone ->
+        phone = phone_number(participant_phone)
+        contact_attrs = %{phone: phone, organization_id: org_id}
+
+        {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
+
+        contact_wa_group_attrs = %{
+          contact_id: contact.id,
+          wa_group_id: wa_group_id,
+          organization_id: org_id
+        }
+
+        ContactWaGroups.create_contact_wa_group(contact_wa_group_attrs)
+      end)
+    end)
+  end
+
+  defp wa_group_id(bsp_id) do
+    WAGroup
+    |> where([g], g.bsp_id == ^bsp_id)
+    |> select([g], g.id)
+    |> Repo.one!()
   end
 
   @spec create_whatsapp_groups(list(), non_neg_integer) :: list()

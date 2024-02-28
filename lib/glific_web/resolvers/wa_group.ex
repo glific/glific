@@ -4,7 +4,10 @@ defmodule GlificWeb.Resolvers.WaGroup do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.Groups.ContactWaGroups
+  alias Glific.{
+    Groups.ContactWaGroups,
+    Groups.WAGroups
+  }
 
   @doc """
   Get the list of contact whastapp groups filtered by args
@@ -32,5 +35,16 @@ defmodule GlificWeb.Resolvers.WaGroup do
   def update_wa_group_contacts(_, %{input: params}, _) do
     wa_group_contacts = ContactWaGroups.update_wa_group_contacts(params)
     {:ok, wa_group_contacts}
+  end
+
+  @doc false
+
+  @spec sync_wa_group_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def sync_wa_group_contacts(_, _, %{context: %{current_user: user}}) do
+    case WAGroups.fetch_wa_groups(user.organization_id) do
+      :ok -> {:ok, %{message: "successful"}}
+      {:error, error} -> {:error, error}
+    end
   end
 end

@@ -51,9 +51,6 @@ defmodule Glific.Groups.ContactWaGroups do
       {:wa_group_id, wa_group_id}, query ->
         where(query, [q], q.wa_group_id == ^wa_group_id)
 
-      {:contact_id, contact_id}, query ->
-        where(query, [q], q.contact_id == ^contact_id)
-
       _, query ->
         query
     end)

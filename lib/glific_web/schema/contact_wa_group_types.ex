@@ -24,6 +24,11 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
     end
   end
 
+  object :sync_wa_contacts do
+    field :message, :string
+    field :errors, list_of(:input_error)
+  end
+
   input_object :contact_wa_group_input do
     field :contact_id, :id
     field :wa_group_id, :id
@@ -47,9 +52,6 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
 
   @desc "Filtering options for messages"
   input_object :contact_wa_group_filter do
-    @desc "Match the contact id"
-    field :contact_id, :id
-
     @desc "Match the group id"
     field :wa_group_id, :id
 
@@ -58,7 +60,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
   end
 
   object :contact_wa_group_queries do
-    @desc "Get a list of all the contact associated with the contact"
+    @desc "Get a list of all the contacts associated with the wa group"
     field :wa_groups_contact, list_of(:contact_wa_group) do
       arg(:filter, :contact_wa_group_filter)
       arg(:opts, :opts)
@@ -78,6 +80,11 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
       arg(:input, non_null(:wa_group_contacts_input))
       middleware(Authorize, :staff)
       resolve(&Resolvers.WaGroup.update_wa_group_contacts/3)
+    end
+
+    field :sync_wa_group_contacts, :sync_wa_contacts do
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.WaGroup.sync_wa_group_contacts/3)
     end
   end
 end
