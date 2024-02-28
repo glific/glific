@@ -510,6 +510,14 @@ defmodule Glific.Searches do
     |> Repo.all(timeout: @search_timeout)
   end
 
+  @spec get_filtered_labeled_message(String.t(), map()) :: list()
+  defp get_filtered_labeled_message(term, args) do
+    filtered_query(args)
+    |> where([m: m], ilike(m.flow_label, ^"%#{term}%"))
+    |> order_by([m: m], desc: m.message_number)
+    |> Repo.all(timeout: @search_timeout)
+  end
+
   @spec get_filtered_wa_messages_with_term(String.t(), map()) :: list()
   defp get_filtered_wa_messages_with_term(term, args) do
     {limit, offset} = {args.wa_message_opts.limit, args.wa_message_opts.offset}
@@ -537,14 +545,6 @@ defmodule Glific.Searches do
     |> where([wag: wag], ilike(wag.label, ^"%#{term}%"))
     |> limit(^limit)
     |> offset(^offset)
-    |> Repo.all(timeout: @search_timeout)
-  end
-
-  @spec get_filtered_labeled_message(String.t(), map()) :: list()
-  defp get_filtered_labeled_message(term, args) do
-    filtered_query(args)
-    |> where([m: m], ilike(m.flow_label, ^"%#{term}%"))
-    |> order_by([m: m], desc: m.message_number)
     |> Repo.all(timeout: @search_timeout)
   end
 

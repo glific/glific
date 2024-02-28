@@ -9,7 +9,8 @@ defmodule Glific.WAManagedPhonesFixtures do
     Groups.WAGroup,
     Groups.WAGroups,
     WAGroup.WAManagedPhone,
-    WAManagedPhones
+    WAManagedPhones,
+    WAMessages
   }
 
   @doc """
@@ -50,5 +51,29 @@ defmodule Glific.WAManagedPhonesFixtures do
       |> WAGroups.create_wa_group()
 
     wa_group
+  end
+
+  @doc """
+  Generate a wa_message.
+  """
+  @spec wa_message_fixture(map()) :: WAGroup.t()
+  def wa_message_fixture(attrs) do
+    wa_managed_phone = wa_managed_phone_fixture(attrs)
+
+    {:ok, wa_message} =
+      attrs
+      |> Enum.into(%{
+        body: Faker.Lorem.sentence(),
+        flow: :inbound,
+        type: :text,
+        bsp_id: Faker.String.base64(10),
+        contact_id: wa_managed_phone.contact_id,
+        bsp_status: :enqueued,
+        wa_managed_phone_id: wa_managed_phone.id,
+        organization_id: attrs.organization_id
+      })
+      |> WAMessages.create_message()
+
+    wa_message
   end
 end

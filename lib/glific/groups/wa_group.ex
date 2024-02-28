@@ -13,7 +13,7 @@ defmodule Glific.Groups.WAGroup do
   }
 
   @required_fields [:label, :wa_managed_phone_id, :organization_id, :bsp_id]
-  @optional_fields [:last_communication_at]
+  @optional_fields [:last_communication_at, :is_org_read]
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
@@ -23,6 +23,7 @@ defmodule Glific.Groups.WAGroup do
           wa_managed_phone: WAManagedPhone.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          is_org_read: :boolean | nil,
           last_communication_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -31,6 +32,7 @@ defmodule Glific.Groups.WAGroup do
   schema "wa_groups" do
     field :label, :string
     field :bsp_id, :string
+    field :is_org_read, :boolean
 
     belongs_to :wa_managed_phone, WAManagedPhone
     belongs_to :organization, Organization
