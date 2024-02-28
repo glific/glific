@@ -384,14 +384,11 @@ defmodule Glific.Searches do
     Logger.info("Searches.wa_Search/1 with : args: #{inspect(args)}")
 
     wa_group_ids =
-      cond do
-        args.filter[:id] != nil ->
-          filter_groups_of_organization(args.filter.id)
+      case filter_groups_of_organization(args.filter) do
+        {true, query} ->
+          query
 
-        args.filter[:ids] != nil ->
-          filter_groups_of_organization(args.filter.ids)
-
-        true ->
+        _ ->
           wa_search_query(args.filter[:term], args)
       end
       |> Repo.all(timeout: @search_timeout)
@@ -613,20 +610,33 @@ defmodule Glific.Searches do
     |> order_by([wa_grp], desc: wa_grp.last_communication_at)
   end
 
-  @spec filter_groups_of_organization(non_neg_integer() | [non_neg_integer()]) ::
-          Ecto.Query.t()
-  defp filter_groups_of_organization(group_id)
-       when is_integer(group_id) do
-    filter_groups_of_organization([group_id])
-  end
-
-  defp filter_groups_of_organization(group_ids)
-       when is_list(group_ids) do
+  @spec filter_groups_of_organization(map()) :: {boolean, Ecto.Query.t()}
+  defp filter_groups_of_organization(filters) do
     query = from(wa_grp in WAGroup, as: :wa_grp)
 
-    query
-    |> where([wa_grp], wa_grp.id in ^group_ids)
-    |> select([wa_grp], wa_grp.id)
-    |> Repo.add_permission(&Searches.add_permission/2)
+    {has_filter, query} =
+      filters
+      |> Enum.reduce({false, query}, fn {k, v}, query_obj ->
+        {has_filter, query} = query_obj
+
+        case {k, v} do
+          {:id, id} ->
+            {true, query |> where([wa_grp], wa_grp.id in [^id])}
+
+          {:ids, ids} ->
+            {true, query |> where([wa_grp], wa_grp.id in ^ids)}
+
+          {:wa_phone_ids, phone_ids} ->
+            {true, query |> where([wa_grp], wa_grp.wa_managed_phone_id in ^phone_ids)}
+
+          _ ->
+            {has_filter, query}
+        end
+      end)
+
+    {has_filter,
+     query
+     |> select([wa_grp], wa_grp.id)
+     |> Repo.add_permission(&Searches.add_permission/2)}
   end
 end

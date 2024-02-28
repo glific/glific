@@ -121,6 +121,9 @@ defmodule GlificWeb.Schema.SearchTypes do
 
     @desc "Match multiple group ids"
     field :ids, list_of(:gid)
+
+    @desc "Match one or multiple wa_managed_phone ids"
+    field :wa_phone_ids, list_of(:gid)
   end
 
   object :search_queries do
