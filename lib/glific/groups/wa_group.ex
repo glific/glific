@@ -10,8 +10,7 @@ defmodule Glific.Groups.WAGroup do
     Contacts.Contact,
     Groups.WAGroup,
     Partners.Organization,
-    WAGroup.WAManagedPhone,
-    Contacts.Contact
+    WAGroup.WAManagedPhone
   }
 
   @required_fields [:label, :wa_managed_phone_id, :organization_id, :bsp_id]
