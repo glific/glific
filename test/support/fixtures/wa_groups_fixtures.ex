@@ -38,7 +38,7 @@ defmodule Glific.WAManagedPhonesFixtures do
   Generate a wa_group.
   """
   @spec wa_group_fixture(map()) :: WAGroup.t()
-  def wa_group_fixture(attrs \\ %{}) do
+  def wa_group_fixture(attrs) do
     {:ok, wa_group} =
       attrs
       |> Enum.into(%{
