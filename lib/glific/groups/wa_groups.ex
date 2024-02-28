@@ -1,4 +1,4 @@
-defmodule Glific.Groups.WhatsappGroup do
+defmodule Glific.Groups.WAGroups do
   @moduledoc """
   Whatsapp groups context.
   """
@@ -54,7 +54,8 @@ defmodule Glific.Groups.WhatsappGroup do
           label: group.name,
           organization_id: org_id,
           bsp_id: group.bsp_id,
-          wa_managed_phone_id: group.wa_managed_phone_id
+          wa_managed_phone_id: group.wa_managed_phone_id,
+          last_communication_at: DateTime.utc_now()
         })
       end
     )
@@ -73,7 +74,7 @@ defmodule Glific.Groups.WhatsappGroup do
 
   """
   @spec create_wa_group(map()) :: {:ok, WAGroup.t()} | {:error, Ecto.Changeset.t()}
-  def create_wa_group(attrs) do
+  def create_wa_group(attrs \\ %{}) do
     %WAGroup{}
     |> WAGroup.changeset(attrs)
     |> Repo.insert()
@@ -122,11 +123,11 @@ defmodule Glific.Groups.WhatsappGroup do
            organization_id: params.organization_id,
            wa_managed_phone_id: params.wa_managed_phone_id
          }) do
-      %WAGroup{} = group ->
-        {:ok, group}
-
       nil ->
         create_wa_group(params)
+
+      wa_group ->
+        {:ok, wa_group}
     end
   end
 end

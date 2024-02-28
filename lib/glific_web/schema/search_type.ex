@@ -34,6 +34,11 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :labels, list_of(:message)
   end
 
+  object :wa_conversation do
+    field :wa_group, :wa_group
+    field :wa_messages, list_of(:wa_message)
+  end
+
   input_object :saved_search_filter do
     field :label, :string
     field :shortcode, :string
@@ -107,6 +112,15 @@ defmodule GlificWeb.Schema.SearchTypes do
 
     @desc "Searches based on group label"
     field :group_label, :string
+  end
+
+  @desc "Filtering options for wa_search"
+  input_object :wa_search_filter do
+    @desc "Match one group ID"
+    field :id, :gid
+
+    @desc "Match multiple group ids"
+    field :ids, list_of(:gid)
   end
 
   object :search_queries do
@@ -192,6 +206,17 @@ defmodule GlificWeb.Schema.SearchTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :manager)
       resolve(&Resolvers.Searches.delete_saved_search/3)
+    end
+  end
+
+  object :wa_search_queries do
+    @desc "Search for whatsapp group conversations"
+    field :wa_search, list_of(:wa_conversation) do
+      arg(:wa_message_opts, non_null(:opts))
+      arg(:wa_group_opts, non_null(:opts))
+      arg(:filter, non_null(:wa_search_filter))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Searches.wa_search/3)
     end
   end
 end

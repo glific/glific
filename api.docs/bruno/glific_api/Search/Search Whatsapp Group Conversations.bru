@@ -1,0 +1,52 @@
+meta {
+  name: Search Whatsapp Group Conversations
+  type: graphql
+  seq: 4
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query waSearch($waGroupOpts: Opts!, $waMessageOpts: Opts!, $filter: WaSearchFilter!) {
+    waSearch(waGroupOpts: $waGroupOpts, waMessageOpts: $waMessageOpts, filter: $filter) {
+      search: wa_group {
+              id
+              label
+              bsp_id
+              last_communication_at
+          }
+      messages: wa_messages {
+          id
+          body
+          flow
+          type
+          contact {
+              id
+              name
+              phone
+          }
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "waMessageOpts": {
+      "limit": 3
+    },
+    "waGroupOpts": {
+      "limit": 1
+    },
+    "filter": {}
+  }
+}
