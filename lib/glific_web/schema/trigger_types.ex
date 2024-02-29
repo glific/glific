@@ -33,6 +33,7 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :days, list_of(:integer)
     field :hours, list_of(:integer)
     field :groups, list_of(:string)
+    field :wa_groups, list_of(:string)
 
     field :flow, :flow do
       resolve(dataloader(Repo))
@@ -55,6 +56,7 @@ defmodule GlificWeb.Schema.TriggerTypes do
   input_object :trigger_input do
     field :flow_id, :id
     field :group_ids, list_of(:integer)
+    field :wa_group_ids, list_of(:integer)
 
     field :is_active, :boolean
     field :is_repeating, :boolean
