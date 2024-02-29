@@ -6,6 +6,7 @@ defmodule Glific.Groups.WAGroups do
 
   alias Glific.{
     Contacts,
+    Contacts.Contact,
     Groups.ContactWaGroups,
     Groups.WAGroup,
     Providers.Maytapi.ApiClient,
@@ -60,25 +61,40 @@ defmodule Glific.Groups.WAGroups do
     end)
   end
 
-  @spec sync_wa_groups_with_contacts(list(), non_neg_integer()) :: :ok
-  defp sync_wa_groups_with_contacts(group_details, org_id) do
+  def sync_wa_groups_with_contacts(group_details, org_id) do
     Enum.each(group_details, fn group ->
       wa_group_id = wa_group_id(group.bsp_id)
 
-      Enum.each(group.participants, fn participant_phone ->
-        phone = phone_number(participant_phone)
-        contact_attrs = %{phone: phone, organization_id: org_id}
+      participant_contact_ids =
+        Enum.map(group.participants, fn participant_phone ->
+          phone = phone_number(participant_phone)
+          contact_attrs = %{phone: phone, organization_id: org_id}
 
-        {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
+          case Repo.fetch_by(Contact, %{phone: phone}) do
+            {:error, _} ->
+              {:ok, contact} = Contacts.create_contact(contact_attrs)
+              contact.id
 
-        contact_wa_group_attrs = %{
-          contact_id: contact.id,
-          wa_group_id: wa_group_id,
-          organization_id: org_id
-        }
+            {:ok, contact} ->
+              contact.id
+          end
+        end)
 
-        ContactWaGroups.create_contact_wa_group(contact_wa_group_attrs)
-      end)
+      existing_contact_ids =
+        ContactWaGroups.list_group_contacts(%{wa_group_id: wa_group_id})
+        |> Enum.map(& &1.id)
+
+      add_ids = Enum.filter(participant_contact_ids, fn id -> id not in existing_contact_ids end)
+
+      delete_ids =
+        Enum.filter(existing_contact_ids, fn id -> id not in participant_contact_ids end)
+
+      ContactWaGroups.update_wa_group_contacts(%{
+        wa_group_id: wa_group_id,
+        add_wa_contact_ids: add_ids,
+        delete_wa_contact_ids: delete_ids,
+        organization_id: org_id
+      })
     end)
   end
 

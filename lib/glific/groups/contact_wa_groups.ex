@@ -32,12 +32,12 @@ defmodule Glific.Groups.ContactWaGroups do
 
   ## Examples
 
-      iex> list_contact_groups()
+      iex> list_group_contacts()
       [%ContactWAGroup{}, ...]
 
   """
-  @spec list_contact_groups(map()) :: [ContactWAGroup.t()]
-  def list_contact_groups(args) do
+  @spec list_group_contacts(map()) :: [ContactWAGroup.t()]
+  def list_group_contacts(args) do
     args
     |> Repo.list_filter_query(ContactWAGroup, &Repo.opts_with_id/2, &filter_with/2)
     |> Repo.all()

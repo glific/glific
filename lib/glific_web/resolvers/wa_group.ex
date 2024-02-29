@@ -15,7 +15,7 @@ defmodule GlificWeb.Resolvers.WaGroup do
   @spec wa_groups_contact(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def wa_groups_contact(_, args, _) do
-    {:ok, ContactWaGroups.list_contact_groups(args)}
+    {:ok, ContactWaGroups.list_group_contacts(args)}
   end
 
   @doc """
