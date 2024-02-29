@@ -17,8 +17,6 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
   object :contact_wa_group do
     field :id, :id
 
-    field :value, :string
-
     field :contact, :contact do
       resolve(dataloader(Repo))
     end
@@ -40,7 +38,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
     field :delete_wa_contact_ids, non_null(list_of(:id))
   end
 
-  object :wa_group_contacts do
+  object :wa_group_contacts_result do
     field :number_deleted, :integer
     field :wa_group_contacts, list_of(:contact_wa_group)
   end
@@ -61,11 +59,11 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
 
   object :contact_wa_group_queries do
     @desc "Get a list of all the contacts associated with the wa group"
-    field :wa_groups_contact, list_of(:contact_wa_group) do
+    field :list_wa_groups_contact, list_of(:contact_wa_group) do
       arg(:filter, :contact_wa_group_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.WaGroup.wa_groups_contact/3)
+      resolve(&Resolvers.WaGroup.list_wa_groups_contact/3)
     end
   end
 
@@ -76,7 +74,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
       resolve(&Resolvers.WaGroup.create_contact_wa_group/3)
     end
 
-    field :update_wa_group_contacts, :wa_group_contacts do
+    field :update_wa_group_contacts, :wa_group_contacts_result do
       arg(:input, non_null(:wa_group_contacts_input))
       middleware(Authorize, :staff)
       resolve(&Resolvers.WaGroup.update_wa_group_contacts/3)

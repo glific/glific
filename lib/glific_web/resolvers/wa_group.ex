@@ -12,9 +12,9 @@ defmodule GlificWeb.Resolvers.WaGroup do
   @doc """
   Get the list of contact whastapp groups filtered by args
   """
-  @spec wa_groups_contact(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec list_wa_groups_contact(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def wa_groups_contact(_, args, _) do
+  def list_wa_groups_contact(_, args, _) do
     {:ok, ContactWaGroups.list_group_contacts(args)}
   end
 
@@ -44,7 +44,6 @@ defmodule GlificWeb.Resolvers.WaGroup do
   def sync_wa_group_contacts(_, _, %{context: %{current_user: user}}) do
     case WAGroups.fetch_wa_groups(user.organization_id) do
       :ok -> {:ok, %{message: "successful"}}
-      {:error, error} -> {:error, error}
     end
   end
 end
