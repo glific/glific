@@ -125,9 +125,10 @@ defmodule Glific.Flows.ContactAction do
     end
   end
 
+  # TODO: reorder, if this is still public
   @spec has_loops?(FlowContext.t(), String.t(), [Message.t()]) ::
           {:ok, map(), any()} | {false, FlowContext.t()}
-  defp has_loops?(context, body, messages) do
+  def has_loops?(context, body, messages) do
     {context, count} = check_recent_outbound_count(context, body)
 
     if count <= @max_loop_limit,

@@ -1,0 +1,9 @@
+mutation startWAGroupFlow($flowId: ID!, $waGroupId: ID!) {
+  startWAGroupFlow(flowId: $flowId, waGroupId: $waGroupId) {
+  	success
+  	errors {
+    	key
+  		message
+  	}
+  }
+}

@@ -16,7 +16,7 @@ defmodule Glific.Flows do
     Flows.ContactField,
     Groups,
     Groups.WAGroup,
-    Groups.WhatsappGroup,
+    Groups.WAGroups,
     Partners,
     Repo,
     Sheets,
@@ -502,7 +502,6 @@ defmodule Glific.Flows do
     args = make_args(key, value)
     flow = Flow.get_loaded_flow(organization_id, status, args)
     Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
-
     # We are setting the cache in the above statement with multiple keys
     # hence we are asking Cachex to just ignore this aspect. All the other
     # requests will get the cache value sent above
@@ -665,7 +664,7 @@ defmodule Glific.Flows do
   def start_wa_group_flow(flow_id, wa_group_id, organization_id) do
     case get_cached_flow(organization_id, {:flow_id, flow_id, @status}) do
       {:ok, flow} ->
-        wa_groups = WhatsappGroup.get_wa_groups!([wa_group_id])
+        wa_groups = WAGroups.get_wa_groups!([wa_group_id])
         process_wa_group_flow(flow, wa_groups)
 
       {:error, _error} ->

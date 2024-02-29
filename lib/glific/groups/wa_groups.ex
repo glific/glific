@@ -129,7 +129,7 @@ defmodule Glific.Groups.WAGroups do
       ** (Ecto.NoResultsError)
 
   """
-  @spec get_wa_groups!([non_neg_integer()]) :: WAGroup.t()
+  @spec get_wa_groups!([non_neg_integer()]) :: list(WAGroup.t())
   def get_wa_groups!(ids) do
     WAGroup
     |> where([wag], wag.id in ^ids)

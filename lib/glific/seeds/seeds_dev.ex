@@ -837,6 +837,26 @@ if Code.ensure_loaded?(Faker) do
         status: "published",
         organization_id: organization.id
       })
+
+      wa_group_send_msg_flow =
+        Repo.insert!(%Flow{
+          name: "wa_group_send_a",
+          keywords: ["send"],
+          version_number: "13.2.0",
+          uuid: "9b5d384c-e90e-415a-8ce5-cb3e94507a74",
+          organization_id: organization.id
+        })
+
+      definition =
+        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> "wa_group_send_msg.json"))
+        |> Jason.decode!()
+
+      Repo.insert!(%FlowRevision{
+        definition: definition,
+        flow_id: wa_group_send_msg_flow.id,
+        status: "published",
+        organization_id: organization.id
+      })
     end
 
     @doc false

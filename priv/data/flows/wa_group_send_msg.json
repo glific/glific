@@ -1,0 +1,57 @@
+{
+    "interactive_templates": [],
+    "flows": [
+      {
+        "definition": {
+          "vars": [
+            "9b5d384c-e90e-415a-8ce5-cb3e94507a74"
+          ],
+          "uuid": "9b5d384c-e90e-415a-8ce5-cb3e94507a74",
+          "type": "messaging",
+          "spec_version": "13.2.0",
+          "revision": 1,
+          "nodes": [
+            {
+              "uuid": "e70592bc-7fd3-4031-b086-74768702f131",
+              "exits": [
+                {
+                  "uuid": "75bbc29d-7ef1-4cad-a24c-b4b5279f22c4",
+                  "destination_uuid": null
+                }
+              ],
+              "actions": [
+                {
+                  "uuid": "1e862881-244e-4bf8-bb04-98ac3bb87b5e",
+                  "type": "send_msg",
+                  "text": "Welcome to wa_groups",
+                  "quick_replies": [],
+                  "labels": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ],
+          "name": "wa_group_send_a",
+          "localization": {},
+          "language": "base",
+          "expire_after_minutes": 10080,
+          "_ui": {
+            "nodes": {
+              "e70592bc-7fd3-4031-b086-74768702f131": {
+                "type": "execute_actions",
+                "position": {
+                  "top": 0,
+                  "left": 0
+                }
+              }
+            }
+          }
+        },
+        "keywords": [
+          "send"
+        ]
+      }
+    ],
+    "contact_field": [],
+    "collections": []
+  }

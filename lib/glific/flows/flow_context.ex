@@ -971,6 +971,14 @@ defmodule Glific.Flows.FlowContext do
     A single place to parse the variable in a string related to flows.
   """
   @spec get_vars_to_parse(FlowContext.t()) :: map()
+  def get_vars_to_parse(%{wa_group_id: wa_group_id}, context) when wa_group_id != nil do
+    # TODO: maybe we have to replace contact with group
+    %{
+      "results" => context.results,
+      # "contact" => Contacts.get_contact_field_map(context.contact_id),
+      "flow" => %{name: context.flow.name, id: context.flow.id, uuid: context.flow.uuid}
+    }
+  end
   def get_vars_to_parse(context) do
     %{
       "results" => context.results,

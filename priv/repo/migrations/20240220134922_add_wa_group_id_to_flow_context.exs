@@ -8,7 +8,7 @@ defmodule Glific.Repo.Migrations.AddWaGroupIdToFlowContext do
   defp flow_contexts do
     alter table(:flow_contexts) do
       add :wa_group_id, references(:wa_groups, on_delete: :delete_all),
-        null: false,
+        null: true,
         comment: "ID of WA group messages are sent/received from"
     end
   end

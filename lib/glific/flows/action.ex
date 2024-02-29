@@ -3,6 +3,7 @@ defmodule Glific.Flows.Action do
   The Action object which encapsulates one action in a given node.
   """
 
+  alias Glific.Flows.WAGroupAction
   alias __MODULE__
 
   use Ecto.Schema
@@ -611,6 +612,14 @@ defmodule Glific.Flows.Action do
   """
   @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+
+  def execute(%{type: "send_msg"} = action, %{wa_group_id: wa_group_id} = context, messages)
+      when wa_group_id != nil do
+    # templating = Templating.execute(action.templating, context, messages)
+    action = Map.put(action, :templating, nil)
+    WAGroupAction.send_message(context, action, messages)
+  end
+
   def execute(%{type: "send_msg"} = action, context, messages) do
     templating = Templating.execute(action.templating, context, messages)
     action = Map.put(action, :templating, templating)
