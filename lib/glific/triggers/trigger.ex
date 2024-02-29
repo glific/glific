@@ -9,7 +9,6 @@ defmodule Glific.Triggers.Trigger do
   alias Glific.{
     AccessControl.Role,
     Flows.Flow,
-    Groups.Group,
     Partners.Organization
   }
 
@@ -33,7 +32,8 @@ defmodule Glific.Triggers.Trigger do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
-          group_ids: list() | nil
+          group_ids: list() | nil,
+          wa_group_ids: list() | nil
         }
 
   @required_fields [
@@ -45,7 +45,6 @@ defmodule Glific.Triggers.Trigger do
     :name,
     :is_active,
     :trigger_type,
-    :group_id,
     :end_date,
     :last_trigger_at,
     :next_trigger_at,
@@ -53,7 +52,8 @@ defmodule Glific.Triggers.Trigger do
     :frequency,
     :days,
     :hours,
-    :group_ids
+    :group_ids,
+    :wa_group_ids
   ]
 
   schema "triggers" do
@@ -67,12 +67,12 @@ defmodule Glific.Triggers.Trigger do
     field :days, {:array, :integer}, default: []
     field :hours, {:array, :integer}, default: []
     field :group_ids, {:array, :integer}, default: []
+    field :wa_group_ids, {:array, :integer}, default: []
 
     field :is_active, :boolean, default: true
     field :is_repeating, :boolean, default: false
-    field(:groups, {:array, :string}, virtual: true)
+    field :groups, {:array, :string}, virtual: true
 
-    belongs_to :group, Group
     belongs_to :flow, Flow
     belongs_to :organization, Organization
     many_to_many :roles, Role, join_through: "trigger_roles", on_replace: :delete
