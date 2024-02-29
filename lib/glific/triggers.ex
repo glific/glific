@@ -33,7 +33,7 @@ defmodule Glific.Triggers do
 
     Trigger
     |> where([t], t.organization_id == ^organization_id and t.is_active == true)
-    |> where([t], t.next_trigger_at < ^now)
+    # |> where([t], t.next_trigger_at < ^now)
     |> select([t], t.id)
     |> limit(@max_trigger_limit)
     |> Repo.all()
@@ -129,7 +129,7 @@ defmodule Glific.Triggers do
   end
 
   @spec do_start_flow(Trigger.t()) :: any
-  defp do_start_flow(trigger) do
+  defp do_start_flow(%{wa_group_ids: wa_group_ids} = trigger) when wa_group_ids == [] do
     flow = Flows.get_flow!(trigger.flow_id)
 
     Logger.info(
@@ -137,6 +137,16 @@ defmodule Glific.Triggers do
     )
 
     Flows.start_group_flow(flow, trigger.group_ids)
+  end
+
+  defp do_start_flow(trigger) do
+    flow = Flows.get_flow!(trigger.flow_id)
+
+    Logger.info(
+      "Starting flow: #{flow.name} trigger: #{trigger.name} of org_id: #{trigger.organization_id} with time #{trigger.next_trigger_at} for WA group"
+    )
+
+    Flows.start_wa_group_flow(flow, trigger.wa_group_ids)
   end
 
   @doc """

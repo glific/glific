@@ -698,6 +698,17 @@ defmodule Glific.Flows do
   end
 
   @doc """
+  Start flow for wa groups of a collection
+  """
+  @spec start_wa_group_flow(Flow.t(), list()) :: {:ok, Flow.t()}
+  def start_wa_group_flow(flow, group_ids) do
+    # the flow returned is the expanded version
+    {:ok, flow} = get_cached_flow(flow.organization_id, {:flow_id, flow.id, @status})
+    Broadcast.broadcast_flow_to_wa_group(flow, group_ids)
+    {:ok, flow}
+  end
+
+  @doc """
   Make a copy of a flow
   """
   @spec copy_flow(Flow.t(), map()) :: {:ok, Flow.t()} | {:error, String.t()}

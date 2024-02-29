@@ -63,6 +63,18 @@ defmodule Glific.Flows.Broadcast do
   end
 
   @doc """
+  The one simple public interface to broadcast a wa_group
+  """
+  @spec broadcast_flow_to_wa_group(Flow.t(), list()) ::
+          {:ok, MessageBroadcast.t()} | {:error, String.t()}
+  def broadcast_flow_to_wa_group(flow, group_ids) do
+    group_ids
+    # replace this with calling to a function to start a flow
+    |> Task.async_stream(fn text -> String.length(text) end)
+    |> Enum.each(fn {:ok, length} -> length end)
+  end
+
+  @doc """
   The one simple public interface to broadcast a group
   """
   @spec broadcast_message_to_group(Messages.Message.t(), list(), map(), map()) ::
