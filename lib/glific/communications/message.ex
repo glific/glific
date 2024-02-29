@@ -9,7 +9,7 @@ defmodule Glific.Communications.Message do
     Communications,
     Contacts,
     Contacts.Contact,
-    Groups.WhatsappGroup,
+    Groups.WAGroups,
     Mails.BalanceAlertMail,
     Messages,
     Messages.Message,
@@ -456,7 +456,7 @@ defmodule Glific.Communications.Message do
       })
 
     {:ok, group} =
-      WhatsappGroup.maybe_create_group(%{
+      WAGroups.maybe_create_group(%{
         organization_id: message_params.organization_id,
         wa_managed_phone_id: wa_managed_phone_id,
         bsp_id: message_params.group_id,

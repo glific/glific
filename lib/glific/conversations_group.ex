@@ -1,6 +1,6 @@
 defmodule Glific.ConversationsGroup do
   @moduledoc """
-  The main Glific abstraction that exposes the group conversation data in a stuctured manner as a set
+  The main Glific abstraction that exposes the group conversation data in a structured manner as a set
   of conversations. For now each group is associated with a set of outgoing messages
   We will keep the API simple for now, but it is likely to become similar to the contact conversations
   API

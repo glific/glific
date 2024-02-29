@@ -4,7 +4,8 @@ defmodule Glific.SearchesTest do
   alias Glific.{
     Contacts,
     Fixtures,
-    Searches
+    Searches,
+    WAManagedPhonesFixtures
   }
 
   describe "searches" do
@@ -120,6 +121,31 @@ defmodule Glific.SearchesTest do
       search_after_block = Searches.search_multi(message.body, args)
       new_message_count = search_after_block.messages |> length()
       assert message_count > new_message_count
+    end
+
+    test "wa_search_multi/2 returns the search result and exclude when contact is blocked",
+         attrs do
+      WAManagedPhonesFixtures.wa_managed_phone_fixture(attrs)
+      wa_message = WAManagedPhonesFixtures.wa_message_fixture(attrs)
+
+      args = %{
+        wa_message_opts: %{limit: 25, offset: 0},
+        wa_group_opts: %{limit: 20, offset: 0}
+      }
+
+      search = Searches.wa_search_multi(wa_message.body, args)
+      message_count = search.wa_messages |> length()
+      assert message_count == 1
+
+      wa_group =
+        attrs
+        |> Map.put(:label, "wa group")
+        |> Map.put(:wa_managed_phone_id, wa_message.wa_managed_phone_id)
+        |> WAManagedPhonesFixtures.wa_group_fixture()
+
+      search = Searches.wa_search_multi(wa_group.label, args)
+      wa_group_count = search.wa_groups |> length()
+      assert wa_group_count == 1
     end
   end
 end

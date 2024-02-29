@@ -19,7 +19,7 @@ defmodule Glific.Partners do
     Flows,
     Flows.Flow,
     GCS,
-    Groups.WhatsappGroup,
+    Groups.WAGroups,
     Notifications,
     Partners.Credential,
     Partners.Organization,
@@ -933,7 +933,7 @@ defmodule Glific.Partners do
 
   defp credential_update_callback(organization, credential, "maytapi") do
     WAManagedPhones.fetch_wa_managed_phones(organization.id)
-    WhatsappGroup.fetch_wa_groups(organization.id)
+    WAGroups.fetch_wa_groups(organization.id)
     {:ok, credential}
   end
 
