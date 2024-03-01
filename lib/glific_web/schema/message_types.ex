@@ -140,6 +140,10 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(dataloader(Repo, use_parent: true))
     end
 
+    field :wa_managed_phone, :wa_managed_phone do
+      resolve(dataloader(Repo, use_parent: true))
+    end
+
     field :media, :message_media do
       resolve(dataloader(Repo, use_parent: true))
     end
@@ -309,6 +313,22 @@ defmodule GlificWeb.Schema.MessageTypes do
     end
 
     field :sent_message, :message do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(&Resolvers.Messages.publish_message/3)
+    end
+
+    field :received_wa_group_message, :wa_message do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(&Resolvers.Messages.publish_message/3)
+    end
+
+    field :sent_wa_group_message, :wa_message do
       arg(:organization_id, non_null(:id))
 
       config(&Schema.config_fun/2)

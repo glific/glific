@@ -6,6 +6,7 @@ defmodule Glific.Communications.GroupMessage do
   require Logger
 
   alias Glific.{
+    Communications,
     Repo,
     WAGroup.WAMessage,
     WAMessages
@@ -53,6 +54,12 @@ defmodule Glific.Communications.GroupMessage do
           contact_id: message.contact_id,
           organization_id: message.organization_id
         }
+      )
+
+      Communications.publish_data(
+        message,
+        :sent_wa_group_message,
+        message.organization_id
       )
 
       {:ok, message}
