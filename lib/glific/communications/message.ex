@@ -282,8 +282,8 @@ defmodule Glific.Communications.Message do
   end
 
   # preload the context message if it exists, so frontend can do the right thing
-  @spec publish_data(message() | {:ok, message()} | {:error, any()}, atom()) ::
-          message() | nil
+  @spec publish_data(Message.t() | {:ok, Message.t()} | {:error, any()}, atom()) ::
+          Message.t() | nil
   defp publish_data({:error, error}, _data_type) do
     error("Create message error", error)
   end
@@ -302,7 +302,7 @@ defmodule Glific.Communications.Message do
   end
 
   # check if the contact is simulator and send another subscription only for it
-  @spec publish_simulator(message() | nil, atom()) :: message() | nil
+  @spec publish_simulator(Message.t() | nil, atom()) :: Message.t() | nil
   defp publish_simulator(message, type) when type in [:sent_message, :received_message] do
     if Contacts.simulator_contact?(message.contact.phone) do
       message_type =
@@ -339,7 +339,7 @@ defmodule Glific.Communications.Message do
     nil
   end
 
-  @spec process_message(message() | nil) :: any
+  @spec process_message(Message.t() | nil) :: any
   defp process_message(nil), do: :ok
 
   defp process_message(message) do

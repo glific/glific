@@ -87,9 +87,7 @@ defmodule Glific.Communications.GroupMessage do
       |> Map.put(:organization_id, organization_id)
       |> Contacts.maybe_create_contact()
 
-    if Contacts.contact_blocked?(contact),
-      do: :ok,
-      else: do_receive_message(contact, message_params, type)
+    do_receive_message(contact, message_params, type)
   end
 
   @spec log_error(WAMessage.t(), String.t()) :: {:error, String.t()}
@@ -122,7 +120,7 @@ defmodule Glific.Communications.GroupMessage do
     )
 
     case type do
-      type when type in [:quick_reply, :list, :text] -> receive_text(message_params)
+      :text -> receive_text(message_params)
       _ -> receive_media(message_params)
     end
   end
@@ -136,6 +134,8 @@ defmodule Glific.Communications.GroupMessage do
       :received_wa_group_message,
       message_params.organization_id
     )
+
+    :ok
   end
 
   # handler for receiving the media (image|video|audio|document|sticker)  message
