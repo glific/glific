@@ -239,15 +239,4 @@ defmodule GlificWeb.Schema.SearchTypes do
       resolve(&Resolvers.Searches.delete_saved_search/3)
     end
   end
-
-  object :wa_search_queries do
-    @desc "Search for whatsapp group conversations"
-    field :wa_search, list_of(:wa_conversation) do
-      arg(:wa_message_opts, non_null(:opts))
-      arg(:wa_group_opts, non_null(:opts))
-      arg(:filter, non_null(:wa_search_filter))
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Searches.wa_search/3)
-    end
-  end
 end
