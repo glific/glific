@@ -27,8 +27,9 @@ defmodule Glific.Flows.FlowContext do
     Notifications,
     Partners.Organization,
     Profiles.Profile,
-    Repo,
+    Repo
   }
+
   alias Glific.Communications.Message, as: CommMessage
 
   @required_fields [:contact_id, :flow_id, :flow_uuid, :status, :organization_id]

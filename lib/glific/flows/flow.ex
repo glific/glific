@@ -327,6 +327,7 @@ defmodule Glific.Flows.Flow do
           version: fr.version
         }
       )
+
     flow =
       query
       |> status_clause(status)

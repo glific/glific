@@ -89,7 +89,9 @@ defmodule Glific.Flows.WAGroupAction do
     }
 
     attrs
-    |> then(&Message.create_and_send_wa_message(context.wa_group.wa_managed_phone, context.wa_group, &1))
+    |> then(
+      &Message.create_and_send_wa_message(context.wa_group.wa_managed_phone, context.wa_group, &1)
+    )
     |> handle_message_result(context, messages, attrs)
   end
 
