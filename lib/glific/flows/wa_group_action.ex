@@ -4,9 +4,6 @@ defmodule Glific.Flows.WAGroupAction do
   # TODO: doc needed
 
   alias Glific.Flows
-  alias Glific.WAManagedPhones
-  alias Glific.WAGroup.WAManagedPhone
-  alias Glific.Groups.WAGroups
   alias Glific.Providers.Maytapi.Message
   alias Glific.Flows.ContactAction
   alias Glific.Flows.MessageVarParser
@@ -14,32 +11,32 @@ defmodule Glific.Flows.WAGroupAction do
   alias Glific.WAGroup.WAMessage
   alias Glific.Flows.Action
   alias Glific.Flows.FlowContext
+  alias Glific.Repo
 
   @spec send_message(FlowContext.t(), Action.t(), [WAMessage.t()], non_neg_integer | nil) ::
           {:ok, map(), any()}
   def send_message(context, action, messages, cid \\ nil)
 
-  def send_message(context, action, messages, cid) do
+  def send_message(context, action, messages, _cid) do
     {context, action} = process_labels(context, action)
 
     # TODO: do we need same thing for group?
     # {cid, message_vars} = resolve_cid(context, cid)
 
     message_vars = FlowContext.get_vars_to_parse(context)
-    # # get the text translation if needed
+
+    # get the text translation if needed
     text = Localization.get_translation(context, action, :text)
 
     body =
       text
       |> MessageVarParser.parse(message_vars)
 
-    with {false, context} <- ContactAction.has_loops?(context, body, messages) do
-      do_send_message(context, action, messages, %{
-        body: body,
-        text: text,
-        flow_label: action.labels
-      })
-    end
+    do_send_message(context, action, messages, %{
+      body: body,
+      text: text,
+      flow_label: action.labels
+    })
   end
 
   @spec process_labels(FlowContext.t(), Action.t()) :: {FlowContext.t(), Action.t()}
@@ -69,30 +66,30 @@ defmodule Glific.Flows.WAGroupAction do
        ) do
     organization_id = context.organization_id
 
-    _attachments = Localization.get_translation(context, action, :attachments)
+    attachments = Localization.get_translation(context, action, :attachments)
 
     # TODO: handle media and type
 
-    # {type, media_id} = get_media_from_attachment(attachments, text, context, cid)
+    {type, media_id} = ContactAction.get_media_from_attachment(attachments, text, context, nil)
+    context = Repo.preload(context, [:wa_group, wa_group: :wa_managed_phone])
 
-    wa_group = WAGroups.get_wa_group!(context.wa_group_id)
-    wa_phone = WAManagedPhones.get_wa_managed_phone!(wa_group.wa_managed_phone_id)
     # TODO: add contact_id
     attrs = %{
       uuid: action.node_uuid,
       body: body,
-      type: "IMAGE",
-      media_id: nil,
+      type: type,
+      media_id: media_id,
       # contact_id: cid,
       organization_id: organization_id,
       flow_label: flow_label,
       flow_id: context.flow_id,
       send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
-      is_optin_flow: Flows.optin_flow?(context.flow)
+      is_optin_flow: Flows.optin_flow?(context.flow),
+      message: body
     }
 
     attrs
-    |> then(&Message.create_and_send_wa_message(wa_phone, wa_group, &1))
+    |> then(&Message.create_and_send_wa_message(context.wa_group.wa_managed_phone, context.wa_group, &1))
     |> handle_message_result(context, messages, attrs)
   end
 

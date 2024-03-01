@@ -374,12 +374,13 @@ defmodule Glific.Flows.ContactAction do
     {:ok, context, []}
   end
 
+  # TODO: Reorder if this is still public
   @spec get_media_from_attachment(any(), any(), FlowContext.t(), non_neg_integer()) :: any()
-  defp get_media_from_attachment(attachment, _, _, _)
+  def get_media_from_attachment(attachment, _, _, _)
        when attachment == %{} or is_nil(attachment),
        do: {:text, nil}
 
-  defp get_media_from_attachment(attachment, caption, context, cid) do
+  def get_media_from_attachment(attachment, caption, context, cid) do
     [type | _tail] = Map.keys(attachment)
     url = String.trim(attachment[type])
 

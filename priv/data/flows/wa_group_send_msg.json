@@ -1,57 +1,45 @@
 {
-    "interactive_templates": [],
-    "flows": [
-      {
-        "definition": {
-          "vars": [
-            "9b5d384c-e90e-415a-8ce5-cb3e94507a74"
-          ],
-          "uuid": "9b5d384c-e90e-415a-8ce5-cb3e94507a74",
-          "type": "messaging",
-          "spec_version": "13.2.0",
-          "revision": 1,
-          "nodes": [
-            {
-              "uuid": "e70592bc-7fd3-4031-b086-74768702f131",
-              "exits": [
-                {
-                  "uuid": "75bbc29d-7ef1-4cad-a24c-b4b5279f22c4",
-                  "destination_uuid": null
-                }
-              ],
-              "actions": [
-                {
-                  "uuid": "1e862881-244e-4bf8-bb04-98ac3bb87b5e",
-                  "type": "send_msg",
-                  "text": "Welcome to wa_groups",
-                  "quick_replies": [],
-                  "labels": [],
-                  "attachments": []
-                }
-              ]
-            }
-          ],
-          "name": "wa_group_send_a",
-          "localization": {},
-          "language": "base",
-          "expire_after_minutes": 10080,
-          "_ui": {
-            "nodes": {
-              "e70592bc-7fd3-4031-b086-74768702f131": {
-                "type": "execute_actions",
-                "position": {
-                  "top": 0,
-                  "left": 0
-                }
-              }
-            }
-          }
-        },
-        "keywords": [
-          "send"
-        ]
+  "_ui": {
+    "nodes": {
+      "b2a39566-284f-4a60-b376-f48b79258c90": {
+        "type": "execute_actions",
+        "position": {
+          "top": 0,
+          "left": 0
+        }
       }
-    ],
-    "contact_field": [],
-    "collections": []
-  }
+    }
+  },
+  "name": "wa_group_send_c",
+  "type": "messaging",
+  "uuid": "49f1a269-a505-467b-8aab-cf21eadcdd30",
+  "vars": [
+    "49f1a269-a505-467b-8aab-cf21eadcdd30"
+  ],
+  "nodes": [
+    {
+      "uuid": "b2a39566-284f-4a60-b376-f48b79258c90",
+      "exits": [
+        {
+          "uuid": "7d69ee5a-8fa8-4427-a49a-782430e6e319",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "text": "wa_group_send_c",
+          "type": "send_msg",
+          "uuid": "dd3c3c14-cee3-4b95-871c-6e62bd2c792f",
+          "labels": [],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    }
+  ],
+  "language": "base",
+  "revision": 1,
+  "localization": {},
+  "spec_version": "13.2.0",
+  "expire_after_minutes": 10080
+}

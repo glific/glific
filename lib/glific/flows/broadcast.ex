@@ -100,7 +100,7 @@ defmodule Glific.Flows.Broadcast do
   @spec broadcast_wa_groups(Flow.t(), list()) :: :ok
   def broadcast_wa_groups(flow, wa_groups) do
     Repo.put_process_state(flow.organization_id)
-    opts = opts(flow.organization_id) |> IO.inspect(label: :broadcast_opts)
+    opts = opts(flow.organization_id)
 
     broadcast_for_wa_groups(
       %{flow: flow, type: :wa_group},
@@ -356,22 +356,21 @@ defmodule Glific.Flows.Broadcast do
 
   @spec wa_group_tasks(Flow.t(), [WAGroup.t()], Keyword.t()) :: :ok
   defp wa_group_tasks(flow, wa_groups, opts) do
-    :ok
-    # stream =
-    #   Task.Supervisor.async_stream_nolink(
-    #     Glific.Broadcast.Supervisor,
-    #     wa_groups,
-    #     fn wa_group ->
-    #       Repo.put_process_state(wa_group.organization_id)
-    #       FlowContext.init_wa_group_context(flow, wa_group, @status, opts)
-    #       :ok
-    #     end,
-    #     ordered: false,
-    #     timeout: 5_000,
-    #     on_timeout: :kill_task
-    #   )
+    stream =
+      Task.Supervisor.async_stream_nolink(
+        Glific.Broadcast.Supervisor,
+        wa_groups,
+        fn wa_group ->
+          Repo.put_process_state(wa_group.organization_id)
+          FlowContext.init_wa_group_context(flow, wa_group, @status, opts)
+          :ok
+        end,
+        ordered: false,
+        timeout: 5_000,
+        on_timeout: :kill_task
+      )
 
-    # Stream.run(stream)
+    Stream.run(stream)
   end
 
   @spec message_tasks(map(), Contact.t(), Keyword.t()) :: :ok

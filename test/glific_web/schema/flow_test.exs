@@ -566,7 +566,7 @@ defmodule GlificWeb.Schema.FlowTest do
   @tag :start_flow
   test "Start flow for a whatsapp group", %{manager: user} = _attrs do
     {:ok, flow} =
-      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+      Repo.fetch_by(Flow, %{name: "wa_group_send_c", organization_id: user.organization_id})
 
     [wa_grp | _] =
       WAGroup

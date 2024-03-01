@@ -27,8 +27,9 @@ defmodule Glific.Flows.FlowContext do
     Notifications,
     Partners.Organization,
     Profiles.Profile,
-    Repo
+    Repo,
   }
+  alias Glific.Communications.Message, as: CommMessage
 
   @required_fields [:contact_id, :flow_id, :flow_uuid, :status, :organization_id]
   @optional_fields [
@@ -47,7 +48,10 @@ defmodule Glific.Flows.FlowContext do
     :recent_outbound,
     :message_broadcast_id,
     :profile_id,
-    :reason
+    :reason,
+    # TODO: Added node field, since else its coming nil always..
+    :node,
+    :wa_group_id
   ]
 
   # we store one more than the number of messages specified here
@@ -72,6 +76,8 @@ defmodule Glific.Flows.FlowContext do
           message_broadcast: Message.t() | Ecto.Association.NotLoaded.t() | nil,
           profile_id: non_neg_integer | nil,
           profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
+          wa_group_id: non_neg_integer | nil,
+          wa_group: WAGroup.t() | Ecto.Association.NotLoaded.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           delay: integer,
@@ -124,7 +130,7 @@ defmodule Glific.Flows.FlowContext do
     belongs_to(:profile, Profile)
     # the originating group message which kicked off this flow if any
     belongs_to(:message_broadcast, MessageBroadcast)
-
+    belongs_to(:wa_group, WAGroup)
     timestamps(type: :utc_datetime)
   end
 
@@ -462,8 +468,8 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Execute one (or more) steps in a flow based on the message stream
   """
-  @spec execute(FlowContext.t(), [Message.t()]) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+  @spec execute(FlowContext.t(), [CommMessage.message()]) ::
+          {:ok | :wait, FlowContext.t(), [CommMessage.message()]} | {:error, String.t()}
   def execute(%FlowContext{node: node} = _context, _messages) when is_nil(node),
     do: {:error, dgettext("errors", "We have finished the flow")}
 
@@ -642,6 +648,9 @@ defmodule Glific.Flows.FlowContext do
 
     node = flow.start_node
 
+    # TODO: preloading wa_group, for the contact_id, since contact_id can't be nil in FlowContext
+    wa_group = Repo.preload(wa_group, [:wa_managed_phone])
+
     {:ok, context} =
       create_flow_context(%{
         wa_group_id: wa_group.id,
@@ -653,7 +662,8 @@ defmodule Glific.Flows.FlowContext do
         flow: flow,
         organization_id: flow.organization_id,
         uuid_map: flow.uuid_map,
-        delay: delay
+        delay: delay,
+        contact_id: wa_group.wa_managed_phone.contact_id
       })
 
     context
@@ -972,13 +982,14 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec get_vars_to_parse(FlowContext.t()) :: map()
   def get_vars_to_parse(%{wa_group_id: wa_group_id}, context) when wa_group_id != nil do
-    # TODO: maybe we have to replace contact with group
+    # TODO: maybe we have to replace contact with group?
     %{
       "results" => context.results,
       # "contact" => Contacts.get_contact_field_map(context.contact_id),
       "flow" => %{name: context.flow.name, id: context.flow.id, uuid: context.flow.uuid}
     }
   end
+
   def get_vars_to_parse(context) do
     %{
       "results" => context.results,

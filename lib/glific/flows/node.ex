@@ -21,6 +21,8 @@ defmodule Glific.Flows.Node do
     Router
   }
 
+  alias Glific.Communications.Message, as: CommMessage
+
   @required_fields [:uuid, :actions, :exits]
 
   @type t() :: %__MODULE__{
@@ -241,7 +243,6 @@ defmodule Glific.Flows.Node do
     node_map = Process.get(@node_map_key, %{})
     count = Map.get(node_map, {context.id, node.uuid}, 0)
     Process.put(@node_map_key, Map.put(node_map, {context.id, node.uuid}, count + 1))
-
     count > @node_max_count
   end
 
@@ -251,8 +252,8 @@ defmodule Glific.Flows.Node do
   Execute a node, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(atom() | Node.t(), atom() | FlowContext.t(), [Message.t()]) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+  @spec execute(atom() | Node.t(), atom() | FlowContext.t(), [CommMessage.message()]) ::
+          {:ok | :wait, FlowContext.t(), [CommMessage.message()]} | {:error, String.t()}
   def execute(node, context, messages) do
     # if node has an action, execute the first action
     :telemetry.execute(
@@ -319,8 +320,8 @@ defmodule Glific.Flows.Node do
     end
   end
 
-  @spec execute_node_actions(Node.t(), FlowContext.t(), [Message.t()]) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+  @spec execute_node_actions(Node.t(), FlowContext.t(), [CommMessage.message()]) ::
+          {:ok | :wait, FlowContext.t(), [CommMessage.message()]} | {:error, String.t()}
   defp execute_node_actions(node, context, messages) do
     bump_count(node, context)
 

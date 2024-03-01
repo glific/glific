@@ -840,10 +840,10 @@ if Code.ensure_loaded?(Faker) do
 
       wa_group_send_msg_flow =
         Repo.insert!(%Flow{
-          name: "wa_group_send_a",
+          name: "wa_group_send_c",
           keywords: ["send"],
           version_number: "13.2.0",
-          uuid: "9b5d384c-e90e-415a-8ce5-cb3e94507a74",
+          uuid: "49f1a269-a505-467b-8aab-cf21eadcdd30",
           organization_id: organization.id
         })
 
