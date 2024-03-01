@@ -75,15 +75,15 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
       resolve(&Resolvers.WaGroup.create_contact_wa_group/3)
     end
 
-    field :update_wa_group_contacts, :wa_group_contacts_result do
+    field :update_contact_wa_groups, :wa_group_contacts_result do
       arg(:input, non_null(:wa_group_contacts_input))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.WaGroup.update_wa_group_contacts/3)
+      resolve(&Resolvers.WaGroup.update_contact_wa_groups/3)
     end
 
-    field :sync_wa_group_contacts, :sync_wa_contacts do
+    field :sync_contact_wa_groups, :sync_wa_contacts do
       middleware(Authorize, :staff)
-      resolve(&Resolvers.WaGroup.sync_wa_group_contacts/3)
+      resolve(&Resolvers.WaGroup.sync_contact_wa_groups/3)
     end
   end
 end

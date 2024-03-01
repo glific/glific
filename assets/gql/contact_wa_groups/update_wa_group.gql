@@ -1,5 +1,5 @@
-mutation UpdateWaGroupContacts($input: WaGroupContactsInput!) {
-  updateWaGroupContacts(input: $input) {
+mutation updateContactWaGroups($input: WaGroupContactsInput!) {
+  updateContactWaGroups(input: $input) {
     numberDeleted
     waGroupContacts {
       contact {

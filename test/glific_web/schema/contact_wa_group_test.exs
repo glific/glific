@@ -7,7 +7,6 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
     Fixtures,
     Groups.ContactWaGroups,
     Seeds.SeedsDev,
-    WAManagedPhonesFixtures
   }
 
   setup do
@@ -29,10 +28,10 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
 
   test "create wa group contacts", %{user: user} do
     wa_managed_phone =
-      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+      Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
-      WAManagedPhonesFixtures.wa_group_fixture(%{
+      Fixtures.wa_group_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -56,10 +55,10 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
 
   test "update wa group contacts", %{user: user} do
     wa_managed_phone =
-      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+      Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
-      WAManagedPhonesFixtures.wa_group_fixture(%{
+      Fixtures.wa_group_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -80,7 +79,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       )
 
     assert {:ok, query_data} = result
-    wa_group_contacts = get_in(query_data, [:data, "updateWaGroupContacts", "waGroupContacts"])
+    wa_group_contacts = get_in(query_data, [:data, "updateContactWaGroups", "waGroupContacts"])
     assert length(wa_group_contacts) == 2
 
     # delete wa group contacts
@@ -96,7 +95,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       )
 
     assert {:ok, query_data} = result
-    number_deleted = get_in(query_data, [:data, "updateWaGroupContacts", "numberDeleted"])
+    number_deleted = get_in(query_data, [:data, "updateContactWaGroups", "numberDeleted"])
     assert number_deleted == 2
 
     # test for incorrect contact id
@@ -112,7 +111,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       )
 
     assert {:ok, query_data} = result
-    wa_group_contacts = get_in(query_data, [:data, "updateWaGroupContacts", "waGroupContacts"])
+    wa_group_contacts = get_in(query_data, [:data, "updateContactWaGroups", "waGroupContacts"])
     assert wa_group_contacts == []
   end
 
@@ -121,15 +120,15 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       Contacts.list_contacts(%{filter: %{organization_id: user.organization_id}})
 
     wa_managed_phone =
-      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+      Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
-      WAManagedPhonesFixtures.wa_group_fixture(%{
+      Fixtures.wa_group_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
 
-    ContactWaGroups.update_wa_group_contacts(%{
+    ContactWaGroups.update_contact_wa_groups(%{
       organization_id: user.organization_id,
       wa_group_id: wa_group.id,
       add_wa_contact_ids: [contact1.id, contact2.id],
@@ -163,7 +162,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
   test "sync contacts in wa groups", %{staff: user} do
     result = auth_query_gql_by(:sync, user)
     assert {:ok, query_data} = result
-    message = get_in(query_data, [:data, "syncWaGroupContacts", "message"])
+    message = get_in(query_data, [:data, "syncContactWaGroups", "message"])
     assert message == "successfully synced"
   end
 end

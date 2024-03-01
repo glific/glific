@@ -11,7 +11,7 @@ defmodule Glific.Groups.WAGroups do
     Providers.Maytapi.ApiClient,
     Repo,
     WAGroup.WAManagedPhone,
-    WAManagedPhones,
+    WAManagedPhones
   }
 
   @spec phone_number(String.t()) :: non_neg_integer()
@@ -68,7 +68,8 @@ defmodule Glific.Groups.WAGroups do
   @spec sync_wa_groups_with_contacts(list(), non_neg_integer()) :: :ok | {:error, any()}
   def sync_wa_groups_with_contacts(group_details, org_id) do
     Enum.each(group_details, fn group ->
-      wa_group_id = wa_group_id(group.bsp_id)
+      {:ok, wa_group} = Repo.fetch_by(WAGroup, %{bsp_id: group.bsp_id})
+      wa_group_id = wa_group.id
       admin_phone_number = Enum.at(group.admins, 0) |> phone_number()
 
       Ecto.Multi.new()
@@ -130,14 +131,6 @@ defmodule Glific.Groups.WAGroups do
 
       {:ok, :added}
     end)
-  end
-
-  @spec wa_group_id(String.t()) :: non_neg_integer()
-  defp wa_group_id(bsp_id) do
-    WAGroup
-    |> where([g], g.bsp_id == ^bsp_id)
-    |> select([g], g.id)
-    |> Repo.one!()
   end
 
   @spec create_whatsapp_groups(list(), non_neg_integer) :: list()

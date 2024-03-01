@@ -74,14 +74,14 @@ defmodule Glific.Groups.ContactWaGroups do
   end
 
   @doc false
-  @spec update_wa_group_contacts(%{
+  @spec update_contact_wa_groups(%{
           :add_wa_contact_ids => any(),
           :delete_wa_contact_ids => [integer()],
           :wa_group_id => integer(),
           optional(any()) => any()
         }) :: Glific.Groups.ContactWaGroups.t()
 
-  def update_wa_group_contacts(
+  def update_contact_wa_groups(
         %{
           wa_group_id: wa_group_id,
           add_wa_contact_ids: add_ids,

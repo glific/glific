@@ -153,8 +153,7 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
 
       add :contact_id, references(:contacts, on_delete: :delete_all),
         null: false,
-        comment:
-          "contact id of beneficiary if the message is received or contact id of WA managed group if the message is send"
+        comment: "contact id of the user who is added in the wa group"
 
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all),
