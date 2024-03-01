@@ -433,20 +433,20 @@ defmodule Glific.Communications.Message do
   defp process_errors(_message, _errors, _code), do: nil
 
   @spec get_receive_msg_telemetry_event(map()) :: list()
-  defp get_receive_msg_telemetry_event(%{provider: :maytapi} = _message_params) do
+  defp get_receive_msg_telemetry_event(%{message_type: "WA"} = _message_params) do
     [:glific, :wa_message, :received]
   end
 
   defp get_receive_msg_telemetry_event(_), do: [:glific, :message, :received]
 
   @spec get_received_msg_publish_event(map()) :: :wa_received_message | :received_message
-  defp get_received_msg_publish_event(%{provider: :maytapi} = _message_params),
+  defp get_received_msg_publish_event(%{message_type: "WA"} = _message_params),
     do: :received_wa_group_message
 
   defp get_received_msg_publish_event(_), do: :received_message
 
   @spec create_message_metadata(Contact.t(), map(), atom()) :: map()
-  defp create_message_metadata(contact, %{provider: :maytapi} = message_params, type) do
+  defp create_message_metadata(contact, %{message_type: "WA"} = message_params, type) do
     # should we create wa_managed_phone if doesn't exist?, ideally those would be created/updated
     # when we update credentials
     %WAManagedPhone{id: wa_managed_phone_id} =
@@ -482,7 +482,7 @@ defmodule Glific.Communications.Message do
   end
 
   @spec create_message(map()) :: {:ok, message()} | {:error, term()}
-  defp create_message(%{provider: :maytapi} = message_params),
+  defp create_message(%{message_type: "WA"} = message_params),
     do: WAMessages.create_message(message_params)
 
   defp create_message(message_params), do: Messages.create_message(message_params)
