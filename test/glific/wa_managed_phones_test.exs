@@ -8,7 +8,7 @@ defmodule Glific.WAManagedPhonesTest do
   }
 
   describe "wa_managed_phones" do
-    import Glific.WAManagedPhonesFixtures
+    import Glific.Fixtures
 
     @invalid_attrs %{label: nil, phone: nil, is_active: nil}
 

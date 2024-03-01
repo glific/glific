@@ -3,9 +3,9 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Fixtures,
     Partners,
-    Seeds.SeedsDev,
-    WAManagedPhonesFixtures
+    Seeds.SeedsDev
   }
 
   setup do
@@ -47,7 +47,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
     })
 
     message =
-      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{
+      Fixtures.wa_managed_phone_fixture(%{
         organization_id: user.organization_id
       })
 
