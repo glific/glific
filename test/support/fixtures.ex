@@ -28,7 +28,6 @@ defmodule Glific.Fixtures do
     Flows.WebhookLog,
     Groups,
     Groups.WAGroups,
-    WAGroup.WAManagedPhone,
     Mails.MailLog,
     MessageConversations,
     Messages,
@@ -54,6 +53,7 @@ defmodule Glific.Fixtures do
     Triggers,
     Triggers.Trigger,
     Users,
+    WAGroup.WAManagedPhone,
     WAManagedPhones,
     WAMessages
   }
