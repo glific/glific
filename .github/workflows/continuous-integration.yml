@@ -48,7 +48,7 @@ jobs:
         id: elixir-mix-cache #id to use in retrieve action
         with:
           path: deps
-          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Install Mix Dependencies if not Cached
         if: steps.elixir-mix-cache.outputs.cache-hit != 'true'
