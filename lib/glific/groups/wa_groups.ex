@@ -56,7 +56,8 @@ defmodule Glific.Groups.WAGroups do
         name: group["name"],
         bsp_id: group["id"],
         wa_managed_phone_id: wa_managed_phone.id,
-        participants: group["participants"] || []
+        participants: group["participants"] || [],
+        admins: group["admins"]
       }
     end)
   end
@@ -64,30 +65,42 @@ defmodule Glific.Groups.WAGroups do
   def sync_wa_groups_with_contacts(group_details, org_id) do
     Enum.each(group_details, fn group ->
       wa_group_id = wa_group_id(group.bsp_id)
+      admin_phone_number = Enum.at(group.admins, 0) |> phone_number()
 
-      participant_contact_ids =
+      participant_contact_ids_and_admin_status =
         Enum.map(group.participants, fn participant_phone ->
           phone = phone_number(participant_phone)
+          is_admin = phone == admin_phone_number
           contact_attrs = %{phone: phone, organization_id: org_id}
 
-          case Repo.fetch_by(Contact, %{phone: phone}) do
-            {:error, _} ->
-              {:ok, contact} = Contacts.create_contact(contact_attrs)
-              contact.id
+          contact_id =
+            case Repo.fetch_by(Contact, %{phone: phone}) do
+              {:error, _} ->
+                {:ok, contact} = Contacts.create_contact(contact_attrs)
+                contact.id
 
-            {:ok, contact} ->
-              contact.id
-          end
+              {:ok, contact} ->
+                contact.id
+            end
+
+          %{contact_id: contact_id, is_admin: is_admin}
         end)
 
       existing_contact_ids =
         ContactWaGroups.list_group_contacts(%{wa_group_id: wa_group_id})
         |> Enum.map(& &1.id)
 
-      add_ids = Enum.filter(participant_contact_ids, fn id -> id not in existing_contact_ids end)
+      add_ids =
+        Enum.filter(participant_contact_ids_and_admin_status, fn %{contact_id: id} ->
+          id not in existing_contact_ids
+        end)
 
       delete_ids =
-        Enum.filter(existing_contact_ids, fn id -> id not in participant_contact_ids end)
+        Enum.filter(existing_contact_ids, fn id ->
+          id not in Enum.map(participant_contact_ids_and_admin_status, fn %{contact_id: id} ->
+            id
+          end)
+        end)
 
       ContactWaGroups.update_wa_group_contacts(%{
         wa_group_id: wa_group_id,

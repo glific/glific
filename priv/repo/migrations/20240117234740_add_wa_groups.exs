@@ -161,6 +161,8 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
         null: false,
         comment: "Unique organization ID"
 
+      add :is_admin, :boolean, default: false
+
       timestamps(type: :utc_datetime)
     end
 

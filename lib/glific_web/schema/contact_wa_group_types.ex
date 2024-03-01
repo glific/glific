@@ -30,6 +30,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
   input_object :contact_wa_group_input do
     field :contact_id, :id
     field :wa_group_id, :id
+    field :is_admin, :boolean
   end
 
   input_object :wa_group_contacts_input do

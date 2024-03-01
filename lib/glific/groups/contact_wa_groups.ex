@@ -59,7 +59,7 @@ defmodule Glific.Groups.ContactWaGroups do
   @spec create_contact_wa_group(map()) :: {:ok, ContactWAGroup.t()} | {:error, Ecto.Changeset.t()}
   def create_contact_wa_group(attrs \\ %{}) do
     # check if an entry exists
-    attrs = Map.take(attrs, [:contact_id, :wa_group_id, :organization_id])
+    attrs = Map.take(attrs, [:contact_id, :wa_group_id, :organization_id, :is_admin])
 
     case Repo.fetch_by(ContactWAGroup, attrs) do
       {:ok, cg} ->
@@ -78,27 +78,34 @@ defmodule Glific.Groups.ContactWaGroups do
           :wa_group_id => integer(),
           optional(any()) => any()
         }) :: Glific.Groups.ContactWaGroups.t()
+
   def update_wa_group_contacts(
         %{
           wa_group_id: wa_group_id,
           add_wa_contact_ids: add_ids,
           delete_wa_contact_ids: delete_ids
-        } =
-          attrs
+        } = attrs
       ) do
-    # we'll ignore errors intentionally here. the return list indicates
-    # what objects we created
     wa_group_contacts =
-      Enum.reduce(
-        add_ids,
-        [],
-        fn contact_id, acc ->
-          case create_contact_wa_group(Map.put(attrs, :contact_id, contact_id)) do
-            {:ok, wa_group_contact} -> [wa_group_contact | acc]
-            _ -> acc
+      Enum.reduce(add_ids, [], fn add_id, acc ->
+        {contact_id, is_admin} =
+          case add_id do
+            %{:contact_id => id, :is_admin => admin} ->
+              {id, admin}
+
+            _ when is_integer(add_id) or is_binary(add_id) ->
+              {String.to_integer(to_string(add_id)), false}
           end
+
+        attrs_with_contact_id_and_admin =
+          Map.put(attrs, :contact_id, contact_id)
+          |> Map.put(:is_admin, is_admin)
+
+        case create_contact_wa_group(attrs_with_contact_id_and_admin) do
+          {:ok, wa_group_contact} -> [wa_group_contact | acc]
+          _ -> acc
         end
-      )
+      end)
 
     {number_deleted, _} = delete_wa_group_contacts_by_ids(wa_group_id, delete_ids)
 
