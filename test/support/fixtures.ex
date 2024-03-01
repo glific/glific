@@ -27,6 +27,7 @@ defmodule Glific.Fixtures do
     Flows.FlowLabel,
     Flows.WebhookLog,
     Groups,
+    Groups.WAGroup,
     Groups.WAGroups,
     Mails.MailLog,
     MessageConversations,
@@ -54,6 +55,7 @@ defmodule Glific.Fixtures do
     Triggers.Trigger,
     Users,
     WAGroup.WAManagedPhone,
+    WAGroup.WAMessage,
     WAManagedPhones,
     WAMessages
   }
@@ -1135,7 +1137,7 @@ defmodule Glific.Fixtures do
   @doc """
   temp function for test to get wa_managed_phone
   """
-  @spec get_wa_managed_phone(non_neg_integer()) :: integer
+  @spec get_wa_managed_phone(non_neg_integer()) :: WAManagedPhone.t()
   def get_wa_managed_phone(organization_id) do
     Repo.fetch_by(WAManagedPhone, %{organization_id: organization_id})
     |> case do
@@ -1150,7 +1152,7 @@ defmodule Glific.Fixtures do
   @doc """
   Generate a wa_message.
   """
-  @spec wa_message_fixture(map()) :: WAGroup.t()
+  @spec wa_message_fixture(map()) :: WAMessage.t()
   def wa_message_fixture(attrs) do
     get_wa_managed_phone(attrs.organization_id)
     wa_managed_phone = get_wa_managed_phone(attrs.organization_id)
