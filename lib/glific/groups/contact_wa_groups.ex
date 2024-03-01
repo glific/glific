@@ -56,6 +56,7 @@ defmodule Glific.Groups.ContactWaGroups do
     end)
   end
 
+  @doc false
   @spec create_contact_wa_group(map()) :: {:ok, ContactWAGroup.t()} | {:error, Ecto.Changeset.t()}
   def create_contact_wa_group(attrs \\ %{}) do
     # check if an entry exists
@@ -72,6 +73,7 @@ defmodule Glific.Groups.ContactWaGroups do
     end
   end
 
+  @doc false
   @spec update_wa_group_contacts(%{
           :add_wa_contact_ids => any(),
           :delete_wa_contact_ids => [integer()],
@@ -115,6 +117,7 @@ defmodule Glific.Groups.ContactWaGroups do
     }
   end
 
+  @doc false
   @spec delete_wa_group_contacts_by_ids(integer, list()) :: {integer(), nil | [term()]}
   def delete_wa_group_contacts_by_ids(wa_group_id, contact_ids) do
     fields = {{:wa_group_id, wa_group_id}, {:contact_id, contact_ids}}

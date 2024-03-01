@@ -14,6 +14,7 @@ defmodule Glific.Groups.WAGroups do
     WAManagedPhones
   }
 
+  @spec phone_number(String.t()) :: non_neg_integer()
   defp phone_number(phone_number) do
     String.split(phone_number, "@") |> List.first()
   end
@@ -62,55 +63,47 @@ defmodule Glific.Groups.WAGroups do
     end)
   end
 
+  @doc false
+  @spec sync_wa_groups_with_contacts([map()], non_neg_integer()) :: :ok
   def sync_wa_groups_with_contacts(group_details, org_id) do
     Enum.each(group_details, fn group ->
       wa_group_id = wa_group_id(group.bsp_id)
       admin_phone_number = Enum.at(group.admins, 0) |> phone_number()
 
-      participant_contact_ids_and_admin_status =
-        Enum.map(group.participants, fn participant_phone ->
-          phone = phone_number(participant_phone)
-          is_admin = phone == admin_phone_number
-          contact_attrs = %{phone: phone, organization_id: org_id}
-
-          contact_id =
-            case Repo.fetch_by(Contact, %{phone: phone}) do
-              {:error, _} ->
-                {:ok, contact} = Contacts.create_contact(contact_attrs)
-                contact.id
-
-              {:ok, contact} ->
-                contact.id
-            end
-
-          %{contact_id: contact_id, is_admin: is_admin}
-        end)
-
-      existing_contact_ids =
+      existing_contact_wa_group_ids =
         ContactWaGroups.list_group_contacts(%{wa_group_id: wa_group_id})
         |> Enum.map(& &1.id)
 
-      add_ids =
-        Enum.filter(participant_contact_ids_and_admin_status, fn %{contact_id: id} ->
-          id not in existing_contact_ids
-        end)
+      # first deleting the contacts associated to the wa groups
+      ContactWaGroups.delete_wa_group_contacts_by_ids(wa_group_id, existing_contact_wa_group_ids)
 
-      delete_ids =
-        Enum.filter(existing_contact_ids, fn id ->
-          id not in Enum.map(participant_contact_ids_and_admin_status, fn %{contact_id: id} ->
-            id
-          end)
-        end)
+      Enum.each(group.participants, fn participant_phone ->
+        phone = phone_number(participant_phone)
+        is_admin = phone == admin_phone_number
+        contact_attrs = %{phone: phone, organization_id: org_id}
 
-      ContactWaGroups.update_wa_group_contacts(%{
-        wa_group_id: wa_group_id,
-        add_wa_contact_ids: add_ids,
-        delete_wa_contact_ids: delete_ids,
-        organization_id: org_id
-      })
+        contact_id =
+          case Repo.fetch_by(Contact, %{phone: phone}) do
+            {:error, _} ->
+              {:ok, contact} = Contacts.create_contact(contact_attrs)
+              contact.id
+
+            {:ok, contact} ->
+              contact.id
+          end
+
+        # Directly create the association without checking if it exists since we've cleared them.
+        ContactWaGroups.create_contact_wa_group(%{
+          contact_id: contact_id,
+          wa_group_id: wa_group_id,
+          organization_id: org_id,
+          is_admin: is_admin
+        })
+      end)
     end)
   end
 
+  @spec wa_group_id(String.t()) :: non_neg_integer()
   defp wa_group_id(bsp_id) do
     WAGroup
     |> where([g], g.bsp_id == ^bsp_id)

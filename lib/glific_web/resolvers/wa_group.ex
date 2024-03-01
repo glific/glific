@@ -43,7 +43,7 @@ defmodule GlificWeb.Resolvers.WaGroup do
           {:ok, any} | {:error, any}
   def sync_wa_group_contacts(_, _, %{context: %{current_user: user}}) do
     case WAGroups.fetch_wa_groups(user.organization_id) do
-      :ok -> {:ok, %{message: "successful"}}
+      :ok -> {:ok, %{message: "successfully synced"}}
     end
   end
 end

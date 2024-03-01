@@ -159,4 +159,11 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "listWaGroupsContact"])) == 2
   end
+
+  test "sync contacts in wa groups", %{staff: user} do
+    result = auth_query_gql_by(:sync, user)
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "syncWaGroupContacts", "message"])
+    assert message == "successfully synced"
+  end
 end
