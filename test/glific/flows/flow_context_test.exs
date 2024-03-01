@@ -4,7 +4,8 @@ defmodule Glific.Flows.FlowContextTest do
   alias Glific.{
     Fixtures,
     Messages,
-    Repo
+    Repo,
+    Seeds.SeedsDev
   }
 
   alias Glific.Flows.{
@@ -265,5 +266,30 @@ defmodule Glific.Flows.FlowContextTest do
     assert flow_context.wakeup_at == nil
     assert flow_context.is_background_flow == false
     assert flow_context.is_await_result == false
+  end
+
+  describe "init_wa_group_context/3" do
+    setup do
+      SeedsDev.seed_test_flows()
+      default_provider = SeedsDev.seed_providers()
+      SeedsDev.seed_organizations(default_provider)
+      SeedsDev.seed_contacts()
+      SeedsDev.seed_wa_managed_phones()
+      SeedsDev.seed_wa_groups()
+      :ok
+    end
+
+    @tag :wa_flow
+    test "init_wa_group_context/3 will initaite a flow context for wa_groups",
+         %{organization_id: organization_id} = attrs do
+      [flow | _tail] =
+        Glific.Flows.list_flows(%{filter: attrs |> Map.put(:name, "wa_group_send_c")})
+
+      [keyword | _] = flow.keywords
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: keyword})
+
+      {:ok, flow_context, _} = FlowContext.init_wa_group_context(flow, contact, "published")
+      # assert flow_context.id != nil
+    end
   end
 end

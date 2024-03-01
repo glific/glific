@@ -665,7 +665,7 @@ defmodule Glific.Flows.FlowContext do
       })
 
     context
-    |> Repo.preload([:flow, :contact])
+    |> Repo.preload([:flow])
     |> then(&{:ok, &1})
   end
 

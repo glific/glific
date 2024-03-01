@@ -13,6 +13,7 @@ defmodule Glific.Flows.WAGroupAction do
   alias Glific.Flows.FlowContext
   alias Glific.Repo
 
+  # TODO: docs
   @spec send_message(FlowContext.t(), Action.t(), [WAMessage.t()], non_neg_integer | nil) ::
           {:ok, map(), any()}
   def send_message(context, action, messages, cid \\ nil)
@@ -22,7 +23,6 @@ defmodule Glific.Flows.WAGroupAction do
 
     message_vars = FlowContext.get_vars_to_parse(context)
 
-    # get the text translation if needed
     text = Localization.get_translation(context, action, :text)
 
     body =
@@ -91,7 +91,16 @@ defmodule Glific.Flows.WAGroupAction do
   end
 
   # TODO: Need to do more here...
-  defp handle_message_result(_result, context, _message, _attrs) do
+  defp handle_message_result(result, context, messages, attrs) do
     {:ok, context}
+    # dbg()
+    # case result do
+    #   {:ok, message} ->
+    #     context = FlowContext.update_recent(context, message, :recent_outbound)
+    #     {:ok, %{context | delay: context.delay + @min_delay}, messages}
+
+    #   # {:error, error} ->
+    #   #   error(context, error, attrs)
+    # end
   end
 end
