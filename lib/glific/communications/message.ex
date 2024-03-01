@@ -22,8 +22,6 @@ defmodule Glific.Communications.Message do
     end
   end
 
-  @type message :: Message.t()
-
   @type_to_token %{
     text: :send_text,
     image: :send_image,
