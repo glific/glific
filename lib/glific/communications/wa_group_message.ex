@@ -8,6 +8,7 @@ defmodule Glific.Communications.GroupMessage do
   alias Glific.{
     Communications,
     Contacts,
+    Contacts.Contact,
     Groups.WAGroups,
     Messages,
     Repo,
