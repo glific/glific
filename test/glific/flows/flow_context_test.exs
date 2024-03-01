@@ -288,7 +288,7 @@ defmodule Glific.Flows.FlowContextTest do
       [keyword | _] = flow.keywords
       flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: keyword})
 
-      {:ok, flow_context, _} = FlowContext.init_wa_group_context(flow, contact, "published")
+      {:ok, _flow_context, _} = FlowContext.init_wa_group_context(flow, contact, "published")
       # assert flow_context.id != nil
     end
   end
