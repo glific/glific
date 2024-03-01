@@ -6,12 +6,12 @@ defmodule Glific.Groups.WAGroups do
 
   alias Glific.{
     Contacts,
-    Contacts.Contact,
     Groups.ContactWaGroups,
     Groups.WAGroup,
     Providers.Maytapi.ApiClient,
     Repo,
-    WAManagedPhones
+    WAGroup.WAManagedPhone,
+    WAManagedPhones,
   }
 
   @spec phone_number(String.t()) :: non_neg_integer()
@@ -51,6 +51,7 @@ defmodule Glific.Groups.WAGroups do
     end
   end
 
+  @spec get_group_details(map(), WAManagedPhone.t()) :: [map()]
   defp get_group_details(%{"data" => groups}, wa_managed_phone) when is_list(groups) do
     Enum.map(groups, fn group ->
       %{
@@ -64,42 +65,70 @@ defmodule Glific.Groups.WAGroups do
   end
 
   @doc false
-  @spec sync_wa_groups_with_contacts([map()], non_neg_integer()) :: :ok
+  @spec sync_wa_groups_with_contacts(list(), non_neg_integer()) :: :ok | {:error, any()}
   def sync_wa_groups_with_contacts(group_details, org_id) do
     Enum.each(group_details, fn group ->
       wa_group_id = wa_group_id(group.bsp_id)
       admin_phone_number = Enum.at(group.admins, 0) |> phone_number()
 
+      Ecto.Multi.new()
+      |> delete_existing_contacts(wa_group_id)
+      |> add_wa_contact(group, wa_group_id, admin_phone_number, org_id)
+      |> Repo.transaction()
+      |> handle_transaction_result()
+    end)
+  end
+
+  defp handle_transaction_result({:ok, _result}), do: :ok
+  defp handle_transaction_result({:error, _reason}), do: {:error, :transaction_failed}
+
+  @spec delete_existing_contacts(Ecto.Multi.t(), non_neg_integer()) :: Ecto.Multi.t()
+  defp delete_existing_contacts(multi, wa_group_id) do
+    Ecto.Multi.run(multi, :delete_existing_contacts, fn _repo, _changes ->
       existing_contact_wa_group_ids =
         ContactWaGroups.list_group_contacts(%{wa_group_id: wa_group_id})
-        |> Enum.map(& &1.id)
+        |> Enum.map(& &1.contact_id)
 
-      # first deleting the contacts associated to the wa groups
       ContactWaGroups.delete_wa_group_contacts_by_ids(wa_group_id, existing_contact_wa_group_ids)
+      {:ok, :deleted}
+    end)
+  end
 
+  @spec add_wa_contact(
+          Ecto.Multi.t(),
+          map(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: Ecto.Multi.t()
+  defp add_wa_contact(multi, group, wa_group_id, admin, org_id) do
+    Ecto.Multi.run(multi, :add_contacts, fn _repo, _changes ->
       Enum.each(group.participants, fn participant_phone ->
         phone = phone_number(participant_phone)
-        is_admin = phone == admin_phone_number
-        contact_attrs = %{phone: phone, organization_id: org_id}
+        is_admin = phone == admin
 
-        contact_id =
-          case Repo.fetch_by(Contact, %{phone: phone}) do
-            {:error, _} ->
-              {:ok, contact} = Contacts.create_contact(contact_attrs)
-              contact.id
-
-            {:ok, contact} ->
-              contact.id
-          end
-
-        # Directly create the association without checking if it exists since we've cleared them.
-        ContactWaGroups.create_contact_wa_group(%{
-          contact_id: contact_id,
-          wa_group_id: wa_group_id,
+        contact_attrs = %{
+          phone: phone,
           organization_id: org_id,
-          is_admin: is_admin
-        })
+          contact_type: "WA",
+          provider: :maytapi
+        }
+
+        case Contacts.maybe_create_contact(contact_attrs) do
+          {:ok, contact} ->
+            ContactWaGroups.create_contact_wa_group(%{
+              contact_id: contact.id,
+              wa_group_id: wa_group_id,
+              organization_id: org_id,
+              is_admin: is_admin
+            })
+
+          {:error, _reason} ->
+            {:error, :contact_creation_failed}
+        end
       end)
+
+      {:ok, :added}
     end)
   end
 
