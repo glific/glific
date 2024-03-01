@@ -650,8 +650,6 @@ defmodule Glific.Flows.FlowContext do
 
     node = flow.start_node
 
-    wa_group = Repo.preload(wa_group, [:wa_managed_phone])
-
     {:ok, context} =
       create_flow_context(%{
         wa_group_id: wa_group.id,

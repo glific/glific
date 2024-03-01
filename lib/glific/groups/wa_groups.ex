@@ -118,15 +118,13 @@ defmodule Glific.Groups.WAGroups do
   @doc """
   Gets a wa_groups from list of IDs.
 
-  Raises `Ecto.NoResultsError` if the Wa managed phone does not exist.
-
   ## Examples
 
       iex> get_wa_groups!([123])
       [%WAGroup{}]
 
       iex> get_wa_groups!([456])
-      ** (Ecto.NoResultsError)
+      []
 
   """
   @spec get_wa_groups!([non_neg_integer()]) :: list(WAGroup.t())
