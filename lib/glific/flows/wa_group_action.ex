@@ -20,7 +20,6 @@ defmodule Glific.Flows.WAGroupAction do
   def send_message(context, action, messages, _cid) do
     {context, action} = process_labels(context, action)
 
-    IO.inspect(context.wa_group_id)
     message_vars = FlowContext.get_vars_to_parse(context)
 
     # get the text translation if needed
