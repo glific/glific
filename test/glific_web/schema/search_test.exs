@@ -15,8 +15,7 @@ defmodule GlificWeb.Schema.SearchTest do
     Searches,
     Searches.SavedSearch,
     Searches.Search,
-    Seeds.SeedsDev,
-    WAManagedPhonesFixtures
+    Seeds.SeedsDev
   }
 
   setup do
@@ -24,7 +23,7 @@ defmodule GlificWeb.Schema.SearchTest do
     org = SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
-    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: org.id})
+    Fixtures.wa_managed_phone_fixture(%{organization_id: org.id})
     :ok
   end
 
@@ -880,12 +879,12 @@ defmodule GlificWeb.Schema.SearchTest do
   end
 
   test "WA Search by term will return the search input", %{staff: user} = attrs do
-    _message_1 = WAManagedPhonesFixtures.wa_message_fixture(attrs)
+    _message_1 = Fixtures.wa_message_fixture(attrs)
 
     _message_2 =
       attrs
       |> Map.put(:body, "wa search multi")
-      |> WAManagedPhonesFixtures.wa_message_fixture()
+      |> Fixtures.wa_message_fixture()
 
     result =
       auth_query_gql_by(:wa_search_multi, user,
