@@ -1,15 +1,10 @@
+#import "./fields.frag.gql"
+
 mutation CreateContactWaGroup($input: ContactWaGroupInput!) {
   createContactWaGroup(input: $input) {
-    contactWaGroup {
-      id
-      value
-      contact {
-        id
-      }
-    }
-    errors {
-      key
-      message
-    }
+   ...ContactWaGroupFields
+
+    ...ErrorFields
   }
 }
+

@@ -5,8 +5,9 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
   alias Glific.{
     Contacts,
     Fixtures,
-    WAManagedPhonesFixtures,
-    Seeds.SeedsDev
+    Groups.ContactWaGroups,
+    Seeds.SeedsDev,
+    WAManagedPhonesFixtures
   }
 
   setup do
@@ -26,24 +27,49 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
     "assets/gql/contact_wa_groups/update_wa_group.gql"
   )
 
-  test "update group contacts", %{user: user_auth} = attrs do
-    user = Fixtures.user_fixture()
-
+  test "create wa group contacts", %{user: user} do
     wa_managed_phone =
-      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
       WAManagedPhonesFixtures.wa_group_fixture(%{
-        organization_id: attrs.organization_id,
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    contact = Fixtures.contact_fixture(%{organization_id: user.organization_id})
+
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "wa_group_id" => wa_group.id,
+            "contact_id" => contact.id
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    wa_group_contacts = get_in(query_data, [:data, "createContactWaGroup"])
+    assert Map.get(wa_group_contacts, "error") == nil
+  end
+
+  test "update wa group contacts", %{user: user} do
+    wa_managed_phone =
+      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+    wa_group =
+      WAManagedPhonesFixtures.wa_group_fixture(%{
+        organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
 
     [contact1, contact2 | _] =
       Contacts.list_contacts(%{filter: %{organization_id: user.organization_id}})
 
-    # add wa_group contacts
+    # add group contacts
     result =
-      auth_query_gql_by(:update_wa_group, user_auth,
+      auth_query_gql_by(:update_wa_group, user,
         variables: %{
           "input" => %{
             "wa_group_id" => wa_group.id,
@@ -54,6 +80,83 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       )
 
     assert {:ok, query_data} = result
-    IO.inspect(query_data)
+    wa_group_contacts = get_in(query_data, [:data, "updateWaGroupContacts", "waGroupContacts"])
+    assert length(wa_group_contacts) == 2
+
+    # delete wa group contacts
+    result =
+      auth_query_gql_by(:update_wa_group, user,
+        variables: %{
+          "input" => %{
+            "wa_group_id" => wa_group.id,
+            "add_wa_contact_ids" => [],
+            "delete_wa_contact_ids" => [contact1.id, contact2.id]
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    number_deleted = get_in(query_data, [:data, "updateWaGroupContacts", "numberDeleted"])
+    assert number_deleted == 2
+
+    # test for incorrect contact id
+    result =
+      auth_query_gql_by(:update_wa_group, user,
+        variables: %{
+          "input" => %{
+            "wa_group_id" => wa_group.id,
+            "add_wa_contact_ids" => ["-1"],
+            "delete_wa_contact_ids" => []
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    wa_group_contacts = get_in(query_data, [:data, "updateWaGroupContacts", "waGroupContacts"])
+    assert wa_group_contacts == []
+  end
+
+  test "list wa contact groups", %{staff: user} do
+    [contact1, contact2 | _] =
+      Contacts.list_contacts(%{filter: %{organization_id: user.organization_id}})
+
+    wa_managed_phone =
+      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+    wa_group =
+      WAManagedPhonesFixtures.wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    ContactWaGroups.update_wa_group_contacts(%{
+      organization_id: user.organization_id,
+      wa_group_id: wa_group.id,
+      add_wa_contact_ids: [contact1.id, contact2.id],
+      delete_wa_contact_ids: []
+    })
+
+    limit = 4
+
+    ## List contact whatsapp groups
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => limit, "offset" => 0}})
+
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "listWaGroupsContact"])) <= limit
+    assert length(get_in(query_data, [:data, "listWaGroupsContact"])) > 0
+
+    # get the contacts using wa_group id
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{
+            "waGroupId" => wa_group.id
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "listWaGroupsContact"])) == 2
   end
 end

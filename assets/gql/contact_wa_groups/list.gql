@@ -1,9 +1,9 @@
 query listWaGroupsContact($filter: ContactWaGroupFilter) {
   listWaGroupsContact(filter: $filter) {
+    id
     contact {
       id
+      name
     }
-    id
-    value
   }
 }
