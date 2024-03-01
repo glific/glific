@@ -32,8 +32,9 @@ defmodule Glific.Flows.FlowContext do
 
   alias Glific.Communications.Message, as: CommMessage
 
-  @required_fields [:contact_id, :flow_id, :flow_uuid, :status, :organization_id]
+  @required_fields [:flow_id, :flow_uuid, :status, :organization_id]
   @optional_fields [
+    :contact_id,
     :node_uuid,
     :parent_id,
     :results,
@@ -649,7 +650,6 @@ defmodule Glific.Flows.FlowContext do
 
     node = flow.start_node
 
-    # TODO: preloading wa_group, for the contact_id, since contact_id can't be nil in FlowContext
     wa_group = Repo.preload(wa_group, [:wa_managed_phone])
 
     {:ok, context} =
@@ -663,8 +663,7 @@ defmodule Glific.Flows.FlowContext do
         flow: flow,
         organization_id: flow.organization_id,
         uuid_map: flow.uuid_map,
-        delay: delay,
-        contact_id: wa_group.wa_managed_phone.contact_id
+        delay: delay
       })
 
     context
@@ -982,11 +981,9 @@ defmodule Glific.Flows.FlowContext do
     A single place to parse the variable in a string related to flows.
   """
   @spec get_vars_to_parse(FlowContext.t()) :: map()
-  def get_vars_to_parse(%{wa_group_id: wa_group_id}, context) when wa_group_id != nil do
-    # TODO: maybe we have to replace contact with group?
+  def get_vars_to_parse(%{wa_group_id: wa_group_id} = context) when wa_group_id != nil do
     %{
       "results" => context.results,
-      # "contact" => Contacts.get_contact_field_map(context.contact_id),
       "flow" => %{name: context.flow.name, id: context.flow.id, uuid: context.flow.uuid}
     }
   end

@@ -20,9 +20,7 @@ defmodule Glific.Flows.WAGroupAction do
   def send_message(context, action, messages, _cid) do
     {context, action} = process_labels(context, action)
 
-    # TODO: do we need same thing for group?
-    # {cid, message_vars} = resolve_cid(context, cid)
-
+    IO.inspect(context.wa_group_id)
     message_vars = FlowContext.get_vars_to_parse(context)
 
     # get the text translation if needed
@@ -68,18 +66,16 @@ defmodule Glific.Flows.WAGroupAction do
 
     attachments = Localization.get_translation(context, action, :attachments)
 
-    # TODO: handle media and type
-
     {type, media_id} = ContactAction.get_media_from_attachment(attachments, text, context, nil)
+
     context = Repo.preload(context, [:wa_group, wa_group: :wa_managed_phone])
 
-    # TODO: add contact_id
     attrs = %{
       uuid: action.node_uuid,
       body: body,
       type: type,
       media_id: media_id,
-      # contact_id: cid,
+      contact_id: context.wa_group.wa_managed_phone.contact_id,
       organization_id: organization_id,
       flow_label: flow_label,
       flow_id: context.flow_id,

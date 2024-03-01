@@ -10,6 +10,8 @@ defmodule Glific.Repo.Migrations.AddWaGroupIdToFlowContext do
       add :wa_group_id, references(:wa_groups, on_delete: :delete_all),
         null: true,
         comment: "ID of WA group messages are sent/received from"
+
+      modify :contact_id, :bigint, null: true
     end
   end
 end

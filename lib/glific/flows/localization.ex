@@ -133,9 +133,15 @@ defmodule Glific.Flows.Localization do
   Given a language id and an action uuid, return the translation if
   one exists, else return the original text
   """
-  @spec get_translation(FlowContext.t(), Action.t(), atom()) :: String.t() | nil | map()
+  @spec get_translation(FlowContext.t(), Action.t(), atom()) ::
+          String.t() | nil | map()
   def get_translation(context, action, type \\ :text) do
-    language_id = context.contact.language_id
+    # if the flowContext has wa_group_id, then for now we defaults to english
+    language_id =
+      case context do
+        %{wa_group_id: wa_group_id} when wa_group_id != nil -> 1
+        _ -> context.contact.language_id
+      end
 
     element =
       context

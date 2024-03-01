@@ -615,7 +615,6 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "send_msg"} = action, %{wa_group_id: wa_group_id} = context, messages)
       when wa_group_id != nil do
-    # templating = Templating.execute(action.templating, context, messages)
     action = Map.put(action, :templating, nil)
     WAGroupAction.send_message(context, action, messages)
   end
