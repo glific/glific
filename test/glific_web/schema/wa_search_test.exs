@@ -1,15 +1,14 @@
 defmodule GlificWeb.Schema.WaSearchTest do
-  alias Glific.WAGroup.WAManagedPhone
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
   alias Glific.{
+    Contacts.Contact,
     Groups.WAGroup,
     Repo,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    WAGroup.WAManagedPhone
   }
-
-  import Ecto.Query
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -66,19 +65,44 @@ defmodule GlificWeb.Schema.WaSearchTest do
     assert Enum.count(searches) == 2
   end
 
-  @tag :skip
   test "wa_search with group filter ids", %{staff: user} do
-    [id1, id2] =
-      WAGroup
-      |> where([grp], grp.organization_id == 1)
-      |> select([grp], grp.id)
-      |> Repo.all()
+    organization_id = 1
 
-    [wa_id1, _wa_id2] =
-      WAManagedPhone
-      |> where([ph], ph.organization_id == 1)
-      |> select([ph], ph.id)
-      |> Repo.all()
+    {:ok, contact_1} =
+      Repo.fetch_by(
+        Contact,
+        %{name: "NGO Main Account", organization_id: organization_id}
+      )
+
+    {:ok, contact_2} =
+      Repo.fetch_by(
+        Contact,
+        %{name: "Default receiver", organization_id: organization_id}
+      )
+
+    {:ok, wa_managed_phone_1} =
+      Repo.fetch_by(
+        WAManagedPhone,
+        %{contact_id: contact_1.id, organization_id: organization_id}
+      )
+
+    {:ok, wa_managed_phone_2} =
+      Repo.fetch_by(
+        WAManagedPhone,
+        %{contact_id: contact_2.id, organization_id: organization_id}
+      )
+
+    {:ok, wa_group_1} =
+      Repo.fetch_by(
+        WAGroup,
+        %{wa_managed_phone_id: wa_managed_phone_1.id, organization_id: organization_id}
+      )
+
+    {:ok, wa_group_2} =
+      Repo.fetch_by(
+        WAGroup,
+        %{wa_managed_phone_id: wa_managed_phone_2.id, organization_id: organization_id}
+      )
 
     # with available id filters
     result =
@@ -86,7 +110,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
         variables: %{
           "waGroupOpts" => %{},
           "waMessageOpts" => %{"limit" => 1},
-          "filter" => %{"id" => to_string(id1)}
+          "filter" => %{"id" => to_string(wa_group_1.id)}
         }
       )
 
@@ -99,7 +123,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
         variables: %{
           "waGroupOpts" => %{},
           "waMessageOpts" => %{"limit" => 1},
-          "filter" => %{"id" => "5"}
+          "filter" => %{"id" => "0"}
         }
       )
 
@@ -112,7 +136,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
         variables: %{
           "waGroupOpts" => %{},
           "waMessageOpts" => %{"limit" => 1},
-          "filter" => %{"ids" => [to_string(id1), to_string(id2)]}
+          "filter" => %{"ids" => [to_string(wa_group_1.id), to_string(wa_group_2.id)]}
         }
       )
 
@@ -126,7 +150,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
         variables: %{
           "waGroupOpts" => %{},
           "waMessageOpts" => %{"limit" => 10},
-          "filter" => %{"wa_phone_ids" => [to_string(wa_id1)]}
+          "filter" => %{"wa_phone_ids" => [to_string(wa_managed_phone_1.id)]}
         }
       )
 
@@ -140,7 +164,10 @@ defmodule GlificWeb.Schema.WaSearchTest do
         variables: %{
           "waGroupOpts" => %{},
           "waMessageOpts" => %{"limit" => 10},
-          "filter" => %{"id" => to_string(id1), "wa_phone_ids" => [to_string(wa_id1)]}
+          "filter" => %{
+            "id" => to_string(wa_group_1.id),
+            "wa_phone_ids" => [to_string(wa_managed_phone_1.id)]
+          }
         }
       )
 
