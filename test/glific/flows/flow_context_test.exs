@@ -285,10 +285,9 @@ defmodule Glific.Flows.FlowContextTest do
         Glific.Flows.list_flows(%{filter: attrs |> Map.put(:name, "wa_group_send_c")})
 
       [keyword | _] = flow.keywords
-      _flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: keyword})
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: keyword})
 
-      # {:ok, _flow_context, _} = FlowContext.init_wa_group_context(flow, contact, "published")
-      # assert flow_context.id != nil
+      {:ok, _flow_context, _} = FlowContext.init_wa_group_context(flow, contact, "published")
     end
   end
 end

@@ -512,6 +512,23 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Set all the flows for a specific context to be completed
   """
+  @spec mark_wa_flows_complete(String.t(), non_neg_integer, boolean()) :: :ok
+  def mark_wa_flows_complete(event_label, wa_group_id, is_killed \\ false) do
+    now = DateTime.utc_now()
+
+    FlowContext
+    |> where([fc], fc.wa_group_id == ^wa_group_id)
+    |> where([fc], is_nil(fc.completed_at))
+    |> Repo.update_all(
+      set: [completed_at: now, updated_at: now, is_killed: is_killed, reason: event_label]
+    )
+
+    :ok
+  end
+
+  @doc """
+  Set all the flows for a specific context to be completed
+  """
   @spec mark_flows_complete(non_neg_integer, boolean(), Keyword.t()) :: nil
   def mark_flows_complete(_contact_id, _is_background_flow, opts \\ [])
   def mark_flows_complete(_contact_id, true, _opts), do: nil

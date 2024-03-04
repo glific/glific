@@ -336,17 +336,20 @@ defmodule Glific.Flows.Node do
         end
       )
 
-    case elem(result, 0) do
-      :error ->
-        result
-
-      :ok ->
-        {_status, context, messages} = result
-        Exit.execute(hd(node.exits), context, messages)
-
-      :wait ->
-        {_status, context, messages} = result
-        {:ok, context, messages}
-    end
+    do_execute_node_actions(result, node, context)
   end
+
+  @spec do_execute_node_actions({:ok, any()} | {:error, any()}, Node.t(), FlowContext.t()) ::
+          {:ok | :wait, FlowContext.t(), [CommMessage.message()]} | {:error, String.t()}
+  defp do_execute_node_actions(_result, _node, %{wa_group_id: wa_group_id} = context)
+       when wa_group_id != nil,
+       do: {:ok, context, []}
+
+  defp do_execute_node_actions({:error, _error} = result, _node, _context), do: result
+
+  defp do_execute_node_actions({:ok, context, messages}, node, _context),
+    do: Exit.execute(hd(node.exits), context, messages)
+
+  defp do_execute_node_actions({:wait, context, messages}, _node, _context),
+    do: {:ok, context, messages}
 end
