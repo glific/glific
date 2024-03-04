@@ -32,7 +32,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -43,8 +43,7 @@ jobs:
           otp-version: ${{ matrix.otp }}
 
       - name: Retrieve Mix Dependencies Cache
-        uses: actions/cache@v3
-        if: always()
+        uses: actions/cache@v4
         id: elixir-mix-cache #id to use in retrieve action
         with:
           path: deps
@@ -65,17 +64,16 @@ jobs:
           mix deps.get
 
       - name: Retrieve PLT Cache
-        uses: actions/cache@v3
-        if: always()
+        uses: actions/cache@v4
         id: elixir-plt-cache #id to use in retrieve action
         with:
-          path: priv/plts_v1
+          path: priv/plts
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Create PLTs
         if: steps.elixir-plt-cache.outputs.cache-hit != 'true'
         run: |
-          mkdir -p priv/plts_v1
+          mkdir -p priv/plts
           mix dialyzer --plt
 
       - name: Run check
