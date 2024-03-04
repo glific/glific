@@ -15,6 +15,8 @@ defmodule Glific.Flows do
     Contacts.Contact,
     Flows.ContactField,
     Groups,
+    Groups.WAGroup,
+    Groups.WAGroups,
     Partners,
     Repo,
     Sheets,
@@ -500,7 +502,6 @@ defmodule Glific.Flows do
     args = make_args(key, value)
     flow = Flow.get_loaded_flow(organization_id, status, args)
     Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
-
     # We are setting the cache in the above statement with multiple keys
     # hence we are asking Cachex to just ignore this aspect. All the other
     # requests will get the cache value sent above
@@ -655,12 +656,39 @@ defmodule Glific.Flows do
   @status "published"
 
   @doc """
+  Start flow for a WA group
+  """
+  @spec start_wa_group_flow(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+          {:ok, Flow.t()} | {:error, String.t()}
+
+  def start_wa_group_flow(flow_id, wa_group_id, organization_id) do
+    case get_cached_flow(organization_id, {:flow_id, flow_id, @status}) do
+      {:ok, flow} ->
+        wa_groups = WAGroups.get_wa_groups!([wa_group_id])
+        process_wa_group_flow(flow, wa_groups)
+
+      {:error, _error} ->
+        {:error, ["Flow", dgettext("errors", "Flow not found")]}
+    end
+  end
+
+  @spec process_wa_group_flow(Flow.t(), [WAGroup.t()]) :: {:ok, Flow.t()}
+  defp process_wa_group_flow(flow, wa_groups) do
+    if flow.is_active do
+      Broadcast.broadcast_wa_groups(flow, wa_groups)
+      {:ok, flow}
+    else
+      {:error, ["Flow", dgettext("errors", "Flow is not active")]}
+    end
+  end
+
+  @doc """
   Start flow for a contact and cache the result
   """
   @spec start_contact_flow(Flow.t() | integer, Contact.t(), map()) ::
           {:ok, Flow.t()} | {:error, String.t()}
 
-  def start_contact_flow(f, c, default_results \\ %{})
+  def start_contact_flow(flow_id, contact, default_results \\ %{})
 
   def start_contact_flow(flow_id, %Contact{} = contact, default_results)
       when is_integer(flow_id) do

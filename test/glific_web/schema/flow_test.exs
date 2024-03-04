@@ -1,4 +1,5 @@
 defmodule GlificWeb.Schema.FlowTest do
+  alias Glific.Groups.WAGroup
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
@@ -17,8 +18,16 @@ defmodule GlificWeb.Schema.FlowTest do
     Templates.InteractiveTemplates
   }
 
+  import Ecto.Query
+
   setup do
     SeedsDev.seed_test_flows()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_wa_managed_phones()
+    SeedsDev.seed_wa_groups()
+
     :ok
   end
 
@@ -49,6 +58,8 @@ defmodule GlificWeb.Schema.FlowTest do
     GlificWeb.Schema,
     "assets/gql/flows/reset_flow_count.gql"
   )
+
+  load_gql(:wa_group_flow, GlificWeb.Schema, "assets/gql/flows/wa_group_flow.gql")
 
   test "flows field returns list of flows", %{manager: user} do
     result = auth_query_gql_by(:list, user)
@@ -550,5 +561,23 @@ defmodule GlificWeb.Schema.FlowTest do
     assert true == Map.has_key?(broadcast_map, "msg_categories")
     assert true == Map.has_key?(broadcast_map, "pending")
     assert true == Map.has_key?(broadcast_map, "success")
+  end
+
+  test "Start flow for a whatsapp group", %{manager: user} = _attrs do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Whatsapp Group", organization_id: user.organization_id})
+
+    [wa_grp | _] =
+      WAGroup
+      |> where([wa_group], wa_group.organization_id == 1)
+      |> limit(1)
+      |> Repo.all()
+
+    result =
+      auth_query_gql_by(:wa_group_flow, user,
+        variables: %{"flowId" => flow.id, "waGroupId" => wa_grp.id}
+      )
+
+    assert {:ok, _query_data} = result
   end
 end
