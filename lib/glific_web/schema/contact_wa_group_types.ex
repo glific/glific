@@ -60,11 +60,11 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
 
   object :contact_wa_group_queries do
     @desc "Get a list of all the contacts associated with the wa group"
-    field :list_wa_groups_contact, list_of(:contact_wa_group) do
+    field :list_contact_wa_group, list_of(:contact_wa_group) do
       arg(:filter, :contact_wa_group_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.WaGroup.list_wa_groups_contact/3)
+      resolve(&Resolvers.WaGroup.list_contact_wa_group/3)
     end
   end
 

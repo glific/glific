@@ -1,5 +1,5 @@
-query listWaGroupsContact($filter: ContactWaGroupFilter) {
-  listWaGroupsContact(filter: $filter) {
+query listContactWaGroups($filter: ContactWaGroupFilter) {
+  listContactWaGroup(filter: $filter) {
     id
     contact {
       id

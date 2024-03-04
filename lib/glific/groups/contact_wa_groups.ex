@@ -1,11 +1,11 @@
-defmodule Glific.Groups.ContactWaGroups do
+defmodule Glific.Groups.ContactWAGroups do
   @moduledoc """
   Simple container to hold all the contact groups we associate with one contact
   """
 
   alias Glific.{
     Groups.ContactWAGroup,
-    Groups.ContactWaGroups,
+    Groups.ContactWAGroups,
     Repo
   }
 
@@ -32,12 +32,12 @@ defmodule Glific.Groups.ContactWaGroups do
 
   ## Examples
 
-      iex> list_group_contacts()
+      iex> list_contact_wa_group()
       [%ContactWAGroup{}, ...]
 
   """
-  @spec list_group_contacts(map()) :: [ContactWAGroup.t()]
-  def list_group_contacts(args) do
+  @spec list_contact_wa_group(map()) :: [ContactWAGroup.t()]
+  def list_contact_wa_group(args) do
     args
     |> Repo.list_filter_query(ContactWAGroup, &Repo.opts_with_id/2, &filter_with/2)
     |> Repo.all()
@@ -79,7 +79,7 @@ defmodule Glific.Groups.ContactWaGroups do
           :delete_wa_contact_ids => [integer()],
           :wa_group_id => integer(),
           optional(any()) => any()
-        }) :: Glific.Groups.ContactWaGroups.t()
+        }) :: Glific.Groups.ContactWAGroups.t()
 
   def update_contact_wa_groups(
         %{
@@ -111,7 +111,7 @@ defmodule Glific.Groups.ContactWaGroups do
 
     {number_deleted, _} = delete_wa_group_contacts_by_ids(wa_group_id, delete_ids)
 
-    %ContactWaGroups{
+    %ContactWAGroups{
       number_deleted: number_deleted,
       wa_group_contacts: wa_group_contacts
     }

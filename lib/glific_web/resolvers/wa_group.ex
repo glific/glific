@@ -5,17 +5,17 @@ defmodule GlificWeb.Resolvers.WaGroup do
   """
 
   alias Glific.{
-    Groups.ContactWaGroups,
+    Groups.ContactWAGroups,
     Groups.WAGroups
   }
 
   @doc """
   Get the list of contact whastapp groups filtered by args
   """
-  @spec list_wa_groups_contact(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec list_contact_wa_group(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def list_wa_groups_contact(_, args, _) do
-    {:ok, ContactWaGroups.list_group_contacts(args)}
+  def list_contact_wa_group(_, args, _) do
+    {:ok, ContactWAGroups.list_contact_wa_group(args)}
   end
 
   @doc """
@@ -24,8 +24,8 @@ defmodule GlificWeb.Resolvers.WaGroup do
   @spec create_contact_wa_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_contact_wa_group(_, %{input: params}, _) do
-    with {:ok, contact_wa_group} <- ContactWaGroups.create_contact_wa_group(params) do
-      {:ok, %{contact_group: contact_wa_group}}
+    with {:ok, contact_wa_group} <- ContactWAGroups.create_contact_wa_group(params) do
+      {:ok, %{contact_wa_group: contact_wa_group}}
     end
   end
 
@@ -33,7 +33,7 @@ defmodule GlificWeb.Resolvers.WaGroup do
   @spec update_contact_wa_groups(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_contact_wa_groups(_, %{input: params}, _) do
-    wa_group_contacts = ContactWaGroups.update_contact_wa_groups(params)
+    wa_group_contacts = ContactWAGroups.update_contact_wa_groups(params)
     {:ok, wa_group_contacts}
   end
 

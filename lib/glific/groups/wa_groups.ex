@@ -6,7 +6,7 @@ defmodule Glific.Groups.WAGroups do
 
   alias Glific.{
     Contacts,
-    Groups.ContactWaGroups,
+    Groups.ContactWAGroups,
     Groups.WAGroup,
     Providers.Maytapi.ApiClient,
     Repo,
@@ -86,10 +86,10 @@ defmodule Glific.Groups.WAGroups do
   defp delete_existing_contacts(multi, wa_group_id) do
     Ecto.Multi.run(multi, :delete_existing_contacts, fn _repo, _changes ->
       existing_contact_wa_group_ids =
-        ContactWaGroups.list_group_contacts(%{wa_group_id: wa_group_id})
+        ContactWAGroups.list_contact_wa_group(%{wa_group_id: wa_group_id})
         |> Enum.map(& &1.contact_id)
 
-      ContactWaGroups.delete_wa_group_contacts_by_ids(wa_group_id, existing_contact_wa_group_ids)
+      ContactWAGroups.delete_wa_group_contacts_by_ids(wa_group_id, existing_contact_wa_group_ids)
       {:ok, :deleted}
     end)
   end
@@ -116,7 +116,7 @@ defmodule Glific.Groups.WAGroups do
 
         case Contacts.maybe_create_contact(contact_attrs) do
           {:ok, contact} ->
-            ContactWaGroups.create_contact_wa_group(%{
+            ContactWAGroups.create_contact_wa_group(%{
               contact_id: contact.id,
               wa_group_id: wa_group_id,
               organization_id: org_id,
