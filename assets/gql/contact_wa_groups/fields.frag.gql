@@ -4,6 +4,7 @@ fragment ContactWaGroupFields on ContactWaGroupResult {
       id
       waGroups {
         id
+        label
       }
     }
     id

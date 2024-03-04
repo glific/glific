@@ -50,10 +50,10 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
 
     assert {:ok, query_data} = result
     wa_group_contacts = get_in(query_data, [:data, "createContactWaGroup", "contactWaGroup"])
-    wa_group_id = hd(wa_group_contacts["contact"]["waGroups"])["id"] |> String.to_integer()
-
+    wa_group_data = hd(wa_group_contacts["contact"]["waGroups"])
     assert wa_group_contacts["contact"]["id"] |> String.to_integer() == contact.id
-    assert wa_group_id == wa_group.id
+    assert wa_group_data["id"] |> String.to_integer() == wa_group.id
+    assert wa_group_data["label"] == wa_group.label
   end
 
   test "update wa group contacts", %{user: user} do
