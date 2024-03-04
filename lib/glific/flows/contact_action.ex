@@ -236,6 +236,42 @@ defmodule Glific.Flows.ContactAction do
     end
   end
 
+  @doc false
+  @spec get_media_from_attachment(any(), any(), FlowContext.t(), non_neg_integer() | nil) :: any()
+  def get_media_from_attachment(attachment, _, _, _)
+      when attachment == %{} or is_nil(attachment),
+      do: {:text, nil}
+
+  def get_media_from_attachment(attachment, caption, context, cid) do
+    [type | _tail] = Map.keys(attachment)
+    url = String.trim(attachment[type])
+
+    {type, url} = handle_attachment_expression(context, type, url)
+
+    type = Glific.safe_string_to_atom(type)
+
+    {_cid, message_vars} = resolve_cid(context, cid)
+
+    if is_nil(url) do
+      FlowContext.notification(context, "Could not send message to contact: Empty media URL")
+      {type, nil}
+    else
+      {:ok, message_media} =
+        %{
+          type: type,
+          url: url,
+          source_url: url,
+          thumbnail: url,
+          flow: :outbound,
+          caption: MessageVarParser.parse(caption, message_vars),
+          organization_id: context.organization_id
+        }
+        |> Messages.create_message_media()
+
+      {type, message_media.id}
+    end
+  end
+
   @spec do_send_template_message(FlowContext.t(), Action.t(), [Message.t()], map()) ::
           {:ok, map(), any()}
   defp do_send_template_message(context, action, messages, %{
@@ -371,41 +407,6 @@ defmodule Glific.Flows.ContactAction do
     # returning for now, but resetting the context
     context = FlowContext.reset_all_contexts(context, message)
     {:ok, context, []}
-  end
-
-  @spec get_media_from_attachment(any(), any(), FlowContext.t(), non_neg_integer()) :: any()
-  defp get_media_from_attachment(attachment, _, _, _)
-       when attachment == %{} or is_nil(attachment),
-       do: {:text, nil}
-
-  defp get_media_from_attachment(attachment, caption, context, cid) do
-    [type | _tail] = Map.keys(attachment)
-    url = String.trim(attachment[type])
-
-    {type, url} = handle_attachment_expression(context, type, url)
-
-    type = Glific.safe_string_to_atom(type)
-
-    {_cid, message_vars} = resolve_cid(context, cid)
-
-    if is_nil(url) do
-      FlowContext.notification(context, "Could not send message to contact: Empty media URL")
-      {type, nil}
-    else
-      {:ok, message_media} =
-        %{
-          type: type,
-          url: url,
-          source_url: url,
-          thumbnail: url,
-          flow: :outbound,
-          caption: MessageVarParser.parse(caption, message_vars),
-          organization_id: context.organization_id
-        }
-        |> Messages.create_message_media()
-
-      {type, message_media.id}
-    end
   end
 
   @spec handle_attachment_expression(FlowContext.t(), String.t(), String.t()) :: tuple()
