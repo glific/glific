@@ -112,7 +112,6 @@ defmodule Glific.Groups.WAGroups do
           phone: phone,
           organization_id: org_id,
           contact_type: "WA",
-          provider: :maytapi
         }
 
         case Contacts.maybe_create_contact(contact_attrs) do
