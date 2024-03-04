@@ -3,16 +3,16 @@ defmodule Glific.Groups.WAGroupsTest do
   use ExUnit.Case
 
   alias Glific.{
+    Fixtures,
     Groups.WAGroup,
     Groups.WAGroups,
     Partners,
-    Seeds.SeedsDev,
-    WAManagedPhonesFixtures
+    Seeds.SeedsDev
   }
 
   setup do
     organization = SeedsDev.seed_organizations()
-    WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: organization.id})
+    Fixtures.wa_managed_phone_fixture(%{organization_id: organization.id})
 
     Partners.create_credential(%{
       organization_id: organization.id,
