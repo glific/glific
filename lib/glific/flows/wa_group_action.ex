@@ -94,16 +94,13 @@ defmodule Glific.Flows.WAGroupAction do
     |> handle_message_result(context, messages, attrs)
   end
 
+  @spec handle_message_result(
+          any(),
+          map(),
+          any(),
+          any()
+        ) :: {:ok, map(), any()}
   defp handle_message_result(_result, context, _messages, _attrs) do
-    {:ok, context}
-    # dbg()
-    # case result do
-    #   {:ok, message} ->
-    #     context = FlowContext.update_recent(context, message, :recent_outbound)
-    #     {:ok, %{context | delay: context.delay + @min_delay}, messages}
-
-    #   # {:error, error} ->
-    #   #   error(context, error, attrs)
-    # end
+    {:ok, context, []}
   end
 end
