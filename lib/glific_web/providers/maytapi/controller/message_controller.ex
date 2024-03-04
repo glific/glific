@@ -26,7 +26,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
     params
     |> Maytapi.Message.receive_text()
     |> update_message_params(conn.assigns[:organization_id], params)
-    |> Communications.Message.receive_message()
+    |> Communications.GroupMessage.receive_message()
 
     handler(conn, params, "text handler")
   end
@@ -68,7 +68,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
     params
     |> Maytapi.Message.receive_media()
     |> update_message_params(conn.assigns[:organization_id], params)
-    |> Communications.Message.receive_message(type)
+    |> Communications.GroupMessage.receive_message(type)
 
     handler(conn, params, "media handler")
   end
@@ -77,8 +77,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
   defp update_message_params(message_payload, org_id, params) do
     message_payload
     |> Map.put(:organization_id, org_id)
-    |> Map.put(:provider, :maytapi)
-    |> Map.put(:message_type, "WA")
     |> Map.put(:group_id, params["conversation"])
     |> Map.put(:group_name, params["conversation_name"])
     |> Map.put(:receiver, params["receiver"])
@@ -88,6 +86,5 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
   @spec update_sender_details(map()) :: map()
   defp update_sender_details(message_params) do
     put_in(message_params, [:sender, :contact_type], "WA")
-    |> put_in([:sender, :provider], :maytapi)
   end
 end
