@@ -33,20 +33,15 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
     field :is_admin, :boolean
   end
 
-  input_object :wa_group_contacts_input do
+  input_object :update_contact_wa_groups_input do
     field :wa_group_id, non_null(:id)
     field :add_wa_contact_ids, non_null(list_of(:id))
     field :delete_wa_contact_ids, non_null(list_of(:id))
   end
 
-  object :wa_group_contacts_result do
+  object :update_contact_wa_groups_result do
     field :number_deleted, :integer
     field :wa_group_contacts, list_of(:contact_wa_group)
-  end
-
-  object :contact_wa_groups do
-    field :number_deleted, :integer
-    field :contact_wa_groups, list_of(:contact_wa_group)
   end
 
   @desc "Filtering options for messages"
@@ -75,8 +70,8 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
       resolve(&Resolvers.WaGroup.create_contact_wa_group/3)
     end
 
-    field :update_contact_wa_groups, :wa_group_contacts_result do
-      arg(:input, non_null(:wa_group_contacts_input))
+    field :update_contact_wa_groups, :update_contact_wa_groups_result do
+      arg(:input, non_null(:update_contact_wa_groups_input))
       middleware(Authorize, :staff)
       resolve(&Resolvers.WaGroup.update_contact_wa_groups/3)
     end

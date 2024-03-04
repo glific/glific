@@ -33,8 +33,8 @@ defmodule GlificWeb.Resolvers.WaGroup do
   @spec update_contact_wa_groups(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_contact_wa_groups(_, %{input: params}, _) do
-    wa_group_contacts = ContactWAGroups.update_contact_wa_groups(params)
-    {:ok, wa_group_contacts}
+    contact_wa_group = ContactWAGroups.update_contact_wa_groups(params)
+    {:ok, contact_wa_group}
   end
 
   @doc false
