@@ -625,6 +625,13 @@ defmodule Glific.Flows.Action do
     {:ok, context, []}
   end
 
+  def execute(_action, %{wa_group_id: wa_group_id} = _context, _messages)
+      when wa_group_id != nil do
+    event_label = "Flow terminated as unsupported node used for WA group"
+
+    FlowContext.mark_wa_flows_complete(event_label, wa_group_id, true)
+  end
+
   def execute(%{type: "send_msg"} = action, context, messages) do
     templating = Templating.execute(action.templating, context, messages)
     action = Map.put(action, :templating, templating)
@@ -944,13 +951,6 @@ defmodule Glific.Flows.Action do
 
       {:wait, context, []}
     end
-  end
-
-  def execute(_action, %{wa_group_id: wa_group_id} = _context, _messages)
-      when wa_group_id != nil do
-    event_label = "Flow terminated as unsupported node used for WA group"
-
-    FlowContext.mark_wa_flows_complete(event_label, wa_group_id, true)
   end
 
   def execute(action, _context, _messages),
