@@ -21,8 +21,6 @@ defmodule Glific.Flows.Node do
     Router
   }
 
-  alias Glific.Communications.Message, as: CommMessage
-
   @required_fields [:uuid, :actions, :exits]
 
   @type t() :: %__MODULE__{
@@ -252,8 +250,8 @@ defmodule Glific.Flows.Node do
   Execute a node, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(atom() | Node.t(), atom() | FlowContext.t(), [CommMessage.message()]) ::
-          {:ok | :wait, FlowContext.t(), [CommMessage.message()]} | {:error, String.t()}
+  @spec execute(atom() | Node.t(), atom() | FlowContext.t(), [FlowContext.message()]) ::
+          {:ok | :wait, FlowContext.t(), [FlowContext.message()]} | {:error, String.t()}
   def execute(node, context, messages) do
     # if node has an action, execute the first action
     :telemetry.execute(
@@ -320,8 +318,8 @@ defmodule Glific.Flows.Node do
     end
   end
 
-  @spec execute_node_actions(Node.t(), FlowContext.t(), [CommMessage.message()]) ::
-          {:ok | :wait, FlowContext.t(), [CommMessage.message()]} | {:error, String.t()}
+  @spec execute_node_actions(Node.t(), FlowContext.t(), [FlowContext.message()]) ::
+          {:ok | :wait, FlowContext.t(), [FlowContext.message()]} | {:error, String.t()}
   defp execute_node_actions(node, context, messages) do
     bump_count(node, context)
 
@@ -340,7 +338,7 @@ defmodule Glific.Flows.Node do
   end
 
   @spec do_execute_node_actions({:ok, any()} | {:error, any()}, Node.t(), FlowContext.t()) ::
-          {:ok | :wait, FlowContext.t(), [CommMessage.message()]} | {:error, String.t()}
+          {:ok | :wait, FlowContext.t(), [FlowContext.message()]} | {:error, String.t()}
   defp do_execute_node_actions(_result, _node, %{wa_group_id: wa_group_id} = context)
        when wa_group_id != nil,
        do: {:ok, context, []}

@@ -53,7 +53,7 @@ defmodule Glific.Flows.WAGroupAction do
     {context, Map.put(action, :labels, flow_label)}
   end
 
-  @spec do_send_message(FlowContext.t(), Action.t(), [Message.t()], map()) ::
+  @spec do_send_message(FlowContext.t(), Action.t(), [WAMessage.t()], map()) ::
           {:ok, map(), any()}
   defp do_send_message(
          context,

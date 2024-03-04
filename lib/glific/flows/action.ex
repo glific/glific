@@ -37,8 +37,6 @@ defmodule Glific.Flows.Action do
     Webhook
   }
 
-  alias Glific.Communications.Message, as: CommMessage
-
   require Logger
 
   @contact_profile %{
@@ -612,8 +610,8 @@ defmodule Glific.Flows.Action do
   Execute a action, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Action.t(), FlowContext.t(), [CommMessage.message()]) ::
-          {:ok | :wait, FlowContext.t(), [CommMessage.message()]} | {:error, String.t()}
+  @spec execute(Action.t(), FlowContext.t(), [FlowContext.message()]) ::
+          {:ok | :wait, FlowContext.t(), [FlowContext.message()]} | {:error, String.t()}
 
   def execute(%{type: "send_msg"} = action, %{wa_group_id: wa_group_id} = context, messages)
       when wa_group_id != nil do
@@ -625,11 +623,12 @@ defmodule Glific.Flows.Action do
     {:ok, context, []}
   end
 
-  def execute(_action, %{wa_group_id: wa_group_id} = _context, _messages)
+  def execute(_action, %{wa_group_id: wa_group_id} = context, _messages)
       when wa_group_id != nil do
     event_label = "Flow terminated as unsupported node used for WA group"
 
     FlowContext.mark_wa_flows_complete(event_label, wa_group_id, true)
+    {:ok, context, []}
   end
 
   def execute(%{type: "send_msg"} = action, context, messages) do
