@@ -51,7 +51,6 @@ defmodule Glific.Flows.FlowContext do
     :message_broadcast_id,
     :profile_id,
     :reason,
-    # TODO: Added node field, since else its coming nil always..
     :node,
     :wa_group_id
   ]

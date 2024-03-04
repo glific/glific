@@ -563,7 +563,6 @@ defmodule GlificWeb.Schema.FlowTest do
     assert true == Map.has_key?(broadcast_map, "success")
   end
 
-  @tag :start_flow
   test "Start flow for a whatsapp group", %{manager: user} = _attrs do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "wa_group_send_c", organization_id: user.organization_id})

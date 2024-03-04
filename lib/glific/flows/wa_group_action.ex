@@ -1,19 +1,23 @@
 defmodule Glific.Flows.WAGroupAction do
-  @moduledoc false
+  @moduledoc """
+  Functionalities related to handling actions in a flow for WA groups
+  """
 
-  # TODO: doc needed
+  alias Glific.{
+    Flows,
+    Flows.Action,
+    Flows.ContactAction,
+    Flows.FlowContext,
+    Flows.Localization,
+    Flows.MessageVarParser,
+    Providers.Maytapi.Message,
+    Repo,
+    WAGroup.WAMessage
+  }
 
-  alias Glific.Flows
-  alias Glific.Providers.Maytapi.Message
-  alias Glific.Flows.ContactAction
-  alias Glific.Flows.MessageVarParser
-  alias Glific.Flows.Localization
-  alias Glific.WAGroup.WAMessage
-  alias Glific.Flows.Action
-  alias Glific.Flows.FlowContext
-  alias Glific.Repo
-
-  # TODO: docs
+  @doc """
+  Send the message in the flow to WA group
+  """
   @spec send_message(FlowContext.t(), Action.t(), [WAMessage.t()], non_neg_integer | nil) ::
           {:ok, map(), any()}
   def send_message(context, action, messages, cid \\ nil)
@@ -90,8 +94,7 @@ defmodule Glific.Flows.WAGroupAction do
     |> handle_message_result(context, messages, attrs)
   end
 
-  # TODO: Need to do more here...
-  defp handle_message_result(result, context, messages, attrs) do
+  defp handle_message_result(_result, context, _messages, _attrs) do
     {:ok, context}
     # dbg()
     # case result do
