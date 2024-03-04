@@ -4,6 +4,11 @@ query listContactWaGroups($filter: ContactWaGroupFilter) {
     contact {
       id
       name
+      phone
+    }
+    waGroups {
+      id
+      label
     }
   }
 }
