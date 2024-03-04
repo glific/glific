@@ -1,18 +1,12 @@
 fragment ContactWaGroupFields on ContactWaGroupResult {
-  contact_wa_group {
-      contact {
-        groups {
-          id
-        }
-        id
-        name
-      }
+  contactWaGroup {
+    contact {
       id
+      name
     }
+    id
   }
-
-
-fragment ErrorFields on ContactWaGroupResult {
+  
   errors {
     key
     message

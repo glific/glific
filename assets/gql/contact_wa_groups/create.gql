@@ -2,9 +2,6 @@
 
 mutation CreateContactWaGroup($input: ContactWaGroupInput!) {
   createContactWaGroup(input: $input) {
-   ...ContactWaGroupFields
-
-    ...ErrorFields
+    ...ContactWaGroupFields
   }
 }
-

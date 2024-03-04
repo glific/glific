@@ -6,7 +6,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
     Contacts,
     Fixtures,
     Groups.ContactWaGroups,
-    Seeds.SeedsDev,
+    Seeds.SeedsDev
   }
 
   setup do
