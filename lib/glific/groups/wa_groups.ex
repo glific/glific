@@ -70,11 +70,11 @@ defmodule Glific.Groups.WAGroups do
     Enum.each(group_details, fn group ->
       {:ok, wa_group} = Repo.fetch_by(WAGroup, %{bsp_id: group.bsp_id})
       wa_group_id = wa_group.id
-      admin_phone_number = Enum.at(group.admins, 0) |> phone_number()
+      admin_phone_numbers = Enum.map(group.admins, &phone_number(&1))
 
       Ecto.Multi.new()
       |> delete_existing_contacts(wa_group_id)
-      |> add_wa_contact(group, wa_group_id, admin_phone_number, org_id)
+      |> add_wa_contact(group, wa_group_id, admin_phone_numbers, org_id)
       |> Repo.transaction()
       |> handle_transaction_result()
     end)
@@ -99,14 +99,14 @@ defmodule Glific.Groups.WAGroups do
           Ecto.Multi.t(),
           map(),
           non_neg_integer(),
-          non_neg_integer(),
+          [non_neg_integer()],
           non_neg_integer()
         ) :: Ecto.Multi.t()
-  defp add_wa_contact(multi, group, wa_group_id, admin, org_id) do
+  defp add_wa_contact(multi, group, wa_group_id, admins, org_id) do
     Ecto.Multi.run(multi, :add_contacts, fn _repo, _changes ->
       Enum.each(group.participants, fn participant_phone ->
         phone = phone_number(participant_phone)
-        is_admin = phone == admin
+        is_admin = phone in admins
 
         contact_attrs = %{
           phone: phone,
