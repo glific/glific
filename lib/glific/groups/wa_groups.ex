@@ -106,12 +106,12 @@ defmodule Glific.Groups.WAGroups do
     Ecto.Multi.run(multi, :add_contacts, fn _repo, _changes ->
       Enum.each(group.participants, fn participant_phone ->
         phone = phone_number(participant_phone)
-        is_admin = is_admin(phone, admin_phone_numbers)
+        is_admin = admin?(phone, admin_phone_numbers)
 
         contact_attrs = %{
           phone: phone,
           organization_id: org_id,
-          contact_type: "WA",
+          contact_type: "WA"
         }
 
         case Contacts.maybe_create_contact(contact_attrs) do
@@ -132,8 +132,8 @@ defmodule Glific.Groups.WAGroups do
     end)
   end
 
-  @spec is_admin(non_neg_integer(), [non_neg_integer()]) :: boolean()
-  defp is_admin(phone, admin_phone_numbers) do
+  @spec admin?(non_neg_integer(), [non_neg_integer()]) :: boolean()
+  defp admin?(phone, admin_phone_numbers) do
     phone in admin_phone_numbers
   end
 
