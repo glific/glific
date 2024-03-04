@@ -837,6 +837,26 @@ if Code.ensure_loaded?(Faker) do
         status: "published",
         organization_id: organization.id
       })
+
+      wa_group_flow =
+        Repo.insert!(%Flow{
+          name: "Whatsapp Group",
+          keywords: ["wagroup"],
+          version_number: "13.2.0",
+          uuid: "49f1a269-a505-467b-8aab-cf21eadcdd30",
+          organization_id: organization.id
+        })
+
+      definition =
+        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> "wa_group.json"))
+        |> Jason.decode!()
+
+      Repo.insert!(%FlowRevision{
+        definition: definition,
+        flow_id: wa_group_flow.id,
+        status: "published",
+        organization_id: organization.id
+      })
     end
 
     @doc false

@@ -4,6 +4,8 @@ defmodule Glific.Groups.WAGroups do
   """
   import Ecto.Query, warn: false
 
+  import Ecto.Query, warn: false
+
   alias Glific.{
     Contacts,
     Groups.ContactWAGroups,
@@ -204,6 +206,25 @@ defmodule Glific.Groups.WAGroups do
   """
   @spec get_wa_group!(non_neg_integer()) :: WAGroup.t()
   def get_wa_group!(id), do: Repo.get!(WAGroup, id)
+
+  @doc """
+  Gets a wa_groups from list of IDs.
+
+  ## Examples
+
+      iex> get_wa_groups!([123])
+      [%WAGroup{}]
+
+      iex> get_wa_groups!([456])
+      []
+
+  """
+  @spec get_wa_groups!([non_neg_integer()]) :: list(WAGroup.t())
+  def get_wa_groups!(ids) do
+    WAGroup
+    |> where([wag], wag.id in ^ids)
+    |> Repo.all()
+  end
 
   @doc """
   Fetches a group with given bsp_id and organization_id (Creates a group if doesnt exist)

@@ -1,0 +1,92 @@
+{
+  "_ui": {
+    "nodes": {
+      "80bdc77e-bd6e-43b3-baf0-3b4623bec01a": {
+        "type": "execute_actions",
+        "position": { "top": 0, "left": 0 }
+      },
+      "af0d9df0-a179-4818-a079-b5d868645226": {
+        "type": "execute_actions",
+        "position": { "top": 380, "left": 180 }
+      },
+      "f6321e74-5f88-4c72-bb51-30604347c7b0": {
+        "type": "wait_for_response",
+        "config": { "cases": {} },
+        "position": { "top": 200, "left": 120 }
+      }
+    }
+  },
+  "name": "Whatsapp Group",
+  "type": "messaging",
+  "uuid": "08601c9e-cfc3-46d9-acab-11c2c3c2d76f",
+  "vars": ["08601c9e-cfc3-46d9-acab-11c2c3c2d76f"],
+  "nodes": [
+    {
+      "uuid": "80bdc77e-bd6e-43b3-baf0-3b4623bec01a",
+      "exits": [
+        {
+          "uuid": "dd669426-0b20-41d7-aebd-3e3f43cffc13",
+          "destination_uuid": "f6321e74-5f88-4c72-bb51-30604347c7b0"
+        }
+      ],
+      "actions": [
+        {
+          "text": "Welcome to WA group feature",
+          "type": "send_msg",
+          "uuid": "a0afdf61-4e93-4ba4-993a-1befd8b15f2c",
+          "labels": [],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "f6321e74-5f88-4c72-bb51-30604347c7b0",
+      "exits": [
+        {
+          "uuid": "b20d7547-3821-4f69-8bf8-2a6b2f0dae4d",
+          "destination_uuid": "af0d9df0-a179-4818-a079-b5d868645226"
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "wait": { "type": "msg" },
+        "cases": [],
+        "operand": "@input.text",
+        "categories": [
+          {
+            "name": "All Responses",
+            "uuid": "d32624a4-c405-4acb-a61a-58440530b983",
+            "exit_uuid": "b20d7547-3821-4f69-8bf8-2a6b2f0dae4d"
+          }
+        ],
+        "result_name": "reply",
+        "default_category_uuid": "d32624a4-c405-4acb-a61a-58440530b983"
+      },
+      "actions": []
+    },
+    {
+      "uuid": "af0d9df0-a179-4818-a079-b5d868645226",
+      "exits": [
+        {
+          "uuid": "d81d0e94-a1e3-422d-af85-08f7eb4a167c",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "text": "This will not be processed for POC",
+          "type": "send_msg",
+          "uuid": "71e7eb71-dee5-470c-bcf3-899359b06974",
+          "labels": [],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    }
+  ],
+  "language": "base",
+  "localization": {},
+  "spec_version": "13.2.0",
+  "expire_after_minutes": 10080
+}
