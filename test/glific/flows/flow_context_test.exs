@@ -1,12 +1,14 @@
 defmodule Glific.Flows.FlowContextTest do
   use Glific.DataCase, async: false
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Fixtures,
     Groups.WAGroups,
     Messages,
     Repo,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    WAGroup.WAMessage
   }
 
   alias Glific.Flows.{
@@ -283,7 +285,7 @@ defmodule Glific.Flows.FlowContextTest do
     test "init_wa_group_context/3 will initiate a flow context for wa_groups",
          %{organization_id: organization_id} = attrs do
       [flow | _tail] =
-        Glific.Flows.list_flows(%{filter: attrs |> Map.put(:name, "wa_group_send_c")})
+        Glific.Flows.list_flows(%{filter: attrs |> Map.put(:name, "Whatsapp Group")})
 
       [keyword | _] = flow.keywords
       flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: keyword})
@@ -291,6 +293,13 @@ defmodule Glific.Flows.FlowContextTest do
       [wa_group | _tail] = WAGroups.list_wa_groups(%{})
 
       {:ok, _flow_context, _} = FlowContext.init_wa_group_context(flow, wa_group, "published")
+
+      [wa_message | _wa_messages] =
+        WAMessage
+        |> where([wam], wam.organization_id == ^organization_id)
+        |> Repo.all()
+
+      assert wa_message.body == "Welcome to WA group feature"
     end
   end
 end

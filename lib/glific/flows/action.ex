@@ -3,7 +3,6 @@ defmodule Glific.Flows.Action do
   The Action object which encapsulates one action in a given node.
   """
 
-  alias Glific.Flows.WAGroupAction
   alias __MODULE__
 
   use Ecto.Schema
@@ -15,6 +14,7 @@ defmodule Glific.Flows.Action do
     Dialogflow,
     Flows,
     Flows.Flow,
+    Flows.WAGroupAction,
     Groups,
     Groups.Group,
     Messages,

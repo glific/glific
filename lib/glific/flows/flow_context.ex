@@ -4,7 +4,6 @@ defmodule Glific.Flows.FlowContext do
   contact and/or a conversation (or other Glific data types). Let encapsulate
   this in a module and isolate the flow from the other aspects of Glific
   """
-  alias Glific.WAGroup.WAMessage
   alias __MODULE__
 
   use Ecto.Schema
@@ -30,8 +29,6 @@ defmodule Glific.Flows.FlowContext do
     Profiles.Profile,
     Repo
   }
-
-  @type message :: Message.t() | WAMessage.t()
 
   @required_fields [:flow_id, :flow_uuid, :status, :organization_id]
   @optional_fields [
@@ -470,8 +467,8 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Execute one (or more) steps in a flow based on the message stream
   """
-  @spec execute(FlowContext.t(), [message()]) ::
-          {:ok | :wait, FlowContext.t(), [message()]} | {:error, String.t()}
+  @spec execute(FlowContext.t(), [Message.t()]) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%FlowContext{node: node} = _context, _messages) when is_nil(node),
     do: {:error, dgettext("errors", "We have finished the flow")}
 
