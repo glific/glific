@@ -610,8 +610,8 @@ defmodule Glific.Flows.Action do
   Execute a action, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Action.t(), FlowContext.t(), [FlowContext.message()]) ::
-          {:ok | :wait, FlowContext.t(), [FlowContext.message()]} | {:error, String.t()}
+  @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
 
   def execute(%{type: "send_msg"} = action, %{wa_group_id: wa_group_id} = context, messages)
       when wa_group_id != nil do
