@@ -10,6 +10,7 @@ defmodule Glific.Groups.Group do
     AccessControl.Role,
     Contacts.Contact,
     Groups.Group,
+    Groups.WAGroup,
     Messages.Message,
     Partners.Organization,
     Users.User
@@ -52,6 +53,7 @@ defmodule Glific.Groups.Group do
     many_to_many :contacts, Contact, join_through: "contacts_groups", on_replace: :delete
     many_to_many :users, User, join_through: "users_groups", on_replace: :delete
     many_to_many :roles, Role, join_through: "group_roles", on_replace: :delete
+    many_to_many :wa_groups, WAGroup, join_through: "wa_groups_groups", on_replace: :delete
 
     has_many :messages, Message
 
