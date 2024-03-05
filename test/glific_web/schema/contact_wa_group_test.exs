@@ -19,6 +19,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/contact_wa_groups/create.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/contact_wa_groups/list.gql")
   load_gql(:sync, GlificWeb.Schema, "assets/gql/contact_wa_groups/sync.gql")
+  load_gql(:count, GlificWeb.Schema, "assets/gql/contact_wa_groups/count_wa_contacts.gql")
 
   load_gql(
     :update_wa_group,
@@ -185,5 +186,29 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       )
 
     assert deleted_contacts == {1, nil}
+  end
+
+  test "count the contacts associated with wa_groups", %{staff: user} do
+    wa_managed_phone =
+      Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+    contact_wa_group =
+      Fixtures.contact_wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    result =
+      auth_query_gql_by(:count, user,
+        variables: %{
+          "filter" => %{
+            "waGroupId" => contact_wa_group.wa_group_id
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    count = get_in(query_data, [:data, "countContactWaGroup"])
+    assert count == 1
   end
 end

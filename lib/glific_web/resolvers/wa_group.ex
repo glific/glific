@@ -47,13 +47,12 @@ defmodule GlificWeb.Resolvers.WaGroup do
     end
   end
 
-
   @doc """
   Get the count of contact whastapp groups filtered by args
   """
   @spec count_contact_wa_group(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-  {:ok, any} | {:error, any}
-def count_contact_wa_group(_, args, _) do
-{:ok, ContactWAGroups.count_contact_wa_group(args)}
-end
+          {:ok, any} | {:error, any}
+  def count_contact_wa_group(_, args, _) do
+    {:ok, ContactWAGroups.count_contact_wa_group(args)}
+  end
 end
