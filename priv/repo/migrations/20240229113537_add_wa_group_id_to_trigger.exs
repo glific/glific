@@ -3,11 +3,7 @@ defmodule Glific.Repo.Migrations.AddWaGroupIdToTrigger do
 
   def change do
     alter table(:triggers) do
-      add :wa_group_ids, {:array, :integer}, default: []
-    end
-
-    alter table(:message_broadcasts) do
-      add :wa_group_ids, {:array, :integer}, default: []
+      add :group_type, :string, comment: "one of WABA, WA"
     end
   end
 end

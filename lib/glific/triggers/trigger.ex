@@ -32,8 +32,7 @@ defmodule Glific.Triggers.Trigger do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
-          group_ids: list() | nil,
-          wa_group_ids: list() | nil
+          group_ids: list() | nil
         }
 
   @required_fields [
@@ -53,7 +52,7 @@ defmodule Glific.Triggers.Trigger do
     :days,
     :hours,
     :group_ids,
-    :wa_group_ids
+    :group_type
   ]
 
   schema "triggers" do
@@ -67,10 +66,10 @@ defmodule Glific.Triggers.Trigger do
     field :days, {:array, :integer}, default: []
     field :hours, {:array, :integer}, default: []
     field :group_ids, {:array, :integer}, default: []
-    field :wa_group_ids, {:array, :integer}, default: []
 
     field :is_active, :boolean, default: true
     field :is_repeating, :boolean, default: false
+    field :group_type, :string, default: "WABA"
     field :groups, {:array, :string}, virtual: true
 
     belongs_to :flow, Flow

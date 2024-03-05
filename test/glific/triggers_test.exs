@@ -53,6 +53,7 @@ defmodule Glific.TriggersTest do
       assert msg_count2 > msg_count1
     end
 
+    @tag :trig
     test "execute_triggers/2 should execute a trigger with frequency as none",
          attrs do
       start_at = Timex.shift(DateTime.utc_now(), minutes: 10)
