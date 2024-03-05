@@ -14,6 +14,7 @@ defmodule Glific.Flows.Action do
     Dialogflow,
     Flows,
     Flows.Flow,
+    Flows.WAGroupAction,
     Groups,
     Groups.Group,
     Messages,
@@ -611,6 +612,25 @@ defmodule Glific.Flows.Action do
   """
   @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+
+  def execute(%{type: "send_msg"} = action, %{wa_group_id: wa_group_id} = context, messages)
+      when wa_group_id != nil do
+    action = Map.put(action, :templating, nil)
+    event_label = "Marking flow as completed after single node for WA group"
+
+    WAGroupAction.send_message(context, action, messages)
+    FlowContext.mark_wa_flows_complete(event_label, wa_group_id)
+    {:ok, context, []}
+  end
+
+  def execute(_action, %{wa_group_id: wa_group_id} = context, _messages)
+      when wa_group_id != nil do
+    event_label = "Flow terminated as unsupported node used for WA group"
+
+    FlowContext.mark_wa_flows_complete(event_label, wa_group_id, true)
+    {:ok, context, []}
+  end
+
   def execute(%{type: "send_msg"} = action, context, messages) do
     templating = Templating.execute(action.templating, context, messages)
     action = Map.put(action, :templating, templating)

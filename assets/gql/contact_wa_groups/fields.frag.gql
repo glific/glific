@@ -1,0 +1,18 @@
+fragment ContactWaGroupFields on ContactWaGroupResult {
+  contactWaGroup {
+    contact {
+      id
+      name
+      phone
+    }
+    waGroup {
+      id
+      label
+    }
+    id
+  }
+  errors {
+    key
+    message
+  }
+}

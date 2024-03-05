@@ -7,8 +7,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     Partners,
     Providers.Maytapi.Message,
     Seeds.SeedsDev,
-    Seeds.SeedsDev,
-    WAManagedPhonesFixtures
+    Seeds.SeedsDev
   }
 
   setup do
@@ -41,10 +40,10 @@ defmodule Glific.Groups.WhatsappMessageTest do
   test "create_and_send_wa_message/3 sends a text message in a whatsapp group successfully",
        attrs do
     wa_managed_phone =
-      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+      Fixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
 
     wa_group =
-      WAManagedPhonesFixtures.wa_group_fixture(%{
+      Fixtures.wa_group_fixture(%{
         organization_id: attrs.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -71,10 +70,10 @@ defmodule Glific.Groups.WhatsappMessageTest do
   test "create_and_send_wa_message/3 send media message successfully",
        attrs do
     wa_managed_phone =
-      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+      Fixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
 
     wa_group =
-      WAManagedPhonesFixtures.wa_group_fixture(%{
+      Fixtures.wa_group_fixture(%{
         organization_id: attrs.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -192,10 +191,10 @@ defmodule Glific.Groups.WhatsappMessageTest do
   test "create_and_send_wa_message/2 should return error when characters limit is reached when sending text message",
        attrs do
     wa_managed_phone =
-      WAManagedPhonesFixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+      Fixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
 
     wa_group =
-      WAManagedPhonesFixtures.wa_group_fixture(%{
+      Fixtures.wa_group_fixture(%{
         organization_id: attrs.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
