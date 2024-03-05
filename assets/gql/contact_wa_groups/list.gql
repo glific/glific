@@ -1,0 +1,14 @@
+query listContactWaGroups($filter: ContactWaGroupFilter) {
+  listContactWaGroup(filter: $filter) {
+    id
+    contact {
+      id
+      name
+      phone
+    }
+    waGroup {
+      id
+      label
+    }
+  }
+}

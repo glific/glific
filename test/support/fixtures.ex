@@ -27,6 +27,8 @@ defmodule Glific.Fixtures do
     Flows.FlowLabel,
     Flows.WebhookLog,
     Groups,
+    Groups.ContactWAGroup,
+    Groups.ContactWAGroups,
     Groups.WAGroup,
     Groups.WAGroups,
     Mails.MailLog,
@@ -1172,6 +1174,22 @@ defmodule Glific.Fixtures do
       |> WAMessages.create_message()
 
     wa_message
+  end
+
+  @doc false
+  @spec contact_wa_group_fixture(map()) :: ContactWAGroup.t()
+  def contact_wa_group_fixture(attrs) do
+    valid_attrs = %{
+      contact_id: contact_fixture(attrs).id,
+      wa_group_id: wa_group_fixture(attrs).id
+    }
+
+    {:ok, contact_wa_group} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> ContactWAGroups.create_contact_wa_group()
+
+    contact_wa_group
   end
 
   @doc """
