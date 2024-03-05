@@ -672,6 +672,17 @@ defmodule Glific.Flows do
     end
   end
 
+  @doc """
+  Start flow for wa groups of a collection
+  """
+  @spec start_wa_group_flow(Flow.t(), list()) :: {:ok, Flow.t()}
+  def start_wa_group_flow(flow, group_ids) do
+    # the flow returned is the expanded version
+    {:ok, flow} = get_cached_flow(flow.organization_id, {:flow_id, flow.id, @status})
+    Broadcast.broadcast_flow_to_wa_group(flow, group_ids)
+    {:ok, flow}
+  end
+
   @spec process_wa_group_flow(Flow.t(), [WAGroup.t()]) :: {:ok, Flow.t()}
   defp process_wa_group_flow(flow, wa_groups) do
     if flow.is_active do
@@ -722,17 +733,6 @@ defmodule Glific.Flows do
     # the flow returned is the expanded version
     {:ok, flow} = get_cached_flow(flow.organization_id, {:flow_id, flow.id, @status})
     Broadcast.broadcast_flow_to_group(flow, group_ids, default_results, opts)
-    {:ok, flow}
-  end
-
-  @doc """
-  Start flow for wa groups of a collection
-  """
-  @spec start_wa_group_flow(Flow.t(), list()) :: {:ok, Flow.t()}
-  def start_wa_group_flow(flow, group_ids) do
-    # the flow returned is the expanded version
-    {:ok, flow} = get_cached_flow(flow.organization_id, {:flow_id, flow.id, @status})
-    Broadcast.broadcast_flow_to_wa_group(flow, group_ids)
     {:ok, flow}
   end
 
