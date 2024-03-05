@@ -20,6 +20,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Jobs.BSPBalanceWorker,
     Partners,
     Partners.Billing,
+    Providers.Maytapi.WAWorker,
     Searches.CollectionCount,
     Stats,
     Templates,
@@ -135,6 +136,8 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], only_recent: true)
 
         Partners.perform_all(&Glific.Clients.hourly_tasks/1, nil, [])
+
+        Partners.perform_all(&WAWorker.perform_periodic/1, nil, [], only_recent: true)
 
       "five_minute_tasks" ->
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
