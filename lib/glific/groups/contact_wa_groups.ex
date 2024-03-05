@@ -123,4 +123,14 @@ defmodule Glific.Groups.ContactWAGroups do
     fields = {{:wa_group_id, wa_group_id}, {:contact_id, contact_ids}}
     Repo.delete_relationships_by_ids(ContactWAGroup, fields)
   end
+
+  @doc """
+  Return the count of wa group contacts, using the same filter as list_wa_group_contacts
+  """
+  @spec count_contact_wa_group(map()) :: [ContactWAGroup.t()]
+  def count_contact_wa_group(args) do
+    args
+    |> Repo.list_filter_query(ContactWAGroup, nil, &filter_with/2)
+    |> Repo.aggregate(:count)
+  end
 end
