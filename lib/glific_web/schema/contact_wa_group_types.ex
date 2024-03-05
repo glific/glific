@@ -20,6 +20,10 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
     field :contact, :contact do
       resolve(dataloader(Repo))
     end
+
+    field :wa_group, :wa_group do
+      resolve(dataloader(Repo))
+    end
   end
 
   object :sync_wa_contacts do
