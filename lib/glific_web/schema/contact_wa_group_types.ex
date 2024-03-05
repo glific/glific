@@ -65,6 +65,13 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.WaGroup.list_contact_wa_group/3)
     end
+
+    @desc "Get a count of all the contacts associated with the wa group"
+    field :count_contact_wa_group, :integer do
+      arg(:filter, :contact_wa_group_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.WaGroup.count_contact_wa_group/3)
+    end
   end
 
   object :contact_wa_group_mutations do
