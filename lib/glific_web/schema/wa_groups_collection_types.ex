@@ -65,6 +65,13 @@ defmodule GlificWeb.Schema.WAGroupsCollectionTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.WACollection.list_wa_groups_collection/3)
     end
+
+    @desc "Get a count of all the wa groups associated with the group"
+    field :count_wa_groups_collection, :integer do
+      arg(:filter, :wa_groups_collection_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.WACollection.count_wa_groups_collection/3)
+    end
   end
 
   object :wa_groups_collection_mutations do

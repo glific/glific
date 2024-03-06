@@ -156,4 +156,14 @@ defmodule Glific.Groups.WaGroupsCollections do
     fields = {{:group_id, group_id}, {:wa_group_id, wa_group_id}}
     Repo.delete_relationships_by_ids(WAGroupsCollection, fields)
   end
+
+  @doc """
+  Return the count of wa group collection, using the same filter as list_wa_groups_collection
+  """
+  @spec count_wa_groups_collection(map()) :: [WAGroupsCollection.t()]
+  def count_wa_groups_collection(args) do
+    args
+    |> Repo.list_filter_query(WAGroupsCollection, nil, &filter_with/2)
+    |> Repo.aggregate(:count)
+  end
 end
