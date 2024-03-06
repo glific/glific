@@ -148,16 +148,6 @@ defmodule Glific.Triggers do
     Flows.start_group_flow(flow, trigger.group_ids)
   end
 
-  # defp do_start_flow(trigger) do
-  #   flow = Flows.get_flow!(trigger.flow_id)
-
-  #   Logger.info(
-  #     "Starting flow: #{flow.name} trigger: #{trigger.name} of org_id: #{trigger.organization_id} with time #{trigger.next_trigger_at} for WA group"
-  #   )
-
-  #   Flows.start_wa_group_flow(flow, trigger.wa_group_ids)
-  # end
-
   @doc """
   Creates a trigger.
 
