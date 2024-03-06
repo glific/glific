@@ -1,11 +1,11 @@
 defmodule Glific.Groups.WaGroupsCollections do
   @moduledoc """
-  Simple container to hold all the contact groups we associate with one contact
+  Simple container to hold all the collection we associate with one whastapp group
   """
 
   alias Glific.{
     Groups.WAGroupsCollection,
-    # Groups.WaGroupsCollections,
+    Groups.WaGroupsCollections,
     Repo
   }
 
@@ -16,27 +16,27 @@ defmodule Glific.Groups.WaGroupsCollections do
 
   @type t() :: %__MODULE__{
           wa_groups_collections: [WAGroupsCollection.t()],
-          # group_wa_groups: [WAGroupsCollection.t()],
-          # wa_groups_deleted: non_neg_integer
+          collection_wa_groups: [WAGroupsCollection.t()],
+          wa_groups_deleted: non_neg_integer
         }
 
   embedded_schema do
-    # field(:wa_group_delete, :integer, default: 0)
+    field(:wa_groups_deleted, :integer, default: 0)
     embeds_many(:wa_groups_collections, WAGroupsCollection)
-    # embeds_many(:group_wa_groups, WAGroupsCollection)
+    embeds_many(:collection_wa_groups, WAGroupsCollection)
   end
 
   @doc """
-  Returns the list of contact whatsapp groups structs.
+  Returns the list of whatsapp groups collections structs.
 
   ## Examples
 
-      iex> list_wa_groups_colection()
+      iex> list_wa_groups_collection()
       [%WAGroupsCollection{}, ...]
 
   """
-  @spec list_wa_groups_colection(map()) :: [WAGroupsCollection.t()]
-  def list_wa_groups_colection(args) do
+  @spec list_wa_groups_collection(map()) :: [WAGroupsCollection.t()]
+  def list_wa_groups_collection(args) do
     args
     |> Repo.list_filter_query(WAGroupsCollection, &Repo.opts_with_id/2, &filter_with/2)
     |> Repo.all()
@@ -56,7 +56,8 @@ defmodule Glific.Groups.WaGroupsCollections do
   end
 
   @doc false
-  @spec create_wa_groups_collection(map()) :: {:ok, WAGroupsCollection.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_wa_groups_collection(map()) ::
+          {:ok, WAGroupsCollection.t()} | {:error, Ecto.Changeset.t()}
   def create_wa_groups_collection(attrs \\ %{}) do
     # check if an entry exists
     attrs = Map.take(attrs, [:group_id, :wa_group_id, :organization_id])
@@ -70,5 +71,47 @@ defmodule Glific.Groups.WaGroupsCollections do
         |> WAGroupsCollection.changeset(attrs)
         |> Repo.insert()
     end
+  end
+
+  @doc false
+  @spec update_wa_groups_collection(%{
+          :add_wa_group_ids => any(),
+          :delete_wa_group_ids => [integer()],
+          :group_id => integer(),
+          optional(any()) => any()
+        }) :: Glific.Groups.WaGroupsCollection.t()
+
+  def update_wa_groups_collection(
+        %{
+          group_id: group_id,
+          add_wa_group_ids: add_ids,
+          delete_wa_group_ids: delete_ids
+        } = attrs
+      ) do
+    collection_wa_groups =
+      Enum.reduce(
+        add_ids,
+        [],
+        fn wa_group_id, acc ->
+          case create_wa_groups_collection(Map.put(attrs, :wa_group_id, wa_group_id)) do
+            {:ok, wa_groups_collection} -> [wa_groups_collection | acc]
+            _ -> acc
+          end
+        end
+      )
+
+    {wa_groups_deleted, _} = delete_group_wa_group_by_ids(group_id, delete_ids)
+
+    %WaGroupsCollections{
+      wa_groups_deleted: wa_groups_deleted,
+      collection_wa_groups: collection_wa_groups
+    }
+  end
+
+  @doc false
+  @spec delete_group_wa_group_by_ids(integer, list()) :: {integer(), nil | [term()]}
+  def delete_group_wa_group_by_ids(group_id, delete_ids) do
+    fields = {{:group_id, group_id}, {:wa_group_id, delete_ids}}
+    Repo.delete_relationships_by_ids(WAGroupsCollection, fields)
   end
 end

@@ -99,4 +99,14 @@ defmodule Glific.ConversationsGroup do
       end
     )
   end
+
+  @doc """
+  Returns the last M conversations, each conversation not more than N messages
+  """
+  @spec wa_list_conversations(list() | nil, map()) :: list() | integer
+  def wa_list_conversations(group_ids, args) do
+    group_ids
+    |> get_groups(args.wa_group_opts)
+    |> get_conversations(args.wa_message_opts)
+  end
 end

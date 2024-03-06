@@ -1,6 +1,6 @@
 defmodule GlificWeb.Schema.WAGroupsCollectionTypes do
   @moduledoc """
-  GraphQL Representation of Glific's Contact Group DataType
+  GraphQL Representation of Glific's whatsapp Groups collection DataType
   """
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
@@ -31,16 +31,16 @@ defmodule GlificWeb.Schema.WAGroupsCollectionTypes do
     field :wa_group_id, :id
   end
 
-  # input_object :update_wa_groups_group_input do
-  #   field :group_id, non_null(:id)
-  #   field :add_wa_group_ids, non_null(list_of(:id))
-  #   field :delete_wa_group_ids, non_null(list_of(:id))
-  # end
+  input_object :update_wa_groups_collection_input do
+    field :group_id, non_null(:id)
+    field :add_wa_group_ids, non_null(list_of(:id))
+    field :delete_wa_group_ids, non_null(list_of(:id))
+  end
 
-  # object :update_wa_groups_group_result do
-  #   field :wa_groups_deleted, :integer
-  #   field :collection_wa_groups, list_of(:wa_groups_grou)
-  # end
+  object :update_wa_groups_collection_result do
+    field :wa_groups_deleted, :integer
+    field :collection_wa_groups, list_of(:wa_groups_collection)
+  end
 
   @desc "Filtering options for messages"
   input_object :wa_groups_collection_filter do
@@ -57,7 +57,7 @@ defmodule GlificWeb.Schema.WAGroupsCollectionTypes do
       arg(:filter, :wa_groups_collection_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.WACollection.list_wa_groups_colection/3)
+      resolve(&Resolvers.WACollection.list_wa_groups_collection/3)
     end
   end
 
@@ -66,6 +66,12 @@ defmodule GlificWeb.Schema.WAGroupsCollectionTypes do
       arg(:input, non_null(:wa_groups_collection_input))
       middleware(Authorize, :staff)
       resolve(&Resolvers.WACollection.create_wa_groups_collection/3)
+    end
+
+    field :update_wa_groups_collection, :update_wa_groups_collection_result do
+      arg(:input, non_null(:update_wa_groups_collection_input))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.WACollection.update_wa_groups_collection/3)
     end
   end
 end
