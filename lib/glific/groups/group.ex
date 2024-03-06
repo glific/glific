@@ -52,8 +52,6 @@ defmodule Glific.Groups.Group do
 
     field :last_communication_at, :utc_datetime
 
-    field :group_type, :string, default: "WABA"
-
     belongs_to :organization, Organization
 
     many_to_many :contacts, Contact, join_through: "contacts_groups", on_replace: :delete
