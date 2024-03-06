@@ -27,7 +27,6 @@ defmodule Glific.Groups.WAGroupsCollection do
         }
 
   schema "wa_groups_collections" do
-    field :is_admin, :boolean, default: false
     belongs_to :group, Group
     belongs_to :wa_group, WAGroup
     belongs_to :organization, Organization

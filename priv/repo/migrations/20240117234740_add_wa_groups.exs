@@ -13,6 +13,8 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
     contact_wa_groups()
 
     wa_groups_collections()
+
+    groups()
   end
 
   defp wa_managed_phones do
@@ -187,5 +189,11 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
     end
 
     create index(:wa_groups_collections, [:wa_group_id, :group_id])
+  end
+
+  def groups do
+    alter table(:groups) do
+      add :group_type, :string, comment: "one of WABA, WA"
+    end
   end
 end

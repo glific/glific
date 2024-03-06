@@ -1,4 +1,4 @@
-defmodule GlificWeb.Schema.WAGroupsGroupTypes do
+defmodule GlificWeb.Schema.WAGroupsCollectionTypes do
   @moduledoc """
   GraphQL Representation of Glific's Contact Group DataType
   """
@@ -31,16 +31,16 @@ defmodule GlificWeb.Schema.WAGroupsGroupTypes do
     field :wa_group_id, :id
   end
 
-  input_object :update_wa_groups_group_input do
-    field :group_id, non_null(:id)
-    field :add_wa_group_ids, non_null(list_of(:id))
-    field :delete_wa_group_ids, non_null(list_of(:id))
-  end
+  # input_object :update_wa_groups_group_input do
+  #   field :group_id, non_null(:id)
+  #   field :add_wa_group_ids, non_null(list_of(:id))
+  #   field :delete_wa_group_ids, non_null(list_of(:id))
+  # end
 
-  object :update_wa_groups_group_result do
-    field :wa_groups_deleted, :integer
-    field :collection_wa_groups, list_of(:wa_groups_grou)
-  end
+  # object :update_wa_groups_group_result do
+  #   field :wa_groups_deleted, :integer
+  #   field :collection_wa_groups, list_of(:wa_groups_grou)
+  # end
 
   @desc "Filtering options for messages"
   input_object :wa_groups_collection_filter do
@@ -51,7 +51,7 @@ defmodule GlificWeb.Schema.WAGroupsGroupTypes do
     field :date_range, :date_range_input
   end
 
-  object :contact_wa_group_queries do
+  object :wa_groups_collection_queries do
     @desc "Get a list of all the contacts associated with the wa group"
     field :list_wa_groups_colection, list_of(:wa_groups_collection) do
       arg(:filter, :wa_groups_collection_filter)
@@ -61,7 +61,7 @@ defmodule GlificWeb.Schema.WAGroupsGroupTypes do
     end
   end
 
-  object :contact_wa_group_mutations do
+  object :wa_groups_collection_mutations do
     field :create_wa_groups_collection, :wa_groups_collection_result do
       arg(:input, non_null(:wa_groups_collection_input))
       middleware(Authorize, :staff)
