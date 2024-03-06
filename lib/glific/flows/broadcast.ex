@@ -8,6 +8,7 @@ defmodule Glific.Flows.Broadcast do
 
   require Logger
 
+  alias Glific.Groups.WAGroups
   alias Glific.{
     Contacts.Contact,
     Flows,
@@ -69,10 +70,23 @@ defmodule Glific.Flows.Broadcast do
   @spec broadcast_flow_to_wa_group(Flow.t(), list()) ::
           {:ok, MessageBroadcast.t()} | {:error, String.t()}
   def broadcast_flow_to_wa_group(flow, group_ids) do
-    group_ids
-    # replace this with calling to a function to start a flow
-    |> Task.async_stream(fn text -> String.length(text) end)
-    |> Enum.each(fn {:ok, length} -> length end)
+    stream =
+      Task.Supervisor.async_stream_nolink(
+        Glific.Broadcast.Supervisor,
+        group_ids,
+        fn _group_id ->
+          # fetch wa_group belong to group_id
+          # wa_group_collection = WaGroupCollections.list_wa_group_collections(%{group_id: group_id})
+          # filter wa_groups only
+          wa_group = WAGroups.get_wa_group!(5)
+          broadcast_wa_groups(flow, [wa_group])
+        end,
+        ordered: false,
+        timeout: 5_000,
+        on_timeout: :kill_task
+      )
+
+    Stream.run(stream)
   end
 
   @doc """
