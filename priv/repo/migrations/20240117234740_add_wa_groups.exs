@@ -12,7 +12,7 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
 
     contact_wa_groups()
 
-    wa_groups_groups()
+    wa_groups_collections()
   end
 
   defp wa_managed_phones do
@@ -170,8 +170,8 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
     create index(:contacts_wa_groups, [:wa_group_id, :contact_id])
   end
 
-  defp wa_groups_groups do
-    create table(:wa_groups_groups) do
+  defp wa_groups_collections do
+    create table(:wa_groups_collections) do
       add :wa_group_id, references(:wa_groups, on_delete: :delete_all),
         null: false,
         comment: "WA group the WhatsApp group is linked to"
@@ -186,6 +186,6 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:wa_groups_groups, [:wa_group_id, :group_id])
+    create index(:wa_groups_collections, [:wa_group_id, :group_id])
   end
 end

@@ -1,4 +1,4 @@
-defmodule Glific.Groups.WaGroupsGroups do
+defmodule Glific.Groups.WAGroupsCollection do
   @moduledoc """
   A pipe for managing the contact whatsapp groups
   """
@@ -6,7 +6,7 @@ defmodule Glific.Groups.WaGroupsGroups do
   alias Glific.{
     Groups.Group,
     Groups.WAGroup,
-    Groups.WaGroupsGroups,
+    Groups.WAGroupsCollection,
     Partners.Organization
   }
 
@@ -26,7 +26,7 @@ defmodule Glific.Groups.WaGroupsGroups do
           updated_at: :utc_datetime | nil
         }
 
-  schema "wa_groups_groups" do
+  schema "wa_groups_collections" do
     field :is_admin, :boolean, default: false
     belongs_to :group, Group
     belongs_to :wa_group, WAGroup
@@ -37,7 +37,7 @@ defmodule Glific.Groups.WaGroupsGroups do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(WaGroupsGroups.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(WAGroupsCollection.t(), map()) :: Ecto.Changeset.t()
   def changeset(contact, attrs) do
     contact
     |> cast(attrs, @required_fields)
