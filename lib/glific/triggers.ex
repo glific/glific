@@ -135,6 +135,7 @@ defmodule Glific.Triggers do
     Logger.info(
       "Starting flow: #{flow.name} trigger: #{trigger.name} of org_id: #{trigger.organization_id} with time #{trigger.next_trigger_at} for WA group"
     )
+
     Flows.start_wa_group_flow(flow, trigger.group_ids)
   end
 
@@ -433,5 +434,7 @@ defmodule Glific.Triggers do
 
     # set the initial value of the next firing of the trigger
     |> Map.put(:next_trigger_at, get_next_trigger_at(attrs, start_at))
+    # setting WABA as default group_type
+    |> Map.put(:group_type, attrs[:group_type] || "WABA")
   end
 end

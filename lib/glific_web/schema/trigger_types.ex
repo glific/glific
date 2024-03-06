@@ -71,6 +71,7 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :end_date, :date
     field :add_role_ids, list_of(:id)
     field :delete_role_ids, list_of(:id)
+    field :group_type, :string
   end
 
   object :trigger_queries do

@@ -37,7 +37,7 @@ defmodule Glific.Groups.Group do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           group_type: String.t(),
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil
         }
 
   schema "groups" do

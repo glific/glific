@@ -9,6 +9,7 @@ defmodule Glific.Flows.Broadcast do
   require Logger
 
   alias Glific.Groups.WAGroups
+
   alias Glific.{
     Contacts.Contact,
     Flows,

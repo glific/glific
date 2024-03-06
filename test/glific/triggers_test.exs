@@ -362,12 +362,12 @@ defmodule Glific.TriggersTest do
     start_at = Timex.shift(DateTime.utc_now(), days: 1)
     end_date = Timex.shift(DateTime.utc_now(), days: 2)
 
-    {:ok, _trigger} = create_wa_group_trigger(attrs, %{
-      start_at: start_at,
-      organization_id: attrs.organization_id,
-      end_date: end_date
-    })
-
+    {:ok, _trigger} =
+      create_wa_group_trigger(attrs, %{
+        start_at: start_at,
+        organization_id: attrs.organization_id,
+        end_date: end_date
+      })
 
     time = DateTime.truncate(DateTime.utc_now(), :second)
 
