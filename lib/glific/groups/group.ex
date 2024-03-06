@@ -10,6 +10,7 @@ defmodule Glific.Groups.Group do
     AccessControl.Role,
     Contacts.Contact,
     Groups.Group,
+    Groups.WAGroup,
     Messages.Message,
     Partners.Organization,
     Users.User
@@ -20,6 +21,7 @@ defmodule Glific.Groups.Group do
     :is_restricted,
     :description,
     :organization_id,
+    :group_type,
     :last_message_number,
     :last_communication_at,
     :group_type
@@ -35,7 +37,7 @@ defmodule Glific.Groups.Group do
           last_communication_at: :utc_datetime | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          group_type: String.t(),
+          group_type: String.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -46,6 +48,7 @@ defmodule Glific.Groups.Group do
     field :is_restricted, :boolean, default: false
 
     field :last_message_number, :integer, default: 0
+    field(:group_type, :string, default: "WABA")
 
     field :last_communication_at, :utc_datetime
 
@@ -56,6 +59,7 @@ defmodule Glific.Groups.Group do
     many_to_many :contacts, Contact, join_through: "contacts_groups", on_replace: :delete
     many_to_many :users, User, join_through: "users_groups", on_replace: :delete
     many_to_many :roles, Role, join_through: "group_roles", on_replace: :delete
+    many_to_many :wa_groups, WAGroup, join_through: "wa_groups_collections", on_replace: :delete
 
     has_many :messages, Message
 

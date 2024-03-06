@@ -79,6 +79,7 @@ defmodule GlificWeb.Schema.GroupTypes do
   end
 
   input_object :group_input do
+    field :group_type, :string
     field :label, :string
     field :description, :string
     field :is_restricted, :boolean
