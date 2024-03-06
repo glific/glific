@@ -187,8 +187,6 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
 
     assert deleted_contacts == {1, nil}
   end
-<<<<<<< HEAD
-=======
 
   test "count the contacts associated with wa_groups", %{staff: user} do
     wa_managed_phone =
@@ -213,5 +211,4 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
     count = get_in(query_data, [:data, "countContactWaGroup"])
     assert count == 1
   end
->>>>>>> master
 end
