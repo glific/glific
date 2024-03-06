@@ -1,7 +1,6 @@
 defmodule Glific.TriggersTest do
   alias Glific.Flows.Flow
   alias Glific.Groups.Group
-  alias Glific.Groups.WAGroups
   use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
   import Ecto.Query
@@ -29,7 +28,7 @@ defmodule Glific.TriggersTest do
     SeedsDev.seed_test_flows()
     SeedsDev.seed_wa_managed_phones()
     SeedsDev.seed_wa_groups()
-
+    SeedsDev.seed_wa_group_collections()
     :ok
   end
 
@@ -383,16 +382,6 @@ defmodule Glific.TriggersTest do
   end
 
   defp create_wa_group_trigger(attrs, trigger_attrs) do
-    # TODO: Will remove after merging wa_groups_collection
-    [_wa_g1 | _] = WAGroups.list_wa_groups(%{})
-
-    Repo.insert!(%Group{
-      label: "Default WA Group Collection",
-      is_restricted: false,
-      organization_id: attrs.organization_id,
-      group_type: "WA"
-    })
-
     valid_attrs = %{
       name: "test wa group trigger",
       end_date: Faker.DateTime.forward(5),

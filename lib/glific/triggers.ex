@@ -164,9 +164,14 @@ defmodule Glific.Triggers do
 
   @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def create_trigger(attrs) do
+    attrs =
+      attrs
+      |> Map.put_new(:start_at, nil)
+      |> Map.put_new(:group_type, "WABA") # group_type WABA as default
+
     with {:ok, trigger} <-
            %Trigger{}
-           |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))
+           |> Trigger.changeset(fix_attrs(attrs))
            |> Repo.insert() do
       if Map.has_key?(attrs, :add_role_ids),
         do: update_trigger_roles(attrs, trigger),
@@ -434,7 +439,5 @@ defmodule Glific.Triggers do
 
     # set the initial value of the next firing of the trigger
     |> Map.put(:next_trigger_at, get_next_trigger_at(attrs, start_at))
-    # setting WABA as default group_type
-    |> Map.put(:group_type, attrs[:group_type] || "WABA")
   end
 end
