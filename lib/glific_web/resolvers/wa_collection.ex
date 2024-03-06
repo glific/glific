@@ -29,10 +29,18 @@ defmodule GlificWeb.Resolvers.WACollection do
   end
 
   @doc false
-  @spec update_wa_groups_collection(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+  @spec update_collection_wa_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_wa_groups_collection(_, %{input: params}, _) do
-    wa_groups_collection = WaGroupsCollections.update_wa_groups_collection(params)
+  def update_collection_wa_group(_, %{input: params}, _) do
+    wa_groups_collection = WaGroupsCollections.update_collection_wa_group(params)
+    {:ok, wa_groups_collection}
+  end
+
+  @doc false
+  @spec update_wa_group_collection(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_wa_group_collection(_, %{input: params}, _) do
+    wa_groups_collection = WaGroupsCollections.update_wa_group_collection(params)
     {:ok, wa_groups_collection}
   end
 end
