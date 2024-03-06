@@ -54,6 +54,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.RoleTypes)
   import_types(__MODULE__.SheetTypes)
   import_types(__MODULE__.TicketTypes)
+  import_types(__MODULE__.ContactWaGroupTypes)
   import_types(__MODULE__.WAManagedPhoneTypes)
 
   query do
@@ -108,6 +109,8 @@ defmodule GlificWeb.Schema do
     import_fields(:access_role_queries)
 
     import_fields(:contact_group_queries)
+
+    import_fields(:contact_wa_group_queries)
 
     import_fields(:sheet_queries)
 
@@ -178,6 +181,8 @@ defmodule GlificWeb.Schema do
     import_fields(:sheet_mutations)
 
     import_fields(:ticket_mutations)
+
+    import_fields(:contact_wa_group_mutations)
   end
 
   subscription do

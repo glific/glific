@@ -2,13 +2,24 @@ defmodule Glific.Groups.WAGroups do
   @moduledoc """
   Whatsapp groups context.
   """
+  import Ecto.Query, warn: false
+
+  import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts,
+    Groups.ContactWAGroups,
     Groups.WAGroup,
     Providers.Maytapi.ApiClient,
     Repo,
+    WAGroup.WAManagedPhone,
     WAManagedPhones
   }
+
+  @spec phone_number(String.t()) :: non_neg_integer()
+  defp phone_number(phone_number) do
+    String.split(phone_number, "@") |> List.first()
+  end
 
   @doc """
   Fetches group using maytapi API and sync it in Glific
@@ -27,9 +38,12 @@ defmodule Glific.Groups.WAGroups do
     with {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 <-
            ApiClient.list_wa_groups(org_id, wa_managed_phone.phone_id),
          {:ok, decoded} <- Jason.decode(body) do
-      decoded
-      |> get_group_details(wa_managed_phone)
-      |> create_whatsapp_groups(org_id)
+      group_details =
+        decoded
+        |> get_group_details(wa_managed_phone)
+
+      create_whatsapp_groups(group_details, org_id)
+      sync_wa_groups_with_contacts(group_details, org_id)
     else
       {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
         {:error, body}
@@ -39,10 +53,90 @@ defmodule Glific.Groups.WAGroups do
     end
   end
 
+  @spec get_group_details(map(), WAManagedPhone.t()) :: [map()]
   defp get_group_details(%{"data" => groups}, wa_managed_phone) when is_list(groups) do
     Enum.map(groups, fn group ->
-      %{name: group["name"], bsp_id: group["id"], wa_managed_phone_id: wa_managed_phone.id}
+      %{
+        name: group["name"],
+        bsp_id: group["id"],
+        wa_managed_phone_id: wa_managed_phone.id,
+        participants: group["participants"] || [],
+        admins: group["admins"]
+      }
     end)
+  end
+
+  @doc false
+  @spec sync_wa_groups_with_contacts(list(), non_neg_integer()) :: :ok | {:error, any()}
+  def sync_wa_groups_with_contacts(group_details, org_id) do
+    Enum.each(group_details, fn group ->
+      {:ok, wa_group} = Repo.fetch_by(WAGroup, %{bsp_id: group.bsp_id})
+      wa_group_id = wa_group.id
+
+      Ecto.Multi.new()
+      |> delete_existing_contacts(wa_group_id)
+      |> add_wa_contact(group, wa_group_id, org_id)
+      |> Repo.transaction()
+      |> handle_transaction_result()
+    end)
+  end
+
+  defp handle_transaction_result({:ok, _result}), do: :ok
+  defp handle_transaction_result({:error, _reason}), do: {:error, :transaction_failed}
+
+  @spec delete_existing_contacts(Ecto.Multi.t(), non_neg_integer()) :: Ecto.Multi.t()
+  defp delete_existing_contacts(multi, wa_group_id) do
+    Ecto.Multi.run(multi, :delete_existing_contacts, fn _repo, _changes ->
+      existing_contact_wa_group_ids =
+        ContactWAGroups.list_contact_wa_group(%{wa_group_id: wa_group_id})
+        |> Enum.map(& &1.contact_id)
+
+      ContactWAGroups.delete_wa_group_contacts_by_ids(wa_group_id, existing_contact_wa_group_ids)
+      {:ok, :deleted}
+    end)
+  end
+
+  @spec add_wa_contact(
+          Ecto.Multi.t(),
+          map(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: Ecto.Multi.t()
+  defp add_wa_contact(multi, group, wa_group_id, org_id) do
+    admin_phone_numbers = Enum.map(group.admins, &phone_number(&1))
+
+    Ecto.Multi.run(multi, :add_contacts, fn _repo, _changes ->
+      Enum.each(group.participants, fn participant_phone ->
+        phone = phone_number(participant_phone)
+        is_admin = admin?(phone, admin_phone_numbers)
+
+        contact_attrs = %{
+          phone: phone,
+          organization_id: org_id,
+          contact_type: "WA"
+        }
+
+        case Contacts.maybe_create_contact(contact_attrs) do
+          {:ok, contact} ->
+            ContactWAGroups.create_contact_wa_group(%{
+              contact_id: contact.id,
+              wa_group_id: wa_group_id,
+              organization_id: org_id,
+              is_admin: is_admin
+            })
+
+          {:error, _reason} ->
+            {:error, :contact_creation_failed}
+        end
+      end)
+
+      {:ok, :added}
+    end)
+  end
+
+  @spec admin?(non_neg_integer(), [non_neg_integer()]) :: boolean()
+  defp admin?(phone, admin_phone_numbers) do
+    phone in admin_phone_numbers
   end
 
   @spec create_whatsapp_groups(list(), non_neg_integer) :: list()
@@ -112,6 +206,25 @@ defmodule Glific.Groups.WAGroups do
   """
   @spec get_wa_group!(non_neg_integer()) :: WAGroup.t()
   def get_wa_group!(id), do: Repo.get!(WAGroup, id)
+
+  @doc """
+  Gets a wa_groups from list of IDs.
+
+  ## Examples
+
+      iex> get_wa_groups!([123])
+      [%WAGroup{}]
+
+      iex> get_wa_groups!([456])
+      []
+
+  """
+  @spec get_wa_groups!([non_neg_integer()]) :: list(WAGroup.t())
+  def get_wa_groups!(ids) do
+    WAGroup
+    |> where([wag], wag.id in ^ids)
+    |> Repo.all()
+  end
 
   @doc """
   Fetches a group with given bsp_id and organization_id (Creates a group if doesnt exist)

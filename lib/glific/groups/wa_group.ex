@@ -7,6 +7,7 @@ defmodule Glific.Groups.WAGroup do
   import Ecto.Changeset
 
   alias Glific.{
+    Contacts.Contact,
     Groups.WAGroup,
     Partners.Organization,
     WAGroup.WAManagedPhone
@@ -36,6 +37,8 @@ defmodule Glific.Groups.WAGroup do
 
     belongs_to :wa_managed_phone, WAManagedPhone
     belongs_to :organization, Organization
+
+    many_to_many :contacts, Contact, join_through: "contacts_wa_groups", on_replace: :delete
 
     field :last_communication_at, :utc_datetime
     timestamps(type: :utc_datetime)

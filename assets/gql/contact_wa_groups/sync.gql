@@ -1,0 +1,9 @@
+mutation syncContactWaGroups {
+  syncContactWaGroups {
+    errors {
+      key
+      message
+    }
+    message
+  }
+}

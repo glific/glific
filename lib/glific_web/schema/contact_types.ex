@@ -89,6 +89,10 @@ defmodule GlificWeb.Schema.ContactTypes do
       resolve(dataloader(Repo, use_parent: true))
     end
 
+    field :wa_groups, list_of(:wa_group) do
+      resolve(dataloader(Repo, use_parent: true))
+    end
+
     field :history, list_of(:contact_history) do
       resolve(fn contact, _, _ ->
         contact_histories =
