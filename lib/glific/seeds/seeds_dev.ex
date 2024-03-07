@@ -4,6 +4,8 @@ if Code.ensure_loaded?(Faker) do
     Script for populating the database. We can call this from tests and/or /priv/repo
     """
 
+    alias Faker.Phone
+
     alias Glific.{
       AccessControl,
       AccessControl.Role,
@@ -1634,12 +1636,12 @@ if Code.ensure_loaded?(Faker) do
 
       wa_managed_phones = [
         %{
-          phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+          phone: Phone.EnUs.phone(),
           phone_id: Enum.random(1000..9999),
           contact_id: contact_1.id
         },
         %{
-          phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+          phone: Phone.EnUs.phone(),
           phone_id: Enum.random(1000..9999),
           contact_id: contact_2.id
         }

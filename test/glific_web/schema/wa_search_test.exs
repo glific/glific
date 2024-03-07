@@ -3,11 +3,9 @@ defmodule GlificWeb.Schema.WaSearchTest do
   use Wormwood.GQLCase
 
   alias Glific.{
-    Contacts.Contact,
-    Groups.WAGroup,
-    Repo,
+    Groups.WAGroups,
     Seeds.SeedsDev,
-    WAGroup.WAManagedPhone
+    WAManagedPhones
   }
 
   setup do
@@ -65,44 +63,11 @@ defmodule GlificWeb.Schema.WaSearchTest do
     assert Enum.count(searches) == 2
   end
 
-  test "wa_search with group filter ids", %{staff: user} do
-    organization_id = 1
+  test "wa_search with group filter ids", %{staff: user} = attrs do
+    [wa_managed_phone_1 | _wa_managed_phones] =
+      WAManagedPhones.list_wa_managed_phones(%{organization_id: attrs.organization_id})
 
-    {:ok, contact_1} =
-      Repo.fetch_by(
-        Contact,
-        %{name: "NGO Main Account", organization_id: organization_id}
-      )
-
-    {:ok, contact_2} =
-      Repo.fetch_by(
-        Contact,
-        %{name: "Default receiver", organization_id: organization_id}
-      )
-
-    {:ok, wa_managed_phone_1} =
-      Repo.fetch_by(
-        WAManagedPhone,
-        %{contact_id: contact_1.id, organization_id: organization_id}
-      )
-
-    {:ok, wa_managed_phone_2} =
-      Repo.fetch_by(
-        WAManagedPhone,
-        %{contact_id: contact_2.id, organization_id: organization_id}
-      )
-
-    {:ok, wa_group_1} =
-      Repo.fetch_by(
-        WAGroup,
-        %{wa_managed_phone_id: wa_managed_phone_1.id, organization_id: organization_id}
-      )
-
-    {:ok, wa_group_2} =
-      Repo.fetch_by(
-        WAGroup,
-        %{wa_managed_phone_id: wa_managed_phone_2.id, organization_id: organization_id}
-      )
+    [wa_group_1, wa_group_2] = WAGroups.list_wa_groups(%{organization_id: attrs.organization_id})
 
     # with available id filters
     result =
@@ -123,7 +88,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
         variables: %{
           "waGroupOpts" => %{},
           "waMessageOpts" => %{"limit" => 1},
-          "filter" => %{"id" => "0"}
+          "filter" => %{"id" => to_string(123_456)}
         }
       )
 

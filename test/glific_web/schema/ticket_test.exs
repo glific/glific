@@ -174,7 +174,6 @@ defmodule GlificWeb.Schema.TicketTest do
     assert get_in(query_data, [:data, "countTickets"]) == 1
   end
 
-  @tag :skip
   test "fetch support tickets field returns list of support ticket", %{user: user} = attrs do
     _support_ticket_1 =
       TicketsFixtures.ticket_fixture(%{
