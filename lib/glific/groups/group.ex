@@ -23,8 +23,7 @@ defmodule Glific.Groups.Group do
     :organization_id,
     :group_type,
     :last_message_number,
-    :last_communication_at,
-    :group_type
+    :last_communication_at
   ]
 
   @type t() :: %__MODULE__{

@@ -1834,7 +1834,7 @@ if Code.ensure_loaded?(Faker) do
           wa_group_id: wa_group.id,
           group_id: group.id,
           organization_id: organization.id
-        }) |> IO.inspect()
+        })
       end)
     end
 

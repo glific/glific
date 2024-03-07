@@ -8,8 +8,6 @@ defmodule Glific.Flows.Broadcast do
 
   require Logger
 
-  alias Glific.Groups.WaGroupsCollections
-
   alias Glific.{
     Contacts.Contact,
     Flows,
@@ -19,6 +17,7 @@ defmodule Glific.Flows.Broadcast do
     Flows.MessageBroadcastContact,
     Groups.Group,
     Groups.WAGroup,
+    Groups.WaGroupsCollections,
     Messages,
     Partners,
     Repo
@@ -66,31 +65,22 @@ defmodule Glific.Flows.Broadcast do
   end
 
   # TODO: fix the specs
+  # TODO: figure why its not working on Task.async_stream?
+
   @doc """
   The one simple public interface to broadcast a wa_group
   """
-  @spec broadcast_flow_to_wa_group(Flow.t(), list()) ::
-          {:ok, MessageBroadcast.t()} | {:error, String.t()}
+  @spec broadcast_flow_to_wa_group(Flow.t(), list()) :: :ok
   def broadcast_flow_to_wa_group(flow, group_ids) do
-    stream =
-      Task.Supervisor.async_stream_nolink(
-        Glific.Broadcast.Supervisor,
-        group_ids,
-        fn group_id ->
-          # fetch wa_group belong to group_id
-          # wa_group_collection = WaGroupCollections.list_wa_group_collections(%{group_id: group_id})
-          # filter wa_groups only
-          WaGroupsCollections.list_wa_groups_collection(%{filter: %{group_id: group_id}})
-          |> IO.inspect()
-          |> Enum.map(fn wa_grp_collection -> wa_grp_collection.wa_group end)
-          |> then(&broadcast_wa_groups(flow, &1))
-        end,
-        ordered: false,
-        timeout: 5_000,
-        on_timeout: :kill_task
-      )
-
-    Stream.run(stream)
+    Task.async_stream(group_ids, fn group_id ->
+      Repo.put_process_state(flow.organization_id)
+      WaGroupsCollections.list_wa_groups_collection(%{filter: %{group_id: group_id, organization_id: flow.organization_id}})
+      |> Enum.map(fn wa_grp_col ->
+        Repo.preload(wa_grp_col, :wa_group) |> then(& &1.wa_group)
+      end)
+      |> then(&broadcast_wa_groups(flow, &1))
+    end)
+    |> Stream.run()
   end
 
   @doc """

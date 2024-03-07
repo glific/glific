@@ -37,14 +37,9 @@ defmodule Glific.Groups.WaGroupsCollections do
   """
   @spec list_wa_groups_collection(map()) :: [WAGroupsCollection.t()]
   def list_wa_groups_collection(args) do
-    WAGroupsCollection
-    |> Repo.all()
-    |> IO.inspect()
-
     args
     |> Repo.list_filter_query(WAGroupsCollection, &Repo.opts_with_id/2, &filter_with/2)
     |> Repo.all()
-    |> IO.inspect()
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()

@@ -31,9 +31,10 @@ defmodule Glific.Triggers do
     # triggers can be executed multiple times a day based on frequency
     now = Timex.shift(now, minutes: 1)
 
+    # TODO: put the next_trigger condition back
     Trigger
     |> where([t], t.organization_id == ^organization_id and t.is_active == true)
-    |> where([t], t.next_trigger_at < ^now)
+    # |> where([t], t.next_trigger_at < ^now)
     |> select([t], t.id)
     |> limit(@max_trigger_limit)
     |> Repo.all()
@@ -135,7 +136,6 @@ defmodule Glific.Triggers do
     Logger.info(
       "Starting flow: #{flow.name} trigger: #{trigger.name} of org_id: #{trigger.organization_id} with time #{trigger.next_trigger_at} for WA group"
     )
-
     Flows.start_wa_group_flow(flow, trigger.group_ids)
   end
 
