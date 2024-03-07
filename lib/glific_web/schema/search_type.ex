@@ -204,16 +204,16 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :wa_search, list_of(:wa_conversation) do
       arg(:wa_message_opts, non_null(:opts))
       arg(:wa_group_opts, non_null(:opts))
-      arg(:filter, non_null(:wa_search_filter))
+      arg(:filter, :wa_search_filter)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Searches.wa_search/3)
     end
 
     @desc "New Search for wa_messages + wa_groups"
     field :wa_search_multi, :wa_search_cup do
-      arg(:filter, non_null(:wa_search_filter))
       arg(:wa_message_opts, non_null(:opts))
       arg(:wa_group_opts, non_null(:opts))
+      arg(:filter, :wa_search_filter)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Searches.wa_search_multi/3)
     end
