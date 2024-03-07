@@ -20,10 +20,6 @@ defmodule GlificWeb.Schema.WAGroupsCollectionTypes do
     field :group, :group do
       resolve(dataloader(Repo))
     end
-
-    field :wa_group, :wa_group do
-      resolve(dataloader(Repo))
-    end
   end
 
   input_object :wa_groups_collection_input do
@@ -59,7 +55,7 @@ defmodule GlificWeb.Schema.WAGroupsCollectionTypes do
 
   object :wa_groups_collection_queries do
     @desc "Get a list of all the contacts associated with the wa group"
-    field :list_wa_groups_colection, list_of(:wa_groups_collection) do
+    field :list_wa_groups_collection, list_of(:wa_groups_collection) do
       arg(:filter, :wa_groups_collection_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)

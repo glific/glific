@@ -77,7 +77,7 @@ defmodule Glific.Groups.WaGroupsCollections do
           :add_wa_group_ids => any(),
           :delete_wa_group_ids => [integer()],
           optional(any()) => any()
-        }) :: Glific.Groups.WaGroupsCollection.t()
+        }) :: WaGroupsCollections.t()
 
   def update_collection_wa_group(
         %{
@@ -112,7 +112,7 @@ defmodule Glific.Groups.WaGroupsCollections do
           :add_group_ids => any(),
           :delete_group_ids => [integer()],
           optional(any()) => any()
-        }) :: Glific.Groups.WaGroupsCollection.t()
+        }) :: WaGroupsCollections.t()
 
   def update_wa_group_collection(
         %{

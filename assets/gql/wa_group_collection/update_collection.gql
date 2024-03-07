@@ -1,0 +1,16 @@
+mutation UpdateCollectionWaGroup($input: UpdateCollectionWaGroupInput!) {
+  updateCollectionWaGroup(input: $input) {
+    collectionWaGroups {
+      group {
+        id
+        label
+        waGroups {
+          id
+          label
+        }
+      }
+      id
+    }
+    waGroupsDeleted
+  }
+}
