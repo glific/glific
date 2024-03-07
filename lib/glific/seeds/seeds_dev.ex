@@ -1818,7 +1818,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
-    @spec seed_wa_group_collections(Organization.t() | nil) :: {integer(), nil}
+    @spec seed_wa_group_collections(Organization.t() | nil) :: :ok
     def seed_wa_group_collections(organization \\ nil) do
       organization = get_organization(organization)
       wa_groups = WAGroups.list_wa_groups(%{filter: %{organization_id: organization.id}})
