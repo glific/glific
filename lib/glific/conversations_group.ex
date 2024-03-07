@@ -106,7 +106,20 @@ defmodule Glific.ConversationsGroup do
   @spec wa_list_conversations(list() | nil, map()) :: list() | integer
   def wa_list_conversations(group_ids, args) do
     group_ids
-    |> get_groups(args.wa_group_opts)
+    |> get_wa_groups(args.wa_group_opts)
     |> get_conversations(args.wa_message_opts)
+  end
+
+  defp get_wa_groups(gids, opts) when is_list(gids) do
+    get_groups_query(opts)
+    |> where([g], g.group_type == "WA")
+    |> where([g], g.id in ^gids)
+    |> Repo.all()
+  end
+
+  defp get_wa_groups(nil, opts) do
+    get_groups_query(opts)
+    |> where([g], g.group_type == "WA")
+    |> Repo.all()
   end
 end
