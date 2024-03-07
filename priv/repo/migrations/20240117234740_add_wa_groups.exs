@@ -98,6 +98,10 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
         null: false,
         comment: "Unique organization ID"
 
+      add :is_dm, :boolean,
+        default: false,
+        comment: "Flag to check if the message is Group Message or DM"
+
       add :context_id, :text, comment: "ID of the message context"
       add :context_message_id, references(:wa_messages, on_delete: :delete_all)
 
