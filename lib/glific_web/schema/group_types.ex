@@ -39,6 +39,10 @@ defmodule GlificWeb.Schema.GroupTypes do
       resolve(dataloader(Repo))
     end
 
+    field :wa_groups, list_of(:wa_group) do
+      resolve(dataloader(Repo))
+    end
+
     # number of contacts in the group
     # this is an expensive operation we can come back and optimize it later
     field :contacts_count, :integer do
@@ -79,6 +83,7 @@ defmodule GlificWeb.Schema.GroupTypes do
   end
 
   input_object :group_input do
+    field :group_type, :string
     field :label, :string
     field :description, :string
     field :is_restricted, :boolean

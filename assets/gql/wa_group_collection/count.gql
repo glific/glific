@@ -1,0 +1,3 @@
+query countWaGroupsCollection($filter: WaGroupsCollectionFilter) {
+  countWaGroupsCollection(filter: $filter)
+}
