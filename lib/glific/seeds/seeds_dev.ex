@@ -1817,6 +1817,7 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert_all(WAMessage, wa_messages_entries)
     end
 
+    @doc false
     @spec seed_wa_group_collections(Organization.t() | nil) :: {integer(), nil}
     def seed_wa_group_collections(organization \\ nil) do
       organization = get_organization(organization)
