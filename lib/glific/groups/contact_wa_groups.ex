@@ -15,7 +15,6 @@ defmodule Glific.Groups.ContactWAGroups do
   @primary_key false
 
   @type t() :: %__MODULE__{
-          contact_wa_groups: [ContactWAGroup.t()],
           wa_group_contacts: [ContactWAGroup.t()],
           number_deleted: non_neg_integer
         }
@@ -23,7 +22,6 @@ defmodule Glific.Groups.ContactWAGroups do
   embedded_schema do
     # the number of contacts we deleted
     field(:number_deleted, :integer, default: 0)
-    embeds_many(:contact_wa_groups, ContactWAGroup)
     embeds_many(:wa_group_contacts, ContactWAGroup)
   end
 

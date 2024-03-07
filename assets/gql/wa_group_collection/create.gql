@@ -1,0 +1,7 @@
+#import "./fields.frag.gql"
+
+mutation CreateWaGroupsCollection($input: WaGroupsCollectionInput!) {
+  createWaGroupsCollection(input: $input) {
+    ...WaGroupsCollectionFields
+  }
+}

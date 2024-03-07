@@ -40,6 +40,7 @@ defmodule GlificWeb.Schema.SearchTypes do
   end
 
   object :wa_conversation do
+    field :group, :group
     field :wa_group, :wa_group
     field :wa_messages, list_of(:wa_message)
   end
@@ -132,6 +133,12 @@ defmodule GlificWeb.Schema.SearchTypes do
 
     @desc "Match term for saving the search"
     field :term, :string
+
+    @desc "match groups"
+    field :search_group, :boolean
+
+    @desc "Searches based on group label"
+    field :group_label, :string
   end
 
   object :search_queries do
