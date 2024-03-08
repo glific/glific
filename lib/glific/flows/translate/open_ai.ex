@@ -20,9 +20,9 @@ defmodule Glific.Flows.Translate.OpenAI do
   iex> Glific.Flows.Translate.OpenAI.translate(["thankyou for joining", "correct answer"], "english", "hindi")
     {:ok, ["शामिल होने के लिए धन्यवाद", "सही जवाब"]}
   """
-  @spec translate([String.t()], String.t(), String.t()) ::
+  @spec translate([String.t()], String.t(), String.t(), Keyword.t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
-  def translate(strings, src, dst) do
+  def translate(strings, src, dst, _opts \\ []) do
     strings
     |> Translate.check_large_strings()
     |> Task.async_stream(fn text -> do_translate(text, src, dst) end,

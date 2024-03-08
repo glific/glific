@@ -9,9 +9,7 @@ defmodule Glific.Flows.Translate.Translate do
   alias Glific.{
     Flags,
     Flows.Translate.GoogleTranslate,
-    Flows.Translate.OpenAI,
-    Flows.Translate.Simple,
-    Settings
+    Flows.Translate.OpenAI
   }
 
   @doc """
@@ -26,24 +24,8 @@ defmodule Glific.Flows.Translate.Translate do
   """
   @spec translate([String.t()], String.t(), String.t(), map()) ::
           {:ok, [String.t()]} | {:error, String.t()}
-  def translate(strings, src, dst, organization) do
-    translation_engine = impl(organization)
-
-    case translation_engine do
-      OpenAI ->
-        OpenAI.translate(strings, src, dst)
-
-      GoogleTranslate ->
-        language_code = Settings.get_language_code(organization.id)
-
-        src_lang_code = Map.get(language_code, src, src)
-        dst_lang_code = Map.get(language_code, dst, dst)
-        GoogleTranslate.translate(strings, src_lang_code, dst_lang_code)
-
-      _ ->
-        Simple.translate(strings, src, dst)
-    end
-  end
+  def translate(strings, src, dst, organization),
+    do: impl(organization).translate(strings, src, dst, org_id: organization.id)
 
   defp impl(organization) do
     cond do

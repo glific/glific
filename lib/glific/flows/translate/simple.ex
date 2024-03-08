@@ -14,9 +14,9 @@ defmodule Glific.Flows.Translate.Simple do
     iex> Glific.Flows.Translate.Simple.translate(["thankyou for joining", "correct answer"], "english", "hindi")
       {:ok, ["hindi thankyou for joining english", "hindi correct answer english"]}
   """
-  @spec translate([String.t()], String.t(), String.t()) ::
+  @spec translate([String.t()], String.t(), String.t(), Keyword.t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
-  def translate(strings, src, dst) do
+  def translate(strings, src, dst, _opts \\ []) do
     result =
       strings
       |> Enum.map(fn s ->

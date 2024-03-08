@@ -4,7 +4,10 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
   """
   @behaviour Glific.Flows.Translate.Translate
 
-  alias Glific.Flows.Translate.Translate
+  alias Glific.{
+    Flows.Translate.Translate,
+    Settings
+  }
 
   require Logger
 
@@ -18,10 +21,17 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
       iex> Glific.Flows.Translate.GoogleTranslate.translate(["thank you for joining", "correct answer"], "English", "Hindi")
       {:ok, ["शामिल होने के लिए धन्यवाद", "सही जवाब"]}
   """
-  @spec translate([String.t()], String.t(), String.t()) ::
+  @spec translate([String.t()], String.t(), String.t(), Keyword.t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
-  def translate(strings, src, dst) do
-    languages = %{"source" => src, "target" => dst}
+  def translate(strings, src, dst, opts \\ []) do
+    org_id = Keyword.get(opts, :org_id)
+    Settings.get_language_code(org_id)
+    language_code = Settings.get_language_code(org_id)
+
+    src_lang_code = Map.get(language_code, src, src)
+    dst_lang_code = Map.get(language_code, dst, dst)
+
+    languages = %{"source" => src_lang_code, "target" => dst_lang_code}
 
     strings
     |> Translate.check_large_strings()
