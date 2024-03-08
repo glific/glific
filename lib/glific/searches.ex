@@ -381,6 +381,26 @@ defmodule Glific.Searches do
   Full text whatsapp group search interface via Postgres
   """
   @spec wa_search(map()) :: [WAConversation.t()]
+  def wa_search(%{filter: %{search_group: true, group_label: group_label}} = args) do
+    Logger.info(
+      "Searches.WASearch/2 with : args: #{inspect(args)} group label: #{inspect(group_label)}"
+    )
+
+    ConversationsGroup.wa_list_conversations(
+      group_ids(args),
+      args
+    )
+  end
+
+  def wa_search(%{filter: %{search_group: true}} = args) do
+    Logger.info("Searches.WASearch/2 with : args: #{inspect(args)}")
+
+    ConversationsGroup.wa_list_conversations(
+      group_ids(args),
+      args
+    )
+  end
+
   def wa_search(args) do
     Logger.info("Searches.wa_Search/1 with : args: #{inspect(args)}")
 
