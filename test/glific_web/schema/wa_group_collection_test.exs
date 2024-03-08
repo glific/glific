@@ -286,4 +286,33 @@ defmodule GlificWeb.Schema.WAGroupCollectionTest do
 
     assert wa_group_collection == []
   end
+
+  test "list_wa_groups_collection/1", %{user: user} do
+    wa_managed_phone =
+      Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+    wa_group =
+      Fixtures.wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    group = Fixtures.group_fixture(%{organization_id: user.organization_id})
+
+    WaGroupsCollections.update_collection_wa_group(%{
+      organization_id: user.organization_id,
+      group_id: group.id,
+      add_wa_group_ids: [wa_group.id],
+      delete_wa_group_ids: []
+    })
+
+    result =
+      WaGroupsCollections.list_wa_groups_collection(%{
+        filter: %{group_id: group.id, organization_id: user.organization_id}
+      })
+
+    wa_group = hd(result)
+    assert wa_group.id == wa_group.id
+    assert wa_group.group_id == group.id
+  end
 end

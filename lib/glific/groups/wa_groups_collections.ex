@@ -24,6 +24,32 @@ defmodule Glific.Groups.WaGroupsCollections do
     embeds_many(:collection_wa_groups, WAGroupsCollection)
   end
 
+  @doc """
+  Returns the list of whatsapp groups collections structs.
+  ## Examples
+      iex> list_wa_groups_collection()
+      [%WAGroupsCollection{}, ...]
+  """
+  @spec list_wa_groups_collection(map()) :: [WAGroupsCollection.t()]
+  def list_wa_groups_collection(args) do
+    args
+    |> Repo.list_filter_query(WAGroupsCollection, &Repo.opts_with_id/2, &filter_with/2)
+    |> Repo.all()
+  end
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:group_id, group_id}, query ->
+        where(query, [q], q.group_id == ^group_id)
+
+      _, query ->
+        query
+    end)
+  end
+
   @doc false
   @spec create_wa_groups_collection(map()) ::
           {:ok, WAGroupsCollection.t()} | {:error, Ecto.Changeset.t()}
