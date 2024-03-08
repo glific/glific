@@ -4,6 +4,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Fixtures,
     Groups.WAGroup,
     Repo,
     Seeds.SeedsDev
@@ -148,5 +149,38 @@ defmodule GlificWeb.Schema.WaSearchTest do
     [conv | _] = searches
     assert Enum.count(searches) == 1
     assert Enum.count(conv) == 2
+
+    # with search group and group label filter
+    group =
+      Fixtures.group_fixture(%{organization_id: user.organization_id})
+      |> Map.put(:group_type, "WA")
+
+    result =
+      auth_query_gql_by(:wa_search, user,
+        variables: %{
+          "filter" => %{
+            "groupLabel" => "#{group.label}",
+            "searchGroup" => true
+          },
+          "waGroupOpts" => %{"limit" => 1},
+          "waMessageOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert {:ok, %{data: %{"search" => _searches}}} = result
+
+    # with search group filter
+    result =
+      auth_query_gql_by(:wa_search, user,
+        variables: %{
+          "filter" => %{
+            "searchGroup" => true
+          },
+          "waGroupOpts" => %{"limit" => 1},
+          "waMessageOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert {:ok, %{data: %{"search" => _searches}}} = result
   end
 end
