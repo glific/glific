@@ -15,14 +15,12 @@ defmodule Glific.Groups.WaGroupsCollections do
   @primary_key false
 
   @type t() :: %__MODULE__{
-          wa_groups_collections: [WAGroupsCollection.t()],
           collection_wa_groups: [WAGroupsCollection.t()],
           wa_groups_deleted: non_neg_integer
         }
 
   embedded_schema do
     field(:wa_groups_deleted, :integer, default: 0)
-    embeds_many(:wa_groups_collections, WAGroupsCollection)
     embeds_many(:collection_wa_groups, WAGroupsCollection)
   end
 
@@ -74,14 +72,14 @@ defmodule Glific.Groups.WaGroupsCollections do
   end
 
   @doc false
-  @spec update_wa_groups_collection(%{
+  @spec update_collection_wa_group(%{
+          :group_id => integer(),
           :add_wa_group_ids => any(),
           :delete_wa_group_ids => [integer()],
-          :group_id => integer(),
           optional(any()) => any()
-        }) :: Glific.Groups.WaGroupsCollections.t()
+        }) :: WaGroupsCollections.t()
 
-  def update_wa_groups_collection(
+  def update_collection_wa_group(
         %{
           group_id: group_id,
           add_wa_group_ids: add_ids,
@@ -100,7 +98,7 @@ defmodule Glific.Groups.WaGroupsCollections do
         end
       )
 
-    {wa_groups_deleted, _} = delete_group_wa_group_by_ids(group_id, delete_ids)
+    {wa_groups_deleted, _} = delete_collection_by_ids(group_id, delete_ids)
 
     %WaGroupsCollections{
       wa_groups_deleted: wa_groups_deleted,
@@ -109,9 +107,63 @@ defmodule Glific.Groups.WaGroupsCollections do
   end
 
   @doc false
-  @spec delete_group_wa_group_by_ids(integer, list()) :: {integer(), nil | [term()]}
-  def delete_group_wa_group_by_ids(group_id, delete_ids) do
-    fields = {{:group_id, group_id}, {:wa_group_id, delete_ids}}
+  @spec update_wa_group_collection(%{
+          :wa_group_id => integer(),
+          :add_group_ids => any(),
+          :delete_group_ids => [integer()],
+          optional(any()) => any()
+        }) :: WaGroupsCollections.t()
+
+  def update_wa_group_collection(
+        %{
+          wa_group_id: wa_group_id,
+          add_group_ids: add_ids,
+          delete_group_ids: delete_ids
+        } = attrs
+      ) do
+    wa_group_collection =
+      Enum.reduce(
+        add_ids,
+        [],
+        fn group_id, acc ->
+          case create_wa_groups_collection(Map.put(attrs, :group_id, group_id)) do
+            {:ok, wa_groups_collection} -> [wa_groups_collection | acc]
+            _ -> acc
+          end
+        end
+      )
+
+    {wa_groups_deleted, _} = delete_wa_groups_by_ids(wa_group_id, delete_ids)
+
+    %WaGroupsCollections{
+      wa_groups_deleted: wa_groups_deleted,
+      collection_wa_groups: wa_group_collection
+    }
+  end
+
+  @doc """
+  Delete wa groups
+  """
+  @spec delete_wa_groups_by_ids(integer, list()) :: {integer(), nil | [term()]}
+  def delete_wa_groups_by_ids(wa_group_id, group_ids) do
+    fields = {{:wa_group_id, wa_group_id}, {:group_id, group_ids}}
     Repo.delete_relationships_by_ids(WAGroupsCollection, fields)
+  end
+
+  @doc false
+  @spec delete_collection_by_ids(integer, list()) :: {integer(), nil | [term()]}
+  def delete_collection_by_ids(group_id, wa_group_id) do
+    fields = {{:group_id, group_id}, {:wa_group_id, wa_group_id}}
+    Repo.delete_relationships_by_ids(WAGroupsCollection, fields)
+  end
+
+  @doc """
+  Return the count of wa group collection, using the same filter as list_wa_groups_collection
+  """
+  @spec count_wa_groups_collection(map()) :: [WAGroupsCollection.t()]
+  def count_wa_groups_collection(args) do
+    args
+    |> Repo.list_filter_query(WAGroupsCollection, nil, &filter_with/2)
+    |> Repo.aggregate(:count)
   end
 end

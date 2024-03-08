@@ -8,6 +8,10 @@ query waSearch(
     waMessageOpts: $waMessageOpts
     filter: $filter
   ) {
+    group {
+      id
+      label
+    }
     wa_group {
       id
       label
