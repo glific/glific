@@ -64,6 +64,11 @@ defmodule Glific.Groups do
       |> Repo.add_permission(&Groups.add_permission/2, skip_permission)
 
     query =
+      if args[:filter][:group_id],
+        do: where(query, [g], g.id == ^args[:filter][:group_id]),
+        else: query
+
+    query =
       if args[:filter][:group_type],
         do: where(query, [g], g.group_type == ^args[:filter][:group_type]),
         else: query

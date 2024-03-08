@@ -5,9 +5,19 @@ defmodule GlificWeb.Resolvers.WaGroup do
   """
 
   alias Glific.{
+    Groups,
     Groups.ContactWAGroups,
     Groups.WAGroups
   }
+
+  @doc """
+  Get the list of whastapp groups filtered by args
+  """
+  @spec wa_groups(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def wa_groups(_, args, _) do
+    {:ok, Groups.list_groups(args)}
+  end
 
   @doc """
   Get the list of contact whastapp groups filtered by args

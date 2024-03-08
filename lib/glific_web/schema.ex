@@ -57,6 +57,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.ContactWaGroupTypes)
   import_types(__MODULE__.WAManagedPhoneTypes)
   import_types(__MODULE__.WAGroupsCollectionTypes)
+  import_types(__MODULE__.WaGroupTypes)
 
   query do
     import_fields(:profile_queries)
@@ -122,6 +123,8 @@ defmodule GlificWeb.Schema do
     import_fields(:wa_search_queries)
 
     import_fields(:wa_groups_collection_queries)
+
+    import_fields(:wa_group_queries)
   end
 
   mutation do

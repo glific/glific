@@ -1,8 +1,0 @@
-query listWaGroupsCollection($filter: WaGroupsCollectionFilter) {
-  listWaGroupsCollection(filter: $filter) {
-    bspId
-    id
-    label
-    lastCommunicationAt
-  }
-}

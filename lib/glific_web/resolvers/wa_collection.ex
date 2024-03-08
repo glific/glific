@@ -9,15 +9,6 @@ defmodule GlificWeb.Resolvers.WACollection do
   }
 
   @doc """
-  Get the list of whastapp groups filtered by args
-  """
-  @spec list_wa_groups_collection(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def list_wa_groups_collection(_, args, _) do
-    {:ok, WaGroupsCollections.list_wa_groups_collection(args)}
-  end
-
-  @doc """
   Creates an whatsapp groups collection entry
   """
   @spec create_wa_groups_collection(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
