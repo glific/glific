@@ -74,6 +74,19 @@ defmodule GlificWeb.Schema.WAGroupCollectionTest do
 
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "waGroups"])) == 1
+
+    # get the wa groups
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{
+            "includeGroups" => []
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "waGroups"])) == 1
   end
 
   test "create wa groups collection", %{user: user} do
