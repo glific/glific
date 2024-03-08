@@ -106,11 +106,9 @@ defmodule Glific.Communications.GroupMessage do
     message_params =
       message_params
       |> Map.merge(metadata)
-      |> Map.merge(%{
-        flow: :inbound,
-        bsp_status: :delivered,
-        status: :received
-      })
+      |> Map.put_new(:flow, :inbound)
+      |> Map.put_new(:bsp_status, :delivered)
+      |> Map.put_new(:status, :received)
 
     # publish a telemetry event about the message being received
     :telemetry.execute(
