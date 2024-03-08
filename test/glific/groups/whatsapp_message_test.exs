@@ -211,14 +211,16 @@ defmodule Glific.Groups.WhatsappMessageTest do
 
   test "receive_text/1 receive text message correctly" do
     params = %{
-      "message" => %{"id" => "1", "text" => "Hello, World!"},
+      "message" => %{"id" => "1", "text" => "Hello, World!", "fromMe" => false},
       "user" => %{"phone" => "1234567890", "name" => "John Doe"}
     }
 
     expected_result = %{
       bsp_id: "1",
       body: "Hello, World!",
-      sender: %{phone: "1234567890", name: "John Doe"}
+      sender: %{phone: "1234567890", name: "John Doe"},
+      flow: :inbound,
+      status: "sent"
     }
 
     assert Message.receive_text(params) == expected_result
@@ -230,7 +232,8 @@ defmodule Glific.Groups.WhatsappMessageTest do
         "id" => "2",
         "caption" => "A photo",
         "url" => "http://example.com/photo.jpg",
-        "type" => "image"
+        "type" => "image",
+        "fromMe" => false
       },
       "user" => %{"phone" => "1234567890", "name" => "Jane Doe"}
     }
@@ -241,7 +244,8 @@ defmodule Glific.Groups.WhatsappMessageTest do
       url: "http://example.com/photo.jpg",
       content_type: "image",
       source_url: "http://example.com/photo.jpg",
-      sender: %{phone: "1234567890", name: "Jane Doe"}
+      sender: %{phone: "1234567890", name: "Jane Doe"},
+      flow: :inbound
     }
 
     assert Message.receive_media(params) == expected_result

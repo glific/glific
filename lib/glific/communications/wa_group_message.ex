@@ -106,11 +106,9 @@ defmodule Glific.Communications.GroupMessage do
     message_params =
       message_params
       |> Map.merge(metadata)
-      |> Map.merge(%{
-        flow: :inbound,
-        bsp_status: :delivered,
-        status: :received
-      })
+      |> Map.put_new(:flow, :inbound)
+      |> Map.put_new(:bsp_status, :delivered)
+      |> Map.put_new(:status, :received)
 
     # publish a telemetry event about the message being received
     :telemetry.execute(
@@ -159,13 +157,29 @@ defmodule Glific.Communications.GroupMessage do
   end
 
   @spec create_message_metadata(Contact.t(), map(), atom()) :: map()
-  defp create_message_metadata(contact, message_params, type) do
+  defp create_message_metadata(contact, %{is_dm: is_dm} = message_params, type) do
     %WAManagedPhone{id: wa_managed_phone_id} =
       Repo.get_by(WAManagedPhone, %{
         organization_id: message_params.organization_id,
         phone: message_params.receiver
       })
 
+    group_id = fetch_group_id(wa_managed_phone_id, message_params)
+
+    %{
+      type: type,
+      contact_id: contact.id,
+      is_dm: is_dm,
+      organization_id: contact.organization_id,
+      wa_group_id: group_id,
+      wa_managed_phone_id: wa_managed_phone_id
+    }
+  end
+
+  @spec fetch_group_id(non_neg_integer(), map()) :: nil | non_neg_integer()
+  defp fetch_group_id(_wa_managed_phone_id, %{is_dm: true} = _message_params), do: nil
+
+  defp fetch_group_id(wa_managed_phone_id, message_params) do
     {:ok, group} =
       WAGroups.maybe_create_group(%{
         organization_id: message_params.organization_id,
@@ -174,12 +188,6 @@ defmodule Glific.Communications.GroupMessage do
         label: message_params.group_name
       })
 
-    %{
-      type: type,
-      contact_id: contact.id,
-      organization_id: contact.organization_id,
-      wa_group_id: group.id,
-      wa_managed_phone_id: wa_managed_phone_id
-    }
+    group.id
   end
 end

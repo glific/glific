@@ -124,6 +124,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :send_at, :datetime
     field :status, :string
     field :errors, :json
+    field :is_dm, :boolean
 
     # expose the date we processed this message since external clients need it
     field :inserted_at, :datetime

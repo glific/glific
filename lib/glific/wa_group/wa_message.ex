@@ -46,6 +46,7 @@ defmodule Glific.WAGroup.WAMessage do
           wa_managed_phone: WAManagedPhone.t() | Ecto.Association.NotLoaded.t() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
+          is_dm: :boolean | nil,
           inserted_at: :utc_datetime_usec | nil,
           updated_at: :utc_datetime_usec | nil
         }
@@ -71,7 +72,7 @@ defmodule Glific.WAGroup.WAMessage do
     :media_id,
     :send_at,
     :sent_at,
-    :updated_at
+    :is_dm
   ]
 
   schema "wa_messages" do
@@ -87,6 +88,7 @@ defmodule Glific.WAGroup.WAMessage do
     field(:sent_at, :utc_datetime)
     field(:context_id, :string)
     field(:bsp_id, :string)
+    field(:is_dm, :boolean)
 
     belongs_to(:contact, Contact)
     belongs_to(:wa_managed_phone, WAManagedPhone)
