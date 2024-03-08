@@ -16,7 +16,6 @@ defmodule Glific.Flows.Broadcast do
     Flows.MessageBroadcast,
     Flows.MessageBroadcastContact,
     Groups.Group,
-    Groups.WAGroup,
     Groups.WaGroupsCollections,
     Messages,
     Partners,
@@ -75,9 +74,7 @@ defmodule Glific.Flows.Broadcast do
       WaGroupsCollections.list_wa_groups_collection(%{
         filter: %{group_id: group_id, organization_id: flow.organization_id}
       })
-      |> Enum.map(fn wa_grp_col ->
-        Repo.preload(wa_grp_col, :wa_group) |> then(& &1.wa_group)
-      end)
+      |> Enum.map(& &1.wa_group_id)
       |> then(&broadcast_wa_groups(flow, &1))
     end)
     |> Stream.run()
@@ -118,13 +115,13 @@ defmodule Glific.Flows.Broadcast do
   We are using this function from the flows.
   """
   @spec broadcast_wa_groups(Flow.t(), list()) :: :ok
-  def broadcast_wa_groups(flow, wa_groups) do
+  def broadcast_wa_groups(flow, wa_group_ids) do
     Repo.put_process_state(flow.organization_id)
     opts = opts(flow.organization_id)
 
     broadcast_for_wa_groups(
       %{flow: flow, type: :wa_group},
-      wa_groups,
+      wa_group_ids,
       opts
     )
   end
@@ -300,9 +297,9 @@ defmodule Glific.Flows.Broadcast do
   # """
   # Lets start a flow for a bunch of wa_groups in parallel
   # """
-  @spec broadcast_for_wa_groups(map(), list(WAGroup.t()), Keyword.t()) :: :ok
-  defp broadcast_for_wa_groups(attrs, wa_groups, opts) do
-    wa_groups
+  @spec broadcast_for_wa_groups(map(), list(non_neg_integer()), Keyword.t()) :: :ok
+  defp broadcast_for_wa_groups(attrs, wa_group_ids, opts) do
+    wa_group_ids
     |> Enum.chunk_every(opts[:bsp_limit])
     |> Enum.with_index()
     |> Enum.each(fn {chunk_list, delay_offset} ->
@@ -374,15 +371,15 @@ defmodule Glific.Flows.Broadcast do
     Stream.run(stream)
   end
 
-  @spec wa_group_tasks(Flow.t(), [WAGroup.t()], Keyword.t()) :: :ok
-  defp wa_group_tasks(flow, wa_groups, opts) do
+  @spec wa_group_tasks(Flow.t(), [non_neg_integer()], Keyword.t()) :: :ok
+  defp wa_group_tasks(flow, wa_group_ids, opts) do
     stream =
       Task.Supervisor.async_stream_nolink(
         Glific.Broadcast.Supervisor,
-        wa_groups,
-        fn wa_group ->
-          Repo.put_process_state(wa_group.organization_id)
-          FlowContext.init_wa_group_context(flow, wa_group, @status, opts)
+        wa_group_ids,
+        fn wa_group_id ->
+          Repo.put_process_state(flow.organization_id)
+          FlowContext.init_wa_group_context(flow, wa_group_id, @status, opts)
           :ok
         end,
         ordered: false,
