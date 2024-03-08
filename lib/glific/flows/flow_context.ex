@@ -655,18 +655,18 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Seed the context and set the wake up time as needed
   """
-  @spec seed_wa_group_context(Flow.t(), WAGroup.t(), String.t(), Keyword.t()) ::
+  @spec seed_wa_group_context(Flow.t(), non_neg_integer(), String.t(), Keyword.t()) ::
           {:ok, FlowContext.t()} | {:error, Ecto.Changeset.t()}
-  def seed_wa_group_context(flow, wa_group, status, opts \\ []) do
+  def seed_wa_group_context(flow, wa_group_id, status, opts \\ []) do
     delay = Keyword.get(opts, :delay, 0)
 
-    Logger.info("Seeding flow: id: '#{flow.id}', wa_group_id: '#{wa_group.id}'")
+    Logger.info("Seeding flow: id: '#{flow.id}', wa_group_id: '#{wa_group_id}'")
 
     node = flow.start_node
 
     {:ok, context} =
       create_flow_context(%{
-        wa_group_id: wa_group.id,
+        wa_group_id: wa_group_id,
         node_uuid: node.uuid,
         flow_uuid: flow.uuid,
         status: status,
@@ -738,10 +738,10 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Start a new context, if there is an existing context, blow it away
   """
-  @spec init_wa_group_context(Flow.t(), WAGroup.t(), String.t(), Keyword.t() | []) ::
+  @spec init_wa_group_context(Flow.t(), non_neg_integer(), String.t(), Keyword.t() | []) ::
           {:ok | :wait, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def init_wa_group_context(flow, wa_group, status, opts \\ []) do
-    {:ok, context} = seed_wa_group_context(flow, wa_group, status, opts)
+  def init_wa_group_context(flow, wa_group_id, status, opts \\ []) do
+    {:ok, context} = seed_wa_group_context(flow, wa_group_id, status, opts)
 
     context
     |> execute([])

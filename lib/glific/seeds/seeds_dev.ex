@@ -20,6 +20,8 @@ if Code.ensure_loaded?(Faker) do
       Groups,
       Groups.Group,
       Groups.WAGroup,
+      Groups.WAGroups,
+      Groups.WAGroupsCollection,
       Messages.Message,
       Messages.MessageMedia,
       Notifications,
@@ -457,6 +459,14 @@ if Code.ensure_loaded?(Faker) do
         label: "Restricted Group",
         is_restricted: true,
         organization_id: organization.id
+      })
+
+      # Group with collection of WA groups
+      Repo.insert!(%Group{
+        label: "Default WA Group Collection",
+        is_restricted: false,
+        organization_id: organization.id,
+        group_type: "WA"
       })
     end
 
@@ -1809,6 +1819,28 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert_all(WAMessage, wa_messages_entries)
     end
 
+    @doc false
+    @spec seed_wa_group_collections(Organization.t() | nil) :: :ok
+    def seed_wa_group_collections(organization \\ nil) do
+      organization = get_organization(organization)
+      wa_groups = WAGroups.list_wa_groups(%{filter: %{organization_id: organization.id}})
+
+      [group] =
+        Groups.list_groups(%{
+          filter: %{organization_id: organization.id, label: "Default WA Group Collection"}
+        })
+
+      wa_groups
+      |> Enum.take(2)
+      |> Enum.each(fn wa_group ->
+        Repo.insert!(%WAGroupsCollection{
+          wa_group_id: wa_group.id,
+          group_id: group.id,
+          organization_id: organization.id
+        })
+      end)
+    end
+
     @doc """
     Function to populate some basic data that we need for the system to operate. We will
     split this function up into multiple different ones for test, dev and production
@@ -1864,6 +1896,8 @@ if Code.ensure_loaded?(Faker) do
       seed_wa_groups(organization)
 
       seed_wa_messages(organization)
+
+      seed_wa_group_collections(organization)
       :ok
     end
   end
