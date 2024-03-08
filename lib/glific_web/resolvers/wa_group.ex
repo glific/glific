@@ -39,9 +39,9 @@ defmodule GlificWeb.Resolvers.WaGroup do
 
   @doc false
 
-  @spec sync_contact_wa_groups(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec sync_wa_group_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def sync_contact_wa_groups(_, _, %{context: %{current_user: user}}) do
+  def sync_wa_group_contacts(_, _, %{context: %{current_user: user}}) do
     case WAGroups.fetch_wa_groups(user.organization_id) do
       :ok -> {:ok, %{message: "successfully synced"}}
     end

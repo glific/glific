@@ -80,6 +80,9 @@ defmodule GlificWeb.Schema.GroupTypes do
   input_object :group_filter do
     @desc "Match the label"
     field :label, :string
+
+    @desc "Match the group_type"
+    field :group_type, :string
   end
 
   input_object :group_input do
