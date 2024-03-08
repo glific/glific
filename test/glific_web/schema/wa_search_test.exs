@@ -4,9 +4,9 @@ defmodule GlificWeb.Schema.WaSearchTest do
 
   alias Glific.{
     Fixtures,
-    Groups.WAGroup,
-    Repo,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    Groups.WAGroups,
+    WAManagedPhones
   }
 
   setup do
@@ -64,6 +64,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
     assert Enum.count(searches) == 2
   end
 
+  @tag :wa_search
   test "wa_search with group filter ids", %{staff: user} = attrs do
     [wa_managed_phone_1 | _wa_managed_phones] =
       WAManagedPhones.list_wa_managed_phones(%{organization_id: attrs.organization_id})
@@ -120,8 +121,9 @@ defmodule GlificWeb.Schema.WaSearchTest do
         }
       )
 
-    assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
+    assert {:ok, %{data: %{"search" => searches}} = _query_data} = result |> IO.inspect()
     [conv | _] = searches
+    # IO.inspect(conv)
     assert Enum.count(conv) == 2
 
     # with id and wa_phone_id filter
