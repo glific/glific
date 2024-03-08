@@ -34,13 +34,4 @@ defmodule GlificWeb.Resolvers.WACollection do
     wa_groups_collection = WaGroupsCollections.update_wa_group_collection(params)
     {:ok, wa_groups_collection}
   end
-
-  @doc """
-  Get the count of groups filtered by args
-  """
-  @spec count_wa_groups_collection(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def count_wa_groups_collection(_, args, _) do
-    {:ok, WaGroupsCollections.count_wa_groups_collection(args)}
-  end
 end

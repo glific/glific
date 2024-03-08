@@ -44,24 +44,6 @@ defmodule GlificWeb.Schema.WAGroupsCollectionTypes do
     field :delete_group_ids, non_null(list_of(:id))
   end
 
-  @desc "Filtering options for messages"
-  input_object :wa_groups_collection_filter do
-    @desc "Match the group id"
-    field :group_id, :id
-
-    @desc "Date range which will apply on date column. Default is inserted at."
-    field :date_range, :date_range_input
-  end
-
-  object :wa_groups_collection_queries do
-    @desc "Get a count of all the wa groups associated with the group"
-    field :count_wa_groups_collection, :integer do
-      arg(:filter, :wa_groups_collection_filter)
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.WACollection.count_wa_groups_collection/3)
-    end
-  end
-
   object :wa_groups_collection_mutations do
     field :create_wa_groups_collection, :wa_groups_collection_result do
       arg(:input, non_null(:wa_groups_collection_input))

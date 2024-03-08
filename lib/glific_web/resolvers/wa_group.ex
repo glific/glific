@@ -5,7 +5,6 @@ defmodule GlificWeb.Resolvers.WaGroup do
   """
 
   alias Glific.{
-    Groups,
     Groups.ContactWAGroups,
     Groups.WAGroups
   }
@@ -16,7 +15,7 @@ defmodule GlificWeb.Resolvers.WaGroup do
   @spec wa_groups(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def wa_groups(_, args, _) do
-    {:ok, Groups.list_groups(args)}
+    {:ok, WAGroups.wa_groups(args)}
   end
 
   @doc """
@@ -64,5 +63,14 @@ defmodule GlificWeb.Resolvers.WaGroup do
           {:ok, any} | {:error, any}
   def count_contact_wa_group(_, args, _) do
     {:ok, ContactWAGroups.count_contact_wa_group(args)}
+  end
+
+  @doc """
+  Get the list of whastapp groups filtered by args
+  """
+  @spec wa_groups_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def wa_groups_count(_, args, _) do
+    {:ok, WAGroups.wa_groups_count(args)}
   end
 end

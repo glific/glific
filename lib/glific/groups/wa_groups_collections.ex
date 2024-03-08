@@ -24,19 +24,6 @@ defmodule Glific.Groups.WaGroupsCollections do
     embeds_many(:collection_wa_groups, WAGroupsCollection)
   end
 
-  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
-  defp filter_with(query, filter) do
-    query = Repo.filter_with(query, filter)
-
-    Enum.reduce(filter, query, fn
-      {:group_id, group_id}, query ->
-        where(query, [q], q.group_id == ^group_id)
-
-      _, query ->
-        query
-    end)
-  end
-
   @doc false
   @spec create_wa_groups_collection(map()) ::
           {:ok, WAGroupsCollection.t()} | {:error, Ecto.Changeset.t()}
@@ -139,15 +126,5 @@ defmodule Glific.Groups.WaGroupsCollections do
   def delete_collection_by_ids(group_id, wa_group_id) do
     fields = {{:group_id, group_id}, {:wa_group_id, wa_group_id}}
     Repo.delete_relationships_by_ids(WAGroupsCollection, fields)
-  end
-
-  @doc """
-  Return the count of wa group collection
-  """
-  @spec count_wa_groups_collection(map()) :: [WAGroupsCollection.t()]
-  def count_wa_groups_collection(args) do
-    args
-    |> Repo.list_filter_query(WAGroupsCollection, nil, &filter_with/2)
-    |> Repo.aggregate(:count)
   end
 end

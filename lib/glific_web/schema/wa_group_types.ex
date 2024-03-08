@@ -24,8 +24,8 @@ defmodule GlificWeb.Schema.WaGroupTypes do
 
   @desc "Filtering options for messages"
   input_object :wa_group_filter do
-    @desc "Match the group id"
-    field :group_id, :id
+    @desc "Include wa_groups with in these groups"
+    field(:include_groups, list_of(:id))
   end
 
   object :wa_group_queries do
@@ -35,6 +35,12 @@ defmodule GlificWeb.Schema.WaGroupTypes do
       arg(:opts, :opts)
       middleware(Authorize, :staff)
       resolve(&Resolvers.WaGroup.wa_groups/3)
+    end
+
+    field :wa_groups_count, :integer do
+      arg(:filter, :wa_group_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.WaGroup.wa_groups_count/3)
     end
   end
 end

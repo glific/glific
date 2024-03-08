@@ -1,8 +1,8 @@
 query waGroups($filter: WaGroupFilter, $opts: Opts) {
   waGroups(filter: $filter, opts: $opts) {
-    label
-    id
     bspId
+    id
+    label
     lastCommunicationAt
   }
 }

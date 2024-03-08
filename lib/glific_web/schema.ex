@@ -122,8 +122,6 @@ defmodule GlificWeb.Schema do
 
     import_fields(:wa_search_queries)
 
-    import_fields(:wa_groups_collection_queries)
-
     import_fields(:wa_group_queries)
   end
 
