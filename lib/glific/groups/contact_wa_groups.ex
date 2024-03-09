@@ -15,7 +15,6 @@ defmodule Glific.Groups.ContactWAGroups do
   @primary_key false
 
   @type t() :: %__MODULE__{
-          contact_wa_groups: [ContactWAGroup.t()],
           wa_group_contacts: [ContactWAGroup.t()],
           number_deleted: non_neg_integer
         }
@@ -23,7 +22,6 @@ defmodule Glific.Groups.ContactWAGroups do
   embedded_schema do
     # the number of contacts we deleted
     field(:number_deleted, :integer, default: 0)
-    embeds_many(:contact_wa_groups, ContactWAGroup)
     embeds_many(:wa_group_contacts, ContactWAGroup)
   end
 
@@ -122,5 +120,15 @@ defmodule Glific.Groups.ContactWAGroups do
   def delete_wa_group_contacts_by_ids(wa_group_id, contact_ids) do
     fields = {{:wa_group_id, wa_group_id}, {:contact_id, contact_ids}}
     Repo.delete_relationships_by_ids(ContactWAGroup, fields)
+  end
+
+  @doc """
+  Return the count of wa group contacts, using the same filter as list_wa_group_contacts
+  """
+  @spec count_contact_wa_group(map()) :: [ContactWAGroup.t()]
+  def count_contact_wa_group(args) do
+    args
+    |> Repo.list_filter_query(ContactWAGroup, nil, &filter_with/2)
+    |> Repo.aggregate(:count)
   end
 end

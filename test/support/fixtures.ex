@@ -705,6 +705,7 @@ defmodule Glific.Fixtures do
     }
 
     [g1 | _] = Groups.list_groups(attrs)
+
     flow_uuid = "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"
     {:ok, f1} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
 

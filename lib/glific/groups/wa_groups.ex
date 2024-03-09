@@ -17,9 +17,7 @@ defmodule Glific.Groups.WAGroups do
   }
 
   @spec phone_number(String.t()) :: non_neg_integer()
-  defp phone_number(phone_number) do
-    String.split(phone_number, "@") |> List.first()
-  end
+  defp phone_number(phone_number), do: String.split(phone_number, "@") |> List.first()
 
   @doc """
   Fetches group using maytapi API and sync it in Glific

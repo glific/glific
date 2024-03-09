@@ -1,0 +1,17 @@
+fragment WaGroupsCollectionFields on WaGroupsCollectionResult {
+    errors {
+      key
+      message
+    }
+    waGroupsCollection {
+      group {
+        id
+        label
+        waGroups {
+          id
+          label
+        }
+      }
+      id
+    }
+}
