@@ -59,8 +59,10 @@ defmodule Glific.OpenAI.ChatGPT do
 
       {_status, %Tesla.Env{status: status, body: error}} when status in 400..499 ->
         error_message = get_in(error, ["error", "message"])
-
         {:error, error_message}
+
+      {_status, response} ->
+        {:error, "invalid response #{inspect(response)}"}
     end
   end
 

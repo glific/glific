@@ -15,7 +15,7 @@ defmodule Glific.Flows.Translate.Translate do
   @doc """
   Lets define the behavior callback that everyone should follow
   """
-  @callback translate(strings :: [String.t()], src :: String.t(), dst :: String.t()) ::
+  @callback translate(strings :: [String.t()], src :: String.t(), dst :: String.t(), Keyword.t()) ::
               {:ok, [String.t()]} | {:error, String.t()}
 
   @doc """
