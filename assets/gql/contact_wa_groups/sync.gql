@@ -1,5 +1,5 @@
-mutation syncContactWaGroups {
-  syncContactWaGroups {
+mutation syncWaGroupContacts {
+  syncWaGroupContacts {
     errors {
       key
       message
