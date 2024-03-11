@@ -22,14 +22,14 @@ defmodule GlificWeb.Schema.WaGroupTypes do
     end
   end
 
-  @desc "Filtering options for messages"
+  @desc "Filtering options for wa groups"
   input_object :wa_group_filter do
     @desc "Include wa_groups with in these groups"
     field(:include_groups, list_of(:id))
   end
 
   object :wa_group_queries do
-    @desc "Get a list of all messages filtered by various criteria"
+    @desc "Get a list of all wa groups filtered by various criteria"
     field :wa_groups, list_of(:wa_group_result) do
       arg(:filter, :wa_group_filter)
       arg(:opts, :opts)
