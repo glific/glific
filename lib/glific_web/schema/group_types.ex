@@ -62,6 +62,14 @@ defmodule GlificWeb.Schema.GroupTypes do
     field :roles, list_of(:access_role) do
       resolve(dataloader(Repo))
     end
+
+    # number of wa groups in the group
+    # this is an expensive operation we can come back and optimize it later
+    field :wa_groups_count, :integer do
+      resolve(fn group, resolution, context ->
+        Resolvers.Groups.wa_groups_count(resolution, %{id: group.id}, context)
+      end)
+    end
   end
 
   object :wa_group do

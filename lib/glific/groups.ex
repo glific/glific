@@ -10,6 +10,7 @@ defmodule Glific.Groups do
     AccessControl,
     AccessControl.GroupRole,
     Contacts.Contact,
+    Groups.WAGroupsCollection,
     Repo,
     Users.User
   }
@@ -122,6 +123,16 @@ defmodule Glific.Groups do
   @spec users_count(map()) :: integer
   def users_count(%{id: group_id}) do
     UserGroup
+    |> where([cg], cg.group_id == ^group_id)
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
+  Return the count of wa groups
+  """
+  @spec wa_groups_count(map()) :: integer
+  def wa_groups_count(%{id: group_id}) do
+    WAGroupsCollection
     |> where([cg], cg.group_id == ^group_id)
     |> Repo.aggregate(:count)
   end

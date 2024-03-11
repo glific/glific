@@ -280,7 +280,7 @@ defmodule Glific.Groups.WAGroups do
   @spec wa_groups_count(map()) :: integer()
   def wa_groups_count(args) do
     args
-    |> Repo.list_filter_query(WAGroup, nil, &Repo.filter_with/2)
+    |> Repo.list_filter_query(WAGroup, nil, &filter_with/2)
     |> Repo.aggregate(:count)
   end
 end
