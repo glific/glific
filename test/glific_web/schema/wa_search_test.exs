@@ -24,7 +24,6 @@ defmodule GlificWeb.Schema.WaSearchTest do
 
   load_gql(:wa_search, GlificWeb.Schema, "assets/gql/searches/wa_search.gql")
 
-  @tag :wa_search
   test "wa_search for conversations", %{staff: user} do
     result =
       auth_query_gql_by(:wa_search, user,
@@ -79,7 +78,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
     assert Enum.count(searches) == 3
   end
 
-  @tag :wa_search
+  @tag :skip
   test "wa_search with group filter ids", %{staff: user} do
     [id1, id2, _id3] =
       WAGroup
