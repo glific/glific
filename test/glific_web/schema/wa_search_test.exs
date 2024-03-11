@@ -84,7 +84,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
     assert Enum.count(searches) == 1
 
-    # without available id filters
+    # # without available id filters
     result =
       auth_query_gql_by(:wa_search, user,
         variables: %{
@@ -97,7 +97,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
     assert Enum.empty?(searches)
 
-    # with available id list filters
+    # # with available id list filters
     result =
       auth_query_gql_by(:wa_search, user,
         variables: %{
@@ -121,10 +121,10 @@ defmodule GlificWeb.Schema.WaSearchTest do
         }
       )
 
-    assert {:ok, %{data: %{"search" => searches}} = _query_data} = result |> IO.inspect()
+    assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
     [conv | _] = searches
-    # IO.inspect(conv)
-    assert Enum.count(conv) == 2
+    assert Enum.count(searches) == 1
+    assert Enum.count(conv["messages"]) == 2
 
     # with id and wa_phone_id filter
     result =
@@ -142,9 +142,9 @@ defmodule GlificWeb.Schema.WaSearchTest do
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
     [conv | _] = searches
     assert Enum.count(searches) == 1
-    assert Enum.count(conv) == 2
+    assert Enum.count(conv["messages"]) == 2
 
-    # with search group and group label filter
+    # # with search group and group label filter
     group =
       Fixtures.group_fixture(%{organization_id: user.organization_id})
       |> Map.put(:group_type, "WA")
