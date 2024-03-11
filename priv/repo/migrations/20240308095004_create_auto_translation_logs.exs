@@ -2,11 +2,11 @@ defmodule Glific.Repo.Migrations.CreateAutoTranslationLogs do
   use Ecto.Migration
 
   def change do
-    add_auto_translation_logs()
+    add_translate_logs()
   end
 
-  defp add_auto_translation_logs do
-    create table(:auto_translation_logs) do
+  defp add_translate_logs do
+    create table(:translate_logs) do
       add :text, :text, comment: "Original text to be translated."
 
       add :translated_text, :text, comment: "Translated text."
