@@ -32,6 +32,7 @@ defmodule GlificWeb.Schema.GroupTest do
     assert get_in(group, ["label"]) == "Default Group"
     assert get_in(query_data, [:data, "groups", Access.at(0), "contacts_count"]) == 0
     assert get_in(query_data, [:data, "groups", Access.at(0), "users_count"]) == 0
+    assert get_in(query_data, [:data, "groups", Access.at(0), "wa_groups_count"]) == 0
   end
 
   test "groups field returns list of groups in desc order", %{staff: user} do

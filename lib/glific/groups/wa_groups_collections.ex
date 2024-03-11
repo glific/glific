@@ -26,12 +26,9 @@ defmodule Glific.Groups.WaGroupsCollections do
 
   @doc """
   Returns the list of whatsapp groups collections structs.
-
   ## Examples
-
       iex> list_wa_groups_collection()
       [%WAGroupsCollection{}, ...]
-
   """
   @spec list_wa_groups_collection(map()) :: [WAGroupsCollection.t()]
   def list_wa_groups_collection(args) do
@@ -155,15 +152,5 @@ defmodule Glific.Groups.WaGroupsCollections do
   def delete_collection_by_ids(group_id, wa_group_id) do
     fields = {{:group_id, group_id}, {:wa_group_id, wa_group_id}}
     Repo.delete_relationships_by_ids(WAGroupsCollection, fields)
-  end
-
-  @doc """
-  Return the count of wa group collection, using the same filter as list_wa_groups_collection
-  """
-  @spec count_wa_groups_collection(map()) :: [WAGroupsCollection.t()]
-  def count_wa_groups_collection(args) do
-    args
-    |> Repo.list_filter_query(WAGroupsCollection, nil, &filter_with/2)
-    |> Repo.aggregate(:count)
   end
 end
