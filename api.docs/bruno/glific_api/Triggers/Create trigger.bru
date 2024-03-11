@@ -1,0 +1,142 @@
+meta {
+  name: Create Trigger
+  type: graphql
+  seq: 1
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+ mutation createTrigger($input: TriggerInput!) {
+    createTrigger(input: $input) {
+        ...TriggerFields
+
+        ...ErrorFields
+    }
+ }
+}
+
+body:graphql:vars {
+  {
+    "groupIds": [ 8 ],
+    "isRepeating": false,
+    "startDate": "2024-03-07",
+    "startTime": "T12:30:00",
+    "isActive": true,
+    "frequency": "none",
+    "flowId": "18",
+    "endDate": "2024-03-08",
+    "groupType": "WA"
+  }
+}
+
+docs {
+  # Create Trigger
+  
+  ## Description
+  This GraphQL API is used to create a trigger for specific groups
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter      | Type    | Description                                                  |
+  |----------------|---------|--------------------------------------------------------------|
+  | `flowId`       | ID      | The ID of the flow to be started.                            |
+  | `groupIds`     | [ID]    | The IDs of the groups for which the trigger will be started. |
+  | `isRepeating`  | Boolean | Whether the Flow will be triggered repeatedly.               |
+  | `startDate`    | String | Start date in ISO8601 format.                                 |
+  | `endDate`      | String | End date in ISO8601 format.                                   |
+  | `startTime`    | String | Starting time in ISO8601 format.                              |
+  | `isActive`     | Boolean | Whether the trigger is active or not.                        |
+  | `frequency`    | String | How often the flow should be triggered.                       |
+  | `flowId`       | ID | The ID of flow, that would be triggered.                          |
+  | `groupType`    | String | Type of group, either WABA or WA.                             |
+
+
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation createTrigger($input: TriggerInput!) { createTrigger(input: $input) { ...TriggerFields ...ErrorFields } }",
+          "variables": {
+             "groupIds": [8],
+             "isRepeating": false,
+             "startDate": "2024-03-07",
+             "startTime": "T12:30:00",
+             "isActive": true,
+             "frequency": "none",
+             "flowId": "18",
+             "endDate": "2024-03-08",
+             "groupType": "WA"
+          }
+      }'
+  ```
+  ## Request Variables
+  ```json
+  {
+    "groupIds": [ 8 ],
+    "isRepeating": false,
+    "startDate": "2024-03-07",
+    "startTime": "T12:30:00",
+    "isActive": true,
+    "frequency": "none",
+    "flowId": "18",
+    "endDate": "2024-03-08",
+    "groupType": "WA"
+  }
+  ```
+  
+  ## Response
+  
+  ### Success Response
+  ```json
+  {
+    "data": {
+      "createTrigger": {
+        "trigger": {
+            "__typename": "Trigger",
+            "id": "11"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+  
+  ### Error Response
+  ```json
+  {
+    "data": {
+      "createTrigger": {
+        "success": false,
+        "errors": [
+          {
+            "key": "ERROR_KEY",
+            "message": "Error message details."
+          }
+        ]
+      }
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+}

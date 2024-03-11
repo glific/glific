@@ -58,6 +58,58 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     "phoneId" => 1_150
   }
 
+  @text_message_from_wa_managed_phone_webhook %{
+    "product_id" => "ce2a5bf0-7a8d-4cc3-8202-a645dd5deccb",
+    "phone_id" => 1_150,
+    "message" => %{
+      "type" => "text",
+      "text" => "from wa_managed phone test message",
+      "id" => "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_919642961232@c.us",
+      "_serialized" => "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_919642961232@c.us",
+      "fromMe" => true
+    },
+    "user" => %{
+      "id" => "919917443994@c.us",
+      "name" => "user_a",
+      "phone" => "919917443994"
+    },
+    "conversation" => "120363213149844251@g.us",
+    "conversation_name" => "Default Group name",
+    "receiver" => "917834811114",
+    "timestamp" => 1_707_216_634,
+    "type" => "message",
+    "reply" =>
+      "https =>//api.maytapi.com/api/5351f38b-c0ae-49c4-9e43-427cb901b0f5/1150/sendMessage",
+    "productId" => "ce2a5bf0-7a8d-4cc3-8202-a645dd5deccb",
+    "phoneId" => 1_150
+  }
+
+  @text_dm_message_webhook %{
+    "product_id" => "ce2a5bf0-7a8d-4cc3-8202-a645dd5deccb",
+    "phone_id" => 1_150,
+    "message" => %{
+      "type" => "text",
+      "text" => "test message",
+      "id" => "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_919642961483@c.us",
+      "_serialized" => "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_919642961483@c.us",
+      "fromMe" => false
+    },
+    "user" => %{
+      "id" => "919917443994@c.us",
+      "name" => "user_a",
+      "phone" => "919917443994"
+    },
+    "conversation" => "",
+    "conversation_name" => "",
+    "receiver" => "917834811114",
+    "timestamp" => 1_707_216_634,
+    "type" => "message",
+    "reply" =>
+      "https =>//api.maytapi.com/api/5351f38b-c0ae-49c4-9e43-427cb901b0f5/1150/sendMessage",
+    "productId" => "ce2a5bf0-7a8d-4cc3-8202-a645dd5deccb",
+    "phoneId" => 1_150
+  }
+
   @media_message_webhook %{
     "product_id" => "ce2a5bf0-7a8d-4cc3-8202-a645dd5deccb",
     "phone_id" => 1150,
@@ -219,6 +271,64 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # Provider message id should be updated
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
+
+      # contact_type and message_type should be updated for wa groups
+      assert message.contact.contact_type == "WA"
+    end
+
+    test "Incoming direct text message should be stored in the database with is_dm true", %{
+      conn: conn
+    } do
+      message_params =
+        @text_dm_message_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+
+      conn = post(conn, "/maytapi", message_params)
+      assert conn.halted
+
+      bsp_message_id = get_in(message_params, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:contact])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+      assert message.is_dm == true
+
+      # contact_type and message_type should be updated for wa groups
+      assert message.contact.contact_type == "WA"
+    end
+
+    test "Incoming direct text message should be stored in the database with fromMe as true", %{
+      conn: conn
+    } do
+      message_params =
+        @text_message_from_wa_managed_phone_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+
+      conn = post(conn, "/maytapi", message_params)
+      assert conn.halted
+
+      bsp_message_id = get_in(message_params, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:contact])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :outbound
+      assert message.is_dm == false
 
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
