@@ -6,6 +6,7 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
 
   alias Glific.{
     Flows.Translate.Translate,
+    Flows.Translate.TranslateLog,
     GoogleTranslate,
     Settings
   }
@@ -79,6 +80,17 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
         result
 
       {:error, error} ->
+        %{
+          text: strings,
+          source_language: languages["src"],
+          destination_language: languages["dst"],
+          translation_engine: "Google Translate",
+          status: false,
+          error: error,
+          organization_id: org_id
+        }
+        |> TranslateLog.create_translate_log()
+
         Logger.error("Error translating: #{error} String: #{strings}")
         ""
     end

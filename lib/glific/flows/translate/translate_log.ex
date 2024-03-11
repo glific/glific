@@ -18,6 +18,7 @@ defmodule Glific.Flows.Translate.TranslateLog do
           source_language: String.t() | nil,
           destination_language: String.t() | nil,
           status: boolean,
+          error: String.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -29,6 +30,7 @@ defmodule Glific.Flows.Translate.TranslateLog do
     :translation_engine,
     :source_language,
     :destination_language,
+    :error,
     :organization_id
   ]
   @optional_fields [:translated_text, :status]
@@ -40,6 +42,7 @@ defmodule Glific.Flows.Translate.TranslateLog do
     field(:source_language, :string)
     field(:destination_language, :string)
     field(:status, :boolean)
+    field(:error, :string)
 
     belongs_to :organization, Organization
 

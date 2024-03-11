@@ -92,6 +92,17 @@ defmodule Glific.Flows.Translate.OpenAI do
         result
 
       {:error, error} ->
+        %{
+          text: strings,
+          source_language: src,
+          destination_language: dst,
+          translation_engine: "OpenAI",
+          status: false,
+          error: error,
+          organization_id: org_id
+        }
+        |> TranslateLog.create_translate_log()
+
         Logger.error("Error translating: #{error} String: #{strings}")
         ""
     end

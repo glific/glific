@@ -21,6 +21,8 @@ defmodule Glific.Repo.Migrations.CreateAutoTranslationLogs do
       add :status, :boolean,
         comment: "Flag indicating whether the translation was successful or not."
 
+      add :error, :string, comment: "Error received from API"
+
       # Foreign key to organization, restricting the scope of this table to the specified organization.
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
