@@ -93,12 +93,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
     do: put_in(message_params, [:sender, :contact_type], "WA")
 
   @spec direct_message?(String.t() | nil) :: boolean()
-  defp direct_message?(conversation_id) do
-    cond do
-      conversation_id in ["", nil] -> true
-      # group's conversation_id end's with "g.us"
-      String.ends_with?(conversation_id, "c.us") -> true
-      true -> false
-    end
-  end
+  defp direct_message?(conversation_id) when conversation_id in ["", nil], do: true
+  defp direct_message?(conversation_id), do: String.ends_with?(conversation_id, "c.us")
 end
