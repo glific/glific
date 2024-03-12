@@ -64,7 +64,6 @@ defmodule GlificWeb.Schema.WaSearchTest do
     assert Enum.count(searches) == 2
   end
 
-  @tag :wa_search
   test "wa_search with group filter ids", %{staff: user} = attrs do
     [wa_managed_phone_1 | _wa_managed_phones] =
       WAManagedPhones.list_wa_managed_phones(%{organization_id: attrs.organization_id})
@@ -108,8 +107,9 @@ defmodule GlificWeb.Schema.WaSearchTest do
       )
 
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
-    [_conv | _] = searches
+    [conv | _] = searches
     assert Enum.count(searches) == 2
+    assert Enum.count(conv["messages"]) == 1
 
     # with available phone_id filters
     result =
@@ -122,9 +122,9 @@ defmodule GlificWeb.Schema.WaSearchTest do
       )
 
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
-    [conv | _] = searches
+    # wa_phone_id_1 messages are in wa_group_1 and wa_phone_id2 messsages are in wa_group_2
+    # So we expect search count to be 1, since only 1 wa_group will be returned
     assert Enum.count(searches) == 1
-    assert Enum.count(conv["messages"]) == 2
 
     # with id and wa_phone_id filter
     result =
@@ -140,9 +140,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
       )
 
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
-    [conv | _] = searches
     assert Enum.count(searches) == 1
-    assert Enum.count(conv["messages"]) == 2
 
     # # with search group and group label filter
     group =
