@@ -27,6 +27,7 @@ defmodule Glific.Flows.Translate.Translate do
   def translate(strings, src, dst, organization),
     do: impl(organization).translate(strings, src, dst, org_id: organization.id)
 
+  @spec impl(map()) :: module()
   defp impl(organization) do
     cond do
       Flags.get_open_ai_auto_translation_enabled(organization) ->
