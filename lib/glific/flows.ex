@@ -680,6 +680,7 @@ defmodule Glific.Flows do
       {:ok, flow} ->
         Broadcast.broadcast_flow_to_wa_group(flow, group_ids)
         {:ok, flow}
+
       {:error, _error} ->
         {:error, ["Flow", dgettext("errors", "Flow not found")]}
     end
