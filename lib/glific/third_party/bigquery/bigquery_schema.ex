@@ -1749,36 +1749,6 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "Flow associated with the message",
-        name: "flow_name",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Flow UUID for joining with flow/flow_results",
-        name: "flow_uuid",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Flow ID for joining with flow/flow_results",
-        name: "flow_id",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Longitude from where the message was sent",
-        name: "longitude",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Latitude from where the message was sent",
-        name: "latitude",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
         description: "Time when the record entry was last updated",
         name: "updated_at",
         type: "DATETIME",
@@ -1799,12 +1769,6 @@ defmodule Glific.BigQuery.Schema do
       %{
         description: "context message id for an template response",
         name: "context_message_id",
-        type: "INTEGER",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "flow broadcast id when a flow started for a group",
-        name: "flow_broadcast_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },
