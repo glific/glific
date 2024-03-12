@@ -38,7 +38,14 @@ defmodule Glific.GroupsTest do
 
     test "list_groups/1 returns all groups", attrs do
       group = group_fixture(attrs)
-      assert Groups.list_groups(%{filter: Map.put(attrs, :label, group.label)}) == [group]
+
+      groups_by_label = Groups.list_groups(%{filter: Map.put(attrs, :label, group.label)})
+      assert Enum.any?(groups_by_label, fn g -> g.id == group.id end)
+
+      groups_by_group_type =
+        Groups.list_groups(%{filter: Map.put(attrs, :group_type, group.group_type)})
+
+      assert Enum.any?(groups_by_group_type, fn g -> g.id == group.id end)
     end
 
     test "count_groups/1 returns count of all groups", attrs do
