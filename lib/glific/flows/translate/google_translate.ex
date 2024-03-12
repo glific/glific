@@ -71,7 +71,7 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
           translated_text: result,
           source_language: languages["src"],
           destination_language: languages["dst"],
-          translation_engine: "OpenAI",
+          translation_engine: "Google Translate",
           status: true,
           organization_id: org_id
         }
