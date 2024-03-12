@@ -28,7 +28,7 @@ defmodule Glific.Repo.Migrations.CreateAutoTranslationLogs do
         null: false,
         comment: "Unique organization ID."
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :utc_datetime)
     end
   end
 end

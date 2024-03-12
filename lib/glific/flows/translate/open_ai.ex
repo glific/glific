@@ -52,8 +52,7 @@ defmodule Glific.Flows.Translate.OpenAI do
   defp handle_async_response({:exit, :timeout}, acc), do: ["" | acc]
 
   # Making API call to open ai to translate list of string from src language to dst
-  @spec do_translate([String.t()], String.t(), String.t(), non_neg_integer()) ::
-          [String.t()] | {:error, String.t()}
+  @spec do_translate([String.t()], String.t(), String.t(), non_neg_integer()) :: String.t()
   defp do_translate(strings, src, dst, org_id) do
     prompt =
       """

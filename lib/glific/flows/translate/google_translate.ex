@@ -59,7 +59,7 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
   defp handle_async_response({:ok, translated_text}, acc), do: [translated_text | acc]
   defp handle_async_response({:exit, :timeout}, acc), do: ["" | acc]
 
-  @spec do_translate(String.t(), map(), non_neg_integer()) :: String.t() | {:error, String.t()}
+  @spec do_translate(String.t(), map(), non_neg_integer()) :: String.t()
   defp do_translate(strings, languages, org_id) do
     api_key = Glific.get_google_translate_key()
 
