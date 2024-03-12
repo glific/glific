@@ -85,7 +85,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         "profiles",
         "message_broadcasts",
         "message_broadcast_contacts",
-        "tickets"
+        "tickets",
+        "wa_messages"
       ]
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
@@ -723,6 +724,53 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :tickets, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("wa_messages", organization_id, attrs) do
+    Logger.info(
+      "fetching wa_messages data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("wa_messages", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            body: row.body,
+            type: row.type,
+            flow: row.flow,
+            inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
+            updated_at: format_date_with_millisecond(row.updated_at, organization_id),
+            sent_at: BigQuery.format_date(row.sent_at, organization_id),
+            uuid: row.uuid,
+            status: row.status,
+            contact_phone: row.contact.phone,
+            contact_name: row.contact.name,
+            flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
+            flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
+            longitude: if(!is_nil(row.location), do: row.location.longitude),
+            latitude: if(!is_nil(row.location), do: row.location.latitude),
+            errors: BigQuery.format_json(row.errors),
+            message_broadcast_id: row.message_broadcast_id,
+            bsp_status: row.bsp_status,
+            wa_group_id: row.wa_group_id,
+            wa_group_name: if(!is_nil(row.wa_group), do: row.wa_group.label)
+          }
+          |> Map.merge(message_media_info(row.media))
+          |> Map.merge(message_template_info(row))
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :wa_messages, organization_id, attrs))
 
     :ok
   end
