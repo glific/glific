@@ -174,6 +174,7 @@ defmodule GlificWeb.Schema.TicketTest do
     assert get_in(query_data, [:data, "countTickets"]) == 1
   end
 
+  @tag :tick
   test "fetch support tickets field returns list of support ticket", %{user: user} = attrs do
     _support_ticket_1 =
       TicketsFixtures.ticket_fixture(%{
@@ -199,7 +200,7 @@ defmodule GlificWeb.Schema.TicketTest do
         }
       )
 
-    assert {:ok, query_data} = result
+    assert {:ok, query_data} = result |> IO.inspect()
     support_tickets = get_in(query_data, [:data, "fetchSupportTickets"])
     time = Timex.format!(DateTime.utc_now(), "{YYYY}-{0M}-{0D}")
     [header | tickets] = String.split(support_tickets, "\n")
