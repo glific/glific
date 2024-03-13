@@ -15,10 +15,9 @@ defmodule Glific.Flows.Translate.TranslateLog do
     :translation_engine,
     :source_language,
     :destination_language,
-    :error,
     :organization_id
   ]
-  @optional_fields [:translated_text, :status]
+  @optional_fields [:translated_text, :error, :status]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
