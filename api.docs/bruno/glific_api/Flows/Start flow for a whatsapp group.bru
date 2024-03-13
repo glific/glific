@@ -1,0 +1,118 @@
+meta {
+  name: Start flow for a whatsapp group
+  type: graphql
+  seq: 18
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation startWAGroupFlow($flowId: ID!, $waGroupId: ID!) {
+    startWAGroupFlow(flowId: $flowId, waGroupId: $waGroupId) {
+        success
+        errors {
+        key
+        message
+        }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "flowId": "1",
+    "waGroupId": "2"
+  }
+}
+
+docs {
+  # Start Flow for a Whatsapp Group
+  
+  ## Description
+  This GraphQL API is used to start a flow for a specific whatsapp group.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter   | Type    | Description                                |
+  |-------------|---------|--------------------------------------------|
+  | `flowId`    | ID      | The ID of the flow to be started.          |
+  | `waGroupId` | ID      | The ID of the whatsapp group for which the flow will be started. |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation startWAGroupFlow($flowId: ID!, $waGroupId: ID!) { startWAGroupFlow(flowId: $flowId, waGroupId: $waGroupId) { success errors { key message } } }",
+          "variables": {
+              "flowId": "1",
+              "waGroupId": "2"
+          }
+      }'
+  ```
+  ## Request Variables
+  ```json
+  {
+    "flowId": "1",
+    "waGroupId": "2"
+  }
+  ```
+  
+  ## Response
+  
+  ### Success Response
+  ```json
+  {
+    "data": {
+      "startWAGroupFlow": {
+        "success": true,
+        "errors": []
+      }
+    }
+  }
+  ```
+  
+  ### Error Response
+  ```json
+  {
+    "data": {
+      "startWAGroupFlow": {
+        "success": false,
+        "errors": [
+          {
+            "key": "ERROR_KEY",
+            "message": "Error message details."
+          }
+        ]
+      }
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the errors field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Start Flow for a whatsapp group**
+     - Start a flow for a specific whatsapp group identified by its ID.
+  
+  ## FAQ
+  None
+  
+}
