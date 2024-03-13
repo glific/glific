@@ -64,7 +64,10 @@ defmodule GlificWeb.Schema.WaSearchTest do
     [conv | _] = searches
     assert Enum.count(searches) == 3
     assert Enum.count(conv["messages"]) in [1, 0]
+<<<<<<< HEAD
 
+=======
+>>>>>>> master
     # group with no messages should also be in the result
     result =
       auth_query_gql_by(:wa_search, user,
@@ -78,6 +81,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
     [_conv | _] = searches
     assert Enum.count(searches) == 3
+<<<<<<< HEAD
   end
 
   test "wa_search, ignoring dms", %{staff: user} do
@@ -95,6 +99,8 @@ defmodule GlificWeb.Schema.WaSearchTest do
     [_conv | _] = searches
     assert Enum.count(searches) == 3
     assert calculate_total_messages(searches) == 3
+=======
+>>>>>>> master
   end
 
   @tag :skip
