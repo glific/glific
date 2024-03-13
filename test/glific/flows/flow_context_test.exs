@@ -292,7 +292,7 @@ defmodule Glific.Flows.FlowContextTest do
 
       [wa_group | _tail] = WAGroups.list_wa_groups(%{})
 
-      {:ok, _flow_context, _} = FlowContext.init_wa_group_context(flow, wa_group, "published")
+      {:ok, _flow_context, _} = FlowContext.init_wa_group_context(flow, wa_group.id, "published")
 
       [wa_message | _wa_messages] =
         WAMessage

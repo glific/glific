@@ -39,10 +39,11 @@ defmodule Glific.Providers.Maytapi.Message do
 
   @doc false
   @spec receive_text(payload :: map()) :: map()
-  def receive_text(params) do
+  def receive_text(%{"message" => %{"fromMe" => from_me}} = params) do
     payload = params["message"]
 
     :ok = validate_phone_number(params["user"]["phone"], payload)
+    flow = if from_me, do: :outbound, else: :inbound
 
     %{
       bsp_id: payload["id"],
@@ -50,16 +51,19 @@ defmodule Glific.Providers.Maytapi.Message do
       sender: %{
         phone: params["user"]["phone"],
         name: params["user"]["name"]
-      }
+      },
+      flow: flow,
+      status: "sent"
     }
   end
 
   @doc false
   @spec receive_media(map()) :: map()
-  def receive_media(params) do
+  def receive_media(%{"message" => %{"fromMe" => from_me}} = params) do
     payload = params["message"]
 
     :ok = validate_phone_number(params["user"]["phone"], payload)
+    flow = if from_me, do: :outbound, else: :inbound
 
     %{
       bsp_id: payload["id"],
@@ -70,7 +74,8 @@ defmodule Glific.Providers.Maytapi.Message do
       sender: %{
         phone: params["user"]["phone"],
         name: params["user"]["name"]
-      }
+      },
+      flow: flow
     }
   end
 

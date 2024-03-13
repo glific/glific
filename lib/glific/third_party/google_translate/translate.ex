@@ -42,8 +42,12 @@ defmodule Glific.GoogleTranslate.Translate do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         {:error, "Unexpected response format: #{inspect(body)}"}
 
+      {_status, %Tesla.Env{status: status, body: error}} when status in 400..499 ->
+        error_message = get_in(error, ["error", "message"])
+        {:error, error_message}
+
       {_status, response} ->
-        {:error, "Invalid response: #{inspect(response)}"}
+        {:error, "invalid response #{inspect(response)}"}
     end
   end
 end

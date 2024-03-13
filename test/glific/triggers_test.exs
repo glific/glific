@@ -1,6 +1,9 @@
 defmodule Glific.TriggersTest do
+  alias Glific.Flows.Flow
+  alias Glific.Groups.Group
   use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
+  import Ecto.Query
 
   alias Glific.{
     Fixtures,
@@ -22,6 +25,10 @@ defmodule Glific.TriggersTest do
     SeedsDev.seed_groups(organization)
     SeedsDev.seed_group_contacts(organization)
     SeedsDev.seed_group_users(organization)
+    SeedsDev.seed_test_flows()
+    SeedsDev.seed_wa_managed_phones()
+    SeedsDev.seed_wa_groups()
+    SeedsDev.seed_wa_group_collections()
     :ok
   end
 
@@ -347,5 +354,59 @@ defmodule Glific.TriggersTest do
 
     {:warning, message} = Triggers.validate_trigger(arc)
     assert message == "The first message node is not an HSM template"
+  end
+
+  @tag :wa_trig
+  test "execute_triggers/2 should execute a trigger for WA group collections", attrs do
+    start_at = Timex.shift(DateTime.utc_now(), days: 1)
+    end_date = Timex.shift(DateTime.utc_now(), days: 2)
+
+    {:ok, _trigger} =
+      create_wa_group_trigger(attrs, %{
+        start_at: start_at,
+        organization_id: attrs.organization_id,
+        end_date: end_date
+      })
+
+    time = DateTime.truncate(DateTime.utc_now(), :second)
+
+    Repo.update_all(Trigger,
+      set: [
+        start_at: Timex.shift(time, days: -1),
+        last_trigger_at: Timex.shift(time, days: -1),
+        next_trigger_at: Timex.shift(time, days: -1)
+      ]
+    )
+
+    Triggers.execute_triggers(attrs.organization_id)
+  end
+
+  defp create_wa_group_trigger(attrs, trigger_attrs) do
+    valid_attrs = %{
+      name: "test wa group trigger",
+      end_date: Faker.DateTime.forward(5),
+      is_active: true,
+      is_repeating: false,
+      start_date: Timex.shift(Date.utc_today(), days: 1),
+      start_time: Time.utc_now(),
+      frequency: ["none"]
+    }
+
+    [g1 | _] =
+      Group
+      |> where([grp], grp.organization_id == ^attrs.organization_id and grp.group_type == "WA")
+      |> Repo.all()
+
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Whatsapp Group", organization_id: attrs.organization_id})
+
+    valid_attrs =
+      Map.merge(valid_attrs, trigger_attrs)
+      |> Map.put(:flow_id, flow.id)
+      |> Map.put(:group_ids, [g1.id])
+      |> Map.put(:organization_id, attrs.organization_id)
+      |> Map.put(:group_type, "WA")
+
+    Triggers.create_trigger(valid_attrs)
   end
 end

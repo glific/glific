@@ -10,16 +10,46 @@ defmodule Glific.Groups.WAGroups do
     Contacts,
     Groups.ContactWAGroups,
     Groups.WAGroup,
+    Groups.WAGroupsCollection,
     Providers.Maytapi.ApiClient,
     Repo,
     WAGroup.WAManagedPhone,
     WAManagedPhones
   }
 
-  @spec phone_number(String.t()) :: non_neg_integer()
-  defp phone_number(phone_number) do
-    String.split(phone_number, "@") |> List.first()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:include_groups, []}, query ->
+        query
+
+      {:include_groups, group_ids}, query ->
+        sub_query =
+          WAGroupsCollection
+          |> where([wc], wc.group_id in ^group_ids)
+          |> select([wa], wa.wa_group_id)
+
+        query
+        |> where([wg], wg.id in subquery(sub_query))
+
+      _, query ->
+        query
+    end)
   end
+
+  @doc """
+  get all the wa groups associated with the group
+  """
+  @spec wa_groups(map()) :: [WAGroup.t()]
+  def wa_groups(args) do
+    args
+    |> Repo.list_filter_query(WAGroup, &Repo.opts_with_label/2, &filter_with/2)
+    |> Repo.all()
+  end
+
+  @spec phone_number(String.t()) :: non_neg_integer()
+  defp phone_number(phone_number), do: String.split(phone_number, "@") |> List.first()
 
   @doc """
   Fetches group using maytapi API and sync it in Glific
@@ -242,5 +272,15 @@ defmodule Glific.Groups.WAGroups do
       wa_group ->
         {:ok, wa_group}
     end
+  end
+
+  @doc """
+  get all the wa groups associated with the group
+  """
+  @spec wa_groups_count(map()) :: integer()
+  def wa_groups_count(args) do
+    args
+    |> Repo.list_filter_query(WAGroup, nil, &filter_with/2)
+    |> Repo.aggregate(:count)
   end
 end

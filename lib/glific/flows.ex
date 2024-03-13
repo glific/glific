@@ -15,8 +15,6 @@ defmodule Glific.Flows do
     Contacts.Contact,
     Flows.ContactField,
     Groups,
-    Groups.WAGroup,
-    Groups.WAGroups,
     Partners,
     Repo,
     Sheets,
@@ -519,7 +517,7 @@ defmodule Glific.Flows do
   def get_cached_flow(organization_id, key) do
     case Caches.fetch(organization_id, key, &load_flow_cache/1) do
       {:error, error} ->
-        Logger.info("Failed to retrieve flow, #{inspect(key)}, #{error}")
+        Logger.info("Failed to retrieve flow, #{inspect(key)}, #{inspect(error)}")
         {:error, error}
 
       {_, flow} ->
@@ -664,18 +662,34 @@ defmodule Glific.Flows do
   def start_wa_group_flow(flow_id, wa_group_id, organization_id) do
     case get_cached_flow(organization_id, {:flow_id, flow_id, @status}) do
       {:ok, flow} ->
-        wa_groups = WAGroups.get_wa_groups!([wa_group_id])
-        process_wa_group_flow(flow, wa_groups)
+        process_wa_group_flow(flow, [wa_group_id])
 
       {:error, _error} ->
         {:error, ["Flow", dgettext("errors", "Flow not found")]}
     end
   end
 
-  @spec process_wa_group_flow(Flow.t(), [WAGroup.t()]) :: {:ok, Flow.t()}
-  defp process_wa_group_flow(flow, wa_groups) do
+  @doc """
+  Start flow for wa groups of a collection
+  """
+  @spec start_wa_group_flow(Flow.t(), list(non_neg_integer())) ::
+          {:ok, Flow.t()} | {:error, String.t()}
+  def start_wa_group_flow(flow, group_ids) do
+    # the flow returned is the expanded version
+    case get_cached_flow(flow.organization_id, {:flow_id, flow.id, @status}) do
+      {:ok, flow} ->
+        Broadcast.broadcast_flow_to_wa_group(flow, group_ids)
+        {:ok, flow}
+
+      {:error, _error} ->
+        {:error, ["Flow", dgettext("errors", "Flow not found")]}
+    end
+  end
+
+  @spec process_wa_group_flow(Flow.t(), [non_neg_integer()]) :: {:ok, Flow.t()}
+  defp process_wa_group_flow(flow, wa_groups_ids) do
     if flow.is_active do
-      Broadcast.broadcast_wa_groups(flow, wa_groups)
+      Broadcast.broadcast_wa_groups(flow, wa_groups_ids)
       {:ok, flow}
     else
       {:error, ["Flow", dgettext("errors", "Flow is not active")]}
