@@ -356,7 +356,6 @@ defmodule Glific.TriggersTest do
     assert message == "The first message node is not an HSM template"
   end
 
-  @tag :wa_trig
   test "execute_triggers/2 should execute a trigger for WA group collections", attrs do
     start_at = Timex.shift(DateTime.utc_now(), days: 1)
     end_date = Timex.shift(DateTime.utc_now(), days: 2)

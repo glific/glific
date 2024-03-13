@@ -1011,7 +1011,7 @@ defmodule Glific.Messages do
   defp add_empty_conversations(results, _), do: results
 
   # helper function that actually implements the above functionality
-  @spec add_empty_conversations([Conversation.t()], [integer]) :: [Conversation.t()]
+  @spec add_empty_conversation([Conversation.t()], [integer]) :: [Conversation.t()]
   defp add_empty_conversation(results, contact_ids) when is_list(contact_ids) do
     # first find all the contact ids that we have some messages
     present_contact_ids =
