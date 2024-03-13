@@ -17,7 +17,6 @@ defmodule Glific.BigQuery do
     Flows.FlowRevision,
     Flows.MessageBroadcast,
     Flows.MessageBroadcastContact,
-    WAGroup.WAMessage,
     Jobs,
     Messages.Message,
     Messages.MessageConversation,
@@ -28,7 +27,8 @@ defmodule Glific.BigQuery do
     Repo,
     Stats.Stat,
     Tickets.Ticket,
-    Trackers.Tracker
+    Trackers.Tracker,
+    WAGroup.WAMessage
   }
 
   alias GoogleApi.BigQuery.V2.{
