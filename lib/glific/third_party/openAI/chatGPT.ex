@@ -57,6 +57,10 @@ defmodule Glific.OpenAI.ChatGPT do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         {:error, "Got different response #{inspect(body)}"}
 
+      {_status, %Tesla.Env{status: status, body: error}} when status in 400..499 ->
+        error_message = get_in(error, ["error", "message"])
+        {:error, error_message}
+
       {_status, response} ->
         {:error, "invalid response #{inspect(response)}"}
     end
