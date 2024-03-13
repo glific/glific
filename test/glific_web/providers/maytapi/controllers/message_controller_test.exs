@@ -355,7 +355,36 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :outbound
       assert message.is_dm == false
+      assert message.status == :sent
+      # contact_type and message_type should be updated for wa groups
+      assert message.contact.contact_type == "WA"
+    end
 
+    test "Incoming text message should be stored in the database with fromMe as false", %{
+      conn: conn
+    } do
+      message_params =
+        @text_message_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+
+      conn = post(conn, "/maytapi", message_params)
+      assert conn.halted
+
+      bsp_message_id = get_in(message_params, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:contact])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+      assert message.is_dm == false
+      assert message.status == :received
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
     end
@@ -538,6 +567,34 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
+      # contact_type and message_type should be updated for wa groups
+      assert message.contact.contact_type == "WA"
+    end
+
+    test "Incoming media message should be stored in the database, new contact, from_me false", %{
+      conn: conn
+    } do
+      media_message_webhook =
+        @media_message_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+
+      conn = post(conn, "/maytapi", media_message_webhook)
+      assert conn.halted
+
+      bsp_message_id = get_in(media_message_webhook, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:media, :contact])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+      assert message.status == :received
       # contact_type and message_type should be updated for wa groups
       assert message.contact.contact_type == "WA"
     end

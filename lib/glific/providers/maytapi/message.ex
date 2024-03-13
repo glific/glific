@@ -43,7 +43,7 @@ defmodule Glific.Providers.Maytapi.Message do
     payload = params["message"]
 
     :ok = validate_phone_number(params["user"]["phone"], payload)
-    flow = if from_me, do: :outbound, else: :inbound
+    {flow, status} = if from_me, do: {:outbound, :sent}, else: {:inbound, :received}
 
     %{
       bsp_id: payload["id"],
@@ -53,7 +53,7 @@ defmodule Glific.Providers.Maytapi.Message do
         name: params["user"]["name"]
       },
       flow: flow,
-      status: "sent"
+      status: status
     }
   end
 
@@ -63,7 +63,7 @@ defmodule Glific.Providers.Maytapi.Message do
     payload = params["message"]
 
     :ok = validate_phone_number(params["user"]["phone"], payload)
-    flow = if from_me, do: :outbound, else: :inbound
+    {flow, status} = if from_me, do: {:outbound, :sent}, else: {:inbound, :received}
 
     %{
       bsp_id: payload["id"],
@@ -75,7 +75,8 @@ defmodule Glific.Providers.Maytapi.Message do
         phone: params["user"]["phone"],
         name: params["user"]["name"]
       },
-      flow: flow
+      flow: flow,
+      status: status
     }
   end
 
