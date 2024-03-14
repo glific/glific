@@ -27,7 +27,8 @@ defmodule Glific.BigQuery do
     Repo,
     Stats.Stat,
     Tickets.Ticket,
-    Trackers.Tracker
+    Trackers.Tracker,
+    WAGroup.WAMessage
   }
 
   alias GoogleApi.BigQuery.V2.{
@@ -53,7 +54,8 @@ defmodule Glific.BigQuery do
     "message_conversations" => :message_conversation_schema,
     "message_broadcasts" => :message_broadcasts_schema,
     "message_broadcast_contacts" => :message_broadcast_contacts_schema,
-    "trackers" => :trackers_schema
+    "trackers" => :trackers_schema,
+    "wa_messages" => :wa_message_schema
   }
 
   @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
@@ -178,7 +180,8 @@ defmodule Glific.BigQuery do
     "message_broadcasts" => MessageBroadcast,
     "message_broadcast_contacts" => MessageBroadcastContact,
     "trackers" => Tracker,
-    "trackers_all" => Tracker
+    "trackers_all" => Tracker,
+    "wa_messages" => WAMessage
   }
 
   @doc false
