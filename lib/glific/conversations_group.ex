@@ -26,6 +26,7 @@ defmodule Glific.ConversationsGroup do
   def list_conversations(group_ids, args) do
     group_ids
     |> get_groups(args.contact_opts)
+    |> Enum.filter(fn g -> g.group_type == "WABA" end)
     |> get_conversations(args.message_opts)
   end
 
