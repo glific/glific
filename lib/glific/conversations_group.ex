@@ -34,21 +34,22 @@ defmodule Glific.ConversationsGroup do
     Group
     |> Ecto.Queryable.to_query()
     |> Repo.add_permission(&Groups.add_permission/2)
-    |> where([g], g.group_type == "WABA")
     |> order_by([g], desc: g.last_communication_at)
     |> limit(^limit)
     |> offset(^offset)
   end
 
   @spec get_groups(list() | nil, map()) :: [Group.t()]
-  defp get_groups(nil, opts) do
+  defp get_groups(gids, opts) when is_list(gids) do
     get_groups_query(opts)
+    |> where([g], g.group_type == "WABA")
+    |> where([g], g.id in ^gids)
     |> Repo.all()
   end
 
-  defp get_groups(gids, opts) when is_list(gids) do
+  defp get_groups(nil, opts) do
     get_groups_query(opts)
-    |> where([g], g.id in ^gids)
+    |> where([g], g.group_type == "WABA")
     |> Repo.all()
   end
 
