@@ -1649,6 +1649,151 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for wa_messages table
+  """
+  @spec wa_message_schema :: list()
+  def wa_message_schema do
+    [
+      %{
+        description: "Unique ID generated for each message",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description:
+          "Uniquely generated message UUID, in case of flow it's id of that particular node which have the message.",
+        name: "uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Body of the message",
+        name: "body",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description:
+          "Type of the message; options are - text, audio, video, image, location, contact, file, sticker",
+        name: "type",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Whether an inbound or an outbound message",
+        name: "flow",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Delivery status of the message",
+        name: "status",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "WA Message status as per the BSP. Options : Sent, Delivered or Read",
+        name: "bsp_status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Errors if any while sending the message",
+        name: "errors",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description:
+          "Either sender contact number or receiver contact number; created to quickly let us know who the beneficiary is",
+        name: "contact_phone",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description:
+          "Either sender contact name or receiver contact name; created to quickly let us know who the beneficiary is",
+        name: "contact_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Message media ID",
+        name: "media_url",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Timestamp when wa message was sent from queue worker",
+        name: "sent_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "URL of media file stored in GCS",
+        name: "gcs_url",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Status if the message was an HSM",
+        name: "is_dm",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "message broadcast id when a flow or message started for a group",
+        name: "message_broadcast_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of the message media table reference to the message media table",
+        name: "media_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of group reference to the wa_group table",
+        name: "wa_group_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "label of the group referenced to in wa_group table",
+        name: "wa_group_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for the trackers_all_schema table
   """
   @spec trackers_all_schema :: list()
