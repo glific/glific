@@ -130,7 +130,6 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :inserted_at, :datetime
     field :updated_at, :datetime
 
-    field :wa_group_id, :integer
     field :context_id, :string
 
     field :context_message, :wa_message do
@@ -146,6 +145,10 @@ defmodule GlificWeb.Schema.MessageTypes do
     end
 
     field :media, :message_media do
+      resolve(dataloader(Repo, use_parent: true))
+    end
+
+    field :wa_group, :wa_group do
       resolve(dataloader(Repo, use_parent: true))
     end
   end

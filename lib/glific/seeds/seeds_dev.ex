@@ -1828,6 +1828,18 @@ if Code.ensure_loaded?(Faker) do
           wa_managed_phone_id: wa_managed_phone_2.id,
           wa_group_id: wa_group_2.id,
           body: Shakespeare.hamlet()
+        },
+        %{
+          type: "text",
+          bsp_id: Faker.String.base64(10),
+          flow: "outbound",
+          bsp_status: "delivered",
+          contact_id: contact_2.id,
+          status: "sent",
+          wa_managed_phone_id: wa_managed_phone_2.id,
+          wa_group_id: wa_group_2.id,
+          body: "This is a DM message",
+          is_dm: true
         }
       ]
 
