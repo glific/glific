@@ -1,4 +1,4 @@
-query searchMulti(
+query waSearchMulti(
   $waGroupOpts: Opts!
   $waMessageOpts: Opts!
   $filter: WaSearchFilter!

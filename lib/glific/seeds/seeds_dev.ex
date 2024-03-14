@@ -1644,6 +1644,12 @@ if Code.ensure_loaded?(Faker) do
           %{name: "Default receiver", organization_id: organization.id}
         )
 
+      {:ok, contact_3} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Adelle Cavin", organization_id: organization.id}
+        )
+
       wa_managed_phones = [
         %{
           phone: Phone.EnUs.phone(),
@@ -1654,6 +1660,11 @@ if Code.ensure_loaded?(Faker) do
           phone: Phone.EnUs.phone(),
           phone_id: Enum.random(1000..9999),
           contact_id: contact_2.id
+        },
+        %{
+          phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+          phone_id: Enum.random(1000..9999),
+          contact_id: contact_3.id
         }
       ]
 
@@ -1688,6 +1699,12 @@ if Code.ensure_loaded?(Faker) do
           %{name: "Default receiver", organization_id: organization.id}
         )
 
+      {:ok, contact_3} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Adelle Cavin", organization_id: organization.id}
+        )
+
       {:ok, wa_managed_phone_1} =
         Repo.fetch_by(
           WAManagedPhone,
@@ -1700,6 +1717,12 @@ if Code.ensure_loaded?(Faker) do
           %{contact_id: contact_2.id, organization_id: organization.id}
         )
 
+      {:ok, wa_managed_phone_3} =
+        Repo.fetch_by(
+          WAManagedPhone,
+          %{contact_id: contact_3.id, organization_id: organization.id}
+        )
+
       wa_groups = [
         %{
           label: Faker.Team.name(),
@@ -1710,6 +1733,11 @@ if Code.ensure_loaded?(Faker) do
           label: Faker.Team.name(),
           bsp_id: (:rand.uniform(1_000_000_000_000_000_000) |> to_string()) <> "@g.us",
           wa_managed_phone_id: wa_managed_phone_2.id
+        },
+        %{
+          label: Faker.Team.name(),
+          bsp_id: (:rand.uniform(1_000_000_000_000_000_000) |> to_string()) <> "@g.us",
+          wa_managed_phone_id: wa_managed_phone_3.id
         }
       ]
 
@@ -1802,6 +1830,18 @@ if Code.ensure_loaded?(Faker) do
           wa_managed_phone_id: wa_managed_phone_2.id,
           wa_group_id: wa_group_2.id,
           body: Shakespeare.hamlet()
+        },
+        %{
+          type: "text",
+          bsp_id: Faker.String.base64(10),
+          flow: "outbound",
+          bsp_status: "delivered",
+          contact_id: contact_2.id,
+          status: "sent",
+          wa_managed_phone_id: wa_managed_phone_2.id,
+          wa_group_id: wa_group_2.id,
+          body: "This is a DM message",
+          is_dm: true
         }
       ]
 

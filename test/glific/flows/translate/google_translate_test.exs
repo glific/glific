@@ -1,8 +1,11 @@
 defmodule Glific.Flows.Translate.GoogleTranslateTest do
   use Glific.DataCase, async: false
 
-  alias Glific.Flows.Translate.GoogleTranslate
-  alias Glific.Flows.Translate.Translate
+  alias Glific.{
+    Fixtures,
+    Flows.Translate.GoogleTranslate,
+    Flows.Translate.Translate
+  }
 
   import Tesla.Mock
 
@@ -51,11 +54,14 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
   end
 
   test "translate/3 basic translation test" do
+    org_id = Repo.get_organization_id()
+
     {:ok, translated_text} =
       GoogleTranslate.translate(
         ["HelloWorld", "nice to meet you"],
         "en",
-        "hi"
+        "hi",
+        org_id: org_id
       )
 
     assert translated_text == ["नमस्ते दुनिया", "आपसे मिलकर अच्छा लगा"]
@@ -64,12 +70,14 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
     long_text = Faker.Lorem.sentence(250)
 
     {:ok, translated_text} =
-      GoogleTranslate.translate(["HelloWorld", long_text], "en", "hi")
+      GoogleTranslate.translate(["HelloWorld", long_text], "en", "hi", org_id: org_id)
 
     assert translated_text == ["नमस्ते दुनिया", "बड़े संदेशों के लिए अनुवाद उपलब्ध नहीं है"]
   end
 
   test "translate/3 test the possible errors" do
+    org_id = Fixtures.get_org_id()
+
     Tesla.Mock.mock(fn _env ->
       %Tesla.Env{
         status: 500,
@@ -85,7 +93,7 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
     src = "english"
     dst = "hindi"
 
-    {:ok, response} = GoogleTranslate.translate(string, src, dst)
+    {:ok, response} = GoogleTranslate.translate(string, src, dst, org_id: org_id)
     assert response == ["बड़े संदेशों के लिए अनुवाद उपलब्ध नहीं है"]
   end
 

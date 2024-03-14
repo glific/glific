@@ -16,7 +16,7 @@ defmodule Glific.Communications do
   end
 
   @doc """
-  Get the current provider worker based on the organization | Config | Defaultconfig
+  Get the current provider worker based on the organization | Config | Default config
   """
   @spec provider_worker(non_neg_integer) :: atom()
   def provider_worker(organization_id) do

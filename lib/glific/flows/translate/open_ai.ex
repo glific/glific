@@ -6,8 +6,12 @@ defmodule Glific.Flows.Translate.OpenAI do
   @open_ai_params %{"temperature" => 0, "max_tokens" => 12_000}
   @token_chunk_size 200
 
-  alias Glific.Flows.Translate.Translate
-  alias Glific.OpenAI.ChatGPT
+  alias Glific.{
+    Flows.Translate.Translate,
+    Flows.Translate.TranslateLog,
+    OpenAI.ChatGPT
+  }
+
   require Logger
 
   @doc """
@@ -20,12 +24,14 @@ defmodule Glific.Flows.Translate.OpenAI do
   iex> Glific.Flows.Translate.OpenAI.translate(["thankyou for joining", "correct answer"], "english", "hindi")
     {:ok, ["शामिल होने के लिए धन्यवाद", "सही जवाब"]}
   """
-  @spec translate([String.t()], String.t(), String.t()) ::
+  @spec translate([String.t()], String.t(), String.t(), Keyword.t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
-  def translate(strings, src, dst) do
+  def translate(strings, src, dst, opts) do
+    org_id = Keyword.get(opts, :org_id)
+
     strings
     |> Translate.check_large_strings()
-    |> Task.async_stream(fn text -> do_translate(text, src, dst) end,
+    |> Task.async_stream(fn text -> do_translate(text, src, dst, org_id) end,
       timeout: 300_000,
       max_concurrency: 15,
       # send {:exit, :timeout} so it can be handled
@@ -42,20 +48,21 @@ defmodule Glific.Flows.Translate.OpenAI do
   # This way successfully translated string will be updated in first go and leftover will be translated in second go
   @spec handle_async_response(tuple(), [String.t()]) :: [String.t()]
   defp handle_async_response({:ok, translated_text}, acc), do: [translated_text | acc]
+
   defp handle_async_response({:exit, :timeout}, acc), do: ["" | acc]
 
   # Making API call to open ai to translate list of string from src language to dst
-  @spec do_translate([String.t()], String.t(), String.t()) :: [String.t()] | {:error, String.t()}
-  defp do_translate(strings, src, dst) do
+  @spec do_translate([String.t()], String.t(), String.t(), non_neg_integer()) :: String.t()
+  defp do_translate(strings, src, dst, org_id) do
     prompt =
       """
       Translate the text from #{src} to #{dst}. Return only translated text
-      User: "hello there"
+      User: hello there
       Think: Translate the text from english to hindi
-      System: "नमस्ते"
-      User: "you won 1 point"
+      System: नमस्ते
+      User: you won 1 point
       Think: Translate the text from english to tamil
-      System: "நீங்கள் 1 புள்ளியை வென்றீர்கள்"
+      System: நீங்கள் 1 புள்ளியை வென்றீர்கள்
       """
 
     Glific.get_open_ai_key()
@@ -70,9 +77,31 @@ defmodule Glific.Flows.Translate.OpenAI do
     )
     |> case do
       {:ok, result} ->
+        %{
+          text: strings,
+          translated_text: result,
+          source_language: src,
+          destination_language: dst,
+          translation_engine: "OpenAI",
+          status: true,
+          organization_id: org_id
+        }
+        |> TranslateLog.create_translate_log()
+
         result
 
       {:error, error} ->
+        %{
+          text: strings,
+          source_language: src,
+          destination_language: dst,
+          translation_engine: "OpenAI",
+          status: false,
+          error: error,
+          organization_id: org_id
+        }
+        |> TranslateLog.create_translate_log()
+
         Logger.error("Error translating: #{error} String: #{strings}")
         ""
     end

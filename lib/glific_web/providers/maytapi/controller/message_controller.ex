@@ -77,27 +77,22 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
   defp update_message_params(
          message_payload,
          org_id,
-         %{"conversation_name" => conversation_name} = params
-       )
-       when conversation_name not in ["", nil] do
+         params
+       ) do
     message_payload
     |> Map.put(:organization_id, org_id)
     |> Map.put(:group_id, params["conversation"])
     |> Map.put(:group_name, params["conversation_name"])
     |> Map.put(:receiver, params["receiver"])
-    |> Map.put(:is_dm, false)
-    |> update_sender_details()
-  end
-
-  defp update_message_params(message_payload, org_id, params) do
-    message_payload
-    |> Map.put(:organization_id, org_id)
-    |> Map.put(:is_dm, true)
-    |> Map.put(:receiver, params["receiver"])
+    |> Map.put(:is_dm, direct_message?(params["conversation"]))
     |> update_sender_details()
   end
 
   @spec update_sender_details(map()) :: map()
   defp update_sender_details(message_params),
     do: put_in(message_params, [:sender, :contact_type], "WA")
+
+  @spec direct_message?(String.t() | nil) :: boolean()
+  defp direct_message?(conversation_id) when conversation_id in ["", nil], do: true
+  defp direct_message?(conversation_id), do: String.ends_with?(conversation_id, "c.us")
 end

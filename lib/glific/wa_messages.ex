@@ -2,10 +2,12 @@ defmodule Glific.WAMessages do
   @moduledoc """
   Whatsapp messages context
   """
+
   alias Glific.{
     Contacts,
     Conversations.WAConversation,
     Flows.MessageVarParser,
+    Groups.WAGroup,
     Messages,
     Repo,
     WAGroup.WAMessage
@@ -65,7 +67,7 @@ defmodule Glific.WAMessages do
           query
       end
     )
-    |> do_list_conversations()
+    |> do_list_conversations(args)
   end
 
   @spec parse_message_vars(map()) :: map()
@@ -123,12 +125,13 @@ defmodule Glific.WAMessages do
 
   defp put_clean_body(attrs), do: attrs
 
-  @spec do_list_conversations(any()) :: [WAConversation.t()]
-  defp do_list_conversations(query) do
+  @spec do_list_conversations(any(), map()) :: [WAConversation.t()]
+  defp do_list_conversations(query, args) do
     query
     |> preload([:contact, :wa_group, :media])
     |> Repo.all()
     |> make_conversations()
+    |> add_empty_conversations(args)
   end
 
   # given all the messages related to multiple wa_groups, group them
@@ -175,5 +178,49 @@ defmodule Glific.WAMessages do
       [element],
       &[element | &1]
     )
+  end
+
+  @spec add_empty_conversations([WAConversation.t()], map()) :: [WAConversation.t()]
+
+  defp add_empty_conversations(results, %{filter: %{id: id}}),
+    do: add_empty_conversation(results, [id])
+
+  defp add_empty_conversations(results, %{filter: %{ids: ids}}),
+    do: add_empty_conversation(results, ids)
+
+  defp add_empty_conversations(results, _), do: results
+
+  # helper function that actually implements the above functionality
+  @spec add_empty_conversation([WAConversation.t()], [integer]) :: [WAConversation.t()]
+  defp add_empty_conversation(results, wa_group_ids) when is_list(wa_group_ids) do
+    # first find all the group ids that we have some messages
+    present_wa_group_ids =
+      Enum.reduce(
+        results,
+        [],
+        fn r, acc -> [r.wa_group.id | acc] end
+      )
+
+    # the difference is the empty wa_group id list
+    empty_wa_group_ids = wa_group_ids -- present_wa_group_ids
+
+    # lets load all wa_group ids in one query, rather than multiple single queries
+    empty_results =
+      WAGroup
+      |> where([wa_grp], wa_grp.id in ^empty_wa_group_ids)
+      |> Repo.all()
+      # now only generate conversations objects for the empty wa_group ids
+      |> Enum.reduce(
+        [],
+        fn wa_group, acc -> add_conversation(acc, wa_group) end
+      )
+
+    results ++ empty_results
+  end
+
+  # add an empty conversation for a specific wa_group
+  @spec add_conversation([WAConversation.t()], WAGroup.t()) :: [WAConversation.t()]
+  defp add_conversation(results, wa_group) do
+    [WAConversation.new(wa_group, []) | results]
   end
 end
