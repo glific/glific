@@ -18,14 +18,14 @@ defmodule Glific.Contacts do
     Contacts.ContactHistory,
     Contacts.Location,
     Groups.ContactGroup,
+    Groups.ContactWAGroup,
     Groups.UserGroup,
     Partners,
     Partners.Provider,
     Profiles,
     Repo,
     Tags.ContactTag,
-    Users.User,
-    Groups.ContactWAGroup
+    Users.User
   }
 
   @delete_timeout 400_000

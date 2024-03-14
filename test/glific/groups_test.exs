@@ -49,6 +49,10 @@ defmodule Glific.GroupsTest do
     end
 
     test "count_groups/1 returns count of all groups", attrs do
+      unique_wa_label = "WA group label"
+      wa_group_attrs = Map.put(attrs, :label, unique_wa_label)
+      wa_group_attrs = Map.put(wa_group_attrs, :group_type, "WA")
+
       _ = group_fixture(attrs)
       assert Groups.count_groups(%{filter: attrs}) == 4
 
@@ -56,6 +60,11 @@ defmodule Glific.GroupsTest do
       assert Groups.count_groups(%{filter: attrs}) == 5
 
       assert Groups.count_groups(%{filter: Map.merge(attrs, %{label: "other group"})}) == 1
+      assert Groups.count_groups(%{filter: Map.merge(attrs, %{group_type: "WABA"})}) == 5
+
+      _ = group_fixture(wa_group_attrs)
+
+      assert Groups.count_groups(%{filter: Map.merge(attrs, %{group_type: "WA"})}) == 1
     end
 
     test "get_group!/1 returns the group with given id", attrs do
