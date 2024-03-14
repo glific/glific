@@ -1,13 +1,12 @@
 defmodule GlificWeb.Schema.WaSearchTest do
   alias Glific.Conversations.WAConversation
-  alias Glific.WAGroup.WAManagedPhone
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
   alias Glific.{
     Fixtures,
-    Seeds.SeedsDev,
     Groups.WAGroups,
+    Seeds.SeedsDev,
     WAManagedPhones
   }
 
@@ -99,7 +98,8 @@ defmodule GlificWeb.Schema.WaSearchTest do
     [wa_managed_phone_1 | _wa_managed_phones] =
       WAManagedPhones.list_wa_managed_phones(%{organization_id: attrs.organization_id})
 
-    [wa_group_1, wa_group_2] = WAGroups.list_wa_groups(%{organization_id: attrs.organization_id})
+    [wa_group_1, wa_group_2 | _] =
+      WAGroups.list_wa_groups(%{organization_id: attrs.organization_id})
 
     # with available id filters
     result =
