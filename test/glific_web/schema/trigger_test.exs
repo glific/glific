@@ -34,6 +34,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert length(triggers) > 0
     [trigger | _] = triggers
     assert String.to_integer(trigger["flow"]["id"]) == tr.flow_id
+    assert trigger["group_type"] == "WABA"
   end
 
   test "trigger field returns list of triggers in various filters", %{manager: user} = attrs do

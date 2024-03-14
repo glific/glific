@@ -220,7 +220,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
       body: "Hello, World!",
       sender: %{phone: "1234567890", name: "John Doe"},
       flow: :inbound,
-      status: "sent"
+      status: :received
     }
 
     assert Message.receive_text(params) == expected_result
@@ -245,7 +245,8 @@ defmodule Glific.Groups.WhatsappMessageTest do
       content_type: "image",
       source_url: "http://example.com/photo.jpg",
       sender: %{phone: "1234567890", name: "Jane Doe"},
-      flow: :inbound
+      flow: :inbound,
+      status: :received
     }
 
     assert Message.receive_media(params) == expected_result
