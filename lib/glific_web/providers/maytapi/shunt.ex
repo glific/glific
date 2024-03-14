@@ -43,7 +43,7 @@ defmodule GlificWeb.Providers.Maytapi.Plugs.Shunt do
   end
 
   @doc false
-  def call(%Conn{params: %{"response" => _response}} = conn, opts) do
+  def call(%Conn{params: %{"type" => "ack"}} = conn, opts) do
     organization = build_context(conn)
 
     path =

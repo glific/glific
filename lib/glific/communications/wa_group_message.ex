@@ -17,6 +17,7 @@ defmodule Glific.Communications.GroupMessage do
     WAMessages
   }
 
+  import Ecto.Query
   @doc false
   defmacro __using__(_opts \\ []) do
     quote do
@@ -89,6 +90,16 @@ defmodule Glific.Communications.GroupMessage do
       |> Contacts.maybe_create_contact()
 
     do_receive_message(contact, message_params, type)
+  end
+
+  @doc """
+  Callback to update the provider status for a message
+  """
+  @spec update_bsp_status(String.t(), atom()) :: any()
+  def update_bsp_status(bsp_message_id, bsp_status) do
+    WAMessage
+    |> where([wa_msg], wa_msg.bsp_id == ^bsp_message_id)
+    |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
   end
 
   @spec log_error(WAMessage.t(), String.t()) :: {:error, String.t()}
