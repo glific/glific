@@ -25,6 +25,11 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :collection_wa_message_result do
+    field :success, :boolean
+    field :errors, list_of(:input_error)
+  end
+
   object :group_message_result do
     field :success, :boolean
     field :contact_ids, list_of(:id)
@@ -214,6 +219,13 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :wa_group_id, :id
   end
 
+  input_object :collection_wa_message_input do
+    field :message, :string
+    field :type, :message_type_enum
+
+    field :media_id, :id
+  end
+
   object :message_queries do
     @desc "get the details of one message"
     field :message, :message_result do
@@ -304,6 +316,13 @@ defmodule GlificWeb.Schema.MessageTypes do
       arg(:input, non_null(:wa_message_input))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.send_message_in_wa_group/3)
+    end
+
+    field :send_message_to_wa_group_collection, :collection_wa_message_result do
+      arg(:input, non_null(:collection_wa_message_input))
+      arg(:group_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Messages.send_message_to_wa_group_collection/3)
     end
   end
 

@@ -6,6 +6,7 @@ defmodule Glific.WAGroup.WAMessage do
   alias Glific.{
     Contacts.Contact,
     Flows.MessageBroadcast,
+    Groups.Group,
     Groups.WAGroup,
     Messages.MessageMedia,
     Partners.Organization,
@@ -31,6 +32,8 @@ defmodule Glific.WAGroup.WAMessage do
           message_number: integer(),
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          group_id: non_neg_integer | nil,
+          group: Group.t() | Ecto.Association.NotLoaded.t() | nil,
           wa_group_id: non_neg_integer | nil,
           wa_group: WAGroup.t() | Ecto.Association.NotLoaded.t() | nil,
           media_id: non_neg_integer | nil,
@@ -62,6 +65,7 @@ defmodule Glific.WAGroup.WAMessage do
     :body,
     :bsp_id,
     :wa_managed_phone_id,
+    :group_id,
     :wa_group_id,
     :uuid,
     :status,
@@ -93,6 +97,7 @@ defmodule Glific.WAGroup.WAMessage do
     belongs_to(:contact, Contact)
     belongs_to(:wa_managed_phone, WAManagedPhone)
     belongs_to(:media, MessageMedia)
+    belongs_to(:group, Group)
     belongs_to(:wa_group, WAGroup)
     belongs_to(:organization, Organization)
     belongs_to(:message_broadcast, MessageBroadcast, foreign_key: :message_broadcast_id)

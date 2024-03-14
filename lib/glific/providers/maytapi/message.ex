@@ -8,8 +8,10 @@ defmodule Glific.Providers.Maytapi.Message do
   alias Glific.{
     Communications.GroupMessage,
     Groups.WAGroup,
+    Groups.WaGroupsCollections,
     WAGroup.WAManagedPhone,
-    WAMessages
+    WAMessages,
+    Repo
   }
 
   @doc false
@@ -22,7 +24,6 @@ defmodule Glific.Providers.Maytapi.Message do
         body: Map.get(attrs, :message),
         contact_id: wa_phone.contact_id,
         organization_id: wa_phone.organization_id,
-        message_type: "WA",
         bsp_status: "sent",
         wa_group_id: wa_group.id,
         wa_managed_phone_id: wa_phone.id,
@@ -35,6 +36,37 @@ defmodule Glific.Providers.Maytapi.Message do
       phone_id: wa_phone.phone_id,
       phone: wa_phone.phone
     })
+  end
+
+  @doc false
+  @spec send_message_to_wa_group_collection(Group.t(), map()) ::
+          {:ok, map()}
+  def send_message_to_wa_group_collection(group, attrs) do
+    wa_group_collections =
+      WaGroupsCollections.list_wa_groups_collection(%{
+        filter: %{group_id: group.id, organization_id: group.organization_id}
+      })
+      |> Repo.preload([:wa_group])
+
+    Task.async_stream(
+      wa_group_collections,
+      fn wa_group_collection ->
+        Repo.put_process_state(wa_group_collection.organization_id)
+
+        {:ok, wa_managed_phone} =
+          Repo.fetch_by(WAManagedPhone, %{
+            id: wa_group_collection.wa_group.wa_managed_phone_id,
+            organization_id: wa_group_collection.organization_id
+          })
+
+        create_and_send_wa_message(wa_managed_phone, wa_group_collection.wa_group, attrs)
+      end,
+      max_concurrency: 20,
+      on_timeout: :kill_task
+    )
+    |> Stream.run()
+
+    {:ok, %{success: true}}
   end
 
   @doc false
