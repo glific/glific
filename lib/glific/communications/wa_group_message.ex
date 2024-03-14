@@ -184,7 +184,7 @@ defmodule Glific.Communications.GroupMessage do
       WAGroups.maybe_create_group(%{
         organization_id: message_params.organization_id,
         wa_managed_phone_id: wa_managed_phone_id,
-        bsp_id: message_params.bsp_id,
+        bsp_id: message_params.wa_group_bsp_id,
         label: message_params.group_name
       })
 
