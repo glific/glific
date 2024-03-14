@@ -95,10 +95,10 @@ defmodule Glific.Communications.GroupMessage do
   @doc """
   Callback to update the provider status for a message
   """
-  @spec update_bsp_status(String.t(), atom()) :: any()
-  def update_bsp_status(bsp_message_id, bsp_status) do
+  @spec update_bsp_status(String.t(), atom(), non_neg_integer()) :: any()
+  def update_bsp_status(bsp_message_id, bsp_status, org_id) do
     WAMessage
-    |> where([wa_msg], wa_msg.bsp_id == ^bsp_message_id)
+    |> where([wa_msg], wa_msg.bsp_id == ^bsp_message_id and wa_msg.organization_id == ^org_id)
     |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
   end
 

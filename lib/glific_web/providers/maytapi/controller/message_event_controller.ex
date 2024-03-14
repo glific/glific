@@ -8,7 +8,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
 
   @message_event_type %{
     "delivered" => :delivered,
-    "reached" => :reached,
     "sent" => :sent,
     "read" => :read
   }
@@ -19,16 +18,16 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
   @spec handler(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def handler(conn, %{"data" => response} = _params) do
     response
-    |> Enum.each(&update_status(&1, &1["ackType"]))
+    |> Enum.each(&update_status(&1, &1["ackType"], conn.assigns.organization_id))
 
     json(conn, nil)
   end
 
   # Updates the provider message status based on provider message id
-  @spec update_status(map(), String.t()) :: any()
-  defp update_status(params, status) do
-    status = Map.get(@message_event_type, status)
+  @spec update_status(map(), String.t(), non_neg_integer()) :: any()
+  defp update_status(params, status, org_id) do
+    status = Map.get(@message_event_type, status) || :delivered
     bsp_message_id = Map.get(params, "msgId")
-    Communications.GroupMessage.update_bsp_status(bsp_message_id, status)
+    Communications.GroupMessage.update_bsp_status(bsp_message_id, status, org_id)
   end
 end

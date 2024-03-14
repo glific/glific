@@ -65,7 +65,6 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
 
   load_gql(:send_msg, GlificWeb.Schema, "assets/gql/messages/wa_group_message.gql")
 
-  @tag :sendd
   test "send message/2 in a whatsapp group", %{staff: user, conn: conn} do
     mock_maytapi_response(200, %{
       "success" => true,
