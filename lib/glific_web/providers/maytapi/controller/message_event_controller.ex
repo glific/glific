@@ -8,6 +8,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
 
   @message_event_type %{
     "delivered" => :delivered,
+    "reached" => :reached,
     "sent" => :sent,
     "read" => :read
   }
