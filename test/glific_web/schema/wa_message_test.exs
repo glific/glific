@@ -1,7 +1,4 @@
 defmodule GlificWeb.Schema.Api.WaMessageTest do
-  alias Glific.WAMessages
-  alias Glific.WAGroup.WAMessage
-  alias Glific.Groups.WAGroups
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
@@ -9,8 +6,11 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
 
   alias Glific.{
     Fixtures,
+    Groups.WAGroups,
     Partners,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    WAGroup.WAMessage,
+    WAMessages
   }
 
   alias Glific.Repo
@@ -26,8 +26,8 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
         "time" => 1_710_342_107
       }
     ],
-    "phoneId" => 47309,
-    "phone_id" => 47309,
+    "phoneId" => 47_309,
+    "phone_id" => 47_309,
     "product_id" => "5bb39ba2-d0f4-4fb5-8bd3-a1f26c50559c",
     "type" => "ack"
   }
