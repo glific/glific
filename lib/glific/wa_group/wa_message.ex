@@ -1,6 +1,7 @@
 defmodule Glific.WAGroup.WAMessage do
   @moduledoc false
   use Ecto.Schema
+  import Ecto.Query, warn: false
   alias __MODULE__
 
   alias Glific.{
