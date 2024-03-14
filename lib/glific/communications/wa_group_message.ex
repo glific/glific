@@ -164,30 +164,30 @@ defmodule Glific.Communications.GroupMessage do
         phone: message_params.receiver
       })
 
-    group_id = fetch_group_id(wa_managed_phone_id, message_params)
+    wa_group_id = fetch_wa_group_id(wa_managed_phone_id, message_params)
 
     %{
       type: type,
       contact_id: contact.id,
       is_dm: is_dm,
       organization_id: contact.organization_id,
-      wa_group_id: group_id,
+      wa_group_id: wa_group_id,
       wa_managed_phone_id: wa_managed_phone_id
     }
   end
 
-  @spec fetch_group_id(non_neg_integer(), map()) :: nil | non_neg_integer()
-  defp fetch_group_id(_wa_managed_phone_id, %{is_dm: true} = _message_params), do: nil
+  @spec fetch_wa_group_id(non_neg_integer(), map()) :: nil | non_neg_integer()
+  defp fetch_wa_group_id(_wa_managed_phone_id, %{is_dm: true} = _message_params), do: nil
 
-  defp fetch_group_id(wa_managed_phone_id, message_params) do
-    {:ok, group} =
+  defp fetch_wa_group_id(wa_managed_phone_id, message_params) do
+    {:ok, wa_group} =
       WAGroups.maybe_create_group(%{
         organization_id: message_params.organization_id,
         wa_managed_phone_id: wa_managed_phone_id,
-        bsp_id: message_params.group_id,
+        bsp_id: message_params.bsp_id,
         label: message_params.group_name
       })
 
-    group.id
+    wa_group.id
   end
 end

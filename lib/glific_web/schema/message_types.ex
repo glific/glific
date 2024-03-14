@@ -392,5 +392,13 @@ defmodule GlificWeb.Schema.MessageTypes do
 
       resolve(fn message, _, _ -> {:ok, message} end)
     end
+
+    field :sent_wa_group_collection_message, :wa_message do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(fn wa_message, _, _ -> {:ok, wa_message} end)
+    end
   end
 end

@@ -6,10 +6,12 @@ defmodule Glific.Providers.Maytapi.Message do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Communications,
     Communications.GroupMessage,
     Groups.WAGroup,
     Groups.WaGroupsCollections,
     WAGroup.WAManagedPhone,
+    WAGroup.WAMessage,
     WAMessages,
     Repo
   }
@@ -48,6 +50,8 @@ defmodule Glific.Providers.Maytapi.Message do
       })
       |> Repo.preload([:wa_group])
 
+    create_wa_group_message(wa_group_collections, group, attrs)
+
     Task.async_stream(
       wa_group_collections,
       fn wa_group_collection ->
@@ -67,6 +71,38 @@ defmodule Glific.Providers.Maytapi.Message do
     |> Stream.run()
 
     {:ok, %{success: true}}
+  end
+
+  defp create_wa_group_message([wa_group_collection | _wa_groups], group, attrs) do
+    {:ok, wa_managed_phone} =
+      Repo.fetch_by(WAManagedPhone, %{
+        id: wa_group_collection.wa_group.wa_managed_phone_id,
+        organization_id: group.organization_id
+      })
+
+    attrs
+    |> Map.put_new(:type, :text)
+    |> Map.merge(%{
+      body: Map.get(attrs, :message),
+      contact_id: wa_managed_phone.contact_id,
+      organization_id: group.organization_id,
+      bsp_status: "sent",
+      wa_group_id: wa_group_collection.wa_group.id,
+      group_id: group.id,
+      wa_managed_phone_id: wa_managed_phone.id,
+      send_at: DateTime.utc_now()
+    })
+    |> WAMessages.create_message()
+    |> then(fn {:ok, wa_message} -> wa_group_message_subscription(wa_message) end)
+  end
+
+  @spec wa_group_message_subscription(WAMessage.t()) :: any()
+  defp wa_group_message_subscription(wa_message) do
+    Communications.publish_data(
+      wa_message,
+      :sent_wa_group_collection_message,
+      wa_message.organization_id
+    )
   end
 
   @doc false
