@@ -1767,12 +1767,6 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "context message id for an template response",
-        name: "context_message_id",
-        type: "INTEGER",
-        mode: "NULLABLE"
-      },
-      %{
         description: "message broadcast id when a flow or message started for a group",
         name: "message_broadcast_id",
         type: "INTEGER",
