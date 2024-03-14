@@ -26,7 +26,6 @@ defmodule Glific.ConversationsGroup do
   def list_conversations(group_ids, args) do
     group_ids
     |> get_groups(args.contact_opts)
-    |> Enum.filter(fn g -> g.group_type == "WABA" end)
     |> get_conversations(args.message_opts)
   end
 
@@ -35,6 +34,7 @@ defmodule Glific.ConversationsGroup do
     Group
     |> Ecto.Queryable.to_query()
     |> Repo.add_permission(&Groups.add_permission/2)
+    |> where([g], g.group_type == "WABA")
     |> order_by([g], desc: g.last_communication_at)
     |> limit(^limit)
     |> offset(^offset)
