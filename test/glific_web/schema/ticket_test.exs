@@ -199,7 +199,7 @@ defmodule GlificWeb.Schema.TicketTest do
         }
       )
 
-    assert {:ok, query_data} = result |> IO.inspect()
+    assert {:ok, query_data} = result
     support_tickets = get_in(query_data, [:data, "fetchSupportTickets"])
     time = Timex.format!(DateTime.utc_now(), "{YYYY}-{0M}-{0D}")
     [header | tickets] = String.split(support_tickets, "\n")
