@@ -40,7 +40,9 @@ defmodule Glific.Providers.Maytapi.Message do
     })
   end
 
-  @doc false
+  @doc """
+  Send message to wa_group collection
+  """
   @spec send_message_to_wa_group_collection(Group.t(), map()) ::
           {:ok, map()}
   def send_message_to_wa_group_collection(group, attrs) do
@@ -52,6 +54,7 @@ defmodule Glific.Providers.Maytapi.Message do
 
     create_wa_group_message(wa_group_collections, group, attrs)
 
+    # Using Async instead of going with the route of message broadcast as the number of WA groups per collection will be way less than contacts in a collection
     Task.async_stream(
       wa_group_collections,
       fn wa_group_collection ->
