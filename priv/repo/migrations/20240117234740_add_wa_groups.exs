@@ -93,6 +93,10 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
 
       add :sent_at, :utc_datetime, comment: "Timestamp when message was sent from queue worker"
 
+      add :group_id, references(:groups, on_delete: :delete_all),
+        null: true,
+        comment: "ID of group, message is sent to"
+
       add :wa_group_id, references(:wa_groups, on_delete: :delete_all),
         null: true,
         comment: "ID of WA group,  message is sent/received from"
