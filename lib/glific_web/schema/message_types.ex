@@ -135,6 +135,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :inserted_at, :datetime
     field :updated_at, :datetime
 
+    field :group_id, :integer
     field :context_id, :string
 
     field :context_message, :wa_message do
