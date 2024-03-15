@@ -102,10 +102,19 @@ defmodule Glific.Groups.WhatsappMessageTest do
     }
 
     Message.send_message_to_wa_group_collection(group, params)
-    Glific.WAGroup.WAMessage |> Repo.all() |> IO.inspect()
-    # {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
-    # assert wa_message.body == params.message
-    # assert wa_message.bsp_status == :sent
+
+    [wa_group_msg, wa_group_collection_msg] =
+      Glific.WAGroup.WAMessage
+      |> order_by([wam], desc: wam.inserted_at)
+      |> limit(2)
+      |> Repo.all()
+
+    assert wa_group_collection_msg.body == params.message
+    assert wa_group_collection_msg.group_id == group.id
+    assert wa_group_collection_msg.wa_group_id == nil
+    assert wa_group_msg.body == params.message
+    assert wa_group_msg.group_id == nil
+    assert wa_group_msg.wa_group_id == wa_group.id
   end
 
   test "create_and_send_wa_message/3 send media message successfully",

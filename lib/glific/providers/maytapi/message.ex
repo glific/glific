@@ -63,7 +63,11 @@ defmodule Glific.Providers.Maytapi.Message do
             organization_id: wa_group_collection.organization_id
           })
 
-        create_and_send_wa_message(wa_managed_phone, wa_group_collection.wa_group, attrs)
+        create_and_send_wa_message(
+          wa_managed_phone,
+          wa_group_collection.wa_group,
+          Map.delete(attrs, :group_id)
+        )
       end,
       max_concurrency: 20,
       on_timeout: :kill_task
