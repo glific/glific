@@ -7,9 +7,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
   alias Glific.Communications
 
   @message_event_type %{
-    "delivered" => :delivered,
-    "sent" => :sent,
-    "read" => :read
+    "delivered" => :delivered
   }
 
   @doc """
@@ -25,9 +23,12 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
 
   # Updates the provider message status based on provider message id
   @spec update_status(map(), String.t(), non_neg_integer()) :: any()
-  defp update_status(params, status, org_id) do
-    status = Map.get(@message_event_type, status) || :delivered
+  defp update_status(params, "delivered", org_id) do
+    status = Map.get(@message_event_type, "delivered")
     bsp_message_id = Map.get(params, "msgId")
     Communications.GroupMessage.update_bsp_status(bsp_message_id, status, org_id)
   end
+
+  # Will extend this, if we want to handle more events
+  defp update_status(_, _, _), do: nil
 end
