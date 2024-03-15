@@ -25,6 +25,11 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :collection_wa_message_result do
+    field :success, :boolean
+    field :errors, list_of(:input_error)
+  end
+
   object :group_message_result do
     field :success, :boolean
     field :contact_ids, list_of(:id)
@@ -130,6 +135,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :inserted_at, :datetime
     field :updated_at, :datetime
 
+    field :group_id, :integer
     field :context_id, :string
 
     field :context_message, :wa_message do
@@ -212,6 +218,13 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :media_id, :id
     field :wa_managed_phone_id, :id
     field :wa_group_id, :id
+  end
+
+  input_object :collection_wa_message_input do
+    field :message, :string
+    field :type, :message_type_enum
+
+    field :media_id, :id
   end
 
   object :message_queries do
@@ -305,6 +318,13 @@ defmodule GlificWeb.Schema.MessageTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.send_message_in_wa_group/3)
     end
+
+    field :send_message_to_wa_group_collection, :collection_wa_message_result do
+      arg(:input, non_null(:collection_wa_message_input))
+      arg(:group_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Messages.send_message_to_wa_group_collection/3)
+    end
   end
 
   object :message_subscriptions do
@@ -372,6 +392,14 @@ defmodule GlificWeb.Schema.MessageTypes do
       config(&Schema.config_fun/2)
 
       resolve(fn message, _, _ -> {:ok, message} end)
+    end
+
+    field :sent_wa_group_collection_message, :wa_message do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(fn wa_message, _, _ -> {:ok, wa_message} end)
     end
   end
 end
