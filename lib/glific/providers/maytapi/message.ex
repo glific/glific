@@ -12,10 +12,10 @@ defmodule Glific.Providers.Maytapi.Message do
     Groups.WAGroup,
     Groups.WAGroupsCollection,
     Groups.WaGroupsCollections,
+    Repo,
     WAGroup.WAManagedPhone,
     WAGroup.WAMessage,
-    WAMessages,
-    Repo
+    WAMessages
   }
 
   @doc false
@@ -55,7 +55,8 @@ defmodule Glific.Providers.Maytapi.Message do
 
     create_wa_group_message(wa_group_collections, group, attrs)
 
-    # Using Async instead of going with the route of message broadcast as the number of WA groups per collection will be way less than contacts in a collection
+    # Using Async instead of going with the route of message broadcast as the number of WA groups
+    #  per collection will be way less than contacts in a collection
     Task.async_stream(
       wa_group_collections,
       fn wa_group_collection ->
