@@ -265,6 +265,8 @@ defmodule GlificWeb.Resolvers.Messages do
     end
   end
 
+  @doc false
+  @spec send_message_to_wa_group_collection(Absinthe.Resolution.t(), map(), map()) :: {:ok, any()}
   def send_message_to_wa_group_collection(_, %{input: params, group_id: group_id}, %{
         context: %{current_user: current_user}
       }) do

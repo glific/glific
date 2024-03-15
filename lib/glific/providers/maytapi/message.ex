@@ -8,7 +8,9 @@ defmodule Glific.Providers.Maytapi.Message do
   alias Glific.{
     Communications,
     Communications.GroupMessage,
+    Groups.Group,
     Groups.WAGroup,
+    Groups.WAGroupsCollection,
     Groups.WaGroupsCollections,
     WAGroup.WAManagedPhone,
     WAGroup.WAMessage,
@@ -43,8 +45,7 @@ defmodule Glific.Providers.Maytapi.Message do
   @doc """
   Send message to wa_group collection
   """
-  @spec send_message_to_wa_group_collection(Group.t(), map()) ::
-          {:ok, map()}
+  @spec send_message_to_wa_group_collection(Group.t(), map()) :: {:ok, map()}
   def send_message_to_wa_group_collection(group, attrs) do
     wa_group_collections =
       WaGroupsCollections.list_wa_groups_collection(%{
@@ -80,6 +81,7 @@ defmodule Glific.Providers.Maytapi.Message do
     {:ok, %{success: true}}
   end
 
+  @spec create_wa_group_message([WAGroupsCollection.t()], Group.t(), map()) :: any()
   defp create_wa_group_message([wa_group_collection | _wa_groups], group, attrs) do
     {:ok, wa_managed_phone} =
       Repo.fetch_by(WAManagedPhone, %{
