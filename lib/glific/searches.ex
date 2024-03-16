@@ -323,6 +323,7 @@ defmodule Glific.Searches do
       group_ids(args),
       args
     )
+    |> append_conversation_id()
   end
 
   def search(%{filter: %{search_group: true}} = args, _count) do
@@ -332,6 +333,7 @@ defmodule Glific.Searches do
       group_ids(args),
       args
     )
+    |> append_conversation_id()
   end
 
   # codebeat:disable[ABC]
@@ -374,7 +376,32 @@ defmodule Glific.Searches do
     else
       put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
       |> Conversations.list_conversations(count)
+      |> append_conversation_id()
     end
+  end
+
+  defp append_conversation_id(conversations) do
+    Enum.reduce(conversations, [], fn conversation, acc ->
+      acc ++ do_append_conversation_id(conversation)
+    end)
+  end
+
+  defp do_append_conversation_id(%{contact: nil, group: group} = conversation) do
+    conversation
+    |> Map.put(:id, "group_#{group.id}")
+    |> then(&[&1])
+  end
+
+  defp do_append_conversation_id(%{contact: contact, group: nil} = conversation) do
+    conversation
+    |> Map.put(:id, "contact_#{contact.id}")
+    |> then(&[&1])
+  end
+
+  defp do_append_conversation_id(%{wa_group: wa_group} = conversation) do
+    conversation
+    |> Map.put(:id, "wa_group_#{wa_group.id}")
+    |> then(&[&1])
   end
 
   @doc """
@@ -390,6 +417,7 @@ defmodule Glific.Searches do
       group_ids(args),
       args
     )
+    |> append_conversation_id()
   end
 
   def wa_search(%{filter: %{search_group: true}} = args) do
@@ -399,6 +427,7 @@ defmodule Glific.Searches do
       group_ids(args),
       args
     )
+    |> append_conversation_id()
   end
 
   def wa_search(args) do
@@ -416,6 +445,7 @@ defmodule Glific.Searches do
 
     put_in(args, [Access.key(:filter, %{}), :ids], wa_group_ids)
     |> WAConversations.list_conversations()
+    |> append_conversation_id()
   end
 
   # codebeat:enable[ABC]
