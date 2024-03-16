@@ -165,7 +165,7 @@ defmodule Glific.WAMessages do
       wa_group_order,
       [],
       fn wa_group, acc ->
-        [WAConversation.new(wa_group, Enum.reverse(wa_group_messages[wa_group])) | acc]
+        [WAConversation.new(wa_group, nil, Enum.reverse(wa_group_messages[wa_group])) | acc]
       end
     )
   end

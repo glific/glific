@@ -13,11 +13,12 @@ defmodule Glific.ConversationsGroup do
   alias Glific.{
     Conversations,
     Conversations.Conversation,
+    Conversations.WAConversation,
     Groups,
     Groups.Group,
     Messages.Message,
     Repo,
-    WAGroup.WAMessage
+    WAGroup.WAMessage,
   }
 
   @doc """
@@ -126,7 +127,7 @@ defmodule Glific.ConversationsGroup do
     |> Repo.all()
   end
 
-  @spec get_wa_conversations([Group.t()], map()) :: [Conversation.t()]
+  @spec get_wa_conversations([Group.t()], map()) :: [WAConversation.t()]
   defp get_wa_conversations(groups, message_opts) do
     groups
     |> Enum.map(fn g -> g.id end)
@@ -147,19 +148,19 @@ defmodule Glific.ConversationsGroup do
     |> Repo.all()
   end
 
-  @spec make_wa_conversations([WAMessage.t()], [Group.t()]) :: [Conversation.t()]
+  @spec make_wa_conversations([WAMessage.t()], [Group.t()]) :: [WAConversation.t()]
   defp make_wa_conversations(wa_messages, groups) do
-    conversations =
+    wa_conversations =
       groups
       |> Enum.reduce(
         %{},
         fn g, acc -> Map.put(acc, g.id, %{group: g, wa_messages: []}) end
       )
 
-    conversations =
+    wa_conversations =
       Enum.reduce(
         wa_messages,
-        conversations,
+        wa_conversations,
         fn m, acc ->
           Map.update!(acc, m.group_id, fn l -> %{group: l.group, wa_messages: [m | l.wa_messages]} end)
         end
@@ -170,8 +171,8 @@ defmodule Glific.ConversationsGroup do
     Enum.map(
       groups,
       fn group ->
-        c = Map.get(conversations, group.id)
-        Conversation.new(nil, c.group, c.wa_messages)
+        c = Map.get(wa_conversations, group.id)
+        WAConversation.new(nil, c.group, c.wa_messages)
       end
     )
   end
