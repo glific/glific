@@ -16,7 +16,8 @@ defmodule Glific.ConversationsGroup do
     Groups,
     Groups.Group,
     Messages.Message,
-    Repo
+    Repo,
+    WAGroup.WAMessage
   }
 
   @doc """
@@ -109,7 +110,7 @@ defmodule Glific.ConversationsGroup do
   def wa_list_conversations(group_ids, args) do
     group_ids
     |> get_wa_groups(args.wa_group_opts)
-    |> get_conversations(args.wa_message_opts)
+    |> get_wa_conversations(args.wa_message_opts)
   end
 
   defp get_wa_groups(gids, opts) when is_list(gids) do
@@ -123,5 +124,55 @@ defmodule Glific.ConversationsGroup do
     get_groups_query(opts)
     |> where([g], g.group_type == "WA")
     |> Repo.all()
+  end
+
+  @spec get_wa_conversations([Group.t()], map()) :: [Conversation.t()]
+  defp get_wa_conversations(groups, message_opts) do
+    groups
+    |> Enum.map(fn g -> g.id end)
+    |> get_wa_messages(message_opts)
+    |> make_wa_conversations(groups)
+  end
+
+  @spec get_wa_messages(list(), map()) :: [WAMessage.t()]
+  defp get_wa_messages(ids, %{limit: limit, offset: offset}) do
+    query = from m in WAMessage, as: :m
+
+    query
+    |> join(:inner, [m: m], c in Group, as: :c, on: c.id == m.group_id)
+    |> where([m: m], m.group_id in ^ids)
+    |> order_by([m], desc: m.inserted_at)
+    |> limit(^limit)
+    |> offset(^offset)
+    |> Repo.all()
+  end
+
+  @spec make_wa_conversations([WAMessage.t()], [Group.t()]) :: [Conversation.t()]
+  defp make_wa_conversations(wa_messages, groups) do
+    conversations =
+      groups
+      |> Enum.reduce(
+        %{},
+        fn g, acc -> Map.put(acc, g.id, %{group: g, wa_messages: []}) end
+      )
+
+    conversations =
+      Enum.reduce(
+        wa_messages,
+        conversations,
+        fn m, acc ->
+          Map.update!(acc, m.group_id, fn l -> %{group: l.group, wa_messages: [m | l.wa_messages]} end)
+        end
+      )
+      |> Enum.map(fn {group_id, c} -> {group_id, Map.update!(c, :wa_messages, &Enum.reverse/1)} end)
+      |> Enum.into(%{})
+
+    Enum.map(
+      groups,
+      fn group ->
+        c = Map.get(conversations, group.id)
+        Conversation.new(nil, c.group, c.wa_messages)
+      end
+    )
   end
 end
