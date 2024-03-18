@@ -96,8 +96,9 @@ defmodule Glific.Providers.Maytapi.Message do
       body: Map.get(attrs, :message),
       contact_id: wa_managed_phone.contact_id,
       organization_id: group.organization_id,
-      bsp_status: "sent",
+      bsp_status: :enqueued,
       group_id: group.id,
+      flow: :outbound,
       send_at: DateTime.utc_now()
     })
     |> WAMessages.create_message()
