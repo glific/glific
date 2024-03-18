@@ -22,6 +22,7 @@ defmodule GlificWeb.Schema.SearchTypes do
   end
 
   object :conversation do
+    field :id, :id
     field :contact, :contact
     field :group, :group
     field :messages, list_of(:message)
@@ -40,6 +41,7 @@ defmodule GlificWeb.Schema.SearchTypes do
   end
 
   object :wa_conversation do
+    field :id, :id
     field :group, :group
     field :wa_group, :wa_group
     field :wa_messages, list_of(:wa_message)

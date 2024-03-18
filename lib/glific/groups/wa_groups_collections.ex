@@ -1,6 +1,6 @@
 defmodule Glific.Groups.WaGroupsCollections do
   @moduledoc """
-  Simple container to hold all the collection we associate with one whastapp group
+  Simple container to hold all the collection we associate with one Whatsapp group
   """
 
   alias Glific.{
