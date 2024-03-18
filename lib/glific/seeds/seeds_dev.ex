@@ -4,6 +4,8 @@ if Code.ensure_loaded?(Faker) do
     Script for populating the database. We can call this from tests and/or /priv/repo
     """
 
+    alias Faker.Phone
+
     alias Glific.{
       AccessControl,
       AccessControl.Role,
@@ -37,7 +39,8 @@ if Code.ensure_loaded?(Faker) do
       Templates.SessionTemplate,
       Users,
       WAGroup.WAManagedPhone,
-      WAGroup.WAMessage
+      WAGroup.WAMessage,
+      WAManagedPhones
     }
 
     alias Faker.Lorem.Shakespeare
@@ -1650,12 +1653,12 @@ if Code.ensure_loaded?(Faker) do
 
       wa_managed_phones = [
         %{
-          phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+          phone: Phone.EnUs.phone(),
           phone_id: Enum.random(1000..9999),
           contact_id: contact_1.id
         },
         %{
-          phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+          phone: Phone.EnUs.phone(),
           phone_id: Enum.random(1000..9999),
           contact_id: contact_2.id
         },
@@ -1759,41 +1762,16 @@ if Code.ensure_loaded?(Faker) do
     def seed_wa_messages(organization \\ nil) do
       organization = get_organization(organization)
 
-      {:ok, contact_1} =
-        Repo.fetch_by(
-          Contact,
-          %{name: "NGO Main Account", organization_id: organization.id}
-        )
-
       {:ok, contact_2} =
         Repo.fetch_by(
           Contact,
           %{name: "Default receiver", organization_id: organization.id}
         )
 
-      {:ok, wa_managed_phone_1} =
-        Repo.fetch_by(
-          WAManagedPhone,
-          %{contact_id: contact_1.id, organization_id: organization.id}
-        )
+      [wa_managed_phone_1, wa_managed_phone_2 | _] =
+        WAManagedPhones.list_wa_managed_phones(%{organization_id: organization.id})
 
-      {:ok, wa_managed_phone_2} =
-        Repo.fetch_by(
-          WAManagedPhone,
-          %{contact_id: contact_2.id, organization_id: organization.id}
-        )
-
-      {:ok, wa_group_1} =
-        Repo.fetch_by(
-          WAGroup,
-          %{wa_managed_phone_id: wa_managed_phone_1.id, organization_id: organization.id}
-        )
-
-      {:ok, wa_group_2} =
-        Repo.fetch_by(
-          WAGroup,
-          %{wa_managed_phone_id: wa_managed_phone_2.id, organization_id: organization.id}
-        )
+      [wa_group_1, wa_group_2 | _] = WAGroups.list_wa_groups(%{organization_id: organization.id})
 
       wa_messages = [
         %{
