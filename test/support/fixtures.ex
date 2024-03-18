@@ -1195,6 +1195,7 @@ defmodule Glific.Fixtures do
     contact_wa_group
   end
 
+  @doc false
   @spec wa_group_collection_message_fixture(map()) :: nil
   def wa_group_collection_message_fixture(attrs) do
     [cwg1, _cwg2, cwg3] = wa_group_contacts_fixture(attrs)
