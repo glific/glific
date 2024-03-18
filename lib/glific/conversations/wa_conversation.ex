@@ -8,8 +8,8 @@ defmodule Glific.Conversations.WAConversation do
   use Ecto.Schema
 
   alias Glific.{
-    Groups.WAGroup,
     Groups.Group,
+    Groups.WAGroup,
     WAGroup.WAMessage
   }
 

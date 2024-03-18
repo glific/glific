@@ -31,6 +31,7 @@ defmodule Glific.Fixtures do
     Groups.ContactWAGroups,
     Groups.WAGroup,
     Groups.WAGroups,
+    Groups.WaGroupsCollections,
     Mails.MailLog,
     MessageConversations,
     Messages,
@@ -43,6 +44,7 @@ defmodule Glific.Fixtures do
     Partners.Organization,
     Partners.Provider,
     Profiles.Profile,
+    Providers.Maytapi.Message,
     Repo,
     Saas.ConsultingHour,
     Settings,
@@ -1191,6 +1193,63 @@ defmodule Glific.Fixtures do
       |> ContactWAGroups.create_contact_wa_group()
 
     contact_wa_group
+  end
+
+  @spec wa_group_collection_message_fixture(map()) :: nil
+  def wa_group_collection_message_fixture(attrs) do
+    [cwg1, _cwg2, cwg3] = wa_group_contacts_fixture(attrs)
+
+    {:ok, group_1} = Repo.fetch_by(Groups.Group, %{id: cwg1.group_id})
+    {:ok, group_2} = Repo.fetch_by(Groups.Group, %{id: cwg3.group_id})
+
+    valid_attrs = %{
+      message: "wa_group message",
+      type: :text,
+      organization_id: attrs.organization_id
+    }
+
+    Message.send_message_to_wa_group_collection(group_1, valid_attrs)
+    Message.send_message_to_wa_group_collection(group_2, valid_attrs)
+    nil
+  end
+
+  @doc false
+  @spec wa_group_contacts_fixture(map()) :: [ContactWAGroup.t(), ...]
+  def wa_group_contacts_fixture(attrs) do
+    wa_managed_phone = get_wa_managed_phone(attrs.organization_id)
+
+    wg1 =
+      wa_group_fixture(%{
+        organization_id: attrs.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    attrs = %{group_type: "WA", filter: attrs, opts: %{order: :asc}}
+
+    g1 = group_fixture(attrs)
+
+    {:ok, wgc1} =
+      WaGroupsCollections.create_wa_groups_collection(%{
+        group_id: g1.id,
+        wa_group_id: wg1.id,
+        organization_id: attrs.filter.organization_id
+      })
+
+    {:ok, wgc2} =
+      WaGroupsCollections.create_wa_groups_collection(%{
+        group_id: g1.id,
+        wa_group_id: wg1.id,
+        organization_id: attrs.filter.organization_id
+      })
+
+    {:ok, wgc3} =
+      WaGroupsCollections.create_wa_groups_collection(%{
+        group_id: g1.id,
+        wa_group_id: wg1.id,
+        organization_id: attrs.filter.organization_id
+      })
+
+    [wgc1, wgc2, wgc3]
   end
 
   @doc """

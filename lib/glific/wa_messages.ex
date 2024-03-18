@@ -221,6 +221,6 @@ defmodule Glific.WAMessages do
   # add an empty conversation for a specific wa_group
   @spec add_conversation([WAConversation.t()], WAGroup.t()) :: [WAConversation.t()]
   defp add_conversation(results, wa_group) do
-    [WAConversation.new(wa_group, []) | results]
+    [WAConversation.new(wa_group, nil, []) | results]
   end
 end
