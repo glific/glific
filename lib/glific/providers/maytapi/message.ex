@@ -34,7 +34,6 @@ defmodule Glific.Providers.Maytapi.Message do
         send_at: DateTime.utc_now()
       })
       |> WAMessages.create_message()
-      |> IO.inspect()
 
     GroupMessage.send_message(message, %{
       wa_group_bsp_id: wa_group.bsp_id,
@@ -54,7 +53,7 @@ defmodule Glific.Providers.Maytapi.Message do
       })
       |> Repo.preload([:wa_group])
 
-    create_wa_group_message(wa_group_collections, group, attrs) |> IO.inspect()
+    create_wa_group_message(wa_group_collections, group, attrs)
 
     # Using Async instead of going with the route of message broadcast as the number of WA groups
     #  per collection will be way less than contacts in a collection
