@@ -39,7 +39,8 @@ if Code.ensure_loaded?(Faker) do
       Templates.SessionTemplate,
       Users,
       WAGroup.WAManagedPhone,
-      WAGroup.WAMessage
+      WAGroup.WAMessage,
+      WAManagedPhones
     }
 
     alias Faker.Lorem.Shakespeare
@@ -1761,41 +1762,16 @@ if Code.ensure_loaded?(Faker) do
     def seed_wa_messages(organization \\ nil) do
       organization = get_organization(organization)
 
-      {:ok, contact_1} =
-        Repo.fetch_by(
-          Contact,
-          %{name: "NGO Main Account", organization_id: organization.id}
-        )
-
       {:ok, contact_2} =
         Repo.fetch_by(
           Contact,
           %{name: "Default receiver", organization_id: organization.id}
         )
 
-      {:ok, wa_managed_phone_1} =
-        Repo.fetch_by(
-          WAManagedPhone,
-          %{contact_id: contact_1.id, organization_id: organization.id}
-        )
+      [wa_managed_phone_1, wa_managed_phone_2] =
+        WAManagedPhones.list_wa_managed_phones(%{})
 
-      {:ok, wa_managed_phone_2} =
-        Repo.fetch_by(
-          WAManagedPhone,
-          %{contact_id: contact_2.id, organization_id: organization.id}
-        )
-
-      {:ok, wa_group_1} =
-        Repo.fetch_by(
-          WAGroup,
-          %{wa_managed_phone_id: wa_managed_phone_1.id, organization_id: organization.id}
-        )
-
-      {:ok, wa_group_2} =
-        Repo.fetch_by(
-          WAGroup,
-          %{wa_managed_phone_id: wa_managed_phone_2.id, organization_id: organization.id}
-        )
+      [wa_group_1, wa_group_2] = WAGroups.list_wa_groups()
 
       wa_messages = [
         %{
