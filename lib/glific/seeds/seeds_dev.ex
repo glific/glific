@@ -1768,10 +1768,10 @@ if Code.ensure_loaded?(Faker) do
           %{name: "Default receiver", organization_id: organization.id}
         )
 
-      [wa_managed_phone_1, wa_managed_phone_2] =
-        WAManagedPhones.list_wa_managed_phones(%{})
+      [wa_managed_phone_1, wa_managed_phone_2 | _] =
+        WAManagedPhones.list_wa_managed_phones(%{organization_id: organization.id})
 
-      [wa_group_1, wa_group_2] = WAGroups.list_wa_groups()
+      [wa_group_1, wa_group_2 | _] = WAGroups.list_wa_groups(%{organization_id: organization.id})
 
       wa_messages = [
         %{
