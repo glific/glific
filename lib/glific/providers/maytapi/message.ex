@@ -34,6 +34,7 @@ defmodule Glific.Providers.Maytapi.Message do
         send_at: DateTime.utc_now()
       })
       |> WAMessages.create_message()
+      |> IO.inspect()
 
     GroupMessage.send_message(message, %{
       wa_group_bsp_id: wa_group.bsp_id,
@@ -53,7 +54,7 @@ defmodule Glific.Providers.Maytapi.Message do
       })
       |> Repo.preload([:wa_group])
 
-    create_wa_group_message(wa_group_collections, group, attrs)
+    create_wa_group_message(wa_group_collections, group, attrs) |> IO.inspect()
 
     # Using Async instead of going with the route of message broadcast as the number of WA groups
     #  per collection will be way less than contacts in a collection
@@ -96,8 +97,9 @@ defmodule Glific.Providers.Maytapi.Message do
       body: Map.get(attrs, :message),
       contact_id: wa_managed_phone.contact_id,
       organization_id: group.organization_id,
-      bsp_status: "sent",
+      bsp_status: :enqueued,
       group_id: group.id,
+      flow: :outbound,
       send_at: DateTime.utc_now()
     })
     |> WAMessages.create_message()
