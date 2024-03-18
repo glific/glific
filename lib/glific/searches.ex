@@ -398,9 +398,14 @@ defmodule Glific.Searches do
     |> then(&[&1])
   end
 
-  defp do_append_conversation_id(%{wa_group: wa_group} = conversation) do
-    conversation
-    |> Map.put(:id, "wa_group_#{wa_group.id}")
+  defp do_append_conversation_id(%{wa_group: wa_group, group: group} = conversation) do
+    case wa_group do
+      nil ->
+        Map.put(conversation, :id, "group_#{group.id}")
+
+      _ ->
+        Map.put(conversation, :id, "wa_group_#{wa_group.id}")
+    end
     |> then(&[&1])
   end
 
