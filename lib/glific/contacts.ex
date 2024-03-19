@@ -18,6 +18,7 @@ defmodule Glific.Contacts do
     Contacts.ContactHistory,
     Contacts.Location,
     Groups.ContactGroup,
+    Groups.ContactWAGroup,
     Groups.UserGroup,
     Partners,
     Partners.Provider,
@@ -122,6 +123,18 @@ defmodule Glific.Contacts do
           ContactGroup
           |> where([cg], cg.group_id in ^group_ids)
           |> select([cg], cg.contact_id)
+
+        query
+        |> where([c], c.id in subquery(sub_query))
+
+      {:include_wa_groups, []}, query ->
+        query
+
+      {:include_wa_groups, wa_group_ids}, query ->
+        sub_query =
+          ContactWAGroup
+          |> where([wg], wg.wa_group_id in ^wa_group_ids)
+          |> select([wa], wa.contact_id)
 
         query
         |> where([c], c.id in subquery(sub_query))

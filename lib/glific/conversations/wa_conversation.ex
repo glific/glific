@@ -8,6 +8,7 @@ defmodule Glific.Conversations.WAConversation do
   use Ecto.Schema
 
   alias Glific.{
+    Groups.Group,
     Groups.WAGroup,
     WAGroup.WAMessage
   }
@@ -21,14 +22,15 @@ defmodule Glific.Conversations.WAConversation do
   # the messages should be in descending order, i.e. most recent ones first
   embedded_schema do
     embeds_one(:wa_group, WAGroup)
+    embeds_one(:group, Group)
     embeds_many(:wa_messages, WAMessage)
   end
 
   @doc """
   Create a new conversation.
   """
-  @spec new(WAGroup.t() | nil, [WAMessage.t()]) :: WAConversation.t()
-  def new(wa_group, wa_messages \\ []) do
-    %WAConversation{wa_group: wa_group, wa_messages: wa_messages}
+  @spec new(WAGroup.t() | nil, Group.t() | nil, [WAMessage.t()]) :: WAConversation.t()
+  def new(wa_group, group, wa_messages \\ []) do
+    %WAConversation{wa_group: wa_group, group: group, wa_messages: wa_messages}
   end
 end

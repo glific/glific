@@ -9,14 +9,14 @@ defmodule Glific.ConversationsGroupTest do
     Seeds.SeedsDev
   }
 
-  describe "conversations group" do
-    setup do
-      default_provider = SeedsDev.seed_providers()
-      SeedsDev.seed_organizations(default_provider)
-      SeedsDev.seed_contacts()
-      :ok
-    end
+  setup do
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
+    :ok
+  end
 
+  describe "conversations group" do
     test "list_conversations/2 will return a list of conversation objects with group", attrs do
       Fixtures.group_messages_fixture(attrs)
 
@@ -83,6 +83,28 @@ defmodule Glific.ConversationsGroupTest do
         })
 
       assert conversations == []
+    end
+  end
+
+  describe "conversations wa_group" do
+    test "list_wa_conversations/2 will return a list of wa_conversation",
+         attrs do
+      Fixtures.wa_group_collection_message_fixture(attrs)
+
+      wa_conversations =
+        ConversationsGroup.wa_list_conversations(nil, %{
+          filter: %{search_group: true},
+          wa_group_opts: %{limit: 10, offset: 0},
+          wa_message_opts: %{limit: 10, offset: 0}
+        })
+
+      wa_messages =
+        wa_conversations
+        |> Enum.at(0)
+        |> Map.get(:wa_messages)
+
+      assert length(wa_conversations) >= 1
+      assert length(wa_messages) >= 1
     end
   end
 end
