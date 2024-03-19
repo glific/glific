@@ -117,7 +117,7 @@ defmodule GlificWeb.Resolvers.Groups do
   def users_count(_, params, _), do: {:ok, Groups.users_count(params)}
 
   @doc """
-  Get the list of whastapp groups filtered by args
+  Get the list of WhatsApp groups filtered by args
   """
   @spec wa_groups_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
