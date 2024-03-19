@@ -1,16 +1,14 @@
 defmodule GlificWeb.Schema.WaSearchTest do
-  alias Glific.WAGroup.WAManagedPhone
+  alias Glific.Conversations.WAConversation
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
   alias Glific.{
     Fixtures,
-    Groups.WAGroup,
-    Repo,
-    Seeds.SeedsDev
+    Groups.WAGroups,
+    Seeds.SeedsDev,
+    WAManagedPhones
   }
-
-  import Ecto.Query
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -28,16 +26,14 @@ defmodule GlificWeb.Schema.WaSearchTest do
     result =
       auth_query_gql_by(:wa_search, user,
         variables: %{
-          "waGroupOpts" => %{"limit" => 1},
+          "waGroupOpts" => %{"limit" => 10},
           "waMessageOpts" => %{"limit" => 1},
           "filter" => %{}
         }
       )
 
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
-    [conv | _] = searches
-    assert Enum.count(searches) == 1
-    assert Enum.count(conv["messages"]) == 1
+    assert Enum.count(searches) == 3
 
     result =
       auth_query_gql_by(:wa_search, user,
@@ -49,7 +45,6 @@ defmodule GlificWeb.Schema.WaSearchTest do
       )
 
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
-    [_conv | _] = searches
     assert Enum.count(searches) == 2
 
     # without group limit
@@ -63,23 +58,48 @@ defmodule GlificWeb.Schema.WaSearchTest do
       )
 
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
+    [conv | _] = searches
+    assert Enum.count(searches) == 3
+    assert Enum.count(conv["messages"]) in [1, 0]
+
+    # group with no messages should also be in the result
+    result =
+      auth_query_gql_by(:wa_search, user,
+        variables: %{
+          "waGroupOpts" => %{},
+          "waMessageOpts" => %{"limit" => 10},
+          "filter" => %{}
+        }
+      )
+
+    assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
     [_conv | _] = searches
-    assert Enum.count(searches) == 2
+    assert Enum.count(searches) == 3
   end
 
-  @tag :skip
-  test "wa_search with group filter ids", %{staff: user} do
-    [id1, id2] =
-      WAGroup
-      |> where([grp], grp.organization_id == 1)
-      |> select([grp], grp.id)
-      |> Repo.all()
+  test "wa_search, ignoring dms", %{staff: user} do
+    # Out of 4 messages we seeded, one is DM, so the total messages should be 3
+    result =
+      auth_query_gql_by(:wa_search, user,
+        variables: %{
+          "waGroupOpts" => %{},
+          "waMessageOpts" => %{"limit" => 10},
+          "filter" => %{}
+        }
+      )
 
-    [wa_id1, _wa_id2] =
-      WAManagedPhone
-      |> where([ph], ph.organization_id == 1)
-      |> select([ph], ph.id)
-      |> Repo.all()
+    assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
+    [_conv | _] = searches
+    assert Enum.count(searches) == 3
+    assert calculate_total_messages(searches) == 3
+  end
+
+  test "wa_search with group filter ids", %{staff: user} = attrs do
+    [wa_managed_phone_1 | _wa_managed_phones] =
+      WAManagedPhones.list_wa_managed_phones(%{organization_id: attrs.organization_id})
+
+    [wa_group_1, wa_group_2 | _] =
+      WAGroups.list_wa_groups(%{organization_id: attrs.organization_id})
 
     # with available id filters
     result =
@@ -87,7 +107,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
         variables: %{
           "waGroupOpts" => %{},
           "waMessageOpts" => %{"limit" => 1},
-          "filter" => %{"id" => to_string(id1)}
+          "filter" => %{"id" => to_string(wa_group_1.id)}
         }
       )
 
@@ -100,7 +120,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
         variables: %{
           "waGroupOpts" => %{},
           "waMessageOpts" => %{"limit" => 1},
-          "filter" => %{"id" => "5"}
+          "filter" => %{"id" => to_string(123_456)}
         }
       )
 
@@ -113,13 +133,14 @@ defmodule GlificWeb.Schema.WaSearchTest do
         variables: %{
           "waGroupOpts" => %{},
           "waMessageOpts" => %{"limit" => 1},
-          "filter" => %{"ids" => [to_string(id1), to_string(id2)]}
+          "filter" => %{"ids" => [to_string(wa_group_1.id), to_string(wa_group_2.id)]}
         }
       )
 
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
-    [_conv | _] = searches
+    [conv | _] = searches
     assert Enum.count(searches) == 2
+    assert Enum.count(conv["messages"]) == 1
 
     # with available phone_id filters
     result =
@@ -127,28 +148,29 @@ defmodule GlificWeb.Schema.WaSearchTest do
         variables: %{
           "waGroupOpts" => %{},
           "waMessageOpts" => %{"limit" => 10},
-          "filter" => %{"wa_phone_ids" => [to_string(wa_id1)]}
+          "filter" => %{"wa_phone_ids" => [to_string(wa_managed_phone_1.id)]}
         }
       )
 
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
-    [conv | _] = searches
-    assert Enum.count(conv) == 2
-
+    # wa_phone_id_1 messages are in wa_group_1 and wa_phone_id2 messsages are in wa_group_2
+    # So we expect search count to be 1, since only 1 wa_group will be returned
+    assert Enum.count(searches) == 1
     # with id and wa_phone_id filter
     result =
       auth_query_gql_by(:wa_search, user,
         variables: %{
           "waGroupOpts" => %{},
           "waMessageOpts" => %{"limit" => 10},
-          "filter" => %{"id" => to_string(id1), "wa_phone_ids" => [to_string(wa_id1)]}
+          "filter" => %{
+            "id" => to_string(wa_group_1.id),
+            "wa_phone_ids" => [to_string(wa_managed_phone_1.id)]
+          }
         }
       )
 
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
-    [conv | _] = searches
     assert Enum.count(searches) == 1
-    assert Enum.count(conv) == 2
 
     # with search group and group label filter
     group =
@@ -182,5 +204,12 @@ defmodule GlificWeb.Schema.WaSearchTest do
       )
 
     assert {:ok, %{data: %{"search" => _searches}}} = result
+  end
+
+  @spec calculate_total_messages([WAConversation.t()]) :: non_neg_integer()
+  defp calculate_total_messages(searches) do
+    Enum.reduce(searches, 0, fn conv, count ->
+      count + Enum.count(conv["messages"])
+    end)
   end
 end

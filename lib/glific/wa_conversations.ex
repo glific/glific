@@ -33,7 +33,7 @@ defmodule Glific.WAConversations do
 
     query
     |> join(:inner, [m: m], g in WAGroup, as: :g, on: g.id == m.wa_group_id)
-    |> where([m: m], m.wa_group_id in ^ids)
+    |> where([m: m], m.wa_group_id in ^ids and m.is_dm == false)
     |> add_special_offset(length(ids), message_limit, message_offset)
     |> select([m: m], m.id)
     |> Repo.all(timeout: 10_000)

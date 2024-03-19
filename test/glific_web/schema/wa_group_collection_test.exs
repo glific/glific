@@ -16,9 +16,9 @@ defmodule GlificWeb.Schema.WAGroupCollectionTest do
     :ok
   end
 
-  load_gql(:list, GlificWeb.Schema, "assets/gql/wa_group_collection/list.gql")
+  load_gql(:list, GlificWeb.Schema, "assets/gql/wa_groups/list.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/wa_group_collection/create.gql")
-  load_gql(:count, GlificWeb.Schema, "assets/gql/wa_group_collection/count.gql")
+  load_gql(:count, GlificWeb.Schema, "assets/gql/wa_groups/count.gql")
 
   load_gql(
     :update_collection,
@@ -32,7 +32,7 @@ defmodule GlificWeb.Schema.WAGroupCollectionTest do
     "assets/gql/wa_group_collection/update_wa_group.gql"
   )
 
-  test "list wa group collection", %{user: user} do
+  test "a list wa group collection", %{user: user} do
     wa_managed_phone =
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
@@ -53,27 +53,40 @@ defmodule GlificWeb.Schema.WAGroupCollectionTest do
 
     limit = 4
 
-    ## List whatsapp groups collection
     result =
       auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => limit, "offset" => 0}})
 
     assert {:ok, query_data} = result
-    list_wa_groups_collection = get_in(query_data, [:data, "listWaGroupsCollection"])
-    assert length(list_wa_groups_collection) > 0
-    assert length(list_wa_groups_collection) <= limit
 
-    # get the contacts using group id
+    wa_groups_collection = get_in(query_data, [:data, "waGroups"])
+    assert length(wa_groups_collection) > 0
+    assert length(wa_groups_collection) <= limit
+
+    # get the wa group using group id
     result =
       auth_query_gql_by(:list, user,
         variables: %{
           "filter" => %{
-            "groupId" => group.id
+            "includeGroups" => [to_string(group.id)]
           }
         }
       )
 
     assert {:ok, query_data} = result
-    assert length(get_in(query_data, [:data, "listWaGroupsCollection"])) == 1
+    assert length(get_in(query_data, [:data, "waGroups"])) == 1
+
+    # get the wa groups
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{
+            "includeGroups" => []
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "waGroups"])) == 1
   end
 
   test "create wa groups collection", %{user: user} do
@@ -131,13 +144,13 @@ defmodule GlificWeb.Schema.WAGroupCollectionTest do
       auth_query_gql_by(:count, user,
         variables: %{
           "filter" => %{
-            "groupId" => group.id
+            "includeGroups" => group.id
           }
         }
       )
 
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "countWaGroupsCollection"]) == 1
+    assert get_in(query_data, [:data, "waGroupsCount"]) == 1
   end
 
   test "update collection using wa group ids", %{user: user} do
@@ -272,5 +285,34 @@ defmodule GlificWeb.Schema.WAGroupCollectionTest do
       get_in(query_data, [:data, "updateWaGroupCollection", "collectionWaGroups"])
 
     assert wa_group_collection == []
+  end
+
+  test "list_wa_groups_collection/1", %{user: user} do
+    wa_managed_phone =
+      Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+    wa_group =
+      Fixtures.wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    group = Fixtures.group_fixture(%{organization_id: user.organization_id})
+
+    WaGroupsCollections.update_collection_wa_group(%{
+      organization_id: user.organization_id,
+      group_id: group.id,
+      add_wa_group_ids: [wa_group.id],
+      delete_wa_group_ids: []
+    })
+
+    result =
+      WaGroupsCollections.list_wa_groups_collection(%{
+        filter: %{group_id: group.id, organization_id: user.organization_id}
+      })
+
+    wa_group = hd(result)
+    assert wa_group.id == wa_group.id
+    assert wa_group.group_id == group.id
   end
 end

@@ -63,12 +63,13 @@ defmodule Glific.Flows.Translate.OpenAITest do
     :ok
   end
 
-  test "translate/3 should translate list of strings" do
+  test "translate/3 should translate list of strings", attrs do
     {:ok, translated_text} =
       OpenAI.translate(
         ["Welcome to our NGO Chatbot", "Thank you for introducing yourself to us"],
         "english",
-        "hindi"
+        "hindi",
+        org_id: attrs.organization_id
       )
 
     assert translated_text == ["हमारे एनजीओ चैटबॉट में आपका स्वागत है", "हमें अपने बारे में परिचय देने के लिए धन्यवाद"]
@@ -77,7 +78,9 @@ defmodule Glific.Flows.Translate.OpenAITest do
     long_text = Faker.Lorem.sentence(250)
 
     {:ok, translated_text} =
-      OpenAI.translate(["Welcome to our NGO Chatbot", long_text], "english", "hindi")
+      OpenAI.translate(["Welcome to our NGO Chatbot", long_text], "english", "hindi",
+        org_id: attrs.organization_id
+      )
 
     assert translated_text == ["हमारे एनजीओ चैटबॉट में आपका स्वागत है", "बड़े संदेशों के लिए अनुवाद उपलब्ध नहीं है।"]
   end
@@ -116,13 +119,13 @@ defmodule Glific.Flows.Translate.OpenAITest do
              OpenAI.check_large_strings([long_text, "thankyou for joining", "correct answer"])
   end
 
-  test "translate/3 test the possible errors" do
+  test "translate/3 test the possible errors", attrs do
     # This will basically fail
     string = ["Error to translate text"]
     src = "english"
     dst = "hindi"
 
-    {:ok, response} = OpenAI.translate(string, src, dst)
+    {:ok, response} = OpenAI.translate(string, src, dst, org_id: attrs.organization_id)
     assert response == [""]
   end
 

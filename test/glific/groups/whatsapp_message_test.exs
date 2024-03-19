@@ -4,6 +4,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
 
   alias Glific.{
     Fixtures,
+    Groups.WaGroupsCollections,
     Partners,
     Providers.Maytapi.Message,
     Seeds.SeedsDev,
@@ -65,6 +66,55 @@ defmodule Glific.Groups.WhatsappMessageTest do
     {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
     assert wa_message.body == params.message
     assert wa_message.bsp_status == :sent
+  end
+
+  test "send_message_to_wa_group_collection/2 sends a text message in a whatsapp group collection and wa_groups in the collection",
+       attrs do
+    group =
+      Fixtures.group_fixture(%{organization_id: attrs.organization_id, group_type: "WA"})
+
+    wa_managed_phone =
+      Fixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+
+    wa_group =
+      Fixtures.wa_group_fixture(%{
+        organization_id: attrs.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    WaGroupsCollections.create_wa_groups_collection(%{
+      group_id: group.id,
+      wa_group_id: wa_group.id,
+      organization_id: attrs.organization_id
+    })
+
+    mock_maytapi_response(200, %{
+      "success" => true,
+      "data" => %{
+        "chatId" => "120363238104@g.us",
+        "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"
+      }
+    })
+
+    params = %{
+      group_id: group.id,
+      message: "hi"
+    }
+
+    Message.send_message_to_wa_group_collection(group, params)
+
+    [wa_group_msg, wa_group_collection_msg] =
+      Glific.WAGroup.WAMessage
+      |> order_by([wam], desc: wam.inserted_at)
+      |> limit(2)
+      |> Repo.all()
+
+    assert wa_group_collection_msg.body == params.message
+    assert wa_group_collection_msg.group_id == group.id
+    assert wa_group_collection_msg.wa_group_id == nil
+    assert wa_group_msg.body == params.message
+    assert wa_group_msg.group_id == nil
+    assert wa_group_msg.wa_group_id == wa_group.id
   end
 
   test "create_and_send_wa_message/3 send media message successfully",
@@ -220,7 +270,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
       body: "Hello, World!",
       sender: %{phone: "1234567890", name: "John Doe"},
       flow: :inbound,
-      status: "sent"
+      status: :received
     }
 
     assert Message.receive_text(params) == expected_result
@@ -245,7 +295,8 @@ defmodule Glific.Groups.WhatsappMessageTest do
       content_type: "image",
       source_url: "http://example.com/photo.jpg",
       sender: %{phone: "1234567890", name: "Jane Doe"},
-      flow: :inbound
+      flow: :inbound,
+      status: :received
     }
 
     assert Message.receive_media(params) == expected_result

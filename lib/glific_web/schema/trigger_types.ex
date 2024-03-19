@@ -29,7 +29,7 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :is_active, :boolean
     field :is_repeating, :boolean
     field :frequency, :string
-
+    field :group_type, :string
     field :days, list_of(:integer)
     field :hours, list_of(:integer)
     field :groups, list_of(:string)
