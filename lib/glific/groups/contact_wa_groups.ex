@@ -3,13 +3,12 @@ defmodule Glific.Groups.ContactWAGroups do
   Simple container to hold all the contact groups we associate with one contact
   """
 
-  alias Glific.Contacts
-  alias Glific.Groups.WAGroups
-  alias Glific.Providers.Maytapi.ApiClient
-
   alias Glific.{
+    Contacts,
     Groups.ContactWAGroup,
     Groups.ContactWAGroups,
+    Groups.WAGroups,
+    Providers.Maytapi.ApiClient,
     Repo
   }
 
