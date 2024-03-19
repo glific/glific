@@ -6,13 +6,26 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
     Contacts,
     Fixtures,
     Groups.ContactWAGroups,
+    Partners,
     Seeds.SeedsDev
   }
 
   setup do
     default_provider = SeedsDev.seed_providers()
-    SeedsDev.seed_organizations(default_provider)
+    organization = SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
+
+    Partners.create_credential(%{
+      organization_id: organization.id,
+      shortcode: "maytapi",
+      keys: %{},
+      secrets: %{
+        "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+        "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+      },
+      is_active: true
+    })
+
     :ok
   end
 
@@ -56,6 +69,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
     assert wa_group_contacts["waGroup"]["label"] == wa_group.label
   end
 
+  @tag :remove
   test "update wa group contacts", %{user: user} do
     wa_managed_phone =
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
@@ -84,6 +98,16 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
     assert {:ok, query_data} = result
     wa_group_contacts = get_in(query_data, [:data, "updateContactWaGroups", "waGroupContacts"])
     assert length(wa_group_contacts) == 2
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true
+          }
+        }
+    end)
 
     # delete wa group contacts
     result =

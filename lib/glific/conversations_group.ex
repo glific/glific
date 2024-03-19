@@ -18,7 +18,7 @@ defmodule Glific.ConversationsGroup do
     Groups.Group,
     Messages.Message,
     Repo,
-    WAGroup.WAMessage,
+    WAGroup.WAMessage
   }
 
   @doc """
@@ -162,10 +162,14 @@ defmodule Glific.ConversationsGroup do
         wa_messages,
         wa_conversations,
         fn m, acc ->
-          Map.update!(acc, m.group_id, fn l -> %{group: l.group, wa_messages: [m | l.wa_messages]} end)
+          Map.update!(acc, m.group_id, fn l ->
+            %{group: l.group, wa_messages: [m | l.wa_messages]}
+          end)
         end
       )
-      |> Enum.map(fn {group_id, c} -> {group_id, Map.update!(c, :wa_messages, &Enum.reverse/1)} end)
+      |> Enum.map(fn {group_id, c} ->
+        {group_id, Map.update!(c, :wa_messages, &Enum.reverse/1)}
+      end)
       |> Enum.into(%{})
 
     Enum.map(

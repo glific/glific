@@ -96,7 +96,14 @@ defmodule Glific.Groups.WAGroups do
     end)
   end
 
-  @doc false
+  @doc """
+  - understand what all happens when we updateContacts
+  - For each
+  %{
+    "addWaContactIds" => [],
+  "deleteWaContactIds" => ["21"],
+   "waGroupId" => "35"}
+  """
   @spec sync_wa_groups_with_contacts(list(), non_neg_integer()) :: :ok | {:error, any()}
   def sync_wa_groups_with_contacts(group_details, org_id) do
     Enum.each(group_details, fn group ->
@@ -223,7 +230,7 @@ defmodule Glific.Groups.WAGroups do
   @doc """
   Gets a single wa_group.
 
-  Raises `Ecto.NoResultsError` if the Wa managed phone does not exist.
+  Raises `Ecto.NoResultsError` if the wa group does not exist.
 
   ## Examples
 

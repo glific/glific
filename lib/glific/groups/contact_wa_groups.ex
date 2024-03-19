@@ -3,6 +3,10 @@ defmodule Glific.Groups.ContactWAGroups do
   Simple container to hold all the contact groups we associate with one contact
   """
 
+  alias Glific.Contacts
+  alias Glific.Groups.WAGroups
+  alias Glific.Providers.Maytapi.ApiClient
+
   alias Glific.{
     Groups.ContactWAGroup,
     Groups.ContactWAGroups,
@@ -83,7 +87,8 @@ defmodule Glific.Groups.ContactWAGroups do
         %{
           wa_group_id: wa_group_id,
           add_wa_contact_ids: add_ids,
-          delete_wa_contact_ids: delete_ids
+          delete_wa_contact_ids: delete_ids,
+          organization_id: org_id
         } = attrs
       ) do
     wa_group_contacts =
@@ -107,7 +112,7 @@ defmodule Glific.Groups.ContactWAGroups do
         end
       end)
 
-    {number_deleted, _} = delete_wa_group_contacts_by_ids(wa_group_id, delete_ids)
+    number_deleted = remove_group_members(org_id, wa_group_id, delete_ids)
 
     %ContactWAGroups{
       number_deleted: number_deleted,
@@ -130,5 +135,27 @@ defmodule Glific.Groups.ContactWAGroups do
     args
     |> Repo.list_filter_query(ContactWAGroup, nil, &filter_with/2)
     |> Repo.aggregate(:count)
+  end
+
+  @spec remove_group_members(non_neg_integer(), non_neg_integer(), list()) ::
+          integer()
+  defp remove_group_members(org_id, wa_group_id, contact_ids) do
+    wa_group = WAGroups.get_wa_group!(wa_group_id)
+    wa_group = Repo.preload(wa_group, :wa_managed_phone)
+
+    Enum.reduce(contact_ids, 0, fn contact_id, numbers_deleted ->
+      contact = Contacts.get_contact!(contact_id)
+      payload = %{conversation_id: wa_group.bsp_id, number: contact.phone <> "@c.us"}
+
+      case ApiClient.remove_group_member(org_id, payload, wa_group.wa_managed_phone.phone_id) do
+        {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
+          fields = {{:wa_group_id, wa_group_id}, {:contact_id, [contact_id]}}
+          {number_deleted, _} = Repo.delete_relationships_by_ids(ContactWAGroup, fields)
+          numbers_deleted + number_deleted
+
+        _ ->
+          numbers_deleted
+      end
+    end)
   end
 end
