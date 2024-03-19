@@ -401,7 +401,7 @@ defmodule Glific.Searches do
   defp do_append_conversation_id(%{wa_group: nil, group: group} = conversation),
     do: conversation |> Map.put(:id, "group_#{group.id}") |> then(&[&1])
 
-  defp do_append_conversation_id(%{wa_group: group, group: group} = conversation),
+  defp do_append_conversation_id(%{wa_group: wa_group, group: _group} = conversation),
     do: conversation |> Map.put(:id, "wa_group_#{wa_group.id}") |> then(&[&1])
 
   @doc """
