@@ -69,7 +69,6 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
     assert wa_group_contacts["waGroup"]["label"] == wa_group.label
   end
 
-  @tag :remove
   test "update wa group contacts", %{user: user} do
     wa_managed_phone =
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
