@@ -31,6 +31,7 @@ defmodule Glific.Fixtures do
     Groups.ContactWAGroups,
     Groups.WAGroup,
     Groups.WAGroups,
+    Groups.WAGroupsCollection,
     Groups.WaGroupsCollections,
     Mails.MailLog,
     MessageConversations,
@@ -1198,10 +1199,10 @@ defmodule Glific.Fixtures do
   @doc false
   @spec wa_group_collection_message_fixture(map()) :: nil
   def wa_group_collection_message_fixture(attrs) do
-    [cwg1, _cwg2, cwg3] = wa_group_contacts_fixture(attrs)
+    [wgc1, _wgc2, wgc3] = collection_wa_group_fixture(attrs)
 
-    {:ok, group_1} = Repo.fetch_by(Groups.Group, %{id: cwg1.group_id})
-    {:ok, group_2} = Repo.fetch_by(Groups.Group, %{id: cwg3.group_id})
+    {:ok, group_1} = Repo.fetch_by(Groups.Group, %{id: wgc1.group_id})
+    {:ok, group_2} = Repo.fetch_by(Groups.Group, %{id: wgc3.group_id})
 
     valid_attrs = %{
       message: "wa_group message",
@@ -1215,8 +1216,8 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec wa_group_contacts_fixture(map()) :: [ContactWAGroup.t(), ...]
-  def wa_group_contacts_fixture(attrs) do
+  @spec collection_wa_group_fixture(map()) :: [WAGroupsCollection.t(), ...]
+  def collection_wa_group_fixture(attrs) do
     wa_managed_phone = get_wa_managed_phone(attrs.organization_id)
 
     wg1 =
