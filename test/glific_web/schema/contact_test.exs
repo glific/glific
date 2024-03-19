@@ -688,6 +688,39 @@ defmodule GlificWeb.Schema.ContactTest do
     assert length(get_in(query_data, [:data, "contacts"])) == 2
   end
 
+  test "search contacts field obeys wa_group filters", %{staff: user} do
+    wa_managed_phone =
+      Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+    cwg1 =
+      Fixtures.contact_wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"includeWaGroups" => ["#{cwg1.wa_group_id}"]}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "contacts"])) == 1
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"includeWaGroups" => ["99999"]}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    contacts = get_in(query_data, [:data, "contacts"])
+    assert contacts == []
+  end
+
   test "search contacts field obeys tag filters", %{staff: user} do
     [ct1, _ct2, _ct3] = Fixtures.contact_tags_fixture(%{organization_id: user.organization_id})
 

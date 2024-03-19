@@ -148,6 +148,9 @@ defmodule GlificWeb.Schema.ContactTypes do
     @desc "Include contacts with in these groups"
     field(:include_groups, list_of(:id))
 
+    @desc "Include contacts with in these wa_groups"
+    field(:include_wa_groups, list_of(:id))
+
     @desc "a static date range input field which will apply on updated at column."
     field(:date_range, :date_range_input)
   end

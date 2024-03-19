@@ -16,6 +16,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTypes do
 
   object :contact_wa_group do
     field :id, :id
+    field :is_admin, :boolean
 
     field :contact, :contact do
       resolve(dataloader(Repo))

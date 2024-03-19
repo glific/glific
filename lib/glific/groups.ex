@@ -101,10 +101,22 @@ defmodule Glific.Groups do
   """
   @spec count_groups(map()) :: integer
   def count_groups(args) do
-    args
-    |> Repo.list_filter_query(Group, nil, &Repo.filter_with/2)
-    |> Repo.add_permission(&Groups.add_permission/2)
-    |> Repo.aggregate(:count)
+    query =
+      args
+      |> Repo.list_filter_query(Group, nil, &Repo.filter_with/2)
+      |> Repo.add_permission(&Groups.add_permission/2)
+
+    query =
+      if args[:filter][:group_type],
+        do: where(query, [g], g.group_type == ^args[:filter][:group_type]),
+        else: query
+
+    query =
+      if args[:filter][:label],
+        do: where(query, [g], ilike(g.label, ^"%#{args[:filter][:label]}%")),
+        else: query
+
+    Repo.aggregate(query, :count)
   end
 
   @doc """

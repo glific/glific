@@ -165,7 +165,7 @@ defmodule Glific.WAMessages do
       wa_group_order,
       [],
       fn wa_group, acc ->
-        [WAConversation.new(wa_group, Enum.reverse(wa_group_messages[wa_group])) | acc]
+        [WAConversation.new(wa_group, nil, Enum.reverse(wa_group_messages[wa_group])) | acc]
       end
     )
   end
@@ -221,6 +221,6 @@ defmodule Glific.WAMessages do
   # add an empty conversation for a specific wa_group
   @spec add_conversation([WAConversation.t()], WAGroup.t()) :: [WAConversation.t()]
   defp add_conversation(results, wa_group) do
-    [WAConversation.new(wa_group, []) | results]
+    [WAConversation.new(wa_group, nil, []) | results]
   end
 end
