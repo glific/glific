@@ -157,6 +157,10 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :wa_group, :wa_group do
       resolve(dataloader(Repo, use_parent: true))
     end
+
+    field :location, :locations do
+      resolve(dataloader(Repo, use_parent: true))
+    end
   end
 
   @desc "Filtering options for messages"
