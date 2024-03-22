@@ -257,24 +257,26 @@ defmodule Glific.Tickets do
     |> convert_to_csv_string()
   end
 
-  @default_headers "status,body,inserted_at,topic,opened_by,assigned_to\n"
-
+  @default_headers [:status, :body, :inserted_at, :topic, :opened_by, :assigned_to]
   @doc false
   @spec convert_to_csv_string([Ticket.t()]) :: String.t()
   def convert_to_csv_string(ticket) do
+    header = Enum.join(@default_headers, ",") <> "\n"
+
     ticket
-    |> Enum.reduce(@default_headers, fn ticket, acc ->
+    |> Enum.reduce(header, fn ticket, acc ->
       acc <> minimal_map(ticket) <> "\n"
     end)
   end
 
   @spec minimal_map(map()) :: String.t()
   defp minimal_map(ticket) do
-    ticket
-    |> convert_time()
-    |> Map.values()
+    ticket = ticket |> convert_time()
+
+    @default_headers
     |> Enum.reduce("", fn key, acc ->
-      acc <> if is_binary(key), do: "#{key},", else: "#{inspect(key)},"
+      value = Map.get(ticket, key)
+      acc <> if is_binary(value), do: "#{value},", else: "#{inspect(value)},"
     end)
   end
 

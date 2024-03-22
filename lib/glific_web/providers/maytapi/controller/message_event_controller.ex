@@ -7,28 +7,28 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
   alias Glific.Communications
 
   @message_event_type %{
-    "DELIVERED" => :delivered,
-    "SENT" => :sent,
-    "READ" => :read
+    "delivered" => :delivered
   }
 
   @doc """
   Default handle for all message event callbacks
   """
   @spec handler(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def handler(conn, %{"response" => response} = _params) do
+  def handler(conn, %{"data" => response} = _params) do
     response
-    |> Jason.decode!()
-    |> Enum.each(&update_status(&1, &1["eventType"]))
+    |> Enum.each(&update_status(&1, &1["ackType"], conn.assigns.organization_id))
 
     json(conn, nil)
   end
 
   # Updates the provider message status based on provider message id
-  @spec update_status(map(), String.t()) :: any()
-  defp update_status(params, status) do
-    status = Map.get(@message_event_type, status)
-    bsp_message_id = Map.get(params, "externalId")
-    Communications.Message.update_bsp_status(bsp_message_id, status, params)
+  @spec update_status(map(), String.t(), non_neg_integer()) :: any()
+  defp update_status(params, "delivered", org_id) do
+    status = Map.get(@message_event_type, "delivered")
+    bsp_message_id = Map.get(params, "msgId")
+    Communications.GroupMessage.update_bsp_status(bsp_message_id, status, org_id)
   end
+
+  # Will extend this, if we want to handle more events
+  defp update_status(_, _, _), do: nil
 end
