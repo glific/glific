@@ -223,7 +223,7 @@ defmodule Glific.Groups.WAGroups do
   @doc """
   Gets a single wa_group.
 
-  Raises `Ecto.NoResultsError` if the Wa managed phone does not exist.
+  Raises `Ecto.NoResultsError` if the wa group does not exist.
 
   ## Examples
 
