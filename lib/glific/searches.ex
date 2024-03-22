@@ -323,6 +323,7 @@ defmodule Glific.Searches do
       group_ids(args),
       args
     )
+    |> append_conversation_id()
   end
 
   def search(%{filter: %{search_group: true}} = args, _count) do
@@ -332,6 +333,7 @@ defmodule Glific.Searches do
       group_ids(args),
       args
     )
+    |> append_conversation_id()
   end
 
   # codebeat:disable[ABC]
@@ -374,8 +376,33 @@ defmodule Glific.Searches do
     else
       put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
       |> Conversations.list_conversations(count)
+      |> append_conversation_id()
     end
   end
+
+  defp append_conversation_id(conversations) do
+    Enum.reduce(conversations, [], fn conversation, acc ->
+      acc ++ do_append_conversation_id(conversation)
+    end)
+  end
+
+  defp do_append_conversation_id(%{contact: nil, group: group} = conversation) do
+    conversation
+    |> Map.put(:id, "group_#{group.id}")
+    |> then(&[&1])
+  end
+
+  defp do_append_conversation_id(%{contact: contact, group: nil} = conversation) do
+    conversation
+    |> Map.put(:id, "contact_#{contact.id}")
+    |> then(&[&1])
+  end
+
+  defp do_append_conversation_id(%{wa_group: nil, group: group} = conversation),
+    do: conversation |> Map.put(:id, "group_#{group.id}") |> then(&[&1])
+
+  defp do_append_conversation_id(%{wa_group: wa_group, group: _group} = conversation),
+    do: conversation |> Map.put(:id, "wa_group_#{wa_group.id}") |> then(&[&1])
 
   @doc """
   Full text whatsapp group search interface via Postgres
@@ -390,6 +417,7 @@ defmodule Glific.Searches do
       group_ids(args),
       args
     )
+    |> append_conversation_id()
   end
 
   def wa_search(%{filter: %{search_group: true}} = args) do
@@ -399,6 +427,7 @@ defmodule Glific.Searches do
       group_ids(args),
       args
     )
+    |> append_conversation_id()
   end
 
   def wa_search(args) do
@@ -407,15 +436,19 @@ defmodule Glific.Searches do
     wa_group_ids =
       case filter_groups_of_organization(args.filter) do
         {true, query} ->
-          query
+          wa_search_query(query, args)
 
         _ ->
-          wa_search_query(args.filter[:term], args)
+          query = from(wa_grp in WAGroup, as: :wa_grp)
+
+          wa_search_query(query, args)
+          |> Full.run(args.filter[:term], args)
       end
       |> Repo.all(timeout: @search_timeout)
 
     put_in(args, [Access.key(:filter, %{}), :ids], wa_group_ids)
     |> WAConversations.list_conversations()
+    |> append_conversation_id()
   end
 
   # codebeat:enable[ABC]
@@ -636,18 +669,16 @@ defmodule Glific.Searches do
     |> put_in([:filter, :organization_id], saved_search.organization_id)
   end
 
-  @spec wa_search_query(String.t(), map()) :: Ecto.Query.t()
-  defp wa_search_query(term, args) do
-    wa_basic_query(args)
+  @spec wa_search_query(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp wa_search_query(query, args) do
+    query
+    |> wa_basic_query(args)
     |> add_wa_group_opts(args.wa_group_opts)
     |> select([wa_grp: wa_grp], wa_grp.id)
-    |> Full.run(term, args)
   end
 
-  @spec wa_basic_query(map()) :: Ecto.Query.t()
-  defp wa_basic_query(args) do
-    query = from(wa_grp in WAGroup, as: :wa_grp)
-
+  @spec wa_basic_query(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp wa_basic_query(query, args) do
     query
     |> add_wa_message_clause(args)
     |> order_by([wa_grp: wa_grp], desc: wa_grp.last_communication_at, desc: wa_grp.id)
@@ -713,9 +744,6 @@ defmodule Glific.Searches do
         end
       end)
 
-    {has_filter,
-     query
-     |> select([wa_grp], wa_grp.id)
-     |> Repo.add_permission(&Searches.add_permission/2)}
+    {has_filter, query}
   end
 end

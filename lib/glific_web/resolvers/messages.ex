@@ -264,4 +264,19 @@ defmodule GlificWeb.Resolvers.Messages do
       Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, params)
     end
   end
+
+  @doc false
+  @spec send_message_to_wa_group_collection(Absinthe.Resolution.t(), map(), map()) :: {:ok, any()}
+  def send_message_to_wa_group_collection(_, %{input: params, group_id: group_id}, %{
+        context: %{current_user: current_user}
+      }) do
+    with {:ok, group} <-
+           Repo.fetch_by(Group, %{
+             id: group_id,
+             organization_id: current_user.organization_id,
+             group_type: "WA"
+           }) do
+      Maytapi.Message.send_message_to_wa_group_collection(group, params)
+    end
+  end
 end

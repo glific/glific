@@ -6,9 +6,15 @@ defmodule Glific.Providers.Maytapi.Message do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Communications,
     Communications.GroupMessage,
+    Groups.Group,
     Groups.WAGroup,
+    Groups.WAGroupsCollection,
+    Groups.WaGroupsCollections,
+    Repo,
     WAGroup.WAManagedPhone,
+    WAGroup.WAMessage,
     WAMessages
   }
 
@@ -22,7 +28,6 @@ defmodule Glific.Providers.Maytapi.Message do
         body: Map.get(attrs, :message),
         contact_id: wa_phone.contact_id,
         organization_id: wa_phone.organization_id,
-        message_type: "WA",
         bsp_status: "sent",
         wa_group_id: wa_group.id,
         wa_managed_phone_id: wa_phone.id,
@@ -35,6 +40,78 @@ defmodule Glific.Providers.Maytapi.Message do
       phone_id: wa_phone.phone_id,
       phone: wa_phone.phone
     })
+  end
+
+  @doc """
+  Send message to wa_group collection
+  """
+  @spec send_message_to_wa_group_collection(Group.t(), map()) :: {:ok, map()}
+  def send_message_to_wa_group_collection(group, attrs) do
+    wa_group_collections =
+      WaGroupsCollections.list_wa_groups_collection(%{
+        filter: %{group_id: group.id, organization_id: group.organization_id}
+      })
+      |> Repo.preload([:wa_group])
+
+    create_wa_group_message(wa_group_collections, group, attrs)
+
+    # Using Async instead of going with the route of message broadcast as the number of WA groups
+    #  per collection will be way less than contacts in a collection
+    Task.async_stream(
+      wa_group_collections,
+      fn wa_group_collection ->
+        Repo.put_process_state(wa_group_collection.organization_id)
+
+        {:ok, wa_managed_phone} =
+          Repo.fetch_by(WAManagedPhone, %{
+            id: wa_group_collection.wa_group.wa_managed_phone_id,
+            organization_id: wa_group_collection.organization_id
+          })
+
+        create_and_send_wa_message(
+          wa_managed_phone,
+          wa_group_collection.wa_group,
+          Map.delete(attrs, :group_id)
+        )
+      end,
+      max_concurrency: 20,
+      on_timeout: :kill_task
+    )
+    |> Stream.run()
+
+    {:ok, %{success: true}}
+  end
+
+  @spec create_wa_group_message([WAGroupsCollection.t()], Group.t(), map()) :: any()
+  defp create_wa_group_message([wa_group_collection | _wa_groups], group, attrs) do
+    {:ok, wa_managed_phone} =
+      Repo.fetch_by(WAManagedPhone, %{
+        id: wa_group_collection.wa_group.wa_managed_phone_id,
+        organization_id: group.organization_id
+      })
+
+    attrs
+    |> Map.put_new(:type, :text)
+    |> Map.merge(%{
+      body: Map.get(attrs, :message),
+      contact_id: wa_managed_phone.contact_id,
+      organization_id: group.organization_id,
+      bsp_status: :enqueued,
+      group_id: group.id,
+      flow: :outbound,
+      send_at: DateTime.utc_now()
+    })
+    |> WAMessages.create_message()
+    |> then(fn {:ok, wa_message} -> wa_group_message_subscription(wa_message) end)
+  end
+
+  @spec wa_group_message_subscription(WAMessage.t()) :: any()
+  defp wa_group_message_subscription(wa_message) do
+    Communications.publish_data(
+      wa_message,
+      :sent_wa_group_collection_message,
+      wa_message.organization_id
+    )
   end
 
   @doc false

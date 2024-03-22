@@ -138,6 +138,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     add_google_sheet()
 
     add_maytapi()
+
+    open_llm()
   end
 
   defp add_dialogflow do
@@ -463,6 +465,38 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             token: %{
               type: :string,
               label: "Token",
+              is_required: true,
+              default: nil,
+              view_only: false
+            }
+          }
+        })
+  end
+
+  defp open_llm() do
+    query = from(p in Provider, where: p.shortcode == "open_llm")
+
+    # add only if does not exist
+    if !Repo.exists?(query),
+      do:
+        Repo.insert!(%Provider{
+          name: "open_llm",
+          shortcode: "open_llm",
+          description: "Querying custom knowledge base using GPT APIs from OpenLLM",
+          group: nil,
+          is_required: false,
+          keys: %{},
+          secrets: %{
+            api_key: %{
+              type: :string,
+              label: "API key",
+              is_required: true,
+              default: nil,
+              view_only: false
+            },
+            api_url: %{
+              type: :string,
+              label: "API URL",
               is_required: true,
               default: nil,
               view_only: false

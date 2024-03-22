@@ -81,7 +81,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
        ) do
     message_payload
     |> Map.put(:organization_id, org_id)
-    |> Map.put(:group_id, params["conversation"])
+    |> Map.put(:bsp_id, params["message"]["id"])
+    |> Map.put(:wa_group_bsp_id, params["conversation"])
     |> Map.put(:group_name, params["conversation_name"])
     |> Map.put(:receiver, params["receiver"])
     |> Map.put(:is_dm, direct_message?(params["conversation"]))
