@@ -10,25 +10,21 @@ defmodule GlificWeb.Resolvers.WaGroup do
   }
 
   @doc """
-  Get the list of whastapp groups filtered by args
+  Get the list of WhatsApp groups filtered by args
   """
   @spec wa_groups(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def wa_groups(_, args, _) do
-    {:ok, WAGroups.wa_groups(args)}
-  end
+  def wa_groups(_, args, _), do: {:ok, WAGroups.wa_groups(args)}
 
   @doc """
-  Get the list of contact whastapp groups filtered by args
+  Get the list of contact WhatsApp groups filtered by args
   """
   @spec list_contact_wa_group(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def list_contact_wa_group(_, args, _) do
-    {:ok, ContactWAGroups.list_contact_wa_group(args)}
-  end
+  def list_contact_wa_group(_, args, _), do: {:ok, ContactWAGroups.list_contact_wa_group(args)}
 
   @doc """
-  Creates an contact whatsapp group entry
+  Creates an contact WhatsApp group entry
   """
   @spec create_contact_wa_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
@@ -56,20 +52,16 @@ defmodule GlificWeb.Resolvers.WaGroup do
   end
 
   @doc """
-  Get the count of contact whastapp groups filtered by args
+  Get the count of contact WhatsApp groups filtered by args
   """
   @spec count_contact_wa_group(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def count_contact_wa_group(_, args, _) do
-    {:ok, ContactWAGroups.count_contact_wa_group(args)}
-  end
+  def count_contact_wa_group(_, args, _), do: {:ok, ContactWAGroups.count_contact_wa_group(args)}
 
   @doc """
-  Get the list of whastapp groups filtered by args
+  Get the list of WhatsApp groups filtered by args
   """
   @spec wa_groups_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def wa_groups_count(_, args, _) do
-    {:ok, WAGroups.wa_groups_count(args)}
-  end
+  def wa_groups_count(_, args, _), do: {:ok, WAGroups.wa_groups_count(args)}
 end
