@@ -17,12 +17,11 @@ defmodule Glific.Contacts.Location do
 
   @required_fields [
     :contact_id,
-    :message_id,
     :longitude,
     :latitude,
     :organization_id
   ]
-  @optional_fields []
+  @optional_fields [:message_id, :wa_message_id]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -57,5 +56,24 @@ defmodule Glific.Contacts.Location do
     location
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_message_id()
+  end
+
+  @spec validate_message_id(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_message_id(changeset) do
+    message_id = Map.get(changeset.changes, :message_id)
+    wa_message_id = Map.get(changeset.changes, :wa_message_id)
+
+    case is_nil(message_id) and is_nil(wa_message_id) do
+      true ->
+        add_error(
+          changeset,
+          :message_id,
+          "both message_id and wa_message_id can't be nil"
+        )
+
+      _ ->
+        changeset
+    end
   end
 end

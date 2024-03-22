@@ -172,40 +172,12 @@ defmodule Glific.Providers.Maytapi.Message do
       longitude: longitude,
       latitude: latitude,
       sender: %{
-        phone: payload["sender"]["phone"],
-        name: payload["sender"]["name"]
+        phone: params["user"]["phone"],
+        name: params["user"]["name"]
       },
       flow: flow,
       status: status
     }
-
-    # %{
-    #   "conversation" => "120363249282776520@g.us",
-    #   "conversation_name" => "Group test2",
-    #   "message" => %{
-    #     "_serialized" =>
-    #       "true_120363249282776520@g.us_12ADF5DC03D2EEAF0ECA37B3BE254617_918547689517@c.us",
-    #     "fromMe" => true,
-    #     "id" => "true_120363249282776520@g.us_12ADF5DC03D2EEAF0ECA37B3BE254617_918547689517@c.us",
-    #     "payload" => "8.486486486486486,76.95066420911877",
-    #     "statuses" => [%{"status" => "sent"}],
-    #     "type" => "location"
-    #   },
-    #   "phoneId" => 48054,
-    #   "phone_id" => 48054,
-    #   "productId" => "f70de5e5-49b0-43a7-bf19-9275062b1627",
-    #   "product_id" => "f70de5e5-49b0-43a7-bf19-9275062b1627",
-    #   "receiver" => "918547689517",
-    #   "reply" =>
-    #     "https://api.maytapi.com/api/f70de5e5-49b0-43a7-bf19-9275062b1627/48054/sendMessage",
-    #   "timestamp" => 1_710_924_241,
-    #   "type" => "message",
-    #   "user" => %{
-    #     "id" => "120363249282776520@g.us",
-    #     "name" => "120363249282776520",
-    #     "phone" => "120363249282776520"
-    #   }
-    # }
   end
 
   # lets ensure that we have a phone number
