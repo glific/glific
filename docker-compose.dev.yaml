@@ -1,0 +1,61 @@
+version: '3'
+
+services:
+  certificates:
+    image: alpine:latest
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk --no-cache add curl
+        apt install libnss3-tools;
+        curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/amd64";
+        chmod +x mkcert-v*-linux-amd64;
+        cp mkcert-v*-linux-amd64 /usr/local/bin/mkcert;
+        /usr/local/bin/mkcert --install;
+        /usr/local/bin/mkcert glific.test api.glific.test;
+        mkdir -p /certs-glific;
+        mv glific.test* /certs-glific;
+    volumes:
+      - cert:/certs-glific
+
+  postgres:
+    image: postgres:14
+    ports:
+      - "5432:5432"
+    environment:
+      PSQL_HISTFILE: /root/log/.psql_history
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  glific:
+    build:
+      context: "."
+      dockerfile: docker/Dockerfile
+      args:
+        SERVER_PORT: 4000
+        ELIXIR_VERSION: ${ELIXIR_VERSION}
+        ERLANG_VERSION: ${ERLANG_VERSION}
+        ALPINE_VERSION: ${ALPINE_VERSION}
+        NODE_VERSION: ${NODE_VERSION}
+        POSTGRES_VERSION: ${POSTGRES_VERSION}
+        FP: ${FP}
+        AUTH_KEY: ${AUTH_KEY}
+    image: glific:latest
+    ports:
+      - "4000:4000"
+      - "4001:4001"
+    env_file:
+      - config/.env.dev
+    healthcheck:
+      test: "${DOCKER_SERVER_HEALTHCHECK_TEST}"
+    volumes:
+      - cert:/app/glific/priv/cert
+    depends_on:
+      - postgres
+    
+
+volumes:
+  pgdata:
+  cert:

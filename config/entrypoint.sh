@@ -5,9 +5,11 @@
 ROOT="/app/glific/priv/cert"
 GLIFIC_FIRST_STARTUP="$ROOT/GLIFIC_FIRST_STARTUP"
 if [ ! -e /$GLIFIC_FIRST_STARTUP ]; then
-    touch /$GLIFIC_FIRST_STARTUP
+    touch $GLIFIC_FIRST_STARTUP
     # lets set things up
     mix setup
+else
+    mix ecto.migrate
 fi
 
 mix phx.server
