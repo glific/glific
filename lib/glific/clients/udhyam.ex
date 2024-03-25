@@ -17,6 +17,9 @@ defmodule Glific.Clients.Udhyam do
   @spec webhook(String.t(), map()) :: map()
   def webhook("jugalbandi", fields), do: CommonWebhook.webhook("jugalbandi", fields)
 
+  def webhook("parse_via_chat_gpt", fields),
+    do: CommonWebhook.webhook("parse_via_chat_gpt", fields)
+
   def webhook(_, _fields),
     do: %{}
 

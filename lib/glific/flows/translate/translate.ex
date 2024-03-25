@@ -6,29 +6,47 @@ defmodule Glific.Flows.Translate.Translate do
   translation API provider is
   """
 
+  alias Glific.{
+    Flags,
+    Flows.Translate.GoogleTranslate,
+    Flows.Translate.OpenAI
+  }
+
   @doc """
   Lets define the behavior callback that everyone should follow
   """
-  @callback translate(strings :: [String.t()], src :: String.t(), dst :: String.t()) ::
+  @callback translate(strings :: [String.t()], src :: String.t(), dst :: String.t(), Keyword.t()) ::
               {:ok, [String.t()]} | {:error, String.t()}
 
   @doc """
   API interface for all modules to call the translate function. We'll use Elixir Config for this
   during deployment. For now, we have only one translator
   """
-  @spec translate([String.t()], String.t(), String.t()) ::
+  @spec translate([String.t()], String.t(), String.t(), map()) ::
           {:ok, [String.t()]} | {:error, String.t()}
-  def translate(strings, src, dst), do: impl().translate(strings, src, dst)
+  def translate(strings, src, dst, organization),
+    do: impl(organization).translate(strings, src, dst, org_id: organization.id)
 
-  # defp impl, do: Application.get_env(:glific, :adaptors)[:translators]
-  defp impl, do: Application.get_env(:glific, :adaptors)[:translators]
+  @spec impl(map()) :: module()
+  defp impl(organization) do
+    cond do
+      Flags.get_open_ai_auto_translation_enabled(organization) ->
+        OpenAI
+
+      Flags.get_google_auto_translation_enabled(organization) ->
+        GoogleTranslate
+
+      true ->
+        Application.get_env(:glific, :adaptors)[:translators]
+    end
+  end
 
   @doc """
   Lets make a simple function to translate one string
   """
-  @spec translate_one!(String.t(), String.t(), String.t()) :: String.t()
-  def translate_one!(orig, src, dst) do
-    {:ok, result} = translate([orig], src, dst)
+  @spec translate_one!(String.t(), String.t(), String.t(), map()) :: String.t()
+  def translate_one!(orig, src, dst, organization) do
+    {:ok, result} = translate([orig], src, dst, organization)
     hd(result)
   end
 

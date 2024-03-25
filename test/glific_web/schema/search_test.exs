@@ -20,9 +20,10 @@ defmodule GlificWeb.Schema.SearchTest do
 
   setup do
     default_provider = SeedsDev.seed_providers()
-    SeedsDev.seed_organizations(default_provider)
+    org = SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
+    Fixtures.wa_managed_phone_fixture(%{organization_id: org.id})
     :ok
   end
 
@@ -35,6 +36,7 @@ defmodule GlificWeb.Schema.SearchTest do
   load_gql(:search, GlificWeb.Schema, "assets/gql/searches/search.gql")
   load_gql(:search_count, GlificWeb.Schema, "assets/gql/searches/search_count.gql")
   load_gql(:search_multi, GlificWeb.Schema, "assets/gql/searches/search_multi.gql")
+  load_gql(:wa_search_multi, GlificWeb.Schema, "assets/gql/searches/wa_search_multi.gql")
 
   defp get_saved_search_list(org_id) do
     Searches.list_saved_searches(%{filter: %{organization_id: org_id}})
@@ -874,5 +876,40 @@ defmodule GlificWeb.Schema.SearchTest do
     assert hd(contacts)["id"] != nil
     assert String.contains?(hd(messages)["contact"]["name"], "Default")
     assert messages != []
+  end
+
+  test "WA Search by term will return the search input", %{staff: user} = attrs do
+    _message_1 = Fixtures.wa_message_fixture(attrs)
+
+    _message_2 =
+      attrs
+      |> Map.put(:body, "wa search multi")
+      |> Fixtures.wa_message_fixture()
+
+    result =
+      auth_query_gql_by(:wa_search_multi, user,
+        variables: %{
+          "filter" => %{},
+          "waGroupOpts" => %{"limit" => 25},
+          "waMessageOpts" => %{"limit" => 25}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    wa_messages = get_in(query_data, [:data, "WaSearchMulti", "waMessages"])
+    assert length(wa_messages) == 2
+
+    result =
+      auth_query_gql_by(:wa_search_multi, user,
+        variables: %{
+          "filter" => %{"term" => "wa search"},
+          "waGroupOpts" => %{"limit" => 1},
+          "waMessageOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    [wa_message] = get_in(query_data, [:data, "WaSearchMulti", "waMessages"])
+    assert wa_message["body"] == "wa search multi"
   end
 end

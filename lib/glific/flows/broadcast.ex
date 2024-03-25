@@ -16,6 +16,7 @@ defmodule Glific.Flows.Broadcast do
     Flows.MessageBroadcast,
     Flows.MessageBroadcastContact,
     Groups.Group,
+    Groups.WaGroupsCollections,
     Messages,
     Partners,
     Repo
@@ -63,6 +64,23 @@ defmodule Glific.Flows.Broadcast do
   end
 
   @doc """
+  The one simple public interface to broadcast a wa_group
+  """
+  @spec broadcast_flow_to_wa_group(Flow.t(), list()) :: :ok
+  def broadcast_flow_to_wa_group(flow, group_ids) do
+    Task.async_stream(group_ids, fn group_id ->
+      Repo.put_process_state(flow.organization_id)
+
+      WaGroupsCollections.list_wa_groups_collection(%{
+        filter: %{group_id: group_id, organization_id: flow.organization_id}
+      })
+      |> Enum.map(& &1.wa_group_id)
+      |> then(&broadcast_wa_groups(flow, &1))
+    end)
+    |> Stream.run()
+  end
+
+  @doc """
   The one simple public interface to broadcast a group
   """
   @spec broadcast_message_to_group(Messages.Message.t(), list(), map(), map()) ::
@@ -91,6 +109,21 @@ defmodule Glific.Flows.Broadcast do
 
     unprocessed_group_broadcast(org_id)
     |> process_broadcast_group()
+  end
+
+  @doc """
+  We are using this function from the flows.
+  """
+  @spec broadcast_wa_groups(Flow.t(), list()) :: :ok
+  def broadcast_wa_groups(flow, wa_group_ids) do
+    Repo.put_process_state(flow.organization_id)
+    opts = opts(flow.organization_id)
+
+    broadcast_for_wa_groups(
+      %{flow: flow, type: :wa_group},
+      wa_group_ids,
+      opts
+    )
   end
 
   @doc """
@@ -262,6 +295,27 @@ defmodule Glific.Flows.Broadcast do
   end
 
   # """
+  # Lets start a flow for a bunch of wa_groups in parallel
+  # """
+  @spec broadcast_for_wa_groups(map(), list(non_neg_integer()), Keyword.t()) :: :ok
+  defp broadcast_for_wa_groups(attrs, wa_group_ids, opts) do
+    wa_group_ids
+    |> Enum.chunk_every(opts[:bsp_limit])
+    |> Enum.with_index()
+    |> Enum.each(fn {chunk_list, delay_offset} ->
+      task_opts = [
+        {:delay, opts[:delay] + delay_offset},
+        {:message_broadcast_id, opts[:message_broadcast_id]},
+        {:default_results, opts[:default_results]}
+      ]
+
+      wa_group_tasks(attrs.flow, chunk_list, task_opts)
+    end)
+
+    :ok
+  end
+
+  # """
   # Lets start a bunch of contacts on a flow in parallel
   # """
   @spec broadcast_for_contacts(map(), list(Contact.t()), Keyword.t()) :: :ok
@@ -307,6 +361,25 @@ defmodule Glific.Flows.Broadcast do
                response #{inspect(response)}")
           end
 
+          :ok
+        end,
+        ordered: false,
+        timeout: 5_000,
+        on_timeout: :kill_task
+      )
+
+    Stream.run(stream)
+  end
+
+  @spec wa_group_tasks(Flow.t(), [non_neg_integer()], Keyword.t()) :: :ok
+  defp wa_group_tasks(flow, wa_group_ids, opts) do
+    stream =
+      Task.Supervisor.async_stream_nolink(
+        Glific.Broadcast.Supervisor,
+        wa_group_ids,
+        fn wa_group_id ->
+          Repo.put_process_state(flow.organization_id)
+          FlowContext.init_wa_group_context(flow, wa_group_id, @status, opts)
           :ok
         end,
         ordered: false,

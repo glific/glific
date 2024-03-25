@@ -21,6 +21,7 @@ defmodule Glific.Flows.FlowContext do
     Flows.MessageBroadcast,
     Flows.MessageVarParser,
     Flows.Node,
+    Groups.WAGroup,
     Messages,
     Messages.Message,
     Notifications,
@@ -29,8 +30,9 @@ defmodule Glific.Flows.FlowContext do
     Repo
   }
 
-  @required_fields [:contact_id, :flow_id, :flow_uuid, :status, :organization_id]
+  @required_fields [:flow_id, :flow_uuid, :status, :organization_id]
   @optional_fields [
+    :contact_id,
     :node_uuid,
     :parent_id,
     :results,
@@ -46,7 +48,9 @@ defmodule Glific.Flows.FlowContext do
     :recent_outbound,
     :message_broadcast_id,
     :profile_id,
-    :reason
+    :reason,
+    :node,
+    :wa_group_id
   ]
 
   # we store one more than the number of messages specified here
@@ -71,6 +75,8 @@ defmodule Glific.Flows.FlowContext do
           message_broadcast: Message.t() | Ecto.Association.NotLoaded.t() | nil,
           profile_id: non_neg_integer | nil,
           profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
+          wa_group_id: non_neg_integer | nil,
+          wa_group: WAGroup.t() | Ecto.Association.NotLoaded.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           delay: integer,
@@ -123,7 +129,7 @@ defmodule Glific.Flows.FlowContext do
     belongs_to(:profile, Profile)
     # the originating group message which kicked off this flow if any
     belongs_to(:message_broadcast, MessageBroadcast)
-
+    belongs_to(:wa_group, WAGroup)
     timestamps(type: :utc_datetime)
   end
 
@@ -504,6 +510,23 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Set all the flows for a specific context to be completed
   """
+  @spec mark_wa_flows_complete(String.t(), non_neg_integer, boolean()) :: :ok
+  def mark_wa_flows_complete(event_label, wa_group_id, is_killed \\ false) do
+    now = DateTime.utc_now()
+
+    FlowContext
+    |> where([fc], fc.wa_group_id == ^wa_group_id)
+    |> where([fc], is_nil(fc.completed_at))
+    |> Repo.update_all(
+      set: [completed_at: now, updated_at: now, is_killed: is_killed, reason: event_label]
+    )
+
+    :ok
+  end
+
+  @doc """
+  Set all the flows for a specific context to be completed
+  """
   @spec mark_flows_complete(non_neg_integer, boolean(), Keyword.t()) :: nil
   def mark_flows_complete(_contact_id, _is_background_flow, opts \\ [])
   def mark_flows_complete(_contact_id, true, _opts), do: nil
@@ -630,6 +653,37 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
+  Seed the context and set the wake up time as needed
+  """
+  @spec seed_wa_group_context(Flow.t(), non_neg_integer(), String.t(), Keyword.t()) ::
+          {:ok, FlowContext.t()} | {:error, Ecto.Changeset.t()}
+  def seed_wa_group_context(flow, wa_group_id, status, opts \\ []) do
+    delay = Keyword.get(opts, :delay, 0)
+
+    Logger.info("Seeding flow: id: '#{flow.id}', wa_group_id: '#{wa_group_id}'")
+
+    node = flow.start_node
+
+    {:ok, context} =
+      create_flow_context(%{
+        wa_group_id: wa_group_id,
+        node_uuid: node.uuid,
+        flow_uuid: flow.uuid,
+        status: status,
+        node: node,
+        flow_id: flow.id,
+        flow: flow,
+        organization_id: flow.organization_id,
+        uuid_map: flow.uuid_map,
+        delay: delay
+      })
+
+    context
+    |> Repo.preload([:flow])
+    |> then(&{:ok, &1})
+  end
+
+  @doc """
   Start a new context, if there is an existing context, blow it away
   """
   @spec init_context(Flow.t(), Contact.t(), String.t(), Keyword.t() | []) ::
@@ -678,6 +732,18 @@ defmodule Glific.Flows.FlowContext do
     context
     |> load_context(flow)
     # lets do the first steps and start executing it till we need a message
+    |> execute([])
+  end
+
+  @doc """
+  Start a new context, if there is an existing context, blow it away
+  """
+  @spec init_wa_group_context(Flow.t(), non_neg_integer(), String.t(), Keyword.t() | []) ::
+          {:ok | :wait, FlowContext.t(), [String.t()]} | {:error, String.t()}
+  def init_wa_group_context(flow, wa_group_id, status, opts \\ []) do
+    {:ok, context} = seed_wa_group_context(flow, wa_group_id, status, opts)
+
+    context
     |> execute([])
   end
 
@@ -927,6 +993,13 @@ defmodule Glific.Flows.FlowContext do
     A single place to parse the variable in a string related to flows.
   """
   @spec get_vars_to_parse(FlowContext.t()) :: map()
+  def get_vars_to_parse(%{wa_group_id: wa_group_id} = context) when wa_group_id != nil do
+    %{
+      "results" => context.results,
+      "flow" => %{name: context.flow.name, id: context.flow.id, uuid: context.flow.uuid}
+    }
+  end
+
   def get_vars_to_parse(context) do
     %{
       "results" => context.results,

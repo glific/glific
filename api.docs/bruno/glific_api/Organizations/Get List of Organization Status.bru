@@ -20,3 +20,49 @@ body:graphql {
     organizationStatus
   }
 }
+
+docs {
+  # Get List of Organization Status
+  
+  ## Description
+  This GraphQL API is used to retrieve a list of organization statuses.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Request Body
+  ```json
+  {
+    "query": "query organizationStatus { organizationStatus }"
+  }
+  ```
+  
+  ## Response
+  The API response includes a list of organization statuses.
+  ```json
+  {
+    "data": {
+      "organizationStatus": [
+        "INACTIVE",
+        "APPROVED",
+        "ACTIVE",
+        "SUSPENDED",
+        "READY_TO_DELETE"
+      ]
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the response field for the list of organization statuses.
+  
+  ## Use Cases
+  1. **Use Case 1: Display Organization Status Options**
+     - Use to retrieve list of organization statuses.
+  
+  ## FAQ
+  None
+}

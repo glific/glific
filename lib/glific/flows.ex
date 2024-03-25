@@ -500,7 +500,6 @@ defmodule Glific.Flows do
     args = make_args(key, value)
     flow = Flow.get_loaded_flow(organization_id, status, args)
     Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
-
     # We are setting the cache in the above statement with multiple keys
     # hence we are asking Cachex to just ignore this aspect. All the other
     # requests will get the cache value sent above
@@ -518,7 +517,7 @@ defmodule Glific.Flows do
   def get_cached_flow(organization_id, key) do
     case Caches.fetch(organization_id, key, &load_flow_cache/1) do
       {:error, error} ->
-        Logger.info("Failed to retrieve flow, #{inspect(key)}, #{error}")
+        Logger.info("Failed to retrieve flow, #{inspect(key)}, #{inspect(error)}")
         {:error, error}
 
       {_, flow} ->
@@ -655,12 +654,55 @@ defmodule Glific.Flows do
   @status "published"
 
   @doc """
+  Start flow for a WA group
+  """
+  @spec start_wa_group_flow(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+          {:ok, Flow.t()} | {:error, String.t()}
+
+  def start_wa_group_flow(flow_id, wa_group_id, organization_id) do
+    case get_cached_flow(organization_id, {:flow_id, flow_id, @status}) do
+      {:ok, flow} ->
+        process_wa_group_flow(flow, [wa_group_id])
+
+      {:error, _error} ->
+        {:error, ["Flow", dgettext("errors", "Flow not found")]}
+    end
+  end
+
+  @doc """
+  Start flow for wa groups of a collection
+  """
+  @spec start_wa_group_flow(Flow.t(), list(non_neg_integer())) ::
+          {:ok, Flow.t()} | {:error, String.t()}
+  def start_wa_group_flow(flow, group_ids) do
+    # the flow returned is the expanded version
+    case get_cached_flow(flow.organization_id, {:flow_id, flow.id, @status}) do
+      {:ok, flow} ->
+        Broadcast.broadcast_flow_to_wa_group(flow, group_ids)
+        {:ok, flow}
+
+      {:error, _error} ->
+        {:error, ["Flow", dgettext("errors", "Flow not found")]}
+    end
+  end
+
+  @spec process_wa_group_flow(Flow.t(), [non_neg_integer()]) :: {:ok, Flow.t()}
+  defp process_wa_group_flow(flow, wa_groups_ids) do
+    if flow.is_active do
+      Broadcast.broadcast_wa_groups(flow, wa_groups_ids)
+      {:ok, flow}
+    else
+      {:error, ["Flow", dgettext("errors", "Flow is not active")]}
+    end
+  end
+
+  @doc """
   Start flow for a contact and cache the result
   """
   @spec start_contact_flow(Flow.t() | integer, Contact.t(), map()) ::
           {:ok, Flow.t()} | {:error, String.t()}
 
-  def start_contact_flow(f, c, default_results \\ %{})
+  def start_contact_flow(flow_id, contact, default_results \\ %{})
 
   def start_contact_flow(flow_id, %Contact{} = contact, default_results)
       when is_integer(flow_id) do

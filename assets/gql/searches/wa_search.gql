@@ -1,0 +1,36 @@
+query waSearch(
+  $waGroupOpts: Opts!
+  $waMessageOpts: Opts!
+  $filter: WaSearchFilter!
+) {
+  search: waSearch(
+    waGroupOpts: $waGroupOpts
+    waMessageOpts: $waMessageOpts
+    filter: $filter
+  ) {
+    group {
+      id
+      label
+    }
+    wa_group {
+      id
+      label
+      bsp_id
+      lastCommunicationAt
+    }
+    messages: wa_messages {
+      id
+      body
+      flow
+      type
+      contact {
+        id
+        name
+        phone
+      }
+      wa_managed_phone {
+        id
+      }
+    }
+  }
+}

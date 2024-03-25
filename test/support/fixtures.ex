@@ -3,6 +3,8 @@ defmodule Glific.Fixtures do
   A module for defining fixtures that can be used in tests.
   """
 
+  import Ecto.Query, warn: false
+
   alias GlificWeb.Flows
 
   alias Faker.{
@@ -25,6 +27,12 @@ defmodule Glific.Fixtures do
     Flows.FlowLabel,
     Flows.WebhookLog,
     Groups,
+    Groups.ContactWAGroup,
+    Groups.ContactWAGroups,
+    Groups.WAGroup,
+    Groups.WAGroups,
+    Groups.WAGroupsCollection,
+    Groups.WaGroupsCollections,
     Mails.MailLog,
     MessageConversations,
     Messages,
@@ -37,6 +45,7 @@ defmodule Glific.Fixtures do
     Partners.Organization,
     Partners.Provider,
     Profiles.Profile,
+    Providers.Maytapi.Message,
     Repo,
     Saas.ConsultingHour,
     Settings,
@@ -49,7 +58,11 @@ defmodule Glific.Fixtures do
     Templates.SessionTemplate,
     Triggers,
     Triggers.Trigger,
-    Users
+    Users,
+    WAGroup.WAManagedPhone,
+    WAGroup.WAMessage,
+    WAManagedPhones,
+    WAMessages
   }
 
   @doc """
@@ -695,6 +708,7 @@ defmodule Glific.Fixtures do
     }
 
     [g1 | _] = Groups.list_groups(attrs)
+
     flow_uuid = "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"
     {:ok, f1} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
 
@@ -1084,6 +1098,160 @@ defmodule Glific.Fixtures do
       |> Sheets.create_sheet()
 
     sheet
+  end
+
+  @doc """
+  Generate a wa_managed_phone.
+  """
+  @spec wa_managed_phone_fixture(map()) :: WAManagedPhone.t()
+  def wa_managed_phone_fixture(attrs) do
+    {:ok, contact} = Contacts.maybe_create_contact(Map.put(attrs, :phone, "917834811231"))
+
+    {:ok, wa_managed_phone} =
+      attrs
+      |> Enum.into(%{
+        is_active: true,
+        label: "some label",
+        phone: "9829627508",
+        phone_id: 242,
+        provider_id: 1,
+        contact_id: contact.id
+      })
+      |> WAManagedPhones.create_wa_managed_phone()
+
+    wa_managed_phone
+  end
+
+  @doc """
+  Generate a wa_group.
+  """
+  @spec wa_group_fixture(map()) :: WAGroup.t()
+  def wa_group_fixture(attrs) do
+    {:ok, wa_group} =
+      attrs
+      |> Enum.into(%{
+        label: "some label",
+        bsp_id: "120363238104@g.us",
+        wa_managed_phone_id: attrs.wa_managed_phone_id,
+        organization_id: attrs.organization_id
+      })
+      |> WAGroups.create_wa_group()
+
+    wa_group
+  end
+
+  @doc """
+  temp function for test to get wa_managed_phone
+  """
+  @spec get_wa_managed_phone(non_neg_integer()) :: WAManagedPhone.t()
+  def get_wa_managed_phone(organization_id) do
+    Repo.fetch_by(WAManagedPhone, %{organization_id: organization_id})
+    |> case do
+      {:ok, wa_managed_phone} ->
+        wa_managed_phone
+
+      {:error, _error} ->
+        wa_managed_phone_fixture(%{organization_id: organization_id})
+    end
+  end
+
+  @doc """
+  Generate a wa_message.
+  """
+  @spec wa_message_fixture(map()) :: WAMessage.t()
+  def wa_message_fixture(attrs) do
+    get_wa_managed_phone(attrs.organization_id)
+    wa_managed_phone = get_wa_managed_phone(attrs.organization_id)
+
+    {:ok, wa_message} =
+      attrs
+      |> Enum.into(%{
+        body: Faker.Lorem.sentence(),
+        flow: :inbound,
+        type: :text,
+        bsp_id: Faker.String.base64(10),
+        contact_id: wa_managed_phone.contact_id,
+        bsp_status: :enqueued,
+        wa_managed_phone_id: wa_managed_phone.id,
+        organization_id: attrs.organization_id
+      })
+      |> WAMessages.create_message()
+
+    wa_message
+  end
+
+  @doc false
+  @spec contact_wa_group_fixture(map()) :: ContactWAGroup.t()
+  def contact_wa_group_fixture(attrs) do
+    valid_attrs = %{
+      contact_id: contact_fixture(attrs).id,
+      wa_group_id: wa_group_fixture(attrs).id
+    }
+
+    {:ok, contact_wa_group} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> ContactWAGroups.create_contact_wa_group()
+
+    contact_wa_group
+  end
+
+  @doc false
+  @spec wa_group_collection_message_fixture(map()) :: nil
+  def wa_group_collection_message_fixture(attrs) do
+    [wgc1, _wgc2, wgc3] = collection_wa_group_fixture(attrs)
+
+    {:ok, group_1} = Repo.fetch_by(Groups.Group, %{id: wgc1.group_id})
+    {:ok, group_2} = Repo.fetch_by(Groups.Group, %{id: wgc3.group_id})
+
+    valid_attrs = %{
+      message: "wa_group message",
+      type: :text,
+      organization_id: attrs.organization_id
+    }
+
+    Message.send_message_to_wa_group_collection(group_1, valid_attrs)
+    Message.send_message_to_wa_group_collection(group_2, valid_attrs)
+    nil
+  end
+
+  @doc false
+  @spec collection_wa_group_fixture(map()) :: [WAGroupsCollection.t(), ...]
+  def collection_wa_group_fixture(attrs) do
+    wa_managed_phone = get_wa_managed_phone(attrs.organization_id)
+
+    wg1 =
+      wa_group_fixture(%{
+        organization_id: attrs.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    attrs = %{group_type: "WA", filter: attrs, opts: %{order: :asc}}
+
+    g1 = group_fixture(attrs)
+
+    {:ok, wgc1} =
+      WaGroupsCollections.create_wa_groups_collection(%{
+        group_id: g1.id,
+        wa_group_id: wg1.id,
+        organization_id: attrs.filter.organization_id
+      })
+
+    {:ok, wgc2} =
+      WaGroupsCollections.create_wa_groups_collection(%{
+        group_id: g1.id,
+        wa_group_id: wg1.id,
+        organization_id: attrs.filter.organization_id
+      })
+
+    {:ok, wgc3} =
+      WaGroupsCollections.create_wa_groups_collection(%{
+        group_id: g1.id,
+        wa_group_id: wg1.id,
+        organization_id: attrs.filter.organization_id
+      })
+
+    [wgc1, wgc2, wgc3]
   end
 
   @doc """

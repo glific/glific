@@ -11,6 +11,7 @@ fragment TriggerFields on TriggerResult {
       name
     }
     groups
+    group_type
   }
 }
 

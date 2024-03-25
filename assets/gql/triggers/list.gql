@@ -9,5 +9,6 @@ query triggers($filter: TriggerFilter, $opts: Opts) {
       name
     }
     groups
+    group_type
   }
 }

@@ -3,9 +3,14 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
   Code to translate using google translate as the translation engine.
   """
   @behaviour Glific.Flows.Translate.Translate
-  @google_translate_params %{"temperature" => 0, "max_tokens" => 12_000}
 
-  alias Glific.Flows.Translate.Translate
+  alias Glific.{
+    Flows.Translate.Translate,
+    Flows.Translate.TranslateLog,
+    GoogleTranslate,
+    Settings
+  }
+
   require Logger
 
   @doc """
@@ -15,17 +20,29 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
 
   ## Examples
 
-      iex> Glific.Flows.Translate.GoogleTranslate.translate(["thank you for joining", "correct answer"], "en", "hi")
+      iex> Glific.Flows.Translate.GoogleTranslate.translate(["thank you for joining", "correct answer"], "English", "Hindi")
       {:ok, ["शामिल होने के लिए धन्यवाद", "सही जवाब"]}
   """
-  @spec translate([String.t()], String.t(), String.t()) ::
+  @spec translate([String.t()], String.t(), String.t(), Keyword.t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
-  def translate(strings, src, dst) do
-    languages = %{"source" => src, "target" => dst}
+  def translate(strings, src, dst, opts \\ []) do
+    org_id = Keyword.get(opts, :org_id)
+    Settings.get_language_code(org_id)
+    language_code = Settings.get_language_code(org_id)
+
+    src_lang_code = Map.get(language_code, src, src)
+    dst_lang_code = Map.get(language_code, dst, dst)
+
+    languages = %{
+      "source" => src_lang_code,
+      "target" => dst_lang_code,
+      "src" => src,
+      "dst" => dst
+    }
 
     strings
     |> Translate.check_large_strings()
-    |> Task.async_stream(fn text -> do_translate(text, languages, @google_translate_params) end,
+    |> Task.async_stream(fn text -> do_translate(text, languages, org_id) end,
       timeout: 300_000,
       on_timeout: :kill_task
     )
@@ -42,18 +59,40 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
   defp handle_async_response({:ok, translated_text}, acc), do: [translated_text | acc]
   defp handle_async_response({:exit, :timeout}, acc), do: ["" | acc]
 
-  @spec do_translate(String.t(), map(), map()) :: String.t() | {:error, String.t()}
-  defp do_translate(strings, languages, params) do
+  @spec do_translate(String.t(), map(), non_neg_integer()) :: String.t()
+  defp do_translate(strings, languages, org_id) do
     api_key = Glific.get_google_translate_key()
 
-    Glific.GoogleTranslate.Translate.parse(api_key, strings, languages, params)
+    GoogleTranslate.Translate.parse(api_key, strings, languages)
     |> case do
       {:ok, result} ->
+        %{
+          text: strings,
+          translated_text: result,
+          source_language: languages["src"],
+          destination_language: languages["dst"],
+          translation_engine: "Google Translate",
+          status: true,
+          organization_id: org_id
+        }
+        |> TranslateLog.create_translate_log()
+
         result
 
       {:error, error} ->
+        %{
+          text: strings,
+          source_language: languages["src"],
+          destination_language: languages["dst"],
+          translation_engine: "Google Translate",
+          status: false,
+          error: error,
+          organization_id: org_id
+        }
+        |> TranslateLog.create_translate_log()
+
         Logger.error("Error translating: #{error} String: #{strings}")
-        ["Could not translate, Try again"]
+        ""
     end
   end
 end

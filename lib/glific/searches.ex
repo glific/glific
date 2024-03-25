@@ -7,21 +7,26 @@ defmodule Glific.Searches do
   require Logger
 
   alias __MODULE__
+  Conversations.WAConversation
 
   alias Glific.{
     Contacts.Contact,
     Conversations,
     Conversations.Conversation,
+    Conversations.WAConversation,
     ConversationsGroup,
     Groups,
     Groups.ContactGroup,
     Groups.UserGroup,
+    Groups.WAGroup,
     Messages.Message,
     Repo,
     Search.Full,
     Searches.SavedSearch,
     Searches.Search,
-    Users.User
+    Users.User,
+    WAConversations,
+    WAGroup.WAMessage
   }
 
   @search_timeout 30_000
@@ -318,6 +323,7 @@ defmodule Glific.Searches do
       group_ids(args),
       args
     )
+    |> append_conversation_id()
   end
 
   def search(%{filter: %{search_group: true}} = args, _count) do
@@ -327,6 +333,7 @@ defmodule Glific.Searches do
       group_ids(args),
       args
     )
+    |> append_conversation_id()
   end
 
   # codebeat:disable[ABC]
@@ -369,7 +376,79 @@ defmodule Glific.Searches do
     else
       put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
       |> Conversations.list_conversations(count)
+      |> append_conversation_id()
     end
+  end
+
+  defp append_conversation_id(conversations) do
+    Enum.reduce(conversations, [], fn conversation, acc ->
+      acc ++ do_append_conversation_id(conversation)
+    end)
+  end
+
+  defp do_append_conversation_id(%{contact: nil, group: group} = conversation) do
+    conversation
+    |> Map.put(:id, "group_#{group.id}")
+    |> then(&[&1])
+  end
+
+  defp do_append_conversation_id(%{contact: contact, group: nil} = conversation) do
+    conversation
+    |> Map.put(:id, "contact_#{contact.id}")
+    |> then(&[&1])
+  end
+
+  defp do_append_conversation_id(%{wa_group: nil, group: group} = conversation),
+    do: conversation |> Map.put(:id, "group_#{group.id}") |> then(&[&1])
+
+  defp do_append_conversation_id(%{wa_group: wa_group, group: _group} = conversation),
+    do: conversation |> Map.put(:id, "wa_group_#{wa_group.id}") |> then(&[&1])
+
+  @doc """
+  Full text whatsapp group search interface via Postgres
+  """
+  @spec wa_search(map()) :: [WAConversation.t()]
+  def wa_search(%{filter: %{search_group: true, group_label: group_label}} = args) do
+    Logger.info(
+      "Searches.WASearch/2 with : args: #{inspect(args)} group label: #{inspect(group_label)}"
+    )
+
+    ConversationsGroup.wa_list_conversations(
+      group_ids(args),
+      args
+    )
+    |> append_conversation_id()
+  end
+
+  def wa_search(%{filter: %{search_group: true}} = args) do
+    Logger.info("Searches.WASearch/2 with : args: #{inspect(args)}")
+
+    ConversationsGroup.wa_list_conversations(
+      group_ids(args),
+      args
+    )
+    |> append_conversation_id()
+  end
+
+  def wa_search(args) do
+    Logger.info("Searches.wa_Search/1 with : args: #{inspect(args)}")
+
+    wa_group_ids =
+      case filter_groups_of_organization(args.filter) do
+        {true, query} ->
+          wa_search_query(query, args)
+
+        _ ->
+          query = from(wa_grp in WAGroup, as: :wa_grp)
+
+          wa_search_query(query, args)
+          |> Full.run(args.filter[:term], args)
+      end
+      |> Repo.all(timeout: @search_timeout)
+
+    put_in(args, [Access.key(:filter, %{}), :ids], wa_group_ids)
+    |> WAConversations.list_conversations()
+    |> append_conversation_id()
   end
 
   # codebeat:enable[ABC]
@@ -416,6 +495,31 @@ defmodule Glific.Searches do
     [contacts, messages, labels] = Task.await_many(search_item_tasks, @search_timeout + 1_000)
 
     Search.new(contacts, messages, tags, labels)
+  end
+
+  @doc """
+  Search across multiple messages and wa_group table, and return a multiple context
+  result back to the frontend. First step in emulating a whatsapp
+  search
+  """
+  @spec wa_search_multi(String.t(), map()) :: map()
+  def wa_search_multi(term, args) do
+    Logger.info("WASearch Multi: term: '#{term}'")
+    org_id = Repo.get_organization_id()
+
+    search_item_tasks = [
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+        get_filtered_wa_groups_with_term(term, args)
+      end),
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+        get_filtered_wa_messages_with_term(term, args)
+      end)
+    ]
+
+    [wa_groups, wa_messages] = Task.await_many(search_item_tasks, @search_timeout + 1_000)
+    %{wa_groups: wa_groups, wa_messages: wa_messages}
   end
 
   @spec filtered_query(map()) :: Ecto.Query.t()
@@ -465,6 +569,36 @@ defmodule Glific.Searches do
     filtered_query(args)
     |> where([m: m], ilike(m.flow_label, ^"%#{term}%"))
     |> order_by([m: m], desc: m.message_number)
+    |> Repo.all(timeout: @search_timeout)
+  end
+
+  @spec get_filtered_wa_messages_with_term(String.t(), map()) :: list()
+  defp get_filtered_wa_messages_with_term(term, args) do
+    {limit, offset} = {args.wa_message_opts.limit, args.wa_message_opts.offset}
+
+    query = from(wam in WAMessage, as: :wam)
+
+    query
+    |> order_by([wam: wam], desc: wam.inserted_at, desc: wam.id)
+    |> Repo.add_permission(&Searches.add_permission/2)
+    |> where([wam: wam], ilike(wam.body, ^"%#{term}%"))
+    |> limit(^limit)
+    |> offset(^offset)
+    |> Repo.all(timeout: @search_timeout)
+  end
+
+  @spec get_filtered_wa_groups_with_term(String.t(), map()) :: list()
+  defp get_filtered_wa_groups_with_term(term, args) do
+    {limit, offset} = {args.wa_group_opts.limit, args.wa_group_opts.offset}
+
+    query = from(wag in WAGroup, as: :wag)
+
+    query
+    |> order_by([wag: wag], desc: wag.last_communication_at, desc: wag.id)
+    |> Repo.add_permission(&Searches.add_permission/2)
+    |> where([wag: wag], ilike(wag.label, ^"%#{term}%"))
+    |> limit(^limit)
+    |> offset(^offset)
     |> Repo.all(timeout: @search_timeout)
   end
 
@@ -533,5 +667,83 @@ defmodule Glific.Searches do
     |> add_term(Map.get(args, :term))
     |> convert_to_atom()
     |> put_in([:filter, :organization_id], saved_search.organization_id)
+  end
+
+  @spec wa_search_query(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp wa_search_query(query, args) do
+    query
+    |> wa_basic_query(args)
+    |> add_wa_group_opts(args.wa_group_opts)
+    |> select([wa_grp: wa_grp], wa_grp.id)
+  end
+
+  @spec wa_basic_query(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp wa_basic_query(query, args) do
+    query
+    |> add_wa_message_clause(args)
+    |> order_by([wa_grp: wa_grp], desc: wa_grp.last_communication_at, desc: wa_grp.id)
+    |> group_by([wa_grp: wa_grp], wa_grp.id)
+    |> Repo.add_permission(&Searches.add_permission/2)
+  end
+
+  @spec add_wa_message_clause(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp add_wa_message_clause(query, %{filter: filters} = _args)
+       when is_map(filters) do
+    if map_size(filters) > 1 do
+      query
+      |> join(:left, [wa_grp: wa_grp], wa_msg in WAMessage,
+        as: :wa_msg,
+        on: wa_grp.id == wa_msg.wa_group_id
+      )
+    else
+      query
+    end
+  end
+
+  defp add_wa_message_clause(query, _args),
+    do: query
+
+  @spec add_wa_group_opts(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp add_wa_group_opts(query, %{limit: limit, offset: offset}) do
+    query
+    |> limit(^limit)
+    |> offset(^offset)
+    |> order_by([wa_grp], desc: wa_grp.last_communication_at)
+  end
+
+  defp add_wa_group_opts(query, _opts) do
+    # always order in descending order of most recent communications
+    query
+    |> order_by([wa_grp], desc: wa_grp.last_communication_at)
+  end
+
+  @spec filter_groups_of_organization(map()) :: {boolean, Ecto.Query.t()}
+  defp filter_groups_of_organization(filters) do
+    query = from(wa_grp in WAGroup, as: :wa_grp)
+
+    {has_filter, query} =
+      filters
+      |> Enum.reduce({false, query}, fn {k, v}, query_obj ->
+        {has_filter, query} = query_obj
+
+        case {k, v} do
+          {:id, id} ->
+            {true, query |> where([wa_grp], wa_grp.id in [^id])}
+
+          {:ids, ids} ->
+            {true, query |> where([wa_grp], wa_grp.id in ^ids)}
+
+          {:wa_phone_ids, wa_phone_ids} ->
+            {true, query |> where([wa_grp], wa_grp.wa_managed_phone_id in ^wa_phone_ids)}
+
+          {:term, term} ->
+            {true, query |> where([wa_grp], ilike(wa_grp.label, ^"%#{term}%"))}
+
+          _ ->
+            {has_filter, query}
+        end
+      end)
+
+    {has_filter, query}
   end
 end

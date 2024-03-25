@@ -45,7 +45,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Stats.Stat,
     Tickets.Ticket,
     Trackers.Tracker,
-    Users.User
+    Users.User,
+    WAGroup.WAMessage
   }
 
   @per_min_limit 500
@@ -85,7 +86,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         "profiles",
         "message_broadcasts",
         "message_broadcast_contacts",
-        "tickets"
+        "tickets",
+        "wa_messages"
       ]
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
@@ -727,6 +729,48 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
+  defp queue_table_data("wa_messages", organization_id, attrs) do
+    Logger.info(
+      "fetching wa_messages data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("wa_messages", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            body: row.body,
+            type: row.type,
+            flow: row.flow,
+            inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
+            updated_at: format_date_with_millisecond(row.updated_at, organization_id),
+            sent_at: BigQuery.format_date(row.sent_at, organization_id),
+            uuid: row.uuid,
+            status: row.status,
+            contact_phone: row.contact.phone,
+            contact_name: row.contact.name,
+            errors: BigQuery.format_json(row.errors),
+            message_broadcast_id: row.message_broadcast_id,
+            bsp_status: row.bsp_status,
+            wa_group_id: row.wa_group_id,
+            wa_group_name: if(!is_nil(row.wa_group), do: row.wa_group.label)
+          }
+          |> Map.merge(message_media_info(row.media))
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :wa_messages, organization_id, attrs))
+
+    :ok
+  end
+
   defp queue_table_data(stat, organization_id, attrs) when stat in ["stats", "stats_all"] do
     Logger.info(
       "fetching #{stat} data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
@@ -1190,4 +1234,16 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:organization])
+
+  defp get_query("wa_messages", organization_id, attrs),
+    do:
+      WAMessage
+      |> where([wm], wm.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([wm], [wm.inserted_at, wm.id])
+      |> preload([
+        :contact,
+        :media,
+        :wa_group
+      ])
 end

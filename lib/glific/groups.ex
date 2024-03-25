@@ -10,6 +10,7 @@ defmodule Glific.Groups do
     AccessControl,
     AccessControl.GroupRole,
     Contacts.Contact,
+    Groups.WAGroupsCollection,
     Repo,
     Users.User
   }
@@ -57,11 +58,23 @@ defmodule Glific.Groups do
   """
   @spec list_groups(map(), boolean()) :: [Group.t()]
   def list_groups(args, skip_permission \\ false) do
-    args
-    |> Repo.list_filter_query(Group, &Repo.opts_with_label/2, &Repo.filter_with/2)
-    |> AccessControl.check_access(:group)
-    |> Repo.add_permission(&Groups.add_permission/2, skip_permission)
-    |> Repo.all()
+    query =
+      args
+      |> Repo.list_filter_query(Group, &Repo.opts_with_label/2, &Repo.filter_with/2)
+      |> AccessControl.check_access(:group)
+      |> Repo.add_permission(&Groups.add_permission/2, skip_permission)
+
+    query =
+      if args[:filter][:group_type],
+        do: where(query, [g], g.group_type == ^args[:filter][:group_type]),
+        else: query
+
+    query =
+      if args[:filter][:label],
+        do: where(query, [g], ilike(g.label, ^"%#{args[:filter][:label]}%")),
+        else: query
+
+    Repo.all(query)
   end
 
   @doc """
@@ -88,10 +101,22 @@ defmodule Glific.Groups do
   """
   @spec count_groups(map()) :: integer
   def count_groups(args) do
-    args
-    |> Repo.list_filter_query(Group, nil, &Repo.filter_with/2)
-    |> Repo.add_permission(&Groups.add_permission/2)
-    |> Repo.aggregate(:count)
+    query =
+      args
+      |> Repo.list_filter_query(Group, nil, &Repo.filter_with/2)
+      |> Repo.add_permission(&Groups.add_permission/2)
+
+    query =
+      if args[:filter][:group_type],
+        do: where(query, [g], g.group_type == ^args[:filter][:group_type]),
+        else: query
+
+    query =
+      if args[:filter][:label],
+        do: where(query, [g], ilike(g.label, ^"%#{args[:filter][:label]}%")),
+        else: query
+
+    Repo.aggregate(query, :count)
   end
 
   @doc """
@@ -110,6 +135,16 @@ defmodule Glific.Groups do
   @spec users_count(map()) :: integer
   def users_count(%{id: group_id}) do
     UserGroup
+    |> where([cg], cg.group_id == ^group_id)
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
+  Return the count of wa groups
+  """
+  @spec wa_groups_count(map()) :: integer
+  def wa_groups_count(%{id: group_id}) do
+    WAGroupsCollection
     |> where([cg], cg.group_id == ^group_id)
     |> Repo.aggregate(:count)
   end

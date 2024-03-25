@@ -1,0 +1,19 @@
+query waSearchMulti(
+  $waGroupOpts: Opts!
+  $waMessageOpts: Opts!
+  $filter: WaSearchFilter!
+) {
+  WaSearchMulti(
+    waGroupOpts: $waGroupOpts
+    waMessageOpts: $waMessageOpts
+    filter: $filter
+  ) {
+    waGroups {
+      label
+    }
+    waMessages {
+      body
+      insertedAt
+    }
+  }
+}

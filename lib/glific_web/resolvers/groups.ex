@@ -117,6 +117,15 @@ defmodule GlificWeb.Resolvers.Groups do
   def users_count(_, params, _), do: {:ok, Groups.users_count(params)}
 
   @doc """
+  Get the list of WhatsApp groups filtered by args
+  """
+  @spec wa_groups_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def wa_groups_count(_, args, _) do
+    {:ok, Groups.wa_groups_count(args)}
+  end
+
+  @doc """
   Creates an contact group entry
   """
   @spec create_contact_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::

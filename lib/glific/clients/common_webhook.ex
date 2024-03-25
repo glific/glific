@@ -8,6 +8,7 @@ defmodule Glific.Clients.CommonWebhook do
     ASR.GoogleASR,
     Contacts.Contact,
     OpenAI.ChatGPT,
+    OpenLLM,
     Repo,
     Sheets.GoogleSheets
   }
@@ -42,6 +43,21 @@ defmodule Glific.Clients.CommonWebhook do
             parsed_msg: error
           }
       end
+    end
+  end
+
+  def webhook("open_llm", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    prompt = fields["prompt"]
+    session_id = Map.get(fields, "session_id", nil)
+
+    with {:ok, %{api_key: api_key, api_url: api_url}} <- OpenLLM.get_credentials(org_id),
+         {:ok, response} <-
+           OpenLLM.parse(api_key, api_url, %{prompt: prompt, session_id: session_id}) do
+      response
+    else
+      {:error, error} ->
+        %{success: false, error: error}
     end
   end
 

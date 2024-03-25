@@ -39,6 +39,10 @@ defmodule GlificWeb.Schema.GroupTypes do
       resolve(dataloader(Repo))
     end
 
+    field :wa_groups, list_of(:wa_group) do
+      resolve(dataloader(Repo))
+    end
+
     # number of contacts in the group
     # this is an expensive operation we can come back and optimize it later
     field :contacts_count, :integer do
@@ -58,15 +62,39 @@ defmodule GlificWeb.Schema.GroupTypes do
     field :roles, list_of(:access_role) do
       resolve(dataloader(Repo))
     end
+
+    # number of wa groups in the group
+    # this is an expensive operation we can come back and optimize it later
+    field :wa_groups_count, :integer do
+      resolve(fn group, resolution, context ->
+        Resolvers.Groups.wa_groups_count(resolution, %{id: group.id}, context)
+      end)
+    end
+  end
+
+  object :wa_group do
+    field :id, :id
+    field :label, :string
+    field :bsp_id, :string
+
+    field :last_communication_at, :datetime
+
+    field :wa_managed_phone, :wa_managed_phone do
+      resolve(dataloader(Repo))
+    end
   end
 
   @desc "Filtering options for groups"
   input_object :group_filter do
     @desc "Match the label"
     field :label, :string
+
+    @desc "Match the group_type"
+    field :group_type, :string
   end
 
   input_object :group_input do
+    field :group_type, :string
     field :label, :string
     field :description, :string
     field :is_restricted, :boolean

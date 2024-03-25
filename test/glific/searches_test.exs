@@ -121,5 +121,29 @@ defmodule Glific.SearchesTest do
       new_message_count = search_after_block.messages |> length()
       assert message_count > new_message_count
     end
+
+    test "wa_search_multi/2 returns the search result", attrs do
+      Fixtures.wa_managed_phone_fixture(attrs)
+      wa_message = Fixtures.wa_message_fixture(attrs)
+
+      args = %{
+        wa_message_opts: %{limit: 25, offset: 0},
+        wa_group_opts: %{limit: 20, offset: 0}
+      }
+
+      search = Searches.wa_search_multi(wa_message.body, args)
+      message_count = search.wa_messages |> length()
+      assert message_count == 1
+
+      wa_group =
+        attrs
+        |> Map.put(:label, "wa group")
+        |> Map.put(:wa_managed_phone_id, wa_message.wa_managed_phone_id)
+        |> Fixtures.wa_group_fixture()
+
+      search = Searches.wa_search_multi(wa_group.label, args)
+      wa_group_count = search.wa_groups |> length()
+      assert wa_group_count == 1
+    end
   end
 end

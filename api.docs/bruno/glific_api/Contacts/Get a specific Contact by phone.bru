@@ -39,3 +39,56 @@ body:graphql:vars {
     "phone": "919876543210"
   }
 }
+
+docs {
+  # Get a specific Contact by phone
+  
+  ## Description
+  This GraphQL API is used to retrieve details of a specific contact identified by its phone number.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter | Type   | Description                           |
+  |-----------|--------|---------------------------------------|
+  | `phone`   | String | Phone number of the contact to retrieve details for. |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "query contactByPhone($phone: String!) { contactByPhone(phone: $phone) { contact { id name optinTime optoutTime phone bspStatus status lastMessageAt fields settings } } }",
+          "variables": {
+              "phone": "919876543210"
+          }
+      }'
+  ```
+  
+  ## Request Variables
+  ``` json
+  {
+    "phone": "919876543210"
+  }
+  ```
+  
+  ## Response
+  The API response includes details of the specific contact identified by the provided phone number, such as ID, name, opt-in time, opt-out time, phone number, status, last message timestamp, custom fields, and settings.
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Get a specific Contact by phone**
+     - Retrieve details of a specific contact identified by its phone number.
+  
+  ## FAQ
+  None
+  
+}

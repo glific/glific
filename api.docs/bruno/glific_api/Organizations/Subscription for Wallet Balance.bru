@@ -20,3 +20,51 @@ body:graphql {
     bsp_balance(organizationId: "1")
   }
 }
+
+docs {
+  # Subscription for Wallet Balance
+  
+  ## Description
+  This GraphQL API is used to subscribe to updates on the wallet balance for a specific organization.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Request Body
+  ```json
+  {
+   subscription organization_subscriptions {
+    bsp_balance(organizationId: "1")
+  }
+  }
+  ```
+  
+  ## Response
+  The API response includes updates on the wallet balance for the specified organization.
+  ```json
+  {
+    "data": {
+      "bspbalance": "{\"balance\":0.426}"
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL subscription responses.
+  
+  ## Use Cases
+  1. **Use Case 1: Real-time Monitoring of Wallet Balance**
+     - Subscribe to wallet balance updates to monitor changes in the organization's wallet in real-time.
+  
+  ## FAQ
+  1. **What information is included in the subscription response for wallet balance updates?**
+     - The subscription response includes updates on the wallet balance for the specified organization.
+  
+  
+  
+  
+  
+}

@@ -27,3 +27,48 @@ body:graphql {
     }
   }
 }
+
+docs {
+  # Subscription for Delete Contact Tag
+  
+  ## Description
+  This GraphQL subscription is used to receive real-time notifications when a contact tag is deleted.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL subscriptions, as it is typically handled by a single endpoint.)
+  
+  ## Parameters
+  - None for subscriptions.
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "subscription { deletedContactTag { contact { id } tag { id } } }"
+      }'
+  
+  ```
+  
+  ## Response
+  The subscription response includes details of the deleted contact tag, specifically the associated contact and tag IDs.
+  
+  ## Use Cases
+  1. **Use Case 1: Real-time Notification**
+  
+     Subscribing to this endpoint allows you to receive real-time notifications whenever a contact tag is deleted.
+  
+  ## FAQ
+  **Q:** What data is included in the subscription response?
+  
+  **A:** The subscription response includes the IDs of the associated contact and tag for the deleted contact tag.
+  
+  **Q:** How do I handle real-time notifications in my application?
+  
+  **A:** You can integrate a WebSocket or other real-time communication mechanism to receive and process the subscription responses in your application.
+  
+}

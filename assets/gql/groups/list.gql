@@ -5,5 +5,6 @@ query groups($filter: GroupFilter, $opts: Opts) {
     is_restricted
     contacts_count
     users_count
+    wa_groups_count
   }
 }

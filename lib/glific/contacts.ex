@@ -18,6 +18,7 @@ defmodule Glific.Contacts do
     Contacts.ContactHistory,
     Contacts.Location,
     Groups.ContactGroup,
+    Groups.ContactWAGroup,
     Groups.UserGroup,
     Partners,
     Partners.Provider,
@@ -122,6 +123,18 @@ defmodule Glific.Contacts do
           ContactGroup
           |> where([cg], cg.group_id in ^group_ids)
           |> select([cg], cg.contact_id)
+
+        query
+        |> where([c], c.id in subquery(sub_query))
+
+      {:include_wa_groups, []}, query ->
+        query
+
+      {:include_wa_groups, wa_group_ids}, query ->
+        sub_query =
+          ContactWAGroup
+          |> where([wg], wg.wa_group_id in ^wa_group_ids)
+          |> select([wa], wa.contact_id)
 
         query
         |> where([c], c.id in subquery(sub_query))
@@ -269,6 +282,7 @@ defmodule Glific.Contacts do
 
   """
   @spec update_contact(Contact.t(), map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+
   def update_contact(%Contact{} = contact, attrs) do
     if has_permission?(contact.id) do
       if simulator_block?(contact, attrs) do
@@ -421,11 +435,13 @@ defmodule Glific.Contacts do
         end
 
       contact ->
-        if contact.name != sender.name do
-          # the contact name has changed, so we need to update it
-          update_contact(contact, %{name: sender.name})
-        else
-          {:ok, contact}
+        # If either the sender name have changed or the provider is maytapi we need to update the contact
+        case get_contact_update_attrs(contact, sender) do
+          nil ->
+            {:ok, contact}
+
+          attrs ->
+            update_contact(contact, attrs)
         end
     end
   end
@@ -997,4 +1013,19 @@ defmodule Glific.Contacts do
         query
     end)
   end
+
+  @spec get_contact_update_attrs(Contact.t(), map()) :: map() | nil
+  defp get_contact_update_attrs(
+         %Contact{contact_type: "WABA"} = _contact,
+         %{name: sender_name, contact_type: "WA"} = _sender
+       ) do
+    %{name: sender_name, contact_type: "WABA+WA"}
+  end
+
+  defp get_contact_update_attrs(%Contact{name: name} = _contact, %{name: sender_name} = _sender)
+       when name != sender_name do
+    %{name: sender_name}
+  end
+
+  defp get_contact_update_attrs(%Contact{}, _), do: nil
 end

@@ -7,11 +7,14 @@ defmodule GlificWeb.Resolvers.Messages do
   alias Glific.{
     Contacts.Contact,
     Groups.Group,
+    Groups.WAGroup,
     Messages,
     Messages.Message,
     Messages.MessageMedia,
+    Providers.Maytapi,
     Repo,
-    Users.User
+    Users.User,
+    WAGroup.WAManagedPhone
   }
 
   @doc """
@@ -237,6 +240,43 @@ defmodule GlificWeb.Resolvers.Messages do
     case args do
       %{message: message} -> {:ok, message}
       message -> {:ok, message}
+    end
+  end
+
+  @doc false
+  @spec send_message_in_wa_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def send_message_in_wa_group(
+        _,
+        %{input: %{wa_managed_phone_id: wa_managed_phone_id, wa_group_id: wa_group_id} = params},
+        %{context: %{current_user: user}}
+      ) do
+    with {:ok, wa_phone} <-
+           Repo.fetch_by(WAManagedPhone, %{
+             id: wa_managed_phone_id,
+             organization_id: user.organization_id
+           }),
+         {:ok, wa_group} <-
+           Repo.fetch_by(WAGroup, %{
+             id: wa_group_id,
+             organization_id: user.organization_id
+           }) do
+      Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, params)
+    end
+  end
+
+  @doc false
+  @spec send_message_to_wa_group_collection(Absinthe.Resolution.t(), map(), map()) :: {:ok, any()}
+  def send_message_to_wa_group_collection(_, %{input: params, group_id: group_id}, %{
+        context: %{current_user: current_user}
+      }) do
+    with {:ok, group} <-
+           Repo.fetch_by(Group, %{
+             id: group_id,
+             organization_id: current_user.organization_id,
+             group_type: "WA"
+           }) do
+      Maytapi.Message.send_message_to_wa_group_collection(group, params)
     end
   end
 end

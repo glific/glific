@@ -20,3 +20,53 @@ body:graphql {
     attachmentsEnabled
   }
 }
+
+docs {
+  # Get List of Timezones
+  
+  ## Description
+  This GraphQL API is used to retrieve a list of available timezones.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Request Body
+  ```json
+  {
+    "query": "query timezones {
+    timezones
+  }"
+  }
+  ```
+  
+  ## Response
+  The API response includes a list of timezones.
+  ```json
+  
+  {
+    "data": {
+      "timezones": [
+        "Africa/Abidjan",
+        "Africa/Accra",
+        "Africa/Addis_Ababa",
+        ...
+      ]
+    }
+  }
+  ```
+  
+  This returns list of timezones
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the response field for the list of timezones.
+  
+  ## Use Cases
+  1. **Use Case 1: Display Timezone Options**
+     - Use the retrieved list of timezones to provide users with options to select their preferred timezone.
+  
+  ## FAQ
+  None
+}

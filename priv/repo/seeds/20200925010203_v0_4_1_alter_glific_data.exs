@@ -136,6 +136,10 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     add_open_ai()
 
     add_google_sheet()
+
+    add_maytapi()
+
+    open_llm()
   end
 
   defp add_dialogflow do
@@ -399,7 +403,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
         Repo.insert!(%Provider{
           name: "OpenAI (ChatGPT) (Beta)",
           shortcode: "open_ai",
-          description: "First cut (Beta version) to integrate simple chat gpt api.",
+          description: "First cut (Beta version) to integrate simple ChatGPT API",
           group: nil,
           is_required: false,
           keys: %{},
@@ -431,6 +435,69 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             service_account: %{
               type: :string,
               label: "Goth Credentials",
+              default: nil,
+              view_only: false
+            }
+          }
+        })
+  end
+
+  defp add_maytapi() do
+    query = from(p in Provider, where: p.shortcode == "maytapi")
+
+    # add only if does not exist
+    if !Repo.exists?(query),
+      do:
+        Repo.insert!(%Provider{
+          name: "Maytapi",
+          shortcode: "maytapi",
+          description: "Third party application to send message to WhatsApp group",
+          group: nil,
+          is_required: false,
+          keys: %{},
+          secrets: %{
+            product_id: %{
+              type: :string,
+              label: "Product ID",
+              default: nil,
+              view_only: false
+            },
+            token: %{
+              type: :string,
+              label: "Token",
+              is_required: true,
+              default: nil,
+              view_only: false
+            }
+          }
+        })
+  end
+
+  defp open_llm() do
+    query = from(p in Provider, where: p.shortcode == "open_llm")
+
+    # add only if does not exist
+    if !Repo.exists?(query),
+      do:
+        Repo.insert!(%Provider{
+          name: "open_llm",
+          shortcode: "open_llm",
+          description: "Querying custom knowledge base using GPT APIs from OpenLLM",
+          group: nil,
+          is_required: false,
+          keys: %{},
+          secrets: %{
+            api_key: %{
+              type: :string,
+              label: "API key",
+              is_required: true,
+              default: nil,
+              view_only: false
+            },
+            api_url: %{
+              type: :string,
+              label: "API URL",
+              is_required: true,
               default: nil,
               view_only: false
             }

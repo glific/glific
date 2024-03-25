@@ -192,7 +192,7 @@ defmodule Glific.Communications.Message do
   @spec receive_message(map(), atom()) :: :ok | {:error, String.t()}
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
     Logger.info(
-      "Received message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{message_params.bsp_message_id}'"
+      "Received message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{message_params[:bsp_message_id]}'"
     )
 
     {:ok, contact} =
@@ -206,15 +206,10 @@ defmodule Glific.Communications.Message do
   end
 
   @spec do_receive_message(Contact.t(), map(), atom()) :: :ok | {:error, String.t()}
-  defp do_receive_message(contact, %{organization_id: organization_id} = message_params, type) do
+  defp do_receive_message(contact, message_params, type) do
     {:ok, contact} = Contacts.set_session_status(contact, :session)
 
-    metadata = %{
-      type: type,
-      sender_id: contact.id,
-      receiver_id: Partners.organization_contact_id(organization_id),
-      organization_id: contact.organization_id
-    }
+    metadata = create_message_metadata(contact, message_params, type)
 
     message_params =
       message_params
@@ -421,4 +416,14 @@ defmodule Glific.Communications.Message do
   end
 
   defp process_errors(_message, _errors, _code), do: nil
+
+  @spec create_message_metadata(Contact.t(), map(), atom()) :: map()
+  defp create_message_metadata(contact, message_params, type) do
+    %{
+      type: type,
+      sender_id: contact.id,
+      receiver_id: Partners.organization_contact_id(message_params.organization_id),
+      organization_id: contact.organization_id
+    }
+  end
 end

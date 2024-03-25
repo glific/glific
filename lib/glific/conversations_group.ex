@@ -1,6 +1,6 @@
 defmodule Glific.ConversationsGroup do
   @moduledoc """
-  The main Glific abstraction that exposes the group conversation data in a stuctured manner as a set
+  The main Glific abstraction that exposes the group conversation data in a structured manner as a set
   of conversations. For now each group is associated with a set of outgoing messages
   We will keep the API simple for now, but it is likely to become similar to the contact conversations
   API
@@ -13,10 +13,12 @@ defmodule Glific.ConversationsGroup do
   alias Glific.{
     Conversations,
     Conversations.Conversation,
+    Conversations.WAConversation,
     Groups,
     Groups.Group,
     Messages.Message,
-    Repo
+    Repo,
+    WAGroup.WAMessage
   }
 
   @doc """
@@ -40,14 +42,16 @@ defmodule Glific.ConversationsGroup do
   end
 
   @spec get_groups(list() | nil, map()) :: [Group.t()]
-  defp get_groups(nil, opts) do
+  defp get_groups(gids, opts) when is_list(gids) do
     get_groups_query(opts)
+    |> where([g], g.group_type == "WABA")
+    |> where([g], g.id in ^gids)
     |> Repo.all()
   end
 
-  defp get_groups(gids, opts) when is_list(gids) do
+  defp get_groups(nil, opts) do
     get_groups_query(opts)
-    |> where([g], g.id in ^gids)
+    |> where([g], g.group_type == "WABA")
     |> Repo.all()
   end
 
@@ -96,6 +100,83 @@ defmodule Glific.ConversationsGroup do
       fn group ->
         c = Map.get(conversations, group.id)
         Conversation.new(nil, c.group, c.messages)
+      end
+    )
+  end
+
+  @doc """
+  Returns the last M conversations, each conversation not more than N messages
+  """
+  @spec wa_list_conversations(list() | nil, map()) :: list() | integer
+  def wa_list_conversations(group_ids, args) do
+    group_ids
+    |> get_wa_groups(args.wa_group_opts)
+    |> get_wa_conversations(args.wa_message_opts)
+  end
+
+  defp get_wa_groups(gids, opts) when is_list(gids) do
+    get_groups_query(opts)
+    |> where([g], g.group_type == "WA")
+    |> where([g], g.id in ^gids)
+    |> Repo.all()
+  end
+
+  defp get_wa_groups(nil, opts) do
+    get_groups_query(opts)
+    |> where([g], g.group_type == "WA")
+    |> Repo.all()
+  end
+
+  @spec get_wa_conversations([Group.t()], map()) :: [WAConversation.t()]
+  defp get_wa_conversations(groups, message_opts) do
+    groups
+    |> Enum.map(fn g -> g.id end)
+    |> get_wa_messages(message_opts)
+    |> make_wa_conversations(groups)
+  end
+
+  @spec get_wa_messages(list(), map()) :: [WAMessage.t()]
+  defp get_wa_messages(ids, %{limit: limit, offset: offset}) do
+    query = from m in WAMessage, as: :m
+
+    query
+    |> join(:inner, [m: m], c in Group, as: :c, on: c.id == m.group_id)
+    |> where([m: m], m.group_id in ^ids)
+    |> order_by([m], desc: m.inserted_at)
+    |> limit(^limit)
+    |> offset(^offset)
+    |> Repo.all()
+  end
+
+  @spec make_wa_conversations([WAMessage.t()], [Group.t()]) :: [WAConversation.t()]
+  defp make_wa_conversations(wa_messages, groups) do
+    wa_conversations =
+      groups
+      |> Enum.reduce(
+        %{},
+        fn g, acc -> Map.put(acc, g.id, %{group: g, wa_messages: []}) end
+      )
+
+    wa_conversations =
+      Enum.reduce(
+        wa_messages,
+        wa_conversations,
+        fn m, acc ->
+          Map.update!(acc, m.group_id, fn l ->
+            %{group: l.group, wa_messages: [m | l.wa_messages]}
+          end)
+        end
+      )
+      |> Enum.map(fn {group_id, c} ->
+        {group_id, Map.update!(c, :wa_messages, &Enum.reverse/1)}
+      end)
+      |> Enum.into(%{})
+
+    Enum.map(
+      groups,
+      fn group ->
+        c = Map.get(wa_conversations, group.id)
+        WAConversation.new(nil, c.group, c.wa_messages)
       end
     )
   end

@@ -52,3 +52,133 @@ body:graphql:vars {
     }
   }
 }
+
+docs {
+  # Get All Contacts
+  
+  ## Description
+  This GraphQL API is used to retrieve all contacts based on specified filters and options.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  (No specific URL for GraphQL, as it is usually handled by a single endpoint.)
+  
+  ## Parameters
+  
+  | Parameter | Type           | Description                                            |
+  |-----------|----------------|--------------------------------------------------------|
+  | `filter`  | ContactFilter  | Filters to apply for contact retrieval.                |
+  | `opts`    | Opts           | Options for ordering, limiting, and offsetting results.|
+  
+  ## Filter Options for Contacts
+  
+  | Field          | Type                        | Description                                       |
+  | -------------- | --------------------------- | ------------------------------------------------- |
+  | `bspStatus`      | ContactProviderStatusEnum   | Filter by the status of the contact provider.    |
+  | `dateRange `     | DateRangeInput              | Filter by a range of dates.                      |
+  | `includeGroups`  | [ID]                        | Include contacts belonging to specified groups.  |
+  | `includeTags`    | [ID]                        | Include contacts with specified tags.            |
+  | `name  `         | String                      | Filter by contact name.                          |
+  | `phone`          | String                      | Filter by contact phone number.                  |
+  | `status  `       | ContactStatusEnum           | Filter by contact status.                        |
+  |` term `          | String                      | Filter by a search term.                         |
+  
+  ## Options for Contacts Query
+  
+  | Field          | Type       | Default | Description                                     |
+  | -------------- | ---------- | ------- | ----------------------------------------------- |
+  |` limit `         | Int        |         | The maximum number of contacts to return.       |
+  |` offset   `      | Int        | 0       | The offset from where to start returning.       |
+  |` order `         | SortOrder  | "ASC"   | The sorting order for the results.              |
+  | `orderWith `     | String     |         | Specify a field to order the results by.        |
+  
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "query contacts($filter: ContactFilter, $opts: Opts) { contacts(filter: $filter, opts: $opts) { id name optinTime optoutTime optinMethod optoutMethod phone maskedPhone bspStatus status tags { id label } groups { id label } } }",
+          "variables": {
+              "filter": {
+                  "name": "Default Receiver"
+              },
+              "opts": {
+                  "order": "ASC",
+                  "limit": 10,
+                  "offset": 0
+              }
+          }
+      }'
+  
+  ```
+  
+  ### Request Variables
+  ```json
+  {
+    "filter": {
+      "name": "Default Receiver"
+    },
+    "opts": {
+      "order": "ASC",
+      "limit": 10,
+      "offset": 0
+    }
+  }
+  ```
+  
+  ## Response
+  The API response includes details of the retrieved contacts based on the specified filters and options.
+  ```json
+  {
+    "data": {
+      "contacts": [
+        {
+          "groups": [],
+          "id": "2",
+          "name": "Default Receiver",
+          "optinTime": null,
+          "optoutTime": null,
+          "optinMethod": null,
+          "optoutMethod": null,
+          "phone": "917834811231",
+          "maskedPhone": "9178******31",
+          "bspStatus": "SESSION_AND_HSM",
+          "status": "VALID",
+          "tags": []
+        }
+      ]
+    }
+  }
+  ```
+  
+  ## Error Codes
+  No specific HTTP status codes mentioned for GraphQL, check the `errors` field in the response.
+  
+  ## Use Cases
+  1. **Use Case 1: Retrieve Contacts**
+  
+     Retrieve contacts based on specified filters and options.
+  
+  ## FAQ
+  
+  ### 1. Filter Contacts
+  **Q:** How can I filter contacts?
+  
+  **A:** Use the `filter` parameter to specify conditions for contact retrieval.
+  
+  ### 2. Limit Results
+  **Q:** Can I limit the number of results?
+  
+    **A:** Yes, use the `opts` parameter with the `limit` option.
+  
+  ### 3. Options
+  
+  **Q:** What does the `order` option do?
+  
+    **A:** The `order` option specifies the sorting order (e.g., "ASC" for ascending).
+  
+}

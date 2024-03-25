@@ -1,0 +1,11 @@
+mutation UpdateContactWaGroups($input: UpdateContactWaGroupsInput!) {
+  updateContactWaGroups(input: $input) {
+    waGroupContacts {
+      contact {
+        id
+      }
+      id
+    }
+    numberDeleted
+  }
+}
