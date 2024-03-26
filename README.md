@@ -217,6 +217,44 @@ ALTER USER postgres WITH PASSWORD 'postgres';
 ```
 Exit the PostgreSQL terminal by typing `\q` and pressing Enter. Run `mix setup` again.
 
+#### Database connection with SSL
+-------------------------
+- creating certs for ssl connection.
+  - `cd priv/cert`
+  - `mkcert -key-file glific-cert.key -cert-file glific-cert.crt localhost 127.0.0.1`
+
+- read-write access only for the owner.
+  - `sudo chmod 600 glific-cert.key glific-cert.crt`
+
+- copy those cert files to `/etc/ssl` and change the owner to postgres.
+  - `sudo cp glific-cert.crt glific-cert.key /etc/ssl/certs/`
+  - `sudo chown postgres:postgres /etc/ssl/certs/glific-cert.key /etc/ssl/certs/glific-cert.crt`
+
+- create ca-cert
+  - `cp $(mkcert -CAROOT)/rootCA.pem glific-cacart.pem`
+
+- turn on ssl and add the cert files to `postgresql.conf`.
+  - `sudo nano /etc/postgresql/15/main/postgresql.conf`
+  - ```
+      ssl = on
+      #ssl_ca_file = ''
+      ssl_cert_file = '/etc/ssl/cert/glific-cert.crt'
+      #ssl_crl_file = ''
+      #ssl_crl_dir = ''
+      ssl_key_file = '/etc/ssl/cert/glific-cert.key'  
+    ```
+
+- append hostssl config in `/etc/postgresql/15/main/pg_hba.conf`
+  - `sudo nano /etc/postgresql/15/main/pg_hba.conf`
+  - ```
+    hostssl glific_dev postgres 127.0.0.1/32 md5
+    hostssl postgres postgres 127.0.0.1/32 md5
+    hostssl glific_test postgres 127.0.0.1/32 md5
+    ```
+- restart postgresql
+  - `sudo service postgresql restart`
+
+------------------
 - Run `iex -S mix phx.server`
 - Inside the iex (you might need to hit enter/return to see the prompt)
   - Update HSM templates by running the following command:
