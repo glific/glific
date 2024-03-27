@@ -127,8 +127,7 @@ defmodule Glific.Providers.Maytapi.WAMessages do
     if Map.has_key?(payload, :text) && payload.text != "" do
       Map.put(request_body, "text", payload.text)
     end
-
-    create_oban_job(message, request_body)
+    |> then(&create_oban_job(message, &1))
   end
 
   @doc false
