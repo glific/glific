@@ -61,6 +61,19 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
   @spec sticker(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def sticker(conn, params), do: media(conn, params, :sticker)
 
+  @doc """
+  Callback for maytapi location message
+  """
+  @spec location(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def location(conn, params) do
+    params
+    |> Maytapi.Message.receive_location()
+    |> update_message_params(conn.assigns[:organization_id], params)
+    |> Communications.GroupMessage.receive_message(:location)
+
+    handler(conn, params, "location handler")
+  end
+
   @doc false
   # Handle maytapi media message and convert them into Glific Message struct
   @spec media(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
