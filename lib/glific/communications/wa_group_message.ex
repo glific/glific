@@ -131,6 +131,7 @@ defmodule Glific.Communications.GroupMessage do
 
     case type do
       :text -> receive_text(message_params)
+      :location -> receive_location(message_params)
       _ -> receive_media(message_params)
     end
   end
@@ -163,6 +164,22 @@ defmodule Glific.Communications.GroupMessage do
       :received_wa_group_message,
       message_params.organization_id
     )
+
+    :ok
+  end
+
+  # handler for receiving the location message
+  @spec receive_location(map()) :: :ok
+  defp receive_location(message_params) do
+    {:ok, message} = WAMessages.create_message(message_params)
+
+    message_params
+    |> Map.put(:contact_id, message_params.contact_id)
+    |> Map.put(:wa_message_id, message.id)
+    |> Contacts.create_location()
+
+    message
+    |> Communications.publish_data(:received_wa_group_message, message_params.organization_id)
 
     :ok
   end

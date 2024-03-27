@@ -1,4 +1,5 @@
 defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
+  alias Glific.Contacts
   use GlificWeb.ConnCase
 
   alias Glific.{
@@ -193,6 +194,33 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     "phoneId" => 1_150
   }
 
+  @location_message_webhook %{
+    "conversation" => "120363213149844251@g.us",
+    "conversation_name" => "Default group name",
+    "message" => %{
+      "_serialized" =>
+        "true_120363213149844251@g.us_12ADF5DC03D2EEAF0ECA37B3BE254617_918547689517@c.us",
+      "fromMe" => false,
+      "id" => "true_120363213149844251@g.us_12ADF5DC03D2EEAF0ECA37B3BE254617_918547689517@c.us",
+      "payload" => "8.486486486486486,76.95066420911877",
+      "statuses" => [%{"status" => "sent"}],
+      "type" => "location"
+    },
+    "phoneId" => 48_054,
+    "phone_id" => 1_150,
+    "productId" => "ce2a5bf0-7a8d-4cc3-8202-a645dd5deccb",
+    "product_id" => "ce2a5bf0-7a8d-4cc3-8202-a645dd5deccb",
+    "receiver" => "917834811114",
+    "reply" =>
+      "https://api.maytapi.com/api/f70de5e5-49b0-43a7-bf19-9275062b1627/48054/sendMessage",
+    "timestamp" => 1_710_924_241,
+    "type" => "message",
+    "user" => %{
+      "id" => "919917443994@c.u",
+      "name" => "user_a",
+      "phone" => "919917443994"
+    }
+  }
   setup do
     default_provider = SeedsDev.seed_providers()
     organization = SeedsDev.seed_organizations(default_provider)
@@ -824,5 +852,40 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       assert wa_group.label == payload_group_name
     end
+  end
+
+  test "Incoming location message should be stored in the database",
+       %{conn: conn} do
+    conn = post(conn, "/maytapi", @location_message_webhook)
+    assert conn.halted
+
+    bsp_message_id = get_in(@location_message_webhook, ["message", "id"])
+
+    {:ok, message} =
+      Repo.fetch_by(WAMessage, %{
+        bsp_id: bsp_message_id,
+        organization_id: conn.assigns[:organization_id]
+      })
+
+    message = Repo.preload(message, [:media, :contact, :location])
+
+    # Provider message id should be updated
+    assert message.bsp_status == :delivered
+    assert message.flow == :inbound
+    assert message.location.latitude == 8.486486486486486
+    assert message.location.longitude == 76.95066420911877
+    # contact_type and message_type should be updated for wa groups
+    assert message.contact.contact_type == "WA"
+
+    # message_id and wa_message_id both can't be nil in locations
+
+    assert {:error,
+            %{errors: [message_id: {"both message_id and wa_message_id can't be nil", []}]}} =
+             Contacts.create_location(%{
+               latitude: 8.486486486486486,
+               longitude: 76.95066420911877,
+               contact_id: message.contact.id,
+               organization_id: conn.assigns[:organization_id]
+             })
   end
 end
