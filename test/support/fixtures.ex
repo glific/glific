@@ -1160,7 +1160,6 @@ defmodule Glific.Fixtures do
   """
   @spec wa_message_fixture(map()) :: WAMessage.t()
   def wa_message_fixture(attrs) do
-    get_wa_managed_phone(attrs.organization_id)
     wa_managed_phone = get_wa_managed_phone(attrs.organization_id)
 
     {:ok, wa_message} =
