@@ -126,12 +126,17 @@ defmodule Glific.WAManagedPhones do
   @doc """
   fetches WhatsApp enabled phone added in Maytapi account
   """
-  @spec fetch_wa_managed_phones(non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
+  @spec fetch_wa_managed_phones(non_neg_integer()) :: :ok | {:error, String.t()}
   def fetch_wa_managed_phones(org_id) do
     with {:ok, secrets} <- ApiClient.fetch_credentials(org_id),
          {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 <-
            ApiClient.list_wa_managed_phones(org_id),
-         {:ok, wa_managed_phones} <- Jason.decode(body) do
+         {:ok, response} <- Jason.decode(body),
+         {:ok, wa_managed_phones} <- validate_response(response) do
+      WAManagedPhone
+      |> where([wam], wam.organization_id == ^org_id)
+      |> Repo.delete_all()
+
       Enum.each(wa_managed_phones, fn wa_managed_phone ->
         phone = wa_managed_phone["number"]
 
@@ -158,7 +163,24 @@ defmodule Glific.WAManagedPhones do
         {:ok, "success"}
       end)
     else
-      _ -> {:error, "error"}
+      {:error, error} ->
+        {:error, error}
     end
   end
+
+  @spec validate_response(list() | map()) :: {:ok, list()} | {:error, String.t()}
+  defp validate_response(wa_managed_phones) when is_list(wa_managed_phones) do
+    wa_managed_phones
+    |> Enum.filter(fn wa_managed_phone -> wa_managed_phone["status"] == "active" end)
+    |> has_any_phones()
+  end
+
+  defp validate_response(%{"message" => message, "success" => false}),
+    do: {:error, message}
+
+  defp validate_response(_), do: {:error, "Something went wrong"}
+
+  @spec has_any_phones(list()) :: {:ok, list()} | {:error, String.t()}
+  defp has_any_phones([]), do: {:error, "No active phones available"}
+  defp has_any_phones(wa_managed_phones), do: {:ok, wa_managed_phones}
 end
