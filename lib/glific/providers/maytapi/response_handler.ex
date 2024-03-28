@@ -79,7 +79,7 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
 
   @spec handle_error_response(Tesla.Env.t() | map(), WAMessage.t()) :: {:error, String.t()}
   defp handle_error_response(response, message) do
-    {:ok, _message} =
+    {:ok, message} =
       message
       |> Poison.encode!()
       |> Poison.decode!(as: %WAMessage{})
@@ -89,6 +89,13 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
         flow: :outbound,
         errors: build_error(response.body)
       })
+
+    message
+    |> Repo.preload([:contact])
+    |> Communications.publish_data(
+      :update_wa_message_status,
+      message.organization_id
+    )
 
     {:error, response.body}
   end
