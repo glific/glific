@@ -137,5 +137,30 @@ defmodule Glific.WAManagedPhonesTest do
       assert {:error, "No active phones available"} ==
                WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
     end
+
+    test "fetch_wa_managed_phones/1 should raise error when the credentials are invalid",
+         attrs do
+      Partners.create_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "maytapi",
+        keys: %{},
+        secrets: %{
+          "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+          "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+        },
+        is_active: true
+      })
+
+      Tesla.Mock.mock(fn _env ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            "{\"success\":false,\"message\":\"Product id is wrong! Please check your Account information.\"}"
+        }
+      end)
+
+      assert {:error, "Product id is wrong! Please check your Account information."} ==
+               WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
+    end
   end
 end

@@ -131,8 +131,8 @@ defmodule Glific.WAManagedPhones do
     with {:ok, secrets} <- ApiClient.fetch_credentials(org_id),
          {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 <-
            ApiClient.list_wa_managed_phones(org_id),
-         {:ok, all_wa_managed_phones} <- Jason.decode(body),
-         {:ok, wa_managed_phones} <- validate_wa_managed_phones(all_wa_managed_phones) do
+         {:ok, response} <- Jason.decode(body),
+         {:ok, wa_managed_phones} <- validate_response(response) do
       WAManagedPhone
       |> where([wam], wam.organization_id == ^org_id)
       |> Repo.delete_all()
@@ -168,12 +168,17 @@ defmodule Glific.WAManagedPhones do
     end
   end
 
-  @spec validate_wa_managed_phones(list()) :: {:ok, list()} | {:error, String.t()}
-  defp validate_wa_managed_phones(wa_managed_phones) do
+  @spec validate_response(list()) :: {:ok, list()} | {:error, String.t()}
+  defp validate_response(wa_managed_phones) when is_list(wa_managed_phones) do
     wa_managed_phones
     |> Enum.filter(fn wa_managed_phone -> wa_managed_phone["status"] == "active" end)
     |> has_any_phones()
   end
+
+  defp validate_response(%{"message" => message, "success" => false}),
+    do: {:error, message}
+
+  defp validate_response(_), do: {:error, "Something went wrong"}
 
   @spec has_any_phones(list()) :: {:ok, list()} | {:error, String.t()}
   defp has_any_phones([]), do: {:error, "No active phones available"}
