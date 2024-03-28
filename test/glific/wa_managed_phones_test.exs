@@ -90,7 +90,7 @@ defmodule Glific.WAManagedPhonesTest do
       assert %Ecto.Changeset{} = WAManagedPhones.change_wa_managed_phone(wa_managed_phone)
     end
 
-    test "list_wa_groups/1 fetch groups using Maytapi API", attrs do
+    test "fetch_wa_managed_phones/1  fetch whatsapp linked phones to maytapi account", attrs do
       Partners.create_credential(%{
         organization_id: attrs.organization_id,
         shortcode: "maytapi",
@@ -110,8 +110,32 @@ defmodule Glific.WAManagedPhonesTest do
         }
       end)
 
-      WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
       assert :ok == WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
+    end
+
+    test "fetch_wa_managed_phones/1  fetch whatsapp linked phones to maytapi account and should raise error if the number is inactive",
+         attrs do
+      Partners.create_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "maytapi",
+        keys: %{},
+        secrets: %{
+          "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+          "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+        },
+        is_active: true
+      })
+
+      Tesla.Mock.mock(fn _env ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            "[{\"id\":43090,\"number\":\"918979120220\",\"status\":\"disabled\",\"type\":\"whatsapp\",\"name\":\"\",\"data\":{},\"multi_device\":true}]"
+        }
+      end)
+
+      assert {:error, "No active phones available"} ==
+               WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
     end
   end
 end
