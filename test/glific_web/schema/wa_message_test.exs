@@ -6,8 +6,10 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
 
   alias Glific.{
     Fixtures,
-    Groups.WAGroups,
+    Messages.MessageMedia,
     Partners,
+    Providers.Maytapi,
+    Providers.Maytapi.WAMessages,
     Seeds.SeedsDev,
     WAGroup.WAMessage,
     WAMessages
@@ -34,10 +36,6 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
 
   setup do
     organization = SeedsDev.seed_organizations()
-
-    SeedsDev.seed_contacts()
-    SeedsDev.seed_wa_managed_phones()
-    SeedsDev.seed_wa_groups()
 
     Partners.create_credential(%{
       organization_id: organization.id,
@@ -79,7 +77,11 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
         organization_id: user.organization_id
       })
 
-    [wa_grp | _] = WAGroups.list_wa_groups(%{organization_id: 1})
+    wa_grp =
+      Fixtures.wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_phone.id
+      })
 
     result =
       auth_query_gql_by(:send_msg, user,
@@ -118,5 +120,66 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       |> Repo.one()
 
     assert message.bsp_status == :delivered
+  end
+
+  test "send media message with caption", %{staff: user, conn: _conn} do
+    wa_phone =
+      Fixtures.wa_managed_phone_fixture(%{
+        organization_id: user.organization_id
+      })
+
+    wa_grp =
+      Fixtures.wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_phone.id
+      })
+
+    message_media = Fixtures.message_media_fixture(%{organization_id: user.organization_id})
+
+    wa_message =
+      Fixtures.wa_message_fixture(%{
+        organization_id: user.organization_id,
+        media_id: message_media.id
+      })
+
+    assert {:ok, %{args: %{"payload" => %{"text" => _}}}} =
+             Repo.preload(wa_message, [:media])
+             |> Maytapi.WAMessages.send_image(%{
+               wa_group_bsp_id: wa_grp.bsp_id,
+               phone_id: wa_phone.phone_id,
+               phone: wa_phone.phone
+             })
+  end
+
+  test "send media message without caption", %{staff: user, conn: _conn} do
+    wa_phone =
+      Fixtures.wa_managed_phone_fixture(%{
+        organization_id: user.organization_id
+      })
+
+    wa_grp =
+      Fixtures.wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_phone.id
+      })
+
+    message_media = Fixtures.message_media_fixture(%{organization_id: user.organization_id})
+
+    MessageMedia.changeset(message_media, %{caption: ""})
+    |> Repo.update!()
+
+    wa_message =
+      Fixtures.wa_message_fixture(%{
+        organization_id: user.organization_id,
+        media_id: message_media.id
+      })
+
+    assert {:ok, %{args: %{"payload" => %{"message" => _}}}} =
+             Repo.preload(wa_message, [:media])
+             |> Maytapi.WAMessages.send_image(%{
+               wa_group_bsp_id: wa_grp.bsp_id,
+               phone_id: wa_phone.phone_id,
+               phone: wa_phone.phone
+             })
   end
 end
