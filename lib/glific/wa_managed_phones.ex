@@ -168,7 +168,7 @@ defmodule Glific.WAManagedPhones do
     end
   end
 
-  @spec validate_response(list()) :: {:ok, list()} | {:error, String.t()}
+  @spec validate_response(list() | map()) :: {:ok, list()} | {:error, String.t()}
   defp validate_response(wa_managed_phones) when is_list(wa_managed_phones) do
     wa_managed_phones
     |> Enum.filter(fn wa_managed_phone -> wa_managed_phone["status"] == "active" end)
