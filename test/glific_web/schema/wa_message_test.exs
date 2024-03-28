@@ -122,7 +122,6 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
     assert message.bsp_status == :delivered
   end
 
-  @tag :caption
   test "send media message with caption", %{staff: user, conn: _conn} do
     wa_phone =
       Fixtures.wa_managed_phone_fixture(%{
@@ -152,7 +151,6 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
              })
   end
 
-  @tag :caption
   test "send media message without caption", %{staff: user, conn: _conn} do
     wa_phone =
       Fixtures.wa_managed_phone_fixture(%{
