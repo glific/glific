@@ -6,9 +6,9 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
 
   alias Glific.{
     Communications,
+    Repo,
     WAGroup.WAMessage,
-    WAMessages,
-    Repo
+    WAMessages
   }
 
   require Logger
