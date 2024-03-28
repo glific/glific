@@ -5,8 +5,10 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
   """
 
   alias Glific.{
+    Communications,
     WAGroup.WAMessage,
-    WAMessages
+    WAMessages,
+    Repo
   }
 
   require Logger
@@ -64,6 +66,13 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
         flow: :outbound,
         sent_at: DateTime.truncate(DateTime.utc_now(), :second)
       })
+
+    message
+    |> Repo.preload([:contact])
+    |> Communications.publish_data(
+      :update_wa_message_status,
+      message.organization_id
+    )
 
     {:ok, message}
   end
