@@ -56,7 +56,8 @@ defmodule Glific.Groups.WAGroups do
   """
   @spec fetch_wa_groups(non_neg_integer()) :: :ok
   def fetch_wa_groups(org_id) do
-    wa_managed_phones = WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
+    wa_managed_phones =
+      WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
 
     Enum.each(wa_managed_phones, fn wa_managed_phone ->
       do_fetch_wa_groups(org_id, wa_managed_phone)
@@ -75,7 +76,7 @@ defmodule Glific.Groups.WAGroups do
       create_whatsapp_groups(group_details, org_id)
       sync_wa_groups_with_contacts(group_details, org_id)
     else
-      {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
+      {:ok, %Tesla.Env{body: body}} ->
         {:error, body}
 
       {:error, message} ->
