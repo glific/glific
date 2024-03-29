@@ -2,6 +2,7 @@ defmodule Glific.WAGroup.WAMessage do
   @moduledoc false
   use Ecto.Schema
   import Ecto.Query, warn: false
+  alias Glific.Contacts.Location
   alias __MODULE__
 
   alias Glific.{
@@ -39,6 +40,7 @@ defmodule Glific.WAGroup.WAMessage do
           wa_group: WAGroup.t() | Ecto.Association.NotLoaded.t() | nil,
           media_id: non_neg_integer | nil,
           media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
+          location: Location.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           context_id: String.t() | nil,
@@ -103,6 +105,7 @@ defmodule Glific.WAGroup.WAMessage do
     belongs_to(:organization, Organization)
     belongs_to(:message_broadcast, MessageBroadcast, foreign_key: :message_broadcast_id)
     belongs_to(:context_message, WAMessage, foreign_key: :context_message_id)
+    has_one(:location, Location)
 
     timestamps(type: :utc_datetime_usec)
   end

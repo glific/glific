@@ -932,9 +932,10 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(organization, credential, "maytapi") do
-    WAManagedPhones.fetch_wa_managed_phones(organization.id)
-    WAGroups.fetch_wa_groups(organization.id)
-    {:ok, credential}
+    with :ok <- WAManagedPhones.fetch_wa_managed_phones(organization.id) do
+      WAGroups.fetch_wa_groups(organization.id)
+      {:ok, credential}
+    end
   end
 
   defp credential_update_callback(_organization, credential, _provider), do: {:ok, credential}

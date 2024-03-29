@@ -157,6 +157,10 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :wa_group, :wa_group do
       resolve(dataloader(Repo, use_parent: true))
     end
+
+    field :location, :locations do
+      resolve(dataloader(Repo, use_parent: true))
+    end
   end
 
   @desc "Filtering options for messages"
@@ -384,6 +388,14 @@ defmodule GlificWeb.Schema.MessageTypes do
       config(&Schema.config_fun/2)
 
       resolve(fn message, _, _ -> {:ok, message} end)
+    end
+
+    field :update_wa_message_status, :wa_message do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(fn wa_message, _, _ -> {:ok, wa_message} end)
     end
 
     field :sent_group_message, :message do

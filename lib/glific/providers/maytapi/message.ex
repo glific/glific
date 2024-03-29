@@ -157,6 +157,29 @@ defmodule Glific.Providers.Maytapi.Message do
     }
   end
 
+  @doc false
+  @spec receive_location(map()) :: map()
+  def receive_location(%{"message" => %{"fromMe" => from_me}} = params) do
+    payload = params["message"]
+
+    :ok = validate_phone_number(params["user"]["phone"], payload)
+    {flow, status} = if from_me, do: {:outbound, :sent}, else: {:inbound, :received}
+
+    [latitude, longitude] = payload["payload"] |> String.split(",")
+
+    %{
+      bsp_id: payload["id"],
+      longitude: longitude,
+      latitude: latitude,
+      sender: %{
+        phone: params["user"]["phone"],
+        name: params["user"]["name"]
+      },
+      flow: flow,
+      status: status
+    }
+  end
+
   # lets ensure that we have a phone number
   # sometime the maytapi payload has a blank payload
   # or maybe a simulator or some test code

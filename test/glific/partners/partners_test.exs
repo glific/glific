@@ -883,7 +883,7 @@ defmodule Glific.PartnersTest do
       assert credential.secrets == valid_update_attrs.secrets
     end
 
-    test "update_credential/2 for guphsup enterprise should update credentials",
+    test "update_credential/2 for gupshup enterprise should update credentials",
          %{organization_id: organization_id} = _attrs do
       {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup_enterprise"})
 
