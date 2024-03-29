@@ -6,6 +6,7 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
 
   alias Glific.{
     Communications,
+    Notifications,
     Repo,
     WAGroup.WAMessage,
     WAMessages
@@ -13,13 +14,10 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
 
   require Logger
 
-  @default_tesla_error %{
-    "payload" => %{
-      "payload" => %{
-        "reason" => "Error sending message due to network issues or maytapi Outage"
-      }
-    }
-  }
+  @default_tesla_error """
+  {\"success\":false,\"message\":\"Error sending message due to network issues or maytapi Outage\"}
+  """
+
   @doc false
   @spec handle_response({:ok, Tesla.Env.t()}, WAMessage.t() | {:error, any()}) ::
           :ok | {:error, String.t()}
@@ -89,6 +87,19 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
         flow: :outbound,
         errors: build_error(response.body)
       })
+
+    error_msg = Jason.decode!(response.body)
+
+    Notifications.create_notification(%{
+      category: "WA Group",
+      message: "Error sending message: #{error_msg["message"]}",
+      severity: Notifications.types().critical,
+      organization_id: message.organization_id,
+      entity: %{
+        id: message.wa_group_id,
+        body: message.body
+      }
+    })
 
     message
     |> Repo.preload([:contact])
