@@ -3,11 +3,23 @@ defmodule GlificWeb.Resolvers.WaGroup do
   Group Resolver which sits between the GraphQL schema and Glific Group Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
+  import GlificWeb.Gettext
 
   alias Glific.{
     Groups.ContactWAGroups,
     Groups.WAGroups
   }
+
+  @doc """
+  Get a specific WhatsApp group by id
+  """
+  @spec wa_group(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def wa_group(_, %{id: id}, _context) do
+    {:ok, %{wa_group: WAGroups.get_wa_group!(id)}}
+  rescue
+    _ -> {:error, ["WAGroup", dgettext("errors", "WAGroup not found or permission denied.")]}
+  end
 
   @doc """
   Get the list of WhatsApp groups filtered by args

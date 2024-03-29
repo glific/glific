@@ -1,0 +1,14 @@
+#import "./fields.frag.gql"
+
+query waGroup($id: ID!) {
+  waGroup(id: $id) {
+    bspId
+    id
+    label
+    lastCommunicationAt
+  }
+  errors {
+    key
+    message
+  }
+}
