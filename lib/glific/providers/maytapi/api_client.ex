@@ -115,4 +115,14 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       maytapi_post(url, payload, token)
     end
   end
+
+  def set_webhook(org_id, payload) do
+    with {:ok, secrets} <- fetch_credentials(org_id) do
+      product_id = secrets["product_id"]
+      token = secrets["token"]
+
+      url = @maytapi_url <> "/#{product_id}/setWebhook"
+      maytapi_post(url, payload, token)
+    end
+  end
 end

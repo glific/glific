@@ -283,4 +283,17 @@ defmodule Glific.Groups.WAGroups do
     |> Repo.list_filter_query(WAGroup, nil, &filter_with/2)
     |> Repo.aggregate(:count)
   end
+
+  @spec set_webhook(String.t()) :: any()
+  def set_webhook(org_details) do
+    payload = %{
+      "webhook" => "https://api.#{org_details.shortcode}.glific.com/maytapi"
+    }
+    case ApiClient.set_webhook(org_details.org_id, payload) do
+      {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
+
+        :ok
+      _ -> :ok
+    end
+  end
 end
