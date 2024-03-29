@@ -14,13 +14,10 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
 
   require Logger
 
-  @default_tesla_error %{
-    "payload" => %{
-      "payload" => %{
-        "reason" => "Error sending message due to network issues or maytapi Outage"
-      }
-    }
-  }
+  @default_tesla_error """
+  {\"success\":false,\"message\":\"Error sending message due to network issues or maytapi Outage\"}
+  """
+
   @doc false
   @spec handle_response({:ok, Tesla.Env.t()}, WAMessage.t() | {:error, any()}) ::
           :ok | {:error, String.t()}
