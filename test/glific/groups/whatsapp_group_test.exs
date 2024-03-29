@@ -72,4 +72,43 @@ defmodule Glific.Groups.WAGroupsTest do
     assert group.label == "Movie PlanB"
     assert group.bsp_id == "120363218884368889@g.us"
   end
+
+  test "setting maytapi webhook endpoint, success", attrs do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            "pid" => "dc01968f-####-####-####-7cfcf51aa423",
+            "webhook" => "https://myserver.com/send/callback/here",
+            "ack_delivery" => true,
+            "phone_limit" => 2
+          }
+        }
+    end)
+
+    assert :ok =
+             WAGroups.set_webhook_endpoint(%{
+               id: attrs.organization_id,
+               shortcode: "maytapi"
+             })
+  end
+
+  test "setting maytapi webhook endpoint, failed", attrs do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 400,
+          body: %{
+            "message" => "error"
+          }
+        }
+    end)
+
+    assert {:error, _} =
+             WAGroups.set_webhook_endpoint(%{
+               id: attrs.organization_id,
+               shortcode: "maytapi"
+             })
+  end
 end
