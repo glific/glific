@@ -923,7 +923,4 @@ defmodule GlificWeb.Schema.SearchTest do
     [wa_message] = get_in(query_data, [:data, "WaSearchMulti", "waMessages"])
     assert wa_message["body"] == "wa search multi"
   end
-
-  test "Exclude dms and collection messages in wa search multi" do
-  end
 end
