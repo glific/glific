@@ -1,4 +1,5 @@
 defmodule GlificWeb.Schema.SearchTest do
+  alias Glific.WAGroup.WAManagedPhone
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
@@ -879,10 +880,20 @@ defmodule GlificWeb.Schema.SearchTest do
   end
 
   test "WA Search by term will return the search input", %{staff: user} = attrs do
-    _message_1 = Fixtures.wa_message_fixture(attrs)
+    {:ok, wa_phone} = Repo.fetch_by(WAManagedPhone, %{organization_id: attrs.organization_id})
+
+    wa_group =
+      attrs
+      |> Map.put(:label, "wa group")
+      |> Map.put(:wa_managed_phone_id, wa_phone.id)
+      |> Fixtures.wa_group_fixture()
+
+    _wa_message_1 =
+      Map.put(attrs, :wa_group_id, wa_group.id) |> Fixtures.wa_message_fixture()
 
     _message_2 =
       attrs
+      |> Map.put(:wa_group_id, wa_group.id)
       |> Map.put(:body, "wa search multi")
       |> Fixtures.wa_message_fixture()
 
@@ -911,5 +922,8 @@ defmodule GlificWeb.Schema.SearchTest do
     assert {:ok, query_data} = result
     [wa_message] = get_in(query_data, [:data, "WaSearchMulti", "waMessages"])
     assert wa_message["body"] == "wa search multi"
+  end
+
+  test "Exclude dms and collection messages in wa search multi" do
   end
 end

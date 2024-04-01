@@ -1,6 +1,7 @@
 defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
   alias Glific.Contacts
   use GlificWeb.ConnCase
+  use Wormwood.GQLCase
 
   alias Glific.{
     Groups.WAGroup,
@@ -270,6 +271,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     SeedsDev.seed_messages()
     {:ok, %{organization_id: organization.id}}
   end
+
+  load_gql(:wa_search_multi, GlificWeb.Schema, "assets/gql/searches/wa_search_multi.gql")
 
   describe "handler" do
     test "handler should return nil data", %{conn: conn} do
@@ -887,5 +890,62 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
                contact_id: message.contact.id,
                organization_id: conn.assigns[:organization_id]
              })
+  end
+
+  test "Exclude dms and colection messages in wa search multi", %{
+    conn: conn,
+    staff: user
+  } do
+    message_params =
+      @text_dm_message_webhook
+      |> put_in(["message", "id"], Ecto.UUID.generate())
+
+    conn_1 = post(conn, "/maytapi", message_params)
+    org_id = conn_1.assigns.organization_id
+    assert conn_1.halted
+
+    bsp_message_id = get_in(message_params, ["message", "id"])
+
+    {:ok, message} =
+      Repo.fetch_by(WAMessage, %{
+        bsp_id: bsp_message_id,
+        organization_id: org_id
+      })
+
+    message = Repo.preload(message, [:contact, :wa_group])
+
+    assert message.is_dm == true
+    assert message.wa_group_id == nil
+
+    message_params =
+      @text_message_webhook
+      |> put_in(["message", "id"], Ecto.UUID.generate())
+
+    conn_2 = post(conn, "/maytapi", message_params)
+
+    assert conn_2.halted
+
+    bsp_message_id = get_in(message_params, ["message", "id"])
+
+    {:ok, message} =
+      Repo.fetch_by(WAMessage, %{
+        bsp_id: bsp_message_id,
+        organization_id: org_id
+      })
+
+    assert message.wa_group_id != nil
+
+    result =
+      auth_query_gql_by(:wa_search_multi, user,
+        variables: %{
+          "filter" => %{"term" => "test message"},
+          "waGroupOpts" => %{"limit" => 1},
+          "waMessageOpts" => %{"limit" => 2}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    messages = get_in(query_data, [:data, "WaSearchMulti", "waMessages"])
+    assert Enum.count(messages) == 1
   end
 end
