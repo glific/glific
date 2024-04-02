@@ -10,7 +10,7 @@
 msgid ""
 msgstr ""
 
-#, elixir-format
 #: lib/glific_web/templates/live/page_live.html.leex:2
+#, elixir-format, elixir-autogen
 msgid "Welcome to %{name}!"
 msgstr ""
