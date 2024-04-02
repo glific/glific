@@ -15,9 +15,9 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           stale-issue-label: "inactive"
-          stale-issue-message: "Without activity, this issue will be closed in 14 days."
+          stale-issue-message: "Without activity, this issue will be closed in 1 day."
           close-issue-message: "This issue was closed for inactivity."
-          stale-pr-message: "Without activity, this PR will be closed in 14 days."
+          stale-pr-message: "Without activity, this PR will be closed in 1 day."
           close-pr-message: "This PR was closed for inactivity."
           stale-pr-label: "inactive"
           days-before-pr-stale: 90
