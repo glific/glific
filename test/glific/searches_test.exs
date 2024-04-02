@@ -133,13 +133,18 @@ defmodule Glific.SearchesTest do
 
       search = Searches.wa_search_multi(wa_message.body, args)
       message_count = search.wa_messages |> length()
-      assert message_count == 1
+      assert message_count == 0
 
       wa_group =
         attrs
         |> Map.put(:label, "wa group")
         |> Map.put(:wa_managed_phone_id, wa_message.wa_managed_phone_id)
         |> Fixtures.wa_group_fixture()
+
+      _wa_message_2 =
+        Map.put(attrs, :wa_group_id, wa_group.id)
+        |> Map.put(:body, "wa group")
+        |> Fixtures.wa_message_fixture()
 
       search = Searches.wa_search_multi(wa_group.label, args)
       wa_group_count = search.wa_groups |> length()
