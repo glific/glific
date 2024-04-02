@@ -72,18 +72,6 @@ defmodule GlificWeb.Schema.GroupTypes do
     end
   end
 
-  object :wa_group do
-    field :id, :id
-    field :label, :string
-    field :bsp_id, :string
-
-    field :last_communication_at, :datetime
-
-    field :wa_managed_phone, :wa_managed_phone do
-      resolve(dataloader(Repo))
-    end
-  end
-
   @desc "Filtering options for groups"
   input_object :group_filter do
     @desc "Match the label"
