@@ -761,6 +761,24 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
+        description: "ID of whatsapp group reference to the wa_group table",
+        name: "wa_group_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "label of whatsapp group referenced to in wa_group table",
+        name: "wa_group_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "bsp_id of whatsapp group reference to the wa_group table",
+        name: "wa_group_bsp_id",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
         description: "Reason behind the flow killed",
         name: "reason",
         type: "STRING",
