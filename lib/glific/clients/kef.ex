@@ -69,7 +69,7 @@ defmodule Glific.Clients.KEF do
         end
 
       {:error, _} ->
-        Logger.error("Invalid media for KEF: #{media}")
+        Logger.error("Invalid media for KEF: #{inspect(media)}")
         "/#{media_subfolder}/" <> media["remote_name"]
     end
   end
