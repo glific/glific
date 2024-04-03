@@ -767,7 +767,7 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "label of whatsapp group referenced to in wa_group table",
+        description: "label of whatsapp group referenced to the wa_group table",
         name: "wa_group_name",
         type: "STRING",
         mode: "NULLABLE"
