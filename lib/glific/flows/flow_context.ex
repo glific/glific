@@ -141,6 +141,7 @@ defmodule Glific.Flows.FlowContext do
     context
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_contact_and_wa_groups(context)
     |> foreign_key_constraint(:contact_id)
     |> foreign_key_constraint(:flow_id)
     |> foreign_key_constraint(:parent_id)
@@ -1047,4 +1048,33 @@ defmodule Glific.Flows.FlowContext do
         get_recent_inbounds(context.parent)
     end
   end
+
+  @spec validate_contact_and_wa_groups(Ecto.Changeset.t(), FlowContext.t()) :: Ecto.Changeset.t()
+  defp validate_contact_and_wa_groups(changeset, %{id: id} = _flow_context) when is_nil(id) do
+    # flow_context having id `nil` means, we are inserting a flow_context.
+    # We don't have to validate for update action
+    contact_id = changeset.changes[:contact_id]
+    wa_group_id = changeset.changes[:wa_group_id]
+
+    cond do
+      is_nil(contact_id) and is_nil(wa_group_id) ->
+        add_error(
+          changeset,
+          :contact_id,
+          "both contact_id and wa_group_id can't be nil"
+        )
+
+      not is_nil(contact_id) and not is_nil(wa_group_id) ->
+        add_error(
+          changeset,
+          :wa_group_id,
+          "both contact_id and wa_group_id can't be non-nil"
+        )
+
+      true ->
+        changeset
+    end
+  end
+
+  defp validate_contact_and_wa_groups(changeset, _flow_context), do: changeset
 end
