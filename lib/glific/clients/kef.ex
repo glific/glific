@@ -41,18 +41,6 @@ defmodule Glific.Clients.KEF do
   def gcs_file_name(media) do
     flow_id = media["flow_id"]
 
-    {:ok, contact} =
-      Repo.fetch_by(Contacts.Contact, %{
-        id: media["contact_id"],
-        organization_id: media["organization_id"]
-      })
-
-    contact_type = get_in(contact.fields, ["contact_type", "value"])
-
-    phone = contact.phone
-
-    folder_structure = get_folder_structure(media, contact_type, contact.fields)
-
     media_subfolder =
       case media["type"] do
         "image" -> "Images"
@@ -61,10 +49,28 @@ defmodule Glific.Clients.KEF do
         _ -> "Others"
       end
 
-    if flow_id == 13_850 do
-      "stories_activities_campaign/#{media_subfolder}/#{phone}/" <> media["remote_name"]
-    else
-      "#{folder_structure}/#{media_subfolder}/#{phone}/" <> media["remote_name"]
+    Contacts.Contact
+    |> Repo.fetch_by(%{
+      id: media["contact_id"],
+      organization_id: media["organization_id"]
+    })
+    |> case do
+      {:ok, contact} ->
+        contact_type = get_in(contact.fields, ["contact_type", "value"])
+
+        phone = contact.phone
+
+        folder_structure = get_folder_structure(media, contact_type, contact.fields)
+
+        if flow_id == 13_850 do
+          "stories_activities_campaign/#{media_subfolder}/#{phone}/" <> media["remote_name"]
+        else
+          "#{folder_structure}/#{media_subfolder}/#{phone}/" <> media["remote_name"]
+        end
+
+      {:error, _} ->
+        Logger.error("Invalid media for KEF: #{inspect(media)}")
+        "/#{media_subfolder}/" <> media["remote_name"]
     end
   end
 
