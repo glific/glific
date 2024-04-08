@@ -465,12 +465,7 @@ defmodule Glific.Messages do
         organization_id: contact.organization_id
       })
 
-    ttl = Application.get_env(:passwordless_auth, :verification_code_ttl) |> div(60)
-
-    parameters = [
-      "Registration",
-      otp
-    ]
+    parameters = ["Registration", otp]
 
     %{template_id: session_template.id, receiver_id: contact.id, parameters: parameters}
     |> create_and_send_hsm_message()
