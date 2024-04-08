@@ -433,7 +433,6 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  # Glific.Messages.create_and_send_otp_template_message(contact, "1122")
   @spec create_and_send_otp_verification_message(Contact.t(), String.t()) ::
           {:ok, Message.t()}
   def create_and_send_otp_verification_message(contact, otp) do
