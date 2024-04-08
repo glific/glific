@@ -62,8 +62,8 @@ defmodule Glific.Clients.KEF do
 
         folder_structure = get_folder_structure(media, contact_type, contact.fields)
 
-        if flow_id == 13_850 do
-          "stories_activities_campaign/#{media_subfolder}/#{phone}/" <> media["remote_name"]
+        if flow_id == 15_436 do
+          "Year end campaign/#{media_subfolder}/#{phone}/" <> media["remote_name"]
         else
           "#{folder_structure}/#{media_subfolder}/#{phone}/" <> media["remote_name"]
         end
