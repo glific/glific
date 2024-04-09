@@ -364,56 +364,72 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     get_query("contacts", organization_id, attrs)
     |> Repo.all()
-    |> Enum.reduce(
-      [],
-      fn row, acc ->
-        if Contacts.simulator_contact?(row.phone),
-          do: acc,
-          else: [
-            # We are sending nil, as setting is a record type and need to structure the data first(like field)
-            %{
-              id: row.id,
-              name: row.name,
-              phone: row.phone,
-              provider_status: row.bsp_status,
-              status: row.status,
-              language: row.language.label,
-              optin_time: BigQuery.format_date(row.optin_time, organization_id),
-              optout_time: BigQuery.format_date(row.optout_time, organization_id),
-              contact_optin_method: row.optin_method,
-              last_message_at: BigQuery.format_date(row.last_message_at, organization_id),
-              inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
-              updated_at: format_date_with_millisecond(row.updated_at, organization_id),
-              fields:
-                Enum.map(row.fields, fn {_key, field} ->
-                  %{
-                    label: field["label"],
-                    inserted_at: BigQuery.format_date(field["inserted_at"], organization_id),
-                    type: field["type"],
-                    value: field["value"]
-                  }
-                end),
-              settings: nil,
-              user_name: if(!is_nil(row.user), do: row.user.name),
-              user_role: if(!is_nil(row.user), do: BigQuery.format_json(row.user.roles)),
-              groups:
-                Enum.map(row.groups, fn group ->
-                  %{label: group.label, description: group.description}
-                end),
-              tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end),
-              raw_fields: BigQuery.format_json(row.fields),
-              group_labels: Enum.map_join(row.groups, ",", &Map.get(&1, :label))
-            }
-            |> Map.merge(bq_fields(organization_id))
-            |> then(&%{json: &1})
-            | acc
-          ]
-      end
-    )
+    |> Enum.reduce([], fn row, acc ->
+      if Contacts.simulator_contact?(row.phone),
+        do: acc,
+        else: [
+          %{
+            id: row.id,
+            name: row.name,
+            phone: row.phone,
+            provider_status: row.bsp_status,
+            status: row.status,
+            language: row.language.label,
+            optin_time: BigQuery.format_date(row.optin_time, organization_id),
+            optout_time: BigQuery.format_date(row.optout_time, organization_id),
+            contact_optin_method: row.optin_method,
+            last_message_at: BigQuery.format_date(row.last_message_at, organization_id),
+            inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
+            updated_at: format_date_with_millisecond(row.updated_at, organization_id),
+            fields: validate_and_format_fields(row.fields, organization_id),
+            settings: nil,
+            user_name: if(!is_nil(row.user), do: row.user.name),
+            user_role: if(!is_nil(row.user), do: BigQuery.format_json(row.user.roles)),
+            groups:
+              Enum.map(row.groups, fn group ->
+                %{label: group.label, description: group.description}
+              end),
+            tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end),
+            raw_fields: BigQuery.format_json(row.fields),
+            group_labels: Enum.map_join(row.groups, ",", &Map.get(&1, :label))
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+    end)
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :contacts, organization_id, attrs))
 
     :ok
+  end
+
+  defp validate_and_format_fields(fields, organization_id) do
+    Enum.reduce(fields, [], fn {_key, field}, acc ->
+      case validate_field(field, organization_id) do
+        :error -> acc
+        valid_field -> [valid_field | acc]
+      end
+    end)
+    |> Enum.reverse()
+  end
+
+  defp validate_field(field, organization_id) do
+    with label when is_binary(label) <- Map.get(field, "label"),
+         type when is_binary(type) <- Map.get(field, "type"),
+         value when is_binary(value) <- Map.get(field, "value"),
+         inserted_at when not is_nil(inserted_at) <- Map.get(field, "inserted_at"),
+         formatted_date when is_binary(formatted_date) <-
+           BigQuery.format_date(inserted_at, organization_id) do
+      %{
+        label: label,
+        inserted_at: formatted_date,
+        type: type,
+        value: value
+      }
+    else
+      _ -> :error
+    end
   end
 
   defp queue_table_data("profiles", organization_id, attrs) do
