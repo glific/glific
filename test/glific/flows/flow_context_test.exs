@@ -3,6 +3,7 @@ defmodule Glific.Flows.FlowContextTest do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts,
     Fixtures,
     Groups.WAGroups,
     Messages,
@@ -300,6 +301,76 @@ defmodule Glific.Flows.FlowContextTest do
         |> Repo.all()
 
       assert wa_message.body == "Welcome to WA group feature"
+    end
+
+    test "both wa_group_id and contact_id cannot be nil in flow_context", attrs do
+      [flow | _tail] =
+        Glific.Flows.list_flows(%{filter: attrs |> Map.put(:name, "Whatsapp Group")})
+
+      assert {:error,
+              %{errors: [contact_id: {"both contact_id and wa_group_id can't be nil", []}]}} =
+               FlowContext.create_flow_context(%{
+                 flow_uuid: flow.uuid,
+                 status: "success",
+                 flow_id: flow.id,
+                 organization_id: flow.organization_id
+               })
+    end
+
+    test "both wa_group_id and contact_id can't be non-nil in flow_context", attrs do
+      [flow | _tail] =
+        Glific.Flows.list_flows(%{filter: attrs |> Map.put(:name, "Whatsapp Group")})
+
+      [wa_group | _tail] = WAGroups.list_wa_groups(%{})
+      [contact | _] = Contacts.list_contacts(%{})
+
+      assert {:error,
+              %{errors: [wa_group_id: {"both contact_id and wa_group_id can't be non-nil", []}]}} =
+               FlowContext.create_flow_context(%{
+                 flow_uuid: flow.uuid,
+                 status: "success",
+                 flow_id: flow.id,
+                 organization_id: flow.organization_id,
+                 wa_group_id: wa_group.id,
+                 contact_id: contact.id
+               })
+    end
+
+    test "Either wa_group_id or contact_id should be non-nil in flow_context", attrs do
+      [flow | _tail] =
+        Glific.Flows.list_flows(%{filter: attrs |> Map.put(:name, "Whatsapp Group")})
+
+      [wa_group | _tail] = WAGroups.list_wa_groups(%{})
+      [_contact | _] = Contacts.list_contacts(%{})
+
+      assert {:ok, _} =
+               FlowContext.create_flow_context(%{
+                 flow_uuid: flow.uuid,
+                 status: "success",
+                 flow_id: flow.id,
+                 organization_id: flow.organization_id,
+                 wa_group_id: wa_group.id
+               })
+    end
+
+    test "update operation ignores the valdiation", attrs do
+      [flow | _tail] =
+        Glific.Flows.list_flows(%{filter: attrs |> Map.put(:name, "Whatsapp Group")})
+
+      [wa_group | _tail] = WAGroups.list_wa_groups(%{})
+      [_contact | _] = Contacts.list_contacts(%{})
+
+      {:ok, flow_context} =
+        FlowContext.create_flow_context(%{
+          flow_uuid: flow.uuid,
+          status: "success",
+          flow_id: flow.id,
+          organization_id: flow.organization_id,
+          wa_group_id: wa_group.id
+        })
+
+      assert {:ok, _flow_context_2} =
+               FlowContext.update_flow_context(flow_context, %{status: "failed"})
     end
   end
 end
