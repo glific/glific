@@ -364,41 +364,52 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     get_query("contacts", organization_id, attrs)
     |> Repo.all()
-    |> Enum.reduce([], fn row, acc ->
-      if Contacts.simulator_contact?(row.phone),
-        do: acc,
-        else: [
-          # We are sending nil, as setting is a record type and need to structure the data first(like field)
-          %{
-            id: row.id,
-            name: row.name,
-            phone: row.phone,
-            provider_status: row.bsp_status,
-            status: row.status,
-            language: row.language.label,
-            optin_time: BigQuery.format_date(row.optin_time, organization_id),
-            optout_time: BigQuery.format_date(row.optout_time, organization_id),
-            contact_optin_method: row.optin_method,
-            last_message_at: BigQuery.format_date(row.last_message_at, organization_id),
-            inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
-            updated_at: format_date_with_millisecond(row.updated_at, organization_id),
-            fields: validate_and_format_fields(row.fields, organization_id),
-            settings: nil,
-            user_name: if(!is_nil(row.user), do: row.user.name),
-            user_role: if(!is_nil(row.user), do: BigQuery.format_json(row.user.roles)),
-            groups:
-              Enum.map(row.groups, fn group ->
-                %{label: group.label, description: group.description}
-              end),
-            tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end),
-            raw_fields: BigQuery.format_json(row.fields),
-            group_labels: Enum.map_join(row.groups, ",", &Map.get(&1, :label))
-          }
-          |> Map.merge(bq_fields(organization_id))
-          |> then(&%{json: &1})
-          | acc
-        ]
-    end)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        if Contacts.simulator_contact?(row.phone),
+          do: acc,
+          else: [
+            # We are sending nil, as setting is a record type and need to structure the data first(like field)
+            %{
+              id: row.id,
+              name: row.name,
+              phone: row.phone,
+              provider_status: row.bsp_status,
+              status: row.status,
+              language: row.language.label,
+              optin_time: BigQuery.format_date(row.optin_time, organization_id),
+              optout_time: BigQuery.format_date(row.optout_time, organization_id),
+              contact_optin_method: row.optin_method,
+              last_message_at: BigQuery.format_date(row.last_message_at, organization_id),
+              inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
+              updated_at: format_date_with_millisecond(row.updated_at, organization_id),
+              fields:
+                Enum.map(row.fields, fn {_key, field} ->
+                  %{
+                    label: field["label"] |> inspect(),
+                    inserted_at: BigQuery.format_date(field["inserted_at"], organization_id),
+                    type: field["type"] |> inspect(),
+                    value: field["value"] |> inspect()
+                  }
+                end),
+              settings: nil,
+              user_name: if(!is_nil(row.user), do: row.user.name),
+              user_role: if(!is_nil(row.user), do: BigQuery.format_json(row.user.roles)),
+              groups:
+                Enum.map(row.groups, fn group ->
+                  %{label: group.label, description: group.description}
+                end),
+              tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end),
+              raw_fields: BigQuery.format_json(row.fields),
+              group_labels: Enum.map_join(row.groups, ",", &Map.get(&1, :label))
+            }
+            |> Map.merge(bq_fields(organization_id))
+            |> then(&%{json: &1})
+            | acc
+          ]
+      end
+    )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :contacts, organization_id, attrs))
 
@@ -650,8 +661,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             node_uuid: row.node_uuid,
             flow_uuid: row.flow.uuid,
             flow_id: row.flow.id,
-            contact_id: if(!is_nil(row.contact), do: row.contact.id),
-            contact_phone: if(!is_nil(row.contact), do: row.contact.phone),
+            contact_id: row.contact.id,
+            contact_phone: row.contact.phone,
             results: BigQuery.format_json(row.results),
             recent_inbound: BigQuery.format_json(row.recent_inbound),
             recent_outbound: BigQuery.format_json(row.recent_outbound),
@@ -662,9 +673,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
             is_await_result: row.is_await_result,
             is_killed: row.is_killed,
             profile_id: row.profile_id,
-            wa_group_id: if(!is_nil(row.wa_group), do: row.wa_group.id),
-            wa_group_name: if(!is_nil(row.wa_group), do: row.wa_group.label),
-            wa_group_bsp_id: if(!is_nil(row.wa_group), do: row.wa_group.bsp_id),
             wakeup_at: BigQuery.format_date(row.wakeup_at, organization_id),
             completed_at: BigQuery.format_date(row.completed_at, organization_id),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
@@ -1189,7 +1197,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([f], f.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
-      |> preload([:flow, :contact, :wa_group])
+      |> preload([:flow, :contact])
 
   defp get_query("tickets", organization_id, attrs),
     do:
@@ -1238,32 +1246,4 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :media,
         :wa_group
       ])
-
-  defp validate_and_format_fields(fields, organization_id) do
-    Enum.reduce(fields, [], fn {_key, field}, acc ->
-      case validate_field(field, organization_id) do
-        :error -> acc
-        valid_field -> [valid_field | acc]
-      end
-    end)
-    |> Enum.reverse()
-  end
-
-  defp validate_field(field, organization_id) do
-    with label when is_binary(label) <- Map.get(field, "label"),
-         type when is_binary(type) <- Map.get(field, "type"),
-         value when is_binary(value) <- Map.get(field, "value"),
-         inserted_at when not is_nil(inserted_at) <- Map.get(field, "inserted_at"),
-         formatted_date when is_binary(formatted_date) <-
-           BigQuery.format_date(inserted_at, organization_id) do
-      %{
-        label: label,
-        inserted_at: formatted_date,
-        type: type,
-        value: value
-      }
-    else
-      _ -> :error
-    end
-  end
 end
