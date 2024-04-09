@@ -368,6 +368,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       if Contacts.simulator_contact?(row.phone),
         do: acc,
         else: [
+          # We are sending nil, as setting is a record type and need to structure the data first(like field)
           %{
             id: row.id,
             name: row.name,
