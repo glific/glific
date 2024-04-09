@@ -657,6 +657,12 @@ defmodule Glific.BigQuery.Schema do
         mode: "REQUIRED"
       },
       %{
+        description: "Name of the flow",
+        name: "flow_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
         description: "contact id references to the contact table",
         name: "contact_id",
         type: "INTEGER",
