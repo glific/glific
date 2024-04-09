@@ -45,6 +45,7 @@ defmodule Glific.Providers.Maytapi.Message do
   @doc """
   Send message to wa_group collection
   """
+  @spec send_message_to_wa_group_collection(Group.t(), map()) :: {:ok, map()}
   def send_message_to_wa_group_collection(group, attrs) do
     wa_group_collections =
       WaGroupsCollections.list_wa_groups_collection(%{
