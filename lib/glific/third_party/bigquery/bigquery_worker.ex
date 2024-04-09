@@ -405,34 +405,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
-  defp validate_and_format_fields(fields, organization_id) do
-    Enum.reduce(fields, [], fn {_key, field}, acc ->
-      case validate_field(field, organization_id) do
-        :error -> acc
-        valid_field -> [valid_field | acc]
-      end
-    end)
-    |> Enum.reverse()
-  end
-
-  defp validate_field(field, organization_id) do
-    with label when is_binary(label) <- Map.get(field, "label"),
-         type when is_binary(type) <- Map.get(field, "type"),
-         value when is_binary(value) <- Map.get(field, "value"),
-         inserted_at when not is_nil(inserted_at) <- Map.get(field, "inserted_at"),
-         formatted_date when is_binary(formatted_date) <-
-           BigQuery.format_date(inserted_at, organization_id) do
-      %{
-        label: label,
-        inserted_at: formatted_date,
-        type: type,
-        value: value
-      }
-    else
-      _ -> :error
-    end
-  end
-
   defp queue_table_data("profiles", organization_id, attrs) do
     # This function will fetch all the profiles from the database and will insert it in bigquery in chunks of 100.
     Logger.info(
@@ -1266,4 +1238,32 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :media,
         :wa_group
       ])
+
+  defp validate_and_format_fields(fields, organization_id) do
+    Enum.reduce(fields, [], fn {_key, field}, acc ->
+      case validate_field(field, organization_id) do
+        :error -> acc
+        valid_field -> [valid_field | acc]
+      end
+    end)
+    |> Enum.reverse()
+  end
+
+  defp validate_field(field, organization_id) do
+    with label when is_binary(label) <- Map.get(field, "label"),
+         type when is_binary(type) <- Map.get(field, "type"),
+         value when is_binary(value) <- Map.get(field, "value"),
+         inserted_at when not is_nil(inserted_at) <- Map.get(field, "inserted_at"),
+         formatted_date when is_binary(formatted_date) <-
+           BigQuery.format_date(inserted_at, organization_id) do
+      %{
+        label: label,
+        inserted_at: formatted_date,
+        type: type,
+        value: value
+      }
+    else
+      _ -> :error
+    end
+  end
 end
