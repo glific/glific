@@ -158,8 +158,8 @@ defmodule Glific.Contacts.Contact do
   @spec validate_fields_map(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp validate_fields_map(%{changes: %{fields: fields}} = changeset) do
     fields
-    |> Enum.reduce_while(changeset, fn {_k, v}, _result ->
-      case validate_field_value(v) do
+    |> Enum.reduce_while(changeset, fn {_field, value}, _result ->
+      case validate_field_value(value) do
         :ok ->
           {:cont, changeset}
 
@@ -178,19 +178,19 @@ defmodule Glific.Contacts.Contact do
 
   @spec validate_field_value(map()) :: :ok | {:error, String.t()}
   defp validate_field_value(%{} = value) do
-    Enum.reduce_while(value, :ok, fn {k, v}, _result ->
-      case {k, v} do
-        {:inserted_at, %DateTime{} = _v} ->
+    Enum.reduce_while(value, :ok, fn {field, value}, _result ->
+      case {field, value} do
+        {:inserted_at, %DateTime{} = _value} ->
           {:cont, :ok}
 
-        {:inserted_at, _v} ->
-          {:halt, {:error, "Expected value of #{k} to be of type DateTime.t() and non-empty"}}
+        {:inserted_at, _value} ->
+          {:halt, {:error, "Expected value of #{field} to be of type DateTime.t() and non-empty"}}
 
-        {_, v} when is_binary(v) and v != "" ->
+        {_, value} when is_binary(value) and value != "" ->
           {:cont, :ok}
 
-        {_, _v} ->
-          {:halt, {:error, "Expected value of #{k} to be of type String and non-empty"}}
+        {_, _value} ->
+          {:halt, {:error, "Expected value of #{field} to be of type String and non-empty"}}
       end
     end)
   end
