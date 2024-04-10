@@ -673,4 +673,12 @@ defmodule Glific.FLowsTest do
              |> FlowRevision.changeset(%{status: "published", revision_number: 0})
              |> Repo.update()
   end
+
+  test "start_group_flow/4 returns an error when no group IDs are provided", attrs do
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+    default_results = %{key: "value"}
+
+    {:error, message} = Flows.start_group_flow(flow, [], default_results)
+    assert message == "Collection does not have any contacts"
+  end
 end
