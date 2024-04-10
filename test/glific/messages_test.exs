@@ -1678,6 +1678,54 @@ defmodule Glific.MessagesTest do
                )
     end
 
+    @valid_audio_media_url "https://www.buildquickbots.com/whatsapp/media/sample/audio/sample02"
+
+    test "validate media/2 check for ogg audio", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "audio/ogg"},
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{
+               is_valid: false,
+               message: "Media content-type is not valid"
+             } ==
+               Messages.validate_media(
+                 @valid_audio_media_url <> ".ogg",
+                 "audio"
+               )
+    end
+
+    test "validate media/2 check for mp3 audio", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "audio/mp3"},
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{
+               is_valid: true,
+               message: "success"
+             } ==
+               Messages.validate_media(
+                 @valid_audio_media_url <> ".mp3",
+                 "audio"
+               )
+    end
+
     test "change_message_media/1 returns a message_media changeset", attrs do
       message_media = message_media_fixture(%{organization_id: attrs.organization_id})
       assert %Ecto.Changeset{} = Messages.change_message_media(message_media)
