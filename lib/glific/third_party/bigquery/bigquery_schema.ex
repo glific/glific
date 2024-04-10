@@ -653,13 +653,19 @@ defmodule Glific.BigQuery.Schema do
       %{
         description: "Unique ID generated for each flow in the glific db",
         name: "flow_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Name of the flow",
+        name: "flow_name",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
         description: "contact id references to the contact table",
         name: "contact_id",
-        type: "STRING",
+        type: "INTEGER",
         mode: "NULLABLE"
       },
       %{
@@ -1377,12 +1383,6 @@ defmodule Glific.BigQuery.Schema do
         name: "id",
         type: "INTEGER",
         mode: "REQUIRED"
-      },
-      %{
-        description: "Conversation ID for the message",
-        name: "conversation_id",
-        type: "INTEGER",
-        mode: "NULLABLE"
       },
       %{
         description: "Conversation ID for the message",
