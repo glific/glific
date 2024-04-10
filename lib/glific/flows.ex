@@ -734,6 +734,7 @@ defmodule Glific.Flows do
   @spec start_group_flow(Flow.t(), list(), map(), Keyword.t()) ::
           {:ok, Flow.t()} | {:error, String.t()}
   def start_group_flow(flow, group_ids, default_results \\ %{}, opts \\ []) do
+    # the flow returned is the expanded version
     {:ok, flow} = get_cached_flow(flow.organization_id, {:flow_id, flow.id, @status})
 
     with {:ok, _} <- Broadcast.broadcast_flow_to_group(flow, group_ids, default_results, opts) do
