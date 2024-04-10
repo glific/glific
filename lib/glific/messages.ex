@@ -733,10 +733,13 @@ defmodule Glific.Messages do
           )
           |> create_group_message()
 
-    {:ok, message_broadcast} =
-      Broadcast.broadcast_message_to_group(group_message, [group.id], message_params)
+    case Broadcast.broadcast_message_to_group(group_message, [group.id], message_params) do
+      {:ok, message_broadcast} ->
+        {:ok, Broadcast.get_broadcast_contact_ids(message_broadcast)}
 
-    {:ok, Broadcast.get_broadcast_contact_ids(message_broadcast)}
+      {:error, error} ->
+        {:error, error}
+    end
   end
 
   @doc """
