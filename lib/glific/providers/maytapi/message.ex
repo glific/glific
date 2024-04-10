@@ -53,33 +53,39 @@ defmodule Glific.Providers.Maytapi.Message do
       })
       |> Repo.preload([:wa_group])
 
-    create_wa_group_message(wa_group_collections, group, attrs)
+    case wa_group_collections do
+      [] ->
+        {:error, "Cannot send message: No WhatsApp group found in the collection"}
 
-    # Using Async instead of going with the route of message broadcast as the number of WA groups
-    #  per collection will be way less than contacts in a collection
-    Task.async_stream(
-      wa_group_collections,
-      fn wa_group_collection ->
-        Repo.put_process_state(wa_group_collection.organization_id)
+      _ ->
+        create_wa_group_message(wa_group_collections, group, attrs)
 
-        {:ok, wa_managed_phone} =
-          Repo.fetch_by(WAManagedPhone, %{
-            id: wa_group_collection.wa_group.wa_managed_phone_id,
-            organization_id: wa_group_collection.organization_id
-          })
+        # Using Async instead of going with the route of message broadcast as the number of WA groups
+        #  per collection will be way less than contacts in a collection
+        Task.async_stream(
+          wa_group_collections,
+          fn wa_group_collection ->
+            Repo.put_process_state(wa_group_collection.organization_id)
 
-        create_and_send_wa_message(
-          wa_managed_phone,
-          wa_group_collection.wa_group,
-          Map.delete(attrs, :group_id)
+            {:ok, wa_managed_phone} =
+              Repo.fetch_by(WAManagedPhone, %{
+                id: wa_group_collection.wa_group.wa_managed_phone_id,
+                organization_id: wa_group_collection.organization_id
+              })
+
+            create_and_send_wa_message(
+              wa_managed_phone,
+              wa_group_collection.wa_group,
+              Map.delete(attrs, :group_id)
+            )
+          end,
+          max_concurrency: 20,
+          on_timeout: :kill_task
         )
-      end,
-      max_concurrency: 20,
-      on_timeout: :kill_task
-    )
-    |> Stream.run()
+        |> Stream.run()
 
-    {:ok, %{success: true}}
+        {:ok, %{success: true}}
+    end
   end
 
   @spec create_wa_group_message([WAGroupsCollection.t()], Group.t(), map()) :: any()
