@@ -13,7 +13,6 @@ defmodule Glific.GcsWorkerTest do
     :ok
   end
 
-  @tag :upload
   test "upload_media/3", attrs do
     Application.put_env(:waffle, :token_fetcher, Glific.GCS)
 
