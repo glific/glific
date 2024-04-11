@@ -36,7 +36,6 @@ defmodule Glific.Flows.Broadcast do
   end
 
   def broadcast_flow_to_group(flow, group_ids, default_results, opts) do
-
     # lets set up the state and then call our helper friend to split group into smaller chunks
     # of contacts
     exclusion = Keyword.get(opts, :exclusions, false)
