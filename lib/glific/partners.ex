@@ -1011,7 +1011,7 @@ defmodule Glific.Partners do
 
         {:error, error} ->
           Logger.info(
-            "Error fetching token for: #{provider_shortcode}, error: #{error}, org_id: #{organization_id}"
+            "Error fetching token for: #{provider_shortcode}, error: #{inspect error}, org_id: #{organization_id}"
           )
 
           handle_token_error(organization_id, provider_shortcode, "#{inspect(error)}")
