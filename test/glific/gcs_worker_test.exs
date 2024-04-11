@@ -57,7 +57,7 @@ defmodule Glific.GcsWorkerTest do
       {:ok, _credential} = Partners.create_credential(valid_attrs)
 
       assert nil ==
-      Partners.get_goth_token(attrs.organization_id, "google_cloud_storage")
+               Partners.get_goth_token(attrs.organization_id, "google_cloud_storage")
     end
   end
 end
