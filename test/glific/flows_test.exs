@@ -679,6 +679,6 @@ defmodule Glific.FLowsTest do
     default_results = %{key: "value"}
 
     {:error, message} = Flows.start_group_flow(flow, [], default_results)
-    assert message == "Collection does not have any contacts"
+    assert message == "Group ID is empty"
   end
 end

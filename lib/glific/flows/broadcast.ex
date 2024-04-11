@@ -32,7 +32,7 @@ defmodule Glific.Flows.Broadcast do
   def broadcast_flow_to_group(flow, group_ids, default_results \\ %{}, opts \\ [])
 
   def broadcast_flow_to_group(_flow, [], _default_results, _opts) do
-    {:error, "Collection does not have any contacts"}
+    {:error, "Group ID is empty"}
   end
 
   def broadcast_flow_to_group(flow, group_ids, default_results, opts) do
