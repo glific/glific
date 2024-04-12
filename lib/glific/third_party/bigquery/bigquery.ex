@@ -612,7 +612,9 @@ defmodule Glific.BigQuery do
       "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{inspect(response)}"
     )
 
-    bigquery_error_status(response)
+    {error, message} = bigquery_error_status(response)
+
+    error
     |> case do
       "NOT_FOUND" ->
         sync_schema_with_bigquery(organization_id)
@@ -621,7 +623,7 @@ defmodule Glific.BigQuery do
         Partners.disable_credential(
           organization_id,
           "bigquery",
-          "Account does not have sufficient permissions to insert data to BigQuery."
+          message
         )
 
       "TIMEOUT" ->
@@ -632,19 +634,20 @@ defmodule Glific.BigQuery do
     end
   end
 
-  @spec bigquery_error_status(any()) :: String.t() | atom()
+  @spec bigquery_error_status(any()) :: {String.t() | atom(), String.t()}
   defp bigquery_error_status(response) do
     with true <- is_map(response),
          true <- Map.has_key?(response, :body),
          {:ok, error} <- Jason.decode(response.body) do
-      error["error"]["status"]
+      [bq_error] = [error["error"]["errors"]]
+      {error["error"]["status"], get_in(bq_error, [Access.at(0), "message"])}
     else
       _ ->
         if is_atom(response) do
-          "TIMEOUT"
+          {"TIMEOUT", "TIMEOUT"}
         else
           Logger.info("Bigquery status error #{inspect(response)}")
-          :unknown
+          {:unknown, "UNKNOWN ERROR"}
         end
     end
   end
