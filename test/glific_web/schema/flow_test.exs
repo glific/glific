@@ -12,6 +12,7 @@ defmodule GlificWeb.Schema.FlowTest do
     Flows.FlowRevision,
     Flows.MessageBroadcast,
     Groups,
+    Groups.GroupContacts,
     Repo,
     Seeds.SeedsDev,
     State,
@@ -444,6 +445,16 @@ defmodule GlificWeb.Schema.FlowTest do
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 
     group = Fixtures.group_fixture()
+    # when there are contacts in the group
+    contact =
+      Fixtures.contact_fixture(%{organization_id: user.organization_id})
+
+    GroupContacts.update_group_contacts(%{
+      group_id: group.id,
+      add_contact_ids: [contact.id],
+      delete_contact_ids: [],
+      organization_id: user.organization_id
+    })
 
     result =
       auth_query_gql_by(:group_flow, user,
@@ -451,8 +462,25 @@ defmodule GlificWeb.Schema.FlowTest do
       )
 
     assert {:ok, query_data} = result
-
     assert get_in(query_data, [:data, "startGroupFlow", "success"]) == true
+  end
+
+  test "Start flow for contacts of group when the collection is empty", %{manager: user} do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
+    group = Fixtures.group_fixture()
+
+    # where there are no contacts in the flow
+    result =
+      auth_query_gql_by(:group_flow, user,
+        variables: %{"flowId" => flow.id, "groupId" => group.id}
+      )
+
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:errors, Access.at(0), :message]) ==
+             "could not initiate broadcast"
   end
 
   test "copy a flow and test possible scenarios and errors", %{manager: user} do
