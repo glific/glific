@@ -737,12 +737,8 @@ defmodule Glific.Flows do
     # the flow returned is the expanded version
     {:ok, flow} = get_cached_flow(flow.organization_id, {:flow_id, flow.id, @status})
 
-    case Broadcast.broadcast_flow_to_group(flow, group_ids, default_results, opts) do
-      {:ok, _} ->
-        {:ok, flow}
-
-      {:error, error} ->
-        {:error, error}
+    with {:ok, _} <- Broadcast.broadcast_flow_to_group(flow, group_ids, default_results, opts) do
+      {:ok, flow}
     end
   end
 
