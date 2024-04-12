@@ -952,8 +952,10 @@ defmodule Glific.Flows.Action do
     end
   end
 
-  def execute(action, _context, _messages),
-    do: raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
+  def execute(action, _context, _messages) do
+    Logger.error("Unsupported action type #{action.type} in execute function")
+    {:error, "Unsupported action type #{action.type}"}
+  end
 
   @spec add_flow_label(FlowContext.t(), String.t()) :: nil
   defp add_flow_label(%{last_message: nil}, _flow_label), do: nil

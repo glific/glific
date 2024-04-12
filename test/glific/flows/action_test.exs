@@ -1233,8 +1233,7 @@ defmodule Glific.Flows.ActionTest do
     context = %FlowContext{}
     message_stream = []
 
-    assert_raise UndefinedFunctionError, fn ->
-      Action.execute(action, context, message_stream)
-    end
+    {:error, result} = Action.execute(action, context, message_stream)
+    assert result == "Unsupported action type others"
   end
 end
