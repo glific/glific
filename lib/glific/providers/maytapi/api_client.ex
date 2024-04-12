@@ -98,6 +98,7 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       token = secrets["token"]
 
       url = @maytapi_url <> "/#{product_id}/#{phone_id}/sendMessage"
+      Glific.Metrics.increment("Sent WAGroup msg")
       maytapi_post(url, payload, token)
     end
   end
