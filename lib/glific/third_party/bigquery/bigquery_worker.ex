@@ -103,6 +103,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         table: bq_job.table,
         organization_id: org_id,
         action: action
+
       })
       |> Oban.insert()
     end)
@@ -384,15 +385,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
               last_message_at: BigQuery.format_date(row.last_message_at, organization_id),
               inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
               updated_at: format_date_with_millisecond(row.updated_at, organization_id),
-              fields:
-                Enum.map(row.fields, fn {_key, field} ->
-                  %{
-                    label: field["label"] |> inspect(),
-                    inserted_at: BigQuery.format_date(field["inserted_at"], organization_id),
-                    type: field["type"] |> inspect(),
-                    value: field["value"] |> inspect()
-                  }
-                end),
+              fields: process_row(row, organization_id),
               settings: nil,
               user_name: if(!is_nil(row.user), do: row.user.name),
               user_role: if(!is_nil(row.user), do: BigQuery.format_json(row.user.roles)),
@@ -1250,4 +1243,27 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :media,
         :wa_group
       ])
+
+  defp format_value(value) when is_map(value) or is_list(value) do
+    Jason.encode!(value)
+  end
+
+  defp format_value(value) when is_struct(value) do
+    value
+    |> Map.from_struct()
+    |> Jason.encode!()
+  end
+
+  defp format_value(value), do: value
+
+  defp process_row(row, organization_id) do
+    Enum.map(row.fields, fn {_key, field} ->
+      %{
+        label: field["label"],
+        inserted_at: BigQuery.format_date(field["inserted_at"], organization_id),
+        type: field["type"],
+        value: format_value(field["value"])
+      }
+    end)
+  end
 end
