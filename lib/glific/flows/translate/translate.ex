@@ -24,8 +24,10 @@ defmodule Glific.Flows.Translate.Translate do
   """
   @spec translate([String.t()], String.t(), String.t(), map()) ::
           {:ok, [String.t()]} | {:error, String.t()}
-  def translate(strings, src, dst, organization),
-    do: impl(organization).translate(strings, src, dst, org_id: organization.id)
+  def translate(strings, src, dst, organization) do
+    Glific.Metrics.increment("Auto Translate")
+    impl(organization).translate(strings, src, dst, org_id: organization.id)
+  end
 
   @spec impl(map()) :: module()
   defp impl(organization) do

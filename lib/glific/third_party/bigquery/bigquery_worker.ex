@@ -661,6 +661,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             node_uuid: row.node_uuid,
             flow_uuid: row.flow.uuid,
             flow_id: row.flow.id,
+            flow_name: row.flow.name,
             contact_id: if(!is_nil(row.contact), do: row.contact.id),
             contact_phone: if(!is_nil(row.contact), do: row.contact.phone),
             results: BigQuery.format_json(row.results),

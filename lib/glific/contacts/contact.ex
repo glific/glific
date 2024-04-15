@@ -132,6 +132,7 @@ defmodule Glific.Contacts.Contact do
     contact
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_fields_map()
     |> unique_constraint([:phone, :organization_id])
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:active_profile_id)
@@ -153,4 +154,46 @@ defmodule Glific.Contacts.Contact do
 
     %{contact | masked_phone: masked_phone}
   end
+
+  @spec validate_fields_map(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_fields_map(%{changes: %{fields: fields}} = changeset) do
+    fields
+    |> Enum.reduce_while(changeset, fn {_field, value}, _result ->
+      case validate_field_value(value) do
+        :ok ->
+          {:cont, changeset}
+
+        {:error, err} ->
+          {:halt,
+           add_error(
+             changeset,
+             :fields,
+             err
+           )}
+      end
+    end)
+  end
+
+  defp validate_fields_map(changeset), do: changeset
+
+  @spec validate_field_value(map()) :: :ok | {:error, String.t()}
+  defp validate_field_value(%{} = value) do
+    Enum.reduce_while(value, :ok, fn {field, value}, _result ->
+      case {field, value} do
+        {:inserted_at, %DateTime{} = _value} ->
+          {:cont, :ok}
+
+        {:inserted_at, _value} ->
+          {:halt, {:error, "Expected value of #{field} to be of type DateTime.t() and non-empty"}}
+
+        {_, value} when is_binary(value) and value != "" ->
+          {:cont, :ok}
+
+        {_, _value} ->
+          {:halt, {:error, "Expected value of #{field} to be of type String and non-empty"}}
+      end
+    end)
+  end
+
+  defp validate_field_value(_value), do: {:error, "value should be a map"}
 end
