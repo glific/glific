@@ -347,4 +347,36 @@ defmodule Glific.BigQueryTest do
     assert @formatted_time ==
              BigQuery.format_date(DateTime.to_string(datetime), attrs.organization_id)
   end
+
+  test "queue_table_data/3 should process and queue data correctly", %{organization_id: org_id} do
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
+        ]
+      }
+    ]) do
+      url =
+        "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULT%20PROJECT%20ID/datasets/917834811114/tables/contacts/insertAll"
+
+      Tesla.Mock.mock(fn
+        %Tesla.Env{method: :post, url: ^url} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+                kind: "bigquery#tableDataInsertAllResponse",
+                insertErrors: nil
+              })
+          }
+      end)
+
+      result = BigQueryWorker.queue_table_data("contacts", org_id, %{some_attr: "value"})
+      assert result == :ok
+    end
+  end
 end

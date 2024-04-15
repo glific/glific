@@ -103,7 +103,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
         table: bq_job.table,
         organization_id: org_id,
         action: action
-
       })
       |> Oban.insert()
     end)
@@ -1244,6 +1243,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :wa_group
       ])
 
+  @spec format_value(map() | list() | struct() | any()) :: String.t()
   defp format_value(value) when is_map(value) or is_list(value) do
     Jason.encode!(value)
   end
@@ -1256,6 +1256,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp format_value(value), do: value
 
+  @spec process_row(map(), non_neg_integer()) :: list()
   defp process_row(row, organization_id) do
     Enum.map(row.fields, fn {_key, field} ->
       %{
