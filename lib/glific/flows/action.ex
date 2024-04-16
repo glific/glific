@@ -954,7 +954,7 @@ defmodule Glific.Flows.Action do
 
   def execute(action, context, messages) do
     Logger.error(
-      "Unsupported action type: for flow_id #{inspect(context.flow_id)} and contact_id #{inspect(context.contact_id)} for the message #{inspect(messages)}"
+      "Unsupported action type: for flow_id #{inspect(context.flow_id)} contact_id #{inspect(context.contact_id)} and the message is #{inspect(messages)}"
     )
 
     raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
