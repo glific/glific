@@ -77,6 +77,11 @@ defmodule GlificWeb.Resolvers.Flows do
         context: %{current_user: user}
       }) do
     add_translation = Map.get(args, :add_translation, true)
+
+    if add_translation,
+      do: Glific.Metrics.increment("Export with auto translate"),
+      else: Glific.Metrics.increment("Export without auto translate")
+
     # load the flow
     data =
       user.organization_id
@@ -101,6 +106,7 @@ defmodule GlificWeb.Resolvers.Flows do
   def import_flow_localization(_, %{localization: data, id: flow_id}, %{
         context: %{current_user: user}
       }) do
+    Glific.Metrics.increment("Import translations")
     flow = Flows.get_complete_flow(user.organization_id, flow_id)
 
     {:ok, stream} = StringIO.open(data)

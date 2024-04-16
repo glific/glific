@@ -301,4 +301,15 @@ defmodule Glific.Groups.WhatsappMessageTest do
 
     assert Message.receive_media(params) == expected_result
   end
+
+  test "send_message_to_wa_group_collection/2 check the possible error",
+       attrs do
+    group =
+      Fixtures.group_fixture(%{organization_id: attrs.organization_id, group_type: "WA"})
+
+    params = %{message: "hi", type: :text, organization_id: attrs.organization_id, media_id: nil}
+    {:error, error_message} = Message.send_message_to_wa_group_collection(group, params)
+
+    assert error_message == "Cannot send message: No WhatsApp group found in the collection"
+  end
 end

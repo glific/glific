@@ -464,13 +464,7 @@ defmodule Glific.Messages do
         organization_id: contact.organization_id
       })
 
-    ttl = Application.get_env(:passwordless_auth, :verification_code_ttl) |> div(60)
-
-    parameters = [
-      "Registration",
-      otp,
-      "#{ttl} minutes"
-    ]
+    parameters = ["Registration", otp]
 
     %{template_id: session_template.id, receiver_id: contact.id, parameters: parameters}
     |> create_and_send_hsm_message()
@@ -1310,8 +1304,15 @@ defmodule Glific.Messages do
     do:
       String.contains?(url, [".webp"]) && String.contains?(headers["content-type"], ["image", ""])
 
-  defp do_validate_headers(headers, type, _url) when type in ["image", "video", "audio"],
-    do: String.contains?(headers["content-type"], type)
+  # accept audio file excluding ogg
+  defp do_validate_headers(headers, type, _url) when type == "audio" do
+    [mime_type, ext] = String.split(headers["content-type"], "/")
+    mime_type == "audio" && ext != "ogg"
+  end
+
+  defp do_validate_headers(headers, type, _url) when type in ["image", "video"] do
+    String.contains?(headers["content-type"], type)
+  end
 
   defp do_validate_headers(_, _, _), do: false
 

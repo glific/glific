@@ -582,6 +582,7 @@ defmodule Glific.Searches do
     |> order_by([wam: wam], desc: wam.inserted_at, desc: wam.id)
     |> Repo.add_permission(&Searches.add_permission/2)
     |> where([wam: wam], ilike(wam.body, ^"%#{term}%"))
+    |> where([wam: wam], not is_nil(wam.wa_group_id))
     |> limit(^limit)
     |> offset(^offset)
     |> Repo.all(timeout: @search_timeout)

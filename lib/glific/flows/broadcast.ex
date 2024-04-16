@@ -29,7 +29,13 @@ defmodule Glific.Flows.Broadcast do
   """
   @spec broadcast_flow_to_group(Flow.t(), list(), map(), Keyword.t()) ::
           {:ok, MessageBroadcast.t()} | {:error, String.t()}
-  def broadcast_flow_to_group(flow, group_ids, default_results \\ %{}, opts \\ []) do
+  def broadcast_flow_to_group(flow, group_ids, default_results \\ %{}, opts \\ [])
+
+  def broadcast_flow_to_group(_flow, [], _default_results, _opts) do
+    {:error, "Group ID is empty"}
+  end
+
+  def broadcast_flow_to_group(flow, group_ids, default_results, opts) do
     # lets set up the state and then call our helper friend to split group into smaller chunks
     # of contacts
     exclusion = Keyword.get(opts, :exclusions, false)
