@@ -46,26 +46,23 @@ defmodule Glific.Clients.Bandhu do
   end
 
   def webhook("fetch_user_profiles", fields) do
-    profile_count =
-      get_in(fields, ["results", "parent", "bandhu_profile_check_mock", "data", "profile_count"]) ||
-        0
-
-    profiles =
-      get_in(fields, ["results", "parent", "bandhu_profile_check_mock", "data", "profiles"]) ||
-        nil
-
-    {index_map, message_list} =
-      if is_nil(profiles),
-        do: {%{}, ["No profiles found"]},
-        else: format_profile_message(profiles)
-
-    %{
-      profile_selection_message: Enum.join(message_list, "\n"),
-      index_map: Jason.encode!(index_map),
-      profile_count: profile_count,
-      x_api_key: "nothing"
-    }
-  end
+  profile_count =
+    get_in(fields, ["data", "profile_count"])  0
+  profiles =
+    get_in(fields, ["data", "profiles"])  %{}
+  {index_map, message_list} =
+    if Map.size(profiles) == 0 do
+      {%{}, ["No profiles found"]}
+    else
+      format_profile_message(profiles)
+    end
+  %{
+    profile_selection_message: Enum.join(message_list, "\n"),
+    index_map: Jason.encode!(index_map),
+    profile_count: profile_count,
+    x_api_key: "nothing"
+  }
+end
 
   def webhook("set_contact_profile", fields) do
     index_map = Jason.decode!(fields["index_map"])
@@ -159,16 +156,14 @@ defmodule Glific.Clients.Bandhu do
   defp do_clean_fields(_key, _value), do: false
 
   defp format_profile_message(profiles) do
-    profiles
-    |> Enum.with_index(1)
-    |> Enum.reduce({%{}, []}, fn {profile, index}, {index_map, message_list} ->
-      profile_name = profile["name"]
-      user_roles = profile["user_roles"]["role_type"]
-
-      {
-        Map.put(index_map, index, profile),
-        message_list ++ ["Type *#{index}* for #{profile_name} (#{user_roles})"]
-      }
-    end)
+  profiles
+  |> Enum.reduce({%{}, []}, fn {index, profile}, {index_map, message_list} ->
+    profile_name = profile["name"]
+    user_roles = profile["user_roles"]["role_type"]
+    {
+      Map.put(index_map, index, profile),
+      message_list ++ ["Type #{index} for #{profile_name} (#{user_roles})"]
+    }
+  end)
   end
 end
