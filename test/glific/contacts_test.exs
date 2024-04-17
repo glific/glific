@@ -281,7 +281,6 @@ defmodule Glific.ContactsTest do
               }} = Contacts.create_contact(attrs)
     end
 
-    @tag :dd
     test "create_contact/1 with valid dateString in field map",
          %{organization_id: _organization_id} = attrs do
       valid_time_attrs =
