@@ -31,7 +31,8 @@ defmodule Glific.OpenLLM do
   """
   @spec parse(String.t(), String.t(), map()) :: tuple()
   def parse(api_key, url, params) do
-    data = set_params(params)
+    IO.inspect(params)
+    data = set_params(params) |> IO.inspect()
     chat_url = url <> "/api/chat"
 
     open_llm_post(chat_url, data, api_key)
@@ -39,11 +40,11 @@ defmodule Glific.OpenLLM do
   end
 
   @spec set_params(map()) :: map()
-  defp set_params(%{prompt: prompt, session_id: session_id}) when is_nil(session_id),
-    do: %{"prompt" => prompt}
+  defp set_params(%{question: question, session_id: session_id}) when is_nil(session_id),
+    do: %{"question" => question}
 
-  defp set_params(%{prompt: prompt, session_id: session_id}),
-    do: %{"prompt" => prompt, "session_id" => session_id}
+  defp set_params(%{question: question, session_id: session_id}),
+    do: %{"question" => question, "session_id" => session_id}
 
   @spec handle_response(tuple()) :: tuple()
   defp handle_response(response) do
