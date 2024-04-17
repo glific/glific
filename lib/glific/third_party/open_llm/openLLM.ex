@@ -31,8 +31,7 @@ defmodule Glific.OpenLLM do
   """
   @spec parse(String.t(), String.t(), map()) :: tuple()
   def parse(api_key, url, params) do
-    IO.inspect(params)
-    data = set_params(params) |> IO.inspect()
+    data = set_params(params)
     chat_url = url <> "/api/chat"
 
     open_llm_post(chat_url, data, api_key)
