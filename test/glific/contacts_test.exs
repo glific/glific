@@ -319,7 +319,10 @@ defmodule Glific.ContactsTest do
       assert {:error,
               %Ecto.Changeset{
                 errors: [
-                  fields: {"Expected value of name to be of type String", []}
+                  fields: {
+                    "Expected value of name to be of type String, got [\"name1\", \"name2\"]",
+                    []
+                  }
                 ]
               }} = Contacts.create_contact(attrs)
     end

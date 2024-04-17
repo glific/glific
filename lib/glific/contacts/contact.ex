@@ -189,8 +189,9 @@ defmodule Glific.Contacts.Contact do
         {_, value} when is_binary(value) ->
           {:cont, :ok}
 
-        {_, _value} ->
-          {:halt, {:error, "Expected value of #{field} to be of type String"}}
+        {_, value} ->
+          {:halt,
+           {:error, "Expected value of #{field} to be of type String, got #{inspect(value)}"}}
       end
     end)
   end
