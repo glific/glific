@@ -276,8 +276,7 @@ defmodule Glific.ContactsTest do
       assert {:error,
               %Ecto.Changeset{
                 errors: [
-                  fields:
-                    {"Expected value of inserted_at to be of type DateTime.t() and non-empty", []}
+                  fields: {"Expected value of inserted_at to be of type DateTime.t()", []}
                 ]
               }} = Contacts.create_contact(attrs)
     end
@@ -310,7 +309,7 @@ defmodule Glific.ContactsTest do
           "name" => %{
             label: "label",
             name: ["name1", "name2"],
-            values: "values",
+            values: "",
             inserted_at: "2024-04-05T05:35:22.265996Z"
           }
         })
@@ -320,7 +319,7 @@ defmodule Glific.ContactsTest do
       assert {:error,
               %Ecto.Changeset{
                 errors: [
-                  fields: {"Expected value of name to be of type String and non-empty", []}
+                  fields: {"Expected value of name to be of type String", []}
                 ]
               }} = Contacts.create_contact(attrs)
     end
