@@ -46,18 +46,23 @@ defmodule Glific.Clients.Bandhu do
   end
 
   def webhook("fetch_user_profiles", fields) do
-    profile_count =
-      get_in(fields, ["results", "parent", "bandhu_profile_check_mock", "data", "profile_count"]) ||
-        0
-
-    profiles =
-      get_in(fields, ["results", "parent", "bandhu_profile_check_mock", "data", "profiles"]) ||
-        nil
-
-    {index_map, message_list} =
-      if is_nil(profiles),
-        do: {%{}, ["No profiles found"]},
-        else: format_profile_message(profiles)
+  profile_count =
+    get_in(fields, ["results", "parent", "bandhu_profile_check_mock", "data", "profile_count"]) || 0
+  profiles =
+    get_in(fields, ["results", "parent", "bandhu_profile_check_mock", "data", "profiles"]) || nil
+  {index_map, message_list} =
+    if is_nil(profiles),
+    do: {%{}, ["No profiles found"]},
+    else
+      Enum.with_index(Map.to_list(profiles)) |> Enum.reduce({%{}, []}, fn {index, profile}, {index_map, message_list} ->
+        profile_name = Map.get(profile, "name", "")
+        user_roles = Map.get_in(profile, ["user_roles", "role_type"], "")
+        {
+          Map.put(index_map, index + 1, profile),
+          message_list ++ ["Type *#{index + 1}* for #{profile_name} (#{user_roles})"]
+        }
+      end)
+    end
 
     %{
       profile_selection_message: Enum.join(message_list, "\n"),
