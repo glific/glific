@@ -1228,6 +1228,16 @@ defmodule Glific.Flows.ActionTest do
     assert count_groups(contact) == 0
   end
 
+  test "execute an action with wait_for_time type, but message is not list" do
+    action = %Action{type: "wait_for_time"}
+    context = %FlowContext{}
+    message_stream = nil
+
+    assert_raise UndefinedFunctionError, fn ->
+      Action.execute(action, context, message_stream)
+    end
+  end
+
   test "execute an action when type is not supported" do
     action = %Action{type: "others"}
     context = %FlowContext{}
