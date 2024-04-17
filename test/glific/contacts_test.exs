@@ -281,13 +281,14 @@ defmodule Glific.ContactsTest do
               }} = Contacts.create_contact(attrs)
     end
 
+    @tag :dd
     test "create_contact/1 with valid dateString in field map",
          %{organization_id: _organization_id} = attrs do
       valid_time_attrs =
         Map.put(@invalid_field_attrs, :fields, %{
           "name" => %{
             label: "label",
-            name: "name",
+            name: "",
             inserted_at: ~U[2024-04-05 06:51:07.544495Z]
           }
         })
