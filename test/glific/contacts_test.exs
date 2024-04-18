@@ -153,7 +153,7 @@ defmodule Glific.ContactsTest do
       phone: "some updated phonenum",
       status: :invalid,
       bsp_status: :hsm,
-      fields: %{label: "", name: "", inserted_at: ""}
+      fields: %{label: "label", name: "", inserted_at: ""}
     }
 
     @optin_date "2021-03-09 12:34:25"
@@ -296,35 +296,51 @@ defmodule Glific.ContactsTest do
       assert {:ok, _} = Contacts.create_contact(attrs)
     end
 
-    test "create_contact/1 with invalid type in field map returns error changeset, list instead of string",
+    test "create_contact/1 with value can be any type",
          %{organization_id: _organization_id} = attrs do
       valid_time_attrs =
         Map.put(@invalid_field_attrs, :fields, %{
-          "title" => %{
-            label: "label",
-            name: "title",
-            values: "titles",
-            inserted_at: "2024-04-05T05:35:22.265996Z"
+          completed_activities_count: %{
+            type: "string",
+            label: "completed_activities_count",
+            value: 4,
+            inserted_at: ~U[2024-02-20T06:51:15.135762Z]
           },
-          "name" => %{
-            label: "label",
-            name: ["name1", "name2"],
-            values: "",
-            inserted_at: "2024-04-05T05:35:22.265996Z"
+          activity_optin_nudge_counter: %{
+            type: "string",
+            label: "activity_optin_nudge_counter",
+            value: "0",
+            inserted_at: ~U[2024-02-20T06:50:26.600354Z]
+          },
+          last_question_correct_answer: %{
+            type: "string",
+            label: "last_question_correct_answer",
+            value: "Option B",
+            inserted_at: ~U[2024-02-20T06:52:11.169209Z]
+          },
+          post_access_check_no_counter: %{
+            type: "string",
+            label: "post_access_check_no_counter",
+            value: "1",
+            inserted_at: ~U[2024-02-20T06:50:53.193069Z]
+          },
+          reach_submission_query_limit: %{
+            type: "string",
+            label: "reach_submission_query_limit",
+            value: "0",
+            inserted_at: ~U[2024-02-20T06:50:45.732518Z]
+          },
+          last_question_option_selected: %{
+            type: "string",
+            label: "Last_question_option_selected",
+            value: "Option C",
+            inserted_at: ~U[2024-02-20T06:52:11.044345Z]
           }
         })
 
       attrs = Map.merge(attrs, valid_time_attrs)
 
-      assert {:error,
-              %Ecto.Changeset{
-                errors: [
-                  fields: {
-                    "Expected value of inserted_at to be of type DateTime.t()",
-                    []
-                  }
-                ]
-              }} = Contacts.create_contact(attrs)
+      assert {:ok, _} = Contacts.create_contact(attrs)
     end
 
     test "create_contact/1 with empty field map",
