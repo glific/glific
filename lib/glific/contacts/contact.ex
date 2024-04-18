@@ -186,12 +186,8 @@ defmodule Glific.Contacts.Contact do
         {:inserted_at, _value} ->
           {:halt, {:error, "Expected value of #{field} to be of type DateTime.t()"}}
 
-        {_, value} when is_binary(value) ->
+        {_, _value} ->
           {:cont, :ok}
-
-        {_, value} ->
-          {:halt,
-           {:error, "Expected value of #{field} to be of type String, got #{inspect(value)}"}}
       end
     end)
   end

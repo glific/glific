@@ -320,7 +320,7 @@ defmodule Glific.ContactsTest do
               %Ecto.Changeset{
                 errors: [
                   fields: {
-                    "Expected value of name to be of type String, got [\"name1\", \"name2\"]",
+                    "Expected value of inserted_at to be of type DateTime.t()",
                     []
                   }
                 ]
