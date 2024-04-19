@@ -145,6 +145,17 @@ defmodule Glific.ContactsTest do
       fields: %{}
     }
 
+    @invalid_field_attrs %{
+      name: "name 3",
+      optin_time: ~U[2011-05-18 15:01:01Z],
+      optin_status: true,
+      optout_time: nil,
+      phone: "some updated phonenum",
+      status: :invalid,
+      bsp_status: :hsm,
+      fields: %{label: "label", name: "", inserted_at: ""}
+    }
+
     @optin_date "2021-03-09 12:34:25"
 
     def contact_fixture(attrs) do
@@ -235,6 +246,111 @@ defmodule Glific.ContactsTest do
          %{organization_id: _organization_id} = attrs do
       attrs = Map.merge(attrs, @invalid_attrs)
       assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(attrs)
+    end
+
+    test "create_contact/1 with fields should be nested map returns error changeset",
+         %{organization_id: _organization_id} = attrs do
+      attrs = Map.merge(attrs, @invalid_field_attrs)
+
+      assert {:error,
+              %Ecto.Changeset{
+                errors: [
+                  fields: {"value should be a map", []}
+                ]
+              }} = Contacts.create_contact(attrs)
+    end
+
+    test "create_contact/1 with invalid dateString in field map returns error changeset",
+         %{organization_id: _organization_id} = attrs do
+      invalid_time_attrs =
+        Map.put(@invalid_field_attrs, :fields, %{
+          "name" => %{
+            label: "label",
+            name: "name",
+            inserted_at: "2024-10-03"
+          }
+        })
+
+      attrs = Map.merge(attrs, invalid_time_attrs)
+
+      assert {:error,
+              %Ecto.Changeset{
+                errors: [
+                  fields: {"Expected value of inserted_at to be of type DateTime.t()", []}
+                ]
+              }} = Contacts.create_contact(attrs)
+    end
+
+    test "create_contact/1 with valid dateString in field map",
+         %{organization_id: _organization_id} = attrs do
+      valid_time_attrs =
+        Map.put(@invalid_field_attrs, :fields, %{
+          "name" => %{
+            label: "label",
+            name: "",
+            inserted_at: ~U[2024-04-05 06:51:07.544495Z]
+          }
+        })
+
+      attrs = Map.merge(attrs, valid_time_attrs)
+      assert {:ok, _} = Contacts.create_contact(attrs)
+    end
+
+    test "create_contact/1 with value can be any type",
+         %{organization_id: _organization_id} = attrs do
+      valid_time_attrs =
+        Map.put(@invalid_field_attrs, :fields, %{
+          completed_activities_count: %{
+            type: "string",
+            label: "completed_activities_count",
+            value: 4,
+            inserted_at: ~U[2024-02-20T06:51:15.135762Z]
+          },
+          activity_optin_nudge_counter: %{
+            type: "string",
+            label: "activity_optin_nudge_counter",
+            value: "0",
+            inserted_at: ~U[2024-02-20T06:50:26.600354Z]
+          },
+          last_question_correct_answer: %{
+            type: "string",
+            label: "last_question_correct_answer",
+            value: "Option B",
+            inserted_at: ~U[2024-02-20T06:52:11.169209Z]
+          },
+          post_access_check_no_counter: %{
+            type: "string",
+            label: "post_access_check_no_counter",
+            value: "1",
+            inserted_at: ~U[2024-02-20T06:50:53.193069Z]
+          },
+          reach_submission_query_limit: %{
+            type: "string",
+            label: "reach_submission_query_limit",
+            value: "0",
+            inserted_at: ~U[2024-02-20T06:50:45.732518Z]
+          },
+          last_question_option_selected: %{
+            type: "string",
+            label: "Last_question_option_selected",
+            value: "Option C",
+            inserted_at: ~U[2024-02-20T06:52:11.044345Z]
+          }
+        })
+
+      attrs = Map.merge(attrs, valid_time_attrs)
+
+      assert {:ok, _} = Contacts.create_contact(attrs)
+    end
+
+    test "create_contact/1 with empty field map",
+         %{organization_id: _organization_id} = attrs do
+      valid_time_attrs =
+        Map.put(@invalid_field_attrs, :fields, %{})
+
+      attrs = Map.merge(attrs, valid_time_attrs)
+
+      assert {:ok, _} = Contacts.create_contact(attrs)
     end
 
     test "import_contact/3 raises an exception if more than one keyword argument provided" do

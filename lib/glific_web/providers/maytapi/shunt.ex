@@ -33,9 +33,12 @@ defmodule GlificWeb.Providers.Maytapi.Plugs.Shunt do
 
     path =
       ["maytapi"] ++
-        if Glific.safe_string_to_atom(organization.status) == :active,
-          do: ["message", payload_type],
-          else: ["not_active"]
+        if Glific.safe_string_to_atom(organization.status) == :active do
+          Glific.Metrics.increment("Received WAGroup msg")
+          ["message", payload_type]
+        else
+          ["not_active"]
+        end
 
     conn
     |> change_path_info(path)

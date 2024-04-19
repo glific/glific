@@ -384,15 +384,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
               last_message_at: BigQuery.format_date(row.last_message_at, organization_id),
               inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
               updated_at: format_date_with_millisecond(row.updated_at, organization_id),
-              fields:
-                Enum.map(row.fields, fn {_key, field} ->
-                  %{
-                    label: field["label"],
-                    inserted_at: BigQuery.format_date(field["inserted_at"], organization_id),
-                    type: field["type"],
-                    value: field["value"]
-                  }
-                end),
+              fields: process_row(row, organization_id),
               settings: nil,
               user_name: if(!is_nil(row.user), do: row.user.name),
               user_role: if(!is_nil(row.user), do: BigQuery.format_json(row.user.roles)),
@@ -661,8 +653,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
             node_uuid: row.node_uuid,
             flow_uuid: row.flow.uuid,
             flow_id: row.flow.id,
-            contact_id: row.contact.id,
-            contact_phone: row.contact.phone,
+            flow_name: row.flow.name,
+            contact_id: if(!is_nil(row.contact), do: row.contact.id),
+            contact_phone: if(!is_nil(row.contact), do: row.contact.phone),
             results: BigQuery.format_json(row.results),
             recent_inbound: BigQuery.format_json(row.recent_inbound),
             recent_outbound: BigQuery.format_json(row.recent_outbound),
@@ -673,6 +666,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
             is_await_result: row.is_await_result,
             is_killed: row.is_killed,
             profile_id: row.profile_id,
+            wa_group_id: if(!is_nil(row.wa_group), do: row.wa_group.id),
+            wa_group_name: if(!is_nil(row.wa_group), do: row.wa_group.label),
+            wa_group_bsp_id: if(!is_nil(row.wa_group), do: row.wa_group.bsp_id),
             wakeup_at: BigQuery.format_date(row.wakeup_at, organization_id),
             completed_at: BigQuery.format_date(row.completed_at, organization_id),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
@@ -1197,7 +1193,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([f], f.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
-      |> preload([:flow, :contact])
+      |> preload([:flow, :contact, :wa_group])
 
   defp get_query("tickets", organization_id, attrs),
     do:
@@ -1246,4 +1242,29 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :media,
         :wa_group
       ])
+
+  @spec format_value(map() | list() | struct() | any()) :: String.t()
+  defp format_value(value) when is_map(value) or is_list(value) do
+    Jason.encode!(value)
+  end
+
+  defp format_value(value) when is_struct(value) do
+    value
+    |> Map.from_struct()
+    |> Jason.encode!()
+  end
+
+  defp format_value(value), do: value
+
+  @spec process_row(map(), non_neg_integer()) :: list()
+  defp process_row(row, organization_id) do
+    Enum.map(row.fields, fn {_key, field} ->
+      %{
+        label: field["label"],
+        inserted_at: BigQuery.format_date(field["inserted_at"], organization_id),
+        type: field["type"],
+        value: format_value(field["value"])
+      }
+    end)
+  end
 end
