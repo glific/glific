@@ -4,6 +4,7 @@ defmodule Glific.LLM4Dev do
   """
 
   alias Glific.Partners
+  alias Tesla.Multipart
 
   use Tesla
 
@@ -97,6 +98,37 @@ defmodule Glific.LLM4Dev do
     with {:ok, %{api_key: api_key, api_url: api_url}} <- get_credentials(org_id) do
       url = api_url <> "/api/examples_text"
       llm4dev_post(url, %{examples_text: examples_text}, api_key)
+    end
+  end
+
+  @doc """
+    Set document as knowledge base with category
+  """
+  @spec upload_knowledge_base(non_neg_integer(), map()) ::
+          {:ok, map()} | {:error, String.t()}
+  def upload_knowledge_base(org_id, params) do
+    with {:ok, %{api_key: api_key, api_url: api_url}} <- get_credentials(org_id) do
+      url = api_url <> "/api/upload"
+
+      data =
+        Multipart.new()
+        |> Multipart.add_file(params["file_path"], name: "file")
+        |> Multipart.add_field("category_id", params["category_id"])
+
+      llm4dev_post(url, data, api_key)
+    end
+  end
+
+  @doc """
+    Create new category for knowledge base
+  """
+  @spec upload_knowledge_base(non_neg_integer(), String.t()) ::
+          {:ok, map()} | {:error, String.t()}
+  def upload_knowledge_base(org_id, category) do
+    with {:ok, %{api_key: api_key, api_url: api_url}} <- get_credentials(org_id) do
+      url = api_url <> "/api/knowledge/category"
+
+      llm4dev_post(url, %{category: category}, api_key)
     end
   end
 end
