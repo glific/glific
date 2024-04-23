@@ -1,6 +1,6 @@
-defmodule Glific.OpenLLM do
+defmodule Glific.LLM4Dev do
   @moduledoc """
-  Glific OpenLLM module for all API calls to OpenLLM
+  Glific LLM4Dev module for all API calls to LLM4Dev
   """
 
   alias Glific.Partners
@@ -8,10 +8,10 @@ defmodule Glific.OpenLLM do
   use Tesla
 
   @doc """
-  Making API call to OpenLLM  and adding Authorization token in header
+  Making API call to LLM4Dev and adding Authorization token in header
   """
-  @spec open_llm_post(String.t(), any(), String.t()) :: Tesla.Env.result()
-  def open_llm_post(url, payload, api_key) do
+  @spec llm4dev_post(String.t(), any(), String.t()) :: Tesla.Env.result()
+  def llm4dev_post(url, payload, api_key) do
     middleware = [
       Tesla.Middleware.JSON,
       {Tesla.Middleware.Headers, [{"Authorization", api_key}]}
@@ -27,14 +27,14 @@ defmodule Glific.OpenLLM do
   end
 
   @doc """
-  API call to OpenLLM
+  API call to LLM4Dev
   """
   @spec parse(String.t(), String.t(), map()) :: tuple()
   def parse(api_key, url, params) do
     data = set_params(params)
     chat_url = url <> "/api/chat"
 
-    open_llm_post(chat_url, data, api_key)
+    llm4dev_post(chat_url, data, api_key)
     |> handle_response()
   end
 
@@ -66,7 +66,7 @@ defmodule Glific.OpenLLM do
   def get_credentials(org_id) do
     organization = Partners.organization(org_id)
 
-    organization.services["open_llm"]
+    organization.services["llm4dev"]
     |> case do
       nil ->
         {:error, "Secret not found."}
@@ -83,19 +83,20 @@ defmodule Glific.OpenLLM do
   def set_system_prompt(org_id, system_prompt) do
     with {:ok, %{api_key: api_key, api_url: api_url}} <- get_credentials(org_id) do
       url = api_url <> "/api/system_prompt"
-      open_llm_post(url, %{system_prompt: system_prompt}, api_key)
+      llm4dev_post(url, %{system_prompt: system_prompt}, api_key)
     end
   end
 
   @doc """
     Set examples text for Open LLM with existing configurations.
-    Glific.OpenLLM.set_examples_text(1, arc)
+    example_text = "Question: What is Glific? \n Chatbot Answer: Glific is a no-code Whatsapp Chatbot building platform"
+    set_examples_text(1, examples_text)
   """
   @spec set_examples_text(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, String.t()}
   def set_examples_text(org_id, examples_text) do
     with {:ok, %{api_key: api_key, api_url: api_url}} <- get_credentials(org_id) do
       url = api_url <> "/api/examples_text"
-      open_llm_post(url, %{examples_text: examples_text}, api_key)
+      llm4dev_post(url, %{examples_text: examples_text}, api_key)
     end
   end
 end
