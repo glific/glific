@@ -28,6 +28,12 @@ defmodule Glific.LLM4Dev do
   end
 
   @doc """
+  Making Tesla get call and adding api key in header
+  """
+  @spec llm4dev_get(String.t(), String.t()) :: Tesla.Env.result()
+  def llm4dev_get(url, api_key), do: get(url, headers: [{"Authorization", api_key}])
+
+  @doc """
   API call to LLM4Dev
   """
   @spec parse(String.t(), String.t(), map()) :: tuple()
@@ -120,15 +126,53 @@ defmodule Glific.LLM4Dev do
   end
 
   @doc """
+    Delete knowledge base document
+  """
+  @spec delete_knowledge_base(non_neg_integer(), String.t()) ::
+          {:ok, map()} | {:error, String.t()}
+  def delete_knowledge_base(org_id, uuid) do
+    with {:ok, %{api_key: api_key, api_url: api_url}} <- get_credentials(org_id) do
+      url = api_url <> "/api/files/#{uuid}"
+      delete(url, headers: [{"Authorization", api_key}])
+    end
+  end
+
+  @doc """
     Create new category for knowledge base
   """
-  @spec upload_knowledge_base(non_neg_integer(), String.t()) ::
+  @spec create_category(non_neg_integer(), String.t()) ::
           {:ok, map()} | {:error, String.t()}
-  def upload_knowledge_base(org_id, category) do
+  def create_category(org_id, category) do
     with {:ok, %{api_key: api_key, api_url: api_url}} <- get_credentials(org_id) do
       url = api_url <> "/api/knowledge/category"
 
       llm4dev_post(url, %{category: category}, api_key)
+    end
+  end
+
+  @doc """
+    List categories of knowledge base
+  """
+  @spec list_categories(non_neg_integer()) ::
+          {:ok, map()} | {:error, String.t()}
+  def list_categories(org_id) do
+    with {:ok, %{api_key: api_key, api_url: api_url}} <- get_credentials(org_id) do
+      url = api_url <> "/api/knowledge/category"
+
+      llm4dev_get(url, api_key)
+    end
+  end
+
+  @doc """
+    List knowledge base docs
+  """
+  @spec list_knowledge_base(non_neg_integer()) ::
+          {:ok, map()} | {:error, String.t()}
+  def list_knowledge_base(org_id) do
+    with {:ok, %{api_key: api_key, api_url: api_url}} <- get_credentials(org_id) do
+      url = api_url <> "/api/files"
+
+      llm4dev_get(url, api_key)
     end
   end
 end
