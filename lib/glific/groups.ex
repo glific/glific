@@ -146,6 +146,7 @@ defmodule Glific.Groups do
   def wa_groups_count(%{id: group_id}) do
     WAGroupsCollection
     |> where([cg], cg.group_id == ^group_id)
+    |> distinct([cg], cg.wa_group_id)
     |> Repo.aggregate(:count)
   end
 

@@ -33,6 +33,9 @@ defmodule Glific.Groups.WAGroups do
         query
         |> where([wg], wg.id in subquery(sub_query))
 
+      {:term, term}, query ->
+        query |> where([wa_grp], ilike(wa_grp.label, ^"%#{term}%"))
+
       _, query ->
         query
     end)
