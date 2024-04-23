@@ -147,13 +147,28 @@ defmodule GlificWeb.Schema.WAGroupCollectionTest do
       auth_query_gql_by(:count, user,
         variables: %{
           "filter" => %{
-            "includeGroups" => group.id
+            "includeGroups" => group.id,
+            "term" => "some"
           }
         }
       )
 
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "waGroupsCount"]) == 1
+
+    # Add invalid term search, results in no results
+    result =
+      auth_query_gql_by(:count, user,
+        variables: %{
+          "filter" => %{
+            "includeGroups" => group.id,
+            "term" => "zx"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "waGroupsCount"]) == 0
   end
 
   test "update collection using wa group ids", %{user: user} do
