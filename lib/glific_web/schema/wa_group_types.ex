@@ -32,6 +32,9 @@ defmodule GlificWeb.Schema.WaGroupTypes do
     @desc "Include wa_groups with in these groups"
     field(:include_groups, list_of(:id))
 
+    @desc "term for the search"
+    field :term, :string
+
     @desc "Searches based on wa group label"
     field :label, :string
   end
