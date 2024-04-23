@@ -3,6 +3,7 @@ defmodule Glific.ClientsTest do
 
   alias Glific.{
     Clients,
+    Clients.Bandhu,
     Clients.ReapBenefit,
     Clients.Sol,
     Contacts,
