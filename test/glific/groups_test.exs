@@ -3,9 +3,11 @@ defmodule Glific.GroupsTest do
 
   alias Glific.{
     Contacts,
+    Fixtures,
     Groups,
     Groups.Group,
     Groups.UserGroup,
+    Groups.WaGroupsCollections,
     Seeds.SeedsDev,
     Users
   }
@@ -333,5 +335,28 @@ defmodule Glific.GroupsTest do
 
       assert user_group_ids == [group_1.id, group_3.id]
     end
+  end
+
+  test "wa_groups_count/1 returns the count of distinct wa groups for a given group", %{
+    organization_id: org_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: org_id})
+
+    wa_group_1 =
+      Fixtures.wa_group_fixture(%{
+        organization_id: org_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    group = Fixtures.group_fixture(%{organization_id: org_id})
+
+    WaGroupsCollections.update_collection_wa_group(%{
+      organization_id: org_id,
+      group_id: group.id,
+      add_wa_group_ids: [wa_group_1.id, wa_group_1.id],
+      delete_wa_group_ids: []
+    })
+
+    assert Groups.wa_groups_count(%{id: group.id}) == 1
   end
 end
