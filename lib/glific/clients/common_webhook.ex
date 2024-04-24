@@ -48,12 +48,21 @@ defmodule Glific.Clients.CommonWebhook do
 
   def webhook("llm4dev", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
-    prompt = fields["prompt"]
+    question = fields["question"]
     session_id = Map.get(fields, "session_id", nil)
+    category_id = Map.get(fields, "category_id", nil)
+    system_prompt = Map.get(fields, "system_prompt", nil)
+
+    params = %{
+      question: question,
+      session_id: session_id,
+      category_id: category_id,
+      system_prompt: system_prompt
+    }
 
     with {:ok, %{api_key: api_key, api_url: api_url}} <- LLM4Dev.get_credentials(org_id),
          {:ok, response} <-
-           LLM4Dev.parse(api_key, api_url, %{prompt: prompt, session_id: session_id}) do
+           LLM4Dev.parse(api_key, api_url, params) do
       response
     else
       {:error, error} ->

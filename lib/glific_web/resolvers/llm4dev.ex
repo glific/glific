@@ -9,13 +9,24 @@ defmodule GlificWeb.Resolvers.LLM4Dev do
   @doc """
   Get the list of groups filtered by args
   """
-  @spec knowledge_bases(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [Group]}
+  @spec knowledge_bases(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, list()} | {:error, any()}
   def knowledge_bases(_, %{organization_id: organization_id} = _args, _),
     do: LLM4Dev.list_knowledge_base(organization_id)
 
+  @doc """
+  Delete a knowledge base file
+  """
+  @spec delete_knowledge_base(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, map()} | {:error, any()}
   def delete_knowledge_base(_, args, _),
     do: LLM4Dev.delete_knowledge_base(args.organization_id, args.uuid)
 
+  @doc """
+  Upload a pdf file as knowledge base
+  """
+  @spec upload_knowledge_base(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, map()} | {:error, any()}
   def upload_knowledge_base(_, args, _),
     do: LLM4Dev.upload_knowledge_base(args.organization_id, args)
 end

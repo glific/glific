@@ -38,19 +38,38 @@ defmodule Glific.LLM4Dev do
   """
   @spec parse(String.t(), String.t(), map()) :: tuple()
   def parse(api_key, url, params) do
-    data = set_params(params)
+    data =
+      params
+      |> add_session_id()
+      |> add_category_id(params)
+      |> add_system_prompt(params)
+
     chat_url = url <> "/api/chat"
 
     llm4dev_post(chat_url, data, api_key)
     |> handle_response()
   end
 
-  @spec set_params(map()) :: map()
-  defp set_params(%{prompt: prompt, session_id: session_id}) when is_nil(session_id),
-    do: %{"prompt" => prompt}
+  @spec add_session_id(map()) :: map()
+  defp add_session_id(%{question: question, session_id: session_id}) when is_nil(session_id),
+    do: %{"question" => question}
 
-  defp set_params(%{prompt: prompt, session_id: session_id}),
-    do: %{"prompt" => prompt, "session_id" => session_id}
+  defp add_session_id(%{question: question, session_id: session_id}),
+    do: %{"question" => question, "session_id" => session_id}
+
+  @spec add_category_id(map(), map()) :: map()
+  defp add_category_id(data, %{category_id: category_id}) when is_nil(category_id),
+    do: data
+
+  defp add_category_id(data, %{category_id: category_id}),
+    do: Map.put(data, "category_id", category_id)
+
+  @spec add_system_prompt(map(), map()) :: map()
+  defp add_system_prompt(data, %{system_prompt: system_prompt}) when is_nil(system_prompt),
+    do: data
+
+  defp add_system_prompt(data, %{system_prompt: system_prompt}),
+    do: Map.put(data, "system_prompt", system_prompt)
 
   @spec handle_response(tuple()) :: tuple()
   defp handle_response(response) do
