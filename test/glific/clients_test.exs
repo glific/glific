@@ -3,6 +3,7 @@ defmodule Glific.ClientsTest do
 
   alias Glific.{
     Clients,
+    Clients.Bandhu,
     Clients.ReapBenefit,
     Clients.Sol,
     Contacts,
@@ -119,5 +120,62 @@ defmodule Glific.ClientsTest do
 
     assert %{error: "Missing webhook function implementation"} ==
              Clients.webhook("function", %{fields: "some fields"})
+  end
+
+  test "fetch_user_profiles webhook function" do
+    fields = %{
+      "results" => %{
+        "parent" => %{
+          "bandhu_profile_check_mock" => %{
+            "success" => "true",
+            "message" => "List loaded Successfully.",
+            "inserted_at" => "2024-04-18T14:19:08.110951Z",
+            "data" => %{
+              "profile_count" => 2,
+              "profiles" => %{
+                "19" => %{
+                  "user_selected_language" => %{
+                    "name" => "English",
+                    "language_code" => "en"
+                  },
+                  "user_roles" => %{
+                    "role_type" => "Worker",
+                    "role_id" => 3
+                  },
+                  "name" => "Jacob Worker Odisha",
+                  "mobile_no" => "8097731363",
+                  "id" => 14_698,
+                  "full_mobile_no" => nil
+                },
+                "1" => %{
+                  "user_selected_language" => %{
+                    "name" => "English",
+                    "language_code" => "en"
+                  },
+                  "user_roles" => %{
+                    "role_type" => "Employer",
+                    "role_id" => 1
+                  },
+                  "name" => "Jacob Employer",
+                  "mobile_no" => "8097731363",
+                  "id" => 11_987,
+                  "full_mobile_no" => nil
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    assert %{profile_selection_message: _, index_map: index_map} =
+             Bandhu.webhook("fetch_user_profiles", fields)
+
+    fields = %{
+      "profile_number" => "1",
+      "index_map" => index_map
+    }
+
+    assert %{profile: _} = Bandhu.webhook("set_contact_profile", fields)
   end
 end
