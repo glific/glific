@@ -190,7 +190,7 @@ defmodule Glific.LLM4Dev do
 
   defp parse_list_knowledgebase_response({:ok, response}) do
     knowledge_base =
-      response_body["data"]
+      response["data"]
       |> Enum.reduce([], fn kb, acc ->
         Map.new(kb, fn {key, value} ->
           if key == "category" do
