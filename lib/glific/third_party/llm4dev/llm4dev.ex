@@ -207,7 +207,7 @@ defmodule Glific.LLM4Dev do
         |> then(&(acc ++ [&1]))
       end)
 
-    {:ok, %{knowledge_base: knowledge_base}}
+    {:ok, knowledge_base}
   end
 
   defp handle_common_response(response) do

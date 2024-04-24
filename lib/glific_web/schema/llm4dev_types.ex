@@ -19,17 +19,13 @@ defmodule GlificWeb.Schema.LLM4DevTypes do
     field :category, :category
   end
 
-  object :knowledge_base_result do
-    field :knowledge_base, list_of(:knowledge_base)
-  end
-
   object :llm_result do
     field :msg, :string
   end
 
   object :llm4dev_queries do
     @desc "Get a list of all knowledge bases"
-    field :knowledge_bases, :knowledge_base_result do
+    field :knowledge_bases, list_of(:knowledge_base) do
       middleware(Authorize, :staff)
       resolve(&Resolvers.LLM4Dev.knowledge_bases/3)
     end
