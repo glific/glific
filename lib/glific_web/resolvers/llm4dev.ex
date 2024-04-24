@@ -13,9 +13,9 @@ defmodule GlificWeb.Resolvers.LLM4Dev do
   def knowledge_bases(_, %{organization_id: organization_id} = _args, _),
     do: LLM4Dev.list_knowledge_base(organization_id)
 
-  @spec delete_knowledge_base(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, [Group]}
-  def delete_knowledge_base(_, args, _) do
-    LLM4Dev.delete_knowledge_base(args.organization_id, args.uuid)
-  end
+  def delete_knowledge_base(_, args, _),
+    do: LLM4Dev.delete_knowledge_base(args.organization_id, args.uuid)
+
+  def upload_knowledge_base(_, args, _),
+    do: LLM4Dev.upload_knowledge_base(args.organization_id, args)
 end

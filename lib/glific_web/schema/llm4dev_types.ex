@@ -42,5 +42,13 @@ defmodule GlificWeb.Schema.LLM4DevTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.LLM4Dev.delete_knowledge_base/3)
     end
+
+    @desc "Upload knowledgebase"
+    field :upload_knowledge_base, :string do
+      arg(:media, non_null(:upload))
+      arg(:category_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.LLM4Dev.upload_knowledge_base/3)
+    end
   end
 end

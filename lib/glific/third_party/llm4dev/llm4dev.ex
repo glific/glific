@@ -118,10 +118,12 @@ defmodule Glific.LLM4Dev do
 
       data =
         Multipart.new()
-        |> Multipart.add_file(params["file_path"], name: "file")
-        |> Multipart.add_field("category_id", params["category_id"])
+        |> Multipart.add_file(params.path, name: "file")
+        |> Multipart.add_field("category_id", params.category_id)
 
       llm4dev_post(url, data, api_key)
+      |> handle_common_response()
+      |> parse_common_response()
     end
   end
 
@@ -135,26 +137,13 @@ defmodule Glific.LLM4Dev do
       url = api_url <> "/api/files/#{uuid}"
 
       delete(url, headers: [{"Authorization", api_key}])
-      |> handle_delete_response()
+      |> handle_common_response()
+      |> parse_common_response()
     end
   end
 
-  defp handle_delete_response(response) do
-    response
-    |> case do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        response_body = Jason.decode!(body)
-
-        {:ok, %{msg: response_body["msg"]}}
-
-      {:ok, %Tesla.Env{status: 400, body: body}} ->
-        response_body = Jason.decode!(body)
-        {:ok, %{msg: response_body["error"]}}
-
-      {_status, _response} ->
-        {:error, "invalid response"}
-    end
-  end
+  defp parse_common_response({:error, error}), do: {:error, error}
+  defp parse_common_response({:ok, response}), do: {:ok, %{msg: response["msg"]}}
 
   @doc """
     Create new category for knowledge base
@@ -192,37 +181,43 @@ defmodule Glific.LLM4Dev do
       url = api_url <> "/api/files"
 
       llm4dev_get(url, api_key)
-      |> handle_kb_response()
+      |> handle_common_response()
+      |> parse_list_knowledgebase_response()
     end
   end
 
-  @spec handle_kb_response(tuple()) :: tuple()
-  defp handle_kb_response(response) do
+  defp parse_list_knowledgebase_response({:error, error}), do: {:error, error}
+
+  defp parse_list_knowledgebase_response({:ok, response}) do
+    knowledge_base =
+      response_body["data"]
+      |> Enum.reduce([], fn kb, acc ->
+        Map.new(kb, fn {key, value} ->
+          if key == "category" do
+            category_map =
+              Map.new(value, fn {category_key, category_value} ->
+                {String.to_atom(category_key), category_value}
+              end)
+
+            {String.to_atom(key), category_map}
+          else
+            {String.to_atom(key), value}
+          end
+        end)
+        |> then(&(acc ++ [&1]))
+      end)
+
+    {:ok, %{knowledge_base: knowledge_base}}
+  end
+
+  defp handle_common_response(response) do
     response
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        response_body = Jason.decode!(body)
-        {:ok, response_body["data"]}
+        Jason.decode(body)
 
-        knowledge_base =
-          response_body["data"]
-          |> Enum.reduce([], fn kb, acc ->
-            Map.new(kb, fn {key, value} ->
-              if key == "category" do
-                category_map =
-                  Map.new(value, fn {category_key, category_value} ->
-                    {String.to_atom(category_key), category_value}
-                  end)
-
-                {String.to_atom(key), category_map}
-              else
-                {String.to_atom(key), value}
-              end
-            end)
-            |> then(&(acc ++ [&1]))
-          end)
-
-        {:ok, %{knowledge_base: knowledge_base}}
+      {:ok, %Tesla.Env{status: 400, body: body}} ->
+        Jason.decode!(body)
 
       {_status, _response} ->
         {:error, "invalid response"}
