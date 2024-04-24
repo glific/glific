@@ -173,6 +173,40 @@ defmodule Glific.LLM4Dev do
       url = api_url <> "/api/files"
 
       llm4dev_get(url, api_key)
+      |> handle_kb_response()
+    end
+  end
+
+  @spec handle_kb_response(tuple()) :: tuple()
+  defp handle_kb_response(response) do
+    response
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        response_body = Jason.decode!(body)
+        {:ok, response_body["data"]}
+
+        knowledge_base =
+          response_body["data"]
+          |> Enum.reduce([], fn kb, acc ->
+            Map.new(kb, fn {key, value} ->
+              if key == "category" do
+                category_map =
+                  Map.new(value, fn {category_key, category_value} ->
+                    {String.to_atom(category_key), category_value}
+                  end)
+
+                {String.to_atom(key), category_map}
+              else
+                {String.to_atom(key), value}
+              end
+            end)
+            |> then(&(acc ++ [&1]))
+          end)
+
+        {:ok, %{knowledge_base: knowledge_base}}
+
+      {_status, _response} ->
+        {:error, "invalid response"}
     end
   end
 end

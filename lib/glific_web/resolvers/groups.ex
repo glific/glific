@@ -42,7 +42,7 @@ defmodule GlificWeb.Resolvers.Groups do
   """
   @spec groups(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [Group]}
   def groups(_, args, _) do
-    {:ok, Groups.list_groups(args)}
+    {:ok, Groups.list_groups(args)} |> IO.inspect()
   end
 
   @doc """
