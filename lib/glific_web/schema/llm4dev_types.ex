@@ -23,11 +23,24 @@ defmodule GlificWeb.Schema.LLM4DevTypes do
     field :knowledge_base, list_of(:knowledge_base)
   end
 
+  object :delete_knowledge_base_result do
+    field :msg, :string
+  end
+
   object :llm4dev_queries do
     @desc "Get a list of all knowledge bases"
     field :knowledge_bases, :knowledge_base_result do
       middleware(Authorize, :staff)
       resolve(&Resolvers.LLM4Dev.knowledge_bases/3)
+    end
+  end
+
+  object :llm4dev_mutations do
+    @desc "Delete a knowledgebase"
+    field :delete_knowledge_base, :delete_knowledge_base_result do
+      arg(:uuid, non_null(:uuid4))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.LLM4Dev.delete_knowledge_base/3)
     end
   end
 end

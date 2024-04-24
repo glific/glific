@@ -133,7 +133,26 @@ defmodule Glific.LLM4Dev do
   def delete_knowledge_base(org_id, uuid) do
     with {:ok, %{api_key: api_key, api_url: api_url}} <- get_credentials(org_id) do
       url = api_url <> "/api/files/#{uuid}"
+
       delete(url, headers: [{"Authorization", api_key}])
+      |> handle_delete_response()
+    end
+  end
+
+  defp handle_delete_response(response) do
+    response
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        response_body = Jason.decode!(body)
+
+        {:ok, %{msg: response_body["msg"]}}
+
+      {:ok, %Tesla.Env{status: 400, body: body}} ->
+        response_body = Jason.decode!(body)
+        {:ok, %{msg: response_body["error"]}}
+
+      {_status, _response} ->
+        {:error, "invalid response"}
     end
   end
 

@@ -192,6 +192,8 @@ defmodule GlificWeb.Schema do
     import_fields(:contact_wa_group_mutations)
 
     import_fields(:wa_groups_collection_mutations)
+
+    import_fields(:llm4dev_mutations)
   end
 
   subscription do
