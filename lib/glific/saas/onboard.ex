@@ -28,6 +28,11 @@ defmodule Glific.Saas.Onboard do
     |> notify_saas_team()
   end
 
+  @spec setupv2(map()) :: map()
+  def setupv2(params) do
+
+  end
+
   @spec add_map(map(), atom(), any()) :: map()
   defp add_map(map, _key, nil), do: map
   defp add_map(map, key, value), do: Map.put(map, key, value)
