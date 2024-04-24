@@ -143,7 +143,7 @@ defmodule Glific.ClientsTest do
                     "role_id" => 3
                   },
                   "name" => "Jacob Worker Odisha",
-                  "mobile_no" => "8097731363",
+                  "mobile_no" => "809XXXXXX3",
                   "id" => 14_698,
                   "full_mobile_no" => nil
                 },
@@ -157,7 +157,7 @@ defmodule Glific.ClientsTest do
                     "role_id" => 1
                   },
                   "name" => "Jacob Employer",
-                  "mobile_no" => "8097731363",
+                  "mobile_no" => "809XXXXXX3",
                   "id" => 11_987,
                   "full_mobile_no" => nil
                 }
