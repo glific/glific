@@ -15,6 +15,14 @@ defmodule GlificWeb.Resolvers.LLM4Dev do
     do: LLM4Dev.list_knowledge_base(organization_id)
 
   @doc """
+  Get the list of groups filtered by args
+  """
+  @spec categories(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, list()} | {:error, any()}
+  def categories(_, %{organization_id: organization_id} = _args, _),
+    do: LLM4Dev.list_categories(organization_id)
+
+  @doc """
   Delete a knowledge base file
   """
   @spec delete_knowledge_base(Absinthe.Resolution.t(), map(), %{context: map()}) ::

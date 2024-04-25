@@ -192,10 +192,24 @@ defmodule Glific.LLM4Dev do
           {:ok, map()} | {:error, String.t()}
   def list_categories(org_id) do
     with {:ok, %{api_key: api_key, api_url: api_url}} <- get_credentials(org_id) do
-      url = api_url <> "/api/knowledge/category"
+      url = api_url <> "/api/knowledge/category/get"
 
       llm4dev_get(url, api_key)
+      |> handle_common_response()
+      |> parse_category_response()
     end
+  end
+
+  defp parse_category_response({:error, error}), do: {:error, error}
+
+  defp parse_category_response({:ok, response}) do
+    response["data"]
+    |> Enum.reduce([], fn category, acc ->
+      category
+      |> Map.new(fn {key, value} -> {String.to_atom(key), value} end)
+      |> then(&(acc ++ [&1]))
+    end)
+    |> then(&{:ok, &1})
   end
 
   @doc """

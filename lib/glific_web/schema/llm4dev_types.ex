@@ -29,6 +29,12 @@ defmodule GlificWeb.Schema.LLM4DevTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.LLM4Dev.knowledge_bases/3)
     end
+
+    @desc "Get a list of all knowledge bases categories"
+    field :categories, list_of(:category) do
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.LLM4Dev.categories/3)
+    end
   end
 
   object :llm4dev_mutations do
