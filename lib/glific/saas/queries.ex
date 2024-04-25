@@ -76,6 +76,50 @@ defmodule Glific.Saas.Queries do
 
   def sync_templates(results), do: results
 
+  # TODO: docs needed
+  # TODO More testing needed interms of submission entry creation checking some null stuff
+  @spec validate_org_details(map(), map()) :: map()
+  def validate_org_details(result, params) do
+    # validations needed, string, non-empty, respect length constraint
+    params = Map.delete(params, :registration_document)
+
+    result =
+      validate_org_field(result, params["name"], "Organization name", 40)
+      |> validate_org_field(params["current_address"], "Current address", 300)
+      |> validate_org_field(
+        params["registered_address"],
+        "Registered address",
+        300
+      )
+
+    if not empty(params["gstin"]) do
+      validate_org_field(result, params["gstin"], "GSTIN number", 15)
+    end
+
+    # TODO: validate doc, after deciding which method should we use
+    # TODO: Add tests for these validations
+    result
+  end
+
+  # TODO: specs needed
+  defp validate_org_field(result, field, label, length) when is_binary(field) do
+    cond do
+      empty(field) ->
+        dgettext("error", "%{label} cannot be empty.", label: label)
+        |> error(result, :org_details)
+
+      String.length(field) > length ->
+        dgettext("error", "%{label} cannot be more than %{length} letters.",
+          label: label,
+          length: length
+        )
+        |> error(result, :org_details)
+
+      true ->
+        result
+    end
+  end
+
   @spec organization(map(), map()) :: map()
   defp organization(%{is_valid: false} = result, _params), do: result
 
@@ -191,7 +235,7 @@ defmodule Glific.Saas.Queries do
   end
 
   @spec error(String.t(), map(), atom()) :: map()
-  defp error(message, result, key) do
+  def error(message, result, key) do
     result
     |> Map.put(:is_valid, false)
     |> Map.update!(:messages, fn msgs -> Map.put(msgs, key, message) end)
