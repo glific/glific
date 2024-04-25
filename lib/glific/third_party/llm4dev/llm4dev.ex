@@ -132,17 +132,25 @@ defmodule Glific.LLM4Dev do
   @spec upload_knowledge_base(non_neg_integer(), map()) ::
           {:ok, map()} | {:error, String.t()}
   def upload_knowledge_base(org_id, params) do
+    IO.inspect(params)
+
     with {:ok, %{api_key: api_key, api_url: api_url}} <- get_credentials(org_id) do
       url = api_url <> "/api/upload"
 
       data =
         Multipart.new()
-        |> Multipart.add_file(params.path, name: "file")
+        |> Multipart.add_file(params.media.path, name: "file")
         |> Multipart.add_field("category_id", params.category_id)
+        |> Multipart.add_field("filename", params.media.filename)
 
       llm4dev_post(url, data, api_key)
-      |> handle_common_response()
-      |> parse_common_response()
+      |> case do
+        {:ok, %Tesla.Env{status: 200, body: body}} ->
+          {:ok, %{msg: body["msg"]}}
+
+        {_status, _response} ->
+          {:error, "invalid response"}
+      end
     end
   end
 
