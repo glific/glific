@@ -7,8 +7,8 @@ defmodule Glific.Clients.CommonWebhook do
     ASR.Bhasini,
     ASR.GoogleASR,
     Contacts.Contact,
-    OpenAI.ChatGPT,
     LLM4Dev,
+    OpenAI.ChatGPT,
     Repo,
     Sheets.GoogleSheets
   }

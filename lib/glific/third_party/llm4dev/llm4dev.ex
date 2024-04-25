@@ -184,7 +184,7 @@ defmodule Glific.LLM4Dev do
       |> case do
         {:ok, %Tesla.Env{status: 200, body: body}} ->
           body
-          |> Map.new(fn {key, value} -> {String.to_atom(key), value} end)
+          |> Glific.atomize_keys()
           |> then(&{:ok, &1})
 
         {_status, _response} ->
@@ -214,7 +214,7 @@ defmodule Glific.LLM4Dev do
     response["data"]
     |> Enum.reduce([], fn category, acc ->
       category
-      |> Map.new(fn {key, value} -> {String.to_atom(key), value} end)
+      |> Glific.atomize_keys()
       |> then(&(acc ++ [&1]))
     end)
     |> then(&{:ok, &1})
@@ -243,12 +243,8 @@ defmodule Glific.LLM4Dev do
       |> Enum.reduce([], fn kb, acc ->
         Map.new(kb, fn {key, value} ->
           if key == "category" do
-            category_map =
-              Map.new(value, fn {category_key, category_value} ->
-                {String.to_atom(category_key), category_value}
-              end)
-
-            {String.to_atom(key), category_map}
+            Glific.atomize_keys(value)
+            |> then(&{String.to_atom(key), &1})
           else
             {String.to_atom(key), value}
           end
