@@ -132,8 +132,6 @@ defmodule Glific.LLM4Dev do
   @spec upload_knowledge_base(non_neg_integer(), map()) ::
           {:ok, map()} | {:error, String.t()}
   def upload_knowledge_base(org_id, params) do
-    IO.inspect(params)
-
     with {:ok, %{api_key: api_key, api_url: api_url}} <- get_credentials(org_id) do
       url = api_url <> "/api/upload"
 
