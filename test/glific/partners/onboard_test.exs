@@ -19,6 +19,38 @@ defmodule Glific.OnboardTest do
     "shortcode" => "short"
   }
 
+  @valid_attrs_2 %{
+    "org_details" => %{
+      "name" => "name",
+      "gstin" => "gstin",
+      "registration_document_url" => "",
+      "registered_address" => "adr1",
+      "current_address" => "adr2"
+    },
+    "platform_details" => %{
+      "api_key" => "ln48plh8lyibjnrtwusnzpkqb45xzcvk",
+      "app_name" => "ngo",
+      "phone" => "918547689517",
+      "shortcode" => "ngo"
+    },
+    "billing_frequency" => "yearly",
+    "finance_poc" => %{
+      "name" => "name",
+      "email" => "email",
+      "designation" => "designation",
+      "phone" => "phone"
+    },
+    "submitter" => %{
+      "name" => "name",
+      "email" => "email"
+    },
+    "signing_authority" => %{
+      "name" => "name",
+      "email" => "email",
+      "designation" => "designation"
+    }
+  }
+
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_billing(organization)
@@ -129,5 +161,10 @@ defmodule Glific.OnboardTest do
 
     assert {:error, ["Elixir.Glific.Partners.Organization", "Resource not found"]} ==
              Repo.fetch_by(Organization, %{name: result.organization.name})
+  end
+
+  @tag :dd
+  test "setupv2" do
+    assert {:ok, _} = Onboard.setupv2(@valid_attrs_2)
   end
 end

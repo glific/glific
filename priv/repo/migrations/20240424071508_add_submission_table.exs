@@ -27,7 +27,7 @@ defmodule Glific.Repo.Migrations.AddSubmissionTable do
 
       # Foreign key to organization, restricting the scope of this table to the specified organization.
       add :organization_id, references(:organizations, on_delete: :delete_all),
-        null: false,
+        null: true,
         comment: "Unique organization ID."
 
       timestamps(type: :utc_datetime)
