@@ -37,4 +37,12 @@ defmodule GlificWeb.Resolvers.LLM4Dev do
           {:ok, map()} | {:error, any()}
   def upload_knowledge_base(_, args, _),
     do: LLM4Dev.upload_knowledge_base(args.organization_id, args)
+
+  @doc """
+  Create a new category
+  """
+  @spec create_category(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, map()} | {:error, any()}
+  def create_category(_, args, _),
+    do: LLM4Dev.create_category(args.organization_id, args)
 end

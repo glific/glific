@@ -37,16 +37,16 @@ defmodule Glific.LLM4Dev do
   API call to LLM4Dev
   """
   @spec parse(String.t(), String.t(), map()) :: tuple()
-  def parse(api_key, url, params) do
+  def parse(api_key, api_url, params) do
     data =
       params
       |> add_session_id()
       |> add_category_id(params)
       |> add_system_prompt(params)
 
-    chat_url = url <> "/api/chat"
+    url = api_url <> "/api/chat"
 
-    llm4dev_post(chat_url, data, api_key)
+    llm4dev_post(url, data, api_key)
     |> handle_response()
   end
 
@@ -167,19 +167,29 @@ defmodule Glific.LLM4Dev do
     end
   end
 
+  @spec parse_common_response({:ok, map()} | {:error, any()}) :: {:ok, map()} | {:error, any()}
   defp parse_common_response({:error, error}), do: {:error, error}
   defp parse_common_response({:ok, response}), do: {:ok, %{msg: response["msg"]}}
 
   @doc """
     Create new category for knowledge base
   """
-  @spec create_category(non_neg_integer(), String.t()) ::
+  @spec create_category(non_neg_integer(), map()) ::
           {:ok, map()} | {:error, String.t()}
-  def create_category(org_id, category) do
+  def create_category(org_id, params) do
     with {:ok, %{api_key: api_key, api_url: api_url}} <- get_credentials(org_id) do
       url = api_url <> "/api/knowledge/category"
 
-      llm4dev_post(url, %{category: category}, api_key)
+      llm4dev_post(url, %{"name" => params.name}, api_key)
+      |> case do
+        {:ok, %Tesla.Env{status: 200, body: body}} ->
+          body
+          |> Map.new(fn {key, value} -> {String.to_atom(key), value} end)
+          |> then(&{:ok, &1})
+
+        {_status, _response} ->
+          {:error, "invalid response"}
+      end
     end
   end
 

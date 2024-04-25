@@ -38,11 +38,11 @@ defmodule GlificWeb.Schema.LLM4DevTypes do
   end
 
   object :llm4dev_mutations do
-    @desc "Delete a knowledgebase"
-    field :delete_knowledge_base, :llm_result do
-      arg(:uuid, non_null(:uuid4))
+    @desc "Create category"
+    field :create_category, :category do
+      arg(:name, non_null(:string))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.LLM4Dev.delete_knowledge_base/3)
+      resolve(&Resolvers.LLM4Dev.create_category/3)
     end
 
     @desc "Upload knowledgebase"
@@ -51,6 +51,13 @@ defmodule GlificWeb.Schema.LLM4DevTypes do
       arg(:category_id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.LLM4Dev.upload_knowledge_base/3)
+    end
+
+    @desc "Delete a knowledgebase"
+    field :delete_knowledge_base, :llm_result do
+      arg(:uuid, non_null(:uuid4))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.LLM4Dev.delete_knowledge_base/3)
     end
   end
 end
