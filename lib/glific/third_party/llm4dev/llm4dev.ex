@@ -95,7 +95,7 @@ defmodule Glific.LLM4Dev do
     organization.services["llm4dev"]
     |> case do
       nil ->
-        {:error, "Secret not found."}
+        {:error, "Credentials not found for LLM4Dev, Kindly update from Settings"}
 
       credentials ->
         {:ok, %{api_key: credentials.secrets["api_key"], api_url: credentials.secrets["api_url"]}}
@@ -203,6 +203,7 @@ defmodule Glific.LLM4Dev do
       url = api_url <> "/api/knowledge/category/get"
 
       llm4dev_get(url, api_key)
+      |> IO.inspect()
       |> handle_common_response()
       |> parse_category_response()
     end
@@ -263,6 +264,10 @@ defmodule Glific.LLM4Dev do
 
       {:ok, %Tesla.Env{status: 400, body: body}} ->
         Jason.decode!(body)
+
+      {:ok, %Tesla.Env{status: 404, body: body}} ->
+        error = Jason.decode!(body)
+        {:error, error["error"]}
 
       {_status, _response} ->
         {:error, "invalid response"}
