@@ -84,16 +84,17 @@ defmodule Glific.Saas.Queries do
     params = Map.delete(params, :registration_document)
 
     result =
-      validate_org_field(result, params["name"], "Organization name", 40)
-      |> validate_org_field(params["current_address"], "Current address", 300)
-      |> validate_org_field(
+      validate_text_field(result, params["name"], "Organization name", 40, :org_details)
+      |> validate_text_field(params["current_address"], "Current address", 300, :org_details)
+      |> validate_text_field(
         params["registered_address"],
         "Registered address",
-        300
+        300,
+        :org_details
       )
 
     if not empty(params["gstin"]) do
-      validate_org_field(result, params["gstin"], "GSTIN number", 15)
+      validate_text_field(result, params["gstin"], "GSTIN number", 15, :org_details)
     end
 
     # TODO: validate doc, after deciding which method should we use
@@ -101,19 +102,41 @@ defmodule Glific.Saas.Queries do
     result
   end
 
+  # TODO: docs needed
+  @spec validate_billing_details(map(), map()) :: map()
+  def validate_billing_details(result, params) do
+    billing_frequency = params["billing_frequency"]
+
+    cond do
+      empty(billing_frequency) ->
+        dgettext("error", "%{label} cannot be empty.", label: "billing_frequency")
+        |> error(result, :billing_frequency)
+
+      billing_frequency not in ["yearly", "monthly", "quarterly"] ->
+        dgettext("error", "%{label} shoudl be one of yearly, monthly or quarterly.",
+          label: "billing_frequency"
+        )
+        |> error(result, :billing_frequency)
+    end
+    |> validate_text_field(params["finance_poc"]["name"], "Finance POC Name", 25, :finance_poc)
+    |> validate_text_field(params["finance_poc"]["designation"], "Finance POC Designation", 25, :finance_poc)
+    |> validate_email(params["finance_poc"]["email"], :finance_poc)
+    |> validate_phone(params["finance_poc"]["phone"], :finance_poc)
+  end
+
   # TODO: specs needed
-  defp validate_org_field(result, field, label, length) when is_binary(field) do
+  defp validate_text_field(result, field, label, length, key) when is_binary(field) do
     cond do
       empty(field) ->
         dgettext("error", "%{label} cannot be empty.", label: label)
-        |> error(result, :org_details)
+        |> error(result, key)
 
       String.length(field) > length ->
         dgettext("error", "%{label} cannot be more than %{length} letters.",
           label: label,
           length: length
         )
-        |> error(result, :org_details)
+        |> error(result, key)
 
       true ->
         result
@@ -292,27 +315,27 @@ defmodule Glific.Saas.Queries do
     end
   end
 
-  @spec validate_email(map(), String.t()) :: map()
-  defp validate_email(result, email) do
+  @spec validate_email(map(), String.t(), atom()) :: map()
+  defp validate_email(result, email, key \\ :email) do
     case Changeset.validate_email(email) do
       :ok ->
         result
 
       _ ->
         dgettext("error", "Email is not valid.")
-        |> error(result, :email)
+        |> error(result, key)
     end
   end
 
-  @spec validate_phone(map(), String.t()) :: map()
-  defp validate_phone(result, phone) do
+  @spec validate_phone(map(), String.t(), atom()) :: map()
+  defp validate_phone(result, phone, key \\ :phone) do
     case ExPhoneNumber.parse(phone, "IN") do
       {:ok, _phone} ->
         result
 
       _ ->
         dgettext("error", "Phone is not valid.")
-        |> error(result, :phone)
+        |> error(result, key)
     end
   end
 
