@@ -139,7 +139,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
 
     add_maytapi()
 
-    open_llm()
+    add_llm4dev()
   end
 
   defp add_dialogflow do
@@ -473,16 +473,16 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
         })
   end
 
-  defp open_llm() do
-    query = from(p in Provider, where: p.shortcode == "open_llm")
+  defp add_llm4dev() do
+    query = from(p in Provider, where: p.shortcode == "llm4dev")
 
     # add only if does not exist
     if !Repo.exists?(query),
       do:
         Repo.insert!(%Provider{
-          name: "open_llm",
-          shortcode: "open_llm",
-          description: "Querying custom knowledge base using GPT APIs from OpenLLM",
+          name: "LLM4Dev",
+          shortcode: "llm4dev",
+          description: "Querying custom knowledge base using GPT APIs from LLM4Dev",
           group: nil,
           is_required: false,
           keys: %{},
