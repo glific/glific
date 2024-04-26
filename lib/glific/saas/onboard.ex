@@ -4,7 +4,7 @@ defmodule Glific.Saas.Onboard do
   here to manage global operations across all organizations.
   At some later point, we might decide to have a separate onboarding table and managment structure
   """
-  alias Glific.Submissions
+  alias Glific.Registrations
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
@@ -32,10 +32,10 @@ defmodule Glific.Saas.Onboard do
   @spec setupv2(map()) :: map()
   def setupv2(params) do
     # validations
-    # entry to submission table
+    # entry to registration table
     # setup org etc..
     # send mail
-    Submissions.create_submission(params)
+    Registrations.create_registration(params)
   end
 
   @spec add_map(map(), atom(), any()) :: map()

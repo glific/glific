@@ -77,7 +77,7 @@ defmodule Glific.Saas.Queries do
   def sync_templates(results), do: results
 
   # TODO: docs needed
-  # TODO More testing needed interms of submission entry creation checking some null stuff
+  # TODO More testing needed interms of registration entry creation checking some null stuff
   @spec validate_org_details(map(), map()) :: map()
   def validate_org_details(result, params) do
     # validations needed, string, non-empty, respect length constraint

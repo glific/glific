@@ -1,6 +1,6 @@
-defmodule Glific.Submissions.Submission do
+defmodule Glific.Registrations.Registration do
   @moduledoc """
-  Submissions are the application form filled by users
+  Registrations are the application form filled by users
   """
   use Ecto.Schema
   import Ecto.Changeset
@@ -11,16 +11,17 @@ defmodule Glific.Submissions.Submission do
 
   # define all the required fields for organization
   @required_fields [
+    :organization_id
+  ]
+
+  # define all the optional fields for organization
+  @optional_fields [
     :org_details,
     :platform_details,
     :billing_frequency,
     :finance_poc,
     :submitter,
-    :signing_authority
-  ]
-
-  # define all the optional fields for organization
-  @optional_fields [
+    :signing_authority,
     :has_submitted,
     :has_confirmed,
     :organization_id
@@ -43,7 +44,7 @@ defmodule Glific.Submissions.Submission do
           updated_at: :utc_datetime | nil
         }
 
-  schema "submissions" do
+  schema "registrations" do
     field(:org_details, :map)
     field(:platform_details, :map)
 
@@ -65,9 +66,9 @@ defmodule Glific.Submissions.Submission do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(Submission.t(), map()) :: Ecto.Changeset.t()
-  def changeset(submission, attrs) do
-    submission
+  @spec changeset(Registration.t(), map()) :: Ecto.Changeset.t()
+  def changeset(registration, attrs) do
+    registration
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:organization_id)
