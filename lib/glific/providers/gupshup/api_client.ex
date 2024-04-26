@@ -6,7 +6,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   alias Plug.Conn.Query
   import GlificWeb.Gettext
 
-  @gupshup_url "https://api.gupshup.io/sm/api/v1"
+  @gupshup_url "https://api.gupshup.io/wa/api/v1"
 
   use Tesla
   # you can add , log_level: :debug to the below if you want debugging info
