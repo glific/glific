@@ -203,7 +203,6 @@ defmodule Glific.LLM4Dev do
       url = api_url <> "/api/knowledge/category/get"
 
       llm4dev_get(url, api_key)
-      |> IO.inspect()
       |> handle_common_response()
       |> parse_category_response()
     end
