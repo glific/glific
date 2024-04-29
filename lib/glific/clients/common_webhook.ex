@@ -48,11 +48,7 @@ defmodule Glific.Clients.CommonWebhook do
 
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_gpt_vision", fields) do
-    IO.inspect(fields)
-    prompt = fields["prompt"]
-    url = fields["url"]
-
-    ChatGPT.gpt_vision(%{prompt: prompt, url: url})
+    ChatGPT.gpt_vision(fields)
     |> case do
       {:ok, response} -> %{success: true, response: response}
       {:error, error} -> %{success: false, error: error}

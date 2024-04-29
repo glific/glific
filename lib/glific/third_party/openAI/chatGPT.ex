@@ -60,19 +60,18 @@ defmodule Glific.OpenAI.ChatGPT do
             "content" => [
               %{
                 "type" => "text",
-                "text" => params.prompt
+                "text" => params["prompt"]
               },
               %{
                 "type" => "image_url",
                 "image_url" => %{
-                  "url" => params.url
+                  "url" => params["url"]
                 }
               }
             ]
           }
         ]
       }
-      |> IO.inspect()
 
     middleware = [
       Tesla.Middleware.JSON,
@@ -82,7 +81,6 @@ defmodule Glific.OpenAI.ChatGPT do
     middleware
     |> Tesla.client()
     |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 120_000]])
-    |> IO.inspect()
     |> handle_response()
   end
 
