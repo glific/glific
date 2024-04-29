@@ -137,4 +137,22 @@ defmodule Glific.Processor.ConsumerFlowTest do
     assert sender.optin_status == false
     assert !is_nil(sender.optout_time)
   end
+
+  test "check regx flow sequence" do
+    state = ConsumerFlow.load_state(Fixtures.get_org_id())
+
+    # keep track of current messages
+    message_count = Repo.aggregate(Message, :count)
+
+    sender = Repo.get_by(Contact, %{name: "Chrissy Cron"})
+
+    # The default regex config matches the word `unique_regex`
+    message =
+      Fixtures.message_fixture(%{body: "unique_regex", sender_id: sender.id})
+      |> Repo.preload([:contact])
+    ConsumerFlow.process_message({message, state}, message.body)
+
+    new_message_count = Repo.aggregate(Message, :count)
+    assert new_message_count > message_count + 1
+  end
 end
