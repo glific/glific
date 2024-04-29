@@ -7,8 +7,8 @@ defmodule Glific.Clients.CommonWebhook do
     ASR.Bhasini,
     ASR.GoogleASR,
     Contacts.Contact,
+    LLM4Dev,
     OpenAI.ChatGPT,
-    OpenLLM,
     Repo,
     Sheets.GoogleSheets
   }
@@ -46,14 +46,23 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  def webhook("open_llm", fields) do
+  def webhook("llm4dev", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     question = fields["question"]
     session_id = Map.get(fields, "session_id", nil)
+    category_id = Map.get(fields, "category_id", nil)
+    system_prompt = Map.get(fields, "system_prompt", nil)
 
-    with {:ok, %{api_key: api_key, api_url: api_url}} <- OpenLLM.get_credentials(org_id),
+    params = %{
+      question: question,
+      session_id: session_id,
+      category_id: category_id,
+      system_prompt: system_prompt
+    }
+
+    with {:ok, %{api_key: api_key, api_url: api_url}} <- LLM4Dev.get_credentials(org_id),
          {:ok, response} <-
-           OpenLLM.parse(api_key, api_url, %{question: question, session_id: session_id}) do
+           LLM4Dev.parse(api_key, api_url, params) do
       response
     else
       {:error, error} ->
