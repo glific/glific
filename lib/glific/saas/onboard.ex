@@ -5,6 +5,7 @@ defmodule Glific.Saas.Onboard do
   At some later point, we might decide to have a separate onboarding table and managment structure
   """
   alias Glific.Registrations
+
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
@@ -26,16 +27,8 @@ defmodule Glific.Saas.Onboard do
     |> Queries.setup(params)
     |> Queries.seed_data()
     |> format_results()
-    |> notify_saas_team()
-  end
 
-  @spec setupv2(map()) :: map()
-  def setupv2(params) do
-    # validations
-    # entry to registration table
-    # setup org etc..
-    # send mail
-    Registrations.create_registration(params)
+    # |> notify_saas_team()
   end
 
   @spec add_map(map(), atom(), any()) :: map()

@@ -4,8 +4,8 @@ defmodule Glific.Registrations do
   """
 
   alias Glific.{
-    Repo,
     Registrations.Registration,
+    Repo
   }
 
   @doc """

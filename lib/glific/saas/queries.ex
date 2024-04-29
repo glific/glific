@@ -48,8 +48,15 @@ defmodule Glific.Saas.Queries do
     result
     |> validate_bsp_keys(params)
     |> validate_shortcode(params["shortcode"])
-    |> validate_email(params["email"])
     |> validate_phone(params["phone"])
+    |> validate_text_field(params["gstin"], :gstin, {15, 15}, true)
+    |> validate_text_field(
+      params["registered_address"],
+      :registered_address,
+      {0, 300}
+    )
+    |> validate_text_field(params["current_address"], :current_address, {0, 300})
+    |> validate_registration_document(params["registration_doc_link"])
   end
 
   @doc """
@@ -77,66 +84,79 @@ defmodule Glific.Saas.Queries do
   def sync_templates(results), do: results
 
   # TODO: docs needed
-  # TODO More testing needed interms of registration entry creation checking some null stuff
-  @spec validate_org_details(map(), map()) :: map()
-  def validate_org_details(result, params) do
-    # validations needed, string, non-empty, respect length constraint
-    params = Map.delete(params, :registration_document)
+  # @spec validate_billing_details(map(), map()) :: map()
+  # def validate_billing_details(result, params) do
+  #   billing_frequency = params["billing_frequency"]
 
-    result =
-      validate_text_field(result, params["name"], "Organization name", 40, :org_details)
-      |> validate_text_field(params["current_address"], "Current address", 300, :org_details)
-      |> validate_text_field(
-        params["registered_address"],
-        "Registered address",
-        300,
-        :org_details
-      )
+  #   cond do
+  #     empty(billing_frequency) ->
+  #       dgettext("error", "%{label} cannot be empty.", label: "billing_frequency")
+  #       |> error(result, :billing_frequency)
 
-    if not empty(params["gstin"]) do
-      validate_text_field(result, params["gstin"], "GSTIN number", 15, :org_details)
-    end
+  #     billing_frequency not in ["yearly", "monthly", "quarterly"] ->
+  #       dgettext("error", "%{label} shoudl be one of yearly, monthly or quarterly.",
+  #         label: "billing_frequency"
+  #       )
+  #       |> error(result, :billing_frequency)
+  #   end
+  #   |> validate_text_field(params["finance_poc"]["name"], "Finance POC Name", 25, :finance_poc)
+  #   |> validate_text_field(
+  #     params["finance_poc"]["designation"],
+  #     "Finance POC Designation",
+  #     25,
+  #     :finance_poc
+  #   )
+  #   |> validate_email(params["finance_poc"]["email"], :finance_poc)
+  #   |> validate_phone(params["finance_poc"]["phone"], :finance_poc)
+  # end
 
-    # TODO: validate doc, after deciding which method should we use
-    # TODO: Add tests for these validations
-    result
+  @spec validate_text_field(map(), String.t(), atom(), {number(), number()}, boolean()) :: map()
+  defp validate_text_field(result, field, key, length, optional \\ false)
+  defp validate_text_field(result, nil, _key, {_min_len, _max_len}, true), do: result
+
+  defp validate_text_field(result, nil, key, {_min_len, _max_len}, false) do
+    dgettext("error", "%{key} cannot be empty.", key: key)
+    |> error(result, key)
   end
 
-  # TODO: docs needed
-  @spec validate_billing_details(map(), map()) :: map()
-  def validate_billing_details(result, params) do
-    billing_frequency = params["billing_frequency"]
-
-    cond do
-      empty(billing_frequency) ->
-        dgettext("error", "%{label} cannot be empty.", label: "billing_frequency")
-        |> error(result, :billing_frequency)
-
-      billing_frequency not in ["yearly", "monthly", "quarterly"] ->
-        dgettext("error", "%{label} shoudl be one of yearly, monthly or quarterly.",
-          label: "billing_frequency"
-        )
-        |> error(result, :billing_frequency)
-    end
-    |> validate_text_field(params["finance_poc"]["name"], "Finance POC Name", 25, :finance_poc)
-    |> validate_text_field(params["finance_poc"]["designation"], "Finance POC Designation", 25, :finance_poc)
-    |> validate_email(params["finance_poc"]["email"], :finance_poc)
-    |> validate_phone(params["finance_poc"]["phone"], :finance_poc)
-  end
-
-  # TODO: specs needed
-  defp validate_text_field(result, field, label, length, key) when is_binary(field) do
+  defp validate_text_field(result, field, key, {min_len, max_len}, _optional)
+       when is_binary(field) do
     cond do
       empty(field) ->
-        dgettext("error", "%{label} cannot be empty.", label: label)
+        dgettext("error", "%{key} cannot be empty.", key: key)
         |> error(result, key)
 
-      String.length(field) > length ->
-        dgettext("error", "%{label} cannot be more than %{length} letters.",
-          label: label,
-          length: length
+      String.length(field) < min_len ->
+        dgettext("error", "%{key} cannot be less than %{length} letters.",
+          key: key,
+          length: min_len
         )
         |> error(result, key)
+
+      String.length(field) > max_len ->
+        dgettext("error", "%{key} cannot be more than %{length} letters.",
+          key: key,
+          length: max_len
+        )
+        |> error(result, key)
+
+      true ->
+        result
+    end
+  end
+
+  @spec validate_registration_document(map(), String.t()) :: map()
+  defp validate_registration_document(result, document_link) do
+    cond do
+      empty(document_link) ->
+        dgettext("error", "%{key} cannot be empty.", key: :registration_doc_link)
+        |> error(result, :registration_doc_link)
+
+      String.starts_with?(document_link, "https://storage.googleapis.com") == false ->
+        dgettext("error", "%{key} should start with https://storage.googleapis.com.",
+          key: :registration_doc_link
+        )
+        |> error(result, :registration_doc_link)
 
       true ->
         result

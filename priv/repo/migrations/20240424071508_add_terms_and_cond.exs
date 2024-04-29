@@ -2,6 +2,11 @@ defmodule Glific.Repo.Migrations.AddRegistrationTable do
   use Ecto.Migration
 
   def change do
+    set_email_non_null()
+    create_registrations()
+  end
+
+  defp create_registrations do
     create table(:registrations) do
       add :org_details, :map, comment: "Details about the organization."
 
@@ -30,6 +35,12 @@ defmodule Glific.Repo.Migrations.AddRegistrationTable do
         comment: "Unique organization ID."
 
       timestamps(type: :utc_datetime)
+    end
+  end
+
+  defp set_email_non_null do
+    alter table(:organizations) do
+      modify :email, :string, null: true
     end
   end
 end

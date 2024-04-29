@@ -375,6 +375,7 @@ defmodule GlificWeb.Schema.WAGroupCollectionTest do
         }
       }
     )
+
     assert WAGroupsCollection
            |> where([wa_grp], wa_grp.wa_group_id == ^wa_group.id)
            |> Repo.all()

@@ -15,41 +15,46 @@ defmodule Glific.OnboardTest do
     "phone" => "+911234567890",
     "api_key" => "fake api key",
     "app_name" => "fake app name",
-    "email" => "lobo@yahoo.com",
-    "shortcode" => "short"
+    "shortcode" => "short",
+    "gstin" => "abcabcabcabcabc",
+    "registered_address" => "registered_address",
+    "current_address" => "current_address",
+    "registration_doc_link" => "https://storage.googleapis.com/1/file.doc"
   }
 
-  @valid_attrs_2 %{
-    "org_details" => %{
-      "name" => "name",
-      "gstin" => "gstin",
-      "registration_document_url" => "",
-      "registered_address" => "adr1",
-      "current_address" => "adr2"
-    },
-    "platform_details" => %{
-      "api_key" => "ln48plh8lyibjnrtwusnzpkqb45xzcvk",
-      "app_name" => "ngo",
-      "phone" => "918547689517",
-      "shortcode" => "ngo"
-    },
-    "billing_frequency" => "yearly",
-    "finance_poc" => %{
-      "name" => "name",
-      "email" => "email",
-      "designation" => "designation",
-      "phone" => "phone"
-    },
-    "submitter" => %{
-      "name" => "name",
-      "email" => "email"
-    },
-    "signing_authority" => %{
-      "name" => "name",
-      "email" => "email",
-      "designation" => "designation"
-    }
-  }
+  # TODO: remove this comments
+
+  # @valid_attrs_2 %{
+  #   "org_details" => %{
+  #     "name" => "name",
+  #     "gstin" => "gstin",
+  #     "registration_document_url" => "",
+  #     "registered_address" => "adr1",
+  #     "current_address" => "adr2"
+  #   },
+  #   "platform_details" => %{
+  #     "api_key" => "ln48plh8lyibjnrtwusnzpkqb45xzcvk",
+  #     "app_name" => "ngo",
+  #     "phone" => "918547689517",
+  #     "shortcode" => "ngo"
+  #   },
+  #   "billing_frequency" => "yearly",
+  #   "finance_poc" => %{
+  #     "name" => "name",
+  #     "email" => "email",
+  #     "designation" => "designation",
+  #     "phone" => "phone"
+  #   },
+  #   "submitter" => %{
+  #     "name" => "name",
+  #     "email" => "email"
+  #   },
+  #   "signing_authority" => %{
+  #     "name" => "name",
+  #     "email" => "email",
+  #     "designation" => "designation"
+  #   }
+  # }
 
   setup do
     organization = SeedsDev.seed_organizations()
@@ -83,21 +88,35 @@ defmodule Glific.OnboardTest do
     :ok
   end
 
+  @tag :val
   test "ensure that validations are applied on params while creating an org" do
     # lets remove a couple and mess up the others to get most of the errors
+    registered_address = String.duplicate("lorum epsum", 300)
+
     attrs =
       @valid_attrs
       |> Map.delete("app_name")
       |> Map.put("email", "foobar")
       |> Map.put("phone", "93'#$%^")
       |> Map.put("shortcode", "glific")
+      |> Map.put("gstin", "abcabcabcabcabc")
+      |> Map.put("registered_address", registered_address)
+      |> Map.delete("current_address")
+      |> Map.put("registration_doc_link", "https://fa.com")
 
-    result = Onboard.setup(attrs)
-
-    assert result.is_valid == false
-    assert result.messages != %{}
+    %{
+      messages: %{
+        phone: "Phone is not valid.",
+        shortcode: "Shortcode has already been taken.",
+        registered_address: "registered_address cannot be more than 300 letters.",
+        current_address: "current_address cannot be empty.",
+        api_key_name: "API Key or App Name is empty."
+      },
+      is_valid: false
+    } = Onboard.setup(attrs)
   end
 
+  @tag :val
   test "ensure that sending in valid parameters, creates an organization, contact and credential" do
     attrs =
       @valid_attrs
@@ -161,10 +180,5 @@ defmodule Glific.OnboardTest do
 
     assert {:error, ["Elixir.Glific.Partners.Organization", "Resource not found"]} ==
              Repo.fetch_by(Organization, %{name: result.organization.name})
-  end
-
-  @tag :dd
-  test "setupv2" do
-    assert {:ok, _} = Onboard.setupv2(@valid_attrs_2)
   end
 end
