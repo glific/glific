@@ -16,6 +16,7 @@ defmodule Glific.Saas.Queries do
     Partners.Provider,
     Providers.Gupshup.ApiClient,
     Providers.GupshupContacts,
+    Registrations,
     Repo,
     Seeds.Seeder,
     Seeds.SeedsMigration,
@@ -38,6 +39,8 @@ defmodule Glific.Saas.Queries do
     |> contact(params)
     # create the credentials
     |> credentials(params)
+    # create registration details
+    |> registration(params)
   end
 
   @doc """
@@ -390,5 +393,28 @@ defmodule Glific.Saas.Queries do
     |> Repo.update_all(set: [fields: %{}, settings: %{}])
 
     reset_organization_id
+  end
+
+  @spec registration(map(), map()) :: map()
+  defp registration(%{is_valid: false} = result, _params), do: result
+
+  defp registration(result, params) do
+    org_details = %{
+      name: params["name"],
+      gstin: params["gstin"],
+      registration_document: params["registration_doc_link"],
+      registered_address: params["registered_address"],
+      current_address: params["current_address"]
+    }
+
+    %{org_details: org_details, organization_id: result.organization.id}
+    |> Registrations.create_registration()
+    |> case do
+      {:ok, %{id: id}} ->
+        Map.put(result, :registration_id, id)
+
+      {:error, errors} ->
+        error(inspect(errors), result, :registration)
+    end
   end
 end

@@ -123,7 +123,7 @@ defmodule Glific.OnboardTest do
       |> Map.put("shortcode", "new_glific")
       |> Map.put("phone", "919917443995")
 
-    result = Onboard.setup(attrs)
+    result = Onboard.setup(attrs) |> IO.inspect()
 
     assert result.is_valid == true
     assert result.messages == %{}

@@ -17,6 +17,7 @@ defmodule Glific.Saas.Onboard do
     Saas.Queries
   }
 
+  # TODO: Need tests for setup that includes registrations
   @doc """
   Setup all the tables and necessary values to onboard an organization
   """

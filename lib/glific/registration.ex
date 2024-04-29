@@ -24,6 +24,6 @@ defmodule Glific.Registrations do
   def create_registration(attrs \\ %{}) do
     %Registration{}
     |> Registration.changeset(attrs)
-    |> Repo.insert(skip_organization_id: true)
+    |> Repo.insert()
   end
 end
