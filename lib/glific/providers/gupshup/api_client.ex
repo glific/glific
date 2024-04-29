@@ -58,7 +58,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   def get_templates(org_id) do
     with {:ok, credentials} <- get_credentials(org_id) do
       template_url = @gupshup_api_url <> "/template/list/" <> credentials.app_name
-      gupshup_get(template_url, credentials.api_key) |> IO.inspect()
+      gupshup_get(template_url, credentials.api_key)
     end
   end
 
