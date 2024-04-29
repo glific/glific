@@ -6,7 +6,8 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   alias Plug.Conn.Query
   import GlificWeb.Gettext
 
-  @gupshup_url "https://api.gupshup.io/wa/api/v1"
+  @gupshup_msg_url "https://api.gupshup.io/wa/api/v1"
+  @gupshup_api_url "https://api.gupshup.io/sm/api/v1"
 
   use Tesla
   # you can add , log_level: :debug to the below if you want debugging info
@@ -56,33 +57,8 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @spec get_templates(non_neg_integer()) :: Tesla.Env.result() | {:error, String.t()}
   def get_templates(org_id) do
     with {:ok, credentials} <- get_credentials(org_id) do
-      template_url = @gupshup_url <> "/template/list/" <> credentials.app_name
-      gupshup_get(template_url, credentials.api_key)
-    end
-  end
-
-  @doc """
-  Submitting HSM template for approval
-  """
-  @spec submit_template_for_approval(non_neg_integer(), map()) ::
-          Tesla.Env.result() | {:error, any()}
-  def submit_template_for_approval(org_id, payload) do
-    with {:ok, credentials} <- get_credentials(org_id) do
-      template_url = @gupshup_url <> "/template/add/" <> credentials.app_name
-      opts = [headers: [{"apikey", credentials.api_key}], opts: [adapter: [recv_timeout: 10_000]]]
-      # Adding a delay of 30 seconds when applying for template
-      post(template_url, payload, opts)
-    end
-  end
-
-  @doc """
-  Sending HSM template to contact
-  """
-  @spec send_template(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
-  def send_template(org_id, payload) do
-    with {:ok, credentials} <- get_credentials(org_id) do
-      template_url = @gupshup_url <> "/template/msg"
-      gupshup_post(template_url, payload, credentials.api_key)
+      template_url = @gupshup_api_url <> "/template/list/" <> credentials.app_name
+      gupshup_get(template_url, credentials.api_key) |> IO.inspect()
     end
   end
 
@@ -92,7 +68,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result() | any()
   def send_message(org_id, payload) do
     with {:ok, credentials} <- get_credentials(org_id) do
-      url = @gupshup_url <> "/msg"
+      url = @gupshup_msg_url <> "/msg"
       gupshup_post(url, payload, credentials.api_key)
     end
   end
@@ -105,7 +81,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     get_credentials(org_id)
 
     with {:ok, credentials} <- get_credentials(org_id) do
-      url = @gupshup_url <> "/app/opt/in/" <> credentials.app_name
+      url = @gupshup_api_url <> "/app/opt/in/" <> credentials.app_name
       gupshup_post(url, payload, credentials.api_key)
     end
   end
@@ -126,7 +102,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @spec users_get(String.t(), String.t(), non_neg_integer()) ::
           Tesla.Env.result() | {:error, String.t()}
   def users_get(api_key, app_name, page \\ 0) do
-    url = @gupshup_url <> "/users/" <> app_name <> "?maxResult=5000&pageNo=#{page}"
+    url = @gupshup_api_url <> "/users/" <> app_name <> "?maxResult=5000&pageNo=#{page}"
     gupshup_get(url, api_key)
   end
 end
