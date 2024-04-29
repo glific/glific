@@ -47,7 +47,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   API call to GPT-4 Turbo with Vision
   """
-  @spec gpt_vision(map()) :: map()
+  @spec gpt_vision(map()) :: tuple()
   def gpt_vision(params \\ %{}) do
     api_key = Glific.get_open_ai_key()
 
