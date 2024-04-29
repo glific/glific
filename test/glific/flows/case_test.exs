@@ -280,7 +280,7 @@ defmodule Glific.Flows.CaseTest do
 
   test "test the execute function for has_groups" do
     c = %Case{type: "has_group", arguments: ["3", "Default groups"]}
-    assert wrap_execute(c, nil, "", extra: %{contact_groups: ["Default groups"]}) == true
+    assert wrap_execute(c, nil, "", extra: %{contact_groups: [3]}) == true
 
     assert wrap_execute(c, nil, "", extra: %{contact_groups: []}) == false
   end
