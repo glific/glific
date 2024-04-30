@@ -13,15 +13,15 @@ defmodule Glific.Registrations do
 
   ## Examples
 
-      iex> Glific.Registrations.create_registration(%{name: value})
-      {:ok, %Glific.Organization{}}
+      iex> Glific.Registrations.create_registration(%{organization_id: 1})
+      {:ok, %Registration{}}
 
-      iex> Glific.Registrations.create_registration(%{bad_field: bad_value})
+      iex> Glific.Registrations.create_registration(%{})
       {:error, %Ecto.Changeset{}}
 
   """
   @spec create_registration(map()) :: {:ok, Registration.t()} | {:error, Ecto.Changeset.t()}
-  def create_registration(attrs) do
+  def create_registration(attrs \\ %{}) do
     %Registration{}
     |> Registration.changeset(attrs)
     |> Repo.insert()

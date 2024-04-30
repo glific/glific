@@ -22,10 +22,4 @@ defmodule GlificWeb.API.V1.OnboardController do
         |> json(%{error: %{status: 400, message: error}})
     end
   end
-
-  @doc false
-  @spec setupv2(Conn.t(), map()) :: Conn.t()
-  def setupv2(conn, %{"token" => _token} = params) do
-    json(conn, Onboard.setup(params))
-  end
 end

@@ -247,6 +247,9 @@ defmodule Glific.Saas.Queries do
     end
   end
 
+  @doc """
+  Updates the error map
+  """
   @spec error(String.t(), map(), atom()) :: map()
   def error(message, result, key) do
     result
