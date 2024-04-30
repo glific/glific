@@ -22,40 +22,6 @@ defmodule Glific.OnboardTest do
     "registration_doc_link" => "https://storage.googleapis.com/1/file.doc"
   }
 
-  # TODO: remove this comments
-
-  # @valid_attrs_2 %{
-  #   "org_details" => %{
-  #     "name" => "name",
-  #     "gstin" => "gstin",
-  #     "registration_document_url" => "",
-  #     "registered_address" => "adr1",
-  #     "current_address" => "adr2"
-  #   },
-  #   "platform_details" => %{
-  #     "api_key" => "ln48plh8lyibjnrtwusnzpkqb45xzcvk",
-  #     "app_name" => "ngo",
-  #     "phone" => "918547689517",
-  #     "shortcode" => "ngo"
-  #   },
-  #   "billing_frequency" => "yearly",
-  #   "finance_poc" => %{
-  #     "name" => "name",
-  #     "email" => "email",
-  #     "designation" => "designation",
-  #     "phone" => "phone"
-  #   },
-  #   "submitter" => %{
-  #     "name" => "name",
-  #     "email" => "email"
-  #   },
-  #   "signing_authority" => %{
-  #     "name" => "name",
-  #     "email" => "email",
-  #     "designation" => "designation"
-  #   }
-  # }
-
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_billing(organization)
@@ -88,7 +54,6 @@ defmodule Glific.OnboardTest do
     :ok
   end
 
-  @tag :val
   test "ensure that validations are applied on params while creating an org" do
     # lets remove a couple and mess up the others to get most of the errors
     registered_address = String.duplicate("lorum epsum", 300)
@@ -116,20 +81,20 @@ defmodule Glific.OnboardTest do
     } = Onboard.setup(attrs)
   end
 
-  @tag :val
   test "ensure that sending in valid parameters, creates an organization, contact and credential" do
     attrs =
       @valid_attrs
       |> Map.put("shortcode", "new_glific")
       |> Map.put("phone", "919917443995")
 
-    result = Onboard.setup(attrs) |> IO.inspect()
+    result = Onboard.setup(attrs)
 
     assert result.is_valid == true
     assert result.messages == %{}
     assert result.organization != nil
     assert result.contact != nil
     assert result.credential != nil
+    assert result.registration_id != nil
   end
 
   test "ensure that sending in valid parameters, update organization status" do

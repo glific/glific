@@ -4,7 +4,6 @@ defmodule Glific.Saas.Onboard do
   here to manage global operations across all organizations.
   At some later point, we might decide to have a separate onboarding table and managment structure
   """
-  alias Glific.Registrations
 
   alias Glific.{
     Communications.Mailer,
@@ -17,7 +16,6 @@ defmodule Glific.Saas.Onboard do
     Saas.Queries
   }
 
-  # TODO: Need tests for setup that includes registrations
   @doc """
   Setup all the tables and necessary values to onboard an organization
   """
@@ -28,8 +26,6 @@ defmodule Glific.Saas.Onboard do
     |> Queries.setup(params)
     |> Queries.seed_data()
     |> format_results()
-
-    # |> notify_saas_team()
   end
 
   @spec add_map(map(), atom(), any()) :: map()

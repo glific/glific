@@ -21,7 +21,7 @@ defmodule Glific.Registrations do
 
   """
   @spec create_registration(map()) :: {:ok, Registration.t()} | {:error, Ecto.Changeset.t()}
-  def create_registration(attrs \\ %{}) do
+  def create_registration(attrs) do
     %Registration{}
     |> Registration.changeset(attrs)
     |> Repo.insert()

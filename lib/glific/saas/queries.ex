@@ -86,44 +86,11 @@ defmodule Glific.Saas.Queries do
 
   def sync_templates(results), do: results
 
-  # TODO: docs needed
-  # @spec validate_billing_details(map(), map()) :: map()
-  # def validate_billing_details(result, params) do
-  #   billing_frequency = params["billing_frequency"]
-
-  #   cond do
-  #     empty(billing_frequency) ->
-  #       dgettext("error", "%{label} cannot be empty.", label: "billing_frequency")
-  #       |> error(result, :billing_frequency)
-
-  #     billing_frequency not in ["yearly", "monthly", "quarterly"] ->
-  #       dgettext("error", "%{label} shoudl be one of yearly, monthly or quarterly.",
-  #         label: "billing_frequency"
-  #       )
-  #       |> error(result, :billing_frequency)
-  #   end
-  #   |> validate_text_field(params["finance_poc"]["name"], "Finance POC Name", 25, :finance_poc)
-  #   |> validate_text_field(
-  #     params["finance_poc"]["designation"],
-  #     "Finance POC Designation",
-  #     25,
-  #     :finance_poc
-  #   )
-  #   |> validate_email(params["finance_poc"]["email"], :finance_poc)
-  #   |> validate_phone(params["finance_poc"]["phone"], :finance_poc)
-  # end
-
   @spec validate_text_field(map(), String.t(), atom(), {number(), number()}, boolean()) :: map()
   defp validate_text_field(result, field, key, length, optional \\ false)
   defp validate_text_field(result, nil, _key, {_min_len, _max_len}, true), do: result
 
-  defp validate_text_field(result, nil, key, {_min_len, _max_len}, false) do
-    dgettext("error", "%{key} cannot be empty.", key: key)
-    |> error(result, key)
-  end
-
-  defp validate_text_field(result, field, key, {min_len, max_len}, _optional)
-       when is_binary(field) do
+  defp validate_text_field(result, field, key, {min_len, max_len}, _optional) do
     cond do
       empty(field) ->
         dgettext("error", "%{key} cannot be empty.", key: key)

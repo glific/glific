@@ -56,8 +56,8 @@ defmodule Glific.Registrations.Registration do
 
     field(:signing_authority, :map)
 
-    field(:has_submitted, :boolean)
-    field(:has_confirmed, :boolean)
+    field(:has_submitted, :boolean, default: false)
+    field(:has_confirmed, :boolean, default: false)
     belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
