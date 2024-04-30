@@ -4,6 +4,7 @@ defmodule Glific.Saas.Onboard do
   here to manage global operations across all organizations.
   At some later point, we might decide to have a separate onboarding table and managment structure
   """
+
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
@@ -25,7 +26,6 @@ defmodule Glific.Saas.Onboard do
     |> Queries.setup(params)
     |> Queries.seed_data()
     |> format_results()
-    |> notify_saas_team()
   end
 
   def update_registration(params) do
