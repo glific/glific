@@ -22,4 +22,15 @@ defmodule GlificWeb.API.V1.OnboardController do
         |> json(%{error: %{status: 400, message: error}})
     end
   end
+
+  @doc false
+  @spec update_registration(Conn.t(), map()) :: Conn.t()
+  def update_registration(conn, params) do
+      # {:ok, "success"} ->
+        json(conn, Onboard.setup(params))
+      # {:error, error} ->
+      #   conn
+      #   |> put_status(400)
+      #   |> json(%{error: %{status: 400, message: error}})
+  end
 end

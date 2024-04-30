@@ -67,6 +67,7 @@ defmodule GlificWeb.Router do
     post("/session/name", SessionController, :name)
     post("/session/tracker", SessionController, :tracker)
     post("/onboard/setup", OnboardController, :setup)
+    post("/onboard/update_registration_details", OnboardController, :update_registration)
   end
 
   # Enables LiveDashboard only for development

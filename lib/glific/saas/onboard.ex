@@ -28,6 +28,15 @@ defmodule Glific.Saas.Onboard do
     |> notify_saas_team()
   end
 
+  def update_registration(params) do
+    # verify the registration_id/maybe fetch too for later updation
+    # based on the key, we can call its validation function
+    # then update it on table
+    # things to check
+    # when key is signing_authority, update the org table's email too
+    # when key is confirm: true, then send email async to user
+  end
+
   @spec add_map(map(), atom(), any()) :: map()
   defp add_map(map, _key, nil), do: map
   defp add_map(map, key, value), do: Map.put(map, key, value)
