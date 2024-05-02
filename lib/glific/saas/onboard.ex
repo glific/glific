@@ -5,6 +5,9 @@ defmodule Glific.Saas.Onboard do
   At some later point, we might decide to have a separate onboarding table and managment structure
   """
 
+  alias Glific.Registrations
+  import GlificWeb.Gettext
+
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
@@ -28,13 +31,42 @@ defmodule Glific.Saas.Onboard do
     |> format_results()
   end
 
-  def update_registration(params) do
-    # verify the registration_id/maybe fetch too for later updation
-    # based on the key, we can call its validation function
-    # then update it on table
-    # things to check
-    # when key is signing_authority, update the org table's email too
-    # when key is confirm: true, then send email async to user
+  # TODO: doc
+  @spec update_registration(map()) :: map()
+  def update_registration(%{"registration_id" => reg_id} = params) when is_integer(reg_id) do
+    result = %{is_valid: false, messages: %{}}
+
+    with {:ok, registration} <- Registrations.fetch_registration(params["registration_id"]),
+         %{is_valid: true} <- Queries.validate_registration_details(result, params) do
+      {:ok, registration} = Registrations.update_registation(registration, params)
+
+      if is_map(params["signing_authority"]) do
+        {:ok, _org} = update_org_email(registration.id, params["signing_authority"]["email"])
+      end
+
+      if params["confirm"] do
+        # send email async
+        # TODO: later
+      end
+
+      result
+      |> Map.put(:registration, registration)
+      |> Map.put(:support_mail, "glific.user@gmail.com")
+    else
+      {:error, _} ->
+        dgettext("error", "Registration doesn't exist for given registration ID.")
+        |> Queries.error(result, :registration_id)
+
+      err ->
+        err
+    end
+  end
+
+  def update_registration(_params) do
+    result = %{is_valid: false, messages: %{}}
+
+    dgettext("error", "Registration ID is empty.")
+    |> Queries.error(result, :registration_id)
   end
 
   @spec add_map(map(), atom(), any()) :: map()
@@ -155,4 +187,15 @@ defmodule Glific.Saas.Onboard do
   end
 
   defp notify_saas_team(results), do: results
+
+  @spec update_org_email(non_neg_integer(), String.t()) ::
+          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
+  defp update_org_email(org_id, email) do
+    changes = %{
+      email: email
+    }
+
+    Partners.get_organization!(org_id)
+    |> Partners.update_organization(changes)
+  end
 end

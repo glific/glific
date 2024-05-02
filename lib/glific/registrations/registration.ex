@@ -4,10 +4,11 @@ defmodule Glific.Registrations.Registration do
   """
   use Ecto.Schema
   import Ecto.Changeset
-  import Ecto.Query, warn: false
 
-  alias Glific.Partners.Organization
-  alias __MODULE__
+  alias Glific.{
+    Partners.Organization,
+    Registrations.Registration
+  }
 
   # define all the required fields for organization
   @required_fields [
@@ -23,8 +24,7 @@ defmodule Glific.Registrations.Registration do
     :submitter,
     :signing_authority,
     :has_submitted,
-    :has_confirmed,
-    :organization_id
+    :has_confirmed
   ]
 
   @type t() :: %__MODULE__{
@@ -71,6 +71,5 @@ defmodule Glific.Registrations.Registration do
     registration
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> foreign_key_constraint(:organization_id)
   end
 end

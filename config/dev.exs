@@ -27,6 +27,11 @@ config :glific, GlificWeb.Endpoint,
     tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
   ]
 
+# Print only warnings and errors during test
+config :logger,
+  level: :emergency,
+  compile_time_purge_matching: [[level_lower_than: :emergency]]
+
 # config :absinthe, Absinthe.Logger,
 #   pipeline: true,
 #   level: :debug

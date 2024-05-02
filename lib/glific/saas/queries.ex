@@ -56,10 +56,32 @@ defmodule Glific.Saas.Queries do
     |> validate_text_field(
       params["registered_address"],
       :registered_address,
-      {0, 300}
+      {1, 300}
     )
     |> validate_text_field(params["current_address"], :current_address, {0, 300})
     |> validate_registration_document(params["registration_doc_link"])
+  end
+
+  @spec validate_registration_details(map(), map()) :: map()
+  def validate_registration_details(result, params) do
+    Enum.reduce(params, result, fn {key, value}, result ->
+      case key do
+        "billing_frequency" ->
+          validate_billing_frequency(result, value)
+
+        "finance_poc" ->
+          validate_finance_poc(result, value)
+
+        "submitter" ->
+          validate_submitter_details(result, value)
+
+        "signing_authority" ->
+          validate_signer_details(result, value)
+
+        _ ->
+          result
+      end
+    end)
   end
 
   @doc """
@@ -386,5 +408,45 @@ defmodule Glific.Saas.Queries do
       {:error, errors} ->
         error(inspect(errors), result, :registration)
     end
+  end
+
+  @spec validate_billing_frequency(map(), String.t()) :: map()
+  defp validate_billing_frequency(result, value) when is_binary(value) do
+    cond do
+      empty(value) ->
+        dgettext("error", "Billing frequency cannot be empty.")
+        |> error(result, :billing_frequency)
+
+      value not in ["yearly", "monthly", "quarterly"] ->
+        dgettext("error", "Value should be one of yearly, monthly, or quarterly.")
+        |> error(result, :billing_frequency)
+
+      true ->
+        result
+    end
+  end
+
+  @spec validate_finance_poc(map(), map()) :: map()
+  defp validate_finance_poc(result, params) do
+    result
+    |> validate_text_field(params["name"], :name, {1, 25})
+    |> validate_text_field(params["designation"], :designation, {1, 25})
+    |> validate_phone(params["phone"])
+    |> validate_email(params["email"])
+  end
+
+  @spec validate_submitter_details(map(), map()) :: map()
+  defp validate_submitter_details(result, params) do
+    result
+    |> validate_text_field(params["name"], :name, {1, 25})
+    |> validate_email(params["email"])
+  end
+
+  @spec validate_signer_details(map(), map()) :: map()
+  defp validate_signer_details(result, params) do
+    result
+    |> validate_text_field(params["name"], :name, {1, 25})
+    |> validate_text_field(params["designation"], :designation, {1, 25})
+    |> validate_email(params["email"])
   end
 end

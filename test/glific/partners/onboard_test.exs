@@ -1,6 +1,6 @@
 defmodule Glific.OnboardTest do
+  alias Glific.Registrations.Registration
   use Glific.DataCase
-  use ExUnit.Case
   use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
 
   alias Glific.{
@@ -81,6 +81,7 @@ defmodule Glific.OnboardTest do
     } = Onboard.setup(attrs)
   end
 
+  @tag :sett
   test "ensure that sending in valid parameters, creates an organization, contact and credential" do
     attrs =
       @valid_attrs
@@ -145,5 +146,43 @@ defmodule Glific.OnboardTest do
 
     assert {:error, ["Elixir.Glific.Partners.Organization", "Resource not found"]} ==
              Repo.fetch_by(Organization, %{name: result.organization.name})
+  end
+
+  @tag :upreg
+  test "update_registration, without registration_id" do
+    assert %{messages: %{registration_id: "Registration ID is empty."}, is_valid: false} =
+             Onboard.update_registration(%{})
+  end
+
+  @tag :upreg
+  test "update_registration, invalid registration_id" do
+    assert %{
+             messages: %{registration_id: "Registration doesn't exist for given registration ID."},
+             is_valid: false
+           } =
+             Onboard.update_registration(%{"registration_id" => 0})
+  end
+
+  @tag :upregg
+  test "update_registration, valid registration_id" do
+    attrs =
+      @valid_attrs
+      |> Map.put("shortcode", "new_glific")
+      |> Map.put("phone", "919917443995")
+
+    result = Onboard.setup(attrs)
+
+    # Registration
+    # |> where([reg], reg.organization_id == ^result.organization.id)
+    # |> Repo.all()
+    # |> IO.inspect(label: "regs")
+
+    Repo.all(Registration) |> IO.inspect()
+    # Ecto.Adapters.SQL.query(Repo, "select * from registrations") |> IO.inspect()
+    assert %{
+             messages: %{registration_id: "Registration doesn't exist for given registration ID."},
+             is_valid: false
+           } =
+             Onboard.update_registration(%{"registration_id" => result.registration_id})
   end
 end
