@@ -45,7 +45,7 @@ defmodule Glific.Saas.Onboard do
       end
 
       if params["confirm"] do
-        # send email async
+        # send emailto authority  async
         # TODO: later
       end
 
@@ -67,6 +67,15 @@ defmodule Glific.Saas.Onboard do
 
     dgettext("error", "Registration ID is empty.")
     |> Queries.error(result, :registration_id)
+  end
+
+  # TODO: doc
+  # TODO: tests pending
+  @spec reachout(map()) :: map()
+  def reachout(params) do
+    %{is_valid: true, messages: %{}}
+    |> Queries.validate_reachout_details(params)
+    # TODO: notify support
   end
 
   @spec add_map(map(), atom(), any()) :: map()

@@ -84,6 +84,13 @@ defmodule Glific.Saas.Queries do
     end)
   end
 
+  @spec validate_reachout_details(map(), map()) :: map()
+  def validate_reachout_details(result, params) do
+    result
+    |> validate_text_field(params["name"], :name, {1, 25})
+    |> validate_text_field(params["message"], :message, {1, 300})
+    |> validate_email(params["email"])
+  end
   @doc """
   Seed data for organization
   """
