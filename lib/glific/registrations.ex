@@ -27,8 +27,8 @@ defmodule Glific.Registrations do
     |> Repo.insert()
   end
 
-  @spec fetch_registration(integer()) :: {:ok, Registration.t()} | {:error, term()}
-  def fetch_registration(registration_id) do
+  @spec get_registration(integer()) :: {:ok, Registration.t()} | {:error, term()}
+  def get_registration(registration_id) do
     Repo.fetch_by(Registration, id: registration_id)
   end
 

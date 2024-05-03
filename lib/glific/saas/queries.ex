@@ -122,18 +122,18 @@ defmodule Glific.Saas.Queries do
   defp validate_text_field(result, field, key, {min_len, max_len}, _optional) do
     cond do
       empty(field) ->
-        dgettext("error", "%{key} cannot be empty.", key: key)
+        dgettext("error", "Field cannot be empty.", key: key)
         |> error(result, key)
 
       String.length(field) < min_len ->
-        dgettext("error", "%{key} cannot be less than %{length} letters.",
+        dgettext("error", "Field cannot be less than %{length} letters.",
           key: key,
           length: min_len
         )
         |> error(result, key)
 
       String.length(field) > max_len ->
-        dgettext("error", "%{key} cannot be more than %{length} letters.",
+        dgettext("error", "Field cannot be more than %{length} letters.",
           key: key,
           length: max_len
         )
@@ -148,11 +148,11 @@ defmodule Glific.Saas.Queries do
   defp validate_registration_document(result, document_link) do
     cond do
       empty(document_link) ->
-        dgettext("error", "%{key} cannot be empty.", key: :registration_doc_link)
+        dgettext("error", "Url cannot be empty.", key: :registration_doc_link)
         |> error(result, :registration_doc_link)
 
       String.starts_with?(document_link, "https://storage.googleapis.com") == false ->
-        dgettext("error", "%{key} should start with https://storage.googleapis.com.",
+        dgettext("error", "Url should start with https://storage.googleapis.com.",
           key: :registration_doc_link
         )
         |> error(result, :registration_doc_link)
@@ -436,24 +436,24 @@ defmodule Glific.Saas.Queries do
   @spec validate_finance_poc(map(), map()) :: map()
   defp validate_finance_poc(result, params) do
     result
-    |> validate_text_field(params["name"], :name, {1, 25})
-    |> validate_text_field(params["designation"], :designation, {1, 25})
-    |> validate_phone(params["phone"])
-    |> validate_email(params["email"])
+    |> validate_text_field(params["name"], :finance_poc_name, {1, 25})
+    |> validate_text_field(params["designation"], :finance_poc_designation, {1, 25})
+    |> validate_phone(params["phone"], :finance_poc_phone)
+    |> validate_email(params["email"], :finance_poc_email)
   end
 
   @spec validate_submitter_details(map(), map()) :: map()
   defp validate_submitter_details(result, params) do
     result
-    |> validate_text_field(params["name"], :name, {1, 25})
-    |> validate_email(params["email"])
+    |> validate_text_field(params["name"], :submitter_name, {1, 25})
+    |> validate_email(params["email"], :submitter_name)
   end
 
   @spec validate_signer_details(map(), map()) :: map()
   defp validate_signer_details(result, params) do
     result
-    |> validate_text_field(params["name"], :name, {1, 25})
-    |> validate_text_field(params["designation"], :designation, {1, 25})
-    |> validate_email(params["email"])
+    |> validate_text_field(params["name"], :signer_name, {1, 25})
+    |> validate_text_field(params["designation"], :signer_designation, {1, 25})
+    |> validate_email(params["email"], :signer_email)
   end
 end

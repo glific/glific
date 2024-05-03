@@ -72,4 +72,10 @@ defmodule Glific.Registrations.Registration do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
   end
+
+  @doc false
+  @spec to_minimal_map(Registration.t()) :: map()
+  def to_minimal_map(registration) do
+    Map.take(registration, [:id | @required_fields ++ @optional_fields])
+  end
 end

@@ -23,27 +23,15 @@ defmodule GlificWeb.API.V1.OnboardController do
     end
   end
 
-  # TODO: refactor the fn, error resp
   @doc false
   @spec update_registration(Conn.t(), map()) :: Conn.t()
   def update_registration(conn, params) do
-    # {:ok, "success"} ->
     json(conn, Onboard.update_registration(params))
-    # {:error, error} ->
-    #   conn
-    #   |> put_status(400)
-    #   |> json(%{error: %{status: 400, message: error}})
   end
 
-  # TODO: refactor the fn, error resp
   @doc false
   @spec reachout(Conn.t(), map()) :: Conn.t()
   def reachout(conn, params) do
-    # {:ok, "success"} ->
     json(conn, Onboard.reachout(params))
-    # {:error, error} ->
-    #   conn
-    #   |> put_status(400)
-    #   |> json(%{error: %{status: 400, message: error}})
   end
 end

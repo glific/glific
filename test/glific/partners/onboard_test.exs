@@ -1,5 +1,7 @@
 defmodule Glific.OnboardTest do
+  alias Glific.Partners
   alias Glific.Registrations.Registration
+  alias Glific.Registrations
   use Glific.DataCase
   use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
 
@@ -73,8 +75,8 @@ defmodule Glific.OnboardTest do
       messages: %{
         phone: "Phone is not valid.",
         shortcode: "Shortcode has already been taken.",
-        registered_address: "registered_address cannot be more than 300 letters.",
-        current_address: "current_address cannot be empty.",
+        registered_address: "Field cannot be more than 300 letters.",
+        current_address: "Field cannot be empty.",
         api_key_name: "API Key or App Name is empty."
       },
       is_valid: false
@@ -148,41 +150,162 @@ defmodule Glific.OnboardTest do
              Repo.fetch_by(Organization, %{name: result.organization.name})
   end
 
-  @tag :upreg
-  test "update_registration, without registration_id" do
-    assert %{messages: %{registration_id: "Registration ID is empty."}, is_valid: false} =
-             Onboard.update_registration(%{})
+  describe "update_registration/1" do
+    setup do
+      attrs =
+        @valid_attrs
+        |> Map.put("shortcode", "new_glific")
+        |> Map.put("phone", "919917443995")
+
+      %{organization: %{id: org_id}, registration_id: registration_id} =
+        Onboard.setup(attrs)
+
+      Repo.put_process_state(org_id)
+
+      Repo.put_current_user(
+        Fixtures.user_fixture(%{
+          name: "NGO Test Admin",
+          roles: ["manager"],
+          organization_id: org_id
+        })
+      )
+
+      {:ok, org_id: org_id, registration_id: registration_id}
+    end
+
+    @tag :upreg
+    test "update_registration, without registration_id" do
+      assert %{messages: %{registration_id: "Registration ID is empty."}, is_valid: false} =
+               Onboard.update_registration(%{})
+    end
+
+    @tag :upreg
+    test "update_registration, invalid registration_id" do
+      assert %{
+               messages: %{
+                 registration_id: "Registration doesn't exist for given registration ID."
+               },
+               is_valid: false
+             } =
+               Onboard.update_registration(%{"registration_id" => 0})
+    end
+
+    @tag :upreg
+    test "update_registration, valid registration_id", %{registration_id: registration_id} do
+      assert %{
+               messages: %{},
+               is_valid: true,
+               registration: _registration_details,
+               support_mail: _support_mail
+             } =
+               Onboard.update_registration(%{"registration_id" => registration_id})
+    end
+
+    @tag :upreg
+    test "update_registration, invalid params", %{registration_id: reg_id} do
+      invalid_params = %{
+        "registration_id" => reg_id,
+        "billing_frequency" => "twice",
+        "finance_poc" => %{
+          "name" => String.duplicate(Faker.Person.name(), 20),
+          "email" => "invalid@.com",
+          "designation" => "",
+          "phone" => "23"
+        },
+        "submitter" => %{
+          "name" => "",
+          "email" => Faker.Internet.email()
+        },
+        "signing_authority" => %{
+          "name" => Faker.Person.name(),
+          "email" => Faker.Internet.email(),
+          "designation" => "designation"
+        }
+      }
+
+      assert %{
+               messages: _,
+               is_valid: false
+             } =
+               Onboard.update_registration(invalid_params)
+    end
+
+    @tag :upreg
+    test "update_registration, valid params", %{org_id: org_id, registration_id: reg_id} do
+      valid_params = %{
+        "registration_id" => reg_id,
+        "billing_frequency" => "yearly",
+        "finance_poc" => %{
+          "name" => Faker.Person.name(),
+          "email" => Faker.Internet.email(),
+          "designation" => "Sr Accountant",
+          "phone" => Faker.Phone.PtBr.phone()
+        },
+        "submitter" => %{
+          "name" => Faker.Person.name(),
+          "email" => Faker.Internet.email()
+        }
+      }
+
+      assert %{
+               messages: _,
+               is_valid: true
+             } =
+               Onboard.update_registration(valid_params)
+
+      {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
+      assert reg.billing_frequency == "yearly"
+      assert %{"name" => _, "email" => _} = reg.submitter
+      assert %{"name" => _, "email" => _, "phone" => _} = reg.finance_poc
+      assert %{email: nil} = Partners.get_organization!(org_id)
+    end
+
+    @tag :upregg
+    test "update_registration, valid signing_details, update's org's email also", %{
+      org_id: org_id,
+      registration_id: reg_id
+    } do
+      valid_params = %{
+        "registration_id" => reg_id,
+        "signing_authority" => %{
+          "name" => Faker.Person.name(),
+          "email" => Faker.Internet.email(),
+          "designation" => "designation"
+        }
+      }
+
+      assert %{
+               messages: _,
+               is_valid: true
+             } =
+               Onboard.update_registration(valid_params)
+
+      {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
+      assert reg.billing_frequency == "yearly"
+      assert %{"name" => _, "email" => _, "designation" => _} = reg.signing_authority
+      %{email: email} = Partners.get_organization!(org_id)
+      assert !is_nil(email)
+    end
   end
 
-  @tag :upreg
-  test "update_registration, invalid registration_id" do
-    assert %{
-             messages: %{registration_id: "Registration doesn't exist for given registration ID."},
-             is_valid: false
-           } =
-             Onboard.update_registration(%{"registration_id" => 0})
+  @tag :reach
+  test "reachout/1, invalid params" do
+    invalid_params = %{
+      "message" => String.duplicate(Faker.Lorem.paragraph(), 300),
+      "email" => "invalid@.com"
+    }
+
+    %{is_valid: false} = Onboard.reachout(invalid_params)
   end
 
-  @tag :upregg
-  test "update_registration, valid registration_id" do
-    attrs =
-      @valid_attrs
-      |> Map.put("shortcode", "new_glific")
-      |> Map.put("phone", "919917443995")
+  @tag :reach
+  test "reachout/1, valid params" do
+    invalid_params = %{
+      "name" => Faker.Person.name(),
+      "message" => Faker.Lorem.paragraph(),
+      "email" => Faker.Internet.email()
+    }
 
-    result = Onboard.setup(attrs)
-
-    # Registration
-    # |> where([reg], reg.organization_id == ^result.organization.id)
-    # |> Repo.all()
-    # |> IO.inspect(label: "regs")
-
-    Repo.all(Registration) |> IO.inspect()
-    # Ecto.Adapters.SQL.query(Repo, "select * from registrations") |> IO.inspect()
-    assert %{
-             messages: %{registration_id: "Registration doesn't exist for given registration ID."},
-             is_valid: false
-           } =
-             Onboard.update_registration(%{"registration_id" => result.registration_id})
+    %{is_valid: true} = Onboard.reachout(invalid_params)
   end
 end

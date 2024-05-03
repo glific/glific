@@ -5,6 +5,8 @@ defmodule Glific.Saas.Onboard do
   At some later point, we might decide to have a separate onboarding table and managment structure
   """
 
+  require Logger
+  alias Glific.Registrations.Registration
   alias Glific.Registrations
   import GlificWeb.Gettext
 
@@ -31,26 +33,25 @@ defmodule Glific.Saas.Onboard do
     |> format_results()
   end
 
-  # TODO: doc
+  # TODO: doc, add bruno docs too
+  # TODO: Add bruno docs to onboard/setup
   @spec update_registration(map()) :: map()
   def update_registration(%{"registration_id" => reg_id} = params) when is_integer(reg_id) do
-    result = %{is_valid: false, messages: %{}}
+    result = %{is_valid: true, messages: %{}}
 
-    with {:ok, registration} <- Registrations.fetch_registration(params["registration_id"]),
+    with {:ok, registration} <- Registrations.get_registration(reg_id),
          %{is_valid: true} <- Queries.validate_registration_details(result, params) do
       {:ok, registration} = Registrations.update_registation(registration, params)
 
       if is_map(params["signing_authority"]) do
-        {:ok, _org} = update_org_email(registration.id, params["signing_authority"]["email"])
+        {:ok, _org} =
+          update_org_email(registration.organization_id, params["signing_authority"]["email"])
       end
 
-      if params["confirm"] do
-        # send emailto authority  async
-        # TODO: later
-      end
+      notify_on_submission(params["has_submitted"] || false)
 
       result
-      |> Map.put(:registration, registration)
+      |> Map.put(:registration, Registration.to_minimal_map(registration))
       |> Map.put(:support_mail, "glific.user@gmail.com")
     else
       {:error, _} ->
@@ -75,7 +76,7 @@ defmodule Glific.Saas.Onboard do
   def reachout(params) do
     %{is_valid: true, messages: %{}}
     |> Queries.validate_reachout_details(params)
-    # TODO: notify support
+    |> notify_user_queries()
   end
 
   @spec add_map(map(), atom(), any()) :: map()
@@ -206,5 +207,18 @@ defmodule Glific.Saas.Onboard do
 
     Partners.get_organization!(org_id)
     |> Partners.update_organization(changes)
+  end
+
+  # TODO: spec needed
+  # TODO: send mail later
+
+  defp notify_on_submission(false), do: :ok
+  defp notify_on_submission(true) do
+    :ok
+  end
+
+  defp notify_user_queries(results) do
+    # TODO: Implement this.
+    results
   end
 end
