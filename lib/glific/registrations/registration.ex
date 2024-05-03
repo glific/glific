@@ -23,8 +23,7 @@ defmodule Glific.Registrations.Registration do
     :submitter,
     :signing_authority,
     :has_submitted,
-    :has_confirmed,
-    :organization_id
+    :has_confirmed
   ]
 
   @type t() :: %__MODULE__{
