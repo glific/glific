@@ -1,0 +1,40 @@
+meta {
+  name: Update registration details
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{api_url}}/v1/onboard/update-registration-details
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "org_id": 2,
+    "registration_id": 1,
+    "billing_frequency": "yearly", // "yearly", "monthly", "quarterly"
+    "finance_poc": {
+      "name": "name",
+      "email": "email@m.com",
+      "designation": "designation",
+      "phone": "phone"
+    },
+    "submitter": {
+      "name": "name",
+      "email": "email@m.com"
+    },
+    "signing_authority": {
+      "name": "name",
+      "email": "email@m.com",
+      "designation": "designation"
+    },
+    "has_submitted": false
+  }
+}

@@ -1,13 +1,14 @@
 defmodule Glific.OnboardTest do
-  alias Glific.Partners
-  alias Glific.Registrations.Registration
-  alias Glific.Registrations
   use Glific.DataCase
   use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
 
   alias Glific.{
+    Faker.Phone.PtBr,
     Fixtures,
+    Partners,
     Partners.Organization,
+    Registrations,
+    Registrations.Registration,
     Saas.Onboard,
     Seeds.SeedsDev
   }
@@ -82,7 +83,6 @@ defmodule Glific.OnboardTest do
     } = Onboard.setup(attrs)
   end
 
-  @tag :sett
   test "ensure that sending in valid parameters, creates an organization, contact and credential" do
     attrs =
       @valid_attrs
@@ -172,13 +172,11 @@ defmodule Glific.OnboardTest do
       {:ok, org_id: org_id, registration_id: registration_id}
     end
 
-    @tag :upreg
     test "update_registration, without registration_id" do
       assert %{messages: %{registration_id: "Registration ID is empty."}, is_valid: false} =
                Onboard.update_registration(%{})
     end
 
-    @tag :upreg
     test "update_registration, invalid registration_id" do
       assert %{
                messages: %{
@@ -189,7 +187,6 @@ defmodule Glific.OnboardTest do
                Onboard.update_registration(%{"registration_id" => 0})
     end
 
-    @tag :upreg
     test "update_registration, valid registration_id", %{registration_id: registration_id} do
       assert %{
                messages: %{},
@@ -200,7 +197,6 @@ defmodule Glific.OnboardTest do
                Onboard.update_registration(%{"registration_id" => registration_id})
     end
 
-    @tag :upreg
     test "update_registration, invalid params", %{registration_id: reg_id} do
       invalid_params = %{
         "registration_id" => reg_id,
@@ -229,7 +225,6 @@ defmodule Glific.OnboardTest do
                Onboard.update_registration(invalid_params)
     end
 
-    @tag :upreg
     test "update_registration, valid params", %{org_id: org_id, registration_id: reg_id} do
       valid_params = %{
         "registration_id" => reg_id,
@@ -238,7 +233,7 @@ defmodule Glific.OnboardTest do
           "name" => Faker.Person.name(),
           "email" => Faker.Internet.email(),
           "designation" => "Sr Accountant",
-          "phone" => Faker.Phone.PtBr.phone()
+          "phone" => PtBr.phone()
         },
         "submitter" => %{
           "name" => Faker.Person.name(),
@@ -259,7 +254,6 @@ defmodule Glific.OnboardTest do
       assert %{email: nil} = Partners.get_organization!(org_id)
     end
 
-    @tag :upregg
     test "update_registration, valid signing_details, update's org's email also", %{
       org_id: org_id,
       registration_id: reg_id
@@ -280,14 +274,13 @@ defmodule Glific.OnboardTest do
                Onboard.update_registration(valid_params)
 
       {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
-      assert reg.billing_frequency == "yearly"
+      assert reg.billing_frequency == "monthly"
       assert %{"name" => _, "email" => _, "designation" => _} = reg.signing_authority
       %{email: email} = Partners.get_organization!(org_id)
       assert !is_nil(email)
     end
   end
 
-  @tag :reach
   test "reachout/1, invalid params" do
     invalid_params = %{
       "message" => String.duplicate(Faker.Lorem.paragraph(), 300),
@@ -297,7 +290,6 @@ defmodule Glific.OnboardTest do
     %{is_valid: false} = Onboard.reachout(invalid_params)
   end
 
-  @tag :reach
   test "reachout/1, valid params" do
     invalid_params = %{
       "name" => Faker.Person.name(),

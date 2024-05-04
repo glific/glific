@@ -89,8 +89,9 @@ defmodule Glific.Saas.Queries do
     result
     |> validate_text_field(params["name"], :name, {1, 25})
     |> validate_text_field(params["message"], :message, {1, 300})
-    |> validate_email(params["email"])
+    |> validate_email(params["email"] || "")
   end
+
   @doc """
   Seed data for organization
   """
@@ -406,7 +407,18 @@ defmodule Glific.Saas.Queries do
       current_address: params["current_address"]
     }
 
-    %{org_details: org_details, organization_id: result.organization.id}
+    platform_details = %{
+      api_key: params["api-key"],
+      app_name: params["ngo"],
+      phone: params["phone"],
+      shortcode: params["shortcode"]
+    }
+
+    %{
+      org_details: org_details,
+      organization_id: result.organization.id,
+      platform_details: platform_details
+    }
     |> Registrations.create_registration()
     |> case do
       {:ok, %{id: id}} ->

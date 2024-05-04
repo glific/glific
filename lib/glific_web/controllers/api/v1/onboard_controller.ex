@@ -3,10 +3,15 @@ defmodule GlificWeb.API.V1.OnboardController do
   The Glific Onboarding Controller
   """
 
-  use GlificWeb, :controller
-  require Logger
+  alias Glific.{
+    Partners,
+    Partners.Organization,
+    Repo,
+    Saas.Onboard
+  }
 
-  alias Glific.Saas.Onboard
+  use GlificWeb, :controller
+
   alias Plug.Conn
 
   @doc false
@@ -25,8 +30,23 @@ defmodule GlificWeb.API.V1.OnboardController do
 
   @doc false
   @spec update_registration(Conn.t(), map()) :: Conn.t()
-  def update_registration(conn, params) do
-    json(conn, Onboard.update_registration(params))
+  def update_registration(conn, %{"org_id" => org_id} = params) do
+    case Partners.organization(org_id) do
+      %Organization{root_user: root_user} ->
+        Repo.put_current_user(root_user)
+        json(conn, Onboard.update_registration(params))
+
+      _ ->
+        conn
+        |> put_status(400)
+        |> json(%{error: %{status: 400, message: "Organization with ID #{org_id} doesn't exist"}})
+    end
+  end
+
+  def update_registration(conn, _params) do
+    conn
+    |> put_status(400)
+    |> json(%{error: %{status: 400, message: "org_id is empty"}})
   end
 
   @doc false

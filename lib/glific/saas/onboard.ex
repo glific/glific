@@ -6,8 +6,6 @@ defmodule Glific.Saas.Onboard do
   """
 
   require Logger
-  alias Glific.Registrations.Registration
-  alias Glific.Registrations
   import GlificWeb.Gettext
 
   alias Glific.{
@@ -17,6 +15,8 @@ defmodule Glific.Saas.Onboard do
     Partners,
     Partners.Billing,
     Partners.Organization,
+    Registrations,
+    Registrations.Registration,
     Repo,
     Saas.Queries
   }
@@ -33,8 +33,9 @@ defmodule Glific.Saas.Onboard do
     |> format_results()
   end
 
-  # TODO: doc, add bruno docs too
-  # TODO: Add bruno docs to onboard/setup
+  @doc """
+  Updates the registration details and send submission mail to user
+  """
   @spec update_registration(map()) :: map()
   def update_registration(%{"registration_id" => reg_id} = params) when is_integer(reg_id) do
     result = %{is_valid: true, messages: %{}}
@@ -70,8 +71,9 @@ defmodule Glific.Saas.Onboard do
     |> Queries.error(result, :registration_id)
   end
 
-  # TODO: doc
-  # TODO: tests pending
+  @doc """
+  Send the queries to support mail
+  """
   @spec reachout(map()) :: map()
   def reachout(params) do
     %{is_valid: true, messages: %{}}
@@ -213,6 +215,7 @@ defmodule Glific.Saas.Onboard do
   # TODO: send mail later
 
   defp notify_on_submission(false), do: :ok
+
   defp notify_on_submission(true) do
     :ok
   end
