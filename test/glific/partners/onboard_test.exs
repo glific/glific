@@ -18,7 +18,7 @@ defmodule Glific.OnboardTest do
     "api_key" => "fake api key",
     "app_name" => "fake app name",
     "shortcode" => "short",
-    "gstin" => "abcabcabcabcabc",
+    "gstin" => "29PSFCP4894X9Z7",
     "registered_address" => "registered_address",
     "current_address" => "current_address",
     "registration_doc_link" => "https://storage.googleapis.com/1/file.doc"
@@ -69,7 +69,6 @@ defmodule Glific.OnboardTest do
       |> Map.put("gstin", "abcabcabcabcabc")
       |> Map.put("registered_address", registered_address)
       |> Map.delete("current_address")
-      |> Map.put("registration_doc_link", "https://fa.com")
 
     %{
       messages: %{

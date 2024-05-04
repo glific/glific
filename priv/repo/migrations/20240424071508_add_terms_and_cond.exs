@@ -13,8 +13,8 @@ defmodule Glific.Repo.Migrations.AddRegistrationTable do
       add :platform_details, :map, comment: "Details about the Gupshup platform."
 
       add :billing_frequency, :string,
-        default: "yearly",
-        comment: "Frequency of billing one of yearly, monthly, quaeterly"
+        default: "monthly",
+        comment: "Frequency of billing one of yearly, monthly, quarterly"
 
       add :finance_poc, :map, comment: "Billing details."
 
