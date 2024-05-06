@@ -3,7 +3,6 @@ defmodule Glific.OnboardTest do
   use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
 
   alias Glific.{
-    Faker.Phone.PtBr,
     Fixtures,
     Partners,
     Partners.Organization,
@@ -21,8 +20,7 @@ defmodule Glific.OnboardTest do
     "shortcode" => "short",
     "gstin" => "29PSFCP4894X9Z7",
     "registered_address" => "registered_address",
-    "current_address" => "current_address",
-    "registration_doc_link" => "https://storage.googleapis.com/1/file.doc"
+    "current_address" => "current_address"
   }
 
   setup do
@@ -233,7 +231,7 @@ defmodule Glific.OnboardTest do
           "name" => Faker.Person.name(),
           "email" => Faker.Internet.email(),
           "designation" => "Sr Accountant",
-          "phone" => PtBr.phone()
+          "phone" => Faker.Phone.PtBr.phone()
         },
         "submitter" => %{
           "name" => Faker.Person.name(),
