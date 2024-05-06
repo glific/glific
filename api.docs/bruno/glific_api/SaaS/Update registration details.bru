@@ -38,3 +38,59 @@ body:json {
     "has_submitted": false
   }
 }
+
+docs {
+  ### Success Response
+  ```json
+  {
+    "messages": {},
+    "is_valid": true,
+    "registration": {
+      "id": 1,
+      "organization_id": 2,
+      "org_details": {
+        "current_address": "current_addr",
+        "gstin": "abcabcabcabcabc",
+        "name": "ngo",
+        "registered_address": "reg_addr",
+        "registration_document": "https://storage.googleapis.com/file"
+      },
+      "platform_details": {
+        "api_key": null,
+        "app_name": null,
+        "phone": "9185XXXXXXXX",
+        "shortcode": "ngo"
+      },
+      "billing_frequency": "yearly",
+      "finance_poc": {
+        "designation": "designation",
+        "email": "email@m.com",
+        "name": "name",
+        "phone": "8547689517"
+      },
+      "has_confirmed": false,
+      "has_submitted": false,
+      "signing_authority": {
+        "designation": "designation",
+        "email": "email@m.com",
+        "name": "name"
+      },
+      "submitter": {
+        "email": "email@m.com",
+        "name": "name"
+      }
+    },
+    "support_mail": "glific.user@gmail.com"
+  }
+  ```
+  
+  ### Error Response
+  ```json
+  {
+    "messages": {
+      "error_field": "Error reason."
+    },
+    "is_valid": false
+  }
+  ```
+}

@@ -22,3 +22,23 @@ body:json {
     "email": "email@g.com"
   }
 }
+
+docs {
+  ### Success Response
+  ```json
+  {
+    "messages": {},
+    "is_valid": true
+  }
+  ```
+  
+  ### Error Response
+  ```json
+  {
+    "messages": {
+     "error_field": "Error reason."
+    },
+    "is_valid": false
+  }
+  ```
+}
