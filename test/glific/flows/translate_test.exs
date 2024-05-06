@@ -32,7 +32,7 @@ defmodule Glific.Flows.TranslateTest do
       fn row ->
         assert length(row) == 4
         [type, uuid, src, dst] = row
-        assert type == "action"
+        assert type == "node"
         assert String.length(uuid) == 36
 
         if uuid != "e319cd39-f764-4680-9199-4cb7da647166",
