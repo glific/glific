@@ -500,11 +500,11 @@ defmodule Glific.Saas.Queries do
     end
   end
 
-  @spec validate_size(map(), String.t()) :: map()
-  defp validate_size(result, file_path) do
+  @spec validate_size(map(), String.t(), non_neg_integer()) :: map()
+  defp validate_size(result, file_path, max_size \\ @max_file_size) do
     {:ok, %File.Stat{size: size}} = File.stat(file_path)
 
-    if size > @max_file_size do
+    if size > max_size do
       dgettext("error", "Document size should not be greater than 5MB")
       |> error(result, :registration_doc)
     else
