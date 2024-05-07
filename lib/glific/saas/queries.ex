@@ -495,12 +495,12 @@ defmodule Glific.Saas.Queries do
         :ok
 
       [_, _type] ->
-        dgettext("error", "Document should of type PDF, JPEG or PNG")
+        dgettext("error", "Document should of type PDF, JPEG, JPG or PNG")
         |> error(result, :registration_doc)
     end
   end
 
-  @spec validate_size(map(), String.t(), non_neg_integer()) :: map()
+  @spec validate_size(map(), String.t(), non_neg_integer()) :: map() | :ok
   defp validate_size(result, file_path, max_size \\ @max_file_size) do
     {:ok, %File.Stat{size: size}} = File.stat(file_path)
 
