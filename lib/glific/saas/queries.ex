@@ -5,11 +5,15 @@ defmodule Glific.Saas.Queries do
   import GlificWeb.Gettext
   import Ecto.Query, warn: false
 
+  require Logger
+  alias Glific.Partners.Saas
+
   alias Glific.{
     Contacts,
     Contacts.Contact,
     Flows.FlowContext,
     Flows.FlowResult,
+    GCS.GcsWorker,
     Messages.Message,
     Partners,
     Partners.Organization,
@@ -26,7 +30,8 @@ defmodule Glific.Saas.Queries do
   alias Pow.Ecto.Schema.Changeset
 
   @default_provider "gupshup"
-
+  # 5MB
+  @max_file_size 5_242_880
   @doc """
   Main function to setup the organization entity in Glific
   """
@@ -56,10 +61,40 @@ defmodule Glific.Saas.Queries do
     |> validate_text_field(
       params["registered_address"],
       :registered_address,
-      {0, 300}
+      {1, 300}
     )
     |> validate_text_field(params["current_address"], :current_address, {0, 300})
-    |> validate_registration_document(params["registration_doc_link"])
+    |> validate_and_upload_document(params)
+  end
+
+  @spec validate_registration_details(map(), map()) :: map()
+  def validate_registration_details(result, params) do
+    Enum.reduce(params, result, fn {key, value}, result ->
+      case key do
+        "billing_frequency" ->
+          validate_billing_frequency(result, value)
+
+        "finance_poc" ->
+          validate_finance_poc(result, value)
+
+        "submitter" ->
+          validate_submitter_details(result, value)
+
+        "signing_authority" ->
+          validate_signer_details(result, value)
+
+        _ ->
+          result
+      end
+    end)
+  end
+
+  @spec validate_reachout_details(map(), map()) :: map()
+  def validate_reachout_details(result, params) do
+    result
+    |> validate_text_field(params["name"], :name, {1, 25})
+    |> validate_text_field(params["message"], :message, {1, 300})
+    |> validate_email(params["email"] || "")
   end
 
   @doc """
@@ -93,40 +128,22 @@ defmodule Glific.Saas.Queries do
   defp validate_text_field(result, field, key, {min_len, max_len}, _optional) do
     cond do
       empty(field) ->
-        dgettext("error", "%{key} cannot be empty.", key: key)
+        dgettext("error", "Field cannot be empty.", key: key)
         |> error(result, key)
 
       String.length(field) < min_len ->
-        dgettext("error", "%{key} cannot be less than %{length} letters.",
+        dgettext("error", "Field cannot be less than %{length} letters.",
           key: key,
           length: min_len
         )
         |> error(result, key)
 
       String.length(field) > max_len ->
-        dgettext("error", "%{key} cannot be more than %{length} letters.",
+        dgettext("error", "Field cannot be more than %{length} letters.",
           key: key,
           length: max_len
         )
         |> error(result, key)
-
-      true ->
-        result
-    end
-  end
-
-  @spec validate_registration_document(map(), String.t()) :: map()
-  defp validate_registration_document(result, document_link) do
-    cond do
-      empty(document_link) ->
-        dgettext("error", "%{key} cannot be empty.", key: :registration_doc_link)
-        |> error(result, :registration_doc_link)
-
-      String.starts_with?(document_link, "https://storage.googleapis.com") == false ->
-        dgettext("error", "%{key} should start with https://storage.googleapis.com.",
-          key: :registration_doc_link
-        )
-        |> error(result, :registration_doc_link)
 
       true ->
         result
@@ -372,12 +389,24 @@ defmodule Glific.Saas.Queries do
     org_details = %{
       name: params["name"],
       gstin: params["gstin"],
-      registration_document: params["registration_doc_link"],
       registered_address: params["registered_address"],
-      current_address: params["current_address"]
+      current_address: params["current_address"],
+      registration_doc_link: result["registration_doc_link"]
     }
 
-    %{org_details: org_details, organization_id: result.organization.id}
+    platform_details = %{
+      api_key: params["api_key"],
+      app_name: params["app_name"],
+      phone: params["phone"],
+      shortcode: params["shortcode"]
+    }
+
+    %{
+      org_details: org_details,
+      organization_id: result.organization.id,
+      platform_details: platform_details,
+      ip_address: params["client_ip"]
+    }
     |> Registrations.create_registration()
     |> case do
       {:ok, %{id: id}} ->
@@ -385,6 +414,102 @@ defmodule Glific.Saas.Queries do
 
       {:error, errors} ->
         error(inspect(errors), result, :registration)
+    end
+  end
+
+  @spec validate_billing_frequency(map(), String.t()) :: map()
+  defp validate_billing_frequency(result, value) when is_binary(value) do
+    cond do
+      empty(value) ->
+        dgettext("error", "Billing frequency cannot be empty.")
+        |> error(result, :billing_frequency)
+
+      value not in ["yearly", "monthly", "quarterly"] ->
+        dgettext("error", "Value should be one of yearly, monthly, or quarterly.")
+        |> error(result, :billing_frequency)
+
+      true ->
+        result
+    end
+  end
+
+  @spec validate_finance_poc(map(), map()) :: map()
+  defp validate_finance_poc(result, params) do
+    result
+    |> validate_text_field(params["name"], :finance_poc_name, {1, 25})
+    |> validate_text_field(params["designation"], :finance_poc_designation, {1, 25})
+    |> validate_phone(params["phone"], :finance_poc_phone)
+    |> validate_email(params["email"], :finance_poc_email)
+  end
+
+  @spec validate_submitter_details(map(), map()) :: map()
+  defp validate_submitter_details(result, params) do
+    result
+    |> validate_text_field(params["name"], :submitter_name, {1, 25})
+    |> validate_email(params["email"], :submitter_name)
+  end
+
+  @spec validate_signer_details(map(), map()) :: map()
+  defp validate_signer_details(result, params) do
+    result
+    |> validate_text_field(params["name"], :signer_name, {1, 25})
+    |> validate_text_field(params["designation"], :signer_designation, {1, 25})
+    |> validate_email(params["email"], :signer_email)
+  end
+
+  @spec validate_and_upload_document(map(), map()) :: map()
+  defp validate_and_upload_document(
+         result,
+         %{"registration_doc" => %Plug.Upload{} = document} = _params
+       ) do
+    with :ok <- validate_content(result, document.content_type),
+         :ok <- validate_size(result, document.path) do
+      {year, week} = Timex.iso_week(Timex.now())
+      uuid = Ecto.UUID.generate()
+      [_, extension] = String.split(document.content_type, "/")
+      [filename, _] = String.split(document.filename, ".")
+      remote_name = "outbound/#{year}-#{week}/#{filename}/#{uuid}.#{extension}"
+
+      GcsWorker.upload_media(document.path, remote_name, Saas.organization_id())
+      |> case do
+        {:ok, %{url: url} = _} ->
+          Map.put(result, "registration_doc_link", url)
+
+        error ->
+          Logger.error("Document upload failed due to #{inspect(error)}")
+
+          dgettext("error", "Document upload failed, try again")
+          |> error(result, :registration_doc)
+      end
+    end
+  end
+
+  defp validate_and_upload_document(result, _params) do
+    dgettext("error", "Registration document cannot be empty.")
+    |> error(result, :registration_doc)
+  end
+
+  @spec validate_content(map(), String.t()) :: :ok | map()
+  defp validate_content(result, content_type) do
+    case String.split(content_type, "/") do
+      [_, type] when type in ["pdf", "jpeg", "png", "jpg"] ->
+        :ok
+
+      [_, _type] ->
+        dgettext("error", "Document should of type PDF, JPEG, JPG or PNG")
+        |> error(result, :registration_doc)
+    end
+  end
+
+  @spec validate_size(map(), String.t(), non_neg_integer()) :: map() | :ok
+  defp validate_size(result, file_path, max_size \\ @max_file_size) do
+    {:ok, %File.Stat{size: size}} = File.stat(file_path)
+
+    if size > max_size do
+      dgettext("error", "Document size should not be greater than 5MB")
+      |> error(result, :registration_doc)
+    else
+      :ok
     end
   end
 end

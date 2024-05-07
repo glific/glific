@@ -5,6 +5,9 @@ defmodule Glific.Saas.Onboard do
   At some later point, we might decide to have a separate onboarding table and managment structure
   """
 
+  require Logger
+  import GlificWeb.Gettext
+
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
@@ -12,6 +15,8 @@ defmodule Glific.Saas.Onboard do
     Partners,
     Partners.Billing,
     Partners.Organization,
+    Registrations,
+    Registrations.Registration,
     Repo,
     Saas.Queries
   }
@@ -26,6 +31,69 @@ defmodule Glific.Saas.Onboard do
     |> Queries.setup(params)
     |> Queries.seed_data()
     |> format_results()
+  end
+
+  @doc """
+  Updates the registration details and send submission mail to user
+  """
+  @spec update_registration(map()) :: map()
+  def update_registration(%{"registration_id" => reg_id} = params) when is_integer(reg_id) do
+    result = %{is_valid: true, messages: %{}}
+
+    with {:ok, registration} <- Registrations.get_registration(reg_id),
+         %{is_valid: true} <- Queries.validate_registration_details(result, params) do
+      {:ok, registration} = Registrations.update_registation(registration, params)
+
+      if is_map(params["signing_authority"]) do
+        {:ok, _org} =
+          update_org_email(registration.organization_id, params["signing_authority"]["email"])
+      end
+
+      notify_on_submission(params["has_submitted"] || false)
+
+      result
+      |> Map.put(:registration, Registration.to_minimal_map(registration))
+      |> Map.put(:support_mail, "glific.user@gmail.com")
+    else
+      {:error, _} ->
+        dgettext("error", "Registration doesn't exist for given registration ID.")
+        |> Queries.error(result, :registration_id)
+
+      err ->
+        err
+    end
+  end
+
+  def update_registration(_params) do
+    result = %{is_valid: false, messages: %{}}
+
+    dgettext("error", "Registration ID is empty.")
+    |> Queries.error(result, :registration_id)
+  end
+
+  @doc """
+  Send the queries to support mail
+  """
+  @spec reachout(map()) :: map()
+  def reachout(params) do
+    %{is_valid: true, messages: %{}}
+    |> Queries.validate_reachout_details(params)
+    |> notify_user_queries()
+  end
+
+  @doc """
+  Returns the ip of client
+
+  conn - Plug.Conn object
+  """
+  @spec get_client_ip(Plug.Conn.t()) :: String.t()
+  def get_client_ip(conn) do
+    Plug.Conn.get_req_header(conn, "x-forwarded-for")
+    |> List.first()
+    |> case do
+      nil -> conn.remote_ip |> :inet_parse.ntoa() |> to_string()
+      forwaded_ips -> String.split(forwaded_ips, ",") |> Enum.map(&String.trim/1) |> List.first()
+    end
   end
 
   @spec add_map(map(), atom(), any()) :: map()
@@ -146,4 +214,29 @@ defmodule Glific.Saas.Onboard do
   end
 
   defp notify_saas_team(results), do: results
+
+  @spec update_org_email(non_neg_integer(), String.t()) ::
+          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
+  defp update_org_email(org_id, email) do
+    changes = %{
+      email: email
+    }
+
+    Partners.get_organization!(org_id)
+    |> Partners.update_organization(changes)
+  end
+
+  # TODO: spec needed
+  # TODO: send mail later
+
+  defp notify_on_submission(false), do: :ok
+
+  defp notify_on_submission(true) do
+    :ok
+  end
+
+  defp notify_user_queries(results) do
+    # TODO: Implement this.
+    results
+  end
 end

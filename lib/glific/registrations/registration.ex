@@ -4,10 +4,11 @@ defmodule Glific.Registrations.Registration do
   """
   use Ecto.Schema
   import Ecto.Changeset
-  import Ecto.Query, warn: false
 
-  alias Glific.Partners.Organization
-  alias __MODULE__
+  alias Glific.{
+    Partners.Organization,
+    Registrations.Registration
+  }
 
   # define all the required fields for organization
   @required_fields [
@@ -23,7 +24,10 @@ defmodule Glific.Registrations.Registration do
     :submitter,
     :signing_authority,
     :has_submitted,
-    :has_confirmed
+    :has_confirmed,
+    :ip_address,
+    :terms_agreed,
+    :support_staff_account
   ]
 
   @type t() :: %__MODULE__{
@@ -40,7 +44,10 @@ defmodule Glific.Registrations.Registration do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          ip_address: String.t() | nil,
+          terms_agreed: boolean() | false,
+          support_staff_account: boolean() | true
         }
 
   schema "registrations" do
@@ -57,6 +64,9 @@ defmodule Glific.Registrations.Registration do
 
     field(:has_submitted, :boolean, default: false)
     field(:has_confirmed, :boolean, default: false)
+    field(:ip_address, :string)
+    field(:terms_agreed, :boolean, default: :false)
+    field(:support_staff_account, :boolean, default: :true)
     belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
@@ -70,6 +80,11 @@ defmodule Glific.Registrations.Registration do
     registration
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> foreign_key_constraint(:organization_id)
+  end
+
+  @doc false
+  @spec to_minimal_map(Registration.t()) :: map()
+  def to_minimal_map(registration) do
+    Map.take(registration, [:id | @required_fields ++ @optional_fields])
   end
 end

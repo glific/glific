@@ -26,4 +26,17 @@ defmodule Glific.Registrations do
     |> Registration.changeset(attrs)
     |> Repo.insert()
   end
+
+  @spec get_registration(integer()) :: {:ok, Registration.t()} | {:error, term()}
+  def get_registration(registration_id) do
+    Repo.fetch_by(Registration, id: registration_id)
+  end
+
+  @spec update_registation(Registration.t(), map()) ::
+          {:ok, Registration.t()} | {:error, Ecto.Changeset.t()}
+  def update_registation(registration, attrs) do
+    registration
+    |> Registration.changeset(attrs)
+    |> Repo.update()
+  end
 end
