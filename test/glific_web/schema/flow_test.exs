@@ -7,18 +7,18 @@ defmodule GlificWeb.Schema.FlowTest do
     Contacts,
     Fixtures,
     Flows,
+    Flows.Action,
     Flows.Broadcast,
-    Flows.Node,
     Flows.Flow,
     Flows.FlowRevision,
     Flows.MessageBroadcast,
+    Flows.Node,
     Groups,
     Groups.GroupContacts,
     Repo,
     Seeds.SeedsDev,
     State,
-    Templates.InteractiveTemplates,
-    Flows.Action
+    Templates.InteractiveTemplates
   }
 
   import Ecto.Query
