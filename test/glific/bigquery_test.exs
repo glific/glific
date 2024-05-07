@@ -1,4 +1,6 @@
 defmodule Glific.BigQueryTest do
+  alias Glific.Fixtures
+  alias Glific.GCS.GcsWorker
   use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
   use ExUnit.Case
@@ -6,9 +8,28 @@ defmodule Glific.BigQueryTest do
 
   alias Glific.{
     BigQuery,
+    BigQuery.BigQueryJob,
     BigQuery.BigQueryWorker,
     Partners,
+    Repo,
+    Saas.Onboard,
     Seeds.SeedsDev
+  }
+
+  @valid_onboard_attrs %{
+    "name" => "First Organization",
+    "phone" => "+911234567890",
+    "api_key" => "fake api key",
+    "app_name" => "fake app name",
+    "shortcode" => "short",
+    "gstin" => "29PSFCP4894X9Z7",
+    "registered_address" => "registered_address",
+    "current_address" => "current_address",
+    "registration_doc" => %Plug.Upload{
+      content_type: "application/pdf",
+      filename: "dummy.pdf",
+      path: "/"
+    }
   }
 
   setup_with_mocks([
@@ -348,6 +369,7 @@ defmodule Glific.BigQueryTest do
              BigQuery.format_date(DateTime.to_string(datetime), attrs.organization_id)
   end
 
+  @tag :con
   test "queue_table_data/3 should process and queue data correctly", %{organization_id: org_id} do
     with_mocks([
       {
@@ -376,6 +398,109 @@ defmodule Glific.BigQueryTest do
       end)
 
       result = BigQueryWorker.queue_table_data("contacts", org_id, %{some_attr: "value"})
+      assert result == :ok
+    end
+  end
+
+  @tag :dd
+  test "queue_table_data/3 should process and queue data correctly for registrations data", %{
+    organization_id: _org_id
+  } do
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 1000}}
+          end
+        ]
+      },
+      {
+        GcsWorker,
+        [],
+        [upload_media: fn _, _, _ -> {:ok, %{url: "url"}} end]
+      }
+    ]) do
+      url =
+        "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULT%20PROJECT%20ID/datasets/917834811114/tables/contacts/insertAll"
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "ok",
+                "users" => [1, 2, 3]
+              })
+          }
+
+        %Tesla.Env{method: :post, url: ^url} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+                kind: "bigquery#tableDataInsertAllResponse",
+                insertErrors: nil
+              })
+          }
+
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "token" => "ks_test_token",
+                "status" => "success",
+                "templates" => [],
+                "template" => %{"id" => Ecto.UUID.generate(), "status" => "PENDING"}
+              })
+          }
+      end)
+
+      %{organization: %{id: org_id}, registration_id: _registration_id} =
+        Onboard.setup(@valid_onboard_attrs)
+
+      default_goth_json = """
+      {
+      "project_id": "DEFAULT PROJECT ID",
+      "private_key_id": "DEFAULT API KEY",
+      "client_email": "DEFAULT CLIENT EMAIL",
+      "private_key": "DEFAULT PRIVATE KEY"
+      }
+      """
+
+      valid_attrs = %{
+        secrets: %{"service_account" => default_goth_json},
+        is_active: true,
+        shortcode: "bigquery",
+        organization_id: org_id
+      }
+
+      {:ok, _credential} = Partners.create_credential(valid_attrs)
+
+      Repo.put_process_state(org_id)
+
+      Repo.put_current_user(
+        Fixtures.user_fixture(%{
+          name: "NGO Test Admin",
+          roles: ["manager"],
+          organization_id: org_id
+        })
+      )
+
+      utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.insert!(%BigQueryJob{
+        table: "registrations",
+        table_id: 0,
+        organization_id: org_id,
+        inserted_at: utc_now,
+        updated_at: utc_now
+      })
+
+      result = BigQueryWorker.queue_table_data("registrations", org_id, %{some_attr: "value"})
       assert result == :ok
     end
   end

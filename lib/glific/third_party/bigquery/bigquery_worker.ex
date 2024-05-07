@@ -17,6 +17,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
   require Logger
   use Publicist
 
+  alias Glific.Registrations.Registration
+
   use Oban.Worker,
     queue: :bigquery,
     max_attempts: 1,
@@ -87,7 +89,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         "message_broadcasts",
         "message_broadcast_contacts",
         "tickets",
-        "wa_messages"
+        "wa_messages",
+        "registrations"
       ]
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
@@ -766,6 +769,68 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
+  defp queue_table_data("registrations", organization_id, attrs) do
+    Logger.info(
+      "fetching registrations data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("registrations", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            org_details: %{
+              name: row.org_details["name"],
+              gstin: row.org_details["gstin"],
+              current_address: row.org_details["current_address"],
+              registered_address: row.org_details["registered_address"],
+              registration_doc_link: row.org_details["registration_doc_link"]
+            },
+            platform_details: %{
+              phone: row.platform_details["phone"],
+              app_name: row.platform_details["app_name"],
+              api_key: row.platform_details["api_key"],
+              shortcode: row.platform_details["shortcode"]
+            },
+            billing_frequency: row.billing_frequency,
+            inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
+            updated_at: format_date_with_millisecond(row.updated_at, organization_id),
+            finance_poc: %{
+              name: row.finance_poc["name"],
+              phone: row.finance_poc["phone"],
+              designation: row.finance_poc["designation"],
+              email: row.finance_poc["email"]
+            },
+            submitter: %{
+              name: row.submitter["name"],
+              email: row.submitter["email"]
+            },
+            signing_authority: %{
+              name: row.signing_authority["name"],
+              designation: row.signing_authority["designation"],
+              email: row.signing_authority["email"]
+            },
+            has_submitted: row.has_submitted,
+            has_confirmed: row.has_confirmed,
+            ip_address: row.ip_address,
+            terms_agreed: row.terms_agreed,
+            support_staff_account: row.support_staff_account
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :registrations, organization_id, attrs))
+
+    :ok
+  end
+
   defp queue_table_data(stat, organization_id, attrs) when stat in ["stats", "stats_all"] do
     Logger.info(
       "fetching #{stat} data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
@@ -1241,6 +1306,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :media,
         :wa_group
       ])
+
+  defp get_query("registrations", organization_id, attrs),
+    do:
+      Registration
+      |> where([reg], reg.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([reg], [reg.inserted_at, reg.id])
 
   @spec format_value(map() | list() | struct() | any()) :: String.t()
   defp format_value(value) when is_map(value) or is_list(value) do

@@ -24,6 +24,7 @@ defmodule Glific.BigQuery do
     Partners,
     Partners.Saas,
     Profiles.Profile,
+    Registrations.Registration,
     Repo,
     Stats.Stat,
     Tickets.Ticket,
@@ -53,9 +54,10 @@ defmodule Glific.BigQuery do
     "contact_histories" => :contact_history_schema,
     "message_conversations" => :message_conversation_schema,
     "message_broadcasts" => :message_broadcasts_schema,
-    "message_broadcast_contacts" => :message_broadcast_contacts_schema,
+    "message_broadcast  _contacts" => :message_broadcast_contacts_schema,
     "trackers" => :trackers_schema,
-    "wa_messages" => :wa_message_schema
+    "wa_messages" => :wa_message_schema,
+    "registrations" => :registrations_schema
   }
 
   @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
@@ -181,7 +183,8 @@ defmodule Glific.BigQuery do
     "message_broadcast_contacts" => MessageBroadcastContact,
     "trackers" => Tracker,
     "trackers_all" => Tracker,
-    "wa_messages" => WAMessage
+    "wa_messages" => WAMessage,
+    "registrations" => Registration
   }
 
   @doc false
