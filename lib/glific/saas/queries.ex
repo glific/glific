@@ -57,14 +57,7 @@ defmodule Glific.Saas.Queries do
     |> validate_bsp_keys(params)
     |> validate_shortcode(params["shortcode"])
     |> validate_phone(params["phone"])
-    |> validate_text_field(params["gstin"], :gstin, {15, 15}, true)
-    |> validate_text_field(
-      params["registered_address"],
-      :registered_address,
-      {1, 300}
-    )
-    |> validate_text_field(params["current_address"], :current_address, {0, 300})
-    |> validate_and_upload_document(params)
+    |> validate_text_field(params["name"], :name, {1, 40})
   end
 
   @spec validate_registration_details(map(), map()) :: map()
@@ -73,15 +66,47 @@ defmodule Glific.Saas.Queries do
       case key do
         "billing_frequency" ->
           validate_billing_frequency(result, value)
+          |> then(&Map.put(&1, "billing_frequency", value))
 
         "finance_poc" ->
+          {result, value} = parse_params(result, value, :finance_poc)
+
           validate_finance_poc(result, value)
+          |> then(&Map.put(&1, "finance_poc", value))
 
         "submitter" ->
+          {result, value} = parse_params(result, value, :submitter)
+
           validate_submitter_details(result, value)
+          |> then(&Map.put(&1, "submitter", value))
 
         "signing_authority" ->
+          {result, value} = parse_params(result, value, :signing_authority)
+
           validate_signer_details(result, value)
+          |> then(&Map.put(&1, "signing_authority", value))
+
+        "org_details" ->
+          {result, value} = parse_params(result, value, :org_details)
+
+          validate_org_details(result, value)
+          |> then(&Map.put(&1, "org_details", value))
+
+        "registration_doc" ->
+          validate_and_upload_document(result, value)
+
+        key when key in ["has_submitted", "terms_agreed", "support_staff_account"] ->
+          case value do
+            "true" ->
+              Map.put(result, key, true)
+
+            "false" ->
+              Map.put(result, key, false)
+
+            _ ->
+              dgettext("error", "%{key} should be of type boolean.", key: key)
+              |> error(result, key)
+          end
 
         _ ->
           result
@@ -387,11 +412,8 @@ defmodule Glific.Saas.Queries do
 
   defp registration(result, params) do
     org_details = %{
-      name: params["name"],
-      gstin: params["gstin"],
-      registered_address: params["registered_address"],
-      current_address: params["current_address"],
-      registration_doc_link: result["registration_doc_link"]
+      name: params["name"]
+      # registration_doc_link: result["registration_doc_link"]
     }
 
     platform_details = %{
@@ -434,6 +456,8 @@ defmodule Glific.Saas.Queries do
   end
 
   @spec validate_finance_poc(map(), map()) :: map()
+  defp validate_finance_poc(%{is_valid: false} = result, _params), do: result
+
   defp validate_finance_poc(result, params) do
     result
     |> validate_text_field(params["name"], :finance_poc_name, {1, 25})
@@ -443,6 +467,8 @@ defmodule Glific.Saas.Queries do
   end
 
   @spec validate_submitter_details(map(), map()) :: map()
+  defp validate_submitter_details(%{is_valid: false} = result, _params), do: result
+
   defp validate_submitter_details(result, params) do
     result
     |> validate_text_field(params["name"], :submitter_name, {1, 25})
@@ -450,6 +476,8 @@ defmodule Glific.Saas.Queries do
   end
 
   @spec validate_signer_details(map(), map()) :: map()
+  defp validate_signer_details(%{is_valid: false} = result, _params), do: result
+
   defp validate_signer_details(result, params) do
     result
     |> validate_text_field(params["name"], :signer_name, {1, 25})
@@ -460,7 +488,7 @@ defmodule Glific.Saas.Queries do
   @spec validate_and_upload_document(map(), map()) :: map()
   defp validate_and_upload_document(
          result,
-         %{"registration_doc" => %Plug.Upload{} = document} = _params
+         %Plug.Upload{} = document = _params
        ) do
     with :ok <- validate_content(result, document.content_type),
          :ok <- validate_size(result, document.path) do
@@ -510,6 +538,32 @@ defmodule Glific.Saas.Queries do
       |> error(result, :registration_doc)
     else
       :ok
+    end
+  end
+
+  @spec validate_org_details(map(), map()) :: map()
+  defp validate_org_details(%{is_valid: false} = result, _params), do: result
+
+  defp validate_org_details(result, params) do
+    result
+    |> validate_text_field(params["gstin"], :gstin, {15, 15}, true)
+    |> validate_text_field(
+      params["registered_address"],
+      :registered_address,
+      {1, 300}
+    )
+    |> validate_text_field(params["current_address"], :current_address, {0, 300})
+  end
+
+  defp parse_params(result, value, key) do
+    case Jason.decode(value) do
+      {:ok, value} ->
+        {result, value}
+
+      {:error, _} ->
+        dgettext("error", "Failed to parse the input.")
+        |> error(result, key)
+        |> then(&{&1, value})
     end
   end
 end

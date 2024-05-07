@@ -37,30 +37,33 @@ defmodule Glific.Saas.Onboard do
   Updates the registration details and send submission mail to user
   """
   @spec update_registration(map()) :: map()
-  def update_registration(%{"registration_id" => reg_id} = params) when is_integer(reg_id) do
+  def update_registration(%{"registration_id" => reg_id} = params) do
     result = %{is_valid: true, messages: %{}}
 
-    with {:ok, registration} <- Registrations.get_registration(reg_id),
-         %{is_valid: true} <- Queries.validate_registration_details(result, params) do
-      {:ok, registration} = Registrations.update_registation(registration, params)
+    with {:ok, registration} <- Registrations.get_registration(String.to_integer(reg_id)),
+         %{is_valid: true} = result <- Queries.validate_registration_details(result, params) do
+      {:ok, registration} =
+        update_org_details(result, registration)
+        |> update_registration_doc_link()
+        |> Map.drop([:is_valid, :messages])
+        |> then(&Registrations.update_registation(registration, &1))
 
-      if is_map(params["signing_authority"]) do
+      if is_map(result["signing_authority"]) do
         {:ok, _org} =
-          update_org_email(registration.organization_id, params["signing_authority"]["email"])
+          update_org_email(registration.organization_id, result["signing_authority"]["email"])
       end
 
-      notify_on_submission(params["has_submitted"] || false)
+      notify_on_submission(result["has_submitted"] || false)
 
-      result
+      Map.take(result, [:is_valid, :messages])
       |> Map.put(:registration, Registration.to_minimal_map(registration))
-      |> Map.put(:support_mail, "glific.user@gmail.com")
     else
       {:error, _} ->
         dgettext("error", "Registration doesn't exist for given registration ID.")
         |> Queries.error(result, :registration_id)
 
-      err ->
-        err
+      result ->
+        Map.take(result, [:is_valid, :messages])
     end
   end
 
@@ -239,4 +242,31 @@ defmodule Glific.Saas.Onboard do
     # TODO: Implement this.
     results
   end
+
+  @spec update_org_details(map(), Registration.t()) :: map()
+  defp update_org_details(%{"org_details" => org_details} = result, registration) do
+    Map.put(
+      result,
+      "org_details",
+      Map.merge(registration.org_details, org_details)
+    )
+  end
+
+  defp update_org_details(result, registration) do
+    Map.put(
+      result,
+      "org_details",
+      registration.org_details
+    )
+  end
+
+  @spec update_registration_doc_link(map()) :: map()
+  defp update_registration_doc_link(
+         %{"registration_doc_link" => link, "org_details" => org_details} = result
+       ) do
+    org_details = Map.put(org_details, "registration_doc_link", link)
+    Map.put(result, "org_details", org_details)
+  end
+
+  defp update_registration_doc_link(result), do: result
 end
