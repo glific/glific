@@ -87,7 +87,7 @@ defmodule Glific.OnboardTest do
         registered_address: "Field cannot be more than 300 letters.",
         current_address: "Field cannot be empty.",
         api_key_name: "API Key or App Name is empty.",
-        registration_doc: "Document should of type PDF, JPEG or PNG"
+        registration_doc: "Document should of type PDF, JPEG, JPG or PNG"
       },
       is_valid: false
     } = Onboard.setup(attrs)
