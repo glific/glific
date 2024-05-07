@@ -627,7 +627,7 @@ defmodule GlificWeb.Schema.FlowTest do
       "groups" => %{
         "uuid" => group.id,
         "name" => group.label
-    },
+      },
       "flow" => %{
         "name" => "Help Workflow",
         "uuid" => "3fa22108-f464-41e5-81d9-d8a298854429"

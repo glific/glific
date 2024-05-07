@@ -44,7 +44,7 @@ defmodule Glific.Flows.Broadcast do
       Enum.map(group_ids, fn group_id ->
         case Repo.fetch_by(Group, %{id: group_id}) do
           {:ok, group} ->
-            create_group_message(flow, group) |> IO.inspect()
+            create_group_message(flow, group)
 
           {:error, _reason} ->
             {:error, "Group not found with ID: #{group_id}"}
