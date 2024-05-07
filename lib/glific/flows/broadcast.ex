@@ -42,20 +42,39 @@ defmodule Glific.Flows.Broadcast do
 
     group_messages =
       Enum.map(group_ids, fn group_id ->
-        {:ok, group} = Repo.fetch_by(Group, %{id: group_id})
+        case Repo.fetch_by(Group, %{id: group_id}) do
+          {:ok, group} ->
+            create_group_message(flow, group) |> IO.inspect()
 
-        {:ok, group_message} =
-          Messages.create_group_message(%{
-            body: "Starting flow: #{flow.name} for group: #{group.label}",
-            type: :text,
-            group_id: group_id
-          })
-
-        group_message
+          {:error, _reason} ->
+            {:error, "Group not found with ID: #{group_id}"}
+        end
       end)
 
-    group_message = hd(group_messages)
+    valid_group_messages =
+      Enum.filter(group_messages, fn
+        {:ok, _} -> true
+        {:error, _} -> false
+      end)
 
+    if Enum.empty?(valid_group_messages) do
+      {:error, "No valid groups found"}
+    else
+      {:ok, group_message} = hd(valid_group_messages)
+
+      broadcast_message_payload(group_ids, group_message, flow, default_results, exclusion)
+    end
+  end
+
+  defp create_group_message(flow, group) do
+    Messages.create_group_message(%{
+      body: "Starting flow: #{flow.name} for group: #{group.label}",
+      type: :text,
+      group_id: group.id
+    })
+  end
+
+  defp broadcast_message_payload(group_ids, group_message, flow, default_results, exclusion) do
     %{
       group_id: hd(group_ids),
       message_id: group_message.id,
