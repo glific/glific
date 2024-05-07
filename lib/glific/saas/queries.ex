@@ -395,8 +395,8 @@ defmodule Glific.Saas.Queries do
     }
 
     platform_details = %{
-      api_key: params["api-key"],
-      app_name: params["ngo"],
+      api_key: params["api_key"],
+      app_name: params["app_name"],
       phone: params["phone"],
       shortcode: params["shortcode"]
     }
@@ -404,7 +404,8 @@ defmodule Glific.Saas.Queries do
     %{
       org_details: org_details,
       organization_id: result.organization.id,
-      platform_details: platform_details
+      platform_details: platform_details,
+      ip_address: params["client_ip"]
     }
     |> Registrations.create_registration()
     |> case do

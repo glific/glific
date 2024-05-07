@@ -81,6 +81,21 @@ defmodule Glific.Saas.Onboard do
     |> notify_user_queries()
   end
 
+  @doc """
+  Returns the ip of client
+
+  conn - Plug.Conn object
+  """
+  @spec get_client_ip(Plug.Conn.t()) :: String.t()
+  def get_client_ip(conn) do
+    Plug.Conn.get_req_header(conn, "x-forwarded-for")
+    |> List.first()
+    |> case do
+      nil -> conn.remote_ip |> :inet_parse.ntoa() |> to_string()
+      forwaded_ips -> String.split(forwaded_ips, ",") |> Enum.map(&String.trim/1) |> List.first()
+    end
+  end
+
   @spec add_map(map(), atom(), any()) :: map()
   defp add_map(map, _key, nil), do: map
   defp add_map(map, key, value), do: Map.put(map, key, value)

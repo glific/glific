@@ -19,7 +19,8 @@ defmodule GlificWeb.API.V1.OnboardController do
   def setup(conn, %{"token" => token} = params) do
     case Glific.verify_google_captcha(token) do
       {:ok, "success"} ->
-        json(conn, Onboard.setup(params))
+        Map.put(params, "client_ip", Onboard.get_client_ip(conn))
+        |> then(&json(conn, Onboard.setup(&1)))
 
       {:error, error} ->
         conn
