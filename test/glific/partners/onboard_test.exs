@@ -15,8 +15,11 @@ defmodule Glific.OnboardTest do
     "phone" => "+911234567890",
     "api_key" => "fake api key",
     "app_name" => "fake app name",
-    "email" => "lobo@yahoo.com",
-    "shortcode" => "short"
+    "shortcode" => "short",
+    "gstin" => "29PSFCP4894X9Z7",
+    "registered_address" => "registered_address",
+    "current_address" => "current_address",
+    "registration_doc_link" => "https://storage.googleapis.com/1/file.doc"
   }
 
   setup do
@@ -53,17 +56,28 @@ defmodule Glific.OnboardTest do
 
   test "ensure that validations are applied on params while creating an org" do
     # lets remove a couple and mess up the others to get most of the errors
+    registered_address = String.duplicate("lorum epsum", 300)
+
     attrs =
       @valid_attrs
       |> Map.delete("app_name")
       |> Map.put("email", "foobar")
       |> Map.put("phone", "93'#$%^")
       |> Map.put("shortcode", "glific")
+      |> Map.put("gstin", "abcabcabcabcabc")
+      |> Map.put("registered_address", registered_address)
+      |> Map.delete("current_address")
 
-    result = Onboard.setup(attrs)
-
-    assert result.is_valid == false
-    assert result.messages != %{}
+    %{
+      messages: %{
+        phone: "Phone is not valid.",
+        shortcode: "Shortcode has already been taken.",
+        registered_address: "registered_address cannot be more than 300 letters.",
+        current_address: "current_address cannot be empty.",
+        api_key_name: "API Key or App Name is empty."
+      },
+      is_valid: false
+    } = Onboard.setup(attrs)
   end
 
   test "ensure that sending in valid parameters, creates an organization, contact and credential" do
@@ -79,6 +93,7 @@ defmodule Glific.OnboardTest do
     assert result.organization != nil
     assert result.contact != nil
     assert result.credential != nil
+    assert result.registration_id != nil
   end
 
   test "ensure that sending in valid parameters, update organization status" do

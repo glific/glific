@@ -16,6 +16,7 @@ defmodule Glific.Saas.Queries do
     Partners.Provider,
     Providers.Gupshup.ApiClient,
     Providers.GupshupContacts,
+    Registrations,
     Repo,
     Seeds.Seeder,
     Seeds.SeedsMigration,
@@ -38,6 +39,8 @@ defmodule Glific.Saas.Queries do
     |> contact(params)
     # create the credentials
     |> credentials(params)
+    # create registration details
+    |> registration(params)
   end
 
   @doc """
@@ -48,8 +51,15 @@ defmodule Glific.Saas.Queries do
     result
     |> validate_bsp_keys(params)
     |> validate_shortcode(params["shortcode"])
-    |> validate_email(params["email"])
     |> validate_phone(params["phone"])
+    |> validate_text_field(params["gstin"], :gstin, {15, 15}, true)
+    |> validate_text_field(
+      params["registered_address"],
+      :registered_address,
+      {0, 300}
+    )
+    |> validate_text_field(params["current_address"], :current_address, {0, 300})
+    |> validate_registration_document(params["registration_doc_link"])
   end
 
   @doc """
@@ -75,6 +85,53 @@ defmodule Glific.Saas.Queries do
   end
 
   def sync_templates(results), do: results
+
+  @spec validate_text_field(map(), String.t(), atom(), {number(), number()}, boolean()) :: map()
+  defp validate_text_field(result, field, key, length, optional \\ false)
+  defp validate_text_field(result, nil, _key, {_min_len, _max_len}, true), do: result
+
+  defp validate_text_field(result, field, key, {min_len, max_len}, _optional) do
+    cond do
+      empty(field) ->
+        dgettext("error", "%{key} cannot be empty.", key: key)
+        |> error(result, key)
+
+      String.length(field) < min_len ->
+        dgettext("error", "%{key} cannot be less than %{length} letters.",
+          key: key,
+          length: min_len
+        )
+        |> error(result, key)
+
+      String.length(field) > max_len ->
+        dgettext("error", "%{key} cannot be more than %{length} letters.",
+          key: key,
+          length: max_len
+        )
+        |> error(result, key)
+
+      true ->
+        result
+    end
+  end
+
+  @spec validate_registration_document(map(), String.t()) :: map()
+  defp validate_registration_document(result, document_link) do
+    cond do
+      empty(document_link) ->
+        dgettext("error", "%{key} cannot be empty.", key: :registration_doc_link)
+        |> error(result, :registration_doc_link)
+
+      String.starts_with?(document_link, "https://storage.googleapis.com") == false ->
+        dgettext("error", "%{key} should start with https://storage.googleapis.com.",
+          key: :registration_doc_link
+        )
+        |> error(result, :registration_doc_link)
+
+      true ->
+        result
+    end
+  end
 
   @spec organization(map(), map()) :: map()
   defp organization(%{is_valid: false} = result, _params), do: result
@@ -190,8 +247,11 @@ defmodule Glific.Saas.Queries do
     end
   end
 
+  @doc """
+  Updates the error map
+  """
   @spec error(String.t(), map(), atom()) :: map()
-  defp error(message, result, key) do
+  def error(message, result, key) do
     result
     |> Map.put(:is_valid, false)
     |> Map.update!(:messages, fn msgs -> Map.put(msgs, key, message) end)
@@ -248,27 +308,27 @@ defmodule Glific.Saas.Queries do
     end
   end
 
-  @spec validate_email(map(), String.t()) :: map()
-  defp validate_email(result, email) do
+  @spec validate_email(map(), String.t(), atom()) :: map()
+  defp validate_email(result, email, key \\ :email) do
     case Changeset.validate_email(email) do
       :ok ->
         result
 
       _ ->
         dgettext("error", "Email is not valid.")
-        |> error(result, :email)
+        |> error(result, key)
     end
   end
 
-  @spec validate_phone(map(), String.t()) :: map()
-  defp validate_phone(result, phone) do
+  @spec validate_phone(map(), String.t(), atom()) :: map()
+  defp validate_phone(result, phone, key \\ :phone) do
     case ExPhoneNumber.parse(phone, "IN") do
       {:ok, _phone} ->
         result
 
       _ ->
         dgettext("error", "Phone is not valid.")
-        |> error(result, :phone)
+        |> error(result, key)
     end
   end
 
@@ -303,5 +363,28 @@ defmodule Glific.Saas.Queries do
     |> Repo.update_all(set: [fields: %{}, settings: %{}])
 
     reset_organization_id
+  end
+
+  @spec registration(map(), map()) :: map()
+  defp registration(%{is_valid: false} = result, _params), do: result
+
+  defp registration(result, params) do
+    org_details = %{
+      name: params["name"],
+      gstin: params["gstin"],
+      registration_document: params["registration_doc_link"],
+      registered_address: params["registered_address"],
+      current_address: params["current_address"]
+    }
+
+    %{org_details: org_details, organization_id: result.organization.id}
+    |> Registrations.create_registration()
+    |> case do
+      {:ok, %{id: id}} ->
+        Map.put(result, :registration_id, id)
+
+      {:error, errors} ->
+        error(inspect(errors), result, :registration)
+    end
   end
 end
