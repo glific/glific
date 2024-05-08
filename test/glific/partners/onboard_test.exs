@@ -332,6 +332,37 @@ defmodule Glific.OnboardTest do
       assert %{email: nil} = Partners.get_organization!(org_id)
     end
 
+    @tag :ddt
+    test "update_registration, valid params in map", %{org_id: org_id, registration_id: reg_id} do
+      valid_params = %{
+        "registration_id" => to_string(reg_id),
+        "billing_frequency" => "yearly",
+        "finance_poc" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "Sr Accountant",
+          "phone" => Faker.Phone.PtBr.phone()
+        },
+        "submitter" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email()
+        },
+        "terms_agreed" => "true"
+      }
+
+      assert %{
+               messages: _,
+               is_valid: true
+             } =
+               Onboard.update_registration(valid_params)
+
+      {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
+      assert reg.billing_frequency == "yearly"
+      assert %{"name" => _, "email" => _} = reg.submitter
+      assert %{"name" => _, "email" => _, "phone" => _} = reg.finance_poc
+      assert %{email: nil} = Partners.get_organization!(org_id)
+    end
+
     @tag :dd
     test "update_registration, valid signing_details, update's org's email also", %{
       org_id: org_id,
@@ -382,10 +413,11 @@ defmodule Glific.OnboardTest do
 
   @tag :ddc
   test "send_user_quer mail" do
-    assert %Swoosh.Email{} = NewPartnerOnboardedMail.user_query_mail(%{
-      "name" => Faker.Person.name(),
-      "message" => Faker.Lorem.paragraph(),
-      "email" => Faker.Internet.email()
-    })
+    assert %Swoosh.Email{} =
+             NewPartnerOnboardedMail.user_query_mail(%{
+               "name" => Faker.Person.name(),
+               "message" => Faker.Lorem.paragraph(),
+               "email" => Faker.Internet.email()
+             })
   end
 end

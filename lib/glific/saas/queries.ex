@@ -97,6 +97,9 @@ defmodule Glific.Saas.Queries do
 
         key when key in ["has_submitted", "terms_agreed", "support_staff_account"] ->
           case value do
+            value when is_boolean(value) ->
+              Map.put(result, key, value)
+
             "true" ->
               Map.put(result, key, true)
 
@@ -555,7 +558,7 @@ defmodule Glific.Saas.Queries do
     |> validate_text_field(params["current_address"], :current_address, {0, 300})
   end
 
-  defp parse_params(result, value, key) do
+  defp parse_params(result, value, key) when is_binary(value) do
     case Jason.decode(value) do
       {:ok, value} ->
         {result, value}
@@ -566,4 +569,6 @@ defmodule Glific.Saas.Queries do
         |> then(&{&1, value})
     end
   end
+
+  defp parse_params(result, value, _key), do: {result, value}
 end
