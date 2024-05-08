@@ -15,60 +15,33 @@ headers {
   Content-Type: application/json
 }
 
-body:json {
-  {
-    "org_id": 3,
-    "registration_id": 2,
-    "billing_frequency": "yearly", // "yearly", "monthly", "quarterly"
-    "finance_poc": {
-      "name": "name",
-      "email": "email@m.com",
-      "designation": "designation",
-      "phone": "9185xxxxxxxx"
-    },
-    "submitter": {
-      "name": "name",
-      "email": "email@m.com"
-    },
-    "signing_authority": {
-      "name": "name",
-      "email": "email@m.com",
-      "designation": "designation"
-    },
-    "has_submitted": false,
-    "terms_agreed": true,
-    "support_staff_account": false
-  }
-}
-
 body:multipart-form {
-  org_id: 4
-  registration_id: 3
+  org_id: 3
+  registration_id: 4
   org_details: {
-   "gstin": "123456789123456",
-   "registered_address": "reg_addr",
-  "current_address": "cur_addr"
-  }
-  ~billing_frequency: monthly
-  ~finance_poc: {
-      "name": "name",
-      "email": "email@m.com",
-      "designation": "designation",
-      "phone": "9185xxxxxxxx"
+     "gstin": "123456789123456",
+     "registered_address": "reg_addr",
+    "current_address": "cur_addr"
     }
-  ~submitter: {
-      "name": "name",
-      "email": "email@m.com"
-    }
-  ~signing_authority: {
-      "name": "name",
-      "email": "email@m.com",
-      "designation": "designation"
-    }
-  ~has_submitted: false
-  ~terms_agreed: true
-  ~support_staff_account: true
-  ~registration_doc: @file(/Users/t4d/Downloads/dummy.pdf)
+  billing_frequency: monthly
+  finance_poc: {
+        "name": "name",
+        "email": "email@m.com",
+        "designation": "designation",
+        "phone": "9185xxxxxxxx"
+      }
+  submitter: {
+        "name": "name",
+        "email": "email@m.com"
+      }
+  signing_authority: {
+        "name": "name",
+        "email": "email@m.com",
+        "designation": "designation"
+      }
+  has_submitted: false
+  terms_agreed: false
+  support_staff_account: true
 }
 
 docs {
@@ -111,7 +84,8 @@ docs {
         "email": "email@m.com",
         "name": "name"
       }
-    }
+    },
+    "support_mail": "glific.user@gmail.com"
   }
   ```
   

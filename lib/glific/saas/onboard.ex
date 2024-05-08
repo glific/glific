@@ -45,7 +45,6 @@ defmodule Glific.Saas.Onboard do
          %{is_valid: true} = result <- Queries.validate_registration_details(result, params) do
       {:ok, registration} =
         update_org_details(result, registration)
-        |> update_registration_doc_link()
         |> Map.drop([:is_valid, :messages])
         |> then(&Registrations.update_registation(registration, &1))
 
@@ -281,14 +280,4 @@ defmodule Glific.Saas.Onboard do
       registration.org_details
     )
   end
-
-  @spec update_registration_doc_link(map()) :: map()
-  defp update_registration_doc_link(
-         %{"registration_doc_link" => link, "org_details" => org_details} = result
-       ) do
-    org_details = Map.put(org_details, "registration_doc_link", link)
-    Map.put(result, "org_details", org_details)
-  end
-
-  defp update_registration_doc_link(result), do: result
 end

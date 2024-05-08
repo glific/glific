@@ -23,14 +23,6 @@ defmodule Glific.OnboardTest do
     "shortcode" => "short"
   }
 
-  # "gstin" => "29PSFCP4894X9Z7",
-  #   "registered_address" => "registered_address",
-  #   "current_address" => "current_address",
-  #   "registration_doc" => %Plug.Upload{
-  #     content_type: "application/pdf",
-  #     filename: "dummy.pdf",
-  #     path: "/"
-  #   }
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_billing(organization)
@@ -74,14 +66,6 @@ defmodule Glific.OnboardTest do
       |> Map.put("phone", "93'#$%^")
       |> Map.put("shortcode", "glific")
 
-    # |> Map.put("gstin", "abcabcabcabcabc")
-    # |> Map.put("registered_address", registered_address)
-    # |> Map.delete("current_address")
-    # |> Map.put("registration_doc", %Plug.Upload{
-    #   content_type: "application/mp3",
-    #   filename: "dummy.pdf",
-    #   path: "/"
-    # })
 
     %{
       messages: %{
@@ -93,41 +77,6 @@ defmodule Glific.OnboardTest do
     } = Onboard.setup(attrs)
   end
 
-  # test "upload document failed while creating an org" do
-  #   with_mock(
-  #     GcsWorker,
-  #     upload_media: fn _, _, _ -> {:error, "auth error"} end
-  #   ) do
-  #     registered_address = String.duplicate("lorum epsum", 300)
-
-  #     attrs =
-  #       @valid_attrs
-  #       |> Map.delete("app_name")
-  #       |> Map.put("email", "foobar")
-  #       |> Map.put("phone", "93'#$%^")
-  #       |> Map.put("shortcode", "glific")
-  #       |> Map.put("gstin", "abcabcabcabcabc")
-  #       |> Map.put("registered_address", registered_address)
-  #       |> Map.delete("current_address")
-  #       |> Map.put("registration_doc", %Plug.Upload{
-  #         content_type: "application/pdf",
-  #         filename: "dummy.pdf",
-  #         path: "/"
-  #       })
-
-  #     %{
-  #       messages: %{
-  #         phone: "Phone is not valid.",
-  #         shortcode: "Shortcode has already been taken.",
-  #         registered_address: "Field cannot be more than 300 letters.",
-  #         current_address: "Field cannot be empty.",
-  #         api_key_name: "API Key or App Name is empty.",
-  #         registration_doc: "Document upload failed, try again"
-  #       },
-  #       is_valid: false
-  #     } = Onboard.setup(attrs)
-  #   end
-  # end
 
   test "ensure that sending in valid parameters, creates an organization, contact and credential" do
     with_mock(
@@ -220,11 +169,6 @@ defmodule Glific.OnboardTest do
           @valid_attrs
           |> Map.put("shortcode", "new_glific")
           |> Map.put("phone", "919917443995")
-          |> Map.put("registration_doc", %Plug.Upload{
-            content_type: "application/pdf",
-            filename: "dummy.pdf",
-            path: "/"
-          })
 
         %{organization: %{id: org_id}, registration_id: registration_id} =
           Onboard.setup(attrs)

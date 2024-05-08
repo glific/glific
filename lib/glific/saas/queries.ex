@@ -6,14 +6,12 @@ defmodule Glific.Saas.Queries do
   import Ecto.Query, warn: false
 
   require Logger
-  alias Glific.Partners.Saas
 
   alias Glific.{
     Contacts,
     Contacts.Contact,
     Flows.FlowContext,
     Flows.FlowResult,
-    GCS.GcsWorker,
     Messages.Message,
     Partners,
     Partners.Organization,
@@ -30,8 +28,7 @@ defmodule Glific.Saas.Queries do
   alias Pow.Ecto.Schema.Changeset
 
   @default_provider "gupshup"
-  # 5MB
-  @max_file_size 5_242_880
+
   @doc """
   Main function to setup the organization entity in Glific
   """
@@ -91,9 +88,6 @@ defmodule Glific.Saas.Queries do
 
           validate_org_details(result, value)
           |> then(&Map.put(&1, "org_details", value))
-
-        "registration_doc" ->
-          validate_and_upload_document(result, value)
 
         key when key in ["has_submitted", "terms_agreed", "support_staff_account"] ->
           case value do
@@ -416,7 +410,6 @@ defmodule Glific.Saas.Queries do
   defp registration(result, params) do
     org_details = %{
       name: params["name"]
-      # registration_doc_link: result["registration_doc_link"]
     }
 
     platform_details = %{
@@ -486,62 +479,6 @@ defmodule Glific.Saas.Queries do
     |> validate_text_field(params["name"], :signer_name, {1, 25})
     |> validate_text_field(params["designation"], :signer_designation, {1, 25})
     |> validate_email(params["email"], :signer_email)
-  end
-
-  @spec validate_and_upload_document(map(), map()) :: map()
-  defp validate_and_upload_document(
-         result,
-         %Plug.Upload{} = document = _params
-       ) do
-    with :ok <- validate_content(result, document.content_type),
-         :ok <- validate_size(result, document.path) do
-      {year, week} = Timex.iso_week(Timex.now())
-      uuid = Ecto.UUID.generate()
-      [_, extension] = String.split(document.content_type, "/")
-      [filename, _] = String.split(document.filename, ".")
-      remote_name = "outbound/#{year}-#{week}/#{filename}/#{uuid}.#{extension}"
-
-      GcsWorker.upload_media(document.path, remote_name, Saas.organization_id())
-      |> case do
-        {:ok, %{url: url} = _} ->
-          Map.put(result, "registration_doc_link", url)
-
-        error ->
-          Logger.error("Document upload failed due to #{inspect(error)}")
-
-          dgettext("error", "Document upload failed, try again")
-          |> error(result, :registration_doc)
-      end
-    end
-  end
-
-  defp validate_and_upload_document(result, _params) do
-    dgettext("error", "Registration document cannot be empty.")
-    |> error(result, :registration_doc)
-  end
-
-  @spec validate_content(map(), String.t()) :: :ok | map()
-  defp validate_content(result, content_type) do
-    case String.split(content_type, "/") do
-      [_, type] when type in ["pdf", "jpeg", "png", "jpg"] ->
-        :ok
-
-      [_, _type] ->
-        dgettext("error", "Document should of type PDF, JPEG, JPG or PNG")
-        |> error(result, :registration_doc)
-    end
-  end
-
-  @spec validate_size(map(), String.t(), non_neg_integer()) :: map() | :ok
-  defp validate_size(result, file_path, max_size \\ @max_file_size) do
-    {:ok, %File.Stat{size: size}} = File.stat(file_path)
-
-    if size > max_size do
-      dgettext("error", "Document size should not be greater than 5MB")
-      |> error(result, :registration_doc)
-    else
-      :ok
-    end
   end
 
   @spec validate_org_details(map(), map()) :: map()
