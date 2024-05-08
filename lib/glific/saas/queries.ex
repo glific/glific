@@ -292,7 +292,7 @@ defmodule Glific.Saas.Queries do
   @doc """
   Updates the error map
   """
-  @spec error(String.t(), map(), atom()) :: map()
+  @spec error(String.t(), map(), atom() | String.t()) :: map()
   def error(message, result, key) do
     result
     |> Map.put(:is_valid, false)
