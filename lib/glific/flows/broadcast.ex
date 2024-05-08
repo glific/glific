@@ -18,6 +18,7 @@ defmodule Glific.Flows.Broadcast do
     Groups.Group,
     Groups.WaGroupsCollections,
     Messages,
+    Messages.Message,
     Partners,
     Repo
   }
@@ -41,21 +42,37 @@ defmodule Glific.Flows.Broadcast do
     exclusion = Keyword.get(opts, :exclusions, false)
 
     group_messages =
-      Enum.map(group_ids, fn group_id ->
-        {:ok, group} = Repo.fetch_by(Group, %{id: group_id})
+      Enum.reduce(group_ids, [], fn group_id, acc ->
+        case Repo.fetch_by(Group, %{id: group_id}) do
+          {:ok, group} ->
+            [create_broadcast_message(flow, group) | acc]
 
-        {:ok, group_message} =
-          Messages.create_group_message(%{
-            body: "Starting flow: #{flow.name} for group: #{group.label}",
-            type: :text,
-            group_id: group_id
-          })
-
-        group_message
+          {:error, _reason} ->
+            acc
+        end
       end)
 
-    group_message = hd(group_messages)
+    if Enum.empty?(group_messages) do
+      {:error, "No valid groups found"}
+    else
+      {:ok, group_message} = hd(group_messages)
+      broadcast_message_payload(group_ids, group_message, flow, default_results, exclusion)
+    end
+  end
 
+  @spec create_broadcast_message(Flow.t(), Group.t()) ::
+          {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
+  defp create_broadcast_message(flow, group) do
+    Messages.create_group_message(%{
+      body: "Starting flow: #{flow.name} for group: #{group.label}",
+      type: :text,
+      group_id: group.id
+    })
+  end
+
+  @spec broadcast_message_payload(list(integer()), Message.t(), Flow.t(), map(), boolean()) ::
+          {:ok, any()} | {:error, String.t()}
+  defp broadcast_message_payload(group_ids, group_message, flow, default_results, exclusion) do
     %{
       group_id: hd(group_ids),
       message_id: group_message.id,
