@@ -15,6 +15,7 @@ defmodule Glific.Saas.Onboard do
     Partners,
     Partners.Billing,
     Partners.Organization,
+    Partners.Saas,
     Registrations,
     Registrations.Registration,
     Repo,
@@ -53,7 +54,7 @@ defmodule Glific.Saas.Onboard do
           update_org_email(registration.organization_id, result["signing_authority"]["email"])
       end
 
-      notify_on_submission(result["has_submitted"] || false)
+      notify_on_submission(result)
 
       Map.take(result, [:is_valid, :messages])
       |> Map.put(:registration, Registration.to_minimal_map(registration))
@@ -81,7 +82,7 @@ defmodule Glific.Saas.Onboard do
   def reachout(params) do
     %{is_valid: true, messages: %{}}
     |> Queries.validate_reachout_details(params)
-    |> notify_user_queries()
+    |> notify_user_queries(params)
   end
 
   @doc """
@@ -232,14 +233,33 @@ defmodule Glific.Saas.Onboard do
   # TODO: spec needed
   # TODO: send mail later
 
-  defp notify_on_submission(false), do: :ok
+  defp notify_on_submission(%{is_valid: false} = result), do: result
 
-  defp notify_on_submission(true) do
+  defp notify_on_submission(result) do
     :ok
   end
 
-  defp notify_user_queries(results) do
-    # TODO: Implement this.
+  @spec notify_user_queries(map(), map()) :: map()
+  defp notify_user_queries(%{is_valid: false} = results, _params), do: results
+
+  defp notify_user_queries(results, params) do
+    org_id = Saas.organization_id()
+
+    NewPartnerOnboardedMail.user_query_mail(params)
+    |> Mailer.send(%{
+      category: "onboard_ngo_query",
+      organization_id: org_id
+    })
+    |> case do
+      {:ok, _} ->
+        results
+
+      error ->
+        Glific.log_error(
+          "Error sending NGO reachout query email #{inspect(error)} for org: #{inspect(org_id)}"
+        )
+    end
+
     results
   end
 

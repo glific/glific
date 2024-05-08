@@ -6,6 +6,7 @@ defmodule Glific.OnboardTest do
 
   alias Glific.{
     Fixtures,
+    Mails.NewPartnerOnboardedMail,
     Partners,
     Partners.Organization,
     Registrations,
@@ -372,10 +373,19 @@ defmodule Glific.OnboardTest do
   test "reachout/1, valid params" do
     invalid_params = %{
       "name" => Faker.Person.name(),
-      "message" => Faker.Lorem.paragraph(),
+      "message" => Faker.Lorem.paragraph() |> String.slice(0, 250),
       "email" => Faker.Internet.email()
     }
 
     %{is_valid: true} = Onboard.reachout(invalid_params)
+  end
+
+  @tag :ddc
+  test "send_user_quer mail" do
+    assert %Swoosh.Email{} = NewPartnerOnboardedMail.user_query_mail(%{
+      "name" => Faker.Person.name(),
+      "message" => Faker.Lorem.paragraph(),
+      "email" => Faker.Internet.email()
+    })
   end
 end
