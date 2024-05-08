@@ -30,16 +30,15 @@ defmodule Glific.Repo.Migrations.AddRegistrationTable do
         default: false,
         comment: "Flag indicating if the applicant have confirmed the registration via email"
 
-      add :ip_address, :string,
-        comment: "IP address of the submitter"
+      add :ip_address, :string, comment: "IP address of the submitter"
 
       add :terms_agreed, :boolean,
         default: false,
         comment: "Flag indicating if the user agreed or disagreed with the T&C"
 
       add :support_staff_account, :boolean,
-      default: true,
-      comment: "Flag indicating if user agrees to create a support staff account"
+        default: true,
+        comment: "Flag indicating if user agrees to create a support staff account"
 
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,

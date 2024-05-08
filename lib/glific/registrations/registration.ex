@@ -65,8 +65,8 @@ defmodule Glific.Registrations.Registration do
     field(:has_submitted, :boolean, default: false)
     field(:has_confirmed, :boolean, default: false)
     field(:ip_address, :string)
-    field(:terms_agreed, :boolean, default: :false)
-    field(:support_staff_account, :boolean, default: :true)
+    field(:terms_agreed, :boolean, default: false)
+    field(:support_staff_account, :boolean, default: true)
     belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)

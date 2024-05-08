@@ -357,6 +357,7 @@ defmodule Glific do
     create_request(token)
     |> then(&Tesla.post(@captcha_verify_url, &1))
     |> handle_response()
+
     {:ok, "success"}
   end
 
