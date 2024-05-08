@@ -12,7 +12,6 @@ defmodule Glific.Saas.Queries do
     Contacts.Contact,
     Flows.FlowContext,
     Flows.FlowResult,
-    GCS.GcsWorker,
     Messages.Message,
     Partners,
     Partners.Organization,
@@ -29,8 +28,6 @@ defmodule Glific.Saas.Queries do
   alias Pow.Ecto.Schema.Changeset
 
   @default_provider "gupshup"
-  # 5MB
-  @max_file_size 5_242_880
   @doc """
   Main function to setup the organization entity in Glific
   """

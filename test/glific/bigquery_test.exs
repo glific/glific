@@ -1,6 +1,5 @@
 defmodule Glific.BigQueryTest do
   alias Glific.Fixtures
-  alias Glific.GCS.GcsWorker
   use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
   use ExUnit.Case
@@ -21,15 +20,7 @@ defmodule Glific.BigQueryTest do
     "phone" => "+911234567890",
     "api_key" => "fake api key",
     "app_name" => "fake app name",
-    "shortcode" => "short",
-    "gstin" => "29PSFCP4894X9Z7",
-    "registered_address" => "registered_address",
-    "current_address" => "current_address",
-    "registration_doc" => %Plug.Upload{
-      content_type: "application/pdf",
-      filename: "dummy.pdf",
-      path: "/"
-    }
+    "shortcode" => "short"
   }
 
   setup_with_mocks([
@@ -415,11 +406,6 @@ defmodule Glific.BigQueryTest do
             {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 1000}}
           end
         ]
-      },
-      {
-        GcsWorker,
-        [],
-        [upload_media: fn _, _, _ -> {:ok, %{url: "url"}} end]
       }
     ]) do
       url =

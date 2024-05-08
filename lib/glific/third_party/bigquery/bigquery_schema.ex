@@ -1864,12 +1864,6 @@ defmodule Glific.BigQuery.Schema do
             name: "registered_address",
             type: "STRING",
             mode: "NULLABLE"
-          },
-          %{
-            description: "Registration document link",
-            name: "registration_doc_link",
-            type: "STRING",
-            mode: "NULLABLE"
           }
         ]
       },

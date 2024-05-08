@@ -16,33 +16,32 @@ headers {
 }
 
 body:multipart-form {
-  org_id: 3
-  registration_id: 4
+  org_id: 3,
+  registration_id: 4,
   org_details: {
      "gstin": "123456789123456",
      "registered_address": "reg_addr",
     "current_address": "cur_addr"
-    }
-  billing_frequency: monthly
+    },
+  billing_frequency: monthly,
   finance_poc: {
         "name": "name",
         "email": "email@m.com",
         "designation": "designation",
         "phone": "9185xxxxxxxx"
-      }
+      },
   submitter: {
         "name": "name",
         "email": "email@m.com"
-      }
+      },
   signing_authority: {
         "name": "name",
         "email": "email@m.com",
         "designation": "designation"
-      }
-  has_submitted: false
-  terms_agreed: false
+      },
+  has_submitted: false,
+  terms_agreed: false,
   support_staff_account: true
->>>>>>> fix/onboard-changes
 }
 
 docs {
@@ -58,8 +57,7 @@ docs {
         "current_address": "current_addr",
         "gstin": "abcabcabcabcabc",
         "name": "ngo",
-        "registered_address": "reg_addr",
-        "registration_document": "https://storage.googleapis.com/file"
+        "registered_address": "reg_addr"
       },
       "platform_details": {
         "api_key": null,
@@ -86,7 +84,6 @@ docs {
         "name": "name"
       }
     },
-    "support_mail": "glific.user@gmail.com"
   }
   ```
   

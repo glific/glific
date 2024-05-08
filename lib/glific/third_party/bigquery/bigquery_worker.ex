@@ -787,7 +787,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
               gstin: row.org_details["gstin"],
               current_address: row.org_details["current_address"],
               registered_address: row.org_details["registered_address"],
-              registration_doc_link: row.org_details["registration_doc_link"]
             },
             platform_details: %{
               phone: row.platform_details["phone"],
