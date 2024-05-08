@@ -53,7 +53,7 @@ defmodule Glific.Saas.Onboard do
           update_org_email(registration.organization_id, result["signing_authority"]["email"])
       end
 
-      notify_on_submission(result)
+      notify_on_submission(result, registration)
 
       Map.take(result, [:is_valid, :messages])
       |> Map.put(:registration, Registration.to_minimal_map(registration))
@@ -229,16 +229,27 @@ defmodule Glific.Saas.Onboard do
     |> Partners.update_organization(changes)
   end
 
-  # TODO: spec needed
-  # TODO: send mail later
+  @spec notify_on_submission(map(), map()) :: map()
+  defp notify_on_submission(%{is_valid: false} = result, _registration), do: result
 
-  defp notify_on_submission(%{is_valid: false} = result), do: result
+  defp notify_on_submission(%{"has_submitted" => true} = result, registration) do
+    NewPartnerOnboardedMail.confirmation_mail(result)
+    |> Mailer.send(%{
+      category: "Onbaording_confirmation",
+      organization_id: registration.organization_id
+    })
+    |> case do
+      {:ok, _} ->
+        result
 
-  defp notify_on_submission(%{"has_submitted" => true} = result) do
-    :ok
+      error ->
+        Glific.log_error(
+          "Error sending NGO reachout query email #{inspect(error)} for org: #{registration.organization_id}"
+        )
+    end
   end
 
-  defp notify_on_submission(result), do: result
+  defp notify_on_submission(result, _registration), do: result
 
   @spec notify_user_queries(map(), map()) :: map()
   defp notify_user_queries(%{is_valid: false} = results, _params), do: results

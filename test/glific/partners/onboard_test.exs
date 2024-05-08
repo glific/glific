@@ -66,7 +66,6 @@ defmodule Glific.OnboardTest do
       |> Map.put("phone", "93'#$%^")
       |> Map.put("shortcode", "glific")
 
-
     %{
       messages: %{
         phone: "Phone is not valid.",
@@ -76,7 +75,6 @@ defmodule Glific.OnboardTest do
       is_valid: false
     } = Onboard.setup(attrs)
   end
-
 
   test "ensure that sending in valid parameters, creates an organization, contact and credential" do
     with_mock(
@@ -319,7 +317,8 @@ defmodule Glific.OnboardTest do
             "name" => Faker.Person.name(),
             "email" => Faker.Internet.email(),
             "designation" => "designation"
-          })
+          }),
+        "has_submitted" => true
       }
 
       assert %{
@@ -362,6 +361,35 @@ defmodule Glific.OnboardTest do
                "name" => Faker.Person.name(),
                "message" => Faker.Lorem.paragraph(),
                "email" => Faker.Internet.email()
+             })
+  end
+
+  @tag :ddc
+  test "create confirmation t&c mail" do
+    assert %Swoosh.Email{} =
+             NewPartnerOnboardedMail.confirmation_mail(%{
+               "billing_frequency" => "yearly",
+               "finance_poc" => %{
+                 "name" => Faker.Person.name() |> String.slice(0, 10),
+                 "email" => Faker.Internet.email(),
+                 "designation" => "Sr Accountant",
+                 "phone" => Faker.Phone.PtBr.phone()
+               },
+               "submitter" => %{
+                 "name" => Faker.Person.name() |> String.slice(0, 10),
+                 "email" => Faker.Internet.email()
+               },
+               "signing_authority" => %{
+                 "name" => Faker.Person.name(),
+                 "email" => Faker.Internet.email(),
+                 "designation" => "designation"
+               },
+               "org_details" => %{
+                 "current_address" => Faker.Lorem.paragraph(1..30),
+                 "gstin" => " 07AAAAA1234A124",
+                 "name" => Faker.Company.name(),
+                 "registered_address" => Faker.Lorem.paragraph(1..30)
+               }
              })
   end
 end
