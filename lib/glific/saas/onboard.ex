@@ -235,9 +235,11 @@ defmodule Glific.Saas.Onboard do
 
   defp notify_on_submission(%{is_valid: false} = result), do: result
 
-  defp notify_on_submission(result) do
+  defp notify_on_submission(%{"has_submitted" => true} = result) do
     :ok
   end
+
+  defp notify_on_submission(result), do: result
 
   @spec notify_user_queries(map(), map()) :: map()
   defp notify_user_queries(%{is_valid: false} = results, _params), do: results

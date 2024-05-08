@@ -73,7 +73,8 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
   #   and acceptance of the T&C is duly noted. Here's all the summary of the information
   #   you have provided:\n\n
 
-
+  #   Organization details
+  #
   #   """
   # end
 end
