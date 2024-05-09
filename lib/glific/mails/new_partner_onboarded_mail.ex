@@ -10,7 +10,9 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
 
   @reachout_send_to {"operations", "operations@projecttech4dev.org"}
 
-  @test_mail_send_to {"", "krishna.dwibhashi@glific.org"}
+  # @test_mail_send_to {"", "krishna.dwibhashi@glific.org"}
+
+  @test_mail_send_to {"", "anandu@projecttech4dev.org"}
 
   @doc false
   @spec new_mail(Organization.t()) :: Swoosh.Email.t()
