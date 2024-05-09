@@ -33,7 +33,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
     opts = [
       team: team,
       # send_to: {"", Saas.primary_email()}
-      send_to: {"", @test_mail_send_to}
+      send_to: @test_mail_send_to
     ]
 
     Mailer.common_send(org, subject, body, opts)
@@ -66,11 +66,11 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
 
     body =
       """
-      Hello #{result["signing_authority"]["name"]},
+      Hello #{result["signing_authority"]["name"]},<br><br>
 
-      Thank you for choosing Glific to run your chatbot program. This email serves as confirmation that we have received the registration form submitted by #{result["submitter"]["name"]} for the creation of a Glific platform.
+      Thank you for choosing Glific to run your chatbot program. This email serves as confirmation that we have received the registration form submitted by #{result["submitter"]["name"]} for the creation of a Glific platform. <br><br>
 
-      Please find Terms & Conditions for the use of the Glific platform attached here with for your review if needed (<a href="https://glific.org/">Terms and Conditions</a>).
+      Please find <a href="https://glific.org/">Terms & Conditions</a> for the use of the Glific platform attached here with for your review if needed. <br><br>
 
       We look forward to an amazing collaboration and scaling your impact together!
       """
