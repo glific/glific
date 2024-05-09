@@ -35,7 +35,7 @@ defmodule Glific.Flows.TranslateTest do
         assert type == "node"
         assert String.length(uuid) == 36
 
-        if uuid != "e319cd39-f764-4680-9199-4cb7da647166",
+        if uuid != "3ea030e9-41c4-4c6c-8880-68bc2828d67b",
           do: assert(dst == "Hindi #{src} English")
       end
     )
@@ -53,7 +53,7 @@ defmodule Glific.Flows.TranslateTest do
     flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
 
     assert map_size(flow.definition["localization"]) == 2
-    assert map_size(flow.definition["localization"]["hi"]) == 6
+    assert map_size(flow.definition["localization"]["hi"]) == 7
     assert map_size(flow.definition["localization"]["en"]) == 6
   end
 end

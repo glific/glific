@@ -41,7 +41,7 @@ defmodule Glific.Flows.Translate.Export do
       node.actions
       |> Enum.reduce(uuids, fn action, acc ->
         if action.type == "send_msg" and !action.is_template,
-          do: [{node.uuid, action.text} | acc],
+          do: [{node.uuid, action.text, action.uuid} | acc],
           else: acc
       end)
     end)
@@ -68,9 +68,9 @@ defmodule Glific.Flows.Translate.Export do
       localizable_nodes
       |> Enum.reduce(
         %{},
-        fn {node_uuid, action_text}, export ->
+        fn {_node_uuid, action_text, action_uuid}, export ->
           localization_map
-          |> Map.get(node_uuid, %{})
+          |> Map.get(action_uuid, %{})
           |> collect_strings(language_labels, action_text, export)
         end
       )
@@ -82,10 +82,10 @@ defmodule Glific.Flows.Translate.Export do
         ["Type" | ["UUID" | Map.values(language_labels)]],
         ["Type" | ["UUID" | language_keys]]
       ],
-      fn {node_uuid, action_text}, export ->
+      fn {node_uuid, action_text, action_uuid}, export ->
         row =
           localization_map
-          |> Map.get(node_uuid, %{})
+          |> Map.get(action_uuid, %{})
           |> make_row(language_labels, action_text, translations)
 
         [["node" | [node_uuid | row]] | export]

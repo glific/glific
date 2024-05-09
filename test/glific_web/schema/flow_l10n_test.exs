@@ -18,12 +18,12 @@ defmodule GlificWeb.Schema.FlowL10NTest do
   @help_export """
   Type,UUID,en,hi
   Type,UUID,English,Hindi
-  node,4cbb069d-99b0-4493-826a-13558107e366,We hope that helped you out.,Hindi We hope that helped you out. English
-  node,a970d5d9-2951-48dc-8c66-ee6833c4b21e,Message for option 2. You can add them to a group based on their response.,Hindi Message for option 2. You can add them to a group based on their response. English
-  node,36051723-7d00-422e-8846-2336a9ecbc9d,Message for option 4,Hindi Message for option 4 English
-  node,10196f43-87f0-4205-aabd-1549aaa7e242,Message for option 3,Hindi Message for option 3 English
-  node,ed7d10f7-6298-4d84-a8d2-7b1f6e91da07,Message for option 1,Hindi Message for option 1 English
-  node,e319cd39-f764-4680-9199-4cb7da647166,"Thank you for reaching out. This is your help message along with some options-
+  node,0abf3b1c-5f79-48bf-9076-a72828d3bb39,We hope that helped you out.,Hindi We hope that helped you out. English
+  node,85e897d2-49e4-42b7-8574-8dc2aee97121,Message for option 2. You can add them to a group based on their response.,Hindi Message for option 2. You can add them to a group based on their response. English
+  node,a5105a7c-0917-4900-a0ce-cb5d3be2ffc5,Message for option 4,Hindi Message for option 4 English
+  node,6d39df59-4572-4f4c-99b7-f667ea112e03,Message for option 3,Hindi Message for option 3 English
+  node,f189f142-6d39-40fa-bf11-95578daeceea,Message for option 1,Hindi Message for option 1 English
+  node,3ea030e9-41c4-4c6c-8880-68bc2828d67b,"Thank you for reaching out. This is your help message along with some options-
   \ \ \ \ \ \ \
 
   *Type 1* for option 1
