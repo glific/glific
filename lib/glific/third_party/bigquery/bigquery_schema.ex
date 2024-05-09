@@ -1812,6 +1812,211 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for registrations table
+  """
+  @spec registrations_schema :: list()
+  def registrations_schema do
+    [
+      %{
+        description: "Unique ID generated for each registrations",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Organization details",
+        name: "org_details",
+        type: "RECORD",
+        mode: "NULLABLE",
+        fields: [
+          %{
+            description: "Organization Name",
+            name: "name",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "GSTIN Number",
+            name: "gstin",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Organization's current address",
+            name: "current_address",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Organization's registered address",
+            name: "registered_address",
+            type: "STRING",
+            mode: "NULLABLE"
+          }
+        ]
+      },
+      %{
+        description: "Platform details",
+        name: "platform_details",
+        type: "RECORD",
+        mode: "NULLABLE",
+        fields: [
+          %{
+            description: "Chatbot number",
+            name: "phone",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Gupshup bot name",
+            name: "app_name",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Gupshup API key",
+            name: "api_key",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "URL shortcode",
+            name: "shortcode",
+            type: "STRING",
+            mode: "NULLABLE"
+          }
+        ]
+      },
+      %{
+        description: "Preferred billing frequency",
+        name: "billing_frequency",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Finance POC details",
+        name: "finance_poc",
+        type: "RECORD",
+        mode: "NULLABLE",
+        fields: [
+          %{
+            description: "Name of finance POC",
+            name: "name",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Phone number of finance POC",
+            name: "phone",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Designation of finance POC",
+            name: "designation",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Email of finance POC",
+            name: "email",
+            type: "STRING",
+            mode: "NULLABLE"
+          }
+        ]
+      },
+      %{
+        description: "Submitter details",
+        name: "submitter",
+        type: "RECORD",
+        mode: "NULLABLE",
+        fields: [
+          %{
+            description: "Name of submitter",
+            name: "name",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Email of submitter",
+            name: "email",
+            type: "STRING",
+            mode: "NULLABLE"
+          }
+        ]
+      },
+      %{
+        description: "Signing authority details",
+        name: "signing_authority",
+        type: "RECORD",
+        mode: "NULLABLE",
+        fields: [
+          %{
+            description: "Name of signing authority",
+            name: "name",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Designation of signing authority",
+            name: "designation",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Email of signing authority",
+            name: "email",
+            type: "STRING",
+            mode: "NULLABLE"
+          }
+        ]
+      },
+      %{
+        description: "Status of final submission of all details",
+        name: "has_submitted",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Status of user confirmation from the email button",
+        name: "has_confirmed",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "IP address of submitter",
+        name: "ip_address",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Status of user agreeing or disagreeing with the T&C",
+        name: "terms_agreed",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Status of user giving consent to create support staff account",
+        name: "support_staff_account",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for the trackers_all_schema table
   """
   @spec trackers_all_schema :: list()

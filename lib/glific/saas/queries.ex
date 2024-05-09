@@ -6,14 +6,12 @@ defmodule Glific.Saas.Queries do
   import Ecto.Query, warn: false
 
   require Logger
-  alias Glific.Partners.Saas
 
   alias Glific.{
     Contacts,
     Contacts.Contact,
     Flows.FlowContext,
     Flows.FlowResult,
-    GCS.GcsWorker,
     Messages.Message,
     Partners,
     Partners.Organization,
@@ -30,8 +28,6 @@ defmodule Glific.Saas.Queries do
   alias Pow.Ecto.Schema.Changeset
 
   @default_provider "gupshup"
-  # 5MB
-  @max_file_size 5_242_880
   @doc """
   Main function to setup the organization entity in Glific
   """
@@ -57,31 +53,46 @@ defmodule Glific.Saas.Queries do
     |> validate_bsp_keys(params)
     |> validate_shortcode(params["shortcode"])
     |> validate_phone(params["phone"])
-    |> validate_text_field(params["gstin"], :gstin, {15, 15}, true)
-    |> validate_text_field(
-      params["registered_address"],
-      :registered_address,
-      {1, 300}
-    )
-    |> validate_text_field(params["current_address"], :current_address, {0, 300})
-    |> validate_and_upload_document(params)
+    |> validate_text_field(params["name"], :name, {1, 40})
   end
 
+  @doc """
+  Validate all the details regarding NGO registration
+  """
   @spec validate_registration_details(map(), map()) :: map()
   def validate_registration_details(result, params) do
     Enum.reduce(params, result, fn {key, value}, result ->
       case key do
         "billing_frequency" ->
           validate_billing_frequency(result, value)
+          |> then(&Map.put(&1, "billing_frequency", value))
 
         "finance_poc" ->
+          {result, value} = parse_params(result, value, :finance_poc)
+
           validate_finance_poc(result, value)
+          |> then(&Map.put(&1, "finance_poc", value))
 
         "submitter" ->
+          {result, value} = parse_params(result, value, :submitter)
+
           validate_submitter_details(result, value)
+          |> then(&Map.put(&1, "submitter", value))
 
         "signing_authority" ->
+          {result, value} = parse_params(result, value, :signing_authority)
+
           validate_signer_details(result, value)
+          |> then(&Map.put(&1, "signing_authority", value))
+
+        "org_details" ->
+          {result, value} = parse_params(result, value, :org_details)
+
+          validate_org_details(result, value)
+          |> then(&Map.put(&1, "org_details", value))
+
+        key when key in ["has_submitted", "terms_agreed", "support_staff_account"] ->
+          validate_booleans(result, key, value)
 
         _ ->
           result
@@ -123,7 +134,10 @@ defmodule Glific.Saas.Queries do
 
   @spec validate_text_field(map(), String.t(), atom(), {number(), number()}, boolean()) :: map()
   defp validate_text_field(result, field, key, length, optional \\ false)
-  defp validate_text_field(result, nil, _key, {_min_len, _max_len}, true), do: result
+
+  defp validate_text_field(result, field, _key, {_min_len, _max_len}, true)
+       when field in [nil, ""],
+       do: result
 
   defp validate_text_field(result, field, key, {min_len, max_len}, _optional) do
     cond do
@@ -267,7 +281,7 @@ defmodule Glific.Saas.Queries do
   @doc """
   Updates the error map
   """
-  @spec error(String.t(), map(), atom()) :: map()
+  @spec error(String.t(), map(), atom() | String.t()) :: map()
   def error(message, result, key) do
     result
     |> Map.put(:is_valid, false)
@@ -303,7 +317,7 @@ defmodule Glific.Saas.Queries do
 
     case response do
       {:ok, _users} -> result
-      {:error, message} -> error(message, result, :app_name)
+      {:error, message, key} -> error(message, result, key)
     end
   end
 
@@ -387,11 +401,7 @@ defmodule Glific.Saas.Queries do
 
   defp registration(result, params) do
     org_details = %{
-      name: params["name"],
-      gstin: params["gstin"],
-      registered_address: params["registered_address"],
-      current_address: params["current_address"],
-      registration_doc_link: result["registration_doc_link"]
+      name: params["name"]
     }
 
     platform_details = %{
@@ -434,6 +444,8 @@ defmodule Glific.Saas.Queries do
   end
 
   @spec validate_finance_poc(map(), map()) :: map()
+  defp validate_finance_poc(%{is_valid: false} = result, _params), do: result
+
   defp validate_finance_poc(result, params) do
     result
     |> validate_text_field(params["name"], :finance_poc_name, {1, 25})
@@ -443,6 +455,9 @@ defmodule Glific.Saas.Queries do
   end
 
   @spec validate_submitter_details(map(), map()) :: map()
+
+  defp validate_submitter_details(%{is_valid: false} = result, _params), do: result
+
   defp validate_submitter_details(result, params) do
     result
     |> validate_text_field(params["name"], :submitter_name, {1, 25})
@@ -450,6 +465,9 @@ defmodule Glific.Saas.Queries do
   end
 
   @spec validate_signer_details(map(), map()) :: map()
+
+  defp validate_signer_details(%{is_valid: false} = result, _params), do: result
+
   defp validate_signer_details(result, params) do
     result
     |> validate_text_field(params["name"], :signer_name, {1, 25})
@@ -457,59 +475,49 @@ defmodule Glific.Saas.Queries do
     |> validate_email(params["email"], :signer_email)
   end
 
-  @spec validate_and_upload_document(map(), map()) :: map()
-  defp validate_and_upload_document(
-         result,
-         %{"registration_doc" => %Plug.Upload{} = document} = _params
-       ) do
-    with :ok <- validate_content(result, document.content_type),
-         :ok <- validate_size(result, document.path) do
-      {year, week} = Timex.iso_week(Timex.now())
-      uuid = Ecto.UUID.generate()
-      [_, extension] = String.split(document.content_type, "/")
-      [filename, _] = String.split(document.filename, ".")
-      remote_name = "outbound/#{year}-#{week}/#{filename}/#{uuid}.#{extension}"
+  @spec validate_org_details(map(), map()) :: map()
+  defp validate_org_details(%{is_valid: false} = result, _params), do: result
 
-      GcsWorker.upload_media(document.path, remote_name, Saas.organization_id())
-      |> case do
-        {:ok, %{url: url} = _} ->
-          Map.put(result, "registration_doc_link", url)
+  defp validate_org_details(result, params) do
+    result
+    |> validate_text_field(params["gstin"], :gstin, {15, 15}, true)
+    |> validate_text_field(
+      params["registered_address"],
+      :registered_address,
+      {1, 300}
+    )
+    |> validate_text_field(params["current_address"], :current_address, {0, 300})
+  end
 
-        error ->
-          Logger.error("Document upload failed due to #{inspect(error)}")
+  defp parse_params(result, value, key) when is_binary(value) do
+    case Jason.decode(value) do
+      {:ok, value} ->
+        {result, value}
 
-          dgettext("error", "Document upload failed, try again")
-          |> error(result, :registration_doc)
-      end
+      {:error, _} ->
+        dgettext("error", "Failed to parse the input.")
+        |> error(result, key)
+        |> then(&{&1, value})
     end
   end
 
-  defp validate_and_upload_document(result, _params) do
-    dgettext("error", "Registration document cannot be empty.")
-    |> error(result, :registration_doc)
-  end
+  defp parse_params(result, value, _key), do: {result, value}
 
-  @spec validate_content(map(), String.t()) :: :ok | map()
-  defp validate_content(result, content_type) do
-    case String.split(content_type, "/") do
-      [_, type] when type in ["pdf", "jpeg", "png", "jpg"] ->
-        :ok
+  @spec validate_booleans(map(), String.t(), any()) :: map()
+  defp validate_booleans(result, key, value) do
+    case value do
+      value when is_boolean(value) ->
+        Map.put(result, key, value)
 
-      [_, _type] ->
-        dgettext("error", "Document should of type PDF, JPEG, JPG or PNG")
-        |> error(result, :registration_doc)
-    end
-  end
+      "true" ->
+        Map.put(result, key, true)
 
-  @spec validate_size(map(), String.t(), non_neg_integer()) :: map() | :ok
-  defp validate_size(result, file_path, max_size \\ @max_file_size) do
-    {:ok, %File.Stat{size: size}} = File.stat(file_path)
+      "false" ->
+        Map.put(result, key, false)
 
-    if size > max_size do
-      dgettext("error", "Document size should not be greater than 5MB")
-      |> error(result, :registration_doc)
-    else
-      :ok
+      _ ->
+        dgettext("error", "%{key} should be of type boolean.", key: key)
+        |> error(result, key)
     end
   end
 end

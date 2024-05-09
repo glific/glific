@@ -6,7 +6,7 @@ meta {
 
 post {
   url: {{api_url}}/v1/onboard/update-registration-details
-  body: json
+  body: multipartForm
   auth: none
 }
 
@@ -15,30 +15,33 @@ headers {
   Content-Type: application/json
 }
 
-body:json {
-  {
-    "org_id": 2,
-    "registration_id": 1,
-    "billing_frequency": "yearly", // "yearly", "monthly", "quarterly"
-    "finance_poc": {
-      "name": "name",
-      "email": "email@m.com",
-      "designation": "designation",
-      "phone": "9185xxxxxxxx"
+body:multipart-form {
+  org_id: 3,
+  registration_id: 4,
+  org_details: {
+     "gstin": "123456789123456",
+     "registered_address": "reg_addr",
+    "current_address": "cur_addr"
     },
-    "submitter": {
-      "name": "name",
-      "email": "email@m.com"
-    },
-    "signing_authority": {
-      "name": "name",
-      "email": "email@m.com",
-      "designation": "designation"
-    },
-    "has_submitted": false,
-    "terms_agreed": true,
-    "support_staff_account": false
-  }
+  billing_frequency: monthly,
+  finance_poc: {
+        "name": "name",
+        "email": "email@m.com",
+        "designation": "designation",
+        "phone": "9185xxxxxxxx"
+      },
+  submitter: {
+        "name": "name",
+        "email": "email@m.com"
+      },
+  signing_authority: {
+        "name": "name",
+        "email": "email@m.com",
+        "designation": "designation"
+      },
+  has_submitted: false,
+  terms_agreed: false,
+  support_staff_account: true
 }
 
 docs {
@@ -54,8 +57,7 @@ docs {
         "current_address": "current_addr",
         "gstin": "abcabcabcabcabc",
         "name": "ngo",
-        "registered_address": "reg_addr",
-        "registration_document": "https://storage.googleapis.com/file"
+        "registered_address": "reg_addr"
       },
       "platform_details": {
         "api_key": null,
@@ -82,7 +84,6 @@ docs {
         "name": "name"
       }
     },
-    "support_mail": "glific.user@gmail.com"
   }
   ```
   

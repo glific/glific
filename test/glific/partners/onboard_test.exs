@@ -4,8 +4,11 @@ defmodule Glific.OnboardTest do
   use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
   import Mock
 
+  alias Faker.Phone
+
   alias Glific.{
     Fixtures,
+    Mails.NewPartnerOnboardedMail,
     Partners,
     Partners.Organization,
     Registrations,
@@ -19,15 +22,7 @@ defmodule Glific.OnboardTest do
     "phone" => "+911234567890",
     "api_key" => "fake api key",
     "app_name" => "fake app name",
-    "shortcode" => "short",
-    "gstin" => "29PSFCP4894X9Z7",
-    "registered_address" => "registered_address",
-    "current_address" => "current_address",
-    "registration_doc" => %Plug.Upload{
-      content_type: "application/pdf",
-      filename: "dummy.pdf",
-      path: "/"
-    }
+    "shortcode" => "short"
   }
 
   setup do
@@ -63,70 +58,21 @@ defmodule Glific.OnboardTest do
   end
 
   test "ensure that validations are applied on params while creating an org" do
-    registered_address = String.duplicate("lorum epsum", 300)
-
     attrs =
       @valid_attrs
       |> Map.delete("app_name")
       |> Map.put("email", "foobar")
       |> Map.put("phone", "93'#$%^")
       |> Map.put("shortcode", "glific")
-      |> Map.put("gstin", "abcabcabcabcabc")
-      |> Map.put("registered_address", registered_address)
-      |> Map.delete("current_address")
-      |> Map.put("registration_doc", %Plug.Upload{
-        content_type: "application/mp3",
-        filename: "dummy.pdf",
-        path: "/"
-      })
 
     %{
       messages: %{
         phone: "Phone is not valid.",
         shortcode: "Shortcode has already been taken.",
-        registered_address: "Field cannot be more than 300 letters.",
-        current_address: "Field cannot be empty.",
-        api_key_name: "API Key or App Name is empty.",
-        registration_doc: "Document should of type PDF, JPEG, JPG or PNG"
+        api_key_name: "API Key or App Name is empty."
       },
       is_valid: false
     } = Onboard.setup(attrs)
-  end
-
-  test "upload document failed while creating an org" do
-    with_mock(
-      GcsWorker,
-      upload_media: fn _, _, _ -> {:error, "auth error"} end
-    ) do
-      registered_address = String.duplicate("lorum epsum", 300)
-
-      attrs =
-        @valid_attrs
-        |> Map.delete("app_name")
-        |> Map.put("email", "foobar")
-        |> Map.put("phone", "93'#$%^")
-        |> Map.put("shortcode", "glific")
-        |> Map.put("gstin", "abcabcabcabcabc")
-        |> Map.put("registered_address", registered_address)
-        |> Map.delete("current_address")
-        |> Map.put("registration_doc", %Plug.Upload{
-          content_type: "application/pdf",
-          filename: "dummy.pdf",
-          path: "/"
-        })
-
-      %{
-        messages: %{
-          phone: "Phone is not valid.",
-          shortcode: "Shortcode has already been taken.",
-          registered_address: "Field cannot be more than 300 letters.",
-          current_address: "Field cannot be empty.",
-          api_key_name: "API Key or App Name is empty.",
-          registration_doc: "Document upload failed, try again"
-        },
-        is_valid: false
-      } = Onboard.setup(attrs)
-    end
   end
 
   test "ensure that sending in valid parameters, creates an organization, contact and credential" do
@@ -220,11 +166,6 @@ defmodule Glific.OnboardTest do
           @valid_attrs
           |> Map.put("shortcode", "new_glific")
           |> Map.put("phone", "919917443995")
-          |> Map.put("registration_doc", %Plug.Upload{
-            content_type: "application/pdf",
-            filename: "dummy.pdf",
-            path: "/"
-          })
 
         %{organization: %{id: org_id}, registration_id: registration_id} =
           Onboard.setup(attrs)
@@ -239,115 +180,159 @@ defmodule Glific.OnboardTest do
           })
         )
 
-        {:ok, org_id: org_id, registration_id: registration_id}
+        org = Partners.get_organization!(org_id)
+
+        {:ok, org: org, registration_id: registration_id}
       end
     end
 
-    test "update_registration, without registration_id" do
+    test "update_registration, without registration_id", %{org: org} do
       assert %{messages: %{registration_id: "Registration ID is empty."}, is_valid: false} =
-               Onboard.update_registration(%{})
+               Onboard.update_registration(%{}, org)
     end
 
-    test "update_registration, invalid registration_id" do
+    test "update_registration, invalid registration_id", %{org: org} do
       assert %{
                messages: %{
                  registration_id: "Registration doesn't exist for given registration ID."
                },
                is_valid: false
              } =
-               Onboard.update_registration(%{"registration_id" => 0})
+               Onboard.update_registration(%{"registration_id" => "0"}, org)
     end
 
-    test "update_registration, valid registration_id", %{registration_id: registration_id} do
+    test "update_registration, valid registration_id", %{
+      registration_id: registration_id,
+      org: org
+    } do
       assert %{
                messages: %{},
                is_valid: true,
-               registration: _registration_details,
-               support_mail: _support_mail
+               registration: _registration_details
              } =
-               Onboard.update_registration(%{"registration_id" => registration_id})
+               Onboard.update_registration(
+                 %{"registration_id" => to_string(registration_id)},
+                 org
+               )
     end
 
-    test "update_registration, invalid params", %{registration_id: reg_id} do
+    test "update_registration, invalid params", %{registration_id: reg_id, org: org} do
       invalid_params = %{
-        "registration_id" => reg_id,
+        "registration_id" => to_string(reg_id),
         "billing_frequency" => "twice",
-        "finance_poc" => %{
-          "name" => String.duplicate(Faker.Person.name(), 20),
-          "email" => "invalid@.com",
-          "designation" => "",
-          "phone" => "23"
-        },
-        "submitter" => %{
-          "name" => "",
-          "email" => Faker.Internet.email()
-        },
-        "signing_authority" => %{
-          "name" => Faker.Person.name(),
-          "email" => Faker.Internet.email(),
-          "designation" => "designation"
-        }
+        "finance_poc" =>
+          Jason.encode!(%{
+            "name" => String.duplicate(Faker.Person.name(), 20),
+            "email" => "invalid@.com",
+            "designation" => "",
+            "phone" => "23"
+          }),
+        "submitter" =>
+          Jason.encode!(%{
+            "name" => "",
+            "email" => Faker.Internet.email()
+          }),
+        "signing_authority" =>
+          Jason.encode!(%{
+            "name" => Faker.Person.name(),
+            "email" => Faker.Internet.email(),
+            "designation" => "designation"
+          })
       }
 
       assert %{
                messages: _,
                is_valid: false
              } =
-               Onboard.update_registration(invalid_params)
+               Onboard.update_registration(invalid_params, org)
     end
 
-    test "update_registration, valid params", %{org_id: org_id, registration_id: reg_id} do
+    test "update_registration, valid params", %{org: org, registration_id: reg_id} do
       valid_params = %{
-        "registration_id" => reg_id,
+        "registration_id" => to_string(reg_id),
         "billing_frequency" => "yearly",
-        "finance_poc" => %{
-          "name" => Faker.Person.name(),
-          "email" => Faker.Internet.email(),
-          "designation" => "Sr Accountant",
-          "phone" => Faker.Phone.PtBr.phone()
-        },
-        "submitter" => %{
-          "name" => Faker.Person.name(),
-          "email" => Faker.Internet.email()
-        }
+        "finance_poc" =>
+          Jason.encode!(%{
+            "name" => Faker.Person.name() |> String.slice(0, 10),
+            "email" => Faker.Internet.email(),
+            "designation" => "Sr Accountant",
+            "phone" => Phone.PtBr.phone()
+          }),
+        "submitter" =>
+          Jason.encode!(%{
+            "name" => Faker.Person.name() |> String.slice(0, 10),
+            "email" => Faker.Internet.email()
+          })
       }
 
       assert %{
                messages: _,
                is_valid: true
              } =
-               Onboard.update_registration(valid_params)
+               Onboard.update_registration(valid_params, org)
 
       {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
       assert reg.billing_frequency == "yearly"
       assert %{"name" => _, "email" => _} = reg.submitter
       assert %{"name" => _, "email" => _, "phone" => _} = reg.finance_poc
-      assert %{email: nil} = Partners.get_organization!(org_id)
+      assert %{email: nil} = Partners.get_organization!(org.id)
     end
 
-    test "update_registration, valid signing_details, update's org's email also", %{
-      org_id: org_id,
-      registration_id: reg_id
-    } do
+    test "update_registration, valid params in map", %{org: org, registration_id: reg_id} do
       valid_params = %{
-        "registration_id" => reg_id,
-        "signing_authority" => %{
-          "name" => Faker.Person.name(),
+        "registration_id" => to_string(reg_id),
+        "billing_frequency" => "yearly",
+        "finance_poc" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email(),
-          "designation" => "designation"
-        }
+          "designation" => "Sr Accountant",
+          "phone" => Phone.PtBr.phone()
+        },
+        "submitter" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email()
+        },
+        "terms_agreed" => "true"
       }
 
       assert %{
                messages: _,
                is_valid: true
              } =
-               Onboard.update_registration(valid_params)
+               Onboard.update_registration(valid_params, org)
+
+      {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
+      assert reg.billing_frequency == "yearly"
+      assert %{"name" => _, "email" => _} = reg.submitter
+      assert %{"name" => _, "email" => _, "phone" => _} = reg.finance_poc
+      assert %{email: nil} = Partners.get_organization!(org.id)
+    end
+
+    test "update_registration, valid signing_details, update's org's email also", %{
+      org: org,
+      registration_id: reg_id
+    } do
+      valid_params = %{
+        "registration_id" => to_string(reg_id),
+        "signing_authority" =>
+          Jason.encode!(%{
+            "name" => Faker.Person.name(),
+            "email" => Faker.Internet.email(),
+            "designation" => "designation"
+          }),
+        "has_submitted" => true
+      }
+
+      assert %{
+               messages: _,
+               is_valid: true
+             } =
+               Onboard.update_registration(valid_params, org)
 
       {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
       assert reg.billing_frequency == "monthly"
       assert %{"name" => _, "email" => _, "designation" => _} = reg.signing_authority
-      %{email: email} = Partners.get_organization!(org_id)
+      %{email: email} = Partners.get_organization!(org.id)
       assert !is_nil(email)
     end
   end
@@ -364,10 +349,47 @@ defmodule Glific.OnboardTest do
   test "reachout/1, valid params" do
     invalid_params = %{
       "name" => Faker.Person.name(),
-      "message" => Faker.Lorem.paragraph(),
+      "message" => Faker.Lorem.paragraph() |> String.slice(0, 250),
       "email" => Faker.Internet.email()
     }
 
     %{is_valid: true} = Onboard.reachout(invalid_params)
+  end
+
+  test "send_user_quer mail" do
+    assert %Swoosh.Email{} =
+             NewPartnerOnboardedMail.user_query_mail(%{
+               "name" => Faker.Person.name(),
+               "message" => Faker.Lorem.paragraph(),
+               "email" => Faker.Internet.email()
+             })
+  end
+
+  test "create confirmation t&c mail" do
+    assert %Swoosh.Email{} =
+             NewPartnerOnboardedMail.confirmation_mail(%{
+               "billing_frequency" => "yearly",
+               "finance_poc" => %{
+                 "name" => Faker.Person.name() |> String.slice(0, 10),
+                 "email" => Faker.Internet.email(),
+                 "designation" => "Sr Accountant",
+                 "phone" => Phone.PtBr.phone()
+               },
+               "submitter" => %{
+                 "name" => Faker.Person.name() |> String.slice(0, 10),
+                 "email" => Faker.Internet.email()
+               },
+               "signing_authority" => %{
+                 "name" => Faker.Person.name(),
+                 "email" => Faker.Internet.email(),
+                 "designation" => "designation"
+               },
+               "org_details" => %{
+                 "current_address" => Faker.Lorem.paragraph(1..30),
+                 "gstin" => " 07AAAAA1234A124",
+                 "name" => Faker.Company.name(),
+                 "registered_address" => Faker.Lorem.paragraph(1..30)
+               }
+             })
   end
 end

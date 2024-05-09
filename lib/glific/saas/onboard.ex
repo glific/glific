@@ -15,6 +15,7 @@ defmodule Glific.Saas.Onboard do
     Partners,
     Partners.Billing,
     Partners.Organization,
+    Partners.Saas,
     Registrations,
     Registrations.Registration,
     Repo,
@@ -36,35 +37,37 @@ defmodule Glific.Saas.Onboard do
   @doc """
   Updates the registration details and send submission mail to user
   """
-  @spec update_registration(map()) :: map()
-  def update_registration(%{"registration_id" => reg_id} = params) when is_integer(reg_id) do
+  @spec update_registration(map(), Organization.t()) :: map()
+  def update_registration(%{"registration_id" => reg_id} = params, org) do
     result = %{is_valid: true, messages: %{}}
 
-    with {:ok, registration} <- Registrations.get_registration(reg_id),
-         %{is_valid: true} <- Queries.validate_registration_details(result, params) do
-      {:ok, registration} = Registrations.update_registation(registration, params)
+    with {:ok, registration} <- Registrations.get_registration(String.to_integer(reg_id)),
+         %{is_valid: true} = result <- Queries.validate_registration_details(result, params) do
+      {:ok, registration} =
+        update_org_details(result, registration)
+        |> Map.drop([:is_valid, :messages])
+        |> then(&Registrations.update_registation(registration, &1))
 
-      if is_map(params["signing_authority"]) do
+      if is_map(result["signing_authority"]) do
         {:ok, _org} =
-          update_org_email(registration.organization_id, params["signing_authority"]["email"])
+          update_org_email(org, result["signing_authority"]["email"])
       end
 
-      notify_on_submission(params["has_submitted"] || false)
+      notify_on_submission(result, org)
 
-      result
+      Map.take(result, [:is_valid, :messages])
       |> Map.put(:registration, Registration.to_minimal_map(registration))
-      |> Map.put(:support_mail, "glific.user@gmail.com")
     else
       {:error, _} ->
         dgettext("error", "Registration doesn't exist for given registration ID.")
         |> Queries.error(result, :registration_id)
 
-      err ->
-        err
+      result ->
+        Map.take(result, [:is_valid, :messages])
     end
   end
 
-  def update_registration(_params) do
+  def update_registration(_params, _org) do
     result = %{is_valid: false, messages: %{}}
 
     dgettext("error", "Registration ID is empty.")
@@ -78,7 +81,7 @@ defmodule Glific.Saas.Onboard do
   def reachout(params) do
     %{is_valid: true, messages: %{}}
     |> Queries.validate_reachout_details(params)
-    |> notify_user_queries()
+    |> notify_user_queries(params)
   end
 
   @doc """
@@ -193,12 +196,12 @@ defmodule Glific.Saas.Onboard do
 
   defp format_results(results), do: results
 
-  @spec notify_saas_team(map()) :: map()
-  defp notify_saas_team(%{is_valid: true} = results) do
-    NewPartnerOnboardedMail.new_mail(results.organization)
+  @spec notify_saas_team(map(), Organization.t()) :: map()
+  defp notify_saas_team(results, org) do
+    NewPartnerOnboardedMail.new_mail(org)
     |> Mailer.send(%{
       category: "new_partner_onboarded",
-      organization_id: results.organization.id
+      organization_id: org.id
     })
     |> case do
       {:ok, _} ->
@@ -213,30 +216,76 @@ defmodule Glific.Saas.Onboard do
     results
   end
 
-  defp notify_saas_team(results), do: results
-
-  @spec update_org_email(non_neg_integer(), String.t()) ::
+  @spec update_org_email(Organization.t(), String.t()) ::
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
-  defp update_org_email(org_id, email) do
+  defp update_org_email(org, email) do
     changes = %{
       email: email
     }
 
-    Partners.get_organization!(org_id)
-    |> Partners.update_organization(changes)
+    Partners.update_organization(org, changes)
   end
 
-  # TODO: spec needed
-  # TODO: send mail later
+  @spec notify_on_submission(map(), Organization.t()) :: map()
+  defp notify_on_submission(%{"has_submitted" => true} = result, org) do
+    NewPartnerOnboardedMail.confirmation_mail(result)
+    |> Mailer.send(%{
+      category: "Onboarding_confirmation",
+      organization_id: org.id
+    })
+    |> case do
+      {:ok, _} ->
+        result
 
-  defp notify_on_submission(false), do: :ok
+      error ->
+        Glific.log_error(
+          "Error sending NGO reachout query email #{inspect(error)} for org: #{org.id}"
+        )
+    end
 
-  defp notify_on_submission(true) do
-    :ok
+    notify_saas_team(result, org)
   end
 
-  defp notify_user_queries(results) do
-    # TODO: Implement this.
+  defp notify_on_submission(result, _org), do: result
+
+  @spec notify_user_queries(map(), map()) :: map()
+  defp notify_user_queries(%{is_valid: false} = results, _params), do: results
+
+  defp notify_user_queries(results, params) do
+    org_id = Saas.organization_id()
+
+    NewPartnerOnboardedMail.user_query_mail(params)
+    |> Mailer.send(%{
+      category: "onboard_ngo_query",
+      organization_id: org_id
+    })
+    |> case do
+      {:ok, _} ->
+        results
+
+      error ->
+        Glific.log_error(
+          "Error sending NGO reachout query email #{inspect(error)} for org: #{inspect(org_id)}"
+        )
+    end
+
     results
+  end
+
+  @spec update_org_details(map(), Registration.t()) :: map()
+  defp update_org_details(%{"org_details" => org_details} = result, registration) do
+    Map.put(
+      result,
+      "org_details",
+      Map.merge(registration.org_details, org_details)
+    )
+  end
+
+  defp update_org_details(result, registration) do
+    Map.put(
+      result,
+      "org_details",
+      registration.org_details
+    )
   end
 end
