@@ -57,7 +57,6 @@ defmodule Glific.OnboardTest do
     :ok
   end
 
-  @tag :dd
   test "ensure that validations are applied on params while creating an org" do
     # registered_address = String.duplicate("lorum epsum", 300)
 
@@ -204,7 +203,6 @@ defmodule Glific.OnboardTest do
                Onboard.update_registration(%{"registration_id" => "0"}, org)
     end
 
-    @tag :dd
     test "update_registration, valid registration_id", %{
       registration_id: registration_id,
       org: org
@@ -220,7 +218,6 @@ defmodule Glific.OnboardTest do
                )
     end
 
-    @tag :dd
     test "update_registration, invalid params", %{registration_id: reg_id, org: org} do
       invalid_params = %{
         "registration_id" => to_string(reg_id),
@@ -252,7 +249,6 @@ defmodule Glific.OnboardTest do
                Onboard.update_registration(invalid_params, org)
     end
 
-    @tag :dd
     test "update_registration, valid params", %{org: org, registration_id: reg_id} do
       valid_params = %{
         "registration_id" => to_string(reg_id),
@@ -284,7 +280,6 @@ defmodule Glific.OnboardTest do
       assert %{email: nil} = Partners.get_organization!(org.id)
     end
 
-    @tag :ddtt
     test "update_registration, valid params in map", %{org: org, registration_id: reg_id} do
       valid_params = %{
         "registration_id" => to_string(reg_id),
@@ -315,7 +310,6 @@ defmodule Glific.OnboardTest do
       assert %{email: nil} = Partners.get_organization!(org.id)
     end
 
-    @tag :dd
     test "update_registration, valid signing_details, update's org's email also", %{
       org: org,
       registration_id: reg_id
@@ -364,7 +358,6 @@ defmodule Glific.OnboardTest do
     %{is_valid: true} = Onboard.reachout(invalid_params)
   end
 
-  @tag :ddc
   test "send_user_quer mail" do
     assert %Swoosh.Email{} =
              NewPartnerOnboardedMail.user_query_mail(%{
@@ -374,7 +367,6 @@ defmodule Glific.OnboardTest do
              })
   end
 
-  @tag :ddc
   test "create confirmation t&c mail" do
     assert %Swoosh.Email{} =
              NewPartnerOnboardedMail.confirmation_mail(%{
