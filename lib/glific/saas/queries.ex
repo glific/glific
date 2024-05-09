@@ -145,7 +145,7 @@ defmodule Glific.Saas.Queries do
 
   @spec validate_text_field(map(), String.t(), atom(), {number(), number()}, boolean()) :: map()
   defp validate_text_field(result, field, key, length, optional \\ false)
-  defp validate_text_field(result, nil, _key, {_min_len, _max_len}, true), do: result
+  defp validate_text_field(result, field, _key, {_min_len, _max_len}, true) when field in [nil, ""], do: result
 
   defp validate_text_field(result, field, key, {min_len, max_len}, _optional) do
     cond do
