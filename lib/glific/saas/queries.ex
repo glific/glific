@@ -56,6 +56,9 @@ defmodule Glific.Saas.Queries do
     |> validate_text_field(params["name"], :name, {1, 40})
   end
 
+  @doc """
+  Validate all the details regarding NGO registration
+  """
   @spec validate_registration_details(map(), map()) :: map()
   def validate_registration_details(result, params) do
     Enum.reduce(params, result, fn {key, value}, result ->
@@ -89,20 +92,7 @@ defmodule Glific.Saas.Queries do
           |> then(&Map.put(&1, "org_details", value))
 
         key when key in ["has_submitted", "terms_agreed", "support_staff_account"] ->
-          case value do
-            value when is_boolean(value) ->
-              Map.put(result, key, value)
-
-            "true" ->
-              Map.put(result, key, true)
-
-            "false" ->
-              Map.put(result, key, false)
-
-            _ ->
-              dgettext("error", "%{key} should be of type boolean.", key: key)
-              |> error(result, key)
-          end
+          validate_booleans(result, key, value)
 
         _ ->
           result
@@ -144,7 +134,10 @@ defmodule Glific.Saas.Queries do
 
   @spec validate_text_field(map(), String.t(), atom(), {number(), number()}, boolean()) :: map()
   defp validate_text_field(result, field, key, length, optional \\ false)
-  defp validate_text_field(result, nil, _key, {_min_len, _max_len}, true), do: result
+
+  defp validate_text_field(result, field, _key, {_min_len, _max_len}, true)
+       when field in [nil, ""],
+       do: result
 
   defp validate_text_field(result, field, key, {min_len, max_len}, _optional) do
     cond do
@@ -509,4 +502,22 @@ defmodule Glific.Saas.Queries do
   end
 
   defp parse_params(result, value, _key), do: {result, value}
+
+  @spec validate_booleans(map(), String.t(), any()) :: map()
+  defp validate_booleans(result, key, value) do
+    case value do
+      value when is_boolean(value) ->
+        Map.put(result, key, value)
+
+      "true" ->
+        Map.put(result, key, true)
+
+      "false" ->
+        Map.put(result, key, false)
+
+      _ ->
+        dgettext("error", "%{key} should be of type boolean.", key: key)
+        |> error(result, key)
+    end
+  end
 end

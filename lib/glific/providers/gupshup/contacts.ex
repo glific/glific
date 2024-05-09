@@ -74,14 +74,16 @@ defmodule Glific.Providers.GupshupContacts do
   Perform the gupshup API call and parse the results for downstream functions.
   We need to think about if we want to add him to behaviour
   """
-  @spec validate_opted_in_contacts(Tesla.Env.result()) :: {:ok, list()} | {:error, String.t(), atom()}
+  @spec validate_opted_in_contacts(Tesla.Env.result()) ::
+          {:ok, list()} | {:error, String.t(), atom()}
   def validate_opted_in_contacts(result) do
     case result do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, response_data} = Jason.decode(body)
 
         if response_data["status"] == "error" do
-          {:error, dgettext("errors", "Message: %{message}", message: response_data["message"]), :app_name}
+          {:error, dgettext("errors", "Message: %{message}", message: response_data["message"]),
+           :app_name}
         else
           users = response_data["users"]
           {:ok, users}

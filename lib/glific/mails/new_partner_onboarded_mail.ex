@@ -8,12 +8,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
     Partners.Saas
   }
 
-  # TODO: Use real mails, and also think about getting from DB
-  # @reachout_send_to {"operations", "operations@projecttech4dev.org"}
-  # @reachout_cc {"", "operations@projecttech4dev.org"}
-
   @reachout_send_to {"operations", "operations@projecttech4dev.org"}
-  @reachout_cc [{"", "operations@projecttech4dev.org"}]
 
   @doc false
   @spec new_mail(Organization.t()) :: Swoosh.Email.t()
@@ -57,24 +52,31 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
     """
 
     opts = [
-      send_to: @reachout_send_to,
-      in_cc: @reachout_cc
+      send_to: @reachout_send_to
     ]
 
     Mailer.common_send(nil, subject, body, opts)
   end
 
-  # def confirmation_mail(result) do
-  #   subject = "Confirmation of accepting T&C"
+  def confirmation_mail(result) do
+    subject = "Confirmation of accepting T&C"
 
-  #   body = """
-  #   We are pleased to confirm that we have received your information submission
-  #   regarding our terms and conditions. We have successfullt processed your submission
-  #   and acceptance of the T&C is duly noted. Here's all the summary of the information
-  #   you have provided:\n\n
+    body =
+      """
+      Hello #{result["signing_authority"]["name"]},
 
-  #   Organization details
-  #
-  #   """
-  # end
+      Thank you for choosing Glific to run your chatbot program. This email serves as confirmation that we have received the registration form submitted by #{result["submitter"]["name"]} for the creation of a Glific platform.
+
+      Please find Terms & Conditions for the use of the Glific platform attached here with for your review if needed (<a href="https://glific.org/">Terms and Conditions</a>).
+
+      We look forward to an amazing collaboration and scaling your impact together!
+      """
+
+    opts = [
+      send_to: {"", result["signing_authority"]["email"]},
+      is_html: true
+    ]
+
+    Mailer.common_send(nil, subject, body, opts)
+  end
 end

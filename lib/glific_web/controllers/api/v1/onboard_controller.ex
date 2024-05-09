@@ -33,9 +33,9 @@ defmodule GlificWeb.API.V1.OnboardController do
   @spec update_registration(Conn.t(), map()) :: Conn.t()
   def update_registration(conn, %{"org_id" => org_id} = params) do
     case Partners.organization(String.to_integer(org_id)) do
-      %Organization{root_user: root_user} ->
+      %Organization{root_user: root_user} = org ->
         Repo.put_current_user(root_user)
-        json(conn, Onboard.update_registration(params))
+        json(conn, Onboard.update_registration(params, org))
 
       _ ->
         conn
