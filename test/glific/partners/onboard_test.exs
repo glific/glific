@@ -4,6 +4,8 @@ defmodule Glific.OnboardTest do
   use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
   import Mock
 
+  alias Faker.Phone
+
   alias Glific.{
     Fixtures,
     Mails.NewPartnerOnboardedMail,
@@ -181,37 +183,45 @@ defmodule Glific.OnboardTest do
           })
         )
 
-        {:ok, org_id: org_id, registration_id: registration_id}
+        org = Partners.get_organization!(org_id)
+
+        {:ok, org: org, registration_id: registration_id}
       end
     end
 
-    test "update_registration, without registration_id" do
+    test "update_registration, without registration_id", %{org: org} do
       assert %{messages: %{registration_id: "Registration ID is empty."}, is_valid: false} =
-               Onboard.update_registration(%{})
+               Onboard.update_registration(%{}, org)
     end
 
-    test "update_registration, invalid registration_id" do
+    test "update_registration, invalid registration_id", %{org: org} do
       assert %{
                messages: %{
                  registration_id: "Registration doesn't exist for given registration ID."
                },
                is_valid: false
              } =
-               Onboard.update_registration(%{"registration_id" => "0"})
+               Onboard.update_registration(%{"registration_id" => "0"}, org)
     end
 
     @tag :dd
-    test "update_registration, valid registration_id", %{registration_id: registration_id} do
+    test "update_registration, valid registration_id", %{
+      registration_id: registration_id,
+      org: org
+    } do
       assert %{
                messages: %{},
                is_valid: true,
                registration: _registration_details
              } =
-               Onboard.update_registration(%{"registration_id" => to_string(registration_id)})
+               Onboard.update_registration(
+                 %{"registration_id" => to_string(registration_id)},
+                 org
+               )
     end
 
     @tag :dd
-    test "update_registration, invalid params", %{registration_id: reg_id} do
+    test "update_registration, invalid params", %{registration_id: reg_id, org: org} do
       invalid_params = %{
         "registration_id" => to_string(reg_id),
         "billing_frequency" => "twice",
@@ -239,11 +249,11 @@ defmodule Glific.OnboardTest do
                messages: _,
                is_valid: false
              } =
-               Onboard.update_registration(invalid_params)
+               Onboard.update_registration(invalid_params, org)
     end
 
     @tag :dd
-    test "update_registration, valid params", %{org_id: org_id, registration_id: reg_id} do
+    test "update_registration, valid params", %{org: org, registration_id: reg_id} do
       valid_params = %{
         "registration_id" => to_string(reg_id),
         "billing_frequency" => "yearly",
@@ -252,7 +262,7 @@ defmodule Glific.OnboardTest do
             "name" => Faker.Person.name() |> String.slice(0, 10),
             "email" => Faker.Internet.email(),
             "designation" => "Sr Accountant",
-            "phone" => Faker.Phone.PtBr.phone()
+            "phone" => Phone.PtBr.phone()
           }),
         "submitter" =>
           Jason.encode!(%{
@@ -265,17 +275,17 @@ defmodule Glific.OnboardTest do
                messages: _,
                is_valid: true
              } =
-               Onboard.update_registration(valid_params)
+               Onboard.update_registration(valid_params, org)
 
       {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
       assert reg.billing_frequency == "yearly"
       assert %{"name" => _, "email" => _} = reg.submitter
       assert %{"name" => _, "email" => _, "phone" => _} = reg.finance_poc
-      assert %{email: nil} = Partners.get_organization!(org_id)
+      assert %{email: nil} = Partners.get_organization!(org.id)
     end
 
-    @tag :ddt
-    test "update_registration, valid params in map", %{org_id: org_id, registration_id: reg_id} do
+    @tag :ddtt
+    test "update_registration, valid params in map", %{org: org, registration_id: reg_id} do
       valid_params = %{
         "registration_id" => to_string(reg_id),
         "billing_frequency" => "yearly",
@@ -283,7 +293,7 @@ defmodule Glific.OnboardTest do
           "name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email(),
           "designation" => "Sr Accountant",
-          "phone" => Faker.Phone.PtBr.phone()
+          "phone" => Phone.PtBr.phone()
         },
         "submitter" => %{
           "name" => Faker.Person.name() |> String.slice(0, 10),
@@ -296,18 +306,18 @@ defmodule Glific.OnboardTest do
                messages: _,
                is_valid: true
              } =
-               Onboard.update_registration(valid_params)
+               Onboard.update_registration(valid_params, org)
 
       {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
       assert reg.billing_frequency == "yearly"
       assert %{"name" => _, "email" => _} = reg.submitter
       assert %{"name" => _, "email" => _, "phone" => _} = reg.finance_poc
-      assert %{email: nil} = Partners.get_organization!(org_id)
+      assert %{email: nil} = Partners.get_organization!(org.id)
     end
 
     @tag :dd
     test "update_registration, valid signing_details, update's org's email also", %{
-      org_id: org_id,
+      org: org,
       registration_id: reg_id
     } do
       valid_params = %{
@@ -325,12 +335,12 @@ defmodule Glific.OnboardTest do
                messages: _,
                is_valid: true
              } =
-               Onboard.update_registration(valid_params)
+               Onboard.update_registration(valid_params, org)
 
       {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
       assert reg.billing_frequency == "monthly"
       assert %{"name" => _, "email" => _, "designation" => _} = reg.signing_authority
-      %{email: email} = Partners.get_organization!(org_id)
+      %{email: email} = Partners.get_organization!(org.id)
       assert !is_nil(email)
     end
   end
@@ -373,7 +383,7 @@ defmodule Glific.OnboardTest do
                  "name" => Faker.Person.name() |> String.slice(0, 10),
                  "email" => Faker.Internet.email(),
                  "designation" => "Sr Accountant",
-                 "phone" => Faker.Phone.PtBr.phone()
+                 "phone" => Phone.PtBr.phone()
                },
                "submitter" => %{
                  "name" => Faker.Person.name() |> String.slice(0, 10),
