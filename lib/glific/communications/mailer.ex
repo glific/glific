@@ -143,6 +143,7 @@ defmodule Glific.Communications.Mailer do
          mail,
          %{category: category, organization_id: organization_id} = _attrs
        ) do
+        IO.inspect("#{inspect error}")
     {:ok, _} =
       %{
         category: category,
