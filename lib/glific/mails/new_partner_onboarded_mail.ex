@@ -10,6 +10,8 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
 
   @reachout_send_to {"operations", "operations@projecttech4dev.org"}
 
+  @test_mail_send_to {"", "anandu@projecttech4dev.org"}
+
   @doc false
   @spec new_mail(Organization.t()) :: Swoosh.Email.t()
   def new_mail(org) do
@@ -30,7 +32,8 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
 
     opts = [
       team: team,
-      send_to: {"", Saas.primary_email()}
+      # send_to: {"", Saas.primary_email()}
+      send_to: {"", @test_mail_send_to}
     ]
 
     Mailer.common_send(org, subject, body, opts)
@@ -52,7 +55,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
     """
 
     opts = [
-      send_to: @reachout_send_to
+      send_to: @test_mail_send_to
     ]
 
     Mailer.common_send(nil, subject, body, opts)
