@@ -148,6 +148,17 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
+  Sending HSM template to contact
+  """
+  @spec send_template(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
+  def send_template(org_id, payload) do
+    req_headers = headers(:app_token, org_id: org_id)
+
+    (app_url(org_id) <> "/template/msg")
+    |> post(payload, headers: req_headers)
+  end
+
+  @doc """
   Remove hsm template from the WABA.
   """
   @spec apply_for_template(non_neg_integer(), map) :: tuple()

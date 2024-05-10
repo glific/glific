@@ -44,6 +44,46 @@ defmodule Glific.OpenAI.ChatGPT do
     |> handle_response()
   end
 
+  @doc """
+  API call to GPT-4 Turbo with Vision
+  """
+  @spec gpt_vision(map()) :: tuple()
+  def gpt_vision(params \\ %{}) do
+    api_key = Glific.get_open_ai_key()
+
+    data =
+      %{
+        "model" => "gpt-4-turbo",
+        "messages" => [
+          %{
+            "role" => "user",
+            "content" => [
+              %{
+                "type" => "text",
+                "text" => params["prompt"]
+              },
+              %{
+                "type" => "image_url",
+                "image_url" => %{
+                  "url" => params["url"]
+                }
+              }
+            ]
+          }
+        ]
+      }
+
+    middleware = [
+      Tesla.Middleware.JSON,
+      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]}
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 120_000]])
+    |> handle_response()
+  end
+
   @spec handle_response(tuple()) :: tuple()
   defp handle_response(response) do
     response
