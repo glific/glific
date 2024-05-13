@@ -58,6 +58,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
     Mailer.common_send(org, subject, body, opts)
   end
 
+  @doc false
   def confirmation_mail(result) do
     subject = "Confirmation of accepting T&C"
 
