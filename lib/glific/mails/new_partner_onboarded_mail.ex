@@ -59,6 +59,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
   end
 
   @doc false
+  @spec confirmation_mail(map()) :: Swoosh.Email.t()
   def confirmation_mail(result) do
     subject = "Confirmation of accepting T&C"
 

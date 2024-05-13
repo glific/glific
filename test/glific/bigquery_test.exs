@@ -1,5 +1,4 @@
 defmodule Glific.BigQueryTest do
-  alias Glific.Fixtures
   use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
   use ExUnit.Case
@@ -7,20 +6,9 @@ defmodule Glific.BigQueryTest do
 
   alias Glific.{
     BigQuery,
-    BigQuery.BigQueryJob,
     BigQuery.BigQueryWorker,
     Partners,
-    Repo,
-    Saas.Onboard,
     Seeds.SeedsDev
-  }
-
-  @valid_onboard_attrs %{
-    "name" => "First Organization",
-    "phone" => "+911234567890",
-    "api_key" => "fake api key",
-    "app_name" => "fake app name",
-    "shortcode" => "short"
   }
 
   setup_with_mocks([
