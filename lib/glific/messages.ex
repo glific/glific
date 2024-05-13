@@ -456,13 +456,17 @@ defmodule Glific.Messages do
   @spec create_and_send_otp_template_message(Contact.t(), String.t()) ::
           {:ok, Message.t()}
   def create_and_send_otp_template_message(contact, otp) do
-    # fetch session template by shortcode "verification"
-    {:ok, session_template} =
-      Repo.fetch_by(SessionTemplate, %{
-        shortcode: "common_otp",
-        is_hsm: true,
-        organization_id: contact.organization_id
-      })
+    # fetch session template by shortcode
+    shortcodes = ["common_otp", "reminder_otp"]
+
+    query =
+      from st in SessionTemplate,
+        where:
+          st.is_hsm == true and st.shortcode in ^shortcodes and
+            st.organization_id == ^contact.organization_id,
+        limit: 1
+
+    session_template = Repo.one(query)
 
     parameters = ["Registration", otp]
 
