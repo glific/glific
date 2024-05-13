@@ -42,9 +42,10 @@ defmodule Glific.Processor.ConsumerFlowTest do
     5 => "no language",
     6 => "2",
     7 => "newcontact",
-    8 => "2",
-    9 => "We are Glific",
-    10 => "4"
+    8 => "👍",
+    9 => "2",
+    10 => "We are Glific",
+    11 => "4"
   }
   @checks_size Enum.count(@checks)
 
@@ -57,7 +58,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
     sender = Repo.get_by(Contact, %{name: "Chrissy Cron"})
 
     Enum.map(
-      0..@checks_size,
+      0..(@checks_size - 1),
       fn c ->
         message =
           Fixtures.message_fixture(%{body: @checks[rem(c, @checks_size)], sender_id: sender.id})
@@ -68,7 +69,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
     )
 
     new_message_count = Repo.aggregate(Message, :count)
-    assert new_message_count > message_count
+    assert new_message_count > message_count + @checks_size
   end
 
   test "test draft flows" do
@@ -86,7 +87,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
     ConsumerFlow.process_message({message, state}, "drafthelp")
 
     new_message_count = Repo.aggregate(Message, :count)
-    assert new_message_count > message_count
+    assert new_message_count > message_count + 1
   end
 
   @checks_1 [
@@ -130,10 +131,28 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
     # We should add check that there is a set of optin and optout message here
     new_message_count = Repo.aggregate(Message, :count)
-    assert new_message_count > message_count
+    assert new_message_count > message_count + Enum.count(@checks_1)
 
     sender = Repo.get_by(Contact, %{name: "Chrissy Cron"})
     assert sender.optin_status == false
     assert !is_nil(sender.optout_time)
+  end
+
+  test "check regx flow sequence" do
+    state = ConsumerFlow.load_state(Fixtures.get_org_id())
+
+    # keep track of current messages
+    message_count = Repo.aggregate(Message, :count)
+
+    sender = Repo.get_by(Contact, %{name: "Chrissy Cron"})
+
+    # The default regex config matches the word `unique_regex`
+    message =
+      Fixtures.message_fixture(%{body: "unique_regex", sender_id: sender.id})
+      |> Repo.preload([:contact])
+    ConsumerFlow.process_message({message, state}, message.body)
+
+    new_message_count = Repo.aggregate(Message, :count)
+    assert new_message_count > message_count + 1
   end
 end

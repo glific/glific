@@ -57,6 +57,12 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:send_warning_mail, :boolean)
   end
 
+  object :regx_flow do
+    field(:flow_id, :id)
+    field(:regx, :string)
+    field(:regx_opt, :string)
+  end
+
   object :organization do
     field(:id, :id)
     field(:name, :string)
@@ -79,6 +85,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:out_of_office, :out_of_office)
 
     field(:setting, :setting)
+
+    field(:regx_flow, :regx_flow)
 
     field(:newcontact_flow_id, :id)
 
@@ -172,6 +180,12 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:send_warning_mail, :boolean)
   end
 
+  input_object :regx_flow_input do
+    field(:flow_id, :id)
+    field(:regx, :string)
+    field(:regx_opt, :string)
+  end
+
   input_object :delete_organization_input do
     field(:delete_organization_id, :id)
     field(:is_confirmed, :boolean)
@@ -188,6 +202,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field(:out_of_office, :out_of_office_input)
     field(:setting, :setting_input)
+    field(:regx_flow, :regx_flow_input)
 
     field(:newcontact_flow_id, :id)
     field(:optin_flow_id, :id)

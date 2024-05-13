@@ -98,6 +98,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     bigquery_jobs(organization)
 
     set_newcontact_optin_flow_id(organization)
+
+    set_regx_flow(organization)
   end
 
   def down(_repo) do
@@ -778,6 +780,23 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     |> Partners.update_organization(%{
       newcontact_flow_id: nc_flow.id,
       optin_flow_id: opt_flow.id
+    })
+  end
+
+  defp set_regx_flow(organization) do
+    {:ok, help_flow} =
+      Repo.fetch_by(Flow, %{
+        name: "Help Workflow",
+        organization_id: organization.id
+      })
+
+    organization
+    |> Partners.update_organization(%{
+      regx_flow: %{
+        regx: "unique_regex",
+        regx_opt: nil,
+        flow_id: help_flow.id
+      }
     })
   end
 
