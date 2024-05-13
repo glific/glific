@@ -21,6 +21,16 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("parse_via_chat_gpt", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     question_text = fields["question_text"]
+    prompt = Map.get(fields, "prompt", nil)
+    model = Map.get(fields, "model", "gpt-3.5-turbo")
+    temperature = Map.get(fields, "temperature", 1)
+
+    params = %{
+      "question_text" => question_text,
+      "prompt" => prompt,
+      "model" => model,
+      "temperature" => temperature
+    }
 
     if question_text in [nil, ""] do
       %{
@@ -29,7 +39,7 @@ defmodule Glific.Clients.CommonWebhook do
       }
     else
       ChatGPT.get_api_key(org_id)
-      |> ChatGPT.parse(question_text)
+      |> ChatGPT.parse(params)
       |> case do
         {:ok, text} ->
           %{

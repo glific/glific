@@ -8,8 +8,6 @@ defmodule Glific.OpenAI.ChatGPT do
   @endpoint "https://api.openai.com/v1/chat/completions"
 
   @default_params %{
-    "model" => "gpt-3.5-turbo-16k",
-    "temperature" => 0.7,
     "max_tokens" => 250,
     "top_p" => 1,
     "frequency_penalty" => 0,
@@ -19,18 +17,13 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   API call to GPT
   """
-  @spec parse(String.t(), String.t(), map()) :: tuple()
-  def parse(api_key, question_text, params \\ %{}) do
+  @spec parse(String.t(), map()) :: tuple()
+  def parse(api_key, params \\ %{}) do
     data =
       @default_params
       |> Map.merge(params)
       |> Map.merge(%{
-        "messages" => [
-          %{
-            "role" => "system",
-            "content" => question_text
-          }
-        ]
+        "messages" => add_prompt(params)
       })
 
     middleware = [
@@ -43,6 +36,27 @@ defmodule Glific.OpenAI.ChatGPT do
     |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 120_000]])
     |> handle_response()
   end
+
+  @spec add_prompt(map()) :: list()
+  defp add_prompt(params) do
+    %{
+      "role" => "user",
+      "content" => params["question_text"]
+    }
+    |> add_system_prompt(params)
+  end
+
+  @spec add_system_prompt(map(), map()) :: list()
+  defp add_system_prompt(message, %{"prompt" => nil} = _params), do: [message]
+
+  defp add_system_prompt(message, params),
+    do: [
+      %{
+        "role" => "system",
+        "content" => params["prompt"]
+      },
+      message
+    ]
 
   @doc """
   API call to GPT-4 Turbo with Vision
