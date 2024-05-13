@@ -90,7 +90,7 @@ defmodule Glific.Communications.Mailer do
 
     send_to = get_team_email(org, team, send_to)
 
-    in_cc = in_cc #++ [glific_support()]
+    in_cc = in_cc ++ [glific_support()]
 
     new()
     |> to(send_to)
@@ -143,7 +143,6 @@ defmodule Glific.Communications.Mailer do
          mail,
          %{category: category, organization_id: organization_id} = _attrs
        ) do
-        IO.inspect("#{inspect error}")
     {:ok, _} =
       %{
         category: category,

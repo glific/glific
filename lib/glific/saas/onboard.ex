@@ -43,15 +43,9 @@ defmodule Glific.Saas.Onboard do
 
     with {:ok, registration} <- Registrations.get_registration(String.to_integer(reg_id)),
          %{is_valid: true} = result <- Queries.validate_registration_details(result, params) do
-      {:ok, registration} =
-        update_org_details(result, registration)
-        |> Map.drop([:is_valid, :messages])
-        |> then(&Registrations.update_registation(registration, &1))
+      {:ok, registration} = update_registration_details(result, registration)
 
-      if is_map(result["signing_authority"]) do
-        {:ok, _org} =
-          update_org_email(org, result["signing_authority"]["email"])
-      end
+      {:ok, org} = update_org_details(org, result, registration)
 
       notify_on_submission(result, org)
 
@@ -216,16 +210,6 @@ defmodule Glific.Saas.Onboard do
     results
   end
 
-  @spec update_org_email(Organization.t(), String.t()) ::
-          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
-  defp update_org_email(org, email) do
-    changes = %{
-      email: email
-    }
-
-    Partners.update_organization(org, changes)
-  end
-
   @spec notify_on_submission(map(), Organization.t()) :: map()
   defp notify_on_submission(%{"has_submitted" => true} = result, org) do
     NewPartnerOnboardedMail.confirmation_mail(result)
@@ -252,12 +236,12 @@ defmodule Glific.Saas.Onboard do
   defp notify_user_queries(%{is_valid: false} = results, _params), do: results
 
   defp notify_user_queries(results, params) do
-    org_id = Saas.organization_id()
+    org = Saas.organization_id() |> Partners.get_organization!()
 
-    NewPartnerOnboardedMail.user_query_mail(params)
+    NewPartnerOnboardedMail.user_query_mail(params, org)
     |> Mailer.send(%{
       category: "onboard_ngo_query",
-      organization_id: org_id
+      organization_id: org.id
     })
     |> case do
       {:ok, _} ->
@@ -265,27 +249,57 @@ defmodule Glific.Saas.Onboard do
 
       error ->
         Glific.log_error(
-          "Error sending NGO reachout query email #{inspect(error)} for org: #{inspect(org_id)}"
+          "Error sending NGO reachout query email #{inspect(error)} for org: #{inspect(org.id)}"
         )
     end
 
     results
   end
 
-  @spec update_org_details(map(), Registration.t()) :: map()
-  defp update_org_details(%{"org_details" => org_details} = result, registration) do
-    Map.put(
-      result,
-      "org_details",
-      Map.merge(registration.org_details, org_details)
-    )
+  @spec update_registration_details(map(), Registration.t()) ::
+          {:ok, Registration.t()} | {:error, Ecto.Changeset.t()}
+  defp update_registration_details(result, registration) do
+    case result do
+      %{"org_details" => org_details} ->
+        Map.put(
+          result,
+          "org_details",
+          Map.merge(registration.org_details, org_details)
+        )
+
+      _ ->
+        result
+    end
+    |> Map.drop([:is_valid, :messages])
+    |> then(&Registrations.update_registation(registration, &1))
   end
 
-  defp update_org_details(result, registration) do
-    Map.put(
-      result,
-      "org_details",
-      registration.org_details
-    )
+  @spec update_org_details(Organization.t(), map(), Registration.t()) ::
+          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
+  defp update_org_details(
+         org,
+         %{"signing_authority" => signing_authority} = _result,
+         registration
+       )
+       when is_map(signing_authority) do
+    team_emails =
+      Enum.reduce(org.team_emails, %{}, fn {key, _val}, team_emails ->
+        case key do
+          "finance" ->
+            Map.put(team_emails, key, registration.finance_poc["email"])
+
+          key ->
+            Map.put(team_emails, key, signing_authority["email"])
+        end
+      end)
+
+    changes = %{
+      email: signing_authority["email"],
+      team_emails: team_emails
+    }
+
+    Partners.update_organization(org, changes)
   end
+
+  defp update_org_details(org, _result, _registration), do: {:ok, org}
 end

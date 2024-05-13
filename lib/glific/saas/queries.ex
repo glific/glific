@@ -100,6 +100,9 @@ defmodule Glific.Saas.Queries do
     end)
   end
 
+  @doc """
+  Validate reachout query params
+  """
   @spec validate_reachout_details(map(), map()) :: map()
   def validate_reachout_details(result, params) do
     result
@@ -189,7 +192,8 @@ defmodule Glific.Saas.Queries do
       team_emails: %{
         "finance" => params["email"],
         "analytics" => params["email"],
-        "chatbot_design" => params["email"]
+        "chatbot_design" => params["email"],
+        "operations" => params["email"]
       }
     }
 

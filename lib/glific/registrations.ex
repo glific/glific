@@ -27,11 +27,17 @@ defmodule Glific.Registrations do
     |> Repo.insert()
   end
 
+  @doc """
+  Fetch a registration by given registration id
+  """
   @spec get_registration(integer()) :: {:ok, Registration.t()} | {:error, term()}
   def get_registration(registration_id) do
     Repo.fetch_by(Registration, id: registration_id)
   end
 
+  @doc """
+  Updates the registrations table
+  """
   @spec update_registation(Registration.t(), map()) ::
           {:ok, Registration.t()} | {:error, Ecto.Changeset.t()}
   def update_registation(registration, attrs) do

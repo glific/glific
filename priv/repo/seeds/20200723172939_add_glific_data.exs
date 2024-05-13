@@ -540,7 +540,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       signature_phrase: "Please change me, NOW!",
       is_active: true,
       is_approved: true,
-      status: :active
+      status: :active,
+      team_emails: %{
+        finance: "ADMIN@REPLACE_ME.NOW",
+        operations: "ADMIN@REPLACE_ME.NOW",
+        analytics: "ADMIN@REPLACE_ME.NOW",
+        chatbot_design: "ADMIN@REPLACE_ME.NOW"
+      }
     })
   end
 

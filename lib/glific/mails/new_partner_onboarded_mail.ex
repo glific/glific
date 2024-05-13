@@ -8,12 +8,6 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
     Partners.Saas
   }
 
-  @reachout_send_to {"operations", "operations@projecttech4dev.org"}
-
-  @test_mail_send_to {"", "anandu@projecttech4dev.org"}
-
-  # @test_mail_send_to {"", "anandu@projecttech4dev.org"}
-
   @doc false
   @spec new_mail(Organization.t()) :: Swoosh.Email.t()
   def new_mail(org) do
@@ -34,16 +28,17 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
 
     opts = [
       team: team,
-      # send_to: {"", Saas.primary_email()}
-      send_to: @test_mail_send_to
+      send_to: {"", Saas.primary_email()}
     ]
 
     Mailer.common_send(org, subject, body, opts)
   end
 
   @doc false
-  @spec user_query_mail(map()) :: Swoosh.Email.t()
-  def user_query_mail(query) do
+  @spec user_query_mail(map(), Organization.t()) :: Swoosh.Email.t()
+  def user_query_mail(query, org) do
+    team = "operations"
+
     subject = """
     Glific Support: User query regarding onboarding.
     """
@@ -57,10 +52,10 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
     """
 
     opts = [
-      send_to: @test_mail_send_to
+      team: team
     ]
 
-    Mailer.common_send(nil, subject, body, opts)
+    Mailer.common_send(org, subject, body, opts)
   end
 
   def confirmation_mail(result) do
@@ -74,7 +69,10 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
 
       Please find <a href="https://glific.org/">Terms & Conditions</a> for the use of the Glific platform attached here with for your review if needed. <br><br>
 
-      We look forward to an amazing collaboration and scaling your impact together!
+      We look forward to an amazing collaboration and scaling your impact together! <br><br>
+
+      Regards,<br>
+      Team Glific
       """
 
     opts = [

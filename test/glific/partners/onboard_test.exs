@@ -11,6 +11,7 @@ defmodule Glific.OnboardTest do
     Mails.NewPartnerOnboardedMail,
     Partners,
     Partners.Organization,
+    Partners.Saas,
     Registrations,
     Registrations.Registration,
     Saas.Onboard,
@@ -314,6 +315,13 @@ defmodule Glific.OnboardTest do
     } do
       valid_params = %{
         "registration_id" => to_string(reg_id),
+        "finance_poc" =>
+          Jason.encode!(%{
+            "name" => Faker.Person.name() |> String.slice(0, 10),
+            "email" => Faker.Internet.email(),
+            "designation" => "Sr Accountant",
+            "phone" => Phone.PtBr.phone()
+          }),
         "signing_authority" =>
           Jason.encode!(%{
             "name" => Faker.Person.name(),
@@ -358,11 +366,14 @@ defmodule Glific.OnboardTest do
 
   test "send_user_quer mail" do
     assert %Swoosh.Email{} =
-             NewPartnerOnboardedMail.user_query_mail(%{
-               "name" => Faker.Person.name(),
-               "message" => Faker.Lorem.paragraph(),
-               "email" => Faker.Internet.email()
-             })
+             NewPartnerOnboardedMail.user_query_mail(
+               %{
+                 "name" => Faker.Person.name(),
+                 "message" => Faker.Lorem.paragraph(),
+                 "email" => Faker.Internet.email()
+               },
+               Saas.organization_id() |> Partners.get_organization!()
+             )
   end
 
   test "create confirmation t&c mail" do
