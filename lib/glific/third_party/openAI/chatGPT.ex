@@ -9,6 +9,7 @@ defmodule Glific.OpenAI.ChatGPT do
 
   @default_params %{
     "model" => "gpt-3.5-turbo-16k",
+    "temperature" => 0.7,
     "max_tokens" => 250,
     "top_p" => 1,
     "frequency_penalty" => 0,
@@ -33,7 +34,9 @@ defmodule Glific.OpenAI.ChatGPT do
     data =
       @default_params
       |> Map.merge(%{
-        "messages" => add_prompt(params)
+        "messages" => add_prompt(params),
+        "model" => params["model"],
+        "temperature" => params["temperature"]
       })
 
     middleware = [
