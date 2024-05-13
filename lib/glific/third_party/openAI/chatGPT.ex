@@ -17,7 +17,7 @@ defmodule Glific.OpenAI.ChatGPT do
   }
 
   @doc """
-  API call to GPT
+  API call to GPT for translation with text only
   """
   @spec parse(String.t(), String.t(), map()) :: tuple()
   def parse(api_key, question_text, params) do
@@ -29,6 +29,9 @@ defmodule Glific.OpenAI.ChatGPT do
     parse(api_key, data)
   end
 
+  @doc """
+  API call to GPT
+  """
   @spec parse(String.t(), map()) :: tuple()
   def parse(api_key, params) do
     data =
