@@ -8,6 +8,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @endpoint "https://api.openai.com/v1/chat/completions"
 
   @default_params %{
+    "model" => "gpt-3.5-turbo-16k",
     "max_tokens" => 250,
     "top_p" => 1,
     "frequency_penalty" => 0,
@@ -17,11 +18,20 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   API call to GPT
   """
-  @spec parse(String.t(), map()) :: tuple()
-  def parse(api_key, params \\ %{}) do
+  @spec parse(String.t(), String.t(), map()) :: tuple()
+  def parse(api_key, question_text, params) do
     data =
       @default_params
       |> Map.merge(params)
+      |> Map.put("question_text", question_text)
+
+    parse(api_key, data)
+  end
+
+  @spec parse(String.t(), map()) :: tuple()
+  def parse(api_key, params) do
+    data =
+      @default_params
       |> Map.merge(%{
         "messages" => add_prompt(params)
       })
