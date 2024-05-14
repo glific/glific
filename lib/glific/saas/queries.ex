@@ -19,6 +19,7 @@ defmodule Glific.Saas.Queries do
     Providers.Gupshup.ApiClient,
     Providers.GupshupContacts,
     Registrations,
+    Registrations.Registration,
     Repo,
     Seeds.Seeder,
     Seeds.SeedsMigration,
@@ -118,6 +119,24 @@ defmodule Glific.Saas.Queries do
   end
 
   def sync_templates(results), do: results
+
+  @spec eligible_for_submission?(map(), Registration.t()) :: map()
+  def eligible_for_submission?(result, registration) do
+    registration_map = Map.from_struct(registration)
+
+    [:org_details, :finance_poc, :submitter, :signing_authority]
+    |> Enum.reduce_while(result, fn key, result ->
+      if is_nil(registration_map[key]) do
+        result =
+          dgettext("error", "Field cannot be empty.")
+          |> error(result, key)
+
+        {:halt, result}
+      else
+        {:cont, result}
+      end
+    end)
+  end
 
   @spec validate_text_field(map(), String.t(), atom(), {number(), number()}, boolean()) :: map()
   defp validate_text_field(result, field, key, length, optional \\ false)

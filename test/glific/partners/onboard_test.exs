@@ -324,7 +324,7 @@ defmodule Glific.OnboardTest do
           "email" => Faker.Internet.email(),
           "designation" => "designation"
         },
-        "has_submitted" => true
+        "has_submitted" => false
       }
 
       assert %{
@@ -338,6 +338,27 @@ defmodule Glific.OnboardTest do
       assert %{"name" => _, "email" => _, "designation" => _} = reg.signing_authority
       %{email: email} = Partners.get_organization!(org.id)
       assert !is_nil(email)
+
+      valid_params = %{
+        "registration_id" => reg_id,
+        "finance_poc" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "Sr Accountant",
+          "phone" => Phone.PtBr.phone()
+        },
+        "submitter" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email()
+        },
+        "has_submitted" => true
+      }
+
+      assert %{
+               messages: _,
+               is_valid: true
+             } =
+               Onboard.update_registration(valid_params, org)
     end
   end
 
