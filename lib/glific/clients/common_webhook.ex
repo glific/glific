@@ -26,7 +26,9 @@ defmodule Glific.Clients.CommonWebhook do
     # ID of the model to use.
     model = Map.get(fields, "model", "gpt-3.5-turbo")
 
-    # The sampling temperature, between 0 and 1. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.
+    # The sampling temperature, between 0 and 1.
+    # Higher values like 0.8 will make the output more random,
+    # while lower values like 0.2 will make it more focused and deterministic.
     temperature = Map.get(fields, "temperature", 0)
 
     params = %{
