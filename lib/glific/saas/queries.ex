@@ -120,6 +120,9 @@ defmodule Glific.Saas.Queries do
 
   def sync_templates(results), do: results
 
+  @doc """
+  Validates if all the required fields are filled before submission
+  """
   @spec eligible_for_submission?(map(), Registration.t()) :: map()
   def eligible_for_submission?(result, registration) do
     registration_map = Map.from_struct(registration)
