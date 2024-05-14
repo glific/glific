@@ -60,14 +60,14 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
 
   @doc false
   @spec confirmation_mail(map()) :: Swoosh.Email.t()
-  def confirmation_mail(result) do
+  def confirmation_mail(params) do
     subject = "Confirmation of accepting T&C"
 
     body =
       """
-      Hello #{result["signing_authority"]["name"]},<br><br>
+      Hello #{params["signing_authority"]["name"]},<br><br>
 
-      Thank you for choosing Glific to run your chatbot program. This email serves as confirmation that we have received the registration form submitted by #{result["submitter"]["name"]} for the creation of a Glific platform. <br><br>
+      Thank you for choosing Glific to run your chatbot program. This email serves as confirmation that we have received the registration form submitted by #{params["submitter"]["name"]} for the creation of a Glific platform. <br><br>
 
       Please find <a href="https://glific.org/">Terms & Conditions</a> for the use of the Glific platform attached here with for your review if needed. <br><br>
 
@@ -78,7 +78,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
       """
 
     opts = [
-      send_to: {"", result["signing_authority"]["email"]},
+      send_to: {"", params["signing_authority"]["email"]},
       is_html: true
     ]
 

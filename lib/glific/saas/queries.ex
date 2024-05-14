@@ -65,34 +65,18 @@ defmodule Glific.Saas.Queries do
       case key do
         "billing_frequency" ->
           validate_billing_frequency(result, value)
-          |> then(&Map.put(&1, "billing_frequency", value))
 
         "finance_poc" ->
-          {result, value} = parse_params(result, value, :finance_poc)
-
           validate_finance_poc(result, value)
-          |> then(&Map.put(&1, "finance_poc", value))
 
         "submitter" ->
-          {result, value} = parse_params(result, value, :submitter)
-
           validate_submitter_details(result, value)
-          |> then(&Map.put(&1, "submitter", value))
 
         "signing_authority" ->
-          {result, value} = parse_params(result, value, :signing_authority)
-
           validate_signer_details(result, value)
-          |> then(&Map.put(&1, "signing_authority", value))
 
         "org_details" ->
-          {result, value} = parse_params(result, value, :org_details)
-
           validate_org_details(result, value)
-          |> then(&Map.put(&1, "org_details", value))
-
-        key when key in ["has_submitted", "terms_agreed", "support_staff_account"] ->
-          validate_booleans(result, key, value)
 
         _ ->
           result
@@ -491,37 +475,5 @@ defmodule Glific.Saas.Queries do
       {1, 300}
     )
     |> validate_text_field(params["current_address"], :current_address, {0, 300})
-  end
-
-  defp parse_params(result, value, key) when is_binary(value) do
-    case Jason.decode(value) do
-      {:ok, value} ->
-        {result, value}
-
-      {:error, _} ->
-        dgettext("error", "Failed to parse the input.")
-        |> error(result, key)
-        |> then(&{&1, value})
-    end
-  end
-
-  defp parse_params(result, value, _key), do: {result, value}
-
-  @spec validate_booleans(map(), String.t(), any()) :: map()
-  defp validate_booleans(result, key, value) do
-    case value do
-      value when is_boolean(value) ->
-        Map.put(result, key, value)
-
-      "true" ->
-        Map.put(result, key, true)
-
-      "false" ->
-        Map.put(result, key, false)
-
-      _ ->
-        dgettext("error", "%{key} should be of type boolean.", key: key)
-        |> error(result, key)
-    end
   end
 end

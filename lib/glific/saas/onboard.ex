@@ -41,15 +41,15 @@ defmodule Glific.Saas.Onboard do
   def update_registration(%{"registration_id" => reg_id} = params, org) do
     result = %{is_valid: true, messages: %{}}
 
-    with {:ok, registration} <- Registrations.get_registration(String.to_integer(reg_id)),
-         %{is_valid: true} = result <- Queries.validate_registration_details(result, params) do
-      {:ok, registration} = update_registration_details(result, registration)
+    with {:ok, registration} <- Registrations.get_registration(reg_id),
+         %{is_valid: true} <- Queries.validate_registration_details(result, params) do
+      {:ok, registration} = update_registration_details(params, registration)
 
-      {:ok, org} = update_org_details(org, result, registration)
+      {:ok, org} = update_org_details(org, params, registration)
 
-      notify_on_submission(result, org)
+      notify_on_submission(params, org, registration)
 
-      Map.take(result, [:is_valid, :messages])
+      result
       |> Map.put(:registration, Registration.to_minimal_map(registration))
     else
       {:error, _} ->
@@ -57,7 +57,7 @@ defmodule Glific.Saas.Onboard do
         |> Queries.error(result, :registration_id)
 
       result ->
-        Map.take(result, [:is_valid, :messages])
+        result
     end
   end
 
@@ -191,7 +191,7 @@ defmodule Glific.Saas.Onboard do
   defp format_results(results), do: results
 
   @spec notify_saas_team(map(), Organization.t()) :: map()
-  defp notify_saas_team(results, org) do
+  defp notify_saas_team(params, org) do
     NewPartnerOnboardedMail.new_mail(org)
     |> Mailer.send(%{
       category: "new_partner_onboarded",
@@ -199,27 +199,29 @@ defmodule Glific.Saas.Onboard do
     })
     |> case do
       {:ok, _} ->
-        results
+        params
 
       error ->
         Glific.log_error(
-          "Error sending new partner onboarded email #{inspect(error)} for org: #{inspect(results)}"
+          "Error sending new partner onboarded email #{inspect(error)} for org: #{inspect(params)}"
         )
     end
 
-    results
+    params
   end
 
-  @spec notify_on_submission(map(), Organization.t()) :: map()
-  defp notify_on_submission(%{"has_submitted" => true} = result, org) do
-    NewPartnerOnboardedMail.confirmation_mail(result)
+  @spec notify_on_submission(map(), Organization.t(), Registration.t()) :: map()
+  defp notify_on_submission(%{"has_submitted" => true} = params, org, registration) do
+    Map.put(%{}, "submitter", registration.submitter)
+    |> Map.put("signing_authority", registration.signing_authority)
+    |> NewPartnerOnboardedMail.confirmation_mail()
     |> Mailer.send(%{
       category: "Onboarding_confirmation",
       organization_id: org.id
     })
     |> case do
       {:ok, _} ->
-        result
+        params
 
       error ->
         Glific.log_error(
@@ -227,10 +229,10 @@ defmodule Glific.Saas.Onboard do
         )
     end
 
-    notify_saas_team(result, org)
+    notify_saas_team(params, org)
   end
 
-  defp notify_on_submission(result, _org), do: result
+  defp notify_on_submission(params, _org, _registration), do: params
 
   @spec notify_user_queries(map(), map()) :: map()
   defp notify_user_queries(%{is_valid: false} = results, _params), do: results
@@ -258,19 +260,18 @@ defmodule Glific.Saas.Onboard do
 
   @spec update_registration_details(map(), Registration.t()) ::
           {:ok, Registration.t()} | {:error, Ecto.Changeset.t()}
-  defp update_registration_details(result, registration) do
-    case result do
+  defp update_registration_details(params, registration) do
+    case params do
       %{"org_details" => org_details} ->
         Map.put(
-          result,
+          params,
           "org_details",
           Map.merge(registration.org_details, org_details)
         )
 
       _ ->
-        result
+        params
     end
-    |> Map.drop([:is_valid, :messages])
     |> then(&Registrations.update_registation(registration, &1))
   end
 
@@ -278,7 +279,7 @@ defmodule Glific.Saas.Onboard do
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   defp update_org_details(
          org,
-         %{"signing_authority" => signing_authority} = _result,
+         %{"signing_authority" => signing_authority} = _params,
          registration
        )
        when is_map(signing_authority) do
@@ -301,5 +302,5 @@ defmodule Glific.Saas.Onboard do
     Partners.update_organization(org, changes)
   end
 
-  defp update_org_details(org, _result, _registration), do: {:ok, org}
+  defp update_org_details(org, _params, _registration), do: {:ok, org}
 end

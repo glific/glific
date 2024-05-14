@@ -212,14 +212,14 @@ defmodule Glific.OnboardTest do
                registration: _registration_details
              } =
                Onboard.update_registration(
-                 %{"registration_id" => to_string(registration_id)},
+                 %{"registration_id" => registration_id},
                  org
                )
     end
 
     test "update_registration, invalid params", %{registration_id: reg_id, org: org} do
       invalid_params = %{
-        "registration_id" => to_string(reg_id),
+        "registration_id" => reg_id,
         "billing_frequency" => "twice",
         "finance_poc" =>
           Jason.encode!(%{
@@ -250,20 +250,18 @@ defmodule Glific.OnboardTest do
 
     test "update_registration, valid params", %{org: org, registration_id: reg_id} do
       valid_params = %{
-        "registration_id" => to_string(reg_id),
+        "registration_id" => reg_id,
         "billing_frequency" => "yearly",
-        "finance_poc" =>
-          Jason.encode!(%{
-            "name" => Faker.Person.name() |> String.slice(0, 10),
-            "email" => Faker.Internet.email(),
-            "designation" => "Sr Accountant",
-            "phone" => Phone.PtBr.phone()
-          }),
-        "submitter" =>
-          Jason.encode!(%{
-            "name" => Faker.Person.name() |> String.slice(0, 10),
-            "email" => Faker.Internet.email()
-          })
+        "finance_poc" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "Sr Accountant",
+          "phone" => Phone.PtBr.phone()
+        },
+        "submitter" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email()
+        }
       }
 
       assert %{
@@ -281,7 +279,7 @@ defmodule Glific.OnboardTest do
 
     test "update_registration, valid params in map", %{org: org, registration_id: reg_id} do
       valid_params = %{
-        "registration_id" => to_string(reg_id),
+        "registration_id" => reg_id,
         "billing_frequency" => "yearly",
         "finance_poc" => %{
           "name" => Faker.Person.name() |> String.slice(0, 10),
@@ -314,20 +312,18 @@ defmodule Glific.OnboardTest do
       registration_id: reg_id
     } do
       valid_params = %{
-        "registration_id" => to_string(reg_id),
-        "finance_poc" =>
-          Jason.encode!(%{
-            "name" => Faker.Person.name() |> String.slice(0, 10),
-            "email" => Faker.Internet.email(),
-            "designation" => "Sr Accountant",
-            "phone" => Phone.PtBr.phone()
-          }),
-        "signing_authority" =>
-          Jason.encode!(%{
-            "name" => Faker.Person.name(),
-            "email" => Faker.Internet.email(),
-            "designation" => "designation"
-          }),
+        "registration_id" => reg_id,
+        "finance_poc" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "Sr Accountant",
+          "phone" => Phone.PtBr.phone()
+        },
+        "signing_authority" => %{
+          "name" => Faker.Person.name(),
+          "email" => Faker.Internet.email(),
+          "designation" => "designation"
+        },
         "has_submitted" => true
       }
 

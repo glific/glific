@@ -1,99 +1,42 @@
 meta {
   name: Update registration details
   type: http
-  seq: 5
+  seq: 6
 }
 
 post {
   url: {{api_url}}/v1/onboard/update-registration-details
-  body: multipartForm
+  body: json
   auth: none
 }
 
-headers {
-  authorization: {{auth_token}}
-  Content-Type: application/json
-}
-
-body:multipart-form {
-  org_id: 3,
-  registration_id: 4,
-  org_details: {
-     "gstin": "123456789123456",
-     "registered_address": "reg_addr",
-    "current_address": "cur_addr"
-    },
-  billing_frequency: monthly,
-  finance_poc: {
-        "name": "name",
-        "email": "email@m.com",
-        "designation": "designation",
-        "phone": "9185xxxxxxxx"
+body:json {
+   {
+    "org_id": 2,
+    "registration_id": 1,
+    "org_details": {
+       "gstin": "",
+       "registered_address": "new_addr",
+      "current_address": "cur_addr"
       },
-  submitter: {
-        "name": "name",
-        "email": "email@m.com"
+    "billing_frequency": "monthly",
+    "finance_poc": {
+          "name": "name",
+         "email": "email@m.com",
+          "designation": "designation",
+          "phone": "9185xxxxxxxx"
+        },
+    "submitter": {
+         "name": "name",
+          "email": "email@m.com"
+        },
+    "signing_authority": {
+          "name": "name",
+         "email": "email@m.com",
+          "designation": "designation"
       },
-  signing_authority: {
-        "name": "name",
-        "email": "email@m.com",
-        "designation": "designation"
-      },
-  has_submitted: false,
-  terms_agreed: false,
-  support_staff_account: true
-}
-
-docs {
-  ### Success Response
-  ```json
-  {
-    "messages": {},
-    "is_valid": true,
-    "registration": {
-      "id": 1,
-      "organization_id": 2,
-      "org_details": {
-        "current_address": "current_addr",
-        "gstin": "abcabcabcabcabc",
-        "name": "ngo",
-        "registered_address": "reg_addr"
-      },
-      "platform_details": {
-        "api_key": null,
-        "app_name": null,
-        "phone": "9185XXXXXXXX",
-        "shortcode": "ngo"
-      },
-      "billing_frequency": "yearly",
-      "finance_poc": {
-        "designation": "designation",
-        "email": "email@m.com",
-        "name": "name",
-        "phone": "8547689517"
-      },
-      "has_confirmed": false,
-      "has_submitted": false,
-      "signing_authority": {
-        "designation": "designation",
-        "email": "email@m.com",
-        "name": "name"
-      },
-      "submitter": {
-        "email": "email@m.com",
-        "name": "name"
-      }
-    },
+    "has_submitted": true,
+    "terms_agreed": true,
+    "support_staff_account": true
   }
-  ```
-  
-  ### Error Response
-  ```json
-  {
-    "messages": {
-      "error_field": "Error reason."
-    },
-    "is_valid": false
-  }
-  ```
 }
