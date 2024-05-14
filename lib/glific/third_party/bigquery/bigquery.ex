@@ -53,7 +53,7 @@ defmodule Glific.BigQuery do
     "contact_histories" => :contact_history_schema,
     "message_conversations" => :message_conversation_schema,
     "message_broadcasts" => :message_broadcasts_schema,
-    "message_broadcast  _contacts" => :message_broadcast_contacts_schema,
+    "message_broadcast_contacts" => :message_broadcast_contacts_schema,
     "trackers" => :trackers_schema,
     "wa_messages" => :wa_message_schema
   }
