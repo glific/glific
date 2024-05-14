@@ -22,8 +22,12 @@ defmodule Glific.Clients.CommonWebhook do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     question_text = fields["question_text"]
     prompt = Map.get(fields, "prompt", nil)
+
+    # ID of the model to use.
     model = Map.get(fields, "model", "gpt-3.5-turbo")
-    temperature = Map.get(fields, "temperature", 1)
+
+    # The sampling temperature, between 0 and 1. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.
+    temperature = Map.get(fields, "temperature", 0)
 
     params = %{
       "question_text" => question_text,
