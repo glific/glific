@@ -391,10 +391,11 @@ defmodule Glific.PartnersTest do
       assert {:ok, updated_organization} =
                Partners.update_organization(organization, %{
                  regx_flow: %{
-                  flow_id: flow.id,
-                  regx: "test",
-                  regx_opt: "i"
-               }})
+                   flow_id: flow.id,
+                   regx: "test",
+                   regx_opt: "i"
+                 }
+               })
 
       assert updated_organization.regx_flow.flow_id == flow.id
       assert updated_organization.regx_flow.regx == "test"
