@@ -9,12 +9,13 @@ defmodule Glific.Partners.OrganizationSettings.RegxFlow do
 
   alias Glific.Flows.Flow
 
-  @optional_fields []
+  @optional_fields [
+    :regx_opt
+  ]
 
   @required_fields [
     :flow_id,
-    :regx,
-    :regx_opt
+    :regx
   ]
 
   @type t() :: %__MODULE__{
