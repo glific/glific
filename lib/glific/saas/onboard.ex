@@ -217,7 +217,7 @@ defmodule Glific.Saas.Onboard do
 
   defp process_on_submission(result, _org, _registration), do: result
 
-  @spec notify_on_submission(Organization.t(), Registration.t()) :: map()
+  @spec notify_on_submission(Organization.t(), Registration.t()) :: any()
   defp notify_on_submission(org, registration) do
     Map.put(%{}, "submitter", registration.submitter)
     |> Map.put("signing_authority", registration.signing_authority)
