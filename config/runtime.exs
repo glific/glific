@@ -78,3 +78,6 @@ config :glific,
 
 config :glific,
   google_translate: env!("GOOGLE_TRANSLATE_KEY", :string!, "This is not a secret")
+
+config :glific,
+  notion_secret: env!("NOTION_SECRET", :string!, "This is not a secret")
