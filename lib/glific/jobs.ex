@@ -20,7 +20,7 @@ defmodule Glific.Jobs do
     do:
       Repo.get_by(
         GcsJob,
-        %{organization_id: organization_id}
+        %{organization_id: organization_id, type: "incremental"}
       )
 
   @doc """
@@ -29,7 +29,7 @@ defmodule Glific.Jobs do
   """
   @spec update_gcs_job(map()) :: {:ok, GcsJob.t()} | {:error, Ecto.Changeset.t()}
   def update_gcs_job(attrs) do
-    case Repo.get_by(GcsJob, %{organization_id: attrs.organization_id}) do
+    case Repo.get_by(GcsJob, %{organization_id: attrs.organization_id, type: "incremental"}) do
       nil ->
         GcsJob.changeset(%GcsJob{}, attrs)
         |> Repo.insert()

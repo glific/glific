@@ -78,7 +78,12 @@ defmodule Glific.GCS.GcsWorker do
       )
 
       queue_urls(organization_id, message_media_id, max_id)
-      Jobs.update_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
+
+      Jobs.update_gcs_job(%{
+        message_media_id: max_id,
+        organization_id: organization_id,
+        type: "incremental"
+      })
     end
 
     :ok

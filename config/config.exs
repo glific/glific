@@ -55,8 +55,10 @@ oban_crontab = [
   # 21:00 Sat UTC is  02:30 Sun IST and hence low traffic
   {"0 21 * * SAT", Glific.Jobs.MinuteWorker, args: %{job: :weekly_tasks}},
   # We are sending report of previous week(MON to SUN)
-  {"0 0 * * MON", Glific.Jobs.MinuteWorker, args: %{job: :weekly_report}}
+  {"0 0 * * MON", Glific.Jobs.MinuteWorker, args: %{job: :weekly_report}},
   # {"0 0 1 * *", Glific.Jobs.MinuteWorker, args: %{job: :monthly_tasks}}
+  # Syncing unsynced media files late in the night
+  {"* 2-6 * * *", Glific.Jobs.MinuteWorker, args: %{job: :daily_low_traffic_tasks}}
 ]
 
 oban_engine = Oban.Pro.Engines.Smart

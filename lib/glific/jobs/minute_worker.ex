@@ -101,6 +101,7 @@ defmodule Glific.Jobs.MinuteWorker do
   defp perform(%Oban.Job{args: %{"job" => job}} = _args, services)
        when job in [
               "daily_tasks",
+              "daily_low_traffic_tasks",
               "tracker_tasks",
               "hourly_tasks",
               "delete_tasks",
@@ -144,6 +145,9 @@ defmodule Glific.Jobs.MinuteWorker do
         CollectionCount.collection_stats()
 
       "update_hsms" ->
+        Partners.perform_all(&Templates.sync_hsms_from_bsp/1, nil, [])
+
+      "daily_low_traffic_tasks" ->
         Partners.perform_all(&Templates.sync_hsms_from_bsp/1, nil, [])
     end
 
