@@ -150,6 +150,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
     message =
       Fixtures.message_fixture(%{body: "unique_regex", sender_id: sender.id})
       |> Repo.preload([:contact])
+
     ConsumerFlow.process_message({message, state}, message.body)
 
     new_message_count = Repo.aggregate(Message, :count)
