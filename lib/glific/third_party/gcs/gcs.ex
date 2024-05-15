@@ -5,9 +5,12 @@ defmodule Glific.GCS do
 
   @behaviour Waffle.Storage.Google.Token.Fetcher
   require Logger
+  import Ecto.Query
 
   alias Glific.{
     GCS.GcsJob,
+    Messages.Message,
+    Messages.MessageMedia,
     Partners,
     Repo
   }
@@ -48,12 +51,50 @@ defmodule Glific.GCS do
         {:ok, gcs_job}
 
       _ ->
-        %GcsJob{organization_id: organization_id}
+        %GcsJob{
+          organization_id: organization_id,
+          type: "incremental"
+        }
+        |> Repo.insert()
+
+        message_media_id = get_first_unsynced_file(org_id)
+
+        %GcsJob{
+          organization_id: organization_id,
+          type: "unsynced",
+          message_media_id: message_media_id
+        }
         |> Repo.insert()
     end
   end
 
   @gcs_bucket_key {__MODULE__, :bucket_id}
+
+  def get_first_unsynced_file(org_id) do
+    base_query(org_id)
+    |> where([m, _msg], is_nil(m.gcs_url))
+    |> Repo.all()
+    |> do_get_first_unsynced_file(org_id)
+  end
+
+  defp do_get_first_unsynced_file(media_id, org_id) when media_id in ["", nil, []] do
+    [%{id: id}] = base_query(org_id) |> Repo.all()
+
+    id
+  end
+
+  defp do_get_first_unsynced_file(%{id: id}, _org_id), do: id
+
+  defp base_query(org_id) do
+    MessageMedia
+    |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
+    |> where([m, _msg], m.organization_id == ^org_id)
+    |> where([m, _msg], m.flow == :inbound)
+    |> where([m, _msg], is_nil(m.gcs_url))
+    |> select([m], %{id: m.id})
+    |> limit(1)
+    |> order_by([m], [m.inserted_at, m.id])
+  end
 
   @doc """
   Put bucket name to the process
