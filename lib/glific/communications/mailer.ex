@@ -90,8 +90,7 @@ defmodule Glific.Communications.Mailer do
 
     send_to = get_team_email(org, team, send_to)
 
-    # ++ [glific_support()]
-    in_cc = in_cc
+    in_cc = in_cc ++ [glific_support()]
 
     new()
     |> to(send_to)

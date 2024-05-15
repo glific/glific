@@ -221,28 +221,31 @@ defmodule Glific.OnboardTest do
       invalid_params = %{
         "registration_id" => reg_id,
         "billing_frequency" => "twice",
-        "finance_poc" =>
-          Jason.encode!(%{
-            "name" => String.duplicate(Faker.Person.name(), 20),
-            "email" => "invalid@.com",
-            "designation" => "",
-            "phone" => "23"
-          }),
-        "submitter" =>
-          Jason.encode!(%{
-            "name" => "",
-            "email" => Faker.Internet.email()
-          }),
-        "signing_authority" =>
-          Jason.encode!(%{
-            "name" => Faker.Person.name(),
-            "email" => Faker.Internet.email(),
-            "designation" => "designation"
-          })
+        "finance_poc" => %{
+          "name" => String.duplicate(Faker.Person.name(), 20),
+          "email" => "invalid@.com",
+          "designation" => "",
+          "phone" => "23"
+        },
+        "submitter" => %{
+          "name" => "",
+          "email" => Faker.Internet.email()
+        },
+        "signing_authority" => %{
+          "name" => Faker.Person.name(),
+          "email" => Faker.Internet.email(),
+          "designation" => "designation"
+        }
       }
 
       assert %{
-               messages: _,
+               messages: %{
+                 billing_frequency: "Value should be one of yearly, monthly, or quarterly.",
+                 finance_poc_name: "Field cannot be more than 25 letters.",
+                 finance_poc_designation: "Field cannot be empty.",
+                 finance_poc_email: "Email is not valid.",
+                 submitter_name: "Field cannot be empty."
+               },
                is_valid: false
              } =
                Onboard.update_registration(invalid_params, org)
