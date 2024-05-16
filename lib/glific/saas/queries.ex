@@ -454,7 +454,6 @@ defmodule Glific.Saas.Queries do
   end
 
   @spec validate_finance_poc(map(), map()) :: map()
-  defp validate_finance_poc(%{is_valid: false} = result, _params), do: result
 
   defp validate_finance_poc(result, params) do
     result
@@ -466,8 +465,6 @@ defmodule Glific.Saas.Queries do
 
   @spec validate_submitter_details(map(), map()) :: map()
 
-  defp validate_submitter_details(%{is_valid: false} = result, _params), do: result
-
   defp validate_submitter_details(result, params) do
     result
     |> validate_text_field(params["name"], :submitter_name, {1, 25})
@@ -475,8 +472,6 @@ defmodule Glific.Saas.Queries do
   end
 
   @spec validate_signer_details(map(), map()) :: map()
-
-  defp validate_signer_details(%{is_valid: false} = result, _params), do: result
 
   defp validate_signer_details(result, params) do
     result
@@ -486,7 +481,6 @@ defmodule Glific.Saas.Queries do
   end
 
   @spec validate_org_details(map(), map()) :: map()
-  defp validate_org_details(%{is_valid: false} = result, _params), do: result
 
   defp validate_org_details(result, params) do
     result

@@ -8,6 +8,7 @@ defmodule Glific.Clients.KEF do
   require Logger
 
   alias Glific.{
+    Clients.CommonWebhook,
     Contacts,
     Flows.ContactField,
     Partners,
@@ -49,6 +50,8 @@ defmodule Glific.Clients.KEF do
         _ -> "Others"
       end
 
+    if is_nil(media["contact_id"]), do: Logger.error("Invalid media for KEF: #{inspect(media)}")
+
     Contacts.Contact
     |> Repo.fetch_by(%{
       id: media["contact_id"],
@@ -69,7 +72,6 @@ defmodule Glific.Clients.KEF do
         end
 
       {:error, _} ->
-        Logger.error("Invalid media for KEF: #{inspect(media)}")
         "/#{media_subfolder}/" <> media["remote_name"]
     end
   end
@@ -136,6 +138,9 @@ defmodule Glific.Clients.KEF do
   additional functionality as needed
   """
   @spec webhook(String.t(), map()) :: map()
+  def webhook("parse_via_gpt_vision", fields),
+    do: CommonWebhook.webhook("parse_via_gpt_vision", fields)
+
   def webhook("load_worksheets", fields) do
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> load_worksheets()
