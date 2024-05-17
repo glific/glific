@@ -57,7 +57,7 @@ defmodule Glific.GCS do
         }
         |> Repo.insert()
 
-        message_media_id = get_first_unsynced_file(org_id)
+        message_media_id = get_first_unsynced_file(organization_id)
 
         %GcsJob{
           organization_id: organization_id,
@@ -70,31 +70,31 @@ defmodule Glific.GCS do
 
   @gcs_bucket_key {__MODULE__, :bucket_id}
 
-  def get_first_unsynced_file(org_id) do
-    base_query(org_id)
+  def get_first_unsynced_file(organization_id) do
+    base_query(organization_id)
+    |> unsynced_query()
     |> where([m, _msg], is_nil(m.gcs_url))
     |> Repo.all()
-    |> do_get_first_unsynced_file(org_id)
+    |> do_get_first_unsynced_file(organization_id)
   end
 
-  defp do_get_first_unsynced_file(media_id, org_id) when media_id in ["", nil, []] do
-    [%{id: id}] = base_query(org_id) |> Repo.all()
+  defp do_get_first_unsynced_file(media_id, organization_id) when media_id in ["", nil, []] do
+    [%{id: id}] = base_query(organization_id) |> unsynced_query() |> Repo.all()
 
     id
   end
 
-  defp do_get_first_unsynced_file(%{id: id}, _org_id), do: id
+  defp do_get_first_unsynced_file(%{id: id}, _organization_id), do: id
 
-  defp base_query(org_id) do
+  def base_query(organization_id) do
     MessageMedia
     |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
-    |> where([m, _msg], m.organization_id == ^org_id)
+    |> where([m, _msg], m.organization_id == ^organization_id)
     |> where([m, _msg], m.flow == :inbound)
-    |> where([m, _msg], is_nil(m.gcs_url))
-    |> select([m], %{id: m.id})
-    |> limit(1)
     |> order_by([m], [m.inserted_at, m.id])
   end
+
+  defp unsynced_query(query), do: query |> limit(1) |> select([m], %{id: m.id})
 
   @doc """
   Put bucket name to the process

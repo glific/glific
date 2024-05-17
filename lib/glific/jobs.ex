@@ -15,12 +15,12 @@ defmodule Glific.Jobs do
 
   Raises `Ecto.NoResultsError` if the User does not exist.
   """
-  @spec get_gcs_job(integer) :: GcsJob.t() | nil
-  def get_gcs_job(organization_id),
+  @spec get_gcs_job(integer, String.t()) :: GcsJob.t() | nil
+  def get_gcs_job(organization_id, phase),
     do:
       Repo.get_by(
         GcsJob,
-        %{organization_id: organization_id, type: "incremental"}
+        %{organization_id: organization_id, type: phase}
       )
 
   @doc """
@@ -29,7 +29,7 @@ defmodule Glific.Jobs do
   """
   @spec update_gcs_job(map()) :: {:ok, GcsJob.t()} | {:error, Ecto.Changeset.t()}
   def update_gcs_job(attrs) do
-    case Repo.get_by(GcsJob, %{organization_id: attrs.organization_id, type: "incremental"}) do
+    case Repo.get_by(GcsJob, %{organization_id: attrs.organization_id, type: attrs.type}) do
       nil ->
         GcsJob.changeset(%GcsJob{}, attrs)
         |> Repo.insert()
