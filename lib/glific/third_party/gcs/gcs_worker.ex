@@ -64,7 +64,7 @@ defmodule Glific.GCS.GcsWorker do
       |> select([m], m.id)
       |> where([m], m.organization_id == ^organization_id and m.id > ^message_media_id)
       |> where([m], m.flow == :inbound)
-      |> where([m], m.gcs_url in ["", nil])
+      |> where([m], is_nil(m.gcs_url) )
       |> order_by([m], asc: m.id)
       |> limit(^limit)
       |> check_phase(organization_id, phase)

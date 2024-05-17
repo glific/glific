@@ -97,7 +97,7 @@ defmodule Glific.GCS do
     id
   end
 
-  defp do_get_first_unsynced_file(%{id: id}, _organization_id), do: id
+  defp do_get_first_unsynced_file([%{id: id}], _organization_id), do: id
 
   @doc """
   Check if ID is returned else get ID of first inbound media file
