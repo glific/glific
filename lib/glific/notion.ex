@@ -1,5 +1,4 @@
 defmodule Glific.Notion do
-  alias Glific.Partners.Organization
   alias Glific.Registrations.Registration
 
   @doc """
@@ -7,17 +6,17 @@ defmodule Glific.Notion do
   """
 
   @ngo_database_id "ebfc67ca718549729861aa8a25ebe296"
-  @ngo_page_id "880ec3558287464fbd6f1688435e33de"
 
   @notion_base_url "https://api.notion.com/v1"
-
+  require Logger
   use Tesla
 
   @spec headers() :: list()
   defp headers(),
     do: [
       {"Content-Type", "application/json"},
-      {"Authorization", "Bearer " <> Application.get_env(:glific, :google_translate)}
+      {"Authorization", "Bearer " <> Application.get_env(:glific, :notion_secret)},
+      {"Notion-Version", "2022-02-22"}
     ]
 
   @doc """
@@ -25,12 +24,14 @@ defmodule Glific.Notion do
   """
   @spec create_database_entry(Registration.t()) :: {:ok, String.t()} | {:error, String.t()}
   def create_database_entry(registration) do
-    # fetch the database schema
-    # Make the payload for the entry
-    # create page
-    # then hit post req
-    # handle the response
-    with {:ok, %{"properties" => properties} = database} <- fetch_database() do
+    with {:ok, _} <- fetch_database(),
+         table_properties <- create_table_properties(registration),
+         {:ok, _} <- create_page(table_properties) do
+      {:ok, "success"}
+    else
+      {:error, message} ->
+        Logger.error("Error on creating notion database entry due to #{message}")
+        {:error, message}
     end
   end
 
@@ -50,7 +51,7 @@ defmodule Glific.Notion do
       properties: properties
     }
 
-    post(@notion_base_url <> "/pages", body)
+    post(@notion_base_url <> "/pages", Jason.encode!(body), headers: headers())
     |> parse_response()
   end
 
@@ -60,13 +61,14 @@ defmodule Glific.Notion do
     {:ok, resp_body}
   end
 
-  defp parse_response({:ok, %{body: resp_body, status: status}}) do
+  defp parse_response({:ok, %{body: resp_body}}) do
     {:error, inspect(resp_body)}
   end
 
-  defp parse_response({:error, message}, _), do: {:error, inspect(message)}
+  defp parse_response({:error, message}), do: {:error, inspect(message)}
 
-  defp create_table_properties(org, %Registration{} = registration) do
+  @spec create_table_properties(Registration.t()) :: map()
+  defp create_table_properties(%Registration{} = registration) do
     %{
       "Org Name" => %{
         "type" => "title",
@@ -97,9 +99,8 @@ defmodule Glific.Notion do
       },
       "BOT number" => %{
         "type" => "number",
-        "number" => "345"
+        "number" => registration.platform_details["phone"]
       }
-      # TODO: add the bot number
     }
   end
 

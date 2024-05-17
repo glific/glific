@@ -8,6 +8,8 @@ defmodule Glific.Saas.Onboard do
   require Logger
   import GlificWeb.Gettext
 
+  alias Glific.Notion
+
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
@@ -209,8 +211,12 @@ defmodule Glific.Saas.Onboard do
   @spec process_on_submission(map(), Organization.t(), Registration.t()) :: map()
   defp process_on_submission(result, org, %{has_submitted: true} = registration) do
     with %{is_valid: true} = result <- Queries.eligible_for_submission?(result, registration) do
-      notify_on_submission(org, registration)
-      notify_saas_team(org)
+      Task.start(fn ->
+        notify_on_submission(org, registration)
+        notify_saas_team(org)
+        Notion.create_database_entry(registration)
+      end)
+
       result
     end
   end

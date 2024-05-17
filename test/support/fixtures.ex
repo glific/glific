@@ -47,6 +47,7 @@ defmodule Glific.Fixtures do
     Profiles.Profile,
     Providers.Maytapi.Message,
     Repo,
+    Registrations,
     Saas.ConsultingHour,
     Settings,
     Sheets,
@@ -1262,5 +1263,37 @@ defmodule Glific.Fixtures do
     Glific.Caches.set(org_id, "partner_app_token", "Some_random_token", ttl: :timer.hours(22))
     Glific.Caches.set(org_id, "partner_token", "Some_random_token", ttl: :timer.hours(22))
     :ok
+  end
+
+  @doc false
+  def registration_fixture do
+    valid_args = %{
+      "org_details" => %{
+        "current_address" => Faker.Lorem.paragraph(1..30),
+        "gstin" => " 07AAAAA1234A124",
+        "name" => Faker.Company.name(),
+        "registered_address" => Faker.Lorem.paragraph(1..30)
+      },
+      "signing_authority" => %{
+        "name" => Faker.Person.name(),
+        "email" => Faker.Internet.email(),
+        "designation" => "designation"
+      },
+      "submitter" => %{
+        "name" => Faker.Person.name() |> String.slice(0, 10),
+        "email" => Faker.Internet.email()
+      },
+      "finance_poc" => %{
+        "name" => Faker.Person.name() |> String.slice(0, 10),
+        "email" => Faker.Internet.email(),
+        "designation" => "Sr Accountant",
+        "phone" => Phone.PtBr.phone()
+      },
+      "billing_frequency" => "yearly",
+      "organization_id" => get_org_id()
+    }
+
+    {:ok, registration} = Registrations.create_registration(valid_args)
+    registration
   end
 end
