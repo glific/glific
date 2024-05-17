@@ -72,7 +72,7 @@ defmodule Glific.Jobs.MinuteWorker do
       "gcs" ->
         Partners.perform_all(
           &GcsWorker.perform_periodic/2,
-          "incremental",
+          %{phase: "incremental"},
           services["google_cloud_storage"],
           only_recent: true
         )
@@ -150,7 +150,7 @@ defmodule Glific.Jobs.MinuteWorker do
       "daily_low_traffic_tasks" ->
         Partners.perform_all(
           &GcsWorker.perform_periodic/2,
-          "unsynced",
+          %{phase: "unsynced"},
           services["google_cloud_storage"],
           only_recent: true
         )

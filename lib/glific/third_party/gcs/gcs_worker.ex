@@ -23,7 +23,6 @@ defmodule Glific.GCS.GcsWorker do
     GCS,
     Jobs,
     Messages,
-    Messages.Message,
     Messages.MessageMedia,
     Partners,
     Repo
@@ -35,8 +34,8 @@ defmodule Glific.GCS.GcsWorker do
   This is called from the cron job on a regular schedule. we sweep the message media url  table
   and queue them up for delivery to gcs
   """
-  @spec perform_periodic(non_neg_integer, String.t()) :: :ok
-  def perform_periodic(organization_id, phase) do
+  @spec perform_periodic(non_neg_integer, map()) :: :ok
+  def perform_periodic(organization_id, %{phase: phase}) do
     organization = Partners.organization(organization_id)
     credential = organization.services[@provider_shortcode]
     goth_token = Partners.get_goth_token(organization_id, @provider_shortcode)
