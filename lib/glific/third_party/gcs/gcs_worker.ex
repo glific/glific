@@ -21,6 +21,7 @@ defmodule Glific.GCS.GcsWorker do
     BigQuery,
     BigQuery.BigQueryWorker,
     GCS,
+    GCS.GcsJob,
     Jobs,
     Messages,
     Messages.MessageMedia,
@@ -63,9 +64,10 @@ defmodule Glific.GCS.GcsWorker do
       |> select([m], m.id)
       |> where([m], m.organization_id == ^organization_id and m.id > ^message_media_id)
       |> where([m], m.flow == :inbound)
-      |> where([m], is_nil(m.gcs_url))
+      |> where([m], m.gcs_url in ["", nil])
       |> order_by([m], asc: m.id)
       |> limit(^limit)
+      |> check_phase(organization_id, phase)
       |> Repo.all()
 
     max_id = if is_list(data), do: List.last(data), else: message_media_id
@@ -85,6 +87,19 @@ defmodule Glific.GCS.GcsWorker do
     end
 
     :ok
+  end
+
+  @spec check_phase(Ecto.Queryable.t(), non_neg_integer, String.t()) :: Ecto.Queryable.t()
+  defp check_phase(query, _organization_id, "incremental"), do: query
+
+  defp check_phase(query, organization_id, "unsynced") do
+    {:ok, gcs_job} =
+      Repo.fetch_by(GcsJob, %{organization_id: organization_id, type: "incremental"})
+
+    message_media_id = gcs_job.message_media_id || 0
+
+    query
+    |> where([m], is_nil(m.id < ^message_media_id))
   end
 
   @spec files_per_minute_count() :: integer()

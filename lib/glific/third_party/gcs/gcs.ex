@@ -45,7 +45,7 @@ defmodule Glific.GCS do
   @doc false
   @spec insert_gcs_jobs(non_neg_integer) :: {:ok, any} | {:error, any}
   def insert_gcs_jobs(organization_id) do
-    Repo.fetch_by(GcsJob, %{organization_id: organization_id})
+    Repo.fetch_by(GcsJob, %{organization_id: organization_id, type: "incremental"})
     |> case do
       {:ok, gcs_job} ->
         {:ok, gcs_job}
@@ -56,7 +56,14 @@ defmodule Glific.GCS do
           type: "incremental"
         }
         |> Repo.insert()
+    end
 
+    Repo.fetch_by(GcsJob, %{organization_id: organization_id, type: "unsynced"})
+    |> case do
+      {:ok, gcs_job} ->
+        {:ok, gcs_job}
+
+      _ ->
         message_media_id = get_first_unsynced_file(organization_id)
 
         %GcsJob{
