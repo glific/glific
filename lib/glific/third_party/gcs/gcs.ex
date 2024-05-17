@@ -70,6 +70,10 @@ defmodule Glific.GCS do
 
   @gcs_bucket_key {__MODULE__, :bucket_id}
 
+  @doc """
+  Get first unsynced file id as a starting point to sync unsynced files
+  """
+  @spec get_first_unsynced_file(non_neg_integer) :: non_neg_integer()
   def get_first_unsynced_file(organization_id) do
     base_query(organization_id)
     |> unsynced_query()
@@ -78,6 +82,8 @@ defmodule Glific.GCS do
     |> do_get_first_unsynced_file(organization_id)
   end
 
+  # Check if ID is returned else get ID of first inbound media file
+  @spec do_get_first_unsynced_file(non_neg_integer, non_neg_integer) :: non_neg_integer()
   defp do_get_first_unsynced_file(media_id, organization_id) when media_id in ["", nil, []] do
     [%{id: id}] = base_query(organization_id) |> unsynced_query() |> Repo.all()
 
@@ -86,6 +92,10 @@ defmodule Glific.GCS do
 
   defp do_get_first_unsynced_file(%{id: id}, _organization_id), do: id
 
+  @doc """
+  Check if ID is returned else get ID of first inbound media file
+  """
+  @spec base_query(non_neg_integer) :: Ecto.Queryable.t()
   def base_query(organization_id) do
     MessageMedia
     |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
@@ -94,6 +104,7 @@ defmodule Glific.GCS do
     |> order_by([m], [m.inserted_at, m.id])
   end
 
+  @spec unsynced_query(Ecto.Queryable.t()) :: Ecto.Queryable.t()
   defp unsynced_query(query), do: query |> limit(1) |> select([m], %{id: m.id})
 
   @doc """
