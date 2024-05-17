@@ -627,6 +627,12 @@ defmodule Glific.BigQuery.Schema do
         mode: "REQUIRED"
       },
       %{
+        description: "Name of the Flow",
+        name: "flow_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
         description: "Unique UUID for the row (allows us to delete duplicates)",
         name: "bq_uuid",
         type: "STRING",
