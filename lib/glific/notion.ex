@@ -5,7 +5,7 @@ defmodule Glific.Notion do
   Utilities to interact with Notion
   """
 
-  @ngo_database_id "ebfc67ca718549729861aa8a25ebe296"
+  @ngo_database_id "2ba8364b6fa94f43b7d2b88bf6628a7d"
 
   @notion_base_url "https://api.notion.com/v1"
   require Logger
@@ -22,11 +22,20 @@ defmodule Glific.Notion do
   @doc """
   Creates a new entry in notion ngo onboarded database
   """
-  @spec create_database_entry(Registration.t()) :: {:ok, String.t()} | {:error, String.t()}
-  def create_database_entry(registration) do
-    with {:ok, _} <- fetch_database(),
-         table_properties <- create_table_properties(registration),
-         {:ok, _} <- create_page(table_properties) do
+  @spec create_database_entry(map()) :: {:ok, String.t()} | {:error, String.t()}
+  def create_database_entry(properties) do
+    with {:ok, %{"id" => page_id}} <- create_page(properties) |> IO.inspect() do
+      {:ok, page_id}
+    else
+      {:error, message} ->
+        Logger.error("Error on creating notion database entry due to #{message}")
+        {:error, message}
+    end
+  end
+
+  @spec update_database_entry(String.t(), map()) :: {:ok, String.t()} | {:error, String.t()}
+  def update_database_entry(page_id, properties) do
+    with {:ok, _} <- update_page(page_id, properties) do
       {:ok, "success"}
     else
       {:error, message} ->
@@ -35,11 +44,96 @@ defmodule Glific.Notion do
     end
   end
 
-  @spec fetch_database :: {:ok, map()} | {:error, String.t()}
-  defp fetch_database do
-    (@notion_base_url <> "/databases/#{@ngo_database_id}")
-    |> get(headers: headers())
-    |> parse_response()
+  @spec init_table_properties(Registration.t()) :: map()
+  def init_table_properties(registration) do
+    %{
+      "Org Name" => %{
+        "type" => "title",
+        "title" => [
+          %{"type" => "text", "text" => %{"content" => "#{registration.org_details.name}"}}
+        ]
+      },
+      "terms agreed" => %{
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "No"}
+          }
+        ]
+      }
+      # "NGO POC email id" => %{
+      #   "type" => "rich_text",
+      #   "rich_text" => %{
+      #     "type" => "text",
+      #     "text" => %{"content" => "#{registration.org_details["email"]}"}
+      #   }
+      # },
+      # "Current office location- City" => %{
+      #   "type" => "rich_text",
+      #   "rich_text" => %{
+      #     "type" => "text",
+      #     "text" => %{"content" => "#{registration.org_details["current_address"]}"}
+      #   }
+      # },
+      # "Finance POC Details" => %{
+      #   "type" => "rich_text",
+      #   "rich_text" => %{
+      #     "type" => "text",
+      #     "text" => %{"content" => "#{convert_details_to_string(registration.finance_poc)}"}
+      #   }
+      # },
+      # "BOT number" => %{
+      #   "type" => "number",
+      #   "number" => registration.platform_details["phone"]
+      # }
+    }
+  end
+
+  @spec update_table_properties(Registration.t()) :: map()
+  def update_table_properties(registration) do
+    %{
+      "Org Name" => %{
+        "type" => "title",
+        "title" => [
+          %{"type" => "text", "text" => %{"content" => "#{registration.org_details["name"]}"}}
+        ]
+      },
+      "terms agreed" => %{
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "No"}
+          }
+        ]
+      },
+      "NGO POC email id" => %{
+        "type" => "rich_text",
+        "rich_text" => %{
+          "type" => "text",
+          "text" => [%{"content" => "#{registration.org_details["email"]}"}]
+        }
+      },
+      "Current office location- City" => %{
+        "type" => "rich_text",
+        "rich_text" => %{
+          "type" => "text",
+          "text" => [%{"content" => "#{registration.org_details["current_address"]}"}]
+        }
+      },
+      "Finance POC Details" => %{
+        "type" => "rich_text",
+        "rich_text" => %{
+          "type" => "text",
+          "text" => [%{"content" => "#{convert_details_to_string(registration.finance_poc)}"}]
+        }
+      },
+      "BOT number" => %{
+        "type" => "number",
+        "number" => registration.platform_details["phone"]
+      }
+    }
   end
 
   @spec create_page(map()) :: {:ok, map()} | {:error, String.t()}
@@ -55,6 +149,16 @@ defmodule Glific.Notion do
     |> parse_response()
   end
 
+  @spec update_page(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp update_page(page_id, properties) do
+    body = %{
+      properties: properties
+    }
+
+    patch(@notion_base_url <> "/pages/#{page_id}", body, headers: headers())
+    |> parse_response()
+  end
+
   @spec parse_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t()}
   defp parse_response({:ok, %{body: resp_body, status: status}})
        when status >= 200 and status < 300 do
@@ -66,43 +170,6 @@ defmodule Glific.Notion do
   end
 
   defp parse_response({:error, message}), do: {:error, inspect(message)}
-
-  @spec create_table_properties(Registration.t()) :: map()
-  defp create_table_properties(%Registration{} = registration) do
-    %{
-      "Org Name" => %{
-        "type" => "title",
-        "title" => [
-          %{"type" => "text", "text" => %{"content" => "#{registration.org_details["name"]}"}}
-        ]
-      },
-      "NGO POC email id" => %{
-        "type" => "rich_text",
-        "rich_text" => %{
-          "type" => "text",
-          "text" => %{"content" => "#{registration.org_details["email"]}"}
-        }
-      },
-      "Current office location- City" => %{
-        "type" => "rich_text",
-        "rich_text" => %{
-          "type" => "text",
-          "text" => %{"content" => "#{registration.org_details["current_address"]}"}
-        }
-      },
-      "Finance POC Details" => %{
-        "type" => "rich_text",
-        "rich_text" => %{
-          "type" => "text",
-          "text" => %{"content" => "#{convert_details_to_string(registration.finance_poc)}"}
-        }
-      },
-      "BOT number" => %{
-        "type" => "number",
-        "number" => registration.platform_details["phone"]
-      }
-    }
-  end
 
   @spec convert_details_to_string(map()) :: String.t()
   defp convert_details_to_string(details) do

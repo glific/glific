@@ -7,6 +7,8 @@ defmodule Glific.Saas.Queries do
 
   require Logger
 
+  alias Glific.Notion
+
   alias Glific.{
     Contacts,
     Contacts.Contact,
@@ -429,7 +431,8 @@ defmodule Glific.Saas.Queries do
     }
     |> Registrations.create_registration()
     |> case do
-      {:ok, %{id: id}} ->
+      {:ok, %{id: id} = registration} ->
+        :ok = create_registration_in_notion(result.organization.id, registration)
         Map.put(result, :registration_id, id)
 
       {:error, errors} ->
@@ -491,5 +494,20 @@ defmodule Glific.Saas.Queries do
       {1, 300}
     )
     |> validate_text_field(params["current_address"], :current_address, {0, 300})
+  end
+
+  @spec create_registration_in_notion(String.t(), Registration.t()) :: :ok
+  defp create_registration_in_notion(org_id, registration) do
+    {:ok, _} =
+      Task.start(fn ->
+        Repo.put_process_state(org_id)
+        properties = Notion.init_table_properties(registration)
+
+        with {:ok, page_id} <- Notion.create_database_entry(properties) do
+          Registrations.update_registation(registration, %{notion_page_id: page_id})
+        end
+      end)
+
+    :ok
   end
 end

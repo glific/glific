@@ -214,7 +214,9 @@ defmodule Glific.Saas.Onboard do
       Task.start(fn ->
         notify_on_submission(org, registration)
         notify_saas_team(org)
-        Notion.create_database_entry(registration)
+
+        Notion.update_table_properties(registration)
+        |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
       end)
 
       result
