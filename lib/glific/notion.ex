@@ -5,11 +5,13 @@ defmodule Glific.Notion do
   Utilities to interact with Notion
   """
 
-  @ngo_database_id "2ba8364b6fa94f43b7d2b88bf6628a7d"
+  @ngo_database_id "880cf3440d4c4e3f80453103e712f897"
 
   @notion_base_url "https://api.notion.com/v1"
   require Logger
   use Tesla
+
+  plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
 
   @spec headers() :: list()
   defp headers(),
@@ -24,7 +26,7 @@ defmodule Glific.Notion do
   """
   @spec create_database_entry(map()) :: {:ok, String.t()} | {:error, String.t()}
   def create_database_entry(properties) do
-    with {:ok, %{"id" => page_id}} <- create_page(properties) |> IO.inspect() do
+    with {:ok, %{id: page_id}} <- create_page(properties) |> IO.inspect() do
       {:ok, page_id}
     else
       {:error, message} ->
@@ -39,7 +41,7 @@ defmodule Glific.Notion do
       {:ok, "success"}
     else
       {:error, message} ->
-        Logger.error("Error on creating notion database entry due to #{message}")
+        Logger.error("Error on updating notion database entry due to #{message}")
         {:error, message}
     end
   end
@@ -47,91 +49,194 @@ defmodule Glific.Notion do
   @spec init_table_properties(Registration.t()) :: map()
   def init_table_properties(registration) do
     %{
-      "Org Name" => %{
+      "Name" => %{
         "type" => "title",
         "title" => [
           %{"type" => "text", "text" => %{"content" => "#{registration.org_details.name}"}}
         ]
       },
-      "terms agreed" => %{
-        "type" => "rich_text",
-        "rich_text" => [
-          %{
-            "type" => "text",
-            "text" => %{"content" => "No"}
-          }
-        ]
+      "T&C Agreed" => %{
+        "type" => "checkbox",
+        "checkbox" => false
       }
-      # "NGO POC email id" => %{
-      #   "type" => "rich_text",
-      #   "rich_text" => %{
-      #     "type" => "text",
-      #     "text" => %{"content" => "#{registration.org_details["email"]}"}
-      #   }
-      # },
-      # "Current office location- City" => %{
-      #   "type" => "rich_text",
-      #   "rich_text" => %{
-      #     "type" => "text",
-      #     "text" => %{"content" => "#{registration.org_details["current_address"]}"}
-      #   }
-      # },
-      # "Finance POC Details" => %{
-      #   "type" => "rich_text",
-      #   "rich_text" => %{
-      #     "type" => "text",
-      #     "text" => %{"content" => "#{convert_details_to_string(registration.finance_poc)}"}
-      #   }
-      # },
-      # "BOT number" => %{
-      #   "type" => "number",
-      #   "number" => registration.platform_details["phone"]
-      # }
     }
   end
 
   @spec update_table_properties(Registration.t()) :: map()
   def update_table_properties(registration) do
     %{
-      "Org Name" => %{
+      "Name" => %{
         "type" => "title",
         "title" => [
           %{"type" => "text", "text" => %{"content" => "#{registration.org_details["name"]}"}}
         ]
       },
-      "terms agreed" => %{
+      "T&C Agreed" => %{
+        "type" => "checkbox",
+        "checkbox" => registration.terms_agreed
+      },
+      "Current Address" => %{
         "type" => "rich_text",
         "rich_text" => [
           %{
             "type" => "text",
-            "text" => %{"content" => "No"}
+            "text" => %{"content" => "#{registration.org_details["current_address"]}"}
           }
         ]
       },
-      "NGO POC email id" => %{
+      "Registered Address" => %{
         "type" => "rich_text",
-        "rich_text" => %{
-          "type" => "text",
-          "text" => [%{"content" => "#{registration.org_details["email"]}"}]
-        }
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.org_details["registered_address"]}"}
+          }
+        ]
       },
-      "Current office location- City" => %{
+      "GSTIN" => %{
         "type" => "rich_text",
-        "rich_text" => %{
-          "type" => "text",
-          "text" => [%{"content" => "#{registration.org_details["current_address"]}"}]
-        }
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.org_details["gstin"]}"}
+          }
+        ]
       },
-      "Finance POC Details" => %{
-        "type" => "rich_text",
-        "rich_text" => %{
-          "type" => "text",
-          "text" => [%{"content" => "#{convert_details_to_string(registration.finance_poc)}"}]
-        }
-      },
-      "BOT number" => %{
+      "BOT Number" => %{
         "type" => "number",
-        "number" => registration.platform_details["phone"]
+        "number" => String.to_integer(registration.platform_details["phone"])
+      },
+      "Gupshup App Name" => %{
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.platform_details["app_name"]}"}
+          }
+        ]
+      },
+      "Shortcode" => %{
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.platform_details["shortcode"]}"}
+          }
+        ]
+      },
+      "Billing Frequency" => %{
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.billing_frequency}"}
+          }
+        ]
+      },
+      "Finance POC Name" => %{
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.finance_poc["name"]}"}
+          }
+        ]
+      },
+      "Finance POC Phone" => %{
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.finance_poc["phone"]}"}
+          }
+        ]
+      },
+      "Finance POC Designation" => %{
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.finance_poc["designation"]}"}
+          }
+        ]
+      },
+      "Finance POC Email" => %{
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.finance_poc["email"]}"}
+          }
+        ]
+      },
+      "Submitter Name" => %{
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.submitter["name"]}"}
+          }
+        ]
+      },
+      "Submitter Email" => %{
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.submitter["email"]}"}
+          }
+        ]
+      },
+      "Signing Authority Name" => %{
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.signing_authority["name"]}"}
+          }
+        ]
+      },
+      "Signing Authority Designation" => %{
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.signing_authority["designation"]}"}
+          }
+        ]
+      },
+      "Signing Authority Email" => %{
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.signing_authority["email"]}"}
+          }
+        ]
+      },
+      "Has Submitted Form" => %{
+        "type" => "checkbox",
+        "checkbox" => registration.has_submitted
+      },
+      "IP Address" => %{
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.ip_address}"}
+          }
+        ]
+      },
+      "Support Staff Account" => %{
+        "type" => "checkbox",
+        "checkbox" => registration.support_staff_account
+      },
+      "Created At" => %{
+        "type" => "date",
+        "date" => %{
+          "start" => DateTime.to_date(registration.inserted_at) |> Date.to_iso8601(),
+          "end" => nil
+        }
       }
     }
   end
@@ -170,12 +275,4 @@ defmodule Glific.Notion do
   end
 
   defp parse_response({:error, message}), do: {:error, inspect(message)}
-
-  @spec convert_details_to_string(map()) :: String.t()
-  defp convert_details_to_string(details) do
-    details
-    |> Enum.reduce("", fn {k, v}, str ->
-      str <> "| #{k}: #{v} "
-    end)
-  end
 end

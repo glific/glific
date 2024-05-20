@@ -31,8 +31,8 @@ config :glific, GlificWeb.Endpoint,
 #   pipeline: true,
 #   level: :debug
 
-config :logger,
-  level: :emergency
+# config :logger,
+#   level: :emergency
 
 # Watch static and templates for browser reloading.
 config :glific, GlificWeb.Endpoint,

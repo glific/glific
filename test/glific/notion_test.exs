@@ -31,9 +31,9 @@ defmodule Glific.NotionTest do
         %Tesla.Env{
           status: 200,
           body: %{
-            "object" => "page",
-            "id" => "page_id",
-            "properties" => %{}
+            object: "page",
+            id: "page_id",
+            properties: %{}
           }
         }
     end)

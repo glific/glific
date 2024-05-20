@@ -44,7 +44,9 @@ defmodule Glific.Repo.Migrations.AddRegistrationTable do
         null: false,
         comment: "Unique organization ID."
 
-      add :notion_page_id, :string, comment: "ID of the org's row in notion's onboarding-list database"
+      add :notion_page_id, :string,
+        comment: "ID of the org's row in notion's onboarding-list database"
+
       timestamps(type: :utc_datetime)
     end
   end

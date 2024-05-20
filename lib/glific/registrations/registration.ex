@@ -27,7 +27,8 @@ defmodule Glific.Registrations.Registration do
     :has_confirmed,
     :ip_address,
     :terms_agreed,
-    :support_staff_account
+    :support_staff_account,
+    :notion_page_id
   ]
 
   @type t() :: %__MODULE__{
