@@ -39,6 +39,9 @@ defmodule Glific.Notion do
     end
   end
 
+  @doc """
+  Updates a database entry with given page_id and properties
+  """
   @spec update_database_entry(String.t(), map()) :: {:ok, String.t()} | {:error, String.t()}
   def update_database_entry(page_id, properties) do
     case update_page(page_id, properties) do
@@ -51,6 +54,9 @@ defmodule Glific.Notion do
     end
   end
 
+  @doc """
+  Create registration notion table properties for table row creation
+  """
   @spec init_table_properties(Registration.t()) :: map()
   def init_table_properties(registration) do
     %{
@@ -67,6 +73,9 @@ defmodule Glific.Notion do
     }
   end
 
+  @doc """
+  Created registration notion table properties for table row updation
+  """
   @spec update_table_properties(Registration.t()) :: map()
   def update_table_properties(registration) do
     %{
