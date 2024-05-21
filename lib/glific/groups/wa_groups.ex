@@ -177,16 +177,18 @@ defmodule Glific.Groups.WAGroups do
 
   @spec create_whatsapp_groups(list(), non_neg_integer) :: list()
   defp create_whatsapp_groups(groups, org_id) do
-    groups
-    |> Enum.map(fn group ->
-      maybe_create_group(%{
-        label: group.name,
-        organization_id: org_id,
-        bsp_id: group.bsp_id,
-        wa_managed_phone_id: group.wa_managed_phone_id,
-        last_communication_at: DateTime.utc_now()
-      })
-    end)
+    Enum.map(
+      groups,
+      fn group ->
+        maybe_create_group(%{
+          label: group.name,
+          organization_id: org_id,
+          bsp_id: group.bsp_id,
+          wa_managed_phone_id: group.wa_managed_phone_id,
+          last_communication_at: DateTime.utc_now()
+        })
+      end
+    )
   end
 
   @doc """
