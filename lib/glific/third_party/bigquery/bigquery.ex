@@ -326,13 +326,17 @@ defmodule Glific.BigQuery do
         organization_id
         |> bigquery_tables()
         |> Enum.each(fn {table_id, schema_fn} ->
-          apply(Schema, schema_fn, [])
-          |> alter_table(%{
-            conn: conn,
-            dataset_id: dataset_id,
-            project_id: project_id,
-            table_id: table_id
-          })
+          Task.async(fn ->
+            Repo.put_process_state(organization_id)
+
+            apply(Schema, schema_fn, [])
+            |> alter_table(%{
+              conn: conn,
+              dataset_id: dataset_id,
+              project_id: project_id,
+              table_id: table_id
+            })
+          end)
         end)
 
       {:error, _} ->
