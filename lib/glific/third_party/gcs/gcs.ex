@@ -90,7 +90,7 @@ defmodule Glific.GCS do
   end
 
   # Check if ID is returned else get ID of first inbound media file
-  @spec do_get_first_unsynced_file(any(), non_neg_integer) :: non_neg_integer()
+  @spec do_get_first_unsynced_file(any(), non_neg_integer) :: non_neg_integer() | nil
   defp do_get_first_unsynced_file(media_id, organization_id) when media_id in ["", nil, []] do
     [%{id: id}] = base_query(organization_id) |> unsynced_query() |> Repo.all()
 
@@ -98,6 +98,11 @@ defmodule Glific.GCS do
   end
 
   defp do_get_first_unsynced_file([%{id: id}], _organization_id), do: id
+
+  defp do_get_first_unsynced_file(_id, organization_id) do
+    Logger.error("Unable to fetch unsynced file ID for org_id: #{organization_id}")
+    nil
+  end
 
   @doc """
   Check if ID is returned else get ID of first inbound media file
