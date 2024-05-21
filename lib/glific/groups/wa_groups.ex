@@ -89,7 +89,9 @@ defmodule Glific.Groups.WAGroups do
 
   @spec get_group_details(map(), WAManagedPhone.t()) :: [map()]
   defp get_group_details(%{"data" => groups}, wa_managed_phone) when is_list(groups) do
-    Enum.map(groups, fn group ->
+    groups
+    |> Enum.filter(fn group -> group["name"] != nil and group["name"] != "" end)
+    |> Enum.map(fn group ->
       %{
         name: group["name"],
         bsp_id: group["id"],
@@ -175,18 +177,16 @@ defmodule Glific.Groups.WAGroups do
 
   @spec create_whatsapp_groups(list(), non_neg_integer) :: list()
   defp create_whatsapp_groups(groups, org_id) do
-    Enum.map(
-      groups,
-      fn group ->
-        maybe_create_group(%{
-          label: group.name,
-          organization_id: org_id,
-          bsp_id: group.bsp_id,
-          wa_managed_phone_id: group.wa_managed_phone_id,
-          last_communication_at: DateTime.utc_now()
-        })
-      end
-    )
+    groups
+    |> Enum.map(fn group ->
+      maybe_create_group(%{
+        label: group.name,
+        organization_id: org_id,
+        bsp_id: group.bsp_id,
+        wa_managed_phone_id: group.wa_managed_phone_id,
+        last_communication_at: DateTime.utc_now()
+      })
+    end)
   end
 
   @doc """
