@@ -1,4 +1,7 @@
 defmodule Glific.Notion do
+  @moduledoc """
+  Notion API integration Utilities
+  """
   alias Glific.Registrations.Registration
 
   @doc """
@@ -13,8 +16,8 @@ defmodule Glific.Notion do
 
   plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
 
-  @spec headers() :: list()
-  defp headers(),
+  @spec headers :: list()
+  defp headers,
     do: [
       {"Content-Type", "application/json"},
       {"Authorization", "Bearer " <> Application.get_env(:glific, :notion_secret)},
@@ -26,9 +29,10 @@ defmodule Glific.Notion do
   """
   @spec create_database_entry(map()) :: {:ok, String.t()} | {:error, String.t()}
   def create_database_entry(properties) do
-    with {:ok, %{id: page_id}} <- create_page(properties) |> IO.inspect() do
-      {:ok, page_id}
-    else
+    case create_page(properties) do
+      {:ok, %{id: page_id}} ->
+        {:ok, page_id}
+
       {:error, message} ->
         Logger.error("Error on creating notion database entry due to #{message}")
         {:error, message}
@@ -37,9 +41,10 @@ defmodule Glific.Notion do
 
   @spec update_database_entry(String.t(), map()) :: {:ok, String.t()} | {:error, String.t()}
   def update_database_entry(page_id, properties) do
-    with {:ok, _} <- update_page(page_id, properties) do
-      {:ok, "success"}
-    else
+    case update_page(page_id, properties) do
+      {:ok, _} ->
+        {:ok, "success"}
+
       {:error, message} ->
         Logger.error("Error on updating notion database entry due to #{message}")
         {:error, message}

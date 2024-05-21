@@ -3,7 +3,7 @@ defmodule Glific.NotionTest do
   Tests for Glific.Notion
   """
   use Glific.DataCase
-  alias Glific.{Notion, Fixtures}
+  alias Glific.{Fixtures, Notion}
 
   @tag :notion
   test "Failed create_database_entry due to create page error" do
