@@ -80,10 +80,11 @@ defmodule Glific.OpenAI.ChatGPT do
   @spec gpt_vision(map()) :: tuple()
   def gpt_vision(params \\ %{}) do
     api_key = Glific.get_open_ai_key()
+    model = Map.get(params, "model", "gpt-4-turbo")
 
     data =
       %{
-        "model" => "gpt-4-turbo",
+        "model" => model,
         "messages" => [
           %{
             "role" => "user",
@@ -95,7 +96,8 @@ defmodule Glific.OpenAI.ChatGPT do
               %{
                 "type" => "image_url",
                 "image_url" => %{
-                  "url" => params["url"]
+                  "url" => params["url"],
+                  "detail" => "high"
                 }
               }
             ]
