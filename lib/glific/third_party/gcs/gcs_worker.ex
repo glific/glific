@@ -99,7 +99,7 @@ defmodule Glific.GCS.GcsWorker do
     message_media_id = gcs_job.message_media_id || 0
 
     query
-    |> where([m], is_nil(m.id < ^message_media_id))
+    |> where([m], (m.id < ^message_media_id))
   end
 
   @spec files_per_minute_count() :: integer()
