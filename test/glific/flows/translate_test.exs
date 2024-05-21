@@ -30,9 +30,9 @@ defmodule Glific.Flows.TranslateTest do
     Enum.each(
       rows,
       fn row ->
-        assert length(row) == 4
-        [type, uuid, src, dst] = row
-        assert type == "action"
+        assert length(row) == 5
+        [type, uuid, src, dst, _node_uuid] = row
+        assert type == "Action"
         assert String.length(uuid) == 36
 
         if uuid != "e319cd39-f764-4680-9199-4cb7da647166",
