@@ -47,6 +47,7 @@ defmodule Glific.Fixtures do
     Profiles.Profile,
     Providers.Maytapi.Message,
     Registrations,
+    Registrations.Registration,
     Repo,
     Saas.ConsultingHour,
     Settings,
@@ -1266,6 +1267,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
+  @spec registration_fixture :: Registration.t()
   def registration_fixture do
     valid_args = %{
       org_details: %{
