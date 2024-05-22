@@ -69,7 +69,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
 
       Thank you for choosing Glific to run your chatbot program. This email serves as confirmation that we have received the registration form submitted by #{params["submitter"]["name"]} for the creation of a Glific platform. <br><br>
 
-      Please find <a href="https://glific.org/">Terms & Conditions</a> for the use of the Glific platform attached here with for your review if needed. <br><br>
+      Please find <a href="https://glific.org/glific-terms-and-conditions/">Terms & Conditions</a> for the use of the Glific platform attached here with for your review if needed. <br><br>
 
       We look forward to an amazing collaboration and scaling your impact together! <br><br>
 
