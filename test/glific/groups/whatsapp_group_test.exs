@@ -92,7 +92,7 @@ defmodule Glific.Groups.WAGroupsTest do
     assert group.label == "admin group"
     assert group.bsp_id == "120363203450035277@g.us"
 
-    #group with an empty name is not created
+    # group with an empty name is not created
     assert is_nil(Repo.get_by(WAGroup, label: ""))
   end
 end
