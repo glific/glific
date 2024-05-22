@@ -117,8 +117,13 @@ defmodule Glific.Notion do
         ]
       },
       "BOT Number" => %{
-        "type" => "number",
-        "number" => String.to_integer(registration.platform_details["phone"])
+        "type" => "rich_text",
+        "rich_text" => [
+          %{
+            "type" => "text",
+            "text" => %{"content" => "#{registration.platform_details["phone"]}"}
+          }
+        ]
       },
       "Gupshup App Name" => %{
         "type" => "rich_text",

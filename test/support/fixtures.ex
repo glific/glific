@@ -1289,6 +1289,11 @@ defmodule Glific.Fixtures do
         designation: "Sr Accountant",
         phone: Phone.PtBr.phone()
       },
+      platform_details: %{
+        app_name: "app_name",
+        api_key: "api_key",
+        phone: Phone.PtBr.phone()
+      },
       billing_frequency: "yearly",
       organization_id: get_org_id()
     }
