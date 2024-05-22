@@ -20,9 +20,10 @@ defmodule Glific.GCS.GcsWorker do
   alias Glific.{
     BigQuery,
     BigQuery.BigQueryWorker,
+    GCS,
+    GCS.GcsJob,
     Jobs,
     Messages,
-    Messages.Message,
     Messages.MessageMedia,
     Partners,
     Repo
@@ -34,8 +35,8 @@ defmodule Glific.GCS.GcsWorker do
   This is called from the cron job on a regular schedule. we sweep the message media url  table
   and queue them up for delivery to gcs
   """
-  @spec perform_periodic(non_neg_integer) :: :ok
-  def perform_periodic(organization_id) do
+  @spec perform_periodic(non_neg_integer, map()) :: :ok
+  def perform_periodic(organization_id, %{phase: phase}) do
     organization = Partners.organization(organization_id)
     credential = organization.services[@provider_shortcode]
     goth_token = Partners.get_goth_token(organization_id, @provider_shortcode)
@@ -43,19 +44,16 @@ defmodule Glific.GCS.GcsWorker do
     if is_nil(credential) || is_nil(goth_token) do
       :ok
     else
-      jobs(organization_id)
+      jobs(organization_id, phase)
       :ok
     end
   end
 
-  @spec jobs(non_neg_integer) :: :ok
-  defp jobs(organization_id) do
-    gcs_job = Jobs.get_gcs_job(organization_id)
+  @spec jobs(non_neg_integer, String.t()) :: :ok
+  defp jobs(organization_id, phase) do
+    gcs_job = Jobs.get_gcs_job(organization_id, phase)
 
-    message_media_id =
-      if gcs_job == nil,
-        do: 0,
-        else: gcs_job.message_media_id
+    message_media_id = if gcs_job == nil, do: 0, else: gcs_job.message_media_id
 
     message_media_id = message_media_id || 0
 
@@ -66,22 +64,42 @@ defmodule Glific.GCS.GcsWorker do
       |> select([m], m.id)
       |> where([m], m.organization_id == ^organization_id and m.id > ^message_media_id)
       |> where([m], m.flow == :inbound)
+      |> where([m], is_nil(m.gcs_url) )
       |> order_by([m], asc: m.id)
       |> limit(^limit)
+      |> check_phase(organization_id, phase)
       |> Repo.all()
 
     max_id = if is_list(data), do: List.last(data), else: message_media_id
 
     if !is_nil(max_id) and max_id > message_media_id do
       Logger.info(
-        "GCSWORKER: Updating GCS jobs with max id:  #{max_id} , min id: #{message_media_id} for org_id: #{organization_id}"
+        "GCSWORKER: Updating #{phase} GCS jobs with max id:  #{max_id} , min id: #{message_media_id} for org_id: #{organization_id}"
       )
 
       queue_urls(organization_id, message_media_id, max_id)
-      Jobs.update_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
+
+      Jobs.update_gcs_job(%{
+        message_media_id: max_id,
+        organization_id: organization_id,
+        type: phase
+      })
     end
 
     :ok
+  end
+
+  @spec check_phase(Ecto.Queryable.t(), non_neg_integer, String.t()) :: Ecto.Queryable.t()
+  defp check_phase(query, _organization_id, "incremental"), do: query
+
+  defp check_phase(query, organization_id, "unsynced") do
+    {:ok, gcs_job} =
+      Repo.fetch_by(GcsJob, %{organization_id: organization_id, type: "incremental"})
+
+    message_media_id = gcs_job.message_media_id || 0
+
+    query
+    |> where([m], (m.id < ^message_media_id))
   end
 
   @spec files_per_minute_count() :: integer()
@@ -101,13 +119,9 @@ defmodule Glific.GCS.GcsWorker do
   @spec queue_urls(non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
   def queue_urls(organization_id, min_id, max_id) do
     query =
-      MessageMedia
+      GCS.base_query(organization_id)
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
-      |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
-      |> where([m, _msg], m.organization_id == ^organization_id)
-      |> where([m, _msg], m.flow == :inbound)
       |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id, msg.flow_id])
-      |> order_by([m], [m.inserted_at, m.id])
 
     query
     |> Repo.all()
