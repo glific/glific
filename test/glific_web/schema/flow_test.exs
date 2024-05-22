@@ -227,18 +227,23 @@ defmodule GlificWeb.Schema.FlowTest do
     assert get_in(query_data, [:data, "publishFlow", "success"]) == true
   end
 
+  @tag :dd
   test "export flow and the import flow", %{manager: user} do
     [flow | _] = Flows.list_flows(%{filter: %{name: "New Contact Workflow"}})
 
     flow_id = flow.id
 
     Repo.fetch_by(FlowRevision, %{flow_id: flow_id, organization_id: user.organization_id})
+    uuid = "dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f"
+    from(f in Flow, where: f.uuid == ^uuid)
+    |> Repo.delete_all([])
 
     result = auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
     assert {:ok, query_data} = result
-
+    IO.inspect(query_data)
     data =
       get_in(query_data, [:data, "exportFlow", "export_data"])
+      |> IO.inspect()
       |> Jason.decode!()
 
     assert length(data["flows"]) > 0
