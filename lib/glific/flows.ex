@@ -1112,6 +1112,7 @@ defmodule Glific.Flows do
 
     export_flow_details(
       flow.uuid,
+      flow.name,
       %{"flows" => [], "contact_field" => [], "collections" => [], "interactive_templates" => []}
     )
   end
@@ -1119,12 +1120,15 @@ defmodule Glific.Flows do
   @doc """
   Process sub flows and check if there is more sub flows in it.
   """
-  @spec export_flow_details(String.t(), map()) :: map()
-  def export_flow_details(flow_uuid, results) do
+  @spec export_flow_details(String.t(), String.t(), map()) :: map()
+  def export_flow_details(flow_uuid, flow_name, results) do
     if Enum.any?(results["flows"], fn flow -> Map.get(flow.definition, "uuid") == flow_uuid end) do
       results
     else
       flow = Repo.get_by(Flow, %{uuid: flow_uuid})
+      if is_nil(flow) do
+        IO.inspect("Flow => #{flow_name} with UUID => #{flow_uuid} doesn't exist")
+      end
       # definition can be nil, hence assigning empty map if so
       # Issue #2173
       definition =
@@ -1155,7 +1159,7 @@ defmodule Glific.Flows do
       definition
       |> Map.get("nodes", [])
       |> get_sub_flows()
-      |> Enum.reduce(results, &export_flow_details(&1["uuid"], &2))
+      |> Enum.reduce(results, &export_flow_details(&1["uuid"], &1["name"], &2))
     end
   end
 
