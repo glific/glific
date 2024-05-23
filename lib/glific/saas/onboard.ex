@@ -8,8 +8,11 @@ defmodule Glific.Saas.Onboard do
   require Logger
   import GlificWeb.Gettext
 
+<<<<<<< HEAD
   alias Glific.Notion
 
+=======
+>>>>>>> master
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
@@ -218,7 +221,6 @@ defmodule Glific.Saas.Onboard do
         Notion.update_table_properties(registration)
         |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
       end)
-
       result
     end
   end

@@ -7,8 +7,11 @@ defmodule Glific.Saas.Queries do
 
   require Logger
 
+<<<<<<< HEAD
   alias Glific.Notion
 
+=======
+>>>>>>> master
   alias Glific.{
     Contacts,
     Contacts.Contact,
@@ -431,8 +434,12 @@ defmodule Glific.Saas.Queries do
     }
     |> Registrations.create_registration()
     |> case do
+<<<<<<< HEAD
       {:ok, %{id: id} = registration} ->
         :ok = create_registration_in_notion(result.organization.id, registration)
+=======
+      {:ok, %{id: id}} ->
+>>>>>>> master
         Map.put(result, :registration_id, id)
 
       {:error, errors} ->
