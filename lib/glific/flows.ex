@@ -1124,14 +1124,12 @@ defmodule Glific.Flows do
     if Enum.any?(results["flows"], fn flow -> Map.get(flow.definition, "uuid") == flow_uuid end) do
       results
     else
-      flow = Repo.get_by(Flow, %{uuid: flow_uuid}) |> IO.inspect
+      flow = Repo.get_by(Flow, %{uuid: flow_uuid})
       # definition can be nil, hence assigning empty map if so
       # Issue #2173
       definition =
         (get_latest_definition(flow_uuid) || %{})
         |> Map.put("name", flow.name)
-
-      IO.inspect(results)
 
       results =
         Map.put(
@@ -1157,7 +1155,6 @@ defmodule Glific.Flows do
       definition
       |> Map.get("nodes", [])
       |> get_sub_flows()
-      # |> IO.inspect()
       |> Enum.reduce(results, &export_flow_details(&1["uuid"], &2))
     end
   end

@@ -240,10 +240,8 @@ defmodule GlificWeb.Schema.FlowTest do
 
     result = auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
     assert {:ok, query_data} = result
-    IO.inspect(query_data)
     data =
       get_in(query_data, [:data, "exportFlow", "export_data"])
-      |> IO.inspect()
       |> Jason.decode!()
 
     assert length(data["flows"]) > 0
