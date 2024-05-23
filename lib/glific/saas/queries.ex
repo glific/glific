@@ -5,6 +5,8 @@ defmodule Glific.Saas.Queries do
   import GlificWeb.Gettext
   import Ecto.Query, warn: false
 
+  require Logger
+
   alias Glific.{
     Contacts,
     Contacts.Contact,
@@ -16,6 +18,8 @@ defmodule Glific.Saas.Queries do
     Partners.Provider,
     Providers.Gupshup.ApiClient,
     Providers.GupshupContacts,
+    Registrations,
+    Registrations.Registration,
     Repo,
     Seeds.Seeder,
     Seeds.SeedsMigration,
@@ -25,7 +29,6 @@ defmodule Glific.Saas.Queries do
   alias Pow.Ecto.Schema.Changeset
 
   @default_provider "gupshup"
-
   @doc """
   Main function to setup the organization entity in Glific
   """
@@ -38,6 +41,8 @@ defmodule Glific.Saas.Queries do
     |> contact(params)
     # create the credentials
     |> credentials(params)
+    # create registration details
+    |> registration(params)
   end
 
   @doc """
@@ -48,8 +53,47 @@ defmodule Glific.Saas.Queries do
     result
     |> validate_bsp_keys(params)
     |> validate_shortcode(params["shortcode"])
-    |> validate_email(params["email"])
     |> validate_phone(params["phone"])
+    |> validate_text_field(params["name"], :name, {1, 40})
+  end
+
+  @doc """
+  Validate all the details regarding NGO registration
+  """
+  @spec validate_registration_details(map(), map()) :: map()
+  def validate_registration_details(result, params) do
+    Enum.reduce(params, result, fn {key, value}, result ->
+      case key do
+        "billing_frequency" ->
+          validate_billing_frequency(result, value)
+
+        "finance_poc" ->
+          validate_finance_poc(result, value)
+
+        "submitter" ->
+          validate_submitter_details(result, value)
+
+        "signing_authority" ->
+          validate_signer_details(result, value)
+
+        "org_details" ->
+          validate_org_details(result, value)
+
+        _ ->
+          result
+      end
+    end)
+  end
+
+  @doc """
+  Validate reachout query params
+  """
+  @spec validate_reachout_details(map(), map()) :: map()
+  def validate_reachout_details(result, params) do
+    result
+    |> validate_text_field(params["name"], :name, {1, 25})
+    |> validate_text_field(params["message"], :message, {1, 300})
+    |> validate_email(params["email"] || "")
   end
 
   @doc """
@@ -76,6 +120,59 @@ defmodule Glific.Saas.Queries do
 
   def sync_templates(results), do: results
 
+  @doc """
+  Validates if all the required fields are filled before submission
+  """
+  @spec eligible_for_submission?(map(), Registration.t()) :: map()
+  def eligible_for_submission?(result, registration) do
+    registration_map = Map.from_struct(registration)
+
+    [:org_details, :finance_poc, :submitter, :signing_authority]
+    |> Enum.reduce_while(result, fn key, result ->
+      if is_nil(registration_map[key]) do
+        result =
+          dgettext("error", "Field cannot be empty.")
+          |> error(result, key)
+
+        {:halt, result}
+      else
+        {:cont, result}
+      end
+    end)
+  end
+
+  @spec validate_text_field(map(), String.t(), atom(), {number(), number()}, boolean()) :: map()
+  defp validate_text_field(result, field, key, length, optional \\ false)
+
+  defp validate_text_field(result, field, _key, {_min_len, _max_len}, true)
+       when field in [nil, ""],
+       do: result
+
+  defp validate_text_field(result, field, key, {min_len, max_len}, _optional) do
+    cond do
+      empty(field) ->
+        dgettext("error", "Field cannot be empty.", key: key)
+        |> error(result, key)
+
+      String.length(field) < min_len ->
+        dgettext("error", "Field cannot be less than %{length} letters.",
+          key: key,
+          length: min_len
+        )
+        |> error(result, key)
+
+      String.length(field) > max_len ->
+        dgettext("error", "Field cannot be more than %{length} letters.",
+          key: key,
+          length: max_len
+        )
+        |> error(result, key)
+
+      true ->
+        result
+    end
+  end
+
   @spec organization(map(), map()) :: map()
   defp organization(%{is_valid: false} = result, _params), do: result
 
@@ -101,7 +198,8 @@ defmodule Glific.Saas.Queries do
       team_emails: %{
         "finance" => params["email"],
         "analytics" => params["email"],
-        "chatbot_design" => params["email"]
+        "chatbot_design" => params["email"],
+        "operations" => params["email"]
       }
     }
 
@@ -190,8 +288,11 @@ defmodule Glific.Saas.Queries do
     end
   end
 
-  @spec error(String.t(), map(), atom()) :: map()
-  defp error(message, result, key) do
+  @doc """
+  Updates the error map
+  """
+  @spec error(String.t(), map(), atom() | String.t()) :: map()
+  def error(message, result, key) do
     result
     |> Map.put(:is_valid, false)
     |> Map.update!(:messages, fn msgs -> Map.put(msgs, key, message) end)
@@ -226,7 +327,7 @@ defmodule Glific.Saas.Queries do
 
     case response do
       {:ok, _users} -> result
-      {:error, message} -> error(message, result, :app_name)
+      {:error, message, key} -> error(message, result, key)
     end
   end
 
@@ -248,27 +349,27 @@ defmodule Glific.Saas.Queries do
     end
   end
 
-  @spec validate_email(map(), String.t()) :: map()
-  defp validate_email(result, email) do
+  @spec validate_email(map(), String.t(), atom()) :: map()
+  defp validate_email(result, email, key \\ :email) do
     case Changeset.validate_email(email) do
       :ok ->
         result
 
       _ ->
         dgettext("error", "Email is not valid.")
-        |> error(result, :email)
+        |> error(result, key)
     end
   end
 
-  @spec validate_phone(map(), String.t()) :: map()
-  defp validate_phone(result, phone) do
+  @spec validate_phone(map(), String.t(), atom()) :: map()
+  defp validate_phone(result, phone, key \\ :phone) do
     case ExPhoneNumber.parse(phone, "IN") do
       {:ok, _phone} ->
         result
 
       _ ->
         dgettext("error", "Phone is not valid.")
-        |> error(result, :phone)
+        |> error(result, key)
     end
   end
 
@@ -303,5 +404,92 @@ defmodule Glific.Saas.Queries do
     |> Repo.update_all(set: [fields: %{}, settings: %{}])
 
     reset_organization_id
+  end
+
+  @spec registration(map(), map()) :: map()
+  defp registration(%{is_valid: false} = result, _params), do: result
+
+  defp registration(result, params) do
+    org_details = %{
+      name: params["name"]
+    }
+
+    platform_details = %{
+      api_key: params["api_key"],
+      app_name: params["app_name"],
+      phone: params["phone"],
+      shortcode: params["shortcode"]
+    }
+
+    %{
+      org_details: org_details,
+      organization_id: result.organization.id,
+      platform_details: platform_details,
+      ip_address: params["client_ip"]
+    }
+    |> Registrations.create_registration()
+    |> case do
+      {:ok, %{id: id}} ->
+        Map.put(result, :registration_id, id)
+
+      {:error, errors} ->
+        error(inspect(errors), result, :registration)
+    end
+  end
+
+  @spec validate_billing_frequency(map(), String.t()) :: map()
+  defp validate_billing_frequency(result, value) when is_binary(value) do
+    cond do
+      empty(value) ->
+        dgettext("error", "Billing frequency cannot be empty.")
+        |> error(result, :billing_frequency)
+
+      value not in ["yearly", "monthly", "quarterly"] ->
+        dgettext("error", "Value should be one of yearly, monthly, or quarterly.")
+        |> error(result, :billing_frequency)
+
+      true ->
+        result
+    end
+  end
+
+  @spec validate_finance_poc(map(), map()) :: map()
+
+  defp validate_finance_poc(result, params) do
+    result
+    |> validate_text_field(params["name"], :finance_poc_name, {1, 25})
+    |> validate_text_field(params["designation"], :finance_poc_designation, {1, 25})
+    |> validate_phone(params["phone"], :finance_poc_phone)
+    |> validate_email(params["email"], :finance_poc_email)
+  end
+
+  @spec validate_submitter_details(map(), map()) :: map()
+
+  defp validate_submitter_details(result, params) do
+    result
+    |> validate_text_field(params["name"], :submitter_name, {1, 25})
+    |> validate_email(params["email"], :submitter_name)
+  end
+
+  @spec validate_signer_details(map(), map()) :: map()
+
+  defp validate_signer_details(result, params) do
+    result
+    |> validate_text_field(params["name"], :signer_name, {1, 25})
+    |> validate_text_field(params["designation"], :signer_designation, {1, 25})
+    |> validate_email(params["email"], :signer_email)
+  end
+
+  @spec validate_org_details(map(), map()) :: map()
+
+  defp validate_org_details(result, params) do
+    result
+    |> validate_text_field(params["gstin"], :gstin, {15, 15}, true)
+    |> validate_text_field(
+      params["registered_address"],
+      :registered_address,
+      {1, 300}
+    )
+    |> validate_text_field(params["current_address"], :current_address, {0, 300})
   end
 end

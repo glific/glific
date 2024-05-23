@@ -23,13 +23,13 @@ defmodule Glific.Partners.Organization do
   @required_fields [
     :name,
     :shortcode,
-    :email,
     :bsp_id,
     :default_language_id
   ]
 
   # define all the optional fields for organization
   @optional_fields [
+    :email,
     :contact_id,
     :is_active,
     :is_approved,
