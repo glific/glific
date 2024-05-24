@@ -1110,11 +1110,21 @@ defmodule Glific.Flows do
   def export_flow(flow_id) do
     flow = Repo.get!(Flow, flow_id)
 
-    export_flow_details(
-      flow.uuid,
-      flow.name,
-      %{"flows" => [], "contact_field" => [], "collections" => [], "interactive_templates" => []}
-    )
+    try do
+      export_flow_details(
+        flow.uuid,
+        flow.name,
+        %{
+          "flows" => [],
+          "contact_field" => [],
+          "collections" => [],
+          "interactive_templates" => []
+        }
+      )
+    rescue
+      e ->
+        {:error, e.message}
+    end
   end
 
   @doc """
@@ -1126,9 +1136,13 @@ defmodule Glific.Flows do
       results
     else
       flow = Repo.get_by(Flow, %{uuid: flow_uuid})
+
       if is_nil(flow) do
-        IO.inspect("Flow => #{flow_name} with UUID => #{flow_uuid} doesn't exist")
+        raise(RuntimeError,
+          message: "Flow doesn't exist, Name - #{flow_name}, UUID - #{flow_uuid}"
+        )
       end
+
       # definition can be nil, hence assigning empty map if so
       # Issue #2173
       definition =

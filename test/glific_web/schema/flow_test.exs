@@ -238,7 +238,7 @@ defmodule GlificWeb.Schema.FlowTest do
     from(f in Flow, where: f.uuid == ^uuid)
     |> Repo.delete_all([])
 
-    result = auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
+    result = auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id}) |> IO.inspect(result)
     assert {:ok, query_data} = result
     data =
       get_in(query_data, [:data, "exportFlow", "export_data"])

@@ -32,7 +32,7 @@ config :glific, GlificWeb.Endpoint,
 #   level: :debug
 
 config :logger,
-  level: :emergency
+  level: :error
 
 # Watch static and templates for browser reloading.
 config :glific, GlificWeb.Endpoint,
