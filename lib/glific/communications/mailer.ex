@@ -75,7 +75,7 @@ defmodule Glific.Communications.Mailer do
   Lets write a common function and centralize notification
   code
   """
-  @spec common_send(Organization.t(), String.t(), String.t(), [{atom(), any()}]) ::
+  @spec common_send(Organization.t() | nil, String.t(), String.t(), [{atom(), any()}]) ::
           Swoosh.Email.t()
   def common_send(org, subject, body, opts \\ []) do
     team = Keyword.get(opts, :team, nil)
@@ -101,7 +101,7 @@ defmodule Glific.Communications.Mailer do
     |> inline_attachments(opts)
   end
 
-  @spec get_team_email(Organization.t(), String.t() | nil, tuple | nil) :: tuple()
+  @spec get_team_email(Organization.t() | nil, String.t() | nil, tuple | nil) :: tuple()
   defp get_team_email(org, nil, nil), do: {org.name, org.email}
 
   defp get_team_email(_org, team, send_to) when team in [nil, ""], do: send_to
