@@ -253,11 +253,19 @@ defmodule Glific.Notion do
       "Created At" => %{
         "type" => "date",
         "date" => %{
-          "start" => DateTime.to_date(registration.inserted_at) |> Date.to_iso8601(),
+          "start" => convert(registration),
           "end" => nil
         }
       }
     }
+  end
+
+  # simple function to handle FunctionClauseError when date conversion fail to return empty string
+  @spec convert(Registration.t()) :: String.t()
+  defp convert(registration) do
+    Date.to_iso8601(registration.inserted_at)
+  catch
+    FunctionClauseError -> ""
   end
 
   @spec create_page(map()) :: {:ok, map()} | {:error, String.t()}
