@@ -160,4 +160,56 @@ defmodule Glific.OpenAI.ChatGPT do
         {:ok, %{api_key: credentials.secrets["api_key"]}}
     end
   end
+
+  @doc """
+  API call to create new thread
+  """
+  @spec create_thread(map()) :: tuple()
+  def create_thread(params) do
+    url = "https://api.openai.com/v1/threads/runs"
+
+    payload =
+      %{
+        assistant_id: params.assistant_id,
+        thread: %{
+          messages: [
+            %{role: "user", content: params.message}
+          ]
+        }
+      }
+      |> Jason.encode!()
+
+    Tesla.post(url, payload, headers: headers(params.open_ai_key))
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        Jason.decode!(body) |> IO.inspect()
+
+      {_status, response} ->
+        {:error, "invalid response #{inspect(response)}"}
+    end
+  end
+
+  @doc """
+  API call to list messages of a thread
+  """
+  def list_thread_messages(params) do
+    url = "https://api.openai.com/v1/threads/#{params.thread_id}/messages"
+
+    Tesla.get(url, headers: headers(params.open_ai_key))
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        Jason.decode!(body) |> IO.inspect()
+
+      {_status, response} ->
+        {:error, "invalid response #{inspect(response)}"}
+    end
+  end
+
+  @spec headers(String.t()) :: list()
+  defp headers(open_ai_key),
+    do: [
+      {"Authorization", "Bearer #{open_ai_key}"},
+      {"Content-Type", "application/json"},
+      {"OpenAI-Beta", "assistants=v2"}
+    ]
 end
