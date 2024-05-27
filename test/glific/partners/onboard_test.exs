@@ -376,7 +376,7 @@ defmodule Glific.OnboardTest do
 
   test "reachout/1, valid params" do
     invalid_params = %{
-      "name" => Faker.Person.name(),
+      "name" => Faker.Person.name() |> String.slice(0, 24),
       "message" => Faker.Lorem.paragraph() |> String.slice(0, 250),
       "email" => Faker.Internet.email()
     }
