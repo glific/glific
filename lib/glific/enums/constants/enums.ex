@@ -96,7 +96,9 @@ defmodule Glific.Enums.Constants do
         # organization is suspended and no activity can be performed on that
         :suspended,
         # admin wants to delete the organization
-        :ready_to_delete
+        :ready_to_delete,
+        # force suspend accounts in case of payment defaulting
+        :forced_suspension
       ]
     end
   end

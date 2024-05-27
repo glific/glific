@@ -550,7 +550,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     result = auth_query_gql_by(:list_organization_status, user)
     assert {:ok, query_data} = result
 
-    statuses = get_in(query_data, [:data, "organizationStatus"])
+    statuses = get_in(query_data, [:data, "organizationStatus"]) |> IO.inspect()
     assert statuses != []
     assert length(statuses) == length(OrganizationStatus.__enum_map__())
   end
