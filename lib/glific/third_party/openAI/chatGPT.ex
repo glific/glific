@@ -198,7 +198,37 @@ defmodule Glific.OpenAI.ChatGPT do
     Tesla.get(url, headers: headers(params.open_ai_key))
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        Jason.decode!(body) |> IO.inspect()
+        Jason.decode!(body)
+        |> get_last_msg()
+
+      {_status, response} ->
+        {:error, "invalid response #{inspect(response)}"}
+    end
+  end
+
+  def get_last_msg(%{"data" => messages}) do
+    [last_msg | _messages] = messages
+    content = last_msg["content"] |> hd()
+
+    %{
+      "assistant_id" => last_msg["assistant_id"],
+      "message" => content["text"]["value"],
+      "thread_id" => last_msg["thread_id"]
+    }
+  end
+
+  @doc """
+  API call to run a thread
+  """
+  def run_thread(params) do
+    url = "https://api.openai.com/v1/threads/#{params.thread_id}/runs"
+
+    payload = Jason.encode!(%{"assistant_id" => params.assistant_id})
+
+    Tesla.post(url, payload, headers: headers(params.open_ai_key))
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        Jason.decode!(body)
 
       {_status, response} ->
         {:error, "invalid response #{inspect(response)}"}
