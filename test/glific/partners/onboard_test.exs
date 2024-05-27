@@ -117,6 +117,17 @@ defmodule Glific.OnboardTest do
     end
   end
 
+  test "ensure that sending in valid parameters, update organization status as forced_suspension true" do
+    result = Onboard.setup(@valid_attrs)
+
+    {:ok, organization} =
+      Repo.fetch_by(Organization, %{name: result.organization.name}, skip_organization_id: true)
+
+    updated_organization = Onboard.status(organization.id, :forced_suspension)
+
+    assert updated_organization.is_suspended == true
+  end
+
   test "ensure that sending in valid parameters, update organization status as is_active false and change subscription plan",
        attrs do
     use_cassette "update_subscription_inactive_plan" do
