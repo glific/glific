@@ -69,6 +69,13 @@ defmodule Glific.Notion do
       "T&C Agreed" => %{
         "type" => "checkbox",
         "checkbox" => false
+      },
+      "Created At" => %{
+        "type" => "date",
+        "date" => %{
+          "start" => convert(registration),
+          "end" => nil
+        }
       }
     }
   end
@@ -249,13 +256,6 @@ defmodule Glific.Notion do
       "Support Staff Account" => %{
         "type" => "checkbox",
         "checkbox" => registration.support_staff_account
-      },
-      "Created At" => %{
-        "type" => "date",
-        "date" => %{
-          "start" => convert(registration),
-          "end" => nil
-        }
       }
     }
   end
