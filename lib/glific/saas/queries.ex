@@ -94,6 +94,7 @@ defmodule Glific.Saas.Queries do
     result
     |> validate_text_field(params["name"], :name, {1, 25})
     |> validate_text_field(params["message"], :message, {1, 300})
+    |> validate_text_field(params["org_name"], :org_name, {1, 40}, true)
     |> validate_email(params["email"] || "")
   end
 
