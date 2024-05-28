@@ -23,6 +23,8 @@ defmodule Glific.Saas.Onboard do
     Saas.Queries
   }
 
+  # 1 year
+  @forced_suspension_hrs 8760
   @doc """
   Setup all the tables and necessary values to onboard an organization
   """
@@ -124,6 +126,12 @@ defmodule Glific.Saas.Onboard do
     changes
     |> add_map(:is_active, false)
     |> add_map(:is_approved, true)
+  end
+
+  defp organization_status(:forced_suspension, changes) do
+    changes
+    |> add_map(:is_suspended, true)
+    |> add_map(:suspended_until, Timex.shift(DateTime.utc_now(), hours: @forced_suspension_hrs))
   end
 
   defp organization_status(_, changes) do
