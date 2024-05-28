@@ -30,9 +30,13 @@ defmodule GlificWeb.Router do
     plug(:fetch_current_user)
   end
 
+  pipeline :mounted_apps do
+    plug(:accepts, ["html"])
+    plug(:put_secure_browser_headers)
+  end
+
   scope path: "/feature-flags" do
-    # ensure that this is protected once we have authentication in place
-    pipe_through([:browser, :auth])
+    pipe_through([:mounted_apps, :auth])
     forward("/", FunWithFlags.UI.Router, namespace: "feature-flags")
   end
 
