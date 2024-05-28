@@ -166,23 +166,36 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec create_thread(map()) :: tuple()
   def create_thread(params) do
-    url = "https://api.openai.com/v1/threads/runs"
+    url = "https://api.openai.com/v1/threads"
+
+    Tesla.post(url, "", headers: headers(params.open_ai_key))
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        Jason.decode!(body)
+
+      {_status, response} ->
+        {:error, "invalid response #{inspect(response)}"}
+    end
+  end
+
+  @doc """
+  API call to add message to a thread
+  """
+  @spec add_message_to_thread(map()) :: tuple()
+  def add_message_to_thread(params) do
+    url = "https://api.openai.com/v1/threads/#{params.thread_id}/messages"
 
     payload =
       %{
-        assistant_id: params.assistant_id,
-        thread: %{
-          messages: [
-            %{role: "user", content: params.message}
-          ]
-        }
+        "role" => "user",
+        "content" => params.question
       }
       |> Jason.encode!()
 
     Tesla.post(url, payload, headers: headers(params.open_ai_key))
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        Jason.decode!(body) |> IO.inspect()
+        Jason.decode!(body)
 
       {_status, response} ->
         {:error, "invalid response #{inspect(response)}"}
@@ -192,6 +205,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   API call to list messages of a thread
   """
+  @spec list_thread_messages(map()) :: map() | {:error, String.t()}
   def list_thread_messages(params) do
     url = "https://api.openai.com/v1/threads/#{params.thread_id}/messages"
 
@@ -206,13 +220,14 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
+  @spec get_last_msg(map()) :: map()
   def get_last_msg(%{"data" => messages}) do
     [last_msg | _messages] = messages
-    content = last_msg["content"] |> hd()
+    content = get_in(last_msg, ["content", Access.at(0)])
 
     %{
       "assistant_id" => last_msg["assistant_id"],
-      "message" => content["text"]["value"],
+      "message" => get_in(content, ["text", "value"]),
       "thread_id" => last_msg["thread_id"]
     }
   end
@@ -220,6 +235,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   API call to run a thread
   """
+  @spec run_thread(map()) :: map() | {:error, String.t()}
   def run_thread(params) do
     url = "https://api.openai.com/v1/threads/#{params.thread_id}/runs"
 
