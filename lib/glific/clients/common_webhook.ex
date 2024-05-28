@@ -76,15 +76,15 @@ defmodule Glific.Clients.CommonWebhook do
     thread_id = Map.get(fields, "thread_id", nil)
     assistant_id = Map.get(fields, "assistant_id", nil)
     thread_id = ChatGPT.validate_and_get_thread_id(thread_id)
-    Process.sleep(4000)
+    Process.sleep(4_000)
 
     ChatGPT.add_message_to_thread(%{thread_id: thread_id, question: question})
 
-    Process.sleep(12000)
+    Process.sleep(12_000)
 
     ChatGPT.run_thread(%{thread_id: thread_id, assistant_id: assistant_id})
 
-    Process.sleep(20000)
+    Process.sleep(20_000)
 
     ChatGPT.list_thread_messages(%{thread_id: thread_id})
     |> Map.merge(%{"success" => false})

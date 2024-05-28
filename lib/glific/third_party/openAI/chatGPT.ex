@@ -165,7 +165,7 @@ defmodule Glific.OpenAI.ChatGPT do
   API call to create new thread
   """
   @spec create_thread() :: tuple()
-  def create_thread() do
+  def create_thread do
     url = "https://api.openai.com/v1/threads"
 
     Tesla.post(url, "", headers: headers())
@@ -276,7 +276,7 @@ defmodule Glific.OpenAI.ChatGPT do
   end
 
   @spec headers() :: list()
-  defp headers() do
+  defp headers do
     open_ai_key = Glific.get_open_ai_key()
 
     [
