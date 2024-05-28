@@ -1110,21 +1110,19 @@ defmodule Glific.Flows do
   def export_flow(flow_id) do
     flow = Repo.get!(Flow, flow_id)
 
-    try do
-      export_flow_details(
-        flow.uuid,
-        flow.name,
-        %{
-          "flows" => [],
-          "contact_field" => [],
-          "collections" => [],
-          "interactive_templates" => []
-        }
-      )
-    rescue
-      e ->
-        {:error, e.message}
-    end
+    export_flow_details(
+      flow.uuid,
+      flow.name,
+      %{
+        "flows" => [],
+        "contact_field" => [],
+        "collections" => [],
+        "interactive_templates" => []
+      }
+    )
+  rescue
+    e ->
+      {:error, e.message}
   end
 
   @doc """
