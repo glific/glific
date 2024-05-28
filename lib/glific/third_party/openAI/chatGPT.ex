@@ -164,17 +164,41 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   API call to create new thread
   """
-  @spec create_thread(map()) :: tuple()
-  def create_thread(params) do
+  @spec create_thread() :: tuple()
+  def create_thread() do
     url = "https://api.openai.com/v1/threads"
 
-    Tesla.post(url, "", headers: headers(params.open_ai_key))
+    Tesla.post(url, "", headers: headers())
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
 
       {_status, response} ->
         {:error, "invalid response #{inspect(response)}"}
+    end
+  end
+
+  @doc """
+  API call to create new thread
+  """
+  @spec fetch_thread(map()) :: map()
+  def fetch_thread(%{thread_id: nil}),
+    do: %{success: false, error: "invalid thread ID"}
+
+  def fetch_thread(%{thread_id: thread_id}) do
+    url = "https://api.openai.com/v1/threads/#{thread_id}"
+
+    Tesla.get(url, headers: headers())
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: _body}} ->
+        %{success: true}
+
+      {:ok, %Tesla.Env{status: 404, body: body}} ->
+        error = Jason.decode!(body)
+        %{success: false, error: error["error"]["message"]}
+
+      {_status, _response} ->
+        %{success: false, error: "invalid response returned from OpenAI"}
     end
   end
 
@@ -192,7 +216,7 @@ defmodule Glific.OpenAI.ChatGPT do
       }
       |> Jason.encode!()
 
-    Tesla.post(url, payload, headers: headers(params.open_ai_key))
+    Tesla.post(url, payload, headers: headers())
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
@@ -209,7 +233,7 @@ defmodule Glific.OpenAI.ChatGPT do
   def list_thread_messages(params) do
     url = "https://api.openai.com/v1/threads/#{params.thread_id}/messages"
 
-    Tesla.get(url, headers: headers(params.open_ai_key))
+    Tesla.get(url, headers: headers())
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
@@ -241,7 +265,7 @@ defmodule Glific.OpenAI.ChatGPT do
 
     payload = Jason.encode!(%{"assistant_id" => params.assistant_id})
 
-    Tesla.post(url, payload, headers: headers(params.open_ai_key))
+    Tesla.post(url, payload, headers: headers())
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
@@ -251,11 +275,29 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
-  @spec headers(String.t()) :: list()
-  defp headers(open_ai_key),
-    do: [
+  @spec headers() :: list()
+  defp headers() do
+    open_ai_key = Glific.get_open_ai_key()
+
+    [
       {"Authorization", "Bearer #{open_ai_key}"},
       {"Content-Type", "application/json"},
       {"OpenAI-Beta", "assistants=v2"}
     ]
+  end
+
+  @doc """
+  API call to run a thread
+  """
+  @spec validate_and_get_thread_id(String.t() | nil) :: String.t()
+  def validate_and_get_thread_id(thread_id) do
+    case fetch_thread(%{thread_id: thread_id}) do
+      %{success: true} ->
+        thread_id
+
+      _ ->
+        thread = create_thread()
+        thread["id"]
+    end
+  end
 end
