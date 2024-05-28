@@ -80,6 +80,9 @@ defmodule Glific.Notion do
     }
   end
 
+  @doc """
+  Create T&C dispute property to update it in Notion
+  """
   @spec update_tc_dispute_property :: map()
   def update_tc_dispute_property do
     %{
