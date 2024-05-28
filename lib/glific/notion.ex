@@ -80,6 +80,16 @@ defmodule Glific.Notion do
     }
   end
 
+  @spec update_tc_dispute_property :: map()
+  def update_tc_dispute_property do
+    %{
+      "Dispute in T&C" => %{
+        "type" => "checkbox",
+        "checkbox" => true
+      }
+    }
+  end
+
   @doc """
   Created registration notion table properties for table row updation
   """
