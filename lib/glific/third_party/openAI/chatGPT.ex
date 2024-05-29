@@ -164,7 +164,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   API call to create new thread
   """
-  @spec create_thread() :: tuple()
+  @spec create_thread() :: map() | {:error, String.t()}
   def create_thread do
     url = "https://api.openai.com/v1/threads"
 
@@ -343,7 +343,7 @@ defmodule Glific.OpenAI.ChatGPT do
 
       _ ->
         thread = create_thread()
-        Map.get(thread, "id", "")
+        if is_map(thread), do: Map.get(thread, "id", ""), else: ""
     end
   end
 end
