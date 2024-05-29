@@ -3,10 +3,14 @@ defmodule Glific.Templates.InteractiveTemplates do
   The InteractiveTemplate Context, which encapsulates and manages interactive templates
   """
 
+  # require Logger
+
   alias Glific.{
     Repo,
     Tags.Tag,
-    Templates.InteractiveTemplate
+    Templates.InteractiveTemplate,
+    Settings,
+    Flows.Translate.GoogleTranslate
   }
 
   import Ecto.Query, warn: false
@@ -277,6 +281,8 @@ defmodule Glific.Templates.InteractiveTemplates do
   """
   @spec translated_content(InteractiveTemplate.t(), non_neg_integer()) :: map() | nil
   def translated_content(interactive_template, language_id) do
+    IO.inspect(interactive_template)
+
     interactive_template
     |> get_translations(language_id)
     |> get_clean_interactive_content(
@@ -318,6 +324,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec formatted_data(Glific.Templates.InteractiveTemplate.t(), non_neg_integer) ::
           {map, binary, nil | non_neg_integer}
   def formatted_data(interactive_template, language_id) do
+    IO.inspect(interactive_template)
     interactive_content = translated_content(interactive_template, language_id)
     body = get_interactive_body(interactive_content)
     media_id = get_media(interactive_content, interactive_template.organization_id)
@@ -384,4 +391,64 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   defp process_dynamic_attachments(interactive_content, _attachment_data), do: interactive_content
+
+  @spec translate_interactive_template(InteractiveTemplate.t()) ::
+          {:ok, InteractiveTemplate.t()} | {:error, String.t()}
+  def translate_interactive_template(%InteractiveTemplate{} = interactive_template) do
+    organization_id = interactive_template.organization_id
+    language_code_map = Settings.locale_id_map()
+
+    active_languages =
+      Settings.get_language_code(organization_id)
+
+    contents_to_translate =
+      [
+        interactive_template.interactive_content["content"]["header"],
+        interactive_template.interactive_content["content"]["text"]
+      ] ++
+        Enum.map(interactive_template.interactive_content["options"], fn option ->
+          option["title"]
+        end)
+
+    translated_contents =
+      Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
+        translations =
+          GoogleTranslate.translate(contents_to_translate, "English", lang_name,
+            org_id: organization_id
+          )
+
+        case translations do
+          {:ok, [header, text | options]} ->
+            options_translated =
+              Enum.zip(
+                Enum.map(interactive_template.interactive_content["options"], fn option ->
+                  option["type"]
+                end),
+                options
+              )
+              |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+
+            translated_template = %{
+              "content" => %{
+                "header" => header,
+                "text" => text,
+                "type" => "text"
+              },
+              "options" => options_translated,
+              "type" => interactive_template.interactive_content["type"]
+            }
+
+            Map.put(
+              acc,
+              Integer.to_string(Map.get(language_code_map, lang_code)),
+              translated_template
+            )
+
+          {:error, _error} ->
+            acc
+        end
+      end)
+
+    update_interactive_template(interactive_template, %{translations: translated_contents})
+  end
 end
