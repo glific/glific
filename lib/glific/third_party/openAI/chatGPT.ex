@@ -245,7 +245,7 @@ defmodule Glific.OpenAI.ChatGPT do
   end
 
   @spec get_last_msg(map()) :: map()
-  def get_last_msg(%{"data" => messages}) do
+  defp get_last_msg(%{"data" => messages}) do
     [last_msg | _messages] = messages
     content = get_in(last_msg, ["content", Access.at(0)])
 
