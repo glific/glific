@@ -27,7 +27,8 @@ defmodule Glific.Registrations.Registration do
     :has_confirmed,
     :ip_address,
     :terms_agreed,
-    :support_staff_account
+    :support_staff_account,
+    :notion_page_id
   ]
 
   @type t() :: %__MODULE__{
@@ -47,7 +48,8 @@ defmodule Glific.Registrations.Registration do
           updated_at: :utc_datetime | nil,
           ip_address: String.t() | nil,
           terms_agreed: boolean() | false,
-          support_staff_account: boolean() | true
+          support_staff_account: boolean() | true,
+          notion_page_id: String.t() | nil
         }
 
   schema "registrations" do
@@ -68,6 +70,7 @@ defmodule Glific.Registrations.Registration do
 
     field(:terms_agreed, :boolean, default: false)
     field(:support_staff_account, :boolean, default: true)
+    field(:notion_page_id, :string)
     belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
