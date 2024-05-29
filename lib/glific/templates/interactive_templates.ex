@@ -3,12 +3,16 @@ defmodule Glific.Templates.InteractiveTemplates do
   The InteractiveTemplate Context, which encapsulates and manages interactive templates
   """
 
+  # require Logger
+
   alias Glific.{
     Flows.Translate.GoogleTranslate,
     Repo,
     Settings,
     Tags.Tag,
-    Templates.InteractiveTemplate
+    Templates.InteractiveTemplate,
+    Settings,
+    Flows.Translate.GoogleTranslate
   }
 
   import Ecto.Query, warn: false
@@ -279,6 +283,8 @@ defmodule Glific.Templates.InteractiveTemplates do
   """
   @spec translated_content(InteractiveTemplate.t(), non_neg_integer()) :: map() | nil
   def translated_content(interactive_template, language_id) do
+    IO.inspect(interactive_template)
+
     interactive_template
     |> get_translations(language_id)
     |> get_clean_interactive_content(
@@ -320,6 +326,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec formatted_data(Glific.Templates.InteractiveTemplate.t(), non_neg_integer) ::
           {map, binary, nil | non_neg_integer}
   def formatted_data(interactive_template, language_id) do
+    IO.inspect(interactive_template)
     interactive_content = translated_content(interactive_template, language_id)
     body = get_interactive_body(interactive_content)
     media_id = get_media(interactive_content, interactive_template.organization_id)
@@ -387,152 +394,51 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   defp process_dynamic_attachments(interactive_content, _attachment_data), do: interactive_content
 
-  @doc """
-    Translates interactive msg in all the active languages
-  """
   @spec translate_interactive_template(InteractiveTemplate.t()) ::
           {:ok, InteractiveTemplate.t()} | {:error, String.t()}
-  def translate_interactive_template(interactive_template) do
+  def translate_interactive_template(%InteractiveTemplate{} = interactive_template) do
     organization_id = interactive_template.organization_id
     language_code_map = Settings.locale_id_map()
-    active_languages = Settings.get_language_code(organization_id)
-    interactive_content = interactive_template.interactive_content
-    interactive_msg_type = interactive_content["type"]
-    label = interactive_template.label
+
+    active_languages =
+      Settings.get_language_code(organization_id)
+
+    contents_to_translate =
+      [
+        interactive_template.interactive_content["content"]["header"],
+        interactive_template.interactive_content["content"]["text"]
+      ] ++
+        Enum.map(interactive_template.interactive_content["options"], fn option ->
+          option["title"]
+        end)
 
     translated_contents =
-      translate_interactive_content(
-        interactive_msg_type,
-        interactive_content,
-        active_languages,
-        language_code_map,
-        organization_id,
-        label
-      )
-
-    update_interactive_template(interactive_template, %{translations: translated_contents})
-  end
-
-  @spec translate_interactive_content(
-          String.t(),
-          map(),
-          map(),
-          map(),
-          non_neg_integer(),
-          String.t()
-        ) :: map()
-
-  defp translate_interactive_content(
-         "quick_reply",
-         interactive_content,
-         active_languages,
-         language_code_map,
-         organization_id,
-         label
-       ) do
-    translate_quick_reply(
-      interactive_content,
-      active_languages,
-      language_code_map,
-      organization_id,
-      label
-    )
-  end
-
-  defp translate_interactive_content(
-         "list",
-         interactive_content,
-         active_languages,
-         language_code_map,
-         organization_id,
-         _label
-       ) do
-    translate_list(interactive_content, active_languages, language_code_map, organization_id)
-  end
-
-  defp translate_interactive_content(
-         "location_request_message",
-         interactive_content,
-         active_languages,
-         language_code_map,
-         organization_id,
-         _label
-       ) do
-    translate_location_request(
-      interactive_content,
-      active_languages,
-      language_code_map,
-      organization_id
-    )
-  end
-
-  @spec translate_quick_reply(map(), map(), map(), non_neg_integer(), String.t()) :: map()
-  defp translate_quick_reply(content, active_languages, language_code_map, organization_id, label) do
-    content_to_translate = content_to_translate(content, label)
-
-    Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
-      translations =
-        if lang_name == "English" do
-          {:ok, content_to_translate}
-        else
-          GoogleTranslate.translate(content_to_translate, "English", lang_name,
+      Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
+        translations =
+          GoogleTranslate.translate(contents_to_translate, "English", lang_name,
             org_id: organization_id
           )
-        end
 
-      case translations do
-        {:ok, translated_content} ->
-          [translated_label | remaining_translations] = translated_content
+        case translations do
+          {:ok, [header, text | options]} ->
+            options_translated =
+              Enum.zip(
+                Enum.map(interactive_template.interactive_content["options"], fn option ->
+                  option["type"]
+                end),
+                options
+              )
+              |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
 
-          translated_template =
-            create_translated_template(content, translated_label, remaining_translations)
-
-          Map.put(
-            acc,
-            Integer.to_string(Map.get(language_code_map, lang_code)),
-            translated_template
-          )
-      end
-    end)
-  end
-
-  @spec translate_list(map(), map(), map(), non_neg_integer()) :: map()
-  defp translate_list(content, active_languages, language_code_map, organization_id) do
-    content_to_translate = build_content_to_translate(content)
-
-    Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
-      translations =
-        if lang_name == "English" do
-          {:ok, content_to_translate}
-        else
-          GoogleTranslate.translate(content_to_translate, "English", lang_name,
-            org_id: organization_id
-          )
-        end
-
-      case translations do
-        {:ok, translated_content} ->
-          [title, body | remaining_translations] = translated_content
-
-          global_buttons_length = length(content["globalButtons"])
-
-          global_buttons_translations =
-            Enum.slice(remaining_translations, 0, global_buttons_length)
-
-          items_translations = Enum.drop(remaining_translations, global_buttons_length)
-
-          global_buttons_translated =
-            translate_global_buttons(global_buttons_translations, content["globalButtons"])
-
-          items_translated = do_items_translated(content, items_translations)
-
-          translated_template = %{
-            "title" => title,
-            "body" => body,
-            "globalButtons" => global_buttons_translated,
-            "items" => items_translated,
-            "type" => "list"
-          }
+            translated_template = %{
+              "content" => %{
+                "header" => header,
+                "text" => text,
+                "type" => "text"
+              },
+              "options" => options_translated,
+              "type" => interactive_template.interactive_content["type"]
+            }
 
           Map.put(
             acc,
