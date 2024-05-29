@@ -3,12 +3,16 @@ defmodule Glific.Templates.InteractiveTemplates do
   The InteractiveTemplate Context, which encapsulates and manages interactive templates
   """
 
+  # require Logger
+
   alias Glific.{
     Flows.Translate.GoogleTranslate,
     Repo,
     Settings,
     Tags.Tag,
-    Templates.InteractiveTemplate
+    Templates.InteractiveTemplate,
+    Settings,
+    Flows.Translate.GoogleTranslate
   }
 
   import Ecto.Query, warn: false
@@ -279,6 +283,8 @@ defmodule Glific.Templates.InteractiveTemplates do
   """
   @spec translated_content(InteractiveTemplate.t(), non_neg_integer()) :: map() | nil
   def translated_content(interactive_template, language_id) do
+    IO.inspect(interactive_template)
+
     interactive_template
     |> get_translations(language_id)
     |> get_clean_interactive_content(
@@ -320,6 +326,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec formatted_data(Glific.Templates.InteractiveTemplate.t(), non_neg_integer) ::
           {map, binary, nil | non_neg_integer}
   def formatted_data(interactive_template, language_id) do
+    IO.inspect(interactive_template)
     interactive_content = translated_content(interactive_template, language_id)
     body = get_interactive_body(interactive_content)
     media_id = get_media(interactive_content, interactive_template.organization_id)
