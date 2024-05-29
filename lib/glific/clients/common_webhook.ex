@@ -84,8 +84,6 @@ defmodule Glific.Clients.CommonWebhook do
 
     ChatGPT.run_thread(%{thread_id: thread_id, assistant_id: assistant_id})
 
-    Process.sleep(20_000)
-
     ChatGPT.list_thread_messages(%{thread_id: thread_id})
     |> Map.merge(%{"success" => false})
   end

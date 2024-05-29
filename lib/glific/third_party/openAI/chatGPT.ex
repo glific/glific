@@ -268,6 +268,52 @@ defmodule Glific.OpenAI.ChatGPT do
     Tesla.post(url, payload, headers: headers())
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
+        run = Jason.decode!(body)
+
+        retrieve_run_and_wait(run["thread_id"], run, 10)
+
+      {_status, response} ->
+        {:error, "invalid response #{inspect(response)}"}
+    end
+  end
+
+  @doc """
+  API call to retrieve a run and check status
+  """
+  @spec retrieve_run_and_wait(String.t(), map(), non_neg_integer()) :: map()
+  def retrieve_run_and_wait(thread_id, run, max_attempts \\ 10) do
+    retrieve_run_and_wait(thread_id, run, max_attempts, 0)
+  end
+
+  @spec retrieve_run_and_wait(String.t(), map(), non_neg_integer(), non_neg_integer()) :: map()
+  defp retrieve_run_and_wait(_thread_id, run, max_attempts, attempt) when attempt >= max_attempts,
+    do: run
+
+  defp retrieve_run_and_wait(thread_id, run, max_attempts, attempt) do
+    run_data =
+      retrieve_run(%{
+        thread_id: thread_id,
+        run_id: run["id"]
+      })
+
+    if run_data["status"] == "completed" do
+      run
+    else
+      Process.sleep(2_000)
+      retrieve_run_and_wait(thread_id, run, max_attempts, attempt + 1)
+    end
+  end
+
+  @doc """
+  API call to run a thread
+  """
+  @spec retrieve_run(map()) :: map() | {:error, String.t()}
+  def retrieve_run(params) do
+    url = "https://api.openai.com/v1/threads/#{params.thread_id}/runs/#{params.run_id}"
+
+    Tesla.get(url, headers: headers())
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
 
       {_status, response} ->
@@ -297,7 +343,7 @@ defmodule Glific.OpenAI.ChatGPT do
 
       _ ->
         thread = create_thread()
-        thread["id"]
+        Map.get(thread, "id", "")
     end
   end
 end
