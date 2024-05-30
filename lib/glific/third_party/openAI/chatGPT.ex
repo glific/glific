@@ -5,7 +5,7 @@ defmodule Glific.OpenAI.ChatGPT do
 
   alias Glific.Partners
 
-  @endpoint "https://api.openai.com/v1/chat/completions"
+  @endpoint "https://api.openai.com/v1"
 
   @default_params %{
     "model" => "gpt-3.5-turbo-16k",
@@ -34,6 +34,8 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec parse(String.t(), map()) :: tuple()
   def parse(api_key, params) do
+    url = @endpoint <> "/chat/completions"
+
     data =
       @default_params
       |> Map.merge(%{
@@ -49,7 +51,7 @@ defmodule Glific.OpenAI.ChatGPT do
 
     middleware
     |> Tesla.client()
-    |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 120_000]])
+    |> Tesla.post(url, data, opts: [adapter: [recv_timeout: 120_000]])
     |> handle_response()
   end
 
@@ -79,6 +81,7 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec gpt_vision(map()) :: tuple()
   def gpt_vision(params \\ %{}) do
+    url = @endpoint <> "/chat/completions"
     api_key = Glific.get_open_ai_key()
     model = Map.get(params, "model", "gpt-4-turbo")
 
@@ -112,7 +115,7 @@ defmodule Glific.OpenAI.ChatGPT do
 
     middleware
     |> Tesla.client()
-    |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 120_000]])
+    |> Tesla.post(url, data, opts: [adapter: [recv_timeout: 120_000]])
     |> handle_response()
   end
 
@@ -166,7 +169,7 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec create_thread() :: map() | {:error, String.t()}
   def create_thread do
-    url = "https://api.openai.com/v1/threads"
+    url = @endpoint <> "threads"
 
     Tesla.post(url, "", headers: headers())
     |> case do
@@ -183,7 +186,7 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec create_and_run_thread(map()) :: map() | {:error, String.t()}
   def create_and_run_thread(params) do
-    url = "https://api.openai.com/v1/threads/runs"
+    url = @endpoint <> "/threads/runs"
 
     payload =
       %{
@@ -214,7 +217,7 @@ defmodule Glific.OpenAI.ChatGPT do
     do: %{success: false, error: "invalid thread ID"}
 
   def fetch_thread(%{thread_id: thread_id}) do
-    url = "https://api.openai.com/v1/threads/#{thread_id}"
+    url = @endpoint <> "/threads/#{thread_id}"
 
     Tesla.get(url, headers: headers())
     |> case do
@@ -235,7 +238,7 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec add_message_to_thread(map()) :: tuple()
   def add_message_to_thread(params) do
-    url = "https://api.openai.com/v1/threads/#{params.thread_id}/messages"
+    url = @endpoint <> "/threads/#{params.thread_id}/messages"
 
     payload =
       %{
@@ -259,7 +262,7 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec list_thread_messages(map()) :: map() | {:error, String.t()}
   def list_thread_messages(params) do
-    url = "https://api.openai.com/v1/threads/#{params.thread_id}/messages"
+    url = @endpoint <> "/threads/#{params.thread_id}/messages"
 
     Tesla.get(url, headers: headers())
     |> case do
@@ -289,7 +292,7 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec run_thread(map()) :: map() | {:error, String.t()}
   def run_thread(params) do
-    url = "https://api.openai.com/v1/threads/#{params.thread_id}/runs"
+    url = @endpoint <> "/threads/#{params.thread_id}/runs"
 
     payload = Jason.encode!(%{"assistant_id" => params.assistant_id})
 
@@ -339,7 +342,7 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec retrieve_run(map()) :: map() | {:error, String.t()}
   def retrieve_run(params) do
-    url = "https://api.openai.com/v1/threads/#{params.thread_id}/runs/#{params.run_id}"
+    url = @endpoint <> "/threads/#{params.thread_id}/runs/#{params.run_id}"
 
     Tesla.get(url, headers: headers())
     |> case do
