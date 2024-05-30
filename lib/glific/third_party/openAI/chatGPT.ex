@@ -377,6 +377,10 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
+  @doc """
+  Handling filesearch openai conversation, basically checks if a thread id is passed then continue appending followup questions else create a new thread, add message and run thread to generate response
+  """
+  @spec handle_conversation(map()) :: map()
   def handle_conversation(%{thread_id: nil} = params) do
     run_thread = create_and_run_thread(params)
     Process.sleep(4_000)
