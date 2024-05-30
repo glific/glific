@@ -281,7 +281,6 @@ defmodule Glific.Templates.InteractiveTemplates do
   """
   @spec translated_content(InteractiveTemplate.t(), non_neg_integer()) :: map() | nil
   def translated_content(interactive_template, language_id) do
-    IO.inspect(interactive_template)
 
     interactive_template
     |> get_translations(language_id)
@@ -324,7 +323,6 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec formatted_data(Glific.Templates.InteractiveTemplate.t(), non_neg_integer) ::
           {map, binary, nil | non_neg_integer}
   def formatted_data(interactive_template, language_id) do
-    IO.inspect(interactive_template)
     interactive_content = translated_content(interactive_template, language_id)
     body = get_interactive_body(interactive_content)
     media_id = get_media(interactive_content, interactive_template.organization_id)
@@ -392,16 +390,18 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   defp process_dynamic_attachments(interactive_content, _attachment_data), do: interactive_content
 
+  @doc """
+    Translates interactive msg in all the active languages
+  """
   @spec translate_interactive_template(InteractiveTemplate.t()) ::
-          {:ok, InteractiveTemplate.t()} | {:error, String.t()}
-  def translate_interactive_template(%InteractiveTemplate{} = interactive_template) do
+  {:ok, InteractiveTemplate.t()} | {:error, String.t()}
+  def translate_interactive_template(interactive_template) do
     organization_id = interactive_template.organization_id
     language_code_map = Settings.locale_id_map()
 
-    active_languages =
-      Settings.get_language_code(organization_id)
+    active_languages = Settings.get_language_code(organization_id)
 
-    contents_to_translate =
+    content_to_translate =
       [
         interactive_template.interactive_content["content"]["header"],
         interactive_template.interactive_content["content"]["text"]
@@ -413,9 +413,13 @@ defmodule Glific.Templates.InteractiveTemplates do
     translated_contents =
       Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
         translations =
-          GoogleTranslate.translate(contents_to_translate, "English", lang_name,
-            org_id: organization_id
-          )
+          if lang_name == "English" do
+            {:ok, content_to_translate}
+          else
+            GoogleTranslate.translate(content_to_translate, "English", lang_name,
+              org_id: organization_id
+            )
+          end
 
         case translations do
           {:ok, [header, text | options]} ->
@@ -444,7 +448,7 @@ defmodule Glific.Templates.InteractiveTemplates do
               translated_template
             )
 
-          {:error, _error} ->
+          _ ->
             acc
         end
       end)
