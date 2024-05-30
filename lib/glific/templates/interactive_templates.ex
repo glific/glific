@@ -281,7 +281,6 @@ defmodule Glific.Templates.InteractiveTemplates do
   """
   @spec translated_content(InteractiveTemplate.t(), non_neg_integer()) :: map() | nil
   def translated_content(interactive_template, language_id) do
-
     interactive_template
     |> get_translations(language_id)
     |> get_clean_interactive_content(
@@ -394,65 +393,155 @@ defmodule Glific.Templates.InteractiveTemplates do
     Translates interactive msg in all the active languages
   """
   @spec translate_interactive_template(InteractiveTemplate.t()) ::
-  {:ok, InteractiveTemplate.t()} | {:error, String.t()}
+          {:ok, InteractiveTemplate.t()} | {:error, String.t()}
   def translate_interactive_template(interactive_template) do
     organization_id = interactive_template.organization_id
     language_code_map = Settings.locale_id_map()
-
     active_languages = Settings.get_language_code(organization_id)
-
-    content_to_translate =
-      [
-        interactive_template.interactive_content["content"]["header"],
-        interactive_template.interactive_content["content"]["text"]
-      ] ++
-        Enum.map(interactive_template.interactive_content["options"], fn option ->
-          option["title"]
-        end)
+    interactive_content = interactive_template.interactive_content
+    interactive_msg_type = interactive_content["type"]
 
     translated_contents =
-      Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
-        translations =
-          if lang_name == "English" do
-            {:ok, content_to_translate}
-          else
-            GoogleTranslate.translate(content_to_translate, "English", lang_name,
-              org_id: organization_id
-            )
-          end
+      case interactive_msg_type do
+        "quick_reply" ->
+          translate_quick_reply(
+            interactive_content,
+            active_languages,
+            language_code_map,
+            organization_id
+          )
 
-        case translations do
-          {:ok, [header, text | options]} ->
-            options_translated =
-              Enum.zip(
-                Enum.map(interactive_template.interactive_content["options"], fn option ->
-                  option["type"]
-                end),
-                options
-              )
-              |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+        "list" ->
+          translate_list(
+            interactive_content,
+            active_languages,
+            language_code_map,
+            organization_id
+          )
 
-            translated_template = %{
-              "content" => %{
-                "header" => header,
-                "text" => text,
-                "type" => "text"
-              },
-              "options" => options_translated,
-              "type" => interactive_template.interactive_content["type"]
-            }
+        _ ->
+          %{}
+      end
 
-            Map.put(
-              acc,
-              Integer.to_string(Map.get(language_code_map, lang_code)),
-              translated_template
-            )
+    update_interactive_template(interactive_template, %{translations: translated_contents}) |> IO.inspect()
+  end
 
-          _ ->
-            acc
+  defp translate_quick_reply(content, active_languages, language_code_map, organization_id) do
+    content_to_translate =
+      [
+        content["content"]["header"],
+        content["content"]["text"]
+      ] ++ Enum.map(content["options"], fn option -> option["title"] end)
+
+    Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
+      translations =
+        if lang_name == "English" do
+          {:ok, content_to_translate}
+        else
+          GoogleTranslate.translate(content_to_translate, "English", lang_name,
+            org_id: organization_id
+          )
         end
-      end)
 
-    update_interactive_template(interactive_template, %{translations: translated_contents})
+      case translations do
+        {:ok, [header, text | options]} ->
+          options_translated =
+            Enum.zip(
+              Enum.map(content["options"], fn option -> option["type"] end),
+              options
+            )
+            |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+
+          translated_template = %{
+            "content" => %{
+              "header" => header,
+              "text" => text,
+              "type" => "text"
+            },
+            "options" => options_translated,
+            "type" => "quick_reply"
+          }
+
+          Map.put(
+            acc,
+            Integer.to_string(Map.get(language_code_map, lang_code)),
+            translated_template
+          )
+
+        _ ->
+          acc
+      end
+    end)
+  end
+
+  defp translate_list(content, active_languages, language_code_map, organization_id) do
+    content_to_translate =
+      [
+        content["title"],
+        content["body"]
+      ] ++
+        Enum.flat_map(content["items"], fn item ->
+          [
+            item["title"],
+            item["subtitle"]
+          ] ++
+            Enum.flat_map(item["options"], fn option ->
+              [option["title"], option["description"]]
+            end)
+        end)
+
+    Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
+      translations =
+        if lang_name == "English" do
+          {:ok, content_to_translate}
+        else
+          GoogleTranslate.translate(content_to_translate, "English", lang_name,
+            org_id: organization_id
+          )
+        end
+
+      case translations do
+        {:ok, translated_content} ->
+          [title, body | items_translations] = translated_content
+
+          items_translated =
+            Enum.chunk_every(items_translations, 4)
+            |> Enum.zip(content["items"])
+            |> Enum.map(fn {[
+                              item_title,
+                              item_subtitle,
+                              option1_title,
+                              option1_description
+                            ], item} ->
+              %{
+                "title" => item_title,
+                "subtitle" => item_subtitle,
+                "options" =>
+                  Enum.zip(
+                    Enum.map(item["options"], fn option -> option["type"] end),
+                    [option1_title, option1_description]
+                  )
+                  |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+              }
+            end)
+
+          translated_template = %{
+            "title" => title,
+            "body" => body,
+            "globalButtons" => content["globalButtons"],
+            "items" => items_translated,
+            "type" => "list"
+          }
+
+          Map.put(
+            acc,
+            Integer.to_string(Map.get(language_code_map, lang_code)),
+            translated_template
+          )
+
+        _ ->
+          acc
+      end
+    end)
   end
 end
