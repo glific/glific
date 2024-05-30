@@ -48,4 +48,39 @@ defmodule Glific.OpenAI.ChatGPTTest do
 
     assert error == "No thread found with id 'thread_uRNWRC9e6Rg95ul95rzWVPuVs'."
   end
+
+  test "add_message_to_thread/1 add user's question as a message to the thread" do
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body:
+          "{\n  \"id\": \"msg_mWMdmAjzT8EuWJ0r39hP5iu3\",\n  \"object\": \"thread.message\",\n  \"created_at\": 1717087602,\n  \"assistant_id\": null,\n  \"thread_id\": \"thread_sst2q6k3SLBjPBTysLeLDG9K\",\n  \"run_id\": null,\n  \"role\": \"user\",\n  \"content\": [\n    {\n      \"type\": \"text\",\n      \"text\": {\n        \"value\": \"how  to get started with creating flow\",\n        \"annotations\": []\n      }\n    }\n  ],\n  \"attachments\": [],\n  \"metadata\": {}\n}"
+      }
+    end)
+
+    params = %{
+      question: "how  to get started with creating flow",
+      thread_id: "thread_qlbXMrY8CsdLZwRdKnzr81eF",
+      assistant_id: "asst_QdmawsEVZhnvq9Nzfq11fjIX"
+    }
+
+    response = ChatGPT.add_message_to_thread(params)
+
+    assert get_in(response, ["content", Access.at(0), "text", "value"]) ==
+             "how  to get started with creating flow"
+  end
+
+  test "list_thread_messages/1 should list all the messages in the thread" do
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body:
+          "{\n  \"object\": \"list\",\n  \"data\": [\n    {\n      \"id\": \"msg_mWMdmAjzT8EuWJ0r39hP5iu3\",\n      \"object\": \"thread.message\",\n      \"created_at\": 1717087602,\n      \"assistant_id\": null,\n      \"thread_id\": \"thread_qlbXMrY8CsdLZwRdKnzr81eF\",\n      \"run_id\": null,\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": {\n            \"value\": \"how  to get started with creating flow\",\n            \"annotations\": []\n          }\n        }\n      ],\n      \"attachments\": [],\n      \"metadata\": {}\n    }\n  ],\n  \"first_id\": \"msg_mWMdmAjzT8EuWJ0r39hP5iu3\",\n  \"last_id\": \"msg_mWMdmAjzT8EuWJ0r39hP5iu3\",\n  \"has_more\": false\n}"
+      }
+    end)
+
+    last_message = ChatGPT.list_thread_messages(%{thread_id: "thread_qlbXMrY8CsdLZwRdKnzr81eF"})
+    assert last_message["message"] == "how  to get started with creating flow"
+    assert last_message["thread_id"] == "thread_qlbXMrY8CsdLZwRdKnzr81eF"
+  end
 end
