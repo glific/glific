@@ -405,12 +405,9 @@ defmodule Glific.Templates.InteractiveTemplates do
 
     contents_to_translate =
       [
-        interactive_template.interactive_content["content"]["header"],
-        interactive_template.interactive_content["content"]["text"]
-      ] ++
-        Enum.map(interactive_template.interactive_content["options"], fn option ->
-          option["title"]
-        end)
+        content["content"]["header"],
+        content["content"]["text"]
+      ] ++ Enum.map(content["options"], fn option -> option["title"] end)
 
     translated_contents =
       Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
@@ -419,26 +416,24 @@ defmodule Glific.Templates.InteractiveTemplates do
             org_id: organization_id
           )
 
-        case translations do
-          {:ok, [header, text | options]} ->
-            options_translated =
-              Enum.zip(
-                Enum.map(interactive_template.interactive_content["options"], fn option ->
-                  option["type"]
-                end),
-                options
-              )
-              |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+      case translations do
+        {:ok, [header, text | options]} ->
+          options_translated =
+            Enum.zip(
+              Enum.map(content["options"], fn option -> option["type"] end),
+              options
+            )
+            |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
 
-            translated_template = %{
-              "content" => %{
-                "header" => header,
-                "text" => text,
-                "type" => "text"
-              },
-              "options" => options_translated,
-              "type" => interactive_template.interactive_content["type"]
-            }
+          translated_template = %{
+            "content" => %{
+              "header" => header,
+              "text" => text,
+              "type" => "text"
+            },
+            "options" => options_translated,
+            "type" => "quick_reply"
+          }
 
           Map.put(
             acc,
