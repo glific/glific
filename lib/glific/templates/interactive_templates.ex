@@ -283,7 +283,6 @@ defmodule Glific.Templates.InteractiveTemplates do
   """
   @spec translated_content(InteractiveTemplate.t(), non_neg_integer()) :: map() | nil
   def translated_content(interactive_template, language_id) do
-    IO.inspect(interactive_template)
 
     interactive_template
     |> get_translations(language_id)
@@ -326,7 +325,6 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec formatted_data(Glific.Templates.InteractiveTemplate.t(), non_neg_integer) ::
           {map, binary, nil | non_neg_integer}
   def formatted_data(interactive_template, language_id) do
-    IO.inspect(interactive_template)
     interactive_content = translated_content(interactive_template, language_id)
     body = get_interactive_body(interactive_content)
     media_id = get_media(interactive_content, interactive_template.organization_id)
