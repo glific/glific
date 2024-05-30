@@ -283,7 +283,6 @@ defmodule Glific.Templates.InteractiveTemplates do
   """
   @spec translated_content(InteractiveTemplate.t(), non_neg_integer()) :: map() | nil
   def translated_content(interactive_template, language_id) do
-
     interactive_template
     |> get_translations(language_id)
     |> get_clean_interactive_content(
