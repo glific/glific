@@ -179,6 +179,34 @@ defmodule Glific.OpenAI.ChatGPT do
   end
 
   @doc """
+  API call to create thread with message and run once
+  """
+  @spec create_and_run_thread(map()) :: map() | {:error, String.t()}
+  def create_and_run_thread(params) do
+    url = "https://api.openai.com/v1/threads/runs"
+
+    payload =
+      %{
+        assistant_id: params.assistant_id,
+        thread: %{
+          messages: [
+            %{role: "user", content: params.question}
+          ]
+        }
+      }
+      |> Jason.encode!()
+
+    Tesla.post(url, payload, headers: headers())
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        Jason.decode!(body)
+
+      {_status, response} ->
+        {:error, "invalid response #{inspect(response)}"}
+    end
+  end
+
+  @doc """
   API call to create new thread
   """
   @spec fetch_thread(map()) :: map()
@@ -270,7 +298,7 @@ defmodule Glific.OpenAI.ChatGPT do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         run = Jason.decode!(body)
 
-        retrieve_run_and_wait(run["thread_id"], run, 10)
+        retrieve_run_and_wait(run["thread_id"], run["id"], 10)
 
       {_status, response} ->
         {:error, "invalid response #{inspect(response)}"}
@@ -280,27 +308,29 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   API call to retrieve a run and check status
   """
-  @spec retrieve_run_and_wait(String.t(), map(), non_neg_integer()) :: map()
-  def retrieve_run_and_wait(thread_id, run, max_attempts \\ 10) do
-    retrieve_run_and_wait(thread_id, run, max_attempts, 0)
+  @spec retrieve_run_and_wait(String.t(), String.t(), non_neg_integer()) :: map()
+  def retrieve_run_and_wait(thread_id, run_id, max_attempts \\ 10) do
+    retrieve_run_and_wait(thread_id, run_id, max_attempts, 0)
   end
 
-  @spec retrieve_run_and_wait(String.t(), map(), non_neg_integer(), non_neg_integer()) :: map()
-  defp retrieve_run_and_wait(_thread_id, run, max_attempts, attempt) when attempt >= max_attempts,
-    do: run
+  @spec retrieve_run_and_wait(String.t(), String.t(), non_neg_integer(), non_neg_integer()) ::
+          map()
+  defp retrieve_run_and_wait(_thread_id, run_id, max_attempts, attempt)
+       when attempt >= max_attempts,
+       do: run_id
 
-  defp retrieve_run_and_wait(thread_id, run, max_attempts, attempt) do
+  defp retrieve_run_and_wait(thread_id, run_id, max_attempts, attempt) do
     run_data =
       retrieve_run(%{
         thread_id: thread_id,
-        run_id: run["id"]
+        run_id: run_id
       })
 
     if run_data["status"] == "completed" do
-      run
+      run_id
     else
       Process.sleep(2_000)
-      retrieve_run_and_wait(thread_id, run, max_attempts, attempt + 1)
+      retrieve_run_and_wait(thread_id, run_id, max_attempts, attempt + 1)
     end
   end
 
@@ -335,15 +365,39 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   API call to run a thread
   """
-  @spec validate_and_get_thread_id(String.t() | nil) :: String.t()
-  def validate_and_get_thread_id(thread_id) do
-    case fetch_thread(%{thread_id: thread_id}) do
+  @spec validate_and_get_thread_id(map()) :: map()
+  def validate_and_get_thread_id(params) do
+    case fetch_thread(params) do
       %{success: true} ->
-        thread_id
+        params.thread_id
 
       _ ->
         thread = create_thread()
         if is_map(thread), do: Map.get(thread, "id", ""), else: ""
     end
+  end
+
+  def handle_conversation(%{thread_id: nil} = params) do
+    run_thread = create_and_run_thread(params)
+    Process.sleep(4_000)
+
+    retrieve_run_and_wait(run_thread["thread_id"], run_thread["id"], 10)
+
+    list_thread_messages(%{thread_id: run_thread["thread_id"]})
+    |> Map.merge(%{"success" => false})
+  end
+
+  def handle_conversation(params) do
+    thread_id = validate_and_get_thread_id(params)
+    Process.sleep(4_000)
+
+    add_message_to_thread(%{thread_id: thread_id, question: params.question})
+
+    Process.sleep(12_000)
+
+    run_thread(%{thread_id: thread_id, assistant_id: params.assistant_id})
+
+    list_thread_messages(%{thread_id: thread_id})
+    |> Map.merge(%{"success" => false})
   end
 end
