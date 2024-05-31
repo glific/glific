@@ -94,6 +94,7 @@ defmodule Glific.Saas.Queries do
     result
     |> validate_text_field(params["name"], :name, {1, 25})
     |> validate_text_field(params["message"], :message, {1, 300})
+    |> validate_text_field(params["org_name"], :org_name, {1, 40}, true)
     |> validate_email(params["email"] || "")
   end
 
@@ -140,6 +141,8 @@ defmodule Glific.Saas.Queries do
         {:cont, result}
       end
     end)
+    |> validate_true(registration.terms_agreed, :terms_agreed)
+    |> validate_true(registration.support_staff_account, :support_staff_account)
   end
 
   @spec validate_text_field(map(), String.t(), atom(), {number(), number()}, boolean()) :: map()
@@ -510,4 +513,12 @@ defmodule Glific.Saas.Queries do
 
     :ok
   end
+
+  @spec validate_true(map(), boolean(), atom()) :: map()
+  defp validate_true(results, false, key) do
+    dgettext("error", "Field cannot be false.")
+    |> error(results, key)
+  end
+
+  defp validate_true(results, _, _key), do: results
 end

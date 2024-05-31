@@ -69,6 +69,26 @@ defmodule Glific.Notion do
       "T&C Agreed" => %{
         "type" => "checkbox",
         "checkbox" => false
+      },
+      "Created At" => %{
+        "type" => "date",
+        "date" => %{
+          "start" => convert(registration),
+          "end" => nil
+        }
+      }
+    }
+  end
+
+  @doc """
+  Create T&C dispute property to update it in Notion
+  """
+  @spec update_tc_dispute_property :: map()
+  def update_tc_dispute_property do
+    %{
+      "Dispute in T&C" => %{
+        "type" => "checkbox",
+        "checkbox" => true
       }
     }
   end
@@ -249,13 +269,6 @@ defmodule Glific.Notion do
       "Support Staff Account" => %{
         "type" => "checkbox",
         "checkbox" => registration.support_staff_account
-      },
-      "Created At" => %{
-        "type" => "date",
-        "date" => %{
-          "start" => convert(registration),
-          "end" => nil
-        }
       }
     }
   end
