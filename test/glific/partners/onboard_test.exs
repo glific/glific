@@ -364,7 +364,115 @@ defmodule Glific.OnboardTest do
         "submitter" => %{
           "name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email()
+        }
+      }
+
+      assert %{
+               messages: _,
+               is_valid: true
+             } =
+               Onboard.update_registration(valid_params, org)
+    end
+
+    test "update_registration, terms_agreed and support_staff_acount were false on submission", %{
+      org: org,
+      registration_id: reg_id
+    } do
+      valid_params = %{
+        "registration_id" => reg_id,
+        "finance_poc" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "Sr Accountant",
+          "phone" => Phone.PtBr.phone()
         },
+        "signing_authority" => %{
+          "name" => Faker.Person.name(),
+          "email" => Faker.Internet.email(),
+          "designation" => "designation"
+        },
+        "has_submitted" => false
+      }
+
+      assert %{
+               messages: _,
+               is_valid: true
+             } =
+               Onboard.update_registration(valid_params, org)
+
+      {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
+      assert reg.billing_frequency == "monthly"
+      assert %{"name" => _, "email" => _, "designation" => _} = reg.signing_authority
+      %{email: email} = Partners.get_organization!(org.id)
+      assert !is_nil(email)
+
+      valid_params = %{
+        "registration_id" => reg_id,
+        "finance_poc" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "Sr Accountant",
+          "phone" => Phone.PtBr.phone()
+        },
+        "submitter" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email()
+        },
+        "has_submitted" => true
+      }
+
+      assert %{
+               messages: _,
+               is_valid: false
+             } =
+               Onboard.update_registration(valid_params, org)
+    end
+
+    test "update_registration, terms_agreed and support_staff_acount were true on submission", %{
+      org: org,
+      registration_id: reg_id
+    } do
+      valid_params = %{
+        "registration_id" => reg_id,
+        "finance_poc" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "Sr Accountant",
+          "phone" => Phone.PtBr.phone()
+        },
+        "signing_authority" => %{
+          "name" => Faker.Person.name(),
+          "email" => Faker.Internet.email(),
+          "designation" => "designation"
+        },
+        "has_submitted" => false
+      }
+
+      assert %{
+               messages: _,
+               is_valid: true
+             } =
+               Onboard.update_registration(valid_params, org)
+
+      {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
+      assert reg.billing_frequency == "monthly"
+      assert %{"name" => _, "email" => _, "designation" => _} = reg.signing_authority
+      %{email: email} = Partners.get_organization!(org.id)
+      assert !is_nil(email)
+
+      valid_params = %{
+        "registration_id" => reg_id,
+        "finance_poc" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "Sr Accountant",
+          "phone" => Phone.PtBr.phone()
+        },
+        "submitter" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email()
+        },
+        "terms_agreed" => true,
         "has_submitted" => true
       }
 
