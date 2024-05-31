@@ -109,6 +109,7 @@ defmodule Glific.StateTest do
     assert Enum.empty?(busy_flows)
   end
 
+  @tag :dd
   test "Ensure that when we get and release a flow the cache returns to its original state",
        %{organization_id: organization_id} = _attrs do
     cache = State.state(1)
