@@ -4,6 +4,7 @@ defmodule Glific.OpenAI.ChatGPT do
   """
 
   alias Glific.Partners
+  require Logger
 
   @endpoint "https://api.openai.com/v1"
 
@@ -210,7 +211,7 @@ defmodule Glific.OpenAI.ChatGPT do
   end
 
   @doc """
-  API call to create new thread
+  API call to fetch thread and validate thread ID
   """
   @spec fetch_thread(map()) :: map()
   def fetch_thread(%{thread_id: nil}),
@@ -275,7 +276,12 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
-  @spec get_last_msg(map()) :: map()
+  @spec get_last_msg(map() | tuple()) :: map()
+  defp get_last_msg({:error, error}) do
+    Logger.error(error)
+    %{"message" => "Invalid response received"}
+  end
+
   defp get_last_msg(%{"data" => messages}) do
     [last_msg | _messages] = messages
     content = get_in(last_msg, ["content", Access.at(0)])
@@ -338,7 +344,7 @@ defmodule Glific.OpenAI.ChatGPT do
   end
 
   @doc """
-  API call to run a thread
+  API call to retrieve a run
   """
   @spec retrieve_run(map()) :: map() | {:error, String.t()}
   def retrieve_run(params) do
