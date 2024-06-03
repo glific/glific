@@ -71,7 +71,7 @@ defmodule Glific.Partners.Organization do
           days: list() | nil,
           is_active: boolean() | true,
           is_approved: boolean() | false,
-          status: String.t() | nil,
+          status: String.t() | nil | atom(),
           timezone: String.t() | nil,
           active_language_ids: [integer] | [],
           languages: [Language.t()] | nil,

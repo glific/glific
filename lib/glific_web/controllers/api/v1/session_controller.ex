@@ -3,6 +3,7 @@ defmodule GlificWeb.API.V1.SessionController do
   The Pow User Session Controller
   """
 
+  alias Glific.Partners.Organization
   use GlificWeb, :controller
   require Logger
 
@@ -16,30 +17,40 @@ defmodule GlificWeb.API.V1.SessionController do
     organization_id = conn.assigns[:organization_id]
     user_params = Map.put(user_params, "organization_id", organization_id)
 
-    conn
-    |> Pow.Plug.authenticate_user(user_params)
-    |> case do
-      {:ok, conn} ->
-        Logger.info("Logged in user: user_id: '#{conn.assigns[:current_user].id}'")
-        last_login_time = conn.assigns[:current_user].last_login_at
+    with %{status: :active} <- Partners.get_organization!(organization_id),
+         {:ok, conn} <- Pow.Plug.authenticate_user(conn, user_params) do
+      Logger.info("Logged in user: user_id: '#{conn.assigns[:current_user].id}'")
+      last_login_time = conn.assigns[:current_user].last_login_at
 
-        update_last_login(conn.assigns[:current_user], conn)
+      update_last_login(conn.assigns[:current_user], conn)
 
-        Glific.Metrics.increment("Login", organization_id)
+      Glific.Metrics.increment("Login", organization_id)
 
-        json(conn, %{
-          data: %{
-            access_token: conn.private[:api_access_token],
-            token_expiry_time: conn.private[:api_token_expiry_time],
-            renewal_token: conn.private[:api_renewal_token],
-            last_login_time: last_login_time
-          }
-        })
+      json(conn, %{
+        data: %{
+          access_token: conn.private[:api_access_token],
+          token_expiry_time: conn.private[:api_token_expiry_time],
+          renewal_token: conn.private[:api_renewal_token],
+          last_login_time: last_login_time
+        }
+      })
+    else
+      %Organization{status: :suspended} ->
+        create_error(
+          conn,
+          "Your account is suspended/ paused by your team. In case of any concerns/ queries, please reach out to us on support@glific.org"
+        )
+
+      %Organization{status: :forced_suspension} ->
+        create_error(
+          conn,
+          "Your account is suspended/ paused as payment isn't done by your team. Please make the payment as soon as possible to resume using the account. In case of any concerns/ queries, please reach out to us on support@glific.org"
+        )
 
       {:error, conn} ->
         Logger.error("Logged in user failure: user_phone: '#{user_params["phone"]}'")
 
-        create_error(conn)
+        create_error(conn, "Invalid phone or password")
     end
   end
 
@@ -47,13 +58,13 @@ defmodule GlificWeb.API.V1.SessionController do
   Catch the case when the caller does not send in a user array with phone / password
   """
   def create(conn, _params),
-    do: create_error(conn)
+    do: create_error(conn, "Invalid phone or password")
 
   # one function to return errors from invalid auth
-  defp create_error(conn) do
+  defp create_error(conn, message) do
     conn
     |> put_status(401)
-    |> json(%{error: %{status: 401, message: "Invalid phone or password"}})
+    |> json(%{error: %{status: 401, message: message}})
   end
 
   defp update_last_login(user, conn) do
@@ -104,7 +115,7 @@ defmodule GlificWeb.API.V1.SessionController do
 
   @doc """
   Given the organization ID, lets send back the organization Name
-  so the user is aware that they are logging into the right account.any()
+  so the user is aware that they are logging into the right account
 
   This is an internal API, so we will not document it (for now)
   """
@@ -115,7 +126,7 @@ defmodule GlificWeb.API.V1.SessionController do
       |> Partners.get_organization!()
 
     conn
-    |> json(%{data: %{name: organization.name}})
+    |> json(%{data: %{name: organization.name, status: organization.status}})
   end
 
   @doc """
