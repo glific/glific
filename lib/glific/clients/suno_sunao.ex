@@ -10,6 +10,5 @@ defmodule Glific.Clients.SunoSunao do
   additional functionality as needed
   """
   @spec webhook(String.t(), map()) :: map()
-  def webhook("speech_to_text", fields), do: CommonWebhook.webhook("speech_to_text", fields)
   def webhook(_, _fields), do: %{}
 end

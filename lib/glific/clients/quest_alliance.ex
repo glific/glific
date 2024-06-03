@@ -22,8 +22,5 @@ defmodule Glific.Clients.QuestAlliance do
     fields
   end
 
-  def webhook("jugalbandi", fields), do: CommonWebhook.webhook("jugalbandi", fields)
-
-  def webhook(_, _fields),
-    do: %{}
+  def webhook(_, _fields), do: %{}
 end

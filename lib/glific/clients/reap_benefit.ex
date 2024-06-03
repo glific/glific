@@ -40,9 +40,6 @@ defmodule Glific.Clients.ReapBenefit do
   additional functionality as needed
   """
   @spec webhook(String.t(), map()) :: map()
-  def webhook("parse_via_gpt_vision", fields),
-    do: CommonWebhook.webhook("parse_via_gpt_vision", fields)
-
   def webhook("frappe_check_existing_user", fields) do
     token = fields["token"]
     header = get_header(token)
@@ -162,7 +159,6 @@ defmodule Glific.Clients.ReapBenefit do
     end
   end
 
-  def webhook("jugalbandi", fields), do: CommonWebhook.webhook("jugalbandi", fields)
   def webhook(_, _fields), do: %{}
 
   @spec get_header(String.t()) :: list()

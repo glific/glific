@@ -36,8 +36,7 @@ defmodule Glific.Clients.BharatRohan do
     %{report_msg: get_report_msg(weather_report)}
   end
 
-  def webhook(_, _fields),
-    do: %{}
+  def webhook(_, _fields), do: %{}
 
   @doc """
     Get weather report message
