@@ -5,7 +5,6 @@ defmodule Glific.Clients.Udhyam do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Clients.CommonWebhook,
     Flows.Flow,
     Repo
   }

@@ -6,7 +6,6 @@ defmodule Glific.Clients.Tap do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Clients.CommonWebhook,
     Contacts.Contact,
     Flows.ContactField,
     Groups.ContactGroup,

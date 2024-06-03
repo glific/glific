@@ -8,7 +8,6 @@ defmodule Glific.Clients.KEF do
   require Logger
 
   alias Glific.{
-    Clients.CommonWebhook,
     Contacts,
     Flows.ContactField,
     Partners,
