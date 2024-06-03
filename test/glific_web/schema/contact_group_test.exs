@@ -239,7 +239,6 @@ defmodule GlificWeb.Schema.ContactGroupTest do
       auth_query_gql_by(:count, user, variables: %{"filter" => %{"group_id" => group.id}})
 
     assert get_in(query_data, [:data, "countContactGroups"]) == 1
-
   end
 
   test "create a contact group and test possible scenarios and errors", %{staff: user_auth} do

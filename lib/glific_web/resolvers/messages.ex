@@ -120,7 +120,7 @@ defmodule GlificWeb.Resolvers.Messages do
         organization_id: group.organization_id
       })
 
-    if ^member_count = 0, do: {:error, "The group has no members"}, else: {:ok, true}
+    if member_count == 0, do: {:error, "The group has no members"}, else: {:ok, true}
   end
 
   @doc """
