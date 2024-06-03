@@ -68,12 +68,19 @@ defmodule GlificWeb.Schema.ContactGroupTypes do
   end
 
   object :contact_group_queries do
-    @desc "Get a list of all messages filtered by various criteria"
+    @desc "Get a list of all contact groups filtered by various criteria"
     field :contact_groups, list_of(:contact_group) do
       arg(:filter, :contact_group_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Groups.contact_groups/3)
+    end
+
+    @desc "Get a count of all contact groups filtered by various criteria"
+    field :count_contact_groups, :integer do
+      arg(:filter, :contact_group_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Groups.count_contact_groups/3)
     end
   end
 
