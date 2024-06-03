@@ -95,9 +95,7 @@ defmodule Glific.Clients.PehlayAkshar do
     end
   end
 
-  def webhook(_, _) do
-    raise "Unknown webhook"
-  end
+  def webhook(_, _fields), do: %{}
 
   defp format_leadership_data(data) do
     Enum.with_index(data)

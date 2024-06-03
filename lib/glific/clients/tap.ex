@@ -6,7 +6,6 @@ defmodule Glific.Clients.Tap do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Clients.CommonWebhook,
     Contacts.Contact,
     Flows.ContactField,
     Groups.ContactGroup,
@@ -226,7 +225,7 @@ defmodule Glific.Clients.Tap do
     end
   end
 
-  def webhook(name, fields), do: CommonWebhook.webhook(name, fields)
+  def webhook(_, fields), do: fields
 
   @spec load_activities(non_neg_integer()) :: :ok
   defp load_activities(org_id) do

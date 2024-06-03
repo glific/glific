@@ -872,7 +872,7 @@ defmodule Glific.Clients.Stir do
     %{response: response}
   end
 
-  def webhook(_, fields), do: fields
+  def webhook(_, _fields), do: %{}
 
   @doc """
     Get a GCS file name for specific user
