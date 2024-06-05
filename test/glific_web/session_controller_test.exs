@@ -76,7 +76,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
       params = put_in(@valid_params, ["user", "organization_id"], organization_id)
       conn = post(conn, Routes.api_v1_session_path(conn, :create, params))
 
-      assert json = json_response(conn, 401)
+      assert json = json_response(conn, 403)
 
       assert json["error"]["message"] ==
                "Your account is suspended/ paused by your team. In case of any concerns/ queries, please reach out to us on support@glific.org"
@@ -92,7 +92,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
       params = put_in(@valid_params, ["user", "organization_id"], organization_id)
       conn = post(conn, Routes.api_v1_session_path(conn, :create, params))
 
-      assert json = json_response(conn, 401)
+      assert json = json_response(conn, 403)
 
       assert json["error"]["message"] ==
                "Your account is suspended/ paused as payment isn't done by your team. Please make the payment as soon as possible to resume using the account. In case of any concerns/ queries, please reach out to us on support@glific.org"

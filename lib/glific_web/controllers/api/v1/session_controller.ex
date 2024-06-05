@@ -38,13 +38,15 @@ defmodule GlificWeb.API.V1.SessionController do
       %Organization{status: :suspended} ->
         create_error(
           conn,
-          "Your account is suspended/ paused by your team. In case of any concerns/ queries, please reach out to us on support@glific.org"
+          "Your account is suspended/ paused by your team. In case of any concerns/ queries, please reach out to us on support@glific.org",
+          403
         )
 
       %Organization{status: :forced_suspension} ->
         create_error(
           conn,
-          "Your account is suspended/ paused as payment isn't done by your team. Please make the payment as soon as possible to resume using the account. In case of any concerns/ queries, please reach out to us on support@glific.org"
+          "Your account is suspended/ paused as payment isn't done by your team. Please make the payment as soon as possible to resume using the account. In case of any concerns/ queries, please reach out to us on support@glific.org",
+          403
         )
 
       {:error, conn} ->
@@ -61,10 +63,10 @@ defmodule GlificWeb.API.V1.SessionController do
     do: create_error(conn, "Invalid phone or password")
 
   # one function to return errors from invalid auth
-  defp create_error(conn, message) do
+  defp create_error(conn, message, status_code \\ 401) do
     conn
-    |> put_status(401)
-    |> json(%{error: %{status: 401, message: message}})
+    |> put_status(status_code)
+    |> json(%{error: %{status: status_code, message: message}})
   end
 
   defp update_last_login(user, conn) do
