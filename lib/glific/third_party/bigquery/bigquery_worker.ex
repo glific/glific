@@ -713,7 +713,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id),
             flow_id: row.flow.id,
-            flow_id: row.flow.name
+            flow_name: row.flow.name
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})

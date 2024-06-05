@@ -891,7 +891,7 @@ defmodule Glific.BigQuery.Schema do
       },
       %{
         description: "Flow ID",
-        name: "id",
+        name: "flow_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },
@@ -900,7 +900,7 @@ defmodule Glific.BigQuery.Schema do
         name: "flow_name",
         type: "STRING",
         mode: "NULLABLE"
-      },
+      }
     ]
   end
 

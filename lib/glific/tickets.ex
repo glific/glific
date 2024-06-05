@@ -220,7 +220,7 @@ defmodule Glific.Tickets do
       user_id: action.assignee,
       contact_id: context.contact_id,
       flow_id: context.flow.id,
-      organization_id: context.organization_id,
+      organization_id: context.organization_id
     }
 
     case create_ticket(ticket_params) do
