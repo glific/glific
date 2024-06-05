@@ -8,6 +8,7 @@ defmodule Glific.Tickets do
   alias Glific.{
     Contacts.Contact,
     Flows.Action,
+    Flows.Flow,
     Flows.FlowContext,
     Flows.MessageVarParser,
     Messages,
@@ -260,7 +261,7 @@ defmodule Glific.Tickets do
     |> convert_to_csv_string()
   end
 
-  @default_headers [:status, :body, :inserted_at, :topic, :opened_by, :assigned_to]
+  @default_headers [:status, :body, :inserted_at, :topic, :opened_by, :assigned_to, :flow_name]
   @doc false
   @spec convert_to_csv_string([Ticket.t()]) :: String.t()
   def convert_to_csv_string(ticket) do
