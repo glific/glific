@@ -38,14 +38,14 @@ defmodule GlificWeb.API.V1.SessionController do
       %Organization{status: :suspended} ->
         create_error(
           conn,
-          "Your account is suspended/ paused by your team. In case of any concerns/ queries, please reach out to us on support@glific.org",
+          "Your account is suspended or paused by your team. In case of any concerns, please reach out to us on support@glific.org.",
           403
         )
 
       %Organization{status: :forced_suspension} ->
         create_error(
           conn,
-          "Your account is suspended/ paused as payment isn't done by your team. Please make the payment as soon as possible to resume using the account. In case of any concerns/ queries, please reach out to us on support@glific.org",
+          "Your account has been suspended or paused due to a pending payment from your team. Kindly make the payment at your earliest convenience to resume your account. In case of any concerns, please reach out to us on support@glific.org.",
           403
         )
 

@@ -79,7 +79,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
       assert json = json_response(conn, 403)
 
       assert json["error"]["message"] ==
-               "Your account is suspended/ paused by your team. In case of any concerns/ queries, please reach out to us on support@glific.org"
+               "Your account is suspended or paused by your team. In case of any concerns, please reach out to us on support@glific.org."
     end
 
     test "with valid params, but org is force suspended", %{
@@ -95,7 +95,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
       assert json = json_response(conn, 403)
 
       assert json["error"]["message"] ==
-               "Your account is suspended/ paused as payment isn't done by your team. Please make the payment as soon as possible to resume using the account. In case of any concerns/ queries, please reach out to us on support@glific.org"
+               "Your account has been suspended or paused due to a pending payment from your team. Kindly make the payment at your earliest convenience to resume your account. In case of any concerns, please reach out to us on support@glific.org."
     end
   end
 
