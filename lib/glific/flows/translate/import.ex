@@ -26,7 +26,7 @@ defmodule Glific.Flows.Translate.Import do
   def import_localization(csv, flow) do
     # get language labels here in one query for all languages if you want
     language_labels = Settings.locale_label_map(flow.organization_id)
-    language_keys = Map.keys(language_labels) |> IO.inspect(label: :language_keys)
+    language_keys = Map.keys(language_labels)
 
     [_header_1 | [_header_2 | rows]] = csv
 
@@ -34,7 +34,6 @@ defmodule Glific.Flows.Translate.Import do
       rows
       |> collect_by_language(language_keys)
       |> merge_with_latest_localization(flow)
-      |> dbg()
       |> Flows.update_flow_localization(flow)
   end
 

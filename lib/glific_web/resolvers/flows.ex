@@ -113,9 +113,8 @@ defmodule GlificWeb.Resolvers.Flows do
 
     stream
     |> IO.binstream(:line)
-    |> CSV.decode!(delimiter: "\n")
+    |> CSV.decode!()
     |> Enum.into([])
-    |> IO.inspect()
     |> Import.import_localization(flow)
 
     {:ok, %{success: true}}
