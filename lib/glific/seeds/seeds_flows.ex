@@ -320,7 +320,6 @@ defmodule Glific.Seeds.SeedsFlows do
   @doc false
   @spec seed_flows([Organization.t()]) :: :ok
   def seed_flows([organization]) do
-    IO.inspect(organization)
     Glific.Repo.put_organization_id(organization.id)
     {opt_uuid_map, opt_data} = get_opt_data(organization)
 
