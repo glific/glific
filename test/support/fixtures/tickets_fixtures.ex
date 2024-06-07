@@ -4,22 +4,28 @@ defmodule Glific.TicketsFixtures do
   entities via the `Glific.Tickets` context.
   """
 
-  alias Glific.Tickets.Ticket
+  alias Glific.{
+    Fixtures,
+    Tickets.Ticket
+  }
 
   @doc """
   Generate a ticket.
   """
   @spec ticket_fixture(map()) :: Ticket.t()
   def ticket_fixture(attrs \\ %{}) do
+    user = Fixtures.user_fixture()
+    contact = Fixtures.contact_fixture()
+
     {:ok, ticket} =
       attrs
       |> Enum.into(%{
         body: "some body",
         topic: "some topic",
-        organization_id: 1,
-        contact_id: 1,
+        organization_id: Fixtures.get_org_id(),
+        contact_id: contact.id,
         status: "open",
-        user_id: 1
+        user_id: user.id
       })
       |> Glific.Tickets.create_ticket()
 
