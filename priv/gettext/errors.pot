@@ -93,164 +93,243 @@ msgstr ""
 msgid "must be equal to %{number}"
 msgstr ""
 
-#, elixir-format
-#: lib/glific_web/schema.ex:184
+#: lib/glific_web/schema.ex:265
+#, elixir-format, elixir-autogen
 msgid "Auth Credentials mismatch"
 msgstr ""
 
-#, elixir-format
-#: lib/glific/contacts.ex:471 lib/glific/contacts.ex:511
+#: lib/glific/contacts.ex:618
+#: lib/glific/contacts.ex:668
+#, elixir-format, elixir-autogen
 msgid "Cannot send hsm message to contact, invalid BSP status."
 msgstr ""
 
-#, elixir-format
-#: lib/glific/contacts.ex:474
+#: lib/glific/contacts.ex:621
+#, elixir-format, elixir-autogen
 msgid "Cannot send hsm message to contact, not opted in."
 msgstr ""
 
-#, elixir-format
 #: lib/glific/jobs/chatbase/chatbase_worker.ex:115
+#, elixir-format
 msgid "Chatbase returned an unexpected result"
 msgstr ""
 
-#, elixir-format
-#: lib/glific/contacts.ex:468 lib/glific/contacts.ex:487
+#: lib/glific/contacts.ex:615
+#: lib/glific/contacts.ex:644
+#, elixir-format, elixir-autogen
 msgid "Contact status is not valid."
 msgstr ""
 
-#, elixir-format
-#: lib/glific/flows/router.ex:214
+#: lib/glific/flows/router.ex:262
+#, elixir-format, elixir-autogen
 msgid "Could not find category for: %{body}"
 msgstr ""
 
-#, elixir-format
-#: lib/glific/partners/invoice.ex:281
+#: lib/glific/partners/invoice.ex:309
+#, elixir-format, elixir-autogen
 msgid "Could not find invoice for %{invoice_id}"
 msgstr ""
 
-#, elixir-format
-#: lib/glific/flows/webhook.ex:122
+#: lib/glific/flows/webhook.ex:123
+#, elixir-format, elixir-autogen
 msgid "Error in decoding webhook body. Please check the json body in floweditor"
 msgstr ""
 
-#, elixir-format
 #: lib/glific/partners/invoice.ex:178
+#, elixir-format
 msgid "Error occurred while creating invoice: %{error}"
 msgstr ""
 
-#, elixir-format
-#: lib/glific/partners/invoice.ex:138
+#: lib/glific/partners/invoice.ex:144
+#, elixir-format, elixir-autogen
 msgid "Error occurred while finalizing setup invoice: %{error}"
 msgstr ""
 
-#, elixir-format
 #: lib/glific/partners/invoice.ex:155
+#, elixir-format
 msgid "Error occurred while updating prorations: %{error}"
 msgstr ""
 
-#, elixir-format
 #: lib/glific/providers/gupshup/contacts.ex:88
+#, elixir-format
 msgid "Error updating opted-in contacts: %{message}"
 msgstr ""
 
-#, elixir-format
 #: lib/glific/providers/gupshup/contacts.ex:101
+#, elixir-format
 msgid "Error updating opted-in contacts: %{reason}"
 msgstr ""
 
-#, elixir-format
 #: lib/glific/providers/gupshup/contacts.ex:97
+#, elixir-format
 msgid "Error updating opted-in contacts: Invalid BSP API key"
 msgstr ""
 
-#, elixir-format
-#: lib/glific_web/resolvers/partners.ex:127
+#: lib/glific_web/resolvers/partners.ex:256
+#, elixir-format, elixir-autogen
 msgid "Error while fetching the BSP balance"
 msgstr ""
 
-#, elixir-format
+#: lib/glific/providers/gupshup/contacts.ex:91
 #: lib/glific/providers/gupshup/wallet.ex:22
+#, elixir-format, elixir-autogen
 msgid "Invalid BSP API key"
 msgstr ""
 
-#, elixir-format
-#: lib/glific/contacts.ex:633 lib/glific/partners.ex:348
-#: lib/glific/templates.ex:164 lib/glific/templates.ex:248
+#: lib/glific/partners.ex:430
+#: lib/glific/partners.ex:447
+#, elixir-format, elixir-autogen
 msgid "Invalid BSP provider"
 msgstr ""
 
-#, elixir-format
-#: lib/glific/partners/invoice.ex:262
+#: lib/glific/partners/invoice.ex:290
+#, elixir-format, elixir-autogen
 msgid "Invoice status updated for %{invoice_id}"
 msgstr ""
 
-#, elixir-format
-#: lib/glific/partners.ex:341 lib/glific/partners.ex:596
+#: lib/glific/partners.ex:423
+#: lib/glific/partners.ex:443
 #: lib/glific/providers/gupshup/api_client.ex:36
+#: lib/glific/providers/gupshup_enterprise/api_client.ex:36
+#, elixir-format, elixir-autogen
 msgid "No active BSP available"
 msgstr ""
 
-#, elixir-format
-#: lib/glific/partners/billing.ex:384
+#: lib/glific/partners/billing.ex:599
+#, elixir-format, elixir-autogen
 msgid "Not handling %{return} value"
 msgstr ""
 
-#, elixir-format
-#: lib/glific/messages.ex:442
+#: lib/glific/messages.ex:626
+#, elixir-format, elixir-autogen
 msgid "Please provide media for media template."
 msgstr ""
 
-#, elixir-format
-#: lib/glific/messages.ex:439
+#: lib/glific/messages.ex:620
+#, elixir-format, elixir-autogen
 msgid "Please provide the right number of parameters for the template."
 msgstr ""
 
-#, elixir-format
 #: lib/glific_web/misc/http_signature.ex:82
+#, elixir-format, elixir-autogen
 msgid "Signature is in a wrong format or is missing %{schema}"
 msgstr ""
 
-#, elixir-format
 #: lib/glific_web/misc/http_signature.ex:61
+#, elixir-format, elixir-autogen
 msgid "Signature is incorrect"
 msgstr ""
 
-#, elixir-format
 #: lib/glific_web/misc/http_signature.ex:55
+#, elixir-format, elixir-autogen
 msgid "Signature is too old"
 msgstr ""
 
-#, elixir-format
-#: lib/glific_web/resolvers/flows.ex:86
+#: lib/glific_web/resolvers/flows.ex:178
+#, elixir-format, elixir-autogen
 msgid "Something went wrong."
 msgstr ""
 
-#, elixir-format
-#: lib/glific/contacts.ex:491
+#: lib/glific/contacts.ex:648
+#, elixir-format, elixir-autogen
 msgid "Sorry! 24 hrs window closed. Your message cannot be sent at this time."
 msgstr ""
 
-#, elixir-format
-#: lib/glific_web/resolvers/triggers.ex:59
+#: lib/glific_web/resolvers/triggers.ex:77
+#, elixir-format, elixir-autogen
 msgid "Trigger start_at should always be greater than current time"
 msgstr ""
 
-#, elixir-format
 #: lib/glific_web/schema/middleware/authorize.ex:24
+#, elixir-format, elixir-autogen
 msgid "Unauthorized"
 msgstr ""
 
-#, elixir-format
-#: lib/glific/flows/node.ex:225
+#: lib/glific/flows/node.ex:291
+#, elixir-format, elixir-autogen
 msgid "Unsupported node type"
 msgstr ""
 
-#, elixir-format
-#: lib/glific/flows/flow_context.ex:340
+#: lib/glific/flows/flow_context.ex:473
+#, elixir-format, elixir-autogen
 msgid "We have finished the flow"
 msgstr ""
 
-#, elixir-format
-#: lib/glific/partners/invoice.ex:270
+#: lib/glific/partners/invoice.ex:298
+#, elixir-format, elixir-autogen
 msgid "Error occurred while updating status for %{invoice_id}: %{error}"
+msgstr ""
+
+#: lib/glific/contacts.ex:630
+#, elixir-autogen, elixir-format
+msgid "Cannot send hsm message to contact, organization is in suspended state"
+msgstr ""
+
+#: lib/glific_web/resolvers/contacts.ex:17
+#: lib/glific_web/resolvers/contacts.ex:27
+#, elixir-autogen, elixir-format
+msgid "Contact not found or permission denied."
+msgstr ""
+
+#: lib/glific/partners/invoice.ex:206
+#, elixir-autogen, elixir-format
+msgid "Could not create invoice"
+msgstr ""
+
+#: lib/glific_web/resolvers/users.ex:102
+#, elixir-autogen, elixir-format
+msgid "Does not have access to the user"
+msgstr ""
+
+#: lib/glific/flows/webhook.ex:164
+#, elixir-autogen, elixir-format
+msgid "Error in encoding webhook body. Please check the json body in floweditor"
+msgstr ""
+
+#: lib/glific_web/resolvers/partners.ex:239
+#, elixir-autogen, elixir-format
+msgid "Error while fetching Quality Rating details"
+msgstr ""
+
+#: lib/glific/flows.ex:695
+#: lib/glific/flows.ex:727
+#, elixir-autogen, elixir-format
+msgid "Flow is not active"
+msgstr ""
+
+#: lib/glific/flows.ex:668
+#: lib/glific/flows.ex:685
+#: lib/glific/flows.ex:714
+#, elixir-autogen, elixir-format
+msgid "Flow not found"
+msgstr ""
+
+#: lib/glific_web/resolvers/groups.ex:19
+#, elixir-autogen, elixir-format
+msgid "Group not found or permission denied."
+msgstr ""
+
+#: lib/glific/contacts.ex:971
+#, elixir-autogen, elixir-format
+msgid "Invalid event type"
+msgstr ""
+
+#: lib/glific/providers/gupshup/contacts.ex:84
+#, elixir-autogen, elixir-format
+msgid "Message: %{message}"
+msgstr ""
+
+#: lib/glific_web/resolvers/profiles.ex:22
+#, elixir-autogen, elixir-format
+msgid "Profile not found or permission denied."
+msgstr ""
+
+#: lib/glific/providers/gupshup/contacts.ex:94
+#, elixir-autogen, elixir-format
+msgid "Reason: %{reason}"
+msgstr ""
+
+#: lib/glific_web/resolvers/wa_group.ex:21
+#, elixir-autogen, elixir-format
+msgid "WAGroup not found or permission denied."
 msgstr ""
