@@ -888,6 +888,18 @@ defmodule Glific.BigQuery.Schema do
         name: "updated_at",
         type: "DATETIME",
         mode: "REQUIRED"
+      },
+      %{
+        description: "Flow ID",
+        name: "flow_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Name of the Flow",
+        name: "flow_name",
+        type: "STRING",
+        mode: "NULLABLE"
       }
     ]
   end
