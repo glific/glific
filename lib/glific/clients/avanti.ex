@@ -98,6 +98,8 @@ defmodule Glific.Clients.Avanti do
 
   def webhook("clean_phone", fields), do: %{phone: clean_phone(fields)}
 
+  def webhook(_, _fields), do: %{}
+
   defp get_multi_query_data(data) do
     indexed_report =
       data

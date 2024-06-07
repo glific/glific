@@ -18,7 +18,7 @@ defmodule GlificWeb.Schema.FlowLabelTest do
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/flow_label/by_id.gql")
 
   test "flow_label id returns one flow_label or nil", %{staff: user} do
-    name = "Age Group less than 10"
+    name = "Poetry"
 
     {:ok, flow_label} =
       Repo.fetch_by(FlowLabel, %{name: name, organization_id: user.organization_id})
@@ -41,7 +41,7 @@ defmodule GlificWeb.Schema.FlowLabelTest do
     flow_labels = get_in(query_data, [:data, "flowLabels"])
     assert length(flow_labels) > 0
     [flow_label | _] = flow_labels
-    assert get_in(flow_label, ["name"]) == "Age Group less than 10"
+    assert get_in(flow_label, ["name"]) == "Poetry"
   end
 
   test "flow_labels field returns list of flow_labels in desc order", %{staff: user} do
@@ -52,7 +52,7 @@ defmodule GlificWeb.Schema.FlowLabelTest do
     assert length(flow_labels) > 0
 
     [flow_label | _] = flow_labels
-    assert get_in(flow_label, ["name"]) == "New Activity"
+    assert get_in(flow_label, ["name"]) == "Poetry"
   end
 
   test "flow_labels field returns list of flow_labels in various filters", %{staff: user} do

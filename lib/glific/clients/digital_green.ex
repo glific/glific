@@ -217,8 +217,7 @@ defmodule Glific.Clients.DigitalGreen do
     %{report_msg: get_report_msg(weather_report, fields["organization_id"])}
   end
 
-  def webhook(_, _fields),
-    do: %{}
+  def webhook(_, _fields), do: %{}
 
   @spec find_translation(map(), String.t(), String.t()) :: map()
   defp find_translation(translations, type, value) do

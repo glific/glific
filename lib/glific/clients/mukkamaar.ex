@@ -67,8 +67,7 @@ defmodule Glific.Clients.MukkaMaar do
     end
   end
 
-  def webhook(_, _fields),
-    do: %{}
+  def webhook(_, _fields), do: %{}
 
   @spec fetch_bigquery_data(map(), String.t()) :: map()
   defp fetch_bigquery_data(fields, phone) do

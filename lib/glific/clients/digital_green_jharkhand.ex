@@ -41,6 +41,5 @@ defmodule Glific.Clients.DigitalGreenJharkhand do
       else: %{is_valid: false}
   end
 
-  def webhook(_, _fields),
-    do: %{}
+  def webhook(_, _fields), do: %{}
 end
