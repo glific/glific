@@ -149,7 +149,7 @@ defmodule Glific.PartnersTest do
       org = SeedsDev.seed_organizations()
 
       Tesla.Mock.mock(fn
-        %{method: get} ->
+        %{method: :get} ->
           %Tesla.Env{
             status: 200,
             body: Jason.encode!(%{
