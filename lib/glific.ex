@@ -173,16 +173,11 @@ defmodule Glific do
   def atomize_keys([head | rest] = list) when is_list(list),
     do: [atomize_keys(head) | atomize_keys(rest)]
 
-  def atomize_keys(map) when is_map(map),
-    do:
-      Enum.map(map, fn {k, v} ->
-        if is_atom(k) do
-          {k, atomize_keys(v)}
-        else
-          {Glific.safe_string_to_atom(k), atomize_keys(v)}
-        end
-      end)
-      |> Enum.into(%{})
+  def atomize_keys(map) when is_map(map) do
+    for {key, val} <- map,
+        into: %{},
+        do: {Glific.safe_string_to_atom(key), atomize_keys(val)}
+  end
 
   def atomize_keys(value), do: value
 
