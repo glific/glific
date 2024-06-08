@@ -542,11 +542,6 @@ defmodule Glific.Flows.Action do
   @spec check_the_next_node(Keyword.t(), map(), map()) :: Keyword.t()
   defp check_the_next_node(errors, node, flow) do
     [exit | _] = node.exits
-    IO.inspect(node, label: "node")
-    IO.inspect(node.exits, label: "node.exits")
-    IO.inspect(exit.destination_node_uuid, label: "destination")
-    IO.inspect(node.uuid, label: "node uuid")
-    IO.inspect(String.slice(node.uuid, -4..-1))
 
     case exit.destination_node_uuid do
       nil ->
@@ -567,8 +562,11 @@ defmodule Glific.Flows.Action do
   @spec warning_message(Keyword.t(), String.t()) :: Keyword.t()
   defp warning_message(errors, node_id) do
     node_label = String.slice(node_id, -4..-1)
+
     [
-      {Message, "The next node after interactive (check #{node_label}) should be wait for response", "Warning"}
+      {Message,
+       "The next node after interactive (check #{node_label}) should be wait for response",
+       "Warning"}
       | errors
     ]
   end
