@@ -423,7 +423,7 @@ defmodule Glific.Templates.InteractiveTemplates do
           %{}
       end
 
-    update_interactive_template(interactive_template, %{translations: translated_contents}) |> IO.inspect()
+    update_interactive_template(interactive_template, %{translations: translated_contents})
   end
 
   defp translate_quick_reply(content, active_languages, language_code_map, organization_id) do
@@ -504,24 +504,31 @@ defmodule Glific.Templates.InteractiveTemplates do
         {:ok, translated_content} ->
           [title, body | items_translations] = translated_content
 
+          options_length = length(Enum.at(content["items"], 0)["options"])
           items_translated =
-            Enum.chunk_every(items_translations, 4)
+            Enum.chunk_every(
+              items_translations,
+              2 + options_length * 2
+            )
             |> Enum.zip(content["items"])
-            |> Enum.map(fn {[
-                              item_title,
-                              item_subtitle,
-                              option1_title,
-                              option1_description
-                            ], item} ->
+            |> Enum.map(fn {translated_item, item} ->
+              [item_title, item_subtitle | options_translations] = translated_item
+
+              options =
+                Enum.chunk_every(options_translations, 2)
+                |> Enum.zip(item["options"])
+                |> Enum.map(fn {[option_title, option_description], option} ->
+                  %{
+                    "title" => option_title,
+                    "description" => option_description,
+                    "type" => option["type"]
+                  }
+                end)
+
               %{
                 "title" => item_title,
                 "subtitle" => item_subtitle,
-                "options" =>
-                  Enum.zip(
-                    Enum.map(item["options"], fn option -> option["type"] end),
-                    [option1_title, option1_description]
-                  )
-                  |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+                "options" => options
               }
             end)
 
@@ -538,9 +545,6 @@ defmodule Glific.Templates.InteractiveTemplates do
             Integer.to_string(Map.get(language_code_map, lang_code)),
             translated_template
           )
-
-        _ ->
-          acc
       end
     end)
   end
