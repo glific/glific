@@ -165,7 +165,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   def apply_for_template(org_id, payload) do
     payload =
       payload
-      |> Map.put("allowTemplateCategoryChange", true)
+      |> Map.put_new("allowTemplateCategoryChange", true)
       |> Map.put("appId", app_id!(org_id))
 
     (app_url(org_id) <> "/templates")
