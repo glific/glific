@@ -18,7 +18,7 @@ defmodule Glific.Sheets.ApiClient do
     {:ok, stream} = StringIO.open(response.body)
 
     IO.binstream(stream, :line)
-    |> CSV.decode(headers: true, strip_fields: true)
+    |> CSV.decode(headers: true, field_transform: &String.trim/1)
   end
 
   def get_csv_content(_opts), do: [ok: %{}]
