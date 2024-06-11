@@ -10,9 +10,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     Repo,
     Settings,
     Tags.Tag,
-    Templates.InteractiveTemplate,
-    Settings,
-    Flows.Translate.GoogleTranslate
+    Templates.InteractiveTemplate
   }
 
   import Ecto.Query, warn: false
@@ -417,28 +415,64 @@ defmodule Glific.Templates.InteractiveTemplates do
           )
 
       case translations do
-        {:ok, [translated_label, text | options]} ->
-          options_translated =
-            Enum.zip(Enum.map(content["options"], fn option -> option["type"] end), options)
-            |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+        {:ok, translated_content} ->
+          [translated_label | remaining_translations] = translated_content
 
-          translated_content =
-            %{
-              "header" => translated_label,
-              "text" => text,
-              "type" => content["content"]["type"]
+          if Map.has_key?(content["content"], "caption") do
+            [caption, text | options] = remaining_translations
+
+            options_translated =
+              Enum.zip(Enum.map(content["options"], fn option -> option["type"] end), options)
+              |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+
+            translated_content_map =
+              %{
+                "header" => translated_label,
+                "caption" => caption,
+                "text" => text,
+                "type" => content["content"]["type"]
+              }
+              |> Map.merge(
+                if Map.has_key?(content["content"], "url"),
+                  do: %{"url" => content["content"]["url"]},
+                  else: %{}
+              )
+
+            translated_template = %{
+              "content" => translated_content_map,
+              "options" => options_translated,
+              "type" => "quick_reply"
             }
-            |> Map.merge(
-              if Map.has_key?(content["content"], "url"),
-                do: %{"url" => content["content"]["url"]},
-                else: %{}
-            )
 
-          translated_template = %{
-            "content" => translated_content,
-            "options" => options_translated,
-            "type" => "quick_reply"
-          }
+            Map.put(
+              acc,
+              Integer.to_string(Map.get(language_code_map, lang_code)),
+              translated_template
+            )
+          else
+            [text | options] = remaining_translations
+
+            options_translated =
+              Enum.zip(Enum.map(content["options"], fn option -> option["type"] end), options)
+              |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+
+            translated_content_map =
+              %{
+                "header" => translated_label,
+                "text" => text,
+                "type" => content["content"]["type"]
+              }
+              |> Map.merge(
+                if Map.has_key?(content["content"], "url"),
+                  do: %{"url" => content["content"]["url"]},
+                  else: %{}
+              )
+
+            translated_template = %{
+              "content" => translated_content_map,
+              "options" => options_translated,
+              "type" => "quick_reply"
+            }
 
           Map.put(
             acc,
