@@ -56,6 +56,7 @@ defmodule Glific.InteractiveTemplatesTest do
     @update_attrs %{
       label: "Updated Quick Reply label"
     }
+
     @invalid_attrs %{
       label: nil,
       type: :quick_reply,
@@ -233,5 +234,126 @@ defmodule Glific.InteractiveTemplatesTest do
       assert interactive1 in interactives
       assert interactive2 in interactives
     end
+  end
+
+  setup_all do
+    Tesla.Mock.mock_global(fn env ->
+      cond do
+        String.contains?(env.body, "How excited are you for Glific?") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "Glific के लिए आप कितने उत्साहित हैं?"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "Excited") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "उत्साहित"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "Very Excited") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "बहुत उत्साहित"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "How was your experience with Glific?") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "Glific के साथ आपका अनुभव कैसा था?"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "Great") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "महान"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "Awesome") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "शानदार"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        true ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "अनुवाद उपलब्ध नहीं है"}
+                ]
+              }
+            }
+          }
+      end
+    end)
+
+    :ok
+  end
+
+  test "translate_interactive_template/1 translates an interactive", %{
+    organization_id: _organization_id
+  } do
+    interactive = %{
+    label: "Quick Reply Test Text 2",
+    type: :quick_reply,
+    interactive_content: %{
+      "type" => "quick_reply",
+      "content" => %{
+        "type" => "text",
+        "text" => "How was your experience with Glific?"
+      },
+      "options" => [
+        %{
+          "type" => "text",
+          "title" => "Great"
+        },
+        %{
+          "type" => "text",
+          "title" => "Awesome"
+        }
+      ]
+    }
+  }
+
+    assert {:ok, %InteractiveTemplate{}} =
+             InteractiveTemplates.translate_interactive_template(interactive) |> IO.inspect()
   end
 end

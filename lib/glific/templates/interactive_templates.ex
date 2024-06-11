@@ -4,11 +4,11 @@ defmodule Glific.Templates.InteractiveTemplates do
   """
 
   alias Glific.{
+    Flows.Translate.GoogleTranslate,
     Repo,
-    Tags.Tag,
-    Templates.InteractiveTemplate,
     Settings,
-    Flows.Translate.GoogleTranslate
+    Tags.Tag,
+    Templates.InteractiveTemplate
   }
 
   import Ecto.Query, warn: false
@@ -425,8 +425,13 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   defp translate_quick_reply(content, active_languages, language_code_map, organization_id, label) do
     content_to_translate =
-      [label, content["content"]["text"]] ++
-        Enum.map(content["options"], fn option -> option["title"] end)
+      if Map.has_key?(content["content"], "caption") do
+        [label, content["content"]["caption"], content["content"]["text"]] ++
+          Enum.map(content["options"], fn option -> option["title"] end)
+      else
+        [label, content["content"]["text"]] ++
+          Enum.map(content["options"], fn option -> option["title"] end)
+      end
 
     Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
       translations =
@@ -439,37 +444,71 @@ defmodule Glific.Templates.InteractiveTemplates do
         end
 
       case translations do
-        {:ok, [translated_label, text | options]} ->
-          options_translated =
-            Enum.zip(Enum.map(content["options"], fn option -> option["type"] end), options)
-            |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+        {:ok, translated_content} ->
+          [translated_label | remaining_translations] = translated_content
 
-          translated_content =
-            %{
-              "header" => translated_label,
-              "text" => text,
-              "type" => content["content"]["type"]
+          if Map.has_key?(content["content"], "caption") do
+            [caption, text | options] = remaining_translations
+
+            options_translated =
+              Enum.zip(Enum.map(content["options"], fn option -> option["type"] end), options)
+              |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+
+            translated_content_map =
+              %{
+                "header" => translated_label,
+                "caption" => caption,
+                "text" => text,
+                "type" => content["content"]["type"]
+              }
+              |> Map.merge(
+                if Map.has_key?(content["content"], "url"),
+                  do: %{"url" => content["content"]["url"]},
+                  else: %{}
+              )
+
+            translated_template = %{
+              "content" => translated_content_map,
+              "options" => options_translated,
+              "type" => "quick_reply"
             }
-            |> Map.merge(
-              if Map.has_key?(content["content"], "url"),
-                do: %{"url" => content["content"]["url"]},
-                else: %{}
+
+            Map.put(
+              acc,
+              Integer.to_string(Map.get(language_code_map, lang_code)),
+              translated_template
             )
+          else
+            [text | options] = remaining_translations
 
-          translated_template = %{
-            "content" => translated_content,
-            "options" => options_translated,
-            "type" => "quick_reply"
-          }
+            options_translated =
+              Enum.zip(Enum.map(content["options"], fn option -> option["type"] end), options)
+              |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
 
-          Map.put(
-            acc,
-            Integer.to_string(Map.get(language_code_map, lang_code)),
-            translated_template
-          )
+            translated_content_map =
+              %{
+                "header" => translated_label,
+                "text" => text,
+                "type" => content["content"]["type"]
+              }
+              |> Map.merge(
+                if Map.has_key?(content["content"], "url"),
+                  do: %{"url" => content["content"]["url"]},
+                  else: %{}
+              )
 
-        _ ->
-          acc
+            translated_template = %{
+              "content" => translated_content_map,
+              "options" => options_translated,
+              "type" => "quick_reply"
+            }
+
+            Map.put(
+              acc,
+              Integer.to_string(Map.get(language_code_map, lang_code)),
+              translated_template
+            )
+          end
       end
     end)
   end
@@ -480,6 +519,9 @@ defmodule Glific.Templates.InteractiveTemplates do
         content["title"],
         content["body"]
       ] ++
+        Enum.map(content["globalButtons"], fn button ->
+          button["title"]
+        end) ++
         Enum.flat_map(content["items"], fn item ->
           [
             item["title"],
@@ -502,7 +544,20 @@ defmodule Glific.Templates.InteractiveTemplates do
 
       case translations do
         {:ok, translated_content} ->
-          [title, body | items_translations] = translated_content
+          [title, body | remaining_translations] = translated_content
+
+          global_buttons_length = length(content["globalButtons"])
+
+          global_buttons_translations =
+            Enum.slice(remaining_translations, 0, global_buttons_length)
+
+          items_translations = Enum.drop(remaining_translations, global_buttons_length)
+
+          global_buttons_translated =
+            Enum.zip(global_buttons_translations, content["globalButtons"])
+            |> Enum.map(fn {translated_title, button} ->
+              Map.put(button, "title", translated_title)
+            end)
 
           options_length = length(Enum.at(content["items"], 0)["options"])
 
@@ -533,13 +588,14 @@ defmodule Glific.Templates.InteractiveTemplates do
               }
             end)
 
-          translated_template = %{
-            "title" => title,
-            "body" => body,
-            "globalButtons" => content["globalButtons"],
-            "items" => items_translated,
-            "type" => "list"
-          }
+          translated_template =
+            %{
+              "title" => title,
+              "body" => body,
+              "globalButtons" => global_buttons_translated,
+              "items" => items_translated,
+              "type" => "list"
+            }
 
           Map.put(
             acc,
