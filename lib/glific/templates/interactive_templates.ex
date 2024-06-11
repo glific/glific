@@ -3,8 +3,6 @@ defmodule Glific.Templates.InteractiveTemplates do
   The InteractiveTemplate Context, which encapsulates and manages interactive templates
   """
 
-  # require Logger
-
   alias Glific.{
     Flows.Translate.GoogleTranslate,
     Repo,
