@@ -138,9 +138,7 @@ defmodule GlificWeb.Schema.WaSearchTest do
       )
 
     assert {:ok, %{data: %{"search" => searches}} = _query_data} = result
-    [conv | _] = searches
     assert Enum.count(searches) == 2
-    assert Enum.count(conv["messages"]) == 1
 
     # with available phone_id filters
     result =

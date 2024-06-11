@@ -15,8 +15,8 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
     WAMessages
   }
 
-  alias GlificWeb.Providers.Maytapi.Controllers.MessageEventController
   alias(Glific.Repo)
+  alias GlificWeb.Providers.Maytapi.Controllers.MessageEventController
 
   @delivered_ack %{
     "data" => [
@@ -125,7 +125,10 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
   end
 
   @tag :dd
-  test "send message/2 in a whatsapp group, update_statuses function test", %{staff: user, conn: _conn} do
+  test "send message/2 in a whatsapp group, update_statuses function test", %{
+    staff: user,
+    conn: _conn
+  } do
     mock_maytapi_response(200, %{
       "success" => true,
       "data" => %{
@@ -175,6 +178,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
     })
 
     MessageEventController.update_statuses(@delivered_ack, user.organization_id)
+
     message =
       WAMessage
       |> where([wa], wa.bsp_id == "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d")
