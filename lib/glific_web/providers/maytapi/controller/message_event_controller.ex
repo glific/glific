@@ -3,7 +3,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
   Dedicated controller to handle all the message status requests like sent, delivered etc..
   """
   use GlificWeb, :controller
-  use Publicist
 
   alias Glific.{
     Communications,
