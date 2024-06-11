@@ -6,6 +6,7 @@ defmodule GlificWeb.Resolvers.Messages do
 
   alias Glific.{
     Contacts.Contact,
+    Groups.ContactGroups,
     Groups.Group,
     Groups.WAGroup,
     Messages,
@@ -104,11 +105,22 @@ defmodule GlificWeb.Resolvers.Messages do
   defp send_message_to_group(attrs, group_id, user, type) do
     with {:ok, group} <-
            Repo.fetch_by(Group, %{id: group_id, organization_id: user.organization_id}),
+         {:ok, true} <- validate_group_members(group),
          {:ok, contact_ids} <-
            attrs
            |> Map.put(:user_id, user.id)
            |> Messages.create_and_send_message_to_group(group, type),
          do: {:ok, %{success: true, contact_ids: contact_ids}}
+  end
+
+  defp validate_group_members(group) do
+    member_count =
+      ContactGroups.count_contact_groups(%{
+        filter: %{group_id: group.id},
+        organization_id: group.organization_id
+      })
+
+    if member_count == 0, do: {:error, "The group has no members"}, else: {:ok, true}
   end
 
   @doc """

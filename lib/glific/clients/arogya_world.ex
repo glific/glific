@@ -136,7 +136,7 @@ defmodule Glific.Clients.ArogyaWorld do
     }
   end
 
-  def webhook(_, fields), do: fields
+  def webhook(_, _fields), do: %{}
 
   @doc """
   Hourly task jobs for the ArogyaWorld

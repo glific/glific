@@ -263,9 +263,10 @@ defmodule Glific.Clients do
   def webhook(name, fields) do
     module_name = get_in(plugins(), [fields["organization_id"], :webhook])
 
-    if module_name,
-      do: module_name.webhook(name, fields),
-      else: CommonWebhook.webhook(name, fields)
+    case CommonWebhook.webhook(name, fields) do
+      %{error: "Missing webhook function implementation"} -> module_name.webhook(name, fields)
+      results -> results
+    end
   end
 
   @doc """

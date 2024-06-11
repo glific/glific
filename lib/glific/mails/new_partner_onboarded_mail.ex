@@ -36,7 +36,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
 
   @doc false
   @spec user_query_mail(map(), Organization.t()) :: Swoosh.Email.t()
-  def user_query_mail(query, org) do
+  def user_query_mail(query, saas_org) do
     team = "operations"
 
     subject = """
@@ -47,7 +47,8 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
     #{query["message"]}
 
 
-    Name: #{query["name"]}
+    Name: #{query["name"]},
+    Organization Name: #{query["org_name"]},
     Email: #{query["email"]}
     """
 
@@ -55,7 +56,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
       team: team
     ]
 
-    Mailer.common_send(org, subject, body, opts)
+    Mailer.common_send(saas_org, subject, body, opts)
   end
 
   @doc false

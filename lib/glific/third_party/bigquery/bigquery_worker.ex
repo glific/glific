@@ -711,7 +711,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
             user_name: if(!is_nil(row.user), do: row.user.name),
             user_phone: if(!is_nil(row.user), do: row.user.phone),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
-            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+            updated_at: BigQuery.format_date(row.updated_at, organization_id),
+            flow_id: row.flow.id,
+            flow_name: row.flow.name
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
@@ -1201,7 +1203,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([t], t.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([t], [t.inserted_at, t.id])
-      |> preload([:user, :contact])
+      |> preload([:user, :contact, :flow])
 
   defp get_query("stats", organization_id, attrs),
     do:

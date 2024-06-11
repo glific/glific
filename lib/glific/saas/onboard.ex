@@ -12,6 +12,7 @@ defmodule Glific.Saas.Onboard do
     Communications.Mailer,
     Contacts.Contact,
     Mails.NewPartnerOnboardedMail,
+    Notion,
     Partners,
     Partners.Billing,
     Partners.Organization,
@@ -22,6 +23,8 @@ defmodule Glific.Saas.Onboard do
     Saas.Queries
   }
 
+  # 1 year
+  @forced_suspension_hrs 8760
   @doc """
   Setup all the tables and necessary values to onboard an organization
   """
@@ -125,6 +128,12 @@ defmodule Glific.Saas.Onboard do
     |> add_map(:is_approved, true)
   end
 
+  defp organization_status(:forced_suspension, changes) do
+    changes
+    |> add_map(:is_suspended, true)
+    |> add_map(:suspended_until, Timex.shift(DateTime.utc_now(), hours: @forced_suspension_hrs))
+  end
+
   defp organization_status(_, changes) do
     changes
     |> add_map(:is_active, false)
@@ -209,8 +218,14 @@ defmodule Glific.Saas.Onboard do
   @spec process_on_submission(map(), Organization.t(), Registration.t()) :: map()
   defp process_on_submission(result, org, %{has_submitted: true} = registration) do
     with %{is_valid: true} = result <- Queries.eligible_for_submission?(result, registration) do
-      notify_on_submission(org, registration)
-      notify_saas_team(org)
+      Task.start(fn ->
+        notify_on_submission(org, registration)
+        notify_saas_team(org)
+
+        Notion.update_table_properties(registration)
+        |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
+      end)
+
       result
     end
   end
@@ -264,6 +279,9 @@ defmodule Glific.Saas.Onboard do
   @spec update_registration_details(map(), Registration.t()) ::
           {:ok, Registration.t()} | {:error, Ecto.Changeset.t()}
   defp update_registration_details(params, registration) do
+    # updates the `Dispute in T&C` column in Notion whenever user disagrees with T&C
+    update_tc_dispute(params["terms_agreed"], registration)
+
     case params do
       %{"org_details" => org_details} ->
         Map.put(
@@ -306,4 +324,14 @@ defmodule Glific.Saas.Onboard do
   end
 
   defp update_org_details(org, _params, _registration), do: {:ok, org}
+
+  @spec update_tc_dispute(boolean() | nil, Registration.t()) :: any()
+  defp update_tc_dispute(false, registration) do
+    Task.start(fn ->
+      Notion.update_tc_dispute_property()
+      |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
+    end)
+  end
+
+  defp update_tc_dispute(_terms_agreed, _registration), do: :ok
 end

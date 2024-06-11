@@ -2,10 +2,7 @@ defmodule Glific.Clients.QuestAlliance do
   @moduledoc """
   Custom webhook implementation specific to QuestAlliance
   """
-  alias Glific.{
-    Clients.CommonWebhook,
-    Contacts
-  }
+  alias Glific.Contacts
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -22,8 +19,5 @@ defmodule Glific.Clients.QuestAlliance do
     fields
   end
 
-  def webhook("jugalbandi", fields), do: CommonWebhook.webhook("jugalbandi", fields)
-
-  def webhook(_, _fields),
-    do: %{}
+  def webhook(_, _fields), do: %{}
 end

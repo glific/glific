@@ -117,6 +117,17 @@ defmodule Glific.OnboardTest do
     end
   end
 
+  test "ensure that sending in valid parameters, update organization status as forced_suspension true" do
+    result = Onboard.setup(@valid_attrs)
+
+    {:ok, organization} =
+      Repo.fetch_by(Organization, %{name: result.organization.name}, skip_organization_id: true)
+
+    updated_organization = Onboard.status(organization.id, :forced_suspension)
+
+    assert updated_organization.is_suspended == true
+  end
+
   test "ensure that sending in valid parameters, update organization status as is_active false and change subscription plan",
        attrs do
     use_cassette "update_subscription_inactive_plan" do
@@ -353,7 +364,115 @@ defmodule Glific.OnboardTest do
         "submitter" => %{
           "name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email()
+        }
+      }
+
+      assert %{
+               messages: _,
+               is_valid: true
+             } =
+               Onboard.update_registration(valid_params, org)
+    end
+
+    test "update_registration, terms_agreed and support_staff_acount were false on submission", %{
+      org: org,
+      registration_id: reg_id
+    } do
+      valid_params = %{
+        "registration_id" => reg_id,
+        "finance_poc" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "Sr Accountant",
+          "phone" => Phone.PtBr.phone()
         },
+        "signing_authority" => %{
+          "name" => Faker.Person.name(),
+          "email" => Faker.Internet.email(),
+          "designation" => "designation"
+        },
+        "has_submitted" => false
+      }
+
+      assert %{
+               messages: _,
+               is_valid: true
+             } =
+               Onboard.update_registration(valid_params, org)
+
+      {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
+      assert reg.billing_frequency == "monthly"
+      assert %{"name" => _, "email" => _, "designation" => _} = reg.signing_authority
+      %{email: email} = Partners.get_organization!(org.id)
+      assert !is_nil(email)
+
+      valid_params = %{
+        "registration_id" => reg_id,
+        "finance_poc" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "Sr Accountant",
+          "phone" => Phone.PtBr.phone()
+        },
+        "submitter" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email()
+        },
+        "has_submitted" => true
+      }
+
+      assert %{
+               messages: _,
+               is_valid: false
+             } =
+               Onboard.update_registration(valid_params, org)
+    end
+
+    test "update_registration, terms_agreed and support_staff_acount were true on submission", %{
+      org: org,
+      registration_id: reg_id
+    } do
+      valid_params = %{
+        "registration_id" => reg_id,
+        "finance_poc" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "Sr Accountant",
+          "phone" => Phone.PtBr.phone()
+        },
+        "signing_authority" => %{
+          "name" => Faker.Person.name(),
+          "email" => Faker.Internet.email(),
+          "designation" => "designation"
+        },
+        "has_submitted" => false
+      }
+
+      assert %{
+               messages: _,
+               is_valid: true
+             } =
+               Onboard.update_registration(valid_params, org)
+
+      {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
+      assert reg.billing_frequency == "monthly"
+      assert %{"name" => _, "email" => _, "designation" => _} = reg.signing_authority
+      %{email: email} = Partners.get_organization!(org.id)
+      assert !is_nil(email)
+
+      valid_params = %{
+        "registration_id" => reg_id,
+        "finance_poc" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "Sr Accountant",
+          "phone" => Phone.PtBr.phone()
+        },
+        "submitter" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email()
+        },
+        "terms_agreed" => true,
         "has_submitted" => true
       }
 
@@ -376,7 +495,7 @@ defmodule Glific.OnboardTest do
 
   test "reachout/1, valid params" do
     invalid_params = %{
-      "name" => Faker.Person.name(),
+      "name" => Faker.Person.name() |> String.slice(0, 24),
       "message" => Faker.Lorem.paragraph() |> String.slice(0, 250),
       "email" => Faker.Internet.email()
     }

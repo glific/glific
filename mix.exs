@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "6.0.7",
+      version: "6.0.8",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -143,7 +143,7 @@ defmodule Glific.MixProject do
       {:google_api_sheets, "~> 0.29"},
       {:waffle, "~> 1.1"},
       {:waffle_ecto, "~> 0.0"},
-      {:csv, "~> 2.5"},
+      {:csv, "~> 3.2"},
       {:observer_cli, "~> 1.7"},
       {:apiac_filter_ip_whitelist, "~> 1.0"},
       {:ex_phone_number, "~> 0.3"},
