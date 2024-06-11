@@ -431,7 +431,7 @@ defmodule Glific do
   @doc """
   Get Bhasini keys
   """
-  @spec get_bhasini_keys() :: String.t()
+  @spec get_bhasini_keys() :: map()
   def get_bhasini_keys do
     %{
       user_id: Application.get_env(:glific, :bhasini_user_id),
