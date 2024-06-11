@@ -15,9 +15,11 @@ defmodule Glific.ASR.Bhasini do
 
     content = Base.encode64(response.body)
 
+    bhasini_keys = Glific.get_bhasini_keys()
+
     default_headers = [
-      {"userID", "#{fields["userID"]}"},
-      {"ulcaApiKey", "#{fields["ulcaApiKey"]}"},
+      {"userID", bhasini_keys.user_id},
+      {"ulcaApiKey", bhasini_keys.ulca_api_key},
       {"Content-Type", "application/json"}
     ]
 

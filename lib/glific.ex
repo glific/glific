@@ -413,7 +413,7 @@ defmodule Glific do
   def add_limit(args), do: Map.put(args, :opts, Map.put(%{}, :limit, 25))
 
   @doc """
-  Get default OpenAI keys
+  Get default OpenAI key
   """
   @spec get_open_ai_key() :: String.t()
   def get_open_ai_key do
@@ -421,10 +421,21 @@ defmodule Glific do
   end
 
   @doc """
-  Get default googleTranslate keys
+  Get default Google Translate key
   """
   @spec get_google_translate_key() :: String.t()
   def get_google_translate_key do
     Application.get_env(:glific, :google_translate)
+  end
+
+  @doc """
+  Get Bhasini keys
+  """
+  @spec get_bhasini_keys() :: String.t()
+  def get_bhasini_keys do
+    %{
+      user_id: Application.get_env(:glific, :bhasini_user_id),
+      ulca_api_key: Application.get_env(:glific, :bhasini_ulca_api_key)
+    }
   end
 end
