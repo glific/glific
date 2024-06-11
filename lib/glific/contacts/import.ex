@@ -179,7 +179,7 @@ defmodule Glific.Contacts.Import do
     {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
 
     data
-    |> CSV.decode(headers: true, strip_fields: true)
+    |> CSV.decode(headers: true, field_transform: &String.trim/1)
     |> Stream.map(fn {_, data} -> cleanup_contact_data(data, params, date_format) end)
     |> Task.async_stream(
       fn contact ->
@@ -331,7 +331,7 @@ defmodule Glific.Contacts.Import do
 
     contact_id_list =
       contact_data_as_stream
-      |> CSV.decode(headers: true, strip_fields: true)
+      |> CSV.decode(headers: true, field_transform: &String.trim/1)
       |> Enum.map(fn {_, data} -> clean_contact_for_group(data, organization_id) end)
       |> get_contact_id_list(organization_id)
 

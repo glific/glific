@@ -123,7 +123,7 @@ defmodule Glific.Providers.Gupshup.Template do
     processed_templates =
       stream
       |> IO.binstream(:line)
-      |> CSV.decode(headers: true, strip_fields: true)
+      |> CSV.decode(headers: true, field_transform: &String.trim/1)
       |> Enum.map(fn {_, data} -> process_templates(organization_id, data, db_templates) end)
 
     processed_templates
