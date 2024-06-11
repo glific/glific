@@ -17,7 +17,7 @@ defmodule GlificWeb.API.V1.SessionController do
     organization_id = conn.assigns[:organization_id]
     user_params = Map.put(user_params, "organization_id", organization_id)
 
-    with %{status: :active} <- Partners.get_organization!(organization_id),
+    with %Organization{status: :active} <- Partners.get_organization!(organization_id),
          {:ok, conn} <- Pow.Plug.authenticate_user(conn, user_params) do
       Logger.info("Logged in user: user_id: '#{conn.assigns[:current_user].id}'")
       last_login_time = conn.assigns[:current_user].last_login_at
