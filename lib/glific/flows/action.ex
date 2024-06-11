@@ -527,7 +527,7 @@ defmodule Glific.Flows.Action do
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
 
-  @spec check_the_next_node(Keyword.t(), Action.t(), map()) :: Keyword.t()
+  @spec check_missing_interactive_template(Keyword.t(), Action.t(), map()) :: Keyword.t()
   defp check_missing_interactive_template(errors, action, flow) do
     Repo.fetch_by(
       InteractiveTemplate,
@@ -565,7 +565,7 @@ defmodule Glific.Flows.Action do
 
     [
       {Message,
-       "The next node after interactive (check #{node_label}) should be wait for response",
+       "The next node after interactive Node #{node_label} should be wait for response",
        "Warning"}
       | errors
     ]
