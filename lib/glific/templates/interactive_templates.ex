@@ -400,6 +400,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     active_languages = Settings.get_language_code(organization_id)
     interactive_content = interactive_template.interactive_content
     interactive_msg_type = interactive_content["type"]
+    label = interactive_template.label
 
     translated_contents =
       case interactive_msg_type do
@@ -408,7 +409,8 @@ defmodule Glific.Templates.InteractiveTemplates do
             interactive_content,
             active_languages,
             language_code_map,
-            organization_id
+            organization_id,
+            label
           )
 
         "list" ->
@@ -418,20 +420,15 @@ defmodule Glific.Templates.InteractiveTemplates do
             language_code_map,
             organization_id
           )
-
-        _ ->
-          %{}
       end
 
     update_interactive_template(interactive_template, %{translations: translated_contents})
   end
 
-  defp translate_quick_reply(content, active_languages, language_code_map, organization_id) do
+  defp translate_quick_reply(content, active_languages, language_code_map, organization_id, label) do
     content_to_translate =
-      [
-        content["content"]["header"],
-        content["content"]["text"]
-      ] ++ Enum.map(content["options"], fn option -> option["title"] end)
+      [label, content["content"]["text"]] ++
+        Enum.map(content["options"], fn option -> option["title"] end)
 
     Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
       translations =
@@ -444,20 +441,25 @@ defmodule Glific.Templates.InteractiveTemplates do
         end
 
       case translations do
-        {:ok, [header, text | options]} ->
+        {:ok, [translated_label, text | options]} ->
           options_translated =
-            Enum.zip(
-              Enum.map(content["options"], fn option -> option["type"] end),
-              options
-            )
+            Enum.zip(Enum.map(content["options"], fn option -> option["type"] end), options)
             |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
 
-          translated_template = %{
-            "content" => %{
-              "header" => header,
+          translated_content =
+            %{
+              "header" => translated_label,
               "text" => text,
-              "type" => "text"
-            },
+              "type" => content["content"]["type"]
+            }
+            |> Map.merge(
+              if Map.has_key?(content["content"], "url"),
+                do: %{"url" => content["content"]["url"]},
+                else: %{}
+            )
+
+          translated_template = %{
+            "content" => translated_content,
             "options" => options_translated,
             "type" => "quick_reply"
           }
@@ -505,6 +507,7 @@ defmodule Glific.Templates.InteractiveTemplates do
           [title, body | items_translations] = translated_content
 
           options_length = length(Enum.at(content["items"], 0)["options"])
+
           items_translated =
             Enum.chunk_every(
               items_translations,
