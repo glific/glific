@@ -174,10 +174,16 @@ defmodule Glific.Clients.CommonWebhook do
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
     contact = get_contact_language(contact_id)
 
-    Bhasini.with_config_request(
-      fields,
-      contact.language.locale
-    )
+    with {:ok, response} <-
+           Bhasini.with_config_request(
+             fields,
+             contact.language.locale
+           ) do
+      {:ok, media_content} = Tesla.get(fields["speech"])
+
+      content = Base.encode64(media_content.body)
+      Bhasini.handle_response(response, content)
+    end
   end
 
   def webhook("get_buttons", fields) do
