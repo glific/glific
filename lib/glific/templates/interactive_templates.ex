@@ -417,20 +417,25 @@ defmodule Glific.Templates.InteractiveTemplates do
           )
 
       case translations do
-        {:ok, [header, text | options]} ->
+        {:ok, [translated_label, text | options]} ->
           options_translated =
-            Enum.zip(
-              Enum.map(content["options"], fn option -> option["type"] end),
-              options
-            )
+            Enum.zip(Enum.map(content["options"], fn option -> option["type"] end), options)
             |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
 
-          translated_template = %{
-            "content" => %{
-              "header" => header,
+          translated_content =
+            %{
+              "header" => translated_label,
               "text" => text,
-              "type" => "text"
-            },
+              "type" => content["content"]["type"]
+            }
+            |> Map.merge(
+              if Map.has_key?(content["content"], "url"),
+                do: %{"url" => content["content"]["url"]},
+                else: %{}
+            )
+
+          translated_template = %{
+            "content" => translated_content,
             "options" => options_translated,
             "type" => "quick_reply"
           }
