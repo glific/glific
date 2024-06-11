@@ -4,6 +4,8 @@ defmodule Glific.ASR.Bhasini do
   """
   use Tesla
 
+  @config_url "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model"
+
   @doc """
   Performs an ASR (Automatic Speech Recognition) API call with configuration request.
 
@@ -39,7 +41,9 @@ defmodule Glific.ASR.Bhasini do
       }
     }
 
-    case Tesla.post("#{fields["base_url"]}getModelsPipeline", Jason.encode!(post_body),
+    url = @config_url <> "/getModelsPipeline"
+
+    case Tesla.post(url, Jason.encode!(post_body),
            headers: default_headers,
            opts: [adapter: [recv_timeout: 300_000]]
          ) do
