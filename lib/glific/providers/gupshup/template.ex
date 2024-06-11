@@ -56,6 +56,7 @@ defmodule Glific.Providers.Gupshup.Template do
              attrs.organization_id,
              # we don't need media_url for further processing
              Map.delete(body, :media_url)
+            |> Map.put(:allowTemplateCategoryChange, Map.get(attrs, :allow_template_category_change, true))
            ) do
       attrs
       |> Map.merge(%{
