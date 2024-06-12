@@ -532,7 +532,7 @@ defmodule Glific.FLowsTest do
       "An Interactive template does not exist",
       "A template could not be found in the flow",
       "Language is a required field",
-      "The next node after interactive should be wait for response",
+      "The next node after interactive Node 731b should be wait for response",
       "Node af33 is missing translations in Hindi",
       "Node 3964 is missing translations in Hindi",
       "Node a0f7 is missing translations in Hindi",
