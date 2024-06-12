@@ -411,4 +411,34 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     assert message =~ "has already been taken"
   end
+
+  test "create a session_template with allow_template_category_change", %{staff: user} do
+    label = "Default Template Label"
+
+    {:ok, session_template} =
+      Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
+
+    language_id = session_template.language_id
+
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "Test Label",
+            "body" => "Test Template",
+            "type" => "TEXT",
+            "languageId" => language_id,
+            "allow_template_category_change" => true
+          }
+        }
+      )
+
+    IO.inspect(result, label: "GraphQL Response")
+
+
+    assert {:ok, query_data} = result
+    allow_template_category_change = get_in(query_data, [:data, "createSessionTemplate", "sessionTemplate", "allowTemplateCategoryChange"])
+    assert allow_template_category_change == true
+  end
+
 end
