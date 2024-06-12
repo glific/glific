@@ -334,7 +334,7 @@ defmodule Glific.OnboardTest do
           "phone" => Phone.PtBr.phone()
         },
         "signing_authority" => %{
-          "name" => Faker.Person.name(),
+          "name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email(),
           "designation" => "designation"
         },
