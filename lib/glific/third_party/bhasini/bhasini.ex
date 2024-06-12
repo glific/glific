@@ -3,6 +3,12 @@ defmodule Glific.Bhasini do
   Bhasini Integration Module
   """
 
+  alias Glific.GCS.GcsWorker
+
+  @doc """
+  This function makes an API call to the Bhasini ASR service using the provided configuration parameters and returns the public media URL of the file.
+  """
+  @spec text_to_speech(map(), String.t(), non_neg_integer()) :: map()
   def text_to_speech(params, text, org_id) do
     authorization_name = params["pipelineInferenceAPIEndPoint"]["inferenceApiKey"]["name"]
     authorization_value = params["pipelineInferenceAPIEndPoint"]["inferenceApiKey"]["value"]
@@ -45,25 +51,13 @@ defmodule Glific.Bhasini do
          ) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         response = Jason.decode!(body)
-
-        encoded_audio =
-          get_in(response, [
-            "pipelineResponse",
-            Access.at(0),
-            "audio",
-            Access.at(0),
-            "audioContent"
-          ])
-
-        decoded_audio = Base.decode64!(encoded_audio)
-
         uuid = Ecto.UUID.generate()
-        path = System.tmp_dir!() <> "#{uuid}.mp3"
-        File.write!(path, decoded_audio)
+        path = download_encoded_file(response, uuid)
+
         remote_name = "Bhasini/outbound/#{uuid}.mp3"
 
         {:ok, media_meta} =
-          Glific.GCS.GcsWorker.upload_media(
+          GcsWorker.upload_media(
             path,
             remote_name,
             org_id
@@ -74,5 +68,25 @@ defmodule Glific.Bhasini do
       _ ->
         %{success: false, reason: "could not fetch data"}
     end
+  end
+
+  # Basically saving decoding the encoded audio and saving it
+  # locally before uploading it to GCS to get public URL of file to be used at flow level
+  @spec download_encoded_file(map(), String.t()) :: String.t()
+  defp download_encoded_file(response, uuid) do
+    encoded_audio =
+      get_in(response, [
+        "pipelineResponse",
+        Access.at(0),
+        "audio",
+        Access.at(0),
+        "audioContent"
+      ])
+
+    decoded_audio = Base.decode64!(encoded_audio)
+
+    path = System.tmp_dir!() <> "#{uuid}.mp3"
+    :ok = File.write!(path, decoded_audio)
+    path
   end
 end

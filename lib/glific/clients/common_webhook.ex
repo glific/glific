@@ -194,8 +194,7 @@ defmodule Glific.Clients.CommonWebhook do
     contact = get_contact_language(contact_id)
     fields = Map.put(fields, "task_type", "tts")
     organization = Glific.Partners.organization(org_id)
-    services = organization.services["google_cloud_storage"] |> IO.inspect()
-
+    services = organization.services["google_cloud_storage"]
     with false <- is_nil(services),
          {:ok, response} <-
            Bhasini.with_config_request(

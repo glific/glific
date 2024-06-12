@@ -14,8 +14,6 @@ defmodule GlificWeb.Resolvers.Media do
         %{media: media, extension: extension, organization_id: organization_id},
         %{context: %{current_user: user}}
       ) do
-    IO.inspect(media)
-    IO.inspect(extension)
 
     GcsWorker.upload_media(media.path, remote_name(user, extension), organization_id)
     |> handle_response()
