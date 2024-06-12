@@ -393,7 +393,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec translate_interactive_template(InteractiveTemplate.t()) ::
           {:ok, InteractiveTemplate.t()} | {:error, String.t()}
   def translate_interactive_template(interactive_template) do
-    organization_id = interactive_template.organization_id
+    organization_id = interactive_template.organization_id |> IO.inspect()
     language_code_map = Settings.locale_id_map()
     active_languages = Settings.get_language_code(organization_id)
     interactive_content = interactive_template.interactive_content
@@ -492,7 +492,7 @@ defmodule Glific.Templates.InteractiveTemplates do
           if Map.has_key?(content["content"], "caption") do
             [caption, text | options] = remaining_translations
 
-            options_translated = do_options_translated(content, options)
+            options_translated = do_options_translated(content, options) |> IO.inspect()
 
             translated_content_map =
               %{
