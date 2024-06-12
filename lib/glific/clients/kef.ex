@@ -8,7 +8,6 @@ defmodule Glific.Clients.KEF do
   require Logger
 
   alias Glific.{
-    Clients.CommonWebhook,
     Contacts,
     Flows.ContactField,
     Partners,
@@ -138,9 +137,6 @@ defmodule Glific.Clients.KEF do
   additional functionality as needed
   """
   @spec webhook(String.t(), map()) :: map()
-  def webhook("parse_via_gpt_vision", fields),
-    do: CommonWebhook.webhook("parse_via_gpt_vision", fields)
-
   def webhook("load_worksheets", fields) do
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> load_worksheets()
@@ -409,9 +405,7 @@ defmodule Glific.Clients.KEF do
     }
   end
 
-  def webhook(_, _) do
-    raise "Unknown webhook"
-  end
+  def webhook(_, _fields), do: %{}
 
   @spec load_worksheets(non_neg_integer()) :: map()
   defp load_worksheets(org_id) do

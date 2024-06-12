@@ -71,6 +71,14 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  def webhook("filesearch-gpt", fields) do
+    question = fields["question"]
+    thread_id = Map.get(fields, "thread_id", nil)
+    assistant_id = Map.get(fields, "assistant_id", nil)
+    params = %{thread_id: thread_id, assistant_id: assistant_id, question: question}
+    ChatGPT.handle_conversation(params)
+  end
+
   def webhook("llm4dev", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     question = fields["question"]

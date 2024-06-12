@@ -96,6 +96,8 @@ defmodule Glific.Clients.Sol do
     %{completed: true}
   end
 
+  def webhook(_, _fields), do: %{}
+
   @doc false
   @spec load_activity_schedule(non_neg_integer()) ::
           {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
