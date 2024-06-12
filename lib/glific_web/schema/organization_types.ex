@@ -140,6 +140,10 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:updated_at, :datetime)
   end
 
+  object :app_usage_output do
+    #TODO
+  end
+
   @desc "Filtering options for organizations"
   input_object :organization_filter do
     @desc "Match the shortcode"
@@ -232,6 +236,13 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:tables, list_of(:string))
   end
 
+  input_object :app_usage_input do
+    field(:id, :id)
+    field(:from_date, :date)
+    field(:to_date, :date)
+  end
+  #TODO: make id non-null and fetch using nested resolver?
+
   object :organization_queries do
     @desc "get the details of one organization"
     field :organization, :organization_result do
@@ -316,6 +327,13 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       resolve(fn _, _, _ ->
         {:ok, OrganizationStatus.__enum_map__()}
       end)
+    end
+
+    @desc "Get daily app usage"
+    field :app_usage, :app_usage_output do
+      arg(:app_usage_input, :app_usage_input)
+      #TODO add middleware?
+      resolve(&Resolvers.Partners.get_app_usage/3)
     end
   end
 

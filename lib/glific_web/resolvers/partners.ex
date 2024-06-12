@@ -343,4 +343,9 @@ defmodule GlificWeb.Resolvers.Partners do
       {:ok, %{credential: updated_credential}}
     end
   end
+
+  def get_app_usage(_parent, args, _res) do
+    {:ok, Partners.get_app_usage(args)}
+  end
+
 end
