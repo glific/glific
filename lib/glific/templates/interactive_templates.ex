@@ -423,6 +423,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     update_interactive_template(interactive_template, %{translations: translated_contents})
   end
 
+  @spec translate_quick_reply(map(), map(), map(), String.t(), String.t()) :: map()
   defp translate_quick_reply(content, active_languages, language_code_map, organization_id, label) do
     content_to_translate =
       if Map.has_key?(content["content"], "caption") do
@@ -501,6 +502,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     end)
   end
 
+  @spec translate_list(map(), map(), map(), String.t()) :: map()
   defp translate_list(content, active_languages, language_code_map, organization_id) do
     content_to_translate =
       [
@@ -567,6 +569,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     end)
   end
 
+  @spec add_url_if_present(map(), map()) :: map()
   defp add_url_if_present(map, content) do
     if Map.has_key?(content["content"], "url") do
       Map.put(map, "url", content["content"]["url"])
@@ -575,11 +578,13 @@ defmodule Glific.Templates.InteractiveTemplates do
     end
   end
 
+  @spec do_options_translated(map(), list()) :: list()
   defp do_options_translated(content, options) do
     Enum.zip(Enum.map(content["options"], fn option -> option["type"] end), options)
     |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
   end
 
+  @spec do_items_translated(map(), list()) :: list()
   defp do_items_translated(content, items_translations) do
     options_length = length(Enum.at(content["items"], 0)["options"])
 
