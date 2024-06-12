@@ -450,9 +450,7 @@ defmodule Glific.Templates.InteractiveTemplates do
           if Map.has_key?(content["content"], "caption") do
             [caption, text | options] = remaining_translations
 
-            options_translated =
-              Enum.zip(Enum.map(content["options"], fn option -> option["type"] end), options)
-              |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+            options_translated = do_options_translated(content, options)
 
             translated_content_map =
               %{
@@ -461,11 +459,7 @@ defmodule Glific.Templates.InteractiveTemplates do
                 "text" => text,
                 "type" => content["content"]["type"]
               }
-              |> Map.merge(
-                if Map.has_key?(content["content"], "url"),
-                  do: %{"url" => content["content"]["url"]},
-                  else: %{}
-              )
+              |> add_url_if_present(content)
 
             translated_template = %{
               "content" => translated_content_map,
@@ -481,9 +475,7 @@ defmodule Glific.Templates.InteractiveTemplates do
           else
             [text | options] = remaining_translations
 
-            options_translated =
-              Enum.zip(Enum.map(content["options"], fn option -> option["type"] end), options)
-              |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+            options_translated = do_options_translated(content, options)
 
             translated_content_map =
               %{
@@ -491,11 +483,7 @@ defmodule Glific.Templates.InteractiveTemplates do
                 "text" => text,
                 "type" => content["content"]["type"]
               }
-              |> Map.merge(
-                if Map.has_key?(content["content"], "url"),
-                  do: %{"url" => content["content"]["url"]},
-                  else: %{}
-              )
+              |> add_url_if_present(content)
 
             translated_template = %{
               "content" => translated_content_map,
@@ -559,34 +547,7 @@ defmodule Glific.Templates.InteractiveTemplates do
               Map.put(button, "title", translated_title)
             end)
 
-          options_length = length(Enum.at(content["items"], 0)["options"])
-
-          items_translated =
-            Enum.chunk_every(
-              items_translations,
-              2 + options_length * 2
-            )
-            |> Enum.zip(content["items"])
-            |> Enum.map(fn {translated_item, item} ->
-              [item_title, item_subtitle | options_translations] = translated_item
-
-              options =
-                Enum.chunk_every(options_translations, 2)
-                |> Enum.zip(item["options"])
-                |> Enum.map(fn {[option_title, option_description], option} ->
-                  %{
-                    "title" => option_title,
-                    "description" => option_description,
-                    "type" => option["type"]
-                  }
-                end)
-
-              %{
-                "title" => item_title,
-                "subtitle" => item_subtitle,
-                "options" => options
-              }
-            end)
+          items_translated = do_items_translated(content, items_translations)
 
           translated_template =
             %{
@@ -603,6 +564,46 @@ defmodule Glific.Templates.InteractiveTemplates do
             translated_template
           )
       end
+    end)
+  end
+
+  defp add_url_if_present(map, content) do
+    if Map.has_key?(content["content"], "url") do
+      Map.put(map, "url", content["content"]["url"])
+    else
+      map
+    end
+  end
+
+  defp do_options_translated(content, options) do
+    Enum.zip(Enum.map(content["options"], fn option -> option["type"] end), options)
+    |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+  end
+
+  defp do_items_translated(content, items_translations) do
+    options_length = length(Enum.at(content["items"], 0)["options"])
+
+    Enum.chunk_every(items_translations, 2 + options_length * 2)
+    |> Enum.zip(content["items"])
+    |> Enum.map(fn {translated_item, item} ->
+      [item_title, item_subtitle | options_translations] = translated_item
+
+      options =
+        Enum.chunk_every(options_translations, 2)
+        |> Enum.zip(item["options"])
+        |> Enum.map(fn {[option_title, option_description], option} ->
+          %{
+            "title" => option_title,
+            "description" => option_description,
+            "type" => option["type"]
+          }
+        end)
+
+      %{
+        "title" => item_title,
+        "subtitle" => item_subtitle,
+        "options" => options
+      }
     end)
   end
 end

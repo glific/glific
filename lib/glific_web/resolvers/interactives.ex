@@ -42,7 +42,7 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
           {:ok, any} | {:error, any}
   def create_interactive_template(_, %{input: params}, _) do
     with {:ok, interactive_template} <-
-           InteractiveTemplates.create_interactive_template(params)
+           InteractiveTemplates.create_interactive_template(params) do
       {:ok, %{interactive_template: interactive_template}}
     end
   end

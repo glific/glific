@@ -239,72 +239,48 @@ defmodule Glific.InteractiveTemplatesTest do
   setup_all do
     Tesla.Mock.mock_global(fn env ->
       cond do
-        String.contains?(env.body, "How excited are you for Glific?") ->
+        String.contains?(env.body, "Test glific quick reply?") ->
           %Tesla.Env{
             body: %{
               "data" => %{
                 "translations" => [
-                  %{"translatedText" => "Glific के लिए आप कितने उत्साहित हैं?"}
+                  %{"translatedText" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"}
                 ]
               }
             },
             status: 200
           }
 
-        String.contains?(env.body, "Excited") ->
+        String.contains?(env.body, "Quick Reply Fixture") ->
           %Tesla.Env{
             body: %{
               "data" => %{
                 "translations" => [
-                  %{"translatedText" => "उत्साहित"}
+                  %{"translatedText" => "त्वरित उत्तर स्थिरता"}
                 ]
               }
             },
             status: 200
           }
 
-        String.contains?(env.body, "Very Excited") ->
+        String.contains?(env.body, "Test 1") ->
           %Tesla.Env{
             body: %{
               "data" => %{
                 "translations" => [
-                  %{"translatedText" => "बहुत उत्साहित"}
+                  %{"translatedText" => "परीक्षण 1"}
                 ]
               }
             },
             status: 200
           }
 
-        String.contains?(env.body, "How was your experience with Glific?") ->
+        String.contains?(env.body, "Test 2") ->
           %Tesla.Env{
             body: %{
               "data" => %{
                 "translations" => [
-                  %{"translatedText" => "Glific के साथ आपका अनुभव कैसा था?"}
-                ]
-              }
-            },
-            status: 200
-          }
-
-        String.contains?(env.body, "Great") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "महान"}
-                ]
-              }
-            },
-            status: 200
-          }
-
-        String.contains?(env.body, "Awesome") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "शानदार"}
+                  %{"translatedText" => "परीक्षण 2"}
                 ]
               }
             },
@@ -328,32 +304,18 @@ defmodule Glific.InteractiveTemplatesTest do
     :ok
   end
 
-  test "translate_interactive_template/1 translates an interactive", %{
-    organization_id: _organization_id
-  } do
-    interactive = %{
-    label: "Quick Reply Test Text 2",
-    type: :quick_reply,
-    interactive_content: %{
-      "type" => "quick_reply",
-      "content" => %{
-        "type" => "text",
-        "text" => "How was your experience with Glific?"
-      },
-      "options" => [
-        %{
-          "type" => "text",
-          "title" => "Great"
-        },
-        %{
-          "type" => "text",
-          "title" => "Awesome"
-        }
-      ]
-    }
-  }
+  test "translate_interactive_template/1 translates an interactive",
+       %{organization_id: _organization_id} = attrs do
+    interactive = Fixtures.interactive_fixture(attrs)
 
-    assert {:ok, %InteractiveTemplate{}} =
-             InteractiveTemplates.translate_interactive_template(interactive) |> IO.inspect()
+    result = InteractiveTemplates.translate_interactive_template(interactive)
+
+    assert {:ok, %InteractiveTemplate{translations: translations}} = result
+
+    assert Map.has_key?(translations, "2")
+    assert translations["2"]["content"]["text"] == "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"
+    assert translations["2"]["content"]["header"] == "त्वरित उत्तर स्थिरता"
+    assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्षण 1" end)
+    assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्षण 2" end)
   end
 end
