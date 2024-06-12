@@ -492,9 +492,7 @@ defmodule Glific.Templates.InteractiveTemplates do
           if Map.has_key?(content["content"], "caption") do
             [caption, text | options] = remaining_translations
 
-            options_translated =
-              Enum.zip(Enum.map(content["options"], fn option -> option["type"] end), options)
-              |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+            options_translated = do_options_translated(content, options)
 
             translated_content_map =
               %{
@@ -503,11 +501,7 @@ defmodule Glific.Templates.InteractiveTemplates do
                 "text" => text,
                 "type" => content["content"]["type"]
               }
-              |> Map.merge(
-                if Map.has_key?(content["content"], "url"),
-                  do: %{"url" => content["content"]["url"]},
-                  else: %{}
-              )
+              |> add_url_if_present(content)
 
             translated_template = %{
               "content" => translated_content_map,
@@ -523,9 +517,7 @@ defmodule Glific.Templates.InteractiveTemplates do
           else
             [text | options] = remaining_translations
 
-            options_translated =
-              Enum.zip(Enum.map(content["options"], fn option -> option["type"] end), options)
-              |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+            options_translated = do_options_translated(content, options)
 
             translated_content_map =
               %{
@@ -533,11 +525,7 @@ defmodule Glific.Templates.InteractiveTemplates do
                 "text" => text,
                 "type" => content["content"]["type"]
               }
-              |> Map.merge(
-                if Map.has_key?(content["content"], "url"),
-                  do: %{"url" => content["content"]["url"]},
-                  else: %{}
-              )
+              |> add_url_if_present(content)
 
             translated_template = %{
               "content" => translated_content_map,
