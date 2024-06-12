@@ -795,4 +795,53 @@ defmodule Glific.Templates.InteractiveTemplates do
       }
     end
   end
+
+  @spec export_interactive_template(map()) :: {:ok, any()}
+  def export_interactive_template(interactive_template) do
+    {:ok, translated_template} = translate_interactive_template(interactive_template)
+
+    translation = translated_template.translations
+
+    header_row = ["Language", "Label", "Type", "Content", "Options"]
+
+    csv_rows =
+      Enum.reduce(translation, [header_row], fn {language_code, translation}, acc ->
+        language_name = get_language_name(language_code)
+        label = interactive_template.label
+        type = translation["type"]
+
+        content =
+          case type do
+            "quick_reply" ->
+              "#{translation["content"]["header"]}, #{translation["content"]["text"]}"
+
+            "list" ->
+              "#{translation["title"]}, #{translation["body"]}"
+          end
+
+        options =
+          case type do
+            "quick_reply" ->
+              Enum.map(translation["options"], fn option -> option["title"] end)
+              |> Enum.join(", ")
+
+            "list" ->
+              Enum.map(translation["items"], fn item -> item["title"] end) |> Enum.join(", ")
+          end
+
+        csv_row = [language_name, label, type, content, options]
+        acc ++ [csv_row]
+      end)
+
+    data =
+      csv_rows
+      |> CSV.encode(delimiter: "\n")
+      |> Enum.join("")
+
+    {:ok, %{export_data: data}}
+  end
+
+  defp get_language_name(language_code) do
+    language_code
+  end
 end
