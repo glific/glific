@@ -186,6 +186,24 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  # This webhook will call Bhasini text-to-speech API
+  def webhook("text_to_speech_with_bhasini", fields) do
+    text = fields["text"]
+    org_id = fields["organization_id"]
+    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+    contact = get_contact_language(contact_id)
+    fields = Map.put(fields, "task_type", "tts")
+
+    with {:ok, response} <-
+           Bhasini.with_config_request(
+             fields,
+             contact.language.locale
+           ) do
+      params = Jason.decode!(response.body)
+      Glific.Bhasini.text_to_speech(params, text, org_id)
+    end
+  end
+
   def webhook("get_buttons", fields) do
     buttons =
       fields["buttons_data"]
