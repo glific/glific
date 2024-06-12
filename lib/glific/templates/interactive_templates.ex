@@ -719,4 +719,55 @@ defmodule Glific.Templates.InteractiveTemplates do
   defp get_language_name(language_code) do
     language_code
   end
+
+  @spec content_to_translate(map(), String.t()) :: list()
+  defp content_to_translate(content, label) do
+    if Map.has_key?(content["content"], "caption") do
+      [label, content["content"]["caption"], content["content"]["text"]] ++
+        Enum.map(content["options"], fn option -> option["title"] end)
+    else
+      [label, content["content"]["text"]] ++
+        Enum.map(content["options"], fn option -> option["title"] end)
+    end
+  end
+
+  @spec create_translated_template(map(), String.t(), [String.t()]) :: map()
+  defp create_translated_template(content, translated_label, remaining_translations) do
+    if Map.has_key?(content["content"], "caption") do
+      [caption, text | options] = remaining_translations
+      options_translated = do_options_translated(content, options)
+
+      translated_content_map =
+        %{
+          "header" => translated_label,
+          "caption" => caption,
+          "text" => text,
+          "type" => content["content"]["type"]
+        }
+        |> add_url_if_present(content)
+
+      %{
+        "content" => translated_content_map,
+        "options" => options_translated,
+        "type" => "quick_reply"
+      }
+    else
+      [text | options] = remaining_translations
+      options_translated = do_options_translated(content, options)
+
+      translated_content_map =
+        %{
+          "header" => translated_label,
+          "text" => text,
+          "type" => content["content"]["type"]
+        }
+        |> add_url_if_present(content)
+
+      %{
+        "content" => translated_content_map,
+        "options" => options_translated,
+        "type" => "quick_reply"
+      }
+    end
+  end
 end
