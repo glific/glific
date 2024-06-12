@@ -393,7 +393,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec translate_interactive_template(InteractiveTemplate.t()) ::
           {:ok, InteractiveTemplate.t()} | {:error, String.t()}
   def translate_interactive_template(interactive_template) do
-    organization_id = interactive_template.organization_id
+    organization_id = interactive_template.organization_id |> IO.inspect()
     language_code_map = Settings.locale_id_map()
     active_languages = Settings.get_language_code(organization_id)
     interactive_content = interactive_template.interactive_content
@@ -423,7 +423,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     update_interactive_template(interactive_template, %{translations: translated_contents})
   end
 
-  @spec translate_quick_reply(map(), map(), map(), String.t(), String.t()) :: map()
+  @spec translate_quick_reply(map(), map(), map(), non_neg_integer(), String.t()) :: map()
   defp translate_quick_reply(content, active_languages, language_code_map, organization_id, label) do
     content_to_translate =
       if Map.has_key?(content["content"], "caption") do
@@ -451,7 +451,7 @@ defmodule Glific.Templates.InteractiveTemplates do
           if Map.has_key?(content["content"], "caption") do
             [caption, text | options] = remaining_translations
 
-            options_translated = do_options_translated(content, options)
+            options_translated = do_options_translated(content, options) |> IO.inspect()
 
             translated_content_map =
               %{
@@ -502,7 +502,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     end)
   end
 
-  @spec translate_list(map(), map(), map(), String.t()) :: map()
+  @spec translate_list(map(), map(), map(), non_neg_integer()) :: map()
   defp translate_list(content, active_languages, language_code_map, organization_id) do
     content_to_translate =
       [
