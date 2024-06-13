@@ -564,8 +564,7 @@ defmodule Glific.Flows.Action do
     node_label = String.slice(node_id, -4..-1)
 
     [
-      {Message,
-       "The next node after interactive Node #{node_label} should be wait for response",
+      {Message, "The next node after interactive Node #{node_label} should be wait for response",
        "Warning"}
       | errors
     ]
