@@ -401,26 +401,69 @@ defmodule Glific.Templates.InteractiveTemplates do
     label = interactive_template.label
 
     translated_contents =
-      case interactive_msg_type do
-        "quick_reply" ->
-          translate_quick_reply(
-            interactive_content,
-            active_languages,
-            language_code_map,
-            organization_id,
-            label
-          )
-
-        "list" ->
-          translate_list(
-            interactive_content,
-            active_languages,
-            language_code_map,
-            organization_id
-          )
-      end
+      translate_interactive_content(
+        interactive_msg_type,
+        interactive_content,
+        active_languages,
+        language_code_map,
+        organization_id,
+        label
+      )
 
     update_interactive_template(interactive_template, %{translations: translated_contents})
+  end
+
+  @spec translate_interactive_content(
+          String.t(),
+          map(),
+          map(),
+          map(),
+          non_neg_integer(),
+          String.t()
+        ) :: map()
+
+  defp translate_interactive_content(
+         "quick_reply",
+         interactive_content,
+         active_languages,
+         language_code_map,
+         organization_id,
+         label
+       ) do
+    translate_quick_reply(
+      interactive_content,
+      active_languages,
+      language_code_map,
+      organization_id,
+      label
+    )
+  end
+
+  defp translate_interactive_content(
+         "list",
+         interactive_content,
+         active_languages,
+         language_code_map,
+         organization_id,
+         _label
+       ) do
+    translate_list(interactive_content, active_languages, language_code_map, organization_id)
+  end
+
+  defp translate_interactive_content(
+         "location_request_message",
+         interactive_content,
+         active_languages,
+         language_code_map,
+         organization_id,
+         _label
+       ) do
+    translate_location_request(
+      interactive_content,
+      active_languages,
+      language_code_map,
+      organization_id
+    )
   end
 
   @spec translate_quick_reply(map(), map(), map(), non_neg_integer(), String.t()) :: map()
@@ -489,6 +532,37 @@ defmodule Glific.Templates.InteractiveTemplates do
             "globalButtons" => global_buttons_translated,
             "items" => items_translated,
             "type" => "list"
+          }
+
+          Map.put(
+            acc,
+            Integer.to_string(Map.get(language_code_map, lang_code)),
+            translated_template
+          )
+      end
+    end)
+  end
+
+  @spec translate_location_request(map(), map(), map(), non_neg_integer()) :: map()
+  defp translate_location_request(content, active_languages, language_code_map, organization_id) do
+    content_to_translate = [content["body"]["text"]]
+
+    Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
+      translations =
+        if lang_name == "English" do
+          {:ok, content_to_translate}
+        else
+          GoogleTranslate.translate(content_to_translate, "English", lang_name,
+            org_id: organization_id
+          )
+        end
+
+      case translations do
+        {:ok, [translated_text]} ->
+          translated_template = %{
+            "action" => content["action"],
+            "body" => %{"text" => translated_text, "type" => content["body"]["type"]},
+            "type" => content["type"]
           }
 
           Map.put(
