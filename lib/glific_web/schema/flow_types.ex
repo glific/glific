@@ -32,6 +32,7 @@ defmodule GlificWeb.Schema.FlowTypes do
 
   object :export_flow do
     field :export_data, :json
+    field :errors, list_of(:input_error)
   end
 
   object :export_flow_localization do
