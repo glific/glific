@@ -111,6 +111,7 @@ defmodule Glific.Groups.WAGroupsTest do
                shortcode: "maytapi"
              })
 
+  end
     test "fetch_wa_groups/1 fetch groups for empty group label", attrs do
       Tesla.Mock.mock(fn _env ->
         %Tesla.Env{
@@ -133,5 +134,4 @@ defmodule Glific.Groups.WAGroupsTest do
       # group with an empty name is not created
       assert is_nil(Repo.get_by(WAGroup, label: ""))
     end
-  end
 end
