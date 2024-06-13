@@ -413,12 +413,27 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   end
 
   test "create a session_template with allow_template_category_change", %{staff: user} do
-    label = "Default Template Label"
+    [hsm | _rest] =
+      Templates.list_session_templates(%{
+        filter: %{organization_id: user.organization_id, is_hsm: true}
+      })
 
-    {:ok, session_template} =
-      Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
-
-    language_id = session_template.language_id
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "success",
+              "template" => %{
+                "id" => hsm.uuid,
+                "allow_template_category_change" => true,
+                "status" => "APPROVED",
+                "category" => "MARKETING"
+              }
+            })
+        }
+    end)
 
     result =
       auth_query_gql_by(:create, user,
@@ -427,18 +442,15 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
             "label" => "Test Label",
             "body" => "Test Template",
             "type" => "TEXT",
-            "languageId" => language_id,
+            "languageId" => hsm.language_id,
             "allow_template_category_change" => true
           }
         }
       )
 
-    IO.inspect(result, label: "GraphQL Response")
+    {:ok, %{"data" => %{"createSessionTemplate" => %{"sessionTemplate" => session_template}}}} = result
 
+    assert session_template["allow_template_category_change"] == true
 
-    assert {:ok, query_data} = result
-    allow_template_category_change = get_in(query_data, [:data, "createSessionTemplate", "sessionTemplate", "allowTemplateCategoryChange"])
-    assert allow_template_category_change == true
+    end
   end
-
-end
