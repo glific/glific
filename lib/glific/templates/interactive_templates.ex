@@ -401,14 +401,15 @@ defmodule Glific.Templates.InteractiveTemplates do
     label = interactive_template.label
 
     translated_contents =
-      translate_interactive_content(
-        interactive_msg_type,
-        interactive_content,
-        active_languages,
-        language_code_map,
-        organization_id,
-        label
-      )
+      case interactive_msg_type do
+        "quick_reply" ->
+          translate_quick_reply(
+            interactive_content,
+            active_languages,
+            language_code_map,
+            organization_id,
+            label
+          )
 
     update_interactive_template(interactive_template, %{translations: translated_contents})
   end
@@ -622,21 +623,21 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   @spec build_content_to_translate(map()) :: list
   defp build_content_to_translate(content) do
-    title = content["title"]
-    body = content["body"]
-
-    global_button_titles = Enum.map(content["globalButtons"], fn button -> button["title"] end)
-
-    item_titles_and_subtitles =
+    [
+      content["title"],
+      content["body"]
+    ] ++
+      Enum.map(content["globalButtons"], fn button ->
+        button["title"]
+      end) ++
       Enum.flat_map(content["items"], fn item ->
-        [item["title"], item["subtitle"]]
-      end)
-
-    option_titles_and_descriptions =
-      Enum.flat_map(content["items"], fn item ->
-        Enum.flat_map(item["options"], fn option ->
-          [option["title"], option["description"]]
-        end)
+        [
+          item["title"],
+          item["subtitle"]
+        ] ++
+          Enum.flat_map(item["options"], fn option ->
+            [option["title"], option["description"]]
+          end)
       end)
 
     [title, body] ++
