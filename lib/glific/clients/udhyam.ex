@@ -5,7 +5,6 @@ defmodule Glific.Clients.Udhyam do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Clients.CommonWebhook,
     Flows.Flow,
     Repo
   }
@@ -15,13 +14,7 @@ defmodule Glific.Clients.Udhyam do
   additional functionality as needed
   """
   @spec webhook(String.t(), map()) :: map()
-  def webhook("jugalbandi", fields), do: CommonWebhook.webhook("jugalbandi", fields)
-
-  def webhook("parse_via_chat_gpt", fields),
-    do: CommonWebhook.webhook("parse_via_chat_gpt", fields)
-
-  def webhook(_, _fields),
-    do: %{}
+  def webhook(_, _fields), do: %{}
 
   @doc """
   Tweak GCS Bucket name based Udhyam usecase

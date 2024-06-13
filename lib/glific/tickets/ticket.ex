@@ -10,12 +10,13 @@ defmodule Glific.Tickets.Ticket do
 
   alias Glific.{
     Contacts.Contact,
+    Flows.Flow,
     Partners.Organization,
     Users.User
   }
 
   @required_fields [:body, :contact_id, :status, :organization_id]
-  @optional_fields [:user_id, :topic, :remarks, :message_number]
+  @optional_fields [:user_id, :topic, :remarks, :message_number, :flow_id]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -29,6 +30,8 @@ defmodule Glific.Tickets.Ticket do
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           user_id: non_neg_integer | nil,
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
+          flow_id: non_neg_integer | nil,
+          flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -44,6 +47,7 @@ defmodule Glific.Tickets.Ticket do
 
     belongs_to(:contact, Contact)
     belongs_to(:user, User)
+    belongs_to(:flow, Flow)
     belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
@@ -57,6 +61,7 @@ defmodule Glific.Tickets.Ticket do
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:contact_id)
     |> foreign_key_constraint(:user_id)
+    |> foreign_key_constraint(:flow_id)
     |> foreign_key_constraint(:organization_id)
   end
 end

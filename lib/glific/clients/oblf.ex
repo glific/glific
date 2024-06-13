@@ -29,6 +29,5 @@ defmodule Glific.Clients.Oblf do
     }
   end
 
-  def webhook(_, _fields),
-    do: %{}
+  def webhook(_, _fields), do: %{}
 end

@@ -23,13 +23,13 @@ defmodule Glific.Partners.Organization do
   @required_fields [
     :name,
     :shortcode,
-    :email,
     :bsp_id,
     :default_language_id
   ]
 
   # define all the optional fields for organization
   @optional_fields [
+    :email,
     :contact_id,
     :is_active,
     :is_approved,
@@ -71,7 +71,7 @@ defmodule Glific.Partners.Organization do
           days: list() | nil,
           is_active: boolean() | true,
           is_approved: boolean() | false,
-          status: String.t() | nil,
+          status: String.t() | nil | atom(),
           timezone: String.t() | nil,
           active_language_ids: [integer] | [],
           languages: [Language.t()] | nil,
@@ -161,6 +161,9 @@ defmodule Glific.Partners.Organization do
 
     # A virtual field for now to conditionally enable contact profile feature for an organization
     field(:is_contact_profile_enabled, :boolean, default: false, virtual: true)
+
+    # A virtual field for now to conditionally enable llm4dev feature for an organization
+    field(:is_llm4dev_enabled, :boolean, default: false, virtual: true)
 
     # A virtual field for now to conditionally enable ticketing feature for an organization
     field(:is_ticketing_enabled, :boolean, default: false, virtual: true)

@@ -160,8 +160,7 @@ defmodule Glific.Clients.Bandhu do
 
   defp format_profile_message(profiles) do
     profiles
-    |> Enum.with_index(1)
-    |> Enum.reduce({%{}, []}, fn {profile, index}, {index_map, message_list} ->
+    |> Enum.reduce({%{}, []}, fn {index, profile}, {index_map, message_list} ->
       profile_name = profile["name"]
       user_roles = profile["user_roles"]["role_type"]
 

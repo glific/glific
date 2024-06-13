@@ -741,6 +741,11 @@ subscription organization_subscriptions {
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>regxFlow</strong></td>
+<td valign="top"><a href="#regxflow">RegxFlow</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>newcontactFlowId</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
 <td></td>
@@ -899,6 +904,36 @@ subscription organization_subscriptions {
 <tr>
 <td colspan="2" valign="top"><strong>flow_id</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### RegxFlow
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>flowId</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>regx</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>regxOpt</strong></td>
+<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 </tbody>
@@ -1110,6 +1145,36 @@ Unique
 <tr>
 <td colspan="2" valign="top"><strong>flow_id</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### RegxFlow
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>flowId</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>regx</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>regxOpt</strong></td>
+<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 </tbody>

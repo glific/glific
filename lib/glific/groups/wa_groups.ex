@@ -35,6 +35,9 @@ defmodule Glific.Groups.WAGroups do
         query
         |> where([wg], wg.id in subquery(sub_query))
 
+      {:term, term}, query ->
+        query |> where([wa_grp], ilike(wa_grp.label, ^"%#{term}%"))
+
       _, query ->
         query
     end)
@@ -88,14 +91,21 @@ defmodule Glific.Groups.WAGroups do
 
   @spec get_group_details(map(), WAManagedPhone.t()) :: [map()]
   defp get_group_details(%{"data" => groups}, wa_managed_phone) when is_list(groups) do
-    Enum.map(groups, fn group ->
-      %{
-        name: group["name"],
-        bsp_id: group["id"],
-        wa_managed_phone_id: wa_managed_phone.id,
-        participants: group["participants"] || [],
-        admins: group["admins"]
-      }
+    Enum.reduce(groups, [], fn group, acc ->
+      if group["name"] != nil and group["name"] != "" do
+        [
+          %{
+            name: group["name"],
+            bsp_id: group["id"],
+            wa_managed_phone_id: wa_managed_phone.id,
+            participants: group["participants"] || [],
+            admins: group["admins"]
+          }
+          | acc
+        ]
+      else
+        acc
+      end
     end)
   end
 

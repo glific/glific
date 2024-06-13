@@ -3,6 +3,8 @@ defmodule Glific.ClientsTest do
 
   alias Glific.{
     Clients,
+    Clients.Bandhu,
+    Clients.CommonWebhook,
     Clients.ReapBenefit,
     Clients.Sol,
     Contacts,
@@ -113,11 +115,102 @@ defmodule Glific.ClientsTest do
     assert Clients.broadcast(nil, contact, -1) == ug.user.contact_id
   end
 
-  test "check that webhook always returns a map" do
-    # a contact not in any group should return the same staff id
-    assert is_map(Clients.webhook("daily", %{fields: "some fields"}))
+  test "check that webhook always returns a map", attrs do
+    assert is_map(
+             Clients.webhook("daily", %{
+               "fields" => "some fields",
+               "organization_id" => attrs.organization_id
+             })
+           )
 
     assert %{error: "Missing webhook function implementation"} ==
-             Clients.webhook("function", %{fields: "some fields"})
+             CommonWebhook.webhook("function", %{fields: "some fields"})
+  end
+
+  test "fetch_user_profiles webhook function" do
+    fields = %{
+      "results" => %{
+        "parent" => %{
+          "bandhu_profile_check_mock" => %{
+            "success" => "true",
+            "message" => "List loaded Successfully.",
+            "inserted_at" => "2024-04-18T14:19:08.110951Z",
+            "data" => %{
+              "profile_count" => 2,
+              "profiles" => %{
+                "19" => %{
+                  "user_selected_language" => %{
+                    "name" => "English",
+                    "language_code" => "en"
+                  },
+                  "user_roles" => %{
+                    "role_type" => "Worker",
+                    "role_id" => 3
+                  },
+                  "name" => "Jacob Worker Odisha",
+                  "mobile_no" => "809XXXXXX3",
+                  "id" => 14_698,
+                  "full_mobile_no" => nil
+                },
+                "1" => %{
+                  "user_selected_language" => %{
+                    "name" => "English",
+                    "language_code" => "en"
+                  },
+                  "user_roles" => %{
+                    "role_type" => "Employer",
+                    "role_id" => 1
+                  },
+                  "name" => "Jacob Employer",
+                  "mobile_no" => "809XXXXXX3",
+                  "id" => 11_987,
+                  "full_mobile_no" => nil
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    assert %{profile_selection_message: _, index_map: index_map} =
+             Bandhu.webhook("fetch_user_profiles", fields)
+
+    fields = %{
+      "profile_number" => "1",
+      "index_map" => index_map
+    }
+
+    assert %{profile: _} = Bandhu.webhook("set_contact_profile", fields)
+  end
+
+  test "Common webhook function is executed first to ensure that all common functions are accesible for all clients" do
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body: %{
+          "choices" => [
+            %{
+              "message" => %{
+                "content" =>
+                  "This image depicts a scenic view of a sunset or sunrise with a field of flowers silhouetted against the light. The bright sun is low on the horizon, casting a warm glow and causing dramatic lighting and shadows among the silhouetted flowers and stems. The sky has a mix of colors, typical of such time of day, with clouds illuminated by the sun. The text overlaying the image reads \"JPEG This is Sample Image.\"",
+                "role" => "assistant"
+              }
+            }
+          ],
+          "created" => 1_717_089_925,
+          "model" => "gpt-4o-2024-05-13"
+        }
+      }
+    end)
+
+    %{response: response} =
+      Clients.webhook("parse_via_gpt_vision", %{
+        "prompt" => "what's in the image",
+        "url" => "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg"
+      })
+
+    assert response ==
+             "This image depicts a scenic view of a sunset or sunrise with a field of flowers silhouetted against the light. The bright sun is low on the horizon, casting a warm glow and causing dramatic lighting and shadows among the silhouetted flowers and stems. The sky has a mix of colors, typical of such time of day, with clouds illuminated by the sun. The text overlaying the image reads \"JPEG This is Sample Image.\""
   end
 end

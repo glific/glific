@@ -238,7 +238,7 @@ defmodule Glific.Processor.ConsumerFlow do
   defp match_with_regex?(regx_flow, body) when nil in [regx_flow, body], do: false
 
   defp match_with_regex?(regx_flow, body) when is_map(regx_flow) == true do
-    Regex.compile(regx_flow.regx, regx_flow.regx_opt)
+    Regex.compile(regx_flow.regx, regx_flow.regx_opt || "")
     |> case do
       {:ok, rgx} -> String.match?(body, rgx)
       _ -> false

@@ -8,6 +8,7 @@ defmodule Glific.Tickets do
   alias Glific.{
     Contacts.Contact,
     Flows.Action,
+    Flows.Flow,
     Flows.FlowContext,
     Flows.MessageVarParser,
     Messages,
@@ -219,6 +220,7 @@ defmodule Glific.Tickets do
       topic: action.topic,
       user_id: action.assignee,
       contact_id: context.contact_id,
+      flow_id: context.flow.id,
       organization_id: context.organization_id
     }
 
@@ -243,21 +245,23 @@ defmodule Glific.Tickets do
     Ticket
     |> join(:left, [t], c in Contact, as: :c, on: c.id == t.contact_id)
     |> join(:left, [t], u in User, as: :u, on: u.id == t.user_id)
+    |> join(:left, [t], f in Flow, as: :f, on: f.id == t.flow_id)
     |> where([t], t.inserted_at >= ^start_time and t.inserted_at <= ^end_time)
     |> where([t], t.organization_id == ^org_id)
-    |> select([t, c, u], %{
+    |> select([t, c, u, f], %{
       status: t.status,
       body: t.body,
       topic: t.topic,
       inserted_at: t.inserted_at,
       opened_by: c.name,
-      assigned_to: u.name
+      assigned_to: u.name,
+      flow_name: f.name
     })
     |> Repo.all()
     |> convert_to_csv_string()
   end
 
-  @default_headers [:status, :body, :inserted_at, :topic, :opened_by, :assigned_to]
+  @default_headers [:status, :body, :inserted_at, :topic, :opened_by, :assigned_to, :flow_name]
   @doc false
   @spec convert_to_csv_string([Ticket.t()]) :: String.t()
   def convert_to_csv_string(ticket) do

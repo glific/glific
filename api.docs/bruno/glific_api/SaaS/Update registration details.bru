@@ -1,0 +1,42 @@
+meta {
+  name: Update registration details
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{api_url}}/v1/onboard/update-registration-details
+  body: json
+  auth: none
+}
+
+body:json {
+   {
+    "org_id": 2,
+    "registration_id": 1,
+    "org_details": {
+       "gstin": "",
+       "registered_address": "new_addr",
+      "current_address": "cur_addr"
+      },
+    "billing_frequency": "monthly",
+    "finance_poc": {
+          "name": "name",
+         "email": "email@m.com",
+          "designation": "designation",
+          "phone": "9185xxxxxxxx"
+        },
+    "submitter": {
+         "name": "name",
+          "email": "email@m.com"
+        },
+    "signing_authority": {
+          "name": "name",
+         "email": "email@m.com",
+          "designation": "designation"
+      },
+    "has_submitted": true,
+    "terms_agreed": true,
+    "support_staff_account": true
+  }
+}

@@ -49,6 +49,8 @@ defmodule Glific.Clients.KEF do
         _ -> "Others"
       end
 
+    if is_nil(media["contact_id"]), do: Logger.error("Invalid media for KEF: #{inspect(media)}")
+
     Contacts.Contact
     |> Repo.fetch_by(%{
       id: media["contact_id"],
@@ -69,7 +71,6 @@ defmodule Glific.Clients.KEF do
         end
 
       {:error, _} ->
-        Logger.error("Invalid media for KEF: #{inspect(media)}")
         "/#{media_subfolder}/" <> media["remote_name"]
     end
   end
@@ -404,9 +405,7 @@ defmodule Glific.Clients.KEF do
     }
   end
 
-  def webhook(_, _) do
-    raise "Unknown webhook"
-  end
+  def webhook(_, _fields), do: %{}
 
   @spec load_worksheets(non_neg_integer()) :: map()
   defp load_worksheets(org_id) do

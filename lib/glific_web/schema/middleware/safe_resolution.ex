@@ -36,7 +36,8 @@ defmodule GlificWeb.Schema.Middleware.SafeResolution do
 
       Resolution.put_result(
         resolution,
-        {:error, "Glific Exception: " <> String.slice(error, 0..32)}
+        {:error,
+         "Something unexpected has happened, please reach out to Glific team over discord to get this resolved"}
       )
   end
 end

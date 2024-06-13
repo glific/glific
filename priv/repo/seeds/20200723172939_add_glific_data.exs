@@ -9,7 +9,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Contacts.Contact,
     Contacts.ContactsField,
     Flows.Flow,
-    Flows.FlowLabel,
     BigQuery.BigQueryJob,
     Partners,
     Partners.Organization,
@@ -85,8 +84,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     saved_searches(organization)
 
-    flow_labels(organization)
-
     flows(organization)
 
     roles(organization)
@@ -98,6 +95,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     bigquery_jobs(organization)
 
     set_newcontact_optin_flow_id(organization)
+
+    set_regx_flow(organization)
   end
 
   def down(_repo) do
@@ -540,7 +539,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       signature_phrase: "Please change me, NOW!",
       is_active: true,
       is_approved: true,
-      status: :active
+      status: :active,
+      team_emails: %{
+        finance: "ADMIN@REPLACE_ME.NOW",
+        operations: "ADMIN@REPLACE_ME.NOW",
+        analytics: "ADMIN@REPLACE_ME.NOW",
+        chatbot_design: "ADMIN@REPLACE_ME.NOW"
+      }
     })
   end
 
@@ -635,35 +640,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         organization_id: organization.id
       })
 
-  defp flow_labels(organization) do
-    flow_labels = [
-      %{name: "Age Group less than 10"},
-      %{name: "Age Group 11 to 14"},
-      %{name: "Age Group 15 to 18"},
-      %{name: "Age Group 19 or above"},
-      %{name: "Hindi"},
-      %{name: "English"},
-      %{name: "AB_A_Success"},
-      %{name: "AB_B_Success"},
-      %{name: "AB_C_Success"}
-    ]
-
-    flow_labels =
-      Enum.map(
-        flow_labels,
-        fn tag ->
-          tag
-          |> Map.put(:organization_id, organization.id)
-          |> Map.put(:uuid, Ecto.UUID.generate())
-          |> Map.put(:inserted_at, utc_now())
-          |> Map.put(:updated_at, utc_now())
-        end
-      )
-
-    # seed multiple flow labels
-    Repo.insert_all(FlowLabel, flow_labels)
-  end
-
   def flows(organization),
     do: SeedsFlows.seed([organization])
 
@@ -691,9 +667,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   def contacts_field(organization) do
     data = [
       {"Name", "name", :text, :contact},
-      {"Age Group", "age_group", :text, :contact},
       {"Gender", "gender", :text, :contact},
-      {"Date of Birth", "dob", :text, :contact},
       {"Settings", "settings", :text, :contact}
     ]
 
@@ -772,6 +746,23 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     |> Partners.update_organization(%{
       newcontact_flow_id: nc_flow.id,
       optin_flow_id: opt_flow.id
+    })
+  end
+
+  defp set_regx_flow(organization) do
+    {:ok, help_flow} =
+      Repo.fetch_by(Flow, %{
+        name: "Help Workflow",
+        organization_id: organization.id
+      })
+
+    organization
+    |> Partners.update_organization(%{
+      regx_flow: %{
+        regx: "unique_regex",
+        regx_opt: nil,
+        flow_id: help_flow.id
+      }
     })
   end
 

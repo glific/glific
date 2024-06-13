@@ -71,8 +71,8 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "gcs" ->
         Partners.perform_all(
-          &GcsWorker.perform_periodic/1,
-          nil,
+          &GcsWorker.perform_periodic/2,
+          %{phase: "incremental"},
           services["google_cloud_storage"],
           only_recent: true
         )
@@ -101,6 +101,7 @@ defmodule Glific.Jobs.MinuteWorker do
   defp perform(%Oban.Job{args: %{"job" => job}} = _args, services)
        when job in [
               "daily_tasks",
+              "daily_low_traffic_tasks",
               "tracker_tasks",
               "hourly_tasks",
               "delete_tasks",
@@ -145,6 +146,14 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "update_hsms" ->
         Partners.perform_all(&Templates.sync_hsms_from_bsp/1, nil, [])
+
+      "daily_low_traffic_tasks" ->
+        Partners.perform_all(
+          &GcsWorker.perform_periodic/2,
+          %{phase: "unsynced"},
+          services["google_cloud_storage"],
+          only_recent: true
+        )
     end
 
     :ok

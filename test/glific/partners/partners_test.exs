@@ -384,6 +384,24 @@ defmodule Glific.PartnersTest do
       assert updated_organization.newcontact_flow_id == flow.id
     end
 
+    test "update_organization/2 should update regex flow" do
+      organization = Fixtures.organization_fixture()
+      flow = Fixtures.flow_fixture()
+
+      assert {:ok, updated_organization} =
+               Partners.update_organization(organization, %{
+                 regx_flow: %{
+                   flow_id: flow.id,
+                   regx: "test",
+                   regx_opt: "i"
+                 }
+               })
+
+      assert updated_organization.regx_flow.flow_id == flow.id
+      assert updated_organization.regx_flow.regx == "test"
+      assert updated_organization.regx_flow.regx_opt == "i"
+    end
+
     test "update_organization/2 with organization new contact flow update is_pinned status of flow" do
       # organization with newcontact flow as nil
       organization = Fixtures.organization_fixture()

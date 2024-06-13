@@ -43,6 +43,12 @@ defmodule Glific.Groups.ContactGroups do
     |> Repo.all()
   end
 
+  @doc """
+  Return the count of contact groups, using the same filter as list_contact_groups
+  """
+  @spec count_contact_groups(map()) :: integer
+  def count_contact_groups(args), do: Repo.count_filter(args, ContactGroup, &filter_with/2)
+
   # codebeat:disable[ABC, LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do

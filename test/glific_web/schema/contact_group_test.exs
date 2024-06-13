@@ -21,6 +21,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
   end
 
   load_gql(:list, GlificWeb.Schema, "assets/gql/contact_groups/list.gql")
+  load_gql(:count, GlificWeb.Schema, "assets/gql/contact_groups/count.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/contact_groups/create.gql")
   load_gql(:info, GlificWeb.Schema, "assets/gql/contact_groups/info.gql")
 
@@ -206,6 +207,38 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     assert {:ok, query_data} = result
 
     assert length(get_in(query_data, [:data, "contactGroups"])) == length(contact1.groups)
+  end
+
+  test "count and returns the number of contact groups", %{staff: user} do
+    [group | _] =
+      Groups.list_groups(%{filter: %{organization_id: user.organization_id}})
+
+    {:ok, query_data} =
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"group_id" => group.id}})
+
+    assert get_in(query_data, [:data, "countContactGroups"]) == 0
+
+    [contact1 | _] =
+      Contacts.list_contacts(%{filter: %{organization_id: user.organization_id}})
+
+    # add group contacts
+    result =
+      auth_query_gql_by(:update_group_contacts, user,
+        variables: %{
+          "input" => %{
+            "group_id" => group.id,
+            "add_contact_ids" => [contact1.id],
+            "delete_contact_ids" => []
+          }
+        }
+      )
+
+    assert {:ok, _query_data} = result
+
+    {:ok, query_data} =
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"group_id" => group.id}})
+
+    assert get_in(query_data, [:data, "countContactGroups"]) == 1
   end
 
   test "create a contact group and test possible scenarios and errors", %{staff: user_auth} do

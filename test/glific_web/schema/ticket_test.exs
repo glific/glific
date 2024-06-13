@@ -185,18 +185,28 @@ defmodule GlificWeb.Schema.TicketTest do
   end
 
   test "fetch support tickets field returns list of support ticket", %{user: user} = attrs do
+    flow = Fixtures.flow_fixture()
+    contact = Fixtures.contact_fixture()
+    staff = Fixtures.user_fixture()
+
     support_ticket_1 =
       TicketsFixtures.ticket_fixture(%{
         organization_id: attrs.organization_id,
         body: "test body01",
-        topic: "test topic01"
+        topic: "test topic01",
+        user_id: staff.id,
+        contact_id: contact.id,
+        flow_id: flow.id
       })
 
     support_ticket_2 =
       TicketsFixtures.ticket_fixture(%{
         organization_id: attrs.organization_id,
         body: "test body02",
-        status: "closed"
+        status: "closed",
+        user_id: staff.id,
+        contact_id: contact.id,
+        flow_id: flow.id
       })
 
     result =
@@ -212,12 +222,13 @@ defmodule GlificWeb.Schema.TicketTest do
     assert {:ok, query_data} = result
     support_tickets = get_in(query_data, [:data, "fetchSupportTickets"])
     time = Timex.format!(DateTime.utc_now(), "{YYYY}-{0M}-{0D}")
+
     [header | tickets] = String.split(support_tickets, "\n")
-    assert header == "status,body,inserted_at,topic,opened_by,assigned_to"
+    assert header == "status,body,inserted_at,topic,opened_by,assigned_to,flow_name"
 
     assert tickets == [
-             "open,test body01,#{time},test topic01,NGO Main Account,NGO Main Account,",
-             "closed,test body02,#{time},some topic,NGO Main Account,NGO Main Account,",
+             "open,test body01,#{time},test topic01,#{contact.name},#{staff.name},#{flow.name},",
+             "closed,test body02,#{time},some topic,#{contact.name},#{staff.name},#{flow.name},",
              ""
            ]
 

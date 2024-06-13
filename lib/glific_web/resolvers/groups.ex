@@ -55,6 +55,14 @@ defmodule GlificWeb.Resolvers.Groups do
   end
 
   @doc """
+  Get the count of contact_groups filtered by args
+  """
+  @spec count_contact_groups(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_contact_groups(_, args, _) do
+    {:ok, Groups.ContactGroups.count_contact_groups(args)}
+  end
+
+  @doc """
   Get the list of organizations groups filtered by args
   """
   @spec organization_groups(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [Group]}

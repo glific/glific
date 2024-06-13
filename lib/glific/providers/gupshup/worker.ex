@@ -14,6 +14,7 @@ defmodule Glific.Providers.Gupshup.Worker do
     Partners,
     Partners.Organization,
     Providers.Gupshup.ApiClient,
+    Providers.Gupshup.PartnerAPI,
     Providers.Gupshup.ResponseHandler,
     Providers.Worker
   }
@@ -81,7 +82,7 @@ defmodule Glific.Providers.Gupshup.Worker do
       }
       |> check_media_template(payload, template_type)
 
-    ApiClient.send_template(
+    PartnerAPI.send_template(
       org_id,
       template_payload
     )

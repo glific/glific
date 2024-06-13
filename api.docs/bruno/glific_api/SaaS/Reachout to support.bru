@@ -1,0 +1,45 @@
+meta {
+  name: Reachout to support
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{api_url}}/v1/onboard/reachout
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "message",
+    "name": "name",
+    "email": "email@g.com",
+    "org_name: "organization name"
+  }
+}
+
+docs {
+  ### Success Response
+  ```json
+  {
+    "messages": {},
+    "is_valid": true
+  }
+  ```
+  
+  ### Error Response
+  ```json
+  {
+    "messages": {
+     "error_field": "Error reason."
+    },
+    "is_valid": false
+  }
+  ```
+}

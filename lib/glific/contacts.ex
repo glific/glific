@@ -856,7 +856,7 @@ defmodule Glific.Contacts do
       Enum.reduce(
         field_map.groups,
         [],
-        fn g, list -> [g.label | list] end
+        fn g, list -> [g.id | list] end
       )
     )
   end

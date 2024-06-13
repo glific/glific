@@ -7,10 +7,12 @@ defmodule GlificWeb.Schema.FlowTest do
     Contacts,
     Fixtures,
     Flows,
+    Flows.Action,
     Flows.Broadcast,
     Flows.Flow,
     Flows.FlowRevision,
     Flows.MessageBroadcast,
+    Flows.Node,
     Groups,
     Groups.GroupContacts,
     Repo,
@@ -227,10 +229,6 @@ defmodule GlificWeb.Schema.FlowTest do
 
   test "export flow and the import flow", %{manager: user} do
     [flow | _] = Flows.list_flows(%{filter: %{name: "New Contact Workflow"}})
-
-    flow_id = flow.id
-
-    Repo.fetch_by(FlowRevision, %{flow_id: flow_id, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
     assert {:ok, query_data} = result
@@ -607,5 +605,59 @@ defmodule GlificWeb.Schema.FlowTest do
       )
 
     assert {:ok, _query_data} = result
+  end
+
+  test "Start flow for contacts of group for a deleted collection", %{manager: user} do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Help Workflow", organization_id: user.organization_id})
+
+    group = Fixtures.group_fixture()
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "start_session",
+      "contacts" => [%{"name" => "NGO Admin", "uuid" => "14"}],
+      "create_contact" => false,
+      "exclusions" => %{"in_a_flow" => false},
+      "groups" => %{
+        "uuid" => group.id,
+        "name" => group.label
+      },
+      "flow" => %{
+        "name" => "Help Workflow",
+        "uuid" => "3fa22108-f464-41e5-81d9-d8a298854429"
+      }
+    }
+
+    Action.process(json, %{}, node)
+
+    _delete_group = Groups.delete_group(group)
+
+    result =
+      auth_query_gql_by(:group_flow, user,
+        variables: %{"flowId" => flow.id, "groupId" => group.id}
+      )
+
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:errors, Access.at(0), :message]) ==
+             "No valid groups found"
+  end
+
+  test "export flow failed due to sub flow not existing", %{manager: user} do
+    [flow | _] = Flows.list_flows(%{filter: %{name: "New Contact Workflow"}})
+
+    flow_id = flow.id
+
+    Repo.fetch_by(FlowRevision, %{flow_id: flow_id, organization_id: user.organization_id})
+    uuid = "dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f"
+
+    from(f in Flow, where: f.uuid == ^uuid)
+    |> Repo.delete_all([])
+
+    result = auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:errors])) == 1
   end
 end

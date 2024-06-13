@@ -7,8 +7,8 @@ defmodule Glific.Clients.CommonWebhook do
     ASR.Bhasini,
     ASR.GoogleASR,
     Contacts.Contact,
+    LLM4Dev,
     OpenAI.ChatGPT,
-    OpenLLM,
     Repo,
     Sheets.GoogleSheets
   }
@@ -21,6 +21,22 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("parse_via_chat_gpt", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     question_text = fields["question_text"]
+    prompt = Map.get(fields, "prompt", nil)
+
+    # ID of the model to use.
+    model = Map.get(fields, "model", "gpt-3.5-turbo")
+
+    # The sampling temperature, between 0 and 1.
+    # Higher values like 0.8 will make the output more random,
+    # while lower values like 0.2 will make it more focused and deterministic.
+    temperature = Map.get(fields, "temperature", 0)
+
+    params = %{
+      "question_text" => question_text,
+      "prompt" => prompt,
+      "model" => model,
+      "temperature" => temperature
+    }
 
     if question_text in [nil, ""] do
       %{
@@ -29,7 +45,7 @@ defmodule Glific.Clients.CommonWebhook do
       }
     else
       ChatGPT.get_api_key(org_id)
-      |> ChatGPT.parse(question_text)
+      |> ChatGPT.parse(params)
       |> case do
         {:ok, text} ->
           %{
@@ -46,14 +62,40 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  def webhook("open_llm", fields) do
-    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
-    prompt = fields["prompt"]
-    session_id = Map.get(fields, "session_id", nil)
+  @spec webhook(String.t(), map()) :: map()
+  def webhook("parse_via_gpt_vision", fields) do
+    ChatGPT.gpt_vision(fields)
+    |> case do
+      {:ok, response} -> %{success: true, response: response}
+      {:error, error} -> %{success: false, error: error}
+    end
+  end
 
-    with {:ok, %{api_key: api_key, api_url: api_url}} <- OpenLLM.get_credentials(org_id),
+  def webhook("filesearch-gpt", fields) do
+    question = fields["question"]
+    thread_id = Map.get(fields, "thread_id", nil)
+    assistant_id = Map.get(fields, "assistant_id", nil)
+    params = %{thread_id: thread_id, assistant_id: assistant_id, question: question}
+    ChatGPT.handle_conversation(params)
+  end
+
+  def webhook("llm4dev", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    question = fields["question"]
+    session_id = Map.get(fields, "session_id", nil)
+    category_id = Map.get(fields, "category_id", nil)
+    system_prompt = Map.get(fields, "system_prompt", nil)
+
+    params = %{
+      question: question,
+      session_id: session_id,
+      category_id: category_id,
+      system_prompt: system_prompt
+    }
+
+    with {:ok, %{api_key: api_key, api_url: api_url}} <- LLM4Dev.get_credentials(org_id),
          {:ok, response} <-
-           OpenLLM.parse(api_key, api_url, %{prompt: prompt, session_id: session_id}) do
+           LLM4Dev.parse(api_key, api_url, params) do
       response
     else
       {:error, error} ->
