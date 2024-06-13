@@ -251,9 +251,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
   gets daily app usage b/w two dates
   """
-  @spec get_app_usage(non_neg_integer(), String.t(), String.t()) :: {:error, String.t()} | {:ok, map()}
+  @spec get_app_usage(non_neg_integer(), Date.t(), Date.t()) :: {:error, String.t()} | {:ok, map()}
   def get_app_usage(org_id, from_date, to_date) do
-    (app_url(org_id) <> "/usage?from=" <> from_date <> "&to=" <> to_date)
+    (app_url(org_id) <> "/usage?from=" <> Date.to_string(from_date) <> "&to=" <> Date.to_string(to_date))
     |> get_request(org_id: org_id)
   end
 
@@ -273,7 +273,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec fetch_partner_token :: {:ok, map()} | {:error, any}
   defp fetch_partner_token do
     url = @partner_url <> "/login"
-    credentials = Saas.isv_credentials()
+    credentials = Saas.isv_credentials() |> IO.inspect(label: "CRED")
 
     request_params = %{"email" => credentials["email"], "password" => credentials["password"]}
 

@@ -140,8 +140,10 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:updated_at, :datetime)
   end
 
-  object :app_usage_output do
-    #TODO
+  object :app_usages do
+    field(:app_id, :id)
+    field(:authentication, :integer)
+    field(:date, :date)
   end
 
   @desc "Filtering options for organizations"
@@ -236,13 +238,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:tables, list_of(:string))
   end
 
-  input_object :app_usage_input do
-    field(:id, :id)
-    field(:from_date, :date)
-    field(:to_date, :date)
-  end
-  #TODO: make id non-null and fetch using nested resolver?
-
   object :organization_queries do
     @desc "get the details of one organization"
     field :organization, :organization_result do
@@ -330,8 +325,9 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     end
 
     @desc "Get daily app usage"
-    field :app_usage, :app_usage_output do
-      arg(:app_usage_input, :app_usage_input)
+    field :app_usage, list_of(:app_usages) do
+      arg(:from_date, :date)
+      arg(:to_date, :date)
       #TODO add middleware?
       resolve(&Resolvers.Partners.get_app_usage/3)
     end
