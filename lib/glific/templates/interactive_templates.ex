@@ -576,22 +576,25 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   @spec build_content_to_translate(map()) :: list
   defp build_content_to_translate(content) do
-    [
-      content["title"],
-      content["body"]
-    ] ++
-      Enum.map(content["globalButtons"], fn button ->
-        button["title"]
-      end) ++
+    title = content["title"]
+    body = content["body"]
+
+    global_button_titles = Enum.map(content["globalButtons"], fn button -> button["title"] end)
+
+    item_titles_and_subtitles =
       Enum.flat_map(content["items"], fn item ->
-        [
-          item["title"],
-          item["subtitle"]
-        ] ++
-          Enum.flat_map(item["options"], fn option ->
-            [option["title"], option["description"]]
-          end)
+        [item["title"], item["subtitle"]]
       end)
+
+    option_titles_and_descriptions =
+      Enum.flat_map(content["items"], fn item ->
+        Enum.flat_map(item["options"], fn option ->
+          [option["title"], option["description"]]
+        end)
+      end)
+
+    [title, body] ++
+      global_button_titles ++ item_titles_and_subtitles ++ option_titles_and_descriptions
   end
 
   @spec translate_global_buttons([String.t()], [map()]) :: [map()]
@@ -619,15 +622,26 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   @spec do_items_translated(map(), list()) :: list()
   defp do_items_translated(content, items_translations) do
-    options_length = length(Enum.at(content["items"], 0)["options"])
+    chunk_sizes =
+      Enum.map(content["items"], fn item ->
+        2 + length(item["options"]) * 2
+      end)
 
-    Enum.chunk_every(items_translations, 2 + options_length * 2)
-    |> Enum.zip(content["items"])
-    |> Enum.map(fn {translated_item, item} ->
+    translations_chunks =
+      Enum.reduce(chunk_sizes, {[], items_translations}, fn chunk_size,
+                                                            {acc, remaining_translations} ->
+        {chunk, rest} = Enum.split(remaining_translations, chunk_size)
+        {acc ++ [chunk], rest}
+      end)
+      |> elem(0)
+
+    Enum.zip(content["items"], translations_chunks)
+    |> Enum.map(fn {item, translated_item} ->
       [item_title, item_subtitle | options_translations] = translated_item
 
       options =
-        Enum.chunk_every(options_translations, 2)
+        options_translations
+        |> Enum.chunk_every(2)
         |> Enum.zip(item["options"])
         |> Enum.map(fn {[option_title, option_description], option} ->
           %{
