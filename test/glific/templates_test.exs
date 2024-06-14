@@ -678,6 +678,12 @@ defmodule Glific.TemplatesTest do
 
     test "create_session_template/1 for apply template change category" do
       Tesla.Mock.mock(fn
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"access_token" => "mocked_token"})
+          }
+
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
@@ -706,9 +712,10 @@ defmodule Glific.TemplatesTest do
 
       result = Templates.create_session_template(attrs)
 
-      assert {:ok, template} = result
+      assert {:ok, template} = result |> IO.inspect()
       assert template.allow_template_category_change == true
     end
+
 
     test "update_session_template/2 with invalid data returns error changeset", attrs do
       session_template = session_template_fixture(attrs)
