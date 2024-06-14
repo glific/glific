@@ -13,6 +13,8 @@ defmodule Glific.Clients.CommonWebhook do
     Sheets.GoogleSheets
   }
 
+  require Logger
+
   @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
@@ -201,11 +203,17 @@ defmodule Glific.Clients.CommonWebhook do
            Bhasini.with_config_request(
              fields,
              contact.language.locale
-           ) do
-      params = Jason.decode!(response.body)
+           ),
+         %{"feedbackUrl" => _feedback_url, "pipelineInferenceAPIEndPoint" => _endpoint} = params <-
+           Jason.decode!(response.body) do
       Glific.Bhasini.text_to_speech(params, text, org_id)
     else
-      _ -> %{success: false, reason: "GCS is disabled or something went wrong with Bhasini"}
+      true ->
+        %{success: false, reason: "GCS is disabled"}
+
+      error ->
+        Logger.error("Error received from Bhasini: #{error["message"]}")
+        Map.put(error, "success", false)
     end
   end
 
