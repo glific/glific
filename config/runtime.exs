@@ -81,3 +81,9 @@ config :glific,
 
 config :glific,
   notion_secret: env!("NOTION_SECRET", :string!, "This is not a secret")
+
+config :glific,
+  bhasini_user_id: env!("BHASINI_USER_ID", :string!, "This is not a secret")
+
+config :glific,
+  bhasini_ulca_api_key: env!("BHASINI_ULCA_API_KEY", :string!, "This is not a secret")
