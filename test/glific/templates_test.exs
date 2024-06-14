@@ -1423,7 +1423,7 @@ defmodule Glific.TemplatesTest do
       assert imported_template5.shortcode == "beforedemo"
 
       assert imported_template5.body ==
-               "Hi{{1}},Your demo is about to start in 15 min. We are excited to see you there.🤩\r\nPlease join 5 min before time.\r\nClick on this link to attend the session. {{2}}\r\nIn case you face any issues, please call on +918047190520"
+               "Hi{{1}},Your demo is about to start in 15 min. We are excited to see you there.🤩\nPlease join 5 min before time.\nClick on this link to attend the session. {{2}}\nIn case you face any issues, please call on +918047190520"
     end
 
     test "update_hsms/1 should update multiple templates same shortcode as translation", attrs do

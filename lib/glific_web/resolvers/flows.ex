@@ -67,7 +67,9 @@ defmodule GlificWeb.Resolvers.Flows do
   @spec export_flow(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, %{export_data: map}}
   def export_flow(_, %{id: flow_id}, _) do
-    {:ok, %{export_data: Flows.export_flow(flow_id)}}
+    with exported_flow when is_map(exported_flow) <- Flows.export_flow(flow_id) do
+      {:ok, %{export_data: exported_flow}}
+    end
   end
 
   @doc false
@@ -113,7 +115,7 @@ defmodule GlificWeb.Resolvers.Flows do
 
     stream
     |> IO.binstream(:line)
-    |> CSV.decode!(delimiter: "\n")
+    |> CSV.decode!()
     |> Enum.into([])
     |> Import.import_localization(flow)
 
