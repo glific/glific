@@ -64,6 +64,7 @@ defmodule Glific.State do
         %{user: params.user, flow_id: params.flow_id, is_forced: params.is_forced},
         state
       )
+
     {:reply, flow, state, :hibernate}
   end
 
@@ -95,8 +96,25 @@ defmodule Glific.State do
   end
 
   @doc false
-  def get_flow(user, flow_id, is_forced) do
-    GenServer.call(__MODULE__, {:get_flow, %{user: user, flow_id: flow_id, is_forced: is_forced}})
+  def get_flow(user, flow_id, is_forced, retries \\ 0) do
+    GenServer.call(
+      __MODULE__,
+      {:get_flow, %{user: user, flow_id: flow_id, is_forced: is_forced}}
+    )
+  catch
+    :exit, {:timeout, _} = _reason ->
+      if retries < 1 do
+        log_msgq()
+        get_flow(user, flow_id, is_forced, retries + 1)
+      else
+        {:ok,
+         %{
+           errors: %{
+             key: "error",
+             message: "Something went wrong"
+           }
+         }}
+      end
   end
 
   @doc false
@@ -261,4 +279,10 @@ defmodule Glific.State do
   end
 
   defp publish_data(_organization_id, _user_id, :flows), do: nil
+
+  defp log_msgq() do
+    state_pid = GenServer.whereis(__MODULE__)
+    {:message_queue_len, msgq} = Process.info(state_pid, :message_queue_len)
+    Logger.error("State Genserver timeout, current msqQ: #{msgq}")
+  end
 end
