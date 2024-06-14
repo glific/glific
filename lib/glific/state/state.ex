@@ -280,7 +280,7 @@ defmodule Glific.State do
 
   defp publish_data(_organization_id, _user_id, :flows), do: nil
 
-  defp log_msgq() do
+  defp log_msgq do
     state_pid = GenServer.whereis(__MODULE__)
     {:message_queue_len, msgq} = Process.info(state_pid, :message_queue_len)
     Logger.error("State Genserver timeout, current msqQ: #{msgq}")
