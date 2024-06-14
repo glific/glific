@@ -29,6 +29,7 @@ defmodule Glific.Templates.SessionTemplate do
           is_source: boolean(),
           is_active: boolean(),
           is_reserved: boolean(),
+          allow_template_category_change: boolean(),
           tag_id: non_neg_integer | nil,
           tag: Tag.t() | Ecto.Association.NotLoaded.t() | nil,
           language_id: non_neg_integer | nil,
@@ -63,6 +64,7 @@ defmodule Glific.Templates.SessionTemplate do
     :is_reserved,
     :is_active,
     :is_source,
+    :allow_template_category_change,
     :message_media_id,
     :parent_id,
     :is_hsm,
@@ -98,6 +100,7 @@ defmodule Glific.Templates.SessionTemplate do
 
     field(:has_buttons, :boolean, default: false)
     field(:button_type, TemplateButtonType)
+    field(:allow_template_category_change, :boolean, default: true)
     field(:buttons, {:array, :map}, default: [])
     field(:bsp_id, :string)
     field(:reason, :string)

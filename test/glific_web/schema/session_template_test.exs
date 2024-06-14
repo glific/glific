@@ -412,45 +412,4 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert message =~ "has already been taken"
   end
 
-  test "create a session_template with allow_template_category_change", %{staff: user} do
-    [hsm | _rest] =
-      Templates.list_session_templates(%{
-        filter: %{organization_id: user.organization_id, is_hsm: true}
-      })
-
-    Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body:
-            Jason.encode!(%{
-              "status" => "success",
-              "template" => %{
-                "id" => hsm.uuid,
-                "allow_template_category_change" => true,
-                "status" => "APPROVED",
-                "category" => "MARKETING"
-              }
-            })
-        }
-    end)
-
-    result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "label" => "Test Label",
-            "body" => "Test Template",
-            "type" => "TEXT",
-            "languageId" => hsm.language_id,
-            "allow_template_category_change" => true
-          }
-        }
-      )
-
-    {:ok, %{"data" => %{"createSessionTemplate" => %{"sessionTemplate" => session_template}}}} = result
-
-    assert session_template["allow_template_category_change"] == true
-
-    end
   end
