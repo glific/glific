@@ -13,7 +13,7 @@ defmodule Glific.StateTest do
     SeedsDev.seed_contacts(organization)
     SeedsDev.seed_flows(organization)
 
-    State.reset()
+    State.reset(organization.id)
     :ok
   end
 

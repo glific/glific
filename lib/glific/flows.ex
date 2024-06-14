@@ -760,7 +760,7 @@ defmodule Glific.Flows do
            %Flow{}
            |> Flow.changeset(attrs)
            |> Repo.insert() do
-      Glific.State.reset()
+      Glific.State.reset(flow.organization_id)
       copy_flow_revision(flow, flow_copy)
 
       {:ok, flow_copy}
@@ -911,7 +911,7 @@ defmodule Glific.Flows do
   @doc false
   @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
   defp clean_cached_flow_keywords_map(organization_id) do
-    Glific.State.reset()
+    Glific.State.reset(organization_id)
     Caches.remove(organization_id, ["flow_keywords_map"])
   end
 

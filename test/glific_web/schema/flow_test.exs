@@ -506,9 +506,10 @@ defmodule GlificWeb.Schema.FlowTest do
     assert name == get_in(query_data, [:data, "copyFlow", "flow", "name"])
   end
 
+  @tag :dd
   test "flow get returns a flow contact",
        %{manager: staff, user: user} do
-    State.reset()
+    State.reset(user.organization_id)
 
     result = auth_query_gql_by(:flow_get, staff, variables: %{"id" => 1})
     assert {:ok, query_data} = result

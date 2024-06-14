@@ -25,7 +25,7 @@ defmodule Glific.State do
   @spec init(any) :: {:ok, %{}}
   def init(_opts) do
     # our state is a map of organization ids to simulator contexts
-    {:ok, reset_state()}
+    {:ok, %{}}
   end
 
   @impl true
@@ -52,8 +52,8 @@ defmodule Glific.State do
 
   @impl true
   @doc false
-  def handle_call(:reset, _from, _state) do
-    {:reply, :ok, reset_state(), :hibernate}
+  def handle_call({:reset, organization_id}, _from, state) do
+    {:reply, :ok, reset_state(organization_id, state), :hibernate}
   end
 
   @impl true
@@ -64,7 +64,6 @@ defmodule Glific.State do
         %{user: params.user, flow_id: params.flow_id, is_forced: params.is_forced},
         state
       )
-
     {:reply, flow, state, :hibernate}
   end
 
@@ -111,8 +110,8 @@ defmodule Glific.State do
   end
 
   @doc false
-  def reset do
-    GenServer.call(__MODULE__, :reset)
+  def reset(organization_id) do
+    GenServer.call(__MODULE__, {:reset, organization_id})
   end
 
   @doc """
@@ -133,9 +132,9 @@ defmodule Glific.State do
     |> Map.merge(Flow.init_state(organization_id))
   end
 
-  @spec reset_state :: map()
-  defp reset_state do
-    %{}
+  @spec reset_state(non_neg_integer(), map()) :: map()
+  defp reset_state(organization_id, state) do
+    Map.delete(state, organization_id)
   end
 
   @doc """
