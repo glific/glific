@@ -411,5 +411,4 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     assert message =~ "has already been taken"
   end
-
-  end
+end
