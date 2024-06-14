@@ -51,6 +51,8 @@ defmodule Glific.ASR.Bhasini do
         {:ok, response}
 
       {:error, reason} ->
+        Logger.error("API call failed with reason:  #{reason}")
+
         %{
           success: false,
           msg: "API call failed with reason: #{reason}"

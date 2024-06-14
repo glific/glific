@@ -211,6 +211,9 @@ defmodule Glific.Clients.CommonWebhook do
       true ->
         %{success: false, reason: "GCS is disabled"}
 
+      {:error, error} ->
+        Map.put(error, "success", false)
+
       error ->
         Logger.error("Error received from Bhasini: #{error["message"]}")
         Map.put(error, "success", false)
