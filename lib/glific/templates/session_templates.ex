@@ -145,13 +145,6 @@ defmodule Glific.Templates.SessionTemplate do
       else: changeset
   end
 
-  # @doc """
-  # Populate virtual field of allow_template_category_change
-  # """
-  # @spec populate_allow_template_category_change(SessionTemplate.t()) :: SessionTemplate.t()
-  # def populate_allow_template_category_change(%SessionTemplate{} = template) do
-  #   %{template | allow_template_category_change: template.allow_template_category_change}
-  # end
 
   @doc """
   Validation for update HSM session template
