@@ -642,9 +642,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         organization_id: organization.id
       })
 
-  def flows(organization) when Mix.env() in [:dev, :test], do: SeedsFlows.seed([organization])
-
-  def flows(organization), do: SeedsFlows.seed_flows([organization])
+  def flows(organization) do
+    if(Mix.env() in [:dev, :test]) do
+      SeedsFlows.seed([organization])
+    else
+      SeedsFlows.seed_flows([organization])
+    end
+  end
 
   def roles(organization),
     do: SeedsDev.seed_roles(organization)
