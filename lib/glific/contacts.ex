@@ -139,6 +139,30 @@ defmodule Glific.Contacts do
         query
         |> where([c], c.id in subquery(sub_query))
 
+      {:exclude_groups, []}, query ->
+        query
+
+      {:exclude_groups, group_ids}, query ->
+        sub_query =
+          ContactGroup
+          |> where([cg], cg.group_id not in ^group_ids)
+          |> select([cg], cg.contact_id)
+
+        query
+        |> where([c], c.id in subquery(sub_query))
+
+      {:exclude_wa_groups, []}, query ->
+        query
+
+      {:exclude_wa_groups, wa_group_ids}, query ->
+        sub_query =
+          ContactWAGroup
+          |> where([wg], wg.wa_group_id not in ^wa_group_ids)
+          |> select([wa], wa.contact_id)
+
+        query
+        |> where([c], c.id in subquery(sub_query))
+
       {:include_tags, []}, query ->
         query
 
