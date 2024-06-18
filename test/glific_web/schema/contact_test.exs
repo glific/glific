@@ -688,6 +688,44 @@ defmodule GlificWeb.Schema.ContactTest do
     assert length(get_in(query_data, [:data, "contacts"])) == 2
   end
 
+  test "search contacts field obeys exclude group filters", %{staff: user} do
+    [cg1, _cg2, cg3] = Fixtures.group_contacts_fixture(%{organization_id: user.organization_id})
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"excludeGroups" => ["#{cg1.group_id}"]}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "contacts"])) == 13
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"excludeGroups" => ["99999"]}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    assert length(get_in(query_data, [:data, "contacts"])) == 15
+
+    # contact should not be repeated in the search list
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{
+            "excludeGroups" => ["#{cg1.group_id}", "#{cg3.group_id}"]
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "contacts"])) == 13
+  end
+
   test "search contacts field obeys wa_group filters", %{staff: user} do
     wa_managed_phone =
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
@@ -719,6 +757,38 @@ defmodule GlificWeb.Schema.ContactTest do
 
     contacts = get_in(query_data, [:data, "contacts"])
     assert contacts == []
+  end
+
+  test "search contacts field obeys exclude wa_group filters", %{staff: user} do
+    wa_managed_phone =
+      Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+    cwg1 =
+      Fixtures.contact_wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"excludeWaGroups" => ["#{cwg1.wa_group_id}"]}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "contacts"])) == 15
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"excludeWaGroups" => ["99999"]}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    assert length(get_in(query_data, [:data, "contacts"])) == 16
   end
 
   test "search contacts field obeys tag filters", %{staff: user} do
