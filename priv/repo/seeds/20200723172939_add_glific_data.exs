@@ -94,9 +94,11 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     bigquery_jobs(organization)
 
-    set_newcontact_optin_flow_id(organization)
+    if(Mix.env() in [:dev, :test]) do
+      set_newcontact_optin_flow_id(organization)
 
-    set_regx_flow(organization)
+      set_regx_flow(organization)
+    end
   end
 
   def down(_repo) do
@@ -640,8 +642,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         organization_id: organization.id
       })
 
-  def flows(organization),
-    do: SeedsFlows.seed([organization])
+  def flows(organization) when Mix.env() in [:dev, :test], do: SeedsFlows.seed([organization])
+
+  def flows(organization), do: SeedsFlows.seed_flows([organization])
 
   def roles(organization),
     do: SeedsDev.seed_roles(organization)

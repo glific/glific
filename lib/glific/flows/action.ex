@@ -527,7 +527,7 @@ defmodule Glific.Flows.Action do
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
 
-  @spec check_the_next_node(Keyword.t(), Action.t(), map()) :: Keyword.t()
+  @spec check_missing_interactive_template(Keyword.t(), Action.t(), map()) :: Keyword.t()
   defp check_missing_interactive_template(errors, action, flow) do
     Repo.fetch_by(
       InteractiveTemplate,
@@ -545,24 +545,27 @@ defmodule Glific.Flows.Action do
 
     case exit.destination_node_uuid do
       nil ->
-        warning_message(errors)
+        warning_message(errors, node.uuid)
 
       _ ->
         {:node, dest_node} = flow.uuid_map[exit.destination_node_uuid]
 
         if dest_node.router == nil or
              dest_node.router.wait == nil do
-          warning_message(errors)
+          warning_message(errors, node.uuid)
         else
           errors
         end
     end
   end
 
-  @spec warning_message(Keyword.t()) :: Keyword.t()
-  defp warning_message(errors) do
+  @spec warning_message(Keyword.t(), String.t()) :: Keyword.t()
+  defp warning_message(errors, node_id) do
+    node_label = String.slice(node_id, -4..-1)
+
     [
-      {Message, "The next node after interactive should be wait for response", "Warning"}
+      {Message, "The next node after interactive Node #{node_label} should be wait for response",
+       "Warning"}
       | errors
     ]
   end

@@ -13,6 +13,8 @@ defmodule Glific.Clients.CommonWebhook do
     Sheets.GoogleSheets
   }
 
+  require Logger
+
   @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
@@ -174,10 +176,48 @@ defmodule Glific.Clients.CommonWebhook do
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
     contact = get_contact_language(contact_id)
 
-    Bhasini.with_config_request(
-      fields,
-      contact.language.locale
-    )
+    with {:ok, response} <-
+           Bhasini.with_config_request(
+             fields,
+             contact.language.locale
+           ) do
+      {:ok, media_content} = Tesla.get(fields["speech"])
+
+      content = Base.encode64(media_content.body)
+      Bhasini.handle_response(response, content)
+    end
+  end
+
+  # This webhook will call Bhasini text-to-speech API
+  def webhook("text_to_speech_with_bhasini", fields) do
+    text = fields["text"]
+    org_id = fields["organization_id"]
+    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+    contact = get_contact_language(contact_id)
+    fields = Map.put(fields, "task_type", "tts")
+    organization = Glific.Partners.organization(org_id)
+    services = organization.services["google_cloud_storage"]
+
+    with false <- is_nil(services),
+         {:ok, response} <-
+           Bhasini.with_config_request(
+             fields,
+             contact.language.locale
+           ),
+         %{"feedbackUrl" => _feedback_url, "pipelineInferenceAPIEndPoint" => _endpoint} = params <-
+           Jason.decode!(response.body) do
+      Glific.Bhasini.text_to_speech(params, text, org_id)
+    else
+      true ->
+        %{success: false, reason: "GCS is disabled"}
+
+      {:error, error} ->
+        Map.put(error, "success", false)
+
+      error ->
+        Logger.error("Error received from Bhasini: #{error["message"]}")
+        Map.put(error, "success", false)
+    end
   end
 
   def webhook("get_buttons", fields) do
