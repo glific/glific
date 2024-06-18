@@ -712,7 +712,7 @@ defmodule Glific.TemplatesTest do
 
       result = Templates.create_session_template(attrs)
 
-      assert {:ok, template} = result |> IO.inspect()
+      assert {:ok, template} = result
       assert template.allow_template_category_change == true
     end
 

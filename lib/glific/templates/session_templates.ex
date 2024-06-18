@@ -42,6 +42,7 @@ defmodule Glific.Templates.SessionTemplate do
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
           translations: map() | nil,
+          allow_template_category_change: boolean(),
           has_buttons: boolean(),
           button_type: String.t() | nil,
           buttons: [map()] | [],
@@ -94,6 +95,7 @@ defmodule Glific.Templates.SessionTemplate do
     field(:is_source, :boolean, default: false)
     field(:is_active, :boolean, default: false)
     field(:is_reserved, :boolean, default: false)
+    field(:allow_template_category_change, :boolean, virtual: true, default: true)
     field(:translations, :map, default: %{})
 
     field(:has_buttons, :boolean, default: false)
@@ -142,6 +144,14 @@ defmodule Glific.Templates.SessionTemplate do
       do: add_error(changeset, :type, "Non-media messages should have a body"),
       else: changeset
   end
+
+  # @doc """
+  # Populate virtual field of allow_template_category_change
+  # """
+  # @spec populate_allow_template_category_change(SessionTemplate.t()) :: SessionTemplate.t()
+  # def populate_allow_template_category_change(%SessionTemplate{} = template) do
+  #   %{template | allow_template_category_change: template.allow_template_category_change}
+  # end
 
   @doc """
   Validation for update HSM session template
