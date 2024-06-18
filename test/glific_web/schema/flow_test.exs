@@ -506,7 +506,6 @@ defmodule GlificWeb.Schema.FlowTest do
     assert name == get_in(query_data, [:data, "copyFlow", "flow", "name"])
   end
 
-  @tag :dd
   test "flow get returns a flow contact",
        %{manager: staff, user: user} do
     State.reset(user.organization_id)
