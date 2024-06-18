@@ -13,7 +13,8 @@ defmodule Glific.GoogleTranslate.Translate do
     data = %{
       "q" => question_text,
       "source" => languages["source"],
-      "target" => languages["target"]
+      "target" => languages["target"],
+      "format" => "text"
     }
 
     middleware = [

@@ -1,4 +1,5 @@
 defmodule GlificWeb.API.V1.SessionControllerTest do
+  alias Glific.Partners
   use GlificWeb.ConnCase
 
   alias Glific.{
@@ -63,6 +64,38 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
       assert json = json_response(conn, 401)
       assert json["error"]["message"] == "Invalid phone or password"
       assert json["error"]["status"] == 401
+    end
+
+    test "with valid params, but org is suspended", %{
+      conn: conn,
+      organization_id: organization_id
+    } do
+      org = Partners.get_organization!(organization_id)
+      Partners.update_organization(org, %{status: :suspended})
+
+      params = put_in(@valid_params, ["user", "organization_id"], organization_id)
+      conn = post(conn, Routes.api_v1_session_path(conn, :create, params))
+
+      assert json = json_response(conn, 403)
+
+      assert json["error"]["message"] ==
+               "Your account is suspended or paused by your team. In case of any concerns, please reach out to us on support@glific.org."
+    end
+
+    test "with valid params, but org is force suspended", %{
+      conn: conn,
+      organization_id: organization_id
+    } do
+      org = Partners.get_organization!(organization_id)
+      Partners.update_organization(org, %{status: :forced_suspension})
+
+      params = put_in(@valid_params, ["user", "organization_id"], organization_id)
+      conn = post(conn, Routes.api_v1_session_path(conn, :create, params))
+
+      assert json = json_response(conn, 403)
+
+      assert json["error"]["message"] ==
+               "Your account has been suspended or paused due to a pending payment from your team. Kindly make the payment at your earliest convenience to resume your account. In case of any concerns, please reach out to us on support@glific.org."
     end
   end
 
@@ -135,7 +168,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
         |> post(Routes.api_v1_session_path(conn, :name))
 
       assert json = json_response(conn, 200)
-      assert json["data"] == %{"name" => "Glific"}
+      assert json["data"] == %{"name" => "Glific", "status" => "active"}
     end
   end
 end
