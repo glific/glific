@@ -387,7 +387,7 @@ defmodule Glific.Flows.Broadcast do
           :ok
         end,
         ordered: false,
-        timeout: 5_000,
+        timeout: 11_000,
         on_timeout: :kill_task
       )
 

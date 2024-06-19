@@ -6,6 +6,8 @@ defmodule Glific.Groups.WAGroups do
 
   import Ecto.Query, warn: false
 
+  require Logger
+
   alias Glific.{
     Contacts,
     Groups.ContactWAGroups,
@@ -293,5 +295,34 @@ defmodule Glific.Groups.WAGroups do
     args
     |> Repo.list_filter_query(WAGroup, nil, &filter_with/2)
     |> Repo.aggregate(:count)
+  end
+
+  @doc """
+  Sets the maytapi webhook for the org
+  """
+  @spec set_webhook_endpoint(map()) :: :ok | {:error, String.t()}
+  def set_webhook_endpoint(org_details) do
+    payload = %{
+      "webhook" => "https://api.#{org_details.shortcode}.glific.com/maytapi"
+    }
+
+    case ApiClient.set_webhook(org_details.id, payload) do
+      {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
+        :ok
+
+      {:ok, %Tesla.Env{body: body}} ->
+        Logger.error(
+          "Failed to set maytapi webhook for #{org_details.shortcode} due to #{inspect(body)}"
+        )
+
+        {:error, "Failed to set maytapi webhook. Try Again"}
+
+      {:error, error} ->
+        Logger.error(
+          "Failed to set maytapi webhook for #{org_details.shortcode} due to #{inspect(error)}"
+        )
+
+        {:error, "Failed to set maytapi webhook. Try Again"}
+    end
   end
 end
