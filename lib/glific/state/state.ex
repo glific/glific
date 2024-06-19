@@ -104,9 +104,11 @@ defmodule Glific.State do
   catch
     :exit, {:timeout, _} = _reason ->
       if retries < 1 do
-        log_msgq()
+        log_msgq("Retry")
         get_flow(user, flow_id, is_forced, retries + 1)
       else
+        log_msgq()
+
         {:ok,
          %{
            errors: %{
@@ -280,9 +282,15 @@ defmodule Glific.State do
 
   defp publish_data(_organization_id, _user_id, :flows), do: nil
 
-  defp log_msgq do
+  @spec log_msgq(String.t() | nil) :: :ok
+  defp log_msgq(action \\ nil) do
     state_pid = GenServer.whereis(__MODULE__)
     {:message_queue_len, msgq} = Process.info(state_pid, :message_queue_len)
-    Logger.error("State Genserver timeout, current msqQ: #{msgq}")
+
+    if is_nil(action) do
+      Logger.error("State Genserver timeout, current msqQ: #{msgq}")
+    else
+      Logger.error("#{action} due to State Genserver timeout, current msqQ: #{msgq}")
+    end
   end
 end
