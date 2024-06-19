@@ -16,9 +16,9 @@ defmodule Glific.ASR.Bhasini do
   """
   @spec with_config_request(Keyword.t()) :: {:ok, map()} | map()
   def with_config_request(params) do
-    source_language = Keyword.get(task_type, :source_language)
-    target_language = Keyword.get(task_type, :target_language)
-    task_type = Keyword.get(task_type, :task_type)
+    source_language = Keyword.get(params, :source_language)
+    target_language = Keyword.get(params, :target_language)
+    task_type = Keyword.get(params, :task_type)
     bhasini_keys = Glific.get_bhasini_keys()
 
     default_headers = [
