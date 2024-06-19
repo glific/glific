@@ -580,6 +580,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     body = content["body"]
 
     global_button_titles = Enum.map(content["globalButtons"], fn button -> button["title"] end)
+
     item_details =
       Enum.flat_map(content["items"], fn item ->
         option_titles_and_descriptions =
@@ -707,113 +708,161 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   def export_interactive_template(interactive_template) do
-    {:ok, translated_template} = translate_interactive_template(interactive_template)
+    {:ok, translated_template} =
+      translate_interactive_template(interactive_template)
+
     translations = translated_template.translations
-
-    # Extract all unique attributes from the translations
-    attributes =
-      Enum.reduce(translations, MapSet.new(), fn {_lang, translation}, acc ->
-        body_attributes = MapSet.new(["Body", "GlobalButtonTitle"])
-
-        items_attributes =
-          translation["items"]
-          |> Enum.flat_map(fn item ->
-            item_titles =
-              MapSet.new([
-                "ItemTitle 1",
-                "ItemSubtitle 1"
-              ])
-
-            option_titles =
-              item["options"]
-              |> Enum.with_index()
-              |> Enum.flat_map(fn {option, index} ->
-                [
-                  "OptionTitle 1.#{index + 1}",
-                  "OptionDescription 1.#{index + 1}"
-                ]
-              end)
-              |> MapSet.new()
-
-            MapSet.union(item_titles, option_titles)
-          end)
-          |> MapSet.new()
-
-        MapSet.union(acc, body_attributes)
-        |> MapSet.union(items_attributes)
-      end)
-      |> MapSet.to_list()
-      |> Enum.sort()
-
+    type = interactive_template.interactive_content["type"]
+    id = interactive_template.id
     language_codes = Map.keys(translations)
-    language_name = get_language_name(language_codes)
 
-    header = ["Attribute" | language_name]
-
-    csv_rows =
-      Enum.map(attributes, fn attribute ->
-        row = [
-          attribute
-          | Enum.map(language_codes, fn lang ->
-              case attribute do
-                "Body" ->
-                  translations[lang]["body"]
-
-                "GlobalButtonTitle" ->
-                  Enum.at(translations[lang]["globalButtons"], 0)["title"]
-
-                _ ->
-                  case Regex.run(
-                         ~r/(ItemTitle|ItemSubtitle|OptionTitle|OptionDescription) (\d+)\.(\d+)/,
-                         attribute
-                       ) do
-                    nil ->
-                      ""
-
-                    [_, "ItemTitle", item_num_str, _] ->
-                      Enum.at(translations[lang]["items"], String.to_integer(item_num_str) - 1)[
-                        "title"
-                      ]
-
-                    [_, "OptionTitle", item_num_str, option_num_str] ->
-                      Enum.at(
-                        Enum.at(translations[lang]["items"], String.to_integer(item_num_str) - 1)[
-                          "options"
-                        ],
-                        String.to_integer(option_num_str) - 1
-                      )["title"]
-
-                    [_, "OptionDescription", item_num_str, option_num_str] ->
-                      Enum.at(
-                        Enum.at(translations[lang]["items"], String.to_integer(item_num_str) - 1)[
-                          "options"
-                        ],
-                        String.to_integer(option_num_str) - 1
-                      )["description"]
-                  end
-              end
-            end)
-        ]
-
-        Enum.join(row, ",")
-      end)
-
-    csv_content =
-      case csv_rows do
-        [] -> ""
-        list -> Enum.join(list, "\n")
+    csv_data =
+      case type do
+        "list" -> build_list_csv_data(translations, language_codes, id)
+        "quick_reply" -> build_quick_reply_csv_data(translations, language_codes, id)
+        "location_request_message" -> build_location_csv_data(translations, language_codes, id)
       end
 
-    file_path = "interactive_template.csv"
+    data =
+      csv_data
+      |> CSV.encode(delimiter: "\n")
+      |> Enum.join("")
 
-    case File.write(file_path, csv_content) do
-      :ok -> {:ok, file_path}
-      {:error, reason} -> {:error, reason}
-    end
+    {:ok, %{export_data: data}}
   end
 
-  def get_language_name(language_codes) do
-    language_map = Settings.locale_id_map()
+  defp build_list_csv_data(translations, language_codes, id) do
+    headers = ["id", "Attribute" | get_language_names(language_codes)]
+    body = build_list_csv_body(translations, language_codes, id)
+    [headers | body]
+  end
+
+  defp build_list_csv_body(translations, language_codes, id) do
+    [
+      ["#{id}", "Body" | Enum.map(language_codes, fn code -> translations[code]["body"] end)],
+      [
+        "#{id}",
+        "GlobalButtonTitle"
+        | Enum.map(language_codes, fn code ->
+            translations[code]["globalButtons"] |> hd() |> Map.get("title")
+          end)
+      ]
+    ] ++ build_item_rows(translations, language_codes, id)
+  end
+
+  defp build_item_rows(translations, language_codes, id) do
+    items = translations[Enum.at(language_codes, 0)]["items"]
+
+    Enum.flat_map(1..length(items), fn item_index ->
+      item = Enum.at(items, item_index - 1)
+
+      item_title_row = [
+        "#{id}",
+        "ItemTitle #{item_index}"
+        | Enum.map(language_codes, fn code ->
+            (translations[code]["items"] |> Enum.at(item_index - 1))["title"]
+          end)
+      ]
+
+      item_subtitle_row = [
+        "#{id}",
+        "ItemSubtitle #{item_index}"
+        | Enum.map(language_codes, fn code ->
+            (translations[code]["items"] |> Enum.at(item_index - 1))["subtitle"]
+          end)
+      ]
+
+      option_rows =
+        build_option_rows(translations, language_codes, item["options"], item_index, id)
+
+      [item_title_row, item_subtitle_row | option_rows]
+    end)
+  end
+
+  defp build_option_rows(translations, language_codes, options, item_index, id) do
+    Enum.flat_map(1..length(options), fn option_index ->
+      _option = Enum.at(options, option_index - 1)
+
+      option_title_row = [
+        "#{id}",
+        "OptionTitle #{item_index}.#{option_index}"
+        | Enum.map(language_codes, fn code ->
+            ((translations[code]["items"] |> Enum.at(item_index - 1))["options"]
+             |> Enum.at(option_index - 1))["title"]
+          end)
+      ]
+
+      option_description_row = [
+        "#{id}",
+        "OptionDescription #{item_index}.#{option_index}"
+        | Enum.map(language_codes, fn code ->
+            ((translations[code]["items"]
+              |> Enum.at(item_index - 1))["options"]
+             |> Enum.at(option_index - 1))["description"]
+          end)
+      ]
+
+      [option_title_row, option_description_row]
+    end)
+  end
+
+  defp build_quick_reply_csv_data(translations, language_codes, id) do
+    headers = ["id", "Attribute" | get_language_names(language_codes)]
+    body = build_quick_reply_csv_body(translations, language_codes, id)
+    [headers | body]
+  end
+
+  defp build_quick_reply_csv_body(translations, language_codes, id) do
+    [
+      [
+        "#{id}",
+        "Header"
+        | Enum.map(language_codes, fn code -> translations[code]["content"]["header"] end)
+      ],
+      [
+        "#{id}",
+        "Text" | Enum.map(language_codes, fn code -> translations[code]["content"]["text"] end)
+      ]
+    ] ++ build_quick_reply_options(translations, language_codes, id)
+  end
+
+  defp build_quick_reply_options(translations, language_codes, id) do
+    options_length = translations[Enum.at(language_codes, 0)]["options"] |> length()
+
+    Enum.map(1..options_length, fn option_index ->
+      [
+        "#{id}",
+        "OptionTitle #{option_index}"
+        | Enum.map(language_codes, fn code ->
+            (translations[code]["options"] |> Enum.at(option_index - 1))["title"]
+          end)
+      ]
+    end)
+  end
+
+  defp build_location_csv_data(translations, language_codes, id) do
+    headers = ["id", "Attribute" | get_language_names(language_codes)]
+    body = build_location_csv_body(translations, language_codes, id)
+    [headers | body]
+  end
+
+  defp build_location_csv_body(translations, language_codes, id) do
+    [
+      [
+        "#{id}",
+        "Action"
+        | Enum.map(language_codes, fn code -> translations[code]["action"] |> Map.get("name") end)
+      ],
+      [
+        "#{id}",
+        "Body"
+        | Enum.map(language_codes, fn code -> translations[code]["body"] |> Map.get("text") end)
+      ]
+    ]
+  end
+
+  def get_language_names(language_codes) do
+    language_map = Settings.get_language_id_local_map()
     Enum.map(language_codes, fn code -> Map.get(language_map, code) end)
   end
 end
