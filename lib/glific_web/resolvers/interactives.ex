@@ -122,7 +122,7 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
     with {:ok, interactive_template} <-
            InteractiveTemplates.fetch_interactive_template(id),
          {:ok, csv_data} <-
-          InteractiveTemplates.export_interactive_template(interactive_template) do
+           InteractiveTemplates.export_interactive_template(interactive_template) do
       {:ok, csv_data}
     end
   end

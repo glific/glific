@@ -318,4 +318,81 @@ defmodule Glific.InteractiveTemplatesTest do
     assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्षण 1" end)
     assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्षण 2" end)
   end
+
+  setup_all do
+    Tesla.Mock.mock_global(fn env ->
+      cond do
+        String.contains?(env.body, "How was your experience with Glific?") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "Quick Reply Test Text 2") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "त्वरित उत्तर स्थिरता"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "Great") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "उत्कृष्ट"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "Awesome") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "शानदार"}
+                ]
+              }
+            },
+            status: 200
+          }
+      end
+    end)
+
+    :ok
+  end
+
+  test "export the interactive template",
+       %{organization_id: _organization_id} = attrs do
+    interactive =
+      Fixtures.interactive_fixture(Map.merge(@valid_more_attrs, attrs))
+
+    interactive_id = interactive.id
+
+    expected_export_data = """
+    id,Attribute,en,hi
+    #{interactive_id},Header,Quick Reply Test Text 2,त्वरित उत्तर स्थिरता
+    #{interactive_id},Text,How was your experience with Glific?,ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?
+    #{interactive_id},OptionTitle 1,Great,उत्कृष्ट
+    #{interactive_id},OptionTitle 2,Awesome,शानदार
+    """
+
+    {:ok, %{export_data: export_data}} =
+      InteractiveTemplates.export_interactive_template(interactive)
+
+    assert String.trim(export_data) == String.trim(expected_export_data)
+  end
 end

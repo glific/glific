@@ -707,6 +707,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     end
   end
 
+  @spec export_interactive_template(InteractiveTemplate.t()) :: {:ok, %{export_data: String.t()}}
   def export_interactive_template(interactive_template) do
     {:ok, translated_template} =
       translate_interactive_template(interactive_template)
@@ -731,6 +732,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     {:ok, %{export_data: data}}
   end
 
+  @spec build_list_csv_data(map(), list(String.t()), non_neg_integer()) :: list()
   defp build_list_csv_data(translations, language_codes, id) do
     headers = ["id", "Attribute" | get_language_names(language_codes)]
     body = build_list_csv_body(translations, language_codes, id)
@@ -778,6 +780,14 @@ defmodule Glific.Templates.InteractiveTemplates do
       [item_title_row, item_subtitle_row | option_rows]
     end)
   end
+
+  @spec build_option_rows(
+          map(),
+          list(String.t()),
+          list(map()),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: list()
 
   defp build_option_rows(translations, language_codes, options, item_index, id) do
     Enum.flat_map(1..length(options), fn option_index ->
@@ -861,6 +871,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     ]
   end
 
+  @spec get_language_names(list(String.t())) :: list(String.t())
   def get_language_names(language_codes) do
     language_map = Settings.get_language_id_local_map()
     Enum.map(language_codes, fn code -> Map.get(language_map, code) end)
