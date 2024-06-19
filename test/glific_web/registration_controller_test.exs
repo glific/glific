@@ -206,6 +206,30 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
                "Account with phone number #{phone} does not exist"
     end
 
+    test "send otp to the non existing contact should get an error message2", %{conn: conn} do
+      receiver = Fixtures.contact_fixture()
+
+      Contacts.contact_opted_in(
+        %{phone: receiver.phone},
+        receiver.organization_id,
+        DateTime.utc_now()
+      )
+
+      {:ok, receiver} = Contacts.update_contact(receiver, %{status: :invalid})
+      Fixtures.user_fixture(%{phone: receiver.phone})
+
+      invalid_params = %{
+        "user" => %{"phone" => receiver.phone, "registration" => "false"}
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp), invalid_params)
+
+      assert json = json_response(conn, 400)
+
+      assert get_in(json, ["error", "message"]) ==
+               "Cannot send the otp to #{receiver.phone}"
+    end
+
     test "send otp to optout contact will optin the contact again", %{conn: conn} do
       receiver = Fixtures.contact_fixture()
 
@@ -250,7 +274,9 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         }
       }
 
-      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+      conn =
+        post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+
       assert _json = json_response(conn, 200)
     end
   end
