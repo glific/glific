@@ -147,7 +147,8 @@ defmodule Glific.Templates do
         else: attrs
 
     with :ok <- validate_hsm(attrs),
-         :ok <- validate_button_template(Map.merge(%{has_buttons: false}, attrs)) do
+         :ok <- validate_button_template(Map.merge(%{has_buttons: false}, attrs)),
+         :ok <- validate_template_length(attrs) do
       submit_for_approval(attrs)
     end
   end
@@ -179,6 +180,18 @@ defmodule Glific.Templates do
        "Button Template",
        "for Button Templates has_buttons, button_type and buttons fields are required"
      ]}
+  end
+
+  @spec validate_template_length(map()) :: :ok | {:error, [String.t()]}
+  def validate_template_length(%{body: body} = attrs) do
+
+  total_length = String.length(body)
+
+    if total_length <= 1024 do
+      :ok
+    else
+      {:error, ["Message Length", "Template cannot be created due to exceeding character limit"]}
+    end
   end
 
   @doc false
