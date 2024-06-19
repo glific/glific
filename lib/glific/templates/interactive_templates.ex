@@ -393,7 +393,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec translate_interactive_template(InteractiveTemplate.t()) ::
           {:ok, InteractiveTemplate.t()} | {:error, String.t()}
   def translate_interactive_template(interactive_template) do
-    organization_id = interactive_template.organization_id |> IO.inspect()
+    organization_id = interactive_template.organization_id
     language_code_map = Settings.locale_id_map()
     active_languages = Settings.get_language_code(organization_id)
     interactive_content = interactive_template.interactive_content
@@ -401,15 +401,14 @@ defmodule Glific.Templates.InteractiveTemplates do
     label = interactive_template.label
 
     translated_contents =
-      case interactive_msg_type do
-        "quick_reply" ->
-          translate_quick_reply(
-            interactive_content,
-            active_languages,
-            language_code_map,
-            organization_id,
-            label
-          )
+      translate_interactive_content(
+        interactive_msg_type,
+        interactive_content,
+        active_languages,
+        language_code_map,
+        organization_id,
+        label
+      )
 
     update_interactive_template(interactive_template, %{translations: translated_contents})
   end
@@ -487,52 +486,6 @@ defmodule Glific.Templates.InteractiveTemplates do
 
           translated_template =
             create_translated_template(content, translated_label, remaining_translations)
-        {:ok, translated_content} ->
-          [translated_label | remaining_translations] = translated_content
-
-          if Map.has_key?(content["content"], "caption") do
-            [caption, text | options] = remaining_translations
-
-            options_translated = do_options_translated(content, options) |> IO.inspect()
-
-            translated_content_map =
-              %{
-                "header" => translated_label,
-                "caption" => caption,
-                "text" => text,
-                "type" => content["content"]["type"]
-              }
-              |> add_url_if_present(content)
-
-            translated_template = %{
-              "content" => translated_content_map,
-              "options" => options_translated,
-              "type" => "quick_reply"
-            }
-
-            Map.put(
-              acc,
-              Integer.to_string(Map.get(language_code_map, lang_code)),
-              translated_template
-            )
-          else
-            [text | options] = remaining_translations
-
-            options_translated = do_options_translated(content, options)
-
-            translated_content_map =
-              %{
-                "header" => translated_label,
-                "text" => text,
-                "type" => content["content"]["type"]
-              }
-              |> add_url_if_present(content)
-
-            translated_template = %{
-              "content" => translated_content_map,
-              "options" => options_translated,
-              "type" => "quick_reply"
-            }
 
           Map.put(
             acc,
@@ -622,26 +575,23 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   @spec build_content_to_translate(map()) :: list
-  defp build_content_to_translate(content) do
-    [
-      content["title"],
-      content["body"]
-    ] ++
-      Enum.map(content["globalButtons"], fn button ->
-        button["title"]
-      end) ++
+  def build_content_to_translate(content) do
+    title = content["title"]
+    body = content["body"]
+
+    global_button_titles = Enum.map(content["globalButtons"], fn button -> button["title"] end)
+
+    item_details =
       Enum.flat_map(content["items"], fn item ->
-        [
-          item["title"],
-          item["subtitle"]
-        ] ++
+        option_titles_and_descriptions =
           Enum.flat_map(item["options"], fn option ->
             [option["title"], option["description"]]
           end)
+
+        [item["title"], item["subtitle"]] ++ option_titles_and_descriptions
       end)
 
-    [title, body] ++
-      global_button_titles ++ item_titles_and_subtitles ++ option_titles_and_descriptions
+    [title, body] ++ global_button_titles ++ item_details
   end
 
   @spec translate_global_buttons([String.t()], [map()]) :: [map()]
@@ -757,52 +707,114 @@ defmodule Glific.Templates.InteractiveTemplates do
     end
   end
 
-  @spec export_interactive_template(map()) :: {:ok, any()}
   def export_interactive_template(interactive_template) do
     {:ok, translated_template} = translate_interactive_template(interactive_template)
+    translations = translated_template.translations
 
-    translation = translated_template.translations
+    # Extract all unique attributes from the translations
+    attributes =
+      Enum.reduce(translations, MapSet.new(), fn {_lang, translation}, acc ->
+        body_attributes = MapSet.new(["Body", "GlobalButtonTitle"])
 
-    header_row = ["Language", "Label", "Type", "Content", "Options"]
+        items_attributes =
+          translation["items"]
+          |> Enum.flat_map(fn item ->
+            item_titles =
+              MapSet.new([
+                "ItemTitle 1",
+                "ItemSubtitle 1"
+              ])
+
+            option_titles =
+              item["options"]
+              |> Enum.with_index()
+              |> Enum.flat_map(fn {option, index} ->
+                [
+                  "OptionTitle 1.#{index + 1}",
+                  "OptionDescription 1.#{index + 1}"
+                ]
+              end)
+              |> MapSet.new()
+
+            MapSet.union(item_titles, option_titles)
+          end)
+          |> MapSet.new()
+
+        MapSet.union(acc, body_attributes)
+        |> MapSet.union(items_attributes)
+      end)
+      |> MapSet.to_list()
+      |> Enum.sort()
+
+    language_codes = Map.keys(translations)
+    language_name = get_language_name(language_codes)
+
+    header = ["Attribute" | language_name]
 
     csv_rows =
-      Enum.reduce(translation, [header_row], fn {language_code, translation}, acc ->
-        language_name = get_language_name(language_code)
-        label = interactive_template.label
-        type = translation["type"]
+      Enum.map(attributes, fn attribute ->
+        row = [
+          attribute
+          | Enum.map(language_codes, fn lang ->
+              case attribute do
+                "Body" ->
+                  translations[lang]["body"]
 
-        content =
-          case type do
-            "quick_reply" ->
-              "#{translation["content"]["header"]}, #{translation["content"]["text"]}"
+                "GlobalButtonTitle" ->
+                  Enum.at(translations[lang]["globalButtons"], 0)["title"]
 
-            "list" ->
-              "#{translation["title"]}, #{translation["body"]}"
-          end
+                _ ->
+                  case Regex.run(
+                         ~r/(ItemTitle|ItemSubtitle|OptionTitle|OptionDescription) (\d+)\.(\d+)/,
+                         attribute
+                       ) do
+                    nil ->
+                      ""
 
-        options =
-          case type do
-            "quick_reply" ->
-              Enum.map(translation["options"], fn option -> option["title"] end)
-              |> Enum.join(", ")
+                    [_, "ItemTitle", item_num_str, _] ->
+                      Enum.at(translations[lang]["items"], String.to_integer(item_num_str) - 1)[
+                        "title"
+                      ]
 
-            "list" ->
-              Enum.map(translation["items"], fn item -> item["title"] end) |> Enum.join(", ")
-          end
+                    [_, "OptionTitle", item_num_str, option_num_str] ->
+                      Enum.at(
+                        Enum.at(translations[lang]["items"], String.to_integer(item_num_str) - 1)[
+                          "options"
+                        ],
+                        String.to_integer(option_num_str) - 1
+                      )["title"]
 
-        csv_row = [language_name, label, type, content, options]
-        acc ++ [csv_row]
+                    [_, "OptionDescription", item_num_str, option_num_str] ->
+                      Enum.at(
+                        Enum.at(translations[lang]["items"], String.to_integer(item_num_str) - 1)[
+                          "options"
+                        ],
+                        String.to_integer(option_num_str) - 1
+                      )["description"]
+                  end
+              end
+            end)
+        ]
+
+        Enum.join(row, ",")
       end)
 
-    data =
-      csv_rows
-      |> CSV.encode(delimiter: "\n")
-      |> Enum.join("")
+    csv_content =
+      case csv_rows do
+        [] -> ""
+        list -> Enum.join(list, "\n")
+      end
 
-    {:ok, %{export_data: data}}
+    file_path = "interactive_template.csv"
+
+    case File.write(file_path, csv_content) do
+      :ok -> {:ok, file_path}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
-  defp get_language_name(language_code) do
-    language_code
+  def get_language_name(language_codes) do
+    language_map = Settings.locale_id_map()
+    Enum.map(language_codes, fn code -> Map.get(language_map, code) end)
   end
 end
