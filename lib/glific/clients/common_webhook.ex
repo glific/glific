@@ -220,6 +220,28 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  def webhook("nmt_tts_with_bhasini", fields) do
+    text = fields["text"]
+    org_id = fields["organization_id"]
+    source_language = fields["source_language"]
+    target_language = fields["target_language"]
+    organization = Glific.Partners.organization(org_id)
+    services = organization.services["google_cloud_storage"]
+
+    with false <- is_nil(services),
+         {:ok, response} <-
+           Bhasini.with_config_request(
+             fields,
+             source_language,
+             target_language
+           ),
+         %{"feedbackUrl" => _feedback_url, "pipelineResponseConfig" => _pipelineresponseconfig} =
+           params <-
+           Jason.decode!(response.body) do
+      Glific.Bhasini.nmt_tts(params, text, source_language, target_language, org_id)
+    end
+  end
+
   def webhook("get_buttons", fields) do
     buttons =
       fields["buttons_data"]
