@@ -457,7 +457,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
           )
 
     assert {:ok, query_data} = result
-    allowTemplateChange = get_in(query_data, [:data, "createSessionTemplate", "sessionTemplate", "allow_template_category_change"])
-    assert allowTemplateChange == true
+    allow_template_change = get_in(query_data, [:data, "createSessionTemplate", "sessionTemplate", "allow_template_category_change"])
+    assert allow_template_change == true
   end
 end
