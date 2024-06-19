@@ -117,7 +117,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     with {:ok, %{"partnerAppsList" => list}} <- get_request(@partner_url <> "/api/partnerApps", token_type: :partner_token) do
       Enum.filter(list, fn app -> gupshup_secrets["app_name"] == app["name"] end)
       |> hd()
-      |> IO.inspect(label: "PARSE TEST")
     end
   end
 

@@ -1230,7 +1230,6 @@ defmodule Glific.Partners do
 
     app_details = PartnerAPI.fetch_app_details(org.id)
     app_id = if is_map(app_details), do: app_details["id"], else: "NA"
-    IO.inspect(app_id, label: "football")
 
     updated_secrets = Map.put(bsp_cred.secrets, "app_id", app_id)
     attrs = %{secrets: updated_secrets, organization_id: org.id}
