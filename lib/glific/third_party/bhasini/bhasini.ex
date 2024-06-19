@@ -31,8 +31,8 @@ defmodule Glific.Bhasini do
             "taskType" => "translation",
             "config" => %{
               "language" => %{
-                "sourceLanguage" => source_language,
-                "targetLanguage" => target_language
+                "sourceLanguage" => "en",
+                "targetLanguage" => "hi"
               },
               "serviceId" => nmt_service_id
             }
@@ -41,7 +41,7 @@ defmodule Glific.Bhasini do
             "taskType" => "tts",
             "config" => %{
               "language" => %{
-                "sourceLanguage" => source_language
+                "sourceLanguage" => "hi"
               },
               "serviceId" => tts_service_id,
               "gender" => "female",
@@ -56,19 +56,19 @@ defmodule Glific.Bhasini do
         }
       }
 
-    IO.inspect(body)
-
     case Tesla.post(url, Jason.encode!(body),
            headers: default_headers,
            opts: [adapter: [recv_timeout: 300_000]]
          ) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        response = Jason.decode!(body)
-        IO.inspect(response)
+        IO.inspect("debug001Teslacall")
+        response = Jason.decode!(body) |> IO.inspect()
         uuid = Ecto.UUID.generate()
         path = download_encoded_file(response, uuid)
 
         remote_name = "Bhasini/outbound/#{uuid}.mp3"
+        IO.inspect("debug001Bhasini")
+        IO.inspect(remote_name)
 
         {:ok, media_meta} =
           GcsWorker.upload_media(
@@ -87,6 +87,9 @@ defmodule Glific.Bhasini do
   defp get_pipeline_config(params, source_language, target_language) do
     [%{"taskType" => "translation"} = nmt_config, %{"taskType" => "tts"} = tts_config] =
       get_in(params, ["pipelineResponseConfig"])
+
+    IO.inspect(nmt_config)
+    IO.inspect(tts_config)
 
     [nmt_service_json] =
       Enum.filter(nmt_config["config"], fn config ->
@@ -171,17 +174,12 @@ defmodule Glific.Bhasini do
   # locally before uploading it to GCS to get public URL of file to be used at flow level
   @spec download_encoded_file(map(), String.t()) :: String.t()
   defp download_encoded_file(response, uuid) do
-    encoded_audio =
-      get_in(response, [
-        "pipelineResponse",
-        Access.at(0),
-        "audio",
-        Access.at(0),
-        "audioContent"
-      ])
+    pipeline_response =
+      get_in(response, ["pipelineResponse"])
+      |> Enum.filter(fn response -> response["taskType"] == "tts" end)
 
+    encoded_audio = get_in(pipeline_response, ["audio", Access.at(0), "audioContent"])
     decoded_audio = Base.decode64!(encoded_audio)
-
     path = System.tmp_dir!() <> "#{uuid}.mp3"
     :ok = File.write!(path, decoded_audio)
     path
