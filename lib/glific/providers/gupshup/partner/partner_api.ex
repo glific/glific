@@ -26,23 +26,18 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec fetch_app_details(non_neg_integer()) :: any()
   def fetch_app_details(org_id) do
-    organization = Partners.organization(org_id)
-    gupshup_secrets = organization.services["bsp"].secrets
-
-    post_request(
-      @partner_url <> "/api/appLink",
-      %{
-        apiKey: gupshup_secrets["api_key"],
-        appName: gupshup_secrets["app_name"]
-      },
-      token_type: :partner_token
-    )
+    app_link(org_id)
     |> case do
       {:ok, res} ->
         res["partnerApps"]
 
-      error ->
-        error
+      {:error, error} ->
+        already_linked? = String.contains?(error, "Re-linking")
+        if already_linked? do
+          app_ID(org_id)
+        else
+          error
+        end
     end
   end
 
@@ -95,7 +90,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-    App Link Using API key
+    App Link Using API key (works to get app ID the first time while creating)
   """
   @spec app_link(non_neg_integer()) :: any()
   def app_link(org_id) do
@@ -110,6 +105,20 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       },
       token_type: :partner_token
     )
+  end
+
+  @doc """
+    Getting app ID once the app is already linked
+  """
+  def app_ID(org_id) do
+    organization = Partners.organization(org_id)
+    gupshup_secrets = organization.services["bsp"].secrets
+
+    with {:ok, %{"partnerAppsList" => list}} <- get_request(@partner_url <> "/api/partnerApps", token_type: :partner_token) do
+      Enum.filter(list, fn app -> gupshup_secrets["app_name"] == app["name"] end)
+      |> hd()
+      |> IO.inspect(label: "PARSE TEST")
+    end
   end
 
   @doc """
