@@ -145,7 +145,6 @@ defmodule Glific.Templates.SessionTemplate do
       else: changeset
   end
 
-
   @doc """
   Validation for update HSM session template
   """

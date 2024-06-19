@@ -716,7 +716,6 @@ defmodule Glific.TemplatesTest do
       assert template.allow_template_category_change == true
     end
 
-
     test "update_session_template/2 with invalid data returns error changeset", attrs do
       session_template = session_template_fixture(attrs)
 
