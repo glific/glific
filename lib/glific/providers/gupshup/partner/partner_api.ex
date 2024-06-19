@@ -34,7 +34,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:error, error} ->
         already_linked? = String.contains?(error, "Re-linking")
         if already_linked? do
-          app_ID(org_id)
+          app_id(org_id)
         else
           error
         end
@@ -110,7 +110,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
     Getting app ID once the app is already linked
   """
-  def app_ID(org_id) do
+  def app_id(org_id) do
     organization = Partners.organization(org_id)
     gupshup_secrets = organization.services["bsp"].secrets
 
