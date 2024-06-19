@@ -14,10 +14,12 @@ defmodule Glific.ASR.Bhasini do
 
   This function makes an API call to the Bhasini ASR service using the provided configuration parameters and returns the ASR response text.
   """
-  @spec with_config_request(map(), String.t()) :: {:ok, map()} | map()
-  def with_config_request(fields, source_language, target_language \\ "") do
+  @spec with_config_request(Keyword.t()) :: {:ok, map()} | map()
+  def with_config_request(params) do
+    source_language = Keyword.get(task_type, :source_language)
+    target_language = Keyword.get(task_type, :target_language)
+    task_type = Keyword.get(task_type, :task_type)
     bhasini_keys = Glific.get_bhasini_keys()
-    task_type = fields["task_type"] || "asr"
 
     default_headers = [
       {"userID", bhasini_keys.user_id},

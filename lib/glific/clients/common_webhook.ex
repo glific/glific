@@ -178,8 +178,8 @@ defmodule Glific.Clients.CommonWebhook do
 
     with {:ok, response} <-
            Bhasini.with_config_request(
-             fields,
-             contact.language.locale
+             source_language: contact.language.locale,
+             task_type: "asr"
            ) do
       {:ok, media_content} = Tesla.get(fields["speech"])
 
@@ -194,16 +194,12 @@ defmodule Glific.Clients.CommonWebhook do
     org_id = fields["organization_id"]
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
     contact = get_contact_language(contact_id)
-    fields = Map.put(fields, "task_type", "tts")
     organization = Glific.Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
 
     with false <- is_nil(services),
          {:ok, response} <-
-           Bhasini.with_config_request(
-             fields,
-             contact.language.locale
-           ),
+           Bhasini.with_config_request(source_language: contact.language.locale, task_type: "tts"),
          %{"feedbackUrl" => _feedback_url, "pipelineInferenceAPIEndPoint" => _endpoint} = params <-
            Jason.decode!(response.body) do
       Glific.Bhasini.text_to_speech(params, text, org_id)
@@ -231,9 +227,9 @@ defmodule Glific.Clients.CommonWebhook do
     with false <- is_nil(services),
          {:ok, response} <-
            Bhasini.with_config_request(
-             fields,
-             source_language,
-             target_language
+             source_language: source_language,
+             target_language: target_language,
+             task_type: "nmt_tts"
            ),
          %{"feedbackUrl" => _feedback_url, "pipelineResponseConfig" => _pipelineresponseconfig} =
            params <-

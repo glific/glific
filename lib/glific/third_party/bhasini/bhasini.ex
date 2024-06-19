@@ -5,6 +5,22 @@ defmodule Glific.Bhasini do
 
   alias Glific.GCS.GcsWorker
 
+  @language_codes %{
+    "tamil" => %{"iso_639_1" => "ta", "iso_639_2" => "tam"},
+    "kannada" => %{"iso_639_1" => "kn", "iso_639_2" => "kan"},
+    "malayalam" => %{"iso_639_1" => "ml", "iso_639_2" => "mal"},
+    "telugu" => %{"iso_639_1" => "te", "iso_639_2" => "tel"},
+    "assamese" => %{"iso_639_1" => "as", "iso_639_2" => "asm"},
+    "gujarati" => %{"iso_639_1" => "gu", "iso_639_2" => "guj"},
+    "bengali" => %{"iso_639_1" => "bn", "iso_639_2" => "ben"},
+    "punjabi" => %{"iso_639_1" => "pa", "iso_639_2" => "pan"},
+    "marathi" => %{"iso_639_1" => "mr", "iso_639_2" => "mar"},
+    "urdu" => %{"iso_639_1" => "ur", "iso_639_2" => "urd"},
+    "spanish" => %{"iso_639_1" => "es", "iso_639_2" => "spa"},
+    "english" => %{"iso_639_1" => "en", "iso_639_2" => "eng"},
+    "hindi" => %{"iso_639_1" => "hi", "iso_639_2" => "hin"}
+  }
+
   @doc """
   This function makes an API call to the Bhasini ASR service for NMT and TTS using the provided configuration parameters and returns the public media URL of the file.
   """
@@ -31,8 +47,8 @@ defmodule Glific.Bhasini do
             "taskType" => "translation",
             "config" => %{
               "language" => %{
-                "sourceLanguage" => "en",
-                "targetLanguage" => "hi"
+                "sourceLanguage" => @language_codes["#{source_language}"]["iso_639_1"],
+                "targetLanguage" => @language_codes["#{target_language}"]["iso_639_1"]
               },
               "serviceId" => nmt_service_id
             }
@@ -41,7 +57,10 @@ defmodule Glific.Bhasini do
             "taskType" => "tts",
             "config" => %{
               "language" => %{
-                "sourceLanguage" => "hi"
+                # If TTS comes after Translation, and Translation is done, say from Marathi to Hindi
+                # then Source Language of TTS should be Hindi (ISO Code hi) because
+                # the output of Translation (Translated text in Hindi) will be fed to Translation Model.
+                "sourceLanguage" => @language_codes["#{target_language}"]["iso_639_1"]
               },
               "serviceId" => tts_service_id,
               "gender" => "female",
@@ -87,13 +106,14 @@ defmodule Glific.Bhasini do
 
     [nmt_service_json] =
       Enum.filter(nmt_config["config"], fn config ->
-        config["language"]["sourceLanguage"] == "en" and
-          config["language"]["targetLanguage"] == "hi"
+        config["language"]["sourceLanguage"] == @language_codes["#{source_language}"]["iso_639_1"] and
+          config["language"]["targetLanguage"] ==
+            @language_codes["#{target_language}"]["iso_639_1"]
       end)
 
     [tts_service_json] =
       Enum.filter(tts_config["config"], fn config ->
-        config["language"]["sourceLanguage"] == "hi"
+        config["language"]["sourceLanguage"] == @language_codes["#{target_language}"]["iso_639_1"]
       end)
 
     {nmt_service_json["serviceId"], tts_service_json["serviceId"]}
