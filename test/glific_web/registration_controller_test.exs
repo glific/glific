@@ -206,7 +206,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
                "Account with phone number #{phone} does not exist"
     end
 
-    test "send otp to the non existing contact should get an error message2", %{conn: conn} do
+    test "Handle errors while sending otp when registration is false", %{conn: conn} do
       receiver = Fixtures.contact_fixture()
 
       Contacts.contact_opted_in(
