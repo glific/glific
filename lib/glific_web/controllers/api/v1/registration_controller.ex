@@ -162,6 +162,9 @@ defmodule GlificWeb.API.V1.RegistrationController do
              true <- send_otp_allowed?(organization_id, phone, registration),
              {:ok, _otp} <- create_and_send_verification_code(contact) do
           json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
+        else
+          _ ->
+            send_otp_error(conn, "Cannot send the otp to #{phone}")
         end
 
       {:error, _} ->
