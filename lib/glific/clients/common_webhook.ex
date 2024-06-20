@@ -219,13 +219,13 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("nmt_tts_with_bhasini", fields) do
     text = fields["text"]
     org_id = fields["organization_id"]
-    source_language = fields["source_language"]
-    target_language = fields["target_language"]
+    source_language = Map.get(fields, "source_language", nil)
+    target_language = Map.get(fields, "target_language", nil)
     organization = Glific.Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
 
     with false <- is_nil(services),
-         true <- Glific.Bhasini.valid_language?(),
+         true <- Glific.Bhasini.valid_language?(source_language, target_language),
          {:ok, response} <-
            Bhasini.with_config_request(
              source_language: source_language,

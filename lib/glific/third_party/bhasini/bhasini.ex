@@ -204,7 +204,7 @@ defmodule Glific.Bhasini do
   @doc """
   This function validates supported languages in Glific before sending to Bhasini
   """
-  @spec valid_language(String.t(), String.t()) :: boolean()
+  @spec valid_language?(String.t(), String.t()) :: boolean()
   def valid_language?(source_language, target_language) do
     valid_languages = Map.keys(@language_codes)
 
