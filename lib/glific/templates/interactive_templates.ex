@@ -755,6 +755,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     ] ++ build_item_rows(translations, language_codes, id)
   end
 
+  @spec build_item_rows(map(), list(String.t()), non_neg_integer()) :: list()
   defp build_item_rows(translations, language_codes, id) do
     items = translations[Enum.at(language_codes, 0)]["items"]
 
@@ -819,12 +820,14 @@ defmodule Glific.Templates.InteractiveTemplates do
     end)
   end
 
+  @spec build_quick_reply_csv_data(map(), list(String.t()), non_neg_integer()) :: list()
   defp build_quick_reply_csv_data(translations, language_codes, id) do
     headers = ["id", "Attribute" | get_language_names(language_codes)]
     body = build_quick_reply_csv_body(translations, language_codes, id)
     [headers | body]
   end
 
+  @spec build_quick_reply_csv_body(map(), list(String.t()), non_neg_integer()) :: list()
   defp build_quick_reply_csv_body(translations, language_codes, id) do
     [
       [
@@ -839,6 +842,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     ] ++ build_quick_reply_options(translations, language_codes, id)
   end
 
+  @spec build_quick_reply_options(map(), list(String.t()), non_neg_integer()) :: list()
   defp build_quick_reply_options(translations, language_codes, id) do
     options_length = translations[Enum.at(language_codes, 0)]["options"] |> length()
 
@@ -853,12 +857,14 @@ defmodule Glific.Templates.InteractiveTemplates do
     end)
   end
 
+  @spec build_location_csv_data(map(), list(String.t()), non_neg_integer()) :: list()
   defp build_location_csv_data(translations, language_codes, id) do
     headers = ["id", "Attribute" | get_language_names(language_codes)]
     body = build_location_csv_body(translations, language_codes, id)
     [headers | body]
   end
 
+  @spec build_location_csv_body(map(), list(String.t()), non_neg_integer()) :: list()
   defp build_location_csv_body(translations, language_codes, id) do
     [
       [
