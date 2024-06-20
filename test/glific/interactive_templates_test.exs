@@ -53,6 +53,60 @@ defmodule Glific.InteractiveTemplatesTest do
       }
     }
 
+    @valid_location_attrs %{
+      label: "Send Location",
+      type: :location_request_message,
+      interactive_content: %{
+        "action" => %{"name" => "send_location"},
+        "body" => %{"text" => "please share your location", "type" => "text"},
+        "type" => "location_request_message"
+      }
+    }
+
+    @valid_list_attrs %{
+      label: "Interactive list",
+      type: :list,
+      interactive_content: %{
+        "body" => "How was your experience with Glific?",
+        "globalButtons" => [%{"title" => "Glific Features", "type" => "text"}],
+        "items" => [
+          %{
+            "options" => [
+              %{
+                "description" => "Awesome",
+                "title" => "Great",
+                "type" => "text"
+              }
+            ],
+            "subtitle" => "Excitement level",
+            "title" => "Excitement level"
+          }
+        ],
+        "title" => "glific",
+        "type" => "list"
+      },
+      translations: %{
+        "1" => %{
+          "body" => "How was your experience with Glific?",
+          "globalButtons" => [%{"title" => "Glific Features", "type" => "text"}],
+          "items" => [
+            %{
+              "options" => [
+                %{
+                  "description" => "Awesome",
+                  "title" => "Great",
+                  "type" => "text"
+                }
+              ],
+              "subtitle" => "Excitement level",
+              "title" => "Excitement level"
+            }
+          ],
+          "title" => "glific",
+          "type" => "list"
+        }
+      }
+    }
     @update_attrs %{
       label: "Updated Quick Reply label"
     }
@@ -335,6 +389,54 @@ defmodule Glific.InteractiveTemplatesTest do
             status: 200
           }
 
+        String.contains?(env.body, "please share your location") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "कृपया अपना स्थान साझा करें"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "Glific Features") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "शानदार विशेषताएं"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "Excitement level") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "उत्साह का स्तर"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "glific") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "ग्लिफ़िक"}
+                ]
+              }
+            },
+            status: 200
+          }
+
         true ->
           %Tesla.Env{
             status: 200,
@@ -369,6 +471,7 @@ defmodule Glific.InteractiveTemplatesTest do
 
   test "export the interactive template",
        %{organization_id: _organization_id} = attrs do
+    # type quick reply
     interactive =
       Fixtures.interactive_fixture(Map.merge(@valid_more_attrs, attrs))
 
@@ -386,5 +489,44 @@ defmodule Glific.InteractiveTemplatesTest do
       InteractiveTemplates.export_interactive_template(interactive)
 
     assert String.trim(export_data) == String.trim(expected_export_data)
+
+    # type location
+
+    interactive =
+      Fixtures.interactive_fixture(Map.merge(@valid_location_attrs, attrs))
+
+    interactive_id = interactive.id
+
+    location_export_data = """
+    id,Attribute,en,hi
+    #{interactive_id},Action,send_location,send_location
+    #{interactive_id},Body,please share your location,कृपया अपना स्थान साझा करें
+    """
+
+    {:ok, %{export_data: export_data}} =
+      InteractiveTemplates.export_interactive_template(interactive)
+
+    assert String.trim(export_data) == String.trim(location_export_data)
+
+    # type interactive
+    interactive =
+      Fixtures.interactive_fixture(Map.merge(@valid_list_attrs, attrs))
+
+    interactive_id = interactive.id
+
+    list_export_data = """
+    id,Attribute,en,hi
+    #{interactive_id},Body,How was your experience with Glific?,ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?
+    #{interactive_id},GlobalButtonTitle,Glific Features,शानदार विशेषताएं
+    #{interactive_id},ItemTitle 1,Excitement level,उत्साह का स्तर
+    #{interactive_id},ItemSubtitle 1,Excitement level,उत्साह का स्तर
+    #{interactive_id},OptionTitle 1.1,Great,उत्कृष्ट
+    #{interactive_id},OptionDescription 1.1,Awesome,शानदार
+    """
+
+    {:ok, %{export_data: export_data}} =
+      InteractiveTemplates.export_interactive_template(interactive)
+
+    assert String.trim(export_data) == String.trim(list_export_data)
   end
 end
