@@ -113,9 +113,49 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec create_interactive_template(map()) ::
           {:ok, InteractiveTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_interactive_template(attrs) do
-    %InteractiveTemplate{}
-    |> InteractiveTemplate.changeset(attrs)
-    |> Repo.insert()
+    case validate_interactive_content_length(attrs) do
+      :ok ->
+        %InteractiveTemplate{}
+        |> InteractiveTemplate.changeset(attrs)
+        |> Repo.insert()
+
+      {:error, message} ->
+        {:error, message}
+    end
+  end
+
+  @doc """
+  Validates the total length of the interactive content body and options.
+  """
+  @spec calculate_total_length(map()) :: integer()
+  def calculate_total_length(%{"content" => content, "options" => options}) do
+    body_length =
+      content
+      |> Map.values()
+      |> Enum.map(&String.length/1)
+      |> Enum.sum()
+    options_length =
+      options
+      |> Enum.map(fn %{"title" => title} -> String.length(title) end)
+      |> Enum.sum()
+
+    body_length + options_length
+
+  end
+
+  @spec validate_interactive_content_length(map()) :: :ok | {:error, String.t()}
+  def validate_interactive_content_length(attrs) do
+    interactive_content = Map.get(attrs, :interactive_content, %{})
+
+    total_length =
+      interactive_content
+      |> calculate_total_length()
+
+    if total_length > 1024 do
+      {:error, "The total length of the body and options exceeds 1024 characters"}
+    else
+      :ok
+    end
   end
 
   @doc """
