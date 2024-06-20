@@ -130,11 +130,11 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
       resolve(&Resolvers.InteractiveTemplates.translate_interactive_template/3)
     end
 
-    field :export_interactive_template, :export_interactive_translation do
+    field :import_interactive_template, :interactive_template_result do
       arg(:id, non_null(:id))
       arg(:add_translation, :boolean)
       middleware(Authorize, :manager)
-      resolve(&Resolvers.InteractiveTemplates.export_interactive_template/3)
+      resolve(&Resolvers.InteractiveTemplates.import_interactive_template/3)
     end
 
     field :import_interactive_template, :interactive_template_result do
