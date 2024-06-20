@@ -143,4 +143,24 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
       InteractiveTemplates.export_interactive_template(interactive_template)
     end
   end
+
+  @doc """
+  import interactive template
+  """
+  @spec import_interactive_template(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def import_interactive_template(_, %{translation: data, id: id}, _) do
+    with {:ok, interactive_template} <-
+           InteractiveTemplates.fetch_interactive_template(id) do
+      {:ok, stream} = StringIO.open(data)
+
+      stream
+      |> IO.binstream(:line)
+      |> CSV.decode!()
+      |> Enum.into([])
+      |> InteractiveTemplates.import_interactive_template(interactive_template)
+
+      {:ok, %{success: true}}
+    end
+  end
 end
