@@ -742,6 +742,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     [headers | body]
   end
 
+  @spec  build_list_csv_body(map(), list(String.t()), non_neg_integer()) :: list()
   defp build_list_csv_body(translations, language_codes, id) do
     [
       ["#{id}", "Body" | Enum.map(language_codes, fn code -> translations[code]["body"] end)],
