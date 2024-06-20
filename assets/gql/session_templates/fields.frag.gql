@@ -9,6 +9,7 @@ fragment SessionTemplateFields on SessionTemplateResult {
     category
     example
     is_reserved
+    allow_template_category_change
     is_active
     has_buttons
     button_type
