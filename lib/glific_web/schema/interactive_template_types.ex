@@ -143,5 +143,11 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
       middleware(Authorize, :manager)
       resolve(&Resolvers.InteractiveTemplates.import_interactive_template/3)
     end
+
+    field :import_interactive_template, :interactive_template_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.InteractiveTemplates.import_interactive_template/3)
+    end
   end
 end
