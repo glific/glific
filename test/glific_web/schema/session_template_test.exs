@@ -417,47 +417,55 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
       filter: %{organization_id: user.organization_id, is_hsm: true}
     })
 
-    [hsm| _] =
+    [hsm | _] =
       Templates.list_session_templates(%{
         filter: %{organization_id: user.organization_id, is_hsm: true}
       })
 
-      Tesla.Mock.mock(fn
-        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
-          %Tesla.Env{
-            status: 200,
-            body: Jason.encode!(%{"access_token" => "mocked_token"})
-          }
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"access_token" => "mocked_token"})
+        }
 
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              Jason.encode!(%{
-                "status" => "success",
-                "template" => %{
-                  "allowTemplateCategoryChange" => true
-                }
-              })
-          }
-      end)
-
-      language_id = hsm.language_id
-
-      result =
-          auth_query_gql_by(:create, user,
-            variables: %{
-              "input" => %{
-                "label" => "Test Label",
-                "body" => "Test Template",
-                "type" => "TEXT",
-                "languageId" => language_id
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "success",
+              "template" => %{
+                "allowTemplateCategoryChange" => true
               }
-            }
-          )
+            })
+        }
+    end)
+
+    language_id = hsm.language_id
+
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "Test Label",
+            "body" => "Test Template",
+            "type" => "TEXT",
+            "languageId" => language_id
+          }
+        }
+      )
 
     assert {:ok, query_data} = result
-    allow_template_change = get_in(query_data, [:data, "createSessionTemplate", "sessionTemplate", "allow_template_category_change"])
+
+    allow_template_change =
+      get_in(query_data, [
+        :data,
+        "createSessionTemplate",
+        "sessionTemplate",
+        "allow_template_category_change"
+      ])
+
     assert allow_template_change == true
   end
 end

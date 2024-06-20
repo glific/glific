@@ -225,6 +225,7 @@ defmodule Glific.Clients.CommonWebhook do
     services = organization.services["google_cloud_storage"]
 
     with false <- is_nil(services),
+         true <- Glific.Bhasini.valid_language?(),
          {:ok, response} <-
            Bhasini.with_config_request(
              source_language: source_language,
@@ -235,6 +236,19 @@ defmodule Glific.Clients.CommonWebhook do
            params <-
            Jason.decode!(response.body) do
       Glific.Bhasini.nmt_tts(params, text, source_language, target_language, org_id)
+    else
+      true ->
+        %{success: false, reason: "GCS is disabled"}
+
+      false ->
+        %{success: false, reason: "Language not supported in Bhasini"}
+
+      {:error, error} ->
+        Map.put(error, "success", false)
+
+      error ->
+        Logger.error("Error received from Bhasini: #{error["message"]}")
+        Map.put(error, "success", false)
     end
   end
 
@@ -253,11 +267,8 @@ defmodule Glific.Clients.CommonWebhook do
     }
   end
 
-  def webhook("check_response", fields) do
-    %{
-      response: String.equivalent?(fields["correct_response"], fields["user_response"])
-    }
-  end
+  def webhook("check_response", fields),
+    do: %{response: String.equivalent?(fields["correct_response"], fields["user_response"])}
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
