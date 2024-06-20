@@ -219,6 +219,43 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     assert label == "Request Location"
   end
 
+  test "create a interactive with more than 1024 characters returns error prompt", %{manager: user} do
+    label = "Quick Reply Video"
+
+    {:ok, interactive} =
+      Repo.fetch_by(InteractiveTemplate, %{label: label, organization_id: user.organization_id})
+
+    language_id = interactive.language_id
+
+    interactive_content= %{
+      "content" => %{"text" => String.duplicate("A", 1025), "type" => "text"},
+      "options" => [
+        %{"title" => "Option 1", "type" => "text"},
+        %{"title" => "Option 2", "type" => "text"}
+      ],
+      "type" => "quick_reply"
+    }
+
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "Request Location",
+            "type" => "LOCATION_REQUEST_MESSAGE",
+            "interactive_content" => Jason.encode!(interactive_content),
+            "languageId" => language_id
+          }
+        }
+      )
+
+      assert {:ok, query_data} = result
+
+      error_message =
+        get_in(query_data, [:errors, Access.at(0), :message])
+
+      assert error_message == "The total length of the body and options exceeds 1024 characters"
+  end
+
   test "update interactive and test possible scenarios and errors", %{manager: user} do
     label = "Quick Reply Text"
 
