@@ -124,24 +124,16 @@ defmodule Glific.Templates.InteractiveTemplates do
     end
   end
 
-  @doc """
-  Validates the total length of the interactive content body and options.
-  """
-  @spec calculate_total_length(map()) :: integer()
-  def calculate_total_length(%{"content" => content, "options" => options}) do
-    body_length =
-      content
-      |> Map.values()
-      |> Enum.map(&String.length/1)
-      |> Enum.sum()
-    options_length =
-      options
-      |> Enum.map(fn %{"title" => title} -> String.length(title) end)
-      |> Enum.sum()
+  @spec calculate_total_length(map() | nil) :: integer()
+  defp calculate_total_length(nil), do: 0
+  defp calculate_total_length(%{"content" => content, "options" => options}) do
+    content_length = content |> Map.values() |> Enum.map(&String.length/1) |> Enum.sum()
+    options_length = options |> Enum.map(&String.length(&1["title"])) |> Enum.sum()
 
-    body_length + options_length
-
+    content_length + options_length
   end
+
+  defp calculate_total_length(_), do: 0
 
   @spec validate_interactive_content_length(map()) :: :ok | {:error, String.t()}
   def validate_interactive_content_length(attrs) do
