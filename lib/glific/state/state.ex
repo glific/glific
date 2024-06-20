@@ -25,7 +25,7 @@ defmodule Glific.State do
   @spec init(any) :: {:ok, %{}}
   def init(_opts) do
     # our state is a map of organization ids to simulator contexts
-    {:ok, reset_state()}
+    {:ok, %{}}
   end
 
   @impl true
@@ -52,8 +52,8 @@ defmodule Glific.State do
 
   @impl true
   @doc false
-  def handle_call(:reset, _from, _state) do
-    {:reply, :ok, reset_state(), :hibernate}
+  def handle_call({:reset, organization_id}, _from, state) do
+    {:reply, :ok, reset_state(organization_id, state), :hibernate}
   end
 
   @impl true
@@ -96,8 +96,27 @@ defmodule Glific.State do
   end
 
   @doc false
-  def get_flow(user, flow_id, is_forced) do
-    GenServer.call(__MODULE__, {:get_flow, %{user: user, flow_id: flow_id, is_forced: is_forced}})
+  def get_flow(user, flow_id, is_forced, retries \\ 0) do
+    GenServer.call(
+      __MODULE__,
+      {:get_flow, %{user: user, flow_id: flow_id, is_forced: is_forced}}
+    )
+  catch
+    :exit, {:timeout, _} = _reason ->
+      if retries < 1 do
+        log_msgq("Retry")
+        get_flow(user, flow_id, is_forced, retries + 1)
+      else
+        log_msgq()
+
+        {:ok,
+         %{
+           errors: %{
+             key: "error",
+             message: "Something went wrong"
+           }
+         }}
+      end
   end
 
   @doc false
@@ -111,8 +130,8 @@ defmodule Glific.State do
   end
 
   @doc false
-  def reset do
-    GenServer.call(__MODULE__, :reset)
+  def reset(organization_id) do
+    GenServer.call(__MODULE__, {:reset, organization_id})
   end
 
   @doc """
@@ -133,9 +152,9 @@ defmodule Glific.State do
     |> Map.merge(Flow.init_state(organization_id))
   end
 
-  @spec reset_state :: map()
-  defp reset_state do
-    %{}
+  @spec reset_state(non_neg_integer(), map()) :: map()
+  defp reset_state(organization_id, state) do
+    Map.delete(state, organization_id)
   end
 
   @doc """
@@ -262,4 +281,16 @@ defmodule Glific.State do
   end
 
   defp publish_data(_organization_id, _user_id, :flows), do: nil
+
+  @spec log_msgq(String.t() | nil) :: :ok
+  defp log_msgq(action \\ nil) do
+    state_pid = GenServer.whereis(__MODULE__)
+    {:message_queue_len, msgq} = Process.info(state_pid, :message_queue_len)
+
+    if is_nil(action) do
+      Logger.error("State Genserver timeout, current msqQ: #{msgq}")
+    else
+      Logger.error("#{action} due to State Genserver timeout, current msqQ: #{msgq}")
+    end
+  end
 end
