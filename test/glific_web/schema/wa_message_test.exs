@@ -64,7 +64,6 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
 
   load_gql(:send_msg, GlificWeb.Schema, "assets/gql/messages/wa_group_message.gql")
 
-  @tag :dd
   test "send message/2 in a whatsapp group", %{staff: user, conn: conn} do
     mock_maytapi_response(200, %{
       "success" => true,
@@ -115,16 +114,8 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
     })
 
     assert %Plug.Conn{} = post(conn, "/maytapi", @delivered_ack)
-
-    # message =
-    #   WAMessage
-    #   |> where([wa], wa.bsp_id == "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d")
-    #   |> Repo.one()
-
-    # assert message.bsp_status == :delivered
   end
 
-  @tag :dd
   test "send message/2 in a whatsapp group, update_statuses function test", %{
     staff: user,
     conn: _conn
