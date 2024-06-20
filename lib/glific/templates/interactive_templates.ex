@@ -709,4 +709,9 @@ defmodule Glific.Templates.InteractiveTemplates do
       }
     end
   end
+
+  def import_interactive_template(translation, interactive_template) do
+    IO.inspect(translation)
+    IO.inspect(interactive_template)
+  end
 end
