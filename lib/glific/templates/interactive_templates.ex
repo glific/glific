@@ -707,6 +707,9 @@ defmodule Glific.Templates.InteractiveTemplates do
     end
   end
 
+  @doc """
+    Export interactive msg in all the active languages
+  """
   @spec export_interactive_template(InteractiveTemplate.t()) :: {:ok, %{export_data: String.t()}}
   def export_interactive_template(interactive_template) do
     {:ok, translated_template} =

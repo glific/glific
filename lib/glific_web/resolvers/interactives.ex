@@ -114,16 +114,16 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
     end
   end
 
+  @doc """
+  Export interactive template
+  """
   @spec export_interactive_template(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
           context: map()
         }) ::
           {:ok, any} | {:error, any}
   def export_interactive_template(_, %{id: id}, _) do
-    with {:ok, interactive_template} <-
-           InteractiveTemplates.fetch_interactive_template(id),
-         {:ok, csv_data} <-
-           InteractiveTemplates.export_interactive_template(interactive_template) do
-      {:ok, csv_data}
+    with {:ok, interactive_template} <- InteractiveTemplates.fetch_interactive_template(id) do
+      InteractiveTemplates.export_interactive_template(interactive_template)
     end
   end
 end
