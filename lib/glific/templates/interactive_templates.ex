@@ -742,7 +742,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     [headers | body]
   end
 
-  @spec  build_list_csv_body(map(), list(String.t()), non_neg_integer()) :: list()
+  @spec build_list_csv_body(map(), list(String.t()), non_neg_integer()) :: list()
   defp build_list_csv_body(translations, language_codes, id) do
     [
       ["#{id}", "Body" | Enum.map(language_codes, fn code -> translations[code]["body"] end)],
@@ -830,6 +830,27 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   @spec build_quick_reply_csv_body(map(), list(String.t()), non_neg_integer()) :: list()
   defp build_quick_reply_csv_body(translations, language_codes, id) do
+    caption_row =
+      if Map.has_key?(translations[hd(language_codes)]["content"], "caption") do
+        [
+          [
+            "#{id}",
+            "Footer"
+            | Enum.map(language_codes, fn code -> translations[code]["content"]["caption"] end)
+          ]
+        ]
+      else
+        []
+      end
+
+    text_header_rows = text_header_csv_body(translations, language_codes, id)
+    options_rows = build_quick_reply_options(translations, language_codes, id)
+
+    caption_row ++ text_header_rows ++ options_rows
+  end
+
+  @spec text_header_csv_body(map(), list(String.t()), non_neg_integer()) :: list()
+  defp text_header_csv_body(translations, language_codes, id) do
     [
       [
         "#{id}",
@@ -840,7 +861,7 @@ defmodule Glific.Templates.InteractiveTemplates do
         "#{id}",
         "Text" | Enum.map(language_codes, fn code -> translations[code]["content"]["text"] end)
       ]
-    ] ++ build_quick_reply_options(translations, language_codes, id)
+    ]
   end
 
   @spec build_quick_reply_options(map(), list(String.t()), non_neg_integer()) :: list()

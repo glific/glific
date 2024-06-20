@@ -1,0 +1,18 @@
+id,Attribute,en,hi,kn,gu
+5,Header,Details Confirmation,विवरण पुष्टि,ವಿವರಗಳ ದೃಢೀಕರಣ,વિગતોની પુષ્ટિ
+5,Text,"Please *confirm* if the below details are correct-
+
+*Name:* @results.name
+*Profile of:* @results.role","कृपया पुष्टि करें कि नीचे दी गई जानकारी सही है या नहीं-
+
+*नाम:* @results.name
+*प्रोफ़ाइल:* @results.role","ಕೆಳಗಿನ ವಿವರಗಳು ಸರಿಯಾಗಿದ್ದರೆ ದಯವಿಟ್ಟು *ದೃಢೀಕರಿಸಿ*-
+
+*ಹೆಸರು:* @results.name
+*ಇದರ ಪ್ರೊಫೈಲ್:* @results.role","જો નીચેની વિગતો સાચી હોય તો કૃપા કરીને *પુષ્ટિ* કરો-
+
+*નામ:* @results.name
+*ની પ્રોફાઇલ:* @results.role"
+5,OptionTitle 1,Correct,सही,ಸರಿ,સાચો
+5,OptionTitle 2,Re-enter details,विवरण पुनः दर्ज करें,ವಿವರಗಳನ್ನು ಮರು-ನಮೂದಿಸಿ,વિગતો ફરીથી દાખલ કરો
+5,OptionTitle 3,gain,पाना,ಲಾಭ,લાભ

@@ -53,6 +53,29 @@ defmodule Glific.InteractiveTemplatesTest do
       }
     }
 
+    @valid_footer_attrs %{
+      label: "Glific Features",
+      type: :quick_reply,
+      interactive_content: %{
+        "type" => "quick_reply",
+        "content" => %{
+          "caption" => "caption is footer",
+          "type" => "text",
+          "text" => "How was your experience with Glific?"
+        },
+        "options" => [
+          %{
+            "type" => "text",
+            "title" => "Great"
+          },
+          %{
+            "type" => "text",
+            "title" => "Awesome"
+          }
+        ]
+      }
+    }
+
     @valid_location_attrs %{
       label: "Send Location",
       type: :location_request_message,
@@ -437,6 +460,18 @@ defmodule Glific.InteractiveTemplatesTest do
             status: 200
           }
 
+        String.contains?(env.body, "caption is footer") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "कैप्शन पाद लेख है"}
+                ]
+              }
+            },
+            status: 200
+          }
+
         true ->
           %Tesla.Env{
             status: 200,
@@ -491,7 +526,6 @@ defmodule Glific.InteractiveTemplatesTest do
     assert String.trim(export_data) == String.trim(expected_export_data)
 
     # type location
-
     interactive =
       Fixtures.interactive_fixture(Map.merge(@valid_location_attrs, attrs))
 
@@ -528,5 +562,25 @@ defmodule Glific.InteractiveTemplatesTest do
       InteractiveTemplates.export_interactive_template(interactive)
 
     assert String.trim(export_data) == String.trim(list_export_data)
+
+    # type quick reply with footer
+    interactive =
+      Fixtures.interactive_fixture(Map.merge(@valid_footer_attrs, attrs))
+
+    interactive_id = interactive.id
+
+    expected_export_data = """
+    id,Attribute,en,hi
+    #{interactive_id},Footer,caption is footer,कैप्शन पाद लेख है
+    #{interactive_id},Header,Glific Features,शानदार विशेषताएं
+    #{interactive_id},Text,How was your experience with Glific?,ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?
+    #{interactive_id},OptionTitle 1,Great,उत्कृष्ट
+    #{interactive_id},OptionTitle 2,Awesome,शानदार
+    """
+
+    {:ok, %{export_data: export_data}} =
+      InteractiveTemplates.export_interactive_template(interactive)
+
+    assert String.trim(export_data) == String.trim(expected_export_data)
   end
 end
