@@ -3,6 +3,7 @@ defmodule Glific.Templates.InteractiveTemplateTest do
 
   alias Glific.Repo
   alias Glific.Templates.InteractiveTemplate
+  alias Glific.Templates.InteractiveTemplates
 
   import Glific.Fixtures
 
@@ -178,5 +179,22 @@ defmodule Glific.Templates.InteractiveTemplateTest do
                   ]}
              ]
     end
+  end
+
+  test "returns error for interactive content length exceeding 1024 characters" do
+    attrs = %{
+      label: "A label",
+      type: :quick_reply,
+      interactive_content: %{
+        "content" => %{"text" => String.duplicate("A", 1025), "type" => "text"},
+        "options" => [
+          %{"title" => "Option 1", "type" => "text"},
+          %{"title" => "Option 2", "type" => "text"}
+        ],
+        "type" => "quick_reply"
+      }
+    }
+
+    assert {:error, "The total length of the body and options exceeds 1024 characters"} = InteractiveTemplates.create_interactive_template(attrs)
   end
 end
