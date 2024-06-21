@@ -706,7 +706,7 @@ defmodule Glific.Templates.InteractiveTemplates do
       }
     end
   end
-    
+
   @doc """
     Export interactive msg in all the active languages
   """
@@ -907,9 +907,38 @@ defmodule Glific.Templates.InteractiveTemplates do
     language_map = Settings.get_language_id_local_map()
     Enum.map(language_codes, fn code -> Map.get(language_map, code) end)
   end
-  
-  def import_interactive_template(translation, interactive_template) do
-    IO.inspect(translation)
-    IO.inspect(interactive_template)
+
+  @doc """
+  Import interactive template with translation
+  """
+  @spec import_interactive_template([[String.t()]], map()) :: map()
+  def import_interactive_template(translation_data, interactive_template) do
+    content = interactive_template.interactive_content
+    [headers | translations] = translation_data
+    language_keys = headers |> Enum.drop(2)
+    language_codes = get_language_codes(language_keys)
+
+    lang_index =
+      headers
+      |> Enum.drop(2)
+      |> Enum.with_index()
+      |> Enum.into(%{})
+
+    translated_contents =
+      Enum.reduce(lang_index, %{}, fn {_lang, idx}, acc ->
+        translated_data = translations |> Enum.map(&Enum.at(&1, idx + 2))
+        [header | remaining_translations] = translated_data
+        translated_template = create_translated_template(content, header, remaining_translations)
+        lang_code = Enum.at(language_codes, idx)
+        Map.put(acc, Integer.to_string(lang_code), translated_template)
+      end)
+
+    update_interactive_template(interactive_template, %{translations: translated_contents})
+  end
+
+  @spec get_language_names(list(String.t())) :: list()
+  defp get_language_codes(language_name) do
+    language_map = Settings.locale_id_map()
+    Enum.map(language_name, fn code -> Map.get(language_map, code) end)
   end
 end
