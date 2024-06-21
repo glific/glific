@@ -219,7 +219,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     assert label == "Request Location"
   end
 
-  test "create a interactive with more than 1024 characters returns error prompt", %{manager: user} do
+  test "interactive template creation scenarios for character validation", %{manager: user} do
     label = "Quick Reply Video"
 
     {:ok, interactive} =
@@ -227,7 +227,8 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
 
     language_id = interactive.language_id
 
-    interactive_content= %{
+    # Test case 1: Content length more than 1024 characters
+    interactive_content_long = %{
       "content" => %{"text" => String.duplicate("A", 1025), "type" => "text"},
       "options" => [
         %{"title" => "Option 1", "type" => "text"},
@@ -236,24 +237,51 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
       "type" => "quick_reply"
     }
 
-    result =
+    result_long =
       auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
             "label" => "Request Location",
             "type" => "LOCATION_REQUEST_MESSAGE",
-            "interactive_content" => Jason.encode!(interactive_content),
+            "interactive_content" => Jason.encode!(interactive_content_long),
             "languageId" => language_id
           }
         }
       )
 
-      assert {:ok, query_data} = result
+    assert {:ok, query_data_long} = result_long
 
-      error_message =
-        get_in(query_data, [:errors, Access.at(0), :message])
+    error_message_long =
+      get_in(query_data_long, [:errors, Access.at(0), :message])
 
-      assert error_message == "The total length of the body and options exceeds 1024 characters"
+    assert error_message_long == "The total length of the body and options exceeds 1024 characters"
+
+    # Test case 2: Valid content length
+    interactive_content_valid = %{
+      "content" => %{"text" => String.duplicate("A", 800), "type" => "text"},
+      "options" => [
+        %{"title" => "Option 1", "type" => "text"},
+        %{"title" => "Option 2", "type" => "text"}
+      ],
+      "type" => "quick_reply"
+    }
+
+    result_valid =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "Request Location",
+            "type" => "LOCATION_REQUEST_MESSAGE",
+            "interactive_content" => Jason.encode!(interactive_content_valid),
+            "languageId" => language_id
+          }
+        }
+      )
+
+    assert {:ok, query_data_valid} = result_valid
+    assert get_in(query_data_valid, [:errors]) == nil
+    assert Repo.get_by(InteractiveTemplate, label: "Request Location")
+
   end
 
   test "update interactive and test possible scenarios and errors", %{manager: user} do
