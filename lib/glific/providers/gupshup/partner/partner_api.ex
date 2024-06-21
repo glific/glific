@@ -24,20 +24,16 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
     Fetch App details based on API key and App name
   """
-  @spec fetch_app_details(non_neg_integer()) :: any()
+  @spec fetch_app_details(non_neg_integer()) :: map() | String.t()
   def fetch_app_details(org_id) do
-    app_link(org_id)
+    link_gupshup_app(org_id)
     |> case do
       {:ok, res} ->
         res["partnerApps"]
 
       {:error, error} ->
-        already_linked? = String.contains?(error, "Re-linking")
-        if already_linked? do
-          app_id(org_id)
-        else
-          error
-        end
+        if String.contains?(error, "Re-linking"), do: fetch_gupshup_app_id(org_id), else: error
+
     end
   end
 
@@ -92,8 +88,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
     App Link Using API key (works to get app ID the first time while creating)
   """
-  @spec app_link(non_neg_integer()) :: any()
-  def app_link(org_id) do
+  @spec link_gupshup_app(non_neg_integer()) :: tuple()
+  def link_gupshup_app(org_id) do
     organization = Partners.organization(org_id)
     gupshup_secrets = organization.services["bsp"].secrets
 
@@ -110,13 +106,17 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
     Getting app ID once the app is already linked
   """
-  def app_id(org_id) do
+  @spec fetch_gupshup_app_id(non_neg_integer()) :: map() | String.t()
+  def fetch_gupshup_app_id(org_id) do
     organization = Partners.organization(org_id)
     gupshup_secrets = organization.services["bsp"].secrets
+    gupshup_app_name = gupshup_secrets["app_name"]
 
-    with {:ok, %{"partnerAppsList" => list}} <- get_request(@partner_url <> "/api/partnerApps", token_type: :partner_token) do
-      Enum.filter(list, fn app -> gupshup_secrets["app_name"] == app["name"] end)
-      |> hd()
+    case get_request(@partner_url <> "/api/partnerApps", token_type: :partner_token) do
+      {:ok, %{"partnerAppsList" => list}} ->
+        Enum.filter(list, fn app -> app["name"] == gupshup_app_name end)
+        |> hd()
+      {:error, error} -> error
     end
   end
 
