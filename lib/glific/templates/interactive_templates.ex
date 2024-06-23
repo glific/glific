@@ -911,7 +911,8 @@ defmodule Glific.Templates.InteractiveTemplates do
   @doc """
   Import interactive template with translation
   """
-  @spec import_interactive_template([[String.t()]], map()) :: map()
+  @spec import_interactive_template([[String.t()]], InteractiveTemplate.t()) ::
+          {:ok, InteractiveTemplate.t()} | {:error, Ecto.Changeset.t()}
   def import_interactive_template(translation_data, interactive_template) do
     content = interactive_template.interactive_content
     [headers | translations] = translation_data
@@ -924,16 +925,36 @@ defmodule Glific.Templates.InteractiveTemplates do
       |> Enum.with_index()
       |> Enum.into(%{})
 
-    translated_contents =
-      Enum.reduce(lang_index, %{}, fn {_lang, idx}, acc ->
-        translated_data = translations |> Enum.map(&Enum.at(&1, idx + 2))
-        [header | remaining_translations] = translated_data
-        translated_template = create_translated_template(content, header, remaining_translations)
-        lang_code = Enum.at(language_codes, idx)
-        Map.put(acc, Integer.to_string(lang_code), translated_template)
-      end)
+    if Map.has_key?(content["content"], "caption") do
+      translated_contents =
+        Enum.reduce(lang_index, %{}, fn {_lang, idx}, acc ->
+          translated_data = translations |> Enum.map(&Enum.at(&1, idx + 2))
+          [footer, header | remaining_translation] = translated_data
+          combined_translations = [footer | remaining_translation]
 
-    update_interactive_template(interactive_template, %{translations: translated_contents})
+          translated_template =
+            create_translated_template(content, header, combined_translations)
+
+          lang_code = Enum.at(language_codes, idx)
+          Map.put(acc, Integer.to_string(lang_code), translated_template)
+        end)
+
+      update_interactive_template(interactive_template, %{translations: translated_contents})
+    else
+      translated_contents =
+        Enum.reduce(lang_index, %{}, fn {_lang, idx}, acc ->
+          translated_data = translations |> Enum.map(&Enum.at(&1, idx + 2)) |> IO.inspect()
+          [header | remaining_translations] = translated_data
+
+          translated_template =
+            create_translated_template(content, header, remaining_translations)
+
+          lang_code = Enum.at(language_codes, idx)
+          Map.put(acc, Integer.to_string(lang_code), translated_template)
+        end)
+
+      update_interactive_template(interactive_template, %{translations: translated_contents})
+    end
   end
 
   @spec get_language_names(list(String.t())) :: list()
