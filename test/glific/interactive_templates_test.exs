@@ -53,6 +53,83 @@ defmodule Glific.InteractiveTemplatesTest do
       }
     }
 
+    @valid_footer_attrs %{
+      label: "Glific Features",
+      type: :quick_reply,
+      interactive_content: %{
+        "type" => "quick_reply",
+        "content" => %{
+          "caption" => "caption is footer",
+          "type" => "text",
+          "text" => "How was your experience with Glific?"
+        },
+        "options" => [
+          %{
+            "type" => "text",
+            "title" => "Great"
+          },
+          %{
+            "type" => "text",
+            "title" => "Awesome"
+          }
+        ]
+      }
+    }
+
+    @valid_location_attrs %{
+      label: "Send Location",
+      type: :location_request_message,
+      interactive_content: %{
+        "action" => %{"name" => "send_location"},
+        "body" => %{"text" => "please share your location", "type" => "text"},
+        "type" => "location_request_message"
+      }
+    }
+
+    @valid_list_attrs %{
+      label: "Interactive list",
+      type: :list,
+      interactive_content: %{
+        "body" => "How was your experience with Glific?",
+        "globalButtons" => [%{"title" => "Glific Features", "type" => "text"}],
+        "items" => [
+          %{
+            "options" => [
+              %{
+                "description" => "Awesome",
+                "title" => "Great",
+                "type" => "text"
+              }
+            ],
+            "subtitle" => "Excitement level",
+            "title" => "Excitement level"
+          }
+        ],
+        "title" => "glific",
+        "type" => "list"
+      },
+      translations: %{
+        "1" => %{
+          "body" => "How was your experience with Glific?",
+          "globalButtons" => [%{"title" => "Glific Features", "type" => "text"}],
+          "items" => [
+            %{
+              "options" => [
+                %{
+                  "description" => "Awesome",
+                  "title" => "Great",
+                  "type" => "text"
+                }
+              ],
+              "subtitle" => "Excitement level",
+              "title" => "Excitement level"
+            }
+          ],
+          "title" => "glific",
+          "type" => "list"
+        }
+      }
+    }
     @update_attrs %{
       label: "Updated Quick Reply label"
     }
@@ -287,6 +364,114 @@ defmodule Glific.InteractiveTemplatesTest do
             status: 200
           }
 
+        String.contains?(env.body, "How was your experience with Glific?") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "Quick Reply Test Text 2") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "त्वरित उत्तर स्थिरता"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "Great") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "उत्कृष्ट"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "Awesome") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "शानदार"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "please share your location") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "कृपया अपना स्थान साझा करें"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "Glific Features") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "शानदार विशेषताएं"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "Excitement level") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "उत्साह का स्तर"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "glific") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "ग्लिफ़िक"}
+                ]
+              }
+            },
+            status: 200
+          }
+
+        String.contains?(env.body, "caption is footer") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "कैप्शन पाद लेख है"}
+                ]
+              }
+            },
+            status: 200
+          }
+
         true ->
           %Tesla.Env{
             status: 200,
@@ -317,5 +502,85 @@ defmodule Glific.InteractiveTemplatesTest do
     assert translations["2"]["content"]["header"] == "त्वरित उत्तर स्थिरता"
     assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्षण 1" end)
     assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्षण 2" end)
+  end
+
+  test "export the interactive template",
+       %{organization_id: _organization_id} = attrs do
+    # type quick reply
+    interactive =
+      Fixtures.interactive_fixture(Map.merge(@valid_more_attrs, attrs))
+
+    interactive_id = interactive.id
+
+    expected_export_data = """
+    id,Attribute,en,hi
+    #{interactive_id},Header,Quick Reply Test Text 2,त्वरित उत्तर स्थिरता
+    #{interactive_id},Text,How was your experience with Glific?,ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?
+    #{interactive_id},OptionTitle 1,Great,उत्कृष्ट
+    #{interactive_id},OptionTitle 2,Awesome,शानदार
+    """
+
+    {:ok, %{export_data: export_data}} =
+      InteractiveTemplates.export_interactive_template(interactive)
+
+    assert String.trim(export_data) == String.trim(expected_export_data)
+
+    # type location
+    interactive =
+      Fixtures.interactive_fixture(Map.merge(@valid_location_attrs, attrs))
+
+    interactive_id = interactive.id
+
+    location_export_data = """
+    id,Attribute,en,hi
+    #{interactive_id},Action,send_location,send_location
+    #{interactive_id},Body,please share your location,कृपया अपना स्थान साझा करें
+    """
+
+    {:ok, %{export_data: export_data}} =
+      InteractiveTemplates.export_interactive_template(interactive)
+
+    assert String.trim(export_data) == String.trim(location_export_data)
+
+    # type interactive
+    interactive =
+      Fixtures.interactive_fixture(Map.merge(@valid_list_attrs, attrs))
+
+    interactive_id = interactive.id
+
+    list_export_data = """
+    id,Attribute,en,hi
+    #{interactive_id},Body,How was your experience with Glific?,ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?
+    #{interactive_id},GlobalButtonTitle,Glific Features,शानदार विशेषताएं
+    #{interactive_id},ItemTitle 1,Excitement level,उत्साह का स्तर
+    #{interactive_id},ItemSubtitle 1,Excitement level,उत्साह का स्तर
+    #{interactive_id},OptionTitle 1.1,Great,उत्कृष्ट
+    #{interactive_id},OptionDescription 1.1,Awesome,शानदार
+    """
+
+    {:ok, %{export_data: export_data}} =
+      InteractiveTemplates.export_interactive_template(interactive)
+
+    assert String.trim(export_data) == String.trim(list_export_data)
+
+    # type quick reply with footer
+    interactive =
+      Fixtures.interactive_fixture(Map.merge(@valid_footer_attrs, attrs))
+
+    interactive_id = interactive.id
+
+    expected_export_data = """
+    id,Attribute,en,hi
+    #{interactive_id},Footer,caption is footer,कैप्शन पाद लेख है
+    #{interactive_id},Header,Glific Features,शानदार विशेषताएं
+    #{interactive_id},Text,How was your experience with Glific?,ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?
+    #{interactive_id},OptionTitle 1,Great,उत्कृष्ट
+    #{interactive_id},OptionTitle 2,Awesome,शानदार
+    """
+
+    {:ok, %{export_data: export_data}} =
+      InteractiveTemplates.export_interactive_template(interactive)
+
+    assert String.trim(export_data) == String.trim(expected_export_data)
   end
 end
