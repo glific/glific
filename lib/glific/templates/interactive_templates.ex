@@ -999,7 +999,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   @spec import_location_message(list(String.t()), map(), list(), map()) :: map()
-  def import_location_message(translations, content, language_codes, lang_index) do
+  defp import_location_message(translations, content, language_codes, lang_index) do
     [_action | body] = translations
 
     translated_texts =
