@@ -115,7 +115,7 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
   end
 
   @doc """
-  import interactive template
+  Export interactive template
   """
   @spec export_interactive_template(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, %{export_data: String.t()}}
