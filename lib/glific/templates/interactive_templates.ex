@@ -710,13 +710,23 @@ defmodule Glific.Templates.InteractiveTemplates do
   @doc """
     Export interactive msg in all the active languages
   """
-  @spec export_interactive_template(InteractiveTemplate.t()) :: {:ok, %{export_data: String.t()}}
-  def export_interactive_template(interactive_template) do
-    {:ok, translated_template} =
-      translate_interactive_template(interactive_template)
+  @spec export_interactive_template(InteractiveTemplate.t(), boolean()) ::
+          {:ok, %{export_data: String.t()}}
 
-    translations = translated_template.translations
-    type = interactive_template.interactive_content["type"]
+  def export_interactive_template(interactive_template, false) do
+    generate_csv_data(interactive_template)
+  end
+
+  def export_interactive_template(interactive_template, true) do
+    {:ok, translated_template} = translate_interactive_template(interactive_template)
+    generate_csv_data(translated_template)
+  end
+
+  @spec generate_csv_data(InteractiveTemplate.t()) ::
+          {:ok, %{export_data: String.t()}}
+  defp generate_csv_data(template) do
+    translations = template.translations
+    type = template.interactive_content["type"]
     language_codes = Map.keys(translations)
 
     csv_data =
