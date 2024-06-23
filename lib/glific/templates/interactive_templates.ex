@@ -914,7 +914,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec import_interactive_template([[String.t()]], InteractiveTemplate.t()) ::
           {:ok, InteractiveTemplate.t()} | {:error, Ecto.Changeset.t()}
   def import_interactive_template(translation_data, interactive_template) do
-    content = interactive_template.interactive_content
+    type = interactive_template.interactive_content["type"]
     [headers | translations] = translation_data
     language_keys = headers |> Enum.drop(2)
     language_codes = get_language_codes(language_keys)
@@ -925,36 +925,71 @@ defmodule Glific.Templates.InteractiveTemplates do
       |> Enum.with_index()
       |> Enum.into(%{})
 
+    imported_data =
+      case type do
+        "quick_reply" ->
+          import_quick_reply(translations, interactive_template, language_codes, lang_index)
+
+        # "quick_reply" -> build_quick_reply_csv_data(translations, interactive_template)
+        "location_request_message" ->
+          import_location_message(translations, interactive_template, language_codes, lang_index)
+      end
+
+    update_interactive_template(interactive_template, %{translations: imported_data})
+  end
+
+  @spec import_quick_reply(list(String.t()), InteractiveTemplate.t(), list(), map()) :: map()
+  defp import_quick_reply(translations, interactive_template, language_codes, lang_index) do
+    content = interactive_template.interactive_content
+
     if Map.has_key?(content["content"], "caption") do
-      translated_contents =
-        Enum.reduce(lang_index, %{}, fn {_lang, idx}, acc ->
-          translated_data = translations |> Enum.map(&Enum.at(&1, idx + 2))
-          [footer, header | remaining_translation] = translated_data
-          combined_translations = [footer | remaining_translation]
+      Enum.reduce(lang_index, %{}, fn {_lang, idx}, acc ->
+        translated_data = translations |> Enum.map(&Enum.at(&1, idx + 2))
+        [footer, header | remaining_translation] = translated_data
+        combined_translations = [footer | remaining_translation]
 
-          translated_template =
-            create_translated_template(content, header, combined_translations)
+        translated_template =
+          create_translated_template(content, header, combined_translations)
 
-          lang_code = Enum.at(language_codes, idx)
-          Map.put(acc, Integer.to_string(lang_code), translated_template)
-        end)
-
-      update_interactive_template(interactive_template, %{translations: translated_contents})
+        lang_code = Enum.at(language_codes, idx)
+        Map.put(acc, Integer.to_string(lang_code), translated_template)
+      end)
     else
-      translated_contents =
-        Enum.reduce(lang_index, %{}, fn {_lang, idx}, acc ->
-          translated_data = translations |> Enum.map(&Enum.at(&1, idx + 2)) |> IO.inspect()
-          [header | remaining_translations] = translated_data
+      Enum.reduce(lang_index, %{}, fn {_lang, idx}, acc ->
+        translated_data = translations |> Enum.map(&Enum.at(&1, idx + 2))
+        [header | remaining_translations] = translated_data
 
-          translated_template =
-            create_translated_template(content, header, remaining_translations)
+        translated_template =
+          create_translated_template(content, header, remaining_translations)
 
-          lang_code = Enum.at(language_codes, idx)
-          Map.put(acc, Integer.to_string(lang_code), translated_template)
-        end)
-
-      update_interactive_template(interactive_template, %{translations: translated_contents})
+        lang_code = Enum.at(language_codes, idx)
+        Map.put(acc, Integer.to_string(lang_code), translated_template)
+      end)
     end
+  end
+
+  @spec import_location_message(list(String.t()), InteractiveTemplate.t(), list(), map()) :: map()
+  def import_location_message(translations, interactive_template, language_codes, lang_index) do
+    content = interactive_template.interactive_content
+    [_action | body] = translations
+
+    translated_texts =
+      body
+      |> List.flatten()
+      |> Enum.drop(2)
+
+    Enum.reduce(lang_index, %{}, fn {_lang, idx}, acc ->
+      translated_text = Enum.at(translated_texts, idx)
+
+      translated_template = %{
+        "action" => content["action"],
+        "body" => %{"text" => translated_text, "type" => content["body"]["type"]},
+        "type" => content["type"]
+      }
+
+      lang_code = Enum.at(language_codes, idx)
+      Map.put(acc, Integer.to_string(lang_code), translated_template)
+    end)
   end
 
   @spec get_language_names(list(String.t())) :: list()
