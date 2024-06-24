@@ -1,4 +1,4 @@
-defmodule Glific.Bhasini.valid_language?() do
+defmodule Glific.Bhasini do
   @moduledoc """
   Bhasini Integration Module
   """
