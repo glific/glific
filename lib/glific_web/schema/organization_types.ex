@@ -140,10 +140,10 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:updated_at, :datetime)
   end
 
-  object :app_usages do
+  object :daily_usage do
     field(:app_id, :id)
     field(:authentication, :integer)
-    field(:date, :date)
+    field(:date, :string)
   end
 
   @desc "Filtering options for organizations"
@@ -325,7 +325,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     end
 
     @desc "Get daily app usage"
-    field :app_usage, list_of(:app_usages) do
+    field :daily_app_usage, list_of(:daily_usage) do
       arg(:from_date, :date)
       arg(:to_date, :date)
       #TODO add middleware?

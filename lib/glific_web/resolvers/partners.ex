@@ -345,7 +345,9 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   def get_app_usage(_parent, %{from_date: from_date, to_date: to_date}, %{context: %{current_user: user}}) do
-    {:ok, Glific.Providers.Gupshup.PartnerAPI.get_app_usage(user.organization_id, from_date, to_date)}
+    IO.inspect(from_date, label: "FROM DATE")
+    IO.inspect(Date.to_string(from_date), label: "STRING")
+    {:ok, Glific.Providers.Gupshup.PartnerAPI.get_app_usage(user.organization_id, Date.to_string(from_date), Date.to_string(to_date))}
     #taken from get quality ratings (how to get org id)
   end
 
