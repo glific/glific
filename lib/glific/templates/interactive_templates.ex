@@ -4,7 +4,9 @@ defmodule Glific.Templates.InteractiveTemplates do
   """
 
   alias Glific.{
+    Flows.Translate.GoogleTranslate,
     Repo,
+    Settings,
     Tags.Tag,
     Templates.InteractiveTemplate
   }
@@ -384,4 +386,525 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   defp process_dynamic_attachments(interactive_content, _attachment_data), do: interactive_content
+
+  @doc """
+    Translates interactive msg in all the active languages
+  """
+  @spec translate_interactive_template(InteractiveTemplate.t()) ::
+          {:ok, InteractiveTemplate.t()} | {:error, String.t()}
+  def translate_interactive_template(interactive_template) do
+    organization_id = interactive_template.organization_id
+    language_code_map = Settings.locale_id_map()
+    active_languages = Settings.get_language_code(organization_id)
+    interactive_content = interactive_template.interactive_content
+    interactive_msg_type = interactive_content["type"]
+    label = interactive_template.label
+
+    translated_contents =
+      translate_interactive_content(
+        interactive_msg_type,
+        interactive_content,
+        active_languages,
+        language_code_map,
+        organization_id,
+        label
+      )
+
+    update_interactive_template(interactive_template, %{translations: translated_contents})
+  end
+
+  @spec translate_interactive_content(
+          String.t(),
+          map(),
+          map(),
+          map(),
+          non_neg_integer(),
+          String.t()
+        ) :: map()
+
+  defp translate_interactive_content(
+         "quick_reply",
+         interactive_content,
+         active_languages,
+         language_code_map,
+         organization_id,
+         label
+       ) do
+    translate_quick_reply(
+      interactive_content,
+      active_languages,
+      language_code_map,
+      organization_id,
+      label
+    )
+  end
+
+  defp translate_interactive_content(
+         "list",
+         interactive_content,
+         active_languages,
+         language_code_map,
+         organization_id,
+         _label
+       ) do
+    translate_list(interactive_content, active_languages, language_code_map, organization_id)
+  end
+
+  defp translate_interactive_content(
+         "location_request_message",
+         interactive_content,
+         active_languages,
+         language_code_map,
+         organization_id,
+         _label
+       ) do
+    translate_location_request(
+      interactive_content,
+      active_languages,
+      language_code_map,
+      organization_id
+    )
+  end
+
+  @spec translate_quick_reply(map(), map(), map(), non_neg_integer(), String.t()) :: map()
+  defp translate_quick_reply(content, active_languages, language_code_map, organization_id, label) do
+    content_to_translate = content_to_translate(content, label)
+
+    Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
+      translations =
+        if lang_name == "English" do
+          {:ok, content_to_translate}
+        else
+          GoogleTranslate.translate(content_to_translate, "English", lang_name,
+            org_id: organization_id
+          )
+        end
+
+      case translations do
+        {:ok, translated_content} ->
+          [translated_label | remaining_translations] = translated_content
+
+          translated_template =
+            create_translated_template(content, translated_label, remaining_translations)
+
+          Map.put(
+            acc,
+            Integer.to_string(Map.get(language_code_map, lang_code)),
+            translated_template
+          )
+      end
+    end)
+  end
+
+  @spec translate_list(map(), map(), map(), non_neg_integer()) :: map()
+  defp translate_list(content, active_languages, language_code_map, organization_id) do
+    content_to_translate = build_content_to_translate(content)
+
+    Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
+      translations =
+        if lang_name == "English" do
+          {:ok, content_to_translate}
+        else
+          GoogleTranslate.translate(content_to_translate, "English", lang_name,
+            org_id: organization_id
+          )
+        end
+
+      case translations do
+        {:ok, translated_content} ->
+          [title, body | remaining_translations] = translated_content
+
+          global_buttons_length = length(content["globalButtons"])
+
+          global_buttons_translations =
+            Enum.slice(remaining_translations, 0, global_buttons_length)
+
+          items_translations = Enum.drop(remaining_translations, global_buttons_length)
+
+          global_buttons_translated =
+            translate_global_buttons(global_buttons_translations, content["globalButtons"])
+
+          items_translated = do_items_translated(content, items_translations)
+
+          translated_template = %{
+            "title" => title,
+            "body" => body,
+            "globalButtons" => global_buttons_translated,
+            "items" => items_translated,
+            "type" => "list"
+          }
+
+          Map.put(
+            acc,
+            Integer.to_string(Map.get(language_code_map, lang_code)),
+            translated_template
+          )
+      end
+    end)
+  end
+
+  @spec translate_location_request(map(), map(), map(), non_neg_integer()) :: map()
+  defp translate_location_request(content, active_languages, language_code_map, organization_id) do
+    content_to_translate = [content["body"]["text"]]
+
+    Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
+      translations =
+        if lang_name == "English" do
+          {:ok, content_to_translate}
+        else
+          GoogleTranslate.translate(content_to_translate, "English", lang_name,
+            org_id: organization_id
+          )
+        end
+
+      case translations do
+        {:ok, [translated_text]} ->
+          translated_template = %{
+            "action" => content["action"],
+            "body" => %{"text" => translated_text, "type" => content["body"]["type"]},
+            "type" => content["type"]
+          }
+
+          Map.put(
+            acc,
+            Integer.to_string(Map.get(language_code_map, lang_code)),
+            translated_template
+          )
+      end
+    end)
+  end
+
+  @spec build_content_to_translate(map()) :: list
+  defp build_content_to_translate(content) do
+    title = content["title"]
+    body = content["body"]
+
+    global_button_titles = Enum.map(content["globalButtons"], fn button -> button["title"] end)
+
+    item_details =
+      Enum.flat_map(content["items"], fn item ->
+        option_titles_and_descriptions =
+          Enum.flat_map(item["options"], fn option ->
+            [option["title"], option["description"]]
+          end)
+
+        [item["title"], item["subtitle"]] ++ option_titles_and_descriptions
+      end)
+
+    [title, body] ++ global_button_titles ++ item_details
+  end
+
+  @spec translate_global_buttons([String.t()], [map()]) :: [map()]
+  defp translate_global_buttons(global_buttons_translations, global_buttons) do
+    Enum.zip(global_buttons_translations, global_buttons)
+    |> Enum.map(fn {translated_title, button} ->
+      Map.put(button, "title", translated_title)
+    end)
+  end
+
+  @spec add_url_if_present(map(), map()) :: map()
+  defp add_url_if_present(map, content) do
+    if Map.has_key?(content["content"], "url") do
+      Map.put(map, "url", content["content"]["url"])
+    else
+      map
+    end
+  end
+
+  @spec do_options_translated(map(), list()) :: list()
+  defp do_options_translated(content, options) do
+    Enum.zip(Enum.map(content["options"], fn option -> option["type"] end), options)
+    |> Enum.map(fn {type, title} -> %{"type" => type, "title" => title} end)
+  end
+
+  @spec do_items_translated(map(), list()) :: list()
+  defp do_items_translated(content, items_translations) do
+    chunk_sizes =
+      Enum.map(content["items"], fn item ->
+        2 + length(item["options"]) * 2
+      end)
+
+    translations_chunks =
+      Enum.reduce(chunk_sizes, {[], items_translations}, fn chunk_size,
+                                                            {acc, remaining_translations} ->
+        {chunk, rest} = Enum.split(remaining_translations, chunk_size)
+        {acc ++ [chunk], rest}
+      end)
+      |> elem(0)
+
+    Enum.zip(content["items"], translations_chunks)
+    |> Enum.map(fn {item, translated_item} ->
+      [item_title, item_subtitle | options_translations] = translated_item
+
+      options =
+        options_translations
+        |> Enum.chunk_every(2)
+        |> Enum.zip(item["options"])
+        |> Enum.map(fn {[option_title, option_description], option} ->
+          %{
+            "title" => option_title,
+            "description" => option_description,
+            "type" => option["type"]
+          }
+        end)
+
+      %{
+        "title" => item_title,
+        "subtitle" => item_subtitle,
+        "options" => options
+      }
+    end)
+  end
+
+  @spec content_to_translate(map(), String.t()) :: list()
+  defp content_to_translate(content, label) do
+    if Map.has_key?(content["content"], "caption") do
+      [label, content["content"]["caption"], content["content"]["text"]] ++
+        Enum.map(content["options"], fn option -> option["title"] end)
+    else
+      [label, content["content"]["text"]] ++
+        Enum.map(content["options"], fn option -> option["title"] end)
+    end
+  end
+
+  @spec create_translated_template(map(), String.t(), [String.t()]) :: map()
+  defp create_translated_template(content, translated_label, remaining_translations) do
+    if Map.has_key?(content["content"], "caption") do
+      [caption, text | options] = remaining_translations
+      options_translated = do_options_translated(content, options)
+
+      translated_content_map =
+        %{
+          "header" => translated_label,
+          "caption" => caption,
+          "text" => text,
+          "type" => content["content"]["type"]
+        }
+        |> add_url_if_present(content)
+
+      %{
+        "content" => translated_content_map,
+        "options" => options_translated,
+        "type" => "quick_reply"
+      }
+    else
+      [text | options] = remaining_translations
+      options_translated = do_options_translated(content, options)
+
+      translated_content_map =
+        %{
+          "header" => translated_label,
+          "text" => text,
+          "type" => content["content"]["type"]
+        }
+        |> add_url_if_present(content)
+
+      %{
+        "content" => translated_content_map,
+        "options" => options_translated,
+        "type" => "quick_reply"
+      }
+    end
+  end
+
+  @doc """
+    Export interactive msg in all the active languages
+  """
+  @spec export_interactive_template(InteractiveTemplate.t()) :: {:ok, %{export_data: String.t()}}
+  def export_interactive_template(interactive_template) do
+    {:ok, translated_template} =
+      translate_interactive_template(interactive_template)
+
+    translations = translated_template.translations
+    type = interactive_template.interactive_content["type"]
+    id = interactive_template.id
+    language_codes = Map.keys(translations)
+
+    csv_data =
+      case type do
+        "list" -> build_list_csv_data(translations, language_codes, id)
+        "quick_reply" -> build_quick_reply_csv_data(translations, language_codes, id)
+        "location_request_message" -> build_location_csv_data(translations, language_codes, id)
+      end
+
+    data =
+      csv_data
+      |> CSV.encode(delimiter: "\n")
+      |> Enum.join("")
+
+    {:ok, %{export_data: data}}
+  end
+
+  @spec build_list_csv_data(map(), list(String.t()), non_neg_integer()) :: list()
+  defp build_list_csv_data(translations, language_codes, id) do
+    headers = ["id", "Attribute" | get_language_names(language_codes)]
+    body = build_list_csv_body(translations, language_codes, id)
+    [headers | body]
+  end
+
+  @spec build_list_csv_body(map(), list(String.t()), non_neg_integer()) :: list()
+  defp build_list_csv_body(translations, language_codes, id) do
+    [
+      ["#{id}", "Body" | Enum.map(language_codes, fn code -> translations[code]["body"] end)],
+      [
+        "#{id}",
+        "GlobalButtonTitle"
+        | Enum.map(language_codes, fn code ->
+            translations[code]["globalButtons"] |> hd() |> Map.get("title")
+          end)
+      ]
+    ] ++ build_item_rows(translations, language_codes, id)
+  end
+
+  @spec build_item_rows(map(), list(String.t()), non_neg_integer()) :: list()
+  defp build_item_rows(translations, language_codes, id) do
+    items = translations[Enum.at(language_codes, 0)]["items"]
+
+    Enum.flat_map(1..length(items), fn item_index ->
+      item = Enum.at(items, item_index - 1)
+
+      item_title_row = [
+        "#{id}",
+        "ItemTitle #{item_index}"
+        | Enum.map(language_codes, fn code ->
+            (translations[code]["items"] |> Enum.at(item_index - 1))["title"]
+          end)
+      ]
+
+      item_subtitle_row = [
+        "#{id}",
+        "ItemSubtitle #{item_index}"
+        | Enum.map(language_codes, fn code ->
+            (translations[code]["items"] |> Enum.at(item_index - 1))["subtitle"]
+          end)
+      ]
+
+      option_rows =
+        build_option_rows(translations, language_codes, item["options"], item_index, id)
+
+      [item_title_row, item_subtitle_row | option_rows]
+    end)
+  end
+
+  @spec build_option_rows(
+          map(),
+          list(String.t()),
+          list(map()),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: list()
+
+  defp build_option_rows(translations, language_codes, options, item_index, id) do
+    Enum.flat_map(1..length(options), fn option_index ->
+      _option = Enum.at(options, option_index - 1)
+
+      option_title_row = [
+        "#{id}",
+        "OptionTitle #{item_index}.#{option_index}"
+        | Enum.map(language_codes, fn code ->
+            ((translations[code]["items"] |> Enum.at(item_index - 1))["options"]
+             |> Enum.at(option_index - 1))["title"]
+          end)
+      ]
+
+      option_description_row = [
+        "#{id}",
+        "OptionDescription #{item_index}.#{option_index}"
+        | Enum.map(language_codes, fn code ->
+            ((translations[code]["items"]
+              |> Enum.at(item_index - 1))["options"]
+             |> Enum.at(option_index - 1))["description"]
+          end)
+      ]
+
+      [option_title_row, option_description_row]
+    end)
+  end
+
+  @spec build_quick_reply_csv_data(map(), list(String.t()), non_neg_integer()) :: list()
+  defp build_quick_reply_csv_data(translations, language_codes, id) do
+    headers = ["id", "Attribute" | get_language_names(language_codes)]
+    body = build_quick_reply_csv_body(translations, language_codes, id)
+    [headers | body]
+  end
+
+  @spec build_quick_reply_csv_body(map(), list(String.t()), non_neg_integer()) :: list()
+  defp build_quick_reply_csv_body(translations, language_codes, id) do
+    caption_row =
+      if Map.has_key?(translations[hd(language_codes)]["content"], "caption") do
+        [
+          [
+            "#{id}",
+            "Footer"
+            | Enum.map(language_codes, fn code -> translations[code]["content"]["caption"] end)
+          ]
+        ]
+      else
+        []
+      end
+
+    text_header_rows = text_header_csv_body(translations, language_codes, id)
+    options_rows = build_quick_reply_options(translations, language_codes, id)
+
+    caption_row ++ text_header_rows ++ options_rows
+  end
+
+  @spec text_header_csv_body(map(), list(String.t()), non_neg_integer()) :: list()
+  defp text_header_csv_body(translations, language_codes, id) do
+    [
+      [
+        "#{id}",
+        "Header"
+        | Enum.map(language_codes, fn code -> translations[code]["content"]["header"] end)
+      ],
+      [
+        "#{id}",
+        "Text" | Enum.map(language_codes, fn code -> translations[code]["content"]["text"] end)
+      ]
+    ]
+  end
+
+  @spec build_quick_reply_options(map(), list(String.t()), non_neg_integer()) :: list()
+  defp build_quick_reply_options(translations, language_codes, id) do
+    options_length = translations[Enum.at(language_codes, 0)]["options"] |> length()
+
+    Enum.map(1..options_length, fn option_index ->
+      [
+        "#{id}",
+        "OptionTitle #{option_index}"
+        | Enum.map(language_codes, fn code ->
+            (translations[code]["options"] |> Enum.at(option_index - 1))["title"]
+          end)
+      ]
+    end)
+  end
+
+  @spec build_location_csv_data(map(), list(String.t()), non_neg_integer()) :: list()
+  defp build_location_csv_data(translations, language_codes, id) do
+    headers = ["id", "Attribute" | get_language_names(language_codes)]
+    body = build_location_csv_body(translations, language_codes, id)
+    [headers | body]
+  end
+
+  @spec build_location_csv_body(map(), list(String.t()), non_neg_integer()) :: list()
+  defp build_location_csv_body(translations, language_codes, id) do
+    [
+      [
+        "#{id}",
+        "Action"
+        | Enum.map(language_codes, fn code -> translations[code]["action"] |> Map.get("name") end)
+      ],
+      [
+        "#{id}",
+        "Body"
+        | Enum.map(language_codes, fn code -> translations[code]["body"] |> Map.get("text") end)
+      ]
+    ]
+  end
+
+  @spec get_language_names(list(String.t())) :: list(String.t())
+  defp get_language_names(language_codes) do
+    language_map = Settings.get_language_id_local_map()
+    Enum.map(language_codes, fn code -> Map.get(language_map, code) end)
+  end
 end

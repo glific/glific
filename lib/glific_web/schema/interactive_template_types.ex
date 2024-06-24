@@ -35,6 +35,10 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
     end
   end
 
+  object :export_interactive_translation do
+    field :export_data, :string
+  end
+
   @desc "Filtering options for interactives"
   input_object :interactive_template_filter do
     @desc "Match term with label and associated tag of template"
@@ -118,6 +122,18 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
       arg(:input, :interactive_template_input)
       middleware(Authorize, :manager)
       resolve(&Resolvers.InteractiveTemplates.copy_interactive_template/3)
+    end
+
+    field :translate_interactive_template, :interactive_template_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.InteractiveTemplates.translate_interactive_template/3)
+    end
+
+    field :export_interactive_template, :export_interactive_translation do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.InteractiveTemplates.export_interactive_template/3)
     end
   end
 end

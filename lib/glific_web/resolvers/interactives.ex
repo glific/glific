@@ -41,7 +41,8 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
   @spec create_interactive_template(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_interactive_template(_, %{input: params}, _) do
-    with {:ok, interactive_template} <- InteractiveTemplates.create_interactive_template(params) do
+    with {:ok, interactive_template} <-
+           InteractiveTemplates.create_interactive_template(params) do
       {:ok, %{interactive_template: interactive_template}}
     end
   end
@@ -96,6 +97,31 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
            InteractiveTemplates.fetch_interactive_template(id),
          {:ok, interactive_template} <- fun.(interactive_template, params) do
       {:ok, %{interactive_template: interactive_template}}
+    end
+  end
+
+  @doc """
+  Translate interactive template
+  """
+  @spec translate_interactive_template(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def translate_interactive_template(_, %{id: id}, _) do
+    with {:ok, interactive_template} <-
+           InteractiveTemplates.fetch_interactive_template(id) do
+      InteractiveTemplates.translate_interactive_template(interactive_template)
+    end
+  end
+
+  @doc """
+  Export interactive template
+  """
+  @spec export_interactive_template(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, %{export_data: String.t()}}
+  def export_interactive_template(_, %{id: id}, _) do
+    with {:ok, interactive_template} <- InteractiveTemplates.fetch_interactive_template(id) do
+      InteractiveTemplates.export_interactive_template(interactive_template)
     end
   end
 end

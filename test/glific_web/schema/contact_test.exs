@@ -913,7 +913,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
   test "simulator get returns a simulator contact",
        %{staff: staff, manager: manager, user: user} do
-    State.reset()
+    State.reset(user.organization_id)
 
     # we should get 5 simulators
     result = auth_query_gql_by(:sim_get, staff, variables: %{})

@@ -110,28 +110,28 @@ defmodule Glific.Groups.WAGroupsTest do
                id: attrs.organization_id,
                shortcode: "maytapi"
              })
-
   end
-    test "fetch_wa_groups/1 fetch groups for empty group label", attrs do
-      Tesla.Mock.mock(fn _env ->
-        %Tesla.Env{
-          status: 200,
-          body:
-            "{\"count\":79,\"data\":[{\"admins\":[\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363213149844251@g.us\",\"name\":\"marketing\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\",\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363203450035277@g.us\",\"name\":\"admin group\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363218884368888@g.us\",\"name\":\"\",\"participants\":[\"917834811114@c.us\"]}],\"limit\":500,\"success\":true,\"total\":79}"
-        }
-      end)
 
-      assert :ok == WAGroups.fetch_wa_groups(attrs.organization_id)
+  test "fetch_wa_groups/1 fetch groups for empty group label", attrs do
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body:
+          "{\"count\":79,\"data\":[{\"admins\":[\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363213149844251@g.us\",\"name\":\"marketing\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\",\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363203450035277@g.us\",\"name\":\"admin group\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363218884368888@g.us\",\"name\":\"\",\"participants\":[\"917834811114@c.us\"]}],\"limit\":500,\"success\":true,\"total\":79}"
+      }
+    end)
 
-      assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "marketing"})
-      assert group.label == "marketing"
-      assert group.bsp_id == "120363213149844251@g.us"
+    assert :ok == WAGroups.fetch_wa_groups(attrs.organization_id)
 
-      assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "admin group"})
-      assert group.label == "admin group"
-      assert group.bsp_id == "120363203450035277@g.us"
+    assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "marketing"})
+    assert group.label == "marketing"
+    assert group.bsp_id == "120363213149844251@g.us"
 
-      # group with an empty name is not created
-      assert is_nil(Repo.get_by(WAGroup, label: ""))
-    end
+    assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "admin group"})
+    assert group.label == "admin group"
+    assert group.bsp_id == "120363203450035277@g.us"
+
+    # group with an empty name is not created
+    assert is_nil(Repo.get_by(WAGroup, label: ""))
+  end
 end
