@@ -53,6 +53,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :is_source, :boolean
     field :translations, :json
     field :has_buttons, :boolean
+    field :allow_template_category_change, :boolean
     field :button_type, :template_button_type_enum
     field :buttons, :json
     field :reason, :string
@@ -138,6 +139,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :message_media_id, :id
     field :language_id, :id
     field :tag_id, :id
+    field :allow_template_category_change, :boolean
     field :translations, :json
     field :has_buttons, :boolean
     field :button_type, :template_button_type_enum
