@@ -155,7 +155,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   defp calculate_total_length(_), do: 0
 
   @spec validate_interactive_content_length(map()) :: :ok | {:error, String.t()}
-  def validate_interactive_content_length(attrs) do
+  defp validate_interactive_content_length(attrs) do
     interactive_content = Map.get(attrs, :interactive_content, %{})
 
     total_length =
@@ -168,7 +168,6 @@ defmodule Glific.Templates.InteractiveTemplates do
       :ok
     end
   end
-
 
   @doc """
   Updates an interactive template
