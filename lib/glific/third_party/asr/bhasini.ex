@@ -14,10 +14,12 @@ defmodule Glific.ASR.Bhasini do
 
   This function makes an API call to the Bhasini ASR service using the provided configuration parameters and returns the ASR response text.
   """
-  @spec with_config_request(map(), String.t()) :: {:ok, map()} | map()
-  def with_config_request(fields, source_language) do
+  @spec with_config_request(Keyword.t()) :: {:ok, map()} | map()
+  def with_config_request(params) do
+    source_language = Keyword.get(params, :source_language)
+    target_language = Keyword.get(params, :target_language)
+    task_type = Keyword.get(params, :task_type)
     bhasini_keys = Glific.get_bhasini_keys()
-    task_type = fields["task_type"] || "asr"
 
     default_headers = [
       {"userID", bhasini_keys.user_id},
@@ -25,21 +27,7 @@ defmodule Glific.ASR.Bhasini do
       {"Content-Type", "application/json"}
     ]
 
-    post_body = %{
-      "pipelineTasks" => [
-        %{
-          "taskType" => task_type,
-          "config" => %{
-            "language" => %{
-              "sourceLanguage" => "#{source_language}"
-            }
-          }
-        }
-      ],
-      "pipelineRequestConfig" => %{
-        "pipelineId" => @meity_pipeline_id
-      }
-    }
+    post_body = get_config_request_body(task_type, source_language, target_language)
 
     url = @config_url <> "/getModelsPipeline"
 
@@ -58,6 +46,52 @@ defmodule Glific.ASR.Bhasini do
           msg: "API call failed with reason: #{reason}"
         }
     end
+  end
+
+  @spec get_config_request_body(String.t(), String.t(), String.t()) :: map()
+  defp get_config_request_body("nmt_tts", source_language, target_language) do
+    %{
+      "pipelineTasks" => [
+        %{
+          "taskType" => "translation",
+          "config" => %{
+            "language" => %{
+              "sourceLanguage" => "#{source_language}",
+              "targetLanguage" => "#{target_language}"
+            }
+          }
+        },
+        %{
+          "taskType" => "tts",
+          "config" => %{
+            "language" => %{
+              "sourceLanguage" => "#{source_language}"
+            }
+          }
+        }
+      ],
+      "pipelineRequestConfig" => %{
+        "pipelineId" => @meity_pipeline_id
+      }
+    }
+  end
+
+  defp get_config_request_body(task_type, source_language, _target_language) do
+    %{
+      "pipelineTasks" => [
+        %{
+          "taskType" => task_type,
+          "config" => %{
+            "language" => %{
+              "sourceLanguage" => "#{source_language}"
+            }
+          }
+        }
+      ],
+      "pipelineRequestConfig" => %{
+        "pipelineId" => @meity_pipeline_id
+      }
+    }
   end
 
   @spec make_asr_api_call(
