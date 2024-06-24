@@ -262,7 +262,7 @@ defmodule Glific do
     String.to_existing_atom(value)
   rescue
     ArgumentError ->
-      error = "#{value} can not be converted to atom"
+      error = "#{value} can not be converted to atom" |> IO.inspect()
       Appsignal.send_error(:error, error, __STACKTRACE__)
       default
   end
