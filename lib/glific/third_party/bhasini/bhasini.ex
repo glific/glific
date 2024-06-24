@@ -1,4 +1,4 @@
-defmodule Glific.Bhasini do
+defmodule Glific.Bhasini.valid_language?() do
   @moduledoc """
   Bhasini Integration Module
   """
@@ -208,8 +208,6 @@ defmodule Glific.Bhasini do
   def valid_language?(source_language, target_language) do
     valid_languages = Map.keys(@language_codes)
 
-    if source_language in valid_languages and target_language in valid_languages,
-      do: true,
-      else: false
+    source_language in valid_languages and target_language in valid_languages
   end
 end
