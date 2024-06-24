@@ -178,7 +178,8 @@ defmodule Glific.GCS do
     end
   end
 
-  def bucket_name(org_id) do
+  @spec bucket_name(non_neg_integer()) :: String.t() | nil
+  defp bucket_name(org_id) do
     case get_secrets(org_id) do
       %{"bucket" => bucket} -> bucket
       _ -> nil
@@ -210,6 +211,7 @@ defmodule Glific.GCS do
     end
   end
 
+  @spec update_bucket_logging(String.t(), String.t()) :: {:ok, any()} | {:error, any()}
   defp update_bucket_logging(bucket_name, log_bucket) do
     command = [
       "storage",
