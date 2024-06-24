@@ -264,14 +264,14 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   def get_app_usage(org_id, from_date, to_date) do
 
     url = (app_url(org_id) <> "/usage?from=" <> from_date <> "&to=" <> to_date)
-    #with {:ok, %{"partnerAppUsageList" => result}} <- get_request(url, org_id: org_id), do: result |> IO.inspect(label: "RESULT")
-    [
-      %{
-        :app_id => "44674650-e991-41c7-9fd7-b3cd58a8aedb",
-        :authentication => 0,
-        :date => "2024-03-02",
-      }
-    ]
+    with {:ok, %{"partnerAppUsageList" => result}} <- get_request(url, org_id: org_id), do: result |> IO.inspect(label: "RESULT")
+    #[
+    #  %{
+    #    "appID" => "44674650-e991-41c7-9fd7-b3cd58a8aedb",
+    #    "authentication" => 0,
+    #    "date" => "2024-03-02",
+    #  }
+    #] |> IO.inspect(label: "SAMPLE")
 
   end
 

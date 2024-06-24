@@ -141,9 +141,12 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   end
 
   object :daily_usage do
-    field(:app_id, :id)
-    field(:authentication, :integer)
     field(:date, :string)
+    field(:incoming_msg, :integer)
+    field(:outgoing_media_msg, :integer)
+    field(:outgoing_msg, :integer)
+    field(:total_fees, :float)
+    field(:total_msg, :integer)
   end
 
   @desc "Filtering options for organizations"
@@ -328,7 +331,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :daily_app_usage, list_of(:daily_usage) do
       arg(:from_date, :date)
       arg(:to_date, :date)
-      #TODO add middleware?
+      #middleware(Authorize, :staff)
       resolve(&Resolvers.Partners.get_app_usage/3)
     end
   end
