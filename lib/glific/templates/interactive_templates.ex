@@ -131,10 +131,31 @@ defmodule Glific.Templates.InteractiveTemplates do
     content_length + options_length
   end
 
+  defp calculate_total_length(%{"body" => body, "globalButtons" => global_buttons, "items" => items}) do
+    body_length = String.length(body)
+    global_buttons_length = global_buttons |> Enum.map(&String.length(&1["title"])) |> Enum.sum()
+    items_length = items
+                    |> Enum.map(fn item ->
+                      item_title_length = String.length(item["title"])
+                      item_subtitle_length = String.length(item["subtitle"])
+                      options_length = item["options"] |> Enum.map(&String.length(&1["title"])) |> Enum.sum()
+                      item_title_length + item_subtitle_length + options_length
+                    end)
+                    |> Enum.sum()
+
+    body_length + global_buttons_length + items_length
+  end
+
+  defp calculate_total_length(%{"body" => body, "action" => action}) do
+    body_length = body |> Map.values() |> Enum.map(&String.length/1) |> Enum.sum()
+    action_length = action |> Map.values() |> Enum.map(&String.length/1) |> Enum.sum()
+    body_length + action_length
+  end
+
   defp calculate_total_length(_), do: 0
 
   @spec validate_interactive_content_length(map()) :: :ok | {:error, String.t()}
-  defp validate_interactive_content_length(attrs) do
+  def validate_interactive_content_length(attrs) do
     interactive_content = Map.get(attrs, :interactive_content, %{})
 
     total_length =
@@ -147,6 +168,7 @@ defmodule Glific.Templates.InteractiveTemplates do
       :ok
     end
   end
+
 
   @doc """
   Updates an interactive template
