@@ -48,6 +48,7 @@ defmodule Glific.ASR.Bhasini do
     end
   end
 
+  @spec get_config_request_body(String.t(), String.t(), String.t()) :: map()
   defp get_config_request_body("nmt_tts", source_language, target_language) do
     %{
       "pipelineTasks" => [

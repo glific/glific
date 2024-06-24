@@ -30,8 +30,6 @@ defmodule Glific.Bhasini.valid_language?() do
     authorization_value = params["pipelineInferenceAPIEndPoint"]["inferenceApiKey"]["value"]
     url = params["pipelineInferenceAPIEndPoint"]["callbackUrl"]
 
-    get_pipeline_config(params, source_language, target_language)
-
     {nmt_service_id, tts_service_id} =
       get_pipeline_config(params, source_language, target_language)
 
@@ -100,6 +98,7 @@ defmodule Glific.Bhasini.valid_language?() do
     end
   end
 
+  @spec get_pipeline_config(map(), String.t(), String.t()) :: {String.t(), String.t()}
   defp get_pipeline_config(params, source_language, target_language) do
     [%{"taskType" => "translation"} = nmt_config, %{"taskType" => "tts"} = tts_config] =
       get_in(params, ["pipelineResponseConfig"])
