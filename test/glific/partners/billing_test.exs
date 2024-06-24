@@ -114,7 +114,7 @@ defmodule Glific.BillingTest do
 
         assert {:ok, response} = Billing.customer_portal_link(billing)
         assert response.url == "https://billing.stripe.com/session/test_session_id"
-        assert response.return_url == "https://test.tides.coloredcow.com/settings/billing"
+        assert response.return_url == "https://test.glific.com/settings/billing"
       end
     end
 
