@@ -125,11 +125,9 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   @spec calculate_total_length(map() | nil) :: integer()
-  defp calculate_total_length(nil), do: 0
   defp calculate_total_length(%{"content" => content, "options" => options}) do
     content_length = content |> Map.values() |> Enum.map(&String.length/1) |> Enum.sum()
     options_length = options |> Enum.map(&String.length(&1["title"])) |> Enum.sum()
-
     content_length + options_length
   end
 
