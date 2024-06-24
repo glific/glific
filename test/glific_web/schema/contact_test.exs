@@ -724,6 +724,18 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "contacts"])) == 13
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{
+            "excludeGroups" => []
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "contacts"])) == 15
   end
 
   test "search contacts field obeys wa_group filters", %{staff: user} do
@@ -783,6 +795,17 @@ defmodule GlificWeb.Schema.ContactTest do
       auth_query_gql_by(:list, user,
         variables: %{
           "filter" => %{"excludeWaGroups" => ["99999"]}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    assert length(get_in(query_data, [:data, "contacts"])) == 16
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"excludeWaGroups" => []}
         }
       )
 
