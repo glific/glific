@@ -324,7 +324,8 @@ defmodule Glific do
     # to a large extent, its more a completion exit rather than an
     # error exit
     String.contains?(error, "Exit Loop") ||
-      String.contains?(error, "finished the flow")
+      String.contains?(error, "finished the flow") ||
+      String.contains?(error, "unexpected message received while waiting for time")
   end
 
   @doc """
