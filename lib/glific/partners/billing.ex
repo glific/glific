@@ -948,7 +948,7 @@ defmodule Glific.Partners.Billing do
 
     params = %{
       customer: billing.stripe_customer_id,
-      return_url: "https://#{organization.shortcode}.tides.coloredcow.com/settings/billing"
+      return_url: "https://#{organization.shortcode}.glific.com/settings/billing"
     }
 
     BillingPortal.Session.create(params)
