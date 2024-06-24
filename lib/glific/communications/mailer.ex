@@ -37,7 +37,7 @@ defmodule Glific.Communications.Mailer do
   """
   @spec sender() :: tuple()
   def sender do
-    {"Glific Team", "glific-team@coloredcow.com"}
+    {"Glific Team", "info@glific.org"}
   end
 
   @doc """

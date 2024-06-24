@@ -20,7 +20,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
     body = """
     Hello Glific Team
 
-    A new organization is onboarded on Tides.
+    A new organization is onboarded on Glific.
 
     Name: #{org.name}
     Email: #{org.email}
