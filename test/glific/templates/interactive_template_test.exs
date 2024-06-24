@@ -199,4 +199,50 @@ defmodule Glific.Templates.InteractiveTemplateTest do
 
     assert {:error, "The total length of the body and options exceeds 1024 characters"} = InteractiveTemplates.create_interactive_template(attrs)
   end
+
+  test "returns error for list interactive content length exceeding 1024 characters", %{organization_id: org_id} do
+    attrs = %{
+      label: "List Label",
+      type: :list,
+      interactive_content: %{
+        "title" => "Interactive list",
+        "body" => String.duplicate("A", 1025),
+        "globalButtons" => [%{"type" => "text", "title" => "button text"}],
+        "items" => [
+          %{
+            "title" => "Item Title",
+            "subtitle" => "Subtitle",
+            "options" => [
+              %{"type" => "text", "title" => "Option 1", "description" => "Description"},
+              %{"type" => "text", "title" => "Option 2", "description" => "Description"}
+            ]
+          }
+        ]
+      },
+      organization_id: org_id,
+      language_id: language_fixture().id
+    }
+
+    assert {:error, "The total length of the body and options exceeds 1024 characters"} = InteractiveTemplates.create_interactive_template(attrs)
+  end
+
+  test "returns error for location request interactive content length exceeding 1024 characters", %{organization_id: org_id} do
+    attrs = %{
+      label: "Location Request",
+      type: :location_request_message,
+      interactive_content: %{
+        "body" => %{
+          "type" => "text",
+          "text" => String.duplicate("A", 1025)
+        },
+        "action" => %{
+          "name" => "send_location"
+        }
+      },
+      organization_id: org_id,
+      language_id: language_fixture().id
+    }
+
+    assert {:error, "The total length of the body and options exceeds 1024 characters"} = InteractiveTemplates.create_interactive_template(attrs)
+  end
 end
