@@ -247,7 +247,7 @@ defmodule Glific.Saas.Onboard do
 
       error ->
         Glific.log_error(
-          "Error sending NGO reachout query email #{inspect(error)} for org: #{org.id}"
+          "Error sending submission confirmation email #{inspect(error)} for org: #{org.id}"
         )
     end
   end

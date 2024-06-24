@@ -22,7 +22,7 @@
     },
     "response": {
       "binary": false,
-      "body": "{\n  \"id\": \"bps_1IiebwEMShkCsLFnkiTcR2mV\",\n  \"object\": \"billing_portal.session\",\n  \"configuration\": \"bpc_1IhrhaEMShkCsLFnPmjexGFb\",\n  \"created\": 1619005972,\n  \"customer\": \"random_id\",\n  \"livemode\": false,\n  \"on_behalf_of\": null,\n  \"return_url\": \"https://test.tides.coloredcow.com/settings/billing\",\n  \"url\": \"https://billing.stripe.com/session/test_session_id\"\n}\n",
+      "body": "{\n  \"id\": \"bps_1IiebwEMShkCsLFnkiTcR2mV\",\n  \"object\": \"billing_portal.session\",\n  \"configuration\": \"bpc_1IhrhaEMShkCsLFnPmjexGFb\",\n  \"created\": 1619005972,\n  \"customer\": \"random_id\",\n  \"livemode\": false,\n  \"on_behalf_of\": null,\n  \"return_url\": \"https://test.glific.com/settings/billing\",\n  \"url\": \"https://billing.stripe.com/session/test_session_id\"\n}\n",
       "headers": {
         "Server": "nginx",
         "Date": "Wed, 21 Apr 2021 11:52:52 GMT",
