@@ -227,7 +227,7 @@ defmodule Glific.PartnersTest do
           }
       end)
 
-      {:ok, result} = PartnerAPI.app_link(org.id)
+      {:ok, result} = PartnerAPI.link_gupshup_app(org.id)
       assert %{"partnerId" => 49, "status" => "success"} == result
     end
 

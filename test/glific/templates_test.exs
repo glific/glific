@@ -676,6 +676,46 @@ defmodule Glific.TemplatesTest do
       assert session_template.language_id == language.id
     end
 
+    test "create_session_template/1 for apply template change category" do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"access_token" => "mocked_token"})
+          }
+
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "template" => %{
+                  "allowTemplateCategoryChange" => true
+                }
+              })
+          }
+      end)
+
+      attrs = %{
+        label: "Default Template Label",
+        type: :text,
+        category: "AUTHENTICATION",
+        body: "some body",
+        is_hsm: true,
+        shortcode: "some_sc",
+        language_id: 1,
+        organization_id: 1,
+        example: "some example",
+        allow_template_category_change: true
+      }
+
+      result = Templates.create_session_template(attrs)
+
+      assert {:ok, template} = result
+      assert template.allow_template_category_change == true
+    end
+
     test "update_session_template/2 with invalid data returns error changeset", attrs do
       session_template = session_template_fixture(attrs)
 
@@ -1355,7 +1395,7 @@ defmodule Glific.TemplatesTest do
 
     test "import_templates/1 should import templates", attrs do
       data =
-        "\"TEMPLATEID\",\"NAME\",\"CATEGORY\",\"LANGUAGE\",\"TYPE\",\"HEADER\",\"BODY\",\"FOOTER\",\"BUTTONTYPE\",\"NOOFBUTTONS\",\"BUTTON1\",\"BUTTON2\",\"BUTTON3\",\"QUALITYRATING\",\"REJECTIONREASON\",\"STATUS\",\"CREATEDON\"\n\"6356300\",\"beforedemo\",\"ALERT_UPDATE\",\"en\",\"TEXT\",\"\",\"Hi{{1}},Your demo is about to start in 15 min. We are excited to see you there.🤩\nPlease join 5 min before time.\nClick on this link to attend the session. {{2}}\nIn case you face any issues, please call on +918047190520\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-03-17\"\n\"6516247\",\"new_feature\",\"UTILITY\",\"en\",\"TEXT\",\"\",\"are you excited for upcoming features?\",\"\",\"CALL_TO_ACTION\",\"2\",\"{\"\"type\"\":\"\"PHONE_NUMBER\"\",\"\"phone_number\"\":\"\"+918979120220\"\",\"\"text\"\":\"\"call here\"\"}\",\"{\"\"type\"\":\"\"URL\"\",\"\"urlType\"\":\"\"STATIC\"\",\"\"url\"\":\"\"https://coloredcow.com/blogs/\"\",\"\"text\"\":\"\"visit here\"\"}\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-09-28\"\n\"6379777\",\"Gender\",\"ACCOUNT_UPDATE\",\"en\",\"TEXT\",\"\",\"Please share your gender\",\"\",\"QUICK_REPLY\",\"3\",\"{\"\"type\"\":\"\"QUICK_REPLY\"\",\"\"text\"\":\"\"Male\"\"}\",\"{\"\"type\"\":\"\"QUICK_REPLY\"\",\"\"text\"\":\"\"Female\"\"}\",\"{\"\"type\"\":\"\"QUICK_REPLY\"\",\"\"text\"\":\"\"Other\"\"}\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-03-22\"\n\"6122571\",\"2meq_payment_link\",\"ACCOUNT_UPDATE\",\"en\",\"TEXT\",\"\",\"Your OTP for {{1}} is {{2}}. This is valid for {{3}}.\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-03-10\"\n\"6122572\",\"meq_payment_link2\",\"ACCOUNT_UPDATE\",\"en\",\"TEXT\",\"\",\"You are one step away! Please click the link below to make your payment for the Future Perfect program.\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"REJECTED\",\"2022-04-05\""
+        "\"TEMPLATEID\",\"NAME\",\"CATEGORY\",\"LANGUAGE\",\"TYPE\",\"HEADER\",\"BODY\",\"FOOTER\",\"BUTTONTYPE\",\"NOOFBUTTONS\",\"BUTTON1\",\"BUTTON2\",\"BUTTON3\",\"QUALITYRATING\",\"REJECTIONREASON\",\"STATUS\",\"CREATEDON\"\n\"6356300\",\"beforedemo\",\"ALERT_UPDATE\",\"en\",\"TEXT\",\"\",\"Hi{{1}},Your demo is about to start in 15 min. We are excited to see you there.🤩\nPlease join 5 min before time.\nClick on this link to attend the session. {{2}}\nIn case you face any issues, please call on +918047190520\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-03-17\"\n\"6516247\",\"new_feature\",\"UTILITY\",\"en\",\"TEXT\",\"\",\"are you excited for upcoming features?\",\"\",\"CALL_TO_ACTION\",\"2\",\"{\"\"type\"\":\"\"PHONE_NUMBER\"\",\"\"phone_number\"\":\"\"+918979120220\"\",\"\"text\"\":\"\"call here\"\"}\",\"{\"\"type\"\":\"\"URL\"\",\"\"urlType\"\":\"\"STATIC\"\",\"\"url\"\":\"\"https://glific.com/blogs/\"\",\"\"text\"\":\"\"visit here\"\"}\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-09-28\"\n\"6379777\",\"Gender\",\"ACCOUNT_UPDATE\",\"en\",\"TEXT\",\"\",\"Please share your gender\",\"\",\"QUICK_REPLY\",\"3\",\"{\"\"type\"\":\"\"QUICK_REPLY\"\",\"\"text\"\":\"\"Male\"\"}\",\"{\"\"type\"\":\"\"QUICK_REPLY\"\",\"\"text\"\":\"\"Female\"\"}\",\"{\"\"type\"\":\"\"QUICK_REPLY\"\",\"\"text\"\":\"\"Other\"\"}\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-03-22\"\n\"6122571\",\"2meq_payment_link\",\"ACCOUNT_UPDATE\",\"en\",\"TEXT\",\"\",\"Your OTP for {{1}} is {{2}}. This is valid for {{3}}.\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-03-10\"\n\"6122572\",\"meq_payment_link2\",\"ACCOUNT_UPDATE\",\"en\",\"TEXT\",\"\",\"You are one step away! Please click the link below to make your payment for the Future Perfect program.\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"REJECTED\",\"2022-04-05\""
 
       Template.import_templates(attrs.organization_id, data)
 
@@ -1412,7 +1452,7 @@ defmodule Glific.TemplatesTest do
                %{
                  "text" => "visit here",
                  "type" => "URL",
-                 "url" => "https://coloredcow.com/blogs/ "
+                 "url" => "https://glific.com/blogs/ "
                }
              ]
 

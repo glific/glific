@@ -3,28 +3,66 @@ defmodule Glific.ASR.Bhasini do
   This is a module to convert speech to text by using bhasini api
   """
   use Tesla
+  require Logger
+
+  @config_url "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model"
+  @meity_pipeline_id "64392f96daac500b55c543cd"
+  # @ai4bharat_pipeline_id "643930aa521a4b1ba0f4c41d"
 
   @doc """
   Performs an ASR (Automatic Speech Recognition) API call with configuration request.
 
   This function makes an API call to the Bhasini ASR service using the provided configuration parameters and returns the ASR response text.
   """
-  @spec with_config_request(map(), String.t()) :: map()
-  def with_config_request(fields, source_language) do
-    {:ok, response} = get(fields["speech"])
-
-    content = Base.encode64(response.body)
+  @spec with_config_request(Keyword.t()) :: {:ok, map()} | map()
+  def with_config_request(params) do
+    source_language = Keyword.get(params, :source_language)
+    target_language = Keyword.get(params, :target_language)
+    task_type = Keyword.get(params, :task_type)
+    bhasini_keys = Glific.get_bhasini_keys()
 
     default_headers = [
-      {"userID", "#{fields["userID"]}"},
-      {"ulcaApiKey", "#{fields["ulcaApiKey"]}"},
+      {"userID", bhasini_keys.user_id},
+      {"ulcaApiKey", bhasini_keys.ulca_api_key},
       {"Content-Type", "application/json"}
     ]
 
-    post_body = %{
+    post_body = get_config_request_body(task_type, source_language, target_language)
+
+    url = @config_url <> "/getModelsPipeline"
+
+    case Tesla.post(url, Jason.encode!(post_body),
+           headers: default_headers,
+           opts: [adapter: [recv_timeout: 300_000]]
+         ) do
+      {:ok, response} ->
+        {:ok, response}
+
+      {:error, reason} ->
+        Logger.error("API call failed with reason:  #{reason}")
+
+        %{
+          success: false,
+          msg: "API call failed with reason: #{reason}"
+        }
+    end
+  end
+
+  @spec get_config_request_body(String.t(), String.t(), String.t()) :: map()
+  defp get_config_request_body("nmt_tts", source_language, target_language) do
+    %{
       "pipelineTasks" => [
         %{
-          "taskType" => "asr",
+          "taskType" => "translation",
+          "config" => %{
+            "language" => %{
+              "sourceLanguage" => "#{source_language}",
+              "targetLanguage" => "#{target_language}"
+            }
+          }
+        },
+        %{
+          "taskType" => "tts",
           "config" => %{
             "language" => %{
               "sourceLanguage" => "#{source_language}"
@@ -33,23 +71,27 @@ defmodule Glific.ASR.Bhasini do
         }
       ],
       "pipelineRequestConfig" => %{
-        "pipelineId" => "#{fields["pipelineId"]}"
+        "pipelineId" => @meity_pipeline_id
       }
     }
+  end
 
-    case Tesla.post("#{fields["base_url"]}getModelsPipeline", Jason.encode!(post_body),
-           headers: default_headers,
-           opts: [adapter: [recv_timeout: 300_000]]
-         ) do
-      {:ok, response} ->
-        handle_response(response, content)
-
-      {:error, reason} ->
+  defp get_config_request_body(task_type, source_language, _target_language) do
+    %{
+      "pipelineTasks" => [
         %{
-          success: false,
-          msg: "API call failed with reason: #{reason}"
+          "taskType" => task_type,
+          "config" => %{
+            "language" => %{
+              "sourceLanguage" => "#{source_language}"
+            }
+          }
         }
-    end
+      ],
+      "pipelineRequestConfig" => %{
+        "pipelineId" => @meity_pipeline_id
+      }
+    }
   end
 
   @spec make_asr_api_call(
@@ -132,8 +174,11 @@ defmodule Glific.ASR.Bhasini do
     end
   end
 
+  @doc """
+  Subsequent API call to Bhasini for ASR after config call
+  """
   @spec handle_response(map(), String.t()) :: map()
-  defp handle_response(%{status: 200} = response, content) do
+  def handle_response(%{status: 200} = response, content) do
     # Extract necessary data from the response
     decoded_response = Jason.decode!(response.body)
 
@@ -167,10 +212,12 @@ defmodule Glific.ASR.Bhasini do
     )
   end
 
-  defp handle_response(%{status: status_code} = _response, _content) do
+  def handle_response(response, _content) do
+    Logger.error("Bhasini API call failed: #{response}")
+
     %{
       success: false,
-      msg: "API call returned status code: #{status_code}"
+      msg: "API call to Bhasini failed"
     }
   end
 end
