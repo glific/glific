@@ -177,4 +177,54 @@ defmodule Glific.GCS do
       )
     end
   end
+
+  def bucket_name(org_id) do
+    case get_secrets(org_id) do
+      %{"bucket" => bucket} -> bucket
+      _ -> nil
+    end
+  end
+
+  @doc """
+  Enabling bucket logging for the specified organization
+  """
+  @spec enable_bucket_logs(non_neg_integer()) ::
+          {:ok, String.t()} | {:error, any()}
+  def enable_bucket_logs(org_id) do
+    case bucket_name(org_id) do
+      nil ->
+        Logger.error("No bucket found for org_id: #{org_id}")
+        {:error, :no_bucket_found}
+
+      bucket_name ->
+        log_bucket = "#{bucket_name}-logs"
+
+        with {:ok, result} <- update_bucket_logging(bucket_name, log_bucket) do
+          Logger.info("Bucket logging enabled successfully for org_id: #{org_id}")
+          {:ok, result}
+        else
+          {:error, error} ->
+            Logger.error("Failed to enable bucket logging for org_id: #{org_id}. Error: #{error}")
+            {:error, error}
+        end
+    end
+  end
+
+  defp update_bucket_logging(bucket_name, log_bucket) do
+    command = [
+      "storage",
+      "buckets",
+      "update",
+      "gs://#{bucket_name}",
+      "--log-bucket=gs://#{log_bucket}"
+    ]
+
+    case System.cmd("gcloud", command) do
+      {result, 0} ->
+        {:ok, result}
+
+      {error, _exit_code} ->
+        {:error, error}
+    end
+  end
 end
