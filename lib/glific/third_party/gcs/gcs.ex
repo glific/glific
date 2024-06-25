@@ -191,10 +191,9 @@ defmodule Glific.GCS do
   @doc """
   Enabling bucket logging for the specified organization
   """
-
   @spec enable_bucket_logs(non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
   def enable_bucket_logs(org_id) do
-    case bucket_name(org_id) |> IO.inspect() do
+    case bucket_name(org_id) do
       nil ->
         Logger.error("Bucket name not found for organization ID: #{org_id}")
         {:error, "Bucket name not found"}
