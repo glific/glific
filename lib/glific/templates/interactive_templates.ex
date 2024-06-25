@@ -131,17 +131,23 @@ defmodule Glific.Templates.InteractiveTemplates do
     content_length + options_length
   end
 
-  defp calculate_total_length(%{"body" => body, "globalButtons" => global_buttons, "items" => items}) do
+  defp calculate_total_length(%{
+         "body" => body,
+         "globalButtons" => global_buttons,
+         "items" => items
+       }) do
     body_length = String.length(body)
     global_buttons_length = global_buttons |> Enum.map(&String.length(&1["title"])) |> Enum.sum()
-    items_length = items
-                    |> Enum.map(fn item ->
-                      item_title_length = String.length(item["title"])
-                      item_subtitle_length = String.length(item["subtitle"])
-                      options_length = item["options"] |> Enum.map(&String.length(&1["title"])) |> Enum.sum()
-                      item_title_length + item_subtitle_length + options_length
-                    end)
-                    |> Enum.sum()
+
+    items_length =
+      items
+      |> Enum.map(fn item ->
+        item_title_length = String.length(item["title"])
+        item_subtitle_length = String.length(item["subtitle"])
+        options_length = item["options"] |> Enum.map(&String.length(&1["title"])) |> Enum.sum()
+        item_title_length + item_subtitle_length + options_length
+      end)
+      |> Enum.sum()
 
     body_length + global_buttons_length + items_length
   end

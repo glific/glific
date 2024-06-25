@@ -181,7 +181,9 @@ defmodule Glific.Templates.InteractiveTemplateTest do
     end
   end
 
-  test "returns error for interactive content length exceeding 1024 characters", %{organization_id: org_id} do
+  test "returns error for interactive content length exceeding 1024 characters", %{
+    organization_id: org_id
+  } do
     attrs = %{
       label: "A label",
       type: :quick_reply,
@@ -197,10 +199,13 @@ defmodule Glific.Templates.InteractiveTemplateTest do
       language_id: language_fixture().id
     }
 
-    assert {:error, "The total length of the body and options exceeds 1024 characters"} = InteractiveTemplates.create_interactive_template(attrs)
+    assert {:error, "The total length of the body and options exceeds 1024 characters"} =
+             InteractiveTemplates.create_interactive_template(attrs)
   end
 
-  test "returns error for list interactive content length exceeding 1024 characters", %{organization_id: org_id} do
+  test "returns error for list interactive content length exceeding 1024 characters", %{
+    organization_id: org_id
+  } do
     attrs = %{
       label: "List Label",
       type: :list,
@@ -223,10 +228,12 @@ defmodule Glific.Templates.InteractiveTemplateTest do
       language_id: language_fixture().id
     }
 
-    assert {:error, "The total length of the body and options exceeds 1024 characters"} = InteractiveTemplates.create_interactive_template(attrs)
+    assert {:error, "The total length of the body and options exceeds 1024 characters"} =
+             InteractiveTemplates.create_interactive_template(attrs)
   end
 
-  test "returns error for location request interactive content length exceeding 1024 characters", %{organization_id: org_id} do
+  test "returns error for location request interactive content length exceeding 1024 characters",
+       %{organization_id: org_id} do
     attrs = %{
       label: "Location Request",
       type: :location_request_message,
@@ -243,6 +250,7 @@ defmodule Glific.Templates.InteractiveTemplateTest do
       language_id: language_fixture().id
     }
 
-    assert {:error, "The total length of the body and options exceeds 1024 characters"} = InteractiveTemplates.create_interactive_template(attrs)
+    assert {:error, "The total length of the body and options exceeds 1024 characters"} =
+             InteractiveTemplates.create_interactive_template(attrs)
   end
 end
