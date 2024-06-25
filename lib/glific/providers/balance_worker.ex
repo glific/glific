@@ -79,7 +79,7 @@ defmodule Glific.Jobs.BSPBalanceWorker do
     #  we can tweak this over time
     #  If the balance is below a critically threshold (below $3 by default), trigger mail more frequently.
 
-    go_back = if bsp_balance < critical_balance_threshold, do: 48, else: 7 * 24
+    go_back = if bsp_balance < critical_balance_threshold, do: 72, else: 7 * 24
 
     ## We need to check if we have already sent this notification in last go_back time
     category = "low_bsp_balance"
