@@ -113,9 +113,66 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec create_interactive_template(map()) ::
           {:ok, InteractiveTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_interactive_template(attrs) do
-    %InteractiveTemplate{}
-    |> InteractiveTemplate.changeset(attrs)
-    |> Repo.insert()
+    case validate_interactive_content_length(attrs) do
+      :ok ->
+        %InteractiveTemplate{}
+        |> InteractiveTemplate.changeset(attrs)
+        |> Repo.insert()
+
+      {:error, message} ->
+        {:error, message}
+    end
+  end
+
+  @spec calculate_total_length(map() | nil) :: integer()
+  defp calculate_total_length(%{"content" => content, "options" => options}) do
+    content_length = content |> Map.values() |> Enum.map(&String.length/1) |> Enum.sum()
+    options_length = options |> Enum.map(&String.length(&1["title"])) |> Enum.sum()
+    content_length + options_length
+  end
+
+  defp calculate_total_length(%{
+         "body" => body,
+         "globalButtons" => global_buttons,
+         "items" => items
+       }) do
+    body_length = String.length(body)
+    global_buttons_length = global_buttons |> Enum.map(&String.length(&1["title"])) |> Enum.sum()
+
+    items_length =
+      items
+      |> Enum.map(fn item ->
+        item_title_length = String.length(item["title"])
+        item_subtitle_length = String.length(item["subtitle"])
+        options_length = item["options"] |> Enum.map(&String.length(&1["title"])) |> Enum.sum()
+        item_title_length + item_subtitle_length + options_length
+      end)
+      |> Enum.sum()
+
+    body_length + global_buttons_length + items_length
+  end
+
+  defp calculate_total_length(%{"body" => body, "action" => action}) do
+    body_length = body |> Map.values() |> Enum.map(&String.length/1) |> Enum.sum()
+    action_length = action |> Map.values() |> Enum.map(&String.length/1) |> Enum.sum()
+    body_length + action_length
+  end
+
+  defp calculate_total_length(_), do: 0
+
+  @spec validate_interactive_content_length(map()) :: :ok | {:error, String.t()}
+  defp validate_interactive_content_length(attrs) do
+    interactive_content = Map.get(attrs, :interactive_content, %{})
+
+    total_length =
+      interactive_content
+      |> calculate_total_length()
+
+    if total_length > 1024 do
+      {:error, "The total length of the body and options exceeds 1024 characters"}
+    else
+      :ok
+    end
   end
 
   @doc """
