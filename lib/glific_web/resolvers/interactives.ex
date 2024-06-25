@@ -109,8 +109,10 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
           {:ok, any} | {:error, any}
   def translate_interactive_template(_, %{id: id}, _) do
     with {:ok, interactive_template} <-
-           InteractiveTemplates.fetch_interactive_template(id) do
-      InteractiveTemplates.translate_interactive_template(interactive_template)
+           InteractiveTemplates.fetch_interactive_template(id),
+         {:ok, interactive} =
+           InteractiveTemplates.translate_interactive_template(interactive_template) do
+      {:ok, %{interactive_template: interactive}}
     end
   end
 
