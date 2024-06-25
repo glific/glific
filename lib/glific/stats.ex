@@ -589,7 +589,7 @@ defmodule Glific.Stats do
       optin: optin,
       duration: duration,
       date_range: get_date_label(duration),
-      dashboard_link: "https://#{org.shortcode}.tides.coloredcow.com/",
+      dashboard_link: "https://#{org.shortcode}.glific.com/",
       parent_org: org.parent_org
     }
 

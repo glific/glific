@@ -21,7 +21,7 @@
 
 1. Set up the a new environment or change the environment to 'Globals'.
 2. Variables `api_url` and `auth_token` should be present in the environment.
-3. `api_url` is already set up if you have changed it to 'Globals' else the value should be `https://api.staging.tides.coloredcow.com/api`.
+3. `api_url` is already set up if you have changed it to 'Globals' else the value should be `https://api.staging.glific.com/api`.
 4. `auth_token` will be automatically setup when you run the Login Api in your bruno environment.
 
 ### 3. Collaborating using Bruno
