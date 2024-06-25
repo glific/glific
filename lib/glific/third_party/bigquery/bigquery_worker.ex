@@ -712,8 +712,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             user_phone: if(!is_nil(row.user), do: row.user.phone),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id),
-            flow_id: row.flow.id,
-            flow_name: row.flow.name
+            flow_id: if(!is_nil(row.flow), do: row.flow.id),
+            flow_name: if(!is_nil(row.flow), do: row.flow.name)
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
