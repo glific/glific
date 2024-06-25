@@ -653,11 +653,9 @@ defmodule Glific.InteractiveTemplatesTest do
         ["Attribute", "en", "hi"],
         ["Title", "glific", "ग्लिफ़िक"],
         ["Body", "How was your experience with Glific?", "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"],
-        ["    "],
         ["GlobalButtonTitle", "Glific Features", "शानदार विशेषताएं"],
         ["ItemTitle 1", "Excitement level", "उत्साह का स्तर"],
-        ["ItemSubtitle 1", "Excitement"],
-        ["    level", "उत्साह का स्तर"],
+        ["ItemSubtitle 1", "Excitement level", "उत्साह का स्तर"],
         ["OptionTitle 1.1", "Great", "उत्कृष्ट"],
         ["OptionDescription 1.1", "Awesome", "शानदार"]
       ]

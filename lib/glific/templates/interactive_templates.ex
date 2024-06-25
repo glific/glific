@@ -621,6 +621,9 @@ defmodule Glific.Templates.InteractiveTemplates do
   defp do_items_translated(content, items_translations) do
     chunk_sizes =
       Enum.map(content["items"], fn item ->
+        # option length is the number of elements in the options list inside items
+        # We multiply this by 2 because we are translating only the title and description,
+        # another 2 that we are adding is for the subtitle and title.
         2 + length(item["options"]) * 2
       end)
 
