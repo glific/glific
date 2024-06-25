@@ -345,6 +345,9 @@ defmodule GlificWeb.Resolvers.Partners do
     end
   end
 
+  @doc """
+  Gets daily app usage
+  """
   @spec get_app_usage(Absinthe.Resolution.t(), %{from_date: Date.t(), to_date: Date.t()}, %{
     context: map()
     }) ::
