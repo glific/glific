@@ -33,7 +33,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
       {:error, error} ->
         if String.contains?(error, "Re-linking"), do: fetch_gupshup_app_id(org_id), else: error
-
     end
   end
 
@@ -116,7 +115,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:ok, %{"partnerAppsList" => list}} ->
         Enum.filter(list, fn app -> app["name"] == gupshup_app_name end)
         |> hd()
-      {:error, error} -> error
+
+      {:error, error} ->
+        error
     end
   end
 
