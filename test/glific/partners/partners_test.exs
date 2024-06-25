@@ -183,7 +183,7 @@ defmodule Glific.PartnersTest do
         end)
 
         {:ok, result} = PartnerAPI.get_app_usage(org.id, "2022-03-01", "2022-04-01")
-        assert %{"partnerAppUsageList" => _} = result
+        assert hd(result)["incomingMsg"] == 172
     end
 
     test "enable template messaging for an app" do

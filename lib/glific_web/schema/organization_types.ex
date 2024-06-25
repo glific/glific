@@ -329,9 +329,9 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     @desc "Get daily app usage"
     field :daily_app_usage, list_of(:daily_usage) do
-      arg(:from_date, :date)
-      arg(:to_date, :date)
-      #middleware(Authorize, :staff)
+      arg(:from_date, non_null(:date))
+      arg(:to_date, non_null(:date))
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.get_app_usage/3)
     end
   end

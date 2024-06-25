@@ -260,19 +260,14 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
   gets daily app usage b/w two dates
   """
-  @spec get_app_usage(non_neg_integer(), String.t(), String.t()) :: {:error, String.t()} | {:ok, map()}
+  @spec get_app_usage(non_neg_integer(), String.t(), String.t()) :: {:error, String.t()} | {:ok, list(map())}
   def get_app_usage(org_id, from_date, to_date) do
-
     url = (app_url(org_id) <> "/usage?from=" <> from_date <> "&to=" <> to_date)
-    with {:ok, %{"partnerAppUsageList" => result}} <- get_request(url, org_id: org_id), do: result |> IO.inspect(label: "RESULT")
-    #[
-    #  %{
-    #    "appID" => "44674650-e991-41c7-9fd7-b3cd58a8aedb",
-    #    "authentication" => 0,
-    #    "date" => "2024-03-02",
-    #  }
-    #] |> IO.inspect(label: "SAMPLE")
 
+    case get_request(url, org_id: org_id) do
+      {:ok, %{"partnerAppUsageList" => result}} -> {:ok, result}
+      {:error, error} -> {:error, error}
+    end
   end
 
   @global_organization_id 0
@@ -291,7 +286,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec fetch_partner_token :: {:ok, map()} | {:error, any}
   defp fetch_partner_token do
     url = @partner_url <> "/login"
-    credentials = Saas.isv_credentials() |> IO.inspect(label: "CRED")
+    credentials = Saas.isv_credentials()
 
     request_params = %{"email" => credentials["email"], "password" => credentials["password"]}
 

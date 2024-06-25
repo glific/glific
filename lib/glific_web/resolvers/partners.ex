@@ -11,6 +11,7 @@ defmodule GlificWeb.Resolvers.Partners do
     Partners.Export,
     Partners.Organization,
     Partners.Provider,
+    Providers.Gupshup.PartnerAPI,
     Repo,
     Saas.Onboard
   }
@@ -344,11 +345,24 @@ defmodule GlificWeb.Resolvers.Partners do
     end
   end
 
+  @spec get_app_usage(Absinthe.Resolution.t(), %{from_date: Date.t(), to_date: Date.t()}, %{
+    context: map()
+    }) ::
+    {:ok, list(map())} | {:error, String.t()}
   def get_app_usage(_parent, %{from_date: from_date, to_date: to_date}, %{context: %{current_user: user}}) do
-
-    {:ok, Glific.atomize_keys(Glific.Providers.Gupshup.PartnerAPI.get_app_usage(user.organization_id, Date.to_string(from_date), Date.to_string(to_date)))}
-    |> IO.inspect(label: "RESOLVER RESULT")
-    #taken from get quality ratings (how to get org id)
+    case PartnerAPI.get_app_usage(user.organization_id, Date.to_string(from_date), Date.to_string(to_date)) do
+      {:ok, response} -> {:ok, Enum.map(response, fn day ->
+        %{
+          date: Map.get(day, "date", 0),
+          incoming_msg: Map.get(day, "incomingMsg", 0),
+          outgoing_media_msg: Map.get(day, "outgoingMediaMsg", 0),
+          outgoing_msg: Map.get(day, "outgoingMsg", 0),
+          total_fees: Map.get(day, "totalFees", 0),
+          total_msg: Map.get(day, "totalMsg", 0)
+        }
+      end)}
+      {:error, _error} -> {:error, "Error fetching daily app usage list"}
+    end
   end
 
 end
