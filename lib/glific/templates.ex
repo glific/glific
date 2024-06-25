@@ -183,16 +183,30 @@ defmodule Glific.Templates do
   end
 
   @spec validate_template_length(map()) :: :ok | {:error, [String.t()]}
-  def validate_template_length(%{body: body} = attrs) do
+  defp validate_template_length(%{body: body} = attrs) do
+    buttons = Map.get(attrs, :buttons, [])
+    total_length =
+      String.length(body || "") +
+      calculate_buttons_length(buttons)
 
-  total_length = String.length(body)
-
-    if total_length <= 1024 do
-      :ok
+    if Enum.any?(buttons, fn %{"text" => text} -> String.length(text || "") > 20 end) do
+      {:error, ["Button Validation", "Buttons text cannot be greater than 20"]}
     else
-      {:error, ["Message Length", "Template cannot be created due to exceeding character limit"]}
+      if total_length <= 1024 do
+        :ok
+      else
+        {:error, ["Character Limit", "Exceeding character limit"]}
+      end
     end
   end
+
+  defp calculate_buttons_length(buttons) when is_list(buttons) do
+    Enum.reduce(buttons, 0, fn %{"text" => text}, acc ->
+      acc + String.length(text || "")
+    end)
+  end
+
+  defp calculate_buttons_length(nil), do: 0
 
   @doc false
   @spec do_create_session_template(map()) ::
