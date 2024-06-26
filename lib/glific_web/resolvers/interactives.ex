@@ -139,13 +139,16 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
            InteractiveTemplates.fetch_interactive_template(id) do
       {:ok, stream} = StringIO.open(data)
 
-      stream
-      |> IO.binstream(:line)
-      |> CSV.decode!()
-      |> Enum.into([])
-      |> InteractiveTemplates.import_interactive_template(interactive_template)
+      data_list =
+        stream
+        |> IO.binstream(:line)
+        |> CSV.decode!()
+        |> Enum.into([])
 
-      {:ok, %{success: true}}
+      {:ok, interactive_template} =
+        InteractiveTemplates.import_interactive_template(data_list, interactive_template)
+
+      {:ok, %{interactive_template: interactive_template}}
     end
   end
 end
