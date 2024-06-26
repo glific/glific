@@ -202,7 +202,7 @@ defmodule Glific.GCS do
         log_bucket = "#{bucket_name}-logs"
         log_object_prefix = "log_object_prefix"
 
-        case update_bucket_logging(bucket_name, log_bucket, log_object_prefix) do
+        case do_enable_bucket_logs(bucket_name, log_bucket, log_object_prefix) do
           {:ok, _result} ->
             Logger.info("Bucket logging enabled successfully for bucket: #{bucket_name}")
             {:ok, "Bucket logging enabled successfully"}
@@ -217,9 +217,9 @@ defmodule Glific.GCS do
     end
   end
 
-  @spec update_bucket_logging(String.t(), String.t(), String.t()) ::
+  @spec do_enable_bucket_logs(String.t(), String.t(), String.t()) ::
           {:ok, any()} | {:error, any()}
-  defp update_bucket_logging(bucket_name, log_bucket, log_object_prefix) do
+  defp do_enable_bucket_logs(bucket_name, log_bucket, log_object_prefix) do
     url = "#{@endpoint}/#{bucket_name}"
 
     body = %{
