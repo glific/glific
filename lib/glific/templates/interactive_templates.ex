@@ -676,44 +676,39 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   @spec do_items_translated(map(), list()) :: list()
   defp do_items_translated(content, items_translations) do
-    chunk_sizes =
-      Enum.map(content["items"], fn item ->
+    {items, _remaining_translations} =
+      Enum.reduce(content["items"], {[], items_translations}, fn item,
+                                                                 {acc, remaining_translations} ->
         # option length is the number of elements in the options list inside items
-        # We multiply this by 2 because we are translating only the title and description,
+        # multiply this by 2 because we are translating only the title and description,
         # another 2 that we are adding is for the subtitle and title.
-        2 + length(item["options"]) * 2
-      end)
-
-    translations_chunks =
-      Enum.reduce(chunk_sizes, {[], items_translations}, fn chunk_size,
-                                                            {acc, remaining_translations} ->
+        chunk_size = 2 + length(item["options"]) * 2
         {chunk, rest} = Enum.split(remaining_translations, chunk_size)
-        {acc ++ [chunk], rest}
+
+        [item_title, item_subtitle | options_translations] = chunk
+
+        options =
+          options_translations
+          |> Enum.chunk_every(2)
+          |> Enum.zip(item["options"])
+          |> Enum.map(fn {[option_title, option_description], option} ->
+            %{
+              "title" => option_title,
+              "description" => option_description,
+              "type" => option["type"]
+            }
+          end)
+
+        translated_item = %{
+          "title" => item_title,
+          "subtitle" => item_subtitle,
+          "options" => options
+        }
+
+        {[translated_item | acc], rest}
       end)
-      |> elem(0)
 
-    Enum.zip(content["items"], translations_chunks)
-    |> Enum.map(fn {item, translated_item} ->
-      [item_title, item_subtitle | options_translations] = translated_item
-
-      options =
-        options_translations
-        |> Enum.chunk_every(2)
-        |> Enum.zip(item["options"])
-        |> Enum.map(fn {[option_title, option_description], option} ->
-          %{
-            "title" => option_title,
-            "description" => option_description,
-            "type" => option["type"]
-          }
-        end)
-
-      %{
-        "title" => item_title,
-        "subtitle" => item_subtitle,
-        "options" => options
-      }
-    end)
+    Enum.reverse(items)
   end
 
   @spec content_to_translate(map(), String.t()) :: list()
