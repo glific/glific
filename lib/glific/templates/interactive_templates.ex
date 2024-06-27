@@ -678,26 +678,14 @@ defmodule Glific.Templates.InteractiveTemplates do
   defp do_items_translated(content, items_translations) do
     {items, _remaining_translations} =
       Enum.reduce(content["items"], {[], items_translations}, fn item,
-                                                                 {acc, remaining_translations} ->
-        # option length is the number of elements in the options list inside items
-        # multiply this by 2 because we are translating only the title and description,
-        # another 2 that we are adding is for the subtitle and title.
+                                                                 {translated_items_acc,
+                                                                  remaining_translations} ->
         chunk_size = 2 + length(item["options"]) * 2
         {chunk, rest} = Enum.split(remaining_translations, chunk_size)
 
         [item_title, item_subtitle | options_translations] = chunk
 
-        options =
-          options_translations
-          |> Enum.chunk_every(2)
-          |> Enum.zip(item["options"])
-          |> Enum.map(fn {[option_title, option_description], option} ->
-            %{
-              "title" => option_title,
-              "description" => option_description,
-              "type" => option["type"]
-            }
-          end)
+        options = build_translated_options(options_translations, item["options"])
 
         translated_item = %{
           "title" => item_title,
@@ -705,10 +693,24 @@ defmodule Glific.Templates.InteractiveTemplates do
           "options" => options
         }
 
-        {[translated_item | acc], rest}
+        {[translated_item | translated_items_acc], rest}
       end)
 
     Enum.reverse(items)
+  end
+
+  @spec build_translated_options(list(), list()) :: list()
+  defp build_translated_options(options_translations, items) do
+    options_translations
+    |> Enum.chunk_every(2)
+    |> Enum.zip(items)
+    |> Enum.map(fn {[option_title, option_description], option} ->
+      %{
+        "title" => option_title,
+        "description" => option_description,
+        "type" => option["type"]
+      }
+    end)
   end
 
   @spec content_to_translate(map(), String.t()) :: list()
