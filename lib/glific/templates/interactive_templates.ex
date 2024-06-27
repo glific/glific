@@ -701,16 +701,22 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   @spec build_translated_options(list(), list()) :: list()
   defp build_translated_options(options_translations, items) do
-    options_translations
-    |> Enum.chunk_every(2)
-    |> Enum.zip(items)
-    |> Enum.map(fn {[option_title, option_description], option} ->
-      %{
-        "title" => option_title,
-        "description" => option_description,
-        "type" => option["type"]
-      }
-    end)
+    {translated_options, _remaining_translations} =
+      Enum.reduce(items, {[], options_translations}, fn option,
+                                                        {translated_options_acc,
+                                                         remaining_translations} ->
+        [option_title, option_description | rest] = remaining_translations
+
+        translated_option = %{
+          "title" => option_title,
+          "description" => option_description,
+          "type" => option["type"]
+        }
+
+        {[translated_option | translated_options_acc], rest}
+      end)
+
+    Enum.reverse(translated_options)
   end
 
   @spec content_to_translate(map(), String.t()) :: list()
