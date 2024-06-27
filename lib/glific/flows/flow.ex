@@ -36,6 +36,7 @@ defmodule Glific.Flows.Flow do
     :is_active,
     :is_background,
     :is_pinned,
+    :is_template,
     :respond_other,
     :respond_no_response,
     :tag_id,
@@ -55,6 +56,7 @@ defmodule Glific.Flows.Flow do
           is_pinned: boolean() | nil,
           respond_other: boolean() | nil,
           respond_no_response: boolean() | nil,
+          is_template: boolean() | nil,
           flow_type: String.t() | nil,
           status: String.t(),
           definition: map() | nil,
@@ -98,6 +100,7 @@ defmodule Glific.Flows.Flow do
     field(:is_active, :boolean, default: true)
     field(:is_background, :boolean, default: false)
     field(:is_pinned, :boolean, default: false)
+    field(:is_template, :boolean, default: false)
     field(:respond_other, :boolean, default: false)
     field(:respond_no_response, :boolean, default: false)
     # we use this to store the latest definition and version from flow_revisions for this flow
