@@ -91,6 +91,57 @@ defmodule Glific.InteractiveTemplatesTest do
       }
     }
 
+    @expected_footer_attrs %{
+      label: "Glific Features",
+      type: :quick_reply,
+      interactive_content: %{
+        "type" => "quick_reply",
+        "content" => %{
+          "caption" => "caption is footer",
+          "type" => "text",
+          "text" => "How was your experience with Glific?"
+        },
+        "options" => [
+          %{
+            "type" => "text",
+            "title" => "Great"
+          },
+          %{
+            "type" => "text",
+            "title" => "Awesome"
+          }
+        ]
+      },
+      translations: %{
+        "1" => %{
+          "content" => %{
+            "caption" => "caption is footer",
+            "header" => "Glific Features",
+            "text" => "How was your experience with Glific?",
+            "type" => "text"
+          },
+          "options" => [
+            %{"title" => "Great", "type" => "text"},
+            %{"title" => "Awesome", "type" => "text"}
+          ],
+          "type" => "quick_reply"
+        },
+        "2" => %{
+          "content" => %{
+            "caption" => "कैप्शन पाद लेख है",
+            "header" => "शानदार विशेषताएं",
+            "text" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?",
+            "type" => "text"
+          },
+          "options" => [
+            %{"title" => "उत्कृष्ट", "type" => "text"},
+            %{"title" => "शानदार", "type" => "text"}
+          ],
+          "type" => "quick_reply"
+        }
+      }
+    }
+
     @valid_location_attrs %{
       label: "Send Location",
       type: :location_request_message,
@@ -103,6 +154,31 @@ defmodule Glific.InteractiveTemplatesTest do
         "1" => %{
           "action" => %{"name" => "send_location"},
           "body" => %{"text" => "please share your location", "type" => "text"},
+          "type" => "location_request_message"
+        }
+      }
+    }
+
+    @expected_location_attrs %{
+      label: "Send Location",
+      type: :location_request_message,
+      interactive_content: %{
+        "action" => %{"name" => "send_location"},
+        "body" => %{"text" => "please share your location", "type" => "text"},
+        "type" => "location_request_message"
+      },
+      translations: %{
+        "1" => %{
+          "action" => %{"name" => "send_location"},
+          "body" => %{"text" => "please share your location", "type" => "text"},
+          "type" => "location_request_message"
+        },
+        "2" => %{
+          "action" => %{"name" => "send_location"},
+          "body" => %{
+            "text" => "कृपया अपना स्थान साझा करें",
+            "type" => "text"
+          },
           "type" => "location_request_message"
         }
       }
@@ -152,6 +228,76 @@ defmodule Glific.InteractiveTemplatesTest do
         }
       }
     }
+
+    @expected_list_attrs %{
+      label: "Interactive list",
+      type: :list,
+      interactive_content: %{
+        "body" => "How was your experience with Glific?",
+        "globalButtons" => [%{"title" => "Glific Features", "type" => "text"}],
+        "items" => [
+          %{
+            "options" => [
+              %{
+                "description" => "Awesome",
+                "title" => "Great",
+                "type" => "text"
+              }
+            ],
+            "subtitle" => "Excitement level",
+            "title" => "Excitement level"
+          }
+        ],
+        "title" => "glific",
+        "type" => "list"
+      },
+      translations: %{
+        "1" => %{
+          "body" => "How was your experience with Glific?",
+          "globalButtons" => [%{"title" => "Glific Features", "type" => "text"}],
+          "items" => [
+            %{
+              "options" => [
+                %{
+                  "description" => "Awesome",
+                  "title" => "Great",
+                  "type" => "text"
+                }
+              ],
+              "subtitle" => "Excitement level",
+              "title" => "Excitement level"
+            }
+          ],
+          "title" => "glific",
+          "type" => "list"
+        },
+        "2" => %{
+          "body" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?",
+          "globalButtons" => [
+            %{
+              "title" => "शानदार विशेषताएं",
+              "type" => "text"
+            }
+          ],
+          "items" => [
+            %{
+              "options" => [
+                %{
+                  "description" => "शानदार",
+                  "title" => "उत्कृष्ट",
+                  "type" => "text"
+                }
+              ],
+              "subtitle" => "उत्साह का स्तर",
+              "title" => "उत्साह का स्तर"
+            }
+          ],
+          "title" => "ग्लिफ़िक",
+          "type" => "list"
+        }
+      }
+    }
+
     @update_attrs %{
       label: "Updated Quick Reply label"
     }
@@ -663,10 +809,11 @@ defmodule Glific.InteractiveTemplatesTest do
     {:ok, imported_temp} =
       InteractiveTemplates.import_interactive_template(translated_data, interactive)
 
-    {:ok, translated_temp} =
-      Repo.fetch_by(Glific.Templates.InteractiveTemplate, %{id: interactive.id})
+    imported_translation = imported_temp.translations
 
-    assert translated_temp == imported_temp
+    translation = @expected_list_attrs[:translations]
+
+    assert imported_translation == translation
 
     # type quick reply with footer
     interactive =
@@ -684,10 +831,11 @@ defmodule Glific.InteractiveTemplatesTest do
     {:ok, imported_temp} =
       InteractiveTemplates.import_interactive_template(translated_data, interactive)
 
-    {:ok, translated_temp} =
-      Repo.fetch_by(Glific.Templates.InteractiveTemplate, %{id: interactive.id})
+    imported_translation = imported_temp.translations
 
-    assert translated_temp == imported_temp
+    translation = @expected_footer_attrs[:translations]
+
+    assert imported_translation == translation
 
     # type location
     interactive =
@@ -702,9 +850,10 @@ defmodule Glific.InteractiveTemplatesTest do
     {:ok, imported_temp} =
       InteractiveTemplates.import_interactive_template(translated_data, interactive)
 
-    {:ok, translated_temp} =
-      Repo.fetch_by(Glific.Templates.InteractiveTemplate, %{id: interactive.id})
+    imported_translation = imported_temp.translations
 
-    assert translated_temp == imported_temp
+    translation = @expected_location_attrs[:translations]
+
+    assert imported_translation == translation
   end
 end
