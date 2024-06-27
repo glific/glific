@@ -1076,7 +1076,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     end)
   end
 
-  @spec get_language_names(list(String.t())) :: list()
+  @spec get_language_codes(list(String.t())) :: list()
   defp get_language_codes(language_name) do
     language_map = Settings.locale_id_map()
     Enum.map(language_name, fn code -> Map.get(language_map, code) end)
