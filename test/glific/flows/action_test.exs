@@ -5,6 +5,7 @@ defmodule Glific.Flows.ActionTest do
     Contacts.Contact,
     Fixtures,
     Flows,
+    Flows.ContactField,
     Groups,
     Groups.ContactGroup,
     Partners,
@@ -233,6 +234,24 @@ defmodule Glific.Flows.ActionTest do
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
     json = %{}
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "process extracts the right values from json for set_run_result" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "category" => "@contact.fields.current_topic",
+      "name" => "video_code",
+      "type" => "set_run_result",
+      "uuid" => "6f9229f6-3c1b-49fd-bec9-34ecbccd74ca",
+      "value" => "@contact.fields.current_topic"
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+    assert action.category == "@contact.fields.current_topic"
+    assert action.name == "name"
+    assert action.type == "set_run_result"
+    assert action.value == "@contact.fields.current_topic"
   end
 
   test "process extracts the right values from json for link_google_sheet when action_type is WRITE" do
@@ -725,6 +744,53 @@ defmodule Glific.Flows.ActionTest do
 
     assert {:ok, updated_context, _updated_message_stream} = result
     assert updated_context.contact.language_id == language.id
+  end
+
+  test "execute an action when type is set_run_result", attrs do
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    # updating contact field of a contact to be used in set_run_result
+    contact
+    |> ContactField.do_add_contact_field(
+      "video_code",
+      "video_code",
+      "shyness",
+      "string"
+    )
+
+    # preload contact
+    context_attrs = %{
+      flow_id: flow.id,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    # preload contact
+    {:ok, context} = FlowContext.create_flow_context(context_attrs)
+    set_run_result_context = Repo.preload(context, [:flow, :contact])
+
+    Repo.preload(context, [:flow, :contact])
+
+    # using uuid of help flow
+    set_run_result_action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "set_run_result",
+      name: "video_code",
+      value: "@contact.fields.video_code",
+      category: "@contact.fields.video_code",
+      flow: %{
+        "name" => "#{flow.name}",
+        "uuid" => "#{flow.uuid}"
+      }
+    }
+
+    result = Action.execute(set_run_result_action, set_run_result_context, [])
+    assert {:ok, updated_context, _updated_message_stream} = result
+    assert updated_context.results["video_code"]["category"] == "shyness"
+    assert updated_context.results["video_code"]["value"] == "shyness"
   end
 
   test "execute an action when type is set_contact_name", _attrs do
