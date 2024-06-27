@@ -79,6 +79,16 @@ defmodule Glific.Bhasini do
          ) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         response = Jason.decode!(body)
+
+        translated_text =
+          get_in(response, [
+            "pipelineResponse",
+            Access.at(0),
+            "output",
+            Access.at(0),
+            "target"
+          ])
+
         uuid = Ecto.UUID.generate()
         path = download_encoded_file(response, uuid)
 
@@ -91,7 +101,9 @@ defmodule Glific.Bhasini do
             org_id
           )
 
-        %{success: true} |> Map.put(:media_url, media_meta.url)
+        %{success: true}
+        |> Map.put(:media_url, media_meta.url)
+        |> Map.put(:translated_text, translated_text)
 
       _ ->
         %{success: false, reason: "could not fetch data"}
