@@ -249,7 +249,7 @@ defmodule Glific.Flows.ActionTest do
 
     {action, _uuid_map} = Action.process(json, %{}, node)
     assert action.category == "@contact.fields.current_topic"
-    assert action.name == "name"
+    assert action.name == "video_code"
     assert action.type == "set_run_result"
     assert action.value == "@contact.fields.current_topic"
   end
