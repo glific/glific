@@ -165,7 +165,6 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :flow_get, :flow_result do
       arg(:id, non_null(:id))
       arg(:is_forced, :boolean)
-      arg(:is_template, :boolean)
       middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.flow_get/3)
     end

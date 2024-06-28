@@ -126,7 +126,6 @@ defmodule Glific.FLowsTest do
 
       flows_template_true = Flows.list_flows(%{filter: %{is_template: true}})
       assert length(flows_template_true) == old_count_template_true + 1
-
     end
 
     test "list_flows/1 returns flows filtered by name keyword", attrs do
