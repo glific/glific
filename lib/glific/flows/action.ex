@@ -906,10 +906,14 @@ defmodule Glific.Flows.Action do
       |> FlowContext.parse_context_string(action.value)
       |> Glific.execute_eex()
 
+    category =
+      context
+      |> FlowContext.parse_context_string(action.category)
+
     results = %{
       "input" => value,
       "value" => value,
-      "category" => action.category,
+      "category" => category,
       "inserted_at" => DateTime.utc_now()
     }
 
