@@ -35,6 +35,18 @@ defmodule Glific.Groups.WAGroups do
         query
         |> where([wg], wg.id in subquery(sub_query))
 
+      {:exclude_groups, []}, query ->
+        query
+
+      {:exclude_groups, group_ids}, query ->
+        sub_query =
+          WAGroupsCollection
+          |> where([wc], wc.group_id in ^group_ids)
+          |> select([wc], wc.wa_group_id)
+
+        query
+        |> where([c], c.id not in subquery(sub_query))
+
       {:term, term}, query ->
         query |> where([wa_grp], ilike(wa_grp.label, ^"%#{term}%"))
 
