@@ -680,6 +680,9 @@ defmodule Glific.Templates.InteractiveTemplates do
       Enum.reduce(content["items"], {[], items_translations}, fn item,
                                                                  {translated_items_acc,
                                                                   remaining_translations} ->
+        # option length is the number of elements in the options list inside items
+        # multiply this by 2 because we are translating only the title and description,
+        # another 2 that we are adding is for the subtitle and title.
         chunk_size = 2 + length(item["options"]) * 2
         {chunk, rest} = Enum.split(remaining_translations, chunk_size)
 
