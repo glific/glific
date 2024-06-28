@@ -301,18 +301,18 @@ defmodule Glific.TemplatesTest do
     end
 
     test "validates template length with total length exceeding limit", attrs do
-
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
-            body: Jason.encode!(%{
-              "status" => "success",
-              "template" => %{
-                "category" => "ACCOUNT_UPDATE",
-                "templateType" => "TEXT",
-              }
-            })
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "template" => %{
+                  "category" => "ACCOUNT_UPDATE",
+                  "templateType" => "TEXT"
+                }
+              })
           }
       end)
 
@@ -324,7 +324,7 @@ defmodule Glific.TemplatesTest do
         is_hsm: true,
         category: "ACCOUNT_UPDATE",
         shortcode: "some_shortcode",
-        example:  String.duplicate("a", 1000),
+        example: String.duplicate("a", 1000),
         organization_id: attrs.organization_id,
         buttons: [%{"text" => "buttontext"}]
       }
