@@ -43,20 +43,6 @@ defmodule Glific.Notifications do
     {:ok, notification}
   end
 
-  defp handle_notification(notification, "warning") do
-    with organization <- Partners.organization(notification.organization_id),
-         true <- organization.setting.send_warning_mail do
-      organization
-      |> NotificationMail.warning_mail(notification.message)
-      |> Mailer.send(%{
-        category: "Warning",
-        organization_id: notification.organization_id
-      })
-    end
-
-    {:ok, notification}
-  end
-
   defp handle_notification(notification, _severity), do: {:ok, notification}
 
   @doc """
