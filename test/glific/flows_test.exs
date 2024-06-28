@@ -112,6 +112,23 @@ defmodule Glific.FLowsTest do
       assert length(flows) == old_count + 1
     end
 
+    test "list_flows/1 returns flows filtered by is_template", attrs do
+      flows_template_true = Flows.list_flows(%{filter: %{is_template: true}})
+      old_count_template_true = length(flows_template_true)
+
+      assert {:ok, %Flow{} = _flow_template_true} =
+               @valid_attrs
+               |> Map.merge(%{
+                 organization_id: attrs.organization_id,
+                 is_template: true
+               })
+               |> Flows.create_flow()
+
+      flows_template_true = Flows.list_flows(%{filter: %{is_template: true}})
+      assert length(flows_template_true) == old_count_template_true + 1
+
+    end
+
     test "list_flows/1 returns flows filtered by name keyword", attrs do
       f0 = flow_fixture(@valid_attrs)
       f1 = flow_fixture(@valid_more_attrs |> Map.merge(%{name: "testkeyword"}))
