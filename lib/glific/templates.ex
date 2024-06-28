@@ -185,9 +185,10 @@ defmodule Glific.Templates do
   @spec validate_template_length(map()) :: :ok | {:error, [String.t()]}
   defp validate_template_length(%{body: body} = attrs) do
     buttons = Map.get(attrs, :buttons, [])
+
     total_length =
       String.length(body || "") +
-      calculate_buttons_length(buttons)
+        calculate_buttons_length(buttons)
 
     if Enum.any?(buttons, fn %{"text" => text} -> String.length(text || "") > 20 end) do
       {:error, ["Button Validation", "Buttons text cannot be greater than 20"]}
