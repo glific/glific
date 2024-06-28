@@ -553,6 +553,14 @@ defmodule GlificWeb.Schema.FlowTest do
            )
   end
 
+  test "get flows filters by is_template field", %{manager: staff, user: user} do
+    State.reset(user.organization_id)
+    result = auth_query_gql_by(:flow_get, staff, variables: %{"id" => 1, "isTemplate" => true})
+    assert {:ok, query_data} = result
+    flows = get_in(query_data, [:data, "flowGet", "flow"])
+    assert flows["isTemplate"] == true
+  end
+
   test "message broadcast stats", %{glific_admin: glific_admin} = attrs do
     [flow | _tail] = Flows.list_flows(%{filter: attrs})
     group = Fixtures.group_fixture()

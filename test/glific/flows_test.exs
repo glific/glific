@@ -146,6 +146,19 @@ defmodule Glific.FLowsTest do
       assert Flows.count_flows(%{filter: Map.merge(attrs, %{name: "Help Workflow"})}) == 1
     end
 
+    test "count_flows/0 returns count of flows filtered by is_template",
+         %{organization_id: organization_id} = attrs do
+      initial_count = Flows.count_flows(%{filter: Map.merge(attrs, %{is_template: true})})
+
+      assert {:ok, %Flow{} = _flow} =
+               @valid_attrs
+               |> Map.merge(%{organization_id: organization_id, is_template: true})
+               |> Flows.create_flow()
+
+      assert Flows.count_flows(%{filter: Map.merge(attrs, %{is_template: true})}) ==
+               initial_count + 1
+    end
+
     test "get_flow!/1 returns the flow with given id" do
       flow = flow_fixture()
       assert Flows.get_flow!(flow.id) == flow
