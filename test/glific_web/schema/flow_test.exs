@@ -313,6 +313,23 @@ defmodule GlificWeb.Schema.FlowTest do
              "The keyword `testkeyword` was already used in the `Flow Test Name` Flow."
   end
 
+  test "create a flow with is_template field", %{manager: user} do
+    name = "Flow Test Name"
+    keywords = ["test_keyword"]
+    description = "test description"
+    is_template = true
+
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{"name" => name, "keywords" => keywords, "description" => description, "is_template" => is_template}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "createFlow", "flow", "isTemplate"]) == is_template
+  end
+
   test "update a flow and test possible scenarios and errors", %{manager: user} do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
