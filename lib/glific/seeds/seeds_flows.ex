@@ -221,7 +221,8 @@ defmodule Glific.Seeds.SeedsFlows do
         ignore_keywords: ignore_keywords,
         version_number: "13.1.0",
         uuid: uuid,
-        organization_id: organization.id
+        organization_id: organization.id,
+        is_template: true
       })
 
     flow_revision(f, organization, file, opts)

@@ -6,6 +6,7 @@ fragment FlowFields on FlowResult {
     flowType
     isBackground
     isPinned
+    isTemplate
   }
 }
 

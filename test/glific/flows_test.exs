@@ -112,6 +112,22 @@ defmodule Glific.FLowsTest do
       assert length(flows) == old_count + 1
     end
 
+    test "list_flows/1 returns flows filtered by is_template", attrs do
+      flows_template_true = Flows.list_flows(%{filter: %{is_template: true}})
+      old_count_template_true = length(flows_template_true)
+
+      assert {:ok, %Flow{} = _flow_template_true} =
+               @valid_attrs
+               |> Map.merge(%{
+                 organization_id: attrs.organization_id,
+                 is_template: true
+               })
+               |> Flows.create_flow()
+
+      flows_template_true = Flows.list_flows(%{filter: %{is_template: true}})
+      assert length(flows_template_true) == old_count_template_true + 1
+    end
+
     test "list_flows/1 returns flows filtered by name keyword", attrs do
       f0 = flow_fixture(@valid_attrs)
       f1 = flow_fixture(@valid_more_attrs |> Map.merge(%{name: "testkeyword"}))
@@ -144,6 +160,19 @@ defmodule Glific.FLowsTest do
       assert Flows.count_flows(%{filter: attrs}) == flow_count + 2
 
       assert Flows.count_flows(%{filter: Map.merge(attrs, %{name: "Help Workflow"})}) == 1
+    end
+
+    test "count_flows/0 returns count of flows filtered by is_template",
+         %{organization_id: organization_id} = attrs do
+      initial_count = Flows.count_flows(%{filter: Map.merge(attrs, %{is_template: true})})
+
+      assert {:ok, %Flow{} = _flow} =
+               @valid_attrs
+               |> Map.merge(%{organization_id: organization_id, is_template: true})
+               |> Flows.create_flow()
+
+      assert Flows.count_flows(%{filter: Map.merge(attrs, %{is_template: true})}) ==
+               initial_count + 1
     end
 
     test "get_flow!/1 returns the flow with given id" do
