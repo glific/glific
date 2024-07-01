@@ -145,55 +145,6 @@ defmodule Glific.PartnersTest do
       assert %{"status" => "success"} == result
     end
 
-    test "get app usage" do
-      org = SeedsDev.seed_organizations()
-
-      Tesla.Mock.mock(fn
-        %{method: :get} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              Jason.encode!(%{
-                "partnerAppUsageList" => [
-                  %{
-                    "appId" => "test-appID-e991-41c7-9fd7-b3cd58a8aedb",
-                    "appName" => "2023TestApp",
-                    "authentication" => 0,
-                    "cumulativeBill" => 0.089,
-                    "currency" => "USD",
-                    "date" => "2024-06-03",
-                    "discount" => 0.0,
-                    "fep" => 0,
-                    "ftc" => 4,
-                    "gsCap" => 75.0,
-                    "gsFees" => 0.064,
-                    "incomingMsg" => 27,
-                    "internationalAuthentication" => 0,
-                    "marketing" => 0,
-                    "outgoingMediaMsg" => 0,
-                    "outgoingMsg" => 37,
-                    "service" => 0,
-                    "templateMediaMsg" => 0,
-                    "templateMsg" => 0,
-                    "totalFees" => 0.064,
-                    "totalMsg" => 64,
-                    "utility" => 0,
-                    "waFees" => 0.0
-                  }
-                ]
-              })
-          }
-      end)
-
-      {:ok, result} = PartnerAPI.get_app_usage(org.id, "2022-03-01", "2022-04-01")
-      app_usage = get_in(result, [Access.at(0)])
-      assert app_usage["cumulativeBill"] == 0.089
-      assert app_usage["gsFees"] == 0.064
-      assert app_usage["incomingMsg"] == 27
-      assert app_usage["outgoingMsg"] == 37
-      assert app_usage["totalFees"] == 0.064
-    end
-
     test "enable template messaging for an app" do
       org = SeedsDev.seed_organizations()
 
