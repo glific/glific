@@ -260,9 +260,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
   gets daily app usage b/w two dates
   """
-  @spec get_app_usage(non_neg_integer(), String.t(), String.t()) :: {:error, String.t()} | {:ok, list(map())}
+  @spec get_app_usage(non_neg_integer(), String.t(), String.t()) ::
+          {:error, String.t()} | {:ok, list(map())}
   def get_app_usage(org_id, from_date, to_date) do
-    url = (app_url(org_id) <> "/usage?from=" <> from_date <> "&to=" <> to_date)
+    url = app_url(org_id) <> "/usage?from=" <> from_date <> "&to=" <> to_date
 
     case get_request(url, org_id: org_id) do
       {:ok, %{"partnerAppUsageList" => result}} -> {:ok, result}

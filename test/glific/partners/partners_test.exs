@@ -152,38 +152,39 @@ defmodule Glific.PartnersTest do
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: Jason.encode!(%{
-              "partnerAppUsageList" => [
-                %{
-                  "appId" => "eea57ae3-0260-4596-8469-a5e1fbad2dde",
-                  "appName" => "testthursday",
-                  "authentication" => 2,
-                  "cumulativeBill" => 20.45,
-                  "date" => "2023-06-01",
-                  "discount" => 10.0,
-                  "fep" => 270,
-                  "ftc" => 16,
-                  "gsCap" => 500.0,
-                  "gsFees" => 43,
-                  "incomingMsg" => 172,
-                  "marketing" => 34,
-                  "outgoingMediaMsgSKU" => 32,
-                  "outgoingMsg" => 277,
-                  "service" => 23,
-                  "templateMediaMsgSKU" => 265,
-                  "templateMsg" => 143,
-                  "totalFees" => 87,
-                  "totalMsg" => 150,
-                  "utility" => 100,
-                  "waFees" => 44
-                }
-              ]
-            })
+            body:
+              Jason.encode!(%{
+                "partnerAppUsageList" => [
+                  %{
+                    "appId" => "eea57ae3-0260-4596-8469-a5e1fbad2dde",
+                    "appName" => "testthursday",
+                    "authentication" => 2,
+                    "cumulativeBill" => 20.45,
+                    "date" => "2023-06-01",
+                    "discount" => 10.0,
+                    "fep" => 270,
+                    "ftc" => 16,
+                    "gsCap" => 500.0,
+                    "gsFees" => 43,
+                    "incomingMsg" => 172,
+                    "marketing" => 34,
+                    "outgoingMediaMsgSKU" => 32,
+                    "outgoingMsg" => 277,
+                    "service" => 23,
+                    "templateMediaMsgSKU" => 265,
+                    "templateMsg" => 143,
+                    "totalFees" => 87,
+                    "totalMsg" => 150,
+                    "utility" => 100,
+                    "waFees" => 44
+                  }
+                ]
+              })
           }
-        end)
+      end)
 
-        {:ok, result} = PartnerAPI.get_app_usage(org.id, "2022-03-01", "2022-04-01")
-        assert hd(result)["incomingMsg"] == 172
+      {:ok, result} = PartnerAPI.get_app_usage(org.id, "2022-03-01", "2022-04-01")
+      assert hd(result)["incomingMsg"] == 172
     end
 
     test "enable template messaging for an app" do

@@ -142,10 +142,22 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
   object :daily_usage do
     field(:date, :string)
+    field(:cumulative_bill, :float)
+    field(:discount, :float)
+    field(:fep, :integer)
+    field(:ftc, :integer)
+    field(:gupshup_cap, :float)
+    field(:gupshup_fees, :float)
     field(:incoming_msg, :integer)
-    field(:outgoing_media_msg, :integer)
     field(:outgoing_msg, :integer)
+    field(:outgoing_media_msg, :integer)
+    field(:marketing, :integer)
+    field(:service, :integer)
+    field(:utility, :integer)
+    field(:template_msg, :integer)
+    field(:template_media_msg, :integer)
     field(:total_fees, :float)
+    field(:whatsapp_fees, :float)
     field(:total_msg, :integer)
   end
 
