@@ -1,0 +1,10 @@
+query dailyAppUsage($fromDate: Date!, $toDate: Date!) {
+  dailyAppUsage(fromDate: $fromDate, toDate: $toDate) {
+    cumulativeBill
+    gupshupFees
+    incomingMsg
+    outgoingMsg
+    templateMsg
+    totalFees
+  }
+}
