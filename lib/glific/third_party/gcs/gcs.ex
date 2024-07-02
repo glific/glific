@@ -17,6 +17,8 @@ defmodule Glific.GCS do
 
   alias Waffle.Storage.Google.CloudStorage
 
+  @endpoint "https://storage.googleapis.com/storage/v1/b"
+
   @doc """
   Fetch token for GCS
   """
@@ -175,6 +177,74 @@ defmodule Glific.GCS do
         {%Waffle.File{file_name: file_name}, "#{organization_id}"},
         opts
       )
+    end
+  end
+
+  @spec bucket_name(non_neg_integer()) :: String.t() | nil
+  defp bucket_name(org_id) do
+    case get_secrets(org_id) do
+      %{"bucket" => bucket} -> bucket
+      _ -> nil
+    end
+  end
+
+  @doc """
+  Enabling bucket logging for the specified organization
+  """
+  @spec enable_bucket_logs(non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
+  def enable_bucket_logs(org_id) do
+    case bucket_name(org_id) do
+      nil ->
+        Logger.error("Bucket name not found for organization ID: #{org_id}")
+        {:error, "Bucket name not found"}
+
+      bucket_name ->
+        log_bucket = "#{bucket_name}-logs"
+        log_object_prefix = "log_object_prefix"
+
+        case do_enable_bucket_logs(bucket_name, log_bucket, log_object_prefix) do
+          {:ok, _result} ->
+            Logger.info("Bucket logging enabled successfully for bucket: #{bucket_name}")
+            {:ok, "Bucket logging enabled successfully"}
+
+          {:error, error} ->
+            Logger.error(
+              "Failed to enable bucket logging for bucket: #{bucket_name}. Error: #{inspect(error)}"
+            )
+
+            {:error, error}
+        end
+    end
+  end
+
+  @spec do_enable_bucket_logs(String.t(), String.t(), String.t()) ::
+          {:ok, any()} | {:error, any()}
+  defp do_enable_bucket_logs(bucket_name, log_bucket, log_object_prefix) do
+    url = "#{@endpoint}/#{bucket_name}"
+
+    body = %{
+      "logging" => %{
+        "logBucket" => log_bucket,
+        "logObjectPrefix" => log_object_prefix
+      }
+    }
+
+    middleware = [
+      Tesla.Middleware.JSON,
+      {Tesla.Middleware.Headers, [{"Content-Type", "application/json"}]}
+    ]
+
+    client = Tesla.client(middleware)
+
+    case Tesla.patch(client, url, body) do
+      {:ok, %Tesla.Env{status: 200, body: response_body}} ->
+        {:ok, response_body}
+
+      {:ok, %Tesla.Env{status: status_code, body: response_body}} ->
+        {:error, %{status_code: status_code, body: response_body}}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 end
