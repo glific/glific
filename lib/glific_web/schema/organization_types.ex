@@ -140,6 +140,27 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:updated_at, :datetime)
   end
 
+  object :daily_usage do
+    field(:date, :string)
+    field(:cumulative_bill, :float)
+    field(:discount, :float)
+    field(:fep, :integer)
+    field(:ftc, :integer)
+    field(:gupshup_cap, :float)
+    field(:gupshup_fees, :float)
+    field(:incoming_msg, :integer)
+    field(:outgoing_msg, :integer)
+    field(:outgoing_media_msg, :integer)
+    field(:marketing, :integer)
+    field(:service, :integer)
+    field(:utility, :integer)
+    field(:template_msg, :integer)
+    field(:template_media_msg, :integer)
+    field(:total_fees, :float)
+    field(:whatsapp_fees, :float)
+    field(:total_msg, :integer)
+  end
+
   @desc "Filtering options for organizations"
   input_object :organization_filter do
     @desc "Match the shortcode"
@@ -316,6 +337,14 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       resolve(fn _, _, _ ->
         {:ok, OrganizationStatus.__enum_map__()}
       end)
+    end
+
+    @desc "Get daily app usage"
+    field :daily_app_usage, list_of(:daily_usage) do
+      arg(:from_date, non_null(:date))
+      arg(:to_date, non_null(:date))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Partners.get_app_usage/3)
     end
   end
 
