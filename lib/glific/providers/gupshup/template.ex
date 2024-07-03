@@ -58,14 +58,19 @@ defmodule Glific.Providers.Gupshup.Template do
              Map.delete(body, :media_url),
              Map.get(attrs, :allow_template_category_change, true)
            ) do
+        # IO.puts("hello world")
+        # IO.inspect(%{"template" => template})
       attrs
       |> Map.merge(%{
         number_parameters: Templates.template_parameters_count(attrs),
         uuid: template["id"],
         bsp_id: template["id"],
         status: template["status"],
+        bsp_category: template["bsp_category"],
         is_active: template["status"] == "APPROVED"
       })
+      # |> IO.inspect()
+
       |> append_buttons(attrs)
       |> Templates.do_create_session_template()
       |> tap(fn _resp -> PartnerAPI.delete_local_resource(body[:media_url], attrs.shortcode) end)
