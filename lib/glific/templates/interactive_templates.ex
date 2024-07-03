@@ -841,11 +841,11 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   @spec build_item_rows(map(), list(String.t())) :: list()
-  def build_item_rows(translations, language_codes) do
+  defp build_item_rows(translations, language_codes) do
     Enum.reduce(language_codes, [], fn code, acc ->
       items = Map.get(translations[code] || %{}, "items", [])
 
-      unless items == [] do
+      if items != [] do
         rows =
           Enum.flat_map(1..length(items), fn item_index ->
             item = Enum.at(items, item_index - 1)
