@@ -24,8 +24,7 @@ defmodule Glific.Templates.SessionTemplate do
           status: String.t() | nil,
           is_hsm: boolean(),
           number_parameters: non_neg_integer | nil,
-          category: String.t() | nil,
-          bsp_category: String.t() | nil,
+          category: String.t() | nil, #bsp_category: String.t() | nil, quality: String.t() | nil,
           example: String.t() | nil,
           is_source: boolean(),
           is_active: boolean(),
@@ -71,14 +70,14 @@ defmodule Glific.Templates.SessionTemplate do
     :uuid,
     :translations,
     :status,
-    :category,
-    :bsp_category,
+    :category,# :bsp_category,
     :example,
     :has_buttons,
     :button_type,
     :buttons,
     :bsp_id,
-    :reason
+    :reason,
+    :quality
   ]
 
   schema "session_templates" do
