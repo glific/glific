@@ -793,7 +793,9 @@ defmodule Glific.Templates.InteractiveTemplates do
   defp generate_csv_data(template) do
     translations = template.translations
     type = template.interactive_content["type"]
-    language_codes = Map.keys(translations)
+    org_language = Settings.get_language_code(template.organization_id)
+    values = Enum.map(org_language, fn {_k, v} -> v end)
+    language_codes = get_language_codes(values)
 
     csv_data =
       case type do
@@ -825,38 +827,63 @@ defmodule Glific.Templates.InteractiveTemplates do
       [
         "GlobalButtonTitle"
         | Enum.map(language_codes, fn code ->
-            translations[code]["globalButtons"] |> hd() |> Map.get("title")
+            translations
+            |> Map.get(code, %{})
+            |> Map.get("globalButtons", [])
+            |> case do
+              [] -> %{}
+              [first | _] -> first
+            end
+            |> Map.get("title", "")
           end)
       ]
     ] ++ build_item_rows(translations, language_codes)
   end
 
   @spec build_item_rows(map(), list(String.t())) :: list()
-  defp build_item_rows(translations, language_codes) do
-    items = translations[Enum.at(language_codes, 0)]["items"]
+  def build_item_rows(translations, language_codes) do
+    Enum.reduce(language_codes, [], fn code, acc ->
+      items = Map.get(translations[code] || %{}, "items", [])
 
-    Enum.flat_map(1..length(items), fn item_index ->
-      item = Enum.at(items, item_index - 1)
+      unless items == [] do
+        rows =
+          Enum.flat_map(1..length(items), fn item_index ->
+            item = Enum.at(items, item_index - 1)
 
-      item_title_row = [
-        "ItemTitle #{item_index}"
-        | Enum.map(language_codes, fn code ->
-            (translations[code]["items"] |> Enum.at(item_index - 1))["title"]
+            item_title_row = [
+              "ItemTitle #{item_index}"
+              | Enum.map(language_codes, fn code ->
+                  translations
+                  |> Map.get(code, %{})
+                  |> Map.get("items", [])
+                  |> Enum.at(item_index - 1, %{})
+                  |> Map.get("title", "")
+                end)
+            ]
+
+            item_subtitle_row = [
+              "ItemSubtitle #{item_index}"
+              | Enum.map(language_codes, fn code ->
+                  translations
+                  |> Map.get(code, %{})
+                  |> Map.get("items", [])
+                  |> Enum.at(item_index - 1, %{})
+                  |> Map.get("subtitle", "")
+                end)
+            ]
+
+            option_rows =
+              build_option_rows(translations, language_codes, item["options"], item_index)
+
+            [item_title_row, item_subtitle_row | option_rows]
           end)
-      ]
 
-      item_subtitle_row = [
-        "ItemSubtitle #{item_index}"
-        | Enum.map(language_codes, fn code ->
-            (translations[code]["items"] |> Enum.at(item_index - 1))["subtitle"]
-          end)
-      ]
-
-      option_rows =
-        build_option_rows(translations, language_codes, item["options"], item_index)
-
-      [item_title_row, item_subtitle_row | option_rows]
+        acc ++ rows
+      else
+        acc
+      end
     end)
+    |> Enum.uniq()
   end
 
   @spec build_option_rows(
@@ -873,17 +900,26 @@ defmodule Glific.Templates.InteractiveTemplates do
       option_title_row = [
         "OptionTitle #{item_index}.#{option_index}"
         | Enum.map(language_codes, fn code ->
-            ((translations[code]["items"] |> Enum.at(item_index - 1))["options"]
-             |> Enum.at(option_index - 1))["title"]
+            translations
+            |> Map.get(code, %{})
+            |> Map.get("items", [])
+            |> Enum.at(item_index - 1, %{})
+            |> Map.get("options", [])
+            |> Enum.at(option_index - 1, %{})
+            |> Map.get("title", "")
           end)
       ]
 
       option_description_row = [
         "OptionDescription #{item_index}.#{option_index}"
         | Enum.map(language_codes, fn code ->
-            ((translations[code]["items"]
-              |> Enum.at(item_index - 1))["options"]
-             |> Enum.at(option_index - 1))["description"]
+            translations
+            |> Map.get(code, %{})
+            |> Map.get("items", [])
+            |> Enum.at(item_index - 1, %{})
+            |> Map.get("options", [])
+            |> Enum.at(option_index - 1, %{})
+            |> Map.get("description", "")
           end)
       ]
 
@@ -901,7 +937,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec build_quick_reply_csv_body(map(), list(String.t())) :: list()
   defp build_quick_reply_csv_body(translations, language_codes) do
     caption_row =
-      if Map.has_key?(translations[hd(language_codes)]["content"], "caption") do
+      if Map.has_key?(translations[hd(language_codes)]["content"] || %{}, "caption") do
         [
           [
             "Footer"
@@ -933,13 +969,21 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   @spec build_quick_reply_options(map(), list(String.t())) :: list()
   defp build_quick_reply_options(translations, language_codes) do
-    options_length = translations[Enum.at(language_codes, 0)]["options"] |> length()
+    options_length =
+      translations
+      |> Map.get(Enum.at(language_codes, 0), %{})
+      |> Map.get("options", [])
+      |> length()
 
     Enum.map(1..options_length, fn option_index ->
       [
         "OptionTitle #{option_index}"
         | Enum.map(language_codes, fn code ->
-            (translations[code]["options"] |> Enum.at(option_index - 1))["title"]
+            translations
+            |> Map.get(code, %{})
+            |> Map.get("options", [])
+            |> Enum.at(option_index - 1, %{})
+            |> Map.get("title", "")
           end)
       ]
     end)
@@ -957,11 +1001,21 @@ defmodule Glific.Templates.InteractiveTemplates do
     [
       [
         "Action"
-        | Enum.map(language_codes, fn code -> translations[code]["action"] |> Map.get("name") end)
+        | Enum.map(language_codes, fn code ->
+            translations
+            |> Map.get(code, %{})
+            |> Map.get("action", %{})
+            |> Map.get("name", "")
+          end)
       ],
       [
         "Body"
-        | Enum.map(language_codes, fn code -> translations[code]["body"] |> Map.get("text") end)
+        | Enum.map(language_codes, fn code ->
+            translations
+            |> Map.get(code, %{})
+            |> Map.get("body", %{})
+            |> Map.get("text", "")
+          end)
       ]
     ]
   end
@@ -1017,7 +1071,7 @@ defmodule Glific.Templates.InteractiveTemplates do
           create_translated_template(content, header, combined_translations)
 
         lang_code = Enum.at(language_codes, idx)
-        Map.put(acc, Integer.to_string(lang_code), translated_template)
+        Map.put(acc, lang_code, translated_template)
       end)
     else
       Enum.reduce(lang_index, %{}, fn {_lang, idx}, acc ->
@@ -1028,7 +1082,7 @@ defmodule Glific.Templates.InteractiveTemplates do
           create_translated_template(content, header, remaining_translations)
 
         lang_code = Enum.at(language_codes, idx)
-        Map.put(acc, Integer.to_string(lang_code), translated_template)
+        Map.put(acc, lang_code, translated_template)
       end)
     end
   end
@@ -1060,7 +1114,7 @@ defmodule Glific.Templates.InteractiveTemplates do
       }
 
       lang_code = Enum.at(language_codes, idx)
-      Map.put(acc, Integer.to_string(lang_code), translated_template)
+      Map.put(acc, lang_code, translated_template)
     end)
   end
 
@@ -1083,13 +1137,18 @@ defmodule Glific.Templates.InteractiveTemplates do
       }
 
       lang_code = Enum.at(language_codes, idx)
-      Map.put(acc, Integer.to_string(lang_code), translated_template)
+      Map.put(acc, lang_code, translated_template)
     end)
   end
 
   @spec get_language_codes(list(String.t())) :: list()
   defp get_language_codes(language_name) do
     language_map = Settings.locale_id_map()
-    Enum.map(language_name, fn code -> Map.get(language_map, code) end)
+
+    Enum.map(language_name, fn code ->
+      language_map
+      |> Map.get(code)
+      |> Integer.to_string()
+    end)
   end
 end

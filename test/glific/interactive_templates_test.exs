@@ -754,14 +754,14 @@ defmodule Glific.InteractiveTemplatesTest do
       Fixtures.interactive_fixture(Map.merge(@valid_list_attrs, attrs))
 
     list_export_data = """
-    Attribute,en
-    Title,glific
-    Body,How was your experience with Glific?
-    GlobalButtonTitle,Glific Features
-    ItemTitle 1,Excitement level
-    ItemSubtitle 1,Excitement level
-    OptionTitle 1.1,Great
-    OptionDescription 1.1,Awesome
+    Attribute,en,hi
+    Title,glific,
+    Body,How was your experience with Glific?,
+    GlobalButtonTitle,Glific Features,
+    ItemTitle 1,Excitement level,
+    ItemSubtitle 1,Excitement level,
+    OptionTitle 1.1,Great,
+    OptionDescription 1.1,Awesome,
     """
 
     {:ok, %{export_data: export_data}} =
@@ -774,12 +774,12 @@ defmodule Glific.InteractiveTemplatesTest do
       Fixtures.interactive_fixture(Map.merge(@valid_footer_attrs, attrs))
 
     expected_export_data = """
-    Attribute,en
-    Footer,caption is footer
-    Header,Glific Features
-    Text,How was your experience with Glific?
-    OptionTitle 1,Great
-    OptionTitle 2,Awesome
+    Attribute,en,hi
+    Footer,caption is footer,
+    Header,Glific Features,
+    Text,How was your experience with Glific?,
+    OptionTitle 1,Great,
+    OptionTitle 2,Awesome,
     """
 
     {:ok, %{export_data: export_data}} =
