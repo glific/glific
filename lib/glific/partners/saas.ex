@@ -1,4 +1,4 @@
-defmodule Glific.Partners.Saas do
+  defmodule Glific.Partners.Saas do
   @moduledoc """
   Saas is the DB table that holds the various parameters we need to run the service.
   """
@@ -110,4 +110,4 @@ defmodule Glific.Partners.Saas do
     |> select([s], field(s, ^field))
     |> Repo.one!(skip_organization_id: true)
   end
-end
+  end
