@@ -824,66 +824,56 @@ defmodule Glific.Templates.InteractiveTemplates do
     [
       ["Title" | Enum.map(language_codes, fn code -> translations[code]["title"] end)],
       ["Body" | Enum.map(language_codes, fn code -> translations[code]["body"] end)],
-      [
-        "GlobalButtonTitle"
-        | Enum.map(language_codes, fn code ->
-            translations
-            |> Map.get(code, %{})
-            |> Map.get("globalButtons", [])
-            |> case do
-              [] -> %{}
-              [first | _] -> first
-            end
-            |> Map.get("title", "")
-          end)
-      ]
+      ["GlobalButtonTitle" | Enum.map(language_codes, &get_global_button_title(translations, &1))]
     ] ++ build_item_rows(translations, language_codes)
+  end
+
+  @spec get_global_button_title(map(), String.t()) :: String.t()
+  defp get_global_button_title(translations, code) do
+    translations
+    |> Map.get(code, %{})
+    |> Map.get("globalButtons", [])
+    |> case do
+      [] -> %{}
+      [first | _] -> first
+    end
+    |> Map.get("title", "")
   end
 
   @spec build_item_rows(map(), list(String.t())) :: list()
   defp build_item_rows(translations, language_codes) do
-    Enum.reduce(language_codes, [], fn code, acc ->
-      items = Map.get(translations[code] || %{}, "items", [])
+    main_items = Map.get(translations[hd(language_codes)] || %{}, "items", [])
 
-      if items != [] do
-        rows =
-          Enum.flat_map(1..length(items), fn item_index ->
-            item = Enum.at(items, item_index - 1)
+    Enum.flat_map(1..length(main_items), fn item_index ->
+      item = Enum.at(main_items, item_index - 1)
 
-            item_title_row = [
-              "ItemTitle #{item_index}"
-              | Enum.map(language_codes, fn code ->
-                  translations
-                  |> Map.get(code, %{})
-                  |> Map.get("items", [])
-                  |> Enum.at(item_index - 1, %{})
-                  |> Map.get("title", "")
-                end)
-            ]
-
-            item_subtitle_row = [
-              "ItemSubtitle #{item_index}"
-              | Enum.map(language_codes, fn code ->
-                  translations
-                  |> Map.get(code, %{})
-                  |> Map.get("items", [])
-                  |> Enum.at(item_index - 1, %{})
-                  |> Map.get("subtitle", "")
-                end)
-            ]
-
-            option_rows =
-              build_option_rows(translations, language_codes, item["options"], item_index)
-
-            [item_title_row, item_subtitle_row | option_rows]
+      item_title_row = [
+        "ItemTitle #{item_index}"
+        | Enum.map(language_codes, fn code ->
+            translations
+            |> Map.get(code, %{})
+            |> Map.get("items", [])
+            |> Enum.at(item_index - 1, %{})
+            |> Map.get("title", "")
           end)
+      ]
 
-        acc ++ rows
-      else
-        acc
-      end
+      item_subtitle_row = [
+        "ItemSubtitle #{item_index}"
+        | Enum.map(language_codes, fn code ->
+            translations
+            |> Map.get(code, %{})
+            |> Map.get("items", [])
+            |> Enum.at(item_index - 1, %{})
+            |> Map.get("subtitle", "")
+          end)
+      ]
+
+      option_rows =
+        build_option_rows(translations, language_codes, item["options"], item_index)
+
+      [item_title_row, item_subtitle_row | option_rows]
     end)
-    |> Enum.uniq()
   end
 
   @spec build_option_rows(
