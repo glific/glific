@@ -24,7 +24,8 @@ defmodule Glific.Templates.SessionTemplate do
           status: String.t() | nil,
           is_hsm: boolean(),
           number_parameters: non_neg_integer | nil,
-          category: String.t() | nil, #bsp_category: String.t() | nil, quality: String.t() | nil,
+          category: String.t() | nil,
+          quality: String.t() | nil,
           example: String.t() | nil,
           is_source: boolean(),
           is_active: boolean(),
@@ -86,6 +87,7 @@ defmodule Glific.Templates.SessionTemplate do
     field(:body, :string)
     field(:type, MessageType)
     field(:shortcode, :string)
+    field(:quality, :string)
 
     field(:status, :string)
     field(:is_hsm, :boolean, default: false)

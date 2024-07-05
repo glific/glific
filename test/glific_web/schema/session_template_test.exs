@@ -91,6 +91,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     {:ok, %{data: %{"syncHSMTemplate" => %{"message" => message}}}} =
       auth_query_gql_by(:sync, user)
 
+
     {:ok, updated_hsm} =
       Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid, organization_id: user.organization_id})
 
@@ -468,4 +469,41 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     assert allow_template_change == true
   end
+end
+
+test "update a session template with quality field", %{manager: user} do
+
+  label = "Default Template Label"
+
+  {:ok, session_template} =
+    Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
+
+  language_id = session_template.language_id
+
+  result =
+    auth_query_gql_by(:create, user,
+      variables: %{
+        "input" => %{
+          "label" => "Test Label",
+          "body" => "Test Template",
+          "type" => "TEXT",
+          "languageId" => language_id,
+          "quality" => "High"
+        }
+      }
+    )
+
+
+
+  assert {:ok, query_data} = result
+  label = get_in(query_data, [:data, "updateSessionTemplate", "sessionTemplate", "label"])
+  assert label == "Test Label"
+
+  {:ok, updated_session_template} =
+    Repo.fetch_by(SessionTemplate, %{
+      id: session_template.id,
+      organization_id: user.organization_id
+    })
+
+  assert updated_session_template.quality == "High"
 end
