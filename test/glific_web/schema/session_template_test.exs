@@ -484,7 +484,7 @@ test "update a session template with quality field", %{manager: user} do
     auth_query_gql_by(:create, user,
       variables: %{
         "input" => %{
-          "label" => "Test Label",
+          "label" => "Test",
           "body" => "Test Template",
           "type" => "TEXT",
           "languageId" => language_id,
@@ -497,7 +497,7 @@ test "update a session template with quality field", %{manager: user} do
 
   assert {:ok, query_data} = result
   label = get_in(query_data, [:data, "updateSessionTemplate", "sessionTemplate", "label"])
-  assert label == "Test Label"
+  assert label == "Test"
 
   {:ok, updated_session_template} =
     Repo.fetch_by(SessionTemplate, %{
