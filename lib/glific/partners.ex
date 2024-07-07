@@ -901,7 +901,11 @@ defmodule Glific.Partners do
          {:ok, _} <- GCS.enable_bucket_logs(organization.id) do
       {:ok, credential}
     else
-      {:error, _error} -> {:error, "Invalid Credentials"}
+      {:error, %{body: %{"error" => %{"message" => message}}}} ->
+        {:error, message}
+
+      _ ->
+        {:error, "Invalid Credentials"}
     end
   end
 
