@@ -58,15 +58,13 @@ defmodule Glific.Providers.Gupshup.Template do
              Map.delete(body, :media_url),
              Map.get(attrs, :allow_template_category_change, true)
            ) do
-       
+
       attrs
       |> Map.merge(%{
         number_parameters: Templates.template_parameters_count(attrs),
         uuid: template["id"],
         bsp_id: template["id"],
         status: template["status"],
-        bsp_category: template["bsp_category"],
-        quality: template["quality"],
         is_active: template["status"] == "APPROVED"
       })
 

@@ -552,9 +552,9 @@ defmodule Glific.Templates do
     update_attrs =
       if current_template.status != template["status"] do
         change_template_status(template["status"], current_template, template)
-        |> Map.put(:category, template["category"]) |> Map.put(:quality, "abc123")
+        |> Map.put(:category, template["category"]) |> Map.put(:quality, template["quality"])
       else
-        %{status: template["status"], category: template["category"], quality: "abc123"}
+        %{status: template["status"], category: template["category"], quality: template["quality"]}
       end
 
 

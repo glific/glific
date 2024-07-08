@@ -71,7 +71,7 @@ defmodule Glific.Templates.SessionTemplate do
     :uuid,
     :translations,
     :status,
-    :category,# :bsp_category,
+    :category,
     :example,
     :has_buttons,
     :button_type,
