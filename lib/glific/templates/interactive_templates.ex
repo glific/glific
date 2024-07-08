@@ -842,7 +842,7 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   @spec build_item_rows(map(), list(String.t())) :: list()
   defp build_item_rows(translations, language_codes) do
-    # code is the language code of for which translation is present
+    # code is the language code for which translation is present
     code = Map.keys(translations) |> hd()
     items = Map.get(translations[code] || %{}, "items", [])
 
