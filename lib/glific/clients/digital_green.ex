@@ -435,14 +435,7 @@ defmodule Glific.Clients.DigitalGreen do
    Send template from expression
   """
   @spec send_template(String.t(), list()) :: binary
-  def send_template(uuid, variables) do
-    %{
-      uuid: uuid,
-      variables: variables,
-      expression: nil
-    }
-    |> Jason.encode!()
-  end
+  def send_template(uuid, variables), do: Glific.send_template(uuid, variables)
 
   @doc """
     Send media template from expression
