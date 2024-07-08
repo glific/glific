@@ -416,6 +416,9 @@ defmodule Glific.OpenAI.ChatGPT do
     |> Map.put_new("success", false)
   end
 
+  @doc """
+  update messages based on citation flag
+  """
   @spec remove_citation(map(), boolean()) :: map()
   def remove_citation(thread_messages, false), do: thread_messages
 
