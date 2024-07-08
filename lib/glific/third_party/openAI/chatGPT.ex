@@ -261,7 +261,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   API call to list messages of a thread
   """
-  @spec list_thread_messages(map()) :: map() | {:error, String.t()}
+  @spec list_thread_messages(map()) :: map()
   def list_thread_messages(params) do
     url = @endpoint <> "/threads/#{params.thread_id}/messages"
 
@@ -272,7 +272,7 @@ defmodule Glific.OpenAI.ChatGPT do
         |> get_last_msg()
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        %{"error" => "invalid response #{inspect(response)}"}
     end
   end
 
@@ -289,7 +289,8 @@ defmodule Glific.OpenAI.ChatGPT do
     %{
       "assistant_id" => last_msg["assistant_id"],
       "message" => get_in(content, ["text", "value"]),
-      "thread_id" => last_msg["thread_id"]
+      "thread_id" => last_msg["thread_id"],
+      "success" => true
     }
   end
 
@@ -318,9 +319,8 @@ defmodule Glific.OpenAI.ChatGPT do
   API call to retrieve a run and check status
   """
   @spec retrieve_run_and_wait(String.t(), String.t(), non_neg_integer()) :: map()
-  def retrieve_run_and_wait(thread_id, run_id, max_attempts \\ 10) do
-    retrieve_run_and_wait(thread_id, run_id, max_attempts, 0)
-  end
+  def retrieve_run_and_wait(thread_id, run_id, max_attempts \\ 10),
+    do: retrieve_run_and_wait(thread_id, run_id, max_attempts, 0)
 
   @spec retrieve_run_and_wait(String.t(), String.t(), non_neg_integer(), non_neg_integer()) ::
           map()
@@ -390,17 +390,18 @@ defmodule Glific.OpenAI.ChatGPT do
   Handling filesearch openai conversation, basically checks if a thread id is passed then continue appending followup questions else create a new thread, add message and run thread to generate response
   """
   @spec handle_conversation(map()) :: map()
-  def handle_conversation(%{thread_id: nil} = params) do
+  def handle_conversation(%{thread_id: nil, remove_citation: remove_citation} = params) do
     run_thread = create_and_run_thread(params)
     Process.sleep(4_000)
 
     retrieve_run_and_wait(run_thread["thread_id"], run_thread["id"], 10)
 
     list_thread_messages(%{thread_id: run_thread["thread_id"]})
-    |> Map.merge(%{"success" => false})
+    |> remove_citation(remove_citation)
+    |> Map.put_new("success", false)
   end
 
-  def handle_conversation(params) do
+  def handle_conversation(%{remove_citation: remove_citation} = params) do
     thread_id = validate_and_get_thread_id(params)
     Process.sleep(4_000)
 
@@ -411,6 +412,15 @@ defmodule Glific.OpenAI.ChatGPT do
     run_thread(%{thread_id: thread_id, assistant_id: params.assistant_id})
 
     list_thread_messages(%{thread_id: thread_id})
-    |> Map.merge(%{"success" => false})
+    |> remove_citation(remove_citation)
+    |> Map.put_new("success", false)
+  end
+
+  @spec remove_citation(map(), boolean()) :: map()
+  defp remove_citation(thread_messages, false), do: thread_messages
+
+  defp remove_citation(thread_messages, _true) do
+    cleaned_message = Regex.replace(~r/【\d+(:\d+)?+†source】/, thread_messages["message"], "")
+    Map.put(thread_messages, "message", cleaned_message)
   end
 end
