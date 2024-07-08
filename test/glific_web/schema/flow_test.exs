@@ -322,7 +322,12 @@ defmodule GlificWeb.Schema.FlowTest do
     result =
       auth_query_gql_by(:create, user,
         variables: %{
-          "input" => %{"name" => name, "keywords" => keywords, "description" => description, "is_template" => is_template}
+          "input" => %{
+            "name" => name,
+            "keywords" => keywords,
+            "description" => description,
+            "is_template" => is_template
+          }
         }
       )
 
