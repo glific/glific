@@ -842,36 +842,35 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   @spec build_item_rows(map(), list(String.t())) :: list()
   defp build_item_rows(translations, language_codes) do
-    Enum.flat_map(language_codes, fn code ->
-      items = Map.get(translations[code] || %{}, "items", [])
+    # code is the language code of for which translation is present
+    code = Map.keys(translations) |> hd()
+    items = Map.get(translations[code] || %{}, "items", [])
 
-      Enum.with_index(items, 1)
-      |> Enum.flat_map(fn {item, item_index} ->
-        item_title_row =
-          build_row(
-            "ItemTitle #{item_index}",
-            translations,
-            language_codes,
-            item_index,
-            &Map.get(&1, "title", "")
-          )
+    Enum.with_index(items, 1)
+    |> Enum.flat_map(fn {item, item_index} ->
+      item_title_row =
+        build_row(
+          "ItemTitle #{item_index}",
+          translations,
+          language_codes,
+          item_index,
+          &Map.get(&1, "title", "")
+        )
 
-        item_subtitle_row =
-          build_row(
-            "ItemSubtitle #{item_index}",
-            translations,
-            language_codes,
-            item_index,
-            &Map.get(&1, "subtitle", "")
-          )
+      item_subtitle_row =
+        build_row(
+          "ItemSubtitle #{item_index}",
+          translations,
+          language_codes,
+          item_index,
+          &Map.get(&1, "subtitle", "")
+        )
 
-        option_rows =
-          build_option_rows(translations, language_codes, item["options"] || [], item_index)
+      option_rows =
+        build_option_rows(translations, language_codes, item["options"] || [], item_index)
 
-        [item_title_row, item_subtitle_row | option_rows]
-      end)
+      [item_title_row, item_subtitle_row | option_rows]
     end)
-    |> Enum.uniq()
   end
 
   @spec build_row(
@@ -903,8 +902,6 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   defp build_option_rows(translations, language_codes, options, item_index) do
     Enum.flat_map(1..length(options), fn option_index ->
-      _option = Enum.at(options, option_index - 1)
-
       option_title_row = [
         "OptionTitle #{item_index}.#{option_index}"
         | Enum.map(language_codes, fn code ->
