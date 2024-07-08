@@ -219,8 +219,17 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("nmt_tts_with_bhasini", fields) do
     text = fields["text"]
     org_id = fields["organization_id"]
-    source_language = Map.get(fields, "source_language", nil)
-    target_language = Map.get(fields, "target_language", nil)
+
+    source_language =
+      fields
+      |> Map.get("source_language", nil)
+      |> then(&if(!is_nil(&1), do: String.downcase(&1)))
+
+    target_language =
+      fields
+      |> Map.get("target_language", nil)
+      |> then(&if(!is_nil(&1), do: String.downcase(&1)))
+
     organization = Glific.Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
 
