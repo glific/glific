@@ -58,7 +58,6 @@ defmodule Glific.Providers.Gupshup.Template do
              Map.delete(body, :media_url),
              Map.get(attrs, :allow_template_category_change, true)
            ) do
-
       attrs
       |> Map.merge(%{
         number_parameters: Templates.template_parameters_count(attrs),
@@ -67,7 +66,6 @@ defmodule Glific.Providers.Gupshup.Template do
         status: template["status"],
         is_active: template["status"] == "APPROVED"
       })
-
       |> append_buttons(attrs)
       |> Templates.do_create_session_template()
       |> tap(fn _resp -> PartnerAPI.delete_local_resource(body[:media_url], attrs.shortcode) end)

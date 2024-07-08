@@ -74,14 +74,16 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
                   "modifiedOn" =>
                     DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
                   "status" => "APPROVED",
-                  "category" => "MARKETING"
+                  "category" => "MARKETING",
+                  "quality" => "UNKNOWN"
                 },
                 %{
                   "id" => hsm2.uuid,
                   "modifiedOn" =>
                     DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
                   "status" => "PENDING",
-                  "category" => "AUTHENTICATION"
+                  "category" => "AUTHENTICATION",
+                  "quality" => "HIGH"
                 }
               ]
             })
@@ -90,7 +92,6 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     {:ok, %{data: %{"syncHSMTemplate" => %{"message" => message}}}} =
       auth_query_gql_by(:sync, user)
-
 
     {:ok, updated_hsm} =
       Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid, organization_id: user.organization_id})
@@ -101,6 +102,8 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert message == "successful"
     assert updated_hsm.category == "MARKETING"
     assert updated_hsm2.category == "AUTHENTICATION"
+    assert updated_hsm.quality == "UNKNOWN"
+    assert updated_hsm2.quality == "HIGH"
   end
 
   test "sync hsm with bsp if it doesn't establish a connection with gupshup test", %{
@@ -469,41 +472,4 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     assert allow_template_change == true
   end
-end
-
-test "update a session template with quality field", %{manager: user} do
-
-  label = "Default Template Label"
-
-  {:ok, session_template} =
-    Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
-
-  language_id = session_template.language_id
-
-  result =
-    auth_query_gql_by(:create, user,
-      variables: %{
-        "input" => %{
-          "label" => "Test",
-          "body" => "Test Template",
-          "type" => "TEXT",
-          "languageId" => language_id,
-          "quality" => "High"
-        }
-      }
-    )
-
-
-
-  assert {:ok, query_data} = result
-  label = get_in(query_data, [:data, "updateSessionTemplate", "sessionTemplate", "label"])
-  assert label == "Test"
-
-  {:ok, updated_session_template} =
-    Repo.fetch_by(SessionTemplate, %{
-      id: session_template.id,
-      organization_id: user.organization_id
-    })
-
-  assert updated_session_template.quality == "High"
 end
