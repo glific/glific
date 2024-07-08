@@ -113,20 +113,14 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec create_interactive_template(map()) ::
           {:ok, InteractiveTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_interactive_template(attrs) do
-    case validate_translated_contents(attrs.translations) do
+    case validate_interactive_content_length(attrs) do
       :ok ->
-        case validate_interactive_content_length(attrs) do
-          :ok ->
-            %InteractiveTemplate{}
-            |> InteractiveTemplate.changeset(attrs)
-            |> Repo.insert()
+        %InteractiveTemplate{}
+        |> InteractiveTemplate.changeset(attrs)
+        |> Repo.insert()
 
-          {:error, message} ->
-            {:error, message}
-        end
-
-      {:error, languages} ->
-        {:error, "Content length exceeding in languages: #{Enum.join(languages, ", ")}"}
+      {:error, message} ->
+        {:error, message}
     end
   end
 
@@ -199,75 +193,6 @@ defmodule Glific.Templates.InteractiveTemplates do
     interactive
     |> InteractiveTemplate.changeset(attrs)
     |> Repo.update()
-  end
-
-  @spec validate_translated_contents(map()) :: :ok | {:error, list(String.t())}
-  def validate_translated_contents(translated_contents) do
-    errors = Enum.reduce(translated_contents, [], fn {language_id, content}, acc ->
-      if validate_total_content_length(content) and validate_interactive_content_fields(content) do
-        acc
-      else
-        [language_id | acc]
-      end
-    end)
-
-    if errors == [] do
-      :ok
-    else
-      language_names = get_language_names_from_id(errors)
-      {:error, language_names}
-    end
-  end
-
-  @spec validate_total_content_length(map()) :: boolean()
-  defp validate_total_content_length(content) do
-    calculate_total_length(content) <= 1024
-  end
-
-  @spec validate_interactive_content_fields(map()) :: boolean()
-  defp validate_interactive_content_fields(%{"content" => content, "options" => options}) do
-    validate_field_length(content["header"], 60) and
-    validate_field_length(content["text"], 1024) and
-    Enum.all?(options, &validate_field_length(&1["title"], 20))
-  end
-
-  defp validate_interactive_content_fields(%{"body" => body, "globalButtons" => global_buttons, "items" => items}) do
-    validate_field_length(body, 60) and
-    Enum.all?(global_buttons, &validate_field_length(&1["title"], 20)) and
-    Enum.all?(items, fn item ->
-      validate_field_length(item["title"], 24) and
-      validate_field_length(item["subtitle"], 24) and
-      Enum.all?(item["options"], &validate_field_length(&1["title"], 24))
-    end)
-  end
-
-  defp validate_interactive_content_fields(%{"body" => body, "action" => action}) do
-    validate_field_length(body["text"], 1024) and
-    validate_field_length(action["button"], 20)
-  end
-
-  defp validate_interactive_content_fields(_), do: true
-
-  @spec validate_field_length(String.t() | nil, integer() | nil) :: boolean()
-  defp validate_field_length(nil, _), do: true
-  defp validate_field_length(_, nil), do: true
-  defp validate_field_length(field, max_length) when is_binary(field) and is_integer(max_length) do
-    case field do
-      _ -> byte_size(field) <= max_length
-    end
-  end
-
-  @spec get_language_names_from_id(list(String.t() | integer())) :: list(String.t())
-  defp get_language_names_from_id(language_ids) do
-    language_ids = Enum.map(language_ids, &String.to_integer/1)
-    language_map = Settings.get_language_map()
-
-    Enum.map(language_ids, fn id ->
-      case Map.get(language_map, id) do
-        %{label: label} -> label
-        _ -> Integer.to_string(id)
-      end
-    end)
   end
 
   @doc """
@@ -542,7 +467,114 @@ defmodule Glific.Templates.InteractiveTemplates do
         label
       )
 
-    update_interactive_template(interactive_template, %{translations: translated_contents})
+    case trim_contents_with_error(translated_contents) do
+      {:ok, trimmed_contents} ->
+        update_interactive_template(interactive_template, %{translations: trimmed_contents})
+        # {:ok, interactive_template}
+
+      {:error, error_message, trimmed_contents} ->
+        {:error, error_message}
+        update_interactive_template(interactive_template, %{translations: trimmed_contents})
+    end
+  end
+
+  defp trim_contents_with_error(nil), do: {:ok, %{}}
+
+  defp trim_contents_with_error(translated_contents) do
+    {trimmed_contents, trimmed_languages} =
+      Enum.reduce(translated_contents, {%{}, []}, fn {language_id, content}, {acc_contents, acc_languages} ->
+        trimmed_content = trim_content(content)
+
+        if trimmed_content != content do
+          {Map.put(acc_contents, language_id, trimmed_content), [language_id | acc_languages]}
+        else
+          {Map.put(acc_contents, language_id, trimmed_content), acc_languages}
+        end
+      end)
+
+    if trimmed_languages == [] do
+      {:ok, trimmed_contents}
+    else
+      language_names = get_language_names_from_id(trimmed_languages)
+      error_message = "Trimming done for the following languages: #{Enum.join(language_names, ", ")}"
+      {:error, error_message, trimmed_contents}
+    end
+  end
+
+  defp trim_content(%{"content" => content, "options" => options} = map) do
+    %{
+      map
+      | "content" => %{
+          content
+          | "header" => trim_field(content["header"], 60),
+            "text" => trim_field(content["text"], 1024)
+        },
+        "options" => Enum.map(options, &Map.put(&1, "title", trim_field(&1["title"], 20)))
+    }
+  end
+
+  defp trim_content(%{"body" => body, "globalButtons" => global_buttons, "items" => items} = map) do
+    %{
+      map
+      | "body" => trim_field(body, 60),
+        "globalButtons" => Enum.map(global_buttons, &Map.put(&1, "title", trim_field(&1["title"], 20))),
+        "items" => Enum.map(items, fn item ->
+          %{
+            item
+            | "title" => trim_field(item["title"], 24),
+              "subtitle" => trim_field(item["subtitle"], 24),
+              "options" => Enum.map(item["options"], fn option ->
+                %{
+                  option
+                  | "title" => trim_field(option["title"], 24),
+                    "description" => trim_field(option["description"], 72)
+                }
+              end)
+          }
+        end)
+    }
+  end
+
+  defp trim_content(%{"body" => body, "action" => action} = map) do
+    %{
+      map
+      | "body" => %{"text" => trim_field(body["text"], 1024)},
+        "action" => %{"button" => trim_field(action["button"], 20)}
+    }
+  end
+
+  defp trim_content(map), do: map
+
+  @spec trim_field(String.t() | nil, integer()) :: String.t() | nil
+  defp trim_field(nil, _), do: nil
+  defp trim_field(field, max_length) when is_binary(field) and is_integer(max_length) do
+    if byte_size(field) > max_length do
+      field
+      |> String.codepoints()
+      |> Enum.reduce_while("", fn char, acc ->
+        new_acc = acc <> char
+        if byte_size(new_acc) > max_length do
+          {:halt, acc}
+        else
+          {:cont, new_acc}
+        end
+      end)
+    else
+      field
+    end
+  end
+
+  @spec get_language_names_from_id(list(String.t() | integer())) :: list(String.t())
+  defp get_language_names_from_id(language_ids) do
+    language_ids = Enum.map(language_ids, &String.to_integer/1)
+    language_map = Settings.get_language_map()
+
+    Enum.map(language_ids, fn id ->
+      case Map.get(language_map, id) do
+        %{label: label} -> label
+        _ -> Integer.to_string(id)
+      end
+    end)
   end
 
   @spec translate_interactive_content(
