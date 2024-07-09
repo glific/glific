@@ -192,19 +192,17 @@ defmodule Glific.Templates.InteractiveTemplates do
   def update_interactive_template(%InteractiveTemplate{} = interactive, attrs) do
     translations = Map.get(attrs, :translations, interactive.translations)
 
-    case trim_contents_with_error(translations) do
-      {:ok, message, trimmed_contents} ->
-        updated_attrs = Map.put(attrs, :translations, trimmed_contents)
+    {:ok, message, trimmed_contents} = trim_contents_with_error(translations)
+    updated_attrs = Map.put(attrs, :translations, trimmed_contents)
 
-        case interactive
-             |> InteractiveTemplate.changeset(updated_attrs)
-             |> Repo.update() do
-          {:ok, updated_interactive} ->
-            {:ok, updated_interactive, message}
+    case interactive
+         |> InteractiveTemplate.changeset(updated_attrs)
+         |> Repo.update() do
+      {:ok, updated_interactive} ->
+        {:ok, updated_interactive, message}
 
-          {:error, changeset} ->
-            {:error, changeset}
-        end
+      {:error, changeset} ->
+        {:error, changeset}
     end
   end
 
