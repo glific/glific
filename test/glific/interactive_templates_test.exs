@@ -372,12 +372,11 @@ defmodule Glific.InteractiveTemplatesTest do
     } do
       interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
 
-      assert {:ok, %InteractiveTemplate{} = interactive, message} =
+      assert {:ok, %InteractiveTemplate{} = interactive, _message} =
                InteractiveTemplates.update_interactive_template(interactive, @update_attrs)
 
       assert interactive.label == "Updated Quick Reply label"
       assert interactive.type == :quick_reply
-      assert message == "updated successfully"
     end
 
     test "update_interactive_template/2 with invalid data returns error changeset", %{

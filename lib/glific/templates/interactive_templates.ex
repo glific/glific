@@ -209,7 +209,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   @spec trim_contents_with_error(map()) ::
-          {:ok, String.t(), map()} | {:error, String.t(), map()}
+          {:ok, String.t() | nil, map()} | {:error, String.t(), map()}
   defp trim_contents_with_error(translated_contents) do
     {processed_content, languages_with_trimming} =
       Enum.reduce(translated_contents, {%{}, []}, fn {language_id, content},
@@ -224,8 +224,7 @@ defmodule Glific.Templates.InteractiveTemplates do
       end)
 
     if languages_with_trimming == [] do
-      message = "updated successfully"
-      {:ok, message, processed_content}
+      {:ok, nil, processed_content}
     else
       language_names = get_language_names_from_id(languages_with_trimming)
 
