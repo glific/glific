@@ -22,7 +22,7 @@ defmodule Glific.Gigalixir do
     body = %{"fqdn" => domain}
 
     case post("/", Jason.encode!(body)) do
-      {:ok, %Tesla.Env{status: 201} = resp} ->
+      {:ok, %Tesla.Env{status: 201}} ->
         {:ok, "Domain successfully created!"}
       {:ok, %Tesla.Env{status: status, body: response_body}} when status >= 400 ->
         Logger.error("Failed with status: '#{status}': #{inspect(response_body)}")
