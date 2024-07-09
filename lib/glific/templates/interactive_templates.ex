@@ -271,11 +271,12 @@ defmodule Glific.Templates.InteractiveTemplates do
     }
   end
 
-  defp trim_content(%{"body" => body, "action" => action} = map) do
+  defp trim_content(%{"body" => body} = map) do
+    trimmed_body_text = trim_field(body["text"], 1024)
+
     %{
       map
-      | "body" => %{"text" => trim_field(body["text"], 1024)},
-        "action" => %{"button" => trim_field(action["button"], 20)}
+      | "body" => %{"text" => trimmed_body_text, "type" => body["type"]}
     }
   end
 
