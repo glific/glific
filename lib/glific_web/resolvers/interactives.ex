@@ -55,9 +55,9 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
   def update_interactive_template(_, %{id: id, input: params}, _) do
     with {:ok, interactive_template} <-
            InteractiveTemplates.fetch_interactive_template(id),
-         {:ok, interactive_template} <-
+         {:ok, interactive_template, message} <-
            InteractiveTemplates.update_interactive_template(interactive_template, params) do
-      {:ok, %{interactive_template: interactive_template}}
+      {:ok, %{interactive_template: interactive_template, message: message}}
     end
   end
 
@@ -110,9 +110,9 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
   def translate_interactive_template(_, %{id: id}, _) do
     with {:ok, interactive_template} <-
            InteractiveTemplates.fetch_interactive_template(id),
-         {:ok, interactive_template} <-
+         {:ok, interactive_template, message} <-
            InteractiveTemplates.translate_interactive_template(interactive_template) do
-      {:ok, %{interactive_template: interactive_template}}
+      {:ok, %{interactive_template: interactive_template, message: message}}
     end
   end
 
@@ -145,10 +145,10 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
         |> CSV.decode!()
         |> Enum.into([])
 
-      {:ok, interactive_template} =
+      {:ok, interactive_template, message} =
         InteractiveTemplates.import_interactive_template(data_list, interactive_template)
 
-      {:ok, %{interactive_template: interactive_template}}
+      {:ok, %{interactive_template: interactive_template, message: message}}
     end
   end
 end

@@ -188,11 +188,138 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   """
   @spec update_interactive_template(InteractiveTemplate.t(), map()) ::
-          {:ok, InteractiveTemplate.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, InteractiveTemplate.t(), String.t()} | {:error, Ecto.Changeset.t()}
   def update_interactive_template(%InteractiveTemplate{} = interactive, attrs) do
-    interactive
-    |> InteractiveTemplate.changeset(attrs)
-    |> Repo.update()
+    translations = Map.get(attrs, :translations, interactive.translations)
+
+    case trim_contents_with_error(translations) do
+      {:ok, trimmed_contents} ->
+        updated_attrs = Map.put(attrs, :translations, trimmed_contents)
+        message = "updated sucessfully"
+
+        case interactive
+             |> InteractiveTemplate.changeset(updated_attrs)
+             |> Repo.update() do
+          {:ok, updated_interactive} ->
+            {:ok, updated_interactive, message}
+        end
+
+      {:error, error_message, trimmed_contents} ->
+        updated_attrs = Map.put(attrs, :translations, trimmed_contents)
+
+        case interactive
+             |> InteractiveTemplate.changeset(updated_attrs)
+             |> Repo.update() do
+          {:ok, updated_interactive} ->
+            {:ok, updated_interactive, error_message}
+        end
+    end
+  end
+
+  defp trim_contents_with_error(translated_contents) do
+    {trimmed_contents, trimmed_languages} =
+      Enum.reduce(translated_contents, {%{}, []}, fn {language_id, content},
+                                                     {acc_contents, acc_languages} ->
+        trimmed_content = trim_content(content)
+
+        if trimmed_content != content do
+          {Map.put(acc_contents, language_id, trimmed_content), [language_id | acc_languages]}
+        else
+          {Map.put(acc_contents, language_id, trimmed_content), acc_languages}
+        end
+      end)
+
+    if trimmed_languages == [] do
+      {:ok, trimmed_contents}
+    else
+      language_names = get_language_names_from_id(trimmed_languages)
+
+      error_message =
+        "Trimming done for the following languages: #{Enum.join(language_names, ", ")}"
+
+      {:error, error_message, trimmed_contents}
+    end
+  end
+
+  defp trim_content(%{"content" => content, "options" => options} = map) do
+    %{
+      map
+      | "content" => %{
+          content
+          | "header" => trim_field(content["header"], 60),
+            "text" => trim_field(content["text"], 1024)
+        },
+        "options" => Enum.map(options, &Map.put(&1, "title", trim_field(&1["title"], 20)))
+    }
+  end
+
+  defp trim_content(%{"body" => body, "globalButtons" => global_buttons, "items" => items} = map) do
+    %{
+      map
+      | "body" => trim_field(body, 60),
+        "globalButtons" =>
+          Enum.map(global_buttons, &Map.put(&1, "title", trim_field(&1["title"], 20))),
+        "items" =>
+          Enum.map(items, fn item ->
+            %{
+              item
+              | "title" => trim_field(item["title"], 24),
+                "subtitle" => trim_field(item["subtitle"], 24),
+                "options" =>
+                  Enum.map(item["options"], fn option ->
+                    %{
+                      option
+                      | "title" => trim_field(option["title"], 24),
+                        "description" => trim_field(option["description"], 72)
+                    }
+                  end)
+            }
+          end)
+    }
+  end
+
+  defp trim_content(%{"body" => body, "action" => action} = map) do
+    %{
+      map
+      | "body" => %{"text" => trim_field(body["text"], 1024)},
+        "action" => %{"button" => trim_field(action["button"], 20)}
+    }
+  end
+
+  defp trim_content(map), do: map
+
+  @spec trim_field(String.t() | nil, integer()) :: String.t() | nil
+  defp trim_field(nil, _), do: nil
+
+  defp trim_field(field, max_length) when is_binary(field) and is_integer(max_length) do
+    if byte_size(field) > max_length do
+      field
+      |> String.codepoints()
+      |> Enum.reduce_while("", fn char, acc ->
+        new_acc = acc <> char
+
+        if byte_size(new_acc) > max_length do
+          {:halt, acc}
+        else
+          {:cont, new_acc}
+        end
+      end)
+    else
+      field
+    end
+  end
+
+  @spec get_language_names_from_id(list(String.t() | integer())) :: list(String.t())
+  defp get_language_names_from_id(language_ids) do
+    language_ids = Enum.map(language_ids, &String.to_integer/1)
+    language_map = Settings.get_language_map()
+
+    Enum.map(language_ids, fn id ->
+      case Map.get(language_map, id) do
+        %{label: label} -> label
+        _ -> Integer.to_string(id)
+      end
+    end)
   end
 
   @doc """
@@ -467,114 +594,7 @@ defmodule Glific.Templates.InteractiveTemplates do
         label
       )
 
-    case trim_contents_with_error(translated_contents) do
-      {:ok, trimmed_contents} ->
-        update_interactive_template(interactive_template, %{translations: trimmed_contents})
-        # {:ok, interactive_template}
-
-      {:error, error_message, trimmed_contents} ->
-        {:error, error_message}
-        update_interactive_template(interactive_template, %{translations: trimmed_contents})
-    end
-  end
-
-  defp trim_contents_with_error(nil), do: {:ok, %{}}
-
-  defp trim_contents_with_error(translated_contents) do
-    {trimmed_contents, trimmed_languages} =
-      Enum.reduce(translated_contents, {%{}, []}, fn {language_id, content}, {acc_contents, acc_languages} ->
-        trimmed_content = trim_content(content)
-
-        if trimmed_content != content do
-          {Map.put(acc_contents, language_id, trimmed_content), [language_id | acc_languages]}
-        else
-          {Map.put(acc_contents, language_id, trimmed_content), acc_languages}
-        end
-      end)
-
-    if trimmed_languages == [] do
-      {:ok, trimmed_contents}
-    else
-      language_names = get_language_names_from_id(trimmed_languages)
-      error_message = "Trimming done for the following languages: #{Enum.join(language_names, ", ")}"
-      {:error, error_message, trimmed_contents}
-    end
-  end
-
-  defp trim_content(%{"content" => content, "options" => options} = map) do
-    %{
-      map
-      | "content" => %{
-          content
-          | "header" => trim_field(content["header"], 60),
-            "text" => trim_field(content["text"], 1024)
-        },
-        "options" => Enum.map(options, &Map.put(&1, "title", trim_field(&1["title"], 20)))
-    }
-  end
-
-  defp trim_content(%{"body" => body, "globalButtons" => global_buttons, "items" => items} = map) do
-    %{
-      map
-      | "body" => trim_field(body, 60),
-        "globalButtons" => Enum.map(global_buttons, &Map.put(&1, "title", trim_field(&1["title"], 20))),
-        "items" => Enum.map(items, fn item ->
-          %{
-            item
-            | "title" => trim_field(item["title"], 24),
-              "subtitle" => trim_field(item["subtitle"], 24),
-              "options" => Enum.map(item["options"], fn option ->
-                %{
-                  option
-                  | "title" => trim_field(option["title"], 24),
-                    "description" => trim_field(option["description"], 72)
-                }
-              end)
-          }
-        end)
-    }
-  end
-
-  defp trim_content(%{"body" => body, "action" => action} = map) do
-    %{
-      map
-      | "body" => %{"text" => trim_field(body["text"], 1024)},
-        "action" => %{"button" => trim_field(action["button"], 20)}
-    }
-  end
-
-  defp trim_content(map), do: map
-
-  @spec trim_field(String.t() | nil, integer()) :: String.t() | nil
-  defp trim_field(nil, _), do: nil
-  defp trim_field(field, max_length) when is_binary(field) and is_integer(max_length) do
-    if byte_size(field) > max_length do
-      field
-      |> String.codepoints()
-      |> Enum.reduce_while("", fn char, acc ->
-        new_acc = acc <> char
-        if byte_size(new_acc) > max_length do
-          {:halt, acc}
-        else
-          {:cont, new_acc}
-        end
-      end)
-    else
-      field
-    end
-  end
-
-  @spec get_language_names_from_id(list(String.t() | integer())) :: list(String.t())
-  defp get_language_names_from_id(language_ids) do
-    language_ids = Enum.map(language_ids, &String.to_integer/1)
-    language_map = Settings.get_language_map()
-
-    Enum.map(language_ids, fn id ->
-      case Map.get(language_map, id) do
-        %{label: label} -> label
-        _ -> Integer.to_string(id)
-      end
-    end)
+    update_interactive_template(interactive_template, %{translations: translated_contents})
   end
 
   @spec translate_interactive_content(
