@@ -192,18 +192,14 @@ defmodule Glific.Templates.InteractiveTemplates do
   def update_interactive_template(%InteractiveTemplate{} = interactive, attrs) do
     translations = Map.get(attrs, :translations, interactive.translations)
 
-    case trim_contents_with_error(translations) do
-      {:ok, trimmed_contents} ->
-        updated_attrs = Map.put(attrs, :translations, trimmed_contents)
-        message = "updated sucessfully"
-
-        case interactive
-             |> InteractiveTemplate.changeset(updated_attrs)
-             |> Repo.update() do
-          {:ok, updated_interactive} ->
-            {:ok, updated_interactive, message}
-        end
-
+    with {:ok, trimmed_contents} <- trim_contents_with_error(translations),
+         updated_attrs = Map.put(attrs, :translations, trimmed_contents),
+         {:ok, updated_interactive} <-
+           interactive
+           |> InteractiveTemplate.changeset(updated_attrs)
+           |> Repo.update() do
+      {:ok, updated_interactive, "updated successfully"}
+    else
       {:error, error_message, trimmed_contents} ->
         updated_attrs = Map.put(attrs, :translations, trimmed_contents)
 
@@ -212,10 +208,18 @@ defmodule Glific.Templates.InteractiveTemplates do
              |> Repo.update() do
           {:ok, updated_interactive} ->
             {:ok, updated_interactive, error_message}
+
+          {:error, changeset} ->
+            {:error, changeset}
         end
+
+      {:error, changeset} ->
+        {:error, changeset}
     end
   end
 
+  @spec trim_contents_with_error(map()) ::
+          {:ok, map()} | {:error, String.t(), map()}
   defp trim_contents_with_error(translated_contents) do
     {trimmed_contents, trimmed_languages} =
       Enum.reduce(translated_contents, {%{}, []}, fn {language_id, content},
@@ -235,12 +239,13 @@ defmodule Glific.Templates.InteractiveTemplates do
       language_names = get_language_names_from_id(trimmed_languages)
 
       error_message =
-        "Trimming done for the following languages: #{Enum.join(language_names, ", ")}"
+        "Trimming has been done for the following languages due to exceeding character limits: #{Enum.join(language_names, ", ")}. Please verify the content before saving."
 
       {:error, error_message, trimmed_contents}
     end
   end
 
+  @spec trim_content(map()) :: map()
   defp trim_content(%{"content" => content, "options" => options} = map) do
     %{
       map
@@ -911,7 +916,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   def export_interactive_template(interactive_template, true) do
-    {:ok, translated_template} = translate_interactive_template(interactive_template)
+    {:ok, translated_template, _message} = translate_interactive_template(interactive_template)
     generate_csv_data(translated_template)
   end
 

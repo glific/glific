@@ -134,7 +134,7 @@ defmodule Glific.InteractiveTemplatesTest do
             "type" => "text"
           },
           "options" => [
-            %{"title" => "उत्कृष्ट", "type" => "text"},
+            %{"title" => "उत्कृष", "type" => "text"},
             %{"title" => "शानदार", "type" => "text"}
           ],
           "type" => "quick_reply"
@@ -169,15 +169,14 @@ defmodule Glific.InteractiveTemplatesTest do
       },
       translations: %{
         "1" => %{
-          "action" => %{"name" => "send_location"},
-          "body" => %{"text" => "please share your location", "type" => "text"},
+          "action" => %{"button" => nil},
+          "body" => %{"text" => "please share your location"},
           "type" => "location_request_message"
         },
         "2" => %{
-          "action" => %{"name" => "send_location"},
+          "action" => %{"button" => nil},
           "body" => %{
-            "text" => "कृपया अपना स्थान साझा करें",
-            "type" => "text"
+            "text" => "कृपया अपना स्थान साझा करें"
           },
           "type" => "location_request_message"
         }
@@ -272,12 +271,9 @@ defmodule Glific.InteractiveTemplatesTest do
           "type" => "list"
         },
         "2" => %{
-          "body" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?",
+          "body" => "ग्लिफ़िक त्वरित उत्तर ",
           "globalButtons" => [
-            %{
-              "title" => "शानदार विशेषताएं",
-              "type" => "text"
-            }
+            %{"title" => "शानदार ", "type" => "text"}
           ],
           "items" => [
             %{
@@ -288,8 +284,8 @@ defmodule Glific.InteractiveTemplatesTest do
                   "type" => "text"
                 }
               ],
-              "subtitle" => "उत्साह का स्तर",
-              "title" => "उत्साह का स्तर"
+              "subtitle" => "उत्साह क",
+              "title" => "उत्साह क"
             }
           ],
           "title" => "ग्लिफ़िक",
@@ -376,11 +372,12 @@ defmodule Glific.InteractiveTemplatesTest do
     } do
       interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
 
-      assert {:ok, %InteractiveTemplate{} = interactive} =
+      assert {:ok, %InteractiveTemplate{} = interactive, message} =
                InteractiveTemplates.update_interactive_template(interactive, @update_attrs)
 
       assert interactive.label == "Updated Quick Reply label"
       assert interactive.type == :quick_reply
+      assert message == "updated successfully"
     end
 
     test "update_interactive_template/2 with invalid data returns error changeset", %{
@@ -663,13 +660,16 @@ defmodule Glific.InteractiveTemplatesTest do
 
     result = InteractiveTemplates.translate_interactive_template(interactive)
 
-    assert {:ok, %InteractiveTemplate{translations: translations}} = result
+    assert {:ok, %InteractiveTemplate{translations: translations}, message} = result
 
     assert Map.has_key?(translations, "2")
     assert translations["2"]["content"]["text"] == "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"
     assert translations["2"]["content"]["header"] == "त्वरित उत्तर स्थिरता"
-    assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्षण 1" end)
-    assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्षण 2" end)
+    assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्ष" end)
+    assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्ष" end)
+
+    assert message ==
+             "Trimming has been done for the following languages due to exceeding character limits: Hindi. Please verify the content before saving."
   end
 
   test "export the interactive template when add translation is true",
@@ -683,7 +683,7 @@ defmodule Glific.InteractiveTemplatesTest do
     Attribute,en,hi
     Header,Quick Reply Test Text 2,त्वरित उत्तर स्थिरता
     Text,How was your experience with Glific?,ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?
-    OptionTitle 1,Great,उत्कृष्ट
+    OptionTitle 1,Great,उत्कृष
     OptionTitle 2,Awesome,शानदार
     """
 
@@ -698,7 +698,6 @@ defmodule Glific.InteractiveTemplatesTest do
 
     location_export_data = """
     Attribute,en,hi
-    Action,send_location,send_location
     Body,please share your location,कृपया अपना स्थान साझा करें
     """
 
@@ -806,7 +805,7 @@ defmodule Glific.InteractiveTemplatesTest do
         ["OptionDescription 1.1", "Awesome", "शानदार"]
       ]
 
-    {:ok, imported_temp} =
+    {:ok, imported_temp, _message} =
       InteractiveTemplates.import_interactive_template(translated_data, interactive)
 
     imported_translation = imported_temp.translations
@@ -828,7 +827,7 @@ defmodule Glific.InteractiveTemplatesTest do
       ["OptionTitle 2", "Awesome", "शानदार"]
     ]
 
-    {:ok, imported_temp} =
+    {:ok, imported_temp, _message} =
       InteractiveTemplates.import_interactive_template(translated_data, interactive)
 
     imported_translation = imported_temp.translations
@@ -847,8 +846,9 @@ defmodule Glific.InteractiveTemplatesTest do
       ["Body", "please share your location", "कृपया अपना स्थान साझा करें"]
     ]
 
-    {:ok, imported_temp} =
+    {:ok, imported_temp, _message} =
       InteractiveTemplates.import_interactive_template(translated_data, interactive)
+      |> IO.inspect()
 
     imported_translation = imported_temp.translations
 
