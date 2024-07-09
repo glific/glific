@@ -83,6 +83,12 @@ config :glific,
   notion_secret: env!("NOTION_SECRET", :string!, "This is not a secret")
 
 config :glific,
+  gigalixir_username: env!("GIGALIXIR_USERNAME", :string!, "vgull574@stanford.edu")
+
+config :glific,
+  gigalixir_api_key: env!("GIGALIXIR_API_KEY", :string!, "4f91902b-6d0f-4068-9f76-2c7916ff0b79")
+
+config :glific,
   bhasini_user_id: env!("BHASINI_USER_ID", :string!, "This is not a secret")
 
 config :glific,
