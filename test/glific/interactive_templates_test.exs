@@ -726,8 +726,7 @@ defmodule Glific.InteractiveTemplatesTest do
 
     export_data_trimmed =
       String.split(export_data, "\n")
-      |> Enum.map(&String.trim_trailing(&1))
-      |> Enum.join("\n")
+      |> Enum.map_join("\n", &String.trim_trailing/1)
 
     assert String.trim(export_data_trimmed) == String.trim(list_export_data)
 

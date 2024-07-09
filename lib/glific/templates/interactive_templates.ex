@@ -192,34 +192,24 @@ defmodule Glific.Templates.InteractiveTemplates do
   def update_interactive_template(%InteractiveTemplate{} = interactive, attrs) do
     translations = Map.get(attrs, :translations, interactive.translations)
 
-    with {:ok, trimmed_contents} <- trim_contents_with_error(translations),
-         updated_attrs = Map.put(attrs, :translations, trimmed_contents),
-         {:ok, updated_interactive} <-
-           interactive
-           |> InteractiveTemplate.changeset(updated_attrs)
-           |> Repo.update() do
-      {:ok, updated_interactive, "updated successfully"}
-    else
-      {:error, error_message, trimmed_contents} ->
+    case trim_contents_with_error(translations) do
+      {:ok, message, trimmed_contents} ->
         updated_attrs = Map.put(attrs, :translations, trimmed_contents)
 
         case interactive
              |> InteractiveTemplate.changeset(updated_attrs)
              |> Repo.update() do
           {:ok, updated_interactive} ->
-            {:ok, updated_interactive, error_message}
+            {:ok, updated_interactive, message}
 
           {:error, changeset} ->
             {:error, changeset}
         end
-
-      {:error, changeset} ->
-        {:error, changeset}
     end
   end
 
   @spec trim_contents_with_error(map()) ::
-          {:ok, map()} | {:error, String.t(), map()}
+          {:ok, String.t(), map()} | {:error, String.t(), map()}
   defp trim_contents_with_error(translated_contents) do
     {processed_content, languages_with_trimming} =
       Enum.reduce(translated_contents, {%{}, []}, fn {language_id, content},
@@ -234,14 +224,15 @@ defmodule Glific.Templates.InteractiveTemplates do
       end)
 
     if languages_with_trimming == [] do
-      {:ok, processed_content}
+      message = "updated successfully"
+      {:ok, message, processed_content}
     else
       language_names = get_language_names_from_id(languages_with_trimming)
 
-      error_message =
+      trimmed_message =
         "Trimming has been done for the following languages due to exceeding character limits: #{Enum.join(language_names, ", ")}. Please verify the content before saving."
 
-      {:error, error_message, processed_content}
+      {:ok, trimmed_message, processed_content}
     end
   end
 
