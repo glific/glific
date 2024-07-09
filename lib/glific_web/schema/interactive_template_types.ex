@@ -12,6 +12,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
 
   object :interactive_template_result do
     field :interactive_template, :interactive_template
+    field :message, :string
     field :errors, list_of(:input_error)
   end
 
