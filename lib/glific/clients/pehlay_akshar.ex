@@ -137,16 +137,7 @@ defmodule Glific.Clients.PehlayAkshar do
    Send template from expression from the flows
   """
   @spec send_template(String.t(), list()) :: binary
-  def send_template(uuid, variables) do
-    variables_list = Enum.map(variables, &to_string/1)
-
-    %{
-      uuid: uuid,
-      variables: variables_list,
-      expression: nil
-    }
-    |> Jason.encode!()
-  end
+  def send_template(uuid, variables), do: Glific.send_template(uuid, variables)
 
   defp fetch_template_uuid(template_label, organization_id) do
     Repo.fetch_by(SessionTemplate, %{

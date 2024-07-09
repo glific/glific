@@ -113,4 +113,28 @@ defmodule Glific.OpenAI.ChatGPTTest do
     assert last_message["message"] == "how  to get started with creating flow"
     assert last_message["thread_id"] == "thread_qlbXMrY8CsdLZwRdKnzr81eF"
   end
+
+  test "remove_citation/2 should remove citations from the GPT response" do
+    message =
+      "Childhood pregnancy can cause many problems for both the mother and the baby. Some of the issues include:\n\n1. Higher risk of complications during pregnancy and childbirth, such as anemia, high blood pressure, and premature birth【4:2†source】【4:5†source】.\n2. Increased chances of delivering low birth weight babies, which can lead to health problems for the baby【4:2†source】.\n3. Emotional and mental stress, which can affect both the mother and the baby's health【4:16†source】.\n4. Lack of proper nutrition and healthcare, which can impact the growth and development of the baby【4:12†source】.\n\nIt is important for young mothers to get proper medical care and support during pregnancy."
+
+    thread_message_params = %{
+      "assistant_id" => "asst_eFPyq1m3zcvm6VkPBSQYz4Np",
+      "message" => message,
+      "success" => true,
+      "thread_id" => "thread_3dhwQYN1xMATT1LsauUXNlYo"
+    }
+
+    cleaned_thread_params =
+      ChatGPT.remove_citation(thread_message_params, true)
+
+    assert cleaned_thread_params["message"] ==
+             "Childhood pregnancy can cause many problems for both the mother and the baby. Some of the issues include:\n\n1. Higher risk of complications during pregnancy and childbirth, such as anemia, high blood pressure, and premature birth.\n2. Increased chances of delivering low birth weight babies, which can lead to health problems for the baby.\n3. Emotional and mental stress, which can affect both the mother and the baby's health.\n4. Lack of proper nutrition and healthcare, which can impact the growth and development of the baby.\n\nIt is important for young mothers to get proper medical care and support during pregnancy."
+
+    # should return default message when remove_citation is set to false
+    cleaned_thread_params =
+      ChatGPT.remove_citation(thread_message_params, false)
+
+    assert cleaned_thread_params["message"] == message
+  end
 end
