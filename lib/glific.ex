@@ -414,6 +414,21 @@ defmodule Glific do
   def add_limit(args), do: Map.put(args, :opts, Map.put(%{}, :limit, 25))
 
   @doc """
+   Send template from expression from the flows
+  """
+  @spec send_template(String.t(), list()) :: binary
+  def send_template(uuid, variables) do
+    variables_list = Enum.map(variables, &to_string/1)
+
+    %{
+      uuid: uuid,
+      variables: variables_list,
+      expression: nil
+    }
+    |> Jason.encode!()
+  end
+
+  @doc """
   Get default OpenAI key
   """
   @spec get_open_ai_key() :: String.t()
