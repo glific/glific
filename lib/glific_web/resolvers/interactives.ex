@@ -51,7 +51,7 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
   @spec update_interactive_template(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
           context: map()
         }) ::
-          {:ok, any} | {:error, any}
+          {:ok, any, String.t()} | {:error, any}
   def update_interactive_template(_, %{id: id, input: params}, _) do
     with {:ok, interactive_template} <-
            InteractiveTemplates.fetch_interactive_template(id),
@@ -106,7 +106,7 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
   @spec translate_interactive_template(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
           context: map()
         }) ::
-          {:ok, any} | {:error, any}
+          {:ok, any, String.t()} | {:error, any}
   def translate_interactive_template(_, %{id: id}, _) do
     with {:ok, interactive_template} <-
            InteractiveTemplates.fetch_interactive_template(id),
@@ -133,7 +133,7 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
   import interactive template
   """
   @spec import_interactive_template(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
+          {:ok, %{interactive_template: any, message: String.t()}} | {:error, any}
   def import_interactive_template(_, %{translation: data, id: id}, _) do
     with {:ok, interactive_template} <-
            InteractiveTemplates.fetch_interactive_template(id) do

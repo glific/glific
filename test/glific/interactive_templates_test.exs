@@ -713,10 +713,10 @@ defmodule Glific.InteractiveTemplatesTest do
     list_export_data = """
     Attribute,en,hi
     Title,glific,ग्लिफ़िक
-    Body,How was your experience with Glific?,ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?
-    GlobalButtonTitle,Glific Features,शानदार विशेषताएं
-    ItemTitle 1,Excitement level,उत्साह का स्तर
-    ItemSubtitle 1,Excitement level,उत्साह का स्तर
+    Body,How was your experience with Glific?,ग्लिफ़िक त्वरित उत्तर
+    GlobalButtonTitle,Glific Features,शानदार
+    ItemTitle 1,Excitement level,उत्साह क
+    ItemSubtitle 1,Excitement level,उत्साह क
     OptionTitle 1.1,Great,उत्कृष्ट
     OptionDescription 1.1,Awesome,शानदार
     """
@@ -724,7 +724,12 @@ defmodule Glific.InteractiveTemplatesTest do
     {:ok, %{export_data: export_data}} =
       InteractiveTemplates.export_interactive_template(interactive, add_translation)
 
-    assert String.trim(export_data) == String.trim(list_export_data)
+    export_data_trimmed =
+      String.split(export_data, "\n")
+      |> Enum.map(&String.trim_trailing(&1))
+      |> Enum.join("\n")
+
+    assert String.trim(export_data_trimmed) == String.trim(list_export_data)
 
     # type quick reply with footer
     interactive =
@@ -735,7 +740,7 @@ defmodule Glific.InteractiveTemplatesTest do
     Footer,caption is footer,कैप्शन पाद लेख है
     Header,Glific Features,शानदार विशेषताएं
     Text,How was your experience with Glific?,ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?
-    OptionTitle 1,Great,उत्कृष्ट
+    OptionTitle 1,Great,उत्कृष
     OptionTitle 2,Awesome,शानदार
     """
 
@@ -848,7 +853,6 @@ defmodule Glific.InteractiveTemplatesTest do
 
     {:ok, imported_temp, _message} =
       InteractiveTemplates.import_interactive_template(translated_data, interactive)
-      |> IO.inspect()
 
     imported_translation = imported_temp.translations
 

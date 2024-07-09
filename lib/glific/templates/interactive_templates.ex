@@ -221,7 +221,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec trim_contents_with_error(map()) ::
           {:ok, map()} | {:error, String.t(), map()}
   defp trim_contents_with_error(translated_contents) do
-    {trimmed_contents, trimmed_languages} =
+    {processed_content, languages_with_trimming} =
       Enum.reduce(translated_contents, {%{}, []}, fn {language_id, content},
                                                      {acc_contents, acc_languages} ->
         trimmed_content = trim_content(content)
@@ -229,19 +229,19 @@ defmodule Glific.Templates.InteractiveTemplates do
         if trimmed_content != content do
           {Map.put(acc_contents, language_id, trimmed_content), [language_id | acc_languages]}
         else
-          {Map.put(acc_contents, language_id, trimmed_content), acc_languages}
+          {Map.put(acc_contents, language_id, content), acc_languages}
         end
       end)
 
-    if trimmed_languages == [] do
-      {:ok, trimmed_contents}
+    if languages_with_trimming == [] do
+      {:ok, processed_content}
     else
-      language_names = get_language_names_from_id(trimmed_languages)
+      language_names = get_language_names_from_id(languages_with_trimming)
 
       error_message =
         "Trimming has been done for the following languages due to exceeding character limits: #{Enum.join(language_names, ", ")}. Please verify the content before saving."
 
-      {:error, error_message, trimmed_contents}
+      {:error, error_message, processed_content}
     end
   end
 
@@ -317,7 +317,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec get_language_names_from_id(list(String.t() | integer())) :: list(String.t())
   defp get_language_names_from_id(language_ids) do
     language_ids = Enum.map(language_ids, &String.to_integer/1)
-    language_map = Settings.get_language_map()
+    language_map = Settings.get_language_map() |> Enum.into(%{})
 
     Enum.map(language_ids, fn id ->
       case Map.get(language_map, id) do
@@ -580,7 +580,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     Translates interactive msg in all the active languages
   """
   @spec translate_interactive_template(InteractiveTemplate.t()) ::
-          {:ok, InteractiveTemplate.t()} | {:error, String.t()}
+          {:ok, InteractiveTemplate.t(), String.t()} | {:error, String.t()}
   def translate_interactive_template(interactive_template) do
     organization_id = interactive_template.organization_id
     language_code_map = Settings.locale_id_map()
@@ -1137,15 +1137,6 @@ defmodule Glific.Templates.InteractiveTemplates do
   defp build_location_csv_body(translations, language_codes) do
     [
       [
-        "Action"
-        | Enum.map(language_codes, fn code ->
-            translations
-            |> Map.get(code, %{})
-            |> Map.get("action", %{})
-            |> Map.get("name", "")
-          end)
-      ],
-      [
         "Body"
         | Enum.map(language_codes, fn code ->
             translations
@@ -1167,7 +1158,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   Import interactive template with translation
   """
   @spec import_interactive_template([[String.t()]], InteractiveTemplate.t()) ::
-          {:ok, InteractiveTemplate.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, InteractiveTemplate.t(), String.t()} | {:error, Ecto.Changeset.t()}
   def import_interactive_template(translation_data, interactive_template) do
     content = interactive_template.interactive_content
     type = interactive_template.interactive_content["type"]
