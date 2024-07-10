@@ -965,9 +965,16 @@ defmodule Glific.Flows do
         %{flow_name: flow.name, status: "Successfully imported"}
       else
         {:error, error} ->
-          flow_name = error.changes |> Map.get(:name)
-          keyword_errors = error.errors |> hd()
-          {:keywords, {message, _}} = keyword_errors
+          flow_name = Map.get(error.changes, :name)
+          errors = hd(error.errors)
+
+          message =
+            case errors do
+              {:keywords, {message, _}} -> message
+              {:name, {message, _}} -> message
+              _ -> "Something went wrong"
+            end
+
           %{flow_name: flow_name, status: message}
       end
     end)
