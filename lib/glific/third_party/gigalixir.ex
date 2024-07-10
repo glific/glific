@@ -3,11 +3,12 @@ defmodule Glific.Gigalixir do
   This Module contains functions that communicate with Gigalixir via Gigalixir API
   """
 
-  @endpoint "https://api.gigalixir.com/api/apps/glific-staging/domains"
+  @base_url "https://api.gigalixir.com/api/apps"
+
   use Tesla
   require Logger
 
-  plug Tesla.Middleware.BaseUrl, @endpoint
+  plug Tesla.Middleware.BaseUrl, "#{@base_url}/#{Application.get_env(:glific, :gigalixir_app_name)}"
   plug Tesla.Middleware.Headers, [{"Content-Type", "application/json"}]
   plug Tesla.Middleware.BasicAuth,
     username: Application.get_env(:glific, :gigalixir_username),

@@ -89,6 +89,9 @@ config :glific,
   gigalixir_api_key: env!("GIGALIXIR_API_KEY", :string!, "This is not a secret")
 
 config :glific,
+  gigalixir_app_name: env!("GIGALIXIR_APP_NAME", :string!, "This is not a secret")
+
+config :glific,
   bhasini_user_id: env!("BHASINI_USER_ID", :string!, "This is not a secret")
 
 config :glific,
