@@ -190,9 +190,10 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec update_interactive_template(InteractiveTemplate.t(), map()) ::
           {:ok, InteractiveTemplate.t(), String.t()} | {:error, Ecto.Changeset.t()}
   def update_interactive_template(%InteractiveTemplate{} = interactive, attrs) do
+    label = interactive.label
     translations = Map.get(attrs, :translations, interactive.translations)
 
-    {:ok, message, trimmed_contents} = trim_contents_with_error(translations)
+    {:ok, message, trimmed_contents} = trim_contents_with_error(translations, label)
     updated_attrs = Map.put(attrs, :translations, trimmed_contents)
 
     case interactive
@@ -206,13 +207,23 @@ defmodule Glific.Templates.InteractiveTemplates do
     end
   end
 
-  @spec trim_contents_with_error(map()) ::
+  @spec trim_contents_with_error(map(), String.t()) ::
           {:ok, String.t() | nil, map()} | {:error, String.t(), map()}
-  defp trim_contents_with_error(translated_contents) do
+  defp trim_contents_with_error(translated_contents, label) do
     {processed_content, languages_with_trimming} =
       Enum.reduce(translated_contents, {%{}, []}, fn {language_id, content},
                                                      {acc_contents, acc_languages} ->
-        trimmed_content = trim_content(content)
+        trimmed_content = trim_content(content, label)
+
+        trimmed_content =
+          if Map.has_key?(trimmed_content, "url") do
+            content
+            |> Map.update("content", %{}, fn content_map ->
+              Map.delete(content_map, "header")
+            end)
+          else
+            content
+          end
 
         if trimmed_content != content do
           {Map.put(acc_contents, language_id, trimmed_content), [language_id | acc_languages]}
@@ -233,18 +244,17 @@ defmodule Glific.Templates.InteractiveTemplates do
     end
   end
 
-  @spec maybe_trim_header(map()) :: map()
-  defp maybe_trim_header(content) do
+  defp maybe_trim_header(content, label) do
     if Map.has_key?(content, "header") do
       Map.put(content, "header", trim_field(content["header"], 60))
     else
-      content
+      Map.put(content, "header", label)
     end
   end
 
-  @spec trim_content(map()) :: map()
-  defp trim_content(%{"content" => content, "options" => options} = map) do
-    updated_content = maybe_trim_header(content)
+  @spec trim_content(map(), String.t()) :: map()
+  defp trim_content(%{"content" => content, "options" => options} = map, label) do
+    updated_content = maybe_trim_header(content, label)
     trimmed_text = Map.put(updated_content, "text", trim_field(content["text"], 1024))
 
     %{
@@ -254,7 +264,10 @@ defmodule Glific.Templates.InteractiveTemplates do
     }
   end
 
-  defp trim_content(%{"body" => body, "globalButtons" => global_buttons, "items" => items} = map) do
+  defp trim_content(
+         %{"body" => body, "globalButtons" => global_buttons, "items" => items} = map,
+         _label
+       ) do
     %{
       map
       | "body" => trim_field(body, 60),
@@ -279,7 +292,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     }
   end
 
-  defp trim_content(%{"body" => body} = map) do
+  defp trim_content(%{"body" => body} = map, _label) do
     trimmed_body_text = trim_field(body["text"], 1024)
 
     %{
@@ -288,7 +301,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     }
   end
 
-  defp trim_content(map), do: map
+  defp trim_content(map, _label), do: map
 
   @spec trim_field(String.t() | nil, integer()) :: String.t() | nil
   defp trim_field(nil, _), do: nil
