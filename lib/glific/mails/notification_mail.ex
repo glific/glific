@@ -16,6 +16,9 @@ defmodule Glific.Mails.NotificationMail do
     Mailer.common_send(org, subject, body)
   end
 
+  @doc """
+  Create the text body to be send in the critical notification mail
+  """
   @spec create_critical_mail_body(Organization.t(), String.t()) :: String.t()
   def create_critical_mail_body(org, message) do
     """
