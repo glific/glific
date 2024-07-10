@@ -213,6 +213,9 @@ defmodule Glific.Templates.InteractiveTemplates do
     {processed_content, languages_with_trimming} =
       Enum.reduce(translated_contents, {%{}, []}, fn {language_id, content},
                                                      {acc_contents, acc_languages} ->
+        # remove the header from the content and trimmed content to follow the same pattern,
+        # because we are getting headers for other translated languages except English
+        # in case of english we are not making any change in the content so not getting header key
         content = remove_header(content)
 
         trimmed_content =
