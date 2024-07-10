@@ -169,14 +169,15 @@ defmodule Glific.InteractiveTemplatesTest do
       },
       translations: %{
         "1" => %{
-          "action" => %{"button" => nil},
-          "body" => %{"text" => "please share your location"},
+          "action" => %{"name" => "send_location"},
+          "body" => %{"text" => "please share your location", "type" => "text"},
           "type" => "location_request_message"
         },
         "2" => %{
-          "action" => %{"button" => nil},
+          "action" => %{"name" => "send_location"},
           "body" => %{
-            "text" => "कृपया अपना स्थान साझा करें"
+            "text" => "कृपया अपना स्थान साझा करें",
+            "type" => "text"
           },
           "type" => "location_request_message"
         }
