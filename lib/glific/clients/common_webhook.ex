@@ -77,7 +77,15 @@ defmodule Glific.Clients.CommonWebhook do
     question = fields["question"]
     thread_id = Map.get(fields, "thread_id", nil)
     assistant_id = Map.get(fields, "assistant_id", nil)
-    params = %{thread_id: thread_id, assistant_id: assistant_id, question: question}
+    remove_citation = Map.get(fields, "remove_citation", false)
+
+    params = %{
+      thread_id: thread_id,
+      assistant_id: assistant_id,
+      question: question,
+      remove_citation: remove_citation
+    }
+
     ChatGPT.handle_conversation(params)
   end
 
