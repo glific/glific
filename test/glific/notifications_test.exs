@@ -4,8 +4,11 @@ defmodule Glific.NotificationTest do
 
   alias Glific.{
     Fixtures,
+    MailLog,
+    Mails.NotificationMail,
     Notifications,
-    Notifications.Notification
+    Notifications.Notification,
+    Partners
   }
 
   describe "notifications" do
@@ -116,5 +119,39 @@ defmodule Glific.NotificationTest do
 
     assert updated_notification.category == "Partner"
     assert updated_notification.message == "Disabling GCS. Billing account is disabled"
+  end
+
+  @tag :dd
+  test "create_notification/1 with with critical error", %{
+    organization_id: organization_id
+  } do
+    attrs =
+      Map.merge(@valid_attrs, %{
+        organization_id: organization_id,
+        severity: "Critical",
+        category: "critical_notification",
+        message: "Disabling GCS. Billing account is disabled test"
+      })
+
+    assert {:ok, %Notification{} = notification} = Notifications.create_notification(attrs)
+    assert notification.category == "critical_notification"
+    assert notification.message == "Disabling GCS. Billing account is disabled test"
+
+    text_body =
+      NotificationMail.create_critical_mail_body(
+        Partners.get_organization!(organization_id),
+        notification.message
+      )
+
+    # check if mails has been send
+
+    assert MailLog.list_mail_logs(%{
+             organization_id: organization_id,
+             category: "critical_notification"
+           })
+           |> Enum.any?(fn mail_log ->
+             {content, _} = Code.eval_string(mail_log.content["data"])
+             content[:text_body] == text_body
+           end)
   end
 end

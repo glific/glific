@@ -15,7 +15,7 @@ defmodule Glific.Mails.MailLog do
   }
 
   @required_fields [:category, :organization_id]
-  @optional_fields [:status, :content, :error]
+  @optional_fields [:status, :content, :error, :inserted_at]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -104,8 +104,30 @@ defmodule Glific.Mails.MailLog do
   Check if we have sent the mail in given time
   """
 
-  @spec mail_sent_in_past_time?(String.t(), DateTime.t(), non_neg_integer()) :: boolean
-  def mail_sent_in_past_time?(category, time, organization_id) do
+  @spec mail_sent_in_past_time?(String.t(), DateTime.t(), non_neg_integer(), String.t() | nil) ::
+          boolean
+  def mail_sent_in_past_time?(category, time, organization_id, message_body \\ nil)
+
+  def mail_sent_in_past_time?("critical_notification", time, organization_id, message_body) do
+    # for critical notifications, we have to check the mail body to make sure
+    # we are not skipping unique messages
+
+    count =
+      MailLog
+      |> where([ml], ml.category == "critical_notification")
+      |> where([ml], ml.organization_id == ^organization_id)
+      |> where([ml], ml.inserted_at >= ^time)
+      |> Repo.all()
+      |> Enum.count(fn mail_log ->
+        # using Code.eval_string, because we use Kernel.inspect for dumping the data in DB
+        {content, _} = Code.eval_string(mail_log.content["data"])
+        content[:text_body] == message_body
+      end)
+
+    count > 0
+  end
+
+  def mail_sent_in_past_time?(category, time, organization_id, _message_body) do
     count =
       MailLog
       |> where([ml], ml.category == ^category)
