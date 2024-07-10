@@ -53,6 +53,55 @@ defmodule Glific.InteractiveTemplatesTest do
       }
     }
 
+    @valid_url_attrs %{
+      label: "Quick Reply Test Text 2",
+      type: :quick_reply,
+      interactive_content: %{
+        "type" => "quick_reply",
+        "content" => %{
+          "type" => "image",
+          "text" => "How was your experience with Glific?",
+          "url" => "https://robohash.org/set_set2/bgset_bg1/mMs4U"
+        },
+        "options" => [
+          %{
+            "type" => "text",
+            "title" => "Great"
+          },
+          %{
+            "type" => "text",
+            "title" => "Awesome"
+          }
+        ]
+      },
+      translations: %{
+        "1" => %{
+          "content" => %{
+            "type" => "image",
+            "text" => "How was your experience with Glific?",
+            "url" => "https://robohash.org/set_set2/bgset_bg1/mMs4U"
+          },
+          "options" => [
+            %{"title" => "Great", "type" => "text"},
+            %{"title" => "Awesome", "type" => "text"}
+          ],
+          "type" => "quick_reply"
+        },
+        "2" => %{
+          "content" => %{
+            "text" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?",
+            "type" => "image",
+            "url" => "https://robohash.org/set_set2/bgset_bg1/mMs4U"
+          },
+          "options" => [
+            %{"title" => "उत्कृष्ट", "type" => "text"},
+            %{"title" => "शानदार", "type" => "text"}
+          ],
+          "type" => "quick_reply"
+        }
+      }
+    }
+
     @valid_footer_attrs %{
       label: "Glific Features",
       type: :quick_reply,
@@ -134,7 +183,7 @@ defmodule Glific.InteractiveTemplatesTest do
             "type" => "text"
           },
           "options" => [
-            %{"title" => "उत्कृष", "type" => "text"},
+            %{"title" => "उत्कृष्ट", "type" => "text"},
             %{"title" => "शानदार", "type" => "text"}
           ],
           "type" => "quick_reply"
@@ -272,9 +321,9 @@ defmodule Glific.InteractiveTemplatesTest do
           "type" => "list"
         },
         "2" => %{
-          "body" => "ग्लिफ़िक त्वरित उत्तर ",
+          "body" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?",
           "globalButtons" => [
-            %{"title" => "शानदार ", "type" => "text"}
+            %{"title" => "शानदार विशेषताएं", "type" => "text"}
           ],
           "items" => [
             %{
@@ -285,8 +334,8 @@ defmodule Glific.InteractiveTemplatesTest do
                   "type" => "text"
                 }
               ],
-              "subtitle" => "उत्साह क",
-              "title" => "उत्साह क"
+              "subtitle" => "उत्साह का स्तर",
+              "title" => "उत्साह का स्तर"
             }
           ],
           "title" => "ग्लिफ़िक",
@@ -660,16 +709,23 @@ defmodule Glific.InteractiveTemplatesTest do
 
     result = InteractiveTemplates.translate_interactive_template(interactive)
 
-    assert {:ok, %InteractiveTemplate{translations: translations}, message} = result
+    assert {:ok, %InteractiveTemplate{translations: translations}, _message} = result
 
     assert Map.has_key?(translations, "2")
     assert translations["2"]["content"]["text"] == "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"
     assert translations["2"]["content"]["header"] == "त्वरित उत्तर स्थिरता"
-    assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्ष" end)
-    assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्ष" end)
+    assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्षण 1" end)
+    assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्षण 2" end)
 
-    assert message ==
-             "Trimming has been done for the following languages due to exceeding character limits: Hindi. Please verify the content before saving."
+    # if url is present
+    url_interactive =
+      Fixtures.interactive_fixture(Map.merge(@valid_url_attrs, attrs))
+
+    result = InteractiveTemplates.translate_interactive_template(url_interactive)
+
+    assert {:ok, %InteractiveTemplate{translations: translations}, _message} = result
+
+    assert translations == @valid_url_attrs[:translations]
   end
 
   test "export the interactive template when add translation is true",
@@ -683,7 +739,7 @@ defmodule Glific.InteractiveTemplatesTest do
     Attribute,en,hi
     Header,Quick Reply Test Text 2,त्वरित उत्तर स्थिरता
     Text,How was your experience with Glific?,ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?
-    OptionTitle 1,Great,उत्कृष
+    OptionTitle 1,Great,उत्कृष्ट
     OptionTitle 2,Awesome,शानदार
     """
 
@@ -713,10 +769,10 @@ defmodule Glific.InteractiveTemplatesTest do
     list_export_data = """
     Attribute,en,hi
     Title,glific,ग्लिफ़िक
-    Body,How was your experience with Glific?,ग्लिफ़िक त्वरित उत्तर
-    GlobalButtonTitle,Glific Features,शानदार
-    ItemTitle 1,Excitement level,उत्साह क
-    ItemSubtitle 1,Excitement level,उत्साह क
+    Body,How was your experience with Glific?,ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?
+    GlobalButtonTitle,Glific Features,शानदार विशेषताएं
+    ItemTitle 1,Excitement level,उत्साह का स्तर
+    ItemSubtitle 1,Excitement level,उत्साह का स्तर
     OptionTitle 1.1,Great,उत्कृष्ट
     OptionDescription 1.1,Awesome,शानदार
     """
@@ -739,7 +795,7 @@ defmodule Glific.InteractiveTemplatesTest do
     Footer,caption is footer,कैप्शन पाद लेख है
     Header,Glific Features,शानदार विशेषताएं
     Text,How was your experience with Glific?,ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?
-    OptionTitle 1,Great,उत्कृष
+    OptionTitle 1,Great,उत्कृष्ट
     OptionTitle 2,Awesome,शानदार
     """
 

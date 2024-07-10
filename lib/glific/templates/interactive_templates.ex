@@ -213,17 +213,11 @@ defmodule Glific.Templates.InteractiveTemplates do
     {processed_content, languages_with_trimming} =
       Enum.reduce(translated_contents, {%{}, []}, fn {language_id, content},
                                                      {acc_contents, acc_languages} ->
-        trimmed_content = trim_content(content, label)
+        content = remove_header(content)
 
         trimmed_content =
-          if Map.has_key?(trimmed_content, "url") do
-            content
-            |> Map.update("content", %{}, fn content_map ->
-              Map.delete(content_map, "header")
-            end)
-          else
-            content
-          end
+          trim_content(content, label)
+          |> remove_header()
 
         if trimmed_content != content do
           {Map.put(acc_contents, language_id, trimmed_content), [language_id | acc_languages]}
@@ -244,6 +238,22 @@ defmodule Glific.Templates.InteractiveTemplates do
     end
   end
 
+  @spec remove_header(map()) :: map()
+  defp remove_header(content) do
+    case content["content"] do
+      %{} = content_map ->
+        if Map.has_key?(content_map, "url") do
+          Map.update!(content, "content", fn _ -> Map.delete(content_map, "header") end)
+        else
+          content
+        end
+
+      _ ->
+        content
+    end
+  end
+
+  @spec maybe_trim_header(map(), String.t()) :: map()
   defp maybe_trim_header(content, label) do
     if Map.has_key?(content, "header") do
       Map.put(content, "header", trim_field(content["header"], 60))
@@ -307,21 +317,10 @@ defmodule Glific.Templates.InteractiveTemplates do
   defp trim_field(nil, _), do: nil
 
   defp trim_field(field, max_length) when is_binary(field) and is_integer(max_length) do
-    if byte_size(field) > max_length do
-      field
-      |> String.codepoints()
-      |> Enum.reduce_while("", fn char, acc ->
-        new_acc = acc <> char
-
-        if byte_size(new_acc) > max_length do
-          {:halt, acc}
-        else
-          {:cont, new_acc}
-        end
-      end)
-    else
-      field
-    end
+    field
+    |> String.codepoints()
+    |> Enum.take(max_length)
+    |> Enum.join()
   end
 
   @spec get_language_names_from_id(list(String.t() | integer())) :: list(String.t())
