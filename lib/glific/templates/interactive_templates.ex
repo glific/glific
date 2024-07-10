@@ -188,11 +188,131 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   """
   @spec update_interactive_template(InteractiveTemplate.t(), map()) ::
-          {:ok, InteractiveTemplate.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, InteractiveTemplate.t(), String.t()} | {:error, Ecto.Changeset.t()}
   def update_interactive_template(%InteractiveTemplate{} = interactive, attrs) do
-    interactive
-    |> InteractiveTemplate.changeset(attrs)
-    |> Repo.update()
+    translations = Map.get(attrs, :translations, interactive.translations)
+
+    {:ok, message, trimmed_contents} = trim_contents_with_error(translations)
+    updated_attrs = Map.put(attrs, :translations, trimmed_contents)
+
+    case interactive
+         |> InteractiveTemplate.changeset(updated_attrs)
+         |> Repo.update() do
+      {:ok, updated_interactive} ->
+        {:ok, updated_interactive, message}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
+  end
+
+  @spec trim_contents_with_error(map()) ::
+          {:ok, String.t() | nil, map()} | {:error, String.t(), map()}
+  defp trim_contents_with_error(translated_contents) do
+    {processed_content, languages_with_trimming} =
+      Enum.reduce(translated_contents, {%{}, []}, fn {language_id, content},
+                                                     {acc_contents, acc_languages} ->
+        trimmed_content = trim_content(content)
+
+        if trimmed_content != content do
+          {Map.put(acc_contents, language_id, trimmed_content), [language_id | acc_languages]}
+        else
+          {Map.put(acc_contents, language_id, content), acc_languages}
+        end
+      end)
+
+    if languages_with_trimming == [] do
+      {:ok, nil, processed_content}
+    else
+      language_names = get_language_names_from_id(languages_with_trimming)
+
+      trimmed_message =
+        "Trimming has been done for the following languages due to exceeding character limits: #{Enum.join(language_names, ", ")}. Please verify the content before saving."
+
+      {:ok, trimmed_message, processed_content}
+    end
+  end
+
+  @spec trim_content(map()) :: map()
+  defp trim_content(%{"content" => content, "options" => options} = map) do
+    %{
+      map
+      | "content" => %{
+          content
+          | "header" => trim_field(content["header"], 60),
+            "text" => trim_field(content["text"], 1024)
+        },
+        "options" => Enum.map(options, &Map.put(&1, "title", trim_field(&1["title"], 20)))
+    }
+  end
+
+  defp trim_content(%{"body" => body, "globalButtons" => global_buttons, "items" => items} = map) do
+    %{
+      map
+      | "body" => trim_field(body, 60),
+        "globalButtons" =>
+          Enum.map(global_buttons, &Map.put(&1, "title", trim_field(&1["title"], 20))),
+        "items" =>
+          Enum.map(items, fn item ->
+            %{
+              item
+              | "title" => trim_field(item["title"], 24),
+                "subtitle" => trim_field(item["subtitle"], 24),
+                "options" =>
+                  Enum.map(item["options"], fn option ->
+                    %{
+                      option
+                      | "title" => trim_field(option["title"], 24),
+                        "description" => trim_field(option["description"], 72)
+                    }
+                  end)
+            }
+          end)
+    }
+  end
+
+  defp trim_content(%{"body" => body, "action" => action} = map) do
+    %{
+      map
+      | "body" => %{"text" => trim_field(body["text"], 1024)},
+        "action" => %{"button" => trim_field(action["button"], 20)}
+    }
+  end
+
+  defp trim_content(map), do: map
+
+  @spec trim_field(String.t() | nil, integer()) :: String.t() | nil
+  defp trim_field(nil, _), do: nil
+
+  defp trim_field(field, max_length) when is_binary(field) and is_integer(max_length) do
+    if byte_size(field) > max_length do
+      field
+      |> String.codepoints()
+      |> Enum.reduce_while("", fn char, acc ->
+        new_acc = acc <> char
+
+        if byte_size(new_acc) > max_length do
+          {:halt, acc}
+        else
+          {:cont, new_acc}
+        end
+      end)
+    else
+      field
+    end
+  end
+
+  @spec get_language_names_from_id(list(String.t() | integer())) :: list(String.t())
+  defp get_language_names_from_id(language_ids) do
+    language_ids = Enum.map(language_ids, &String.to_integer/1)
+    language_map = Settings.get_language_map() |> Enum.into(%{})
+
+    Enum.map(language_ids, fn id ->
+      case Map.get(language_map, id) do
+        %{label: label} -> label
+        _ -> Integer.to_string(id)
+      end
+    end)
   end
 
   @doc """
@@ -448,7 +568,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     Translates interactive msg in all the active languages
   """
   @spec translate_interactive_template(InteractiveTemplate.t()) ::
-          {:ok, InteractiveTemplate.t()} | {:error, String.t()}
+          {:ok, InteractiveTemplate.t(), String.t()} | {:error, String.t()}
   def translate_interactive_template(interactive_template) do
     organization_id = interactive_template.organization_id
     language_code_map = Settings.locale_id_map()
@@ -784,7 +904,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   def export_interactive_template(interactive_template, true) do
-    {:ok, translated_template} = translate_interactive_template(interactive_template)
+    {:ok, translated_template, _message} = translate_interactive_template(interactive_template)
     generate_csv_data(translated_template)
   end
 
@@ -1005,15 +1125,6 @@ defmodule Glific.Templates.InteractiveTemplates do
   defp build_location_csv_body(translations, language_codes) do
     [
       [
-        "Action"
-        | Enum.map(language_codes, fn code ->
-            translations
-            |> Map.get(code, %{})
-            |> Map.get("action", %{})
-            |> Map.get("name", "")
-          end)
-      ],
-      [
         "Body"
         | Enum.map(language_codes, fn code ->
             translations
@@ -1035,7 +1146,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   Import interactive template with translation
   """
   @spec import_interactive_template([[String.t()]], InteractiveTemplate.t()) ::
-          {:ok, InteractiveTemplate.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, InteractiveTemplate.t(), String.t()} | {:error, Ecto.Changeset.t()}
   def import_interactive_template(translation_data, interactive_template) do
     content = interactive_template.interactive_content
     type = interactive_template.interactive_content["type"]
