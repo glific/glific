@@ -190,9 +190,10 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec update_interactive_template(InteractiveTemplate.t(), map()) ::
           {:ok, InteractiveTemplate.t(), String.t()} | {:error, Ecto.Changeset.t()}
   def update_interactive_template(%InteractiveTemplate{} = interactive, attrs) do
+    label = interactive.label
     translations = Map.get(attrs, :translations, interactive.translations)
 
-    {:ok, message, trimmed_contents} = trim_contents_with_error(translations)
+    {:ok, message, trimmed_contents} = trim_contents_with_error(translations, label)
     updated_attrs = Map.put(attrs, :translations, trimmed_contents)
 
     case interactive
@@ -206,13 +207,20 @@ defmodule Glific.Templates.InteractiveTemplates do
     end
   end
 
-  @spec trim_contents_with_error(map()) ::
+  @spec trim_contents_with_error(map(), String.t()) ::
           {:ok, String.t() | nil, map()} | {:error, String.t(), map()}
-  defp trim_contents_with_error(translated_contents) do
+  defp trim_contents_with_error(translated_contents, label) do
     {processed_content, languages_with_trimming} =
       Enum.reduce(translated_contents, {%{}, []}, fn {language_id, content},
                                                      {acc_contents, acc_languages} ->
-        trimmed_content = trim_content(content)
+        # remove the header from the content and trimmed content to follow the same pattern,
+        # because we are getting headers for other translated languages except English
+        # in case of english we are not making any change in the content so not getting header key
+        content = remove_header(content)
+
+        trimmed_content =
+          trim_content(content, label)
+          |> remove_header()
 
         if trimmed_content != content do
           {Map.put(acc_contents, language_id, trimmed_content), [language_id | acc_languages]}
@@ -233,20 +241,46 @@ defmodule Glific.Templates.InteractiveTemplates do
     end
   end
 
-  @spec trim_content(map()) :: map()
-  defp trim_content(%{"content" => content, "options" => options} = map) do
+  @spec remove_header(map()) :: map()
+  defp remove_header(content) do
+    case content["content"] do
+      %{} = content_map ->
+        if Map.has_key?(content_map, "url") do
+          Map.update!(content, "content", fn _ -> Map.delete(content_map, "header") end)
+        else
+          content
+        end
+
+      _ ->
+        content
+    end
+  end
+
+  @spec maybe_trim_header(map(), String.t()) :: map()
+  defp maybe_trim_header(content, label) do
+    if Map.has_key?(content, "header") do
+      Map.put(content, "header", trim_field(content["header"], 60))
+    else
+      Map.put(content, "header", label)
+    end
+  end
+
+  @spec trim_content(map(), String.t()) :: map()
+  defp trim_content(%{"content" => content, "options" => options} = map, label) do
+    updated_content = maybe_trim_header(content, label)
+    trimmed_text = Map.put(updated_content, "text", trim_field(content["text"], 1024))
+
     %{
       map
-      | "content" => %{
-          content
-          | "header" => trim_field(content["header"], 60),
-            "text" => trim_field(content["text"], 1024)
-        },
+      | "content" => trimmed_text,
         "options" => Enum.map(options, &Map.put(&1, "title", trim_field(&1["title"], 20)))
     }
   end
 
-  defp trim_content(%{"body" => body, "globalButtons" => global_buttons, "items" => items} = map) do
+  defp trim_content(
+         %{"body" => body, "globalButtons" => global_buttons, "items" => items} = map,
+         _label
+       ) do
     %{
       map
       | "body" => trim_field(body, 60),
@@ -271,35 +305,25 @@ defmodule Glific.Templates.InteractiveTemplates do
     }
   end
 
-  defp trim_content(%{"body" => body, "action" => action} = map) do
+  defp trim_content(%{"body" => body} = map, _label) do
+    trimmed_body_text = trim_field(body["text"], 1024)
+
     %{
       map
-      | "body" => %{"text" => trim_field(body["text"], 1024)},
-        "action" => %{"button" => trim_field(action["button"], 20)}
+      | "body" => %{"text" => trimmed_body_text, "type" => body["type"]}
     }
   end
 
-  defp trim_content(map), do: map
+  defp trim_content(map, _label), do: map
 
   @spec trim_field(String.t() | nil, integer()) :: String.t() | nil
   defp trim_field(nil, _), do: nil
 
   defp trim_field(field, max_length) when is_binary(field) and is_integer(max_length) do
-    if byte_size(field) > max_length do
-      field
-      |> String.codepoints()
-      |> Enum.reduce_while("", fn char, acc ->
-        new_acc = acc <> char
-
-        if byte_size(new_acc) > max_length do
-          {:halt, acc}
-        else
-          {:cont, new_acc}
-        end
-      end)
-    else
-      field
-    end
+    field
+    |> String.codepoints()
+    |> Enum.take(max_length)
+    |> Enum.join()
   end
 
   @spec get_language_names_from_id(list(String.t() | integer())) :: list(String.t())
