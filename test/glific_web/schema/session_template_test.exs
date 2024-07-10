@@ -74,14 +74,16 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
                   "modifiedOn" =>
                     DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
                   "status" => "APPROVED",
-                  "category" => "MARKETING"
+                  "category" => "MARKETING",
+                  "quality" => "UNKNOWN"
                 },
                 %{
                   "id" => hsm2.uuid,
                   "modifiedOn" =>
                     DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
                   "status" => "PENDING",
-                  "category" => "AUTHENTICATION"
+                  "category" => "AUTHENTICATION",
+                  "quality" => "HIGH"
                 }
               ]
             })
@@ -100,6 +102,8 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert message == "successful"
     assert updated_hsm.category == "MARKETING"
     assert updated_hsm2.category == "AUTHENTICATION"
+    assert updated_hsm.quality == "UNKNOWN"
+    assert updated_hsm2.quality == "HIGH"
   end
 
   test "sync hsm with bsp if it doesn't establish a connection with gupshup test", %{
