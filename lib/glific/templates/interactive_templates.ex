@@ -233,15 +233,23 @@ defmodule Glific.Templates.InteractiveTemplates do
     end
   end
 
+  @spec maybe_trim_header(map()) :: map()
+  defp maybe_trim_header(content) do
+    if Map.has_key?(content, "header") do
+      Map.put(content, "header", trim_field(content["header"], 60))
+    else
+      content
+    end
+  end
+
   @spec trim_content(map()) :: map()
   defp trim_content(%{"content" => content, "options" => options} = map) do
+    updated_content = maybe_trim_header(content)
+    trimmed_text = Map.put(updated_content, "text", trim_field(content["text"], 1024))
+
     %{
       map
-      | "content" => %{
-          content
-          | "header" => trim_field(content["header"], 60),
-            "text" => trim_field(content["text"], 1024)
-        },
+      | "content" => trimmed_text,
         "options" => Enum.map(options, &Map.put(&1, "title", trim_field(&1["title"], 20)))
     }
   end
