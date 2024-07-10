@@ -966,10 +966,10 @@ defmodule Glific.Flows do
       else
         {:error, error} ->
           flow_name = Map.get(error.changes, :name)
-          keyword_errors = hd(error.errors)
+          errors = hd(error.errors)
 
           message =
-            case keyword_errors do
+            case errors do
               {:keywords, {message, _}} -> message
               {:name, {message, _}} -> message
               _ -> "Something went wrong"
