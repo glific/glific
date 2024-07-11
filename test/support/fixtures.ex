@@ -1063,7 +1063,7 @@ defmodule Glific.Fixtures do
       %{
         method: :get,
         url:
-          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/export?format=csv&&gid=0"
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/export?format=csv&gid=0"
       } ->
         %Tesla.Env{
           body:
