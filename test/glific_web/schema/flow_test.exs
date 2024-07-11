@@ -268,6 +268,32 @@ defmodule GlificWeb.Schema.FlowTest do
     assert interactive_template.label == "Optin template"
   end
 
+  test "import flow returns an error when import the same flow ",
+       %{manager: user} = _attrs do
+    [flow | _] = Flows.list_flows(%{filter: %{name: "Import Workflow"}})
+
+    flow_id = flow.id
+
+    Repo.fetch_by(FlowRevision, %{flow_id: flow_id, organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
+    assert {:ok, query_data} = result
+
+    data =
+      get_in(query_data, [:data, "exportFlow", "export_data"])
+      |> Jason.decode!()
+
+    assert length(data["flows"]) > 0
+    import_flow = data |> Jason.encode!()
+    result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
+    assert {:ok, query_data} = result
+    import_status = get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
+    assert import_status["flowName"] == "Import Workflow"
+
+    assert import_status["status"] ==
+             "The keyword `importtest` was already used in the `Import Workflow` Flow."
+  end
+
   test "create a flow and test possible scenarios and errors", %{manager: user} do
     name = "Flow Test Name"
     keywords = ["test_keyword", "test_keyword_2"]
