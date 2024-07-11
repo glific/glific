@@ -170,7 +170,9 @@ defmodule Glific.Sheets do
     last_synced_at = DateTime.utc_now()
     {:ok, uri} = URI.new(sheet.url)
     # https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id
-    export_url = sheet_url <> "export?format=csv&" <> uri.fragment
+
+    gid_params = uri.fragment || "gid=0"
+    export_url = sheet_url <> "export?format=csv&" <> gid_params
 
     SheetData
     |> where([sd], sd.sheet_id == ^sheet.id)
