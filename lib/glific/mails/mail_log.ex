@@ -15,7 +15,7 @@ defmodule Glific.Mails.MailLog do
   }
 
   @required_fields [:category, :organization_id]
-  @optional_fields [:status, :content, :error, :inserted_at]
+  @optional_fields [:status, :content, :error]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
