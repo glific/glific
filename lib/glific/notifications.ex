@@ -35,7 +35,6 @@ defmodule Glific.Notifications do
 
   @spec handle_notification(Notification.t(), String.t()) :: {:ok, Notification.t()}
   defp handle_notification(%{message: message} = notification, "critical") do
-    # checking for duplicates in past 3 days
     time = Glific.go_back_time(72)
     org = Partners.organization(notification.organization_id)
     text_body = NotificationMail.create_critical_mail_body(org, message)

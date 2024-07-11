@@ -121,7 +121,6 @@ defmodule Glific.NotificationTest do
     assert updated_notification.message == "Disabling GCS. Billing account is disabled"
   end
 
-  @tag :dd
   test "create_notification/1 with with critical error", %{
     organization_id: organization_id
   } do
