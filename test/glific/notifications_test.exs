@@ -4,7 +4,7 @@ defmodule Glific.NotificationTest do
 
   alias Glific.{
     Fixtures,
-    MailLog,
+    Mails.MailLog,
     Mails.NotificationMail,
     Notifications,
     Notifications.Notification,
