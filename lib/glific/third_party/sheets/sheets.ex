@@ -165,11 +165,12 @@ defmodule Glific.Sheets do
 
   def sync_sheet_data(sheet) do
     Glific.Metrics.increment("Sheets Read")
-
-    [sheet_url, gid] = String.split(sheet.url, ["edit", "view", "comment"])
+    [sheet_url, _gid] = String.split(sheet.url, ["edit", "view", "comment"])
 
     last_synced_at = DateTime.utc_now()
-    export_url = sheet_url <> "export?format=csv&&" <> String.replace(gid, "#", "")
+    {:ok, uri} = URI.new(sheet.url)
+    # https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id
+    export_url = sheet_url <> "export?format=csv&" <> uri.fragment
 
     SheetData
     |> where([sd], sd.sheet_id == ^sheet.id)
