@@ -12,19 +12,23 @@ defmodule Glific.Contacts.Import do
     Groups.ContactGroup,
     Groups.GroupContacts,
     Partners,
+    Jobs.UserJob,
+    Contacts.ImportWorker,
     Repo,
     Settings,
     Users.User
   }
 
-  @max_concurrency System.schedulers_online()
+  # @max_concurrency System.schedulers_online()
 
   @spec cleanup_contact_data(map(), map(), String.t()) :: map()
   defp cleanup_contact_data(
          data,
          %{user: user, organization_id: organization_id} = contact_attrs,
-         date_format
+         _date_format
        ) do
+      current_time = NaiveDateTime.utc_now() |> NaiveDateTime.to_string()
+
     results =
       %{
         name: data["name"],
@@ -35,7 +39,7 @@ defmodule Glific.Contacts.Import do
         contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
       }
       |> add_language(data["language"])
-      |> add_optin_date(data["opt_in"], date_format)
+      |> add_optin_date(current_time)
 
     cond do
       user.roles == [:glific_admin] ->
@@ -54,6 +58,11 @@ defmodule Glific.Contacts.Import do
       true ->
         results
     end
+  end
+
+  @spec add_optin_date(map(), any()) :: map()
+  defp add_optin_date(results, current_time) do
+    Map.put(results, :optin_time, current_time)
   end
 
   @spec add_contact_fields(Contact.t(), map()) :: {:ok, ContactGroup.t()}
@@ -173,27 +182,54 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  @spec decode_csv_data(map(), map(), [{atom(), String.t()}]) :: list()
-  defp decode_csv_data(params, data, opts) do
-    %{organization_id: organization_id, user: user} = params
-    {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
+  def create_user_job(org_id) do
+    %UserJob{
+      status: "pending",
+      type: "contact_import",
+      total_tasks: 0,
+      tasks_done: 0,
+      organization_id: org_id,
+      errors: %{}
+    }
+    |> Repo.insert!()
+  end
 
+  @spec decode_csv_data(map(), map(), [{atom(), String.t()}]) :: {:ok, list()} | {:error, any()}
+  defp decode_csv_data(params, data, opts) do
+    %{organization_id: organization_id, user: _user} = params
+    {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
+    user_job = create_user_job(organization_id)
+
+    total_contacts_to_upload =
+      data
+      |> CSV.decode(headers: true, field_transform: &String.trim/1)
+      |> Enum.count()
+
+    Repo.transaction(fn ->
+      user_job = Repo.get!(UserJob, user_job.id)
+      Repo.update!(UserJob.changeset(user_job, %{total_tasks: total_contacts_to_upload}))
+    end)
+
+    results =
     data
     |> CSV.decode(headers: true, field_transform: &String.trim/1)
     |> Stream.map(fn {_, data} -> cleanup_contact_data(data, params, date_format) end)
-    |> Task.async_stream(
-      fn contact ->
-        process_data(user, contact, %{
-          organization_id: Repo.put_process_state(organization_id)
-        })
-      end,
-      max_concurrency: @max_concurrency
-    )
-    |> Enum.map(fn {:ok, result} -> result end)
+    |> Stream.chunk_every(opts[:bsp_limit] || 100)
+    |> Stream.with_index()
+    |> Enum.map(fn {chunk, _index} ->
+      Repo.transaction(fn ->
+        user_job = Repo.get!(UserJob, user_job.id)
+        Repo.update!(UserJob.changeset(user_job, %{total_tasks: user_job.total_tasks + 1}))
+
+        ImportWorker.make_job(chunk, params, user_job.id)
+      end)
+      chunk
+    end)
+  results
   end
 
   @spec process_data(User.t(), map(), map()) :: {String.t(), String.t()}
-  defp process_data(user, %{delete: "1"} = contact, _contact_attrs) do
+  def process_data(user, %{delete: "1"} = contact, _contact_attrs) do
     if user.roles == [:glific_admin] || user.upload_contacts == true do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
         nil ->
@@ -208,7 +244,7 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  defp process_data(user, contact_attrs, _attrs) do
+  def process_data(user, contact_attrs, _attrs) do
     cond do
       user.roles == [:glific_admin] ->
         {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
@@ -373,15 +409,15 @@ defmodule Glific.Contacts.Import do
     )
   end
 
-  @spec add_optin_date(map(), any(), String.t()) :: map()
-  defp add_optin_date(results, "", _date_format), do: Map.put(results, :optin, nil)
-  defp add_optin_date(results, nil, _date_format), do: results
+  # @spec add_optin_date(map(), any(), String.t()) :: map()
+  # defp add_optin_date(results, "", _date_format), do: Map.put(results, :optin, nil)
+  # defp add_optin_date(results, nil, _date_format), do: results
 
-  defp add_optin_date(results, opt_in, date_format) do
-    Map.put(
-      results,
-      :optin_time,
-      elem(Timex.parse(opt_in, date_format), 1)
-    )
-  end
+  # defp add_optin_date(results, opt_in, date_format) do
+  #   Map.put(
+  #     results,
+  #     :optin_time,
+  #     elem(Timex.parse(opt_in, date_format), 1)
+  #   )
+  # end
 end
