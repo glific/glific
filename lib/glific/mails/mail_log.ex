@@ -111,7 +111,6 @@ defmodule Glific.Mails.MailLog do
   def mail_sent_in_past_time?("critical_notification", time, organization_id, message_body) do
     # for critical notifications, we have to check the mail body to make sure
     # we are not skipping unique messages
-
     count =
       MailLog
       |> where([ml], ml.category == "critical_notification")

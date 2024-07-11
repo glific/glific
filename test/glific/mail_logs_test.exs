@@ -112,8 +112,7 @@ defmodule Glific.MailLogTest do
     old_time = Glific.go_back_time(24)
     assert true == MailLog.mail_sent_in_past_time?(mail_log.category, old_time, organization_id)
 
-    assert {:ok, %MailLog{} = _updated_mail_log} =
-             MailLog.update_mail_log(mail_log, %{inserted_at: Glific.go_back_time(25)})
+    update_mail_log(mail_log.id, Glific.go_back_time(25))
 
     assert false == MailLog.mail_sent_in_past_time?(mail_log.category, old_time, organization_id)
   end
@@ -141,8 +140,7 @@ defmodule Glific.MailLogTest do
              message_body
            )
 
-    assert {:ok, %MailLog{} = _updated_mail_log} =
-             MailLog.update_mail_log(mail_log, %{inserted_at: Glific.go_back_time(25)})
+    update_mail_log(mail_log.id, Glific.go_back_time(25))
 
     refute MailLog.mail_sent_in_past_time?(
              mail_log.category,
@@ -159,6 +157,7 @@ defmodule Glific.MailLogTest do
     # content should mimic the actual one
 
     attrs = Map.merge(@valid_critical_attrs, %{organization_id: organization_id})
+    # |> IO.inspect()
     assert {:ok, %MailLog{} = mail_log} = MailLog.create_mail_log(attrs)
     old_time = Glific.go_back_time(24)
 
@@ -175,8 +174,7 @@ defmodule Glific.MailLogTest do
              message_body
            )
 
-    assert {:ok, %MailLog{} = _updated_mail_log} =
-             MailLog.update_mail_log(mail_log, %{inserted_at: Glific.go_back_time(24)})
+    update_mail_log(mail_log.id, Glific.go_back_time(24))
 
     assert MailLog.mail_sent_in_past_time?(
              mail_log.category,
@@ -215,8 +213,7 @@ defmodule Glific.MailLogTest do
         "Disabling bigquery. Error using streaming api"
       )
 
-    assert {:ok, %MailLog{} = _updated_mail_log} =
-             MailLog.update_mail_log(mail_log, %{inserted_at: Glific.go_back_time(24)})
+    update_mail_log(mail_log.id, Glific.go_back_time(24))
 
     refute MailLog.mail_sent_in_past_time?(
              mail_log.category,
@@ -224,5 +221,13 @@ defmodule Glific.MailLogTest do
              organization_id,
              message_body
            )
+  end
+
+  @spec update_mail_log(integer(), DateTime.t()) :: any()
+  defp update_mail_log(mail_log_id, time) do
+    MailLog
+    |> where([ml], ml.id == ^mail_log_id)
+    |> update([ml], set: [inserted_at: ^time])
+    |> Repo.update_all([])
   end
 end
