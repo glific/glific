@@ -11,14 +11,22 @@ defmodule Glific.Mails.NotificationMail do
   def critical_mail(org, message) do
     subject = "Glific CRITICAL Issue: Needs your immediate attention."
 
-    body = """
+    body = create_critical_mail_body(org, message)
+
+    Mailer.common_send(org, subject, body)
+  end
+
+  @doc """
+  Create the text body to be send in the critical notification mail
+  """
+  @spec create_critical_mail_body(Organization.t(), String.t()) :: String.t()
+  def create_critical_mail_body(org, message) do
+    """
     Hello #{org.name}
     Your Glific instance has run into this critical error: #{message}
     Please contact the Glific team in case you don't understand the issue.
     The Glific team
     """
-
-    Mailer.common_send(org, subject, body)
   end
 
   @doc """
