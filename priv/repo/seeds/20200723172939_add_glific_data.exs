@@ -675,7 +675,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     data = [
       {"Name", "name", :text, :contact},
       {"Gender", "gender", :text, :contact},
-      {"Settings", "settings", :text, :contact}
+      {"Consent status", "settings", :text, :contact}
     ]
 
     Enum.map(data, &contacts_field(&1, organization))
