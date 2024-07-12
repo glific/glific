@@ -1,4 +1,6 @@
 defmodule Glific.MailLogTest do
+  alias Glific.Mails.NotificationMail
+  alias Glific.Partners
   use Glific.DataCase
   use ExUnit.Case
 
@@ -27,6 +29,14 @@ defmodule Glific.MailLogTest do
       category: nil,
       status: nil,
       content: nil
+    }
+    @valid_critical_attrs %{
+      category: "critical_notification",
+      status: "sent",
+      content: %{
+        data:
+          "%{private: %{}, from: {\"Team\", \"info@team.org\"}, cc: [{\"Team support\", \"support@team.org\"}], to: [{\"NGO\", \"name@ngo.org\"}], assigns: %{}, headers: %{}, subject: \"Glific CRITICAL Issue: Needs your immediate attention.\", attachments: [], bcc: [], text_body: \"Hello Glific\\nYour Glific instance has run into this critical error: Disabling bigquery. Error fetching token with Service Account JSON\\nPlease contact the Glific team in case you don't understand the issue.\\nThe Glific team\\n\", html_body: nil, provider_options: %{}, reply_to: nil}"
+      }
     }
   end
 
@@ -97,14 +107,127 @@ defmodule Glific.MailLogTest do
   test "mail_sent_in_past_time?/3 checks if we have sent in a mail in the given time", %{
     organization_id: organization_id
   } do
-    attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
+    attrs = Map.merge(@valid_more_attrs, %{organization_id: organization_id})
     assert {:ok, %MailLog{} = mail_log} = MailLog.create_mail_log(attrs)
     old_time = Glific.go_back_time(24)
     assert true == MailLog.mail_sent_in_past_time?(mail_log.category, old_time, organization_id)
 
-    assert {:ok, %MailLog{} = _updated_mail_log} =
-             MailLog.update_mail_log(mail_log, %{inserted_at: Glific.go_back_time(25)})
+    update_mail_log(mail_log.id, Glific.go_back_time(25))
 
-    assert true == MailLog.mail_sent_in_past_time?(mail_log.category, old_time, organization_id)
+    assert false == MailLog.mail_sent_in_past_time?(mail_log.category, old_time, organization_id)
+  end
+
+  test "mail_sent_in_past_time?/4 checks if we have sent in a critical_notification mail in the given time",
+       %{
+         organization_id: organization_id
+       } do
+    # content should mimic the actual one
+
+    attrs = Map.merge(@valid_critical_attrs, %{organization_id: organization_id})
+    assert {:ok, %MailLog{} = mail_log} = MailLog.create_mail_log(attrs)
+    old_time = Glific.go_back_time(24)
+
+    message_body =
+      Partners.organization(organization_id)
+      |> NotificationMail.create_critical_mail_body(
+        "Disabling bigquery. Error fetching token with Service Account JSON"
+      )
+
+    assert MailLog.mail_sent_in_past_time?(
+             mail_log.category,
+             old_time,
+             organization_id,
+             message_body
+           )
+
+    update_mail_log(mail_log.id, Glific.go_back_time(25))
+
+    refute MailLog.mail_sent_in_past_time?(
+             mail_log.category,
+             old_time,
+             organization_id,
+             message_body
+           )
+  end
+
+  test "mail_sent_in_past_time?/4 checks if we have sent in a critical_notification mail with same message in same duration",
+       %{
+         organization_id: organization_id
+       } do
+    # content should mimic the actual one
+
+    attrs = Map.merge(@valid_critical_attrs, %{organization_id: organization_id})
+    # |> IO.inspect()
+    assert {:ok, %MailLog{} = mail_log} = MailLog.create_mail_log(attrs)
+    old_time = Glific.go_back_time(24)
+
+    message_body =
+      Partners.organization(organization_id)
+      |> NotificationMail.create_critical_mail_body(
+        "Disabling bigquery. Error fetching token with Service Account JSON"
+      )
+
+    assert MailLog.mail_sent_in_past_time?(
+             mail_log.category,
+             old_time,
+             organization_id,
+             message_body
+           )
+
+    update_mail_log(mail_log.id, Glific.go_back_time(24))
+
+    assert MailLog.mail_sent_in_past_time?(
+             mail_log.category,
+             old_time,
+             organization_id,
+             message_body
+           )
+  end
+
+  test "mail_sent_in_past_time?/4 checks if we have sent in a critical_notification mail with different message in same duration",
+       %{
+         organization_id: organization_id
+       } do
+    # content should mimic the actual one
+
+    attrs = Map.merge(@valid_critical_attrs, %{organization_id: organization_id})
+    assert {:ok, %MailLog{} = mail_log} = MailLog.create_mail_log(attrs)
+    old_time = Glific.go_back_time(24)
+
+    message_body =
+      Partners.organization(organization_id)
+      |> NotificationMail.create_critical_mail_body(
+        "Disabling bigquery. Error fetching token with Service Account JSON"
+      )
+
+    assert MailLog.mail_sent_in_past_time?(
+             mail_log.category,
+             old_time,
+             organization_id,
+             message_body
+           )
+
+    message_body =
+      Partners.organization(organization_id)
+      |> NotificationMail.create_critical_mail_body(
+        "Disabling bigquery. Error using streaming api"
+      )
+
+    update_mail_log(mail_log.id, Glific.go_back_time(24))
+
+    refute MailLog.mail_sent_in_past_time?(
+             mail_log.category,
+             old_time,
+             organization_id,
+             message_body
+           )
+  end
+
+  @spec update_mail_log(integer(), DateTime.t()) :: any()
+  defp update_mail_log(mail_log_id, time) do
+    MailLog
+    |> where([ml], ml.id == ^mail_log_id)
+    |> update([ml], set: [inserted_at: ^time])
+    |> Repo.update_all([])
   end
 end
