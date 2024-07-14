@@ -394,7 +394,7 @@ defmodule Glific.ContactsTest do
     end
 
     test "maybe_update_contact/1 with a nil input" do
-      {:error, error} = Contacts.maybe_update_contact(nil)
+      {:error, error} = Contacts.maybe_update_contact(%{phone: nil})
       assert error == "Invalid input information"
     end
 
