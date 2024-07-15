@@ -266,6 +266,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   @spec trim_content(map(), String.t()) :: map()
+  #type: quick reply
   defp trim_content(%{"content" => content, "options" => options} = map, label) do
     updated_content = maybe_trim_header(content, label)
     trimmed_text = Map.put(updated_content, "text", trim_field(content["text"], 1024))
@@ -277,6 +278,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     }
   end
 
+  #type: list
   defp trim_content(
          %{"body" => body, "globalButtons" => global_buttons, "items" => items} = map,
          _label
@@ -305,6 +307,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     }
   end
 
+  #type: location
   defp trim_content(%{"body" => body} = map, _label) do
     trimmed_body_text = trim_field(body["text"], 1024)
 
