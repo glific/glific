@@ -474,15 +474,14 @@ defmodule Glific.Contacts do
   """
   @spec maybe_update_contact(map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, any}
-    def maybe_update_contact(%{phone: nil}), do: {:error, "Invalid input information"}
+    def maybe_update_contact(%{phone: nil}), do: {:error, "Phone number is missing" }
 
-    def maybe_update_contact(%{phone: _} = sender) do
+    def maybe_update_contact(sender) do
       case Repo.get_by(Contact, %{phone: sender.phone}) do
         nil -> {:error, "Contact #{sender.phone} was not found and hence not added"}
         contact -> update_contact(contact, sender)
         end
     end
-
 
   @doc """
   Check if this contact id is a new contact.
