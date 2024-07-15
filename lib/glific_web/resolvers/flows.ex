@@ -115,7 +115,7 @@ defmodule GlificWeb.Resolvers.Flows do
 
     stream
     |> IO.binstream(:line)
-    |> CSV.decode!()
+    |> CSV.decode!(escape_max_lines: 50)
     |> Enum.into([])
     |> Import.import_localization(flow)
 
