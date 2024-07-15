@@ -283,7 +283,7 @@ defmodule Glific.Templates.InteractiveTemplates do
        ) do
     %{
       map
-      | "body" => trim_field(body, 60),
+      | "body" => trim_field(body, 1024),
         "globalButtons" =>
           Enum.map(global_buttons, &Map.put(&1, "title", trim_field(&1["title"], 20))),
         "items" =>
