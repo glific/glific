@@ -142,7 +142,7 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
       data_list =
         stream
         |> IO.binstream(:line)
-        |> CSV.decode!()
+        |> CSV.decode!(escape_max_lines: 50)
         |> Enum.into([])
 
       {:ok, interactive_template, message} =
