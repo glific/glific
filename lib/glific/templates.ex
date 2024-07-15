@@ -553,7 +553,7 @@ defmodule Glific.Templates do
       if current_template.status != template["status"] do
         change_template_status(template["status"], current_template, template)
         |> Map.put(:category, template["category"])
-        |> Map.put(:quality,template["quality"])
+        |> Map.put(:quality, template["quality"])
       else
         %{
           status: template["status"],
