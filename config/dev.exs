@@ -27,6 +27,9 @@ config :glific, GlificWeb.Endpoint,
     tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
   ]
 
+config :logger,
+  level: :error
+
 # config :absinthe, Absinthe.Logger,
 #   pipeline: true,
 #   level: :debug

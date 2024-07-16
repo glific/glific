@@ -14,7 +14,8 @@ defmodule Glific.Jobs.UserJob do
     :type,
     :total_tasks,
     :tasks_done,
-    :organization_id
+    :organization_id,
+    :all_tasks_created
   ]
   @optional_fields [:errors]
 
@@ -27,6 +28,7 @@ defmodule Glific.Jobs.UserJob do
           tasks_done: non_neg_integer | nil,
           organization_id: non_neg_integer | nil,
           errors: map() | nil,
+          all_tasks_created: boolean | false,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -38,6 +40,7 @@ defmodule Glific.Jobs.UserJob do
     field(:total_tasks, :integer)
     field(:tasks_done, :integer)
     field(:errors, :map, default: %{})
+    field(:all_tasks_created, :boolean, default: false)
 
     belongs_to(:organization, Organization, foreign_key: :organization_id)
 

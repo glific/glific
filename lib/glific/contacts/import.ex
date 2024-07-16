@@ -27,7 +27,7 @@ defmodule Glific.Contacts.Import do
          %{user: user, organization_id: organization_id} = contact_attrs,
          _date_format
        ) do
-      current_time = NaiveDateTime.utc_now() |> NaiveDateTime.to_string()
+    current_time = NaiveDateTime.utc_now() |> NaiveDateTime.to_string()
 
     results =
       %{
@@ -200,36 +200,30 @@ defmodule Glific.Contacts.Import do
     {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
     user_job = create_user_job(organization_id)
 
-    total_contacts_to_upload =
+    params = %{
+      params
+      | user: %{roles: params.user.roles, upload_contacts: params.user.upload_contacts}
+    }
+
+    total_chunks =
       data
       |> CSV.decode(headers: true, field_transform: &String.trim/1)
+      |> Stream.map(fn {_, data} -> cleanup_contact_data(data, params, date_format) end)
+      |> Stream.chunk_every(opts[:bsp_limit] || 100)
+      |> Stream.with_index()
+      |> Enum.map(fn {chunk, _index} ->
+          ImportWorker.make_job(chunk, params, user_job.id)
+      end)
       |> Enum.count()
 
-    Repo.transaction(fn ->
-      user_job = Repo.get!(UserJob, user_job.id)
-      Repo.update!(UserJob.changeset(user_job, %{total_tasks: total_contacts_to_upload}))
-    end)
-
-    results =
-    data
-    |> CSV.decode(headers: true, field_transform: &String.trim/1)
-    |> Stream.map(fn {_, data} -> cleanup_contact_data(data, params, date_format) end)
-    |> Stream.chunk_every(opts[:bsp_limit] || 100)
-    |> Stream.with_index()
-    |> Enum.map(fn {chunk, _index} ->
-      Repo.transaction(fn ->
-        user_job = Repo.get!(UserJob, user_job.id)
-        Repo.update!(UserJob.changeset(user_job, %{total_tasks: user_job.total_tasks + 1}))
-
-        ImportWorker.make_job(chunk, params, user_job.id)
-      end)
-      chunk
-    end)
-  results
+    Repo.update!(UserJob.changeset(user_job, %{total_tasks: total_chunks}))
+    Repo.update!(UserJob.changeset(user_job, %{all_tasks_created: true}))
+    []
   end
 
   @spec process_data(User.t(), map(), map()) :: {String.t(), String.t()}
   def process_data(user, %{delete: "1"} = contact, _contact_attrs) do
+    IO.inspect("here")
     if user.roles == [:glific_admin] || user.upload_contacts == true do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
         nil ->
@@ -245,6 +239,7 @@ defmodule Glific.Contacts.Import do
   end
 
   def process_data(user, contact_attrs, _attrs) do
+    IO.inspect("asi")
     cond do
       user.roles == [:glific_admin] ->
         {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
