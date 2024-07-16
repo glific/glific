@@ -21,7 +21,7 @@ defmodule Glific.Providers.Gupshup.Message do
   @spec send_text(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_text(message, attrs \\ %{}) do
-    %{type: :text, text: message.body, isHSM: message.is_hsm, previewUrl: true}
+    %{type: :text, text: message.body, isHSM: message.is_hsm}
     |> check_size()
     |> send_message(message, attrs)
   end
