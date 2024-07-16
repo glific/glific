@@ -73,6 +73,7 @@ defmodule Glific.Providers.Gupshup.Template do
       {:error, error} ->
         Logger.error(error)
         {:error, ["BSP", "couldn't submit for approval"]}
+        {:error, ["BSP", error]}
     end
   end
 

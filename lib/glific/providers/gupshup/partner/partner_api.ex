@@ -182,11 +182,17 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       org_id: org_id
     )
     |> case do
-      {:ok, response} ->
-        {:ok, response}
 
-      {:error, error} ->
-        {:error, error}
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+        {:ok, Jason.decode!(body)}
+        
+      {:ok, %Tesla.Env{status: status, body: %{"message" => message}}} when status in 400..499 ->
+        {:error, message}
+
+      unmatched_response ->
+        Logger.error(unmatched_response)
+        {:error, "unmatched_response"}
+
     end
   end
 
