@@ -35,14 +35,40 @@ defmodule Glific.Contacts.ImportWorker do
       }) do
 
     Repo.put_process_state(params["organization_id"])
-    user_job = Repo.get(UserJob, user_job_id)
-    tasks_done = user_job.tasks_done + 1
-    Repo.update!(UserJob.changeset(user_job, %{tasks_done: tasks_done}))
+    result = Enum.reduce_while(contacts, %{}, fn contact, acc ->
+      phone_number = Map.get(contact, "phone")
+      acc = validate_phone(acc, phone_number)
+
+      if Map.has_key?(acc, :errors) do
+        {:halt, acc}
+      else
+        {:cont, acc}
+      end
+    end)
+
+    if Map.has_key?(result, :errors) do
+      {:error, result}
+    else
+      user_job = Repo.get(UserJob, user_job_id)
+      tasks_done = user_job.tasks_done + 1
+      Repo.update!(UserJob.changeset(user_job, %{tasks_done: tasks_done}))
     # Enum.each(contacts, fn contact ->
     #   process_contact(contact, params)
     # end)
+    end
 
     :ok
+  end
+
+  @spec validate_phone(map(), String.t(), atom()) :: map()
+  defp validate_phone(result, phone, key \\ :phone) do
+    case ExPhoneNumber.parse(phone, "IN") do
+      {:ok, _phone} ->
+        result
+
+      _ ->
+        Map.update(result, :errors, %{key => "Phone is not valid."}, &Map.put(&1, key, "Phone is not valid."))
+    end
   end
 
   defp process_contact(contact, params) do
