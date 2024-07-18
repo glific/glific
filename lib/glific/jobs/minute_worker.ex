@@ -20,7 +20,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Jobs.BSPBalanceWorker,
     Partners,
     Partners.Billing,
-    Contacts.ImportWorker,
+    Jobs.UserJobWorker,
     Providers.Maytapi.WAWorker,
     Searches.CollectionCount,
     Stats,
@@ -67,7 +67,7 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&BroadcastWorker.execute/1, nil, [])
 
       "check_user_job_status" ->
-        Partners.perform_all(&ImportWorker.check_user_job_status/1, nil, [])
+        Partners.perform_all(&UserJobWorker.check_user_job_status/1, nil, [])
 
       "bigquery" ->
         Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil, services["bigquery"],

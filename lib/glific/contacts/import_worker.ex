@@ -2,8 +2,6 @@ defmodule Glific.Contacts.ImportWorker do
   @moduledoc """
   Worker for processing contact chunks.
   """
-  import Ecto.Query
-
   require Logger
 
   use Oban.Worker,
@@ -20,42 +18,43 @@ defmodule Glific.Contacts.ImportWorker do
   @doc """
   Creating new job for each chunk of contacts.
   """
-  @spec make_job(list(), map(), non_neg_integer()) :: :ok
-  def make_job(chunk, params, user_job_id) do
+  @spec make_job(list(), map(), non_neg_integer(), non_neg_integer()) :: :ok
+  def make_job(chunk, params, user_job_id, index) do
     __MODULE__.new(%{contacts: chunk, params: params, user_job_id: user_job_id})
-    |> Oban.insert()
+    |> Oban.insert(schedule_in: index)
   end
 
   @doc """
   Standard perform method to use Oban worker.
   """
   @impl Oban.Worker
-  def perform(%Oban.Job{
-        args: %{"contacts" => contacts, "params" => params, "user_job_id" => user_job_id} = args
-      }) do
+  def perform(%Oban.Job{args: %{"contacts" => contacts, "params" => params, "user_job_id" => user_job_id}}) do
+    params = %{
+      organization_id: params["organization_id"],
+      user: %{
+        roles: Enum.map(params["user"]["roles"], &String.to_existing_atom/1),
+        upload_contacts: params["user"]["upload_contacts"]
+      }}
 
-    Repo.put_process_state(params["organization_id"])
-    result = Enum.reduce_while(contacts, %{}, fn contact, acc ->
+    Repo.put_process_state(params.organization_id)
+
+    errors = Enum.reduce(contacts, %{}, fn contact, acc ->
       phone_number = Map.get(contact, "phone")
       acc = validate_phone(acc, phone_number)
-
-      if Map.has_key?(acc, :errors) do
-        {:halt, acc}
-      else
-        {:cont, acc}
-      end
+      acc
     end)
 
-    if Map.has_key?(result, :errors) do
-      {:error, result}
-    else
-      user_job = Repo.get(UserJob, user_job_id)
-      tasks_done = user_job.tasks_done + 1
-      Repo.update!(UserJob.changeset(user_job, %{tasks_done: tasks_done}))
-    # Enum.each(contacts, fn contact ->
-    #   process_contact(contact, params)
-    # end)
-    end
+    user_job = Repo.get(UserJob, user_job_id)
+    tasks_done = user_job.tasks_done + 1
+    updated_errors = Map.merge(user_job.errors || %{}, errors)
+    UserJob.update_user_job(user_job, %{tasks_done: tasks_done, errors: updated_errors})
+
+    contacts = Enum.map(contacts, fn contact ->
+      for {key, value} <- contact, into: %{}, do: {String.to_existing_atom(key), value}
+    end)
+    Enum.each(contacts, fn contact ->
+      process_contact(contact, params)
+    end)
 
     :ok
   end
@@ -72,28 +71,11 @@ defmodule Glific.Contacts.ImportWorker do
   end
 
   defp process_contact(contact, params) do
-    user = params["user"]
+    user = params.user
     contact_attrs = contact
 
     contact_attrs_with_org =
-      Map.put(contact_attrs, :organization_id, Repo.put_process_state(params["organization_id"]))
+      Map.put(contact_attrs, :organization_id, Repo.put_process_state(params.organization_id))
     Import.process_data(user, contact_attrs, contact_attrs_with_org)
-  end
-
-  def check_user_job_status(_org_id) do
-    query =
-      from uj in UserJob,
-        where: uj.status == "pending" and uj.all_tasks_created == true
-
-    user_jobs = Repo.all(query)
-
-    Enum.each(user_jobs, fn user_job ->
-      if user_job.total_tasks == user_job.tasks_done do
-        Repo.transaction(fn ->
-          user_job = Ecto.Changeset.change(user_job, status: "success")
-          Repo.update!(user_job)
-        end)
-      end
-    end)
   end
 end

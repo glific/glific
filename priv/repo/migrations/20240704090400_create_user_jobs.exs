@@ -11,6 +11,8 @@ defmodule Glific.Repo.Migrations.CreateUserJobs do
 
       add :tasks_done, :integer, comment: "Number of tasks completed for this job"
 
+      add :all_tasks_created, :boolean,  default: false, comment: "Specifies whether all tasks created"
+
       add :organization_id, references(:organizations, on_delete: :delete_all),
       null: false,
       comment: "Unique organization ID."

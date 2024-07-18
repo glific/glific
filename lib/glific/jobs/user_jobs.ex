@@ -6,7 +6,8 @@ defmodule Glific.Jobs.UserJob do
   alias __MODULE__
 
   alias Glific.{
-    Partners.Organization
+    Partners.Organization,
+    Repo
   }
 
   @required_fields [
@@ -57,4 +58,45 @@ defmodule Glific.Jobs.UserJob do
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:organization_id)
   end
+
+  @spec create_user_job(map()) :: %UserJob{}
+  def create_user_job(attrs) do
+    %UserJob{}
+    |> UserJob.changeset(attrs)
+    |> Repo.insert!()
+  end
+
+  @doc """
+  Updates a user job with the given changeset.
+  """
+  def update_user_job(user_job, changes) do
+    user_job
+    |> changeset(changes)
+    |> Repo.update()
+  end
+
+  @spec list_user_jobs(map()) :: [UserJob.t()]
+  def list_user_jobs(args \\ %{}) do
+    args
+    |> Glific.add_limit()
+    |> Repo.list_filter_query(UserJob, &Repo.opts_with_name/2, &filter_with/2)
+    |> Repo.all()
+  end
+
+  defp filter_with(query, filter) do
+    Enum.reduce(filter, query, fn
+      {:status, status}, query ->
+        from(u in query, where: u.status == ^status)
+
+      {:all_tasks_created, all_tasks_created}, query ->
+        from(u in query, where: u.all_tasks_created == ^all_tasks_created)
+
+      {:organization_id, organization_id}, query ->
+        from(u in query, where: u.organization_id == ^organization_id)
+
+      _, query ->
+        query
+    end)
+  end
+
 end

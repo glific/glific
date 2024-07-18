@@ -198,8 +198,15 @@ defmodule Glific.Contacts.Import do
   defp decode_csv_data(params, data, opts) do
     %{organization_id: organization_id, user: _user} = params
     {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
-    user_job = create_user_job(organization_id)
-
+    user_job_attrs = %{
+      status: "pending",
+      type: "contact_import",
+      total_tasks: 0,
+      tasks_done: 0,
+      organization_id: organization_id,
+      errors: %{}
+    }
+    user_job = UserJob.create_user_job(user_job_attrs)
     params = %{
       params
       | user: %{roles: params.user.roles, upload_contacts: params.user.upload_contacts}
@@ -211,19 +218,17 @@ defmodule Glific.Contacts.Import do
       |> Stream.map(fn {_, data} -> cleanup_contact_data(data, params, date_format) end)
       |> Stream.chunk_every(opts[:bsp_limit] || 100)
       |> Stream.with_index()
-      |> Enum.map(fn {chunk, _index} ->
-          ImportWorker.make_job(chunk, params, user_job.id)
+      |> Enum.map(fn {chunk, index} ->
+        ImportWorker.make_job(chunk, params, user_job.id, index)
       end)
       |> Enum.count()
 
-    Repo.update!(UserJob.changeset(user_job, %{total_tasks: total_chunks}))
-    Repo.update!(UserJob.changeset(user_job, %{all_tasks_created: true}))
+    UserJob.update_user_job(user_job, %{total_tasks: total_chunks, all_tasks_created: true})
     []
   end
 
   @spec process_data(User.t(), map(), map()) :: {String.t(), String.t()}
   def process_data(user, %{delete: "1"} = contact, _contact_attrs) do
-    IO.inspect("here")
     if user.roles == [:glific_admin] || user.upload_contacts == true do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
         nil ->
@@ -239,9 +244,8 @@ defmodule Glific.Contacts.Import do
   end
 
   def process_data(user, contact_attrs, _attrs) do
-    IO.inspect("asi")
     cond do
-      user.roles == [:glific_admin] ->
+      user.roles == [:admin] ->
         {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
 
         create_group_and_contact_fields(contact_attrs, contact)
