@@ -301,6 +301,12 @@ defmodule GlificWeb.Resolvers.Flows do
   @spec copy_flow(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def copy_flow(_, %{id: id, input: params}, _) do
+    {:ok, template} = Repo.fetch_by(Flow, %{id: id})
+
+    if template.is_template == true do
+      Glific.Metrics.increment("Template on UI flow")
+    end
+
     do_copy_flow(id, params, &Flows.copy_flow/2)
   end
 
