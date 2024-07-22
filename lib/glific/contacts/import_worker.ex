@@ -35,7 +35,6 @@ defmodule Glific.Contacts.ImportWorker do
         roles: Enum.map(params["user"]["roles"], &String.to_existing_atom/1),
         upload_contacts: params["user"]["upload_contacts"]
       }}
-
     Repo.put_process_state(params.organization_id)
 
     errors = Enum.reduce(contacts, %{}, fn contact, acc ->

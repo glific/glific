@@ -78,7 +78,6 @@ defmodule Glific.Jobs.UserJob do
   @spec list_user_jobs(map()) :: [UserJob.t()]
   def list_user_jobs(args \\ %{}) do
     args
-    |> Glific.add_limit()
     |> Repo.list_filter_query(UserJob, &Repo.opts_with_name/2, &filter_with/2)
     |> Repo.all()
   end

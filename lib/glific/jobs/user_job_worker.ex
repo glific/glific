@@ -27,6 +27,4 @@ defmodule Glific.Jobs.UserJobWorker do
       end
     end)
   end
-
-  # Other functions related to UserJobWorker
 end

@@ -19,8 +19,6 @@ defmodule Glific.Contacts.Import do
     Users.User
   }
 
-  # @max_concurrency System.schedulers_online()
-
   @spec cleanup_contact_data(map(), map(), String.t()) :: map()
   defp cleanup_contact_data(
          data,
@@ -123,7 +121,6 @@ defmodule Glific.Contacts.Import do
     contact_attrs = %{organization_id: organization_id, user: user, collection: collection}
 
     result = handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
-
     if is_list(result), do: parse_result(result, "default"), else: result
   end
 
@@ -182,18 +179,6 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  def create_user_job(org_id) do
-    %UserJob{
-      status: "pending",
-      type: "contact_import",
-      total_tasks: 0,
-      tasks_done: 0,
-      organization_id: org_id,
-      errors: %{}
-    }
-    |> Repo.insert!()
-  end
-
   @spec decode_csv_data(map(), map(), [{atom(), String.t()}]) :: {:ok, list()} | {:error, any()}
   defp decode_csv_data(params, data, opts) do
     %{organization_id: organization_id, user: _user} = params
@@ -229,7 +214,7 @@ defmodule Glific.Contacts.Import do
 
   @spec process_data(User.t(), map(), map()) :: {String.t(), String.t()}
   def process_data(user, %{delete: "1"} = contact, _contact_attrs) do
-    if user.roles == [:glific_admin] || user.upload_contacts == true do
+    if user.roles == [:admin] || user.upload_contacts == true do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
         nil ->
           {contact.phone, "Contact does not exist"}
@@ -407,16 +392,4 @@ defmodule Glific.Contacts.Import do
       Enum.at(Settings.get_language_by_label_or_locale(language), 0).id
     )
   end
-
-  # @spec add_optin_date(map(), any(), String.t()) :: map()
-  # defp add_optin_date(results, "", _date_format), do: Map.put(results, :optin, nil)
-  # defp add_optin_date(results, nil, _date_format), do: results
-
-  # defp add_optin_date(results, opt_in, date_format) do
-  #   Map.put(
-  #     results,
-  #     :optin_time,
-  #     elem(Timex.parse(opt_in, date_format), 1)
-  #   )
-  # end
 end

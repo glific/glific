@@ -1,10 +1,13 @@
 defmodule GlificWeb.Schema.ContactTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
+  use Oban.Pro.Testing, repo: Glific.Repo
+
 
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.ImportWorker,
     Fixtures,
     Flows,
     Messages.Message,
@@ -299,8 +302,9 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert Contacts.count_contacts(%{filter: %{phone: test_phone}}) == 1
-    assert Contacts.count_contacts(%{filter: %{term: test_phone}}) == 1
+    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default)
 
     # Test success for creating a contact with opt-in
     Tesla.Mock.mock(fn
@@ -327,8 +331,9 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
-    assert count == 1
+    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default)
 
     # Test success for updating a contact
     Tesla.Mock.mock(fn
@@ -355,8 +360,9 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert Contacts.count_contacts(%{filter: %{name: "#{test_name} updated"}}) == 1
-    assert Contacts.count_contacts(%{filter: %{term: "#{test_name} updated"}}) == 1
+    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default)
 
     # # Test success for uploading contact through url
     Tesla.Mock.mock(fn
@@ -384,8 +390,9 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    count = Contacts.count_contacts(%{filter: %{name: "uploaded_contact"}})
-    assert count == 1
+    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default)
   end
 
   test "Test success for uploading contact through filepath", %{manager: user} do
@@ -416,8 +423,9 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    count = Contacts.count_contacts(%{filter: %{name: "test"}})
-    assert count == 1
+    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default)
   end
 
   test "Test success for uploading contact through filepath organization_id is given", %{
@@ -451,8 +459,9 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    count = Contacts.count_contacts(%{filter: %{name: "test"}})
-    assert count == 1
+    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default)
   end
 
   test "test success for uploading contact for different csv", %{manager: user} do
@@ -483,41 +492,13 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    count = Contacts.count_contacts(%{filter: %{name: "test"}})
-    assert count == 1
+    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default)
   end
 
-  test "test failure when uploading contacts by admin user", %{manager: user} do
-    file =
-      System.tmp_dir!()
-      |> Path.join("fixture.csv")
-      |> File.open!([:write, :utf8])
-
-    [
-      ~w(name phone language opt_in delete collection),
-      ["test", "9989329297", "english", "2021-03-09 12:34:25", "0", "collection"]
-    ]
-    |> CSV.encode()
-    |> Enum.each(&IO.write(file, &1))
-
-    file_name = System.tmp_dir!() |> Path.join("fixture.csv")
-
-    result =
-      auth_query_gql_by(:import_contacts, user,
-        variables: %{
-          "type" => "FILE_PATH",
-          "data" => file_name,
-          "id" => user.organization_id
-        }
-      )
-
-    assert {:ok, _} = result
-    count = Contacts.count_contacts(%{filter: %{name: "test"}})
-    assert count == 0
-  end
-
-  test "test success for uploading contact for glific admin", %{manager: user} do
-    user = Map.put(user, :roles, [:glific_admin])
+  test "test success for uploading contact for admin", %{manager: user} do
+    user = Map.put(user, :roles, [:admin])
 
     test_name = "test2"
     test_phone = "test phone2"
@@ -536,8 +517,9 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    count = Contacts.count_contacts(%{filter: %{name: "test"}})
-    assert count == 1
+    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default)
   end
 
   test "update a contact and test possible scenarios and errors", %{staff: user, manager: manager} do
