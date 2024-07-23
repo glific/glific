@@ -454,4 +454,19 @@ defmodule Glific do
       ulca_api_key: Application.get_env(:glific, :bhasini_ulca_api_key)
     }
   end
+
+  @doc """
+  mask last 5 digit of a phone number
+  """
+  @spec mask_phone_number(String.t()) :: String.t()
+  def mask_phone_number(phone) when is_integer(phone) do
+    phone
+    |> Integer.to_string()
+    |> mask_phone_number()
+  end
+
+  def mask_phone_number(phone) do
+    {visible, masked} = String.split_at(phone, -5)
+    visible <> String.replace(masked, ~r/\d/, "*")
+  end
 end
