@@ -459,7 +459,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     assert {:ok, query_data} = result
 
-    category =
+    allow_template_change =
       get_in(query_data, [
         :data,
         "createSessionTemplate",
@@ -467,7 +467,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
         "allow_template_category_change"
       ])
 
-    assert category == false
+    assert allow_template_change == false
 
     # Create second template without passing allowTemplateCategoryChange (should default to true)
     result =
@@ -484,7 +484,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     assert {:ok, query_data} = result
 
-    category =
+    allow_template_change =
       get_in(query_data, [
         :data,
         "createSessionTemplate",
@@ -492,6 +492,6 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
         "allow_template_category_change"
       ])
 
-    assert category == true
+    assert allow_template_change == true
   end
 end
