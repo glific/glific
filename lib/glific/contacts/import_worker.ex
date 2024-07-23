@@ -18,10 +18,10 @@ defmodule Glific.Contacts.ImportWorker do
   @doc """
   Creating new job for each chunk of contacts.
   """
-  @spec make_job(list(), map(), non_neg_integer(), non_neg_integer()) :: :ok
-  def make_job(chunk, params, user_job_id, index) do
+  @spec make_job(list(), map(), non_neg_integer(), non_neg_integer()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def make_job(chunk, params, user_job_id, delay) do
     __MODULE__.new(%{contacts: chunk, params: params, user_job_id: user_job_id})
-    |> Oban.insert(schedule_in: index)
+    |> Oban.insert(schedule_in: delay)
   end
 
   @doc """
@@ -37,35 +37,42 @@ defmodule Glific.Contacts.ImportWorker do
       }}
     Repo.put_process_state(params.organization_id)
 
-    errors = Enum.reduce(contacts, %{}, fn contact, acc ->
+    {errors, _} = Enum.reduce(contacts, {%{}, 0}, fn contact, {acc, index} ->
       phone_number = Map.get(contact, "phone")
-      acc = validate_phone(acc, phone_number)
-      acc
+      errors = validate_phone(phone_number)
+      acc = Map.update(acc, :errors, errors, &Map.merge(&1, errors))
+      {acc, index + 1}
     end)
-
-    user_job = Repo.get(UserJob, user_job_id)
-    tasks_done = user_job.tasks_done + 1
-    updated_errors = Map.merge(user_job.errors || %{}, errors)
-    UserJob.update_user_job(user_job, %{tasks_done: tasks_done, errors: updated_errors})
 
     contacts = Enum.map(contacts, fn contact ->
       for {key, value} <- contact, into: %{}, do: {String.to_existing_atom(key), value}
     end)
+
     Enum.each(contacts, fn contact ->
       process_contact(contact, params)
     end)
 
+    Repo.transaction(fn ->
+      user_job = Repo.get!(UserJob, user_job_id)
+      tasks_done = user_job.tasks_done + 1
+      updated_errors = Map.merge(user_job.errors || %{}, errors)
+      UserJob.update_user_job(user_job, %{tasks_done: tasks_done, errors: updated_errors})
+    end)
     :ok
   end
 
-  @spec validate_phone(map(), String.t(), atom()) :: map()
-  defp validate_phone(result, phone, key \\ :phone) do
+  @spec validate_phone(String.t() | nil) :: map()
+  defp validate_phone(nil) do
+    %{"phone" => "Phone number is missing."}
+  end
+
+  defp validate_phone(phone) do
     case ExPhoneNumber.parse(phone, "IN") do
       {:ok, _phone} ->
-        result
+        %{}
 
       _ ->
-        Map.update(result, :errors, %{key => "Phone is not valid."}, &Map.put(&1, key, "Phone is not valid."))
+        %{"phone" => "Phone #{phone} is not valid."}
     end
   end
 

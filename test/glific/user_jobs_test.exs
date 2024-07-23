@@ -37,7 +37,7 @@ defmodule Glific.UserJobTest do
 
     test "list_user_jobs/1 returns all user_jobs", %{organization: organization} do
       user_job_fixture(organization_id: organization.id)
-      user_jobs = UserJob.list_user_jobs(%{organization_id: organization.id})
+      user_jobs = UserJob.list_user_jobs(%{filter: %{organization_id: organization.id}})
       assert length(user_jobs) == 1
     end
 
@@ -78,6 +78,9 @@ defmodule Glific.UserJobTest do
       UserJob.create_user_job(attrs)
 
       assert :ok == UserJobWorker.check_user_job_status(organization.id)
-    end
+      user_job = UserJob.list_user_jobs(%{filter: %{organization_id: organization.id}})
+      success_jobs = Enum.filter(user_job, &(&1.status == "success"))
+      assert length(success_jobs) == 1
+     end
   end
 end
