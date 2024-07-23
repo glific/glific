@@ -304,7 +304,7 @@ defmodule GlificWeb.Resolvers.Flows do
     {:ok, template} = Repo.fetch_by(Flow, %{id: id})
 
     if template.is_template == true do
-      Glific.Metrics.increment("Template on UI flow")
+      Glific.Metrics.increment("Template flows on UI")
     end
 
     do_copy_flow(id, params, &Flows.copy_flow/2)
