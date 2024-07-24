@@ -202,8 +202,7 @@ defmodule Glific.Seeds.SeedsFlows do
         Map.merge(acc, %{name => interactive_template.id})
       end)
 
-    Enum.with_index(data)
-    |> Enum.map(fn {flow_item, index} ->
+    Enum.each(Enum.with_index(data), fn {flow_item, index} ->
       is_template = index < 4
 
       flow(flow_item, organization,
