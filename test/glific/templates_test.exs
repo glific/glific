@@ -692,7 +692,7 @@ defmodule Glific.TemplatesTest do
         organization_id: attrs.organization_id
       }
 
-      assert {:error, ["BSP", "couldn't submit for approval"]} =
+      assert {:error, ["BSP", "Couldn't submit for approval: Something went wrong"]} =
                Templates.create_session_template(attrs)
     end
 

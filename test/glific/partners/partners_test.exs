@@ -1284,12 +1284,14 @@ defmodule Glific.PartnersTest do
         %{method: :post} ->
           %Tesla.Env{
             status: 400,
-            body: "{\"message\":\"Template Already exists with same namespace and elementName and languageCode\",\"status\":\"error\"}"
+            body:
+              "{\"message\":\"Template Already exists with same namespace and elementName and languageCode\",\"status\":\"error\"}"
           }
       end)
 
-      assert {:error, "Template Already exists with same namespace and elementName and languageCode"} =
-        PartnerAPI.apply_for_template(1, %{ elementName: "trial"}, false)
+      assert {:error,
+              "Template Already exists with same namespace and elementName and languageCode"} =
+               PartnerAPI.apply_for_template(1, %{elementName: "trial"}, false)
     end
   end
 
@@ -1303,9 +1305,8 @@ defmodule Glific.PartnersTest do
           }
       end)
 
-      assert {:ok, "{\"message\":\"Success\",\"status\":\"error\"}"} =
-        PartnerAPI.apply_for_template(1, %{ elementName: "trial"}, false)
+      assert {:ok, %{"message" => "Success", "status" => "error"}} =
+               PartnerAPI.apply_for_template(1, %{elementName: "trial"}, false)
     end
   end
-
 end

@@ -32,7 +32,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         res["partnerApps"]
 
       {:error, error} ->
-        error = "#{inspect error}"
+        error = "#{inspect(error)}"
         if String.contains?(error, "Re-linking"), do: fetch_gupshup_app_id(org_id), else: error
     end
   end
@@ -56,7 +56,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
          }}
 
       error ->
-
         {:error, "Error while getting the ratings. #{inspect(error)}"}
     end
   end
@@ -183,20 +182,17 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     |> post_request(payload,
       org_id: org_id
     )
-
     |> case do
-
-      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
-        {:ok, Jason.decode!(body)}
+      {:ok, response} ->
+        {:ok, response}
 
       {:error, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
         decoded_body = Jason.decode!(body)
         {:error, decoded_body["message"]}
 
       unmatched_response ->
-        Logger.error("#{inspect unmatched_response}")
-        {:error, "Your template was not able to be submitted for approval."}
-
+        Logger.error("#{inspect(unmatched_response)}")
+        {:error, "Something went wrong, not able to submit the template for approval."}
     end
   end
 
