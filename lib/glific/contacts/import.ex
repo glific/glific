@@ -382,14 +382,17 @@ defmodule Glific.Contacts.Import do
     |> Repo.all()
   end
 
-  @spec add_language(map(), nil) :: map()
+  @spec add_language(map(), String.t() | nil) :: map()
   defp add_language(results, nil), do: results
 
   defp add_language(results, language) do
-    Map.put(
-      results,
-      :language_id,
-      Enum.at(Settings.get_language_by_label_or_locale(language), 0).id
-    )
+    case Settings.get_language_by_label_or_locale(language) do
+      [] ->
+        results
+      [lang | _] ->
+        Map.put(results, :language_id, lang.id)
+      nil ->
+        results
   end
+end
 end
