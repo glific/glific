@@ -234,6 +234,10 @@ defmodule Glific.Saas.Onboard do
 
   defp process_on_submission(result, _org, _registration), do: result
 
+  @doc """
+  Updates password_hash field of passed org_id with hashed password generated via Glific.Password
+  """
+  @spec update_process_on_submission(any()) :: {:error, binary()} | {:ok, <<_::232>>}
   def update_process_on_submission(org_id) do
     now = DateTime.utc_now()
     password_hash = Glific.Password.generate_password()
