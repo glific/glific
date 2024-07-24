@@ -202,18 +202,22 @@ defmodule Glific.Seeds.SeedsFlows do
         Map.merge(acc, %{name => interactive_template.id})
       end)
 
-    Enum.each(
-      data,
-      &flow(&1, organization,
+    Enum.each(data, fn flow_item ->
+      is_template = Enum.take_random(data, 4) |> Enum.member?(flow_item)
+
+      flow(flow_item, organization,
         uuid_map: uuid_map,
         id_map: flow_labels_id_map,
-        label_map: interactive_template_map
+        label_map: interactive_template_map,
+        is_template: is_template
       )
-    )
+    end)
   end
 
   @spec flow(tuple(), Organization.t(), Keyword.t()) :: nil
   defp flow({name, keywords, uuid, ignore_keywords, file}, organization, opts) do
+    is_template = Keyword.get(opts, :is_template, false)
+
     f =
       Repo.insert!(%Flow{
         name: name,
@@ -222,7 +226,7 @@ defmodule Glific.Seeds.SeedsFlows do
         version_number: "13.1.0",
         uuid: uuid,
         organization_id: organization.id,
-        is_template: true
+        is_template: is_template
       })
 
     flow_revision(f, organization, file, opts)
