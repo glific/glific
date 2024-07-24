@@ -72,7 +72,7 @@ defmodule GlificWeb.API.V1.SessionController do
   defp update_last_login(user, conn) do
     remote_ip = GlificWeb.Tenants.remote_ip(conn)
 
-    Logger.info("Updating user login timestamp, user_phone: #{user.phone}, ip: #{remote_ip}")
+    Logger.info("Updating user login timestamp, user_id: #{user.id}, ip: #{remote_ip}")
 
     user
     # we are not using update_user call here, since it destroys all tokens
