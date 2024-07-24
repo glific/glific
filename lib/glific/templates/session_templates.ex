@@ -78,7 +78,8 @@ defmodule Glific.Templates.SessionTemplate do
     :buttons,
     :bsp_id,
     :reason,
-    :quality
+    :quality,
+    :allow_template_category_change
   ]
 
   schema "session_templates" do
@@ -98,7 +99,7 @@ defmodule Glific.Templates.SessionTemplate do
     field(:is_source, :boolean, default: false)
     field(:is_active, :boolean, default: false)
     field(:is_reserved, :boolean, default: false)
-    field(:allow_template_category_change, :boolean, virtual: true, default: true)
+    field(:allow_template_category_change, :boolean, default: true)
     field(:translations, :map, default: %{})
 
     field(:has_buttons, :boolean, default: false)
