@@ -25,4 +25,14 @@ defmodule Glific.GlificTest do
     assert Glific.make_set("a,\tb\n;c") == valid
     assert Glific.make_set("a,     b;     c") == valid
   end
+
+  test "mask phone number" do
+    # when number is string
+    phone = "919876543210_2"
+    assert Glific.mask_phone_number(phone) == "919876543***_*"
+
+    # when number is integer
+    phone = 9_198_765_432_102
+    assert Glific.mask_phone_number(phone) == "91987654*****"
+  end
 end
