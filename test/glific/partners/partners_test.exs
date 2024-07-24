@@ -1277,4 +1277,36 @@ defmodule Glific.PartnersTest do
       assert {:error, :enoent} = PartnerAPI.delete_local_resource("sample2.png", "sample2")
     end
   end
+
+  describe "test gupshup error handling on applying for template/3" do
+    test "successfull gupshup error handling for HSM template" do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 400,
+            body:
+              "{\"message\":\"Template Already exists with same namespace and elementName and languageCode\",\"status\":\"error\"}"
+          }
+      end)
+
+      assert {:error,
+              "Template Already exists with same namespace and elementName and languageCode"} =
+               PartnerAPI.apply_for_template(1, %{elementName: "trial"}, false)
+    end
+  end
+
+  describe "test sucessful response on the api: applying for template/3" do
+    test "successfull response for applying for HSM template" do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"message\":\"Success\",\"status\":\"error\"}"
+          }
+      end)
+
+      assert {:ok, %{"message" => "Success", "status" => "error"}} =
+               PartnerAPI.apply_for_template(1, %{elementName: "trial"}, false)
+    end
+  end
 end
