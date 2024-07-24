@@ -234,7 +234,7 @@ defmodule Glific.Saas.Onboard do
 
   defp process_on_submission(result, _org, _registration), do: result
 
-  defp update_process_on_submission(org_id) do
+  def update_process_on_submission(org_id) do
     now = DateTime.utc_now()
     password_hash = Glific.Password.generate_password()
 
