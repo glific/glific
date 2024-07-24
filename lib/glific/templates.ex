@@ -140,6 +140,7 @@ defmodule Glific.Templates do
   @spec create_session_template(map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_session_template(%{is_hsm: true} = attrs) do
+    IO.inspect(attrs, label: "trial")
     # validate HSM before calling the BSP's API
     attrs =
       if Map.has_key?(attrs, :shortcode),
@@ -171,8 +172,15 @@ defmodule Glific.Templates do
   @spec validate_button_template(map()) :: :ok | {:error, [String.t()]}
   defp validate_button_template(%{has_buttons: false} = _attrs), do: :ok
 
-  defp validate_button_template(%{has_buttons: true, button_type: _, buttons: _} = _attrs),
-    do: :ok
+  defp validate_button_template(%{has_buttons: true, button_type: _, buttons: buttons} = _attrs) do
+    invalid_texts = Enum.filter(buttons, fn %{"text" => text} ->
+      contains_invalid_chars?(text)
+    end)
+
+    if invalid_texts == [],
+      do: :ok,
+      else: {:error, ["Button Template", "Button texts contain invalid characters"]}
+  end
 
   defp validate_button_template(_) do
     {:error,
@@ -181,6 +189,31 @@ defmodule Glific.Templates do
        "for Button Templates has_buttons, button_type and buttons fields are required"
      ]}
   end
+
+
+  defp contains_invalid_chars?(text) do
+    contains_variable?(text) or
+      contains_newline?(text) or
+      contains_formatting?(text)
+      # contains_emoji?(text) or
+  end
+
+  defp contains_variable?(text) do
+    Regex.match?(~r/\{\{.*?\}\}/, text)
+  end
+
+  defp contains_newline?(text) do
+    String.contains?(text, "\n")
+  end
+
+  # defp contains_emoji?(text) do
+  #   Regex.match?(~r/\p{Emoji}/u, text)
+  # end
+
+  defp contains_formatting?(text) do
+    Regex.match?(~r/[*_~]/, text) # assuming bold, italics, and strikethrough are represented by *, _, ~
+  end
+
 
   @spec validate_template_length(map()) :: :ok | {:error, [String.t()]}
   defp validate_template_length(%{body: body} = attrs) do
