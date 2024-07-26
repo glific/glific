@@ -120,11 +120,7 @@ defmodule Glific.Contacts.Import do
     contact_data_as_stream = fetch_contact_data_as_string(opts)
     contact_attrs = %{organization_id: organization_id, user: user, collection: collection}
 
-    result = handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
-    case result do
-      {:error, _} = error -> error
-      _ -> {:ok, %{status: "Contact import is in progress"}}
-    end
+    handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
   end
 
   def import_contacts(organization_id, contact_attrs, opts) do
@@ -185,7 +181,7 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  @spec decode_csv_data(map(), map(), [{atom(), String.t()}]) :: {:ok, list()} | {:error, any()}
+  @spec decode_csv_data(map(), map(), [{atom(), String.t()}]) :: {:ok, map()}
   defp decode_csv_data(params, data, opts) do
     %{organization_id: organization_id, user: _user} = params
     {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
@@ -215,7 +211,7 @@ defmodule Glific.Contacts.Import do
       |> Enum.count()
 
     UserJob.update_user_job(user_job, %{total_tasks: total_chunks, all_tasks_created: true})
-    []
+    {:ok, %{status: "Contact import is in progress"}}
   end
 
   @spec process_data(User.t(), map(), map()) :: {String.t(), String.t()}

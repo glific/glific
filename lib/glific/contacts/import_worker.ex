@@ -20,8 +20,8 @@ defmodule Glific.Contacts.ImportWorker do
   """
   @spec make_job(list(), map(), non_neg_integer(), non_neg_integer()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def make_job(chunk, params, user_job_id, delay) do
-    __MODULE__.new(%{contacts: chunk, params: params, user_job_id: user_job_id})
-    |> Oban.insert(schedule_in: delay)
+    __MODULE__.new(%{contacts: chunk, params: params, user_job_id: user_job_id}, schedule_in: delay)
+    |> Oban.insert()
   end
 
   @doc """
