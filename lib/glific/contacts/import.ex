@@ -40,7 +40,7 @@ defmodule Glific.Contacts.Import do
       |> add_optin_date(current_time)
 
     cond do
-      user.roles == [:glific_admin] ->
+      user.roles == [:admin] ->
         results
         |> Map.merge(%{
           delete: data["delete"],
@@ -339,7 +339,7 @@ defmodule Glific.Contacts.Import do
       contact.optout_time != nil ->
         false
 
-      user.roles == [:glific_admin] || user.upload_contacts ->
+      user.roles == [:admin] || user.upload_contacts ->
         true
 
       true ->
