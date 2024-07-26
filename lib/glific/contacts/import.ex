@@ -121,7 +121,10 @@ defmodule Glific.Contacts.Import do
     contact_attrs = %{organization_id: organization_id, user: user, collection: collection}
 
     result = handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
-    if is_list(result), do: parse_result(result, "default"), else: result
+    case result do
+      {:error, _} = error -> error
+      _ -> {:ok, %{status: "Contact import is in progress"}}
+    end
   end
 
   def import_contacts(organization_id, contact_attrs, opts) do
@@ -133,7 +136,10 @@ defmodule Glific.Contacts.Import do
     contact_attrs = %{organization_id: organization_id, user: contact_attrs.user}
 
     result = handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
-    if is_list(result), do: parse_result(result, "csv"), else: result
+    case result do
+      {:error, _} = error -> error
+      _ -> {:ok, %{status: "Contact import is in progress"}}
+    end
   end
 
   @spec parse_result(list(), String.t()) :: {:ok, any()} | {:error, any()}
