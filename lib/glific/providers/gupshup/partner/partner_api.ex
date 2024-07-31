@@ -103,6 +103,23 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     )
   end
 
+  @wallet_name "4000202160_wallet"
+  @doc """
+    Transfer balance from ISV partner to app
+  """
+  @spec recharge_partner(String.t(), float()) :: tuple()
+  def recharge_partner(customer_id, amount) do
+    post_request(
+      @partner_url <> "/api/wallet/balance/transfer",
+      %{
+        walletName: @wallet_name,
+        customerId: customer_id,
+        amount: amount
+      },
+      token_type: :partner_token
+    )
+  end
+
   @doc """
     Getting app ID once the app is already linked
   """
