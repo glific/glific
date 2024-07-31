@@ -21,7 +21,6 @@ defmodule Glific.Password do
   def generate_password do
     generated_password = generate_password([], 15)
     hashed_password = Pwd.pbkdf2_hash(generated_password)
-    Logger.info("Generated and hashed password successfully.")
     hashed_password
   end
 
