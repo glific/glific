@@ -190,6 +190,19 @@ defmodule Glific.PartnersTest do
       assert %{"partnerId" => 49, "status" => "success"} == result
     end
 
+    test "recharge_partner/2 should transfer balance from ISV partner to app" do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"message\":\"Amount has been transferred successfully\"}"
+          }
+      end)
+
+      {:ok, result} = PartnerAPI.recharge_partner("9999999999", 100.000)
+      assert %{"message" => "Amount has been transferred successfully"} == result
+    end
+
     test "delete_provider/1 deletes the provider" do
       provider = provider_fixture()
       assert {:ok, %Provider{}} = Partners.delete_provider(provider)
