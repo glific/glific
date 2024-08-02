@@ -117,6 +117,7 @@ defmodule Glific.OpenAI.ChatGPT do
     middleware
     |> Tesla.client()
     |> Tesla.post(url, data, opts: [adapter: [recv_timeout: 120_000]])
+    |> IO.inspect()
     |> handle_response()
   end
 
@@ -425,5 +426,49 @@ defmodule Glific.OpenAI.ChatGPT do
   def remove_citation(thread_messages, _true) do
     cleaned_message = Regex.replace(~r/【\d+(:\d+)?+†source】/, thread_messages["message"], "")
     Map.put(thread_messages, "message", cleaned_message)
+  end
+
+  @spec create_vector(String.t()) :: String.t()
+  def create_vector(name) do
+    url = @endpoint <> "/vector_stores"
+    api_key = Application.get_env(:glific, :gigalixir_api_key)
+
+    middleware = [
+      Tesla.Middleware.JSON,
+      {Tesla.Middleware.Headers, [
+        {"authorization", "Bearer " <> api_key},
+        {"Content-Type", "application/json"},
+        {"OpenAI-Beta", "assistants=v2"}
+      ]}
+    ]
+
+    payload = %{"name" => name}
+            |> Jason.encode!()
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.post(url, payload)
+    |> IO.inspect()
+  end
+
+  @spec delete_vector(String.t()) :: boolean()
+  def delete_vector(id) do
+    url = @endpoint <> "/vector_stores/#{id}"
+    api_key = Application.get_env(:glific, :gigalixir_api_key)
+
+    middleware = [
+      Tesla.Middleware.JSON,
+      {Tesla.Middleware.Headers, [
+        {"authorization", "Bearer " <> api_key},
+        {"Content-Type", "application/json"},
+        {"OpenAI-Beta", "assistants=v2"}
+      ]}
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.delete(url)
+    |> IO.inspect()
+
   end
 end
