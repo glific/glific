@@ -32,6 +32,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         res["partnerApps"]
 
       {:error, error} ->
+        error = "#{inspect(error)}"
         if String.contains?(error, "Re-linking"), do: fetch_gupshup_app_id(org_id), else: error
     end
   end
@@ -185,8 +186,13 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:ok, response} ->
         {:ok, response}
 
-      {:error, error} ->
-        {:error, error}
+      {:error, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
+        decoded_body = Jason.decode!(body)
+        {:error, decoded_body["message"]}
+
+      unmatched_response ->
+        Logger.error("#{inspect(unmatched_response)}")
+        {:error, "Something went wrong, not able to submit the template for approval."}
     end
   end
 
@@ -265,6 +271,20 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     resource_url
     |> get_filename_from_resource_url(media_name)
     |> File.rm()
+  end
+
+  @doc """
+  gets daily app usage b/w two dates
+  """
+  @spec get_app_usage(non_neg_integer(), String.t(), String.t()) ::
+          {:error, String.t()} | {:ok, list(map())}
+  def get_app_usage(org_id, from_date, to_date) do
+    url = app_url(org_id) <> "/usage?from=" <> from_date <> "&to=" <> to_date
+
+    case get_request(url, org_id: org_id) do
+      {:ok, %{"partnerAppUsageList" => result}} -> {:ok, result}
+      {:error, error} -> {:error, error}
+    end
   end
 
   @global_organization_id 0
@@ -370,8 +390,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}
 
+      {:ok, resp} ->
+        {:error, resp}
+
       err ->
-        {:error, "#{inspect(err)}"}
+        {:error, err}
     end
   end
 

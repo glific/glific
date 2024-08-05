@@ -64,6 +64,21 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  def webhook("voice-filesearch-gpt", fields) do
+    with %{
+           success: true,
+           asr_response_text: asr_response_text
+         } <- webhook("speech_to_text_with_bhasini", fields),
+         %{
+           "success" => true,
+           "thread_id" => thread_id,
+           "message" => filesearch_response
+         } <- webhook("filesearch-gpt", Map.put(fields, "question", asr_response_text)) do
+      webhook("nmt_tts_with_bhasini", Map.put(fields, "text", filesearch_response))
+      |> Map.put("thread_id", thread_id)
+    end
+  end
+
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_gpt_vision", fields) do
     ChatGPT.gpt_vision(fields)
@@ -77,7 +92,15 @@ defmodule Glific.Clients.CommonWebhook do
     question = fields["question"]
     thread_id = Map.get(fields, "thread_id", nil)
     assistant_id = Map.get(fields, "assistant_id", nil)
-    params = %{thread_id: thread_id, assistant_id: assistant_id, question: question}
+    remove_citation = Map.get(fields, "remove_citation", false)
+
+    params = %{
+      thread_id: thread_id,
+      assistant_id: assistant_id,
+      question: question,
+      remove_citation: remove_citation
+    }
+
     ChatGPT.handle_conversation(params)
   end
 
@@ -219,8 +242,17 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("nmt_tts_with_bhasini", fields) do
     text = fields["text"]
     org_id = fields["organization_id"]
-    source_language = Map.get(fields, "source_language", nil)
-    target_language = Map.get(fields, "target_language", nil)
+
+    source_language =
+      fields
+      |> Map.get("source_language", nil)
+      |> then(&if(!is_nil(&1), do: String.downcase(&1)))
+
+    target_language =
+      fields
+      |> Map.get("target_language", nil)
+      |> then(&if(!is_nil(&1), do: String.downcase(&1)))
+
     organization = Glific.Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
 

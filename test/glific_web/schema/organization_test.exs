@@ -43,6 +43,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   load_gql(:update_status, GlificWeb.Schema, "assets/gql/organizations/update_status.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/organizations/delete.gql")
   load_gql(:delete_test, GlificWeb.Schema, "assets/gql/organizations/delete_test.gql")
+  load_gql(:get_app_usage, GlificWeb.Schema, "assets/gql/organizations/get_app_usage.gql")
 
   load_gql(:delete_onboarded, GlificWeb.Schema, "assets/gql/organizations/delete_onboarded.gql")
   load_gql(:attachments, GlificWeb.Schema, "assets/gql/organizations/attachments.gql")
@@ -73,6 +74,57 @@ defmodule GlificWeb.Schema.OrganizationTest do
       |> Enum.find(fn name -> name == "Glific" end)
 
     assert res == "Glific"
+  end
+
+  test "daily_app_usage/2 returns list of gupshup app usage", %{user: user} do
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "partnerAppUsageList" => [
+                %{
+                  "appId" => "test-appID-e991-41c7-9fd7-b3cd58a8aedb",
+                  "appName" => "2023TestApp",
+                  "authentication" => 0,
+                  "cumulativeBill" => 0.089,
+                  "currency" => "USD",
+                  "date" => "2024-06-03",
+                  "discount" => 0.0,
+                  "fep" => 0,
+                  "ftc" => 4,
+                  "gsCap" => 75.0,
+                  "gsFees" => 0.064,
+                  "incomingMsg" => 27,
+                  "internationalAuthentication" => 0,
+                  "marketing" => 0,
+                  "outgoingMediaMsg" => 0,
+                  "outgoingMsg" => 37,
+                  "service" => 0,
+                  "templateMediaMsg" => 0,
+                  "templateMsg" => 0,
+                  "totalFees" => 0.064,
+                  "totalMsg" => 64,
+                  "utility" => 0,
+                  "waFees" => 0.0
+                }
+              ]
+            })
+        }
+    end)
+
+    {:ok, query_data} =
+      auth_query_gql_by(:get_app_usage, user,
+        variables: %{"fromDate" => "2024-06-01", "toDate" => "2024-06-04"}
+      )
+
+    app_usage = get_in(query_data, [:data, "dailyAppUsage", Access.at(0)])
+    assert app_usage["cumulativeBill"] == 0.089
+    assert app_usage["gupshupFees"] == 0.064
+    assert app_usage["incomingMsg"] == 27
+    assert app_usage["outgoingMsg"] == 37
+    assert app_usage["totalFees"] == 0.064
   end
 
   test "count returns the number of organizations", %{user: user} do

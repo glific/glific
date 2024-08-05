@@ -147,6 +147,9 @@ defmodule Glific.Flows do
       {:is_pinned, is_pinned}, query ->
         from(q in query, where: q.is_pinned == ^is_pinned)
 
+      {:is_template, is_template}, query ->
+        from(q in query, where: q.is_template == ^is_template)
+
       {:tag_ids, tag_ids}, query ->
         from(q in query, where: q.tag_id in ^tag_ids)
 
@@ -173,7 +176,7 @@ defmodule Glific.Flows do
   """
   @spec count_flows(map()) :: integer
   def count_flows(args),
-    do: Repo.count_filter(args, Flow, &Repo.filter_with/2)
+    do: Repo.count_filter(args, Flow, &filter_with/2)
 
   @doc """
   Gets a single flow.
@@ -962,9 +965,16 @@ defmodule Glific.Flows do
         %{flow_name: flow.name, status: "Successfully imported"}
       else
         {:error, error} ->
-          flow_name = error.changes |> Map.get(:name)
-          keyword_errors = error.errors |> hd()
-          {:keywords, {message, _}} = keyword_errors
+          flow_name = Map.get(error.changes, :name)
+          errors = hd(error.errors)
+
+          message =
+            case errors do
+              {:keywords, {message, _}} -> message
+              {:name, {message, _}} -> message
+              _ -> "Something went wrong"
+            end
+
           %{flow_name: flow_name, status: message}
       end
     end)

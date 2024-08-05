@@ -147,7 +147,8 @@ defmodule Glific.Templates do
         else: attrs
 
     with :ok <- validate_hsm(attrs),
-         :ok <- validate_button_template(Map.merge(%{has_buttons: false}, attrs)) do
+         :ok <- validate_button_template(Map.merge(%{has_buttons: false}, attrs)),
+         :ok <- validate_template_length(attrs) do
       submit_for_approval(attrs)
     end
   end
@@ -180,6 +181,33 @@ defmodule Glific.Templates do
        "for Button Templates has_buttons, button_type and buttons fields are required"
      ]}
   end
+
+  @spec validate_template_length(map()) :: :ok | {:error, [String.t()]}
+  defp validate_template_length(%{body: body} = attrs) do
+    buttons = Map.get(attrs, :buttons, [])
+
+    total_length =
+      String.length(body || "") +
+        calculate_buttons_length(buttons)
+
+    if Enum.any?(buttons, fn %{"text" => text} -> String.length(text || "") > 20 end) do
+      {:error, ["Button Validation", "Buttons text cannot be greater than 20"]}
+    else
+      if total_length <= 1024 do
+        :ok
+      else
+        {:error, ["Character Limit", "Exceeding character limit"]}
+      end
+    end
+  end
+
+  defp calculate_buttons_length(buttons) when is_list(buttons) do
+    Enum.reduce(buttons, 0, fn %{"text" => text}, acc ->
+      acc + String.length(text || "")
+    end)
+  end
+
+  defp calculate_buttons_length(nil), do: 0
 
   @doc false
   @spec do_create_session_template(map()) ::
@@ -516,15 +544,22 @@ defmodule Glific.Templates do
 
   @spec do_update_hsm(map(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
+
   defp do_update_hsm(template, db_templates) do
-    current_template = db_templates[template["bsp_id"]]
+    current_template =
+      db_templates[template["bsp_id"]]
 
     update_attrs =
       if current_template.status != template["status"] do
         change_template_status(template["status"], current_template, template)
         |> Map.put(:category, template["category"])
+        |> Map.put(:quality, template["quality"])
       else
-        %{status: template["status"], category: template["category"]}
+        %{
+          status: template["status"],
+          category: template["category"],
+          quality: template["quality"]
+        }
       end
 
     update_attrs =

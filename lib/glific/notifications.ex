@@ -6,6 +6,8 @@ defmodule Glific.Notifications do
   import Ecto.Query, warn: false
   require Logger
 
+  alias Glific.Mails.MailLog
+
   alias Glific.{
     Communications.Mailer,
     Mails.NotificationMail,
@@ -32,13 +34,18 @@ defmodule Glific.Notifications do
   end
 
   @spec handle_notification(Notification.t(), String.t()) :: {:ok, Notification.t()}
-  defp handle_notification(notification, "critical") do
-    Partners.organization(notification.organization_id)
-    |> NotificationMail.critical_mail(notification.message)
-    |> Mailer.send(%{
-      category: "critical_notification",
-      organization_id: notification.organization_id
-    })
+  defp handle_notification(%{message: message} = notification, "critical") do
+    time = Glific.go_back_time(72)
+    org = Partners.organization(notification.organization_id)
+    text_body = NotificationMail.create_critical_mail_body(org, message)
+
+    if MailLog.mail_sent_in_past_time?("critical_notification", time, org.id, text_body) == false do
+      NotificationMail.critical_mail(org, message)
+      |> Mailer.send(%{
+        category: "critical_notification",
+        organization_id: org.id
+      })
+    end
 
     {:ok, notification}
   end

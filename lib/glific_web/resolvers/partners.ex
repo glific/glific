@@ -11,6 +11,7 @@ defmodule GlificWeb.Resolvers.Partners do
     Partners.Export,
     Partners.Organization,
     Partners.Provider,
+    Providers.Gupshup.PartnerAPI,
     Repo,
     Saas.Onboard
   }
@@ -341,6 +342,51 @@ defmodule GlificWeb.Resolvers.Partners do
          {:ok, updated_credential} <-
            Partners.update_credential(credential, params) do
       {:ok, %{credential: updated_credential}}
+    end
+  end
+
+  @doc """
+  Gets daily app usage
+  """
+  @spec get_app_usage(Absinthe.Resolution.t(), %{from_date: Date.t(), to_date: Date.t()}, %{
+          context: map()
+        }) ::
+          {:ok, list(map())} | {:error, String.t()}
+  def get_app_usage(_parent, %{from_date: from_date, to_date: to_date}, %{
+        context: %{current_user: user}
+      }) do
+    case PartnerAPI.get_app_usage(
+           user.organization_id,
+           Date.to_string(from_date),
+           Date.to_string(to_date)
+         ) do
+      {:ok, response} ->
+        {:ok,
+         Enum.map(response, fn day ->
+           %{
+             date: Map.get(day, "date", ""),
+             cumulative_bill: Map.get(day, "cumulativeBill", 0.0),
+             discount: Map.get(day, "discount", 0.0),
+             fep: Map.get(day, "fep", 0),
+             ftc: Map.get(day, "ftc", 0),
+             gupshup_cap: Map.get(day, "gsCap", 0.0),
+             gupshup_fees: Map.get(day, "gsFees", 0.0),
+             incoming_msg: Map.get(day, "incomingMsg", 0),
+             outgoing_msg: Map.get(day, "outgoingMsg", 0),
+             outgoing_media_msg: Map.get(day, "outgoingMediaMsg", 0),
+             marketing: Map.get(day, "marketing", 0),
+             service: Map.get(day, "service", 0),
+             utility: Map.get(day, "utility", 0),
+             template_msg: Map.get(day, "templateMsg", 0),
+             template_media_msg: Map.get(day, "templateMediaMsg", 0),
+             total_fees: Map.get(day, "totalFees", 0.0),
+             whatsapp_fees: Map.get(day, "waFees", 0.0),
+             total_msg: Map.get(day, "totalMsg", 0)
+           }
+         end)}
+
+      {:error, _error} ->
+        {:error, "Error fetching daily app usage list"}
     end
   end
 end

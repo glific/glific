@@ -72,7 +72,7 @@ defmodule Glific.Providers.Gupshup.Template do
     else
       {:error, error} ->
         Logger.error(error)
-        {:error, ["BSP", "couldn't submit for approval"]}
+        {:error, ["BSP", "Couldn't submit for approval: " <> error]}
     end
   end
 

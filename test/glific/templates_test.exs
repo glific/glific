@@ -300,6 +300,39 @@ defmodule Glific.TemplatesTest do
                Templates.create_session_template(attrs_2)
     end
 
+    test "validates template length with total length exceeding limit", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "template" => %{
+                  "category" => "ACCOUNT_UPDATE",
+                  "templateType" => "TEXT"
+                }
+              })
+          }
+      end)
+
+      attrs = %{
+        body: String.duplicate("a", 1020),
+        label: "New Label",
+        language_id: language_fixture().id,
+        type: :text,
+        is_hsm: true,
+        category: "ACCOUNT_UPDATE",
+        shortcode: "some_shortcode",
+        example: String.duplicate("a", 1000),
+        organization_id: attrs.organization_id,
+        buttons: [%{"text" => "buttontext"}]
+      }
+
+      assert {:error, ["Character Limit", "Exceeding character limit"]} =
+               Templates.create_session_template(attrs)
+    end
+
     test "create_session_template/1 for HSM data should submit it for approval", attrs do
       whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9b94e53b4b"
 
@@ -659,7 +692,7 @@ defmodule Glific.TemplatesTest do
         organization_id: attrs.organization_id
       }
 
-      assert {:error, ["BSP", "couldn't submit for approval"]} =
+      assert {:error, ["BSP", "Couldn't submit for approval: Something went wrong"]} =
                Templates.create_session_template(attrs)
     end
 

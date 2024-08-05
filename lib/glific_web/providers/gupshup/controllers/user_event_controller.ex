@@ -23,9 +23,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
       method: "BSP"
     )
 
-    Logger.info(
-      "Contact with phone: #{get_in(params, ["payload", "phone"])} opted in on #{timestamp}"
-    )
+    phone_number =
+      params
+      |> get_in(["payload", "phone"])
+      |> Glific.mask_phone_number()
+
+    Logger.info("Contact with phone: #{phone_number} opted in on #{timestamp}")
 
     handler(conn, params, "Opted in handler")
   end
@@ -42,9 +45,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
       "BSP"
     )
 
-    Logger.info(
-      "Contact with phone: #{get_in(params, ["payload", "phone"])} opted out on #{timestamp}"
-    )
+    phone_number =
+      params
+      |> get_in(["payload", "phone"])
+      |> Glific.mask_phone_number()
+
+    Logger.info("Contact with phone: #{phone_number} opted out on #{timestamp}")
 
     handler(conn, params, "Opted out handler")
   end

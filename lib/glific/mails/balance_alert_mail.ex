@@ -10,7 +10,7 @@ defmodule Glific.Mails.BalanceAlertMail do
     team = "finance"
 
     subject = """
-    [URGENT Low balance $#{bsp_balance}] : Messages on Glific will stop soon
+    [URGENT Low balance] : Messages on Glific will stop soon
     """
 
     body = """
