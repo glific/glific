@@ -207,6 +207,16 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
+  Enable DLR events for an app.
+  """
+  @spec enable_dlr_events(non_neg_integer(), list(String.t())) :: tuple()
+  def enable_dlr_events(org_id, modes) do
+  url = app_url(org_id) <> "/callback/mode"
+  data = %{"modes" => Enum.join(modes, ",")}
+  put_request(url, data, org_id: org_id)
+  end
+
+  @doc """
   Setting Business Profile Details.
   Following parameters can be updated in the given form:
   %{
