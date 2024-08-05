@@ -64,6 +64,19 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  def webhook("gpt-voice", fields) do
+    with %{
+           success: true,
+           asr_response_text: asr_response_text
+         } <- webhook("speech_to_text_with_bhasini", fields),
+         %{
+           "success" => true,
+           "message" => filesearch_response
+         } <- webhook("filesearch-gpt", Map.put(fields, "question", asr_response_text)) do
+      webhook("nmt_tts_with_bhasini", Map.put(fields, "text", filesearch_response))
+    end
+  end
+
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_gpt_vision", fields) do
     ChatGPT.gpt_vision(fields)
