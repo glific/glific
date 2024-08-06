@@ -32,6 +32,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         res["partnerApps"]
 
       {:error, error} ->
+        error = "#{inspect(error)}"
         if String.contains?(error, "Re-linking"), do: fetch_gupshup_app_id(org_id), else: error
     end
   end
@@ -185,8 +186,13 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:ok, response} ->
         {:ok, response}
 
-      {:error, error} ->
-        {:error, error}
+      {:error, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
+        decoded_body = Jason.decode!(body)
+        {:error, decoded_body["message"]}
+
+      unmatched_response ->
+        Logger.error("#{inspect(unmatched_response)}")
+        {:error, "Something went wrong, not able to submit the template for approval."}
     end
   end
 
@@ -198,6 +204,16 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     url = app_url(org_id) <> "/callbackUrl"
     data = %{"callbackUrl" => callback_url}
     put_request(url, data, org_id: org_id)
+  end
+
+  @doc """
+  Enable DLR events for an app.
+  """
+  @spec enable_dlr_events(non_neg_integer(), list(String.t())) :: tuple()
+  def enable_dlr_events(org_id, modes) do
+  url = app_url(org_id) <> "/callback/mode"
+  data = %{"modes" => Enum.join(modes, ",")}
+  put_request(url, data, org_id: org_id)
   end
 
   @doc """
@@ -374,8 +390,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}
 
+      {:ok, resp} ->
+        {:error, resp}
+
       err ->
-        {:error, "#{inspect(err)}"}
+        {:error, err}
     end
   end
 
