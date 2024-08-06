@@ -11,13 +11,17 @@ defmodule Glific.Repo.Migrations.CreateUserJobs do
 
       add :tasks_done, :integer, comment: "Number of tasks completed for this job"
 
-      add :all_tasks_created, :boolean,  default: false, comment: "Specifies whether all tasks created"
+      add :all_tasks_created, :boolean,
+        default: false,
+        comment: "Specifies whether all tasks created"
 
       add :organization_id, references(:organizations, on_delete: :delete_all),
-      null: false,
-      comment: "Unique organization ID."
+        null: false,
+        comment: "Unique organization ID."
 
-      add :errors, :map, default: %{}, comment: "Details of any errors that occurred during the job"
+      add :errors, :map,
+        default: %{},
+        comment: "Details of any errors that occurred during the job"
 
       timestamps(type: :utc_datetime)
     end

@@ -4,6 +4,8 @@ defmodule Glific.Contacts.Import do
   """
   import Ecto.Query, warn: false
 
+  alias GlificWeb.Schema.Middleware.Authorize
+
   alias Glific.{
     Contacts,
     Contacts.Contact,
@@ -40,7 +42,7 @@ defmodule Glific.Contacts.Import do
       |> add_optin_date(current_time)
 
     cond do
-      user.roles == [:admin] ->
+      Authorize.valid_role?(user.roles, :admin) ->
         results
         |> Map.merge(%{
           delete: data["delete"],
@@ -132,6 +134,7 @@ defmodule Glific.Contacts.Import do
     contact_attrs = %{organization_id: organization_id, user: contact_attrs.user}
 
     result = handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
+
     case result do
       {:error, _} = error -> error
       _ -> {:ok, %{status: "Contact import is in progress"}}
@@ -185,6 +188,7 @@ defmodule Glific.Contacts.Import do
   defp decode_csv_data(params, data, opts) do
     %{organization_id: organization_id, user: _user} = params
     {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
+
     user_job_attrs = %{
       status: "pending",
       type: "contact_import",
@@ -193,7 +197,9 @@ defmodule Glific.Contacts.Import do
       organization_id: organization_id,
       errors: %{}
     }
+
     user_job = UserJob.create_user_job(user_job_attrs)
+
     params = %{
       params
       | user: %{roles: params.user.roles, upload_contacts: params.user.upload_contacts}
@@ -216,7 +222,7 @@ defmodule Glific.Contacts.Import do
 
   @spec process_data(User.t(), map(), map()) :: {String.t(), String.t()}
   def process_data(user, %{delete: "1"} = contact, _contact_attrs) do
-    if user.roles == [:admin] || user.upload_contacts == true do
+    if Authorize.valid_role?(user.roles, :admin) || user.upload_contacts == true do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
         nil ->
           {contact.phone, "Contact does not exist"}
@@ -232,8 +238,9 @@ defmodule Glific.Contacts.Import do
 
   def process_data(user, contact_attrs, _attrs) do
     cond do
-      user.roles == [:admin] ->
-        {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
+      Authorize.valid_role?(user.roles, :admin) ->
+        {:ok, contact} =
+          Contacts.maybe_create_contact(contact_attrs)
 
         create_group_and_contact_fields(contact_attrs, contact)
         optin_contact(user, contact, contact_attrs)
@@ -335,7 +342,7 @@ defmodule Glific.Contacts.Import do
       contact.optout_time != nil ->
         false
 
-      user.roles == [:admin] || user.upload_contacts ->
+      Authorize.valid_role?(user.roles, :admin) || user.upload_contacts ->
         true
 
       true ->
@@ -391,10 +398,12 @@ defmodule Glific.Contacts.Import do
     case Settings.get_language_by_label_or_locale(language) do
       [] ->
         results
+
       [lang | _] ->
         Map.put(results, :language_id, lang.id)
+
       nil ->
         results
+    end
   end
-end
 end

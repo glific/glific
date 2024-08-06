@@ -97,5 +97,4 @@ defmodule Glific.Jobs.UserJob do
         query
     end)
   end
-
 end

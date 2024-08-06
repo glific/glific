@@ -3,7 +3,6 @@ defmodule GlificWeb.Schema.ContactTest do
   use Wormwood.GQLCase
   use Oban.Pro.Testing, repo: Glific.Repo
 
-
   alias Glific.{
     Contacts,
     Contacts.Contact,
@@ -305,8 +304,12 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, _} = result
     assert_enqueued(worker: ImportWorker, prefix: "global")
+
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+             Oban.drain_queue(queue: :default, with_scheduled: true)
+
+    assert Contacts.count_contacts(%{filter: %{phone: test_phone}}) == 1
+    assert Contacts.count_contacts(%{filter: %{term: test_phone}}) == 1
 
     # Test success for creating a contact with opt-in
     Tesla.Mock.mock(fn
@@ -334,8 +337,12 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, _} = result
     assert_enqueued(worker: ImportWorker, prefix: "global")
+
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+             Oban.drain_queue(queue: :default, with_scheduled: true)
+
+    count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
+    assert count == 1
 
     # Test success for updating a contact
     Tesla.Mock.mock(fn
@@ -363,8 +370,12 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, _} = result
     assert_enqueued(worker: ImportWorker, prefix: "global")
+
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+             Oban.drain_queue(queue: :default, with_scheduled: true)
+
+    assert Contacts.count_contacts(%{filter: %{name: "#{test_name} updated"}}) == 1
+    assert Contacts.count_contacts(%{filter: %{term: "#{test_name} updated"}}) == 1
 
     # # Test success for uploading contact through url
     Tesla.Mock.mock(fn
@@ -393,8 +404,12 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, _} = result
     assert_enqueued(worker: ImportWorker, prefix: "global")
+
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+             Oban.drain_queue(queue: :default, with_scheduled: true)
+
+    count = Contacts.count_contacts(%{filter: %{name: "uploaded_contact"}})
+    assert count == 1
   end
 
   test "Test success for uploading contact through filepath", %{manager: user} do
@@ -426,8 +441,12 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, _} = result
     assert_enqueued(worker: ImportWorker, prefix: "global")
+
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+             Oban.drain_queue(queue: :default, with_scheduled: true)
+
+    count = Contacts.count_contacts(%{filter: %{name: "test"}})
+    assert count == 1
   end
 
   test "Test success for uploading contact through filepath organization_id is given", %{
@@ -462,8 +481,9 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, _} = result
     assert_enqueued(worker: ImportWorker, prefix: "global")
+
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+             Oban.drain_queue(queue: :default, with_scheduled: true)
   end
 
   test "test success for uploading contact for different csv", %{manager: user} do
@@ -495,8 +515,12 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, _} = result
     assert_enqueued(worker: ImportWorker, prefix: "global")
+
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+             Oban.drain_queue(queue: :default, with_scheduled: true)
+
+    count = Contacts.count_contacts(%{filter: %{name: "test"}})
+    assert count == 1
   end
 
   test "test success for uploading contact for admin", %{manager: user} do
@@ -520,8 +544,12 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, _} = result
     assert_enqueued(worker: ImportWorker, prefix: "global")
+
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+             Oban.drain_queue(queue: :default, with_scheduled: true)
+
+    count = Contacts.count_contacts(%{filter: %{name: "test"}})
+    assert count == 1
   end
 
   test "update a contact and test possible scenarios and errors", %{staff: user, manager: manager} do

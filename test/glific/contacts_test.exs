@@ -361,6 +361,7 @@ defmodule Glific.ContactsTest do
       user = Map.put(user, :roles, [:admin])
 
       [organization | _] = Partners.list_organizations()
+
       contacts = [
         %{
           "collection" => "collection",
@@ -381,7 +382,9 @@ defmodule Glific.ContactsTest do
         organization_id: organization.id,
         errors: %{}
       }
+
       user_job = UserJob.create_user_job(user_job_attrs)
+
       params = %{
         "organization_id" => organization.id,
         "user" => %{
@@ -389,6 +392,7 @@ defmodule Glific.ContactsTest do
           "upload_contacts" => true
         }
       }
+
       job_args = %{"contacts" => contacts, "params" => params, "user_job_id" => user_job.id}
       assert :ok == ImportWorker.perform(%Oban.Job{args: job_args})
     end
@@ -457,8 +461,13 @@ defmodule Glific.ContactsTest do
       )
 
       assert_enqueued(worker: ImportWorker, prefix: "global")
+
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{name: "test"}})
+
+      assert count == 1
     end
 
     test "import_contact/3 with valid data from string inserts new contacts in the database" do
@@ -472,9 +481,14 @@ defmodule Glific.ContactsTest do
       Import.import_contacts(organization.id, %{user: user, collection: "collection"}, data: data)
 
       assert_enqueued(worker: ImportWorker, prefix: "global")
+
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
-   end
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
+
+      assert count == 1
+    end
 
     test "import_contact/3 with valid data from URL inserts new contacts in the database" do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
@@ -500,8 +514,13 @@ defmodule Glific.ContactsTest do
       )
 
       assert_enqueued(worker: ImportWorker, prefix: "global")
+
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{name: "test"}})
+
+      assert count == 1
     end
 
     test "import_contact/3 can creates the contact in the db if upload contacts is enabled" do
@@ -532,8 +551,13 @@ defmodule Glific.ContactsTest do
       )
 
       assert_enqueued(worker: ImportWorker, prefix: "global")
+
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{name: "test"}})
+
+      assert count == 1
     end
 
     test "import_contact/3 with valid data from file updates existing contacts in the database",
@@ -562,8 +586,13 @@ defmodule Glific.ContactsTest do
       Import.import_contacts(organization.id, %{user: user}, file_path: get_tmp_path())
 
       assert_enqueued(worker: ImportWorker, prefix: "global")
+
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
+
+      assert count == 1
     end
 
     test "import_contact/3 with valid data from string updates existing contacts in the database",
@@ -586,8 +615,13 @@ defmodule Glific.ContactsTest do
 
       Import.import_contacts(organization.id, %{user: user}, data: data)
       assert_enqueued(worker: ImportWorker, prefix: "global")
+
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
+
+      assert count == 1
     end
 
     test "import_contact/3 with valid data from URL updates existing contacts in the database",
@@ -615,8 +649,13 @@ defmodule Glific.ContactsTest do
       Import.import_contacts(organization.id, %{user: user}, url: "http://www.bar.com/foo.csv")
 
       assert_enqueued(worker: ImportWorker, prefix: "global")
+
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
+
+      assert count == 1
     end
 
     test "import_contact/3 deletes contacts when delete=1 column is present", attrs do
@@ -646,8 +685,13 @@ defmodule Glific.ContactsTest do
       )
 
       assert_enqueued(worker: ImportWorker, prefix: "global")
+
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
+
+      assert count == 0
     end
 
     test "import_contact/3 deletes contacts when delete=1 column is present and if permission is not given",
@@ -672,16 +716,19 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      {:error, message} =
+      {:ok, _} =
         Import.import_contacts(organization.id, %{user: user, collection: "collection"},
           file_path: get_tmp_path()
         )
 
-      assert message == ["This user doesn't have enough permission"]
-
       assert_enqueued(worker: ImportWorker, prefix: "global")
+
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
+
+      assert count == 1
     end
 
     test "import_contact/3 ignores delete if the contact already deleted", attrs do
@@ -712,8 +759,13 @@ defmodule Glific.ContactsTest do
       )
 
       assert_enqueued(worker: ImportWorker, prefix: "global")
+
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
+
+      assert count == 0
     end
 
     test "import_contact/3 does not call glific opt_in api if column empty" do
@@ -748,8 +800,10 @@ defmodule Glific.ContactsTest do
         )
 
         assert_enqueued(worker: ImportWorker, prefix: "global")
+
         assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-                 Oban.drain_queue(queue: :default)
+                 Oban.drain_queue(queue: :default, with_scheduled: true)
+
         assert_not_called(Contacts.optin_contact())
       end
     end

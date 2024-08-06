@@ -54,7 +54,6 @@ defmodule Glific.UserJobTest do
       assert user_job.all_tasks_created == false
     end
 
-
     test "update_user_job/2 with valid data updates the user_job", %{organization: organization} do
       user_job = user_job_fixture(organization_id: organization.id)
 
@@ -66,7 +65,9 @@ defmodule Glific.UserJobTest do
       assert user_job.all_tasks_created == true
     end
 
-    test "updates the status to success for jobs with all tasks done", %{organization: organization} do
+    test "updates the status to success for jobs with all tasks done", %{
+      organization: organization
+    } do
       attrs = %{
         status: "pending",
         type: "import",
@@ -75,12 +76,13 @@ defmodule Glific.UserJobTest do
         organization_id: organization.id,
         all_tasks_created: true
       }
+
       UserJob.create_user_job(attrs)
 
       assert :ok == UserJobWorker.check_user_job_status(organization.id)
       user_job = UserJob.list_user_jobs(%{filter: %{organization_id: organization.id}})
       success_jobs = Enum.filter(user_job, &(&1.status == "success"))
       assert length(success_jobs) == 1
-     end
+    end
   end
 end
