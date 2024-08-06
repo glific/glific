@@ -414,6 +414,21 @@ defmodule Glific do
   def add_limit(args), do: Map.put(args, :opts, Map.put(%{}, :limit, 25))
 
   @doc """
+   Send template from expression from the flows
+  """
+  @spec send_template(String.t(), list()) :: binary
+  def send_template(uuid, variables) do
+    variables_list = Enum.map(variables, &to_string/1)
+
+    %{
+      uuid: uuid,
+      variables: variables_list,
+      expression: nil
+    }
+    |> Jason.encode!()
+  end
+
+  @doc """
   Get default OpenAI key
   """
   @spec get_open_ai_key() :: String.t()
@@ -438,5 +453,20 @@ defmodule Glific do
       user_id: Application.get_env(:glific, :bhasini_user_id),
       ulca_api_key: Application.get_env(:glific, :bhasini_ulca_api_key)
     }
+  end
+
+  @doc """
+  mask last 5 digit of a phone number
+  """
+  @spec mask_phone_number(String.t()) :: String.t()
+  def mask_phone_number(phone) when is_integer(phone) do
+    phone
+    |> Integer.to_string()
+    |> mask_phone_number()
+  end
+
+  def mask_phone_number(phone) do
+    {visible, masked} = String.split_at(phone, -5)
+    visible <> String.replace(masked, ~r/\d/, "*")
   end
 end

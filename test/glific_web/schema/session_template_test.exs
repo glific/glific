@@ -74,14 +74,16 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
                   "modifiedOn" =>
                     DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
                   "status" => "APPROVED",
-                  "category" => "MARKETING"
+                  "category" => "MARKETING",
+                  "quality" => "UNKNOWN"
                 },
                 %{
                   "id" => hsm2.uuid,
                   "modifiedOn" =>
                     DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
                   "status" => "PENDING",
-                  "category" => "AUTHENTICATION"
+                  "category" => "AUTHENTICATION",
+                  "quality" => "HIGH"
                 }
               ]
             })
@@ -100,6 +102,8 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert message == "successful"
     assert updated_hsm.category == "MARKETING"
     assert updated_hsm2.category == "AUTHENTICATION"
+    assert updated_hsm.quality == "UNKNOWN"
+    assert updated_hsm2.quality == "HIGH"
   end
 
   test "sync hsm with bsp if it doesn't establish a connection with gupshup test", %{
@@ -417,18 +421,12 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
       filter: %{organization_id: user.organization_id, is_hsm: true}
     })
 
-    [hsm | _] =
+    [hsm, hsm2 | _] =
       Templates.list_session_templates(%{
         filter: %{organization_id: user.organization_id, is_hsm: true}
       })
 
     Tesla.Mock.mock(fn
-      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
-        %Tesla.Env{
-          status: 200,
-          body: Jason.encode!(%{"access_token" => "mocked_token"})
-        }
-
       %{method: :post} ->
         %Tesla.Env{
           status: 200,
@@ -436,7 +434,8 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
             Jason.encode!(%{
               "status" => "success",
               "template" => %{
-                "allowTemplateCategoryChange" => true
+                "id" => hsm2.uuid,
+                "allowTemplateCategoryChange" => false
               }
             })
         }
@@ -444,12 +443,39 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     language_id = hsm.language_id
 
+    # Create first template with allowTemplateCategoryChange set to false
     result =
       auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
-            "label" => "Test Label",
-            "body" => "Test Template",
+            "label" => "Test Label 1",
+            "body" => "Test Template 1",
+            "type" => "TEXT",
+            "languageId" => language_id,
+            "allowTemplateCategoryChange" => false
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    allow_template_change =
+      get_in(query_data, [
+        :data,
+        "createSessionTemplate",
+        "sessionTemplate",
+        "allow_template_category_change"
+      ])
+
+    assert allow_template_change == false
+
+    # Create second template without passing allowTemplateCategoryChange (should default to true)
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "Test Label 2",
+            "body" => "Test Template 2",
             "type" => "TEXT",
             "languageId" => language_id
           }

@@ -53,6 +53,55 @@ defmodule Glific.InteractiveTemplatesTest do
       }
     }
 
+    @valid_url_attrs %{
+      label: "Quick Reply Test Text 2",
+      type: :quick_reply,
+      interactive_content: %{
+        "type" => "quick_reply",
+        "content" => %{
+          "type" => "image",
+          "text" => "How was your experience with Glific?",
+          "url" => "https://robohash.org/set_set2/bgset_bg1/mMs4U"
+        },
+        "options" => [
+          %{
+            "type" => "text",
+            "title" => "Great"
+          },
+          %{
+            "type" => "text",
+            "title" => "Awesome"
+          }
+        ]
+      },
+      translations: %{
+        "1" => %{
+          "content" => %{
+            "type" => "image",
+            "text" => "How was your experience with Glific?",
+            "url" => "https://robohash.org/set_set2/bgset_bg1/mMs4U"
+          },
+          "options" => [
+            %{"title" => "Great", "type" => "text"},
+            %{"title" => "Awesome", "type" => "text"}
+          ],
+          "type" => "quick_reply"
+        },
+        "2" => %{
+          "content" => %{
+            "text" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?",
+            "type" => "image",
+            "url" => "https://robohash.org/set_set2/bgset_bg1/mMs4U"
+          },
+          "options" => [
+            %{"title" => "उत्कृष्ट", "type" => "text"},
+            %{"title" => "शानदार", "type" => "text"}
+          ],
+          "type" => "quick_reply"
+        }
+      }
+    }
+
     @valid_footer_attrs %{
       label: "Glific Features",
       type: :quick_reply,
@@ -274,10 +323,7 @@ defmodule Glific.InteractiveTemplatesTest do
         "2" => %{
           "body" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?",
           "globalButtons" => [
-            %{
-              "title" => "शानदार विशेषताएं",
-              "type" => "text"
-            }
+            %{"title" => "शानदार विशेषताएं", "type" => "text"}
           ],
           "items" => [
             %{
@@ -376,7 +422,7 @@ defmodule Glific.InteractiveTemplatesTest do
     } do
       interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
 
-      assert {:ok, %InteractiveTemplate{} = interactive} =
+      assert {:ok, %InteractiveTemplate{} = interactive, _message} =
                InteractiveTemplates.update_interactive_template(interactive, @update_attrs)
 
       assert interactive.label == "Updated Quick Reply label"
@@ -663,13 +709,23 @@ defmodule Glific.InteractiveTemplatesTest do
 
     result = InteractiveTemplates.translate_interactive_template(interactive)
 
-    assert {:ok, %InteractiveTemplate{translations: translations}} = result
+    assert {:ok, %InteractiveTemplate{translations: translations}, _message} = result
 
     assert Map.has_key?(translations, "2")
     assert translations["2"]["content"]["text"] == "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"
     assert translations["2"]["content"]["header"] == "त्वरित उत्तर स्थिरता"
     assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्षण 1" end)
     assert Enum.any?(translations["2"]["options"], fn option -> option["title"] == "परीक्षण 2" end)
+
+    # if url is present
+    url_interactive =
+      Fixtures.interactive_fixture(Map.merge(@valid_url_attrs, attrs))
+
+    result = InteractiveTemplates.translate_interactive_template(url_interactive)
+
+    assert {:ok, %InteractiveTemplate{translations: translations}, _message} = result
+
+    assert translations == @valid_url_attrs[:translations]
   end
 
   test "export the interactive template when add translation is true",
@@ -698,7 +754,6 @@ defmodule Glific.InteractiveTemplatesTest do
 
     location_export_data = """
     Attribute,en,hi
-    Action,send_location,send_location
     Body,please share your location,कृपया अपना स्थान साझा करें
     """
 
@@ -725,7 +780,11 @@ defmodule Glific.InteractiveTemplatesTest do
     {:ok, %{export_data: export_data}} =
       InteractiveTemplates.export_interactive_template(interactive, add_translation)
 
-    assert String.trim(export_data) == String.trim(list_export_data)
+    export_data_trimmed =
+      String.split(export_data, "\n")
+      |> Enum.map_join("\n", &String.trim_trailing/1)
+
+    assert String.trim(export_data_trimmed) == String.trim(list_export_data)
 
     # type quick reply with footer
     interactive =
@@ -754,14 +813,14 @@ defmodule Glific.InteractiveTemplatesTest do
       Fixtures.interactive_fixture(Map.merge(@valid_list_attrs, attrs))
 
     list_export_data = """
-    Attribute,en
-    Title,glific
-    Body,How was your experience with Glific?
-    GlobalButtonTitle,Glific Features
-    ItemTitle 1,Excitement level
-    ItemSubtitle 1,Excitement level
-    OptionTitle 1.1,Great
-    OptionDescription 1.1,Awesome
+    Attribute,en,hi
+    Title,glific,
+    Body,How was your experience with Glific?,
+    GlobalButtonTitle,Glific Features,
+    ItemTitle 1,Excitement level,
+    ItemSubtitle 1,Excitement level,
+    OptionTitle 1.1,Great,
+    OptionDescription 1.1,Awesome,
     """
 
     {:ok, %{export_data: export_data}} =
@@ -774,12 +833,12 @@ defmodule Glific.InteractiveTemplatesTest do
       Fixtures.interactive_fixture(Map.merge(@valid_footer_attrs, attrs))
 
     expected_export_data = """
-    Attribute,en
-    Footer,caption is footer
-    Header,Glific Features
-    Text,How was your experience with Glific?
-    OptionTitle 1,Great
-    OptionTitle 2,Awesome
+    Attribute,en,hi
+    Footer,caption is footer,
+    Header,Glific Features,
+    Text,How was your experience with Glific?,
+    OptionTitle 1,Great,
+    OptionTitle 2,Awesome,
     """
 
     {:ok, %{export_data: export_data}} =
@@ -806,7 +865,7 @@ defmodule Glific.InteractiveTemplatesTest do
         ["OptionDescription 1.1", "Awesome", "शानदार"]
       ]
 
-    {:ok, imported_temp} =
+    {:ok, imported_temp, _message} =
       InteractiveTemplates.import_interactive_template(translated_data, interactive)
 
     imported_translation = imported_temp.translations
@@ -828,7 +887,7 @@ defmodule Glific.InteractiveTemplatesTest do
       ["OptionTitle 2", "Awesome", "शानदार"]
     ]
 
-    {:ok, imported_temp} =
+    {:ok, imported_temp, _message} =
       InteractiveTemplates.import_interactive_template(translated_data, interactive)
 
     imported_translation = imported_temp.translations
@@ -847,7 +906,7 @@ defmodule Glific.InteractiveTemplatesTest do
       ["Body", "please share your location", "कृपया अपना स्थान साझा करें"]
     ]
 
-    {:ok, imported_temp} =
+    {:ok, imported_temp, _message} =
       InteractiveTemplates.import_interactive_template(translated_data, interactive)
 
     imported_translation = imported_temp.translations

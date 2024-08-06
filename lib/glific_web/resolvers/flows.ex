@@ -115,7 +115,7 @@ defmodule GlificWeb.Resolvers.Flows do
 
     stream
     |> IO.binstream(:line)
-    |> CSV.decode!()
+    |> CSV.decode!(escape_max_lines: 50)
     |> Enum.into([])
     |> Import.import_localization(flow)
 
@@ -301,6 +301,13 @@ defmodule GlificWeb.Resolvers.Flows do
   @spec copy_flow(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def copy_flow(_, %{id: id, input: params}, _) do
+    org_id = Map.get(params, :organization_id)
+    {:ok, template} = Repo.fetch_by(Flow, %{id: id})
+
+    if template.is_template do
+      Glific.Metrics.increment("Template flows on UI", org_id)
+    end
+
     do_copy_flow(id, params, &Flows.copy_flow/2)
   end
 

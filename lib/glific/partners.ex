@@ -897,9 +897,15 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(organization, credential, "google_cloud_storage") do
-    case GCS.refresh_gcs_setup(organization.id) do
-      {:ok, _callback} -> {:ok, credential}
-      {:error, _error} -> {:error, "Invalid Credentials"}
+    with {:ok, _} <- GCS.refresh_gcs_setup(organization.id),
+         {:ok, _} <- GCS.enable_bucket_logs(organization.id) do
+      {:ok, credential}
+    else
+      {:error, %{body: %{"error" => %{"message" => message}}}} ->
+        {:error, message}
+
+      _ ->
+        {:error, "Invalid Credentials"}
     end
   end
 

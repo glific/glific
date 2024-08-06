@@ -433,6 +433,11 @@ defmodule Glific.ContactsTest do
       assert error == "Contact some updated phone was not found and hence not added"
     end
 
+    test "maybe_update_contact/1 with a nil input" do
+      {:error, error} = Contacts.maybe_update_contact(%{phone: nil})
+      assert error == "Phone number is missing"
+    end
+
     test "import_contact/3 with valid data from file inserts new contacts in the database" do
       file = get_tmp_file()
 
