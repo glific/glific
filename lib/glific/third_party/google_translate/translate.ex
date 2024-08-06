@@ -10,7 +10,6 @@ defmodule Glific.GoogleTranslate.Translate do
   """
   @spec parse(String.t(), String.t(), map()) :: tuple()
   def parse(api_key, question_text, languages) do
-
     # Split the text into lines
     lines = String.split(question_text, "\n")
 
@@ -54,8 +53,7 @@ defmodule Glific.GoogleTranslate.Translate do
       {:ok, %Tesla.Env{status: 200, body: %{"data" => %{"translations" => translations}}}} ->
         translated_texts =
           translations
-          |> Enum.map(fn translation -> translation["translatedText"] end)
-          |> Enum.join("\n")
+          |> Enum.map_join("\n", fn translation -> translation["translatedText"] end)
 
         # Combine translated and non-translatable segments
         combined_texts =
