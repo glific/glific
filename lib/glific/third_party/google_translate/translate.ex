@@ -10,14 +10,23 @@ defmodule Glific.GoogleTranslate.Translate do
   """
   @spec parse(String.t(), String.t(), map()) :: tuple()
   def parse(api_key, question_text, languages) do
-    IO.inspect(question_text)
-    #contact variables are non_translatable
-    {translatable_segments, non_translatable_segments} =
-      question_text
-      |> String.split("\n")
-      |> Enum.split_with(&(!String.starts_with?(&1, "@results")))
 
-    translatable_text = Enum.join(translatable_segments, "\n")
+    # Split the text into lines
+    lines = String.split(question_text, "\n")
+
+    # Partition the lines into translatable and non-translatable segments
+    {translatable_segments, non_translatable_segments} =
+      Enum.reduce(lines, {[], []}, fn line, {trans, non_trans} ->
+        if String.starts_with?(line, "@") and
+             line |> String.trim() |> String.split() |> length() == 1 do
+          {trans, [line | non_trans]}
+        else
+          {[line | trans], non_trans}
+        end
+      end)
+
+    translatable_text = Enum.reverse(translatable_segments) |> Enum.join("\n")
+    non_translatable_segments = Enum.reverse(non_translatable_segments)
 
     data = %{
       "q" => translatable_text,
@@ -36,7 +45,6 @@ defmodule Glific.GoogleTranslate.Translate do
     |> Tesla.client()
     |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 120_000]])
     |> handle_response(non_translatable_segments)
-    |> IO.inspect()
   end
 
   @spec handle_response(tuple(), list()) :: tuple()
