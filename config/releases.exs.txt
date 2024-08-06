@@ -69,3 +69,5 @@ config :glific, open_ai: System.get_env("OPEN_AI_KEY")
 config :glific, bhasini_user_id: System.get_env("BHASINI_USER_ID")
 
 config :glific, bhasini_ulca_api_key: System.get_env("BHASINI_ULCA_API_KEY")
+
+config :glific, google_maps_api_key: System.get_env("GOOGLE_MAPS_API_KEY")

@@ -96,3 +96,7 @@ config :glific,
 
 config :glific,
   bhasini_ulca_api_key: env!("BHASINI_ULCA_API_KEY", :string!, "This is not a secret")
+
+
+config :glific,
+  google_maps_api_key: env!("GOOGLE_MAPS_API_KEY", :string!, "This is not a secret")

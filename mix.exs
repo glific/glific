@@ -80,6 +80,7 @@ defmodule Glific.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:unicode_set, "~> 0.10"},
       {:phoenix, "~> 1.7"},
       {:phoenix_ecto, "~> 4.1"},
       {:phoenix_html, "~> 3.3"},

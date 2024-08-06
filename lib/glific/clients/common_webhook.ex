@@ -287,6 +287,47 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("check_response", fields),
     do: %{response: String.equivalent?(fields["correct_response"], fields["user_response"])}
 
+  def webhook("geolocation", fields) do
+    lat = fields["lat"]
+    long = fields["long"]
+    api_key = Glific.get_google_maps_api_key()
+
+    url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=#{lat},#{long}&key=#{api_key}"
+
+    Tesla.get(url)
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        %{"results" => results} = Jason.decode!(body)
+
+        case results do
+          [%{"address_components" => components} | _] ->
+            city = find_component(components, "locality")
+            state = find_component(components, "administrative_area_level_1")
+            country = find_component(components, "country")
+            street_address = find_component(components, "street_address")
+            postal_code = find_component(components, "postal_code")
+
+            %{
+              success: true,
+              city: city,
+              state: state,
+              country: country,
+              street_address: street_address,
+              postal_code: postal_code
+            }
+
+          _ ->
+            %{success: false, error: "No results found"}
+        end
+
+      {:ok, %Tesla.Env{status: status_code}} ->
+        %{success: false, error: "Received status code #{status_code}"}
+
+      {:error, reason} ->
+        %{success: false, error: "HTTP request failed: #{reason}"}
+    end
+  end
+
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
   defp get_contact_language(contact_id) do
@@ -320,4 +361,13 @@ defmodule Glific.Clients.CommonWebhook do
         %{success: false, response: "Invalid response #{response}"}
     end
   end
+
+  defp find_component(components, type) do
+    components
+    |> Enum.find(fn component ->
+      type in component["types"]
+    end)
+    |> then(& &1["long_name"])
+  end
+
 end
