@@ -179,4 +179,11 @@ defmodule GlificWeb.Resolvers.Contacts do
   def simulator_release(_, _params, %{context: %{current_user: user}}) do
     {:ok, State.release_simulator(user)}
   end
+
+  @doc false
+  @spec get_contact_upload_report(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def get_contact_upload_report(_, params, %{context: %{current_user: user}}) do
+    Import.get_contact_upload_report(user.organization_id, params)
+  end
 end

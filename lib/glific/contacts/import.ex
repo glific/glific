@@ -22,6 +22,145 @@ defmodule Glific.Contacts.Import do
     Users.User
   }
 
+  @doc """
+  This method allows importing of contacts to a particular organization and group
+
+  The method takes in a csv file path and adds the contacts to the particular organization
+  and group.
+  """
+  @spec import_contacts(non_neg_integer(), map(), [{atom(), String.t()}]) :: tuple()
+  def import_contacts(
+        organization_id,
+        %{user: user, collection: collection} = _contact_attrs,
+        opts
+      ) do
+    if length(opts) > 1 do
+      raise "Please specify only one of keyword arguments: file_path, url or data"
+    end
+
+    contact_data_as_stream = fetch_contact_data_as_string(opts)
+    contact_attrs = %{organization_id: organization_id, user: user, collection: collection}
+
+    handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
+  end
+
+  def import_contacts(organization_id, contact_attrs, opts) do
+    if length(opts) > 1 do
+      raise "Please specify only one of keyword arguments: file_path, url or data"
+    end
+
+    contact_data_as_stream = fetch_contact_data_as_string(opts)
+    contact_attrs = %{organization_id: organization_id, user: contact_attrs.user}
+
+    handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
+  end
+
+  @doc """
+  Deletes/updates or add the given contact
+  """
+  @spec process_data(User.t() | map(), map(), map()) :: {:ok, map()} | {:error, map()}
+  def process_data(user, %{delete: "1"} = contact, _contact_attrs) do
+    if Authorize.valid_role?(user.roles, :admin) || user.upload_contacts == true do
+      case Repo.get_by(Contact, %{phone: contact.phone}) do
+        nil ->
+          {:error, %{contact.phone => "Contact does not exist"}}
+
+        contact ->
+          {:ok, contact} = Contacts.delete_contact(contact)
+          {:ok, %{contact.phone => "Contact has been deleted as per flag in csv"}}
+      end
+    else
+      {:error, %{contact.phone => "This user #{user.name} doesn't have enough permission"}}
+    end
+  end
+
+  def process_data(user, contact_attrs, _attrs) do
+    cond do
+      Authorize.valid_role?(user.roles, :admin) ->
+        {:ok, contact} =
+          Contacts.maybe_create_contact(contact_attrs)
+
+        create_group_and_contact_fields(contact_attrs, contact)
+        optin_contact(user, contact, contact_attrs)
+        {:ok, %{contact.phone => "New contact has been created and marked as opted in"}}
+
+      user.upload_contacts ->
+        {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
+        may_update_contact(contact_attrs)
+        optin_contact(user, contact, contact_attrs)
+        {:ok, %{contact.phone => "New contact has been created and marked as opted in"}}
+
+      true ->
+        may_update_contact(contact_attrs)
+    end
+  end
+
+  @doc """
+    Move the existing contacts to a group.
+  """
+  @spec add_contacts_to_group(integer, String.t(), [{atom(), String.t()}]) :: tuple()
+  def add_contacts_to_group(organization_id, group_label, opts \\ []) do
+    contact_data_as_stream = fetch_contact_data_as_string(opts)
+    {:ok, group} = Groups.get_or_create_group_by_label(group_label, organization_id)
+
+    contact_id_list =
+      contact_data_as_stream
+      |> CSV.decode(headers: true, field_transform: &String.trim/1)
+      |> Enum.map(fn {_, data} -> clean_contact_for_group(data, organization_id) end)
+      |> get_contact_id_list(organization_id)
+
+    %{
+      group_id: group.id,
+      add_contact_ids: contact_id_list,
+      delete_contact_ids: [],
+      organization_id: organization_id
+    }
+    |> GroupContacts.update_group_contacts()
+
+    {:ok, %{message: "#{length(contact_id_list)} contacts added to group #{group_label}"}}
+  end
+
+  @doc """
+  Fetches the contact upload report
+  """
+  @spec get_contact_upload_report(non_neg_integer(), map()) :: {:ok, any()}
+  def get_contact_upload_report(organization_id, params) do
+    Repo.put_process_state(organization_id)
+
+    case UserJob.list_user_jobs(%{filter: %{id: params.user_job_id}}) do
+      [%UserJob{status: "success"} = user_job] ->
+        csv_rows =
+          user_job.errors["errors"]
+          |> Enum.reduce("Phone,Status", fn {phone, status}, acc ->
+            acc <> "\r\n#{phone},#{status}"
+          end)
+
+        {:ok, %{csv_rows: csv_rows}}
+
+      [%UserJob{} = _user_job] ->
+        {:ok, %{error: "Contact upload is in progress"}}
+
+      [] ->
+        {:ok, %{error: "Contact upload report doesn't exist"}}
+    end
+  end
+
+  @spec clean_contact_for_group(map(), non_neg_integer()) :: map()
+  defp clean_contact_for_group(data, _organization_id),
+    do: %{phone: data["Contact Number"]}
+
+  @spec get_contact_id_list(list(), non_neg_integer()) :: list()
+  defp get_contact_id_list(contacts, org_id) do
+    contact_phone_list = Enum.map(contacts, fn contact -> contact.phone end)
+    Repo.put_organization_id(org_id)
+
+    Contact
+    |> where([c], c.organization_id == ^org_id)
+    |> where([c], c.phone in ^contact_phone_list)
+    |> select([c], c.id)
+    |> Repo.all()
+  end
+
   @spec cleanup_contact_data(map(), map(), String.t()) :: map()
   defp cleanup_contact_data(
          data,
@@ -104,65 +243,6 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  @doc """
-  This method allows importing of contacts to a particular organization and group
-
-  The method takes in a csv file path and adds the contacts to the particular organization
-  and group.
-  """
-  @spec import_contacts(non_neg_integer(), map(), [{atom(), String.t()}]) :: tuple()
-  def import_contacts(
-        organization_id,
-        %{user: user, collection: collection} = _contact_attrs,
-        opts
-      ) do
-    if length(opts) > 1 do
-      raise "Please specify only one of keyword arguments: file_path, url or data"
-    end
-
-    contact_data_as_stream = fetch_contact_data_as_string(opts)
-    contact_attrs = %{organization_id: organization_id, user: user, collection: collection}
-
-    handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
-  end
-
-  def import_contacts(organization_id, contact_attrs, opts) do
-    if length(opts) > 1 do
-      raise "Please specify only one of keyword arguments: file_path, url or data"
-    end
-
-    contact_data_as_stream = fetch_contact_data_as_string(opts)
-    contact_attrs = %{organization_id: organization_id, user: contact_attrs.user}
-
-    handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
-  end
-
-  # @spec parse_result(list(), String.t()) :: {:ok, any()} | {:error, any()}
-  # defp parse_result(result, "csv") do
-  #   csv_rows =
-  #     result
-  #     |> Enum.reduce("Phone,Status", fn {phone, status}, acc ->
-  #       acc <> "\r\n#{phone},#{status}"
-  #     end)
-
-  #   {:ok, %{csv_rows: csv_rows}}
-  # end
-
-  # defp parse_result(result, "default") do
-  #   errors =
-  #     result
-  #     |> Enum.filter(fn {_contact, status} -> status != "Contact has been updated" end)
-  #     |> Enum.map(fn {_contact, error} -> error end)
-
-  #   case errors do
-  #     [] ->
-  #       {:ok, %{message: "All contacts added"}}
-
-  #     _ ->
-  #       {:error, errors}
-  #   end
-  # end
-
   @spec handle_csv_for_admins(map(), map(), [{atom(), String.t()}]) :: list() | {:error, any()}
   defp handle_csv_for_admins(contact_attrs, data, opts) do
     # this ensures the  org_id exists and is valid
@@ -196,7 +276,7 @@ defmodule Glific.Contacts.Import do
 
     user_job = UserJob.create_user_job(user_job_attrs)
     create_contact_upload_notification(organization_id, user_job.id)
-    Glific.Metrics.increment("User Job Created")
+    Glific.Metrics.increment("Contact Job Created")
 
     params = %{
       params
@@ -229,46 +309,6 @@ defmodule Glific.Contacts.Import do
     })
 
     :ok
-  end
-
-  @doc """
-  Deletes/updates or add the given contact
-  """
-  @spec process_data(User.t() | map(), map(), map()) :: {:ok, map()} | {:error, map()}
-  def process_data(user, %{delete: "1"} = contact, _contact_attrs) do
-    if Authorize.valid_role?(user.roles, :admin) || user.upload_contacts == true do
-      case Repo.get_by(Contact, %{phone: contact.phone}) do
-        nil ->
-          {:error, %{contact.phone => "Contact does not exist"}}
-
-        contact ->
-          {:ok, contact} = Contacts.delete_contact(contact)
-          {:ok, %{contact.phone => "Contact has been deleted as per flag in csv"}}
-      end
-    else
-      {:error, %{contact.phone => "This user #{user.name} doesn't have enough permission"}}
-    end
-  end
-
-  def process_data(user, contact_attrs, _attrs) do
-    cond do
-      Authorize.valid_role?(user.roles, :admin) ->
-        {:ok, contact} =
-          Contacts.maybe_create_contact(contact_attrs)
-
-        create_group_and_contact_fields(contact_attrs, contact)
-        optin_contact(user, contact, contact_attrs)
-        {:ok, %{contact.phone => "New contact has been created and marked as opted in"}}
-
-      user.upload_contacts ->
-        {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
-        may_update_contact(contact_attrs)
-        optin_contact(user, contact, contact_attrs)
-        {:ok, %{contact.phone => "New contact has been created and marked as opted in"}}
-
-      true ->
-        may_update_contact(contact_attrs)
-    end
   end
 
   @spec may_update_contact(map()) :: {:ok, any} | {:error, any}
@@ -362,47 +402,6 @@ defmodule Glific.Contacts.Import do
       true ->
         false
     end
-  end
-
-  @doc """
-    Move the existing contacts to a group.
-  """
-  @spec add_contacts_to_group(integer, String.t(), [{atom(), String.t()}]) :: tuple()
-  def add_contacts_to_group(organization_id, group_label, opts \\ []) do
-    contact_data_as_stream = fetch_contact_data_as_string(opts)
-    {:ok, group} = Groups.get_or_create_group_by_label(group_label, organization_id)
-
-    contact_id_list =
-      contact_data_as_stream
-      |> CSV.decode(headers: true, field_transform: &String.trim/1)
-      |> Enum.map(fn {_, data} -> clean_contact_for_group(data, organization_id) end)
-      |> get_contact_id_list(organization_id)
-
-    %{
-      group_id: group.id,
-      add_contact_ids: contact_id_list,
-      delete_contact_ids: [],
-      organization_id: organization_id
-    }
-    |> GroupContacts.update_group_contacts()
-
-    {:ok, %{message: "#{length(contact_id_list)} contacts added to group #{group_label}"}}
-  end
-
-  @spec clean_contact_for_group(map(), non_neg_integer()) :: map()
-  defp clean_contact_for_group(data, _organization_id),
-    do: %{phone: data["Contact Number"]}
-
-  @spec get_contact_id_list(list(), non_neg_integer()) :: list()
-  defp get_contact_id_list(contacts, org_id) do
-    contact_phone_list = Enum.map(contacts, fn contact -> contact.phone end)
-    Repo.put_organization_id(org_id)
-
-    Contact
-    |> where([c], c.organization_id == ^org_id)
-    |> where([c], c.phone in ^contact_phone_list)
-    |> select([c], c.id)
-    |> Repo.all()
   end
 
   @spec add_language(map(), String.t() | nil) :: map()
