@@ -724,7 +724,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :default, with_scheduled: true, with_safety: false)
 
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 

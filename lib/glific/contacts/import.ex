@@ -215,19 +215,19 @@ defmodule Glific.Contacts.Import do
     {:ok, %{status: "Contact import is in progress"}}
   end
 
-  @spec process_data(User.t(), map(), map()) :: {String.t(), String.t()}
+  @spec process_data(User.t(), map(), map()) :: {:ok, map()} | {:error, map()}
   def process_data(user, %{delete: "1"} = contact, _contact_attrs) do
     if Authorize.valid_role?(user.roles, :admin) || user.upload_contacts == true do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
         nil ->
-          {contact.phone, "Contact does not exist"}
+          {:error, %{contact.phone => "Contact does not exist"}}
 
         contact ->
           {:ok, contact} = Contacts.delete_contact(contact)
-          {contact.phone, "Contact has been deleted as per flag in csv"}
+          {:ok, %{contact.phone => "Contact has been deleted as per flag in csv"}}
       end
     else
-      {:error, "This user doesn't have enough permission"}
+      {:error, %{contact.phone => "This user #{user.name} doesn't have enough permission"}}
     end
   end
 
@@ -239,13 +239,13 @@ defmodule Glific.Contacts.Import do
 
         create_group_and_contact_fields(contact_attrs, contact)
         optin_contact(user, contact, contact_attrs)
-        {contact.phone, "New contact has been created and marked as opted in"}
+        {:ok, %{contact.phone => "New contact has been created and marked as opted in"}}
 
       user.upload_contacts ->
         {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
         may_update_contact(contact_attrs)
         optin_contact(user, contact, contact_attrs)
-        {contact.phone, "New contact has been created and marked as opted in"}
+        {:ok, %{contact.phone => "New contact has been created and marked as opted in"}}
 
       true ->
         may_update_contact(contact_attrs)
@@ -257,11 +257,11 @@ defmodule Glific.Contacts.Import do
     case Contacts.maybe_update_contact(contact_attrs) do
       {:ok, contact} ->
         create_group_and_contact_fields(contact_attrs, contact)
-        {contact.phone, "Contact has been updated"}
+        {:ok, %{contact.phone => "Contact has been updated"}}
 
       {:error, error} ->
         Map.put(%{}, contact_attrs.phone, "#{error}")
-        {contact_attrs.phone, "#{error}"}
+        {:error, %{contact_attrs.phone => "#{error}"}}
     end
   end
 
