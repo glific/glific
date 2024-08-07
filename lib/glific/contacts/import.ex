@@ -9,13 +9,13 @@ defmodule Glific.Contacts.Import do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.ImportWorker,
     Flows.ContactField,
     Groups,
     Groups.ContactGroup,
     Groups.GroupContacts,
-    Partners,
     Jobs.UserJob,
-    Contacts.ImportWorker,
+    Partners,
     Repo,
     Settings,
     Users.User
@@ -136,31 +136,31 @@ defmodule Glific.Contacts.Import do
     handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
   end
 
-  @spec parse_result(list(), String.t()) :: {:ok, any()} | {:error, any()}
-  defp parse_result(result, "csv") do
-    csv_rows =
-      result
-      |> Enum.reduce("Phone,Status", fn {phone, status}, acc ->
-        acc <> "\r\n#{phone},#{status}"
-      end)
+  # @spec parse_result(list(), String.t()) :: {:ok, any()} | {:error, any()}
+  # defp parse_result(result, "csv") do
+  #   csv_rows =
+  #     result
+  #     |> Enum.reduce("Phone,Status", fn {phone, status}, acc ->
+  #       acc <> "\r\n#{phone},#{status}"
+  #     end)
 
-    {:ok, %{csv_rows: csv_rows}}
-  end
+  #   {:ok, %{csv_rows: csv_rows}}
+  # end
 
-  defp parse_result(result, "default") do
-    errors =
-      result
-      |> Enum.filter(fn {_contact, status} -> status != "Contact has been updated" end)
-      |> Enum.map(fn {_contact, error} -> error end)
+  # defp parse_result(result, "default") do
+  #   errors =
+  #     result
+  #     |> Enum.filter(fn {_contact, status} -> status != "Contact has been updated" end)
+  #     |> Enum.map(fn {_contact, error} -> error end)
 
-    case errors do
-      [] ->
-        {:ok, %{message: "All contacts added"}}
+  #   case errors do
+  #     [] ->
+  #       {:ok, %{message: "All contacts added"}}
 
-      _ ->
-        {:error, errors}
-    end
-  end
+  #     _ ->
+  #       {:error, errors}
+  #   end
+  # end
 
   @spec handle_csv_for_admins(map(), map(), [{atom(), String.t()}]) :: list() | {:error, any()}
   defp handle_csv_for_admins(contact_attrs, data, opts) do
@@ -215,6 +215,9 @@ defmodule Glific.Contacts.Import do
     {:ok, %{status: "Contact import is in progress"}}
   end
 
+  @doc """
+  Deletes/updates or add the given contact
+  """
   @spec process_data(User.t() | map(), map(), map()) :: {:ok, map()} | {:error, map()}
   def process_data(user, %{delete: "1"} = contact, _contact_attrs) do
     if Authorize.valid_role?(user.roles, :admin) || user.upload_contacts == true do

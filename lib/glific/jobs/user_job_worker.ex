@@ -5,13 +5,14 @@ defmodule Glific.Jobs.UserJobWorker do
   require Logger
 
   alias Glific.{
-    Repo,
-    Jobs.UserJob
+    Jobs.UserJob,
+    Repo
   }
 
   @doc """
   Check and update user job status.
   """
+  @spec check_user_job_status(non_neg_integer()) :: :ok
   def check_user_job_status(_org_id) do
     args = %{filter: %{status: "pending", all_tasks_created: true}}
     user_jobs = UserJob.list_user_jobs(args)

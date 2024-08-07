@@ -10,12 +10,12 @@ defmodule Glific.ContactsTest do
     Contacts.Contact,
     Contacts.Import,
     Contacts.ImportWorker,
+    Jobs.UserJob,
     Partners,
     Partners.Organization,
     Partners.Saas,
     Seeds.SeedsDev,
     Settings,
-    Jobs.UserJob,
     Settings.Language,
     Users
   }

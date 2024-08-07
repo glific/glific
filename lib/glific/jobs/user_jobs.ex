@@ -59,22 +59,29 @@ defmodule Glific.Jobs.UserJob do
     |> foreign_key_constraint(:organization_id)
   end
 
-  @spec create_user_job(map()) :: %UserJob{}
+  @doc """
+  Creates a new user job
+  """
+  @spec create_user_job(map()) :: UserJob.t()
   def create_user_job(attrs) do
     %UserJob{}
-    |> UserJob.changeset(attrs)
+    |> changeset(attrs)
     |> Repo.insert!()
   end
 
   @doc """
   Updates a user job with the given changeset.
   """
+  @spec update_user_job(UserJob.t(), map()) :: UserJob.t()
   def update_user_job(user_job, changes) do
     user_job
     |> changeset(changes)
     |> Repo.update()
   end
 
+  @doc """
+  Fetch user jobs wrto the filters and arguments
+  """
   @spec list_user_jobs(map()) :: [UserJob.t()]
   def list_user_jobs(args \\ %{}) do
     args
@@ -82,6 +89,7 @@ defmodule Glific.Jobs.UserJob do
     |> Repo.all()
   end
 
+  @spec filter_with(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn
       {:status, status}, query ->
