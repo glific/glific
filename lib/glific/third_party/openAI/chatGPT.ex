@@ -426,4 +426,95 @@ defmodule Glific.OpenAI.ChatGPT do
     cleaned_message = Regex.replace(~r/【\d+(:\d+)?+†source】/, thread_messages["message"], "")
     Map.put(thread_messages, "message", cleaned_message)
   end
+
+  @spec create_vector_store(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  def create_vector_store(name) do
+    url = @endpoint <> "/vector_stores"
+    payload = %{"name" => name}
+            |> Jason.encode!()
+    middleware = [
+      {Tesla.Middleware.Headers, headers()}
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.post(url, payload)
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        {:ok, Jason.decode!(body)["id"]}
+
+      {_status, response} ->
+        {:error, "Failed to create vector store: #{inspect(response)}"}
+    end
+  end
+
+  @spec delete_vector_store(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  def delete_vector_store(id) do
+    url = @endpoint <> "/vector_stores/#{id}"
+    middleware = [
+      {Tesla.Middleware.Headers, headers()}
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.delete(url)
+    |> case do
+      {:ok, %Tesla.Env{status: 200}} ->
+        {:ok, id}
+
+      {_status, response} ->
+        {:error, "Failed to delete vector store call: #{inspect(response)}"}
+    end
+  end
+
+  @spec create_assistant(String.t(), String.t(), String.t(), String.t(), String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  def create_assistant(name, description, instructions, id, model) do
+    url = @endpoint <> "/assistants"
+    payload =
+      %{
+        instructions: instructions,
+        name: name,
+        description: description,
+        tool_resources: %{
+          file_search: %{
+            vector_store_ids: [id]
+          }
+        },
+        model: model
+      }
+      |> Jason.encode!()
+
+    middleware = [
+      {Tesla.Middleware.Headers, headers()}
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.post(url, payload)
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        {:ok, Jason.decode!(body)["id"]}
+
+      {_status, response} ->
+        {:error, "Failed to create assistant: #{inspect(response)}"}
+    end
+  end
+
+  def delete_assistant(id) do
+    url = @endpoint <> "/assistants/#{id}"
+    middleware = [
+      {Tesla.Middleware.Headers, headers()}
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.delete(url)
+    |> case do
+      {:ok, %Tesla.Env{status: 200}} ->
+        {:ok, id}
+
+      {_status, response} ->
+        {:error, "Failed to delete assistant: #{inspect(response)}"}
+    end
+  end
 end
