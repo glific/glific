@@ -160,6 +160,21 @@ defmodule Glific.PartnersTest do
       assert %{"status" => "success"} == result
     end
 
+    test "enable DLR Events for an app" do
+      org = SeedsDev.seed_organizations()
+
+      Tesla.Mock.mock(fn
+        %{method: :put} ->
+          %Tesla.Env{
+            status: 204,
+            body: "{\"status\":\"success\"}"
+          }
+      end)
+      modes = ["DELIVERED", "READ"]
+      {:ok, data} = PartnerAPI.enable_dlr_events(org.id, modes)
+      assert %{"status" => "success"} == data
+    end
+
     test "set_callback_url/2 for setting callback URL" do
       Tesla.Mock.mock(fn
         %{method: :put} ->
