@@ -15,6 +15,7 @@ defmodule Glific.Contacts.Import do
     Groups.GroupContacts,
     Partners,
     Jobs.UserJob,
+    Notifications,
     Contacts.ImportWorker,
     Repo,
     Settings,
@@ -194,7 +195,7 @@ defmodule Glific.Contacts.Import do
     }
 
     user_job = UserJob.create_user_job(user_job_attrs)
-
+    create_contact_upload_notification(organization_id, user_job.id)
     params = %{
       params
       | user: %{roles: params.user.roles, upload_contacts: params.user.upload_contacts}
@@ -213,6 +214,18 @@ defmodule Glific.Contacts.Import do
 
     UserJob.update_user_job(user_job, %{total_tasks: total_chunks, all_tasks_created: true})
     {:ok, %{status: "Contact import is in progress"}}
+  end
+
+  @spec create_contact_upload_notification(integer(), integer()) :: :ok
+  defp create_contact_upload_notification(organization_id, user_job_id) do
+    Notifications.create_notification(%{
+      category: "contact upload",
+      message: "Contact upload in progress",
+      severity: Notifications.types().info,
+      organization_id: organization_id,
+      entity: %{user_job_id: user_job_id}
+    })
+    :ok
   end
 
   @spec process_data(User.t(), map(), map()) :: {String.t(), String.t()}

@@ -12,6 +12,7 @@ defmodule Glific.Contacts.ImportWorker do
   alias Glific.{
     Contacts.Import,
     Jobs.UserJob,
+    Notifications,
     Repo
   }
 
@@ -66,9 +67,22 @@ defmodule Glific.Contacts.ImportWorker do
       tasks_done = user_job.tasks_done + 1
       updated_errors = Map.merge(user_job.errors || %{}, errors)
       UserJob.update_user_job(user_job, %{tasks_done: tasks_done, errors: updated_errors})
+      create_completion_notification(user_job, tasks_done, params.organization_id)
     end)
 
     :ok
+  end
+
+  defp create_completion_notification(user_job, tasks_done, organization_id) do
+    if tasks_done == user_job.total_tasks do
+      Notifications.create_notification(%{
+        category: "contact upload",
+        message: "Contact upload completed",
+        severity: Notifications.types().info,
+        organization_id: organization_id,
+        entity: %{user_job_id: user_job.id}
+      })
+    end
   end
 
   @spec validate_phone(String.t() | nil) :: map()
