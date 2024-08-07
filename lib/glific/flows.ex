@@ -346,22 +346,15 @@ defmodule Glific.Flows do
       |> limit(14)
       |> Repo.all()
 
+    IO.inspect("debug001")
+
     last_published_revision =
       get_base_flow_revision_query(flow_uuid)
       |> where([fr, f], fr.status == "published")
       |> limit(1)
       |> Repo.all()
-      |> hd()
-      |> then(
-        &%{
-          user: get_user(&1.user_name),
-          created_on: &1.updated_at,
-          id: &1.id,
-          version: "13.0.0",
-          revision: &1.id,
-          status: &1.status
-        }
-      )
+      |> parse_revision()
+      |> then(&if &1 == [], do: [], else: [&1])
 
     # Instead of sorting this list we need to fetch the ordered items from the DB
     # We will optimize this more in the v0.4
@@ -369,23 +362,31 @@ defmodule Glific.Flows do
       results
       |> Enum.sort(fn fr1, fr2 -> fr1.id >= fr2.id end)
       |> Enum.reduce(
-        [last_published_revision],
+        last_published_revision,
         fn revision, acc ->
           [
-            %{
-              user: get_user(revision.user_name),
-              created_on: revision.updated_at,
-              id: revision.id,
-              version: "13.0.0",
-              revision: revision.id,
-              status: revision.status
-            }
+            parse_revision(revision)
             | acc
           ]
         end
       )
 
     %{results: Enum.reverse(asset_list)}
+  end
+
+  defp parse_revision([]), do: []
+
+  defp parse_revision(revision) when is_list(revision), do: revision |> hd |> parse_revision()
+
+  defp parse_revision(revision) do
+    %{
+      user: get_user(revision.user_name),
+      created_on: revision.updated_at,
+      id: revision.id,
+      version: "13.0.0",
+      revision: revision.id,
+      status: revision.status
+    }
   end
 
   defp get_base_flow_revision_query(flow_uuid) do
