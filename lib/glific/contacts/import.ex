@@ -9,14 +9,14 @@ defmodule Glific.Contacts.Import do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.ImportWorker,
     Flows.ContactField,
     Groups,
     Groups.ContactGroup,
     Groups.GroupContacts,
-    Partners,
     Jobs.UserJob,
     Notifications,
-    Contacts.ImportWorker,
+    Partners,
     Repo,
     Settings,
     Users.User
@@ -137,31 +137,31 @@ defmodule Glific.Contacts.Import do
     handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
   end
 
-  @spec parse_result(list(), String.t()) :: {:ok, any()} | {:error, any()}
-  defp parse_result(result, "csv") do
-    csv_rows =
-      result
-      |> Enum.reduce("Phone,Status", fn {phone, status}, acc ->
-        acc <> "\r\n#{phone},#{status}"
-      end)
+  # @spec parse_result(list(), String.t()) :: {:ok, any()} | {:error, any()}
+  # defp parse_result(result, "csv") do
+  #   csv_rows =
+  #     result
+  #     |> Enum.reduce("Phone,Status", fn {phone, status}, acc ->
+  #       acc <> "\r\n#{phone},#{status}"
+  #     end)
 
-    {:ok, %{csv_rows: csv_rows}}
-  end
+  #   {:ok, %{csv_rows: csv_rows}}
+  # end
 
-  defp parse_result(result, "default") do
-    errors =
-      result
-      |> Enum.filter(fn {_contact, status} -> status != "Contact has been updated" end)
-      |> Enum.map(fn {_contact, error} -> error end)
+  # defp parse_result(result, "default") do
+  #   errors =
+  #     result
+  #     |> Enum.filter(fn {_contact, status} -> status != "Contact has been updated" end)
+  #     |> Enum.map(fn {_contact, error} -> error end)
 
-    case errors do
-      [] ->
-        {:ok, %{message: "All contacts added"}}
+  #   case errors do
+  #     [] ->
+  #       {:ok, %{message: "All contacts added"}}
 
-      _ ->
-        {:error, errors}
-    end
-  end
+  #     _ ->
+  #       {:error, errors}
+  #   end
+  # end
 
   @spec handle_csv_for_admins(map(), map(), [{atom(), String.t()}]) :: list() | {:error, any()}
   defp handle_csv_for_admins(contact_attrs, data, opts) do
@@ -197,6 +197,7 @@ defmodule Glific.Contacts.Import do
     user_job = UserJob.create_user_job(user_job_attrs)
     create_contact_upload_notification(organization_id, user_job.id)
     Glific.Metrics.increment("User Job Created")
+
     params = %{
       params
       | user: %{roles: params.user.roles, upload_contacts: params.user.upload_contacts}
@@ -226,22 +227,26 @@ defmodule Glific.Contacts.Import do
       organization_id: organization_id,
       entity: %{user_job_id: user_job_id}
     })
+
     :ok
   end
 
-  @spec process_data(User.t(), map(), map()) :: {String.t(), String.t()}
+  @doc """
+  Deletes/updates or add the given contact
+  """
+  @spec process_data(User.t() | map(), map(), map()) :: {:ok, map()} | {:error, map()}
   def process_data(user, %{delete: "1"} = contact, _contact_attrs) do
     if Authorize.valid_role?(user.roles, :admin) || user.upload_contacts == true do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
         nil ->
-          {contact.phone, "Contact does not exist"}
+          {:error, %{contact.phone => "Contact does not exist"}}
 
         contact ->
           {:ok, contact} = Contacts.delete_contact(contact)
-          {contact.phone, "Contact has been deleted as per flag in csv"}
+          {:ok, %{contact.phone => "Contact has been deleted as per flag in csv"}}
       end
     else
-      {:error, "This user doesn't have enough permission"}
+      {:error, %{contact.phone => "This user #{user.name} doesn't have enough permission"}}
     end
   end
 
@@ -253,13 +258,13 @@ defmodule Glific.Contacts.Import do
 
         create_group_and_contact_fields(contact_attrs, contact)
         optin_contact(user, contact, contact_attrs)
-        {contact.phone, "New contact has been created and marked as opted in"}
+        {:ok, %{contact.phone => "New contact has been created and marked as opted in"}}
 
       user.upload_contacts ->
         {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
         may_update_contact(contact_attrs)
         optin_contact(user, contact, contact_attrs)
-        {contact.phone, "New contact has been created and marked as opted in"}
+        {:ok, %{contact.phone => "New contact has been created and marked as opted in"}}
 
       true ->
         may_update_contact(contact_attrs)
@@ -271,11 +276,11 @@ defmodule Glific.Contacts.Import do
     case Contacts.maybe_update_contact(contact_attrs) do
       {:ok, contact} ->
         create_group_and_contact_fields(contact_attrs, contact)
-        {contact.phone, "Contact has been updated"}
+        {:ok, %{contact.phone => "Contact has been updated"}}
 
       {:error, error} ->
         Map.put(%{}, contact_attrs.phone, "#{error}")
-        {contact_attrs.phone, "#{error}"}
+        {:error, %{contact_attrs.phone => "#{error}"}}
     end
   end
 

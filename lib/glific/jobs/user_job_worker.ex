@@ -5,14 +5,15 @@ defmodule Glific.Jobs.UserJobWorker do
   require Logger
 
   alias Glific.{
-    Repo,
     Jobs.UserJob,
-    Notifications
+    Notifications,
+    Repo
   }
 
   @doc """
   Check and update user job status.
   """
+  @spec check_user_job_status(non_neg_integer()) :: :ok
   def check_user_job_status(_org_id) do
     args = %{filter: %{status: "pending", all_tasks_created: true}}
     user_jobs = UserJob.list_user_jobs(args)
@@ -22,6 +23,7 @@ defmodule Glific.Jobs.UserJobWorker do
         user_job
         |> Ecto.Changeset.change(status: "success")
         |> Repo.update!()
+
         create_completion_notification(user_job)
         Glific.Metrics.increment("User Jobs Succesful")
       end
