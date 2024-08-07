@@ -454,6 +454,14 @@ defmodule Glific do
       ulca_api_key: Application.get_env(:glific, :bhasini_ulca_api_key)
     }
   end
+  
+  @doc """
+  Get Get Google Maps keys
+  """
+  @spec get_google_maps_api_key() :: String.t()
+  def get_google_maps_api_key do
+    Application.get_env(:glific, :google_maps_api_key)
+  end
 
   @doc """
   mask last 5 digit of a phone number
