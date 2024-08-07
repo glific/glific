@@ -333,6 +333,108 @@ defmodule Glific.TemplatesTest do
                Templates.create_session_template(attrs)
     end
 
+    test "validates that we catch improper input by user for button text", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "template" => %{
+                  "category" => "ACCOUNT_UPDATE",
+                  "templateType" => "TEXT"
+                }
+              })
+          }
+      end)
+
+      # Test with variables
+      attrs_with_variables = %{
+        body: String.duplicate("a", 10),
+        label: "New Label",
+        language_id: language_fixture().id,
+        type: :text,
+        is_hsm: true,
+        category: "ACCOUNT_UPDATE",
+        shortcode: "some_shortcode",
+        example: String.duplicate("a", 1000),
+        organization_id: attrs.organization_id,
+        buttons: [%{"text" => "{{user_name}}"}]
+      }
+
+      assert {:error, ["Button Template", "Button texts contain invalid characters"]} =
+               Templates.create_session_template(attrs_with_variables)
+
+      # Test with newlines
+      attrs_with_newlines = %{
+        body: String.duplicate("a", 10),
+        label: "New Label",
+        language_id: language_fixture().id,
+        type: :text,
+        is_hsm: true,
+        category: "ACCOUNT_UPDATE",
+        shortcode: "some_shortcode",
+        example: String.duplicate("a", 1000),
+        organization_id: attrs.organization_id,
+        buttons: [%{"text" => "Line 1\nLine 2"}]
+      }
+
+      assert {:error, ["Button Template", "Button texts contain invalid characters"]} =
+               Templates.create_session_template(attrs_with_newlines)
+
+      # Test with emojis
+      attrs_with_emojis = %{
+        body: String.duplicate("a", 10),
+        label: "New Label",
+        language_id: language_fixture().id,
+        type: :text,
+        is_hsm: true,
+        category: "ACCOUNT_UPDATE",
+        shortcode: "some_shortcode",
+        example: String.duplicate("a", 1000),
+        organization_id: attrs.organization_id,
+        buttons: [%{"text" => "Hello 😊"}]
+      }
+
+      assert {:error, ["Button Template", "Button texts contain invalid characters"]} =
+               Templates.create_session_template(attrs_with_emojis)
+
+      # Test with formatting characters (bold and italics)
+      attrs_with_formatting = %{
+        body: String.duplicate("a", 10),
+        label: "New Label",
+        language_id: language_fixture().id,
+        type: :text,
+        is_hsm: true,
+        category: "ACCOUNT_UPDATE",
+        shortcode: "some_shortcode",
+        example: String.duplicate("a", 1000),
+        organization_id: attrs.organization_id,
+        buttons: [%{"text" => "**Bold Text**"}]
+      }
+
+      assert {:error, ["Button Template", "Button texts contain invalid characters"]} =
+               Templates.create_session_template(attrs_with_formatting)
+
+      # Test with a combination of different cases
+      attrs_combined = %{
+        body: String.duplicate("a", 10),
+        label: "New Label",
+        language_id: language_fixture().id,
+        type: :text,
+        is_hsm: true,
+        category: "ACCOUNT_UPDATE",
+        shortcode: "some_shortcode",
+        example: String.duplicate("a", 1000),
+        organization_id: attrs.organization_id,
+        buttons: [%{"text" => "Hello {{user_name}}, here is a new line\nand an emoji 😊"}]
+      }
+
+      assert {:error, ["Button Template", "Button texts contain invalid characters"]} =
+               Templates.create_session_template(attrs_combined)
+    end
+
     test "create_session_template/1 for HSM data should submit it for approval", attrs do
       whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9b94e53b4b"
 
