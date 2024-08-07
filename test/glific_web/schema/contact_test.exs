@@ -262,8 +262,6 @@ defmodule GlificWeb.Schema.ContactTest do
     assert count == 0
   end
 
-  # We will revisit when we tackle move_contacts
-  @tag :skip
   test "moving contacts and test possible scenarios and errors", %{manager: user} do
     data = "name,phone,collection\r\nJohn Doe,9876543210_4,Bleach\r\nUkitake,918979120220,Bleach"
 
@@ -276,11 +274,13 @@ defmodule GlificWeb.Schema.ContactTest do
         }
       )
 
-    assert {:ok, query_data} = result
-    csv_rows = get_in(query_data, [:data, "moveContacts", "csvRows"])
+    assert {:ok, _query_data} = result
+    assert_enqueued(worker: ImportWorker, prefix: "global")
 
-    assert csv_rows ==
-             "Phone,Status\r\n9876543210_4,Contact has been updated\r\n918979120220,Contact 918979120220 was not found and hence not added"
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default, with_scheduled: true)
+
+    assert Contacts.count_contacts(%{filter: %{phone: "918979120220"}}) == 0
   end
 
   test "import contacts and test possible scenarios and errors", %{manager: user} do

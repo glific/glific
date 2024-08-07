@@ -401,9 +401,6 @@ defmodule Glific.Contacts.Import do
 
       [lang | _] ->
         Map.put(results, :language_id, lang.id)
-
-      nil ->
-        results
     end
   end
 end
