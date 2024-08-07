@@ -315,12 +315,14 @@ defmodule Glific.Clients.CommonWebhook do
         %{"results" => results} = Jason.decode!(body)
 
         case results do
-          [%{"address_components" => components} | _] ->
+          [%{"address_components" => components, "formatted_address" => formatted_address} | _] ->
             city = find_component(components, "locality")
             state = find_component(components, "administrative_area_level_1")
             country = find_component(components, "country")
             street_address = find_component(components, "street_address")
             postal_code = find_component(components, "postal_code")
+            district = find_component(components, "administrative_area_level_2")
+            ward = find_component(components, "administrative_area_level_3")
 
             %{
               success: true,
@@ -328,8 +330,12 @@ defmodule Glific.Clients.CommonWebhook do
               state: state,
               country: country,
               street_address: street_address,
-              postal_code: postal_code
+              postal_code: postal_code,
+              district: district,
+              ward: ward,
+              formatted_address: formatted_address
             }
+
 
           _ ->
             %{success: false, error: "No results found"}
