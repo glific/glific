@@ -336,7 +336,6 @@ defmodule Glific.Flows do
 
   @doc """
   Get a list of all the revisions based on a flow UUID
-  Glific.Flows.get_flow_revision_list("796e7158-41fc-4ef7-a4e4-ee38bb318762")
   """
   @spec get_flow_revision_list(String.t()) :: %{results: list()}
   def get_flow_revision_list(flow_uuid) do
@@ -352,7 +351,7 @@ defmodule Glific.Flows do
       |> limit(1)
       |> Repo.all()
       |> parse_revision()
-      |> then(&if &1 == [], do: [], else: [&1])
+      |> then(&if is_list(&1), do: [], else: [&1])
 
     # Instead of sorting this list we need to fetch the ordered items from the DB
     # We will optimize this more in the v0.4
@@ -372,6 +371,7 @@ defmodule Glific.Flows do
     %{results: Enum.reverse(asset_list)}
   end
 
+  @spec parse_revision(List | map()) :: List | map()
   defp parse_revision([]), do: []
 
   defp parse_revision(revision) when is_list(revision), do: revision |> hd |> parse_revision()
@@ -387,6 +387,7 @@ defmodule Glific.Flows do
     }
   end
 
+  @spec get_base_flow_revision_query(String.t()) :: Ecto.Query.t()
   defp get_base_flow_revision_query(flow_uuid) do
     FlowRevision
     |> join(:left, [fr], f in Flow, as: :f, on: f.id == fr.flow_id)
