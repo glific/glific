@@ -215,7 +215,7 @@ defmodule Glific.Contacts.Import do
     {:ok, %{status: "Contact import is in progress"}}
   end
 
-  @spec process_data(User.t(), map(), map()) :: {:ok, map()} | {:error, map()}
+  @spec process_data(User.t() | map(), map(), map()) :: {:ok, map()} | {:error, map()}
   def process_data(user, %{delete: "1"} = contact, _contact_attrs) do
     if Authorize.valid_role?(user.roles, :admin) || user.upload_contacts == true do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
