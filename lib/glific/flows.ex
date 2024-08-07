@@ -346,8 +346,6 @@ defmodule Glific.Flows do
       |> limit(14)
       |> Repo.all()
 
-    IO.inspect("debug001")
-
     last_published_revision =
       get_base_flow_revision_query(flow_uuid)
       |> where([fr, f], fr.status == "published")
