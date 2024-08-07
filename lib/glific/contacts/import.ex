@@ -196,6 +196,7 @@ defmodule Glific.Contacts.Import do
 
     user_job = UserJob.create_user_job(user_job_attrs)
     create_contact_upload_notification(organization_id, user_job.id)
+    Glific.Metrics.increment("User Job Created")
     params = %{
       params
       | user: %{roles: params.user.roles, upload_contacts: params.user.upload_contacts}

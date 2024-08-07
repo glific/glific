@@ -6,7 +6,8 @@ defmodule Glific.Jobs.UserJobWorker do
 
   alias Glific.{
     Repo,
-    Jobs.UserJob
+    Jobs.UserJob,
+    Notifications
   }
 
   @doc """
@@ -21,7 +22,19 @@ defmodule Glific.Jobs.UserJobWorker do
         user_job
         |> Ecto.Changeset.change(status: "success")
         |> Repo.update!()
+        create_completion_notification(user_job)
+        Glific.Metrics.increment("User Jobs Succesful")
       end
     end)
+  end
+
+  defp create_completion_notification(user_job) do
+    Notifications.create_notification(%{
+      category: "contact upload",
+      message: "Contact upload completed",
+      severity: Notifications.types().info,
+      organization_id: user_job.organization_id,
+      entity: %{user_job_id: user_job.id}
+    })
   end
 end
