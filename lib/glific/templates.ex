@@ -171,8 +171,15 @@ defmodule Glific.Templates do
   @spec validate_button_template(map()) :: :ok | {:error, [String.t()]}
   defp validate_button_template(%{has_buttons: false} = _attrs), do: :ok
 
-  defp validate_button_template(%{has_buttons: true, button_type: _, buttons: _} = _attrs),
-    do: :ok
+  defp validate_button_template(%{has_buttons: true, button_type: _, buttons: buttons} = _attrs) do
+    invalid_texts = Enum.filter(buttons, fn %{"text" => text} ->
+      contains_invalid_chars?(text)
+    end)
+
+    if invalid_texts == [],
+      do: :ok,
+      else: {:error, ["Button Template", "Button texts cannot contain any variables, newlines, emojis or formatting characters (e.g., bold, italics)."]}
+  end
 
   defp validate_button_template(_) do
     {:error,
@@ -181,6 +188,31 @@ defmodule Glific.Templates do
        "for Button Templates has_buttons, button_type and buttons fields are required"
      ]}
   end
+
+  defp contains_invalid_chars?(text) do
+    contains_variable?(text) or
+    contains_newline?(text) or
+    contains_formatting?(text) or
+    contains_emoji?(text)
+  end
+
+  defp contains_variable?(text) do
+    Regex.match?(~r/\{\{.*?\}\}/, text)
+  end
+
+  defp contains_newline?(text) do
+    String.contains?(text, "\n")
+  end
+
+  defp contains_emoji?(text) do
+    Regex.match?(~r/[^a-zA-Z0-9\s]/, text)
+  end
+
+  defp contains_formatting?(text) do
+    Regex.match?(~r/[*_~]/, text) # assuming bold, italics, and strikethrough are represented by *, _, ~
+  end
+
+
 
   @spec validate_template_length(map()) :: :ok | {:error, [String.t()]}
   defp validate_template_length(%{body: body} = attrs) do
