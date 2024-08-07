@@ -333,107 +333,6 @@ defmodule Glific.TemplatesTest do
                Templates.create_session_template(attrs)
     end
 
-    test "validates that we catch improper input by user for button text", attrs do
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              Jason.encode!(%{
-                "status" => "success",
-                "template" => %{
-                  "category" => "ACCOUNT_UPDATE",
-                  "templateType" => "TEXT"
-                }
-              })
-          }
-      end)
-
-      # Test with variables
-      attrs_with_variables = %{
-        body: String.duplicate("a", 10),
-        label: "New Label",
-        language_id: language_fixture().id,
-        type: :text,
-        is_hsm: true,
-        category: "ACCOUNT_UPDATE",
-        shortcode: "some_shortcode",
-        example: String.duplicate("a", 1000),
-        organization_id: attrs.organization_id,
-        buttons: [%{"text" => "{{user_name}}"}]
-      }
-
-      assert {:error, ["Button Template", "Button texts contain invalid characters"]} =
-               Templates.create_session_template(attrs_with_variables)
-
-      # Test with newlines
-      attrs_with_newlines = %{
-        body: String.duplicate("a", 10),
-        label: "New Label",
-        language_id: language_fixture().id,
-        type: :text,
-        is_hsm: true,
-        category: "ACCOUNT_UPDATE",
-        shortcode: "some_shortcode",
-        example: String.duplicate("a", 1000),
-        organization_id: attrs.organization_id,
-        buttons: [%{"text" => "Line 1\nLine 2"}]
-      }
-
-      assert {:error, ["Button Template", "Button texts contain invalid characters"]} =
-               Templates.create_session_template(attrs_with_newlines)
-
-      # Test with emojis
-      attrs_with_emojis = %{
-        body: String.duplicate("a", 10),
-        label: "New Label",
-        language_id: language_fixture().id,
-        type: :text,
-        is_hsm: true,
-        category: "ACCOUNT_UPDATE",
-        shortcode: "some_shortcode",
-        example: String.duplicate("a", 1000),
-        organization_id: attrs.organization_id,
-        buttons: [%{"text" => "Hello 😊"}]
-      }
-
-      assert {:error, ["Button Template", "Button texts contain invalid characters"]} =
-               Templates.create_session_template(attrs_with_emojis)
-
-      # Test with formatting characters (bold and italics)
-      attrs_with_formatting = %{
-        body: String.duplicate("a", 10),
-        label: "New Label",
-        language_id: language_fixture().id,
-        type: :text,
-        is_hsm: true,
-        category: "ACCOUNT_UPDATE",
-        shortcode: "some_shortcode",
-        example: String.duplicate("a", 1000),
-        organization_id: attrs.organization_id,
-        buttons: [%{"text" => "**Bold Text**"}]
-      }
-
-      assert {:error, ["Button Template", "Button texts contain invalid characters"]} =
-               Templates.create_session_template(attrs_with_formatting)
-
-      # Test with a combination of different cases
-      attrs_combined = %{
-        body: String.duplicate("a", 10),
-        label: "New Label",
-        language_id: language_fixture().id,
-        type: :text,
-        is_hsm: true,
-        category: "ACCOUNT_UPDATE",
-        shortcode: "some_shortcode",
-        example: String.duplicate("a", 1000),
-        organization_id: attrs.organization_id,
-        buttons: [%{"text" => "Hello {{user_name}}, here is a new line\nand an emoji 😊"}]
-      }
-
-      assert {:error, ["Button Template", "Button texts contain invalid characters"]} =
-               Templates.create_session_template(attrs_combined)
-    end
 
     test "create_session_template/1 for HSM data should submit it for approval", attrs do
       whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9b94e53b4b"
@@ -1798,4 +1697,144 @@ defmodule Glific.TemplatesTest do
 
     Partners.update_credential(cred, updated_attrs)
   end
+
+  test "create_session_template/1 for HSM button template should not accept improper input",
+         attrs do
+      whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9c94e53b4b"
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})
+          }
+
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "template" => %{
+                  "category" => "ACCOUNT_UPDATE",
+                  "createdOn" => 1_595_904_220_495,
+                  "data" => "Your conference ticket no. {{1}}",
+                  "elementName" => "conference_ticket_status",
+                  "id" => whatspp_hsm_uuid,
+                  "languageCode" => "en",
+                  "languagePolicy" => "deterministic",
+                  "master" => true,
+                  "meta" => "{\"example\":\"Your conference ticket no. [1234]\"}",
+                  "modifiedOn" => 1_595_904_220_495,
+                  "status" => "PENDING",
+                  "templateType" => "TEXT",
+                  "vertical" => "ACTION_BUTTON"
+                }
+              })
+          }
+      end)
+
+      language = language_fixture()
+
+      # Test with variables
+      attrs = %{
+        body: "Your conference ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "conference_ticket_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your conference ticket no. [1234]",
+        organization_id: attrs.organization_id,
+        has_buttons: true,
+        button_type: "quick_reply",
+        buttons: [%{"text" => "{{user_name}}", "type" => "QUICK_REPLY"}]
+      }
+
+      assert {:error, ["Button Template", "Button texts cannot contain any variables, newlines, emojis or formatting characters (e.g., bold, italics)."]} =
+        Templates.create_session_template(attrs)
+
+      # Test with newlines
+      attrs_2 = %{
+        body: "Your conference ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "conference_ticket_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your conference ticket no. [1234]",
+        organization_id: attrs.organization_id,
+        has_buttons: true,
+        button_type: "quick_reply",
+        buttons: [%{"text" => "Line 1\nLine 2", "type" => "QUICK_REPLY"}]
+      }
+
+      assert {:error, ["Button Template", "Button texts cannot contain any variables, newlines, emojis or formatting characters (e.g., bold, italics)."]} =
+        Templates.create_session_template(attrs_2)
+
+
+      # Test with emojis
+      attrs_3 = %{
+        body: "Your conference ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "conference_ticket_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your conference ticket no. [1234]",
+        organization_id: attrs.organization_id,
+        has_buttons: true,
+        button_type: "quick_reply",
+        buttons: [%{"text" => "Hello 😊", "type" => "QUICK_REPLY"}]
+      }
+
+      assert {:error, ["Button Template", "Button texts cannot contain any variables, newlines, emojis or formatting characters (e.g., bold, italics)."]} =
+        Templates.create_session_template(attrs_3)
+
+
+      # Test with formatting characters (bold and italics)
+      attrs_4 = %{
+        body: "Your conference ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "conference_ticket_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your conference ticket no. [1234]",
+        organization_id: attrs.organization_id,
+        has_buttons: true,
+        button_type: "quick_reply",
+        buttons: [%{"text" => "**Bold Text**", "type" => "QUICK_REPLY"}]
+      }
+
+      assert {:error, ["Button Template", "Button texts cannot contain any variables, newlines, emojis or formatting characters (e.g., bold, italics)."]} =
+        Templates.create_session_template(attrs_4)
+
+
+      # Test with a combination of different cases
+      attrs_5 = %{
+      body: "Your conference ticket no. {{1}}",
+      label: "New Label",
+      language_id: language.id,
+      is_hsm: true,
+      type: :text,
+      shortcode: "conference_ticket_status",
+      category: "ACCOUNT_UPDATE",
+      example: "Your conference ticket no. [1234]",
+      organization_id: attrs.organization_id,
+      has_buttons: true,
+      button_type: "quick_reply",
+      buttons: [%{"text" => "Hello {{user_name}}, here is a new line\nand an emoji 😊", "type" => "QUICK_REPLY"}]
+    }
+
+    assert {:error, ["Button Template", "Button texts cannot contain any variables, newlines, emojis or formatting characters (e.g., bold, italics)."]} =
+      Templates.create_session_template(attrs_5)
+
+    end
+
+
 end
