@@ -193,7 +193,7 @@ defmodule GlificWeb.StatsLive do
 
     assign(socket, Keyword.merge(stats, page_title: "Glific Dashboard"))
     |> assign(range: default_range)
-    |> assign(get_chart_data(org_id, default_range)) |> IO.inspect()
+    |> assign(get_chart_data(org_id, default_range))
     |> assign_dataset()
     |> assign_chart_svg()
     |> assign(bookmarks: Reports.get_bookmark_data(org_id))
