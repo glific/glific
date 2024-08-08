@@ -32,7 +32,7 @@ defmodule Glific.Jobs.UserJobWorker do
 
   defp create_completion_notification(user_job) do
     Notifications.create_notification(%{
-      category: "contact upload",
+      category: "Contact Upload",
       message: "Contact upload completed",
       severity: Notifications.types().info,
       organization_id: user_job.organization_id,

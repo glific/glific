@@ -301,7 +301,7 @@ defmodule Glific.Contacts.Import do
   @spec create_contact_upload_notification(integer(), integer()) :: :ok
   defp create_contact_upload_notification(organization_id, user_job_id) do
     Notifications.create_notification(%{
-      category: "contact upload",
+      category: "Contact Upload",
       message: "Contact upload in progress",
       severity: Notifications.types().info,
       organization_id: organization_id,
