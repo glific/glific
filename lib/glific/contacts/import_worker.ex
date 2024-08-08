@@ -42,7 +42,8 @@ defmodule Glific.Contacts.ImportWorker do
         roles: Enum.map(params["user"]["roles"], &String.to_existing_atom/1),
         upload_contacts: params["user"]["upload_contacts"],
         name: params["user"]["name"]
-      }
+      },
+      type: params["type"]
     }
 
     Repo.put_process_state(params.organization_id)
@@ -105,9 +106,10 @@ defmodule Glific.Contacts.ImportWorker do
     user = params.user
     contact_attrs = contact
 
-    contact_attrs_with_org =
+    attrs =
       Map.put(contact_attrs, :organization_id, Repo.put_process_state(params.organization_id))
+      |> Map.put(:type, params.type)
 
-    Import.process_data(user, contact_attrs, contact_attrs_with_org)
+    Import.process_data(user, contact_attrs, attrs)
   end
 end

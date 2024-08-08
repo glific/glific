@@ -312,7 +312,7 @@ defmodule GlificWeb.Schema.ContactTypes do
       arg(:type, :import_contacts_type_enum)
       arg(:group_label, :string)
       arg(:data, non_null(:string))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Contacts.import_contacts/3)
     end
 

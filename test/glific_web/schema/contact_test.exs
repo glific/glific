@@ -486,6 +486,7 @@ defmodule GlificWeb.Schema.ContactTest do
              Oban.drain_queue(queue: :default, with_scheduled: true)
   end
 
+  @tag :tt
   test "test success for uploading contact for different csv", %{manager: user} do
     user = Map.put(user, :roles, [:glific_admin])
 

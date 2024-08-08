@@ -390,7 +390,8 @@ defmodule Glific.ContactsTest do
         "user" => %{
           "roles" => Enum.map(user.roles, &Atom.to_string/1),
           "upload_contacts" => true
-        }
+        },
+        "type" => "import_contact"
       }
 
       job_args = %{"contacts" => contacts, "params" => params, "user_job_id" => user_job.id}
@@ -456,7 +457,7 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:glific_admin])
 
-      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+      Import.import_contacts(organization.id, %{user: user, collection: "collection", type: :import_contact},
         file_path: get_tmp_path()
       )
 
@@ -478,7 +479,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user, collection: "collection"}, data: data)
+      Import.import_contacts(organization.id, %{user: user, collection: "collection", type: :import_contact}, data: data)
 
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
@@ -509,7 +510,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+      Import.import_contacts(organization.id, %{user: user, collection: "collection", type: :import_contact},
         url: "http://www.bar.com/foo.csv"
       )
 
@@ -546,7 +547,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+      Import.import_contacts(organization.id, %{user: user, collection: "collection", type: :import_contact},
         url: "http://www.bar.com/foo.csv"
       )
 
@@ -583,7 +584,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user}, file_path: get_tmp_path())
+      Import.import_contacts(organization.id, %{user: user, type: :import_contact}, file_path: get_tmp_path())
 
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
@@ -613,7 +614,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user}, data: data)
+      Import.import_contacts(organization.id, %{user: user, type: :import_contact}, data: data)
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
@@ -646,7 +647,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user}, url: "http://www.bar.com/foo.csv")
+      Import.import_contacts(organization.id, %{user: user, type: :import_contact}, url: "http://www.bar.com/foo.csv")
 
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
@@ -680,7 +681,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+      Import.import_contacts(organization.id, %{user: user, collection: "collection", type: :import_contact},
         file_path: get_tmp_path()
       )
 
@@ -717,7 +718,7 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
 
       {:ok, _} =
-        Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+        Import.import_contacts(organization.id, %{user: user, collection: "collection", type: :import_contact},
           file_path: get_tmp_path()
         )
 
@@ -754,7 +755,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+      Import.import_contacts(organization.id, %{user: user, collection: "collection", type: :import_contact},
         file_path: get_tmp_path()
       )
 
@@ -795,7 +796,7 @@ defmodule Glific.ContactsTest do
         {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
         user = Map.put(user, :roles, [:glific_admin])
 
-        Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+        Import.import_contacts(organization.id, %{user: user, collection: "collection", type: :import_contact},
           file_path: get_tmp_path()
         )
 
@@ -825,7 +826,7 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
       assert {:error, _} =
-               Import.import_contacts(999, %{user: user, collection: "collection"},
+               Import.import_contacts(999, %{user: user, collection: "collection", type: :import_contact},
                  file_path: get_tmp_path()
                )
     end

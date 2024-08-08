@@ -31,7 +31,7 @@ defmodule Glific.Contacts.Import do
   @spec import_contacts(non_neg_integer(), map(), [{atom(), String.t()}]) :: tuple()
   def import_contacts(
         organization_id,
-        %{user: user, collection: collection} = _contact_attrs,
+        %{user: user, collection: collection, type: type} = _contact_attrs,
         opts
       ) do
     if length(opts) > 1 do
@@ -39,7 +39,13 @@ defmodule Glific.Contacts.Import do
     end
 
     contact_data_as_stream = fetch_contact_data_as_string(opts)
-    contact_attrs = %{organization_id: organization_id, user: user, collection: collection}
+
+    contact_attrs = %{
+      organization_id: organization_id,
+      user: user,
+      collection: collection,
+      type: type
+    }
 
     handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
   end
@@ -50,7 +56,12 @@ defmodule Glific.Contacts.Import do
     end
 
     contact_data_as_stream = fetch_contact_data_as_string(opts)
-    contact_attrs = %{organization_id: organization_id, user: contact_attrs.user}
+
+    contact_attrs = %{
+      organization_id: organization_id,
+      user: contact_attrs.user,
+      type: contact_attrs.type
+    }
 
     handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
   end
@@ -59,8 +70,8 @@ defmodule Glific.Contacts.Import do
   Deletes/updates or add the given contact
   """
   @spec process_data(User.t() | map(), map(), map()) :: {:ok, map()} | {:error, map()}
-  def process_data(user, %{delete: "1"} = contact, _contact_attrs) do
-    if Authorize.valid_role?(user.roles, :admin) || user.upload_contacts == true do
+  def process_data(user, %{delete: "1"} = contact, _attrs) do
+    if Authorize.valid_role?(user.roles, :manager) || user.upload_contacts == true do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
         nil ->
           {:error, %{contact.phone => "Contact does not exist"}}
@@ -74,23 +85,15 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  def process_data(user, contact_attrs, _attrs) do
-    cond do
-      Authorize.valid_role?(user.roles, :admin) ->
-        {:ok, contact} =
-          Contacts.maybe_create_contact(contact_attrs)
-
-        create_group_and_contact_fields(contact_attrs, contact)
-        optin_contact(user, contact, contact_attrs)
-        {:ok, %{contact.phone => "New contact has been created and marked as opted in"}}
-
-      user.upload_contacts ->
+  def process_data(user, contact_attrs, attrs) do
+    case attrs.type do
+      "import_contact" ->
         {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
         may_update_contact(contact_attrs)
         optin_contact(user, contact, contact_attrs)
         {:ok, %{contact.phone => "New contact has been created and marked as opted in"}}
 
-      true ->
+      "move_contact" ->
         may_update_contact(contact_attrs)
     end
   end
@@ -164,40 +167,29 @@ defmodule Glific.Contacts.Import do
   @spec cleanup_contact_data(map(), map(), String.t()) :: map()
   defp cleanup_contact_data(
          data,
-         %{user: user, organization_id: organization_id} = contact_attrs,
+         %{user: _user, organization_id: organization_id} = contact_attrs,
          _date_format
        ) do
     current_time = NaiveDateTime.utc_now() |> NaiveDateTime.to_string()
 
-    results =
-      %{
-        name: data["name"],
-        phone: data["phone"],
-        organization_id: organization_id,
-        collection: data["collection"],
-        delete: data["delete"],
-        contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
-      }
-      |> add_language(data["language"])
-      |> add_optin_date(current_time)
+    %{
+      name: data["name"],
+      phone: data["phone"],
+      organization_id: organization_id,
+      collection: get_collection(contact_attrs.type, data, contact_attrs),
+      delete: data["delete"],
+      contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
+    }
+    |> add_language(data["language"])
+    |> add_optin_date(current_time)
+  end
 
-    cond do
-      Authorize.valid_role?(user.roles, :admin) ->
-        results
-        |> Map.merge(%{
-          delete: data["delete"],
-          collection: Map.get(contact_attrs, :collection, data["collection"])
-        })
+  defp get_collection(:import_contact, data, contact_attrs) do
+    Map.get(contact_attrs, :collection, data["collection"])
+  end
 
-      user.upload_contacts ->
-        results
-        |> Map.merge(%{
-          delete: data["delete"]
-        })
-
-      true ->
-        results
-    end
+  defp get_collection(:move_contact, data, _contact_attrs) do
+    data["collection"]
   end
 
   @spec add_optin_date(map(), any()) :: map()
@@ -278,12 +270,10 @@ defmodule Glific.Contacts.Import do
     create_contact_upload_notification(organization_id, user_job.id)
     Glific.Metrics.increment("Contact Job Created")
 
-
     params = %{
       params
       | user: %{roles: params.user.roles, upload_contacts: params.user.upload_contacts}
     }
-
     total_chunks =
       data
       |> CSV.decode(headers: true, field_transform: &String.trim/1)
@@ -303,12 +293,12 @@ defmodule Glific.Contacts.Import do
   defp create_contact_upload_notification(organization_id, user_job_id) do
     Notifications.create_notification(%{
       category: "Contact Upload",
-
       message: "Contact upload in progress",
       severity: Notifications.types().info,
       organization_id: organization_id,
       entity: %{user_job_id: user_job_id}
     })
+
     :ok
   end
 
