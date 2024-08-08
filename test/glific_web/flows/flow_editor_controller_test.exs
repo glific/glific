@@ -155,10 +155,10 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     test "labels_post", %{conn: conn, access_token: token} do
       conn =
         get_auth_token(conn, token)
-        |> post("/flow-editor/labels", %{"name" => "Test Lable"})
+        |> post("/flow-editor/labels", %{"name" => "Test Label"})
 
       results = json_response(conn, 200)
-      assert results["name"] == "Test Lable"
+      assert results["name"] == "Test Label"
     end
 
     test "channels", %{conn: conn, access_token: token} do
@@ -340,7 +340,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       assert length(flows) == length(results)
     end
 
-    test "Flow with UUID should return the latest difination", %{conn: conn, access_token: token} do
+    test "Flow with UUID should return the latest definition", %{conn: conn, access_token: token} do
       [flow | _tail] =
         Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
 
