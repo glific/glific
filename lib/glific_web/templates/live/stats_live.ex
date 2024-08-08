@@ -193,7 +193,7 @@ defmodule GlificWeb.StatsLive do
 
     assign(socket, Keyword.merge(stats, page_title: "Glific Dashboard"))
     |> assign(range: default_range)
-    |> assign(get_chart_data(org_id, default_range))
+    |> assign(get_chart_data(org_id, default_range)) |> IO.inspect()
     |> assign_dataset()
     |> assign_chart_svg()
     |> assign(bookmarks: Reports.get_bookmark_data(org_id))
@@ -422,7 +422,8 @@ defmodule GlificWeb.StatsLive do
       broadcast_data: fetch_table_data(:broadcasts, org_id, date_range),
       broadcast_headers: ["Flow Name", "Group Name", "Started At", "Completed At"],
       contact_pie_chart_data: fetch_count_data(:contact_type, org_id, date_range),
-      messages_chart_data: fetch_hourly_data(org_id, date_range)
+      messages_chart_data: fetch_hourly_data(org_id, date_range),
+      bigquery_sync_data: Reports.get_sync_data(:bigquery, org_id)
     ]
   end
 

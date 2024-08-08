@@ -6,6 +6,7 @@ defmodule Glific.Reports do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    BigQuery.BigQueryJob,
     Contacts,
     Contacts.Contact,
     Flows.FlowContext,
@@ -266,6 +267,18 @@ defmodule Glific.Reports do
       group_by: fragment("date_trunc('day', ?)", t.inserted_at),
       select: %{date: fragment("date_trunc('day', ?)", t.inserted_at), count: count(t.id)}
     )
+  end
+
+  @doc false
+  @spec get_sync_data(atom(), non_neg_integer()) :: list(map)
+  def get_sync_data(:bigquery, org_id) do
+    Repo.put_process_state(org_id)
+
+    query =
+      BigQueryJob
+      |> select([b], %{table_id: b.table_id, table: b.table, last_updated_at: b.last_updated_at})
+
+    Repo.all(query)
   end
 
   @doc false
