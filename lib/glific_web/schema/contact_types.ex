@@ -31,6 +31,11 @@ defmodule GlificWeb.Schema.ContactTypes do
     field(:errors, list_of(:input_error))
   end
 
+  object :contact_upload_report do
+    field(:csv_rows, :string)
+    field(:error, :string)
+  end
+
   object :contact do
     field(:id, :id)
     field(:name, :string)
@@ -309,6 +314,12 @@ defmodule GlificWeb.Schema.ContactTypes do
       arg(:data, non_null(:string))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Contacts.import_contacts/3)
+    end
+
+    field :get_contact_upload_report, :contact_upload_report do
+      arg(:user_job_id, :id)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Contacts.get_contact_upload_report/3)
     end
   end
 end

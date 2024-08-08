@@ -25,14 +25,14 @@ defmodule Glific.Jobs.UserJobWorker do
         |> Repo.update!()
 
         create_completion_notification(user_job)
-        Glific.Metrics.increment("User Jobs Succesful")
+        Glific.Metrics.increment("Contact upload success")
       end
     end)
   end
 
   defp create_completion_notification(user_job) do
     Notifications.create_notification(%{
-      category: "contact upload",
+      category: "Contact Upload",
       message: "Contact upload completed",
       severity: Notifications.types().info,
       organization_id: user_job.organization_id,

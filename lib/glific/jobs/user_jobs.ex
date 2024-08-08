@@ -101,6 +101,9 @@ defmodule Glific.Jobs.UserJob do
       {:organization_id, organization_id}, query ->
         from(u in query, where: u.organization_id == ^organization_id)
 
+      {:id, id}, query ->
+        from(u in query, where: u.id == ^id)
+
       _, query ->
         query
     end)
