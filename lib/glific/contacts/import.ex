@@ -278,6 +278,7 @@ defmodule Glific.Contacts.Import do
     create_contact_upload_notification(organization_id, user_job.id)
     Glific.Metrics.increment("Contact Job Created")
 
+
     params = %{
       params
       | user: %{roles: params.user.roles, upload_contacts: params.user.upload_contacts}
@@ -302,12 +303,12 @@ defmodule Glific.Contacts.Import do
   defp create_contact_upload_notification(organization_id, user_job_id) do
     Notifications.create_notification(%{
       category: "Contact Upload",
+
       message: "Contact upload in progress",
       severity: Notifications.types().info,
       organization_id: organization_id,
       entity: %{user_job_id: user_job_id}
     })
-
     :ok
   end
 
