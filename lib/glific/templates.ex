@@ -557,7 +557,8 @@ defmodule Glific.Templates do
       else
         %{
           status: template["status"],
-          category: template["category"]
+          category: template["category"],
+          quality: template["quality"]
         }
       end
 
