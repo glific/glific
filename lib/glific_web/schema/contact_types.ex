@@ -27,7 +27,7 @@ defmodule GlificWeb.Schema.ContactTypes do
   end
 
   object :move_contacts_result do
-    field(:csv_rows, :string)
+    field(:status, :string)
     field(:errors, list_of(:input_error))
   end
 
@@ -299,7 +299,7 @@ defmodule GlificWeb.Schema.ContactTypes do
       resolve(&Resolvers.Contacts.optin_contact/3)
     end
 
-    field :move_contacts, :move_contacts_result do
+    field :move_contacts, :import_result do
       arg(:id, :id)
       arg(:type, :import_contacts_type_enum)
       arg(:data, non_null(:string))

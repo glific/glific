@@ -274,6 +274,7 @@ defmodule Glific.Contacts.Import do
       params
       | user: %{roles: params.user.roles, upload_contacts: params.user.upload_contacts}
     }
+
     total_chunks =
       data
       |> CSV.decode(headers: true, field_transform: &String.trim/1)
