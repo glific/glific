@@ -38,6 +38,7 @@ defmodule Glific.Contacts.Import do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
 
+    opts = Keyword.put(opts, :bsp_limit, get_bsp_limit(organization_id))
     contact_data_as_stream = fetch_contact_data_as_string(opts)
 
     contact_attrs = %{
@@ -54,6 +55,8 @@ defmodule Glific.Contacts.Import do
     if length(opts) > 1 do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
+
+    opts = Keyword.put(opts, :bsp_limit, get_bsp_limit(organization_id))
 
     contact_data_as_stream = fetch_contact_data_as_string(opts)
 
@@ -279,10 +282,10 @@ defmodule Glific.Contacts.Import do
       data
       |> CSV.decode(headers: true, field_transform: &String.trim/1)
       |> Stream.map(fn {_, data} -> cleanup_contact_data(data, params, date_format) end)
-      |> Stream.chunk_every(opts[:bsp_limit] || 100)
+      |> Stream.chunk_every(opts[:bsp_limit])
       |> Stream.with_index()
       |> Enum.map(fn {chunk, index} ->
-        ImportWorker.make_job(chunk, params, user_job.id, index)
+        ImportWorker.make_job(chunk, params, user_job.id, index * 2)
       end)
       |> Enum.count()
 
@@ -407,5 +410,16 @@ defmodule Glific.Contacts.Import do
       [lang | _] ->
         Map.put(results, :language_id, lang.id)
     end
+  end
+
+  @spec get_bsp_limit(non_neg_integer()) :: non_neg_integer()
+  defp get_bsp_limit(organization_id) do
+    organization = Partners.organization(organization_id)
+
+    bsp_limit = organization.services["bsp"].keys["bsp_limit"]
+    bsp_limit = if is_nil(bsp_limit), do: 30, else: bsp_limit
+
+    # lets do 80% of organization bsp limit to allow replies to come in and be processed
+    div(bsp_limit * 80, 100)
   end
 end
