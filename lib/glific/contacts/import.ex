@@ -414,12 +414,16 @@ defmodule Glific.Contacts.Import do
 
   @spec get_bsp_limit(non_neg_integer()) :: non_neg_integer()
   defp get_bsp_limit(organization_id) do
-    organization = Partners.organization(organization_id)
+    case Partners.organization(organization_id) do
+      {:error, _} ->
+        30
 
-    bsp_limit = organization.services["bsp"].keys["bsp_limit"]
-    bsp_limit = if is_nil(bsp_limit), do: 30, else: bsp_limit
+      organization ->
+        bsp_limit = organization.services["bsp"].keys["bsp_limit"]
+        bsp_limit = if is_nil(bsp_limit), do: 30, else: bsp_limit
 
-    # lets do 80% of organization bsp limit to allow replies to come in and be processed
-    div(bsp_limit * 80, 100)
+        # lets do 80% of organization bsp limit to allow replies to come in and be processed
+        div(bsp_limit * 80, 100)
+    end
   end
 end
