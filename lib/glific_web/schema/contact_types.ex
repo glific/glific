@@ -27,8 +27,13 @@ defmodule GlificWeb.Schema.ContactTypes do
   end
 
   object :move_contacts_result do
-    field(:csv_rows, :string)
+    field(:status, :string)
     field(:errors, list_of(:input_error))
+  end
+
+  object :contact_upload_report do
+    field(:csv_rows, :string)
+    field(:error, :string)
   end
 
   object :contact do
@@ -294,7 +299,7 @@ defmodule GlificWeb.Schema.ContactTypes do
       resolve(&Resolvers.Contacts.optin_contact/3)
     end
 
-    field :move_contacts, :move_contacts_result do
+    field :move_contacts, :import_result do
       arg(:id, :id)
       arg(:type, :import_contacts_type_enum)
       arg(:data, non_null(:string))
@@ -307,8 +312,14 @@ defmodule GlificWeb.Schema.ContactTypes do
       arg(:type, :import_contacts_type_enum)
       arg(:group_label, :string)
       arg(:data, non_null(:string))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Contacts.import_contacts/3)
+    end
+
+    field :get_contact_upload_report, :contact_upload_report do
+      arg(:user_job_id, :id)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Contacts.get_contact_upload_report/3)
     end
   end
 end
