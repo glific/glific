@@ -873,12 +873,16 @@ defmodule Glific.ContactsTest do
       user_job = UserJob.create_user_job(user_job_attrs)
 
       params = %{user_job_id: user_job.id}
-      assert {:ok, %{csv_rows: csv_rows}} = Import.get_contact_upload_report(organization.id, params)
+
+      assert {:ok, %{csv_rows: csv_rows}} =
+               Import.get_contact_upload_report(organization.id, params)
+
       assert csv_rows == "Phone,Status\r\n9989123456,invalid\r\n9989329297,duplicate"
     end
 
     test "get_contact_upload_report/2 returns an error message when the job is in progress" do
       [organization | _] = Partners.list_organizations()
+
       user_job_attrs = %{
         status: "pending",
         type: "contact_import",
@@ -891,7 +895,10 @@ defmodule Glific.ContactsTest do
 
       user_job = UserJob.create_user_job(user_job_attrs)
       params = %{user_job_id: user_job.id}
-      assert {:ok, %{error: error_message}} = Import.get_contact_upload_report(organization.id, params)
+
+      assert {:ok, %{error: error_message}} =
+               Import.get_contact_upload_report(organization.id, params)
+
       assert error_message == "Contact upload is in progress"
     end
 
@@ -899,7 +906,10 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
 
       params = %{user_job_id: -1}
-      assert {:ok, %{error: error_message}} = Import.get_contact_upload_report(organization.id, params)
+
+      assert {:ok, %{error: error_message}} =
+               Import.get_contact_upload_report(organization.id, params)
+
       assert error_message == "Contact upload report doesn't exist"
     end
 
