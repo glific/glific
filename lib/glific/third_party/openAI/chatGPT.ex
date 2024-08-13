@@ -426,6 +426,9 @@ defmodule Glific.OpenAI.ChatGPT do
     Map.put(thread_messages, "message", cleaned_message)
   end
 
+  @doc """
+  Creates vector store with given name to enable file search
+  """
   @spec create_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
   def create_vector_store(name) do
     url = @endpoint <> "/vector_stores"
@@ -447,6 +450,9 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
+  @doc """
+    Deletes vector store identified with passed vector_store_id paramater
+  """
   @spec delete_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
   def delete_vector_store(vector_store_id) do
     url = @endpoint <> "/vector_stores/#{vector_store_id}"
@@ -466,6 +472,9 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
+  @doc """
+    Creates assistant with specified instructions for vector store identified with passed vector_store_id paramater
+  """
   @spec create_assistant(map()) :: {:ok, map()} | {:error, String.t()}
   def create_assistant(params) do
     url = @endpoint <> "/assistants"
@@ -499,6 +508,9 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
+  @doc """
+    Deletes assistant identified with passed assistant_id paramater
+  """
   @spec delete_assistant(String.t()) :: {:ok, map()} | {:error, String.t()}
   def delete_assistant(assistant_id) do
     url = @endpoint <> "/assistants/#{assistant_id}"
