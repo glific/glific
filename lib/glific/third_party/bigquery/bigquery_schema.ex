@@ -471,6 +471,183 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for wa_group table
+  """
+  @spec wa_group_schema :: list()
+  def wa_group_schema do
+    [
+      %{
+        description: "Unique ID generated for each WA Group",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "label of WhatsApp group",
+        name: "label",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "WA managed phone",
+        name: "label",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when last message was sent/received from group",
+        name: "last_communication_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for wa_group_collections table
+  """
+  @spec wa_groups_collection_schema :: list()
+  def wa_groups_collection_schema do
+    [
+      %{
+        description: "WA Group ID",
+        name: "group_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Glific Collection ID",
+        name: "collection_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "label of WhatsApp group",
+        name: "group_label",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "label of Glific collection",
+        name: "collection_label",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for contacts_wa_group table
+  """
+  @spec contacts_wa_group_schema :: list()
+  def contacts_wa_group_schema do
+    [
+      %{
+        description: "Unique ID generated for each contacts_wa_group",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Phone number of the contact",
+        name: "phone",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "WA Group ID",
+        name: "group_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "label of WhatsApp group",
+        name: "label",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Check for contact is Admin of Group",
+        name: "is_admin",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for messages media table
   """
   @spec messages_media_schema :: list()
