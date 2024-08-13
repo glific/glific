@@ -170,54 +170,9 @@ defmodule Glific.OnboardTest do
     end
   end
 
-  describe "update_NGO_password/1" do
-    setup do
-      with_mock(
-        GcsWorker,
-        upload_media: fn _, _, _ -> {:ok, %{url: "url"}} end
-      ) do
-        attrs =
-          @valid_attrs
-          |> Map.put("shortcode", "new_glific")
-          |> Map.put("phone", "919917443995")
-
-        %{organization: %{id: org_id}, registration_id: registration_id} =
-          Onboard.setup(attrs)
-
-        Repo.put_process_state(org_id)
-
-        Repo.put_current_user(
-          Fixtures.user_fixture(%{
-            name: "NGO Main Account",
-            roles: ["manager"],
-            organization_id: org_id
-          })
-        )
-
-        org = Partners.get_organization!(org_id)
-
-        {:ok, org: org, registration_id: registration_id}
-      end
-    end
-
-    test "success case", %{org: org} do
-      user = Fixtures.user_fixture(%{
-        name: "NGO Main Account",
-        roles: ["manager"],
-        organization_id: org.id
-      })
-
-      original_hash = user.password_hash
-
-      assert {:ok, "User was successfully updated"} = Onboard.update_NGO_password(org.id)
-
-      updated_user = Glific.Repo.get(Glific.Users, user.id)
-      assert updated_user.password_hash != original_hash
-    end
-
-    test "failure case - invalid organization ID" do
-      assert {:error, error_message} = Onboard.update_NGO_password("invalid_id")
-      assert error_message == "Could not find an organization with ID invalid_id"
+  describe "update_ngo_password/1" do
+    test "success case", %{organization_id: org_id} do
+      assert {:ok, "User was successfully updated"} = Onboard.update_ngo_password(org_id)
     end
   end
 

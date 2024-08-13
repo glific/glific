@@ -9,7 +9,6 @@ defmodule Glific.Saas.Onboard do
   import GlificWeb.Gettext
   import Ecto.Query, warn: false
 
-  alias Glific.Users
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
@@ -23,6 +22,7 @@ defmodule Glific.Saas.Onboard do
     Registrations.Registration,
     Repo,
     Saas.Queries,
+    Users.User
   }
 
   # 1 year
@@ -237,22 +237,24 @@ defmodule Glific.Saas.Onboard do
   @doc """
   Updates password_hash field of passed org_id with hashed password generated via Glific.Password
   """
-  @spec update_NGO_password(any()) :: {:error, String.t()} | {:ok, String.t()}
-  def update_NGO_password(org_id) do
+  @spec update_ngo_password(non_neg_integer()) :: {:error, String.t()} | {:ok, String.t()}
+  def update_ngo_password(org_id) do
     now = DateTime.utc_now()
     password_hash = Glific.Password.generate_password()
     Glific.Repo.put_process_state(org_id)
 
-    Users
+    User
     |> where([user], user.organization_id == ^org_id)
-    |> where([user], user.name == "NGO Main account")
-    |> Repo.update_all([set: [password_hash: password_hash, updated_at: now]])
+    |> where([user], user.name == "NGO Main Account")
+    |> update([user], set: [password_hash: ^password_hash, updated_at: ^now])
+    |> Repo.update_all([])
     |> case do
-      #expecting one data cell change
+      # expecting one data cell change
       {1, _} ->
         {:ok, "User was successfully updated"}
+
       err ->
-        {:error, "#{inspect(err)}"}
+        {:error, "Error updating password due to #{inspect(err)}"}
     end
   end
 
