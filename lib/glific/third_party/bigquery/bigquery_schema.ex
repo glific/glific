@@ -502,7 +502,7 @@ defmodule Glific.BigQuery.Schema do
       },
       %{
         description: "WA managed phone",
-        name: "label",
+        name: "wa_phone",
         type: "STRING",
         mode: "REQUIRED"
       },
@@ -533,6 +533,12 @@ defmodule Glific.BigQuery.Schema do
   @spec wa_groups_collection_schema :: list()
   def wa_groups_collection_schema do
     [
+      %{
+        description: "Unique ID generated for each WA Group Collection",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
       %{
         description: "WA Group ID",
         name: "group_id",
@@ -622,7 +628,7 @@ defmodule Glific.BigQuery.Schema do
       },
       %{
         description: "label of WhatsApp group",
-        name: "label",
+        name: "group_label",
         type: "STRING",
         mode: "REQUIRED"
       },
