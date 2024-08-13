@@ -35,6 +35,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Flows.MessageBroadcast,
     Flows.MessageBroadcastContact,
     Groups.ContactWAGroup,
+    Groups.WAGroupsCollection,
     Groups.Group,
     Groups.WAGroup,
     Jobs,
@@ -1250,7 +1251,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp get_query("wa_groups_collections", organization_id, attrs),
     do:
-      WAGroup
+      WAGroupsCollection
       |> where([m], m.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
