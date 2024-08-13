@@ -157,7 +157,6 @@ defmodule Glific.MailLogTest do
     # content should mimic the actual one
 
     attrs = Map.merge(@valid_critical_attrs, %{organization_id: organization_id})
-    # |> IO.inspect()
     assert {:ok, %MailLog{} = mail_log} = MailLog.create_mail_log(attrs)
     old_time = Glific.go_back_time(24)
 

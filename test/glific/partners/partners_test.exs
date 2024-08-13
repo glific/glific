@@ -160,6 +160,21 @@ defmodule Glific.PartnersTest do
       assert %{"status" => "success"} == result
     end
 
+    test "enable DLR Events for an app" do
+      org = SeedsDev.seed_organizations()
+
+      Tesla.Mock.mock(fn
+        %{method: :put} ->
+          %Tesla.Env{
+            status: 204,
+            body: "{\"status\":\"success\"}"
+          }
+      end)
+      modes = ["DELIVERED", "READ"]
+      {:ok, data} = PartnerAPI.enable_dlr_events(org.id, modes)
+      assert %{"status" => "success"} == data
+    end
+
     test "set_callback_url/2 for setting callback URL" do
       Tesla.Mock.mock(fn
         %{method: :put} ->
@@ -188,6 +203,19 @@ defmodule Glific.PartnersTest do
 
       {:ok, result} = PartnerAPI.link_gupshup_app(org.id)
       assert %{"partnerId" => 49, "status" => "success"} == result
+    end
+
+    test "recharge_partner/2 should transfer balance from ISV partner to app" do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"message\":\"Amount has been transferred successfully\"}"
+          }
+      end)
+
+      {:ok, result} = PartnerAPI.recharge_partner("9999999999", 100.000)
+      assert %{"message" => "Amount has been transferred successfully"} == result
     end
 
     test "delete_provider/1 deletes the provider" do
@@ -1275,6 +1303,38 @@ defmodule Glific.PartnersTest do
 
     test "local file deletion failed" do
       assert {:error, :enoent} = PartnerAPI.delete_local_resource("sample2.png", "sample2")
+    end
+  end
+
+  describe "test gupshup error handling on applying for template/3" do
+    test "successfull gupshup error handling for HSM template" do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 400,
+            body:
+              "{\"message\":\"Template Already exists with same namespace and elementName and languageCode\",\"status\":\"error\"}"
+          }
+      end)
+
+      assert {:error,
+              "Template Already exists with same namespace and elementName and languageCode"} =
+               PartnerAPI.apply_for_template(1, %{elementName: "trial"}, false)
+    end
+  end
+
+  describe "test sucessful response on the api: applying for template/3" do
+    test "successfull response for applying for HSM template" do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"message\":\"Success\",\"status\":\"error\"}"
+          }
+      end)
+
+      assert {:ok, %{"message" => "Success", "status" => "error"}} =
+               PartnerAPI.apply_for_template(1, %{elementName: "trial"}, false)
     end
   end
 end
