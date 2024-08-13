@@ -9,7 +9,7 @@ defmodule GlificWeb.Schema.OpenAITypes do
 
   object :vector_store do
     field :name, :string
-    field :id, :string
+    field :vector_store_id, :string
   end
 
   object :assistant do
@@ -31,7 +31,7 @@ defmodule GlificWeb.Schema.OpenAITypes do
 
     @desc "Delete vector store"
     field :delete_vector_store, :vector_store do
-      arg(:id, non_null(:string))
+      arg(:vector_store_id, non_null(:string))
       middleware(Authorize, :staff)
       resolve(&Resolvers.OpenAI.delete_vector_store/3)
     end
@@ -47,7 +47,7 @@ defmodule GlificWeb.Schema.OpenAITypes do
       resolve(&Resolvers.OpenAI.create_assistant/3)
     end
 
-    @desc "Delete a knowledgebase"
+    @desc "Delete assistant"
     field :delete_assistant, :assistant do
       arg(:assistant_id, non_null(:string))
       middleware(Authorize, :staff)

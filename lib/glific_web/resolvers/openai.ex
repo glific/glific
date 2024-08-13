@@ -28,7 +28,7 @@ defmodule GlificWeb.Resolvers.OpenAI do
   @spec create_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, map()} | {:error, any()}
   def create_assistant(_, args, _),
-    do: ChatGPT.create_assistant(args.name, args.description, args.instructions, args.vector_store_id, args.model)
+    do: ChatGPT.create_assistant(args)
 
   @doc """
   Delete Assistant

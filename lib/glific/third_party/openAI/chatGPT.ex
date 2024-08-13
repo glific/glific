@@ -363,7 +363,6 @@ defmodule Glific.OpenAI.ChatGPT do
   @spec headers() :: list()
   defp headers do
     open_ai_key = Glific.get_open_ai_key()
-
     [
       {"Authorization", "Bearer #{open_ai_key}"},
       {"Content-Type", "application/json"},
@@ -441,7 +440,7 @@ defmodule Glific.OpenAI.ChatGPT do
     |> Tesla.post(url, payload)
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        {:ok, Jason.decode!(body)["id"]}
+        {:ok, %{vector_store_id: Jason.decode!(body)["id"]}}
 
       {_status, response} ->
         {:error, "Failed to create vector store: #{inspect(response)}"}
@@ -449,8 +448,8 @@ defmodule Glific.OpenAI.ChatGPT do
   end
 
   @spec delete_vector_store(String.t()) :: {:ok, String.t()} | {:error, String.t()}
-  def delete_vector_store(id) do
-    url = @endpoint <> "/vector_stores/#{id}"
+  def delete_vector_store(vector_store_id) do
+    url = @endpoint <> "/vector_stores/#{vector_store_id}"
     middleware = [
       {Tesla.Middleware.Headers, headers()}
     ]
@@ -460,27 +459,27 @@ defmodule Glific.OpenAI.ChatGPT do
     |> Tesla.delete(url)
     |> case do
       {:ok, %Tesla.Env{status: 200}} ->
-        {:ok, id}
+        {:ok, %{vector_store_id: vector_store_id}}
 
       {_status, response} ->
         {:error, "Failed to delete vector store call: #{inspect(response)}"}
     end
   end
 
-  @spec create_assistant(String.t(), String.t(), String.t(), String.t(), String.t()) :: {:ok, String.t()} | {:error, String.t()}
-  def create_assistant(name, description, instructions, id, model) do
+  @spec create_assistant(map()) :: {:ok, String.t()} | {:error, String.t()}
+  def create_assistant(params) do
     url = @endpoint <> "/assistants"
     payload =
       %{
-        instructions: instructions,
-        name: name,
-        description: description,
+        instructions: params.instructions,
+        name: params.name,
+        description: params.description,
         tool_resources: %{
           file_search: %{
-            vector_store_ids: [id]
+            vector_store_ids: [params.vector_store_id]
           }
         },
-        model: model
+        model: params.model
       }
       |> Jason.encode!()
 
@@ -493,15 +492,15 @@ defmodule Glific.OpenAI.ChatGPT do
     |> Tesla.post(url, payload)
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        {:ok, Jason.decode!(body)["id"]}
+        {:ok, %{assistant_id: Jason.decode!(body)["id"]}}
 
       {_status, response} ->
         {:error, "Failed to create assistant: #{inspect(response)}"}
     end
   end
 
-  def delete_assistant(id) do
-    url = @endpoint <> "/assistants/#{id}"
+  def delete_assistant(assistant_id) do
+    url = @endpoint <> "/assistants/#{assistant_id}"
     middleware = [
       {Tesla.Middleware.Headers, headers()}
     ]
@@ -511,7 +510,7 @@ defmodule Glific.OpenAI.ChatGPT do
     |> Tesla.delete(url)
     |> case do
       {:ok, %Tesla.Env{status: 200}} ->
-        {:ok, id}
+        {:ok, %{assistant_id: assistant_id}}
 
       {_status, response} ->
         {:error, "Failed to delete assistant: #{inspect(response)}"}
