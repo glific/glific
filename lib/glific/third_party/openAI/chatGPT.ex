@@ -426,7 +426,7 @@ defmodule Glific.OpenAI.ChatGPT do
     Map.put(thread_messages, "message", cleaned_message)
   end
 
-  @spec create_vector_store(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  @spec create_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
   def create_vector_store(name) do
     url = @endpoint <> "/vector_stores"
     payload = %{"name" => name}
@@ -447,7 +447,7 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
-  @spec delete_vector_store(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  @spec delete_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
   def delete_vector_store(vector_store_id) do
     url = @endpoint <> "/vector_stores/#{vector_store_id}"
     middleware = [
@@ -466,7 +466,7 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
-  @spec create_assistant(map()) :: {:ok, String.t()} | {:error, String.t()}
+  @spec create_assistant(map()) :: {:ok, map()} | {:error, String.t()}
   def create_assistant(params) do
     url = @endpoint <> "/assistants"
     payload =
@@ -499,6 +499,7 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
+  @spec delete_assistant(String.t()) :: {:ok, map()} | {:error, String.t()}
   def delete_assistant(assistant_id) do
     url = @endpoint <> "/assistants/#{assistant_id}"
     middleware = [
