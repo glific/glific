@@ -29,6 +29,8 @@ defmodule Glific.OnboardTest do
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_billing(organization)
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_users()
     ExVCR.Config.cassette_library_dir("test/support/ex_vcr")
 
     Tesla.Mock.mock_global(fn
@@ -165,6 +167,12 @@ defmodule Glific.OnboardTest do
 
       assert {:error, ["Elixir.Glific.Partners.Organization", "Resource not found"]} ==
                Repo.fetch_by(Organization, %{name: result.organization.name})
+    end
+  end
+
+  describe "update_ngo_password/1" do
+    test "success case", %{organization_id: org_id} do
+      assert {:ok, "User was successfully updated"} = Onboard.update_ngo_password(org_id)
     end
   end
 
