@@ -454,7 +454,7 @@ defmodule Glific do
       ulca_api_key: Application.get_env(:glific, :bhasini_ulca_api_key)
     }
   end
-  
+
   @doc """
   Get Get Google Maps keys
   """

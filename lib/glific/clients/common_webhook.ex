@@ -314,12 +314,13 @@ defmodule Glific.Clients.CommonWebhook do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         %{"results" => results} = Jason.decode!(body)
 
+        Glific.Metrics.increment("Geolocation API Success")
+
         case results do
           [%{"address_components" => components, "formatted_address" => formatted_address} | _] ->
             city = find_component(components, "locality")
             state = find_component(components, "administrative_area_level_1")
             country = find_component(components, "country")
-            street_address = find_component(components, "street_address")
             postal_code = find_component(components, "postal_code")
             district = find_component(components, "administrative_area_level_2")
             ward = find_component(components, "administrative_area_level_3")
@@ -329,22 +330,22 @@ defmodule Glific.Clients.CommonWebhook do
               city: city,
               state: state,
               country: country,
-              street_address: street_address,
               postal_code: postal_code,
               district: district,
               ward: ward,
-              formatted_address: formatted_address
+              address: formatted_address
             }
-
 
           _ ->
             %{success: false, error: "No results found"}
         end
 
       {:ok, %Tesla.Env{status: status_code}} ->
+        Glific.Metrics.increment("Geolocation API Failure")
         %{success: false, error: "Received status code #{status_code}"}
 
       {:error, reason} ->
+        Glific.Metrics.increment("Geolocation API Failure")
         %{success: false, error: "HTTP request failed: #{reason}"}
     end
   end
@@ -358,12 +359,13 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  @spec find_component(list(map()), String.t()) :: String.t()
   defp find_component(components, type) do
     components
     |> Enum.find(fn component ->
       type in component["types"]
     end)
-    |> then(& &1["long_name"])
+    |> then(&((&1 && &1["long_name"]) || "N/A"))
   end
 
   @spec query_jugalbandi_api(map(), list()) :: map()

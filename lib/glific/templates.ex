@@ -171,7 +171,8 @@ defmodule Glific.Templates do
   @spec validate_button_template(map()) :: :ok | {:error, [String.t()]}
   defp validate_button_template(%{has_buttons: false} = _attrs), do: :ok
 
-  defp validate_button_template(%{has_buttons: true, button_type: _, buttons: _} = _attrs), do: :ok
+  defp validate_button_template(%{has_buttons: true, button_type: _, buttons: _} = _attrs),
+    do: :ok
 
   defp validate_button_template(_) do
     {:error,

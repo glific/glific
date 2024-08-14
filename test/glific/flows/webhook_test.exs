@@ -10,6 +10,7 @@ defmodule Glific.Flows.WebhookTest do
   }
 
   alias Glific.{
+    Clients.CommonWebhook,
     Fixtures,
     Seeds.SeedsDev
   }
@@ -44,6 +45,16 @@ defmodule Glific.Flows.WebhookTest do
       results: "@results",
       custom_key: "custom_value"
     }
+
+    test "successful geolocation response" do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(@results)
+          }
+      end)
+    end
 
     test "execute a webhook for post method should return the response body with results",
          attrs do
@@ -247,5 +258,64 @@ defmodule Glific.Flows.WebhookTest do
 
       assert WebhookLog.count_webhook_logs(%{filter: attrs}) == logs_count + 1
     end
+  end
+
+  test "successful geolocation response" do
+    lat = "37.7749"
+    long = "-122.4194"
+    fields = %{"lat" => lat, "long" => long}
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "results" => [
+                %{
+                  "address_components" => [
+                    %{"long_name" => "San Francisco", "types" => ["locality"]},
+                    %{"long_name" => "CA", "types" => ["administrative_area_level_1"]},
+                    %{"long_name" => "USA", "types" => ["country"]}
+                  ],
+                  "formatted_address" => "San Francisco, CA, USA"
+                }
+              ]
+            })
+        }
+    end)
+
+    result = CommonWebhook.webhook("geolocation", fields)
+
+    assert result[:success] != nil
+    assert result[:city] != nil
+    assert result[:state] != nil
+    assert result[:country] != nil
+    assert result[:postal_code] != nil
+    assert result[:district] != nil
+    assert result[:ward] != nil
+    assert result[:address] != nil
+  end
+
+  test "geolocation failure response" do
+    lat = "37.7749"
+    long = "-122.4194"
+    fields = %{"lat" => lat, "long" => long}
+
+    # Mock a non-200 response from the API (e.g., 500 Internal Server Error)
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 500,
+          body: "Internal Server Error"
+        }
+    end)
+
+    result = CommonWebhook.webhook("geolocation", fields)
+
+    # Assert that success is false and an error message is returned
+    assert result[:success] == false
+    assert result[:error] != nil
+    assert result[:error] == "Received status code 500"
   end
 end

@@ -80,8 +80,6 @@ defmodule Glific.Communications.GroupMessage do
   """
   @spec receive_message(map(), atom()) :: :ok | {:error, String.t()}
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
-   
-
     {:ok, contact} =
       message_params.sender
       |> Map.put(:organization_id, organization_id)
