@@ -7,6 +7,7 @@ defmodule Glific.Saas.Onboard do
 
   require Logger
   import GlificWeb.Gettext
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Communications.Mailer,
@@ -20,7 +21,8 @@ defmodule Glific.Saas.Onboard do
     Registrations,
     Registrations.Registration,
     Repo,
-    Saas.Queries
+    Saas.Queries,
+    Users.User
   }
 
   # 1 year
@@ -231,6 +233,30 @@ defmodule Glific.Saas.Onboard do
   end
 
   defp process_on_submission(result, _org, _registration), do: result
+
+  @doc """
+  Updates password_hash field of passed org_id with hashed password generated via Glific.Password
+  """
+  @spec update_ngo_password(non_neg_integer()) :: {:error, String.t()} | {:ok, String.t()}
+  def update_ngo_password(org_id) do
+    now = DateTime.utc_now()
+    password_hash = Glific.Password.generate_password()
+    Glific.Repo.put_process_state(org_id)
+
+    User
+    |> where([user], user.organization_id == ^org_id)
+    |> where([user], user.name == "NGO Main Account")
+    |> update([user], set: [password_hash: ^password_hash, updated_at: ^now])
+    |> Repo.update_all([])
+    |> case do
+      # expecting one data cell change
+      {1, _} ->
+        {:ok, "User was successfully updated"}
+
+      err ->
+        {:error, "Error updating password due to #{inspect(err)}"}
+    end
+  end
 
   @spec notify_on_submission(Organization.t(), Registration.t()) :: any()
   defp notify_on_submission(org, registration) do
