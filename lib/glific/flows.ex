@@ -606,6 +606,7 @@ defmodule Glific.Flows do
       )
 
       update_cached_flow(flow, "published")
+      clean_cached_flow_keywords_map(flow.organization_id)
     end
 
     result
@@ -758,6 +759,7 @@ defmodule Glific.Flows do
         organization_id: flow.organization_id,
         uuid: Ecto.UUID.generate()
       })
+
 
     with {:ok, flow_copy} <-
            %Flow{}
