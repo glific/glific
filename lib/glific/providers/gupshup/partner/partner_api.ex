@@ -103,6 +103,23 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     )
   end
 
+  @wallet_name "4000202160_wallet"
+  @doc """
+    Transfer balance from ISV partner to app
+  """
+  @spec recharge_partner(String.t(), float()) :: tuple()
+  def recharge_partner(customer_id, amount) do
+    post_request(
+      @partner_url <> "/api/wallet/balance/transfer",
+      %{
+        walletName: @wallet_name,
+        customerId: customer_id,
+        amount: amount
+      },
+      token_type: :partner_token
+    )
+  end
+
   @doc """
     Getting app ID once the app is already linked
   """
@@ -203,6 +220,16 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   def set_callback_url(org_id, callback_url) do
     url = app_url(org_id) <> "/callbackUrl"
     data = %{"callbackUrl" => callback_url}
+    put_request(url, data, org_id: org_id)
+  end
+
+  @doc """
+  Enable DLR events for an app.
+  """
+  @spec enable_dlr_events(non_neg_integer(), list(String.t())) :: tuple()
+  def enable_dlr_events(org_id, modes) do
+    url = app_url(org_id) <> "/callback/mode"
+    data = %{"modes" => Enum.join(modes, ",")}
     put_request(url, data, org_id: org_id)
   end
 
