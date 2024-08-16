@@ -760,7 +760,6 @@ defmodule Glific.Flows do
         uuid: Ecto.UUID.generate()
       })
 
-
     with {:ok, flow_copy} <-
            %Flow{}
            |> Flow.changeset(attrs)
