@@ -287,14 +287,14 @@ defmodule Glific.Flows.WebhookTest do
 
     result = CommonWebhook.webhook("geolocation", fields)
 
-    assert result[:success] != nil
-    assert result[:city] != nil
-    assert result[:state] != nil
-    assert result[:country] != nil
-    assert result[:postal_code] != nil
-    assert result[:district] != nil
-    assert result[:ward] != nil
-    assert result[:address] != nil
+    assert result[:success] == true
+    assert result[:city] == "San Francisco"
+    assert result[:state] == "CA"
+    assert result[:country] == "USA"
+    assert result[:postal_code] == "N/A"
+    assert result[:district] == "N/A"
+    assert result[:ward] == "N/A"
+    assert result[:address] == "San Francisco, CA, USA"
   end
 
   test "geolocation failure response" do
@@ -314,8 +314,8 @@ defmodule Glific.Flows.WebhookTest do
     result = CommonWebhook.webhook("geolocation", fields)
 
     # Assert that success is false and an error message is returned
-    assert result[:success] == false
-    assert result[:error] != nil
+    refute result[:success]
+    refute is_nil(result[:error])
     assert result[:error] == "Received status code 500"
   end
 end
