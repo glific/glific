@@ -83,8 +83,23 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("parse_via_gpt_vision", fields) do
     ChatGPT.gpt_vision(fields)
     |> case do
-      {:ok, response} -> %{success: true, response: response}
-      {:error, error} -> %{success: false, error: error}
+      {:ok, response} ->
+        %{success: true, response: response}
+
+      {:error, error} ->
+        %{success: false, error: error}
+
+        validation_result = Glific.Messages.validate_media(fields["url"], "image")
+
+        if validation_result[:is_valid] do
+          ChatGPT.gpt_vision(fields)
+          |> case do
+            {:ok, response} -> %{success: true, response: response}
+            {:error, error} -> %{success: false, error: error}
+          end
+        else
+          %{success: false, error: "Invalid URL"}
+        end
     end
   end
 
