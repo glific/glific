@@ -477,4 +477,13 @@ defmodule Glific do
     {visible, masked} = String.split_at(phone, -5)
     visible <> String.replace(masked, ~r/\d/, "*")
   end
+
+  @doc """
+  the below 2 conditions are just for testing and prototyping purposes
+  we'll get rid of them when we start using this actively
+  """
+  @spec trusted_env?(atom(), non_neg_integer()) :: boolean
+  def trusted_env?(:dev, 1), do: true
+  def trusted_env?(:prod, 2), do: true
+  def trusted_env?(_env, _id), do: false
 end
