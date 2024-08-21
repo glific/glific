@@ -432,8 +432,11 @@ defmodule Glific.OpenAI.ChatGPT do
   @spec create_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
   def create_vector_store(name) do
     url = @endpoint <> "/vector_stores"
-    payload = %{"name" => name}
-            |> Jason.encode!()
+
+    payload =
+      %{"name" => name}
+      |> Jason.encode!()
+
     middleware = [
       {Tesla.Middleware.Headers, headers()}
     ]
@@ -456,6 +459,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @spec delete_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
   def delete_vector_store(vector_store_id) do
     url = @endpoint <> "/vector_stores/#{vector_store_id}"
+
     middleware = [
       {Tesla.Middleware.Headers, headers()}
     ]
@@ -478,6 +482,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @spec create_assistant(map()) :: {:ok, map()} | {:error, String.t()}
   def create_assistant(params) do
     url = @endpoint <> "/assistants"
+
     payload =
       %{
         instructions: params.instructions,
@@ -514,6 +519,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @spec delete_assistant(String.t()) :: {:ok, map()} | {:error, String.t()}
   def delete_assistant(assistant_id) do
     url = @endpoint <> "/assistants/#{assistant_id}"
+
     middleware = [
       {Tesla.Middleware.Headers, headers()}
     ]
