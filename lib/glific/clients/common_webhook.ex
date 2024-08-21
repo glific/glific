@@ -88,9 +88,13 @@ defmodule Glific.Clients.CommonWebhook do
          {:ok, response} <- ChatGPT.gpt_vision(fields) do
       %{success: true, response: response}
     else
-      error ->
-        Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{inspect(error)}")
-        {:error, "Media content-type is not valid"}
+      %{is_valid: false, message: message} ->
+        Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{message}")
+        message
+
+      {:error, error} ->
+        Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{error}")
+        error
     end
   end
 
