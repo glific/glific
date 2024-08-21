@@ -9,7 +9,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @endpoint "https://api.openai.com/v1"
 
   @default_params %{
-    "model" => "gpt-3.5-turbo-16k",
+    "model" => "gpt-4o",
     "temperature" => 0.7,
     "max_tokens" => 250,
     "top_p" => 1,
@@ -307,7 +307,8 @@ defmodule Glific.OpenAI.ChatGPT do
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         run = Jason.decode!(body)
-
+        # Waiting for atleast 10 seconds after running the thread to generate the response
+        Process.sleep(10_000)
         retrieve_run_and_wait(run["thread_id"], run["id"], 10)
 
       {_status, response} ->
@@ -325,8 +326,10 @@ defmodule Glific.OpenAI.ChatGPT do
   @spec retrieve_run_and_wait(String.t(), String.t(), non_neg_integer(), non_neg_integer()) ::
           map()
   defp retrieve_run_and_wait(_thread_id, run_id, max_attempts, attempt)
-       when attempt >= max_attempts,
-       do: run_id
+       when attempt >= max_attempts do
+    Logger.info("OpenAI run timed out after #{attempt} attempts")
+    run_id
+  end
 
   defp retrieve_run_and_wait(thread_id, run_id, max_attempts, attempt) do
     run_data =
@@ -336,9 +339,10 @@ defmodule Glific.OpenAI.ChatGPT do
       })
 
     if run_data["status"] == "completed" do
+      Logger.info("OpenAI run completed after #{attempt} attempts")
       run_id
     else
-      Process.sleep(2_000)
+      Process.sleep(3_000)
       retrieve_run_and_wait(thread_id, run_id, max_attempts, attempt + 1)
     end
   end
