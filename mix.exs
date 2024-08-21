@@ -162,7 +162,8 @@ defmodule Glific.MixProject do
       {:contex, "~> 0.5.0"},
       {:password_validator, "~> 0.5"},
       {:resvg, "~> 0.3.0"},
-      {:google_api_translate, "~> 0.15"}
+      {:google_api_translate, "~> 0.15"},
+      {:passgen, "~> 0.1.1"}
     ]
   end
 
