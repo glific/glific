@@ -300,6 +300,7 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  @spec do_nmt_tts_with_bhasini(String.t(), String.t(), non_neg_integer(), String.t()) :: map()
   defp do_nmt_tts_with_bhasini(source_language, target_language, org_id, text) do
     organization = Glific.Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
@@ -332,6 +333,8 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  @spec do_text_to_speech_with_bhasini(String.t(), non_neg_integer(), String.t()) ::
+          map()
   defp do_text_to_speech_with_bhasini(source_language, org_id, text) do
     organization = Glific.Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
