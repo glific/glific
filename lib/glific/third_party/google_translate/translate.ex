@@ -1,6 +1,6 @@
 defmodule Glific.GoogleTranslate.Translate do
   @moduledoc """
-  Glific Google Translate module for all API calls to Google Translate
+  Glific Google Translate module for all API calls to Google Translate.
   """
 
   @endpoint "https://translation.googleapis.com/language/translate/v2"
@@ -10,22 +10,24 @@ defmodule Glific.GoogleTranslate.Translate do
   """
   @spec parse(String.t(), String.t(), map()) :: tuple()
   def parse(api_key, question_text, languages) do
-    # Split the text into lines
     lines = String.split(question_text, "\n")
 
-    # Partition the lines into translatable and non-translatable segments
+    indexed_lines = Enum.with_index(lines)
+
     {translatable_segments, non_translatable_segments} =
-      Enum.reduce(lines, {[], []}, fn line, {trans, non_trans} ->
+      Enum.reduce(indexed_lines, {[], []}, fn {line, index}, {trans, non_trans} ->
         if String.starts_with?(line, "@") and
              line |> String.trim() |> String.split() |> length() == 1 do
-          {trans, [line | non_trans]}
+          {trans, [{index, line} | non_trans]}
         else
-          {[line | trans], non_trans}
+          {[{index, line} | trans], non_trans}
         end
       end)
 
-    translatable_text = Enum.reverse(translatable_segments) |> Enum.join("\n")
-    non_translatable_segments = Enum.reverse(non_translatable_segments)
+    translatable_text =
+      translatable_segments
+      |> Enum.sort_by(fn {index, _line} -> index end)
+      |> Enum.map_join("\n", fn {_index, line} -> line end)
 
     data = %{
       "q" => translatable_text,
@@ -43,24 +45,36 @@ defmodule Glific.GoogleTranslate.Translate do
     middleware
     |> Tesla.client()
     |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 120_000]])
-    |> handle_response(non_translatable_segments)
+    |> handle_response(non_translatable_segments, translatable_segments)
   end
 
-  @spec handle_response(tuple(), list()) :: tuple()
-  defp handle_response(response, non_translatable_segments) do
+  @spec handle_response(tuple(), list(), list()) :: tuple()
+  defp handle_response(response, non_translatable_segments, translatable_segments) do
     response
     |> case do
       {:ok, %Tesla.Env{status: 200, body: %{"data" => %{"translations" => translations}}}} ->
         translated_texts =
           translations
-          |> Enum.map_join("\n", fn translation -> translation["translatedText"] end)
+          |> Enum.map(fn translation -> translation["translatedText"] end)
 
-        # Combine translated and non-translatable segments
+        translated_lines =
+          translated_texts
+          |> Enum.flat_map(fn text -> String.split(text, "\n") end)
+
+        translatable_indices =
+          translatable_segments
+          |> Enum.map(fn {index, _original_text} -> index end)
+
+        translated_lines_with_indices =
+          Enum.zip(translatable_indices, translated_lines)
+
+        all_segments =
+          (translated_lines_with_indices ++ non_translatable_segments)
+          |> Enum.sort_by(fn {index, _text} -> index end)
+
         combined_texts =
-          non_translatable_segments
-          |> Enum.reduce(translated_texts, fn seg, acc ->
-            acc <> seg
-          end)
+          all_segments
+          |> Enum.map_join("\n", fn {_, text} -> text end)
 
         {:ok, combined_texts}
 
@@ -72,7 +86,7 @@ defmodule Glific.GoogleTranslate.Translate do
         {:error, error_message}
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "Invalid response #{inspect(response)}"}
     end
   end
 end
