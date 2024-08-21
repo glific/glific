@@ -81,10 +81,16 @@ defmodule Glific.Clients.CommonWebhook do
 
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_gpt_vision", fields) do
-    ChatGPT.gpt_vision(fields)
-    |> case do
-      {:ok, response} -> %{success: true, response: response}
-      {:error, error} -> %{success: false, error: error}
+    url = fields["url"]
+
+    # validating if the url passed is a valid image url
+    with %{is_valid: true} <- Glific.Messages.validate_media(url, "image"),
+         {:ok, response} <- ChatGPT.gpt_vision(fields) do
+      %{success: true, response: response}
+    else
+      error ->
+        Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{inspect(error)}")
+        {:error, "Media content-type is not valid"}
     end
   end
 
