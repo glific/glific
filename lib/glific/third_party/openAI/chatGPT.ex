@@ -430,4 +430,24 @@ defmodule Glific.OpenAI.ChatGPT do
     cleaned_message = Regex.replace(~r/【\d+(:\d+)?+†source】/, thread_messages["message"], "")
     Map.put(thread_messages, "message", cleaned_message)
   end
+
+  @doc """
+  API call to retrieve an assistant
+  """
+  @spec retrieve_assistant(map()) :: {:ok, String.t()} | {:error, String.t()}
+  def retrieve_assistant(assistant_id) do
+    url = @endpoint <> "/assistants/#{assistant_id}"
+
+    Tesla.get(url, headers: headers())
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        response = Jason.decode!(body)
+        {:ok, response["name"]}
+
+      {_status, response} ->
+        error_response = Jason.decode!(response.body)
+
+        {:error, error_response["error"]["message"]}
+    end
+  end
 end
