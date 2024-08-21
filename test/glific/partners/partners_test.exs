@@ -170,6 +170,7 @@ defmodule Glific.PartnersTest do
             body: "{\"status\":\"success\"}"
           }
       end)
+
       modes = ["DELIVERED", "READ"]
       {:ok, data} = PartnerAPI.enable_dlr_events(org.id, modes)
       assert %{"status" => "success"} == data
