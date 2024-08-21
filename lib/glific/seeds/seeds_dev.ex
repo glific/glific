@@ -1588,12 +1588,17 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization.id
       })
 
-      Repo.insert!(%Role{
-        label: "Glific Admin",
-        description: "Super Admin Role for Glific",
-        is_reserved: true,
-        organization_id: organization.id
-      })
+      app_env = Application.get_env(:glific, :environment)
+      trusted_env? = Glific.trusted_env?(app_env, organization.id)
+
+      if trusted_env?,
+        do:
+          Repo.insert!(%Role{
+            label: "Glific Admin",
+            description: "Super Admin Role for Glific",
+            is_reserved: true,
+            organization_id: organization.id
+          })
     end
 
     @doc false
