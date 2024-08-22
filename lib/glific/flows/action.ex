@@ -763,7 +763,7 @@ defmodule Glific.Flows.Action do
 
     # Webhooks don't consume message, so if we send a message while a webhook node is running
     # this check will prevent webhook node from running again
-    if length(messages) == 0 do
+    if Enum.empty?(messages) do
       Webhook.execute(action, context)
     end
 
