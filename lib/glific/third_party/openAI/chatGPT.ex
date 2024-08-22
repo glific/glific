@@ -363,7 +363,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @spec headers() :: list()
   defp headers do
     open_ai_key = Glific.get_open_ai_key()
-    [
+  [
       {"Authorization", "Bearer #{open_ai_key}"},
       {"Content-Type", "application/json"},
       {"OpenAI-Beta", "assistants=v2"}
@@ -424,115 +424,5 @@ defmodule Glific.OpenAI.ChatGPT do
   def remove_citation(thread_messages, _true) do
     cleaned_message = Regex.replace(~r/【\d+(:\d+)?+†source】/, thread_messages["message"], "")
     Map.put(thread_messages, "message", cleaned_message)
-  end
-
-  @doc """
-  Creates vector store with given name to enable file search
-  """
-  @spec create_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
-  def create_vector_store(name) do
-    url = @endpoint <> "/vector_stores"
-
-    payload =
-      %{"name" => name}
-      |> Jason.encode!()
-
-    middleware = [
-      {Tesla.Middleware.Headers, headers()}
-    ]
-
-    middleware
-    |> Tesla.client()
-    |> Tesla.post(url, payload)
-    |> case do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        {:ok, %{vector_store_id: Jason.decode!(body)["id"]}}
-
-      {_status, response} ->
-        {:error, "Failed to create vector store: #{inspect(response)}"}
-    end
-  end
-
-  @doc """
-    Deletes vector store identified with passed vector_store_id paramater
-  """
-  @spec delete_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
-  def delete_vector_store(vector_store_id) do
-    url = @endpoint <> "/vector_stores/#{vector_store_id}"
-
-    middleware = [
-      {Tesla.Middleware.Headers, headers()}
-    ]
-
-    middleware
-    |> Tesla.client()
-    |> Tesla.delete(url)
-    |> case do
-      {:ok, %Tesla.Env{status: 200}} ->
-        {:ok, %{vector_store_id: vector_store_id}}
-
-      {_status, response} ->
-        {:error, "Failed to delete vector store call: #{inspect(response)}"}
-    end
-  end
-
-  @doc """
-    Creates assistant with specified instructions for vector store identified with passed vector_store_id paramater
-  """
-  @spec create_assistant(map()) :: {:ok, map()} | {:error, String.t()}
-  def create_assistant(params) do
-    url = @endpoint <> "/assistants"
-
-    payload =
-      %{
-        instructions: params.instructions,
-        name: params.name,
-        description: params.description,
-        tool_resources: %{
-          file_search: %{
-            vector_store_ids: [params.vector_store_id]
-          }
-        },
-        model: params.model
-      }
-      |> Jason.encode!()
-
-    middleware = [
-      {Tesla.Middleware.Headers, headers()}
-    ]
-
-    middleware
-    |> Tesla.client()
-    |> Tesla.post(url, payload)
-    |> case do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        {:ok, %{assistant_id: Jason.decode!(body)["id"]}}
-
-      {_status, response} ->
-        {:error, "Failed to create assistant: #{inspect(response)}"}
-    end
-  end
-
-  @doc """
-    Deletes assistant identified with passed assistant_id paramater
-  """
-  @spec delete_assistant(String.t()) :: {:ok, map()} | {:error, String.t()}
-  def delete_assistant(assistant_id) do
-    url = @endpoint <> "/assistants/#{assistant_id}"
-
-    middleware = [
-      {Tesla.Middleware.Headers, headers()}
-    ]
-
-    middleware
-    |> Tesla.client()
-    |> Tesla.delete(url)
-    |> case do
-      {:ok, %Tesla.Env{status: 200}} ->
-        {:ok, %{assistant_id: assistant_id}}
-
-      {_status, response} ->
-        {:error, "Failed to delete assistant: #{inspect(response)}"}
-    end
   end
 end

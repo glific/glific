@@ -4,7 +4,8 @@ defmodule GlificWeb.Resolvers.OpenAI do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.OpenAI.{VectorStore, Assistant, ChatGPT}
+  alias Glific.OpenAI
+  alias Glific.OpenAI.{VectorStore, Assistant}
   alias Glific.Repo
 
   @doc """
@@ -13,7 +14,7 @@ defmodule GlificWeb.Resolvers.OpenAI do
   @spec create_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_vector_store(_, %{name: vector_store_name}, %{context: %{current_user: user}}) do
-    {:ok, %{vector_store_id: store_id}} = ChatGPT.create_vector_store(vector_store_name)
+    {:ok, %{vector_store_id: store_id}} = OpenAI.create_vector_store(vector_store_name)
 
     VectorStore.record_vector_store(%{
       vector_store_id: store_id,
@@ -25,13 +26,22 @@ defmodule GlificWeb.Resolvers.OpenAI do
   end
 
   @doc """
+  Modify a Vector Store
+  """
+  @spec modify_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def modify_vector_store(_, params, _) do
+    OpenAI.modify_vector_store(params)
+  end
+
+  @doc """
   Delete a Vector Store
   """
   @spec delete_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, map()} | {:error, any()}
-  def delete_vector_store(_, %{vector_store_id: vector_store_id} = _args, _) do
+  def delete_vector_store(_, %{vector_store_id: vector_store_id}, _) do
     with {:ok, %{vector_store_id: vector_store_id}} <-
-           ChatGPT.delete_vector_store(vector_store_id),
+           OpenAI.delete_vector_store(vector_store_id),
          {:ok, openai_vector_store} <- Repo.fetch_by(VectorStore, %{vector_store_id: vector_store_id}) do
       VectorStore.delete_vector_store_record(openai_vector_store)
     end
@@ -45,7 +55,7 @@ defmodule GlificWeb.Resolvers.OpenAI do
   @spec create_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, map()} | {:error, any()}
   def create_assistant(_, params, %{context: %{current_user: user}}) do
-    {:ok, %{assistant_id: assistant_id}} = ChatGPT.create_assistant(params)
+    {:ok, %{assistant_id: assistant_id}} = OpenAI.create_assistant(params)
 
     Assistant.record_assistant(%{
       assistant_id: assistant_id,
@@ -61,12 +71,21 @@ defmodule GlificWeb.Resolvers.OpenAI do
   end
 
   @doc """
+  Modify an Assistant
+  """
+  @spec modify_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def modify_assistant(_, params, _) do
+    OpenAI.modify_assistant(params)
+  end
+
+  @doc """
   Delete Assistant
   """
   @spec delete_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, map()} | {:error, any()}
   def delete_assistant(_, %{assistant_id: assistant_id} = _args, _) do
-    with {:ok, %{assistant_id: assistant_id}} <- ChatGPT.delete_assistant(assistant_id),
+    with {:ok, %{assistant_id: assistant_id}} <- OpenAI.delete_assistant(assistant_id),
          {:ok, openai_assistant} <- Repo.fetch_by(Assistant, %{assistant_id: assistant_id}) do
       Assistant.delete_assistant_record(openai_assistant)
     end

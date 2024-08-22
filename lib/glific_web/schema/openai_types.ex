@@ -29,6 +29,14 @@ defmodule GlificWeb.Schema.OpenAITypes do
       resolve(&Resolvers.OpenAI.create_vector_store/3)
     end
 
+    @desc "Modify vector sotre"
+    field :modify_vector_store, :vector_store do
+      arg(:vector_store_id, non_null(:string))
+      arg(:name, non_null(:string))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.OpenAI.modify_vector_store/3)
+    end
+
     @desc "Delete vector store"
     field :delete_vector_store, :vector_store do
       arg(:vector_store_id, non_null(:string))
@@ -40,11 +48,23 @@ defmodule GlificWeb.Schema.OpenAITypes do
     field :create_assistant, :assistant do
       arg(:name, non_null(:string))
       arg(:model, non_null(:string))
-      arg(:description, :string)
-      arg(:instructions, :string)
+      arg(:description, non_null(:string))
+      arg(:instructions, non_null(:string))
       arg(:vector_store_id, non_null(:string))
       middleware(Authorize, :staff)
       resolve(&Resolvers.OpenAI.create_assistant/3)
+    end
+
+    @desc "Modify Assistant"
+    field :modify_assistant, :assistant do
+      arg(:assistant_id, non_null(:string))
+      arg(:name, non_null(:string))
+      arg(:model, non_null(:string))
+      arg(:description, non_null(:string))
+      arg(:instructions, non_null(:string))
+      arg(:vector_store_id, non_null(:string))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.OpenAI.modify_assistant/3)
     end
 
     @desc "Delete assistant"

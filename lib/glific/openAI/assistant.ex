@@ -18,11 +18,11 @@ defmodule Glific.OpenAI.Assistant do
   @required_fields [
     :assistant_id,
     :organization_id,
-    :model
+    :model,
+    :description,
+    :instructions
   ]
   @optional_fields [
-    :description,
-    :instructions,
     :vector_store_id,
     :has_vector_store,
     :assistant_name
