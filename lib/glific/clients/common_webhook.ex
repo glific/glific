@@ -361,11 +361,10 @@ defmodule Glific.Clients.CommonWebhook do
 
   @spec find_component(list(map()), String.t()) :: String.t()
   defp find_component(components, type) do
-    components
-    |> Enum.find(fn component ->
-      type in component["types"]
-    end)
-    |> then(&((&1 && &1["long_name"]) || "N/A"))
+    case Enum.find(components, fn component -> type in component["types"] end) do
+      nil -> "N/A"
+      component -> component["long_name"]
+    end
   end
 
   @spec query_jugalbandi_api(map(), list()) :: map()
