@@ -188,7 +188,9 @@ defmodule Glific.Bhasini do
             org_id
           )
 
-        %{success: true} |> Map.put(:media_url, media_meta.url)
+        %{success: true}
+        |> Map.put(:media_url, media_meta.url)
+        |> Map.put(:translated_text, text)
 
       _ ->
         %{success: false, reason: "could not fetch data"}

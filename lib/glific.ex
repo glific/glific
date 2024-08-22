@@ -456,6 +456,14 @@ defmodule Glific do
   end
 
   @doc """
+  Get Get Google Maps keys
+  """
+  @spec get_google_maps_api_key() :: String.t()
+  def get_google_maps_api_key do
+    Application.get_env(:glific, :google_maps_api_key)
+  end
+
+  @doc """
   mask last 5 digit of a phone number
   """
   @spec mask_phone_number(String.t()) :: String.t()
@@ -469,4 +477,13 @@ defmodule Glific do
     {visible, masked} = String.split_at(phone, -5)
     visible <> String.replace(masked, ~r/\d/, "*")
   end
+
+  @doc """
+  the below 2 conditions are just for testing and prototyping purposes
+  we'll get rid of them when we start using this actively
+  """
+  @spec trusted_env?(atom(), non_neg_integer()) :: boolean
+  def trusted_env?(:dev, 1), do: true
+  def trusted_env?(:prod, 2), do: true
+  def trusted_env?(_env, _id), do: false
 end
