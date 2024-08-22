@@ -38,6 +38,7 @@ defmodule Glific.Seeds.SeedsFlows do
   @spec add_interactive_templates(Organization.t()) :: :ok
   defp add_interactive_templates(org) do
     SeedsDev.seed_optin_interactives(org)
+    SeedsDev.seed_template_flow_interactives(org)
 
     [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
@@ -129,6 +130,14 @@ defmodule Glific.Seeds.SeedsFlows do
       with {:error, _} <-
              Repo.fetch_by(Flow, %{name: "Optin Workflow", organization_id: organization.id}),
            do: add_opt_flow(organization)
+    end)
+  end
+
+  @spec add_template_flows([Organization.t()]) :: :ok
+  def add_template_flows(organizations) do
+    organizations
+    |> Enum.each(fn organization ->
+      Glific.Repo.put_organization_id(organization.id)
     end)
   end
 

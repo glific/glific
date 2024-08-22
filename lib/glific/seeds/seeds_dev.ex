@@ -1516,6 +1516,49 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    @spec seed_template_flow_interactives(Organization.t() | nil) :: InteractiveTemplate.t()
+    def seed_template_flow_interactives(organization \\ nil) do
+      organization = get_organization(organization)
+      [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
+
+      interactive_content = %{
+        "body" => %{
+          "text" =>
+            "Could you please share your current location on WhatsApp?\n\nRemember to turn on your GPS\nLocation will only be used for this Demo",
+          "type" => "text"
+        },
+        "type" => "location_request_message",
+        "action" => %{
+          "name" => "Share current location"
+        }
+      }
+
+      interactive_content_hin = %{
+        type: "location_request_message",
+        body: %{
+          text:
+            "क्या आप कृपया अपना वर्तमान स्थान WhatsApp पर साझा कर सकते हैं?अपना GPS चालू करना न भूलें स्थान का उपयोग केवल इस डेमो के लिए किया जाएगा",
+          type: "text",
+          action: %{
+            name: "Share current location"
+          }
+        }
+      }
+
+      Repo.insert!(%InteractiveTemplate{
+        label: get_in(interactive_content, ["action", "name"]),
+        type: :location_request_message,
+        interactive_content: interactive_content,
+        organization_id: organization.id,
+        language_id: en.id,
+        send_with_title: false,
+        translations: %{
+          "1" => interactive_content,
+          "2" => interactive_content_hin
+        }
+      })
+    end
+
     @doc false
     @spec seed_contact_history(Organization.t()) :: ContactHistory.t()
     def seed_contact_history(organization) do
