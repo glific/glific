@@ -276,12 +276,68 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("check_response", fields),
     do: %{response: String.equivalent?(fields["correct_response"], fields["user_response"])}
 
+  def webhook("geolocation", fields) do
+    lat = fields["lat"]
+    long = fields["long"]
+    api_key = Glific.get_google_maps_api_key()
+
+    url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=#{lat},#{long}&key=#{api_key}"
+
+    Tesla.get(url)
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        %{"results" => results} = Jason.decode!(body)
+
+        Glific.Metrics.increment("Geolocation API Success")
+
+        case results do
+          [%{"address_components" => components, "formatted_address" => formatted_address} | _] ->
+            city = find_component(components, "locality")
+            state = find_component(components, "administrative_area_level_1")
+            country = find_component(components, "country")
+            postal_code = find_component(components, "postal_code")
+            district = find_component(components, "administrative_area_level_2")
+            ward = find_component(components, "administrative_area_level_3")
+
+            %{
+              success: true,
+              city: city,
+              state: state,
+              country: country,
+              postal_code: postal_code,
+              district: district,
+              ward: ward,
+              address: formatted_address
+            }
+
+          _ ->
+            %{success: false, error: "No results found"}
+        end
+
+      {:ok, %Tesla.Env{status: status_code}} ->
+        Glific.Metrics.increment("Geolocation API Failure")
+        %{success: false, error: "Received status code #{status_code}"}
+
+      {:error, reason} ->
+        Glific.Metrics.increment("Geolocation API Failure")
+        %{success: false, error: "HTTP request failed: #{reason}"}
+    end
+  end
+
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
   defp get_contact_language(contact_id) do
     case Repo.fetch(Contact, contact_id) do
       {:ok, contact} -> contact |> Repo.preload(:language)
       {:error, error} -> error
+    end
+  end
+
+  @spec find_component(list(map()), String.t()) :: String.t()
+  defp find_component(components, type) do
+    case Enum.find(components, fn component -> type in component["types"] end) do
+      nil -> "N/A"
+      component -> component["long_name"]
     end
   end
 
