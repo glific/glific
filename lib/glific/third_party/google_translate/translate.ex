@@ -1,6 +1,6 @@
 defmodule Glific.GoogleTranslate.Translate do
   @moduledoc """
-  Glific Google Translate module for all API calls to Google Translate.
+  Glific Google Translate module for all API calls to Google Translate
   """
 
   @endpoint "https://translation.googleapis.com/language/translate/v2"
@@ -64,6 +64,7 @@ defmodule Glific.GoogleTranslate.Translate do
         translatable_indices =
           translatable_segments
           |> Enum.map(fn {index, _original_text} -> index end)
+          |> Enum.reverse()
 
         translated_lines_with_indices =
           Enum.zip(translatable_indices, translated_lines)
