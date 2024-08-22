@@ -14,13 +14,6 @@ defmodule Glific.Flows.Webhook do
     max_attempts: 2,
     priority: 1
 
-  # unique: [
-  #   period: 60,
-  #   fields: [:args, :worker],
-  #   keys: [:context_id, :url, :webhook_log_id],
-  #   states: [:available, :scheduled, :executing]
-  # ]
-
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
     now = System.system_time(:second)
