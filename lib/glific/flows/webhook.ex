@@ -101,7 +101,8 @@ defmodule Glific.Flows.Webhook do
   @spec update_log(WebhookLog.t(), String.t()) :: {:ok, WebhookLog.t()}
   defp update_log(webhook_log, error_message) do
     attrs = %{
-      error: error_message
+      error: error_message,
+      status_code: 400
     }
 
     webhook_log

@@ -137,4 +137,32 @@ defmodule Glific.OpenAI.ChatGPTTest do
 
     assert cleaned_thread_params["message"] == message
   end
+
+  test "retrieve_assistant/1  fetches an existing assistant with incorrect id and returns map with error message" do
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 404,
+        body:
+          "{\n  \"error\": {\n    \"message\": \"No assistant found with id 'asst_GIqJAImBf800RWaxsadfs'.\",\n    \"type\": \"invalid_request_error\",\n    \"param\": null,\n    \"code\": null\n  }\n}"
+      }
+    end)
+
+    {:error, error} = ChatGPT.retrieve_assistant("asst_GIqJAImBf800RWaxsadfs")
+
+    assert error == "No assistant found with id 'asst_GIqJAImBf800RWaxsadfs'."
+  end
+
+  test "retrieve_assistant/1  fetches an existing assistant with correct id and returns ok tuple with assistant name" do
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body:
+          "{\n  \"id\": \"asst_GIqyCU4atuRWax\",\n  \"object\": \"assistant\",\n  \"created_at\": 1723531767,\n  \"name\": \"Diagnosis BOT\",\n  \"description\": null,\n  \"model\": \"gpt-4o\",\n  \"instructions\": \"You are a medical assistant specializing in identifying disabilities.\\\"\",\n  \"tools\": [\n    {\n      \"type\": \"file_search\"\n    }\n  ],\n  \"top_p\": 1.0,\n  \"temperature\": 0.0,\n  \"tool_resources\": {\n    \"file_search\": {\n      \"vector_store_ids\": [\n        \"vs_xUZaQSr3sdfsdpF\"\n      ]\n    }\n  },\n  \"metadata\": {},\n  \"response_format\": \"auto\"\n}"
+      }
+    end)
+
+    {:ok, assistant_name} = ChatGPT.retrieve_assistant("asst_GIqJAImBf800RWaxsadfs")
+
+    assert assistant_name == "Diagnosis BOT"
+  end
 end
