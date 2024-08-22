@@ -81,10 +81,20 @@ defmodule Glific.Clients.CommonWebhook do
 
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_gpt_vision", fields) do
-    ChatGPT.gpt_vision(fields)
-    |> case do
-      {:ok, response} -> %{success: true, response: response}
-      {:error, error} -> %{success: false, error: error}
+    url = fields["url"]
+
+    # validating if the url passed is a valid image url
+    with %{is_valid: true} <- Glific.Messages.validate_media(url, "image"),
+         {:ok, response} <- ChatGPT.gpt_vision(fields) do
+      %{success: true, response: response}
+    else
+      %{is_valid: false, message: message} ->
+        Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{message}")
+        message
+
+      {:error, error} ->
+        Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{error}")
+        error
     end
   end
 
@@ -94,14 +104,20 @@ defmodule Glific.Clients.CommonWebhook do
     assistant_id = Map.get(fields, "assistant_id", nil)
     remove_citation = Map.get(fields, "remove_citation", false)
 
-    params = %{
-      thread_id: thread_id,
-      assistant_id: assistant_id,
-      question: question,
-      remove_citation: remove_citation
-    }
+    case ChatGPT.retrieve_assistant(assistant_id) do
+      {:ok, _assistant_name} ->
+        params = %{
+          thread_id: thread_id,
+          assistant_id: assistant_id,
+          question: question,
+          remove_citation: remove_citation
+        }
 
-    ChatGPT.handle_conversation(params)
+        ChatGPT.handle_conversation(params)
+
+      {:error, error} ->
+        %{success: false, error: error}
+    end
   end
 
   def webhook("llm4dev", fields) do
@@ -217,26 +233,8 @@ defmodule Glific.Clients.CommonWebhook do
     org_id = fields["organization_id"]
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
     contact = get_contact_language(contact_id)
-    organization = Glific.Partners.organization(org_id)
-    services = organization.services["google_cloud_storage"]
-
-    with false <- is_nil(services),
-         {:ok, response} <-
-           Bhasini.with_config_request(source_language: contact.language.locale, task_type: "tts"),
-         %{"feedbackUrl" => _feedback_url, "pipelineInferenceAPIEndPoint" => _endpoint} = params <-
-           Jason.decode!(response.body) do
-      Glific.Bhasini.text_to_speech(params, text, org_id)
-    else
-      true ->
-        %{success: false, reason: "GCS is disabled"}
-
-      {:error, error} ->
-        Map.put(error, "success", false)
-
-      error ->
-        Logger.error("Error received from Bhasini: #{error["message"]}")
-        Map.put(error, "success", false)
-    end
+    source_language = contact.language.locale
+    do_text_to_speech_with_bhasini(source_language, org_id, text)
   end
 
   def webhook("nmt_tts_with_bhasini", fields) do
@@ -253,34 +251,10 @@ defmodule Glific.Clients.CommonWebhook do
       |> Map.get("target_language", nil)
       |> then(&if(!is_nil(&1), do: String.downcase(&1)))
 
-    organization = Glific.Partners.organization(org_id)
-    services = organization.services["google_cloud_storage"]
-
-    with false <- is_nil(services),
-         true <- Glific.Bhasini.valid_language?(source_language, target_language),
-         {:ok, response} <-
-           Bhasini.with_config_request(
-             source_language: source_language,
-             target_language: target_language,
-             task_type: "nmt_tts"
-           ),
-         %{"feedbackUrl" => _feedback_url, "pipelineResponseConfig" => _pipelineresponseconfig} =
-           params <-
-           Jason.decode!(response.body) do
-      Glific.Bhasini.nmt_tts(params, text, source_language, target_language, org_id)
+    if source_language == target_language do
+      do_text_to_speech_with_bhasini(source_language, org_id, text)
     else
-      true ->
-        %{success: false, reason: "GCS is disabled"}
-
-      false ->
-        %{success: false, reason: "Language not supported in Bhasini"}
-
-      {:error, error} ->
-        Map.put(error, "success", false)
-
-      error ->
-        Logger.error("Error received from Bhasini: #{error["message"]}")
-        Map.put(error, "success", false)
+      do_nmt_tts_with_bhasini(source_language, target_language, org_id, text)
     end
   end
 
@@ -389,6 +363,64 @@ defmodule Glific.Clients.CommonWebhook do
 
       {_status, response} ->
         %{success: false, response: "Invalid response #{response}"}
+    end
+  end
+
+  @spec do_nmt_tts_with_bhasini(String.t(), String.t(), non_neg_integer(), String.t()) :: map()
+  defp do_nmt_tts_with_bhasini(source_language, target_language, org_id, text) do
+    organization = Glific.Partners.organization(org_id)
+    services = organization.services["google_cloud_storage"]
+
+    with false <- is_nil(services),
+         true <- Glific.Bhasini.valid_language?(source_language, target_language),
+         {:ok, response} <-
+           Bhasini.with_config_request(
+             source_language: source_language,
+             target_language: target_language,
+             task_type: "nmt_tts"
+           ),
+         %{"feedbackUrl" => _feedback_url, "pipelineResponseConfig" => _pipelineresponseconfig} =
+           params <-
+           Jason.decode!(response.body) do
+      Glific.Bhasini.nmt_tts(params, text, source_language, target_language, org_id)
+    else
+      true ->
+        %{success: false, reason: "GCS is disabled"}
+
+      false ->
+        %{success: false, reason: "Language not supported in Bhasini"}
+
+      {:error, error} ->
+        Map.put(error, "success", false)
+
+      error ->
+        Logger.error("Error received from Bhasini: #{error["message"]}")
+        Map.put(error, "success", false)
+    end
+  end
+
+  @spec do_text_to_speech_with_bhasini(String.t(), non_neg_integer(), String.t()) ::
+          map()
+  defp do_text_to_speech_with_bhasini(source_language, org_id, text) do
+    organization = Glific.Partners.organization(org_id)
+    services = organization.services["google_cloud_storage"]
+
+    with false <- is_nil(services),
+         {:ok, response} <-
+           Bhasini.with_config_request(source_language: source_language, task_type: "tts"),
+         %{"feedbackUrl" => _feedback_url, "pipelineInferenceAPIEndPoint" => _endpoint} = params <-
+           Jason.decode!(response.body) do
+      Glific.Bhasini.text_to_speech(params, text, org_id)
+    else
+      true ->
+        %{success: false, reason: "GCS is disabled"}
+
+      {:error, error} ->
+        Map.put(error, "success", false)
+
+      error ->
+        Logger.error("Error received from Bhasini: #{error["message"]}")
+        Map.put(error, "success", false)
     end
   end
 end
