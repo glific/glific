@@ -12,13 +12,13 @@ defmodule Glific.Flows.Webhook do
   use Oban.Worker,
     queue: :webhook,
     max_attempts: 2,
-    priority: 1,
-    unique: [
-      period: 60,
-      fields: [:args, :worker],
-      keys: [:context_id, :url],
-      states: [:available, :scheduled, :executing]
-    ]
+    priority: 0
+    # unique: [
+    #   period: 60,
+    #   fields: [:args, :worker],
+    #   keys: [:context_id, :url, :webhook_log_id],
+    #   states: [:available, :scheduled, :executing]
+    # ]
 
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
@@ -216,6 +216,7 @@ defmodule Glific.Flows.Webhook do
       context: %{id: context.id, delay: context.delay},
       organization_id: context.organization_id
     })
+    # |> IO.inspect()
     |> Oban.insert()
     |> case do
       {:ok, %Job{conflict?: true} = response} ->
