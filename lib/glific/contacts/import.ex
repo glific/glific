@@ -391,7 +391,7 @@ defmodule Glific.Contacts.Import do
       contact.optout_time != nil ->
         false
 
-      Authorize.valid_role?(user.roles, :admin) || user.upload_contacts ->
+      Authorize.valid_role?(user.roles, :manager) || user.upload_contacts ->
         true
 
       true ->

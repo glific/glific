@@ -48,12 +48,11 @@ defmodule Glific.Contacts.ImportWorker do
 
     Repo.put_process_state(params.organization_id)
 
-    {errors, _} =
-      Enum.reduce(contacts, {%{}, 0}, fn contact, {acc, index} ->
+    validation_errors =
+      Enum.reduce(contacts, %{}, fn contact, acc ->
         phone_number = Map.get(contact, "phone")
         errors = validate_phone(phone_number)
-        acc = Map.update(acc, :errors, errors, &Map.merge(&1, errors))
-        {acc, index + 1}
+        Map.update(acc, :errors, errors, &Map.merge(&1, errors))
       end)
 
     contacts =
@@ -62,7 +61,7 @@ defmodule Glific.Contacts.ImportWorker do
       end)
 
     errors =
-      Enum.reduce(contacts, errors, fn contact, error_map ->
+      Enum.reduce(contacts, validation_errors, fn contact, error_map ->
         case process_contact(contact, params) do
           {:ok, _} ->
             error_map
@@ -103,13 +102,10 @@ defmodule Glific.Contacts.ImportWorker do
 
   @spec process_contact(map(), map()) :: {:ok, map()} | {:error, map()}
   defp process_contact(contact, params) do
-    user = params.user
-    contact_attrs = contact
-
     attrs =
-      Map.put(contact_attrs, :organization_id, Repo.put_process_state(params.organization_id))
+      Map.put(contact, :organization_id, params.organization_id)
       |> Map.put(:type, params.type)
 
-    Import.process_data(user, contact_attrs, attrs)
+    Import.process_data(params.user, contact, attrs)
   end
 end
