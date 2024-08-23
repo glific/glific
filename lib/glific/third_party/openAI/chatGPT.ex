@@ -6,6 +6,8 @@ defmodule Glific.OpenAI.ChatGPT do
   alias Glific.Partners
   require Logger
 
+  alias Glific.GCS.GcsWorker
+
   @endpoint "https://api.openai.com/v1"
 
   @default_params %{
@@ -140,6 +142,53 @@ defmodule Glific.OpenAI.ChatGPT do
       {_status, response} ->
         {:error, "invalid response #{inspect(response)}"}
     end
+  end
+
+  @spec text_to_speech(non_neg_integer(), String.t(), String.t(), String.t()) :: map()
+  def text_to_speech(org_id, text, voice \\ "alloy", model \\ "tts-1") do
+    url = @endpoint <> "/audio/speech"
+    api_key = Glific.get_open_ai_key()
+
+    data = %{
+      "model" => model,
+      "input" => text,
+      "voice" => voice
+    }
+
+    middleware = [
+      Tesla.Middleware.JSON,
+      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]}
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.post(url, data, opts: [adapter: [recv_timeout: 120_000]])
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        uuid = Ecto.UUID.generate()
+        path = write_audio_file_locally(body, uuid)
+
+        remote_name = "Bhasini/outbound/#{uuid}.mp3"
+
+        {:ok, media_meta} =
+          GcsWorker.upload_media(
+            path,
+            remote_name,
+            org_id
+          )
+
+        %{media_url: media_meta.url}
+
+      _ ->
+        %{success: false, reason: "Could not generate Audio note"}
+    end
+  end
+
+  @spec write_audio_file_locally(map(), String.t()) :: String.t()
+  defp write_audio_file_locally(encoded_audio, uuid) do
+    path = System.tmp_dir!() <> "#{uuid}.mp3"
+    :ok = File.write!(path, encoded_audio)
+    path
   end
 
   @doc """
