@@ -5,7 +5,7 @@ defmodule GlificWeb.Resolvers.OpenAI do
   """
 
   alias Glific.OpenAI
-  alias Glific.OpenAI.{VectorStore, Assistant}
+  alias Glific.OpenAI.{Assistant, VectorStore}
   alias Glific.Repo
 
   @doc """
