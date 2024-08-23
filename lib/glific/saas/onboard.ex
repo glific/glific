@@ -25,6 +25,7 @@ defmodule Glific.Saas.Onboard do
     Users.User
   }
 
+  alias Pow.Ecto.Schema.Password
   # 1 year
   @forced_suspension_hrs 8760
   @doc """
@@ -240,7 +241,8 @@ defmodule Glific.Saas.Onboard do
   @spec update_ngo_password(non_neg_integer()) :: {:error, String.t()} | {:ok, String.t()}
   def update_ngo_password(org_id) do
     now = DateTime.utc_now()
-    password_hash = Glific.Password.generate_password()
+    {:ok, password} = Passgen.create!(length: 15, numbers: true, uppercase: true, lowercase: true)
+    password_hash = Password.pbkdf2_hash(password)
     Glific.Repo.put_process_state(org_id)
 
     User

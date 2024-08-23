@@ -464,7 +464,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
             filter: %{
               organization_id: conn.assigns[:organization_id],
               status: "published",
-              is_active: true
+              is_active: true,
+              is_template: false
             }
           })
           |> Enum.reduce([], fn flow, acc ->

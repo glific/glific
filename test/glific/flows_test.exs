@@ -12,6 +12,7 @@ defmodule Glific.FLowsTest do
     Groups,
     Messages,
     Messages.Message,
+    Processor.ConsumerFlow,
     Processor.ConsumerWorker,
     Repo,
     Seeds.SeedsDev
@@ -709,5 +710,50 @@ defmodule Glific.FLowsTest do
 
     {:error, message} = Flows.start_group_flow(flow, [], default_results)
     assert message == "Group ID is empty"
+  end
+
+  test "copy_flow/2 with valid data makes a copy of a template flow",
+       %{organization_id: organization_id} = _attrs do
+    user = Repo.get_current_user()
+    name = "Language Workflow"
+
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: name, organization_id: organization_id})
+    flow = Repo.preload(flow, [:revisions])
+    flow = Map.merge(flow, %{is_template: true})
+
+    attrs = %{
+      name: "copied flow",
+      keywords: ["temp"]
+    }
+
+    {:ok, temp_flow} = Flows.copy_flow(flow, attrs)
+    assert temp_flow.name == attrs.name
+    assert temp_flow.is_template == false
+    temp_flow = Repo.preload(temp_flow, [:revisions])
+    {:ok, temp_flow} = Flows.publish_flow(temp_flow, user.id)
+
+    {:ok, revision} =
+      FlowRevision
+      |> Repo.fetch_by(%{flow_id: temp_flow.id, revision_number: 0})
+
+    assert revision.status == "published"
+
+    # check if the keyword is starting a flow
+    state = ConsumerFlow.load_state(Fixtures.get_org_id())
+    body = hd(attrs.keywords)
+
+    # keep track of current messages
+    message_count = Repo.aggregate(Message, :count)
+
+    sender = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+    message =
+      Fixtures.message_fixture(%{body: body, sender_id: sender.id})
+      |> Repo.preload([:contact])
+
+    ConsumerFlow.process_message({message, state}, message.body)
+
+    new_message_count = Repo.aggregate(Message, :count)
+    assert new_message_count > message_count + 1
   end
 end

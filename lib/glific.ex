@@ -456,6 +456,14 @@ defmodule Glific do
   end
 
   @doc """
+  Get Get Google Maps keys
+  """
+  @spec get_google_maps_api_key() :: String.t()
+  def get_google_maps_api_key do
+    Application.get_env(:glific, :google_maps_api_key)
+  end
+
+  @doc """
   mask last 5 digit of a phone number
   """
   @spec mask_phone_number(String.t()) :: String.t()
