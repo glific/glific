@@ -9,12 +9,15 @@ defmodule Glific.GoogleTranslate.Translate do
   API call to Google Translate.
   """
   @spec parse(String.t(), String.t(), map()) :: {:ok, any()} | {:error, any()}
-  def parse(api_key, question_text, languages) do
-    lines = String.split(question_text, "\n")
+  def parse(api_key, strings, languages) do
+    lines = String.split(strings, "\n")
 
     indexed_lines = Enum.with_index(lines)
 
-    {translatable_segments, non_translatable_segments} =
+    # splitting the translatable string and non-translatable string i.e contact variable
+    # and then concatenating them again in all_string_map and then sending that map in the translation api,
+    # to keep a track of newlines
+    {translatable_string, non_translatable_string} =
       Enum.reduce(indexed_lines, {[], []}, fn {line, index}, {trans, non_trans} ->
         if String.starts_with?(line, "@") and
              line |> String.trim() |> String.split() |> length() == 1 do
@@ -24,13 +27,13 @@ defmodule Glific.GoogleTranslate.Translate do
         end
       end)
 
-    all_segments_map =
-      (translatable_segments ++ non_translatable_segments)
+    all_string_map =
+      (translatable_string ++ non_translatable_string)
       |> Enum.sort_by(fn {index, _line} -> index end)
       |> Enum.into(%{})
 
     translatable_text =
-      all_segments_map
+      all_string_map
       |> Enum.sort_by(fn {index, _line} -> index end)
       |> Enum.map_join("\n", fn {_index, line} -> line end)
 
@@ -50,21 +53,21 @@ defmodule Glific.GoogleTranslate.Translate do
     middleware
     |> Tesla.client()
     |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 120_000]])
-    |> handle_response(non_translatable_segments, all_segments_map)
+    |> handle_response(non_translatable_string, all_string_map)
   end
 
   @spec handle_response(tuple(), list(), map()) :: {:ok, any} | {:error, any}
-  defp handle_response(response, non_translatable_segments, all_segments_map) do
+  defp handle_response(response, non_translatable_string, all_string_map) do
     with {:ok, translations} <- extract_translations(response),
-         translated_segments_with_indices <-
-           map_translations_to_indices(translations, all_segments_map),
-         final_segments <-
-           replace_non_translatable_segments(
-             translated_segments_with_indices,
-             non_translatable_segments,
-             all_segments_map
+         translated_string_with_indices <-
+           map_translations_to_indices(translations, all_string_map),
+         final_string <-
+           replacing_flow_variables(
+             translated_string_with_indices,
+             non_translatable_string,
+             all_string_map
            ),
-         combined_texts <- combine_segments(final_segments) do
+         combined_texts <- combine_string(final_string) do
       {:ok, combined_texts}
     else
       {:ok, %Tesla.Env{status: 200, body: body}} ->
@@ -97,26 +100,27 @@ defmodule Glific.GoogleTranslate.Translate do
   end
 
   @spec map_translations_to_indices(list(String.t()), map()) :: list()
-  defp map_translations_to_indices(translated_texts, all_segments_map) do
-    Enum.zip(Map.keys(all_segments_map), translated_texts)
+  defp map_translations_to_indices(translated_texts, all_string_map) do
+    Enum.zip(Map.keys(all_string_map), translated_texts)
   end
 
-  @spec replace_non_translatable_segments(
+  @spec replacing_flow_variables(
           list(),
           list(),
           map()
         ) :: list()
-  defp replace_non_translatable_segments(
-         translated_segments_with_indices,
-         non_translatable_segments,
-         all_segments_map
+  defp replacing_flow_variables(
+         translated_string_with_indices,
+         non_translatable_string,
+         all_string_map
        ) do
-    translated_segments_with_indices
+    # replacing the translated contact variables with the original non translated contact variable
+    translated_string_with_indices
     |> Enum.map(fn {index, translated_text} ->
-      if Enum.any?(non_translatable_segments, fn {non_trans_index, _} ->
+      if Enum.any?(non_translatable_string, fn {non_trans_index, _} ->
            non_trans_index == index
          end) do
-        {index, all_segments_map[index]}
+        {index, all_string_map[index]}
       else
         {index, translated_text}
       end
@@ -124,9 +128,9 @@ defmodule Glific.GoogleTranslate.Translate do
     |> Enum.sort_by(fn {index, _text} -> index end)
   end
 
-  @spec combine_segments(list({integer(), String.t()})) :: String.t()
-  defp combine_segments(final_segments) do
-    final_segments
+  @spec combine_string(list({integer(), String.t()})) :: String.t()
+  defp combine_string(final_string) do
+    final_string
     |> Enum.map_join("\n", fn {_, text} -> text end)
   end
 end
