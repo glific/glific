@@ -8,7 +8,7 @@ defmodule Glific.GoogleTranslate.Translate do
   @doc """
   API call to Google Translate.
   """
-  @spec parse(String.t(), String.t(), map()) :: tuple()
+  @spec parse(String.t(), String.t(), map()) :: {:ok, any()} | {:error, any()}
   def parse(api_key, question_text, languages) do
     lines = String.split(question_text, "\n")
 
@@ -53,7 +53,7 @@ defmodule Glific.GoogleTranslate.Translate do
     |> handle_response(non_translatable_segments, all_segments_map)
   end
 
-  @spec handle_response(tuple(), list(), map()) :: tuple()
+  @spec handle_response(tuple(), list(), map()) :: {:ok, any} | {:error, any}
   defp handle_response(response, non_translatable_segments, all_segments_map) do
     with {:ok, translations} <- extract_translations(response),
          translated_segments_with_indices <-
@@ -90,6 +90,10 @@ defmodule Glific.GoogleTranslate.Translate do
       |> Enum.flat_map(&String.split(&1, "\n"))
 
     {:ok, translated_texts}
+  end
+
+  defp extract_translations(_unexpected) do
+    {:error, "Failed to extract translations"}
   end
 
   @spec map_translations_to_indices(list(String.t()), map()) :: list()
