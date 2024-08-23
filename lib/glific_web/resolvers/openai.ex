@@ -71,9 +71,9 @@ defmodule GlificWeb.Resolvers.OpenAI do
   end
 
   @doc """
-  Modify an Assistant
+  Modify vector store
   """
-  @spec modify_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec modify_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def modify_assistant(_, params, _) do
     OpenAI.modify_assistant(params)
