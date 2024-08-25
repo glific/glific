@@ -1,0 +1,1109 @@
+{
+    "_ui": {
+        "nodes": {
+            "473e7ee6-b1a2-4621-a879-103afff3d900": {
+                "type": "wait_for_response",
+                "config": {
+                    "cases": {}
+                },
+                "position": {
+                    "top": 200,
+                    "left": 420
+                }
+            },
+            "59efe2ea-454d-4480-888f-9cb3b3bd8e25": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 400,
+                    "left": 520
+                }
+            },
+            "5cc843f7-4e01-46fb-8af8-d245e4d20625": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 1140,
+                    "left": 120
+                }
+            },
+            "65abaa10-81b5-401e-abb4-375d3ab30bd0": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 0,
+                    "left": 20
+                }
+            },
+            "79cffc86-d4ef-4436-817f-dce8e5c15e9f": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 520,
+                    "left": 580
+                }
+            },
+            "7f873ac2-3326-4691-be77-044a48fd2f0f": {
+                "type": "split_by_subflow",
+                "config": {},
+                "position": {
+                    "top": 900,
+                    "left": 740
+                }
+            },
+            "9a14fcf5-4616-495f-9781-e094e39658aa": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 380,
+                    "left": 280
+                }
+            },
+            "b92df20d-17a3-4164-b294-3afe0cd92438": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 660,
+                    "left": 420
+                }
+            },
+            "b9ca1098-b1c6-4e06-9f14-e7efe1be7b4f": {
+                "type": "split_by_subflow",
+                "config": {},
+                "position": {
+                    "top": 380,
+                    "left": 840
+                }
+            },
+            "bc8946d1-7fc7-4024-8e84-4f4b7e229283": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 520,
+                    "left": 280
+                }
+            },
+            "e2dc9605-1582-4b44-8feb-d97859da2281": {
+                "type": "wait_for_response",
+                "config": {
+                    "cases": {}
+                },
+                "position": {
+                    "top": 940,
+                    "left": 300
+                }
+            }
+        },
+        "stickies": {
+            "511d7457-f8dc-4030-8325-25a258b948de": {
+                "body": "Labels will help to track users' data at different points in the flow. So add Labels in the places wherever you want to track data",
+                "color": "yellow",
+                "title": "Explainer: Node 8e25 and 58aa",
+                "position": {
+                    "top": 480,
+                    "left": 1060,
+                    "right": 100,
+                    "bottom": -320
+                }
+            },
+            "5db2257d-3b43-4616-a880-b7e679ad7969": {
+                "body": "As you don't know the preferred language of the user yet, it is better to ask for  the language preference in all he languages you are offering",
+                "color": "purple",
+                "title": "Good to have :0bd0",
+                "position": {
+                    "top": 20,
+                    "left": 600
+                }
+            },
+            "621ff6c4-13f9-42c3-8b92-22aa26bf7852": {
+                "body": "Users don't always follow the expected path and might send messages different from the given options. In such cases, an \"Other options flow\" is used. Since every interactive message might include an \"Other\" option, we created a small flow with this message and reuse it in every scenario, rather than writing it anew each time.",
+                "color": "yellow",
+                "title": "Explainer : Node 7b4f",
+                "position": {
+                    "top": 900,
+                    "left": 1040,
+                    "right": 0,
+                    "bottom": 700
+                }
+            },
+            "85a646fd-a4d9-468e-b777-9ca5203f6d43": {
+                "body": "The \"Update Contact\" feature is used to update the language in the user's profile based on their choice from the interactive message. \n\nIt's important to note that if a user wishes to change their language preference later on, another \"Update Contact\" action is required to override the existing information with the new information.",
+                "color": "yellow",
+                "title": "Explainer: Node 9283 and 5e9f",
+                "position": {
+                    "top": 440,
+                    "left": 60,
+                    "right": -740,
+                    "bottom": -620
+                }
+            },
+            "a20599ee-41c5-44a3-bc58-8d819548017d": {
+                "body": "As language is an important question which will impact user's chatbot experience going forward, it is important to cross verify it before proceeding",
+                "color": "purple",
+                "title": "Good to have : Node 2438",
+                "position": {
+                    "top": 700,
+                    "left": 900,
+                    "right": null,
+                    "bottom": null
+                }
+            }
+        }
+    },
+    "name": "Registration_Language flow",
+    "type": "messaging",
+    "uuid": "9557da8f-dab8-470c-96cf-1d1a214c2f23",
+    "vars": [
+        "9557da8f-dab8-470c-96cf-1d1a214c2f23"
+    ],
+    "nodes": [
+        {
+            "uuid": "65abaa10-81b5-401e-abb4-375d3ab30bd0",
+            "exits": [
+                {
+                    "uuid": "a28bdeab-3346-4932-a4a4-b331e354c16f",
+                    "destination_uuid": "473e7ee6-b1a2-4621-a879-103afff3d900"
+                }
+            ],
+            "actions": [
+                {
+                    "id": 23,
+                    "name": "Language_selection",
+                    "text": "{\"content\":{\"header\":\"Language_selection\",\"text\":\"Which language do you want me to speak in?\\n            आप मुझसे किस भाषा में बात करवाना चाहते हैं?\",\"type\":\"text\"},\"options\":[{\"title\":\"English\",\"type\":\"text\"},{\"title\":\"हिंदी\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+                    "type": "send_interactive_msg",
+                    "uuid": "163000a1-d035-4da1-a326-cb5214785523",
+                    "labels": [],
+                    "attachment_url": "",
+                    "attachment_type": ""
+                }
+            ]
+        },
+        {
+            "uuid": "473e7ee6-b1a2-4621-a879-103afff3d900",
+            "exits": [
+                {
+                    "uuid": "66bd3f57-9ff3-4fa0-bdc8-6bffb07fd2dc",
+                    "destination_uuid": "9a14fcf5-4616-495f-9781-e094e39658aa"
+                },
+                {
+                    "uuid": "d64ab5d2-d75d-4609-be90-f0e2d9cc78c1",
+                    "destination_uuid": "59efe2ea-454d-4480-888f-9cb3b3bd8e25"
+                },
+                {
+                    "uuid": "7ce731f8-1788-4ac0-986b-66943700d8e0",
+                    "destination_uuid": "b9ca1098-b1c6-4e06-9f14-e7efe1be7b4f"
+                }
+            ],
+            "router": {
+                "type": "switch",
+                "wait": {
+                    "type": "msg"
+                },
+                "cases": [
+                    {
+                        "type": "has_any_word",
+                        "uuid": "d5e3b2d8-5f7e-4849-a030-a0b677efb9be",
+                        "arguments": [
+                            "English"
+                        ],
+                        "category_uuid": "8a8201a5-06c2-4c14-8b65-1544d869b5fb"
+                    },
+                    {
+                        "type": "has_any_word",
+                        "uuid": "316ffd89-22c4-463e-a2eb-c2da7d45c062",
+                        "arguments": [
+                            "हिंदी"
+                        ],
+                        "category_uuid": "0a694fc1-6a4b-4e30-896a-574f1e4a19a9"
+                    }
+                ],
+                "operand": "@input.text",
+                "categories": [
+                    {
+                        "name": "English",
+                        "uuid": "8a8201a5-06c2-4c14-8b65-1544d869b5fb",
+                        "exit_uuid": "66bd3f57-9ff3-4fa0-bdc8-6bffb07fd2dc"
+                    },
+                    {
+                        "name": "हिंदी",
+                        "uuid": "0a694fc1-6a4b-4e30-896a-574f1e4a19a9",
+                        "exit_uuid": "d64ab5d2-d75d-4609-be90-f0e2d9cc78c1"
+                    },
+                    {
+                        "name": "Other",
+                        "uuid": "57d92058-6873-4685-a293-3c77b6dea803",
+                        "exit_uuid": "7ce731f8-1788-4ac0-986b-66943700d8e0"
+                    }
+                ],
+                "result_name": "result_3",
+                "default_category_uuid": "57d92058-6873-4685-a293-3c77b6dea803"
+            },
+            "actions": []
+        },
+        {
+            "uuid": "9a14fcf5-4616-495f-9781-e094e39658aa",
+            "exits": [
+                {
+                    "uuid": "6124ad43-f605-40df-90ab-6c55d0fed7e9",
+                    "destination_uuid": "bc8946d1-7fc7-4024-8e84-4f4b7e229283"
+                }
+            ],
+            "actions": [
+                {
+                    "type": "add_input_labels",
+                    "uuid": "e83b67d4-4ec9-49dd-8082-afcc7e5fdb0c",
+                    "labels": [
+                        {
+                            "name": "English",
+                            "uuid": "971eb58c-b086-421f-a2ee-dc4fcddc7947"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "uuid": "b9ca1098-b1c6-4e06-9f14-e7efe1be7b4f",
+            "exits": [
+                {
+                    "uuid": "63f606f6-6e7f-4849-a3ca-d89d775c17ea",
+                    "destination_uuid": "65abaa10-81b5-401e-abb4-375d3ab30bd0"
+                },
+                {
+                    "uuid": "540ed6f3-a8be-43f5-bb6c-a44144364030",
+                    "destination_uuid": null
+                }
+            ],
+            "router": {
+                "type": "switch",
+                "cases": [
+                    {
+                        "type": "has_only_text",
+                        "uuid": "d420f8ce-4359-4bd7-88ef-3523e472eee2",
+                        "arguments": [
+                            "completed"
+                        ],
+                        "category_uuid": "7723d550-3d05-4fb0-a518-268beb8d924f"
+                    },
+                    {
+                        "type": "has_only_text",
+                        "uuid": "8b2b39a0-0db3-4ca6-9c21-2e48b4a8a353",
+                        "arguments": [
+                            "expired"
+                        ],
+                        "category_uuid": "df8967cb-d8cb-423c-a425-ccaecb18e7b3"
+                    }
+                ],
+                "operand": "@child.status",
+                "categories": [
+                    {
+                        "name": "Complete",
+                        "uuid": "7723d550-3d05-4fb0-a518-268beb8d924f",
+                        "exit_uuid": "63f606f6-6e7f-4849-a3ca-d89d775c17ea"
+                    },
+                    {
+                        "name": "Expired",
+                        "uuid": "df8967cb-d8cb-423c-a425-ccaecb18e7b3",
+                        "exit_uuid": "540ed6f3-a8be-43f5-bb6c-a44144364030"
+                    }
+                ],
+                "default_category_uuid": "df8967cb-d8cb-423c-a425-ccaecb18e7b3"
+            },
+            "actions": [
+                {
+                    "flow": {
+                        "name": "Other options flow",
+                        "uuid": "6c362d4a-01cd-47cb-a03c-1dfb294faa63"
+                    },
+                    "type": "enter_flow",
+                    "uuid": "265a928c-48a5-4b93-9796-60560d29bdc6"
+                }
+            ]
+        },
+        {
+            "uuid": "59efe2ea-454d-4480-888f-9cb3b3bd8e25",
+            "exits": [
+                {
+                    "uuid": "fb83a39b-f6be-4d21-b351-9c2b71052ce4",
+                    "destination_uuid": "79cffc86-d4ef-4436-817f-dce8e5c15e9f"
+                }
+            ],
+            "actions": [
+                {
+                    "type": "add_input_labels",
+                    "uuid": "182b3b52-4d8e-4353-a471-e7f4aeb0bf75",
+                    "labels": [
+                        {
+                            "name": "Hindi",
+                            "uuid": "9c747d05-17b4-46e1-8c99-e9ba9227cefa"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "uuid": "bc8946d1-7fc7-4024-8e84-4f4b7e229283",
+            "exits": [
+                {
+                    "uuid": "0aca811d-bccf-48b5-8d54-5987365f2917",
+                    "destination_uuid": "b92df20d-17a3-4164-b294-3afe0cd92438"
+                }
+            ],
+            "actions": [
+                {
+                    "type": "set_contact_language",
+                    "uuid": "7a32150f-f6b4-4e05-9f51-82afa303856c",
+                    "language": "en"
+                }
+            ]
+        },
+        {
+            "uuid": "79cffc86-d4ef-4436-817f-dce8e5c15e9f",
+            "exits": [
+                {
+                    "uuid": "049a93f5-b19b-4adf-85e8-df582385ef10",
+                    "destination_uuid": "b92df20d-17a3-4164-b294-3afe0cd92438"
+                }
+            ],
+            "actions": [
+                {
+                    "type": "set_contact_language",
+                    "uuid": "254c0931-22ee-47f5-bc5b-a38c094f0b25",
+                    "language": "hi"
+                }
+            ]
+        },
+        {
+            "uuid": "b92df20d-17a3-4164-b294-3afe0cd92438",
+            "exits": [
+                {
+                    "uuid": "968e6c52-6bbe-4c90-bee7-f72e37027323",
+                    "destination_uuid": "e2dc9605-1582-4b44-8feb-d97859da2281"
+                }
+            ],
+            "actions": [
+                {
+                    "id": 24,
+                    "name": "language_confirmation",
+                    "text": "{\"content\":{\"header\":\"language_confirmation\",\"text\":\"Your langauge has been set to *@results.language*. Is it correct?🤔\",\"type\":\"text\"},\"options\":[{\"title\":\"Confirm\",\"type\":\"text\"},{\"title\":\"Change language\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+                    "type": "send_interactive_msg",
+                    "uuid": "ff51e180-a381-4c4e-b7c4-cf1cd6230223",
+                    "labels": [],
+                    "attachment_url": "",
+                    "attachment_type": ""
+                }
+            ]
+        },
+        {
+            "uuid": "7f873ac2-3326-4691-be77-044a48fd2f0f",
+            "exits": [
+                {
+                    "uuid": "cd858875-e1cf-41a1-84b7-2c5b42450cd3",
+                    "destination_uuid": "b92df20d-17a3-4164-b294-3afe0cd92438"
+                },
+                {
+                    "uuid": "0bcddae1-cc00-41fb-bde5-9e4a1c2c23fa",
+                    "destination_uuid": null
+                }
+            ],
+            "router": {
+                "type": "switch",
+                "cases": [
+                    {
+                        "type": "has_only_text",
+                        "uuid": "edc74650-dfe8-4529-a6ff-740a84124d5d",
+                        "arguments": [
+                            "completed"
+                        ],
+                        "category_uuid": "9f27de3a-b6a0-4554-8587-264240c11a35"
+                    },
+                    {
+                        "type": "has_only_text",
+                        "uuid": "8411594d-9598-43ed-ac6d-db801a4ba676",
+                        "arguments": [
+                            "expired"
+                        ],
+                        "category_uuid": "364d9366-276f-4954-9a9a-d6064e83df5f"
+                    }
+                ],
+                "operand": "@child.status",
+                "categories": [
+                    {
+                        "name": "Complete",
+                        "uuid": "9f27de3a-b6a0-4554-8587-264240c11a35",
+                        "exit_uuid": "cd858875-e1cf-41a1-84b7-2c5b42450cd3"
+                    },
+                    {
+                        "name": "Expired",
+                        "uuid": "364d9366-276f-4954-9a9a-d6064e83df5f",
+                        "exit_uuid": "0bcddae1-cc00-41fb-bde5-9e4a1c2c23fa"
+                    }
+                ],
+                "default_category_uuid": "364d9366-276f-4954-9a9a-d6064e83df5f"
+            },
+            "actions": [
+                {
+                    "flow": {
+                        "name": "Other options flow",
+                        "uuid": "6c362d4a-01cd-47cb-a03c-1dfb294faa63"
+                    },
+                    "type": "enter_flow",
+                    "uuid": "b3b6c867-77eb-427e-9066-e7583b34fb41"
+                }
+            ]
+        },
+        {
+            "uuid": "e2dc9605-1582-4b44-8feb-d97859da2281",
+            "exits": [
+                {
+                    "uuid": "0db66b82-5e76-4637-bccb-eb3aa9a464b2",
+                    "destination_uuid": "5cc843f7-4e01-46fb-8af8-d245e4d20625"
+                },
+                {
+                    "uuid": "7c091a45-61c7-42a3-89f0-ea982dec1804",
+                    "destination_uuid": "65abaa10-81b5-401e-abb4-375d3ab30bd0"
+                },
+                {
+                    "uuid": "cb28dbc3-e624-4de5-a0f0-77bf6bcbbdff",
+                    "destination_uuid": "7f873ac2-3326-4691-be77-044a48fd2f0f"
+                }
+            ],
+            "router": {
+                "type": "switch",
+                "wait": {
+                    "type": "msg"
+                },
+                "cases": [
+                    {
+                        "type": "has_any_word",
+                        "uuid": "b54cce1c-7e74-4386-a990-4abbd6065b2b",
+                        "arguments": [
+                            "Confirm"
+                        ],
+                        "category_uuid": "0369f102-3d49-4ce1-bb1e-9690893092d1"
+                    },
+                    {
+                        "type": "has_any_word",
+                        "uuid": "cacbc12f-4a52-40ec-b9c6-04c6d81d48b0",
+                        "arguments": [
+                            "Change language"
+                        ],
+                        "category_uuid": "19a1374d-eb56-4092-b56a-408950886286"
+                    }
+                ],
+                "operand": "@input.text",
+                "categories": [
+                    {
+                        "name": "Confirm",
+                        "uuid": "0369f102-3d49-4ce1-bb1e-9690893092d1",
+                        "exit_uuid": "0db66b82-5e76-4637-bccb-eb3aa9a464b2"
+                    },
+                    {
+                        "name": "Change language",
+                        "uuid": "19a1374d-eb56-4092-b56a-408950886286",
+                        "exit_uuid": "7c091a45-61c7-42a3-89f0-ea982dec1804"
+                    },
+                    {
+                        "name": "Other",
+                        "uuid": "6ef197dd-17ca-4d02-bcea-3abf977dad1b",
+                        "exit_uuid": "cb28dbc3-e624-4de5-a0f0-77bf6bcbbdff"
+                    }
+                ],
+                "result_name": "result_3",
+                "default_category_uuid": "6ef197dd-17ca-4d02-bcea-3abf977dad1b"
+            },
+            "actions": []
+        },
+        {
+            "uuid": "5cc843f7-4e01-46fb-8af8-d245e4d20625",
+            "exits": [
+                {
+                    "uuid": "5d4b47c3-9b24-47d7-8bbc-0188576dbbe7",
+                    "destination_uuid": null
+                }
+            ],
+            "actions": [
+                {
+                    "text": "Great!",
+                    "type": "send_msg",
+                    "uuid": "5d5056c1-d476-4c39-bc1d-080bb127108d",
+                    "labels": [],
+                    "attachments": [],
+                    "quick_replies": []
+                }
+            ]
+        }
+    ],
+    "language": "base",
+    "localization": {
+        "en": {
+            "16370408-0482-459d-8981-6c1e6f57c818": {
+                "text": [
+                    "Congratulations!👏🏼 Thank You for the registration."
+                ]
+            },
+            "20a54406-1fe6-4212-9240-5f68f722cb70": {
+                "text": [
+                    "I am thrilled that you are interested in joining the Chatbot Program! 🥳\n\nMy name is *Glific Chabot*\n\n*What is your name?*😎"
+                ]
+            },
+            "2cc498f5-a632-4775-bacf-e67a779bfb43": {
+                "text": [
+                    "Thank you for registering with Glific ChatBot! 🌟"
+                ]
+            },
+            "3b03ac7d-254d-46b5-9360-b3e59f24ae77": {
+                "attachments": [
+                    "video:https://storage.googleapis.com/bucket_tap_1/TLM22/Quiz%20Questions/hingssf1vid.mp4"
+                ]
+            },
+            "524bcbb6-88e6-4d56-85e5-7c97204f4477": {
+                "text": [
+                    "Please select from the below option👇🏼"
+                ],
+                "attachments": []
+            },
+            "77f4763d-20af-4bb8-8371-527519864ce0": {
+                "text": [
+                    "Hello👋🏻 Welcome to the Glific Chatbot 🥳\n\nनमस्ते 🙏🏻 Glific Chatbot में आपका  स्वागत है🥳 \n"
+                ]
+            },
+            "8e79461d-6730-4d57-bc81-0f59060d1b79": {
+                "text": [
+                    "Please select one of the given options only👇🏼"
+                ],
+                "attachments": []
+            },
+            "ed4a7a8f-cea7-4307-b38a-ef8ec618f21b": {
+                "text": [
+                    "Please select from the below option👇🏼"
+                ],
+                "attachments": []
+            }
+        },
+        "gu": {
+            "16370408-0482-459d-8981-6c1e6f57c818": {
+                "text": [
+                    "અભિનંદન!👏🏼 નોંધણી માટે આભાર."
+                ]
+            },
+            "20a54406-1fe6-4212-9240-5f68f722cb70": {
+                "text": [
+                    "હું રોમાંચિત છું કે તમે ચેટબોટ પ્રોગ્રામમાં જોડાવામાં રસ ધરાવો છો! 🥳\n\nમારું નામ *ગ્લિફિક ચાબોટ* છે\n\n*તમારું નામ શું છે?*😎"
+                ]
+            },
+            "2cc498f5-a632-4775-bacf-e67a779bfb43": {
+                "text": [
+                    "Glific ChatBot સાથે નોંધણી કરવા બદલ આભાર! 🌟"
+                ]
+            },
+            "77f4763d-20af-4bb8-8371-527519864ce0": {
+                "text": [
+                    "Hello👋🏻 Glific Chatbot 🥳 માં આપનું સ્વાગત છે\n\nનમસ્તે 🙏🏻 Glific Chatbot માં તમારું સ્વાગત છે \n"
+                ]
+            }
+        },
+        "hi": {
+            "0abbc719-1734-4545-8856-fe6a01df1720": {
+                "text": [
+                    "कृपया एक option/button चुनो "
+                ],
+                "attachments": []
+            },
+            "16370408-0482-459d-8981-6c1e6f57c818": {
+                "text": [
+                    "बधाई हो!👏🏼 पंजीकरण के लिए धन्यवाद।"
+                ]
+            },
+            "1a680dba-3e9e-4cf9-a424-9fa69bf6e638": {
+                "text": [
+                    "तुम course में क्या सिखोगे जाने के लिए ये Video देखो 😍\n\nhttps://youtu.be/RicXsy_gsp4 "
+                ],
+                "attachments": []
+            },
+            "20a54406-1fe6-4212-9240-5f68f722cb70": {
+                "text": [
+                    "मुझे बहुत खुशी है कि आप Glific ChatBot में शामिल होना चाहते हैं 🥳\nमेरा नाम  * Glific ChatBot* है\n\n*आपका नाम क्या है ?*😎"
+                ]
+            },
+            "22613761-fd13-4f85-ba0b-ec5e99103162": {
+                "text": [
+                    "तुम course में क्या सिखोगे जाने के लिए ये Video देखो 😍\n\nhttps://youtu.be/aWUQtgQVfpg "
+                ],
+                "attachments": []
+            },
+            "2c58040b-3218-450e-997a-6efc3b839b4d": {
+                "arguments": [
+                    "उड़िया"
+                ]
+            },
+            "2c9894bf-492d-47bd-905f-b3fa0702176c": {
+                "text": [
+                    "*आखिरी मौका*\n\nकृपया एक option/button चुनो "
+                ],
+                "attachments": []
+            },
+            "2cc498f5-a632-4775-bacf-e67a779bfb43": {
+                "text": [
+                    "Glific Chabot के साथ पंजीकरण करने के लिए धन्यवाद! 🌟"
+                ]
+            },
+            "2f5536d4-b5e7-4162-be5c-660b4cb2142a": {
+                "text": [
+                    "*आखिरी मौका*\n\nकृपया एक option/button चुनो "
+                ],
+                "attachments": []
+            },
+            "336d9b8e-931d-4f12-93d5-1381d01bcc58": {
+                "text": [
+                    "तुम course में क्या सिखोगे जाने के लिए ये Video देखो 😍\n\nhttps://youtu.be/S6drooqE7sk "
+                ],
+                "attachments": []
+            },
+            "36209593-7e78-4511-9542-a11e8e8c6384": {
+                "text": [
+                    "*कोर्स चुनने का आखिरी मौका*\n\nअपना पसंदिदा कोर्स चुनो\n"
+                ],
+                "attachments": []
+            },
+            "3b03ac7d-254d-46b5-9360-b3e59f24ae77": {
+                "text": [
+                    "."
+                ],
+                "attachments": [
+                    "video:https://storage.googleapis.com/bucket_tap_1/TLM22/Quiz%20Questions/hingssf1vid.mp4"
+                ]
+            },
+            "42983aab-54d8-4d7d-875b-f420a7d672f4": {
+                "text": [
+                    "तुम course में क्या सिखोगे जाने के लिए ये Video देखो 😍\n\nhttps://youtu.be/7jxwUBwpihg "
+                ],
+                "attachments": []
+            },
+            "4960c570-16bb-4ee7-a8a2-94c4ad7f9dbe": {
+                "arguments": [
+                    "हाँ"
+                ]
+            },
+            "4c6f6b40-ee3a-4cf5-9c1e-fa1e26f9acb2": {
+                "arguments": [
+                    "हिंदी"
+                ]
+            },
+            "4c9a04cb-8217-4128-98ae-ea57c7d2214b": {
+                "text": [
+                    "*आखिरी मौका*\n\nकृपया एक option/button चुनो "
+                ],
+                "attachments": []
+            },
+            "50b91a48-743c-4165-a915-e9788d61d9c7": {
+                "text": [
+                    "तुम course में क्या सिखोगे जाने के लिए ये Video देखो 😍\n\nhttps://youtu.be/IBvfEWb_3ug"
+                ],
+                "attachments": []
+            },
+            "51920275-8681-4997-b222-cc45ad5408a5": {
+                "arguments": [
+                    "नहीं"
+                ]
+            },
+            "51fbb3a1-2f83-4850-b615-813f1280ec00": {
+                "text": [
+                    "ठीक है! मुझे मैसेज करना अगर शामिल होना है तो😁 Bye 👋"
+                ],
+                "attachments": []
+            },
+            "524bcbb6-88e6-4d56-85e5-7c97204f4477": {
+                "text": [
+                    "कृपया नीचे दिए गए विकल्प में से चयन करें👇🏼\n"
+                ],
+                "attachments": []
+            },
+            "5482d822-88c6-434e-a6f7-1ece26f69e2a": {
+                "arguments": [
+                    "हाँ"
+                ]
+            },
+            "77f4763d-20af-4bb8-8371-527519864ce0": {
+                "text": [
+                    "नमस्ते 🙏🏻 Glific Chatbot में आपका  स्वागत है🥳 \n\n"
+                ]
+            },
+            "7abd7ab2-cc01-45bd-a73d-083bbd1f6950": {
+                "text": [
+                    "तुम course में क्या सिखोगे जाने के लिए ये Video देखो 😍\n\nhttps://youtu.be/Yp1KMuptBSQ"
+                ],
+                "attachments": []
+            },
+            "83dd9725-5990-421e-a377-20d7aec7a58a": {
+                "arguments": [
+                    "अंग्रेजी"
+                ]
+            },
+            "8c994a1e-b6aa-4755-9448-60700f9d1fe3": {
+                "text": [
+                    "तुम course में क्या सिखोगे जाने के लिए ये Video देखो 😍\n\nhttps://youtu.be/mIbFejJLfZk "
+                ],
+                "attachments": []
+            },
+            "8d32d1c0-4242-4ff7-8747-3e1abd6a0dd2": {
+                "text": [
+                    "शाबाश🥳  तुम्हारा course है 👇🏻 \n*@results.course_studentscertflow1*"
+                ],
+                "attachments": []
+            },
+            "8e79461d-6730-4d57-bc81-0f59060d1b79": {
+                "text": [
+                    "कृपया दिए गए विकल्पों में से केवल एक का चयन करें👇🏼"
+                ],
+                "attachments": []
+            },
+            "93231196-1e7f-4aa4-960e-6ed49aa052c2": {
+                "text": [
+                    "तुम course में क्या सिखोगे जाने के लिए ये Video देखो 😍\n\nhttps://youtu.be/ZILwFUNCaPg "
+                ],
+                "attachments": []
+            },
+            "9d4188d7-8894-4df3-bbbc-890938f94cbc": {
+                "arguments": [
+                    "लड़की"
+                ]
+            },
+            "9d7cab3f-269e-4907-9b10-36260a1e4679": {
+                "text": [
+                    "बधाई हो👏🏼 तुमने जीते है  *500 Joining Bonus points*🪙"
+                ],
+                "attachments": []
+            },
+            "af8a2faa-3817-42ae-8632-dc4f7f929d13": {
+                "text": [
+                    "."
+                ],
+                "attachments": [
+                    "sticker:https://storage.googleapis.com/bucket_tap_1/TLM22/Quiz%20Questions/hello.webp"
+                ]
+            },
+            "af93f456-8af3-4ab2-aa6d-f07d7455d022": {
+                "text": [
+                    "तुम course में क्या सिखोगे जाने के लिए ये Video देखो 😍\n\nhttps://youtu.be/RicXsy_gsp4 "
+                ],
+                "attachments": []
+            },
+            "b74faaa9-e13f-4aef-814b-6b477ecc5162": {
+                "text": [
+                    "*आखिरी मौका*\n\nकृपया एक option/button चुनो "
+                ],
+                "attachments": []
+            },
+            "bbcdcb8a-38e3-42e5-af71-ad4cbb54e6b2": {
+                "text": [
+                    "तुम course में क्या सिखोगे जाने के लिए ये Video देखो 😍\n\nhttps://youtu.be/aWUQtgQVfpg "
+                ],
+                "attachments": []
+            },
+            "d0a35af4-4632-4726-8c06-e12bb24de2d0": {
+                "text": [
+                    "*आखिरी मौका*\n\nकृपया एक option/button चुनो "
+                ],
+                "attachments": []
+            },
+            "d22b013d-eae1-4f35-9b19-6398b6334e40": {
+                "text": [
+                    "बधाई हो👏🏼 तुमने जीते है  *500 Joining Bonus points*🪙\nतुम्हारे रजिस्ट्रेशन पूरा होगया है ✅ \n\nमैं तुम्हे जल्द ही मैसेज भेजूंगी, TAP Program से जुडी और जानकारी देने के लीए ✨"
+                ],
+                "attachments": []
+            },
+            "d5985e03-a82b-4825-b931-78b370d5dd61": {
+                "arguments": [
+                    "नहीं"
+                ]
+            },
+            "da5a9c62-68db-40ee-a1e2-1711b9585ba5": {
+                "arguments": [
+                    "लड़का"
+                ]
+            },
+            "e297051c-4c44-4ee9-b251-cab7c103b45e": {
+                "text": [
+                    "*आखिरी मौका*\n\nकृपया एक option/button चुनो "
+                ],
+                "attachments": []
+            },
+            "ece79d25-3364-4752-b914-771ec3106f0d": {
+                "text": [
+                    "*आखिरी मौका*\n\nकृपया एक option/button चुनो "
+                ],
+                "attachments": []
+            },
+            "ed4a7a8f-cea7-4307-b38a-ef8ec618f21b": {
+                "text": [
+                    "कृपया नीचे दिए गए विकल्प में से चयन करें👇🏼"
+                ],
+                "attachments": []
+            },
+            "fdffb7fc-cf73-449e-8988-10441f2ed19b": {
+                "text": [
+                    "तुम course में क्या सिखोगे जाने के लिए ये Video देखो 😍\n\nhttps://youtu.be/QI3997g-02Q "
+                ],
+                "attachments": []
+            },
+            "ffaa4252-4fc9-4f78-af60-c32304d63203": {
+                "arguments": [
+                    "हाँ"
+                ]
+            }
+        },
+        "mr": {
+            "0abbc719-1734-4545-8856-fe6a01df1720": {
+                "text": [
+                    "कृपया एक पर्याय/बटण निवडा"
+                ],
+                "attachments": []
+            },
+            "1a680dba-3e9e-4cf9-a424-9fa69bf6e638": {
+                "text": [
+                    "या कोर्समध्ये तुम्ही काय शिकाल हे जाणून घेण्यासाठी, हा व्हिडिओ पहा 😍\n\nhttps://youtu.be/rh-wnE9rfYE "
+                ],
+                "attachments": []
+            },
+            "20a54406-1fe6-4212-9240-5f68f722cb70": {
+                "text": [
+                    "मला खूप आनंद झाला की तुम्हाला TAP कार्यक्रमात सामील व्हायचे आहे 🥳\nमाझे नाव *TAP Buddy* आहे\n\n*तुमचे नाव काय आहे?*😎"
+                ],
+                "attachments": []
+            },
+            "22613761-fd13-4f85-ba0b-ec5e99103162": {
+                "text": [
+                    "या कोर्समध्ये तुम्ही काय शिकाल हे जाणून घेण्यासाठी, हा व्हिडिओ पहा 😍\n\nhttps://youtu.be/2dsHquekJ6g "
+                ],
+                "attachments": []
+            },
+            "2c9894bf-492d-47bd-905f-b3fa0702176c": {
+                "text": [
+                    "*शेवटची संधी*\n\nकृपया एक पर्याय/बटण निवडा"
+                ],
+                "attachments": []
+            },
+            "2f5536d4-b5e7-4162-be5c-660b4cb2142a": {
+                "text": [
+                    "कृपया एक पर्याय/बटण निवडा"
+                ],
+                "attachments": []
+            },
+            "336d9b8e-931d-4f12-93d5-1381d01bcc58": {
+                "text": [
+                    "या कोर्समध्ये तुम्ही काय शिकाल हे जाणून घेण्यासाठी, हा व्हिडिओ पहा 😍\n\nhttps://youtu.be/KHsxTvrvPmQ "
+                ],
+                "attachments": []
+            },
+            "36209593-7e78-4511-9542-a11e8e8c6384": {
+                "text": [
+                    "*कोर्स निवडण्याची शेवटची संधी* यावेळी तुमचा इच्छित कोर्स निवडा"
+                ],
+                "attachments": []
+            },
+            "3b03ac7d-254d-46b5-9360-b3e59f24ae77": {
+                "text": [
+                    "."
+                ],
+                "attachments": [
+                    "video:https://storage.googleapis.com/bucket_tap_1/TLM22/Quiz%20Questions/marssf1vid.mp4"
+                ]
+            },
+            "42983aab-54d8-4d7d-875b-f420a7d672f4": {
+                "text": [
+                    "या कोर्समध्ये तुम्ही काय शिकाल हे जाणून घेण्यासाठी, हा व्हिडिओ पहा 😍\n\nhttps://www.youtube.com/watch?v=h3DfxvhGC8w "
+                ],
+                "attachments": []
+            },
+            "4c9a04cb-8217-4128-98ae-ea57c7d2214b": {
+                "text": [
+                    "कृपया एक पर्याय/बटण निवडा"
+                ],
+                "attachments": []
+            },
+            "50b91a48-743c-4165-a915-e9788d61d9c7": {
+                "text": [
+                    "या कोर्समध्ये तुम्ही काय शिकाल हे जाणून घेण्यासाठी, हा व्हिडिओ पहा 😍\n\nhttps://youtu.be/IBvfEWb_3ug"
+                ],
+                "attachments": []
+            },
+            "51fbb3a1-2f83-4850-b615-813f1280ec00": {
+                "text": [
+                    "ठीक आहे! तुम्हाला TAP मध्ये सामील व्हायचे असल्यास मला मेसेज करा 😁 Bye 👋"
+                ],
+                "attachments": []
+            },
+            "524bcbb6-88e6-4d56-85e5-7c97204f4477": {
+                "text": [
+                    "*शेवटची संधी*\n\nया मधून एक विकल्प निवडा 🙏\n"
+                ],
+                "attachments": []
+            },
+            "7abd7ab2-cc01-45bd-a73d-083bbd1f6950": {
+                "text": [
+                    "या कोर्समध्ये तुम्ही काय शिकाल हे जाणून घेण्यासाठी, हा व्हिडिओ पहा 😍\n\nhttps://youtu.be/LZC0zWA9J-Y"
+                ],
+                "attachments": []
+            },
+            "8c994a1e-b6aa-4755-9448-60700f9d1fe3": {
+                "text": [
+                    "या कोर्समध्ये तुम्ही काय शिकाल हे जाणून घेण्यासाठी, हा व्हिडिओ पहा 😍\n\nhttps://youtu.be/KwrLrxz-O-M "
+                ],
+                "attachments": []
+            },
+            "8d32d1c0-4242-4ff7-8747-3e1abd6a0dd2": {
+                "text": [
+                    "शाब्बास🥳  तुमचा कोर्स आहे👇🏻\n*@results.course_studentscertflow1*"
+                ],
+                "attachments": []
+            },
+            "93231196-1e7f-4aa4-960e-6ed49aa052c2": {
+                "text": [
+                    "या कोर्समध्ये तुम्ही काय शिकाल हे जाणून घेण्यासाठी, हा व्हिडिओ पहा 😍\n\nhttps://youtu.be/GIB3yBugZ9E "
+                ],
+                "attachments": []
+            },
+            "9d7cab3f-269e-4907-9b10-36260a1e4679": {
+                "text": [
+                    "अभिनंदन👏🏼 तुम्ही जिंकले *500 जॉईनिंग बोनस पॉइंट* "
+                ],
+                "attachments": []
+            },
+            "af8a2faa-3817-42ae-8632-dc4f7f929d13": {
+                "text": [
+                    "."
+                ],
+                "attachments": [
+                    "sticker:https://storage.googleapis.com/bucket_tap_1/TLM22/Quiz%20Questions/hello.webp"
+                ]
+            },
+            "af93f456-8af3-4ab2-aa6d-f07d7455d022": {
+                "text": [
+                    "या कोर्समध्ये तुम्ही काय शिकाल हे जाणून घेण्यासाठी, हा व्हिडिओ पहा 😍\n\nhttps://youtu.be/hh2wJTfXreY "
+                ],
+                "attachments": []
+            },
+            "b74faaa9-e13f-4aef-814b-6b477ecc5162": {
+                "text": [
+                    "*शेवटची संधी*\n\nकृपया एक पर्याय/बटण निवडा"
+                ],
+                "attachments": []
+            },
+            "bbcdcb8a-38e3-42e5-af71-ad4cbb54e6b2": {
+                "text": [
+                    "या कोर्समध्ये तुम्ही काय शिकाल हे जाणून घेण्यासाठी, हा व्हिडिओ पहा 😍\n\nhttps://youtu.be/2dsHquekJ6g "
+                ],
+                "attachments": []
+            },
+            "d0a35af4-4632-4726-8c06-e12bb24de2d0": {
+                "text": [
+                    "कृपया एक पर्याय/बटण निवडा"
+                ],
+                "attachments": []
+            },
+            "d22b013d-eae1-4f35-9b19-6398b6334e40": {
+                "text": [
+                    "अभिनंदन👏🏼 तुम्ही जिंकले *500 जॉईनिंग बोनस पॉइंट* 🥳\n *तुमची नोंदणी पूर्ण झाली आहे*  ✅  \n\nमी तुम्हाला लवकरच मेसेज पाठवीन, TAP प्रोग्रामबद्दल अधिक सांगण्यासाठी✨"
+                ],
+                "attachments": []
+            },
+            "e297051c-4c44-4ee9-b251-cab7c103b45e": {
+                "text": [
+                    "*शेवटची संधी*\n\nकृपया एक पर्याय/बटण निवडा"
+                ],
+                "attachments": []
+            },
+            "ea0aacf8-1322-44de-a3d8-5a046ab7b699": {
+                "text": [
+                    "हा कोर्स तुमचा अंतिम टॅप कोर्स असेल."
+                ],
+                "attachments": []
+            },
+            "ece79d25-3364-4752-b914-771ec3106f0d": {
+                "text": [
+                    "*शेवटची संधी*\n\nकृपया एक पर्याय/बटण निवडा"
+                ],
+                "attachments": []
+            },
+            "fdffb7fc-cf73-449e-8988-10441f2ed19b": {
+                "text": [
+                    "या कोर्समध्ये तुम्ही काय शिकाल हे जाणून घेण्यासाठी, हा व्हिडिओ पहा 😍\n\nhttps://youtu.be/Rq0EVqGaE9s "
+                ],
+                "attachments": []
+            }
+        },
+        "or": {
+            "20a54406-1fe6-4212-9240-5f68f722cb70": {
+                "text": [
+                    "ମୁଁ ଖୁସି ଯେ ଆପଣ ଚାଟବଟ୍ ପ୍ରୋଗ୍ରାମରେ ଯୋଗଦେବାକୁ ଆଗ୍ରହୀ!    ମୋର ନାମ * ଗ୍ଲାଇଫିକ୍ ଚାବୋଟ୍ * * ତୁମର ନାମ କ'ଣ? *"
+                ],
+                "attachments": []
+            },
+            "2c58040b-3218-450e-997a-6efc3b839b4d": {
+                "arguments": [
+                    "ଓଡିଆ"
+                ]
+            },
+            "2cc498f5-a632-4775-bacf-e67a779bfb43": {
+                "text": [
+                    "ଗ୍ଲାଇଫିକ୍ ଚାଟବଟ୍ ସହିତ ପଞ୍ଜୀକରଣ କରିଥିବାରୁ ଧନ୍ୟବାଦ! 🌟"
+                ],
+                "attachments": []
+            },
+            "4960c570-16bb-4ee7-a8a2-94c4ad7f9dbe": {
+                "arguments": [
+                    "ହଁ"
+                ]
+            },
+            "4c6f6b40-ee3a-4cf5-9c1e-fa1e26f9acb2": {
+                "arguments": [
+                    "ହିନ୍ଦୀ"
+                ]
+            },
+            "51920275-8681-4997-b222-cc45ad5408a5": {
+                "arguments": [
+                    "ନା"
+                ]
+            },
+            "524bcbb6-88e6-4d56-85e5-7c97204f4477": {
+                "text": [
+                    "ଦୟାକରି ନିମ୍ନ ବିକଳ୍ପରୁ ଚୟନ କରନ୍ତୁ👇🏼"
+                ],
+                "attachments": []
+            },
+            "5482d822-88c6-434e-a6f7-1ece26f69e2a": {
+                "arguments": [
+                    "ହଁ"
+                ]
+            },
+            "77f4763d-20af-4bb8-8371-527519864ce0": {
+                "text": [
+                    "ନମସ୍କାର 🙏🏻 କୁ ସ୍ଵାଗତ Glific Chatbot 🥳"
+                ],
+                "attachments": []
+            },
+            "83dd9725-5990-421e-a377-20d7aec7a58a": {
+                "arguments": [
+                    "ଇଂରାଜୀ"
+                ]
+            },
+            "8e79461d-6730-4d57-bc81-0f59060d1b79": {
+                "text": [
+                    "ଦୟାକରି କେବଳ ଦିଆଯାଇଥିବା ବିକଳ୍ପଗୁଡ଼ିକ ମଧ୍ୟରୁ ଗୋଟିଏ ବାଛନ୍ତୁ 👇🏼"
+                ],
+                "attachments": []
+            },
+            "d5985e03-a82b-4825-b931-78b370d5dd61": {
+                "arguments": [
+                    "ନା"
+                ]
+            },
+            "ed4a7a8f-cea7-4307-b38a-ef8ec618f21b": {
+                "text": [
+                    "ଦୟାକରି ନିମ୍ନ ବିକଳ୍ପରୁ ଚୟନ କରନ୍ତୁ👇🏼"
+                ],
+                "attachments": []
+            },
+            "ffaa4252-4fc9-4f78-af60-c32304d63203": {
+                "arguments": [
+                    "ହଁ"
+                ]
+            }
+        }
+    },
+    "spec_version": "13.2.0",
+    "expire_after_minutes": 10080
+}

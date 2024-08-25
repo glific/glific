@@ -1557,6 +1557,71 @@ if Code.ensure_loaded?(Faker) do
           "2" => interactive_content_hin
         }
       })
+
+      interactive_content = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "text" => "Which language do you want me to speak in?
+            आप मुझसे किस भाषा में बात करवाना चाहते हैं?",
+          "header" => "Language_selection"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "English"},
+          %{"type" => "text", "title" => "हिंदी"}
+        ]
+      }
+
+      Repo.insert!(%InteractiveTemplate{
+        label: get_in(interactive_content, ["content", "header"]),
+        type: :quick_reply,
+        interactive_content: interactive_content,
+        organization_id: organization.id,
+        language_id: en.id,
+        send_with_title: false,
+        translations: %{
+          "1" => interactive_content
+        }
+      })
+
+      interactive_content_eng = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "header" => "language_confirmation",
+          "type" => "text",
+          "text" => "Your langauge has been set to *@results.language*. Is it correct?🤔"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "Confirm"},
+          %{"type" => "text", "title" => "Change language"}
+        ]
+      }
+
+      interactive_content_hin = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "header" => "भाषा_पुष्टि",
+          "type" => "text",
+          "text" => "आपकी भाषा *@results.language* पर सेट की गई है। क्या यह सही है?🤔"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "पुष्टि करना"},
+          %{"type" => "text", "title" => "भाषा बदलें"}
+        ]
+      }
+
+      translation = %{
+        "1" => interactive_content_eng,
+        "2" => interactive_content_hin
+      }
+
+      Repo.insert!(%InteractiveTemplate{
+        label: get_in(interactive_content_eng, ["content", "header"]),
+        type: :quick_reply,
+        interactive_content: interactive_content_eng,
+        organization_id: organization.id,
+        language_id: en.id,
+        translations: translation
+      })
     end
 
     @doc false
