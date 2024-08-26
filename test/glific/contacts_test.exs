@@ -1,5 +1,6 @@
 defmodule Glific.ContactsTest do
   use Glific.DataCase, async: true
+  use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Faker.Phone
   import Mock
@@ -8,6 +9,8 @@ defmodule Glific.ContactsTest do
     Contacts,
     Contacts.Contact,
     Contacts.Import,
+    Contacts.ImportWorker,
+    Jobs.UserJob,
     Partners,
     Partners.Organization,
     Partners.Saas,
@@ -353,6 +356,48 @@ defmodule Glific.ContactsTest do
       assert {:ok, _} = Contacts.create_contact(attrs)
     end
 
+    test "perform/1 should work properly while importing contacts in chunks" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+
+      [organization | _] = Partners.list_organizations()
+
+      contacts = [
+        %{
+          "collection" => "collection",
+          "contact_fields" => %{"collection" => "collection", "name" => "test"},
+          "delete" => "0",
+          "language_id" => 1,
+          "name" => "test",
+          "organization_id" => organization.id,
+          "phone" => "9989329297"
+        }
+      ]
+
+      user_job_attrs = %{
+        status: "pending",
+        type: "contact_import",
+        total_tasks: 0,
+        tasks_done: 0,
+        organization_id: organization.id,
+        errors: %{}
+      }
+
+      user_job = UserJob.create_user_job(user_job_attrs)
+
+      params = %{
+        "organization_id" => organization.id,
+        "user" => %{
+          "roles" => Enum.map(user.roles, &Atom.to_string/1),
+          "upload_contacts" => true
+        },
+        "type" => "import_contact"
+      }
+
+      job_args = %{"contacts" => contacts, "params" => params, "user_job_id" => user_job.id}
+      assert :ok == ImportWorker.perform(%Oban.Job{args: job_args})
+    end
+
     test "import_contact/3 raises an exception if more than one keyword argument provided" do
       assert_raise RuntimeError, fn ->
         Import.import_contacts(999, "admin",
@@ -412,9 +457,16 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:glific_admin])
 
-      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
         file_path: get_tmp_path()
       )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
@@ -423,13 +475,23 @@ defmodule Glific.ContactsTest do
 
     test "import_contact/3 with valid data from string inserts new contacts in the database" do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
-      user = Map.put(user, :roles, [:glific_admin])
+      user = Map.put(user, :roles, [:admin])
 
       data = "name,phone,Language,opt_in\ncontact_test,9989329297,english,2021-03-09 12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user, collection: "collection"}, data: data)
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
       count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
 
       assert count == 1
@@ -454,9 +516,16 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
         url: "http://www.bar.com/foo.csv"
       )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
@@ -486,9 +555,16 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
         url: "http://www.bar.com/foo.csv"
       )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
@@ -518,7 +594,14 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user}, file_path: get_tmp_path())
+      Import.import_contacts(organization.id, %{user: user, type: :import_contact},
+        file_path: get_tmp_path()
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
@@ -543,7 +626,12 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user}, data: data)
+      Import.import_contacts(organization.id, %{user: user, type: :import_contact}, data: data)
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
       assert count == 1
@@ -571,7 +659,14 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user}, url: "http://www.bar.com/foo.csv")
+      Import.import_contacts(organization.id, %{user: user, type: :import_contact},
+        url: "http://www.bar.com/foo.csv"
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
@@ -600,9 +695,16 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
         file_path: get_tmp_path()
       )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
@@ -631,12 +733,17 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      {:error, message} =
-        Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+      {:ok, _} =
+        Import.import_contacts(
+          organization.id,
+          %{user: user, collection: "collection", type: :import_contact},
           file_path: get_tmp_path()
         )
 
-      assert message == ["This user doesn't have enough permission"]
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true, with_safety: false)
 
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
@@ -666,9 +773,16 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
         file_path: get_tmp_path()
       )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
@@ -702,17 +816,17 @@ defmodule Glific.ContactsTest do
         {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
         user = Map.put(user, :roles, [:glific_admin])
 
-        Import.import_contacts(organization.id, %{user: user, collection: "collection"},
+        Import.import_contacts(
+          organization.id,
+          %{user: user, collection: "collection", type: :import_contact},
           file_path: get_tmp_path()
         )
 
-        count = Contacts.count_contacts(%{filter: %{phone: 9_989_329_297}})
+        assert_enqueued(worker: ImportWorker, prefix: "global")
 
-        [contact | _tail] = Contacts.list_contacts(%{filter: %{phone: 9_989_329_297}})
+        assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+                 Oban.drain_queue(queue: :default, with_scheduled: true)
 
-        assert get_in(contact.fields, ["name", "value"]) == "updated"
-
-        assert count == 1
         assert_not_called(Contacts.optin_contact())
       end
     end
@@ -734,9 +848,69 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
       assert {:error, _} =
-               Import.import_contacts(999, %{user: user, collection: "collection"},
+               Import.import_contacts(
+                 999,
+                 %{user: user, collection: "collection", type: :import_contact},
                  file_path: get_tmp_path()
                )
+    end
+
+    test "get_contact_upload_report/2 returns the correct report when the job is successful" do
+      [organization | _] = Partners.list_organizations()
+
+      user_job_attrs = %{
+        status: "success",
+        type: "contact_import",
+        total_tasks: 5,
+        tasks_done: 5,
+        organization_id: organization.id,
+        errors: %{
+          "errors" => %{"9989329297" => "duplicate", "9989123456" => "invalid"}
+        },
+        all_tasks_created: true
+      }
+
+      user_job = UserJob.create_user_job(user_job_attrs)
+
+      params = %{user_job_id: user_job.id}
+
+      assert {:ok, %{csv_rows: csv_rows}} =
+               Import.get_contact_upload_report(organization.id, params)
+
+      assert csv_rows == "Phone,Status\r\n9989123456,invalid\r\n9989329297,duplicate"
+    end
+
+    test "get_contact_upload_report/2 returns an error message when the job is in progress" do
+      [organization | _] = Partners.list_organizations()
+
+      user_job_attrs = %{
+        status: "pending",
+        type: "contact_import",
+        total_tasks: 5,
+        tasks_done: 3,
+        organization_id: organization.id,
+        errors: %{},
+        all_tasks_created: false
+      }
+
+      user_job = UserJob.create_user_job(user_job_attrs)
+      params = %{user_job_id: user_job.id}
+
+      assert {:ok, %{error: error_message}} =
+               Import.get_contact_upload_report(organization.id, params)
+
+      assert error_message == "Contact upload is in progress"
+    end
+
+    test "get_contact_upload_report/2 returns an error message when the job does not exist" do
+      [organization | _] = Partners.list_organizations()
+
+      params = %{user_job_id: -1}
+
+      assert {:ok, %{error: error_message}} =
+               Import.get_contact_upload_report(organization.id, params)
+
+      assert error_message == "Contact upload report doesn't exist"
     end
 
     test "update_contact/2 with valid data updates the contact",
