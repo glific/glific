@@ -169,6 +169,40 @@ defmodule Glific.Seeds.SeedsFlows do
     add_flow(organization, data, uuid_map)
   end
 
+  def add_template_flows(organizations) do
+    organizations
+    |> Enum.each(fn organization ->
+      Glific.Repo.put_organization_id(organization.id)
+      add_temp_flow(organization)
+    end)
+  end
+
+  defp get_temp_data(organization) do
+    uuid_map = %{
+      location: generate_uuid(organization, "f78ba8c7-0215-439c-9588-f79d5ba4ee65"),
+      other_options: generate_uuid(organization, "6c362d4a-01cd-47cb-a03c-1dfb294faa63"),
+      registration_language: generate_uuid(organization, "9557da8f-dab8-470c-96cf-1d1a214c2f23"),
+      gpt_vision: generate_uuid(organization, "8c18c6db-deb7-47c0-9413-31ca6fd142d8")
+    }
+
+    data = [
+      {"Location Flow", ["map"], uuid_map.location, true, "Location.json"},
+      {"Other options flow", ["otheroptionsflow"], uuid_map.other_options, true,
+       "other_options.json"},
+      {"Registration_Language flow", ["languageselection"], uuid_map.registration_language, true,
+       "registration_language.json"},
+      {"GPT_Vision flow", ["gptvisionflow"], uuid_map.gpt_vision, true, "gpt_vision.json"}
+    ]
+
+    {uuid_map, data}
+  end
+
+  defp add_temp_flow(organization) do
+    {uuid_map, data} = get_temp_data(organization) |> IO.inspect()
+
+    add_flow(organization, data, uuid_map)
+  end
+
   @doc false
   @spec generate_uuid(Organization.t(), Ecto.UUID.t()) :: Ecto.UUID.t()
   def generate_uuid(organization, default) do
@@ -304,8 +338,7 @@ defmodule Glific.Seeds.SeedsFlows do
         generate_uuid(organization, "15666d20-7ba9-4698-adf1-50e91cee2b6b"),
       ab_test: generate_uuid(organization, "5f3fd8c6-2ec3-4945-8e7c-314db8c04c31"),
       # location: generate_uuid(organization, "f78ba8c7-0215-439c-9588-f79d5ba4ee65"),
-      other_options: generate_uuid(organization, "6c362d4a-01cd-47cb-a03c-1dfb294faa63"),
-      registration_language: generate_uuid(organization, "9557da8f-dab8-470c-96cf-1d1a214c2f23")
+      other_options: generate_uuid(organization, "6c362d4a-01cd-47cb-a03c-1dfb294faa63")
     }
 
     data = [
@@ -323,8 +356,7 @@ defmodule Glific.Seeds.SeedsFlows do
        false, "multiple_profile_creation.json"},
       {"AB Test Workflow", ["abtest"], uuid_map.ab_test, false, "ab_test.json"},
       # {"Location Flow", ["map"], uuid_map.location, true, "optin.json"},
-      {"Other options flow", ["otheroptionsflow"], uuid_map.other_options, true, "optout.json"},
-      {"Registration_Language flow", ["languageselection"], uuid_map.registration_language, true, "registration_language.json"}
+      {"Other options flow", ["otheroptionsflow"], uuid_map.other_options, true, "optout.json"}
     ]
 
     {uuid_map, data}
