@@ -21,38 +21,35 @@ defmodule Glific.Clients.CommonWebhook do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_chat_gpt", fields) do
-    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
-    question_text = fields["question_text"]
-    prompt = Map.get(fields, "prompt", nil)
+    with false <- fields["question_text"] in [nil, ""],
+         {:ok, fields} <- validate_response_format(fields) do
+      org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+      question_text = fields["question_text"]
+      prompt = Map.get(fields, "prompt", nil)
 
-    # ID of the model to use.
-    model = Map.get(fields, "model", "gpt-3.5-turbo")
+      # ID of the model to use.
+      model = Map.get(fields, "model", "gpt-3.5-turbo") |> IO.inspect()
 
-    # The sampling temperature, between 0 and 1.
-    # Higher values like 0.8 will make the output more random,
-    # while lower values like 0.2 will make it more focused and deterministic.
-    temperature = Map.get(fields, "temperature", 0)
+      # The sampling temperature, between 0 and 1.
+      # Higher values like 0.8 will make the output more random,
+      # while lower values like 0.2 will make it more focused and deterministic.
+      temperature = Map.get(fields, "temperature", 0)
 
-    params = %{
-      "question_text" => question_text,
-      "prompt" => prompt,
-      "model" => model,
-      "temperature" => temperature
-    }
-
-    if question_text in [nil, ""] do
-      %{
-        success: false,
-        parsed_msg: "Could not parsed"
+      params = %{
+        "question_text" => question_text,
+        "prompt" => prompt,
+        "model" => model,
+        "temperature" => temperature,
+        "response_format" => Map.get(fields, "response_format", nil)
       }
-    else
+
       ChatGPT.get_api_key(org_id)
       |> ChatGPT.parse(params)
       |> case do
         {:ok, text} ->
           %{
             success: true,
-            parsed_msg: text
+            parsed_msg: parse_gpt_response(fields, text)
           }
 
         {_, error} ->
@@ -61,6 +58,15 @@ defmodule Glific.Clients.CommonWebhook do
             parsed_msg: error
           }
       end
+    else
+      true ->
+        %{
+          success: false,
+          parsed_msg: "Could not parsed"
+        }
+
+      {:error, err} ->
+        err
     end
   end
 
@@ -82,11 +88,11 @@ defmodule Glific.Clients.CommonWebhook do
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_gpt_vision", fields) do
     url = fields["url"]
-
     # validating if the url passed is a valid image url
     with %{is_valid: true} <- Glific.Messages.validate_media(url, "image"),
+         {:ok, fields} <- validate_response_format(fields),
          {:ok, response} <- ChatGPT.gpt_vision(fields) do
-      %{success: true, response: response}
+      %{success: true, response: parse_gpt_response(fields, response)}
     else
       %{is_valid: false, message: message} ->
         Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{message}")
@@ -421,6 +427,31 @@ defmodule Glific.Clients.CommonWebhook do
       error ->
         Logger.error("Error received from Bhasini: #{error["message"]}")
         Map.put(error, "success", false)
+    end
+  end
+
+  def validate_response_format(%{"response_format" => %{"type" => "json_schema"}} = fields) do
+    # Support for json_schema is only since gpt-4o-2024-08-06
+    {:ok, Map.put(fields, "model", "gpt-4o-2024-08-06")}
+  end
+
+  def validate_response_format(%{"response_format" => %{"type" => "json_object"}} = fields),
+    do: {:ok, fields}
+
+  def validate_response_format(%{"response_format" => _}),
+    do: {:error, "response_format type should be json_schema or json_object"}
+
+  def validate_response_format(fields), do: {:ok, fields}
+
+  @spec parse_gpt_response(map(), String.t()) :: any()
+  defp parse_gpt_response(fields, response) do
+    response_format = Map.get(fields, "response_format", nil)
+
+    case response_format do
+      nil -> response
+      %{"type" => "json_schema"} -> Jason.decode!(response)
+      %{"type" => "json_object"} -> Jason.decode!(response)
+      _ -> response
     end
   end
 end

@@ -42,7 +42,8 @@ defmodule Glific.OpenAI.ChatGPT do
       |> Map.merge(%{
         "messages" => add_prompt(params),
         "model" => params["model"],
-        "temperature" => params["temperature"]
+        "temperature" => params["temperature"],
+        "response_format" => params["response_format"]
       })
 
     middleware = [
@@ -84,7 +85,7 @@ defmodule Glific.OpenAI.ChatGPT do
   def gpt_vision(params \\ %{}) do
     url = @endpoint <> "/chat/completions"
     api_key = Glific.get_open_ai_key()
-    model = Map.get(params, "model", "gpt-4-turbo")
+    model = Map.get(params, "model", "gpt-4-turbo") |> IO.inspect(label: :model)
 
     data =
       %{
@@ -106,7 +107,8 @@ defmodule Glific.OpenAI.ChatGPT do
               }
             ]
           }
-        ]
+        ],
+        "response_format" => Map.get(params, "response_format", nil)
       }
 
     middleware = [
