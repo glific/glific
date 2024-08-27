@@ -48,6 +48,18 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
             status: 200
           }
 
+        String.contains?(env.body, "@contact.name") ->
+          %Tesla.Env{
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "@संपर्क नाम"}
+                ]
+              }
+            },
+            status: 200
+          }
+
         true ->
           %Tesla.Env{
             status: 200,
@@ -123,7 +135,7 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
     assert result == ["World", "Hello", "translation not available for long messages"]
   end
 
-  test "translate/3 translation of contact variables" do
+  test "translate/3 translation of contact variables with text" do
     org_id = Repo.get_organization_id()
 
     {:ok, translated_text} =
@@ -135,5 +147,21 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
       )
 
     assert translated_text == ["@contact.name क्या यह आपका नाम है"]
+  end
+
+  test "translate/3 translation of contact variables" do
+    org_id = Repo.get_organization_id()
+
+    {:ok, translated_text} =
+      GoogleTranslate.translate(
+        ["@contact.name"],
+        "en",
+        "hi",
+        org_id: org_id
+      )
+
+    expected_result = ["@contact.name"]
+
+    assert translated_text == expected_result
   end
 end
