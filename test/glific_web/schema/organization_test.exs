@@ -411,6 +411,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     language_1 = Fixtures.language_fixture()
     language_2 = Fixtures.language_fixture()
 
+    #default language should not be in active language
     result =
       auth_query_gql_by(:update, user,
         variables: %{
@@ -427,7 +428,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
     updated_organization = get_in(query_data, [:data, "updateOrganization", "organization"])
     assert updated_organization["default_language"]["id"] == "#{language_1.id}"
     active_language_id = get_in(updated_organization, ["active_languages", Access.at(0), "id"])
-    assert active_language_id in ["#{language_1.id}", "#{language_2.id}"]
+    assert active_language_id == "#{language_2.id}"
+    assert active_language_id != "#{language_1.id}"
 
     # active languages should be subset of supported languages
     result =
@@ -449,23 +451,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
       get_in(query_data, [:data, "updateOrganization", "errors", Access.at(1), "message"])
 
     assert message_1 =~ "has an invalid entry" || message_2 =~ "has an invalid entry"
-
-    # default language should be included in active language list
-    result =
-      auth_query_gql_by(:update, user,
-        variables: %{
-          "id" => organization.id,
-          "input" => %{
-            "default_language_id" => language_1.id,
-            "active_language_ids" => [language_2.id]
-          }
-        }
-      )
-
-    assert {:ok, query_data} = result
-
-    message = get_in(query_data, [:data, "updateOrganization", "errors", Access.at(0), "message"])
-    assert message =~ "default language must be updated according to active languages"
   end
 
   @default_goth_json """
