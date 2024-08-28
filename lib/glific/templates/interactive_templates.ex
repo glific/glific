@@ -164,7 +164,7 @@ defmodule Glific.Templates.InteractiveTemplates do
          )
        end) do
       {:error,
-       "Button texts cannot contain any markdown characters (e.g., **bold**, _italics_, etc)."}
+       "Button text cannot contain any markdown characters (e.g., **bold**, _italics_, etc)."}
     else
       :ok
     end
