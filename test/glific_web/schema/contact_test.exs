@@ -526,7 +526,8 @@ defmodule GlificWeb.Schema.ContactTest do
     assert count == 1
   end
 
-  test "test success for uploading contact for admin, contact won't upload since phone is not a valid one", %{manager: user} do
+  test "test success for uploading contact for admin, contact won't upload since phone is not a valid one",
+       %{manager: user} do
     user = Map.put(user, :roles, [:admin])
 
     test_name = "test2"
