@@ -69,6 +69,8 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   def send_message(org_id, payload) do
     with {:ok, credentials} <- get_credentials(org_id) do
       url = @gupshup_msg_url <> "/msg"
+      IO.inspect(url)
+      IO.inspect(payload)
       gupshup_post(url, payload, credentials.api_key)
     end
   end
