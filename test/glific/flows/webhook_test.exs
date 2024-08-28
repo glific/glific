@@ -12,8 +12,11 @@ defmodule Glific.Flows.WebhookTest do
   alias Glific.{
     Clients.CommonWebhook,
     Fixtures,
+    Messages,
     Seeds.SeedsDev
   }
+
+  import Mock
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -317,5 +320,227 @@ defmodule Glific.Flows.WebhookTest do
     refute result[:success]
     refute is_nil(result[:error])
     assert result[:error] == "Received status code 500"
+  end
+
+  @tag :respo
+  test "parse_via_gpt_vision without response_format params, trying to get valid json" do
+    with_mock(
+      Messages,
+      validate_media: fn _, _ -> %{is_valid: true, message: "success"} end
+    ) do
+      Tesla.Mock.mock(fn
+        %{url: "https://api.openai.com/v1/chat/completions"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "choices" => [
+                %{
+                  "message" => %{
+                    "content" => "```json\n{\n  \"steps\": 4,\n  \"answer\": 10\n}\n```"
+                  }
+                }
+              ]
+            }
+          }
+      end)
+
+      fields = %{
+        "prompt" =>
+          "ignore the image, value of steps is 4 and value of answer is 10, give in valid json",
+        "url" =>
+          "https://fastly.picsum.photos/id/145/200/300.jpg?hmac=mIsOtHDzbaNzDdNRa6aQCd5CHCVewrkTO5B1D4aHMB8",
+        "model" => "gpt-4o"
+      }
+
+      assert %{success: true, response: "```json\n{\n  \"steps\": 4,\n  \"answer\": 10\n}\n```"} =
+               CommonWebhook.webhook("parse_via_gpt_vision", fields)
+    end
+  end
+
+  @tag :respo
+  test "parse_via_gpt_vision with response_format params type json_object, trying to get valid json" do
+    with_mock(
+      Messages,
+      validate_media: fn _, _ -> %{is_valid: true, message: "success"} end
+    ) do
+      Tesla.Mock.mock(fn
+        %{url: "https://api.openai.com/v1/chat/completions"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "choices" => [
+                %{
+                  "message" => %{
+                    "content" => "{\n  \"steps\": 4,\n  \"answer\": 10\n}"
+                  }
+                }
+              ]
+            }
+          }
+      end)
+
+      fields = %{
+        "prompt" =>
+          "ignore the image, value of steps is 4 and value of answer is 10, give in valid json",
+        "url" =>
+          "https://fastly.picsum.photos/id/145/200/300.jpg?hmac=mIsOtHDzbaNzDdNRa6aQCd5CHCVewrkTO5B1D4aHMB8",
+        "model" => "gpt-4o",
+        "response_format" => %{"type" => "json_object"}
+      }
+
+      assert %{success: true, response: %{"steps" => 4, "answer" => 10}} =
+               CommonWebhook.webhook("parse_via_gpt_vision", fields)
+    end
+  end
+
+  @tag :respo
+  test "parse_via_gpt_vision with invalid response_format param, trying to get valid json" do
+    with_mock(
+      Messages,
+      validate_media: fn _, _ -> %{is_valid: true, message: "success"} end
+    ) do
+      Tesla.Mock.mock(fn
+        %{url: "https://api.openai.com/v1/chat/completions"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "choices" => [
+                %{
+                  "message" => %{
+                    "content" => "{\n  \"steps\": 4,\n  \"answer\": 10\n}"
+                  }
+                }
+              ]
+            }
+          }
+      end)
+
+      fields = %{
+        "prompt" =>
+          "ignore the image, value of steps is 4 and value of answer is 10, give in valid json",
+        "url" =>
+          "https://fastly.picsum.photos/id/145/200/300.jpg?hmac=mIsOtHDzbaNzDdNRa6aQCd5CHCVewrkTO5B1D4aHMB8",
+        "model" => "gpt-4o",
+        # the response format is invalid
+        "response_format" => %{"type" => "json_objectz"}
+      }
+
+      assert "response_format type should be json_schema or json_object" =
+               CommonWebhook.webhook("parse_via_gpt_vision", fields)
+    end
+  end
+
+  @tag :respo
+  test "parse_via_gpt_vision with response_format param as json_schema, trying to get valid json" do
+    with_mock(
+      Messages,
+      validate_media: fn _, _ -> %{is_valid: true, message: "success"} end
+    ) do
+      Tesla.Mock.mock(fn
+        %{url: "https://api.openai.com/v1/chat/completions"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "choices" => [
+                %{
+                  "message" => %{
+                    "content" => "{\n  \"steps\": \"4\",\n  \"answer\": \"10\"\n}"
+                  }
+                }
+              ]
+            }
+          }
+      end)
+
+      fields = %{
+        "prompt" =>
+          "ignore the image, value of steps is 4 and value of answer is 10, give in valid json",
+        "url" =>
+          "https://fastly.picsum.photos/id/145/200/300.jpg?hmac=mIsOtHDzbaNzDdNRa6aQCd5CHCVewrkTO5B1D4aHMB8",
+        "model" => "gpt-4o",
+        "response_format" => %{
+          "type" => "json_schema",
+          "json_schema" => %{
+            "name" => "schemaing",
+            "strict" => true,
+            "schema" => %{
+              "type" => "object",
+              "properties" => %{
+                "steps" => %{
+                  "type" => "string"
+                },
+                "answer" => %{
+                  "type" => "string"
+                }
+              },
+              "required" => [
+                "steps",
+                "answer"
+              ],
+              "additionalProperties" => false
+            }
+          }
+        }
+      }
+
+      assert %{success: true, response: %{"steps" => "4", "answer" => "10"}} =
+               CommonWebhook.webhook("parse_via_gpt_vision", fields)
+    end
+  end
+
+  @tag :respo
+  test "parse_via_gpt_vision with response_format param as invalid json_schema, trying to get valid json" do
+    with_mock(
+      Messages,
+      validate_media: fn _, _ -> %{is_valid: true, message: "success"} end
+    ) do
+      Tesla.Mock.mock(fn
+        %{url: "https://api.openai.com/v1/chat/completions"} ->
+          %Tesla.Env{
+            status: 400,
+            body: %{
+              "error" => %{
+                "message" =>
+                  "Invalid schema for response_format 'schemaing': In context=(), 'additionalProperties' is required to be supplied and to be false."
+              }
+            }
+          }
+      end)
+
+      fields = %{
+        "prompt" =>
+          "ignore the image, value of steps is 4 and value of answer is 10, give in valid json",
+        "url" =>
+          "https://fastly.picsum.photos/id/145/200/300.jpg?hmac=mIsOtHDzbaNzDdNRa6aQCd5CHCVewrkTO5B1D4aHMB8",
+        "model" => "gpt-4o",
+        "response_format" => %{
+          "type" => "json_schema",
+          "json_schema" => %{
+            "name" => "schemaing",
+            "strict" => true,
+            "schema" => %{
+              "type" => "object",
+              "properties" => %{
+                "steps" => %{
+                  "type" => "string"
+                },
+                "answer" => %{
+                  "type" => "string"
+                }
+              },
+              "required" => [
+                "steps",
+                "answer"
+              ]
+              # additionalProperties is mandatory
+              # "additionalProperties" => false
+            }
+          }
+        }
+      }
+
+      assert "Invalid schema for response_format" <> _ =
+               CommonWebhook.webhook("parse_via_gpt_vision", fields)
+    end
   end
 end

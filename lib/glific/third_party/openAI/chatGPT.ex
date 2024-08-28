@@ -85,7 +85,7 @@ defmodule Glific.OpenAI.ChatGPT do
   def gpt_vision(params \\ %{}) do
     url = @endpoint <> "/chat/completions"
     api_key = Glific.get_open_ai_key()
-    model = Map.get(params, "model", "gpt-4-turbo") |> IO.inspect(label: :model)
+    model = Map.get(params, "model", "gpt-4-turbo")
 
     data =
       %{
@@ -108,7 +108,7 @@ defmodule Glific.OpenAI.ChatGPT do
             ]
           }
         ],
-        "response_format" => Map.get(params, "response_format", nil)
+        "response_format" => params["response_format"]
       }
 
     middleware = [
@@ -125,6 +125,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @spec handle_response(tuple()) :: tuple()
   defp handle_response(response) do
     response
+    # |> IO.inspect()
     |> case do
       {:ok, %Tesla.Env{status: 200, body: %{"choices" => []} = body}} ->
         {:error, "Got empty response #{inspect(body)}"}

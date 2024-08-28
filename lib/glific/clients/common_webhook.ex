@@ -22,13 +22,13 @@ defmodule Glific.Clients.CommonWebhook do
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_chat_gpt", fields) do
     with false <- fields["question_text"] in [nil, ""],
-         {:ok, fields} <- validate_response_format(fields) do
+         {:ok, fields} <- parse_response_format(fields) do
       org_id = Glific.parse_maybe_integer!(fields["organization_id"])
       question_text = fields["question_text"]
       prompt = Map.get(fields, "prompt", nil)
 
       # ID of the model to use.
-      model = Map.get(fields, "model", "gpt-3.5-turbo") |> IO.inspect()
+      model = Map.get(fields, "model", "gpt-3.5-turbo")
 
       # The sampling temperature, between 0 and 1.
       # Higher values like 0.8 will make the output more random,
@@ -90,7 +90,7 @@ defmodule Glific.Clients.CommonWebhook do
     url = fields["url"]
     # validating if the url passed is a valid image url
     with %{is_valid: true} <- Glific.Messages.validate_media(url, "image"),
-         {:ok, fields} <- validate_response_format(fields),
+         {:ok, fields} <- parse_response_format(fields),
          {:ok, response} <- ChatGPT.gpt_vision(fields) do
       %{success: true, response: parse_gpt_response(fields, response)}
     else
@@ -430,24 +430,22 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  def validate_response_format(%{"response_format" => %{"type" => "json_schema"}} = fields) do
+  def parse_response_format(%{"response_format" => %{"type" => "json_schema"}} = fields) do
     # Support for json_schema is only since gpt-4o-2024-08-06
     {:ok, Map.put(fields, "model", "gpt-4o-2024-08-06")}
   end
 
-  def validate_response_format(%{"response_format" => %{"type" => "json_object"}} = fields),
+  def parse_response_format(%{"response_format" => %{"type" => "json_object"}} = fields),
     do: {:ok, fields}
 
-  def validate_response_format(%{"response_format" => _}),
+  def parse_response_format(%{"response_format" => _}),
     do: {:error, "response_format type should be json_schema or json_object"}
 
-  def validate_response_format(fields), do: {:ok, fields}
+  def parse_response_format(fields), do: {:ok, Map.put(fields, "response_format", nil)}
 
   @spec parse_gpt_response(map(), String.t()) :: any()
   defp parse_gpt_response(fields, response) do
-    response_format = Map.get(fields, "response_format", nil)
-
-    case response_format do
+    case Map.get(fields, "response_format") do
       nil -> response
       %{"type" => "json_schema"} -> Jason.decode!(response)
       %{"type" => "json_object"} -> Jason.decode!(response)
