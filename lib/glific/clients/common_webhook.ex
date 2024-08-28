@@ -21,52 +21,19 @@ defmodule Glific.Clients.CommonWebhook do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_chat_gpt", fields) do
-    with false <- fields["question_text"] in [nil, ""],
-         {:ok, fields} <- parse_response_format(fields) do
-      org_id = Glific.parse_maybe_integer!(fields["organization_id"])
-      question_text = fields["question_text"]
-      prompt = Map.get(fields, "prompt", nil)
-
-      # ID of the model to use.
-      model = Map.get(fields, "model", "gpt-3.5-turbo")
-
-      # The sampling temperature, between 0 and 1.
-      # Higher values like 0.8 will make the output more random,
-      # while lower values like 0.2 will make it more focused and deterministic.
-      temperature = Map.get(fields, "temperature", 0)
-
-      params = %{
-        "question_text" => question_text,
-        "prompt" => prompt,
-        "model" => model,
-        "temperature" => temperature,
-        "response_format" => Map.get(fields, "response_format", nil)
+    with {:ok, fields} <- parse_chatgpt_fields(fields),
+         {:ok, fields} <- parse_response_format(fields),
+         {:ok, text} <- ChatGPT.get_api_key(fields["organization_id"]) |> ChatGPT.parse(fields) do
+      %{
+        success: true,
+        parsed_msg: parse_gpt_response(fields, text)
       }
-
-      ChatGPT.get_api_key(org_id)
-      |> ChatGPT.parse(params)
-      |> case do
-        {:ok, text} ->
-          %{
-            success: true,
-            parsed_msg: parse_gpt_response(fields, text)
-          }
-
-        {_, error} ->
-          %{
-            success: false,
-            parsed_msg: error
-          }
-      end
     else
-      true ->
+      {:error, error} ->
         %{
           success: false,
-          parsed_msg: "Could not parsed"
+          parsed_msg: error
         }
-
-      {:error, err} ->
-        err
     end
   end
 
@@ -450,6 +417,26 @@ defmodule Glific.Clients.CommonWebhook do
       %{"type" => "json_schema"} -> Jason.decode!(response)
       %{"type" => "json_object"} -> Jason.decode!(response)
       _ -> response
+    end
+  end
+
+  @spec parse_chatgpt_fields(map()) :: {:ok, map()} | {:error, String.t()}
+  defp parse_chatgpt_fields(fields) do
+    if fields["question_text"] in [nil, ""] do
+      {:error, "question_text is empty"}
+    else
+      {:ok,
+       %{
+         "organization_id" => Glific.parse_maybe_integer!(fields["organization_id"]),
+         "question_text" => Map.get(fields, "question_text"),
+         "prompt" => Map.get(fields, "prompt", nil),
+         # ID of the model to use.
+         "model" => Map.get(fields, "model", "gpt-3.5-turbo"),
+         # The sampling temperature, between 0 and 1.
+         # Higher values like 0.8 will make the output more random,
+         # while lower values like 0.2 will make it more focused and deterministic.
+         "temperature" => Map.get(fields, "temperature", 0)
+       }}
     end
   end
 end

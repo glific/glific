@@ -543,4 +543,8 @@ defmodule Glific.Flows.WebhookTest do
                CommonWebhook.webhook("parse_via_gpt_vision", fields)
     end
   end
+
+  test "parse_via_chat_gpt, failed due to empty question_text" do
+
+  end
 end
