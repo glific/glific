@@ -4,6 +4,7 @@ defmodule Glific.Contacts.Import do
   """
   import Ecto.Query, warn: false
 
+  alias Glific.Settings.Language
   alias GlificWeb.Schema.Middleware.Authorize
 
   alias Glific.{
@@ -400,16 +401,24 @@ defmodule Glific.Contacts.Import do
   end
 
   @spec add_language(map(), String.t() | nil) :: map()
-  defp add_language(results, nil), do: results
+  defp add_language(results, language) when language in [nil, ""] do
+    add_default_language(results)
+  end
 
   defp add_language(results, language) do
     case Settings.get_language_by_label_or_locale(language) do
       [] ->
-        results
+        add_default_language(results)
 
       [lang | _] ->
         Map.put(results, :language_id, lang.id)
     end
+  end
+
+  @spec add_default_language(map()) :: map()
+  defp add_default_language(results) do
+    {:ok, en} = Repo.fetch_by(Language, %{label_locale: "English"})
+    Map.put(results, :language_id, en.id)
   end
 
   @spec get_bsp_limit(non_neg_integer()) :: non_neg_integer()
