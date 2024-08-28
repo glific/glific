@@ -48,15 +48,19 @@ defmodule Glific.Contacts.ImportWorker do
 
     Repo.put_process_state(params.organization_id)
 
-    validation_errors =
-      Enum.reduce(contacts, %{}, fn contact, acc ->
-        phone_number = Map.get(contact, "phone")
-        errors = validate_phone(phone_number)
-        Map.update(acc, :errors, errors, &Map.merge(&1, errors))
+    {validation_errors, valid_contacts} =
+      Enum.reduce(contacts, {%{}, []}, fn contact, {acc, valid_contacts} ->
+        case validate_contact(contact) do
+          errors when errors == %{} ->
+            {acc, [contact | valid_contacts]}
+
+          errors ->
+            {Map.update(acc, :errors, errors, &Map.merge(&1, errors)), valid_contacts}
+        end
       end)
 
     contacts =
-      Enum.map(contacts, fn contact ->
+      Enum.map(valid_contacts, fn contact ->
         for {key, value} <- contact, into: %{}, do: {String.to_existing_atom(key), value}
       end)
 
@@ -85,20 +89,25 @@ defmodule Glific.Contacts.ImportWorker do
     :ok
   end
 
-  @spec validate_phone(String.t() | nil) :: map()
-  defp validate_phone(nil) do
+  @spec validate_contact(map()) :: map()
+  defp validate_contact(%{"phone" => phone}) when phone in [nil, ""] do
     %{"phone" => "Phone number is missing."}
   end
 
-  defp validate_phone(phone) do
-    case ExPhoneNumber.parse(phone, "IN") do
-      {:ok, _phone} ->
-        %{}
-
-      _ ->
-        %{phone => "Phone number is not valid."}
+  defp validate_contact(%{"phone" => phone, "name" => name}) do
+    with {:ok, _} <- ExPhoneNumber.parse(phone, "IN") do
+      validate_name(name, phone)
+    else
+      {:error, reason} -> %{phone => "Phone number is not valid because #{reason}."}
     end
   end
+
+  @spec validate_name(String.t(), String.t()) :: map()
+  defp validate_name(name, phone) when name in [nil, ""] do
+    %{phone => "Contact name is empty"}
+  end
+
+  defp validate_name(_name, _phone), do: %{}
 
   @spec process_contact(map(), map()) :: {:ok, map()} | {:error, map()}
   defp process_contact(contact, params) do

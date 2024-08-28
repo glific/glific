@@ -1345,5 +1345,55 @@ defmodule Glific.ContactsTest do
     test "getting saas variables" do
       assert "91111222333" == Saas.phone()
     end
+
+    @tag :invalid
+    test "import_contact/3 with invalid name data should not inserts new contact in the database" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+
+      data = "name,phone,Language,opt_in\n,9989329297,english,2021-03-09 12:34:25\n"
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
+
+      assert count == 0
+    end
+
+    @tag :invalid
+    test "import_contact/3 with invalid phone data should not inserts new contact in the database" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+
+      data = "name,phone,Language,opt_in\n,abcdef,english,2021-03-09 12:34:25\n"
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{phone: "abcdef"}})
+
+      assert count == 0
+    end
   end
 end
