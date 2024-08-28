@@ -113,16 +113,64 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec create_interactive_template(map()) ::
           {:ok, InteractiveTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_interactive_template(attrs) do
-    case validate_interactive_content_length(attrs) do
-      :ok ->
-        %InteractiveTemplate{}
-        |> InteractiveTemplate.changeset(attrs)
-        |> Repo.insert()
-
+    with :ok <- contains_markdown_syntax?(attrs.interactive_content),
+         :ok <- validate_interactive_content_length(attrs) do
+      %InteractiveTemplate{}
+      |> InteractiveTemplate.changeset(attrs)
+      |> Repo.insert()
+    else
       {:error, message} ->
         {:error, message}
     end
   end
+
+  @spec contains_markdown_syntax?(map()) :: :ok | {:error, String.t()}
+  defp contains_markdown_syntax?(%{"content" => _content, "options" => options}) do
+    check_options_for_markdown(options)
+  end
+
+  defp contains_markdown_syntax?(%{
+         "body" => _body,
+         "globalButtons" => _global_buttons,
+         "items" => items
+       }) do
+    options_lists =
+      Enum.flat_map(items, fn item ->
+        Map.get(item, "options", []) ++
+          Enum.flat_map(item, fn {key, value} ->
+            if key != "options" and is_list(value), do: value, else: []
+          end)
+      end)
+
+    check_options_for_markdown(options_lists)
+  end
+
+  defp contains_markdown_syntax?(%{
+         "action" => _action,
+         "body" => _body,
+         "type" => "location_request_message"
+       }) do
+    :ok
+  end
+
+  defp contains_markdown_syntax?(_), do: :ok
+
+  @spec check_options_for_markdown(list()) :: :ok | {:error, String.t()}
+  defp check_options_for_markdown(options) when is_list(options) do
+    if Enum.any?(options, fn option ->
+         Regex.match?(
+           ~r/(\*\*.*?\*\*)|(\*.*?\*)|(__.*?__)|(_.*?_)|(#.*?\n)|(\[.*?\]\(.*?\))/,
+           option["title"]
+         )
+       end) do
+      {:error,
+       "Button texts cannot contain any markdown characters (e.g., **bold**, _italics_, etc)."}
+    else
+      :ok
+    end
+  end
+
+  defp check_options_for_markdown(_), do: :ok
 
   @spec calculate_total_length(map() | nil) :: integer()
   defp calculate_total_length(%{"content" => content, "options" => options}) do
