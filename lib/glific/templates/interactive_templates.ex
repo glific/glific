@@ -113,7 +113,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec create_interactive_template(map()) ::
           {:ok, InteractiveTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_interactive_template(attrs) do
-    with :ok <- contains_markdown_syntax?(attrs.interactive_content),
+    with :ok <- contains_markdown_syntax?(attrs),
          :ok <- validate_interactive_content_length(attrs) do
       %InteractiveTemplate{}
       |> InteractiveTemplate.changeset(attrs)
@@ -125,15 +125,30 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   @spec contains_markdown_syntax?(map()) :: :ok | {:error, String.t()}
-  defp contains_markdown_syntax?(%{"content" => _content, "options" => options}) do
+  defp contains_markdown_syntax?(attrs) do
+    with :ok <- check_interactive_content(attrs) do
+      :ok
+    else
+      {:error, message} -> {:error, message}
+    end
+  end
+
+  defp check_interactive_content(%{interactive_content: interactive_content}) do
+    check_options(interactive_content)
+  end
+
+  defp check_interactive_content(%{"interactive_content" => interactive_content}) do
+    check_options(interactive_content)
+  end
+
+  defp check_interactive_content(_), do: :ok
+
+  @spec check_options(map()) :: :ok | {:error, String.t()}
+  defp check_options(%{"options" => options}) do
     check_options_for_markdown(options)
   end
 
-  defp contains_markdown_syntax?(%{
-         "body" => _body,
-         "globalButtons" => _global_buttons,
-         "items" => items
-       }) do
+  defp check_options(%{"items" => items}) do
     options_lists =
       Enum.flat_map(items, fn item ->
         Map.get(item, "options", []) ++
@@ -145,15 +160,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     check_options_for_markdown(options_lists)
   end
 
-  defp contains_markdown_syntax?(%{
-         "action" => _action,
-         "body" => _body,
-         "type" => "location_request_message"
-       }) do
-    :ok
-  end
-
-  defp contains_markdown_syntax?(_), do: :ok
+  defp check_options(_), do: :ok
 
   @spec check_options_for_markdown(list()) :: :ok | {:error, String.t()}
   defp check_options_for_markdown(options) when is_list(options) do
