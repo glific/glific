@@ -134,7 +134,6 @@ defmodule Glific.Templates.InteractiveTemplates do
   defp contains_markdown_syntax?(attrs) do
     case check_interactive_content(attrs) do
       :ok -> :ok
-    else
       {:error, message} -> {:error, message}
     end
   end
