@@ -21,7 +21,6 @@ defmodule Glific.Clients.CommonWebhook do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_chat_gpt", fields) do
-    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     question_text = fields["question_text"]
     prompt = Map.get(fields, "prompt", nil)
 
@@ -46,7 +45,7 @@ defmodule Glific.Clients.CommonWebhook do
         parsed_msg: "Could not parsed"
       }
     else
-      ChatGPT.get_api_key(org_id)
+      Glific.get_open_ai_key()
       |> ChatGPT.parse(params)
       |> case do
         {:ok, text} ->
@@ -401,6 +400,25 @@ defmodule Glific.Clients.CommonWebhook do
 
   @spec do_text_to_speech_with_bhasini(String.t(), non_neg_integer(), String.t()) ::
           map()
+  defp do_text_to_speech_with_bhasini("english", org_id, text) do
+    organization = Glific.Partners.organization(org_id)
+    services = organization.services["google_cloud_storage"]
+
+    with false <- is_nil(services),
+         %{media_url: media_url} <-
+           ChatGPT.text_to_speech(org_id, text) do
+      %{success: true}
+      |> Map.put(:media_url, media_url)
+      |> Map.put(:translated_text, text)
+    else
+      true ->
+        %{success: false, reason: "GCS is disabled"}
+
+      error ->
+        error
+    end
+  end
+
   defp do_text_to_speech_with_bhasini(source_language, org_id, text) do
     organization = Glific.Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]

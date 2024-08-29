@@ -133,8 +133,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
 
     add_google_asr()
 
-    add_open_ai()
-
     add_google_sheet()
 
     add_maytapi()
@@ -392,30 +390,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             is_active: false
           })
     end)
-  end
-
-  defp add_open_ai() do
-    query = from(p in Provider, where: p.shortcode == "open_ai")
-
-    # add only if does not exist
-    if !Repo.exists?(query),
-      do:
-        Repo.insert!(%Provider{
-          name: "OpenAI (ChatGPT) (Beta)",
-          shortcode: "open_ai",
-          description: "First cut (Beta version) to integrate simple ChatGPT API",
-          group: nil,
-          is_required: false,
-          keys: %{},
-          secrets: %{
-            api_key: %{
-              type: :string,
-              label: "OpenAI API KEY",
-              default: nil,
-              view_only: false
-            }
-          }
-        })
   end
 
   defp add_google_sheet() do
