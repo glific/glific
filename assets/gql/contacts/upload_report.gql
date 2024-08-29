@@ -1,0 +1,5 @@
+query get_contact_upload_report ($id: ID!) {
+  get_contact_upload_report ($id: ID!) {
+   csvRows
+  }
+}
