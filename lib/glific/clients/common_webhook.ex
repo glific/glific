@@ -21,7 +21,6 @@ defmodule Glific.Clients.CommonWebhook do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_chat_gpt", fields) do
-    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     question_text = fields["question_text"]
     prompt = Map.get(fields, "prompt", nil)
 
@@ -46,7 +45,7 @@ defmodule Glific.Clients.CommonWebhook do
         parsed_msg: "Could not parsed"
       }
     else
-      ChatGPT.get_api_key(org_id)
+      Glific.get_open_ai_key()
       |> ChatGPT.parse(params)
       |> case do
         {:ok, text} ->
