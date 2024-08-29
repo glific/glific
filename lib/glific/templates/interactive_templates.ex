@@ -113,36 +113,20 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec create_interactive_template(map()) ::
           {:ok, InteractiveTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_interactive_template(attrs) do
-    case contains_markdown_syntax?(attrs) do
-      :ok ->
-        case validate_interactive_content_length(attrs) do
-          :ok ->
-            %InteractiveTemplate{}
-            |> InteractiveTemplate.changeset(attrs)
-            |> Repo.insert()
-
-          {:error, message} ->
-            {:error, message}
-        end
-
-      {:error, message} ->
-        {:error, message}
+    with :ok <- contains_markdown_syntax?(attrs),
+         :ok <- validate_interactive_content_length(attrs) do
+      %InteractiveTemplate{}
+      |> InteractiveTemplate.changeset(attrs)
+      |> Repo.insert()
     end
   end
 
   @spec contains_markdown_syntax?(map()) :: :ok | {:error, String.t()}
   defp contains_markdown_syntax?(attrs) do
-    case check_interactive_content(attrs) do
-      :ok -> :ok
-      {:error, message} -> {:error, message}
-    end
+    check_interactive_content(attrs)
   end
 
   defp check_interactive_content(%{interactive_content: interactive_content}) do
-    check_options(interactive_content)
-  end
-
-  defp check_interactive_content(%{"interactive_content" => interactive_content}) do
     check_options(interactive_content)
   end
 
