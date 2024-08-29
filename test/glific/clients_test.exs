@@ -185,23 +185,34 @@ defmodule Glific.ClientsTest do
   end
 
   test "Common webhook function is executed first to ensure that all common functions are accesible for all clients" do
-    Tesla.Mock.mock(fn _env ->
-      %Tesla.Env{
-        status: 200,
-        body: %{
-          "choices" => [
-            %{
-              "message" => %{
-                "content" =>
-                  "This image depicts a scenic view of a sunset or sunrise with a field of flowers silhouetted against the light. The bright sun is low on the horizon, casting a warm glow and causing dramatic lighting and shadows among the silhouetted flowers and stems. The sky has a mix of colors, typical of such time of day, with clouds illuminated by the sun. The text overlaying the image reads \"JPEG This is Sample Image.\"",
-                "role" => "assistant"
-              }
-            }
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          headers: [
+            {"content-type", "image/png"},
+            {"content-length", "3209581"}
           ],
-          "created" => 1_717_089_925,
-          "model" => "gpt-4o-2024-05-13"
+          method: :get,
+          status: 200
         }
-      }
+
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            "choices" => [
+              %{
+                "message" => %{
+                  "content" =>
+                    "This image depicts a scenic view of a sunset or sunrise with a field of flowers silhouetted against the light. The bright sun is low on the horizon, casting a warm glow and causing dramatic lighting and shadows among the silhouetted flowers and stems. The sky has a mix of colors, typical of such time of day, with clouds illuminated by the sun. The text overlaying the image reads \"JPEG This is Sample Image.\"",
+                  "role" => "assistant"
+                }
+              }
+            ],
+            "created" => 1_717_089_925,
+            "model" => "gpt-4o-2024-05-13"
+          }
+        }
     end)
 
     %{response: response} =

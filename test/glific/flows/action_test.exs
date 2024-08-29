@@ -1,4 +1,5 @@
 defmodule Glific.Flows.ActionTest do
+  alias Glific.Messages
   use Glific.DataCase
 
   alias Glific.{
@@ -1229,6 +1230,45 @@ defmodule Glific.Flows.ActionTest do
     log = Repo.get_by(WebhookLog, %{url: url})
 
     assert String.contains?(log.error, "Error in decoding webhook body")
+  end
+
+  test "execute an action when type is call_webhook, but has message_stream", attrs do
+    Partners.organization(attrs.organization_id)
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    # preload contact
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
+      |> Repo.preload([:contact, :flow])
+
+    url = "https://postman-echo.com/post"
+
+    # using uuid of language flow
+    action = %Action{
+      type: "call_webhook",
+      uuid: "UUID 1",
+      url: url,
+      body: "qbc",
+      method: "POST",
+      headers: %{
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      result_name: "test_webhook",
+      node_uuid: "Test UUID"
+    }
+
+    message_stream = [Messages.create_temp_message(attrs.organization_id, "temp")]
+
+    result = Action.execute(action, context, message_stream)
+
+    assert {:wait, updated_context, _updated_message_stream} = result
+
+    assert updated_context == context
+
+    # WebhookLog won't created and webhook won't be executed in this case
+    assert is_nil(Repo.get_by(WebhookLog, %{url: url}))
   end
 
   defp add_contact_group(contact, organization_id) do

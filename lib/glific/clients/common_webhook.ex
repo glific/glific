@@ -81,10 +81,20 @@ defmodule Glific.Clients.CommonWebhook do
 
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_gpt_vision", fields) do
-    ChatGPT.gpt_vision(fields)
-    |> case do
-      {:ok, response} -> %{success: true, response: response}
-      {:error, error} -> %{success: false, error: error}
+    url = fields["url"]
+
+    # validating if the url passed is a valid image url
+    with %{is_valid: true} <- Glific.Messages.validate_media(url, "image"),
+         {:ok, response} <- ChatGPT.gpt_vision(fields) do
+      %{success: true, response: response}
+    else
+      %{is_valid: false, message: message} ->
+        Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{message}")
+        message
+
+      {:error, error} ->
+        Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{error}")
+        error
     end
   end
 
@@ -94,14 +104,20 @@ defmodule Glific.Clients.CommonWebhook do
     assistant_id = Map.get(fields, "assistant_id", nil)
     remove_citation = Map.get(fields, "remove_citation", false)
 
-    params = %{
-      thread_id: thread_id,
-      assistant_id: assistant_id,
-      question: question,
-      remove_citation: remove_citation
-    }
+    case ChatGPT.retrieve_assistant(assistant_id) do
+      {:ok, _assistant_name} ->
+        params = %{
+          thread_id: thread_id,
+          assistant_id: assistant_id,
+          question: question,
+          remove_citation: remove_citation
+        }
 
-    ChatGPT.handle_conversation(params)
+        ChatGPT.handle_conversation(params)
+
+      {:error, error} ->
+        error
+    end
   end
 
   def webhook("llm4dev", fields) do
@@ -217,26 +233,8 @@ defmodule Glific.Clients.CommonWebhook do
     org_id = fields["organization_id"]
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
     contact = get_contact_language(contact_id)
-    organization = Glific.Partners.organization(org_id)
-    services = organization.services["google_cloud_storage"]
-
-    with false <- is_nil(services),
-         {:ok, response} <-
-           Bhasini.with_config_request(source_language: contact.language.locale, task_type: "tts"),
-         %{"feedbackUrl" => _feedback_url, "pipelineInferenceAPIEndPoint" => _endpoint} = params <-
-           Jason.decode!(response.body) do
-      Glific.Bhasini.text_to_speech(params, text, org_id)
-    else
-      true ->
-        %{success: false, reason: "GCS is disabled"}
-
-      {:error, error} ->
-        Map.put(error, "success", false)
-
-      error ->
-        Logger.error("Error received from Bhasini: #{error["message"]}")
-        Map.put(error, "success", false)
-    end
+    source_language = contact.language.locale
+    do_text_to_speech_with_bhasini(source_language, org_id, text)
   end
 
   def webhook("nmt_tts_with_bhasini", fields) do
@@ -253,6 +251,123 @@ defmodule Glific.Clients.CommonWebhook do
       |> Map.get("target_language", nil)
       |> then(&if(!is_nil(&1), do: String.downcase(&1)))
 
+    if source_language == target_language do
+      do_text_to_speech_with_bhasini(source_language, org_id, text)
+    else
+      do_nmt_tts_with_bhasini(source_language, target_language, org_id, text)
+    end
+  end
+
+  def webhook("get_buttons", fields) do
+    buttons =
+      fields["buttons_data"]
+      |> String.split("|")
+      |> Enum.with_index()
+      |> Enum.map(fn {answer, index} -> {"button_#{index + 1}", String.trim(answer)} end)
+      |> Enum.into(%{})
+
+    %{
+      buttons: buttons,
+      button_count: length(Map.keys(buttons)),
+      is_valid: true
+    }
+  end
+
+  def webhook("check_response", fields),
+    do: %{response: String.equivalent?(fields["correct_response"], fields["user_response"])}
+
+  def webhook("geolocation", fields) do
+    lat = fields["lat"]
+    long = fields["long"]
+    api_key = Glific.get_google_maps_api_key()
+
+    url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=#{lat},#{long}&key=#{api_key}"
+
+    Tesla.get(url)
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        %{"results" => results} = Jason.decode!(body)
+
+        Glific.Metrics.increment("Geolocation API Success")
+
+        case results do
+          [%{"address_components" => components, "formatted_address" => formatted_address} | _] ->
+            city = find_component(components, "locality")
+            state = find_component(components, "administrative_area_level_1")
+            country = find_component(components, "country")
+            postal_code = find_component(components, "postal_code")
+            district = find_component(components, "administrative_area_level_2")
+            ward = find_component(components, "administrative_area_level_3")
+
+            %{
+              success: true,
+              city: city,
+              state: state,
+              country: country,
+              postal_code: postal_code,
+              district: district,
+              ward: ward,
+              address: formatted_address
+            }
+
+          _ ->
+            %{success: false, error: "No results found"}
+        end
+
+      {:ok, %Tesla.Env{status: status_code}} ->
+        Glific.Metrics.increment("Geolocation API Failure")
+        %{success: false, error: "Received status code #{status_code}"}
+
+      {:error, reason} ->
+        Glific.Metrics.increment("Geolocation API Failure")
+        %{success: false, error: "HTTP request failed: #{reason}"}
+    end
+  end
+
+  def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
+
+  defp get_contact_language(contact_id) do
+    case Repo.fetch(Contact, contact_id) do
+      {:ok, contact} -> contact |> Repo.preload(:language)
+      {:error, error} -> error
+    end
+  end
+
+  @spec find_component(list(map()), String.t()) :: String.t()
+  defp find_component(components, type) do
+    case Enum.find(components, fn component -> type in component["types"] end) do
+      nil -> "N/A"
+      component -> component["long_name"]
+    end
+  end
+
+  @spec query_jugalbandi_api(map(), list()) :: map()
+  defp query_jugalbandi_api(fields, input) do
+    query =
+      [
+        uuid_number: fields["uuid_number"],
+        input_language: fields["input_language"],
+        output_format: fields["output_format"]
+      ] ++ input
+
+    Tesla.get(fields["url"],
+      headers: [{"Accept", "application/json"}],
+      query: query,
+      opts: [adapter: [recv_timeout: 200_000]]
+    )
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        Jason.decode!(body)
+        |> Map.take(["answer", "audio_output_url"])
+        |> Map.merge(%{success: true})
+
+      {_status, response} ->
+        %{success: false, response: "Invalid response #{response}"}
+    end
+  end
+
+  @spec do_nmt_tts_with_bhasini(String.t(), String.t(), non_neg_integer(), String.t()) :: map()
+  defp do_nmt_tts_with_bhasini(source_language, target_language, org_id, text) do
     organization = Glific.Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
 
@@ -284,55 +399,47 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  def webhook("get_buttons", fields) do
-    buttons =
-      fields["buttons_data"]
-      |> String.split("|")
-      |> Enum.with_index()
-      |> Enum.map(fn {answer, index} -> {"button_#{index + 1}", String.trim(answer)} end)
-      |> Enum.into(%{})
+  @spec do_text_to_speech_with_bhasini(String.t(), non_neg_integer(), String.t()) ::
+          map()
+  defp do_text_to_speech_with_bhasini("english", org_id, text) do
+    organization = Glific.Partners.organization(org_id)
+    services = organization.services["google_cloud_storage"]
 
-    %{
-      buttons: buttons,
-      button_count: length(Map.keys(buttons)),
-      is_valid: true
-    }
-  end
+    with false <- is_nil(services),
+         %{media_url: media_url} <-
+           ChatGPT.text_to_speech(org_id, text) do
+      %{success: true}
+      |> Map.put(:media_url, media_url)
+      |> Map.put(:translated_text, text)
+    else
+      true ->
+        %{success: false, reason: "GCS is disabled"}
 
-  def webhook("check_response", fields),
-    do: %{response: String.equivalent?(fields["correct_response"], fields["user_response"])}
-
-  def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
-
-  defp get_contact_language(contact_id) do
-    case Repo.fetch(Contact, contact_id) do
-      {:ok, contact} -> contact |> Repo.preload(:language)
-      {:error, error} -> error
+      error ->
+        error
     end
   end
 
-  @spec query_jugalbandi_api(map(), list()) :: map()
-  defp query_jugalbandi_api(fields, input) do
-    query =
-      [
-        uuid_number: fields["uuid_number"],
-        input_language: fields["input_language"],
-        output_format: fields["output_format"]
-      ] ++ input
+  defp do_text_to_speech_with_bhasini(source_language, org_id, text) do
+    organization = Glific.Partners.organization(org_id)
+    services = organization.services["google_cloud_storage"]
 
-    Tesla.get(fields["url"],
-      headers: [{"Accept", "application/json"}],
-      query: query,
-      opts: [adapter: [recv_timeout: 200_000]]
-    )
-    |> case do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        Jason.decode!(body)
-        |> Map.take(["answer", "audio_output_url"])
-        |> Map.merge(%{success: true})
+    with false <- is_nil(services),
+         {:ok, response} <-
+           Bhasini.with_config_request(source_language: source_language, task_type: "tts"),
+         %{"feedbackUrl" => _feedback_url, "pipelineInferenceAPIEndPoint" => _endpoint} = params <-
+           Jason.decode!(response.body) do
+      Glific.Bhasini.text_to_speech(params, text, org_id)
+    else
+      true ->
+        %{success: false, reason: "GCS is disabled"}
 
-      {_status, response} ->
-        %{success: false, response: "Invalid response #{response}"}
+      {:error, error} ->
+        Map.put(error, "success", false)
+
+      error ->
+        Logger.error("Error received from Bhasini: #{error["message"]}")
+        Map.put(error, "success", false)
     end
   end
 end

@@ -16,8 +16,8 @@ defmodule Glific.Flows.Webhook do
     unique: [
       period: 60,
       fields: [:args, :worker],
-      keys: [:context_id, :url],
-      states: [:available, :scheduled, :executing]
+      keys: [:context_id, :url, :action_id],
+      states: [:available, :scheduled, :executing, :completed]
     ]
 
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
@@ -101,7 +101,8 @@ defmodule Glific.Flows.Webhook do
   @spec update_log(WebhookLog.t(), String.t()) :: {:ok, WebhookLog.t()}
   defp update_log(webhook_log, error_message) do
     attrs = %{
-      error: error_message
+      error: error_message,
+      status_code: 400
     }
 
     webhook_log
@@ -211,10 +212,11 @@ defmodule Glific.Flows.Webhook do
       body: body,
       headers: headers,
       webhook_log_id: webhook_log.id,
-      # for jon uniqueness,
+      # for job uniqueness,
       context_id: context.id,
       context: %{id: context.id, delay: context.delay},
-      organization_id: context.organization_id
+      organization_id: context.organization_id,
+      action_id: action.uuid
     })
     |> Oban.insert()
     |> case do

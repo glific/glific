@@ -6,10 +6,12 @@ defmodule Glific.OpenAI.ChatGPT do
   alias Glific.Partners
   require Logger
 
+  alias Glific.GCS.GcsWorker
+
   @endpoint "https://api.openai.com/v1"
 
   @default_params %{
-    "model" => "gpt-3.5-turbo-16k",
+    "model" => "gpt-4o",
     "temperature" => 0.7,
     "max_tokens" => 250,
     "top_p" => 1,
@@ -140,6 +142,57 @@ defmodule Glific.OpenAI.ChatGPT do
       {_status, response} ->
         {:error, "invalid response #{inspect(response)}"}
     end
+  end
+
+  @doc """
+  This function makes an API call to the OpenAI and returns the public media URL of the file.
+  """
+  @spec text_to_speech(non_neg_integer(), String.t(), String.t(), String.t()) :: map()
+  def text_to_speech(org_id, text, voice \\ "alloy", model \\ "tts-1") do
+    url = @endpoint <> "/audio/speech"
+    api_key = Glific.get_open_ai_key()
+
+    data = %{
+      "model" => model,
+      "input" => text,
+      "voice" => voice
+    }
+
+    middleware = [
+      Tesla.Middleware.JSON,
+      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]}
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.post(url, data, opts: [adapter: [recv_timeout: 120_000]])
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        uuid = Ecto.UUID.generate()
+        path = write_audio_file_locally(body, uuid)
+
+        remote_name = "Bhasini/outbound/#{uuid}.mp3"
+
+        {:ok, media_meta} =
+          GcsWorker.upload_media(
+            path,
+            remote_name,
+            org_id
+          )
+
+        %{media_url: media_meta.url}
+
+      _ ->
+        %{success: false, reason: "Could not generate Audio note"}
+    end
+  end
+
+  # locally downloading the file before uploading it to GCS to get public URL of file to be used at flow level
+  @spec write_audio_file_locally(String.t(), String.t()) :: String.t()
+  defp write_audio_file_locally(encoded_audio, uuid) do
+    path = System.tmp_dir!() <> "#{uuid}.mp3"
+    :ok = File.write!(path, encoded_audio)
+    path
   end
 
   @doc """
@@ -297,7 +350,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   API call to run a thread
   """
-  @spec run_thread(map()) :: map() | {:error, String.t()}
+  @spec run_thread(map()) :: {:ok, String.t()} | {:error, String.t()}
   def run_thread(params) do
     url = @endpoint <> "/threads/#{params.thread_id}/runs"
 
@@ -307,7 +360,8 @@ defmodule Glific.OpenAI.ChatGPT do
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         run = Jason.decode!(body)
-
+        # Waiting for atleast 10 seconds after running the thread to generate the response
+        Process.sleep(10_000)
         retrieve_run_and_wait(run["thread_id"], run["id"], 10)
 
       {_status, response} ->
@@ -318,15 +372,18 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   API call to retrieve a run and check status
   """
-  @spec retrieve_run_and_wait(String.t(), String.t(), non_neg_integer()) :: map()
+  @spec retrieve_run_and_wait(String.t(), String.t(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
   def retrieve_run_and_wait(thread_id, run_id, max_attempts \\ 10),
     do: retrieve_run_and_wait(thread_id, run_id, max_attempts, 0)
 
   @spec retrieve_run_and_wait(String.t(), String.t(), non_neg_integer(), non_neg_integer()) ::
-          map()
-  defp retrieve_run_and_wait(_thread_id, run_id, max_attempts, attempt)
-       when attempt >= max_attempts,
-       do: run_id
+          {:ok, String.t()} | {:error, String.t()}
+  defp retrieve_run_and_wait(_thread_id, _run_id, max_attempts, attempt)
+       when attempt >= max_attempts do
+    Logger.info("OpenAI run timed out after #{attempt} attempts")
+    {:error, "OpenAI timed out"}
+  end
 
   defp retrieve_run_and_wait(thread_id, run_id, max_attempts, attempt) do
     run_data =
@@ -336,9 +393,10 @@ defmodule Glific.OpenAI.ChatGPT do
       })
 
     if run_data["status"] == "completed" do
-      run_id
+      Logger.info("OpenAI run completed after #{attempt} attempts")
+      {:ok, run_id}
     else
-      Process.sleep(2_000)
+      Process.sleep(3_000)
       retrieve_run_and_wait(thread_id, run_id, max_attempts, attempt + 1)
     end
   end
@@ -394,11 +452,15 @@ defmodule Glific.OpenAI.ChatGPT do
     run_thread = create_and_run_thread(params)
     Process.sleep(4_000)
 
-    retrieve_run_and_wait(run_thread["thread_id"], run_thread["id"], 10)
+    case retrieve_run_and_wait(run_thread["thread_id"], run_thread["id"], 10) do
+      {:ok, _run_id} ->
+        list_thread_messages(%{thread_id: run_thread["thread_id"]})
+        |> remove_citation(remove_citation)
+        |> Map.put_new("success", false)
 
-    list_thread_messages(%{thread_id: run_thread["thread_id"]})
-    |> remove_citation(remove_citation)
-    |> Map.put_new("success", false)
+      {:error, error} ->
+        error
+    end
   end
 
   def handle_conversation(%{remove_citation: remove_citation} = params) do
@@ -409,11 +471,15 @@ defmodule Glific.OpenAI.ChatGPT do
 
     Process.sleep(12_000)
 
-    run_thread(%{thread_id: thread_id, assistant_id: params.assistant_id})
+    case run_thread(%{thread_id: thread_id, assistant_id: params.assistant_id}) do
+      {:ok, _run_id} ->
+        list_thread_messages(%{thread_id: thread_id})
+        |> remove_citation(remove_citation)
+        |> Map.put_new("success", false)
 
-    list_thread_messages(%{thread_id: thread_id})
-    |> remove_citation(remove_citation)
-    |> Map.put_new("success", false)
+      {:error, error} ->
+        error
+    end
   end
 
   @doc """
@@ -425,5 +491,25 @@ defmodule Glific.OpenAI.ChatGPT do
   def remove_citation(thread_messages, _true) do
     cleaned_message = Regex.replace(~r/【\d+(:\d+)?+†source】/, thread_messages["message"], "")
     Map.put(thread_messages, "message", cleaned_message)
+  end
+
+  @doc """
+  API call to retrieve an assistant
+  """
+  @spec retrieve_assistant(map()) :: {:ok, String.t()} | {:error, String.t()}
+  def retrieve_assistant(assistant_id) do
+    url = @endpoint <> "/assistants/#{assistant_id}"
+
+    Tesla.get(url, headers: headers())
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        response = Jason.decode!(body)
+        {:ok, response["name"]}
+
+      {_status, response} ->
+        error_response = Jason.decode!(response.body)
+
+        {:error, error_response["error"]["message"]}
+    end
   end
 end

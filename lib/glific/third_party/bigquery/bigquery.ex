@@ -17,6 +17,9 @@ defmodule Glific.BigQuery do
     Flows.FlowRevision,
     Flows.MessageBroadcast,
     Flows.MessageBroadcastContact,
+    Groups.ContactWAGroup,
+    Groups.WAGroup,
+    Groups.WAGroupsCollection,
     Jobs,
     Messages.Message,
     Messages.MessageConversation,
@@ -40,22 +43,25 @@ defmodule Glific.BigQuery do
   }
 
   @bigquery_tables %{
-    "messages" => :message_schema,
     "contacts" => :contact_schema,
-    "flows" => :flow_schema,
-    "flow_results" => :flow_result_schema,
-    "stats" => :stats_schema,
-    "flow_counts" => :flow_count_schema,
-    "messages_media" => :messages_media_schema,
-    "flow_contexts" => :flow_context_schema,
-    "tickets" => :ticket_schema,
-    "profiles" => :profile_schema,
     "contact_histories" => :contact_history_schema,
-    "message_conversations" => :message_conversation_schema,
+    "contacts_wa_groups" => :contacts_wa_group_schema,
+    "flows" => :flow_schema,
+    "flow_counts" => :flow_count_schema,
+    "flow_contexts" => :flow_context_schema,
+    "flow_results" => :flow_result_schema,
     "message_broadcasts" => :message_broadcasts_schema,
     "message_broadcast_contacts" => :message_broadcast_contacts_schema,
+    "message_conversations" => :message_conversation_schema,
+    "messages" => :message_schema,
+    "messages_media" => :messages_media_schema,
+    "profiles" => :profile_schema,
+    "stats" => :stats_schema,
+    "tickets" => :ticket_schema,
     "trackers" => :trackers_schema,
-    "wa_messages" => :wa_message_schema
+    "wa_messages" => :wa_message_schema,
+    "wa_groups" => :wa_group_schema,
+    "wa_groups_collections" => :wa_groups_collection_schema
   }
 
   @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
@@ -164,24 +170,27 @@ defmodule Glific.BigQuery do
   end
 
   @table_lookup %{
-    "messages" => Message,
+    "contact_histories" => ContactHistory,
     "contacts" => Contact,
+    "contacts_wa_groups" => ContactWAGroup,
+    "flow_counts" => FlowCount,
+    "flow_contexts" => Flows.FlowContext,
     "flow_results" => FlowResult,
     "flows" => FlowRevision,
-    "stats" => Stat,
-    "stats_all" => Stat,
-    "flow_counts" => FlowCount,
+    "messages" => Message,
     "messages_media" => MessageMedia,
-    "flow_contexts" => Flows.FlowContext,
-    "tickets" => Ticket,
-    "profiles" => Profile,
-    "contact_histories" => ContactHistory,
-    "message_conversations" => MessageConversation,
     "message_broadcasts" => MessageBroadcast,
     "message_broadcast_contacts" => MessageBroadcastContact,
+    "message_conversations" => MessageConversation,
+    "profiles" => Profile,
+    "stats" => Stat,
+    "stats_all" => Stat,
+    "tickets" => Ticket,
     "trackers" => Tracker,
     "trackers_all" => Tracker,
-    "wa_messages" => WAMessage
+    "wa_messages" => WAMessage,
+    "wa_groups" => WAGroup,
+    "wa_groups_collections" => WAGroupsCollection
   }
 
   @doc false

@@ -629,6 +629,7 @@ defmodule Glific.Flows do
       )
 
       update_cached_flow(flow, "published")
+      clean_cached_flow_keywords_map(flow.organization_id)
     end
 
     result

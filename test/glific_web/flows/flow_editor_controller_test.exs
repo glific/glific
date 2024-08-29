@@ -330,7 +330,10 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     end
 
     test "get all the flows", %{conn: conn, access_token: token} do
-      flows = Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+      flows =
+        Flows.list_flows(%{
+          filter: %{organization_id: conn.assigns[:organization_id], is_template: false}
+        })
 
       conn =
         get_auth_token(conn, token)
