@@ -397,7 +397,7 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  def parse_response_format(%{"response_format" => response_format} = fields) do
+  defp parse_response_format(%{"response_format" => response_format} = fields) do
     case response_format do
       %{"type" => "json_schema"} ->
         # Support for json_schema is only since gpt-4o-2024-08-06
@@ -414,7 +414,7 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  def parse_response_format(fields), do: {:ok, Map.put(fields, "response_format", nil)}
+  defp parse_response_format(fields), do: {:ok, Map.put(fields, "response_format", nil)}
 
   @spec parse_gpt_response(map(), String.t()) :: any()
   defp parse_gpt_response(fields, response) do
