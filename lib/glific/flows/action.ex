@@ -760,7 +760,13 @@ defmodule Glific.Flows.Action do
   def execute(%{type: "call_webhook"} = action, context, messages) do
     # just call the webhook, and ask the caller to wait
     # we are processing the webhook using Oban and this happens asynchronously
-    Webhook.execute(action, context)
+
+    # Webhooks don't consume message, so if we send a message while a webhook node is running
+    # this check will prevent webhook node from running again
+    if Enum.empty?(messages) do
+      Webhook.execute(action, context)
+    end
+
     # webhooks don't consume a message, so we send it forward
     {:wait, context, messages}
   end
