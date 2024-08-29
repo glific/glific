@@ -39,6 +39,8 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
         null: false,
         comment: "contact id wa_managed_phone"
 
+      add :status, :string
+
       timestamps(type: :utc_datetime_usec)
     end
 
