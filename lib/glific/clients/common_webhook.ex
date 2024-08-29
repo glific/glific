@@ -115,7 +115,7 @@ defmodule Glific.Clients.CommonWebhook do
         ChatGPT.handle_conversation(params)
 
       {:error, error} ->
-        %{success: false, error: error}
+        error
     end
   end
 
@@ -400,6 +400,25 @@ defmodule Glific.Clients.CommonWebhook do
 
   @spec do_text_to_speech_with_bhasini(String.t(), non_neg_integer(), String.t()) ::
           map()
+  defp do_text_to_speech_with_bhasini("english", org_id, text) do
+    organization = Glific.Partners.organization(org_id)
+    services = organization.services["google_cloud_storage"]
+
+    with false <- is_nil(services),
+         %{media_url: media_url} <-
+           ChatGPT.text_to_speech(org_id, text) do
+      %{success: true}
+      |> Map.put(:media_url, media_url)
+      |> Map.put(:translated_text, text)
+    else
+      true ->
+        %{success: false, reason: "GCS is disabled"}
+
+      error ->
+        error
+    end
+  end
+
   defp do_text_to_speech_with_bhasini(source_language, org_id, text) do
     organization = Glific.Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
