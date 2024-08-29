@@ -144,6 +144,9 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
+  @doc """
+  This function makes an API call to the OpenAI and returns the public media URL of the file.
+  """
   @spec text_to_speech(non_neg_integer(), String.t(), String.t(), String.t()) :: map()
   def text_to_speech(org_id, text, voice \\ "alloy", model \\ "tts-1") do
     url = @endpoint <> "/audio/speech"
@@ -184,7 +187,8 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
-  @spec write_audio_file_locally(map(), String.t()) :: String.t()
+  # locally downloading the file before uploading it to GCS to get public URL of file to be used at flow level
+  @spec write_audio_file_locally(String.t(), String.t()) :: String.t()
   defp write_audio_file_locally(encoded_audio, uuid) do
     path = System.tmp_dir!() <> "#{uuid}.mp3"
     :ok = File.write!(path, encoded_audio)
