@@ -212,7 +212,7 @@ defmodule Glific.Flows.Webhook do
       body: body,
       headers: headers,
       webhook_log_id: webhook_log.id,
-      # for jon uniqueness,
+      # for job uniqueness,
       context_id: context.id,
       context: %{id: context.id, delay: context.delay},
       organization_id: context.organization_id,
