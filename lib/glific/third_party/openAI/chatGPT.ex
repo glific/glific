@@ -125,7 +125,6 @@ defmodule Glific.OpenAI.ChatGPT do
   @spec handle_response(tuple()) :: tuple()
   defp handle_response(response) do
     response
-    # |> IO.inspect()
     |> case do
       {:ok, %Tesla.Env{status: 200, body: %{"choices" => []} = body}} ->
         {:error, "Got empty response #{inspect(body)}"}

@@ -23,7 +23,7 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("parse_via_chat_gpt", fields) do
     with {:ok, fields} <- parse_chatgpt_fields(fields),
          {:ok, fields} <- parse_response_format(fields),
-         {:ok, text} <- ChatGPT.get_api_key(fields["organization_id"]) |> ChatGPT.parse(fields) do
+         {:ok, text} <- Glific.get_open_ai_key() |> ChatGPT.parse(fields) do
       %{
         success: true,
         parsed_msg: parse_gpt_response(fields, text)
@@ -397,23 +397,28 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  def parse_response_format(%{"response_format" => %{"type" => "json_schema"}} = fields) do
-    # Support for json_schema is only since gpt-4o-2024-08-06
-    {:ok, Map.put(fields, "model", "gpt-4o-2024-08-06")}
+  def parse_response_format(%{"response_format" => response_format} = fields) do
+    case response_format do
+      %{"type" => "json_schema"} ->
+        # Support for json_schema is only since gpt-4o-2024-08-06
+        {:ok, Map.put(fields, "model", "gpt-4o-2024-08-06")}
+
+      %{"type" => "json_object"} ->
+        {:ok, fields}
+
+      nil ->
+        {:ok, fields}
+
+      _ ->
+        {:error, "response_format type should be json_schema or json_object"}
+    end
   end
-
-  def parse_response_format(%{"response_format" => %{"type" => "json_object"}} = fields),
-    do: {:ok, fields}
-
-  def parse_response_format(%{"response_format" => _}),
-    do: {:error, "response_format type should be json_schema or json_object"}
 
   def parse_response_format(fields), do: {:ok, Map.put(fields, "response_format", nil)}
 
   @spec parse_gpt_response(map(), String.t()) :: any()
   defp parse_gpt_response(fields, response) do
     case Map.get(fields, "response_format") do
-      nil -> response
       %{"type" => "json_schema"} -> Jason.decode!(response)
       %{"type" => "json_object"} -> Jason.decode!(response)
       _ -> response
@@ -427,7 +432,6 @@ defmodule Glific.Clients.CommonWebhook do
     else
       {:ok,
        %{
-         "organization_id" => Glific.parse_maybe_integer!(fields["organization_id"]),
          "question_text" => Map.get(fields, "question_text"),
          "prompt" => Map.get(fields, "prompt", nil),
          # ID of the model to use.
@@ -435,7 +439,8 @@ defmodule Glific.Clients.CommonWebhook do
          # The sampling temperature, between 0 and 1.
          # Higher values like 0.8 will make the output more random,
          # while lower values like 0.2 will make it more focused and deterministic.
-         "temperature" => Map.get(fields, "temperature", 0)
+         "temperature" => Map.get(fields, "temperature", 0),
+         "response_format" => Map.get(fields, "response_format", nil)
        }}
     end
   end
