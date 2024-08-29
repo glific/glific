@@ -116,7 +116,7 @@ defmodule Glific.Clients.CommonWebhook do
         ChatGPT.handle_conversation(params)
 
       {:error, error} ->
-        %{success: false, error: error}
+        error
     end
   end
 
