@@ -21,7 +21,6 @@ defmodule Glific.Clients.CommonWebhook do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_chat_gpt", fields) do
-    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     question_text = fields["question_text"]
     prompt = Map.get(fields, "prompt", nil)
 
@@ -46,7 +45,7 @@ defmodule Glific.Clients.CommonWebhook do
         parsed_msg: "Could not parsed"
       }
     else
-      ChatGPT.get_api_key(org_id)
+      Glific.get_open_ai_key()
       |> ChatGPT.parse(params)
       |> case do
         {:ok, text} ->
@@ -116,7 +115,7 @@ defmodule Glific.Clients.CommonWebhook do
         ChatGPT.handle_conversation(params)
 
       {:error, error} ->
-        %{success: false, error: error}
+        error
     end
   end
 
@@ -276,12 +275,68 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("check_response", fields),
     do: %{response: String.equivalent?(fields["correct_response"], fields["user_response"])}
 
+  def webhook("geolocation", fields) do
+    lat = fields["lat"]
+    long = fields["long"]
+    api_key = Glific.get_google_maps_api_key()
+
+    url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=#{lat},#{long}&key=#{api_key}"
+
+    Tesla.get(url)
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        %{"results" => results} = Jason.decode!(body)
+
+        Glific.Metrics.increment("Geolocation API Success")
+
+        case results do
+          [%{"address_components" => components, "formatted_address" => formatted_address} | _] ->
+            city = find_component(components, "locality")
+            state = find_component(components, "administrative_area_level_1")
+            country = find_component(components, "country")
+            postal_code = find_component(components, "postal_code")
+            district = find_component(components, "administrative_area_level_2")
+            ward = find_component(components, "administrative_area_level_3")
+
+            %{
+              success: true,
+              city: city,
+              state: state,
+              country: country,
+              postal_code: postal_code,
+              district: district,
+              ward: ward,
+              address: formatted_address
+            }
+
+          _ ->
+            %{success: false, error: "No results found"}
+        end
+
+      {:ok, %Tesla.Env{status: status_code}} ->
+        Glific.Metrics.increment("Geolocation API Failure")
+        %{success: false, error: "Received status code #{status_code}"}
+
+      {:error, reason} ->
+        Glific.Metrics.increment("Geolocation API Failure")
+        %{success: false, error: "HTTP request failed: #{reason}"}
+    end
+  end
+
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
   defp get_contact_language(contact_id) do
     case Repo.fetch(Contact, contact_id) do
       {:ok, contact} -> contact |> Repo.preload(:language)
       {:error, error} -> error
+    end
+  end
+
+  @spec find_component(list(map()), String.t()) :: String.t()
+  defp find_component(components, type) do
+    case Enum.find(components, fn component -> type in component["types"] end) do
+      nil -> "N/A"
+      component -> component["long_name"]
     end
   end
 
@@ -345,6 +400,25 @@ defmodule Glific.Clients.CommonWebhook do
 
   @spec do_text_to_speech_with_bhasini(String.t(), non_neg_integer(), String.t()) ::
           map()
+  defp do_text_to_speech_with_bhasini("english", org_id, text) do
+    organization = Glific.Partners.organization(org_id)
+    services = organization.services["google_cloud_storage"]
+
+    with false <- is_nil(services),
+         %{media_url: media_url} <-
+           ChatGPT.text_to_speech(org_id, text) do
+      %{success: true}
+      |> Map.put(:media_url, media_url)
+      |> Map.put(:translated_text, text)
+    else
+      true ->
+        %{success: false, reason: "GCS is disabled"}
+
+      error ->
+        error
+    end
+  end
+
   defp do_text_to_speech_with_bhasini(source_language, org_id, text) do
     organization = Glific.Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]

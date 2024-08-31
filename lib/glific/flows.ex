@@ -340,21 +340,18 @@ defmodule Glific.Flows do
   @spec get_flow_revision_list(String.t()) :: %{results: list()}
   def get_flow_revision_list(flow_uuid) do
     results =
-      FlowRevision
-      |> join(:left, [fr], f in Flow, as: :f, on: f.id == fr.flow_id)
-      |> join(:left, [fr, f], u in User, as: :u, on: u.id == fr.user_id)
-      |> where([fr, f], f.uuid == ^flow_uuid)
-      |> select([fr, f, u], %{
-        id: fr.id,
-        inserted_at: fr.inserted_at,
-        status: fr.status,
-        revision_number: fr.revision_number,
-        flow_id: fr.flow_id,
-        user_name: u.name
-      })
-      |> order_by([fr], desc: fr.id)
-      |> limit(15)
+      get_base_flow_revision_query(flow_uuid)
+      |> where([fr, f], fr.status != "published")
+      |> limit(14)
       |> Repo.all()
+
+    last_published_revision =
+      get_base_flow_revision_query(flow_uuid)
+      |> where([fr, f], fr.status == "published")
+      |> limit(1)
+      |> Repo.all()
+      |> parse_revision()
+      |> then(&if is_list(&1), do: [], else: [&1])
 
     # Instead of sorting this list we need to fetch the ordered items from the DB
     # We will optimize this more in the v0.4
@@ -362,23 +359,49 @@ defmodule Glific.Flows do
       results
       |> Enum.sort(fn fr1, fr2 -> fr1.id >= fr2.id end)
       |> Enum.reduce(
-        [],
+        last_published_revision,
         fn revision, acc ->
           [
-            %{
-              user: get_user(revision.user_name),
-              created_on: revision.inserted_at,
-              id: revision.id,
-              version: "13.0.0",
-              revision: revision.id,
-              status: revision.status
-            }
+            parse_revision(revision)
             | acc
           ]
         end
       )
 
-    %{results: asset_list |> Enum.reverse()}
+    %{results: Enum.reverse(asset_list)}
+  end
+
+  @spec parse_revision(List | map()) :: List | map()
+  defp parse_revision([]), do: []
+
+  defp parse_revision(revision) when is_list(revision), do: revision |> hd |> parse_revision()
+
+  defp parse_revision(revision) do
+    %{
+      user: get_user(revision.user_name),
+      created_on: revision.updated_at,
+      id: revision.id,
+      version: "13.0.0",
+      revision: revision.id,
+      status: revision.status
+    }
+  end
+
+  @spec get_base_flow_revision_query(String.t()) :: Ecto.Query.t()
+  defp get_base_flow_revision_query(flow_uuid) do
+    FlowRevision
+    |> join(:left, [fr], f in Flow, as: :f, on: f.id == fr.flow_id)
+    |> join(:left, [fr, f], u in User, as: :u, on: u.id == fr.user_id)
+    |> where([fr, f], f.uuid == ^flow_uuid)
+    |> select([fr, f, u], %{
+      id: fr.id,
+      updated_at: fr.updated_at,
+      status: fr.status,
+      revision_number: fr.revision_number,
+      flow_id: fr.flow_id,
+      user_name: u.name
+    })
+    |> order_by([fr], desc: fr.id)
   end
 
   @doc """
@@ -606,6 +629,7 @@ defmodule Glific.Flows do
       )
 
       update_cached_flow(flow, "published")
+      clean_cached_flow_keywords_map(flow.organization_id)
     end
 
     result

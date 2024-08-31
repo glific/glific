@@ -22,6 +22,12 @@ defmodule Glific.Bhasini do
   }
 
   @doc """
+  returns iso_code for a language given the standard
+  """
+  @spec get_iso_code(String.t(), String.t()) :: String.t()
+  def get_iso_code(language, standard), do: @language_codes["#{language}"][standard]
+
+  @doc """
   This function makes an API call to the Bhasini ASR service for NMT and TTS using the provided configuration parameters and returns the public media URL of the file.
   """
   @spec nmt_tts(map(), String.t(), String.t(), String.t(), non_neg_integer()) :: map()
@@ -45,8 +51,8 @@ defmodule Glific.Bhasini do
             "taskType" => "translation",
             "config" => %{
               "language" => %{
-                "sourceLanguage" => @language_codes["#{source_language}"]["iso_639_1"],
-                "targetLanguage" => @language_codes["#{target_language}"]["iso_639_1"]
+                "sourceLanguage" => get_iso_code(source_language, "iso_639_1"),
+                "targetLanguage" => get_iso_code(target_language, "iso_639_1")
               },
               "serviceId" => nmt_service_id
             }
@@ -58,7 +64,7 @@ defmodule Glific.Bhasini do
                 # If TTS comes after Translation, and Translation is done, say from Marathi to Hindi
                 # then Source Language of TTS should be Hindi (ISO Code hi) because
                 # the output of Translation (Translated text in Hindi) will be fed to Translation Model.
-                "sourceLanguage" => @language_codes["#{target_language}"]["iso_639_1"]
+                "sourceLanguage" => get_iso_code(target_language, "iso_639_1")
               },
               "serviceId" => tts_service_id,
               "gender" => "female",
@@ -117,14 +123,14 @@ defmodule Glific.Bhasini do
 
     [nmt_service_json] =
       Enum.filter(nmt_config["config"], fn config ->
-        config["language"]["sourceLanguage"] == @language_codes["#{source_language}"]["iso_639_1"] and
+        config["language"]["sourceLanguage"] == get_iso_code(source_language, "iso_639_1") and
           config["language"]["targetLanguage"] ==
-            @language_codes["#{target_language}"]["iso_639_1"]
+            get_iso_code(target_language, "iso_639_1")
       end)
 
     [tts_service_json] =
       Enum.filter(tts_config["config"], fn config ->
-        config["language"]["sourceLanguage"] == @language_codes["#{target_language}"]["iso_639_1"]
+        config["language"]["sourceLanguage"] == get_iso_code(target_language, "iso_639_1")
       end)
 
     {nmt_service_json["serviceId"], tts_service_json["serviceId"]}
@@ -188,7 +194,9 @@ defmodule Glific.Bhasini do
             org_id
           )
 
-        %{success: true} |> Map.put(:media_url, media_meta.url)
+        %{success: true}
+        |> Map.put(:media_url, media_meta.url)
+        |> Map.put(:translated_text, text)
 
       _ ->
         %{success: false, reason: "could not fetch data"}
