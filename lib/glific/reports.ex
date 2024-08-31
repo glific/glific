@@ -320,7 +320,14 @@ defmodule Glific.Reports do
       |> select([m], count(m.id))
       |> Repo.one()
 
-    [total_media, media_synced]
+    last_synced_at =
+      GcsJob
+      |> where([q], q.organization_id == ^org_id)
+      |> where([q], q.type == "incremental")
+      |> select([q], q.updated_at)
+      |> Repo.one()
+
+    ["#{media_synced} out of #{total_media} media files synced", last_synced_at |> DateTime.to_date() |> Date.to_string()]
 
   end
 
