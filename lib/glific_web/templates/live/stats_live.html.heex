@@ -407,6 +407,25 @@
     </div>
   </div>
 
+  <div class="h-full mb-10 mt-4 mx-40">
+    <div id="media-sync-table" class="table">
+      <table>
+        <thead>
+          <tr>
+            <th>Total Media Synced</th>
+            <th>Last Synced Media At</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><%= @media_sync_data.media_synced %> out of <%= @media_sync_data.total_media %> media files</td>
+            <td><%= @media_sync_data.last_synced_at %></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="card-container">
     <div class="card-section">
       <div class="flex flex-wrap">

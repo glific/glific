@@ -287,7 +287,7 @@ defmodule Glific.Reports do
   end
 
   @doc false
-  @spec get_sync_data(atom(), non_neg_integer()) :: list(map)
+  @spec get_sync_data(atom(), non_neg_integer()) :: list(map) | map()
   def get_sync_data(:bigquery, org_id) do
     Repo.put_process_state(org_id)
 
@@ -327,7 +327,9 @@ defmodule Glific.Reports do
       |> select([q], q.updated_at)
       |> Repo.one()
 
-    ["#{media_synced} out of #{total_media} media files synced", last_synced_at |> DateTime.to_date() |> Date.to_string()]
+    IO.inspect([total_media, media_synced, last_synced_at])
+    %{media_synced: media_synced, total_media: total_media, last_synced_at: last_synced_at |> DateTime.to_date() |> Date.to_string()}
+    #["#{media_synced} out of #{total_media} media files synced", last_synced_at |> DateTime.to_date() |> Date.to_string()]
 
   end
 
