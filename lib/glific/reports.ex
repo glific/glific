@@ -11,7 +11,9 @@ defmodule Glific.Reports do
     Contacts.Contact,
     Flows.FlowContext,
     Flows.MessageBroadcast,
+    GCS.GcsJob,
     Messages.Message,
+    Messages.MessageMedia,
     Notifications.Notification,
     Organization,
     Partners,
@@ -152,6 +154,21 @@ defmodule Glific.Reports do
 
   defp get_count_query(:conversation_count), do: select(Stat, [q], sum(q.conversations))
 
+  defp get_count_query(:total_media), do: select(MessageMedia, [q], count(q.id))
+
+  defp get_count_query(:media_synced) do
+    message_media_id = get_count_query(:message_media_id)
+    MessageMedia
+    |> select([q], count(q.id))
+    |> where([q], q.id > ^message_media_id)
+  end
+
+  defp get_count_query(:message_media_id) do
+    GcsJob
+    |> select([q], q.message_media_id)
+    |> where([q], q.type == "incremental")
+  end
+
   @spec add_timestamps(Ecto.Query.t(), atom(), [{atom(), any()}], map()) :: Ecto.Query.t()
   defp add_timestamps(query, kpi, _opts, date_range)
        when kpi in [
@@ -279,6 +296,32 @@ defmodule Glific.Reports do
       |> select([b], %{table_id: b.table_id, table: b.table, last_updated_at: b.last_updated_at})
 
     Repo.all(query)
+  end
+
+  def get_sync_data(:media_sync, org_id) do
+    Repo.put_process_state(org_id)
+
+    total_media =
+      MessageMedia
+      |> select([q], count(q.id))
+      |> where([q], q.organization_id == ^org_id)
+      |> Repo.one()
+
+    subquery =
+      GcsJob
+      |> where([g], g.organization_id == ^org_id)
+      |> where([g], g.type == "incremental")
+      |> select([g], g.message_media_id)
+
+    media_synced =
+      MessageMedia
+      |> where([m], m.organization_id == ^org_id)
+      |> where([m], m.id > subquery(subquery))
+      |> select([m], count(m.id))
+      |> Repo.one()
+
+    [total_media, media_synced]
+
   end
 
   @doc false

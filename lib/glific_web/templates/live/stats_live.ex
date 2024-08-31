@@ -423,7 +423,8 @@ defmodule GlificWeb.StatsLive do
       broadcast_headers: ["Flow Name", "Group Name", "Started At", "Completed At"],
       contact_pie_chart_data: fetch_count_data(:contact_type, org_id, date_range),
       messages_chart_data: fetch_hourly_data(org_id, date_range),
-      bigquery_sync_data: Reports.get_sync_data(:bigquery, org_id)
+      bigquery_sync_data: Reports.get_sync_data(:bigquery, org_id),
+      media_sync_data: Reports.get_sync_data(:media_sync, org_id)
     ]
   end
 
