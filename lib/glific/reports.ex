@@ -296,7 +296,10 @@ defmodule Glific.Reports do
       |> select([b], %{table_id: b.table_id, table: b.table, last_updated_at: b.last_updated_at})
 
     Repo.all(query)
-    |> Enum.map(fn x -> Map.update(x, :table, 0, fn name -> format_table_name(name) end) end)
+    |> Enum.map(fn x ->
+      Map.update(x, :table, 0, fn name -> format_table_name(name) end)
+      |> Map.update(:last_updated_at, 0, fn date -> Date.to_string(date) end)
+    end)
   end
 
   def get_sync_data(:media_sync, org_id) do
@@ -331,13 +334,10 @@ defmodule Glific.Reports do
     last_synced_at_string =
       case last_synced_at do
         nil -> "No date available"
-        datetime -> DateTime.to_date(datetime) |> Date.to_string()
+        datetime -> datetime |> Date.to_string()
       end
 
-    IO.inspect([total_media, media_synced, last_synced_at])
     %{media_synced: media_synced, total_media: total_media, last_synced_at: last_synced_at_string}
-    #["#{media_synced} out of #{total_media} media files synced", last_synced_at |> DateTime.to_date() |> Date.to_string()]
-
   end
 
   @doc false
