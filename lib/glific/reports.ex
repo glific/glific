@@ -327,8 +327,14 @@ defmodule Glific.Reports do
       |> select([q], q.updated_at)
       |> Repo.one()
 
+    last_synced_at_string =
+      case last_synced_at do
+        nil -> "No date available"
+        datetime -> DateTime.to_date(datetime) |> Date.to_string()
+      end
+
     IO.inspect([total_media, media_synced, last_synced_at])
-    %{media_synced: media_synced, total_media: total_media, last_synced_at: last_synced_at |> DateTime.to_date() |> Date.to_string()}
+    %{media_synced: media_synced, total_media: total_media, last_synced_at: last_synced_at_string}
     #["#{media_synced} out of #{total_media} media files synced", last_synced_at |> DateTime.to_date() |> Date.to_string()]
 
   end
