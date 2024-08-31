@@ -154,21 +154,6 @@ defmodule Glific.Reports do
 
   defp get_count_query(:conversation_count), do: select(Stat, [q], sum(q.conversations))
 
-  defp get_count_query(:total_media), do: select(MessageMedia, [q], count(q.id))
-
-  defp get_count_query(:media_synced) do
-    message_media_id = get_count_query(:message_media_id)
-    MessageMedia
-    |> select([q], count(q.id))
-    |> where([q], q.id > ^message_media_id)
-  end
-
-  defp get_count_query(:message_media_id) do
-    GcsJob
-    |> select([q], q.message_media_id)
-    |> where([q], q.type == "incremental")
-  end
-
   @spec add_timestamps(Ecto.Query.t(), atom(), [{atom(), any()}], map()) :: Ecto.Query.t()
   defp add_timestamps(query, kpi, _opts, date_range)
        when kpi in [
