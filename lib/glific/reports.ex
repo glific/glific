@@ -570,15 +570,12 @@ defmodule Glific.Reports do
     |> Timex.shift(days: days)
   end
 
-  @doc """
-  Converts table names such as "flow_results" to "Flow Results"
-  """
-  @spec
+  @doc false
+  @spec format_table_name(String.t()) :: String.t()
   def format_table_name(table_name) do
     table_name
     |> String.split("_")
-    |> Enum.map(&String.capitalize/1)
-    |> Enum.join(" ")
+    |> Enum.map_join(" ", &String.capitalize/1)
   end
 
 end
