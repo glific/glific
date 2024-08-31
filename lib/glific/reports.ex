@@ -296,6 +296,7 @@ defmodule Glific.Reports do
       |> select([b], %{table_id: b.table_id, table: b.table, last_updated_at: b.last_updated_at})
 
     Repo.all(query)
+    |> Enum.map(fn x -> Map.update(x, :table, 0, fn name -> format_table_name(name) end) end)
   end
 
   def get_sync_data(:media_sync, org_id) do
@@ -568,4 +569,16 @@ defmodule Glific.Reports do
     |> Timex.beginning_of_day()
     |> Timex.shift(days: days)
   end
+
+  @doc """
+  Converts table names such as "flow_results" to "Flow Results"
+  """
+  @spec
+  def format_table_name(table_name) do
+    table_name
+    |> String.split("_")
+    |> Enum.map(&String.capitalize/1)
+    |> Enum.join(" ")
+  end
+
 end
