@@ -13,7 +13,8 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
   alias Glific.{
     WAGroup.WAManagedPhone,
-    Repo
+    Repo,
+    Notifications
   }
 
   plug(Tesla.Middleware.FormUrlencoded,
@@ -140,8 +141,10 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   @doc """
   add the phone status
   """
-  @spec status(String.t(), non_neg_integer()) :: {:ok, WAManagedPhone}
+  @spec status(String.t(), non_neg_integer()) :: {:ok, WAManagedPhone} | {:error, String.t()}
   def status(new_status, phone_id) do
+    organization_id = Repo.get_organization_id()
+
     phone =
       from(p in WAManagedPhone,
         where: p.phone_id == ^phone_id
@@ -150,12 +153,32 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
     case phone do
       nil ->
-        "Phone ID not found"
+        {:error, "Phone ID not found"}
 
       _phone ->
-        phone
-        |> WAManagedPhone.changeset(%{status: new_status})
-        |> Repo.update()
+        case phone
+             |> WAManagedPhone.changeset(%{status: new_status})
+             |> Repo.update() do
+          {:ok, wa_managed_phone} ->
+            if new_status != "active" do
+              Notifications.create_notification(%{
+                category: "WhatsApp Groups",
+                message:
+                  "Cannot send messages. WhatsApp phone #{wa_managed_phone.phone} is not connected with Maytapi. Current status: #{wa_managed_phone.status}",
+                severity: Notifications.types().critical,
+                organization_id: organization_id,
+                entity: %{
+                  phone: wa_managed_phone.phone,
+                  status: new_status
+                }
+              })
+            end
+
+            {:ok, wa_managed_phone}
+
+          {:error, _changeset} ->
+            {:error, "Failed to update status"}
+        end
     end
   end
 end

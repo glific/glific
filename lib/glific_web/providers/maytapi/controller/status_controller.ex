@@ -6,7 +6,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.StatusController do
 
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
-  def handler(conn, params, msg) do
+  def handler(conn, _params, _msg) do
     conn
     |> Plug.Conn.send_resp(200, "")
     |> Plug.Conn.halt()

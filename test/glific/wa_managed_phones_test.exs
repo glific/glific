@@ -4,7 +4,10 @@ defmodule Glific.WAManagedPhonesTest do
   alias Glific.{
     Partners,
     WAGroup.WAManagedPhone,
-    WAManagedPhones
+    WAManagedPhones,
+    Fixtures,
+    Providers.Maytapi.ApiClient,
+    Notifications.Notification
   }
 
   describe "wa_managed_phones" do
@@ -161,6 +164,44 @@ defmodule Glific.WAManagedPhonesTest do
 
       assert {:error, "Product id is wrong! Please check your Account information."} ==
                WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
+    end
+
+    test "status/2 should update the status on wa_managed_phone check all the possible errors", %{
+      organization_id: organization_id
+    } do
+      wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+      new_status = "active"
+      phone_id = wa_managed_phone.phone_id
+
+      {:ok, updated_phone} = ApiClient.status(new_status, phone_id)
+
+      assert updated_phone.status == new_status
+
+      # shouild give an error if phone id does not exist
+      new_status = "active"
+      phone_id = 999
+
+      assert ApiClient.status(new_status, phone_id) == {:error, "Phone ID not found"}
+    end
+
+    test "status/2 should create a notification when status is not 'active'", %{
+      organization_id: organization_id
+    } do
+      wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+      new_status = "qr-screen"
+      phone_id = wa_managed_phone.phone_id
+
+      {:ok, _updated_phone} = ApiClient.status(new_status, phone_id)
+
+      {:ok, notification} =
+        Repo.fetch_by(Notification, %{
+          organization_id: organization_id
+        })
+
+      assert notification.message ==
+               "Cannot send messages. WhatsApp phone 9829627508 is not connected with Maytapi. Current status: qr-screen"
     end
   end
 end

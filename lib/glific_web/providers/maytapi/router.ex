@@ -26,7 +26,7 @@ defmodule GlificWeb.Providers.Maytapi.Router do
       post("/*unknown", DefaultController, :unknown)
     end
 
-    scope "status" do
+    scope "/status" do
       post("/status", StatusController, :status)
       post("/*unknown", DefaultController, :unknown)
     end
