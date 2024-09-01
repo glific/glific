@@ -14,8 +14,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.StatusController do
 
   @doc false
   @spec status(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def status(conn, %{"status" => status, "phone_id" => phoneId} = params) do
-    ApiClient.status(status, phoneId)
+  def status(conn, %{"status" => status, "phone_id" => phone_id} = params) do
+    ApiClient.status(status, phone_id)
 
     handler(conn, params, "status handler")
   end

@@ -12,9 +12,9 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   use Tesla
 
   alias Glific.{
-    WAGroup.WAManagedPhone,
+    Notifications,
     Repo,
-    Notifications
+    WAGroup.WAManagedPhone
   }
 
   plug(Tesla.Middleware.FormUrlencoded,

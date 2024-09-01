@@ -2,12 +2,12 @@ defmodule Glific.WAManagedPhonesTest do
   use Glific.DataCase
 
   alias Glific.{
-    Partners,
-    WAGroup.WAManagedPhone,
-    WAManagedPhones,
     Fixtures,
+    Notifications.Notification,
+    Partners,
     Providers.Maytapi.ApiClient,
-    Notifications.Notification
+    WAGroup.WAManagedPhone,
+    WAManagedPhones
   }
 
   describe "wa_managed_phones" do
