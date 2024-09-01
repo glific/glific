@@ -148,7 +148,7 @@ defmodule Glific.OpenAI.ChatGPT do
   This function makes an API call to the OpenAI and returns the public media URL of the file.
   """
   @spec text_to_speech(non_neg_integer(), String.t(), String.t(), String.t()) :: map()
-  def text_to_speech(org_id, text, voice \\ "alloy", model \\ "tts-1") do
+  def text_to_speech(org_id, text, voice \\ "nova", model \\ "tts-1") do
     url = @endpoint <> "/audio/speech"
     api_key = Glific.get_open_ai_key()
 
