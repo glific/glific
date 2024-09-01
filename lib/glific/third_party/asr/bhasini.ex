@@ -1,6 +1,6 @@
 defmodule Glific.ASR.Bhasini do
   @moduledoc """
-  This is a module to convert speech to text by using bhasini api
+  This is a module to convert speech to text by using Bhasini API
   """
   use Tesla
   require Logger
@@ -83,7 +83,7 @@ defmodule Glific.ASR.Bhasini do
           "taskType" => task_type,
           "config" => %{
             "language" => %{
-              "sourceLanguage" => "#{source_language}"
+              "sourceLanguage" => Glific.Bhasini.get_iso_code(source_language, "iso_639_1")
             }
           }
         }
