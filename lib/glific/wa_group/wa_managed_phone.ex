@@ -50,7 +50,7 @@ defmodule Glific.WAGroup.WAManagedPhone do
     # these are associated with the whatsapp api provider
     # using maytapi as template
     field :phone_id, :integer
-    #status of the phone is that is connected with the maytapi console or not
+
     field :status, :string
 
     belongs_to(:organization, Organization)
