@@ -5,10 +5,16 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
   alias Glific.Partners
   alias Plug.Conn.Query
+  import Ecto.Query
 
   @maytapi_url "https://api.maytapi.com/api"
 
   use Tesla
+
+  alias Glific.{
+    WAGroup.WAManagedPhone,
+    Repo
+  }
 
   plug(Tesla.Middleware.FormUrlencoded,
     encode: &Query.encode/1
@@ -128,6 +134,28 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
       url = @maytapi_url <> "/#{product_id}/setWebhook"
       maytapi_post(url, payload, token)
+    end
+  end
+
+  @doc """
+  add the phone status
+  """
+  @spec status(String.t(), non_neg_integer()) :: {:ok, WAManagedPhone}
+  def status(new_status, phone_id) do
+    phone =
+      from(p in WAManagedPhone,
+        where: p.phone_id == ^phone_id
+      )
+      |> Repo.one()
+
+    case phone do
+      nil ->
+        "Phone ID not found"
+
+      _phone ->
+        phone
+        |> WAManagedPhone.changeset(%{status: new_status})
+        |> Repo.update()
     end
   end
 end

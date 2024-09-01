@@ -61,6 +61,21 @@ defmodule GlificWeb.Providers.Maytapi.Plugs.Shunt do
   end
 
   @doc false
+  def call(%Conn{params: %{"status" => _status}} = conn, opts) do
+    organization = build_context(conn)
+
+    path =
+      ["maytapi"] ++
+        if Glific.safe_string_to_atom(organization.status) == :active,
+          do: ["status", "status"],
+          else: ["not_active"]
+
+    conn
+    |> change_path_info(path)
+    |> Router.call(opts)
+  end
+
+  @doc false
   def call(conn, opts) do
     conn
     |> change_path_info(["maytapi", "unknown", "unknown"])
