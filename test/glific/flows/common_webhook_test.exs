@@ -237,6 +237,66 @@ defmodule Glific.Flows.CommonWebhookTest do
     end
   end
 
+  @tag :resp
+  test "parse_via_gpt_vision with response_format param as json_schema, but got a non-nil refusal" do
+    with_mock(
+      Messages,
+      validate_media: fn _, _ -> %{is_valid: true, message: "success"} end
+    ) do
+      Tesla.Mock.mock(fn
+        %{url: "https://api.openai.com/v1/chat/completions"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "choices" => [
+                %{
+                  "message" => %{
+                    "content" => nil,
+                    "refusal" =>
+                      "I'm sorry, but I can't provide the information from the document."
+                  }
+                }
+              ]
+            }
+          }
+      end)
+
+      fields = %{
+        "prompt" =>
+          "ignore the image, value of steps is 4 and value of answer is 10, give in valid json",
+        "url" =>
+          "https://fastly.picsum.photos/id/145/200/300.jpg?hmac=mIsOtHDzbaNzDdNRa6aQCd5CHCVewrkTO5B1D4aHMB8",
+        "model" => "gpt-4o",
+        "response_format" => %{
+          "type" => "json_schema",
+          "json_schema" => %{
+            "name" => "schemaing",
+            "strict" => true,
+            "schema" => %{
+              "type" => "object",
+              "properties" => %{
+                "steps" => %{
+                  "type" => "string"
+                },
+                "answer" => %{
+                  "type" => "string"
+                }
+              },
+              "required" => [
+                "steps",
+                "answer"
+              ],
+              "additionalProperties" => false
+            }
+          }
+        }
+      }
+
+      assert "I'm sorry, but I can't provide the information from the document." =
+               CommonWebhook.webhook("parse_via_gpt_vision", fields)
+    end
+  end
+
   test "parse_via_gpt_vision with response_format param as invalid json_schema, trying to get valid json" do
     with_mock(
       Messages,

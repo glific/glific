@@ -132,7 +132,10 @@ defmodule Glific.OpenAI.ChatGPT do
         {:error, "Got empty response #{inspect(body)}"}
 
       {:ok, %Tesla.Env{status: 200, body: %{"choices" => choices} = _body}} ->
-        {:ok, hd(choices)["message"]["content"]}
+        case hd(choices)["message"]["content"] do
+          nil -> {:error, hd(choices)["message"]["refusal"]}
+          msg -> {:ok, msg}
+        end
 
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         {:error, "Got different response #{inspect(body)}"}

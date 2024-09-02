@@ -26,7 +26,7 @@ defmodule Glific.Clients.CommonWebhook do
          {:ok, text} <- Glific.get_open_ai_key() |> ChatGPT.parse(fields) do
       %{
         success: true,
-        parsed_msg: parse_gpt_response(fields, text)
+        parsed_msg: parse_gpt_response(text)
       }
     else
       {:error, error} ->
@@ -59,7 +59,7 @@ defmodule Glific.Clients.CommonWebhook do
     with %{is_valid: true} <- Glific.Messages.validate_media(url, "image"),
          {:ok, fields} <- parse_response_format(fields),
          {:ok, response} <- ChatGPT.gpt_vision(fields) do
-      %{success: true, response: parse_gpt_response(fields, response)}
+      %{success: true, response: parse_gpt_response(response)}
     else
       %{is_valid: false, message: message} ->
         Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{message}")
@@ -435,12 +435,14 @@ defmodule Glific.Clients.CommonWebhook do
 
   defp parse_response_format(fields), do: {:ok, Map.put(fields, "response_format", nil)}
 
-  @spec parse_gpt_response(map(), String.t()) :: any()
-  defp parse_gpt_response(fields, response) do
-    case Map.get(fields, "response_format") do
-      %{"type" => "json_schema"} -> Jason.decode!(response)
-      %{"type" => "json_object"} -> Jason.decode!(response)
-      _ -> response
+  @spec parse_gpt_response(String.t()) :: any()
+  defp parse_gpt_response(response) do
+    case Jason.decode(response) do
+      {:ok, decoded_response} ->
+        decoded_response
+
+      {:error, _err} ->
+        response
     end
   end
 
@@ -454,7 +456,7 @@ defmodule Glific.Clients.CommonWebhook do
          "question_text" => Map.get(fields, "question_text"),
          "prompt" => Map.get(fields, "prompt", nil),
          # ID of the model to use.
-         "model" => Map.get(fields, "model", "gpt-3.5-turbo"),
+         "model" => Map.get(fields, "model", "gpt-4o"),
          # The sampling temperature, between 0 and 1.
          # Higher values like 0.8 will make the output more random,
          # while lower values like 0.2 will make it more focused and deterministic.
