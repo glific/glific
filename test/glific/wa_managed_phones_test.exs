@@ -212,7 +212,7 @@ defmodule Glific.WAManagedPhonesTest do
     assert WAManagedPhones.status(new_status, phone_id) == {:error, "Phone ID not found"}
   end
 
-  test "status/2 should create a notification when status is not 'active'", %{
+  test "status/2 should create a notification when status is not 'active' or loading", %{
     organization_id: organization_id
   } do
     wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
@@ -229,5 +229,20 @@ defmodule Glific.WAManagedPhonesTest do
 
     assert notification.message ==
              "Cannot send messages. WhatsApp phone 9829627508 is not connected with Maytapi. Current status: qr-screen"
+  end
+
+  test "status/2 shouldn't create a notification when status is 'active' or loading", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+    new_status = wa_managed_phone.status
+    phone_id = wa_managed_phone.phone_id
+
+    {:ok, _updated_phone} = WAManagedPhones.status(new_status, phone_id)
+
+    fetch_result = Repo.fetch_by(Notification, %{organization_id: organization_id})
+
+    assert fetch_result ==
+             {:error, ["Elixir.Glific.Notifications.Notification", "Resource not found"]}
   end
 end

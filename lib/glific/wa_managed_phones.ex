@@ -207,7 +207,7 @@ defmodule Glific.WAManagedPhones do
              |> WAManagedPhone.changeset(%{status: new_status})
              |> Repo.update() do
           {:ok, wa_managed_phone} ->
-            if new_status != "active" do
+            if new_status not in ["active", "loading"] do
               Notifications.create_notification(%{
                 category: "WhatsApp Groups",
                 message:

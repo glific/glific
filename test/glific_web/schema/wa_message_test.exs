@@ -207,7 +207,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
              })
   end
 
-  test "send media message without caption", %{staff: user, conn: conn} do
+  test "send media message without caption", %{staff: user, conn: _conn} do
     wa_phone =
       Fixtures.wa_managed_phone_fixture(%{
         organization_id: user.organization_id
