@@ -2025,8 +2025,20 @@ defmodule Glific.BigQuery.Schema do
         mode: "REQUIRED"
       },
       %{
-        description: "Reference for the contact",
+        description: "Reference for the contact id",
         name: "contact_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Reference for the contact name",
+        name: "name",
+        type: "string",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Reference for the contact phone",
+        name: "phone",
         type: "INTEGER",
         mode: "NULLABLE"
       },
@@ -2034,6 +2046,12 @@ defmodule Glific.BigQuery.Schema do
         description: "Reference for the collection",
         name: "group_id",
         type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Reference for the collection name",
+        name: "group_name",
+        type: "string",
         mode: "NULLABLE"
       },
       %{
