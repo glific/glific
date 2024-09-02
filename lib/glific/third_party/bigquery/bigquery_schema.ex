@@ -2013,6 +2013,51 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for the contact_groups table
+  """
+  @spec contacts_groups_schema :: list()
+  def contacts_groups_schema do
+    [
+      %{
+        description: "Unique ID for the contact groups",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Reference for the contact",
+        name: "contact_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Reference for the collection",
+        name: "group_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the contact was added in group",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the contact group was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for the trackers_all_schema table
   """
   @spec trackers_all_schema :: list()
