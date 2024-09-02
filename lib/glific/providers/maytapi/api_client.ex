@@ -5,17 +5,10 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
   alias Glific.Partners
   alias Plug.Conn.Query
-  import Ecto.Query
 
   @maytapi_url "https://api.maytapi.com/api"
 
   use Tesla
-
-  alias Glific.{
-    Notifications,
-    Repo,
-    WAGroup.WAManagedPhone
-  }
 
   plug(Tesla.Middleware.FormUrlencoded,
     encode: &Query.encode/1
@@ -135,50 +128,6 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
       url = @maytapi_url <> "/#{product_id}/setWebhook"
       maytapi_post(url, payload, token)
-    end
-  end
-
-  @doc """
-  add the phone status
-  """
-  @spec status(String.t(), non_neg_integer()) :: {:ok, WAManagedPhone} | {:error, String.t()}
-  def status(new_status, phone_id) do
-    organization_id = Repo.get_organization_id()
-
-    phone =
-      from(p in WAManagedPhone,
-        where: p.phone_id == ^phone_id
-      )
-      |> Repo.one()
-
-    case phone do
-      nil ->
-        {:error, "Phone ID not found"}
-
-      _phone ->
-        case phone
-             |> WAManagedPhone.changeset(%{status: new_status})
-             |> Repo.update() do
-          {:ok, wa_managed_phone} ->
-            if new_status != "active" do
-              Notifications.create_notification(%{
-                category: "WhatsApp Groups",
-                message:
-                  "Cannot send messages. WhatsApp phone #{wa_managed_phone.phone} is not connected with Maytapi. Current status: #{wa_managed_phone.status}",
-                severity: Notifications.types().critical,
-                organization_id: organization_id,
-                entity: %{
-                  phone: wa_managed_phone.phone,
-                  status: new_status
-                }
-              })
-            end
-
-            {:ok, wa_managed_phone}
-
-          {:error, _changeset} ->
-            {:error, "Failed to update status"}
-        end
     end
   end
 end

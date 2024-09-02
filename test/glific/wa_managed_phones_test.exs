@@ -1,14 +1,17 @@
 defmodule Glific.WAManagedPhonesTest do
-  use Glific.DataCase
+  use GlificWeb.ConnCase
+  use Wormwood.GQLCase
 
   alias Glific.{
     Fixtures,
     Notifications.Notification,
     Partners,
-    Providers.Maytapi.ApiClient,
+    Repo,
     WAGroup.WAManagedPhone,
     WAManagedPhones
   }
+
+  alias GlificWeb.Providers.Maytapi.Controllers.StatusController
 
   describe "wa_managed_phones" do
     import Glific.Fixtures
@@ -165,43 +168,66 @@ defmodule Glific.WAManagedPhonesTest do
       assert {:error, "Product id is wrong! Please check your Account information."} ==
                WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
     end
+  end
 
-    test "status/2 should update the status on wa_managed_phone check all the possible errors", %{
-      organization_id: organization_id
-    } do
-      wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+  test "status/2 webhook should update the status on wa_managed_phone", %{
+    staff: user,
+    conn: conn
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
-      new_status = "active"
-      phone_id = wa_managed_phone.phone_id
+    params = %{
+      "phoneId" => wa_managed_phone.phone_id,
+      "phone_id" => wa_managed_phone.phone_id,
+      "pid" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d",
+      "product_id" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d",
+      "status" => "active",
+      "type" => "status"
+    }
 
-      {:ok, updated_phone} = ApiClient.status(new_status, phone_id)
+    conn = StatusController.status(conn, params)
 
-      assert updated_phone.status == new_status
+    assert conn.status == 200
 
-      # shouild give an error if phone id does not exist
-      new_status = "active"
-      phone_id = 999
+    updated_phone = WAManagedPhones.get_wa_managed_phone!(wa_managed_phone.id)
+    assert updated_phone.status == "active"
+  end
 
-      assert ApiClient.status(new_status, phone_id) == {:error, "Phone ID not found"}
-    end
+  test "status/2 should update the status on wa_managed_phone check all the possible errors", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
 
-    test "status/2 should create a notification when status is not 'active'", %{
-      organization_id: organization_id
-    } do
-      wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+    new_status = "active"
+    phone_id = wa_managed_phone.phone_id
 
-      new_status = "qr-screen"
-      phone_id = wa_managed_phone.phone_id
+    {:ok, updated_phone} = WAManagedPhones.status(new_status, phone_id)
 
-      {:ok, _updated_phone} = ApiClient.status(new_status, phone_id)
+    assert updated_phone.status == new_status
 
-      {:ok, notification} =
-        Repo.fetch_by(Notification, %{
-          organization_id: organization_id
-        })
+    # should give an error if phone id does not exist
+    new_status = "active"
+    phone_id = 999
 
-      assert notification.message ==
-               "Cannot send messages. WhatsApp phone 9829627508 is not connected with Maytapi. Current status: qr-screen"
-    end
+    assert WAManagedPhones.status(new_status, phone_id) == {:error, "Phone ID not found"}
+  end
+
+  test "status/2 should create a notification when status is not 'active'", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+    new_status = "qr-screen"
+    phone_id = wa_managed_phone.phone_id
+
+    {:ok, _updated_phone} = WAManagedPhones.status(new_status, phone_id)
+
+    {:ok, notification} =
+      Repo.fetch_by(Notification, %{
+        organization_id: organization_id
+      })
+
+    assert notification.message ==
+             "Cannot send messages. WhatsApp phone 9829627508 is not connected with Maytapi. Current status: qr-screen"
   end
 end
