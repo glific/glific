@@ -913,6 +913,29 @@ defmodule Glific.ContactsTest do
       assert error_message == "Contact upload report doesn't exist"
     end
 
+    test "get_contact_upload_report/2 returns the correct report when there are no errors" do
+      [organization | _] = Partners.list_organizations()
+
+      user_job_attrs = %{
+        status: "success",
+        type: "contact_import",
+        total_tasks: 5,
+        tasks_done: 5,
+        organization_id: organization.id,
+        errors: %{},
+        all_tasks_created: true
+      }
+
+      user_job = UserJob.create_user_job(user_job_attrs)
+
+      params = %{user_job_id: user_job.id}
+
+      assert {:ok, %{csv_rows: csv_rows}} =
+               Import.get_contact_upload_report(organization.id, params)
+
+      assert csv_rows == "Phone,Status"
+    end
+
     test "update_contact/2 with valid data updates the contact",
          %{organization_id: _organization_id} = attrs do
       contact = contact_fixture(attrs)
