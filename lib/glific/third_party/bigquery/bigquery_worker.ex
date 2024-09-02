@@ -529,7 +529,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             name: row.contact.name,
             phone: row.contact.phone,
             group_id: row.group.id,
-            group_name: row.group_name,
+            group_name: row.group.label,
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
