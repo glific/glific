@@ -77,19 +77,18 @@ defmodule Glific.Clients.CommonWebhook do
     assistant_id = Map.get(fields, "assistant_id", nil)
     remove_citation = Map.get(fields, "remove_citation", false)
 
-    case ChatGPT.retrieve_assistant(assistant_id) do
-      {:ok, _assistant_name} ->
-        params = %{
-          thread_id: thread_id,
-          assistant_id: assistant_id,
-          question: question,
-          remove_citation: remove_citation
-        }
+    with {:ok, _assistant_name} <- ChatGPT.retrieve_assistant(assistant_id),
+         {:ok, thread_id} <- ChatGPT.validate_thread_id(thread_id) do
+      params = %{
+        thread_id: thread_id,
+        assistant_id: assistant_id,
+        question: question,
+        remove_citation: remove_citation
+      }
 
-        ChatGPT.handle_conversation(params)
-
-      {:error, error} ->
-        error
+      ChatGPT.handle_conversation(params)
+    else
+      {:error, error} -> error
     end
   end
 
