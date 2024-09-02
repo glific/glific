@@ -136,8 +136,11 @@ defmodule Glific.Contacts.Import do
 
     case UserJob.list_user_jobs(%{filter: %{id: params.user_job_id}}) do
       [%UserJob{status: "success"} = user_job] ->
+        # Right now we only add the errors in the csv
+        errors = user_job.errors["errors"] || %{}
+
         csv_rows =
-          user_job.errors["errors"]
+          errors
           |> Enum.reduce("Phone,Status", fn {phone, status}, acc ->
             acc <> "\r\n#{phone},#{status}"
           end)
