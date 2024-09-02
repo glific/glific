@@ -237,7 +237,6 @@ defmodule Glific.Flows.CommonWebhookTest do
     end
   end
 
-  @tag :resp
   test "parse_via_gpt_vision with response_format param as json_schema, but got a non-nil refusal" do
     with_mock(
       Messages,
