@@ -34,6 +34,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Flows.FlowRevision,
     Flows.MessageBroadcast,
     Flows.MessageBroadcastContact,
+    Groups.ContactGroup,
     Groups.ContactWAGroup,
     Groups.Group,
     Groups.WAGroup,
@@ -49,8 +50,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Tickets.Ticket,
     Trackers.Tracker,
     Users.User,
-    WAGroup.WAMessage,
-    Groups.ContactGroup
+    WAGroup.WAMessage
   }
 
   @per_min_limit 500
