@@ -269,11 +269,18 @@ defmodule Glific.OpenAI.ChatGPT do
   end
 
   @doc """
+  Validating thread ID passed
+  If nil is passed then returning {:ok, nil} as it will create new thread
+  """
+  @spec validate_thread_id(nil | String.t()) :: {:ok, any()} | {:error, String.t()}
+  def validate_thread_id(nil), do: {:ok, nil}
+  def validate_thread_id(thread_id), do: fetch_thread(%{thread_id: thread_id})
+
+  @doc """
   API call to fetch thread and validate thread ID
   """
-  @spec fetch_thread(map()) :: map()
-  def fetch_thread(%{thread_id: nil}),
-    do: %{success: false, error: "invalid thread ID"}
+  @spec fetch_thread(map()) :: {:ok, String.t()} | {:error, String.t()}
+  def fetch_thread(%{thread_id: nil}), do: {:error, "No thread found with nil id."}
 
   def fetch_thread(%{thread_id: thread_id}) do
     url = @endpoint <> "/threads/#{thread_id}"
@@ -281,14 +288,14 @@ defmodule Glific.OpenAI.ChatGPT do
     Tesla.get(url, headers: headers())
     |> case do
       {:ok, %Tesla.Env{status: 200, body: _body}} ->
-        %{success: true}
+        {:ok, thread_id}
 
       {:ok, %Tesla.Env{status: 404, body: body}} ->
         error = Jason.decode!(body)
-        %{success: false, error: error["error"]["message"]}
+        {:error, error["error"]["message"]}
 
       {_status, _response} ->
-        %{success: false, error: "invalid response returned from OpenAI"}
+        {:error, "invalid response returned from OpenAI"}
     end
   end
 
@@ -435,21 +442,6 @@ defmodule Glific.OpenAI.ChatGPT do
   end
 
   @doc """
-  API call to run a thread
-  """
-  @spec validate_and_get_thread_id(map()) :: map()
-  def validate_and_get_thread_id(params) do
-    case fetch_thread(params) do
-      %{success: true} ->
-        params.thread_id
-
-      _ ->
-        thread = create_thread()
-        if is_map(thread), do: Map.get(thread, "id", ""), else: ""
-    end
-  end
-
-  @doc """
   Handling filesearch openai conversation, basically checks if a thread id is passed then continue appending followup questions else create a new thread, add message and run thread to generate response
   """
   @spec handle_conversation(map()) :: map()
@@ -468,10 +460,7 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
-  def handle_conversation(%{remove_citation: remove_citation} = params) do
-    thread_id = validate_and_get_thread_id(params)
-    Process.sleep(4_000)
-
+  def handle_conversation(%{thread_id: thread_id, remove_citation: remove_citation} = params) do
     add_message_to_thread(%{thread_id: thread_id, question: params.question})
 
     Process.sleep(12_000)
