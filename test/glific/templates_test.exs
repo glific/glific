@@ -1854,5 +1854,28 @@ defmodule Glific.TemplatesTest do
               "Button texts cannot contain any variables, newlines, emojis or formatting characters (e.g., bold, italics)."
             ]} =
              Templates.create_session_template(attrs_5)
+
+    # check for hindi content
+    attrs = %{
+      body: "इनमें से कौन सा विकल्प आपके आवासीय स्थिति का सबसे अच्छा वर्णन करता है?",
+      label: "New Label",
+      language_id: language.id,
+      is_hsm: true,
+      type: :text,
+      shortcode: "conference_ticket_status",
+      category: "UTILITY",
+      example: "इनमें से कौन सा विकल्प आपके आवासीय स्थिति का सबसे अच्छा वर्णन करता है?",
+      organization_id: attrs.organization_id,
+      has_buttons: true,
+      button_type: "quick_reply",
+      buttons: [%{"text" => "खुद के घर में रहते हैं ", "type" => "QUICK_REPLY"}]
+    }
+
+    assert {:ok, %SessionTemplate{} = session_template} =
+             Templates.create_session_template(attrs)
+
+    assert session_template.shortcode == "conference_ticket_status"
+    assert session_template.is_hsm == true
+    assert session_template.language_id == language.id
   end
 end
