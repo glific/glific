@@ -2015,8 +2015,8 @@ defmodule Glific.BigQuery.Schema do
   @doc """
   Schema for the contact_groups table
   """
-  @spec contacts_groups_schema :: list()
-  def contacts_groups_schema do
+  @spec contact_groups_schema :: list()
+  def contact_groups_schema do
     [
       %{
         description: "Unique ID for the contact groups",

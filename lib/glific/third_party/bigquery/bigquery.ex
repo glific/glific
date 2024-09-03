@@ -63,7 +63,7 @@ defmodule Glific.BigQuery do
     "wa_messages" => :wa_message_schema,
     "wa_groups" => :wa_group_schema,
     "wa_groups_collections" => :wa_groups_collection_schema,
-    "contacts_groups" => :contacts_groups_schema
+    "contacts_groups" => :contact_groups_schema
   }
 
   @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}

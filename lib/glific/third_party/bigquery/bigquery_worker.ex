@@ -1314,7 +1314,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([m], m.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
-      |> preload([:contact, :groups])
+      |> preload([:contact, :group])
 
   defp get_query("profiles", organization_id, attrs),
     # We are creating a query here with the fields which are required instead of loading all the data.
