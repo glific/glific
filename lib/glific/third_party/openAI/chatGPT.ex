@@ -387,7 +387,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   API call to retrieve a run and check status
   """
-  @spec retrieve_run_and_wait(String.t(), String.t(), String.t(), non_neg_integer(), boolean()) ::
+  @spec retrieve_run_and_wait(String.t(), String.t(), String.t(), boolean()) ::
           {:ok, String.t()} | {:error, String.t()}
   def retrieve_run_and_wait(thread_id, assistant_id, run_id, re_run),
     do: retrieve_run_and_wait(thread_id, assistant_id, run_id, 0, re_run)
