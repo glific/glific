@@ -498,7 +498,6 @@ defmodule Glific.OpenAI.ChatGPT do
            run_thread["thread_id"],
            params.assistant_id,
            run_thread["id"],
-           10,
            false
          ) do
       {:ok, _run_id} ->
