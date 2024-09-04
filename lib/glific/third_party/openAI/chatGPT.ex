@@ -376,7 +376,7 @@ defmodule Glific.OpenAI.ChatGPT do
         # Waiting for atleast 10 seconds after running the thread to generate the response
         Process.sleep(10_000)
 
-        retrieve_run_and_wait(run["thread_id"], params.assistant_id, run["id"], 10, re_run)
+        retrieve_run_and_wait(run["thread_id"], params.assistant_id, run["id"], re_run)
 
       {_status, response} ->
         {:error, "invalid response #{inspect(response)}"}
@@ -411,7 +411,7 @@ defmodule Glific.OpenAI.ChatGPT do
     run_thread(%{thread_id: thread_id, re_run: true, assistant_id: assistant_id})
   end
 
-  defp retrieve_run_and_wait(thread_id, _assistant_id, _run_id, attempt, _re_run)
+  defp retrieve_run_and_wait(thread_id, _assistant_id, _run_id, attempt, true)
        when attempt >= @max_attempts do
     Logger.info(
       "OpenAI run timed out after #{attempt} attempts in second run for thread: #{thread_id}"
