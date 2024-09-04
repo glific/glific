@@ -2033,13 +2033,13 @@ defmodule Glific.BigQuery.Schema do
       %{
         description: "Reference for the contact name",
         name: "name",
-        type: "string",
+        type: "STRING",
         mode: "NULLABLE"
       },
       %{
         description: "Reference for the contact phone",
         name: "phone",
-        type: "INTEGER",
+        type: "STRING",
         mode: "NULLABLE"
       },
       %{
@@ -2051,7 +2051,7 @@ defmodule Glific.BigQuery.Schema do
       %{
         description: "Reference for the collection name",
         name: "group_name",
-        type: "string",
+        type: "STRING",
         mode: "NULLABLE"
       },
       %{
@@ -2065,6 +2065,12 @@ defmodule Glific.BigQuery.Schema do
         name: "updated_at",
         type: "DATETIME",
         mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
       },
       %{
         description: "Time when the record entry was made on bigquery",
