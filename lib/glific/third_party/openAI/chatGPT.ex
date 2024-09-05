@@ -411,7 +411,7 @@ defmodule Glific.OpenAI.ChatGPT do
     )
 
     cancel_run(thread_id, run_id)
-    Process.sleep(5_000)
+    Process.sleep(3_000)
     run_thread(%{thread_id: thread_id, re_run: true, assistant_id: assistant_id})
   end
 
@@ -442,7 +442,7 @@ defmodule Glific.OpenAI.ChatGPT do
         {:ok, run_id}
 
       run["status"] == "in_progress" ->
-        Process.sleep(3_000)
+        Process.sleep(5_000)
         retrieve_run_and_wait(thread_id, assistant_id, run_id, attempt + 1, re_run)
 
       run["status"] == "failed" ->
