@@ -441,12 +441,22 @@ defmodule Glific.OpenAI.ChatGPT do
 
         {:ok, run_id}
 
-      run["status"] == "in_progress" ->
+      run["status"] in ["in_progress", "queued"] ->
         Process.sleep(5_000)
         retrieve_run_and_wait(thread_id, assistant_id, run_id, attempt + 1, re_run)
 
       run["status"] == "failed" ->
         {:error, "Token limit reached for this thread"}
+
+      true ->
+        run_status = run["status"]
+
+        Logger.info(
+          "OpenAI run returned unknown status #{run_status} after #{attempt} attempts in #{run_attempt} run for thread: #{thread_id}"
+        )
+
+        Process.sleep(5_000)
+        retrieve_run_and_wait(thread_id, assistant_id, run_id, attempt + 1, re_run)
     end
   end
 
