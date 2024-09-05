@@ -127,20 +127,37 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   defp check_interactive_content(%{interactive_content: interactive_content}) do
-    check_options(interactive_content)
+    with :ok <- check_global_buttons(interactive_content),
+         :ok <- check_options(interactive_content) do
+      :ok
+    else
+      error -> error
+    end
   end
 
   defp check_interactive_content(_), do: :ok
+
+  @spec check_global_buttons(map()) :: :ok | {:error, String.t()}
+  defp check_global_buttons(%{"globalButtons" => global_buttons}) when is_list(global_buttons) do
+    check_options_for_markdown(global_buttons)
+  end
+
+  defp check_global_buttons(_), do: :ok
 
   @spec check_options(map()) :: :ok | {:error, String.t()}
   defp check_options(%{"options" => options}) do
     check_options_for_markdown(options)
   end
 
+  @spec check_options(map()) :: :ok | {:error, String.t()}
   defp check_options(%{"items" => items}) do
     options_lists =
       Enum.flat_map(items, fn item ->
         Map.get(item, "options", []) ++
+          [
+            %{"title" => item["title"] || "", "description" => ""},
+            %{"title" => item["subtitle"] || "", "description" => ""}
+          ] ++
           Enum.flat_map(item, fn {key, value} ->
             if key != "options" and is_list(value), do: value, else: []
           end)
@@ -154,10 +171,21 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec check_options_for_markdown(list()) :: :ok | {:error, String.t()}
   defp check_options_for_markdown(options) when is_list(options) do
     if Enum.any?(options, fn option ->
-         Regex.match?(
-           ~r/(\*\*.*?\*\*)|(\*.*?\*)|(__.*?__)|(_.*?_)|(#.*?\n)|(\[.*?\]\(.*?\))/,
-           option["title"]
-         )
+         if is_map(option) do
+           title = option["title"] || ""
+           description = option["description"] || ""
+
+           Regex.match?(
+             ~r/(\*\*.*?\*\*)|(\*.*?\*)|(__.*?__)|(_.*?_)|(#.*?\n)|(\[.*?\]\(.*?\))/,
+             title
+           ) or
+             Regex.match?(
+               ~r/(\*\*.*?\*\*)|(\*.*?\*)|(__.*?__)|(_.*?_)|(#.*?\n)|(\[.*?\]\(.*?\))/,
+               description
+             )
+         else
+           false
+         end
        end) do
       {:error,
        "Button text cannot contain any markdown characters (e.g., **bold**, _italics_, etc)."}
@@ -240,14 +268,15 @@ defmodule Glific.Templates.InteractiveTemplates do
     {:ok, message, trimmed_contents} = trim_contents_with_error(translations, label)
     updated_attrs = Map.put(attrs, :translations, trimmed_contents)
 
-    case interactive
-         |> InteractiveTemplate.changeset(updated_attrs)
-         |> Repo.update() do
-      {:ok, updated_interactive} ->
-        {:ok, updated_interactive, message}
-
-      {:error, changeset} ->
-        {:error, changeset}
+    with :ok <- contains_markdown_syntax?(updated_attrs),
+         {:ok, updated_interactive} <-
+           interactive
+           |> InteractiveTemplate.changeset(updated_attrs)
+           |> Repo.update() do
+      {:ok, updated_interactive, message}
+    else
+      {:error, changeset} -> {:error, changeset}
+      error -> error
     end
   end
 

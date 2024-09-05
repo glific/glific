@@ -283,6 +283,87 @@ defmodule Glific.Templates.InteractiveTemplateTest do
             "Button text cannot contain any markdown characters (e.g., **bold**, _italics_, etc)."} ==
              InteractiveTemplates.create_interactive_template(attrs)
 
+    # check global buttons
+    attrs = %{
+      label: "List Label",
+      type: :list,
+      interactive_content: %{
+        "title" => "Interactive list",
+        "body" => "some body",
+        "globalButtons" => [%{"type" => "text", "title" => "**button text**"}],
+        "items" => [
+          %{
+            "title" => "Item Title",
+            "subtitle" => "Subtitle",
+            "options" => [
+              %{"type" => "text", "title" => "Option 1", "description" => "Description"},
+              %{"type" => "text", "title" => "Option 2", "description" => "Description"}
+            ]
+          }
+        ]
+      },
+      organization_id: org_id,
+      language_id: language_fixture().id
+    }
+
+    assert {:error,
+            "Button text cannot contain any markdown characters (e.g., **bold**, _italics_, etc)."} ==
+             InteractiveTemplates.create_interactive_template(attrs)
+
+    # check description
+    attrs = %{
+      label: "List Label",
+      type: :list,
+      interactive_content: %{
+        "title" => "Interactive list",
+        "body" => "some body",
+        "globalButtons" => [%{"type" => "text", "title" => "button text"}],
+        "items" => [
+          %{
+            "title" => "Item Title",
+            "subtitle" => "Subtitle",
+            "options" => [
+              %{"type" => "text", "title" => "Option 1", "description" => "**Description**"},
+              %{"type" => "text", "title" => "Option 2", "description" => "Description"}
+            ]
+          }
+        ]
+      },
+      organization_id: org_id,
+      language_id: language_fixture().id
+    }
+
+    assert {:error,
+            "Button text cannot contain any markdown characters (e.g., **bold**, _italics_, etc)."} ==
+             InteractiveTemplates.create_interactive_template(attrs)
+
+    # check title
+    attrs = %{
+      label: "List Label",
+      type: :list,
+      interactive_content: %{
+        "title" => "Interactive list",
+        "body" => "some body",
+        "globalButtons" => [%{"type" => "text", "title" => "button text"}],
+        "items" => [
+          %{
+            "title" => "**Item Title**",
+            "subtitle" => "Subtitle",
+            "options" => [
+              %{"type" => "text", "title" => "Option 1", "description" => "Description"},
+              %{"type" => "text", "title" => "Option 2", "description" => "Description"}
+            ]
+          }
+        ]
+      },
+      organization_id: org_id,
+      language_id: language_fixture().id
+    }
+
+    assert {:error,
+            "Button text cannot contain any markdown characters (e.g., **bold**, _italics_, etc)."} ==
+             InteractiveTemplates.create_interactive_template(attrs)
+
     # quick reply
     attrs = %{
       label: "A label",
