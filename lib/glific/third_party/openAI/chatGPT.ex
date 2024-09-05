@@ -369,7 +369,7 @@ defmodule Glific.OpenAI.ChatGPT do
 
     payload = Jason.encode!(%{"assistant_id" => params.assistant_id})
 
-    Tesla.post(url, payload, headers: headers(), opts: [adapter: [recv_timeout: 10_000]])
+    Tesla.post(url, payload, headers: headers(), opts: [adapter: [recv_timeout: 20_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         run = Jason.decode!(body)
