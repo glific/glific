@@ -236,7 +236,7 @@ defmodule Glific.OpenAI.ChatGPT do
         Jason.decode!(body)
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "invalid response while creating thread #{inspect(response)}"}
     end
   end
 
@@ -264,7 +264,7 @@ defmodule Glific.OpenAI.ChatGPT do
         Jason.decode!(body)
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "invalid response while creating and running thread #{inspect(response)}"}
     end
   end
 
@@ -295,7 +295,7 @@ defmodule Glific.OpenAI.ChatGPT do
         {:error, error["error"]["message"]}
 
       {_status, _response} ->
-        {:error, "invalid response returned from OpenAI"}
+        {:error, "invalid response while fetching thread returned from OpenAI"}
     end
   end
 
@@ -319,7 +319,7 @@ defmodule Glific.OpenAI.ChatGPT do
         Jason.decode!(body)
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "invalid response while adding message to the thread #{inspect(response)}"}
     end
   end
 
@@ -337,7 +337,7 @@ defmodule Glific.OpenAI.ChatGPT do
         |> get_last_msg()
 
       {_status, response} ->
-        %{"error" => "invalid response #{inspect(response)}"}
+        %{"error" => "invalid response while listing thread messages #{inspect(response)}"}
     end
   end
 
@@ -369,7 +369,7 @@ defmodule Glific.OpenAI.ChatGPT do
 
     payload = Jason.encode!(%{"assistant_id" => params.assistant_id})
 
-    Tesla.post(url, payload, headers: headers())
+    Tesla.post(url, payload, headers: headers(), opts: [adapter: [recv_timeout: 10_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         run = Jason.decode!(body)
@@ -379,7 +379,7 @@ defmodule Glific.OpenAI.ChatGPT do
         retrieve_run_and_wait(run["thread_id"], params.assistant_id, run["id"], re_run)
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "invalid response while running thread #{inspect(response)}"}
     end
   end
 
@@ -407,7 +407,7 @@ defmodule Glific.OpenAI.ChatGPT do
     )
 
     cancel_run(thread_id, run_id)
-    Process.sleep(3_000)
+    Process.sleep(5_000)
     run_thread(%{thread_id: thread_id, re_run: true, assistant_id: assistant_id})
   end
 
@@ -454,7 +454,7 @@ defmodule Glific.OpenAI.ChatGPT do
         {:ok, "run cancelled"}
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "invalid response while cancelling thread #{inspect(response)}"}
     end
   end
 
@@ -471,7 +471,7 @@ defmodule Glific.OpenAI.ChatGPT do
         Jason.decode!(body)
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "invalid response while retrieving run #{inspect(response)}"}
     end
   end
 
