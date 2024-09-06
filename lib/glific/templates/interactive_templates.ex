@@ -170,31 +170,32 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   @spec check_options_for_markdown(list()) :: :ok | {:error, String.t()}
   defp check_options_for_markdown(options) when is_list(options) do
-    if Enum.any?(options, fn option ->
-         if is_map(option) do
-           title = option["title"] || ""
-           description = option["description"] || ""
+    case Enum.any?(options, &markdown_in_option?/1) do
+      true ->
+        {:error,
+         "Button text cannot contain any markdown characters (e.g., **bold**, _italics_, etc)."}
 
-           Regex.match?(
-             ~r/(\*\*.*?\*\*)|(\*.*?\*)|(__.*?__)|(_.*?_)|(#.*?\n)|(\[.*?\]\(.*?\))/,
-             title
-           ) or
-             Regex.match?(
-               ~r/(\*\*.*?\*\*)|(\*.*?\*)|(__.*?__)|(_.*?_)|(#.*?\n)|(\[.*?\]\(.*?\))/,
-               description
-             )
-         else
-           false
-         end
-       end) do
-      {:error,
-       "Button text cannot contain any markdown characters (e.g., **bold**, _italics_, etc)."}
-    else
-      :ok
+      false ->
+        :ok
     end
   end
 
   defp check_options_for_markdown(_), do: :ok
+
+  @spec markdown_in_option?(map()) :: boolean()
+  defp markdown_in_option?(option) when is_map(option) do
+    title = option["title"] || ""
+    description = option["description"] || ""
+
+    has_markdown?(title) or has_markdown?(description)
+  end
+
+  defp markdown_in_option?(_), do: false
+
+  @spec has_markdown?(String.t()) :: boolean()
+  defp has_markdown?(text) do
+    Regex.match?(~r/(\*\*.*?\*\*)|(\*.*?\*)|(__.*?__)|(_.*?_)|(#.*?\n)|(\[.*?\]\(.*?\))/, text)
+  end
 
   @spec calculate_total_length(map() | nil) :: integer()
   defp calculate_total_length(%{"content" => content, "options" => options}) do
