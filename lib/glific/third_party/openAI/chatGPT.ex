@@ -44,7 +44,8 @@ defmodule Glific.OpenAI.ChatGPT do
       |> Map.merge(%{
         "messages" => add_prompt(params),
         "model" => params["model"],
-        "temperature" => params["temperature"]
+        "temperature" => params["temperature"],
+        "response_format" => params["response_format"]
       })
 
     middleware = [
@@ -108,7 +109,8 @@ defmodule Glific.OpenAI.ChatGPT do
               }
             ]
           }
-        ]
+        ],
+        "response_format" => params["response_format"]
       }
 
     middleware = [
@@ -130,7 +132,10 @@ defmodule Glific.OpenAI.ChatGPT do
         {:error, "Got empty response #{inspect(body)}"}
 
       {:ok, %Tesla.Env{status: 200, body: %{"choices" => choices} = _body}} ->
-        {:ok, hd(choices)["message"]["content"]}
+        case hd(choices)["message"]["content"] do
+          nil -> {:error, hd(choices)["message"]["refusal"]}
+          msg -> {:ok, msg}
+        end
 
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         {:error, "Got different response #{inspect(body)}"}
@@ -231,7 +236,7 @@ defmodule Glific.OpenAI.ChatGPT do
         Jason.decode!(body)
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "invalid response while creating thread #{inspect(response)}"}
     end
   end
 
@@ -259,16 +264,23 @@ defmodule Glific.OpenAI.ChatGPT do
         Jason.decode!(body)
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "invalid response while creating and running thread #{inspect(response)}"}
     end
   end
 
   @doc """
+  Validating thread ID passed
+  If nil is passed then returning {:ok, nil} as it will create new thread
+  """
+  @spec validate_thread_id(nil | String.t()) :: {:ok, any()} | {:error, String.t()}
+  def validate_thread_id(nil), do: {:ok, nil}
+  def validate_thread_id(thread_id), do: fetch_thread(%{thread_id: thread_id})
+
+  @doc """
   API call to fetch thread and validate thread ID
   """
-  @spec fetch_thread(map()) :: map()
-  def fetch_thread(%{thread_id: nil}),
-    do: %{success: false, error: "invalid thread ID"}
+  @spec fetch_thread(map()) :: {:ok, String.t()} | {:error, String.t()}
+  def fetch_thread(%{thread_id: nil}), do: {:error, "No thread found with nil id."}
 
   def fetch_thread(%{thread_id: thread_id}) do
     url = @endpoint <> "/threads/#{thread_id}"
@@ -276,14 +288,14 @@ defmodule Glific.OpenAI.ChatGPT do
     Tesla.get(url, headers: headers())
     |> case do
       {:ok, %Tesla.Env{status: 200, body: _body}} ->
-        %{success: true}
+        {:ok, thread_id}
 
       {:ok, %Tesla.Env{status: 404, body: body}} ->
         error = Jason.decode!(body)
-        %{success: false, error: error["error"]["message"]}
+        {:error, error["error"]["message"]}
 
       {_status, _response} ->
-        %{success: false, error: "invalid response returned from OpenAI"}
+        {:error, "invalid response while fetching thread returned from OpenAI"}
     end
   end
 
@@ -307,7 +319,7 @@ defmodule Glific.OpenAI.ChatGPT do
         Jason.decode!(body)
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "invalid response while adding message to the thread #{inspect(response)}"}
     end
   end
 
@@ -325,7 +337,7 @@ defmodule Glific.OpenAI.ChatGPT do
         |> get_last_msg()
 
       {_status, response} ->
-        %{"error" => "invalid response #{inspect(response)}"}
+        %{"error" => "invalid response while listing thread messages #{inspect(response)}"}
     end
   end
 
@@ -352,52 +364,116 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec run_thread(map()) :: {:ok, String.t()} | {:error, String.t()}
   def run_thread(params) do
+    re_run = Map.get(params, :re_run, false)
     url = @endpoint <> "/threads/#{params.thread_id}/runs"
 
     payload = Jason.encode!(%{"assistant_id" => params.assistant_id})
 
-    Tesla.post(url, payload, headers: headers())
+    Tesla.post(url, payload, headers: headers(), opts: [adapter: [recv_timeout: 20_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         run = Jason.decode!(body)
         # Waiting for atleast 10 seconds after running the thread to generate the response
         Process.sleep(10_000)
-        retrieve_run_and_wait(run["thread_id"], run["id"], 10)
+        retrieve_run_and_wait(run["thread_id"], params.assistant_id, run["id"], re_run)
+
+      {_status, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
+        error = Jason.decode!(body)
+        error_message = get_in(error, ["error", "message"])
+        {:error, error_message}
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "invalid response while running thread #{inspect(response)}"}
     end
   end
 
+  @max_attempts 10
   @doc """
   API call to retrieve a run and check status
   """
-  @spec retrieve_run_and_wait(String.t(), String.t(), non_neg_integer()) ::
+  @spec retrieve_run_and_wait(String.t(), String.t(), String.t(), boolean()) ::
           {:ok, String.t()} | {:error, String.t()}
-  def retrieve_run_and_wait(thread_id, run_id, max_attempts \\ 10),
-    do: retrieve_run_and_wait(thread_id, run_id, max_attempts, 0)
+  def retrieve_run_and_wait(thread_id, assistant_id, run_id, re_run),
+    do: retrieve_run_and_wait(thread_id, assistant_id, run_id, 0, re_run)
 
-  @spec retrieve_run_and_wait(String.t(), String.t(), non_neg_integer(), non_neg_integer()) ::
+  @spec retrieve_run_and_wait(
+          String.t(),
+          String.t(),
+          String.t(),
+          non_neg_integer(),
+          boolean()
+        ) ::
           {:ok, String.t()} | {:error, String.t()}
-  defp retrieve_run_and_wait(_thread_id, _run_id, max_attempts, attempt)
-       when attempt >= max_attempts do
-    Logger.info("OpenAI run timed out after #{attempt} attempts")
+  defp retrieve_run_and_wait(thread_id, assistant_id, run_id, attempt, false)
+       when attempt >= @max_attempts do
+    Logger.info(
+      "OpenAI run timed out after #{attempt} attempts in first run for thread: #{thread_id}"
+    )
+
+    cancel_run(thread_id, run_id)
+    Process.sleep(3_000)
+    run_thread(%{thread_id: thread_id, re_run: true, assistant_id: assistant_id})
+  end
+
+  defp retrieve_run_and_wait(thread_id, _assistant_id, _run_id, attempt, true)
+       when attempt >= @max_attempts do
+    Logger.info(
+      "OpenAI run timed out after #{attempt} attempts in second run for thread: #{thread_id}"
+    )
+
     {:error, "OpenAI timed out"}
   end
 
-  defp retrieve_run_and_wait(thread_id, run_id, max_attempts, attempt) do
-    run_data =
+  defp retrieve_run_and_wait(thread_id, assistant_id, run_id, attempt, re_run) do
+    run =
       retrieve_run(%{
         thread_id: thread_id,
         run_id: run_id
       })
 
-    if run_data["status"] == "completed" do
-      Logger.info("OpenAI run completed after #{attempt} attempts")
-      {:ok, run_id}
-    else
-      Process.sleep(3_000)
-      retrieve_run_and_wait(thread_id, run_id, max_attempts, attempt + 1)
+    run_attempt = if re_run, do: "second", else: "first"
+
+    cond do
+      run["status"] == "completed" ->
+        Logger.info(
+          "OpenAI run completed after #{attempt} attempts in #{run_attempt} run for thread: #{thread_id}"
+        )
+
+        {:ok, run_id}
+
+      run["status"] in ["in_progress", "queued"] ->
+        Process.sleep(5_000)
+        retrieve_run_and_wait(thread_id, assistant_id, run_id, attempt + 1, re_run)
+
+      run["status"] == "failed" ->
+        {:error, "Token limit reached for this thread"}
+
+      true ->
+        run_status = run["status"]
+
+        Logger.info(
+          "OpenAI run returned unknown status #{run_status} after #{attempt} attempts in #{run_attempt} run for thread: #{thread_id}"
+        )
+
+        Process.sleep(5_000)
+        retrieve_run_and_wait(thread_id, assistant_id, run_id, attempt + 1, re_run)
+    end
+  end
+
+  @doc """
+  API call to cancel a thread
+  """
+  @spec cancel_run(String.t(), String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  def cancel_run(thread_id, run_id) do
+    url = @endpoint <> "/threads/#{thread_id}/runs/#{run_id}/cancel"
+
+    Tesla.post(url, "", headers: headers())
+    |> case do
+      {:ok, %Tesla.Env{status: 200}} ->
+        {:ok, "run cancelled"}
+
+      {_status, response} ->
+        {:error, "invalid response while cancelling thread #{inspect(response)}"}
     end
   end
 
@@ -414,7 +490,7 @@ defmodule Glific.OpenAI.ChatGPT do
         Jason.decode!(body)
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "invalid response while retrieving run #{inspect(response)}"}
     end
   end
 
@@ -430,21 +506,6 @@ defmodule Glific.OpenAI.ChatGPT do
   end
 
   @doc """
-  API call to run a thread
-  """
-  @spec validate_and_get_thread_id(map()) :: map()
-  def validate_and_get_thread_id(params) do
-    case fetch_thread(params) do
-      %{success: true} ->
-        params.thread_id
-
-      _ ->
-        thread = create_thread()
-        if is_map(thread), do: Map.get(thread, "id", ""), else: ""
-    end
-  end
-
-  @doc """
   Handling filesearch openai conversation, basically checks if a thread id is passed then continue appending followup questions else create a new thread, add message and run thread to generate response
   """
   @spec handle_conversation(map()) :: map()
@@ -452,7 +513,12 @@ defmodule Glific.OpenAI.ChatGPT do
     run_thread = create_and_run_thread(params)
     Process.sleep(4_000)
 
-    case retrieve_run_and_wait(run_thread["thread_id"], run_thread["id"], 10) do
+    case retrieve_run_and_wait(
+           run_thread["thread_id"],
+           params.assistant_id,
+           run_thread["id"],
+           false
+         ) do
       {:ok, _run_id} ->
         list_thread_messages(%{thread_id: run_thread["thread_id"]})
         |> remove_citation(remove_citation)
@@ -463,12 +529,8 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
-  def handle_conversation(%{remove_citation: remove_citation} = params) do
-    thread_id = validate_and_get_thread_id(params)
-    Process.sleep(4_000)
-
+  def handle_conversation(%{thread_id: thread_id, remove_citation: remove_citation} = params) do
     add_message_to_thread(%{thread_id: thread_id, question: params.question})
-
     Process.sleep(12_000)
 
     case run_thread(%{thread_id: thread_id, assistant_id: params.assistant_id}) do
