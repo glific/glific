@@ -195,6 +195,7 @@ defmodule Glific.Templates do
      ]}
   end
 
+  @spec contains_invalid_chars?(String.t()) :: boolean()
   defp contains_invalid_chars?(text) do
     contains_variable?(text) or
       contains_newline?(text) or
@@ -202,18 +203,25 @@ defmodule Glific.Templates do
       contains_emoji?(text)
   end
 
+  @spec contains_variable?(String.t()) :: boolean()
   defp contains_variable?(text) do
     Regex.match?(~r/\{\{.*?\}\}/, text)
   end
 
+  @spec contains_newline?(String.t()) :: boolean()
   defp contains_newline?(text) do
     String.contains?(text, "\n")
   end
 
+  @spec contains_emoji?(String.t()) :: boolean()
   defp contains_emoji?(text) do
-    Regex.match?(~r/[^a-zA-Z0-9\s]/, text)
+    emoji_regex =
+      ~r/[\x{1F600}-\x{1F64F}|\x{1F300}-\x{1F5FF}|\x{1F680}-\x{1F6FF}|\x{1F700}-\x{1F77F}|\x{1F780}-\x{1F7FF}|\x{1F800}-\x{1F8FF}|\x{1F900}-\x{1F9FF}|\x{1FA00}-\x{1FA6F}|\x{1FA70}-\x{1FAFF}|\x{2600}-\x{26FF}|\x{2700}-\x{27BF}|\x{1F1E6}-\x{1F1FF}]/u
+
+    Regex.match?(emoji_regex, text)
   end
 
+  @spec contains_formatting?(String.t()) :: boolean()
   defp contains_formatting?(text) do
     # assuming bold, italics, and strikethrough are represented by *, _, ~
     Regex.match?(~r/[*_~]/, text)

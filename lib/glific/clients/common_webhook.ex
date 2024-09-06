@@ -21,46 +21,19 @@ defmodule Glific.Clients.CommonWebhook do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_chat_gpt", fields) do
-    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
-    question_text = fields["question_text"]
-    prompt = Map.get(fields, "prompt", nil)
-
-    # ID of the model to use.
-    model = Map.get(fields, "model", "gpt-3.5-turbo")
-
-    # The sampling temperature, between 0 and 1.
-    # Higher values like 0.8 will make the output more random,
-    # while lower values like 0.2 will make it more focused and deterministic.
-    temperature = Map.get(fields, "temperature", 0)
-
-    params = %{
-      "question_text" => question_text,
-      "prompt" => prompt,
-      "model" => model,
-      "temperature" => temperature
-    }
-
-    if question_text in [nil, ""] do
+    with {:ok, fields} <- parse_chatgpt_fields(fields),
+         {:ok, fields} <- parse_response_format(fields),
+         {:ok, text} <- Glific.get_open_ai_key() |> ChatGPT.parse(fields) do
       %{
-        success: false,
-        parsed_msg: "Could not parsed"
+        success: true,
+        parsed_msg: parse_gpt_response(text)
       }
     else
-      ChatGPT.get_api_key(org_id)
-      |> ChatGPT.parse(params)
-      |> case do
-        {:ok, text} ->
-          %{
-            success: true,
-            parsed_msg: text
-          }
-
-        {_, error} ->
-          %{
-            success: false,
-            parsed_msg: error
-          }
-      end
+      {:error, error} ->
+        %{
+          success: false,
+          parsed_msg: error
+        }
     end
   end
 
@@ -82,11 +55,11 @@ defmodule Glific.Clients.CommonWebhook do
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_gpt_vision", fields) do
     url = fields["url"]
-
     # validating if the url passed is a valid image url
     with %{is_valid: true} <- Glific.Messages.validate_media(url, "image"),
+         {:ok, fields} <- parse_response_format(fields),
          {:ok, response} <- ChatGPT.gpt_vision(fields) do
-      %{success: true, response: response}
+      %{success: true, response: parse_gpt_response(response)}
     else
       %{is_valid: false, message: message} ->
         Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{message}")
@@ -104,19 +77,18 @@ defmodule Glific.Clients.CommonWebhook do
     assistant_id = Map.get(fields, "assistant_id", nil)
     remove_citation = Map.get(fields, "remove_citation", false)
 
-    case ChatGPT.retrieve_assistant(assistant_id) do
-      {:ok, _assistant_name} ->
-        params = %{
-          thread_id: thread_id,
-          assistant_id: assistant_id,
-          question: question,
-          remove_citation: remove_citation
-        }
+    with {:ok, _assistant_name} <- ChatGPT.retrieve_assistant(assistant_id),
+         {:ok, thread_id} <- ChatGPT.validate_thread_id(thread_id) do
+      params = %{
+        thread_id: thread_id,
+        assistant_id: assistant_id,
+        question: question,
+        remove_citation: remove_citation
+      }
 
-        ChatGPT.handle_conversation(params)
-
-      {:error, error} ->
-        error
+      ChatGPT.handle_conversation(params)
+    else
+      {:error, error} -> error
     end
   end
 
@@ -401,6 +373,25 @@ defmodule Glific.Clients.CommonWebhook do
 
   @spec do_text_to_speech_with_bhasini(String.t(), non_neg_integer(), String.t()) ::
           map()
+  defp do_text_to_speech_with_bhasini("english", org_id, text) do
+    organization = Glific.Partners.organization(org_id)
+    services = organization.services["google_cloud_storage"]
+
+    with false <- is_nil(services),
+         %{media_url: media_url} <-
+           ChatGPT.text_to_speech(org_id, text) do
+      %{success: true}
+      |> Map.put(:media_url, media_url)
+      |> Map.put(:translated_text, text)
+    else
+      true ->
+        %{success: false, reason: "GCS is disabled"}
+
+      error ->
+        error
+    end
+  end
+
   defp do_text_to_speech_with_bhasini(source_language, org_id, text) do
     organization = Glific.Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
@@ -421,6 +412,56 @@ defmodule Glific.Clients.CommonWebhook do
       error ->
         Logger.error("Error received from Bhasini: #{error["message"]}")
         Map.put(error, "success", false)
+    end
+  end
+
+  defp parse_response_format(%{"response_format" => response_format} = fields) do
+    case response_format do
+      %{"type" => "json_schema"} ->
+        # Support for json_schema is only since gpt-4o-2024-08-06
+        {:ok, Map.put(fields, "model", "gpt-4o-2024-08-06")}
+
+      %{"type" => "json_object"} ->
+        {:ok, fields}
+
+      nil ->
+        {:ok, fields}
+
+      _ ->
+        {:error, "response_format type should be json_schema or json_object"}
+    end
+  end
+
+  defp parse_response_format(fields), do: {:ok, Map.put(fields, "response_format", nil)}
+
+  @spec parse_gpt_response(String.t()) :: any()
+  defp parse_gpt_response(response) do
+    case Jason.decode(response) do
+      {:ok, decoded_response} ->
+        decoded_response
+
+      {:error, _err} ->
+        response
+    end
+  end
+
+  @spec parse_chatgpt_fields(map()) :: {:ok, map()} | {:error, String.t()}
+  defp parse_chatgpt_fields(fields) do
+    if fields["question_text"] in [nil, ""] do
+      {:error, "question_text is empty"}
+    else
+      {:ok,
+       %{
+         "question_text" => Map.get(fields, "question_text"),
+         "prompt" => Map.get(fields, "prompt", nil),
+         # ID of the model to use.
+         "model" => Map.get(fields, "model", "gpt-4o"),
+         # The sampling temperature, between 0 and 1.
+         # Higher values like 0.8 will make the output more random,
+         # while lower values like 0.2 will make it more focused and deterministic.
+         "temperature" => Map.get(fields, "temperature", 0),
+         "response_format" => Map.get(fields, "response_format", nil)
+       }}
     end
   end
 end
