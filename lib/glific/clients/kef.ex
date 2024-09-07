@@ -39,8 +39,6 @@ defmodule Glific.Clients.KEF do
   """
   @spec gcs_file_name(map()) :: String.t()
   def gcs_file_name(media) do
-    flow_id = media["flow_id"]
-
     media_subfolder =
       case media["type"] do
         "image" -> "Images"
@@ -64,11 +62,8 @@ defmodule Glific.Clients.KEF do
 
         folder_structure = get_folder_structure(media, contact_type, contact.fields)
 
-        if flow_id == 15_436 do
-          "Year end campaign/#{media_subfolder}/#{phone}/" <> media["remote_name"]
-        else
-          "#{folder_structure}/#{media_subfolder}/#{phone}/" <> media["remote_name"]
-        end
+        ("#{folder_structure}/#{media_subfolder}/" <> get_image_name(media["remote_name"], phone))
+        |> IO.inspect(label: :filename)
 
       {:error, _} ->
         "/#{media_subfolder}/" <> media["remote_name"]
@@ -79,26 +74,12 @@ defmodule Glific.Clients.KEF do
   defp get_folder_structure(media, contact_type, fields) do
     current_worksheet_code = get_in(fields, ["current_worksheet_code", "value"])
 
-    with {:ok, school_id} <- get_school_id(contact_type, fields),
-         {:ok, school_name} <- get_school_name(contact_type, fields),
+    with {:ok, school_name} <- get_school_name(contact_type, fields),
          {:ok, flow_subfolder} <- get_flow_subfolder(media["flow_id"], current_worksheet_code) do
-      "#{school_name}/#{school_id}/#{flow_subfolder}"
+      "#{school_name}/#{flow_subfolder}"
     else
       _ -> "Ungrouped users"
     end
-  end
-
-  @spec get_school_id(nil | String.t(), map()) :: {:error, String.t()} | {:ok, String.t()}
-  defp get_school_id(nil, _fields), do: {:error, "Invalid contact_type"}
-
-  defp get_school_id("Parent", fields) do
-    school_id = get_in(fields, ["usersschoolid", "value"])
-    {:ok, school_id}
-  end
-
-  defp get_school_id("Teacher", fields) do
-    school_id = get_in(fields, ["child_school_id", "value"])
-    {:ok, school_id}
   end
 
   @spec get_school_name(nil | String.t(), map()) :: {:error, String.t()} | {:ok, String.t()}
@@ -113,6 +94,8 @@ defmodule Glific.Clients.KEF do
     school_name = get_in(fields, ["school_name", "value"])
     {:ok, school_name}
   end
+
+  defp get_school_name(_, _fields), do: {:error, "Invalid contact_type"}
 
   @spec get_flow_subfolder(non_neg_integer(), String.t()) ::
           {:error, String.t()} | {:ok, String.t()}
@@ -647,5 +630,12 @@ defmodule Glific.Clients.KEF do
       |> Repo.preload([:language])
 
     contact.language
+  end
+
+  @spec get_image_name(String.t(), String.t()) :: String.t()
+  defp get_image_name(remote_name, phone_number) do
+    [datetime, _, _, message_id] = String.split(remote_name, "_")
+    [message_id, ext] = String.split(message_id, ".")
+    datetime <> "_" <> message_id <> "_" <> phone_number <> "." <> ext
   end
 end
