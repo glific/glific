@@ -17,6 +17,7 @@ defmodule Glific.BigQuery do
     Flows.FlowRevision,
     Flows.MessageBroadcast,
     Flows.MessageBroadcastContact,
+    Groups.ContactGroup,
     Groups.ContactWAGroup,
     Groups.WAGroup,
     Groups.WAGroupsCollection,
@@ -61,7 +62,8 @@ defmodule Glific.BigQuery do
     "trackers" => :trackers_schema,
     "wa_messages" => :wa_message_schema,
     "wa_groups" => :wa_group_schema,
-    "wa_groups_collections" => :wa_groups_collection_schema
+    "wa_groups_collections" => :wa_groups_collection_schema,
+    "contacts_groups" => :contact_groups_schema
   }
 
   @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
@@ -190,7 +192,8 @@ defmodule Glific.BigQuery do
     "trackers_all" => Tracker,
     "wa_messages" => WAMessage,
     "wa_groups" => WAGroup,
-    "wa_groups_collections" => WAGroupsCollection
+    "wa_groups_collections" => WAGroupsCollection,
+    "contacts_groups" => ContactGroup
   }
 
   @doc false
