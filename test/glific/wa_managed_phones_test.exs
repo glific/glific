@@ -189,7 +189,11 @@ defmodule Glific.WAManagedPhonesTest do
 
     assert conn.status == 200
 
+    # small delay to allow background task to complete
+    :timer.sleep(100)
+
     updated_phone = WAManagedPhones.get_wa_managed_phone!(wa_managed_phone.id)
+
     assert updated_phone.status == "active"
   end
 

@@ -54,6 +54,28 @@ defmodule Glific.WAManagedPhones do
   def get_wa_managed_phone!(id), do: Repo.get!(WAManagedPhone, id)
 
   @doc """
+  Gets a single wa_managed_phone.
+
+  Raises `Ecto.NoResultsError` if the Wa managed phone does not exist.
+
+  ## Examples
+
+      iex> get_wa_managed_phone(123)
+      %WAManagedPhone{}
+
+      iex> get_wa_managed_phone(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  @spec get_wa_managed_phone(non_neg_integer()) :: WAManagedPhone.t()
+  def get_wa_managed_phone(phone_id) do
+    from(p in WAManagedPhone,
+      where: p.phone_id == ^phone_id
+    )
+    |> Repo.one()
+  end
+
+  @doc """
   Creates a wa_managed_phone.
 
   ## Examples
@@ -192,40 +214,35 @@ defmodule Glific.WAManagedPhones do
   def status(new_status, phone_id) do
     organization_id = Repo.get_organization_id()
 
-    phone =
-      from(p in WAManagedPhone,
-        where: p.phone_id == ^phone_id
-      )
-      |> Repo.one()
+    with %WAManagedPhone{} = phone <- get_wa_managed_phone(phone_id),
+         {:ok, wa_managed_phone} <-
+           phone
+           |> WAManagedPhone.changeset(%{status: new_status})
+           |> Repo.update() do
+      if new_status not in ["active", "loading"] do
+        Notifications.create_notification(%{
+          category: "WhatsApp Groups",
+          message:
+            "Cannot send messages. WhatsApp phone #{wa_managed_phone.phone} is not connected with Maytapi. Current status: #{wa_managed_phone.status}",
+          severity: Notifications.types().critical,
+          organization_id: organization_id,
+          entity: %{
+            phone: wa_managed_phone.phone,
+            status: new_status
+          }
+        })
+      end
 
-    case phone do
+      {:ok, wa_managed_phone}
+    else
       nil ->
         {:error, "Phone ID not found"}
 
-      _phone ->
-        case phone
-             |> WAManagedPhone.changeset(%{status: new_status})
-             |> Repo.update() do
-          {:ok, wa_managed_phone} ->
-            if new_status not in ["active", "loading"] do
-              Notifications.create_notification(%{
-                category: "WhatsApp Groups",
-                message:
-                  "Cannot send messages. WhatsApp phone #{wa_managed_phone.phone} is not connected with Maytapi. Current status: #{wa_managed_phone.status}",
-                severity: Notifications.types().critical,
-                organization_id: organization_id,
-                entity: %{
-                  phone: wa_managed_phone.phone,
-                  status: new_status
-                }
-              })
-            end
+      {:error, changeset} ->
+        {:error, "Failed to update status: #{inspect(changeset.errors)}"}
 
-            {:ok, wa_managed_phone}
-
-          {:error, _changeset} ->
-            {:error, "Failed to update status"}
-        end
+      _ ->
+        {:error, "Unexpected error occurred"}
     end
   end
 end
