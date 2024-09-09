@@ -5,9 +5,34 @@ defmodule Glific.ASR.Bhasini do
   use Tesla
   require Logger
 
+  alias Glific.{
+    Contacts.Contact,
+    Repo
+  }
+
   @config_url "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model"
   @meity_pipeline_id "64392f96daac500b55c543cd"
   # @ai4bharat_pipeline_id "643930aa521a4b1ba0f4c41d"
+
+  def validate_params(fields) do
+    with true <- Map.has_key?(fields, "contact"),
+         true <- Map.has_key?(fields, "speech") do
+      fields["contact"]["id"]
+      |> Glific.parse_maybe_integer!()
+      |> get_contact_language()
+      |> then(&{:ok, &1})
+    else
+      _ ->
+        {:error, "Missing required parameters: contact or speech"}
+    end
+  end
+
+  def get_contact_language(contact_id) do
+    case Repo.fetch(Contact, contact_id) do
+      {:ok, contact} -> contact |> Repo.preload(:language)
+      {:error, error} -> error
+    end
+  end
 
   @doc """
   Performs an ASR (Automatic Speech Recognition) API call with configuration request.
