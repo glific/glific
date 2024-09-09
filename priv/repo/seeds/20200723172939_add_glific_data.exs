@@ -781,7 +781,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   defp set_out_of_office(organization) do
     out_of_office_default_data = %{
-      enabled: true,
+      enabled: false,
       start_time: elem(Time.new(9, 0, 0), 1),
       end_time: elem(Time.new(20, 0, 0), 1),
       enabled_days: [

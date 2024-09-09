@@ -20,6 +20,8 @@ defmodule Glific.Flows.Webhook do
       states: [:available, :scheduled, :executing, :completed]
     ]
 
+  @non_unique_urls ["parse_via_gpt_vision", "parse_via_chat_gpt", "filesearch-gpt"]
+
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
     now = System.system_time(:second)
@@ -205,7 +207,7 @@ defmodule Glific.Flows.Webhook do
     action = Map.put(action, :url, parsed_attrs.url)
     webhook_log = create_log(action, map, parsed_attrs.header, context)
 
-    __MODULE__.new(%{
+    payload = %{
       method: String.downcase(action.method),
       url: parsed_attrs.url,
       result_name: action.result_name,
@@ -217,7 +219,13 @@ defmodule Glific.Flows.Webhook do
       context: %{id: context.id, delay: context.delay},
       organization_id: context.organization_id,
       action_id: action.uuid
-    })
+    }
+
+    if parsed_attrs.url in @non_unique_urls do
+      __MODULE__.new(payload, unique: nil)
+    else
+      __MODULE__.new(payload)
+    end
     |> Oban.insert()
     |> case do
       {:ok, %Job{conflict?: true} = response} ->
@@ -232,6 +240,7 @@ defmodule Glific.Flows.Webhook do
         {:ok, response}
 
       response ->
+        IO.inspect(response)
         Glific.log_error(
           "something wrong while inserting webhook node. ",
           true
