@@ -20,7 +20,14 @@ defmodule Glific.Flows.Webhook do
       states: [:available, :scheduled, :executing, :completed]
     ]
 
-  @non_unique_urls ["parse_via_gpt_vision", "parse_via_chat_gpt", "filesearch-gpt"]
+  @non_unique_urls [
+    "parse_via_gpt_vision",
+    "parse_via_chat_gpt",
+    "filesearch-gpt",
+    "voice-filesearch-gpt",
+    "speech_to_text_with_bhasini",
+    "nmt_tts_with_bhasini"
+  ]
 
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
@@ -240,7 +247,6 @@ defmodule Glific.Flows.Webhook do
         {:ok, response}
 
       response ->
-        IO.inspect(response)
         Glific.log_error(
           "something wrong while inserting webhook node. ",
           true
