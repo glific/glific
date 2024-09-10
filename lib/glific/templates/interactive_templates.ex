@@ -272,8 +272,6 @@ defmodule Glific.Templates.InteractiveTemplates do
            |> InteractiveTemplate.changeset(updated_attrs)
            |> Repo.update() do
       {:ok, updated_interactive, message}
-    else
-      {:error, changeset} -> {:error, changeset}
     end
   end
 
