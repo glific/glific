@@ -525,11 +525,11 @@ defmodule Glific.BigQuery.BigQueryWorker do
         [
           %{
             id: row.id,
-            contact_id: row.contact.id,
+            contact_id: if(!is_nil(row.contact), do: row.contact.id),
             name: row.contact.name,
             phone: row.contact.phone,
             group_id: row.group_id,
-            group_name: row.group.label,
+            group_name: if(!is_nil(row.group), do: row.group.label),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
