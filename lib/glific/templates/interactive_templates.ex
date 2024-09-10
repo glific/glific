@@ -130,6 +130,8 @@ defmodule Glific.Templates.InteractiveTemplates do
     with :ok <- check_global_buttons(interactive_content),
          :ok <- check_options(interactive_content) do
       :ok
+    else
+      error -> error
     end
   end
 
