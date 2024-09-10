@@ -1116,6 +1116,7 @@ defmodule Glific.Fixtures do
         label: "some label",
         phone: "9829627508",
         phone_id: 242,
+        status: "loading",
         provider_id: 1,
         contact_id: contact.id
       })

@@ -5,9 +5,39 @@ defmodule Glific.ASR.Bhasini do
   use Tesla
   require Logger
 
+  alias Glific.Contacts
+
   @config_url "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model"
   @meity_pipeline_id "64392f96daac500b55c543cd"
   # @ai4bharat_pipeline_id "643930aa521a4b1ba0f4c41d"
+
+  @doc """
+  Validate audio url
+  """
+  @spec validate_audio(String.t()) :: true | String.t()
+  def validate_audio(url),
+    do: if(String.starts_with?(url, "https"), do: true, else: "Media URL is invalid")
+
+  @doc """
+  Validate speech to text params
+  """
+  @spec validate_params(map()) :: {:ok, any()} | {:error, String.t()}
+  def validate_params(fields) do
+    with true <- Map.has_key?(fields, "contact"),
+         true <- Map.has_key?(fields, "speech"),
+         true <- validate_audio(fields["speech"]) do
+      fields["contact"]["id"]
+      |> Glific.parse_maybe_integer!()
+      |> Contacts.preload_contact_language()
+      |> then(&{:ok, &1})
+    else
+      false ->
+        {:error, "Missing required parameters: contact or speech"}
+
+      error ->
+        {:error, error}
+    end
+  end
 
   @doc """
   Performs an ASR (Automatic Speech Recognition) API call with configuration request.
@@ -41,10 +71,7 @@ defmodule Glific.ASR.Bhasini do
       {:error, reason} ->
         Logger.error("API call failed with reason:  #{reason}")
 
-        %{
-          success: false,
-          msg: "API call failed with reason: #{reason}"
-        }
+        {:error, "API call failed with reason: #{reason}"}
     end
   end
 

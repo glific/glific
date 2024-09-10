@@ -38,6 +38,8 @@ defmodule GlificWeb.Schema.ProfileTest do
 
     fetched_profile = get_in(query_data, [:data, "profile", "profile"])
     assert fetched_profile["name"] == name
+    assert fetched_profile["contact"]["id"] == "1"
+    assert fetched_profile["contact"]["language"]["label"] == "English"
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result

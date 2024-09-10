@@ -3,5 +3,6 @@ query wa_managed_phones($filter: WaManagedPhoneFilter, $opts: Opts) {
     id
     label
     phone
+    status
   }
 }
