@@ -39,7 +39,8 @@ defmodule Glific.Repo.Migrations.AddWAManagedPhones do
         null: false,
         comment: "contact id wa_managed_phone"
 
-      add :status, :string
+      add :status, :string,
+        comment: "status of the phone connected to Maytapi to see whether it is active or not"
 
       timestamps(type: :utc_datetime_usec)
     end

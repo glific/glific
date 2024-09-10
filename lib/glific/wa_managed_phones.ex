@@ -60,11 +60,11 @@ defmodule Glific.WAManagedPhones do
 
   ## Examples
 
-      iex> get_wa_managed_phone(123)
+      iex> get_wa_managed_phone(45323)
       %WAManagedPhone{}
 
-      iex> get_wa_managed_phone(456)
-      ** (Ecto.NoResultsError)
+      iex> get_wa_managed_phone(156)
+      ** nil
 
   """
   @spec get_wa_managed_phone(non_neg_integer()) :: WAManagedPhone.t()
@@ -241,9 +241,6 @@ defmodule Glific.WAManagedPhones do
 
       {:error, changeset} ->
         {:error, "Failed to update status: #{inspect(changeset.errors)}"}
-
-      _ ->
-        {:error, "Unexpected error occurred"}
     end
   end
 end
