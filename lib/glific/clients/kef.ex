@@ -62,7 +62,7 @@ defmodule Glific.Clients.KEF do
 
         folder_structure = get_folder_structure(media, contact_type, contact.fields)
 
-        "#{folder_structure}/#{media_subfolder}/" <> get_image_name(media["remote_name"], phone)
+        "#{folder_structure}/#{media_subfolder}/" <> generate_filename(media["remote_name"], phone)
 
       {:error, _} ->
         "/#{media_subfolder}/" <> media["remote_name"]
@@ -623,8 +623,9 @@ defmodule Glific.Clients.KEF do
     contact.language
   end
 
-  @spec get_image_name(String.t(), String.t()) :: String.t()
-  defp get_image_name(remote_name, phone_number) do
+  # We need the ending part of the file name to be phonenumber
+  @spec generate_filename(String.t(), String.t()) :: String.t()
+  defp generate_filename(remote_name, phone_number) do
     [datetime, _, _, message_id] = String.split(remote_name, "_")
     [message_id, ext] = String.split(message_id, ".")
     datetime <> "_" <> message_id <> "_" <> phone_number <> "." <> ext
