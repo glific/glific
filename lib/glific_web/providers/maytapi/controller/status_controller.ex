@@ -2,7 +2,11 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.StatusController do
   @moduledoc false
 
   use GlificWeb, :controller
-  alias Glific.WAManagedPhones
+
+  alias Glific.{
+    Repo,
+    WAManagedPhones
+  }
 
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
@@ -15,7 +19,10 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.StatusController do
   @doc false
   @spec status(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def status(conn, %{"status" => status, "phone_id" => phone_id} = params) do
+    organization_id = Repo.get_organization_id()
+
     Task.start(fn ->
+      Repo.put_process_state(organization_id)
       WAManagedPhones.status(status, phone_id)
     end)
 

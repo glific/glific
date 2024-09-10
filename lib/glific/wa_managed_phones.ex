@@ -162,12 +162,14 @@ defmodule Glific.WAManagedPhones do
 
       Enum.each(wa_managed_phones, fn wa_managed_phone ->
         phone = wa_managed_phone["number"]
+        status = wa_managed_phone["status"]
 
         params =
           %{
             label: wa_managed_phone["name"],
             phone: phone,
             phone_id: wa_managed_phone["id"],
+            status: status,
             product_id: secrets["product_id"],
             organization_id: org_id,
             contact_type: "WA"
