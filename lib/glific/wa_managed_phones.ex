@@ -169,7 +169,6 @@ defmodule Glific.WAManagedPhones do
             label: wa_managed_phone["name"],
             phone: phone,
             phone_id: wa_managed_phone["id"],
-            status: status,
             product_id: secrets["product_id"],
             organization_id: org_id,
             contact_type: "WA"
@@ -181,7 +180,7 @@ defmodule Glific.WAManagedPhones do
                  phone: phone,
                  organization_id: params.organization_id
                }) do
-          Map.put(params, :contact_id, contact.id)
+          Map.merge(params, %{contact_id: contact.id, status: status})
           |> create_wa_managed_phone()
         end
 
