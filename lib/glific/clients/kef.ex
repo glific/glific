@@ -17,7 +17,7 @@ defmodule Glific.Clients.KEF do
     Sheets.ApiClient
   }
 
-  @worksheet_flow_ids [8880, 8176]
+  @worksheet_flow_ids [15_955, 15_507, 16_171, 16_175, 17_479]
 
   @props %{
     worksheets: %{
@@ -62,8 +62,7 @@ defmodule Glific.Clients.KEF do
 
         folder_structure = get_folder_structure(media, contact_type, contact.fields)
 
-        ("#{folder_structure}/#{media_subfolder}/" <> get_image_name(media["remote_name"], phone))
-        |> IO.inspect(label: :filename)
+        "#{folder_structure}/#{media_subfolder}/" <> get_image_name(media["remote_name"], phone)
 
       {:error, _} ->
         "/#{media_subfolder}/" <> media["remote_name"]
@@ -101,14 +100,6 @@ defmodule Glific.Clients.KEF do
           {:error, String.t()} | {:ok, String.t()}
   defp get_flow_subfolder(flow_id, current_worksheet_code) when flow_id in @worksheet_flow_ids do
     {:ok, "Worksheets/#{current_worksheet_code}"}
-  end
-
-  defp get_flow_subfolder(8842, _current_worksheet_code) do
-    {:ok, "Videos/Video 1"}
-  end
-
-  defp get_flow_subfolder(9870, _current_worksheet_code) do
-    {:ok, "Videos/Video 2"}
   end
 
   defp get_flow_subfolder(_flow_id, nil), do: {:ok, "Others"}
