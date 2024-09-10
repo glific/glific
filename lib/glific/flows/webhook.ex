@@ -392,11 +392,8 @@ defmodule Glific.Flows.Webhook do
   defp format_response(response_json), do: response_json
 
   @spec create_oban_changeset(map()) :: Oban.Job.changeset()
-  defp create_oban_changeset(payload) do
-    if payload.url in @non_unique_urls do
-      __MODULE__.new(payload, unique: nil)
-    else
-      __MODULE__.new(payload)
-    end
-  end
+  defp create_oban_changeset(%{url: url} = payload) when url in @non_unique_urls,
+    do: __MODULE__.new(payload, unique: nil)
+
+  defp create_oban_changeset(payload), do: __MODULE__.new(payload)
 end
