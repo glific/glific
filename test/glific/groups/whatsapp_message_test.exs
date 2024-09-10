@@ -66,6 +66,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
     assert wa_message.body == params.message
     assert wa_message.bsp_status == :sent
+    assert wa_message.flow == :outbound
   end
 
   test "send_message_to_wa_group_collection/2 sends a text message in a whatsapp group collection and wa_groups in the collection",

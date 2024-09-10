@@ -105,13 +105,15 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       |> Repo.one()
 
     # manually updating wa_message as we do in real
-    WAMessages.update_message(message, %{
-      bsp_id: "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d",
-      bsp_status: :enqueued,
-      status: :sent,
-      flow: :outbound,
-      sent_at: DateTime.truncate(DateTime.utc_now(), :second)
-    })
+    {:ok, wa_message} =
+      WAMessages.update_message(message, %{
+        bsp_id: "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d",
+        bsp_status: :enqueued,
+        status: :sent,
+        sent_at: DateTime.truncate(DateTime.utc_now(), :second)
+      })
+
+    assert wa_message.flow == :outbound
 
     assert %Plug.Conn{} = post(conn, "/maytapi", @delivered_ack)
   end

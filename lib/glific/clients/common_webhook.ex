@@ -6,10 +6,9 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.{
     ASR.Bhasini,
     ASR.GoogleASR,
-    Contacts.Contact,
+    Contacts,
     LLM4Dev,
     OpenAI.ChatGPT,
-    Repo,
     Sheets.GoogleSheets
   }
 
@@ -52,7 +51,7 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  @spec webhook(String.t(), map()) :: map()
+  @spec webhook(String.t(), map()) :: any()
   def webhook("parse_via_gpt_vision", fields) do
     url = fields["url"]
     # validating if the url passed is a valid image url
@@ -176,7 +175,7 @@ defmodule Glific.Clients.CommonWebhook do
   # This webhook will call Google speech-to-text API
   def webhook("speech_to_text", fields) do
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
-    contact = get_contact_language(contact_id)
+    contact = Contacts.preload_contact_language(contact_id)
 
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> GoogleASR.speech_to_text(fields["results"], contact.language.locale)
@@ -184,18 +183,19 @@ defmodule Glific.Clients.CommonWebhook do
 
   # This webhook will call Bhasini speech-to-text API
   def webhook("speech_to_text_with_bhasini", fields) do
-    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
-    contact = get_contact_language(contact_id)
-
-    with {:ok, response} <-
+    with {:ok, contact} <- Bhasini.validate_params(fields),
+         {:ok, response} <-
            Bhasini.with_config_request(
-             source_language: contact.language.locale,
+             source_language: contact.language.label,
              task_type: "asr"
            ) do
       {:ok, media_content} = Tesla.get(fields["speech"])
 
       content = Base.encode64(media_content.body)
       Bhasini.handle_response(response, content)
+    else
+      {:error, error} ->
+        error
     end
   end
 
@@ -204,8 +204,8 @@ defmodule Glific.Clients.CommonWebhook do
     text = fields["text"]
     org_id = fields["organization_id"]
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
-    contact = get_contact_language(contact_id)
-    source_language = contact.language.locale
+    contact = Contacts.preload_contact_language(contact_id)
+    source_language = contact.language.label
     do_text_to_speech_with_bhasini(source_language, org_id, text)
   end
 
@@ -298,13 +298,6 @@ defmodule Glific.Clients.CommonWebhook do
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
-  defp get_contact_language(contact_id) do
-    case Repo.fetch(Contact, contact_id) do
-      {:ok, contact} -> contact |> Repo.preload(:language)
-      {:error, error} -> error
-    end
-  end
-
   @spec find_component(list(map()), String.t()) :: String.t()
   defp find_component(components, type) do
     case Enum.find(components, fn component -> type in component["types"] end) do
@@ -385,7 +378,7 @@ defmodule Glific.Clients.CommonWebhook do
       |> Map.put(:translated_text, text)
     else
       true ->
-        %{success: false, reason: "GCS is disabled"}
+        "Enable GCS is use Bhasini text to speech"
 
       error ->
         error
@@ -404,7 +397,7 @@ defmodule Glific.Clients.CommonWebhook do
       Glific.Bhasini.text_to_speech(params, text, org_id)
     else
       true ->
-        %{success: false, reason: "GCS is disabled"}
+        "Enable GCS is use Bhasini text to speech"
 
       {:error, error} ->
         Map.put(error, "success", false)
