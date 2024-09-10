@@ -25,7 +25,11 @@ defmodule Glific.Bhasini do
   returns iso_code for a language given the standard
   """
   @spec get_iso_code(String.t(), String.t()) :: String.t()
-  def get_iso_code(language, standard), do: @language_codes["#{language}"][standard]
+  def get_iso_code(language, standard) do
+    language
+    |> String.downcase()
+    |> then(&@language_codes["#{&1}"][standard])
+  end
 
   @doc """
   This function makes an API call to the Bhasini ASR service for NMT and TTS using the provided configuration parameters and returns the public media URL of the file.
