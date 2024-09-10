@@ -186,7 +186,7 @@ defmodule Glific.Clients.CommonWebhook do
     with {:ok, contact} <- Bhasini.validate_params(fields),
          {:ok, response} <-
            Bhasini.with_config_request(
-             source_language: contact.language.locale,
+             source_language: contact.language.label,
              task_type: "asr"
            ) do
       {:ok, media_content} = Tesla.get(fields["speech"])
@@ -205,7 +205,7 @@ defmodule Glific.Clients.CommonWebhook do
     org_id = fields["organization_id"]
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
     contact = Contacts.preload_contact_language(contact_id)
-    source_language = contact.language.locale
+    source_language = contact.language.label
     do_text_to_speech_with_bhasini(source_language, org_id, text)
   end
 
