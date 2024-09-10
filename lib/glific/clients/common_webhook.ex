@@ -6,6 +6,7 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.{
     ASR.Bhasini,
     ASR.GoogleASR,
+    Contacts,
     LLM4Dev,
     OpenAI.ChatGPT,
     Sheets.GoogleSheets
@@ -50,7 +51,7 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  @spec webhook(String.t(), map()) :: map()
+  @spec webhook(String.t(), map()) :: any()
   def webhook("parse_via_gpt_vision", fields) do
     url = fields["url"]
     # validating if the url passed is a valid image url
@@ -122,6 +123,7 @@ defmodule Glific.Clients.CommonWebhook do
 
     with {:ok, response} <-
            GoogleSheets.insert_row(org_id, spreadsheet_id, %{range: range, data: [row_data]}) do
+      %{response: "#{inspect(response)}"}
     end
   end
 
@@ -173,7 +175,7 @@ defmodule Glific.Clients.CommonWebhook do
   # This webhook will call Google speech-to-text API
   def webhook("speech_to_text", fields) do
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
-    contact = Bhasini.get_contact_language(contact_id)
+    contact = Contacts.preload_contact_language(contact_id)
 
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> GoogleASR.speech_to_text(fields["results"], contact.language.locale)
@@ -202,7 +204,7 @@ defmodule Glific.Clients.CommonWebhook do
     text = fields["text"]
     org_id = fields["organization_id"]
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
-    contact = Bhasini.get_contact_language(contact_id)
+    contact = Contacts.preload_contact_language(contact_id)
     source_language = contact.language.locale
     do_text_to_speech_with_bhasini(source_language, org_id, text)
   end
