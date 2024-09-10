@@ -205,7 +205,7 @@ defmodule Glific.Clients.CommonWebhook do
     org_id = fields["organization_id"]
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
     contact = get_contact_language(contact_id)
-    source_language = contact.language.locale
+    source_language = String.downcase(contact.language.label)
     do_text_to_speech_with_bhasini(source_language, org_id, text)
   end
 
