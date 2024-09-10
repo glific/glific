@@ -127,11 +127,8 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   defp check_interactive_content(%{interactive_content: interactive_content}) do
-    with :ok <- check_global_buttons(interactive_content),
-         :ok <- check_options(interactive_content) do
-      :ok
-    else
-      error -> error
+    with :ok <- check_global_buttons(interactive_content) do
+      check_options(interactive_content)
     end
   end
 
