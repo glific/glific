@@ -56,7 +56,7 @@ defmodule Glific.WAManagedPhones do
   @doc """
   Gets a single wa_managed_phone.
 
-  Raises `Ecto.NoResultsError` if the Wa managed phone does not exist.
+  Returns nil if the Wa managed phone does not exist.
 
   ## Examples
 
