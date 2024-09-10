@@ -15,16 +15,8 @@ defmodule Glific.ASR.Bhasini do
   Validate audio url
   """
   @spec validate_audio(String.t()) :: true | String.t()
-  def validate_audio(url) do
-    Glific.Messages.validate_media(url, "audio")
-    |> case do
-      %{is_valid: true} ->
-        true
-
-      %{is_valid: false, message: message} ->
-        message
-    end
-  end
+  def validate_audio(url),
+    do: if(String.starts_with?(url, "https"), do: true, else: "Media URL is invalid")
 
   @doc """
   Validate speech to text params
