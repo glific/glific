@@ -26,7 +26,7 @@ defmodule Glific.WAMessages do
   @spec create_message(map()) :: {:ok, WAMessage.t()} | {:error, Ecto.Changeset.t()}
   def create_message(attrs) do
     attrs =
-      %{flow: :inbound, status: :enqueued}
+      %{flow: :outbound, status: :enqueued}
       |> Map.merge(attrs)
       |> parse_message_vars()
       |> put_clean_body()
