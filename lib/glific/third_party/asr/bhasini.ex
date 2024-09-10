@@ -28,6 +28,7 @@ defmodule Glific.ASR.Bhasini do
     ]
 
     post_body = get_config_request_body(task_type, source_language, target_language)
+
     url = @config_url <> "/getModelsPipeline"
 
     case Tesla.post(url, Jason.encode!(post_body),
@@ -117,29 +118,28 @@ defmodule Glific.ASR.Bhasini do
       {"Content-Type", "application/json"}
     ]
 
-    asr_post_body =
-      %{
-        "pipelineTasks" => [
-          %{
-            "taskType" => "asr",
-            "config" => %{
-              "language" => %{
-                "sourceLanguage" => "#{source_language}"
-              },
-              "serviceId" => "#{asr_service_id}",
-              "audioFormat" => "flac",
-              "samplingRate" => 16_000
-            }
+    asr_post_body = %{
+      "pipelineTasks" => [
+        %{
+          "taskType" => "asr",
+          "config" => %{
+            "language" => %{
+              "sourceLanguage" => "#{source_language}"
+            },
+            "serviceId" => "#{asr_service_id}",
+            "audioFormat" => "flac",
+            "samplingRate" => 16_000
           }
-        ],
-        "inputData" => %{
-          "audio" => [
-            %{
-              "audioContent" => "#{base64_data}"
-            }
-          ]
         }
+      ],
+      "inputData" => %{
+        "audio" => [
+          %{
+            "audioContent" => "#{base64_data}"
+          }
+        ]
       }
+    }
 
     case Tesla.post(callback_url, Jason.encode!(asr_post_body),
            headers: asr_headers,
