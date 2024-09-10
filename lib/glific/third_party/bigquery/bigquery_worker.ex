@@ -526,8 +526,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
           %{
             id: row.id,
             contact_id: if(!is_nil(row.contact), do: row.contact.id),
-            name: row.contact.name,
-            phone: row.contact.phone,
+            name: if(!is_nil(row.contact), do: row.contact.name),
+            phone: if(!is_nil(row.contact), do: row.contact.phone),
             group_id: row.group_id,
             group_name: if(!is_nil(row.group), do: row.group.label),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
