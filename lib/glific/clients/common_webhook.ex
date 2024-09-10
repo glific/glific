@@ -189,7 +189,7 @@ defmodule Glific.Clients.CommonWebhook do
 
     with {:ok, response} <-
            Bhasini.with_config_request(
-             source_language: contact.language.locale,
+             source_language: contact.language.label,
              task_type: "asr"
            ) do
       {:ok, media_content} = Tesla.get(fields["speech"])
