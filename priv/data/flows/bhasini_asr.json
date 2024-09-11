@@ -1,0 +1,611 @@
+{
+    "interactive_templates": [],
+    "flows": [
+        {
+            "definition": {
+                "vars": [
+                    "5021668f-d19b-4b6f-a2a7-986f8f0ddcf0"
+                ],
+                "uuid": "5021668f-d19b-4b6f-a2a7-986f8f0ddcf0",
+                "type": "messaging",
+                "spec_version": "13.2.0",
+                "nodes": [
+                    {
+                        "uuid": "8fece42c-30ec-4386-b34b-847f1ed6d3b3",
+                        "exits": [
+                            {
+                                "uuid": "29fcced4-f0a7-4ef8-83d6-34a0ae993ce9",
+                                "destination_uuid": "4f10a668-81b2-450a-a773-f589e5ee1939"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "d8ee57c3-2fec-44d9-b180-2dc22966be92",
+                                "type": "send_msg",
+                                "text": "Record and share a voice note in the language of your choice.\n\nThis demo will transliterate it into english, ",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "721ba4ad-c305-4818-988a-437b8807db5a",
+                        "exits": [
+                            {
+                                "uuid": "3f27e2a4-76dc-4d74-9162-b4aee4738b27",
+                                "destination_uuid": "8fece42c-30ec-4386-b34b-847f1ed6d3b3"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "632e3ced-50da-49c8-8899-20aedecab53c",
+                                "type": "send_msg",
+                                "text": "Please enter a voice note only.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "2f8a4a71-1911-42c3-87f6-94d2410f7fec",
+                        "router": {
+                            "type": "switch",
+                            "operand": "@results.voicetotext.category",
+                            "default_category_uuid": "e61fb1dd-2b2a-4534-83be-b014c27fb031",
+                            "categories": [
+                                {
+                                    "uuid": "703ad401-0159-4891-94a4-79c8a7208a98",
+                                    "name": "Success",
+                                    "exit_uuid": "d72583fd-5029-4caa-b137-c8b8ef7dff00"
+                                },
+                                {
+                                    "uuid": "e61fb1dd-2b2a-4534-83be-b014c27fb031",
+                                    "name": "Failure",
+                                    "exit_uuid": "232b300e-30da-48ae-994c-f2de59bcee00"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "e075ddbe-8e44-4f48-aa0d-b6f30075814e",
+                                    "type": "has_only_text",
+                                    "category_uuid": "703ad401-0159-4891-94a4-79c8a7208a98",
+                                    "arguments": [
+                                        "Success"
+                                    ]
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "d72583fd-5029-4caa-b137-c8b8ef7dff00",
+                                "destination_uuid": "71f8a857-2162-4213-88b3-3af96ce37661"
+                            },
+                            {
+                                "uuid": "232b300e-30da-48ae-994c-f2de59bcee00",
+                                "destination_uuid": "cfd57ccc-150c-4aed-b1c6-48312468b1c8"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "88e9534a-d0e5-4fdf-8ae6-67c07ca0d93c",
+                                "url": "speech_to_text_with_bhasini",
+                                "type": "call_webhook",
+                                "result_name": "voicetotext",
+                                "method": "FUNCTION",
+                                "headers": {
+                                    "Content-Type": "application/json",
+                                    "Accept": "application/json"
+                                },
+                                "body": "{\n \"speech\": \"@results.voicenote.input\",\n  \"contact\": \"@contact\"\n}"
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "4f10a668-81b2-450a-a773-f589e5ee1939",
+                        "router": {
+                            "wait": {
+                                "type": "msg"
+                            },
+                            "type": "switch",
+                            "result_name": "voicenote",
+                            "operand": "@input.text",
+                            "default_category_uuid": "de276c32-bec5-48d2-8505-560fa393b3d8",
+                            "categories": [
+                                {
+                                    "uuid": "405effd5-ea81-4cb9-a2cd-af55b7528030",
+                                    "name": "Has Audio",
+                                    "exit_uuid": "90984a0a-c065-4038-9552-40c1224443b7"
+                                },
+                                {
+                                    "uuid": "de276c32-bec5-48d2-8505-560fa393b3d8",
+                                    "name": "Other",
+                                    "exit_uuid": "ab82275c-9e53-4fae-9386-c7dfdb65b3ce"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "c69cf8be-ed19-44e3-a135-f777ea222cec",
+                                    "type": "has_audio",
+                                    "category_uuid": "405effd5-ea81-4cb9-a2cd-af55b7528030",
+                                    "arguments": []
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "90984a0a-c065-4038-9552-40c1224443b7",
+                                "destination_uuid": "2f8a4a71-1911-42c3-87f6-94d2410f7fec"
+                            },
+                            {
+                                "uuid": "ab82275c-9e53-4fae-9386-c7dfdb65b3ce",
+                                "destination_uuid": "721ba4ad-c305-4818-988a-437b8807db5a"
+                            }
+                        ],
+                        "actions": []
+                    },
+                    {
+                        "uuid": "cfd57ccc-150c-4aed-b1c6-48312468b1c8",
+                        "exits": [
+                            {
+                                "uuid": "d4a10225-10cd-48d6-b97a-7b4ce05f7f94",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "d0f9aabe-3ed8-4c96-a6d8-7d75860ccae8",
+                                "type": "send_msg",
+                                "text": "The speech to text api failed. Please try again.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "71f8a857-2162-4213-88b3-3af96ce37661",
+                        "router": {
+                            "type": "switch",
+                            "operand": "@results.bhasini_asr.success",
+                            "default_category_uuid": "b9e923a1-b9c5-49e0-a683-2045ddab1a12",
+                            "categories": [
+                                {
+                                    "uuid": "e9e8ae44-1b87-48ec-a4d5-42579127b250",
+                                    "name": "True",
+                                    "exit_uuid": "baf3d390-d49f-4628-889a-97c7c679e9e2"
+                                },
+                                {
+                                    "uuid": "b9e923a1-b9c5-49e0-a683-2045ddab1a12",
+                                    "name": "Other",
+                                    "exit_uuid": "e775d1f9-9dd5-44bb-9c67-bb0dc9e7f2ae"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "c8cdf056-1e8a-4b30-8c60-bb9bf6005ebf",
+                                    "type": "has_any_word",
+                                    "category_uuid": "e9e8ae44-1b87-48ec-a4d5-42579127b250",
+                                    "arguments": [
+                                        "True"
+                                    ]
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "baf3d390-d49f-4628-889a-97c7c679e9e2",
+                                "destination_uuid": "d2073924-d198-45cf-80d4-48ce7b5a982f"
+                            },
+                            {
+                                "uuid": "e775d1f9-9dd5-44bb-9c67-bb0dc9e7f2ae",
+                                "destination_uuid": "cfd57ccc-150c-4aed-b1c6-48312468b1c8"
+                            }
+                        ],
+                        "actions": []
+                    },
+                    {
+                        "uuid": "d2073924-d198-45cf-80d4-48ce7b5a982f",
+                        "exits": [
+                            {
+                                "uuid": "6ec50725-10da-431a-b4d6-f83898c61d9b",
+                                "destination_uuid": "7a2abd56-0edf-4467-83c7-0ede9fba8158"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "d2df248b-b4cd-4843-bb99-1a9d1cff111e",
+                                "type": "send_msg",
+                                "text": "This is what you shared in the voice note\n",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "7a2abd56-0edf-4467-83c7-0ede9fba8158",
+                        "exits": [
+                            {
+                                "uuid": "b016524e-e193-4aad-9e52-0727649ec6a9",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "89520307-6a08-4f80-aa32-32574b19ed17",
+                                "type": "send_msg",
+                                "text": "@results.voicetotext.asr_response_text",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    }
+                ],
+                "name": "TEMPLATE_Bhashini_speechtotext",
+                "localization": {
+                    "ta": {
+                        "d8ee57c3-2fec-44d9-b180-2dc22966be92": {
+                            "text": [
+                                "\"உங்கள் உரையாடல் பற்றி, நீங்கள் என்ன கற்றுக்கொண்டீர்கள் அல்லது எதைக் குறிப்பிட விரும்புகிறீர்கள் என்பது பற்றி ஒரு ஒலி குறிப்பை பதிவு செய்யுங்கள்\""
+                            ]
+                        },
+                        "89520307-6a08-4f80-aa32-32574b19ed17": {
+                            "text": [
+                                "\"@results.voicetotext.asr_response_text\""
+                            ]
+                        },
+                        "747c74d0-32ea-4680-948d-25edc8fb40b5": {
+                            "text": [
+                                "தேடல் முடிவுகளைப் பெற தோல்வியடைந்தது"
+                            ]
+                        },
+                        "498c69a4-b1fb-4317-9ebb-8f3072f11cef": {
+                            "text": [
+                                "நீங்கள் உரையாடிய தொழில்நுட்ப அமைப்பு/நபரின் பெயரை உள்ளிடவும்"
+                            ]
+                        },
+                        "186bd128-face-4aff-a085-44168eb317b2": {
+                            "text": [
+                                "ஓய்வு!"
+                            ]
+                        }
+                    },
+                    "mr": {
+                        "d8ee57c3-2fec-44d9-b180-2dc22966be92": {
+                            "text": [
+                                "\"तुमची चर्चा काय आहे, तुम्ही काय शिकला आहे किंवा भविष्यात नोंदवायला इच्छिता ते आदांश रेकॉर्ड करा आणि सामायिक करा\""
+                            ]
+                        },
+                        "d2df248b-b4cd-4843-bb99-1a9d1cff111e": {
+                            "text": [
+                                "हे तुम्ही व्हॉइस नोटमध्ये शेअर केले आहे\n"
+                            ]
+                        },
+                        "89520307-6a08-4f80-aa32-32574b19ed17": {
+                            "text": [
+                                "\"@results.voicetotext.asr_response_text\""
+                            ]
+                        },
+                        "81fec8cb-5ba9-4c95-ad49-3523b66e8095": {
+                            "text": [
+                                "बॉट Google शीटमध्ये सहजपणे डेटा लिहू शकतो - https://docs.google.com/spreadsheets/d/193cgd1AHFVj1LLPTem73er5grxJahvYlSuPW3jQqWVo/edit#gid=1761154731 पुढील वापरासाठी पुढे जा!"
+                            ]
+                        },
+                        "747c74d0-32ea-4680-948d-25edc8fb40b5": {
+                            "text": [
+                                "\"उचित प्रतिसाद प्राप्त करण्यात असणे अयशस्वी\""
+                            ]
+                        },
+                        "498c69a4-b1fb-4317-9ebb-8f3072f11cef": {
+                            "text": [
+                                "\"तुम्ही कोणत्या एनजीओ / व्यक्तीशी बोललात\""
+                            ]
+                        },
+                        "186bd128-face-4aff-a085-44168eb317b2": {
+                            "text": [
+                                "अरे नाही!"
+                            ]
+                        }
+                    },
+                    "kn": {
+                        "d8ee57c3-2fec-44d9-b180-2dc22966be92": {
+                            "text": [
+                                "ನಿಮ್ಮ ಸಂಭಾಷಣೆ ಏನು, ನೀವು ಏನು ಕಲಿತಿದ್ದೀರಿ ಅಥವಾ ಭವಿಷ್ಯಕ್ಕಾಗಿ ಗಮನಿಸಲು ಬಯಸುತ್ತೀರಿ ಎಂಬುದರ ಕುರಿತು ಧ್ವನಿ ಟಿಪ್ಪಣಿಯನ್ನು ರೆಕಾರ್ಡ್ ಮಾಡಿ ಮತ್ತು ಹಂಚಿಕೊಳ್ಳಿ"
+                            ]
+                        },
+                        "d2df248b-b4cd-4843-bb99-1a9d1cff111e": {
+                            "text": [
+                                "ಧ್ವನಿ ಟಿಪ್ಪಣಿಯಲ್ಲಿ ನೀವು ಹಂಚಿಕೊಂಡಿರುವುದು ಇದನ್ನೇ\n"
+                            ]
+                        },
+                        "89520307-6a08-4f80-aa32-32574b19ed17": {
+                            "text": [
+                                "@results.voicetotext.asr_response_text"
+                            ]
+                        },
+                        "81fec8cb-5ba9-4c95-ad49-3523b66e8095": {
+                            "text": [
+                                "ಧನ್ಯವಾದ!"
+                            ]
+                        },
+                        "747c74d0-32ea-4680-948d-25edc8fb40b5": {
+                            "text": [
+                                "ಸಂಬಂಧಿತ ಪ್ರತಿಕ್ರಿಯೆಯನ್ನು ಪಡೆಯುವಲ್ಲಿ ವಿಫಲವಾಗಿದೆ"
+                            ]
+                        },
+                        "498c69a4-b1fb-4317-9ebb-8f3072f11cef": {
+                            "text": [
+                                "ನೀವು ಮಾತನಾಡಿದ NGO/ವ್ಯಕ್ತಿಯ ಹೆಸರನ್ನು ನಮೂದಿಸಿ"
+                            ]
+                        },
+                        "186bd128-face-4aff-a085-44168eb317b2": {
+                            "text": [
+                                "ಓಹ್ ಇಲ್ಲ!"
+                            ]
+                        }
+                    },
+                    "hi": {
+                        "d8ee57c3-2fec-44d9-b180-2dc22966be92": {
+                            "text": [
+                                "\"अपनी बातचीत के बारे में, जो आपने सीखा है या भविष्य के लिए नोट करना चाहते हैं, एक आवाज़ नोट रिकॉर्ड करें और साझा करें\""
+                            ]
+                        },
+                        "d2df248b-b4cd-4843-bb99-1a9d1cff111e": {
+                            "text": [
+                                "यह वही है जो आपने वॉइस नोट में साझा किया है\n"
+                            ]
+                        },
+                        "89520307-6a08-4f80-aa32-32574b19ed17": {
+                            "text": [
+                                "\"@results.voicetotext.asr_response_text\""
+                            ]
+                        },
+                        "81fec8cb-5ba9-4c95-ad49-3523b66e8095": {
+                            "text": [
+                                "धन्यवाद!"
+                            ]
+                        },
+                        "747c74d0-32ea-4680-948d-25edc8fb40b5": {
+                            "text": [
+                                "\"उचित प्रतिक्रिया प्राप्त करने में विफल\""
+                            ]
+                        },
+                        "498c69a4-b1fb-4317-9ebb-8f3072f11cef": {
+                            "text": [
+                                "आपने बात की है एनजीओ / व्यक्ति के नाम दर्ज करें"
+                            ]
+                        },
+                        "186bd128-face-4aff-a085-44168eb317b2": {
+                            "text": [
+                                "ओह नहीं!"
+                            ]
+                        }
+                    },
+                    "gu": {
+                        "d8ee57c3-2fec-44d9-b180-2dc22966be92": {
+                            "text": [
+                                "તમારી વાતચીત શેના વિશે છે, તમે શું શીખ્યા છો અથવા ભવિષ્ય માટે નોંધ કરવા માંગો છો તેના પર વૉઇસ નોટ રેકોર્ડ કરો અને શેર કરો"
+                            ]
+                        },
+                        "d2df248b-b4cd-4843-bb99-1a9d1cff111e": {
+                            "text": [
+                                "આ તે છે જે તમે વૉઇસ નોટમાં શેર કર્યું છે\n"
+                            ]
+                        },
+                        "89520307-6a08-4f80-aa32-32574b19ed17": {
+                            "text": [
+                                "@results.voicetotext.asr_response_text"
+                            ]
+                        },
+                        "81fec8cb-5ba9-4c95-ad49-3523b66e8095": {
+                            "text": [
+                                "આભાર!"
+                            ]
+                        },
+                        "747c74d0-32ea-4680-948d-25edc8fb40b5": {
+                            "text": [
+                                "સંબંધિત પ્રતિસાદ મેળવવામાં નિષ્ફળ"
+                            ]
+                        },
+                        "498c69a4-b1fb-4317-9ebb-8f3072f11cef": {
+                            "text": [
+                                "તમારું નામ દાખલ કરો"
+                            ]
+                        },
+                        "186bd128-face-4aff-a085-44168eb317b2": {
+                            "text": [
+                                "અરે નહિ!"
+                            ]
+                        }
+                    },
+                    "es": {
+                        "d8ee57c3-2fec-44d9-b180-2dc22966be92": {
+                            "text": [
+                                "Graba y comparte una nota de voz en el idioma que elijas.\n\nEsta demostración lo transliterará al inglés, "
+                            ]
+                        },
+                        "d2df248b-b4cd-4843-bb99-1a9d1cff111e": {
+                            "text": [
+                                "Esto es lo que compartiste en la nota de voz.\n"
+                            ]
+                        },
+                        "89520307-6a08-4f80-aa32-32574b19ed17": {
+                            "text": [
+                                "@results.voicetotext.asr_response_text"
+                            ],
+                            "attachments": []
+                        },
+                        "81fec8cb-5ba9-4c95-ad49-3523b66e8095": {
+                            "text": [
+                                "El bot puede escribir datos fácilmente en una hoja de Google: https://docs.google.com/spreadsheets/d/193cgd1AHFVj1LLPTem73er5grxJahvYlSuPW3jQqWVo/edit#gid=1761154731\n\n¡Adelante al siguiente caso de uso!"
+                            ]
+                        }
+                    },
+                    "en": {
+                        "d8ee57c3-2fec-44d9-b180-2dc22966be92": {
+                            "text": [
+                                "Record and share a voice note in the language of your choice.\n\nThis demo will transliterate it into english, "
+                            ]
+                        },
+                        "d2df248b-b4cd-4843-bb99-1a9d1cff111e": {
+                            "text": [
+                                "This is what you shared in the voice note\n"
+                            ]
+                        },
+                        "89520307-6a08-4f80-aa32-32574b19ed17": {
+                            "text": [
+                                "@results.voicetotext.asr_response_text"
+                            ]
+                        },
+                        "81fec8cb-5ba9-4c95-ad49-3523b66e8095": {
+                            "text": [
+                                "The bot can write data easily in a google sheet - https://docs.google.com/spreadsheets/d/193cgd1AHFVj1LLPTem73er5grxJahvYlSuPW3jQqWVo/edit#gid=1761154731\n\nOnward to the next usecase!"
+                            ]
+                        },
+                        "747c74d0-32ea-4680-948d-25edc8fb40b5": {
+                            "text": [
+                                "Failed to fetch relevant response"
+                            ]
+                        },
+                        "498c69a4-b1fb-4317-9ebb-8f3072f11cef": {
+                            "text": [
+                                "Enter your name"
+                            ]
+                        },
+                        "186bd128-face-4aff-a085-44168eb317b2": {
+                            "text": [
+                                "oh no!"
+                            ]
+                        }
+                    },
+                    "bn": {
+                        "d8ee57c3-2fec-44d9-b180-2dc22966be92": {
+                            "text": [
+                                "আপনার পছন্দের ভাষায় একটি ভয়েস নোট রেকর্ড করুন এবং শেয়ার করুন। এই ডেমো এটিকে ইংরেজিতে প্রতিবর্ণীকৃত করবে, "
+                            ]
+                        },
+                        "d2df248b-b4cd-4843-bb99-1a9d1cff111e": {
+                            "text": [
+                                "এটি আপনি ভয়েস নোটে শেয়ার করেছেন\n"
+                            ]
+                        },
+                        "89520307-6a08-4f80-aa32-32574b19ed17": {
+                            "text": [
+                                "@results.voicetotext.asr_response_text"
+                            ]
+                        },
+                        "81fec8cb-5ba9-4c95-ad49-3523b66e8095": {
+                            "text": [
+                                "বটটি গুগল শীটে সহজেই ডেটা লিখতে পারে - https://docs.google.com/spreadsheets/d/193cgd1AHFVj1LLPTem73er5grxJahvYlSuPW3jQqWVo/edit#gid=1761154731 পরবর্তী ইউজকেসে এগিয়ে যান!"
+                            ]
+                        },
+                        "498c69a4-b1fb-4317-9ebb-8f3072f11cef": {
+                            "text": [
+                                "আপনার নাম প্রবেশ করুন"
+                            ]
+                        }
+                    }
+                },
+                "language": "base",
+                "expire_after_minutes": 10080,
+                "_ui": {
+                    "stickies": {
+                        "bbd9a6bd-8cab-40b4-81b0-1f332b768cef": {
+                            "title": "Need to have Node: 7fec",
+                            "position": {
+                                "top": 160,
+                                "right": null,
+                                "left": 1020,
+                                "bottom": null
+                            },
+                            "color": "yellow",
+                            "body": "This nodes translates and transcribes the voice note sent by the user into English."
+                        },
+                        "51d37406-a6a7-4f52-87ca-21e3da35000e": {
+                            "title": "Good to have node 7661",
+                            "position": {
+                                "top": 500,
+                                "left": 800
+                            },
+                            "color": "purple",
+                            "body": "This node checks if the bhashini speech to text api request returned a success response."
+                        }
+                    },
+                    "nodes": {
+                        "d2073924-d198-45cf-80d4-48ce7b5a982f": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 680,
+                                "left": 380
+                            }
+                        },
+                        "cfd57ccc-150c-4aed-b1c6-48312468b1c8": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 520,
+                                "left": 1140
+                            }
+                        },
+                        "8fece42c-30ec-4386-b34b-847f1ed6d3b3": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 0,
+                                "left": 0
+                            }
+                        },
+                        "7a2abd56-0edf-4467-83c7-0ede9fba8158": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 860,
+                                "left": 300
+                            }
+                        },
+                        "721ba4ad-c305-4818-988a-437b8807db5a": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 240,
+                                "left": 300
+                            }
+                        },
+                        "71f8a857-2162-4213-88b3-3af96ce37661": {
+                            "type": "split_by_expression",
+                            "position": {
+                                "top": 620,
+                                "left": 620
+                            },
+                            "config": {
+                                "cases": {}
+                            }
+                        },
+                        "4f10a668-81b2-450a-a773-f589e5ee1939": {
+                            "type": "wait_for_response",
+                            "position": {
+                                "top": 420,
+                                "left": 40
+                            },
+                            "config": {
+                                "cases": {}
+                            }
+                        },
+                        "2f8a4a71-1911-42c3-87f6-94d2410f7fec": {
+                            "type": "split_by_webhook",
+                            "position": {
+                                "top": 280,
+                                "left": 680
+                            },
+                            "config": {}
+                        }
+                    }
+                }
+            },
+            "keywords": [
+              
+            ]
+        }
+    ],
+    "contact_field": [],
+    "collections": []
+}

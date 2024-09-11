@@ -170,21 +170,44 @@ defmodule Glific.Seeds.SeedsFlows do
   end
 
   def add_template_flows(organizations) do
-    flow_json_path = "priv/data/flows/other_options.json"
+    flow_files = [
+      "other_options.json",
+      "clear_variable.json",
+      "bhasini_asr.json",
+      "consent_optout.json",
+      "GPT_Vision.json",
+      "geolocation.json",
+      "ticketing_help.json",
+      "consent_optin.json",
+      "filesearch_GPT_textandvoice.json",
+      "direct_with_GPT.json",
+      "bhashini_text_to_speech.json"
+    ]
 
-    case File.read(flow_json_path) do
-      {:ok, file_content} ->
-        case Jason.decode(file_content) do
-          {:ok, import_flow} ->
-            organizations
-            |> Enum.each(fn organization ->
-              Glific.Repo.put_organization_id(organization.id)
-              Glific.Flows.import_flow(import_flow, organization.id)
-            end)
+    Enum.each(flow_files, fn flow_file ->
+      full_file_path = Path.join(:code.priv_dir(:glific), "data/flows/" <> flow_file)
 
-            {:ok, "Flows imported successfully"}
-        end
-    end
+      case File.read(full_file_path) do
+        {:ok, file_content} ->
+          case Jason.decode(file_content) do
+            {:ok, import_flow} ->
+              Enum.each(organizations, fn organization ->
+                Repo.put_organization_id(organization.id)
+
+                with [flow_data] <- Flows.import_flow(import_flow, organization.id),
+                     {:ok, flow} <- Repo.fetch_by(Flow, %{name: flow_data.flow_name}) do
+                  changeset = Flow.changeset(flow, %{is_template: true})
+                  Repo.update!(changeset)
+
+                  flow_revision(flow, organization, flow_file)
+                else
+                  _ ->
+                    "Error importing flow for organization: #{organization.id}"
+                end
+              end)
+          end
+      end
+    end)
   end
 
   @doc false

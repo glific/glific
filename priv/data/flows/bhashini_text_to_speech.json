@@ -1,0 +1,399 @@
+{
+    "interactive_templates": [],
+    "flows": [
+        {
+            "definition": {
+                "vars": [
+                    "9c613a04-6a58-4669-b2e2-3b14c174ad9a"
+                ],
+                "uuid": "9c613a04-6a58-4669-b2e2-3b14c174ad9a",
+                "type": "messaging",
+                "spec_version": "13.2.0",
+                "nodes": [
+                    {
+                        "uuid": "ca519af6-87c5-4e36-be6b-3220ddb35498",
+                        "exits": [
+                            {
+                                "uuid": "ea09b597-3019-42e6-9346-7bfbce58d5c8",
+                                "destination_uuid": "1b806f74-2965-453d-9e61-d70a5f9cbd24"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "c0f90128-6662-4beb-9238-b5119abe40a2",
+                                "type": "send_msg",
+                                "text": "Send a text in English, and get a voice note in Hindi.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "1b806f74-2965-453d-9e61-d70a5f9cbd24",
+                        "router": {
+                            "wait": {
+                                "type": "msg"
+                            },
+                            "type": "switch",
+                            "result_name": "result_3",
+                            "operand": "@input.text",
+                            "default_category_uuid": "ac8580be-0d3c-445e-8e66-7f87558cb9f2",
+                            "categories": [
+                                {
+                                    "uuid": "ac8580be-0d3c-445e-8e66-7f87558cb9f2",
+                                    "name": "All Responses",
+                                    "exit_uuid": "4220e1c3-b7e2-4723-8038-4ee8158008b1"
+                                }
+                            ],
+                            "cases": []
+                        },
+                        "exits": [
+                            {
+                                "uuid": "4220e1c3-b7e2-4723-8038-4ee8158008b1",
+                                "destination_uuid": "d6d2a15f-0b9a-44cb-b263-7bcb6d083adf"
+                            }
+                        ],
+                        "actions": []
+                    },
+                    {
+                        "uuid": "d6d2a15f-0b9a-44cb-b263-7bcb6d083adf",
+                        "router": {
+                            "type": "switch",
+                            "operand": "@results.bhasini_tts.category",
+                            "default_category_uuid": "ee1697b7-0990-4aa5-bba3-c8f96255d661",
+                            "categories": [
+                                {
+                                    "uuid": "6e874758-9079-48f7-b80e-8492571a3d62",
+                                    "name": "Success",
+                                    "exit_uuid": "c3a1c399-aad3-4af9-a5aa-6eb58671e395"
+                                },
+                                {
+                                    "uuid": "ee1697b7-0990-4aa5-bba3-c8f96255d661",
+                                    "name": "Failure",
+                                    "exit_uuid": "6fa297fd-61af-4457-b27c-b951385a2a98"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "e1558f9a-7865-4fc7-b73e-3b8fdcdd6c11",
+                                    "type": "has_only_text",
+                                    "category_uuid": "6e874758-9079-48f7-b80e-8492571a3d62",
+                                    "arguments": [
+                                        "Success"
+                                    ]
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "c3a1c399-aad3-4af9-a5aa-6eb58671e395",
+                                "destination_uuid": "1cb67f6d-77c6-4a6a-a361-a7ae9ba7f3bf"
+                            },
+                            {
+                                "uuid": "6fa297fd-61af-4457-b27c-b951385a2a98",
+                                "destination_uuid": "3edf5887-ca30-4fde-876a-e053c23a5c5e"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "70e2f970-d7c8-4574-9388-0c2f929e046d",
+                                "url": "nmt_tts_with_bhasini",
+                                "type": "call_webhook",
+                                "result_name": "bhasini_tts",
+                                "method": "FUNCTION",
+                                "headers": {
+                                    "Content-Type": "application/json",
+                                    "Accept": "application/json"
+                                },
+                                "body": "{\n\"text\": \"@results.result_3\",\n\"source_language\": \"english\",\n\"target_language\": \"hindi\"\n}"
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "1cb67f6d-77c6-4a6a-a361-a7ae9ba7f3bf",
+                        "exits": [
+                            {
+                                "uuid": "33e03a8c-f87b-49c4-895b-d6bde97f26d4",
+                                "destination_uuid": "780deeeb-b1e1-4138-b73a-0a8da28fb931"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "5b8037b0-46f4-43a4-aed2-740556c2e48a",
+                                "type": "send_msg",
+                                "text": "@results.bhasini_tts.translated_text",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "3edf5887-ca30-4fde-876a-e053c23a5c5e",
+                        "exits": [
+                            {
+                                "uuid": "1fc88181-e1de-4d0d-a902-0129dd0f86e8",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "f0487a47-ec8f-4930-adc3-4f02b87b815f",
+                                "type": "send_msg",
+                                "text": "webhook failed",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "780deeeb-b1e1-4138-b73a-0a8da28fb931",
+                        "exits": [
+                            {
+                                "uuid": "f2de6512-c962-428f-af90-11d40fafd69f",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "ed1fe093-9609-4185-a926-40727ca80e7e",
+                                "type": "send_msg",
+                                "text": "",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": [
+                                    "expression:@results.bhasini_tts.media_url"
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "name": "Bhashini_TextToSpeech",
+                "localization": {
+                    "mr": {
+                        "fe9f0ed2-722b-4b11-a1ad-739549d3080c": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "f42ff349-8f2d-4318-ac06-390577995ced": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "c0f90128-6662-4beb-9238-b5119abe40a2": {
+                            "attachments": []
+                        },
+                        "79652cbe-f204-40ee-b7cc-d647a2edcf34": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "50fe9fa6-82a7-44b8-ad8d-87eaeafdfede": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "251c98a5-6ceb-446c-84e0-f9e6699b10a8": {
+                            "text": [
+                                ""
+                            ]
+                        }
+                    },
+                    "kn": {
+                        "fe9f0ed2-722b-4b11-a1ad-739549d3080c": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "f42ff349-8f2d-4318-ac06-390577995ced": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "c0f90128-6662-4beb-9238-b5119abe40a2": {
+                            "attachments": []
+                        },
+                        "79652cbe-f204-40ee-b7cc-d647a2edcf34": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "50fe9fa6-82a7-44b8-ad8d-87eaeafdfede": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "251c98a5-6ceb-446c-84e0-f9e6699b10a8": {
+                            "text": [
+                                ""
+                            ]
+                        }
+                    },
+                    "hi": {
+                        "fe9f0ed2-722b-4b11-a1ad-739549d3080c": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "f42ff349-8f2d-4318-ac06-390577995ced": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "c0f90128-6662-4beb-9238-b5119abe40a2": {
+                            "attachments": []
+                        },
+                        "79652cbe-f204-40ee-b7cc-d647a2edcf34": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "50fe9fa6-82a7-44b8-ad8d-87eaeafdfede": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "251c98a5-6ceb-446c-84e0-f9e6699b10a8": {
+                            "text": [
+                                ""
+                            ]
+                        }
+                    },
+                    "gu": {
+                        "fe9f0ed2-722b-4b11-a1ad-739549d3080c": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "f42ff349-8f2d-4318-ac06-390577995ced": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "c0f90128-6662-4beb-9238-b5119abe40a2": {
+                            "attachments": []
+                        },
+                        "79652cbe-f204-40ee-b7cc-d647a2edcf34": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "50fe9fa6-82a7-44b8-ad8d-87eaeafdfede": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "251c98a5-6ceb-446c-84e0-f9e6699b10a8": {
+                            "text": [
+                                ""
+                            ]
+                        }
+                    },
+                    "en": {
+                        "fe9f0ed2-722b-4b11-a1ad-739549d3080c": {
+                            "text": [
+                                "failed"
+                            ]
+                        },
+                        "f42ff349-8f2d-4318-ac06-390577995ced": {
+                            "text": [
+                                "Please ask"
+                            ]
+                        },
+                        "c0f90128-6662-4beb-9238-b5119abe40a2": {
+                            "attachments": []
+                        },
+                        "79652cbe-f204-40ee-b7cc-d647a2edcf34": {
+                            "text": [
+                                "@results.open_llm_2.answer"
+                            ]
+                        },
+                        "50fe9fa6-82a7-44b8-ad8d-87eaeafdfede": {
+                            "text": [
+                                "@results.open_llm.answer"
+                            ]
+                        },
+                        "251c98a5-6ceb-446c-84e0-f9e6699b10a8": {
+                            "text": [
+                                "Thankyou for reaching out"
+                            ]
+                        }
+                    }
+                },
+                "language": "base",
+                "expire_after_minutes": 10080,
+                "_ui": {
+                    "stickies": {
+                        "e772866d-6ea4-4f55-838c-8ba2f8d32dc5": {
+                            "title": "Need to have node 3adf",
+                            "position": {
+                                "top": 360,
+                                "right": null,
+                                "left": 660,
+                                "bottom": null
+                            },
+                            "color": "yellow",
+                            "body": "Go to \"function body\" to explore the different combinations of source language and target language to perform the translation and transcription."
+                        }
+                    },
+                    "nodes": {
+                        "d6d2a15f-0b9a-44cb-b263-7bcb6d083adf": {
+                            "type": "split_by_webhook",
+                            "position": {
+                                "top": 360,
+                                "left": 440
+                            },
+                            "config": {}
+                        },
+                        "ca519af6-87c5-4e36-be6b-3220ddb35498": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 20,
+                                "left": 20
+                            }
+                        },
+                        "780deeeb-b1e1-4138-b73a-0a8da28fb931": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 760,
+                                "left": 140
+                            }
+                        },
+                        "3edf5887-ca30-4fde-876a-e053c23a5c5e": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 580,
+                                "left": 880
+                            }
+                        },
+                        "1cb67f6d-77c6-4a6a-a361-a7ae9ba7f3bf": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 580,
+                                "left": 260
+                            }
+                        },
+                        "1b806f74-2965-453d-9e61-d70a5f9cbd24": {
+                            "type": "wait_for_response",
+                            "position": {
+                                "top": 280,
+                                "left": 140
+                            },
+                            "config": {
+                                "cases": {}
+                            }
+                        }
+                    }
+                }
+            },
+            "keywords": [
+               
+            ]
+        }
+    ],
+    "contact_field": [],
+    "collections": []
+}

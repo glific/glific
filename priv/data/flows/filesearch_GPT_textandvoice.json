@@ -1,0 +1,1343 @@
+{
+    "interactive_templates": [],
+    "flows": [
+        {
+            "definition": {
+                "vars": [
+                    "4f7dc473-0a7d-4245-bc3f-19aec4ca3de6"
+                ],
+                "uuid": "4f7dc473-0a7d-4245-bc3f-19aec4ca3de6",
+                "type": "messaging",
+                "spec_version": "13.2.0",
+                "nodes": [
+                    {
+                        "uuid": "e659b2c1-5131-4bae-ab33-be21eee9522e",
+                        "exits": [
+                            {
+                                "uuid": "e333163b-a448-4fdf-8029-7aacbe1f2165",
+                                "destination_uuid": "703d1f8b-18d0-4095-b0cf-25a21adb56ac"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "71cad612-89b9-4f19-993b-919740e53d3f",
+                                "type": "send_msg",
+                                "text": "Please ask your question regarding Glific platform using a 🎤️ voice note \n\n(For the purpose of this demo, the assistant is answering questions from Glific's documentation as the knowledge base)",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "703d1f8b-18d0-4095-b0cf-25a21adb56ac",
+                        "router": {
+                            "wait": {
+                                "type": "msg"
+                            },
+                            "type": "switch",
+                            "result_name": "audio_query",
+                            "operand": "@input.text",
+                            "default_category_uuid": "1786166b-82d1-49f1-b9ef-b319e7d644c3",
+                            "categories": [
+                                {
+                                    "uuid": "b2cde0c9-0c30-48a7-83e7-496f10d13c77",
+                                    "name": "Has Audio",
+                                    "exit_uuid": "b8036595-26ff-4320-a16d-be4237c0d7ec"
+                                },
+                                {
+                                    "uuid": "1786166b-82d1-49f1-b9ef-b319e7d644c3",
+                                    "name": "Other",
+                                    "exit_uuid": "f1764792-c261-4173-89a7-4dac6c56f492"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "3c3849f8-e30f-4edb-ace1-f9048b49d242",
+                                    "type": "has_audio",
+                                    "category_uuid": "b2cde0c9-0c30-48a7-83e7-496f10d13c77",
+                                    "arguments": []
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "b8036595-26ff-4320-a16d-be4237c0d7ec",
+                                "destination_uuid": "41b06724-b7ce-46b0-892e-8c1e0b8052c4"
+                            },
+                            {
+                                "uuid": "f1764792-c261-4173-89a7-4dac6c56f492",
+                                "destination_uuid": "3e4e7a8e-9fe5-4561-bc0f-c7953f13626f"
+                            }
+                        ],
+                        "actions": []
+                    },
+                    {
+                        "uuid": "3e4e7a8e-9fe5-4561-bc0f-c7953f13626f",
+                        "exits": [
+                            {
+                                "uuid": "f45bde42-2537-4f9c-99a4-d0841271d555",
+                                "destination_uuid": "45040225-584d-40bb-8d80-a3032371a4d5"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "89746156-bebe-4237-89f5-cbc9f27f9e00",
+                                "type": "send_msg",
+                                "text": "Generating your response, please wait for 15-20 seconds",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "45040225-584d-40bb-8d80-a3032371a4d5",
+                        "router": {
+                            "type": "switch",
+                            "operand": "@results.gpt_search.category",
+                            "default_category_uuid": "ed9f7872-4269-4c2d-8a94-ddbb901a4f76",
+                            "categories": [
+                                {
+                                    "uuid": "f2e2beb1-e46d-4f51-ae45-42e0d13e3f5a",
+                                    "name": "Success",
+                                    "exit_uuid": "adb22721-8d24-4ee2-a529-2c96574b7ab9"
+                                },
+                                {
+                                    "uuid": "ed9f7872-4269-4c2d-8a94-ddbb901a4f76",
+                                    "name": "Failure",
+                                    "exit_uuid": "8e531112-f482-4267-8947-ce4139d9ee03"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "c51bbd4d-4e7b-46fe-9ea9-c8d71694cbba",
+                                    "type": "has_only_text",
+                                    "category_uuid": "f2e2beb1-e46d-4f51-ae45-42e0d13e3f5a",
+                                    "arguments": [
+                                        "Success"
+                                    ]
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "adb22721-8d24-4ee2-a529-2c96574b7ab9",
+                                "destination_uuid": "29aba071-4831-4c3e-bce7-9684efd8f983"
+                            },
+                            {
+                                "uuid": "8e531112-f482-4267-8947-ce4139d9ee03",
+                                "destination_uuid": "4c25f06d-a447-4c7f-bad2-da8b3a5c7d27"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "7f8f8247-9b5f-4e45-891a-fe225a0960dc",
+                                "url": "filesearch-gpt",
+                                "type": "call_webhook",
+                                "result_name": "gpt_search",
+                                "method": "FUNCTION",
+                                "headers": {
+                                    "Content-Type": "application/json",
+                                    "Accept": "application/json"
+                                },
+                                "body": "{ \n\"question\": \"@results.audio_query\", \n\"assistant_id\": \"asst_sYY3vlpf2rHKuCzlk750fidn\", \n\"remove_citation\":true \n}"
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "41b06724-b7ce-46b0-892e-8c1e0b8052c4",
+                        "exits": [
+                            {
+                                "uuid": "484e7f2e-4354-46a9-aa91-edc1250be6c7",
+                                "destination_uuid": "b9dbbcd7-4dff-47ac-9b4b-aab088b0cf6c"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "6e4d4fd8-73e7-44c2-9f3d-b6d2e3e0fbfa",
+                                "type": "send_msg",
+                                "text": "Generating your response, please wait for 15-20 seconds",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "b9dbbcd7-4dff-47ac-9b4b-aab088b0cf6c",
+                        "router": {
+                            "type": "switch",
+                            "operand": "@results.gpt_voice.category",
+                            "default_category_uuid": "fd89c75e-5ec8-46aa-b24b-46b52adc1dc2",
+                            "categories": [
+                                {
+                                    "uuid": "60c8f5ab-6ba4-42b1-940f-762b9622086f",
+                                    "name": "Success",
+                                    "exit_uuid": "3f35ce77-0fef-494f-8ede-88b0bee6eb0a"
+                                },
+                                {
+                                    "uuid": "fd89c75e-5ec8-46aa-b24b-46b52adc1dc2",
+                                    "name": "Failure",
+                                    "exit_uuid": "53334e88-f427-496b-8ae6-2d1aeb7cf672"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "a5d30792-f63e-4c57-a06b-1908c6d66024",
+                                    "type": "has_only_text",
+                                    "category_uuid": "60c8f5ab-6ba4-42b1-940f-762b9622086f",
+                                    "arguments": [
+                                        "Success"
+                                    ]
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "3f35ce77-0fef-494f-8ede-88b0bee6eb0a",
+                                "destination_uuid": "8cc64160-763d-4658-9e1c-bff745d4ff2f"
+                            },
+                            {
+                                "uuid": "53334e88-f427-496b-8ae6-2d1aeb7cf672",
+                                "destination_uuid": "da05ce31-2cd8-432b-9df0-59b9ec2c59be"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "1f26fb5c-38bc-4adb-8c57-378874a01dc1",
+                                "url": "voice-filesearch-gpt",
+                                "type": "call_webhook",
+                                "result_name": "gpt_voice",
+                                "method": "FUNCTION",
+                                "headers": {
+                                    "Content-Type": "application/json",
+                                    "Accept": "application/json"
+                                },
+                                "body": "{\n  \"contact\": \"@contact\",\n  \"speech\": \"@results.audio_query.input\",\n \"assistant_id\": \"asst_sYY3vlpf2rHKuCzlk750fidn\",\n \"remove_citation\": true,\n \"source_language\": \"english\",\n \"target_language\": \"@contact.language\" \n}"
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "4c25f06d-a447-4c7f-bad2-da8b3a5c7d27",
+                        "exits": [
+                            {
+                                "uuid": "184917cd-588f-445c-865c-132d2424ddba",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "5d1df67d-e1ce-4986-839f-6712d8e7e7d2",
+                                "type": "send_msg",
+                                "text": "text response failed.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "da05ce31-2cd8-432b-9df0-59b9ec2c59be",
+                        "exits": [
+                            {
+                                "uuid": "23ed5151-c14a-43d6-a948-c349da91350a",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "00379d7b-d3ad-4d85-b48e-c8cfaace5ee5",
+                                "type": "send_msg",
+                                "text": "voice response failed",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "8cc64160-763d-4658-9e1c-bff745d4ff2f",
+                        "exits": [
+                            {
+                                "uuid": "37b382a0-f9ab-41a6-803c-112d2e4bc956",
+                                "destination_uuid": "4ba2756d-53c3-4692-ae15-728e67c3ae56"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "da6af142-e1b5-49d7-8b75-ae8c9ac89dbe",
+                                "type": "send_msg",
+                                "text": "@results.gpt_voice.translated_text",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "29aba071-4831-4c3e-bce7-9684efd8f983",
+                        "exits": [
+                            {
+                                "uuid": "6eb5bd13-42aa-4cde-86c8-2c6f2446590e",
+                                "destination_uuid": "76420377-4079-4a40-b784-65bc8dd2a7bb"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "34f013de-e2ce-47c4-ba34-bcb0d3520854",
+                                "type": "send_msg",
+                                "text": "@results.gpt_search.message",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "4ba2756d-53c3-4692-ae15-728e67c3ae56",
+                        "exits": [
+                            {
+                                "uuid": "81d51dc4-2690-4e03-abaf-1aa4b73c83e8",
+                                "destination_uuid": "76420377-4079-4a40-b784-65bc8dd2a7bb"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "0be16e99-50c3-4bef-895a-05d71fef4d5e",
+                                "type": "send_msg",
+                                "text": "",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": [
+                                    "expression:@results.gpt_voice.media_url"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "76420377-4079-4a40-b784-65bc8dd2a7bb",
+                        "router": {
+                            "wait": {
+                                "type": "msg"
+                            },
+                            "type": "switch",
+                            "result_name": "result_3",
+                            "operand": "@input.text",
+                            "default_category_uuid": "1b1e96a1-8d3f-4f35-b10a-1ddb03ee7306",
+                            "categories": [
+                                {
+                                    "uuid": "41c0b8a8-d7ed-4443-9096-6e9cdf182e1e",
+                                    "name": "Has Audio",
+                                    "exit_uuid": "e60dce7f-31e2-48c8-8e14-c2ff475efe85"
+                                },
+                                {
+                                    "uuid": "1b1e96a1-8d3f-4f35-b10a-1ddb03ee7306",
+                                    "name": "Other",
+                                    "exit_uuid": "8ee86803-de90-4c75-a279-6c377ef8ffec"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "54e3bc45-dfc6-4f17-9d3c-50aa6180a9fa",
+                                    "type": "has_audio",
+                                    "category_uuid": "41c0b8a8-d7ed-4443-9096-6e9cdf182e1e",
+                                    "arguments": []
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "e60dce7f-31e2-48c8-8e14-c2ff475efe85",
+                                "destination_uuid": "86972ef9-84ee-4c3a-b396-fea594252d52"
+                            },
+                            {
+                                "uuid": "8ee86803-de90-4c75-a279-6c377ef8ffec",
+                                "destination_uuid": "c88f879f-ac0a-4db7-b572-b8598e74015b"
+                            }
+                        ],
+                        "actions": []
+                    },
+                    {
+                        "uuid": "86972ef9-84ee-4c3a-b396-fea594252d52",
+                        "exits": [
+                            {
+                                "uuid": "47c42bfe-3161-4973-bc60-a1f753f52b25",
+                                "destination_uuid": "23a315aa-d319-4847-8974-3c6178b4b8f3"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "af58082b-d8ce-423e-afdb-1561bd727f45",
+                                "type": "send_msg",
+                                "text": "Generating your response, please wait for 15-20 seconds",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "c88f879f-ac0a-4db7-b572-b8598e74015b",
+                        "exits": [
+                            {
+                                "uuid": "9fe54ba6-22ba-4761-8473-51369a1be526",
+                                "destination_uuid": "e72aed19-32fb-4100-bd78-8d71ad6eca31"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "cf3152ea-1c24-43dc-9ccc-189f93fb6ee2",
+                                "type": "send_msg",
+                                "text": "Generating your response, please wait for 15-20 seconds",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "23a315aa-d319-4847-8974-3c6178b4b8f3",
+                        "router": {
+                            "type": "switch",
+                            "operand": "@results.filesearch_2.category",
+                            "default_category_uuid": "b90ec94d-f239-471e-ac14-30f34306da5a",
+                            "categories": [
+                                {
+                                    "uuid": "cb0c23cf-6a1c-47eb-8c35-95c6b25a0b69",
+                                    "name": "Success",
+                                    "exit_uuid": "f69d4588-e654-4338-a535-6592797cbf2c"
+                                },
+                                {
+                                    "uuid": "b90ec94d-f239-471e-ac14-30f34306da5a",
+                                    "name": "Failure",
+                                    "exit_uuid": "ea358234-be52-4b4c-968e-92b3750cc576"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "65d5129f-7cfd-4694-a82d-7876a28002ec",
+                                    "type": "has_only_text",
+                                    "category_uuid": "cb0c23cf-6a1c-47eb-8c35-95c6b25a0b69",
+                                    "arguments": [
+                                        "Success"
+                                    ]
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "f69d4588-e654-4338-a535-6592797cbf2c",
+                                "destination_uuid": "dd0cd7e2-9253-425a-b3b1-e0d0cabcdafb"
+                            },
+                            {
+                                "uuid": "ea358234-be52-4b4c-968e-92b3750cc576",
+                                "destination_uuid": "6748dde8-eee8-4fff-8962-c13488133f96"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "e9c3adbd-befb-4669-89a4-d316bac583a7",
+                                "url": "voice-filesearch-gpt",
+                                "type": "call_webhook",
+                                "result_name": "filesearch_2",
+                                "method": "FUNCTION",
+                                "headers": {
+                                    "Content-Type": "application/json",
+                                    "Accept": "application/json"
+                                },
+                                "body": "{\n  \"contact\": \"@contact\",\n  \"speech\": \"@results.result_3\",\n \"assistant_id\": \"asst_sYY3vlpf2rHKuCzlk750fidn\",\n  \"thread_id\":\"@results.gpt_voice.thread_id\",\n \"remove_citation\": true,\n \"source_language\": \"english\",\n \"target_language\": \"@contact.language\" \n}"
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "e72aed19-32fb-4100-bd78-8d71ad6eca31",
+                        "router": {
+                            "type": "switch",
+                            "operand": "@results.gpt_search_2.category",
+                            "default_category_uuid": "851f66d3-6fe0-4c11-ab55-9e598b72cafb",
+                            "categories": [
+                                {
+                                    "uuid": "1c3bc5d4-98d8-49d9-810a-e80207f98238",
+                                    "name": "Success",
+                                    "exit_uuid": "ee2de10f-5965-4aad-87a4-9a18edc47fa9"
+                                },
+                                {
+                                    "uuid": "851f66d3-6fe0-4c11-ab55-9e598b72cafb",
+                                    "name": "Failure",
+                                    "exit_uuid": "d5668901-585d-4175-80ec-fe1f260db0c3"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "162361b5-2ce4-41b1-b4da-b8d32ceeb8f0",
+                                    "type": "has_only_text",
+                                    "category_uuid": "1c3bc5d4-98d8-49d9-810a-e80207f98238",
+                                    "arguments": [
+                                        "Success"
+                                    ]
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "ee2de10f-5965-4aad-87a4-9a18edc47fa9",
+                                "destination_uuid": "8f362cdb-2777-469b-a83e-89dee1783a6f"
+                            },
+                            {
+                                "uuid": "d5668901-585d-4175-80ec-fe1f260db0c3",
+                                "destination_uuid": "1f44cb81-478f-4b15-afde-a7cb7d3667b0"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "34093bdc-a4cb-4b25-bc0e-838b66107cef",
+                                "url": "filesearch-gpt",
+                                "type": "call_webhook",
+                                "result_name": "gpt_search_2",
+                                "method": "FUNCTION",
+                                "headers": {
+                                    "Content-Type": "application/json",
+                                    "Accept": "application/json"
+                                },
+                                "body": "{ \n\"question\": \"@results.result_3\", \n\"assistant_id\": \"\", \n\"remove_citation\":true ,\n\"thread_id\":\"@results.gpt_search.thread_id\"\n}"
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "dd0cd7e2-9253-425a-b3b1-e0d0cabcdafb",
+                        "exits": [
+                            {
+                                "uuid": "24952ca2-e936-4146-a7a0-c64d5326d123",
+                                "destination_uuid": "dfc35c3e-a56c-4e01-afdf-b79adc6c6965"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "2aff5709-18d7-407b-b4f5-80eea20f3749",
+                                "type": "send_msg",
+                                "text": "@results.filesearch_2.translated_text",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "8f362cdb-2777-469b-a83e-89dee1783a6f",
+                        "exits": [
+                            {
+                                "uuid": "13909e6b-34c2-4886-a83b-c556183d405a",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "f8360106-7f76-4e66-97d6-f4f458495ade",
+                                "type": "send_msg",
+                                "text": "@results.gpt_search_2.message",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "1f44cb81-478f-4b15-afde-a7cb7d3667b0",
+                        "exits": [
+                            {
+                                "uuid": "900d34ee-33ee-4aa6-a6f4-f4a208083744",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "627030b0-2a69-4295-84df-a5e0cad2cebe",
+                                "type": "send_msg",
+                                "text": "text response failed.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "6748dde8-eee8-4fff-8962-c13488133f96",
+                        "exits": [
+                            {
+                                "uuid": "f90b3c55-a904-4b74-a15a-0e671ce346c4",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "dbaf0e00-3a55-4e73-ba5b-bf382fa7a1d8",
+                                "type": "send_msg",
+                                "text": "voice response failed.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "dfc35c3e-a56c-4e01-afdf-b79adc6c6965",
+                        "exits": [
+                            {
+                                "uuid": "11e241dc-cefe-4f80-baf1-fcbc43350a4b",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "12d18696-79f7-4ae4-a809-8a3f51d3809a",
+                                "type": "send_msg",
+                                "text": "",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": [
+                                    "expression:@results.filesearch_2.media_url"
+                                ],
+                                "all_urns": false
+                            }
+                        ]
+                    }
+                ],
+                "name": "DEMO_filesearchvoice",
+                "localization": {
+                    "te": {
+                        "f8360106-7f76-4e66-97d6-f4f458495ade": {
+                            "text": [
+                                "@results.gpt_search_2.message"
+                            ]
+                        },
+                        "dbaf0e00-3a55-4e73-ba5b-bf382fa7a1d8": {
+                            "text": [
+                                "వాయిస్ ప్రతిస్పందన విఫలమైంది."
+                            ]
+                        },
+                        "da6af142-e1b5-49d7-8b75-ae8c9ac89dbe": {
+                            "text": [
+                                "@results.gpt_voice.translated_text"
+                            ]
+                        },
+                        "cf3152ea-1c24-43dc-9ccc-189f93fb6ee2": {
+                            "text": [
+                                "మీ ప్రతిస్పందనను రూపొందిస్తోంది, దయచేసి 15-20 సెకన్లు వేచి ఉండండి"
+                            ]
+                        },
+                        "af58082b-d8ce-423e-afdb-1561bd727f45": {
+                            "text": [
+                                "మీ ప్రతిస్పందనను రూపొందిస్తోంది, దయచేసి 15-20 సెకన్లు వేచి ఉండండి"
+                            ]
+                        },
+                        "89746156-bebe-4237-89f5-cbc9f27f9e00": {
+                            "text": [
+                                "మీ ప్రతిస్పందనను రూపొందిస్తోంది, దయచేసి 15-20 సెకన్లు వేచి ఉండండి"
+                            ]
+                        },
+                        "71cad612-89b9-4f19-993b-919740e53d3f": {
+                            "text": [
+                                "దయచేసి 🎤️ వాయిస్ నోట్‌ని ఉపయోగించి గ్లిఫిక్ ప్లాట్‌ఫారమ్ గురించి మీ ప్రశ్న అడగండి \n\n(ఈ డెమో ప్రయోజనం కోసం, అసిస్టెంట్ నాలెడ్జ్ బేస్‌గా గ్లిఫిక్ డాక్యుమెంటేషన్ నుండి ప్రశ్నలకు సమాధానమిస్తున్నారు)"
+                            ]
+                        },
+                        "6e4d4fd8-73e7-44c2-9f3d-b6d2e3e0fbfa": {
+                            "text": [
+                                "మీ ప్రతిస్పందనను రూపొందిస్తోంది, దయచేసి 15-20 సెకన్లు వేచి ఉండండి"
+                            ]
+                        },
+                        "627030b0-2a69-4295-84df-a5e0cad2cebe": {
+                            "text": [
+                                "వచన ప్రతిస్పందన విఫలమైంది."
+                            ]
+                        },
+                        "5d1df67d-e1ce-4986-839f-6712d8e7e7d2": {
+                            "text": [
+                                "వచన ప్రతిస్పందన విఫలమైంది."
+                            ]
+                        },
+                        "34f013de-e2ce-47c4-ba34-bcb0d3520854": {
+                            "text": [
+                                "@results.gpt_search.message"
+                            ]
+                        },
+                        "2aff5709-18d7-407b-b4f5-80eea20f3749": {
+                            "text": [
+                                "@results.filesearch_2.translated_text"
+                            ]
+                        },
+                        "12d18696-79f7-4ae4-a809-8a3f51d3809a": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "0be16e99-50c3-4bef-895a-05d71fef4d5e": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "00379d7b-d3ad-4d85-b48e-c8cfaace5ee5": {
+                            "text": [
+                                "వాయిస్ ప్రతిస్పందన విఫలమైంది"
+                            ]
+                        }
+                    },
+                    "ta": {
+                        "f8360106-7f76-4e66-97d6-f4f458495ade": {
+                            "text": [
+                                "@results.gpt_search_2.message"
+                            ]
+                        },
+                        "dbaf0e00-3a55-4e73-ba5b-bf382fa7a1d8": {
+                            "text": [
+                                "குரல் பதில் தோல்வி."
+                            ]
+                        },
+                        "da6af142-e1b5-49d7-8b75-ae8c9ac89dbe": {
+                            "text": [
+                                "@results.gpt_voice.translated_text"
+                            ]
+                        },
+                        "cf3152ea-1c24-43dc-9ccc-189f93fb6ee2": {
+                            "text": [
+                                "உங்கள் பதிலை உருவாக்குகிறது, தயவுசெய்து 15-20 வினாடிகள் காத்திருக்கவும்"
+                            ]
+                        },
+                        "af58082b-d8ce-423e-afdb-1561bd727f45": {
+                            "text": [
+                                "உங்கள் பதிலை உருவாக்குகிறது, தயவுசெய்து 15-20 வினாடிகள் காத்திருக்கவும்"
+                            ]
+                        },
+                        "89746156-bebe-4237-89f5-cbc9f27f9e00": {
+                            "text": [
+                                "உங்கள் பதிலை உருவாக்குகிறது, தயவுசெய்து 15-20 வினாடிகள் காத்திருக்கவும்"
+                            ]
+                        },
+                        "71cad612-89b9-4f19-993b-919740e53d3f": {
+                            "text": [
+                                "🎤️ குரல் குறிப்பைப் பயன்படுத்தி Glific இயங்குதளம் தொடர்பான உங்கள் கேள்வியைக் கேளுங்கள் \n\n(இந்த டெமோவின் நோக்கத்திற்காக, உதவியாளர் Glific இன் ஆவணங்களில் இருந்து கேள்விகளுக்கு அறிவுத் தளமாக பதிலளிக்கிறார்)"
+                            ]
+                        },
+                        "6e4d4fd8-73e7-44c2-9f3d-b6d2e3e0fbfa": {
+                            "text": [
+                                "உங்கள் பதிலை உருவாக்குகிறது, தயவுசெய்து 15-20 வினாடிகள் காத்திருக்கவும்"
+                            ]
+                        },
+                        "627030b0-2a69-4295-84df-a5e0cad2cebe": {
+                            "text": [
+                                "உரை பதில் தோல்வியடைந்தது."
+                            ]
+                        },
+                        "5d1df67d-e1ce-4986-839f-6712d8e7e7d2": {
+                            "text": [
+                                "உரை பதில் தோல்வியடைந்தது."
+                            ]
+                        },
+                        "34f013de-e2ce-47c4-ba34-bcb0d3520854": {
+                            "text": [
+                                "@results.gpt_search.message"
+                            ]
+                        },
+                        "2aff5709-18d7-407b-b4f5-80eea20f3749": {
+                            "text": [
+                                "@results.filesearch_2.translated_text"
+                            ]
+                        },
+                        "12d18696-79f7-4ae4-a809-8a3f51d3809a": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "0be16e99-50c3-4bef-895a-05d71fef4d5e": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "00379d7b-d3ad-4d85-b48e-c8cfaace5ee5": {
+                            "text": [
+                                "குரல் பதில் தோல்வி"
+                            ]
+                        }
+                    },
+                    "mr": {
+                        "f8360106-7f76-4e66-97d6-f4f458495ade": {
+                            "text": [
+                                "@results.gpt_search_2.message"
+                            ]
+                        },
+                        "dbaf0e00-3a55-4e73-ba5b-bf382fa7a1d8": {
+                            "text": [
+                                "आवाज प्रतिसाद अयशस्वी."
+                            ]
+                        },
+                        "da6af142-e1b5-49d7-8b75-ae8c9ac89dbe": {
+                            "text": [
+                                "@results.gpt_voice.translated_text"
+                            ]
+                        },
+                        "cf3152ea-1c24-43dc-9ccc-189f93fb6ee2": {
+                            "text": [
+                                "तुमचा प्रतिसाद निर्माण करत आहे, कृपया १५-२० सेकंद प्रतीक्षा करा"
+                            ]
+                        },
+                        "af58082b-d8ce-423e-afdb-1561bd727f45": {
+                            "text": [
+                                "तुमचा प्रतिसाद निर्माण करत आहे, कृपया १५-२० सेकंद प्रतीक्षा करा"
+                            ]
+                        },
+                        "89746156-bebe-4237-89f5-cbc9f27f9e00": {
+                            "text": [
+                                "तुमचा प्रतिसाद निर्माण करत आहे, कृपया १५-२० सेकंद प्रतीक्षा करा"
+                            ]
+                        },
+                        "71cad612-89b9-4f19-993b-919740e53d3f": {
+                            "text": [
+                                "कृपया 🎤️ व्हॉईस नोट वापरून ग्लिफिक प्लॅटफॉर्मबद्दल तुमचे प्रश्न विचारा \n\n(या डेमोच्या उद्देशाने, सहाय्यक ग्लिफिकच्या दस्तऐवजीकरणातील प्रश्नांची उत्तरे ज्ञान आधार म्हणून देत आहे)"
+                            ]
+                        },
+                        "6e4d4fd8-73e7-44c2-9f3d-b6d2e3e0fbfa": {
+                            "text": [
+                                "तुमचा प्रतिसाद निर्माण करत आहे, कृपया १५-२० सेकंद प्रतीक्षा करा"
+                            ]
+                        },
+                        "627030b0-2a69-4295-84df-a5e0cad2cebe": {
+                            "text": [
+                                "मजकूर प्रतिसाद अयशस्वी."
+                            ]
+                        },
+                        "5d1df67d-e1ce-4986-839f-6712d8e7e7d2": {
+                            "text": [
+                                "मजकूर प्रतिसाद अयशस्वी."
+                            ]
+                        },
+                        "34f013de-e2ce-47c4-ba34-bcb0d3520854": {
+                            "text": [
+                                "@results.gpt_search.message"
+                            ]
+                        },
+                        "2aff5709-18d7-407b-b4f5-80eea20f3749": {
+                            "text": [
+                                "@results.filesearch_2.translated_text"
+                            ]
+                        },
+                        "12d18696-79f7-4ae4-a809-8a3f51d3809a": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "0be16e99-50c3-4bef-895a-05d71fef4d5e": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "00379d7b-d3ad-4d85-b48e-c8cfaace5ee5": {
+                            "text": [
+                                "आवाज प्रतिसाद अयशस्वी"
+                            ]
+                        }
+                    },
+                    "ml": {
+                        "f8360106-7f76-4e66-97d6-f4f458495ade": {
+                            "text": [
+                                "@results.gpt_search_2.message"
+                            ]
+                        },
+                        "dbaf0e00-3a55-4e73-ba5b-bf382fa7a1d8": {
+                            "text": [
+                                "ശബ്ദ പ്രതികരണം പരാജയപ്പെട്ടു."
+                            ]
+                        },
+                        "da6af142-e1b5-49d7-8b75-ae8c9ac89dbe": {
+                            "text": [
+                                "@results.gpt_voice.translated_text"
+                            ]
+                        },
+                        "cf3152ea-1c24-43dc-9ccc-189f93fb6ee2": {
+                            "text": [
+                                "നിങ്ങളുടെ പ്രതികരണം സൃഷ്ടിക്കുന്നു, ദയവായി 15-20 സെക്കൻഡ് കാത്തിരിക്കുക"
+                            ]
+                        },
+                        "af58082b-d8ce-423e-afdb-1561bd727f45": {
+                            "text": [
+                                "നിങ്ങളുടെ പ്രതികരണം സൃഷ്ടിക്കുന്നു, ദയവായി 15-20 സെക്കൻഡ് കാത്തിരിക്കുക"
+                            ]
+                        },
+                        "89746156-bebe-4237-89f5-cbc9f27f9e00": {
+                            "text": [
+                                "നിങ്ങളുടെ പ്രതികരണം സൃഷ്ടിക്കുന്നു, ദയവായി 15-20 സെക്കൻഡ് കാത്തിരിക്കുക"
+                            ]
+                        },
+                        "71cad612-89b9-4f19-993b-919740e53d3f": {
+                            "text": [
+                                "ഒരു 🎤️ വോയ്‌സ് നോട്ട് ഉപയോഗിച്ച് ഗ്ലിഫിക് പ്ലാറ്റ്‌ഫോമിനെക്കുറിച്ചുള്ള നിങ്ങളുടെ ചോദ്യം ചോദിക്കുക \n\n(ഈ ഡെമോയുടെ ഉദ്ദേശ്യത്തിനായി, വിജ്ഞാന അടിത്തറയായി ഗ്ലിഫിക്കിൻ്റെ ഡോക്യുമെൻ്റേഷനിൽ നിന്നുള്ള ചോദ്യങ്ങൾക്ക് അസിസ്റ്റൻ്റ് ഉത്തരം നൽകുന്നു)"
+                            ]
+                        },
+                        "6e4d4fd8-73e7-44c2-9f3d-b6d2e3e0fbfa": {
+                            "text": [
+                                "നിങ്ങളുടെ പ്രതികരണം സൃഷ്ടിക്കുന്നു, ദയവായി 15-20 സെക്കൻഡ് കാത്തിരിക്കുക"
+                            ]
+                        },
+                        "627030b0-2a69-4295-84df-a5e0cad2cebe": {
+                            "text": [
+                                "ടെക്സ്റ്റ് പ്രതികരണം പരാജയപ്പെട്ടു."
+                            ]
+                        },
+                        "5d1df67d-e1ce-4986-839f-6712d8e7e7d2": {
+                            "text": [
+                                "ടെക്സ്റ്റ് പ്രതികരണം പരാജയപ്പെട്ടു."
+                            ]
+                        },
+                        "34f013de-e2ce-47c4-ba34-bcb0d3520854": {
+                            "text": [
+                                "@results.gpt_search.message"
+                            ]
+                        },
+                        "2aff5709-18d7-407b-b4f5-80eea20f3749": {
+                            "text": [
+                                "@results.filesearch_2.translated_text"
+                            ]
+                        },
+                        "12d18696-79f7-4ae4-a809-8a3f51d3809a": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "0be16e99-50c3-4bef-895a-05d71fef4d5e": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "00379d7b-d3ad-4d85-b48e-c8cfaace5ee5": {
+                            "text": [
+                                "ശബ്ദ പ്രതികരണം പരാജയപ്പെട്ടു"
+                            ]
+                        }
+                    },
+                    "hi": {
+                        "f8360106-7f76-4e66-97d6-f4f458495ade": {
+                            "text": [
+                                "@results.gpt_search_2.संदेश"
+                            ]
+                        },
+                        "dbaf0e00-3a55-4e73-ba5b-bf382fa7a1d8": {
+                            "text": [
+                                "आवाज प्रतिक्रिया विफल."
+                            ]
+                        },
+                        "da6af142-e1b5-49d7-8b75-ae8c9ac89dbe": {
+                            "text": [
+                                "@results.gpt_voice.translated_text"
+                            ]
+                        },
+                        "cf3152ea-1c24-43dc-9ccc-189f93fb6ee2": {
+                            "text": [
+                                "आपका जवाब तैयार हो रहा है, कृपया 15-20 सेकंड तक प्रतीक्षा करें"
+                            ]
+                        },
+                        "af58082b-d8ce-423e-afdb-1561bd727f45": {
+                            "text": [
+                                "आपका जवाब तैयार हो रहा है, कृपया 15-20 सेकंड तक प्रतीक्षा करें"
+                            ]
+                        },
+                        "89746156-bebe-4237-89f5-cbc9f27f9e00": {
+                            "text": [
+                                "आपका जवाब तैयार हो रहा है, कृपया 15-20 सेकंड तक प्रतीक्षा करें"
+                            ]
+                        },
+                        "71cad612-89b9-4f19-993b-919740e53d3f": {
+                            "text": [
+                                "कृपया 🎤️ वॉयस नोट का उपयोग करके ग्लिफ़िक प्लेटफ़ॉर्म के बारे में अपना प्रश्न पूछें\n\n(इस डेमो के उद्देश्य के लिए, सहायक ज्ञान आधार के रूप में ग्लिफ़िक के दस्तावेज़ों से प्रश्नों का उत्तर दे रहा है)"
+                            ]
+                        },
+                        "6e4d4fd8-73e7-44c2-9f3d-b6d2e3e0fbfa": {
+                            "text": [
+                                "आपका जवाब तैयार हो रहा है, कृपया 15-20 सेकंड तक प्रतीक्षा करें"
+                            ]
+                        },
+                        "627030b0-2a69-4295-84df-a5e0cad2cebe": {
+                            "text": [
+                                "पाठ प्रतिक्रिया विफल."
+                            ]
+                        },
+                        "5d1df67d-e1ce-4986-839f-6712d8e7e7d2": {
+                            "text": [
+                                "पाठ प्रतिक्रिया विफल."
+                            ]
+                        },
+                        "34f013de-e2ce-47c4-ba34-bcb0d3520854": {
+                            "text": [
+                                "@results.gpt_search.संदेश"
+                            ]
+                        },
+                        "2aff5709-18d7-407b-b4f5-80eea20f3749": {
+                            "text": [
+                                "@results.filesearch_2.translated_text"
+                            ]
+                        },
+                        "12d18696-79f7-4ae4-a809-8a3f51d3809a": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "0be16e99-50c3-4bef-895a-05d71fef4d5e": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "00379d7b-d3ad-4d85-b48e-c8cfaace5ee5": {
+                            "text": [
+                                "आवाज़ प्रत्युत्तर विफल"
+                            ]
+                        }
+                    },
+                    "es": {
+                        "f8360106-7f76-4e66-97d6-f4f458495ade": {
+                            "text": [
+                                "@resultados.gpt_search_2.mensaje"
+                            ]
+                        },
+                        "dbaf0e00-3a55-4e73-ba5b-bf382fa7a1d8": {
+                            "text": [
+                                "La respuesta de voz falló."
+                            ]
+                        },
+                        "da6af142-e1b5-49d7-8b75-ae8c9ac89dbe": {
+                            "text": [
+                                "@resultados.gpt_voice.texto_traducido"
+                            ]
+                        },
+                        "cf3152ea-1c24-43dc-9ccc-189f93fb6ee2": {
+                            "text": [
+                                "Generando su respuesta, por favor espere 15-20 segundos"
+                            ]
+                        },
+                        "af58082b-d8ce-423e-afdb-1561bd727f45": {
+                            "text": [
+                                "Generando su respuesta, por favor espere 15-20 segundos"
+                            ]
+                        },
+                        "89746156-bebe-4237-89f5-cbc9f27f9e00": {
+                            "text": [
+                                "Generando su respuesta, por favor espere 15-20 segundos"
+                            ]
+                        },
+                        "71cad612-89b9-4f19-993b-919740e53d3f": {
+                            "text": [
+                                "Haga su pregunta sobre la plataforma Glific mediante una nota de voz 🎤️\n\n(Para los fines de esta demostración, el asistente responde preguntas de la documentación de Glific como base de conocimiento)"
+                            ]
+                        },
+                        "6e4d4fd8-73e7-44c2-9f3d-b6d2e3e0fbfa": {
+                            "text": [
+                                "Generando su respuesta, por favor espere 15-20 segundos"
+                            ]
+                        },
+                        "627030b0-2a69-4295-84df-a5e0cad2cebe": {
+                            "text": [
+                                "La respuesta del texto falló."
+                            ]
+                        },
+                        "5d1df67d-e1ce-4986-839f-6712d8e7e7d2": {
+                            "text": [
+                                "La respuesta del texto falló."
+                            ]
+                        },
+                        "34f013de-e2ce-47c4-ba34-bcb0d3520854": {
+                            "text": [
+                                "@resultados.gpt_search.mensaje"
+                            ]
+                        },
+                        "2aff5709-18d7-407b-b4f5-80eea20f3749": {
+                            "text": [
+                                "@resultados.filesearch_2.texto_traducido"
+                            ]
+                        },
+                        "12d18696-79f7-4ae4-a809-8a3f51d3809a": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "0be16e99-50c3-4bef-895a-05d71fef4d5e": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "00379d7b-d3ad-4d85-b48e-c8cfaace5ee5": {
+                            "text": [
+                                "La respuesta de voz falló"
+                            ]
+                        }
+                    },
+                    "en": {
+                        "f8360106-7f76-4e66-97d6-f4f458495ade": {
+                            "text": [
+                                "@results.gpt_search_2.message"
+                            ]
+                        },
+                        "dbaf0e00-3a55-4e73-ba5b-bf382fa7a1d8": {
+                            "text": [
+                                "voice response failed."
+                            ]
+                        },
+                        "da6af142-e1b5-49d7-8b75-ae8c9ac89dbe": {
+                            "text": [
+                                "@results.gpt_voice.translated_text"
+                            ]
+                        },
+                        "cf3152ea-1c24-43dc-9ccc-189f93fb6ee2": {
+                            "text": [
+                                "Generating your response, please wait for 15-20 seconds"
+                            ]
+                        },
+                        "af58082b-d8ce-423e-afdb-1561bd727f45": {
+                            "text": [
+                                "Generating your response, please wait for 15-20 seconds"
+                            ]
+                        },
+                        "89746156-bebe-4237-89f5-cbc9f27f9e00": {
+                            "text": [
+                                "Generating your response, please wait for 15-20 seconds"
+                            ]
+                        },
+                        "71cad612-89b9-4f19-993b-919740e53d3f": {
+                            "text": [
+                                "Please ask your question regarding Glific platform using a 🎤️ voice note \n\n(For the purpose of this demo, the assistant is answering questions from Glific's documentation as the knowledge base)"
+                            ]
+                        },
+                        "6e4d4fd8-73e7-44c2-9f3d-b6d2e3e0fbfa": {
+                            "text": [
+                                "Generating your response, please wait for 15-20 seconds"
+                            ]
+                        },
+                        "627030b0-2a69-4295-84df-a5e0cad2cebe": {
+                            "text": [
+                                "text response failed."
+                            ]
+                        },
+                        "5d1df67d-e1ce-4986-839f-6712d8e7e7d2": {
+                            "text": [
+                                "text response failed."
+                            ]
+                        },
+                        "34f013de-e2ce-47c4-ba34-bcb0d3520854": {
+                            "text": [
+                                "@results.gpt_search.message"
+                            ]
+                        },
+                        "2aff5709-18d7-407b-b4f5-80eea20f3749": {
+                            "text": [
+                                "@results.filesearch_2.translated_text"
+                            ]
+                        },
+                        "12d18696-79f7-4ae4-a809-8a3f51d3809a": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "0be16e99-50c3-4bef-895a-05d71fef4d5e": {
+                            "text": [
+                                ""
+                            ]
+                        },
+                        "00379d7b-d3ad-4d85-b48e-c8cfaace5ee5": {
+                            "text": [
+                                "voice response failed"
+                            ]
+                        }
+                    }
+                },
+                "language": "base",
+                "expire_after_minutes": 10080,
+                "_ui": {
+                    "stickies": {
+                        "4d6b230a-727c-4562-8af9-4fc76100887b": {
+                            "title": "Need to have node cf6c",
+                            "position": {
+                                "top": 520,
+                                "right": null,
+                                "left": 440,
+                                "bottom": null
+                            },
+                            "color": "yellow",
+                            "body": "Go to \"function body\" to change the parameters like source langauge, target language and most importantly assistant id."
+                        },
+                        "0b4e715a-5143-44dd-877f-4cf6d1629085": {
+                            "title": "",
+                            "position": {
+                                "top": 1200,
+                                "right": null,
+                                "left": 460,
+                                "bottom": null
+                            },
+                            "color": "yellow",
+                            "body": "Go to \"function body\" to change the parameters like source langauge, target language and most importantly assistant id.\n\nAdditional parameter passed here to capture the thread id from the previous node, which can be used to make the conversation contextual to the previous question."
+                        }
+                    },
+                    "nodes": {
+                        "e72aed19-32fb-4100-bd78-8d71ad6eca31": {
+                            "type": "split_by_webhook",
+                            "position": {
+                                "top": 1400,
+                                "left": 740
+                            },
+                            "config": {}
+                        },
+                        "e659b2c1-5131-4bae-ab33-be21eee9522e": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 0,
+                                "left": 0
+                            }
+                        },
+                        "dfc35c3e-a56c-4e01-afdf-b79adc6c6965": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 1720,
+                                "left": 180
+                            }
+                        },
+                        "dd0cd7e2-9253-425a-b3b1-e0d0cabcdafb": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 1520,
+                                "left": 60
+                            }
+                        },
+                        "da05ce31-2cd8-432b-9df0-59b9ec2c59be": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 760,
+                                "left": 580
+                            }
+                        },
+                        "c88f879f-ac0a-4db7-b572-b8598e74015b": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 1280,
+                                "left": 800
+                            }
+                        },
+                        "b9dbbcd7-4dff-47ac-9b4b-aab088b0cf6c": {
+                            "type": "split_by_webhook",
+                            "position": {
+                                "top": 620,
+                                "left": 160
+                            },
+                            "config": {}
+                        },
+                        "8f362cdb-2777-469b-a83e-89dee1783a6f": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 1580,
+                                "left": 620
+                            }
+                        },
+                        "8cc64160-763d-4658-9e1c-bff745d4ff2f": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 800,
+                                "left": 260
+                            }
+                        },
+                        "86972ef9-84ee-4c3a-b396-fea594252d52": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 1220,
+                                "left": 180
+                            }
+                        },
+                        "76420377-4079-4a40-b784-65bc8dd2a7bb": {
+                            "type": "wait_for_response",
+                            "position": {
+                                "top": 1080,
+                                "left": 560
+                            },
+                            "config": {
+                                "cases": {}
+                            }
+                        },
+                        "703d1f8b-18d0-4095-b0cf-25a21adb56ac": {
+                            "type": "wait_for_response",
+                            "position": {
+                                "top": 300,
+                                "left": 120
+                            },
+                            "config": {
+                                "cases": {}
+                            }
+                        },
+                        "6748dde8-eee8-4fff-8962-c13488133f96": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 1620,
+                                "left": 320
+                            }
+                        },
+                        "4c25f06d-a447-4c7f-bad2-da8b3a5c7d27": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 700,
+                                "left": 1040
+                            }
+                        },
+                        "4ba2756d-53c3-4692-ae15-728e67c3ae56": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 940,
+                                "left": 120
+                            }
+                        },
+                        "45040225-584d-40bb-8d80-a3032371a4d5": {
+                            "type": "split_by_webhook",
+                            "position": {
+                                "top": 420,
+                                "left": 780
+                            },
+                            "config": {}
+                        },
+                        "41b06724-b7ce-46b0-892e-8c1e0b8052c4": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 500,
+                                "left": 180
+                            }
+                        },
+                        "3e4e7a8e-9fe5-4561-bc0f-c7953f13626f": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 380,
+                                "left": 480
+                            }
+                        },
+                        "29aba071-4831-4c3e-bce7-9684efd8f983": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 800,
+                                "left": 840
+                            }
+                        },
+                        "23a315aa-d319-4847-8974-3c6178b4b8f3": {
+                            "type": "split_by_webhook",
+                            "position": {
+                                "top": 1340,
+                                "left": 200
+                            },
+                            "config": {}
+                        },
+                        "1f44cb81-478f-4b15-afde-a7cb7d3667b0": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 1580,
+                                "left": 860
+                            }
+                        }
+                    }
+                }
+            },
+            "keywords": [
+                
+            ]
+        }
+    ],
+    "contact_field": [],
+    "collections": []
+}

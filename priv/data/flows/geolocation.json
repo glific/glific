@@ -1,0 +1,329 @@
+{
+    "interactive_templates": [
+        {
+            "send_with_title": true,
+            "source_id": 19630,
+            "language_id": 1,
+            "interactive_content": {
+                "type": "location_request_message",
+                "body": {
+                    "type": "text",
+                    "text": "Please click on Send location."
+                },
+                "action": {
+                    "name": "send_location"
+                }
+            },
+            "translations": {
+                "1": {
+                    "type": "location_request_message",
+                    "body": {
+                        "type": "text",
+                        "text": "Please click on Send location."
+                    },
+                    "action": {
+                        "name": "send_location"
+                    }
+                }
+            },
+            "type": "location_request_message",
+            "label": "Location"
+        }
+    ],
+    "flows": [
+        {
+            "definition": {
+                "vars": [
+                    "d2eed6d9-5619-4b58-a802-2a2829cae4bb"
+                ],
+                "uuid": "d2eed6d9-5619-4b58-a802-2a2829cae4bb",
+                "type": "messaging",
+                "spec_version": "13.2.0",
+                "nodes": [
+                    {
+                        "uuid": "3ce484c0-c336-454e-8a20-a38d20ded7ee",
+                        "exits": [
+                            {
+                                "uuid": "ee13687c-803d-4361-9a34-285f851439e9",
+                                "destination_uuid": "3a3c6579-d4a3-4195-8de3-9ab19e6c3b19"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "bf9c012f-8bf7-47a3-86fe-03895c20e089",
+                                "type": "send_msg",
+                                "text": "Dear user, please share your location to record your geographic details.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "3a3c6579-d4a3-4195-8de3-9ab19e6c3b19",
+                        "exits": [
+                            {
+                                "uuid": "1c76e6e3-5795-4609-a70b-934a4fc87e6a",
+                                "destination_uuid": "10ae1f08-c173-4fea-b4fd-3eaf37e32cf3"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "a888d7bc-74a6-4d65-a351-2e082e0868f0",
+                                "type": "send_interactive_msg",
+                                "text": "{\"action\":{\"name\":\"send_location\"},\"body\":{\"text\":\"Please click on Send location.\",\"type\":\"text\"},\"type\":\"location_request_message\"}",
+                                "name": "Location",
+                                "labels": [],
+                                "id": 19630,
+                                "attachment_url": "",
+                                "attachment_type": ""
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "10ae1f08-c173-4fea-b4fd-3eaf37e32cf3",
+                        "router": {
+                            "wait": {
+                                "type": "msg"
+                            },
+                            "type": "switch",
+                            "result_name": "result_1",
+                            "operand": "@input.text",
+                            "default_category_uuid": "0583f62d-00e6-43d9-9bd5-b17f6c5c466d",
+                            "categories": [
+                                {
+                                    "uuid": "dfba36f5-63d7-4b9c-acdf-22d15d22d47b",
+                                    "name": "Has location",
+                                    "exit_uuid": "0e7e55e8-b9c8-4716-a60b-f86779c40be0"
+                                },
+                                {
+                                    "uuid": "0583f62d-00e6-43d9-9bd5-b17f6c5c466d",
+                                    "name": "Other",
+                                    "exit_uuid": "8d513d79-9509-4427-8b1f-332b2305a621"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "effbc14d-4d43-43f6-86ac-60ff2fd1e7f0",
+                                    "type": "has_location",
+                                    "category_uuid": "dfba36f5-63d7-4b9c-acdf-22d15d22d47b",
+                                    "arguments": []
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "0e7e55e8-b9c8-4716-a60b-f86779c40be0",
+                                "destination_uuid": "1a70219a-0bbd-4cab-89b8-50553e79ffb4"
+                            },
+                            {
+                                "uuid": "8d513d79-9509-4427-8b1f-332b2305a621",
+                                "destination_uuid": "c89dc96f-22b2-4eb4-a51e-91b3d932bc2f"
+                            }
+                        ],
+                        "actions": []
+                    },
+                    {
+                        "uuid": "c89dc96f-22b2-4eb4-a51e-91b3d932bc2f",
+                        "exits": [
+                            {
+                                "uuid": "e131f710-9461-475d-b926-24ad1d6cfd65",
+                                "destination_uuid": "3a3c6579-d4a3-4195-8de3-9ab19e6c3b19"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "ee9c4817-6ab0-4582-a95a-8821a9663d2f",
+                                "type": "send_msg",
+                                "text": "Please share your \"current location\" in WhatsApp.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "1a70219a-0bbd-4cab-89b8-50553e79ffb4",
+                        "router": {
+                            "type": "switch",
+                            "operand": "@results.loc.category",
+                            "default_category_uuid": "44f5e25c-d56c-40c6-b9f1-19243b8e5dcd",
+                            "categories": [
+                                {
+                                    "uuid": "e73cc142-02c3-41c0-b26a-5d354301f5a5",
+                                    "name": "Success",
+                                    "exit_uuid": "625519e4-c868-4e5e-af75-0e0d0ee11ce6"
+                                },
+                                {
+                                    "uuid": "44f5e25c-d56c-40c6-b9f1-19243b8e5dcd",
+                                    "name": "Failure",
+                                    "exit_uuid": "a2b682cc-7f71-40b5-b0e3-5fedd3e2ea19"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "c8b1e374-aaa2-47b3-b15c-4bd4546c16ef",
+                                    "type": "has_only_text",
+                                    "category_uuid": "e73cc142-02c3-41c0-b26a-5d354301f5a5",
+                                    "arguments": [
+                                        "Success"
+                                    ]
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "625519e4-c868-4e5e-af75-0e0d0ee11ce6",
+                                "destination_uuid": "d82c194d-c537-45ba-8fa0-0b1e0614b657"
+                            },
+                            {
+                                "uuid": "a2b682cc-7f71-40b5-b0e3-5fedd3e2ea19",
+                                "destination_uuid": "687cfea4-6e8b-44a3-9d9d-a368e57c7ebb"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "9ab60aed-40b2-4c02-a03b-f39404281b03",
+                                "url": "geolocation",
+                                "type": "call_webhook",
+                                "result_name": "loc",
+                                "method": "FUNCTION",
+                                "headers": {
+                                    "Content-Type": "application/json",
+                                    "Accept": "application/json"
+                                },
+                                "body": "{\n \"lat\": \"@results.result_1.latitude\",\n \"long\": \"@results.result_1.longitude\"\n}"
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "d82c194d-c537-45ba-8fa0-0b1e0614b657",
+                        "exits": [
+                            {
+                                "uuid": "66a9775d-cf7f-4e72-8aaf-d288fa743a47",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "f7c5c029-0c47-40c3-af49-69dcc6430bf1",
+                                "type": "send_msg",
+                                "text": "Location details\n\nWard - @results.loc.ward\nState - @results.loc.state\nPostal Code - @results.loc.postal_code\nDistrict - @results.loc.district\nCity - @results.loc.city\nCountry - @results.loc.country\nFull address - @results.loc.address",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "687cfea4-6e8b-44a3-9d9d-a368e57c7ebb",
+                        "exits": [
+                            {
+                                "uuid": "23ffe911-1898-4c1e-9a88-5e0079878cfa",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "9dbfd98e-c2e9-41af-b30c-19c3bf49ece2",
+                                "type": "send_msg",
+                                "text": "Something went wrong with the Google Maps API, pls try again",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    }
+                ],
+                "name": "TEMPLATE_geolocate_googlemaps",
+                "localization": {},
+                "language": "base",
+                "expire_after_minutes": 10080,
+                "_ui": {
+                    "stickies": {
+                        "e6c62879-90e9-48c7-80d9-945cbd62f885": {
+                            "title": "Need to have node 3b19",
+                            "position": {
+                                "top": 80,
+                                "left": 460
+                            },
+                            "color": "yellow",
+                            "body": "interactive message to get the location from the user"
+                        },
+                        "4300e977-593c-431e-8dd4-a045a78ecd34": {
+                            "title": "Need to have node ffb4",
+                            "position": {
+                                "top": 560,
+                                "right": null,
+                                "left": 340,
+                                "bottom": null
+                            },
+                            "color": "yellow",
+                            "body": "Go to \"function body\" to see parameters being passed to google maps api to get the geographic details in return"
+                        }
+                    },
+                    "nodes": {
+                        "d82c194d-c537-45ba-8fa0-0b1e0614b657": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 860,
+                                "left": 100
+                            }
+                        },
+                        "c89dc96f-22b2-4eb4-a51e-91b3d932bc2f": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 360,
+                                "left": 660
+                            }
+                        },
+                        "687cfea4-6e8b-44a3-9d9d-a368e57c7ebb": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 860,
+                                "left": 480
+                            }
+                        },
+                        "3ce484c0-c336-454e-8a20-a38d20ded7ee": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 0,
+                                "left": 0
+                            }
+                        },
+                        "3a3c6579-d4a3-4195-8de3-9ab19e6c3b19": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 160,
+                                "left": 220
+                            }
+                        },
+                        "1a70219a-0bbd-4cab-89b8-50553e79ffb4": {
+                            "type": "split_by_webhook",
+                            "position": {
+                                "top": 500,
+                                "left": 120
+                            },
+                            "config": {}
+                        },
+                        "10ae1f08-c173-4fea-b4fd-3eaf37e32cf3": {
+                            "type": "wait_for_response",
+                            "position": {
+                                "top": 320,
+                                "left": 200
+                            },
+                            "config": {
+                                "cases": {}
+                            }
+                        }
+                    }
+                }
+            },
+            "keywords": [
+                
+            ]
+        }
+    ],
+    "contact_field": [],
+    "collections": []
+}
