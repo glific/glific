@@ -1052,4 +1052,15 @@ defmodule Glific.Contacts do
   end
 
   defp get_contact_update_attrs(%Contact{}, _), do: nil
+
+  @doc """
+  preload language
+  """
+  @spec preload_contact_language(non_neg_integer()) :: any()
+  def preload_contact_language(contact_id) do
+    case Repo.fetch(Contact, contact_id) do
+      {:ok, contact} -> contact |> Repo.preload(:language)
+      {:error, error} -> error
+    end
+  end
 end

@@ -18,6 +18,7 @@ defmodule GlificWeb.Schema.WAManagedPhoneTest do
     [wa_managed_phone | _] = wa_managed_phones
     assert wa_managed_phone["label"] == seed_wa_managed_phone.label
     assert wa_managed_phone["phone"] == seed_wa_managed_phone.phone
+    assert wa_managed_phone["status"] == seed_wa_managed_phone.status
   end
 
   test "wa_managed_phones field returns list of wa_managed_phones in desc order",
