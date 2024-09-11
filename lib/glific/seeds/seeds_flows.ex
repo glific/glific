@@ -211,7 +211,7 @@ defmodule Glific.Seeds.SeedsFlows do
       flow_revision(flow, organization, flow_file)
     else
       _ ->
-        IO.puts("Error importing flow for organization: #{organization.id}")
+        {:error, "Error importing flow for organization: #{organization.id}"}
     end
 
     :ok
