@@ -39,7 +39,6 @@ defmodule Glific.Seeds.SeedsMigration do
   @spec migrate_data(atom(), Organization.t() | nil) :: :ok
   def migrate_data(phase, organization \\ nil) do
     organizations = get_organizations(organization)
-    IO.inspect(organizations)
 
     do_migrate_data(phase, organizations)
   end

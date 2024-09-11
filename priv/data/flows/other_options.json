@@ -1,60 +1,79 @@
 {
-    "_ui": {
-        "nodes": {
-            "1f34dc47-1f64-4a46-8015-db954a768d31": {
-                "type": "execute_actions",
-                "position": {
-                    "top": 0,
-                    "left": 0
-                }
-            }
-        }
-    },
-    "name": "Other options flow",
-    "type": "messaging",
-    "uuid": "6c362d4a-01cd-47cb-a03c-1dfb294faa63",
-    "vars": [
-        "6c362d4a-01cd-47cb-a03c-1dfb294faa63"
-    ],
-    "nodes": [
+    "interactive_templates": [],
+    "flows": [
         {
-            "uuid": "1f34dc47-1f64-4a46-8015-db954a768d31",
-            "exits": [
-                {
-                    "uuid": "cacd5381-6f33-4cd6-974b-292071fb2493",
-                    "destination_uuid": null
+            "definition": {
+                "vars": [
+                    "6c362d4a-01cd-47cb-a03c-1dfb294faa63"
+                ],
+                "uuid": "21cbe6b8-ec85-4d3b-9364-a5154ab40dd0",
+                "type": "messaging",
+                "spec_version": "13.2.0",
+                "revision": 1,
+                "nodes": [
+                    {
+                        "uuid": "1f34dc47-1f64-4a46-8015-db954a768d31",
+                        "exits": [
+                            {
+                                "uuid": "cacd5381-6f33-4cd6-974b-292071fb2493",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "81dc3813-3484-4336-a001-eb63411a87fb",
+                                "type": "send_msg",
+                                "text": "Please select one of the given options only👇🏼",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    }
+                ],
+                "name": "Other options flow",
+                "localization": {
+                    "hi": {
+                        "81dc3813-3484-4336-a001-eb63411a87fb": {
+                            "text": [
+                                "कृपया दिए गए विकल्पों में से ही एक का चयन करें👇🏼"
+                            ]
+                        }
+                    },
+                    "gu": {
+                        "81dc3813-3484-4336-a001-eb63411a87fb": {
+                            "text": [
+                                "કૃપા કરીને આપેલા વિકલ્પોમાંથી માત્ર એક પસંદ કરો👇🏼"
+                            ]
+                        }
+                    },
+                    "en": {
+                        "81dc3813-3484-4336-a001-eb63411a87fb": {
+                            "text": [
+                                "Please select one of the given options only👇🏼"
+                            ]
+                        }
+                    }
+                },
+                "language": "base",
+                "expire_after_minutes": 10080,
+                "_ui": {
+                    "nodes": {
+                        "1f34dc47-1f64-4a46-8015-db954a768d31": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 0,
+                                "left": 0
+                            }
+                        }
+                    }
                 }
-            ],
-            "actions": [
-                {
-                    "text": "Please select one of the given options only👇🏼",
-                    "type": "send_msg",
-                    "uuid": "81dc3813-3484-4336-a001-eb63411a87fb",
-                    "labels": [],
-                    "attachments": [],
-                    "quick_replies": []
-                }
+            },
+            "keywords": [
+                "json"
             ]
         }
     ],
-    "language": "base",
-    "revision": 1,
-    "localization": {
-        "en": {
-            "81dc3813-3484-4336-a001-eb63411a87fb": {
-                "text": [
-                    "Please select one of the given options only👇🏼"
-                ]
-            }
-        },
-        "hi": {
-            "81dc3813-3484-4336-a001-eb63411a87fb": {
-                "text": [
-                    "कृपया दिए गए विकल्पों में से ही एक का चयन करें👇🏼"
-                ]
-            }
-        }
-    },
-    "spec_version": "13.2.0",
-    "expire_after_minutes": 10080
+    "contact_field": [],
+    "collections": []
 }

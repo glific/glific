@@ -4,6 +4,7 @@ defmodule Glific.Seeds.SeedsFlows do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Flows,
     Flows.Flow,
     Flows.FlowLabel,
     Flows.FlowRevision,
@@ -38,7 +39,6 @@ defmodule Glific.Seeds.SeedsFlows do
   @spec add_interactive_templates(Organization.t()) :: :ok
   defp add_interactive_templates(org) do
     SeedsDev.seed_optin_interactives(org)
-    SeedsDev.seed_template_flow_interactives(org)
 
     [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
@@ -170,37 +170,21 @@ defmodule Glific.Seeds.SeedsFlows do
   end
 
   def add_template_flows(organizations) do
-    organizations
-    |> Enum.each(fn organization ->
-      Glific.Repo.put_organization_id(organization.id)
-      add_temp_flow(organization)
-    end)
-  end
+    flow_json_path = "priv/data/flows/other_options.json"
 
-  defp get_temp_data(organization) do
-    uuid_map = %{
-      location: generate_uuid(organization, "f78ba8c7-0215-439c-9588-f79d5ba4ee65"),
-      other_options: generate_uuid(organization, "6c362d4a-01cd-47cb-a03c-1dfb294faa63"),
-      registration_language: generate_uuid(organization, "9557da8f-dab8-470c-96cf-1d1a214c2f23"),
-      gpt_vision: generate_uuid(organization, "8c18c6db-deb7-47c0-9413-31ca6fd142d8")
-    }
+    case File.read(flow_json_path) do
+      {:ok, file_content} ->
+        case Jason.decode(file_content) do
+          {:ok, import_flow} ->
+            organizations
+            |> Enum.each(fn organization ->
+              Glific.Repo.put_organization_id(organization.id)
+              Glific.Flows.import_flow(import_flow, organization.id)
+            end)
 
-    data = [
-      {"Location Flow", ["map"], uuid_map.location, true, "Location.json"},
-      {"Other options flow", ["otheroptionsflow"], uuid_map.other_options, true,
-       "other_options.json"},
-      {"Registration_Language flow", ["languageselection"], uuid_map.registration_language, true,
-       "registration_language.json"},
-      {"GPT_Vision flow", ["gptvisionflow"], uuid_map.gpt_vision, true, "gpt_vision.json"}
-    ]
-
-    {uuid_map, data}
-  end
-
-  defp add_temp_flow(organization) do
-    {uuid_map, data} = get_temp_data(organization) |> IO.inspect()
-
-    add_flow(organization, data, uuid_map)
+            {:ok, "Flows imported successfully"}
+        end
+    end
   end
 
   @doc false
