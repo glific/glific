@@ -16,9 +16,18 @@ defmodule Glific.Flows.Webhook do
     unique: [
       period: 60,
       fields: [:args, :worker],
-      keys: [:context_id, :url],
-      states: [:available, :scheduled, :executing]
+      keys: [:context_id, :url, :action_id],
+      states: [:available, :scheduled, :executing, :completed]
     ]
+
+  @non_unique_urls [
+    "parse_via_gpt_vision",
+    "parse_via_chat_gpt",
+    "filesearch-gpt",
+    "voice-filesearch-gpt",
+    "speech_to_text_with_bhasini",
+    "nmt_tts_with_bhasini"
+  ]
 
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
@@ -205,18 +214,21 @@ defmodule Glific.Flows.Webhook do
     action = Map.put(action, :url, parsed_attrs.url)
     webhook_log = create_log(action, map, parsed_attrs.header, context)
 
-    __MODULE__.new(%{
+    payload = %{
       method: String.downcase(action.method),
       url: parsed_attrs.url,
       result_name: action.result_name,
       body: body,
       headers: headers,
       webhook_log_id: webhook_log.id,
-      # for jon uniqueness,
+      # for job uniqueness,
       context_id: context.id,
       context: %{id: context.id, delay: context.delay},
-      organization_id: context.organization_id
-    })
+      organization_id: context.organization_id,
+      action_id: action.uuid
+    }
+
+    create_oban_changeset(payload)
     |> Oban.insert()
     |> case do
       {:ok, %Job{conflict?: true} = response} ->
@@ -378,4 +390,10 @@ defmodule Glific.Flows.Webhook do
   end
 
   defp format_response(response_json), do: response_json
+
+  @spec create_oban_changeset(map()) :: Oban.Job.changeset()
+  defp create_oban_changeset(%{url: url} = payload) when url in @non_unique_urls,
+    do: __MODULE__.new(payload, unique: nil)
+
+  defp create_oban_changeset(payload), do: __MODULE__.new(payload)
 end

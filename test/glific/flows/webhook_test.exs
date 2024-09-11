@@ -10,7 +10,6 @@ defmodule Glific.Flows.WebhookTest do
   }
 
   alias Glific.{
-    Clients.CommonWebhook,
     Fixtures,
     Seeds.SeedsDev
   }
@@ -84,6 +83,9 @@ defmodule Glific.Flows.WebhookTest do
       }
 
       assert Webhook.execute(action, context) == nil
+
+      assert_enqueued(worker: Webhook, prefix: "global")
+
       # we now need to wait for the Oban job and fire and then
       # check the results of the context
     end
@@ -260,11 +262,83 @@ defmodule Glific.Flows.WebhookTest do
     end
   end
 
-  test "successful geolocation response" do
-    lat = "37.7749"
-    long = "-122.4194"
-    fields = %{"lat" => lat, "long" => long}
+  test "execute a webhook with a POST request, consecutive webhook calls should not work",
+       attrs do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(@results)
+        }
+    end)
 
+    attrs = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: Fixtures.contact_fixture(attrs).id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{
+      headers: %{"Accept" => "application/json"},
+      method: "POST",
+      url: "some url",
+      body: Jason.encode!(@action_body)
+    }
+
+    assert Webhook.execute(action, context) == nil
+    assert Webhook.execute(action, context) == nil
+    jobs = all_enqueued(worker: Webhook, prefix: "global")
+    # although we had 2 webhook calls, only 1 job got enqueued
+    assert 1 == length(jobs)
+  end
+
+  test "execute a webhook where url is parse_via_gpt_vision, consecutive webhook calls should work",
+       attrs do
+    Tesla.Mock.mock(fn
+      %{url: "https://api.openai.com/v1/chat/completions"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            "choices" => [
+              %{
+                "message" => %{
+                  "content" => "{\"maximum_value\":\"10\",\"minimum_value\":\"1\"}"
+                }
+              }
+            ]
+          }
+        }
+    end)
+
+    attrs = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: Fixtures.contact_fixture(attrs).id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{
+      headers: %{"Accept" => "application/json"},
+      method: "FUNCTION",
+      url: "parse_via_gpt_vision",
+      body: Jason.encode!(@action_body)
+    }
+
+    assert Webhook.execute(action, context) == nil
+    assert Webhook.execute(action, context) == nil
+    jobs = all_enqueued(worker: Webhook, prefix: "global")
+    assert 2 == length(jobs)
+  end
+
+  test "execute a webhook where url is geolocation, consecutive webhook calls should not work",
+       attrs do
     Tesla.Mock.mock(fn
       %{method: :get} ->
         %Tesla.Env{
@@ -285,37 +359,27 @@ defmodule Glific.Flows.WebhookTest do
         }
     end)
 
-    result = CommonWebhook.webhook("geolocation", fields)
+    attrs = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: Fixtures.contact_fixture(attrs).id,
+      organization_id: attrs.organization_id
+    }
 
-    assert result[:success] == true
-    assert result[:city] == "San Francisco"
-    assert result[:state] == "CA"
-    assert result[:country] == "USA"
-    assert result[:postal_code] == "N/A"
-    assert result[:district] == "N/A"
-    assert result[:ward] == "N/A"
-    assert result[:address] == "San Francisco, CA, USA"
-  end
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+    context = Repo.preload(context, [:contact, :flow])
 
-  test "geolocation failure response" do
-    lat = "37.7749"
-    long = "-122.4194"
-    fields = %{"lat" => lat, "long" => long}
+    action = %Action{
+      headers: %{"Accept" => "application/json"},
+      method: "FUNCTION",
+      url: "geolocation",
+      body: Jason.encode!(@action_body)
+    }
 
-    # Mock a non-200 response from the API (e.g., 500 Internal Server Error)
-    Tesla.Mock.mock(fn
-      %{method: :get} ->
-        %Tesla.Env{
-          status: 500,
-          body: "Internal Server Error"
-        }
-    end)
-
-    result = CommonWebhook.webhook("geolocation", fields)
-
-    # Assert that success is false and an error message is returned
-    refute result[:success]
-    refute is_nil(result[:error])
-    assert result[:error] == "Received status code 500"
+    assert Webhook.execute(action, context) == nil
+    assert Webhook.execute(action, context) == nil
+    jobs = all_enqueued(worker: Webhook, prefix: "global")
+    # although we had 2 webhook calls for geolocation, only 1 job got enqueued
+    assert 1 == length(jobs)
   end
 end

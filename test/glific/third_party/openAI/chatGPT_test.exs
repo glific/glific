@@ -47,7 +47,7 @@ defmodule Glific.OpenAI.ChatGPTTest do
     assert thread["created_at"] == 1_717_086_012
   end
 
-  test "fetch_thread/1  fetches an existing thread and returns %{success: true} " do
+  test "fetch_thread/1  fetches an existing thread and returns {:ok, thread_id} " do
     Tesla.Mock.mock(fn _env ->
       %Tesla.Env{
         status: 200,
@@ -56,12 +56,12 @@ defmodule Glific.OpenAI.ChatGPTTest do
       }
     end)
 
-    assert %{success: true} ==
+    assert {:ok, "thread_uRNWRC9e6Rg95ul95rzWVPuV"} ==
              ChatGPT.fetch_thread(%{thread_id: "thread_uRNWRC9e6Rg95ul95rzWVPuV"})
 
     # passing nil value should return error map
-    response = ChatGPT.fetch_thread(%{thread_id: nil})
-    assert response.error == "invalid thread ID"
+    {:error, error} = ChatGPT.fetch_thread(%{thread_id: nil})
+    assert error == "No thread found with nil id."
   end
 
   test "fetch_thread/1  fetches an existing thread with incorrect id and returns map with error message" do
@@ -73,7 +73,7 @@ defmodule Glific.OpenAI.ChatGPTTest do
       }
     end)
 
-    %{success: false, error: error} =
+    {:error, error} =
       ChatGPT.fetch_thread(%{thread_id: "thread_uRNWRC9e6Rg95ul95rzWVPuV"})
 
     assert error == "No thread found with id 'thread_uRNWRC9e6Rg95ul95rzWVPuVs'."

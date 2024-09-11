@@ -913,6 +913,29 @@ defmodule Glific.ContactsTest do
       assert error_message == "Contact upload report doesn't exist"
     end
 
+    test "get_contact_upload_report/2 returns the correct report when there are no errors" do
+      [organization | _] = Partners.list_organizations()
+
+      user_job_attrs = %{
+        status: "success",
+        type: "contact_import",
+        total_tasks: 5,
+        tasks_done: 5,
+        organization_id: organization.id,
+        errors: %{},
+        all_tasks_created: true
+      }
+
+      user_job = UserJob.create_user_job(user_job_attrs)
+
+      params = %{user_job_id: user_job.id}
+
+      assert {:ok, %{csv_rows: csv_rows}} =
+               Import.get_contact_upload_report(organization.id, params)
+
+      assert csv_rows == "Phone,Status"
+    end
+
     test "update_contact/2 with valid data updates the contact",
          %{organization_id: _organization_id} = attrs do
       contact = contact_fixture(attrs)
@@ -1344,6 +1367,123 @@ defmodule Glific.ContactsTest do
 
     test "getting saas variables" do
       assert "91111222333" == Saas.phone()
+    end
+
+    test "import_contact/3 with invalid name data should not inserts new contact in the database" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+
+      data = "name,phone,Language,opt_in\n,9989329297,english,2021-03-09 12:34:25\n"
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
+
+      assert count == 0
+    end
+
+    test "import_contact/3 with invalid phone data should not inserts new contact in the database" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+
+      data = "name,phone,Language,opt_in\n,abcdef,english,2021-03-09 12:34:25\n"
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{phone: "abcdef"}})
+
+      assert count == 0
+    end
+
+    test "import_contact/3 with language not available , contact should be added with default language" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+
+      data = "name,phone,Language,opt_in\nName,9989329297,klingon,2021-03-09 12:34:25\n"
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      [contact | _] = Contacts.list_contacts(%{filter: %{phone: 9_989_329_297}})
+      assert contact.language_id == 1
+    end
+
+    test "import_contact/3 with available language" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+
+      data = "name,phone,language,opt_in\nName,9989329297,Hindi,2021-03-09 12:34:25\n"
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      [contact | _] = Contacts.list_contacts(%{filter: %{phone: 9_989_329_297}})
+      assert contact.language_id == 2
+    end
+
+    test "import_contact/3 with no language" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+
+      data = "name,phone,language,opt_in\nName,9989329297,,2021-03-09 12:34:25\n"
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      [contact | _] = Contacts.list_contacts(%{filter: %{phone: 9_989_329_297}})
+      assert contact.language_id == 1
     end
   end
 end

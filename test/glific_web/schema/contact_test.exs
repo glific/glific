@@ -308,8 +308,9 @@ defmodule GlificWeb.Schema.ContactTest do
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :default, with_scheduled: true)
 
-    assert Contacts.count_contacts(%{filter: %{phone: test_phone}}) == 1
-    assert Contacts.count_contacts(%{filter: %{term: test_phone}}) == 1
+    # Will fail since contact is not a valid phone number
+    assert Contacts.count_contacts(%{filter: %{phone: test_phone}}) == 0
+    assert Contacts.count_contacts(%{filter: %{term: test_phone}}) == 0
 
     # Test success for creating a contact with opt-in
     Tesla.Mock.mock(fn
@@ -344,7 +345,8 @@ defmodule GlificWeb.Schema.ContactTest do
     count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
     assert count == 1
 
-    # Test success for updating a contact
+    # Test success for updating a contact, the contact won't get uploaded due to
+    #  test_phone being invalid
     Tesla.Mock.mock(fn
       %{method: :post} ->
         %Tesla.Env{
@@ -374,8 +376,8 @@ defmodule GlificWeb.Schema.ContactTest do
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :default, with_scheduled: true)
 
-    assert Contacts.count_contacts(%{filter: %{name: "#{test_name} updated"}}) == 1
-    assert Contacts.count_contacts(%{filter: %{term: "#{test_name} updated"}}) == 1
+    assert Contacts.count_contacts(%{filter: %{name: "#{test_name} updated"}}) == 0
+    assert Contacts.count_contacts(%{filter: %{term: "#{test_name} updated"}}) == 0
 
     # # Test success for uploading contact through url
     Tesla.Mock.mock(fn
@@ -486,7 +488,6 @@ defmodule GlificWeb.Schema.ContactTest do
              Oban.drain_queue(queue: :default, with_scheduled: true)
   end
 
-  @tag :tt
   test "test success for uploading contact for different csv", %{manager: user} do
     user = Map.put(user, :roles, [:glific_admin])
 
@@ -524,7 +525,8 @@ defmodule GlificWeb.Schema.ContactTest do
     assert count == 1
   end
 
-  test "test success for uploading contact for admin", %{manager: user} do
+  test "test success for uploading contact for admin, contact won't upload since phone is not a valid one",
+       %{manager: user} do
     user = Map.put(user, :roles, [:admin])
 
     test_name = "test2"
@@ -550,7 +552,7 @@ defmodule GlificWeb.Schema.ContactTest do
              Oban.drain_queue(queue: :default, with_scheduled: true)
 
     count = Contacts.count_contacts(%{filter: %{name: "test"}})
-    assert count == 1
+    assert count == 0
   end
 
   test "update a contact and test possible scenarios and errors", %{staff: user, manager: manager} do
