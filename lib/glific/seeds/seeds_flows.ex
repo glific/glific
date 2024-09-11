@@ -320,9 +320,7 @@ defmodule Glific.Seeds.SeedsFlows do
       multiple_profile: generate_uuid(organization, "3c50b79a-0420-4ced-bcd7-f37e0577cca6"),
       multiple_profile_creation:
         generate_uuid(organization, "15666d20-7ba9-4698-adf1-50e91cee2b6b"),
-      ab_test: generate_uuid(organization, "5f3fd8c6-2ec3-4945-8e7c-314db8c04c31"),
-      # location: generate_uuid(organization, "f78ba8c7-0215-439c-9588-f79d5ba4ee65"),
-      other_options: generate_uuid(organization, "6c362d4a-01cd-47cb-a03c-1dfb294faa63")
+      ab_test: generate_uuid(organization, "5f3fd8c6-2ec3-4945-8e7c-314db8c04c31")
     }
 
     data = [
@@ -338,9 +336,7 @@ defmodule Glific.Seeds.SeedsFlows do
        "multiple_profile.json"},
       {"Multiple Profile Creation Flow", ["profilecreation"], uuid_map.multiple_profile_creation,
        false, "multiple_profile_creation.json"},
-      {"AB Test Workflow", ["abtest"], uuid_map.ab_test, false, "ab_test.json"},
-      # {"Location Flow", ["map"], uuid_map.location, true, "optin.json"},
-      {"Other options flow", ["otheroptionsflow"], uuid_map.other_options, true, "optout.json"}
+      {"AB Test Workflow", ["abtest"], uuid_map.ab_test, false, "ab_test.json"}
     ]
 
     {uuid_map, data}
