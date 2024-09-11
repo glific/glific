@@ -169,6 +169,8 @@ defmodule Glific.Seeds.SeedsFlows do
     add_flow(organization, data, uuid_map)
   end
 
+  @doc false
+  @spec add_template_flows([Organization.t()]) :: :ok
   def add_template_flows(organizations) do
     flow_files = [
       "other_options.json",
@@ -184,30 +186,41 @@ defmodule Glific.Seeds.SeedsFlows do
       "bhashini_text_to_speech.json"
     ]
 
-    Enum.each(flow_files, fn flow_file ->
-      full_file_path = Path.join(:code.priv_dir(:glific), "data/flows/" <> flow_file)
+    Enum.each(flow_files, &process_flow_file(&1, organizations))
+    :ok
+  end
 
-      case File.read(full_file_path) do
-        {:ok, file_content} ->
-          case Jason.decode(file_content) do
-            {:ok, import_flow} ->
-              Enum.each(organizations, fn organization ->
-                Repo.put_organization_id(organization.id)
+  @spec process_flow_file(String.t(), [Organization.t()]) :: :ok
+  defp process_flow_file(flow_file, organizations) do
+    full_file_path = Path.join(:code.priv_dir(:glific), "data/flows/" <> flow_file)
 
-                with [flow_data] <- Flows.import_flow(import_flow, organization.id),
-                     {:ok, flow} <- Repo.fetch_by(Flow, %{name: flow_data.flow_name}) do
-                  changeset = Flow.changeset(flow, %{is_template: true})
-                  Repo.update!(changeset)
+    {:ok, file_content} = File.read(full_file_path)
+    {:ok, import_flow} = Jason.decode(file_content)
 
-                  flow_revision(flow, organization, flow_file)
-                else
-                  _ ->
-                    "Error importing flow for organization: #{organization.id}"
-                end
-              end)
-          end
-      end
-    end)
+    Enum.each(organizations, &import_flow_for_organization(&1, import_flow, flow_file))
+    :ok
+  end
+
+  @spec import_flow_for_organization(Organization.t(), map(), String.t()) :: :ok
+  defp import_flow_for_organization(organization, import_flow, flow_file) do
+    Repo.put_organization_id(organization.id)
+
+    with [flow_data] <- Flows.import_flow(import_flow, organization.id),
+         {:ok, flow} <- Repo.fetch_by(Flow, %{name: flow_data.flow_name}) do
+      update_flow_as_template(flow)
+      flow_revision(flow, organization, flow_file)
+    else
+      _ ->
+        IO.puts("Error importing flow for organization: #{organization.id}")
+    end
+
+    :ok
+  end
+
+  @spec update_flow_as_template(Flow.t()) :: Flow.t()
+  defp update_flow_as_template(flow) do
+    changeset = Flow.changeset(flow, %{is_template: true})
+    Repo.update!(changeset)
   end
 
   @doc false
