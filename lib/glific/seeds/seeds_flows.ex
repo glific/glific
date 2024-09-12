@@ -13,8 +13,10 @@ defmodule Glific.Seeds.SeedsFlows do
     Repo,
     Seeds.SeedsDev,
     Settings,
+    Tags,
+    Tags.Tag,
     Templates.InteractiveTemplate,
-    Users
+    Users,
   }
 
   @doc false
@@ -202,13 +204,34 @@ defmodule Glific.Seeds.SeedsFlows do
   end
 
   @spec import_flow_for_organization(Organization.t(), map(), String.t()) :: :ok
-  defp import_flow_for_organization(organization, import_flow, _flow_file) do
+  defp import_flow_for_organization(organization, import_flow, flow_file) do
     Repo.put_organization_id(organization.id)
+
+    flow_tag_map = %{
+      "bhasini_asr.json" => "Speech to Text",
+      "consent_optout.json" => "Optout",
+      "GPT_Vision.json" => "GPT",
+      "clear_variable.json" => "Clear",
+      "geolocation.json" => "Location",
+      "ticketing_help.json" => "Help",
+      "other_options.json" => "Other",
+      "consent_optin.json" => "Optin",
+      "filesearch_GPT_textandvoice.json" => "GPT filesearch",
+      "direct_with_GPT.json" => "GPT direct",
+      "bhashini_text_to_speech.json" => "Text to Speech"
+    }
 
     with [flow_data] <- Flows.import_flow(import_flow, organization.id),
          {:ok, flow} <- Repo.fetch_by(Flow, %{name: flow_data.flow_name}) do
       update_flow_as_template(flow)
       update_flow_revision(flow.id)
+
+      tag_name = Map.get(flow_tag_map, flow_file)
+
+      if tag_name do
+        tag_id = get_or_create_tag(tag_name, organization.id)
+        Flows.update_flow(flow, %{tag_id: tag_id})
+      end
     else
       _ ->
         {:error, "Error importing flow for organization: #{organization.id}"}
@@ -228,6 +251,22 @@ defmodule Glific.Seeds.SeedsFlows do
     flow_revision = Repo.get_by(FlowRevision, %{flow_id: flow_id, revision_number: 0})
     changeset = FlowRevision.changeset(flow_revision, %{status: "published"})
     Repo.update!(changeset)
+  end
+
+  @spec get_or_create_tag(String.t(), non_neg_integer()) :: non_neg_integer()
+  defp get_or_create_tag(tag_name, organization_id) do
+    existing_tag = Repo.get_by(Tag, %{label: tag_name})
+
+    case existing_tag do
+      nil ->
+        {:ok, tag} =
+          Tags.create_tag(%{label: tag_name, organization_id: organization_id})
+
+        tag.id
+
+      tag ->
+        tag.id
+    end
   end
 
   @doc false

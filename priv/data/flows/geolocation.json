@@ -235,7 +235,7 @@
                         ]
                     }
                 ],
-                "name": "TEMPLATE_geolocate_googlemaps",
+                "name": "Location flow",
                 "localization": {},
                 "language": "base",
                 "expire_after_minutes": 10080,

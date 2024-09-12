@@ -268,7 +268,7 @@
                         ]
                     }
                 ],
-                "name": "Demo of Vanilla GPT",
+                "name": "Direct with GPT",
                 "localization": {},
                 "language": "base",
                 "expire_after_minutes": 10080,

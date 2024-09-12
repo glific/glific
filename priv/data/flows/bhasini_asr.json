@@ -244,7 +244,7 @@
                         ]
                     }
                 ],
-                "name": "TEMPLATE_Bhashini_speechtotext",
+                "name": "Bhasini ASR flow",
                 "localization": {
                     "ta": {
                         "d8ee57c3-2fec-44d9-b180-2dc22966be92": {

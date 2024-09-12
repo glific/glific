@@ -244,7 +244,7 @@
                         ]
                     }
                 ],
-                "name": "TEMPLATE_GPT_Vision",
+                "name": "GPT_Vision",
                 "localization": {
                     "hi": {
                         "c3f17a85-910f-45d1-925f-82a0dcf06efa": {
