@@ -202,13 +202,13 @@ defmodule Glific.Seeds.SeedsFlows do
   end
 
   @spec import_flow_for_organization(Organization.t(), map(), String.t()) :: :ok
-  defp import_flow_for_organization(organization, import_flow, flow_file) do
+  defp import_flow_for_organization(organization, import_flow, _flow_file) do
     Repo.put_organization_id(organization.id)
 
     with [flow_data] <- Flows.import_flow(import_flow, organization.id),
          {:ok, flow} <- Repo.fetch_by(Flow, %{name: flow_data.flow_name}) do
       update_flow_as_template(flow)
-      flow_revision(flow, organization, flow_file)
+      update_flow_revision(flow.id)
     else
       _ ->
         {:error, "Error importing flow for organization: #{organization.id}"}
@@ -220,6 +220,13 @@ defmodule Glific.Seeds.SeedsFlows do
   @spec update_flow_as_template(Flow.t()) :: Flow.t()
   defp update_flow_as_template(flow) do
     changeset = Flow.changeset(flow, %{is_template: true})
+    Repo.update!(changeset)
+  end
+
+  @spec update_flow_revision(non_neg_integer()) :: FlowRevision.t()
+  defp update_flow_revision(flow_id) do
+    flow_revision = Repo.get_by(FlowRevision, %{flow_id: flow_id, revision_number: 0})
+    changeset = FlowRevision.changeset(flow_revision, %{status: "published"})
     Repo.update!(changeset)
   end
 

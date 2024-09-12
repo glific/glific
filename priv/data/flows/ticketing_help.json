@@ -4,9 +4,9 @@
         {
             "definition": {
                 "vars": [
-                    "1a6b89d4-deca-46a5-bf26-ce1831feeb8c"
+                    "9b4b4760-0960-44f8-88cd-6e4189fff137"
                 ],
-                "uuid": "1a6b89d4-deca-46a5-bf26-ce1831feeb8c",
+                "uuid": "9b4b4760-0960-44f8-88cd-6e4189fff137",
                 "type": "messaging",
                 "spec_version": "13.2.0",
                 "nodes": [
@@ -104,12 +104,7 @@
                                     "name": "Query"
                                 },
                                 "result_name": "result",
-                                "body": "@results.query",
-                                "assignee": {
-                                    "uuid": "1577",
-                                    "type": "user",
-                                    "name": "Sangeeta Mishra"
-                                }
+                                "body": "@results.query"
                             }
                         ]
                     },
@@ -246,9 +241,7 @@
                     }
                 }
             },
-            "keywords": [
-                
-            ]
+            "keywords": []
         }
     ],
     "contact_field": [],
