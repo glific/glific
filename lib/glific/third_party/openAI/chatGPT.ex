@@ -145,7 +145,7 @@ defmodule Glific.OpenAI.ChatGPT do
         {:error, error_message}
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "Invalid response #{inspect(response)}"}
     end
   end
 
@@ -230,13 +230,13 @@ defmodule Glific.OpenAI.ChatGPT do
   def create_thread do
     url = @endpoint <> "threads"
 
-    Tesla.post(url, "", headers: headers())
+    Tesla.post(url, "", headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
 
       {_status, response} ->
-        {:error, "invalid response while creating thread #{inspect(response)}"}
+        {:error, "Invalid response while creating thread #{inspect(response)}"}
     end
   end
 
@@ -258,13 +258,13 @@ defmodule Glific.OpenAI.ChatGPT do
       }
       |> Jason.encode!()
 
-    Tesla.post(url, payload, headers: headers())
+    Tesla.post(url, payload, headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
 
       {_status, response} ->
-        {:error, "invalid response while creating and running thread #{inspect(response)}"}
+        {:error, "Invalid response while creating and running thread #{inspect(response)}"}
     end
   end
 
@@ -285,7 +285,7 @@ defmodule Glific.OpenAI.ChatGPT do
   def fetch_thread(%{thread_id: thread_id}) do
     url = @endpoint <> "/threads/#{thread_id}"
 
-    Tesla.get(url, headers: headers())
+    Tesla.get(url, headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: _body}} ->
         {:ok, thread_id}
@@ -295,7 +295,7 @@ defmodule Glific.OpenAI.ChatGPT do
         {:error, error["error"]["message"]}
 
       {_status, _response} ->
-        {:error, "invalid response while fetching thread returned from OpenAI"}
+        {:error, "Invalid response while fetching thread returned from OpenAI"}
     end
   end
 
@@ -313,13 +313,13 @@ defmodule Glific.OpenAI.ChatGPT do
       }
       |> Jason.encode!()
 
-    Tesla.post(url, payload, headers: headers())
+    Tesla.post(url, payload, headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
 
       {_status, response} ->
-        {:error, "invalid response while adding message to the thread #{inspect(response)}"}
+        {:error, "Invalid response while adding message to the thread #{inspect(response)}"}
     end
   end
 
@@ -330,7 +330,7 @@ defmodule Glific.OpenAI.ChatGPT do
   def list_thread_messages(params) do
     url = @endpoint <> "/threads/#{params.thread_id}/messages"
 
-    Tesla.get(url, headers: headers())
+    Tesla.get(url, headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
@@ -383,7 +383,7 @@ defmodule Glific.OpenAI.ChatGPT do
         {:error, error_message}
 
       {_status, response} ->
-        {:error, "invalid response while running thread #{inspect(response)}"}
+        {:error, "Invalid response while running thread #{inspect(response)}"}
     end
   end
 
@@ -425,38 +425,38 @@ defmodule Glific.OpenAI.ChatGPT do
   end
 
   defp retrieve_run_and_wait(thread_id, assistant_id, run_id, attempt, re_run) do
-    run =
-      retrieve_run(%{
-        thread_id: thread_id,
-        run_id: run_id
-      })
+    with {:ok, run} <-
+           retrieve_run(%{
+             thread_id: thread_id,
+             run_id: run_id
+           }) do
+      run_attempt = if re_run, do: "second", else: "first"
 
-    run_attempt = if re_run, do: "second", else: "first"
+      cond do
+        run["status"] == "completed" ->
+          Logger.info(
+            "OpenAI run completed after #{attempt} attempts in #{run_attempt} run for thread: #{thread_id}"
+          )
 
-    cond do
-      run["status"] == "completed" ->
-        Logger.info(
-          "OpenAI run completed after #{attempt} attempts in #{run_attempt} run for thread: #{thread_id}"
-        )
+          {:ok, run_id}
 
-        {:ok, run_id}
+        run["status"] in ["in_progress", "queued"] ->
+          Process.sleep(5_000)
+          retrieve_run_and_wait(thread_id, assistant_id, run_id, attempt + 1, re_run)
 
-      run["status"] in ["in_progress", "queued"] ->
-        Process.sleep(5_000)
-        retrieve_run_and_wait(thread_id, assistant_id, run_id, attempt + 1, re_run)
+        run["status"] == "failed" ->
+          {:error, "Token limit reached for this thread"}
 
-      run["status"] == "failed" ->
-        {:error, "Token limit reached for this thread"}
+        true ->
+          run_status = run["status"]
 
-      true ->
-        run_status = run["status"]
+          Logger.info(
+            "OpenAI run returned unknown status #{run_status} after #{attempt} attempts in #{run_attempt} run for thread: #{thread_id}"
+          )
 
-        Logger.info(
-          "OpenAI run returned unknown status #{run_status} after #{attempt} attempts in #{run_attempt} run for thread: #{thread_id}"
-        )
-
-        Process.sleep(5_000)
-        retrieve_run_and_wait(thread_id, assistant_id, run_id, attempt + 1, re_run)
+          Process.sleep(5_000)
+          retrieve_run_and_wait(thread_id, assistant_id, run_id, attempt + 1, re_run)
+      end
     end
   end
 
@@ -467,30 +467,30 @@ defmodule Glific.OpenAI.ChatGPT do
   def cancel_run(thread_id, run_id) do
     url = @endpoint <> "/threads/#{thread_id}/runs/#{run_id}/cancel"
 
-    Tesla.post(url, "", headers: headers())
+    Tesla.post(url, "", headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200}} ->
         {:ok, "run cancelled"}
 
       {_status, response} ->
-        {:error, "invalid response while cancelling thread #{inspect(response)}"}
+        {:error, "Invalid response while cancelling thread #{inspect(response)}"}
     end
   end
 
   @doc """
   API call to retrieve a run
   """
-  @spec retrieve_run(map()) :: map() | {:error, String.t()}
+  @spec retrieve_run(map()) :: {:ok, map()} | {:error, String.t()}
   def retrieve_run(params) do
     url = @endpoint <> "/threads/#{params.thread_id}/runs/#{params.run_id}"
 
-    Tesla.get(url, headers: headers())
+    Tesla.get(url, headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        Jason.decode!(body)
+        {:ok, Jason.decode!(body)}
 
       {_status, response} ->
-        {:error, "invalid response while retrieving run #{inspect(response)}"}
+        {:error, "Invalid response while retrieving run #{inspect(response)}"}
     end
   end
 
@@ -562,7 +562,7 @@ defmodule Glific.OpenAI.ChatGPT do
   def retrieve_assistant(assistant_id) do
     url = @endpoint <> "/assistants/#{assistant_id}"
 
-    Tesla.get(url, headers: headers())
+    Tesla.get(url, headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         response = Jason.decode!(body)
