@@ -62,7 +62,7 @@ defmodule Glific.Clients.KEF do
         phone = contact.phone
 
         folder_structure = get_folder_structure(media, contact_type, contact.fields)
-
+        
         "2024/#{folder_structure}/#{media_subfolder}/" <>
           generate_filename(media["remote_name"], phone)
 

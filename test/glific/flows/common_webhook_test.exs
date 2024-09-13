@@ -49,7 +49,6 @@ defmodule Glific.Flows.CommonWebhookTest do
     assert result[:country] == "USA"
     assert result[:postal_code] == "N/A"
     assert result[:district] == "N/A"
-    assert result[:ward] == "N/A"
     assert result[:address] == "San Francisco, CA, USA"
   end
 

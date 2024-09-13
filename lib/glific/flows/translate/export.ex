@@ -142,6 +142,7 @@ defmodule Glific.Flows.Translate.Export do
     strings
     |> Task.async_stream(
       fn {{src, dst}, values} ->
+        Repo.put_process_state(organization_id)
         {src, dst, values, Translate.translate(values, src, dst, organization)}
       end,
       timeout: 300_000,
