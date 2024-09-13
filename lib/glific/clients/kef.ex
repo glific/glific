@@ -56,17 +56,18 @@ defmodule Glific.Clients.KEF do
     })
     |> case do
       {:ok, contact} ->
-        contact_type = get_in(contact.fields, ["contact_type", "value"])
+        contact_type =
+          get_in(contact.fields, ["contact_type2425", "value"])
 
         phone = contact.phone
 
         folder_structure = get_folder_structure(media, contact_type, contact.fields)
-
-        "#{folder_structure}/#{media_subfolder}/" <>
+        
+        "2024/#{folder_structure}/#{media_subfolder}/" <>
           generate_filename(media["remote_name"], phone)
 
       {:error, _} ->
-        "/#{media_subfolder}/" <> media["remote_name"]
+        "2024/#{media_subfolder}/" <> media["remote_name"]
     end
   end
 
@@ -83,15 +84,9 @@ defmodule Glific.Clients.KEF do
   end
 
   @spec get_school_name(nil | String.t(), map()) :: {:error, String.t()} | {:ok, String.t()}
-  defp get_school_name(nil, _fields), do: {:error, "Invalid contact_type"}
-
-  defp get_school_name("Parent", fields) do
-    school_name = get_in(fields, ["child_school_name", "value"])
-    {:ok, school_name}
-  end
-
-  defp get_school_name("Teacher", fields) do
-    school_name = get_in(fields, ["school_name", "value"])
+  defp get_school_name(contact_type, fields)
+       when contact_type in ["Parent", "Teacher", "Teacher and Parent"] do
+    school_name = get_in(fields, ["school_name_2425", "value"])
     {:ok, school_name}
   end
 
