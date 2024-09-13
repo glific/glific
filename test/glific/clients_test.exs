@@ -246,7 +246,7 @@ defmodule Glific.ClientsTest do
         "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
     }
 
-    "Ungrouped users/Images/" <> image = KEF.gcs_file_name(media)
+    "2024/Ungrouped users/Images/" <> image = KEF.gcs_file_name(media)
     [_, _, message_id] = String.split(image, "_")
     [phone_num, ext] = String.split(message_id, ".")
     assert ext == "png"
@@ -302,28 +302,29 @@ defmodule Glific.ClientsTest do
         "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
     }
 
-    "Ungrouped users/Videos/" <> video = KEF.gcs_file_name(media)
+    "2024/Ungrouped users/Videos/" <> video = KEF.gcs_file_name(media)
     [_, _, message_id] = String.split(video, "_")
     [phone_num, ext] = String.split(message_id, ".")
     assert ext == "mp4"
     assert contact.phone == phone_num
   end
 
-  test "gcs_file_name/1, with valid contact_type, child_school_name but no worksheet" do
+  @tag :gcs
+  test "gcs_file_name/1, with valid contact_type, school name but no worksheet" do
     # Doesn't have schoolName in contact.fields
     contact =
       Fixtures.contact_fixture(%{
         phone: "918634278954",
         fields: %{
-          contact_type: %{
+          "contact_type2425" => %{
             type: "string",
-            label: "contact_type",
+            label: "contact_type2425",
             value: "Parent",
             inserted_at: ~U[2024-09-07 15:17:53.964448Z]
           },
-          child_school_name: %{
+          "school_name_2425" => %{
             type: "string",
-            label: "child_school_name",
+            label: "School Name 2425",
             value: "ABC School",
             inserted_at: ~U[2024-09-07 15:17:53.964448Z]
           }
@@ -343,7 +344,7 @@ defmodule Glific.ClientsTest do
         "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
     }
 
-    "ABC School/Others/Others/" <> document = KEF.gcs_file_name(media)
+    "2024/ABC School/Others/Others/" <> document = KEF.gcs_file_name(media)
     [_, _, message_id] = String.split(document, "_")
     [phone_num, ext] = String.split(message_id, ".")
     assert ext == "pdf"
@@ -370,32 +371,32 @@ defmodule Glific.ClientsTest do
         "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
     }
 
-    "Ungrouped users/Images/" <> image = KEF.gcs_file_name(media)
+    "2024/Ungrouped users/Images/" <> image = KEF.gcs_file_name(media)
     [_, _, message_id] = String.split(image, "_")
     [phone_num, ext] = String.split(message_id, ".")
     assert ext == "png"
     assert contact.phone == phone_num
   end
 
-  test "gcs_file_name/1, with valid contact_type, child_school_name and selected worksheets" do
+  test "gcs_file_name/1, with valid contact_type, school_name and selected worksheets" do
     # Doesn't have schoolName in contact.fields
     contact =
       Fixtures.contact_fixture(%{
         phone: "918634278954",
         fields: %{
-          contact_type: %{
+          "contact_type2425" => %{
             type: "string",
-            label: "contact_type",
+            label: "contact_type2425",
             value: "Parent",
             inserted_at: ~U[2024-09-07 15:17:53.964448Z]
           },
-          child_school_name: %{
+          "school_name_2425" => %{
             type: "string",
-            label: "child_school_name",
+            label: "School Name 2425",
             value: "ABC School",
             inserted_at: ~U[2024-09-07 15:17:53.964448Z]
           },
-          current_worksheet_code: %{
+          "current_worksheet_code" => %{
             type: "string",
             label: "current_worksheet_code",
             value: "1234",
@@ -417,32 +418,33 @@ defmodule Glific.ClientsTest do
         "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
     }
 
-    "ABC School/Worksheets/1234/Others/" <> document = KEF.gcs_file_name(media)
+    "2024/ABC School/Worksheets/1234/Others/" <> document = KEF.gcs_file_name(media)
     [_, _, message_id] = String.split(document, "_")
     [phone_num, ext] = String.split(message_id, ".")
     assert ext == "pdf"
     assert contact.phone == phone_num
   end
 
+  @tag :gcs
   test "gcs_file_name/1, with valid contact_type, child_school_name and selected flows" do
     # Doesn't have schoolName in contact.fields
     contact =
       Fixtures.contact_fixture(%{
         phone: "918634278954",
         fields: %{
-          contact_type: %{
+          "contact_type2425" => %{
             type: "string",
-            label: "contact_type",
+            label: "contact_type2425",
             value: "Parent",
             inserted_at: ~U[2024-09-07 15:17:53.964448Z]
           },
-          child_school_name: %{
+          "school_name_2425" => %{
             type: "string",
-            label: "child_school_name",
+            label: "School Name 2425",
             value: "ABC School",
             inserted_at: ~U[2024-09-07 15:17:53.964448Z]
           },
-          current_worksheet_code: %{
+          "current_worksheet_code" => %{
             type: "string",
             label: "current_worksheet_code",
             value: "1234",
@@ -464,7 +466,7 @@ defmodule Glific.ClientsTest do
         "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
     }
 
-    "ABC School/Worksheets/1234/Others/" <> document = KEF.gcs_file_name(media)
+    "2024/ABC School/Worksheets/1234/Others/" <> document = KEF.gcs_file_name(media)
     [_, _, message_id] = String.split(document, "_")
     [phone_num, ext] = String.split(message_id, ".")
     assert ext == "pdf"
