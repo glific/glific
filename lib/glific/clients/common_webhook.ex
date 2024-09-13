@@ -268,8 +268,7 @@ defmodule Glific.Clients.CommonWebhook do
             state = find_component(components, "administrative_area_level_1")
             country = find_component(components, "country")
             postal_code = find_component(components, "postal_code")
-            district = find_component(components, "administrative_area_level_2")
-            ward = find_component(components, "administrative_area_level_3")
+            district = find_component(components, "administrative_area_level_3")
 
             %{
               success: true,
@@ -278,7 +277,6 @@ defmodule Glific.Clients.CommonWebhook do
               country: country,
               postal_code: postal_code,
               district: district,
-              ward: ward,
               address: formatted_address
             }
 
