@@ -36,4 +36,7 @@ jobs:
       # Remove unattended-upgrades
       - name: remove unattended-upgrades
         run: sudo apt-get -y remove unattended-upgrades
+
+      # Install ffmpeg for file conversion
+      - name: install ffmpeg
         run: sudo apt-get install ffmpeg
