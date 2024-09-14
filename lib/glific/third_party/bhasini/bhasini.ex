@@ -219,9 +219,11 @@ defmodule Glific.Bhasini do
       get_in(pipeline_response, [Access.at(0), "audio", Access.at(0), "audioContent"])
 
     decoded_audio = Base.decode64!(encoded_audio)
-    path = System.tmp_dir!() <> "#{uuid}.mp3"
+    path = System.tmp_dir!() <> "#{uuid}.wav"
+    output_file = System.tmp_dir!() <> "#{uuid}.mp3"
     :ok = File.write!(path, decoded_audio)
-    path
+    System.cmd("ffmpeg", ["-i", path, output_file])
+    output_file
   end
 
   @doc """
