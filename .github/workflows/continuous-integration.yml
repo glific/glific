@@ -43,9 +43,9 @@ jobs:
           otp-version: ${{ matrix.otp }}
 
       - name: Set correct permissions for the temporary directory
-      run: |
-        mkdir -p $(System.tmp_dir!)
-        chmod -R 777 $(System.tmp_dir!)
+        run: |
+          mkdir -p $(System.tmp_dir!)
+          chmod -R 777 $(System.tmp_dir!)
 
       - name: Retrieve Mix Dependencies Cache
         uses: actions/cache@v4
