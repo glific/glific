@@ -39,6 +39,7 @@ defmodule Glific.WAManagedPhonesTest do
         phone: "some phone",
         is_active: true,
         phone_id: 242,
+        product_id: "5a441f2-f033-40f4-8a6sd34ns-a8sr58",
         organization_id: 1,
         provider_id: 1,
         contact_id: 1
@@ -50,6 +51,7 @@ defmodule Glific.WAManagedPhonesTest do
       assert wa_managed_phone.label == "some label"
       assert wa_managed_phone.phone == "some phone"
       assert wa_managed_phone.is_active == true
+      assert wa_managed_phone.product_id == "5a441f2-f033-40f4-8a6sd34ns-a8sr58"
     end
 
     test "create_wa_managed_phone/1 with invalid data returns error changeset" do
