@@ -102,7 +102,11 @@ defmodule Glific.Bhasini do
 
         process_media(translated_text, response, org_id)
 
-      _ ->
+      {:ok, %Tesla.Env{status: 500, body: body}} ->
+        %{success: false, reason: body}
+
+      error ->
+        Logger.info("Error from Bhashini: #{error}")
         %{success: false, reason: "could not fetch data"}
     end
   end
@@ -118,6 +122,8 @@ defmodule Glific.Bhasini do
              remote_name,
              org_id
            ) do
+      File.rm(path)
+
       %{success: true}
       |> Map.put(:media_url, media_meta.url)
       |> Map.put(:translated_text, translated_text)
@@ -205,15 +211,21 @@ defmodule Glific.Bhasini do
           |> Map.put(:translated_text, text)
         end
 
-      _ ->
+      {:ok, %Tesla.Env{body: body}} ->
+        %{success: false, reason: body}
+
+      error ->
+        Logger.info("Error from Bhashini: #{error}")
         %{success: false, reason: "could not fetch data"}
     end
   end
 
-  # Basically saving decoding the encoded audio and saving it
-  # locally before uploading it to GCS to get public URL of file to be used at flow level
+  @doc """
+  Basically saving decoding the encoded audio and saving it
+  locally before uploading it to GCS to get public URL of file to be used at flow level
+  """
   @spec download_encoded_file(map(), String.t()) :: {:ok, String.t()} | String.t()
-  defp download_encoded_file(response, uuid) do
+  def download_encoded_file(response, uuid) do
     pipeline_response =
       get_in(response, ["pipelineResponse"])
       |> Enum.filter(fn response -> response["taskType"] == "tts" end)
@@ -222,13 +234,14 @@ defmodule Glific.Bhasini do
       get_in(pipeline_response, [Access.at(0), "audio", Access.at(0), "audioContent"])
 
     decoded_audio = Base.decode64!(encoded_audio)
-    path = System.tmp_dir!() <> "#{uuid}.wav"
-    output_file = System.tmp_dir!() <> "#{uuid}.mp3"
-    File.write!(path, decoded_audio)
+    wav_file = System.tmp_dir!() <> "#{uuid}.wav"
+    mp3_file = System.tmp_dir!() <> "#{uuid}.mp3"
+    File.write!(wav_file, decoded_audio)
 
     try do
-      System.cmd("ffmpeg", ["-i", path, output_file], stderr_to_stdout: true)
-      {:ok, output_file}
+      System.cmd("ffmpeg", ["-i", wav_file, mp3_file], stderr_to_stdout: true)
+      File.rm(wav_file)
+      {:ok, mp3_file}
     catch
       error, reason ->
         Logger.info("Bhasini Downloaded with error: #{error} and reason: #{reason}")
