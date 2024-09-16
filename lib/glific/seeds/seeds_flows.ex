@@ -16,7 +16,7 @@ defmodule Glific.Seeds.SeedsFlows do
     Tags,
     Tags.Tag,
     Templates.InteractiveTemplate,
-    Users,
+    Users
   }
 
   @doc false
@@ -229,7 +229,7 @@ defmodule Glific.Seeds.SeedsFlows do
       tag_name = Map.get(flow_tag_map, flow_file)
 
       if tag_name do
-        tag_id = get_or_create_tag(tag_name, organization.id)
+        tag_id = get_or_create_tag(tag_name, organization.id, organization.default_language_id)
         Flows.update_flow(flow, %{tag_id: tag_id})
       end
     else
@@ -253,14 +253,18 @@ defmodule Glific.Seeds.SeedsFlows do
     Repo.update!(changeset)
   end
 
-  @spec get_or_create_tag(String.t(), non_neg_integer()) :: non_neg_integer()
-  defp get_or_create_tag(tag_name, organization_id) do
+  @spec get_or_create_tag(String.t(), non_neg_integer(), non_neg_integer()) :: non_neg_integer()
+  defp get_or_create_tag(tag_name, organization_id, language_id) do
     existing_tag = Repo.get_by(Tag, %{label: tag_name})
 
     case existing_tag do
       nil ->
         {:ok, tag} =
-          Tags.create_tag(%{label: tag_name, organization_id: organization_id})
+          Tags.create_tag(%{
+            label: tag_name,
+            organization_id: organization_id,
+            language_id: language_id
+          })
 
         tag.id
 
