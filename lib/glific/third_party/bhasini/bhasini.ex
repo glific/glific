@@ -224,14 +224,14 @@ defmodule Glific.Bhasini do
     decoded_audio = Base.decode64!(encoded_audio)
     path = System.tmp_dir!() <> "#{uuid}.wav"
     output_file = System.tmp_dir!() <> "#{uuid}.mp3"
+    File.write!(path, decoded_audio)
 
-    with :ok <- File.write!(path, decoded_audio),
-         {"", 0} <- System.cmd("ffmpeg", ["-i", path, output_file]) do
-      {:ok, output_file}
-    else
-      error ->
-        Logger.info("Error downloading file: #{error}")
-        "Error downloading file from Bhashini"
+    try do
+      System.cmd("ffmpeg", ["-i", path, output_file], stderr_to_stdout: true)
+    catch
+      error, reason ->
+        Logger.info("Bhasini Downloaded with error: #{error} and reason: #{reason}")
+        "Error while converting file"
     end
   end
 
