@@ -3,6 +3,7 @@ defmodule Glific.Bhasini do
   Bhasini Integration Module
   """
 
+  require Logger
   alias Glific.GCS.GcsWorker
 
   @language_codes %{
@@ -99,24 +100,27 @@ defmodule Glific.Bhasini do
             "target"
           ])
 
-        uuid = Ecto.UUID.generate()
-        path = download_encoded_file(response, uuid)
-
-        remote_name = "Bhasini/outbound/#{uuid}.mp3"
-
-        {:ok, media_meta} =
-          GcsWorker.upload_media(
-            path,
-            remote_name,
-            org_id
-          )
-
-        %{success: true}
-        |> Map.put(:media_url, media_meta.url)
-        |> Map.put(:translated_text, translated_text)
+        process_media(translated_text, response, org_id)
 
       _ ->
         %{success: false, reason: "could not fetch data"}
+    end
+  end
+
+  defp process_media(translated_text, response, org_id) do
+    uuid = Ecto.UUID.generate()
+    remote_name = "Bhasini/outbound/#{uuid}.mp3"
+
+    with {:ok, path} <- download_encoded_file(response, uuid),
+         {:ok, media_meta} <-
+           GcsWorker.upload_media(
+             path,
+             remote_name,
+             org_id
+           ) do
+      %{success: true}
+      |> Map.put(:media_url, media_meta.url)
+      |> Map.put(:translated_text, translated_text)
     end
   end
 
@@ -187,20 +191,19 @@ defmodule Glific.Bhasini do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         response = Jason.decode!(body)
         uuid = Ecto.UUID.generate()
-        path = download_encoded_file(response, uuid)
-
         remote_name = "Bhasini/outbound/#{uuid}.mp3"
 
-        {:ok, media_meta} =
-          GcsWorker.upload_media(
-            path,
-            remote_name,
-            org_id
-          )
-
-        %{success: true}
-        |> Map.put(:media_url, media_meta.url)
-        |> Map.put(:translated_text, text)
+        with {:ok, path} <- download_encoded_file(response, uuid),
+             {:ok, media_meta} <-
+               GcsWorker.upload_media(
+                 path,
+                 remote_name,
+                 org_id
+               ) do
+          %{success: true}
+          |> Map.put(:media_url, media_meta.url)
+          |> Map.put(:translated_text, text)
+        end
 
       _ ->
         %{success: false, reason: "could not fetch data"}
@@ -221,9 +224,15 @@ defmodule Glific.Bhasini do
     decoded_audio = Base.decode64!(encoded_audio)
     path = System.tmp_dir!() <> "#{uuid}.wav"
     output_file = System.tmp_dir!() <> "#{uuid}.mp3"
-    :ok = File.write!(path, decoded_audio)
-    System.cmd("ffmpeg", ["-i", path, output_file])
-    output_file
+
+    with :ok <- File.write!(path, decoded_audio),
+         {"", 0} <- System.cmd("ffmpeg", ["-i", path, output_file]) do
+      {:ok, output_file}
+    else
+      error ->
+        Logger.info("Error downloading file: #{error}")
+        "Error downloading file from Bhashini"
+    end
   end
 
   @doc """
