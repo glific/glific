@@ -39,4 +39,4 @@ jobs:
 
       # Install ffmpeg for file conversion
       - name: install ffmpeg
-        run: sudo apt-get install ffmpeg
+        run: sudo apt-get -y install ffmpeg
