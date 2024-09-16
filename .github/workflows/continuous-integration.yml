@@ -76,6 +76,9 @@ jobs:
           mkdir -p priv/plts
           mix dialyzer --plt
 
+      - name: Set tmp directory permissions
+        run: sudo chmod -R 777 /tmp
+
       - name: Run check
         run: mix check
 
