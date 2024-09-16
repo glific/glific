@@ -212,7 +212,7 @@ defmodule Glific.Bhasini do
 
   # Basically saving decoding the encoded audio and saving it
   # locally before uploading it to GCS to get public URL of file to be used at flow level
-  @spec download_encoded_file(map(), String.t()) :: String.t()
+  @spec download_encoded_file(map(), String.t()) :: {:ok, String.t()} | String.t()
   defp download_encoded_file(response, uuid) do
     pipeline_response =
       get_in(response, ["pipelineResponse"])
