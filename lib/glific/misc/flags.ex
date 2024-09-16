@@ -157,20 +157,13 @@ defmodule Glific.Flags do
       FunWithFlags.enabled?(:flow_uuid_display, for: %{organization_id: organization.id}) ->
         true
 
-      trusted_env?(app_env, organization.id) ->
+      Glific.trusted_env?(app_env, organization.id) ->
         true
 
       true ->
         false
     end
   end
-
-  # the below 2 conditions are just for testing and prototyping purposes
-  # we'll get rid of them when we start using this actively
-  @spec trusted_env?(atom(), non_neg_integer()) :: boolean
-  defp trusted_env?(:dev, 1), do: true
-  defp trusted_env?(:prod, 2), do: true
-  defp trusted_env?(_env, _id), do: false
 
   @doc """
   Get role and permission value for organization flag
@@ -190,7 +183,7 @@ defmodule Glific.Flags do
       FunWithFlags.enabled?(:is_ticketing_enabled, for: %{organization_id: organization.id}) ->
         true
 
-      trusted_env?(app_env, organization.id) ->
+      Glific.trusted_env?(app_env, organization.id) ->
         true
 
       true ->
@@ -209,7 +202,7 @@ defmodule Glific.Flags do
       FunWithFlags.enabled?(:is_whatsapp_group_enabled, for: %{organization_id: organization.id}) ->
         true
 
-      trusted_env?(app_env, organization.id) ->
+      Glific.trusted_env?(app_env, organization.id) ->
         true
 
       true ->

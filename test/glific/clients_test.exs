@@ -5,6 +5,7 @@ defmodule Glific.ClientsTest do
     Clients,
     Clients.Bandhu,
     Clients.CommonWebhook,
+    Clients.KEF,
     Clients.ReapBenefit,
     Clients.Sol,
     Contacts,
@@ -185,23 +186,34 @@ defmodule Glific.ClientsTest do
   end
 
   test "Common webhook function is executed first to ensure that all common functions are accesible for all clients" do
-    Tesla.Mock.mock(fn _env ->
-      %Tesla.Env{
-        status: 200,
-        body: %{
-          "choices" => [
-            %{
-              "message" => %{
-                "content" =>
-                  "This image depicts a scenic view of a sunset or sunrise with a field of flowers silhouetted against the light. The bright sun is low on the horizon, casting a warm glow and causing dramatic lighting and shadows among the silhouetted flowers and stems. The sky has a mix of colors, typical of such time of day, with clouds illuminated by the sun. The text overlaying the image reads \"JPEG This is Sample Image.\"",
-                "role" => "assistant"
-              }
-            }
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          headers: [
+            {"content-type", "image/png"},
+            {"content-length", "3209581"}
           ],
-          "created" => 1_717_089_925,
-          "model" => "gpt-4o-2024-05-13"
+          method: :get,
+          status: 200
         }
-      }
+
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            "choices" => [
+              %{
+                "message" => %{
+                  "content" =>
+                    "This image depicts a scenic view of a sunset or sunrise with a field of flowers silhouetted against the light. The bright sun is low on the horizon, casting a warm glow and causing dramatic lighting and shadows among the silhouetted flowers and stems. The sky has a mix of colors, typical of such time of day, with clouds illuminated by the sun. The text overlaying the image reads \"JPEG This is Sample Image.\"",
+                  "role" => "assistant"
+                }
+              }
+            ],
+            "created" => 1_717_089_925,
+            "model" => "gpt-4o-2024-05-13"
+          }
+        }
     end)
 
     %{response: response} =
@@ -212,5 +224,252 @@ defmodule Glific.ClientsTest do
 
     assert response ==
              "This image depicts a scenic view of a sunset or sunrise with a field of flowers silhouetted against the light. The bright sun is low on the horizon, casting a warm glow and causing dramatic lighting and shadows among the silhouetted flowers and stems. The sky has a mix of colors, typical of such time of day, with clouds illuminated by the sun. The text overlaying the image reads \"JPEG This is Sample Image.\""
+  end
+
+  test "gcs_file_name/1 for ungrouped users, no schoolName in contact.fields" do
+    # Doesn't have schoolName in contact.fields
+    contact =
+      Fixtures.contact_fixture(%{
+        phone: "918634278954"
+      })
+
+    media = %{
+      "contact_id" => contact.id,
+      "flow_id" => 18,
+      "id" => 6,
+      "local_name" =>
+        "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T//20240907150900_C20_F18_M6.png",
+      "organization_id" => 1,
+      "remote_name" => "20240907150900_C20_F18_M6.png",
+      "type" => "image",
+      "url" =>
+        "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
+    }
+
+    "2024/Ungrouped users/Images/" <> image = KEF.gcs_file_name(media)
+    [_, _, message_id] = String.split(image, "_")
+    [phone_num, ext] = String.split(message_id, ".")
+    assert ext == "png"
+    assert contact.phone == phone_num
+  end
+
+  test "gcs_file_name/1, when contact_id is nil, raises error" do
+    # Doesn't have schoolName in contact.fields
+
+    media = %{
+      "contact_id" => nil,
+      "flow_id" => 18,
+      "id" => 6,
+      "local_name" =>
+        "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T//20240907150900_C20_F18_M6.png",
+      "organization_id" => 1,
+      "remote_name" => "20240907150900_C20_F18_M6.png",
+      "type" => "image",
+      "url" =>
+        "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
+    }
+
+    assert_raise ArgumentError, fn ->
+      KEF.gcs_file_name(media)
+    end
+  end
+
+  test "gcs_file_name/1, with invalid contact_type" do
+    # Doesn't have schoolName in contact.fields
+    contact =
+      Fixtures.contact_fixture(%{
+        phone: "918634278954",
+        fields: %{
+          contact_type: %{
+            type: "string",
+            label: "contact_type",
+            value: "NA",
+            inserted_at: ~U[2024-09-07 15:17:53.964448Z]
+          }
+        }
+      })
+
+    media = %{
+      "contact_id" => contact.id,
+      "flow_id" => 18,
+      "id" => 6,
+      "local_name" =>
+        "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T//20240907150900_C20_F18_M6.mp4",
+      "organization_id" => 1,
+      "remote_name" => "20240907150900_C20_F18_M6.mp4",
+      "type" => "video",
+      "url" =>
+        "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
+    }
+
+    "2024/Ungrouped users/Videos/" <> video = KEF.gcs_file_name(media)
+    [_, _, message_id] = String.split(video, "_")
+    [phone_num, ext] = String.split(message_id, ".")
+    assert ext == "mp4"
+    assert contact.phone == phone_num
+  end
+
+  @tag :gcs
+  test "gcs_file_name/1, with valid contact_type, school name but no worksheet" do
+    # Doesn't have schoolName in contact.fields
+    contact =
+      Fixtures.contact_fixture(%{
+        phone: "918634278954",
+        fields: %{
+          "contact_type2425" => %{
+            type: "string",
+            label: "contact_type2425",
+            value: "Parent",
+            inserted_at: ~U[2024-09-07 15:17:53.964448Z]
+          },
+          "school_name_2425" => %{
+            type: "string",
+            label: "School Name 2425",
+            value: "ABC School",
+            inserted_at: ~U[2024-09-07 15:17:53.964448Z]
+          }
+        }
+      })
+
+    media = %{
+      "contact_id" => contact.id,
+      "flow_id" => 18,
+      "id" => 6,
+      "local_name" =>
+        "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T//20240907150900_C20_F18_M6.pdf",
+      "organization_id" => 1,
+      "remote_name" => "20240907150900_C20_F18_M6.pdf",
+      "type" => "document",
+      "url" =>
+        "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
+    }
+
+    "2024/ABC School/Others/Others/" <> document = KEF.gcs_file_name(media)
+    [_, _, message_id] = String.split(document, "_")
+    [phone_num, ext] = String.split(message_id, ".")
+    assert ext == "pdf"
+    assert contact.phone == phone_num
+  end
+
+  test "gcs_file_name/1 for ungrouped users, no schoolName in contact.fields but valid worksheet flow" do
+    # Doesn't have schoolName in contact.fields
+    contact =
+      Fixtures.contact_fixture(%{
+        phone: "918634278954"
+      })
+
+    media = %{
+      "contact_id" => contact.id,
+      "flow_id" => 15_955,
+      "id" => 6,
+      "local_name" =>
+        "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T//20240907150900_C20_F18_M6.png",
+      "organization_id" => 1,
+      "remote_name" => "20240907150900_C20_F18_M6.png",
+      "type" => "image",
+      "url" =>
+        "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
+    }
+
+    "2024/Ungrouped users/Images/" <> image = KEF.gcs_file_name(media)
+    [_, _, message_id] = String.split(image, "_")
+    [phone_num, ext] = String.split(message_id, ".")
+    assert ext == "png"
+    assert contact.phone == phone_num
+  end
+
+  test "gcs_file_name/1, with valid contact_type, school_name and selected worksheets" do
+    # Doesn't have schoolName in contact.fields
+    contact =
+      Fixtures.contact_fixture(%{
+        phone: "918634278954",
+        fields: %{
+          "contact_type2425" => %{
+            type: "string",
+            label: "contact_type2425",
+            value: "Parent",
+            inserted_at: ~U[2024-09-07 15:17:53.964448Z]
+          },
+          "school_name_2425" => %{
+            type: "string",
+            label: "School Name 2425",
+            value: "ABC School",
+            inserted_at: ~U[2024-09-07 15:17:53.964448Z]
+          },
+          "current_worksheet_code" => %{
+            type: "string",
+            label: "current_worksheet_code",
+            value: "1234",
+            inserted_at: ~U[2024-09-07 15:17:53.964448Z]
+          }
+        }
+      })
+
+    media = %{
+      "contact_id" => contact.id,
+      "flow_id" => 15_955,
+      "id" => 6,
+      "local_name" =>
+        "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T//20240907150900_C20_F18_M6.pdf",
+      "organization_id" => 1,
+      "remote_name" => "20240907150900_C20_F18_M6.pdf",
+      "type" => "document",
+      "url" =>
+        "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
+    }
+
+    "2024/ABC School/Worksheets/1234/Others/" <> document = KEF.gcs_file_name(media)
+    [_, _, message_id] = String.split(document, "_")
+    [phone_num, ext] = String.split(message_id, ".")
+    assert ext == "pdf"
+    assert contact.phone == phone_num
+  end
+
+  @tag :gcs
+  test "gcs_file_name/1, with valid contact_type, child_school_name and selected flows" do
+    # Doesn't have schoolName in contact.fields
+    contact =
+      Fixtures.contact_fixture(%{
+        phone: "918634278954",
+        fields: %{
+          "contact_type2425" => %{
+            type: "string",
+            label: "contact_type2425",
+            value: "Parent",
+            inserted_at: ~U[2024-09-07 15:17:53.964448Z]
+          },
+          "school_name_2425" => %{
+            type: "string",
+            label: "School Name 2425",
+            value: "ABC School",
+            inserted_at: ~U[2024-09-07 15:17:53.964448Z]
+          },
+          "current_worksheet_code" => %{
+            type: "string",
+            label: "current_worksheet_code",
+            value: "1234",
+            inserted_at: ~U[2024-09-07 15:17:53.964448Z]
+          }
+        }
+      })
+
+    media = %{
+      "contact_id" => contact.id,
+      "flow_id" => 16_171,
+      "id" => 6,
+      "local_name" =>
+        "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T//20240907150900_C20_F18_M6.pdf",
+      "organization_id" => 1,
+      "remote_name" => "20240907150900_C20_F18_M6.pdf",
+      "type" => "document",
+      "url" =>
+        "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
+    }
+
+    "2024/ABC School/Worksheets/1234/Others/" <> document = KEF.gcs_file_name(media)
+    [_, _, message_id] = String.split(document, "_")
+    [phone_num, ext] = String.split(message_id, ".")
+    assert ext == "pdf"
+    assert contact.phone == phone_num
   end
 end

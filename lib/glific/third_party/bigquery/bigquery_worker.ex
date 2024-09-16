@@ -34,7 +34,11 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Flows.FlowRevision,
     Flows.MessageBroadcast,
     Flows.MessageBroadcastContact,
+    Groups.ContactGroup,
+    Groups.ContactWAGroup,
     Groups.Group,
+    Groups.WAGroup,
+    Groups.WAGroupsCollection,
     Jobs,
     Messages.Message,
     Messages.MessageConversation,
@@ -78,6 +82,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     if credential do
       [
         "contacts",
+        "contacts_wa_groups",
         "messages",
         "flow_results",
         "flow_counts",
@@ -87,7 +92,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
         "message_broadcasts",
         "message_broadcast_contacts",
         "tickets",
-        "wa_messages"
+        "wa_messages",
+        "wa_groups",
+        "wa_groups_collections",
+        "contacts_groups"
       ]
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
@@ -287,6 +295,102 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
+  defp queue_table_data("contacts_wa_groups", organization_id, attrs) do
+    Logger.info(
+      "fetching contacts_wa_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("contacts_wa_groups", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            phone: row.contact.phone,
+            group_id: row.wa_group.id,
+            group_label: row.wa_group.label,
+            is_admin: row.is_admin,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :contacts_wa_groups, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("wa_groups", organization_id, attrs) do
+    Logger.info(
+      "fetching wa_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("wa_groups", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            label: row.label,
+            wa_phone: row.wa_managed_phone.phone,
+            last_communication_at:
+              BigQuery.format_date(row.last_communication_at, organization_id),
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :wa_groups, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("wa_groups_collections", organization_id, attrs) do
+    Logger.info(
+      "fetching wa_groups_collections data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("wa_groups_collections", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            group_id: row.wa_group_id,
+            collection_id: row.group_id,
+            group_label: row.wa_group.label,
+            collection_label: row.group.label,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :wa_groups_collections, organization_id, attrs))
+
+    :ok
+  end
+
   defp queue_table_data("message_broadcast_contacts", organization_id, attrs) do
     Logger.info(
       "fetching message_broadcast_contacts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
@@ -404,6 +508,39 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :contacts, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("contacts_groups", organization_id, attrs) do
+    Logger.info(
+      "fetching contacts_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("contacts_groups", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            contact_id: if(!is_nil(row.contact), do: row.contact.id),
+            name: if(!is_nil(row.contact), do: row.contact.name),
+            phone: if(!is_nil(row.contact), do: row.contact.phone),
+            group_id: row.group_id,
+            group_name: if(!is_nil(row.group), do: row.group.label),
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :contacts_groups, organization_id, attrs))
 
     :ok
   end
@@ -1131,6 +1268,30 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([mb], [mb.inserted_at, mb.id])
 
+  defp get_query("contacts_wa_groups", organization_id, attrs),
+    do:
+      ContactWAGroup
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+      |> preload([:contact, :wa_group])
+
+  defp get_query("wa_groups", organization_id, attrs),
+    do:
+      WAGroup
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+      |> preload([:wa_managed_phone])
+
+  defp get_query("wa_groups_collections", organization_id, attrs),
+    do:
+      WAGroupsCollection
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+      |> preload([:wa_group, :group])
+
   defp get_query("contacts", organization_id, attrs),
     do:
       Contact
@@ -1146,6 +1307,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([c], [c.inserted_at, c.id])
       |> preload([:contact])
+
+  defp get_query("contacts_groups", organization_id, attrs),
+    do:
+      ContactGroup
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+      |> preload([:contact, :group])
 
   defp get_query("profiles", organization_id, attrs),
     # We are creating a query here with the fields which are required instead of loading all the data.

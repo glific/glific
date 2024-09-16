@@ -61,7 +61,6 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
         bsp_id: message_id,
         bsp_status: :enqueued,
         status: :sent,
-        flow: :outbound,
         sent_at: DateTime.truncate(DateTime.utc_now(), :second)
       })
 
@@ -84,7 +83,6 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
       |> WAMessages.update_message(%{
         bsp_status: :error,
         status: :sent,
-        flow: :outbound,
         errors: build_error(response.body)
       })
 

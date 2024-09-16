@@ -30,6 +30,10 @@ defmodule GlificWeb.Schema.ProfileTypes do
     field :language, :language do
       resolve(dataloader(Repo, use_parent: true))
     end
+
+    field :contact, :contact do
+      resolve(dataloader(Repo))
+    end
   end
 
   input_object :profile_input do
