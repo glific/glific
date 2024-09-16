@@ -228,6 +228,7 @@ defmodule Glific.Bhasini do
 
     try do
       System.cmd("ffmpeg", ["-i", path, output_file], stderr_to_stdout: true)
+      {:ok, output_file}
     catch
       error, reason ->
         Logger.info("Bhasini Downloaded with error: #{error} and reason: #{reason}")
