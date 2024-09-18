@@ -20,11 +20,11 @@ defmodule Glific.Filesearch.Assistant do
     :name,
     :organization_id,
     :model,
-    :vector_store_id,
     :settings
   ]
   @optional_fields [
-    :instructions
+    :instructions,
+    :vector_store_id
   ]
 
   @type t() :: %__MODULE__{
@@ -59,10 +59,11 @@ defmodule Glific.Filesearch.Assistant do
     openai_assistant
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint([:assistant_id, :organization_id])
   end
 
   @doc """
-  Creates an assistant record
+  Creates an assistant
   """
   @spec create_assistant(map()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
   def create_assistant(attrs) do
@@ -76,7 +77,7 @@ defmodule Glific.Filesearch.Assistant do
   """
   @spec get_assistant(integer()) :: Assistant.t() | nil
   def get_assistant(id),
-    do: Repo.get!(Assistant, id)
+    do: Repo.get(Assistant, id)
 
   @doc """
   Deletes assistant
@@ -99,8 +100,28 @@ defmodule Glific.Filesearch.Assistant do
   @spec list_assistants(map()) :: [Assistant.t()]
   def list_assistants(args) do
     args
-    |> Repo.list_filter_query(Assistant, &Repo.opts_with_name/2, &filter_with/2)
+    |> Repo.list_filter_query(Assistant, &Repo.opts_with_inserted_at/2, &filter_with/2)
     |> Repo.all()
+  end
+
+  @doc """
+  Updates a assistant.
+
+  ## Examples
+
+      iex> update_assistant(assistant, %{field: new_value})
+      {:ok, %Assistant{}}
+
+      iex> update_assistant(assistant, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec update_assistant(Assistant.t(), map()) ::
+          {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
+  def update_assistant(%Assistant{} = assistant, attrs) do
+    assistant
+    |> Assistant.changeset(attrs)
+    |> Repo.update()
   end
 
   @spec filter_with(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
@@ -110,6 +131,9 @@ defmodule Glific.Filesearch.Assistant do
     Enum.reduce(filter, query, fn
       {:assistant_id, assistant_id}, query ->
         from(q in query, where: q.assistant_id == ^assistant_id)
+
+      _, query ->
+        query
     end)
   end
 end

@@ -17,6 +17,7 @@ defmodule Glific.Repo.Migrations.FilesearchTables do
       add :instructions, :string, comment: "Prompt for the agent"
 
       add :settings, :map,
+        null: false,
         comment: "Additional assistant settings such as temperature, chunks etc"
 
       add :vector_store_id, references(:openai_vector_stores, on_delete: :nothing),
@@ -41,7 +42,7 @@ defmodule Glific.Repo.Migrations.FilesearchTables do
 
       add :vector_store_name, :string, null: false, comment: "Name of the vector store"
 
-      add :files, :map, comment: "Map of fileId and its details"
+      add :files, :map, default: %{}, comment: "Map of fileId and its details"
 
       # Foreign key to organization, restricting the scope of this table to the specified organization.
       add :organization_id, references(:organizations, on_delete: :delete_all),
