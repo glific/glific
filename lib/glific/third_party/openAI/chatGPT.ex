@@ -497,7 +497,8 @@ defmodule Glific.OpenAI.ChatGPT do
   @spec headers() :: list()
   defp headers do
     open_ai_key = Glific.get_open_ai_key()
-  [
+
+    [
       {"Authorization", "Bearer #{open_ai_key}"},
       {"Content-Type", "application/json"},
       {"OpenAI-Beta", "assistants=v2"}

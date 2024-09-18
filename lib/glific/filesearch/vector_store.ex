@@ -1,6 +1,6 @@
-defmodule Glific.OpenAI.VectorStore do
+defmodule Glific.Filesearch.VectorStore do
   @moduledoc """
-  The table structure to record vector store information from Filesearch API
+  VectorStore schema that maps openAI vector stores
   """
 
   use Ecto.Schema

@@ -1,11 +1,9 @@
-defmodule GlificWeb.Resolvers.OpenAI do
+defmodule GlificWeb.Resolvers.Filesearch do
   @moduledoc """
-  OPENAI Resolver which sits between the GraphQL schema and OPENAI Filesearch API. This layer basically stitches together
-  one or more calls to resolve the incoming queries.
+  Filesearch Resolver which sits between the GraphQL schema and Glific Filesearch API.
   """
-
-  alias Glific.OpenAI
-  alias Glific.OpenAI.{Assistant, VectorStore}
+  alias Glific.OpenAI.Filesearch
+  alias Glific.Filesearch.{Assistant, VectorStore}
   alias Glific.Repo
 
   @doc """
@@ -14,7 +12,7 @@ defmodule GlificWeb.Resolvers.OpenAI do
   @spec create_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_vector_store(_, %{name: vector_store_name}, %{context: %{current_user: user}}) do
-    {:ok, %{vector_store_id: store_id}} = OpenAI.create_vector_store(vector_store_name)
+    {:ok, %{vector_store_id: store_id}} = Filesearch.create_vector_store(vector_store_name)
 
     VectorStore.record_vector_store(%{
       vector_store_id: store_id,
@@ -31,7 +29,7 @@ defmodule GlificWeb.Resolvers.OpenAI do
   @spec modify_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def modify_vector_store(_, params, _) do
-    OpenAI.modify_vector_store(params)
+    Filesearch.modify_vector_store(params)
   end
 
   @doc """
@@ -41,8 +39,9 @@ defmodule GlificWeb.Resolvers.OpenAI do
           {:ok, map()} | {:error, any()}
   def delete_vector_store(_, %{vector_store_id: vector_store_id}, _) do
     with {:ok, %{vector_store_id: vector_store_id}} <-
-           OpenAI.delete_vector_store(vector_store_id),
-         {:ok, openai_vector_store} <- Repo.fetch_by(VectorStore, %{vector_store_id: vector_store_id}) do
+           Filesearch.delete_vector_store(vector_store_id),
+         {:ok, openai_vector_store} <-
+           Repo.fetch_by(VectorStore, %{vector_store_id: vector_store_id}) do
       VectorStore.delete_vector_store_record(openai_vector_store)
     end
 
@@ -55,7 +54,7 @@ defmodule GlificWeb.Resolvers.OpenAI do
   @spec create_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, map()} | {:error, any()}
   def create_assistant(_, params, %{context: %{current_user: user}}) do
-    {:ok, %{assistant_id: assistant_id}} = OpenAI.create_assistant(params)
+    {:ok, %{assistant_id: assistant_id}} = Filesearch.create_assistant(params)
 
     Assistant.record_assistant(%{
       assistant_id: assistant_id,
@@ -76,7 +75,7 @@ defmodule GlificWeb.Resolvers.OpenAI do
   @spec modify_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def modify_assistant(_, params, _) do
-    OpenAI.modify_assistant(params)
+    Filesearch.modify_assistant(params)
   end
 
   @doc """
@@ -85,7 +84,7 @@ defmodule GlificWeb.Resolvers.OpenAI do
   @spec delete_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, map()} | {:error, any()}
   def delete_assistant(_, %{assistant_id: assistant_id} = _args, _) do
-    with {:ok, %{assistant_id: assistant_id}} <- OpenAI.delete_assistant(assistant_id),
+    with {:ok, %{assistant_id: assistant_id}} <- Filesearch.delete_assistant(assistant_id),
          {:ok, openai_assistant} <- Repo.fetch_by(Assistant, %{assistant_id: assistant_id}) do
       Assistant.delete_assistant_record(openai_assistant)
     end

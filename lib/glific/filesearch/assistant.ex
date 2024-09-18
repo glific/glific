@@ -1,6 +1,6 @@
-defmodule Glific.OpenAI.Assistant do
+defmodule Glific.Filesearch.Assistant do
   @moduledoc """
-  The table structure to record assistant information from Filesearch API
+  Assistant schema that maps openAI assistants
   """
 
   use Ecto.Schema
@@ -29,6 +29,7 @@ defmodule Glific.OpenAI.Assistant do
     # TODO: assistant name should be required
     :assistant_name
   ]
+
   # TODO: Advanced settings on has temperature now?
   # TODO: Need to add temperature?
 
