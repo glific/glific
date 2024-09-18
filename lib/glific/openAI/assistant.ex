@@ -24,9 +24,13 @@ defmodule Glific.OpenAI.Assistant do
   ]
   @optional_fields [
     :vector_store_id,
+    # TODO: vector_store_id null means no vector store right?
     :has_vector_store,
+    # TODO: assistant name should be required
     :assistant_name
   ]
+  # TODO: Advanced settings on has temperature now?
+  # TODO: Need to add temperature?
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -45,6 +49,7 @@ defmodule Glific.OpenAI.Assistant do
     field :assistant_id, :string
     field :assistant_name, :string
     field :has_vector_store, :boolean, default: true
+    # TODO: assistant - vector store might have one-many relationship
     field :vector_store_id, :string
     field :model, :string
     field :description, :string
@@ -74,6 +79,8 @@ defmodule Glific.OpenAI.Assistant do
     |> Repo.insert()
   end
 
+  # TODO Put both migrations in one file
+  # TODO: why skip_organization_id??
   @doc """
     Retrieves an assistant record by clauses
   """
@@ -91,6 +98,7 @@ defmodule Glific.OpenAI.Assistant do
         skip_organization_id: true
       )
 
+  # TODO: function name refactoring (all functions check)
   @doc """
     Deletes assistant record
   """

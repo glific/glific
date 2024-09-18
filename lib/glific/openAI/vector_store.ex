@@ -20,8 +20,11 @@ defmodule Glific.OpenAI.VectorStore do
     :vector_store_id
   ]
   @optional_fields [
+    # TODO: Shouldnt be optional
     :vector_store_name,
+    # TODO: won't be needing it
     :has_assistant,
+    # TODO: Should be replaced by assistants (has many)
     :assistant_counts
   ]
 
@@ -55,6 +58,7 @@ defmodule Glific.OpenAI.VectorStore do
     |> foreign_key_constraint(:organization_id)
   end
 
+  # TODO: refactor the functions names and skip_organization_id
   @doc """
   Creates Vector Store record
   """

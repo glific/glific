@@ -2,7 +2,7 @@ defmodule Glific.OpenAI do
   @moduledoc """
    Glific module for API calls to OpenAI related to Filesearch
    """
-
+  # TODO: This module should be inside openAI/Filesearch
    @endpoint "https://api.openai.com/v1"
 
    @spec middleware() :: list()
