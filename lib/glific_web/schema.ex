@@ -59,7 +59,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.WAGroupsCollectionTypes)
   import_types(__MODULE__.WaGroupTypes)
   import_types(__MODULE__.LLM4DevTypes)
-  import_types(__MODULE__.OpenAITypes)
+  import_types(__MODULE__.FilesearchTypes)
 
   query do
     import_fields(:profile_queries)
@@ -196,7 +196,7 @@ defmodule GlificWeb.Schema do
 
     import_fields(:llm4dev_mutations)
 
-    import_fields(:openai_mutations)
+    import_fields(:filesearch_mutations)
   end
 
   subscription do

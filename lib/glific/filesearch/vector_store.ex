@@ -38,7 +38,7 @@ defmodule Glific.Filesearch.VectorStore do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
-  schema "openai_vector_store" do
+  schema "openai_vector_stores" do
     field :vector_store_id, :string
     field :vector_store_name, :string
     field :has_assistant, :boolean, default: false

@@ -1,6 +1,6 @@
-defmodule GlificWeb.Schema.OpenAITypes do
+defmodule GlificWeb.Schema.FilesearchTypes do
   @moduledoc """
-  GraphQL Representation of Glific's OpenAI DataType
+  GraphQL Representation of Glific's Filesearch DataType
   """
   use Absinthe.Schema.Notation
 
@@ -21,12 +21,12 @@ defmodule GlificWeb.Schema.OpenAITypes do
     field :assistant_id, :string
   end
 
-  object :openai_mutations do
+  object :filesearch_mutations do
     @desc "Create vector store"
     field :create_vector_store, :vector_store do
       arg(:name, non_null(:string))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.OpenAI.create_vector_store/3)
+      resolve(&Resolvers.Filesearch.create_vector_store/3)
     end
 
     @desc "Modify vector sotre"
@@ -34,14 +34,14 @@ defmodule GlificWeb.Schema.OpenAITypes do
       arg(:vector_store_id, non_null(:string))
       arg(:name, non_null(:string))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.OpenAI.modify_vector_store/3)
+      resolve(&Resolvers.Filesearch.modify_vector_store/3)
     end
 
     @desc "Delete vector store"
     field :delete_vector_store, :vector_store do
       arg(:vector_store_id, non_null(:string))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.OpenAI.delete_vector_store/3)
+      resolve(&Resolvers.Filesearch.delete_vector_store/3)
     end
 
     @desc "Create Assistant"
@@ -52,7 +52,7 @@ defmodule GlificWeb.Schema.OpenAITypes do
       arg(:instructions, non_null(:string))
       arg(:vector_store_id, non_null(:string))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.OpenAI.create_assistant/3)
+      resolve(&Resolvers.Filesearch.create_assistant/3)
     end
 
     @desc "Modify Assistant"
@@ -64,14 +64,14 @@ defmodule GlificWeb.Schema.OpenAITypes do
       arg(:instructions, non_null(:string))
       arg(:vector_store_id, non_null(:string))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.OpenAI.modify_assistant/3)
+      resolve(&Resolvers.Filesearch.modify_assistant/3)
     end
 
     @desc "Delete assistant"
     field :delete_assistant, :assistant do
       arg(:assistant_id, non_null(:string))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.OpenAI.delete_assistant/3)
+      resolve(&Resolvers.Filesearch.delete_assistant/3)
     end
   end
 end

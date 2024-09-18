@@ -56,12 +56,11 @@ defmodule GlificWeb.Resolvers.Filesearch do
   def create_assistant(_, params, %{context: %{current_user: user}}) do
     {:ok, %{assistant_id: assistant_id}} = Filesearch.create_assistant(params)
 
-    Assistant.record_assistant(%{
+    Assistant.create_assistant(%{
       assistant_id: assistant_id,
-      assistant_name: params.name,
+      name: params.name,
       model: params.model,
       vector_store_id: params.vector_store_id,
-      description: params.description,
       instructions: params.instructions,
       organization_id: user.organization_id
     })
@@ -86,7 +85,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   def delete_assistant(_, %{assistant_id: assistant_id} = _args, _) do
     with {:ok, %{assistant_id: assistant_id}} <- Filesearch.delete_assistant(assistant_id),
          {:ok, openai_assistant} <- Repo.fetch_by(Assistant, %{assistant_id: assistant_id}) do
-      Assistant.delete_assistant_record(openai_assistant)
+      Assistant.delete_assistant(openai_assistant)
     end
 
     {:ok, %{assistant_id: assistant_id}}

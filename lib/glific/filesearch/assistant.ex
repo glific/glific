@@ -7,6 +7,7 @@ defmodule Glific.Filesearch.Assistant do
   import Ecto.Changeset
   import Ecto.Query, warn: false
 
+  alias Glific.Filesearch.VectorStore
   alias __MODULE__
 
   alias Glific.{
@@ -14,49 +15,40 @@ defmodule Glific.Filesearch.Assistant do
     Repo
   }
 
-  # define all the required fields for
   @required_fields [
     :assistant_id,
+    :name,
     :organization_id,
     :model,
-    :description,
-    :instructions
+    :vector_store_id,
+    :settings
   ]
   @optional_fields [
-    :vector_store_id,
-    # TODO: vector_store_id null means no vector store right?
-    :has_vector_store,
-    # TODO: assistant name should be required
-    :assistant_name
+    :instructions
   ]
-
-  # TODO: Advanced settings on has temperature now?
-  # TODO: Need to add temperature?
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           assistant_id: String.t() | nil,
-          assistant_name: String.t() | nil,
+          name: String.t() | nil,
           organization_id: non_neg_integer | nil,
-          has_vector_store: boolean() | true,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           vector_store_id: String.t() | nil,
+          vector_store: VectorStore.t() | Ecto.Association.NotLoaded.t() | nil,
           model: String.t() | nil,
-          description: String.t() | nil,
           instructions: String.t() | nil,
-          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
+          settings: map() | nil
         }
 
-  schema "openai_assistant" do
+  schema "openai_assistants" do
     field :assistant_id, :string
-    field :assistant_name, :string
-    field :has_vector_store, :boolean, default: true
-    # TODO: assistant - vector store might have one-many relationship
-    field :vector_store_id, :string
+    field :name, :string
     field :model, :string
-    field :description, :string
     field :instructions, :string
-
+    field :settings, :map
     belongs_to :organization, Organization
+    belongs_to :vector_store, VectorStore
+    timestamps()
   end
 
   @doc """
@@ -67,45 +59,57 @@ defmodule Glific.Filesearch.Assistant do
     openai_assistant
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> foreign_key_constraint(:organization_id)
   end
 
   @doc """
   Creates an assistant record
   """
-  @spec record_assistant(map()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
-  def record_assistant(attrs) do
+  @spec create_assistant(map()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
+  def create_assistant(attrs) do
     %Assistant{}
     |> changeset(attrs)
     |> Repo.insert()
   end
 
-  # TODO Put both migrations in one file
-  # TODO: why skip_organization_id??
   @doc """
-    Retrieves an assistant record by clauses
+  Get an assistant
   """
-  @spec get_assistant(map()) :: Assistant.t() | nil
-  def get_assistant(clauses),
-    do: Repo.get_by(Assistant, clauses, skip_organization_id: true)
+  @spec get_assistant(integer()) :: Assistant.t() | nil
+  def get_assistant(id),
+    do: Repo.get!(Assistant, id)
 
   @doc """
-    Returns the list of assistants
+  Deletes assistant
   """
-  @spec list_assistant(map()) :: [Assistant.t()]
-  def list_assistant(args),
-    do:
-      Repo.list_filter(args, Assistant, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2,
-        skip_organization_id: true
-      )
-
-  # TODO: function name refactoring (all functions check)
-  @doc """
-    Deletes assistant record
-  """
-  @spec delete_assistant_record(Assistant.t()) ::
+  @spec delete_assistant(Assistant.t()) ::
           {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
-  def delete_assistant_record(%Assistant{} = openai_assistant) do
-    Repo.delete(openai_assistant, skip_organization_id: true)
+  def delete_assistant(%Assistant{} = assistant) do
+    Repo.delete(assistant)
+  end
+
+  @doc """
+  Returns the list of assistants.
+
+  ## Examples
+
+      iex> list_assistants()
+      [%Assistant{}, ...]
+
+  """
+  @spec list_assistants(map()) :: [Assistant.t()]
+  def list_assistants(args) do
+    args
+    |> Repo.list_filter_query(Assistant, &Repo.opts_with_name/2, &filter_with/2)
+    |> Repo.all()
+  end
+
+  @spec filter_with(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:assistant_id, assistant_id}, query ->
+        from(q in query, where: q.assistant_id == ^assistant_id)
+    end)
   end
 end
