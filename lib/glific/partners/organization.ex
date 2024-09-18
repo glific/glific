@@ -210,7 +210,21 @@ defmodule Glific.Partners.Organization do
       |> Repo.all()
 
     changeset
+    |> remove_default_from_active()
     |> validate_subset(:active_language_ids, language_ids)
+  end
+
+  @spec remove_default_from_active(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp remove_default_from_active(changeset) do
+    default_language_id = get_field(changeset, :default_language_id)
+    active_language_ids = get_field(changeset, :active_language_ids)
+
+    if default_language_id && active_language_ids do
+      updated_active_languages = List.delete(active_language_ids, default_language_id)
+      put_change(changeset, :active_language_ids, updated_active_languages)
+    else
+      changeset
+    end
   end
 
   @spec validate_default_language(Ecto.Changeset.t()) :: Ecto.Changeset.t()
@@ -227,14 +241,15 @@ defmodule Glific.Partners.Organization do
   defp check_valid_language(changeset, _, nil), do: changeset
 
   defp check_valid_language(changeset, default_language_id, active_language_ids) do
-    if default_language_id in active_language_ids,
-      do: changeset,
-      else:
-        add_error(
-          changeset,
-          :default_language_id,
-          "default language must be updated according to active languages"
-        )
+    if default_language_id in active_language_ids do
+      add_error(
+        changeset,
+        :default_language_id,
+        "default language cannot be included in the active languages list"
+      )
+    else
+      changeset
+    end
   end
 
   @spec add_out_of_office_if_missing(Ecto.Changeset.t()) :: Ecto.Changeset.t()

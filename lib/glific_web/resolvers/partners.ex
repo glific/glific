@@ -80,6 +80,7 @@ defmodule GlificWeb.Resolvers.Partners do
           context: map()
         }) :: {:ok, any} | {:error, any}
   def update_organization(_, %{id: id, input: params}, _) do
+    IO.inspect(params)
     with {:ok, organization} <- Repo.fetch(Organization, id, skip_organization_id: true),
          {:ok, organization} <- Partners.update_organization(organization, params) do
       {:ok, %{organization: organization}}
