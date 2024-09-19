@@ -208,7 +208,7 @@
                             {
                                 "uuid": "f7c5c029-0c47-40c3-af49-69dcc6430bf1",
                                 "type": "send_msg",
-                                "text": "Location details\n\nWard - @results.loc.ward\nState - @results.loc.state\nPostal Code - @results.loc.postal_code\nDistrict - @results.loc.district\nCity - @results.loc.city\nCountry - @results.loc.country\nFull address - @results.loc.address",
+                                "text": "Location details\n\nState - @results.loc.state\nPostal Code - @results.loc.postal_code\nDistrict - @results.loc.district\nCity - @results.loc.city\nCountry - @results.loc.country\nFull address - @results.loc.address",
                                 "quick_replies": [],
                                 "labels": [],
                                 "attachments": []

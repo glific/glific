@@ -3,6 +3,8 @@ defmodule Glific.Seeds.SeedsFlows do
 
   import Ecto.Query, warn: false
 
+  require Logger
+
   alias Glific.{
     Flows,
     Flows.Flow,
@@ -189,7 +191,6 @@ defmodule Glific.Seeds.SeedsFlows do
     ]
 
     Enum.each(flow_files, &process_flow_file(&1, organizations))
-    :ok
   end
 
   @spec process_flow_file(String.t(), [Organization.t()]) :: :ok
@@ -200,7 +201,6 @@ defmodule Glific.Seeds.SeedsFlows do
     {:ok, import_flow} = Jason.decode(file_content)
 
     Enum.each(organizations, &import_flow_for_organization(&1, import_flow, flow_file))
-    :ok
   end
 
   @spec import_flow_for_organization(Organization.t(), map(), String.t()) :: :ok
@@ -234,6 +234,7 @@ defmodule Glific.Seeds.SeedsFlows do
       end
     else
       _ ->
+        Logger.error("flow import failed for : #{organization.id}")
         {:error, "Error importing flow for organization: #{organization.id}"}
     end
 
