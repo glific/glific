@@ -1,0 +1,7 @@
+#import "./fields.frag.gql"
+
+mutation createAssistant($input:AssistantInput!) {
+  createAssistant(input: $input) {
+    ...AssistantFields
+  }
+}

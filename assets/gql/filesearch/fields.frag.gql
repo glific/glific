@@ -1,0 +1,13 @@
+fragment AssistantFields on AssistantResult {
+  assistant {
+    name
+    instructions
+    vector_store_id
+    model
+    assistant_id
+  }
+  errors {
+    key
+    message
+  }
+}

@@ -17,7 +17,8 @@ defmodule GlificWeb.Resolvers.Filesearch do
     VectorStore.create_vector_store(%{
       vector_store_id: store_id,
       organization_id: user.organization_id,
-      vector_store_name: vector_store_name
+      vector_store_name: vector_store_name,
+      files: %{}
     })
 
     {:ok, %{vector_store_id: store_id}}
@@ -53,19 +54,21 @@ defmodule GlificWeb.Resolvers.Filesearch do
   """
   @spec create_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, map()} | {:error, any()}
-  def create_assistant(_, params, %{context: %{current_user: user}}) do
-    {:ok, %{assistant_id: assistant_id}} = Filesearch.create_assistant(params)
+  def create_assistant(_, %{input: params}, %{context: %{current_user: user}}) do
+    {:ok, %{id: assistant_id}} = Filesearch.create_assistant(params) |> IO.inspect()
 
-    Assistant.create_assistant(%{
-      assistant_id: assistant_id,
-      name: params.name,
-      model: params.model,
-      vector_store_id: params.vector_store_id,
-      instructions: params.instructions,
-      organization_id: user.organization_id
-    })
+    {:ok, assistant} =
+      Assistant.create_assistant(%{
+        assistant_id: assistant_id,
+        name: params.name,
+        model: params.model,
+        vector_store_id: params[:vector_store_id],
+        instructions: params[:instructions],
+        settings: params[:settings] || %{temperature: 1.25, max_chunk: 20},
+        organization_id: user.organization_id
+      })
 
-    {:ok, %{assistant_id: assistant_id}}
+    {:ok, %{assistant: assistant}}
   end
 
   @doc """
