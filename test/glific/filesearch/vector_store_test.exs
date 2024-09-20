@@ -11,7 +11,6 @@ defmodule Glific.Filesearch.VectorStoreTest do
 
   use GlificWeb.ConnCase
 
-  @tag :vs
   test "create_vector_store/1 with valid data creates a vector_store", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abc",
@@ -23,7 +22,6 @@ defmodule Glific.Filesearch.VectorStoreTest do
     assert {:ok, _vector_store} = VectorStore.create_vector_store(valid_attrs)
   end
 
-  @tag :vs
   test "create_vector_store/1 with invalid data not create a vector_store", attrs do
     valid_attrs = %{
       name: "temp vector store",
@@ -34,7 +32,6 @@ defmodule Glific.Filesearch.VectorStoreTest do
     assert {:error, _vector_store} = VectorStore.create_vector_store(valid_attrs)
   end
 
-  @tag :vs
   test "get_vector_store/1 with valid id returns a vector_store", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abc",
@@ -48,7 +45,6 @@ defmodule Glific.Filesearch.VectorStoreTest do
     assert %VectorStore{} = VectorStore.get_vector_store(vector_store.id)
   end
 
-  @tag :vs
   test "list_vector_stores/1 with returns list of vector stores matching the filters", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abc",
@@ -74,7 +70,6 @@ defmodule Glific.Filesearch.VectorStoreTest do
     assert length(vector_stores) == 2
   end
 
-  @tag :vs
   test "update_vector_store/1, updates vector store", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcd",
@@ -99,7 +94,6 @@ defmodule Glific.Filesearch.VectorStoreTest do
     assert vector_store.name == "vector store 3"
   end
 
-  @tag :vs
   test "assitants and vector store associations", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcd",
