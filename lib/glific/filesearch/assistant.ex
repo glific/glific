@@ -7,10 +7,10 @@ defmodule Glific.Filesearch.Assistant do
   import Ecto.Changeset
   import Ecto.Query, warn: false
 
-  alias Glific.Filesearch.VectorStore
   alias __MODULE__
 
   alias Glific.{
+    Filesearch.VectorStore,
     Partners.Organization,
     Repo
   }

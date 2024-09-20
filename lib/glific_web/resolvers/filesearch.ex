@@ -14,7 +14,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   def create_vector_store(_, %{name: vector_store_name}, %{context: %{current_user: user}}) do
     {:ok, %{vector_store_id: store_id}} = Filesearch.create_vector_store(vector_store_name)
 
-    VectorStore.record_vector_store(%{
+    VectorStore.create_vector_store(%{
       vector_store_id: store_id,
       organization_id: user.organization_id,
       vector_store_name: vector_store_name
@@ -42,7 +42,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
            Filesearch.delete_vector_store(vector_store_id),
          {:ok, openai_vector_store} <-
            Repo.fetch_by(VectorStore, %{vector_store_id: vector_store_id}) do
-      VectorStore.delete_vector_store_record(openai_vector_store)
+      VectorStore.delete_vector_store(openai_vector_store)
     end
 
     {:ok, %{vector_store_id: vector_store_id}}
