@@ -16,28 +16,20 @@ defmodule Glific.OpenAI.Filesearch do
     ]
   end
 
-  # @doc """
-  # Creates vector store with given name to enable file search
-  # """
-  # @spec create_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
-  # def create_vector_store(name) do
-  #   url = @endpoint <> "/vector_stores"
+  @doc """
+  Creates vector store
+  """
+  @spec create_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
+  def create_vector_store(name) do
+    url = @endpoint <> "/vector_stores"
 
-  #   payload =
-  #     %{"name" => name}
-  #     |> Jason.encode!()
+    payload =
+      %{"name" => name}
+      |> Jason.encode!()
 
-  #   middleware()
-  #   |> Tesla.client()
-  #   |> Tesla.post(url, payload)
-  #   |> case do
-  #     {:ok, %Tesla.Env{status: 200, body: body}} ->
-  #       {:ok, %{vector_store_id: Jason.decode!(body)["id"]}}
-
-  #     {_status, response} ->
-  #       {:error, "Failed to create vector store: #{inspect(response)}"}
-  #   end
-  # end
+    post(url, payload, headers: headers())
+    |> parse_response()
+  end
 
   # @doc """
   #   Modifies vector store identified with passed vector_store_id paramater
@@ -81,29 +73,29 @@ defmodule Glific.OpenAI.Filesearch do
   #   end
   # end
 
-  @doc """
-    Creates assistant with specified instructions for vector store identified with passed vector_store_id paramater
-  """
-  @spec create_assistant(map()) :: {:ok, map()} | {:error, String.t()}
-  def create_assistant(params) do
-    url = @endpoint <> "/assistants"
-    vector_store_ids = []
+  # @doc """
+  #   Creates assistant with specified instructions for vector store identified with passed vector_store_id paramater
+  # """
+  # @spec create_assistant(map()) :: {:ok, map()} | {:error, String.t()}
+  # def create_assistant(params) do
+  #   url = @endpoint <> "/assistants"
+  #   vector_store_ids = []
 
-    payload =
-      %{
-        name: params.name,
-        tool_resources: %{
-          file_search: %{
-            vector_store_ids: vector_store_ids
-          }
-        },
-        model: params.model
-      }
-      |> Jason.encode!()
+  #   payload =
+  #     %{
+  #       name: params.name,
+  #       tool_resources: %{
+  #         file_search: %{
+  #           vector_store_ids: vector_store_ids
+  #         }
+  #       },
+  #       model: params.model
+  #     }
+  #     |> Jason.encode!()
 
-    post(url, payload, headers: headers())
-    |> parse_response()
-  end
+  #   post(url, payload, headers: headers())
+  #   |> parse_response()
+  # end
 
   # @doc """
   #   Updates assistant identified with passed assistant_id paramater
