@@ -244,7 +244,7 @@
                         ]
                     }
                 ],
-                "name": "Bhashini_speechtotext",
+                "name": "Bhashini_speech_to_text",
                 "localization": {
                     "ta": {
                         "d8ee57c3-2fec-44d9-b180-2dc22966be92": {
@@ -652,7 +652,8 @@
                     }
                 }
             },
-            "keywords": []
+            "keywords": [
+            ]
         }
     ],
     "contact_field": [],
