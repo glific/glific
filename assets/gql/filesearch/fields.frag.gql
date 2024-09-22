@@ -1,11 +1,11 @@
-fragment AssistantFields on AssistantResult {
-  assistant {
+fragment VectorStoreFields on VectorStoreResult {
+  vectorStore {
     name
-    instructions
     vector_store_id
-    model
-    assistant_id
   }
+}
+
+fragment ErrorFields on VectorStoreResult {
   errors {
     key
     message
