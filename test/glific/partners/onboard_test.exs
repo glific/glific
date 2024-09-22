@@ -550,4 +550,19 @@ defmodule Glific.OnboardTest do
                }
              })
   end
+
+  test "ensure that the suspension data and status are changed after we change status from forced_suspension to active" do
+    {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
+
+    updated_organization = Onboard.status(organization.id, :forced_suspension)
+
+    assert updated_organization.is_suspended == true
+    assert updated_organization.suspended_until != nil
+
+    # Change the status to active
+    updated_organization = Onboard.status(organization.id, :active)
+
+    assert updated_organization.is_suspended == false
+    assert updated_organization.suspended_until == nil
+  end
 end

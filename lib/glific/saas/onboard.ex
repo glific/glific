@@ -115,6 +115,7 @@ defmodule Glific.Saas.Onboard do
       |> Partners.get_organization!()
       |> Partners.update_organization(changes)
 
+    Partners.remove_organization_cache(organization.id, organization.shortcode)
     update_organization_billing(organization)
   end
 
@@ -123,6 +124,8 @@ defmodule Glific.Saas.Onboard do
     changes
     |> add_map(:is_active, true)
     |> add_map(:is_approved, true)
+    |> add_map(:is_suspended, false)
+    |> Map.put(:suspended_until, nil)
   end
 
   defp organization_status(:approved, changes) do
