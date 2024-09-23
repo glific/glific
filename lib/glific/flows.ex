@@ -1004,7 +1004,7 @@ defmodule Glific.Flows do
               _ -> "Something went wrong"
             end
 
-          Logger.error("Failed to import flow #{flow_name}: #{message}")
+          Logger.error("Failed to import flow #{flow_name}: #{message}, #{inspect(errors)}")
 
           %{flow_name: flow_name, status: message}
       end
