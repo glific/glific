@@ -986,7 +986,6 @@ defmodule Glific.Flows do
              }) do
         import_contact_field(import_flow, organization_id)
         import_groups(import_flow, organization_id)
-
         %{flow_name: flow.name, status: "Successfully imported"}
       else
         {:error, error} ->

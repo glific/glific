@@ -224,7 +224,6 @@ defmodule Glific.Seeds.SeedsFlows do
     with [flow_data] <- Flows.import_flow(import_flow, organization.id),
          {:ok, flow} <- Repo.fetch_by(Flow, %{name: flow_data.flow_name}) do
       update_flow_as_template(flow)
-
       update_flow_revision(flow.id)
 
       tag_name = Map.get(flow_tag_map, flow_file)
@@ -256,9 +255,7 @@ defmodule Glific.Seeds.SeedsFlows do
   defp update_flow_revision(flow_id) do
     flow_revision = Repo.get_by(FlowRevision, %{flow_id: flow_id, revision_number: 0})
     changeset = FlowRevision.changeset(flow_revision, %{status: "published"})
-    updated_revision = Repo.update!(changeset)
-
-    updated_revision
+    Repo.update!(changeset)
   end
 
   @spec get_or_create_tag(String.t(), non_neg_integer(), non_neg_integer()) :: non_neg_integer()
