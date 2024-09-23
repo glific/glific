@@ -234,8 +234,12 @@ defmodule Glific.Seeds.SeedsFlows do
       end
     else
       _ ->
-        Logger.error("flow import failed for : #{organization.id}")
-        {:error, "Error importing flow for organization: #{organization.id}"}
+        Logger.error(
+          "Flow import failed for organization: #{organization.id}, flow name: #{flow_file}"
+        )
+
+        {:error,
+         "Error importing flow for organization: #{organization.id}, flow name: #{flow_file}"}
     end
 
     :ok
