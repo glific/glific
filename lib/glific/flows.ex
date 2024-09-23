@@ -984,8 +984,13 @@ defmodule Glific.Flows do
                organization_id: flow.organization_id,
                user_id: user.id
              }) do
+        Logger.info("Flow #{flow.name} (ID: #{flow.id}) created successfully")
+
+        Logger.info("Flow revision for Flow ID: #{flow.id} created successfully")
+
         import_contact_field(import_flow, organization_id)
         import_groups(import_flow, organization_id)
+
         %{flow_name: flow.name, status: "Successfully imported"}
       else
         {:error, error} ->
@@ -998,6 +1003,8 @@ defmodule Glific.Flows do
               {:name, {message, _}} -> message
               _ -> "Something went wrong"
             end
+
+          Logger.error("Failed to import flow #{flow_name}: #{message}")
 
           %{flow_name: flow_name, status: message}
       end
