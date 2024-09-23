@@ -2,6 +2,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   @moduledoc """
   Glific module for API calls to OpenAI related to Filesearch
   """
+  alias Tesla.Multipart
   require Logger
   @endpoint "https://api.openai.com/v1"
   use Tesla
@@ -31,6 +32,26 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
       |> Jason.encode!()
 
     post(url, payload, headers: headers())
+    |> parse_response()
+  end
+
+  @spec upload_knowledge_base(
+          atom()
+          | %{
+              :media => atom() | %{:path => binary(), optional(any()) => any()},
+              optional(any()) => any()
+            }
+        ) :: {:error, <<_::64, _::_*8>>} | {:ok, map()}
+  def upload_knowledge_base(params) do
+    url = @endpoint <> "/files"
+
+    data =
+      Multipart.new()
+      |> Multipart.add_file(params.media.path, name: "file")
+      |> Multipart.add_field("purpose", "assistants")
+
+    post(url, data, headers: headers())
+    |> IO.inspect()
     |> parse_response()
   end
 

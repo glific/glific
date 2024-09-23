@@ -1,0 +1,39 @@
+meta {
+  name: Create Vector Store
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: 
+  body: graphql
+  auth: none
+}
+
+headers {
+  Authorization: SFMyNTY.NTlhNDFmZGEtNmVjNi00OTZiLTg5NjktM2YwMzEzZjJkODEw.5a_mRSkf1V2gRsJ-exutahiHj8j1Ms6twc6OCiFtKwA
+}
+
+body:graphql {
+  mutation CreateVectorStore($input: VectorStoreInput!) {
+    createVectorStore(input: $input) {
+      errors {
+        key
+        message
+      }
+      vectorStore {
+        name
+        vectorStoreId
+      }
+    }
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "name": "vs_brn"
+    }
+  }
+}

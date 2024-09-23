@@ -23,6 +23,10 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     # end
   end
 
+  # object :file_result do
+  #   field :msg, :string
+  # end
+
   input_object :vector_store_input do
     field :name, :string
   end
@@ -33,6 +37,13 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       arg(:input, non_null(:vector_store_input))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.create_vector_store/3)
+    end
+
+    @desc "Upload knowledgebase"
+    field :upload_filesearch_file, :string do
+      arg(:media, non_null(:upload))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.upload_knowledge_base/3)
     end
   end
 end

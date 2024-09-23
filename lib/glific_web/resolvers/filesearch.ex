@@ -18,4 +18,14 @@ defmodule GlificWeb.Resolvers.Filesearch do
 
     Filesearch.create_vector_store(attrs)
   end
+
+  @doc """
+  Create a Vector Store
+  """
+  @spec upload_knowledge_base(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def upload_knowledge_base(_, params, %{context: %{current_user: _user}}) do
+    Filesearch.upload_knowledge_base(params)
+    {:ok, "success"}
+  end
 end

@@ -1,0 +1,30 @@
+meta {
+  name: Upload Filesearch File
+  type: graphql
+  seq: 1
+}
+
+post {
+  url: 
+  body: graphql
+  auth: none
+}
+
+headers {
+  Authorization: SFMyNTY.NTlhNDFmZGEtNmVjNi00OTZiLTg5NjktM2YwMzEzZjJkODEw.5a_mRSkf1V2gRsJ-exutahiHj8j1Ms6twc6OCiFtKwA
+}
+
+body:graphql {
+  mutation UploadFilesearchFile($media: Upload!) {
+    uploadFilesearchFile(media: $media) {
+      msg
+    }
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "media": null
+  }
+}

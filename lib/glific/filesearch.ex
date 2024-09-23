@@ -16,4 +16,13 @@ defmodule Glific.Filesearch do
         {:error, "Vector store creation failed"}
     end
   end
+
+  @doc """
+    Set document as knowledge base with category
+  """
+  @spec upload_knowledge_base(map()) ::
+          {:ok, map()} | {:error, String.t()}
+  def upload_knowledge_base(params) do
+    ApiClient.upload_knowledge_base(params)
+  end
 end
