@@ -3,7 +3,10 @@ defmodule Glific.Seeds.SeedsFlows do
 
   import Ecto.Query, warn: false
 
+  require Logger
+
   alias Glific.{
+    Flows,
     Flows.Flow,
     Flows.FlowLabel,
     Flows.FlowRevision,
@@ -12,6 +15,8 @@ defmodule Glific.Seeds.SeedsFlows do
     Repo,
     Seeds.SeedsDev,
     Settings,
+    Tags,
+    Tags.Tag,
     Templates.InteractiveTemplate,
     Users
   }
@@ -166,6 +171,107 @@ defmodule Glific.Seeds.SeedsFlows do
     {uuid_map, data} = get_opt_data(organization)
 
     add_flow(organization, data, uuid_map)
+  end
+
+  @doc false
+  @spec add_template_flows([Organization.t()]) :: :ok
+  def add_template_flows(organizations) do
+    flow_files = [
+      "other_options.json",
+      "clear_variable.json",
+      "bhasini_asr.json",
+      "consent_optout.json",
+      "GPT_Vision.json",
+      "geolocation.json",
+      "ticketing_help.json",
+      "consent_optin.json",
+      "filesearch_GPT_textandvoice.json",
+      "direct_with_GPT.json",
+      "bhashini_text_to_speech.json"
+    ]
+
+    Enum.each(flow_files, &process_flow_file(&1, organizations))
+  end
+
+  @spec process_flow_file(String.t(), [Organization.t()]) :: :ok
+  defp process_flow_file(flow_file, organizations) do
+    full_file_path = Path.join(:code.priv_dir(:glific), "data/flows/" <> flow_file)
+
+    {:ok, file_content} = File.read(full_file_path)
+    {:ok, import_flow} = Jason.decode(file_content)
+
+    Enum.each(organizations, &import_flow_for_organization(&1, import_flow, flow_file))
+  end
+
+  @spec import_flow_for_organization(Organization.t(), map(), String.t()) :: :ok
+  defp import_flow_for_organization(organization, import_flow, flow_file) do
+    Repo.put_organization_id(organization.id)
+
+    flow_tag_map = %{
+      "bhasini_asr.json" => "Speech to Text",
+      "consent_optout.json" => "Optout",
+      "GPT_Vision.json" => "GPT",
+      "clear_variable.json" => "Clear",
+      "geolocation.json" => "Location",
+      "ticketing_help.json" => "Help",
+      "other_options.json" => "Other",
+      "consent_optin.json" => "Optin",
+      "filesearch_GPT_textandvoice.json" => "GPT filesearch",
+      "direct_with_GPT.json" => "GPT direct",
+      "bhashini_text_to_speech.json" => "Text to Speech"
+    }
+
+    with [flow_data] <- Flows.import_flow(import_flow, organization.id),
+         {:ok, flow} <- Repo.fetch_by(Flow, %{name: flow_data.flow_name}) do
+      update_flow_as_template(flow)
+      update_flow_revision(flow.id)
+
+      tag_name = Map.get(flow_tag_map, flow_file)
+
+      if tag_name do
+        tag_id = get_or_create_tag(tag_name, organization.id, organization.default_language_id)
+        Flows.update_flow(flow, %{tag_id: tag_id})
+      end
+    else
+      _ ->
+        Logger.error("flow import failed for : #{organization.id}")
+        {:error, "Error importing flow for organization: #{organization.id}"}
+    end
+
+    :ok
+  end
+
+  @spec update_flow_as_template(Flow.t()) :: Flow.t()
+  defp update_flow_as_template(flow) do
+    changeset = Flow.changeset(flow, %{is_template: true})
+    Repo.update!(changeset)
+  end
+
+  @spec update_flow_revision(non_neg_integer()) :: FlowRevision.t()
+  defp update_flow_revision(flow_id) do
+    flow_revision = Repo.get_by(FlowRevision, %{flow_id: flow_id, revision_number: 0})
+    changeset = FlowRevision.changeset(flow_revision, %{status: "published"})
+    Repo.update!(changeset)
+  end
+
+  @spec get_or_create_tag(String.t(), non_neg_integer(), non_neg_integer()) :: non_neg_integer()
+  defp get_or_create_tag(tag_name, organization_id, language_id) do
+    existing_tag = Repo.get_by(Tag, %{label: tag_name})
+
+    case existing_tag do
+      nil ->
+        {:ok, tag} =
+          Tags.create_tag(%{
+            label: tag_name,
+            organization_id: organization_id,
+            language_id: language_id
+          })
+
+        tag.id
+
+      tag ->
+        tag.id
+    end
   end
 
   @doc false

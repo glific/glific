@@ -1,0 +1,249 @@
+{
+    "interactive_templates": [],
+    "flows": [
+        {
+            "definition": {
+                "vars": [
+                    "9b4b4760-0960-44f8-88cd-6e4189fff137"
+                ],
+                "uuid": "9b4b4760-0960-44f8-88cd-6e4189fff137",
+                "type": "messaging",
+                "spec_version": "13.2.0",
+                "nodes": [
+                    {
+                        "uuid": "471e9cce-551f-4271-93d1-7a0a8fc0ded8",
+                        "exits": [
+                            {
+                                "uuid": "d07a4097-31ae-4d7a-9cee-fe4b665b149a",
+                                "destination_uuid": "7030e92f-3925-4a10-a390-d53002accdd8"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "4bb95eb1-003f-409b-9689-9e20c6a4c013",
+                                "type": "send_msg",
+                                "text": "*Hello!*😊 How can I assist you today?  \nPlease type out the issue or question you have.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "7030e92f-3925-4a10-a390-d53002accdd8",
+                        "router": {
+                            "wait": {
+                                "type": "msg"
+                            },
+                            "type": "switch",
+                            "result_name": "query",
+                            "operand": "@input.text",
+                            "default_category_uuid": "f15ae55c-ec9a-4237-8cdf-03beae965252",
+                            "categories": [
+                                {
+                                    "uuid": "f15ae55c-ec9a-4237-8cdf-03beae965252",
+                                    "name": "All Responses",
+                                    "exit_uuid": "30df6508-4968-4134-a66b-55600363e46f"
+                                }
+                            ],
+                            "cases": []
+                        },
+                        "exits": [
+                            {
+                                "uuid": "30df6508-4968-4134-a66b-55600363e46f",
+                                "destination_uuid": "35ca70f2-1791-4770-a3b0-7c251f90929e"
+                            }
+                        ],
+                        "actions": []
+                    },
+                    {
+                        "uuid": "35ca70f2-1791-4770-a3b0-7c251f90929e",
+                        "router": {
+                            "type": "switch",
+                            "operand": "@results.result",
+                            "default_category_uuid": "165cd0a1-c442-43cf-acdd-2552dda56270",
+                            "categories": [
+                                {
+                                    "uuid": "3a8235ce-a25a-4e99-be5c-dc957e4c9389",
+                                    "name": "Success",
+                                    "exit_uuid": "f738fd0f-fada-47fc-ac98-a467e47e9fd3"
+                                },
+                                {
+                                    "uuid": "165cd0a1-c442-43cf-acdd-2552dda56270",
+                                    "name": "Failure",
+                                    "exit_uuid": "08e8407d-02d1-4d00-9ca8-61aff43d9f37"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "103ea1d8-a820-4e45-a068-757bc16aa450",
+                                    "type": "has_category",
+                                    "category_uuid": "3a8235ce-a25a-4e99-be5c-dc957e4c9389",
+                                    "arguments": [
+                                        "Success"
+                                    ]
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "f738fd0f-fada-47fc-ac98-a467e47e9fd3",
+                                "destination_uuid": "c78bea5b-fe5b-47a0-80e1-7a361b2dcd96"
+                            },
+                            {
+                                "uuid": "08e8407d-02d1-4d00-9ca8-61aff43d9f37",
+                                "destination_uuid": "e1c13fc3-fa4d-46d7-b24c-4fa0598d110b"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "73325fda-c730-4cbc-8402-e824b62ed075",
+                                "type": "open_ticket",
+                                "topic": {
+                                    "uuid": "e8392319-7a55-45a3-9328-7f685f1f6550",
+                                    "name": "Query"
+                                },
+                                "result_name": "result",
+                                "body": "@results.query"
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "e1c13fc3-fa4d-46d7-b24c-4fa0598d110b",
+                        "exits": [
+                            {
+                                "uuid": "44929bb6-788f-4ca8-a2de-b7e942065b2a",
+                                "destination_uuid": "471e9cce-551f-4271-93d1-7a0a8fc0ded8"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "eb7f82ed-e141-43b2-a096-47fb8b37d970",
+                                "type": "send_msg",
+                                "text": "Something went wrong! Please share your query again",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "c78bea5b-fe5b-47a0-80e1-7a361b2dcd96",
+                        "exits": [
+                            {
+                                "uuid": "9e4c4f37-5af0-4cdd-afd7-1a4bac6eddd3",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "3f25eaaf-e3c6-48dc-9fec-d8025c06d4c4",
+                                "type": "send_msg",
+                                "text": "We have received your query. Our team will get back to you within *1 working day*",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    }
+                ],
+                "name": "Ticketing_Help flow",
+                "localization": {},
+                "language": "base",
+                "expire_after_minutes": 10080,
+                "_ui": {
+                    "stickies": {
+                        "8d35d64f-d9f8-48ff-a1f4-65034c90a2a5": {
+                            "title": "Explainer: Node 1b0d",
+                            "position": {
+                                "top": 500,
+                                "right": -240,
+                                "left": 560,
+                                "bottom": 240
+                            },
+                            "color": "purple",
+                            "body": "For urgent user queries, you can send a WhatsApp message to the staff member to check the ticket immediately. \n\nThis step is optional but can help your staff. Keep in mind that an HSM message will incur a cost.\n\nYou would need to change HSM message, staff name while using this flow"
+                        },
+                        "8555c1e0-bd82-46e2-927f-e31baabff02e": {
+                            "title": "Good to have: Node 11ad",
+                            "position": {
+                                "top": 920,
+                                "right": -120,
+                                "left": 600,
+                                "bottom": 100
+                            },
+                            "color": "purple",
+                            "body": "Some of your other teams might be comfortable using/ looking data in google sheets. So adding a Write to google sheets node and writing queries to the sheet might be a good idea."
+                        },
+                        "4ef1e8d4-ff3e-42b9-bee5-f324472fa453": {
+                            "title": "Good to have: Node cdb2, 110b",
+                            "position": {
+                                "top": 340,
+                                "right": null,
+                                "left": 940,
+                                "bottom": null
+                            },
+                            "color": "purple",
+                            "body": "For webhook failure cases,instead of asking user to reach out to POC, you can also create a ticket and assign to your team member too for them to later on look into the cases where the webhook is failing.\n\nYou can also notify your team member by using \"Send staff member a message \" if required"
+                        },
+                        "34acfb3e-8482-4b3b-86b9-ad5f365a56a0": {
+                            "title": "Explainer: Node 929e",
+                            "position": {
+                                "top": 20,
+                                "right": 20,
+                                "left": 700,
+                                "bottom": -560
+                            },
+                            "color": "yellow",
+                            "body": "We have used the 'Open a ticket' feature to collate all user queries in one place, making it easier for your staff to check and respond.\n\nYou can categorize the queries, assign them to the respective staff member, and customize the description of the ticket that staff sees.\n\nIn this case, staff member is Sangeeta, Category name is Query and description she can see later on will be the query user asked. You would need to change these details while using the flow\n"
+                        }
+                    },
+                    "nodes": {
+                        "e1c13fc3-fa4d-46d7-b24c-4fa0598d110b": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 360,
+                                "left": 480
+                            }
+                        },
+                        "c78bea5b-fe5b-47a0-80e1-7a361b2dcd96": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 540,
+                                "left": 40
+                            }
+                        },
+                        "7030e92f-3925-4a10-a390-d53002accdd8": {
+                            "type": "wait_for_response",
+                            "position": {
+                                "top": 160,
+                                "left": 160
+                            },
+                            "config": {
+                                "cases": {}
+                            }
+                        },
+                        "471e9cce-551f-4271-93d1-7a0a8fc0ded8": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 0,
+                                "left": 160
+                            }
+                        },
+                        "35ca70f2-1791-4770-a3b0-7c251f90929e": {
+                            "type": "split_by_ticket",
+                            "position": {
+                                "top": 300,
+                                "left": 160
+                            },
+                            "config": {}
+                        }
+                    }
+                }
+            },
+            "keywords": []
+        }
+    ],
+    "contact_field": [],
+    "collections": []
+}

@@ -1,0 +1,441 @@
+{
+    "interactive_templates": [],
+    "flows": [
+        {
+            "definition": {
+                "vars": [
+                    "98c27a69-345d-432a-be59-7c25bd64d716"
+                ],
+                "uuid": "98c27a69-345d-432a-be59-7c25bd64d716",
+                "type": "messaging",
+                "spec_version": "13.2.0",
+                "nodes": [
+                    {
+                        "uuid": "24e3467d-97a6-4304-b9ed-bbe227729567",
+                        "exits": [
+                            {
+                                "uuid": "c174424a-b979-4602-bfcb-fc41d212bcda",
+                                "destination_uuid": "e9655e16-5c58-4c3b-b33e-cb650b26a5fd"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "182ba9ee-44b8-4afc-8dff-a2029d993f48",
+                                "type": "send_msg",
+                                "text": "Hello, Welcome to the *Glific Story and Culture* Chatbot\n\nPlease share an image with us, and our BOT will craft a beautiful story for you.\n\n(This is a demo of GPT vision bot)",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "e9655e16-5c58-4c3b-b33e-cb650b26a5fd",
+                        "router": {
+                            "wait": {
+                                "type": "msg"
+                            },
+                            "type": "switch",
+                            "result_name": "image",
+                            "operand": "@input.text",
+                            "default_category_uuid": "8a74768a-d4a7-4cf8-9cf0-291cecd40330",
+                            "categories": [
+                                {
+                                    "uuid": "b8feaaf2-57eb-4029-8fc2-b7bbbbad8b99",
+                                    "name": "Has Image",
+                                    "exit_uuid": "5ec9cbe0-895c-4f02-a3ab-77c3e444a187"
+                                },
+                                {
+                                    "uuid": "8a74768a-d4a7-4cf8-9cf0-291cecd40330",
+                                    "name": "Other",
+                                    "exit_uuid": "842c150c-088b-4757-9339-004725c5b0a3"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "7559b8e3-1819-4cad-a312-5f7d85426157",
+                                    "type": "has_image",
+                                    "category_uuid": "b8feaaf2-57eb-4029-8fc2-b7bbbbad8b99",
+                                    "arguments": []
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "5ec9cbe0-895c-4f02-a3ab-77c3e444a187",
+                                "destination_uuid": "880bf202-ca5c-4381-bf82-5e1c3c92bd40"
+                            },
+                            {
+                                "uuid": "842c150c-088b-4757-9339-004725c5b0a3",
+                                "destination_uuid": "ddda643f-e95b-46f5-9c50-2e773b10c626"
+                            }
+                        ],
+                        "actions": []
+                    },
+                    {
+                        "uuid": "880bf202-ca5c-4381-bf82-5e1c3c92bd40",
+                        "exits": [
+                            {
+                                "uuid": "90e0dcae-7592-4c23-8d9e-f587c13f27df",
+                                "destination_uuid": "988aaa66-7f56-4d26-967b-819be8eeba24"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "c3f17a85-910f-45d1-925f-82a0dcf06efa",
+                                "type": "send_msg",
+                                "text": "Please wait for a few seconds while I share the best response for you.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "ddda643f-e95b-46f5-9c50-2e773b10c626",
+                        "exits": [
+                            {
+                                "uuid": "0731a4c0-d52b-4c2d-8344-675b17c986c8",
+                                "destination_uuid": "e9655e16-5c58-4c3b-b33e-cb650b26a5fd"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "3360644c-f359-4f8a-8515-4a162098a9b2",
+                                "type": "send_msg",
+                                "text": "Please share an image only",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "988aaa66-7f56-4d26-967b-819be8eeba24",
+                        "router": {
+                            "type": "switch",
+                            "operand": "@results.gptvision.category",
+                            "default_category_uuid": "dfe106a0-a37f-4acd-8efa-11740f1c4193",
+                            "categories": [
+                                {
+                                    "uuid": "a0e0d650-3775-467e-b84d-24096389a61c",
+                                    "name": "Success",
+                                    "exit_uuid": "b92c0aac-6162-4c16-aab6-2b2d0d161639"
+                                },
+                                {
+                                    "uuid": "dfe106a0-a37f-4acd-8efa-11740f1c4193",
+                                    "name": "Failure",
+                                    "exit_uuid": "57cca402-f202-4a8d-b71d-59a2603bdc08"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "4d9d39b8-c09d-4c68-b053-18cee17469ca",
+                                    "type": "has_only_text",
+                                    "category_uuid": "a0e0d650-3775-467e-b84d-24096389a61c",
+                                    "arguments": [
+                                        "Success"
+                                    ]
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "b92c0aac-6162-4c16-aab6-2b2d0d161639",
+                                "destination_uuid": "6bcd2783-b9a2-44fb-a811-854859e078df"
+                            },
+                            {
+                                "uuid": "57cca402-f202-4a8d-b71d-59a2603bdc08",
+                                "destination_uuid": "34c70ef7-20c9-47bf-bb4d-80c49f3f4502"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "5ad98dff-3028-4c9a-8463-5304ba87cab7",
+                                "url": "parse_via_gpt_vision",
+                                "type": "call_webhook",
+                                "result_name": "gptvision",
+                                "method": "FUNCTION",
+                                "headers": {
+                                    "Content-Type": "application/json",
+                                    "Accept": "application/json"
+                                },
+                                "body": "{\n  \"prompt\": \"You are an expert storyteller. See the contents of the photo and tell a story which one can tell a 5 year old. Ensure that the story is fascinating and exciting\",\n  \"url\": \"@results.image\",\n\"model\" : \"gpt-4o\"\n}"
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "6bcd2783-b9a2-44fb-a811-854859e078df",
+                        "router": {
+                            "type": "switch",
+                            "operand": "@results.gptvision",
+                            "default_category_uuid": "eafe418d-5e54-46b0-9560-769e6d3ce6cb",
+                            "categories": [
+                                {
+                                    "uuid": "70a4d967-344d-4c30-b7a7-6b2df4a4e4f6",
+                                    "name": "Failed",
+                                    "exit_uuid": "cf3e5984-aff3-4833-a7b9-478186efda6f"
+                                },
+                                {
+                                    "uuid": "eafe418d-5e54-46b0-9560-769e6d3ce6cb",
+                                    "name": "Other",
+                                    "exit_uuid": "b80b26d3-a7e9-4428-8362-1095ddd9c63d"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "f7d1c953-0cf6-4597-914a-5cc759282f81",
+                                    "type": "has_any_word",
+                                    "category_uuid": "70a4d967-344d-4c30-b7a7-6b2df4a4e4f6",
+                                    "arguments": [
+                                        "@results.gptvision.response"
+                                    ]
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "cf3e5984-aff3-4833-a7b9-478186efda6f",
+                                "destination_uuid": "34c70ef7-20c9-47bf-bb4d-80c49f3f4502"
+                            },
+                            {
+                                "uuid": "b80b26d3-a7e9-4428-8362-1095ddd9c63d",
+                                "destination_uuid": "3db4d692-a018-4a59-a127-9ab4d7e7e858"
+                            }
+                        ],
+                        "actions": []
+                    },
+                    {
+                        "uuid": "34c70ef7-20c9-47bf-bb4d-80c49f3f4502",
+                        "exits": [
+                            {
+                                "uuid": "cddbf87e-ae23-4f13-9502-4243aa3d7cab",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "9d6268bf-440f-4004-a57d-6ec1fab5f128",
+                                "type": "send_msg",
+                                "text": "Looks like something went wrong. Please try again or contact your POC",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "3db4d692-a018-4a59-a127-9ab4d7e7e858",
+                        "exits": [
+                            {
+                                "uuid": "e5ab4cdb-aef7-47eb-8ec2-3ca9f8280685",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "25a80525-7b09-4b8e-be25-14ea8cef7a68",
+                                "type": "send_msg",
+                                "text": "@results.gptvision.response",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    }
+                ],
+                "name": "GPT_Vision",
+                "localization": {
+                    "hi": {
+                        "c3f17a85-910f-45d1-925f-82a0dcf06efa": {
+                            "text": [
+                                "कृपया कुछ सेकंड प्रतीक्षा करें जब तक मैं आपके लिए सर्वोत्तम प्रतिक्रिया साझा करूँ।"
+                            ],
+                            "attachments": []
+                        },
+                        "9d6268bf-440f-4004-a57d-6ec1fab5f128": {
+                            "text": [
+                                "लगता है कुछ ग़लत हो गया. कृपया पुनः प्रयास करें या अपने पीओसी से संपर्क करें"
+                            ],
+                            "attachments": []
+                        },
+                        "3360644c-f359-4f8a-8515-4a162098a9b2": {
+                            "text": [
+                                "कृपया केवल एक छवि साझा करें"
+                            ],
+                            "attachments": []
+                        },
+                        "25a80525-7b09-4b8e-be25-14ea8cef7a68": {
+                            "text": [
+                                "@results.gptvision.response\n"
+                            ],
+                            "attachments": []
+                        },
+                        "182ba9ee-44b8-4afc-8dff-a2029d993f48": {
+                            "text": [
+                                "नमस्ते, *ग्लिफिक स्टोरी एंड कल्चर* चैटबॉट में आपका स्वागत है। कृपया हमारे साथ एक छवि साझा करें, और हमारा बीओटी आपके लिए एक सुंदर "
+                            ],
+                            "attachments": []
+                        }
+                    },
+                    "en": {
+                        "c3f17a85-910f-45d1-925f-82a0dcf06efa": {
+                            "text": [
+                                "Please wait for a few seconds while I share the best response for you.\n"
+                            ],
+                            "attachments": []
+                        },
+                        "b8feaaf2-57eb-4029-8fc2-b7bbbbad8b99": {
+                            "name": [
+                                "Has Image"
+                            ]
+                        },
+                        "9d6268bf-440f-4004-a57d-6ec1fab5f128": {
+                            "text": [
+                                "Looks like something went wrong. Please try again or contact your POC\n"
+                            ],
+                            "attachments": []
+                        },
+                        "8a74768a-d4a7-4cf8-9cf0-291cecd40330": {
+                            "name": [
+                                "Other"
+                            ]
+                        },
+                        "3360644c-f359-4f8a-8515-4a162098a9b2": {
+                            "text": [
+                                "Please share an image"
+                            ],
+                            "attachments": []
+                        },
+                        "25a80525-7b09-4b8e-be25-14ea8cef7a68": {
+                            "text": [
+                                "@results.gptvision.response\n"
+                            ],
+                            "attachments": []
+                        },
+                        "182ba9ee-44b8-4afc-8dff-a2029d993f48": {
+                            "text": [
+                                "Hello, Welcome to the *GlificStory and Culture Bot*\n\nPlease share an image with us, and our BOT will craft a beautiful story for you.\n"
+                            ],
+                            "attachments": []
+                        }
+                    }
+                },
+                "language": "base",
+                "expire_after_minutes": 10080,
+                "_ui": {
+                    "stickies": {
+                        "be9d8daa-79c4-4426-82ce-217ac0bc3edc": {
+                            "title": "Explainer Node ba24",
+                            "position": {
+                                "top": 560,
+                                "right": -480,
+                                "left": 260,
+                                "bottom": 40
+                            },
+                            "color": "yellow",
+                            "body": "Go to \"function body\" in the webhook and make changes to the \"prompt\" parameter to explore what other things GPT vision is capable of accomplishing \n\nPlease make changes to this node as needed."
+                        },
+                        "a2ffb943-b135-4cbd-a700-dd47b573c39b": {
+                            "title": "Good to have : Node 78df",
+                            "position": {
+                                "top": 760,
+                                "right": 0,
+                                "left": 560,
+                                "bottom": 20
+                            },
+                            "color": "purple",
+                            "body": "For webhook failure cases,instead of asking user to reach out to POC, you can also create a ticket and assign to your team member too for them to later on look into the cases where the webhook is failing.\n\nYou can also notify your team member by using \"Send staff : Node 4502member a message \" if required"
+                        },
+                        "141a4995-c84a-4c7d-abb0-1b4221c536ff": {
+                            "title": "Good to have : Node bd40",
+                            "position": {
+                                "top": 280,
+                                "right": null,
+                                "left": 580,
+                                "bottom": null
+                            },
+                            "color": "purple",
+                            "body": "As the flow has to interpret the user's input and create a story/ share information accordingly, it will take a few seconds for the bot to process. To ensure users don't worry about not receiving a response from the bot, this message is being added."
+                        }
+                    },
+                    "nodes": {
+                        "e9655e16-5c58-4c3b-b33e-cb650b26a5fd": {
+                            "type": "wait_for_response",
+                            "position": {
+                                "top": 280,
+                                "left": 220
+                            },
+                            "config": {
+                                "cases": {}
+                            }
+                        },
+                        "ddda643f-e95b-46f5-9c50-2e773b10c626": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 580,
+                                "left": 480
+                            }
+                        },
+                        "988aaa66-7f56-4d26-967b-819be8eeba24": {
+                            "type": "split_by_webhook",
+                            "position": {
+                                "top": 600,
+                                "left": 40
+                            },
+                            "config": {}
+                        },
+                        "880bf202-ca5c-4381-bf82-5e1c3c92bd40": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 380,
+                                "left": 0
+                            }
+                        },
+                        "6bcd2783-b9a2-44fb-a811-854859e078df": {
+                            "type": "split_by_run_result",
+                            "position": {
+                                "top": 940,
+                                "left": 40
+                            },
+                            "config": {
+                                "operand": {
+                                    "type": "result",
+                                    "name": "gptvision",
+                                    "id": "gptvision"
+                                },
+                                "cases": {}
+                            }
+                        },
+                        "3db4d692-a018-4a59-a127-9ab4d7e7e858": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 1120,
+                                "left": 0
+                            }
+                        },
+                        "34c70ef7-20c9-47bf-bb4d-80c49f3f4502": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 1100,
+                                "left": 360
+                            }
+                        },
+                        "24e3467d-97a6-4304-b9ed-bbe227729567": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 0,
+                                "left": 120
+                            }
+                        }
+                    }
+                }
+            },
+            "keywords": [
+               
+            ]
+        }
+    ],
+    "contact_field": [],
+    "collections": []
+}
