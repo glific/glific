@@ -1,0 +1,344 @@
+{
+    "interactive_templates": [
+        {
+            "send_with_title": false,
+            "source_id": 21043,
+            "language_id": 1,
+            "interactive_content": {
+                "type": "quick_reply",
+                "options": [
+                    {
+                        "type": "text",
+                        "title": "Yes, I will OPT-OUT"
+                    },
+                    {
+                        "type": "text",
+                        "title": "No, I will STAY BACK"
+                    }
+                ],
+                "content": {
+                    "type": "text",
+                    "text": "We are sorry to see you go 😕\nAre you sure you want to opt out?",
+                    "header": "STOP"
+                }
+            },
+            "translations": {
+                "1": {
+                    "type": "quick_reply",
+                    "options": [
+                        {
+                            "type": "text",
+                            "title": "Yes, I will OPT-OUT"
+                        },
+                        {
+                            "type": "text",
+                            "title": "No, I will STAY BACK"
+                        }
+                    ],
+                    "content": {
+                        "type": "text",
+                        "text": "We are sorry to see you go 😕\nAre you sure you want to opt out?",
+                        "header": "STOP"
+                    }
+                }
+            },
+            "type": "quick_reply",
+            "label": "STOP"
+        }
+    ],
+    "flows": [
+        {
+            "definition": {
+                "vars": [
+                    "b58ee890-5fc9-44c3-9034-a6f7a206bbf3"
+                ],
+                "uuid": "b58ee890-5fc9-44c3-9034-a6f7a206bbf3",
+                "type": "messaging",
+                "spec_version": "13.2.0",
+                "nodes": [
+                    {
+                        "uuid": "f9ff289b-4e9b-4c78-b972-79a6405824ac",
+                        "exits": [
+                            {
+                                "uuid": "1562851b-8c23-4cdc-b19b-53ba02329f34",
+                                "destination_uuid": "9b694a3e-b572-45f6-9324-8a97d6fd95c8"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "8b539d44-6929-4fa7-a4ad-91f81a5acd5f",
+                                "type": "send_interactive_msg",
+                                "text": "{\"content\":{\"header\":\"STOP\",\"text\":\"We are sorry to see you go 😕\\nAre you sure you want to opt out?\",\"type\":\"text\"},\"options\":[{\"title\":\"Yes, I will OPT-OUT\",\"type\":\"text\"},{\"title\":\"No, I will STAY BACK\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+                                "name": "STOP",
+                                "labels": [],
+                                "id": 21043,
+                                "attachment_url": "",
+                                "attachment_type": ""
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "31355e7d-0c22-49bb-a910-80a1d9e16f35",
+                        "exits": [
+                            {
+                                "uuid": "6fff4023-fb70-439c-9511-7020414767d3",
+                                "destination_uuid": "9b694a3e-b572-45f6-9324-8a97d6fd95c8"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "18f7b0ed-8365-4cfe-b0ae-21838a5d23de",
+                                "type": "send_msg",
+                                "text": "Please click on one of the given options only",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "9b694a3e-b572-45f6-9324-8a97d6fd95c8",
+                        "router": {
+                            "wait": {
+                                "type": "msg"
+                            },
+                            "type": "switch",
+                            "result_name": "result_1",
+                            "operand": "@input.text",
+                            "default_category_uuid": "4e9956e1-a967-40de-bc41-582c14f6367e",
+                            "categories": [
+                                {
+                                    "uuid": "b8652efd-d540-4896-8be2-8b3003fae47f",
+                                    "name": "Yes, I will OPT-OUT",
+                                    "exit_uuid": "ca61e127-3a43-4998-80a0-f24ede4a493c"
+                                },
+                                {
+                                    "uuid": "bff9561c-301d-409b-ba7f-dd4c94b76732",
+                                    "name": "No, I will STAY BACK",
+                                    "exit_uuid": "f866af0f-3ab7-4a38-b5c7-44578ee24dfe"
+                                },
+                                {
+                                    "uuid": "4e9956e1-a967-40de-bc41-582c14f6367e",
+                                    "name": "Other",
+                                    "exit_uuid": "bbff149d-36af-4e46-8149-e319b04ef45c"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "8f809ac4-14ae-4c1a-b803-71aef51c8b5e",
+                                    "type": "has_phrase",
+                                    "category_uuid": "b8652efd-d540-4896-8be2-8b3003fae47f",
+                                    "arguments": [
+                                        "Yes, I will OPT-OUT"
+                                    ]
+                                },
+                                {
+                                    "uuid": "686701f6-6892-4345-a997-a715da92abd9",
+                                    "type": "has_phrase",
+                                    "category_uuid": "bff9561c-301d-409b-ba7f-dd4c94b76732",
+                                    "arguments": [
+                                        "No, I will STAY BACK"
+                                    ]
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "ca61e127-3a43-4998-80a0-f24ede4a493c",
+                                "destination_uuid": "73fb3de2-a647-4946-87d0-cb97d90cdd52"
+                            },
+                            {
+                                "uuid": "f866af0f-3ab7-4a38-b5c7-44578ee24dfe",
+                                "destination_uuid": "85788ca0-7e55-4cb9-a71e-8e424a4e3c26"
+                            },
+                            {
+                                "uuid": "bbff149d-36af-4e46-8149-e319b04ef45c",
+                                "destination_uuid": "31355e7d-0c22-49bb-a910-80a1d9e16f35"
+                            }
+                        ],
+                        "actions": []
+                    },
+                    {
+                        "uuid": "73fb3de2-a647-4946-87d0-cb97d90cdd52",
+                        "exits": [
+                            {
+                                "uuid": "73e1ccde-132e-4a77-b32b-0ce5a018ecf3",
+                                "destination_uuid": "ba5b588e-4c8b-472c-a6a5-43db3d3a9df2"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "fc5f091a-7ac6-4cda-a897-949a3aaa093a",
+                                "type": "remove_contact_groups",
+                                "groups": [
+                                    {
+                                        "uuid": "106",
+                                        "name": "Optin contacts"
+                                    }
+                                ],
+                                "all_groups": false
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "85788ca0-7e55-4cb9-a71e-8e424a4e3c26",
+                        "exits": [
+                            {
+                                "uuid": "d2d56568-c6a0-45f7-9690-e218f173f250",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "bb7ca40c-8077-4aa0-a1e8-1de93c29aa96",
+                                "type": "send_msg",
+                                "text": "Thank you for staying with us🙂 I am sure it will be helpful for you.\nYou can continue using the chatbot",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "ba5b588e-4c8b-472c-a6a5-43db3d3a9df2",
+                        "exits": [
+                            {
+                                "uuid": "bf5066ed-7c5a-4d81-8dba-069fa6fee309",
+                                "destination_uuid": "4fa35920-c7d4-4562-9046-36fb02a56ca8"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "178dec86-be29-4a27-b070-5f3d13713f54",
+                                "type": "add_contact_groups",
+                                "groups": [
+                                    {
+                                        "uuid": "107",
+                                        "type": "group",
+                                        "name": "Optout contacts"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "4fa35920-c7d4-4562-9046-36fb02a56ca8",
+                        "exits": [
+                            {
+                                "uuid": "32e2f06b-91b6-4d2e-ac08-3003bc7f59c2",
+                                "destination_uuid": "4e14b6e1-77e9-4305-a275-9c8fcd6aa2e2"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "value": "optout",
+                                "uuid": "1a21138b-ff3c-4a42-b0ad-5ca7c0455b1b",
+                                "type": "set_contact_field",
+                                "field": {
+                                    "name": "Consent status",
+                                    "key": "settings"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "4e14b6e1-77e9-4305-a275-9c8fcd6aa2e2",
+                        "exits": [
+                            {
+                                "uuid": "1146793a-02d2-45d4-9cf2-ee545a3d252f",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "77cd17dc-328e-4c2c-839b-31135f4e5aa0",
+                                "type": "send_msg",
+                                "text": "You will not receive any messages from now on. In case you change your mind in the future, please type *<Add keyword for registration>*",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    }
+                ],
+                "name": "Consent_Optout flow ",
+                "localization": {},
+                "language": "base",
+                "expire_after_minutes": 10080,
+                "_ui": {
+                    "stickies": {},
+                    "nodes": {
+                        "f9ff289b-4e9b-4c78-b972-79a6405824ac": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 0,
+                                "left": 20
+                            }
+                        },
+                        "ba5b588e-4c8b-472c-a6a5-43db3d3a9df2": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 580,
+                                "left": 140
+                            }
+                        },
+                        "9b694a3e-b572-45f6-9324-8a97d6fd95c8": {
+                            "type": "wait_for_response",
+                            "position": {
+                                "top": 260,
+                                "left": 140
+                            },
+                            "config": {
+                                "cases": {}
+                            }
+                        },
+                        "85788ca0-7e55-4cb9-a71e-8e424a4e3c26": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 480,
+                                "left": 500
+                            }
+                        },
+                        "73fb3de2-a647-4946-87d0-cb97d90cdd52": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 480,
+                                "left": 140
+                            }
+                        },
+                        "4fa35920-c7d4-4562-9046-36fb02a56ca8": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 680,
+                                "left": 140
+                            }
+                        },
+                        "4e14b6e1-77e9-4305-a275-9c8fcd6aa2e2": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 780,
+                                "left": 140
+                            }
+                        },
+                        "31355e7d-0c22-49bb-a910-80a1d9e16f35": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 240,
+                                "left": 600
+                            }
+                        }
+                    }
+                }
+            },
+            "keywords": [
+                
+            ]
+        }
+    ],
+    "contact_field": [
+        "settings"
+    ],
+    "collections": [
+        "Optout contacts"
+    ]
+}
