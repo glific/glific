@@ -115,6 +115,9 @@ defmodule Glific.Saas.Onboard do
       |> Partners.get_organization!()
       |> Partners.update_organization(changes)
 
+    # When we change the status of an organization from suspension, the cached data still contains the old suspension date,
+    # which prevents HSM messages from being sent.
+    # We must clear the cache to ensure the updated suspension information is reflected.
     Partners.remove_organization_cache(organization.id, organization.shortcode)
     update_organization_billing(organization)
   end
