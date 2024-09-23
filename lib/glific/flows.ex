@@ -984,10 +984,6 @@ defmodule Glific.Flows do
                organization_id: flow.organization_id,
                user_id: user.id
              }) do
-        Logger.info("Flow #{flow.name} (ID: #{flow.id}) created successfully")
-
-        Logger.info("Flow revision for Flow ID: #{flow.id} created successfully")
-
         import_contact_field(import_flow, organization_id)
         import_groups(import_flow, organization_id)
 

@@ -224,7 +224,6 @@ defmodule Glific.Seeds.SeedsFlows do
     with [flow_data] <- Flows.import_flow(import_flow, organization.id),
          {:ok, flow} <- Repo.fetch_by(Flow, %{name: flow_data.flow_name}) do
       update_flow_as_template(flow)
-      Logger.info("Flow #{flow.name} (ID: #{flow.id}) updated as template")
 
       update_flow_revision(flow.id)
 
@@ -233,10 +232,6 @@ defmodule Glific.Seeds.SeedsFlows do
       if tag_name do
         tag_id = get_or_create_tag(tag_name, organization.id, organization.default_language_id)
         Flows.update_flow(flow, %{tag_id: tag_id})
-
-        Logger.info(
-          "Tag '#{tag_name}' (ID: #{tag_id}) updated to flow #{flow.name} (ID: #{flow.id})"
-        )
       end
     else
       _ ->
@@ -247,10 +242,6 @@ defmodule Glific.Seeds.SeedsFlows do
         {:error,
          "Error importing flow for organization: #{organization.id}, flow name: #{flow_file}"}
     end
-
-    Logger.info(
-      "Completed flow import for organization: #{organization.id}, flow name: #{flow_file}"
-    )
 
     :ok
   end
@@ -266,8 +257,6 @@ defmodule Glific.Seeds.SeedsFlows do
     flow_revision = Repo.get_by(FlowRevision, %{flow_id: flow_id, revision_number: 0})
     changeset = FlowRevision.changeset(flow_revision, %{status: "published"})
     updated_revision = Repo.update!(changeset)
-
-    Logger.info("Flow revision for Flow ID: #{flow_id} set to 'published'")
 
     updated_revision
   end
@@ -285,17 +274,9 @@ defmodule Glific.Seeds.SeedsFlows do
             language_id: language_id
           })
 
-        Logger.info(
-          "Created new tag '#{tag_name}' (ID: #{tag.id}) for organization: #{organization_id}"
-        )
-
         tag.id
 
       tag ->
-        Logger.info(
-          "Using existing tag '#{tag_name}' (ID: #{tag.id}) for organization: #{organization_id}"
-        )
-
         tag.id
     end
   end
