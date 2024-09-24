@@ -32,6 +32,12 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :name, :string
   end
 
+  input_object :update_vector_store_files do
+    field :id, :id
+    field :add, list_of(:string)
+    field :remove, list_of(:string)
+  end
+
   object :filesearch_mutations do
     @desc "Create vector store"
     field :create_vector_store, :vector_store_result do
@@ -45,6 +51,12 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       arg(:media, non_null(:upload))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.upload_file/3)
+    end
+
+    field :update_vector_store_files, :string do
+      arg(:input, non_null(:update_vector_store_files))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.update_vector_store_files/3)
     end
   end
 end

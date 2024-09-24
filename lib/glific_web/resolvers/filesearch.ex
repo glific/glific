@@ -30,4 +30,10 @@ defmodule GlificWeb.Resolvers.Filesearch do
   def upload_file(_, params, %{context: %{current_user: _user}}) do
     Filesearch.upload_file(params)
   end
+
+  @spec update_vector_store_files(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_vector_store_files(_, %{input: params}, %{context: %{current_user: _user}}) do
+    Filesearch.update_vector_store_files(params)
+  end
 end

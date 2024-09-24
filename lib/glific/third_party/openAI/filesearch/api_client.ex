@@ -48,6 +48,18 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
+  @spec create_vector_store_file(map()) :: {:ok, map()} | {:error, String.t()}
+  def create_vector_store_file(params) do
+    url = @endpoint <> "/vector_stores/#{params.vector_store_id}/files"
+
+    payload =
+      %{"file_id" => params.file_id}
+      |> Jason.encode!()
+
+    post(url, payload, headers: headers())
+    |> parse_response()
+  end
+
   @spec parse_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t()}
   defp parse_response({:ok, %{body: resp_body, status: status}})
        when status >= 200 and status < 300 do
