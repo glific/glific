@@ -331,7 +331,7 @@ defmodule Glific.Seeds.SeedsMigration do
 
   @spec create_saas_user(Contact.t()) :: User.t()
   defp create_saas_user(contact) do
-    password = (Ecto.UUID.generate() |> binary_part(16, 16)) <> "-ABC!"
+    password = (Ecto.UUID.generate() |> binary_part(16, 16)) <> "-ABC!" <> "-abc" <> "-1" <> "*"
 
     {:ok, user} =
       Users.create_user(%{
