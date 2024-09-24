@@ -13,19 +13,20 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :errors, list_of(:input_error)
   end
 
+  # TODO: Will be adding more stuff here
   object :vector_store do
     field :vector_store_id, :string
     field :name, :string
-    # field :files, :map
-
     # field :assistants, list_of(:assistant) do
     #   resolve(dataloader(Repo, use_parent: true))
     # end
   end
 
-  # object :file_result do
-  #   field :msg, :string
-  # end
+  object :file_result do
+    field :file_id, :string
+    field :filename, :string
+    field :size, :integer
+  end
 
   input_object :vector_store_input do
     field :name, :string
@@ -39,11 +40,11 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       resolve(&Resolvers.Filesearch.create_vector_store/3)
     end
 
-    @desc "Upload knowledgebase"
-    field :upload_filesearch_file, :string do
+    @desc "Upload filesearch file"
+    field :upload_filesearch_file, :file_result do
       arg(:media, non_null(:upload))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.upload_knowledge_base/3)
+      resolve(&Resolvers.Filesearch.upload_file/3)
     end
   end
 end

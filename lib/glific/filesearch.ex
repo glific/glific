@@ -5,6 +5,9 @@ defmodule Glific.Filesearch do
   alias Glific.Filesearch.VectorStore
   alias Glific.OpenAI.Filesearch.ApiClient
 
+  @doc """
+  Creates an empty vector store
+  """
   @spec create_vector_store(map()) :: {:ok, map()} | {:error, String.t()}
   def create_vector_store(params) do
     with {:ok, %{id: store_id}} <- ApiClient.create_vector_store(params.name),
@@ -12,17 +15,27 @@ defmodule Glific.Filesearch do
            VectorStore.create_vector_store(Map.put(params, :vector_store_id, store_id)) do
       {:ok, %{vector_store: vector_store}}
     else
-      {:error, _} ->
+      {:error, %Ecto.Changeset{}} ->
         {:error, "Vector store creation failed"}
+
+      {:error, reason} ->
+        {:error, "Vector store creation failed due to #{reason}"}
     end
   end
 
   @doc """
-    Set document as knowledge base with category
+  Upload file to openAI
   """
-  @spec upload_knowledge_base(map()) ::
+  @spec upload_file(map()) ::
           {:ok, map()} | {:error, String.t()}
-  def upload_knowledge_base(params) do
-    ApiClient.upload_knowledge_base(params)
+  def upload_file(params) do
+    with {:ok, file} <- ApiClient.upload_file(params) do
+      {:ok,
+       %{
+         file_id: file.id,
+         filename: file.filename,
+         size: file.bytes
+       }}
+    end
   end
 end
