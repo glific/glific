@@ -90,11 +90,11 @@ defmodule Glific.Processor.ConsumerFlow do
       template_flow?(state, message.body) ->
         flow_id =
           Map.get(
-            state,
+            state.flow_keywords["template"],
             String.replace_leading(message.body, @template_phrase, "")
           )
 
-        flow_params = {:flow_id, flow_id, @template_phrase}
+        flow_params = {:flow_id, flow_id, @final_phrase}
         start_new_flow(message, body, state, flow_params: flow_params)
 
       start_new_contact_flow?(state) ->
