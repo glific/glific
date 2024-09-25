@@ -309,7 +309,6 @@ defmodule Glific.ClientsTest do
     assert contact.phone == phone_num
   end
 
-  @tag :gcs
   test "gcs_file_name/1, with valid contact_type, school name but no worksheet" do
     # Doesn't have schoolName in contact.fields
     contact =
@@ -425,7 +424,6 @@ defmodule Glific.ClientsTest do
     assert contact.phone == phone_num
   end
 
-  @tag :gcs
   test "gcs_file_name/1, with valid contact_type, child_school_name and selected flows" do
     # Doesn't have schoolName in contact.fields
     contact =

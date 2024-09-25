@@ -27,7 +27,6 @@ defmodule Glific.Bhasini.BhasiniTest do
              end)
   end
 
-  @tag :skip
   test "download_encoded_file/2 should download encoded file, convert it to mp3 and return ok tuple" do
     uuid = Ecto.UUID.generate()
 
