@@ -465,10 +465,6 @@ defmodule Glific.Flows.Broadcast do
       |> Messages.update_message(%{message_broadcast_id: message_broadcast.id})
 
     populate_message_broadcast_contacts(message_broadcast, group_ids, exclusion)
-    |> case do
-      {:ok, _} -> {:ok, message_broadcast}
-      _ -> {:error, "could not initiate broadcast"}
-    end
   end
 
   @spec mark_message_broadcast_contact_processed(integer() | nil, integer(), String.t()) :: :ok
