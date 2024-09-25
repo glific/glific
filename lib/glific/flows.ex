@@ -861,6 +861,15 @@ defmodule Glific.Flows do
   end
 
   @spec update_flow_keyword_map(map(), String.t(), String.t(), non_neg_integer) :: map()
+  defp update_flow_keyword_map(map, "template", name, flow_id) do
+    map
+    |> Map.update(
+      "template",
+      %{name => flow_id},
+      fn m -> Map.put(m, name, flow_id) end
+    )
+  end
+
   defp update_flow_keyword_map(map, status, keyword, flow_id) do
     map
     |> Map.update(
@@ -880,8 +889,13 @@ defmodule Glific.Flows do
         acc = update_flow_keyword_map(acc, flow.status, keyword, flow.id)
 
         # always add to draft status if published
-        if flow.status == "published",
+        if flow.status == "published" && flow.is_template == true,
           do: update_flow_keyword_map(acc, "draft", keyword, flow.id),
+          else: acc
+
+        # add template flows
+        if flow.is_template == true,
+          do: update_flow_keyword_map(acc, "template", flow.name, flow.id),
           else: acc
       end
     )
@@ -899,7 +913,13 @@ defmodule Glific.Flows do
       |> where([f], f.organization_id == ^organization_id)
       |> where([f], f.is_active == true)
       |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
-      |> select([f, fr], %{keywords: f.keywords, id: f.id, status: fr.status})
+      |> select([f, fr], %{
+        name: f.name,
+        is_template: f.is_template,
+        keywords: f.keywords,
+        id: f.id,
+        status: fr.status
+      })
       # the revisions table is potentially large, so we really want just a few rows from
       # it, hence this where clause
       |> where([f, fr], fr.status == "published" or fr.revision_number == 0)
@@ -907,7 +927,7 @@ defmodule Glific.Flows do
       |> Enum.reduce(
         # create empty arrays always, so all map operations works
         # and wont throw an exception of "expected map, got nil"
-        %{"published" => %{}, "draft" => %{}},
+        %{"published" => %{}, "draft" => %{}, "template" => %{}},
         fn flow, acc -> add_flow_keyword_map(flow, acc) end
       )
       |> add_default_flows(organization.out_of_office)

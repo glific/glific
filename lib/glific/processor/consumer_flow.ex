@@ -45,6 +45,20 @@ defmodule Glific.Processor.ConsumerFlow do
           }
         )
 
+    # check if draft keyword, if so bypass ignore keywords
+    # and start draft flow, issue #621
+    is_template = template_flow?(state, message.body)
+
+    if is_template,
+      do:
+        FlowContext.mark_flows_complete(message.contact_id, false,
+          source: "process_message",
+          event_meta: %{
+            is_template: is_template,
+            body: body
+          }
+        )
+
     context = FlowContext.active_context(message.contact_id)
 
     # if contact is not optout if we are in a flow and the flow is set to ignore keywords
@@ -59,6 +73,7 @@ defmodule Glific.Processor.ConsumerFlow do
   # Setting this to 0 since we are pushing out our own optin flow
   @delay_time 0
   @draft_phrase "draft"
+  @template_phrase "template:"
   @final_phrase "published"
   @optin_flow_keyword "optin"
 
@@ -71,6 +86,16 @@ defmodule Glific.Processor.ConsumerFlow do
     cond do
       continue_the_context?(context) ->
         continue_current_context(context, message, body, state)
+
+      template_flow?(state, message.body) ->
+        flow_id =
+          Map.get(
+            state,
+            String.replace_leading(message.body, @template_phrase, "")
+          )
+
+        flow_params = {:flow_id, flow_id, @template_phrase}
+        start_new_flow(message, body, state, flow_params: flow_params)
 
       start_new_contact_flow?(state) ->
         flow_id = state.flow_keywords["org_default_new_contact"]
@@ -176,6 +201,19 @@ defmodule Glific.Processor.ConsumerFlow do
            state.flow_keywords["draft"],
            String.replace_leading(body, @draft_phrase, "")
          ),
+       do: true,
+       else: false
+  end
+
+  @spec template_flow?(map(), String.t()) :: boolean()
+  defp template_flow?(_state, nil), do: false
+
+  defp template_flow?(state, body) do
+    if String.starts_with?(body, @template_phrase) and
+         Map.has_key?(
+           state.flow_keywords["template"],
+           String.replace_leading(body, @template_phrase, "")
+         ) and Map.get(state, :simulator, true),
        do: true,
        else: false
   end

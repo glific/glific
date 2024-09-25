@@ -4,6 +4,7 @@ defmodule Glific.Processor.ConsumerTagger do
   """
 
   alias Glific.{
+    Contacts,
     Messages.Message,
     Taggers,
     Taggers.Status
@@ -27,6 +28,16 @@ defmodule Glific.Processor.ConsumerTagger do
 
     {message, state}
     |> new_contact_tagger()
+    |> simulater_tagger()
+  end
+
+  @spec simulater_tagger({atom() | Message.t(), map()}) :: {Message.t(), map()}
+  defp simulater_tagger({message, state}) do
+    if Contacts.simulator_contact?(message.contact.phone) do
+      {message, state |> Map.put(:simulator, true)}
+    else
+      {message, state}
+    end
   end
 
   @spec new_contact_tagger({atom() | Message.t(), map()}) :: {Message.t(), map()}
