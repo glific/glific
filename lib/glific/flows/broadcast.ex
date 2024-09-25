@@ -502,26 +502,8 @@ defmodule Glific.Flows.Broadcast do
 
     contacts_not_in_flow =
       Flow.exclude_contacts_in_flow(contact_ids)
-      |> then(&("(" <> Enum.join(&1, ", ") <> ")"))
 
-    query =
-      """
-      INSERT INTO message_broadcast_contacts
-      (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id, group_ids)
-
-      (SELECT $1, 'pending', $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id, $3
-       FROM contacts
-
-       WHERE (status != 'blocked') AND (optout_time is null) AND id in #{contacts_not_in_flow})
-      """
-
-    values = [
-      message_broadcast.id,
-      message_broadcast.organization_id,
-      group_ids
-    ]
-
-    Repo.query(query, values)
+    run_message_broadcast_contacts_query(message_broadcast, group_ids, contacts_not_in_flow)
   end
 
   defp populate_message_broadcast_contacts(message_broadcast, group_ids, _exclusion) do
@@ -532,26 +514,39 @@ defmodule Glific.Flows.Broadcast do
       )
       |> distinct(true)
       |> Repo.all()
-      |> then(&("(" <> Enum.join(&1, ", ") <> ")"))
 
-    query =
-      """
+    run_message_broadcast_contacts_query(message_broadcast, group_ids, contact_ids)
+  end
+
+  @spec run_message_broadcast_contacts_query(MessageBroadcast.t(), list(), list(integer())) ::
+          {:ok, any()}
+  defp run_message_broadcast_contacts_query(message_broadcast, group_ids, contact_ids) do
+    # Batch inserting so that we can insert for large collections (15K+ for ex)
+    contact_ids
+    |> Enum.chunk_every(1000)
+    |> Enum.each(fn contacts_chunk ->
+      contacts_chunk_str = "(" <> Enum.join(contacts_chunk, ", ") <> ")"
+
+      query = """
       INSERT INTO message_broadcast_contacts
       (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id, group_ids)
 
       (SELECT $1, 'pending', $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id, $3
        FROM contacts
 
-       WHERE (status != 'blocked') AND (optout_time is null) AND id in #{contact_ids})
+       WHERE (status != 'blocked') AND (optout_time is null) AND id in #{contacts_chunk_str})
       """
 
-    values = [
-      message_broadcast.id,
-      message_broadcast.organization_id,
-      group_ids
-    ]
+      values = [
+        message_broadcast.id,
+        message_broadcast.organization_id,
+        group_ids
+      ]
 
-    Repo.query(query, values)
+      Repo.query(query, values)
+    end)
+
+    {:ok, message_broadcast}
   end
 
   @spec broadcast_stats_base_query(non_neg_integer()) :: String.t()
