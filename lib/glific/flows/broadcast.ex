@@ -24,7 +24,7 @@ defmodule Glific.Flows.Broadcast do
   }
 
   @status "published"
-
+  @contact_chunk 1000
   @doc """
   The one simple public interface to broadcast a group
   """
@@ -519,7 +519,7 @@ defmodule Glific.Flows.Broadcast do
   defp run_message_broadcast_contacts_query(message_broadcast, group_ids, contact_ids) do
     # Batch inserting so that we can insert for large collections (15K+ for ex)
     contact_ids
-    |> Enum.chunk_every(1000)
+    |> Enum.chunk_every(@contact_chunk)
     |> Enum.each(fn contacts_chunk ->
       contacts_chunk_str = "(" <> Enum.join(contacts_chunk, ", ") <> ")"
 
@@ -539,7 +539,7 @@ defmodule Glific.Flows.Broadcast do
         group_ids
       ]
 
-      Repo.query(query, values)
+      {:ok, _} = Repo.query(query, values)
     end)
 
     {:ok, message_broadcast}
