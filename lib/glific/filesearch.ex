@@ -2,6 +2,7 @@ defmodule Glific.Filesearch do
   @moduledoc """
   Main module to interact with filesearch
   """
+  alias Glific.Repo
   alias Glific.Filesearch.VectorStore
   alias Glific.OpenAI.Filesearch.ApiClient
 
@@ -41,30 +42,42 @@ defmodule Glific.Filesearch do
 
   @spec update_vector_store_files(map()) :: {:ok, map()} | {:error, String.t()}
   def update_vector_store_files(params) do
-    # validate the vector_store first
-    # if add has is non-empty
-    #   iter through each do a Task.async
-    #   do a Task.await for all
-    #  map the filesIds with the outputs, add :ok ones to DB,
-    # if there's errors ones, then add the status of them as failed in files col.
-    # update the vector_store
     {:ok, vector_store} = VectorStore.get_vector_store(params.id)
 
     if length(params.add) > 0 do
+      add_vector_store_files(params, vector_store)
+    end
+  end
+
+  @spec add_vector_store_files(map(), VectorStore.t()) :: {:ok, map()} | {:error, any()}
+  defp add_vector_store_files(params, vector_store) do
+    files_details =
       Task.async_stream(
         params.add,
         fn file_id ->
           Repo.put_process_state(params.org_id)
 
           ApiClient.create_vector_store_file(%{
-            vector_store_id: vector_store_id,
+            vector_store_id: vector_store.vector_store_id,
             file_id: file_id
           })
         end,
         timeout: 5000,
         on_timeout: :kill_task
       )
-      # |> Enum.reduce()
+      |> Enum.reduce(%{}, fn response, acc ->
+        case response do
+          {:ok, file} -> Map.put(acc, file.id, file)
+          _ -> acc
+        end
+      end)
+
+    with {:error, _} <-
+           VectorStore.update_vector_store(
+             vector_store,
+             Map.merge(vector_store.files, files_details)
+           ) do
+      {:error, "Updating vector store files failed"}
     end
   end
 end

@@ -53,6 +53,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       resolve(&Resolvers.Filesearch.upload_file/3)
     end
 
+    @desc "Update Vector Store files"
     field :update_vector_store_files, :string do
       arg(:input, non_null(:update_vector_store_files))
       middleware(Authorize, :staff)
