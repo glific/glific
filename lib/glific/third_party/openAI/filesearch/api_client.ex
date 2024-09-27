@@ -36,12 +36,12 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   end
 
   @spec upload_file(map()) :: {:ok, map()} | {:error, String.t()}
-  def upload_file(params) do
+  def upload_file(media_info) do
     url = @endpoint <> "/files"
 
     data =
       Multipart.new()
-      |> Multipart.add_file(params.media.path, name: "file", filename: params.media.filename)
+      |> Multipart.add_file(media_info.path, name: "file", filename: media_info.filename)
       |> Multipart.add_field("purpose", "assistants")
 
     post(url, data, headers: headers())

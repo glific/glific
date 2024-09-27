@@ -2,6 +2,12 @@ fragment VectorStoreFields on VectorStoreResult {
   vectorStore {
     name
     vector_store_id
+    files {
+      id
+      info {
+        id
+      }
+    }
   }
 }
 

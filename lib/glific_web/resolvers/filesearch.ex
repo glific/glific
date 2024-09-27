@@ -2,6 +2,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @moduledoc """
   Filesearch Resolver which sits between the GraphQL schema and Glific Filesearch API.
   """
+  alias Glific.Filesearch.VectorStore
   alias Glific.Filesearch
 
   @doc """
@@ -33,7 +34,26 @@ defmodule GlificWeb.Resolvers.Filesearch do
 
   @spec update_vector_store_files(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_vector_store_files(_, %{input: params}, %{context: %{current_user: _user}}) do
-    Filesearch.update_vector_store_files(params)
+  def update_vector_store_files(_, params, %{context: %{current_user: _user}}) do
+    with {:ok, vector_store} <- Filesearch.update_vector_store_files(params) do
+      {:ok, %{vector_store: vector_store}}
+    end
+  end
+
+  def add_vector_store_files(_, params, %{context: %{current_user: user}}) do
+    params = Map.put(params, :organization_id, user.organization_id)
+
+    with {:ok, vector_store} <- Filesearch.add_vector_store_files(params) do
+      {:ok, %{vector_store: vector_store}}
+    end
+  end
+
+  @spec list_files(VectorStore.t(), map(), map()) :: {:ok, list()}
+  def list_files(vector_store, _args, _context) do
+    Enum.map(vector_store.files, fn {file_id, file_details} ->
+      %{id: file_id, info: file_details}
+    end)
+    |> IO.inspect()
+    |> then(&{:ok, &1})
   end
 end
