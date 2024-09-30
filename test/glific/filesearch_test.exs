@@ -3,10 +3,15 @@ defmodule Glific.FilesearchTest do
   Tests for public filesearch APIs
   """
 
-  alias Glific.Filesearch.VectorStore
-  alias Glific.Filesearch
+  alias Glific.{
+    Filesearch,
+    Filesearch.VectorStore,
+    Repo
+  }
+
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
+  import Ecto.Query
 
   load_gql(
     :create_vector_store,
@@ -26,7 +31,24 @@ defmodule Glific.FilesearchTest do
     "assets/gql/filesearch/remove_vector_store_file.gql"
   )
 
-  @tag :vs_api
+  load_gql(
+    :vector_stores,
+    GlificWeb.Schema,
+    "assets/gql/filesearch/list_vector_stores.gql"
+  )
+
+  load_gql(
+    :vector_store,
+    GlificWeb.Schema,
+    "assets/gql/filesearch/get_vector_store.gql"
+  )
+
+  load_gql(
+    :update_vector_store,
+    GlificWeb.Schema,
+    "assets/gql/filesearch/update_vector_store.gql"
+  )
+
   test "valid create vector_store", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://api.openai.com/v1/vector_stores"} ->
@@ -45,7 +67,6 @@ defmodule Glific.FilesearchTest do
     assert "vectorStore" <> _ = query_data.data["createVectorStore"]["vectorStore"]["name"]
   end
 
-  @tag :vs_api
   test "create vector_store failed due to api failure", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://api.openai.com/v1/vector_stores"} ->
@@ -62,7 +83,6 @@ defmodule Glific.FilesearchTest do
     assert length(query_data.errors) == 1
   end
 
-  @tag :fileup
   test "upload_file/1, uploads the file successfully", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://api.openai.com/v1/files"} ->
@@ -106,8 +126,7 @@ defmodule Glific.FilesearchTest do
       Map.merge(attrs, %{vector_store: vector_store})
     end
 
-    @tag :update_vs_files
-    test "Add openAI files to vector_store, passing empty list to add", attrs do
+    test "Add openAI files to vector_store", attrs do
       media_files = [
         %Plug.Upload{
           path:
@@ -160,11 +179,101 @@ defmodule Glific.FilesearchTest do
           }
       end)
 
-      {:ok, %VectorStore{}} = Filesearch.add_vector_store_files(params)
+      {:ok, %VectorStore{files: files}} =
+        Filesearch.add_vector_store_files(params)
+
+      assert Map.keys(files) |> length() == 1
+    end
+
+    test "Add openAI files to vector_store, handling API failures", attrs do
+      media_files = [
+        %Plug.Upload{
+          path:
+            "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T/plug-1727-NXFz/multipart-1727169241-575672640710-1",
+          content_type: "application/pdf",
+          filename: "sample.pdf"
+        }
+      ]
+
+      params = %{
+        id: attrs.vector_store.id,
+        media: media_files,
+        organization_id: attrs.organization_id
+      }
+
+      Tesla.Mock.mock_global(fn
+        %{method: :post, url: "https://api.openai.com/v1/files"} ->
+          %Tesla.Env{
+            status: 400,
+            body: %{
+              error: %{
+                message: "Upload failed"
+              }
+            }
+          }
+
+        %{method: :post, url: "https://api.openai.com/v1/vector_stores" <> _} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              error: %{
+                message: "attach vector store failed"
+              }
+            }
+          }
+      end)
+
+      {:ok, %VectorStore{files: files}} = Filesearch.add_vector_store_files(params)
+      assert Map.keys(files) |> length() == 0
+    end
+
+    test "Add openAI files to vector_store, handling API failures 2", attrs do
+      media_files = [
+        %Plug.Upload{
+          path:
+            "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T/plug-1727-NXFz/multipart-1727169241-575672640710-1",
+          content_type: "application/pdf",
+          filename: "sample.pdf"
+        }
+      ]
+
+      params = %{
+        id: attrs.vector_store.id,
+        media: media_files,
+        organization_id: attrs.organization_id
+      }
+
+      Tesla.Mock.mock_global(fn
+        %{method: :post, url: "https://api.openai.com/v1/files"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              id: "file-XNgygnDzO9cTs3YZLJWRscoq",
+              object: "vector_store.file",
+              created_at: 1_699_061_776,
+              usage_bytes: 1234,
+              vector_store_id: attrs.vector_store.vector_store_id,
+              status: "completed",
+              last_error: nil
+            }
+          }
+
+        %{method: :post, url: "https://api.openai.com/v1/vector_stores" <> _} ->
+          %Tesla.Env{
+            status: 400,
+            body: %{
+              error: %{
+                message: "attach vector store failed"
+              }
+            }
+          }
+      end)
+
+      {:ok, %VectorStore{files: files}} = Filesearch.add_vector_store_files(params)
+      assert Map.keys(files) |> length() == 0
     end
   end
 
-  @tag :del_vs
   test "delete_vector_store/1, valid deletion", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcde",
@@ -196,7 +305,6 @@ defmodule Glific.FilesearchTest do
     assert query_data.data["deleteVectorStore"]["vectorStore"]["name"] == "new vector store"
   end
 
-  @tag :del_vs
   test "delete_vector_store/1, invalid deletion", attrs do
     result =
       auth_query_gql_by(:delete_vector_store, attrs.user,
@@ -209,7 +317,6 @@ defmodule Glific.FilesearchTest do
     assert length(query_data.data["deleteVectorStore"]["errors"]) == 1
   end
 
-  @tag :remove_vs_file
   test "remove vector store file, valid removal", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcde",
@@ -260,7 +367,6 @@ defmodule Glific.FilesearchTest do
     assert length(result.data["RemoveVectorStoreFile"]["vectorStore"]["files"]) == 1
   end
 
-  @tag :remove_vs_file
   test "remove vector store file, invalid fileId", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcdef",
@@ -305,5 +411,162 @@ defmodule Glific.FilesearchTest do
     assert "Removing vector store failed" <> _ = List.first(result.errors) |> Map.get(:message)
   end
 
+  test "list vector_stores", attrs do
+    # empty vectorstores
+    {:ok, result} =
+      auth_query_gql_by(:vector_stores, attrs.user, variables: %{})
 
+    assert result.data["VectorStores"] == []
+
+    valid_attrs = %{
+      vector_store_id: "vs_abcdef",
+      name: "vector store 1",
+      files: %{},
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, _vector_store} = VectorStore.create_vector_store(valid_attrs)
+
+    valid_attrs = %{
+      vector_store_id: "vs_xyz",
+      name: "vector store 2",
+      files: %{},
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, _vector_store} = VectorStore.create_vector_store(valid_attrs)
+
+    # fetch all
+    {:ok, result} =
+      auth_query_gql_by(:vector_stores, attrs.user, variables: %{})
+
+    assert length(result.data["VectorStores"]) == 2
+
+    # limit 1
+    {:ok, result} =
+      auth_query_gql_by(:vector_stores, attrs.user,
+        variables: %{
+          "opts" => %{
+            "limit" => 1
+          }
+        }
+      )
+
+    assert length(result.data["VectorStores"]) == 1
+
+    valid_attrs = %{
+      vector_store_id: "vs_xyzw",
+      name: "vector store 3",
+      files: %{},
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, _vector_store} = VectorStore.create_vector_store(valid_attrs)
+
+    # limit 1, offset 2
+    {:ok, result} =
+      auth_query_gql_by(:vector_stores, attrs.user,
+        variables: %{
+          "opts" => %{
+            "limit" => 1,
+            "offset" => 2
+          }
+        }
+      )
+
+    date = DateTime.utc_now() |> DateTime.add(-2 * 86_400)
+
+    VectorStore
+    |> where([vs], vs.vector_store_id == "vs_xyzw")
+    |> update([vs], set: [inserted_at: ^date])
+    |> Repo.update_all([])
+
+    assert length(result.data["VectorStores"]) == 1
+
+    # limit 1, default asc by inserted_at
+    {:ok, result} =
+      auth_query_gql_by(:vector_stores, attrs.user,
+        variables: %{
+          "opts" => %{
+            "limit" => 1
+          }
+        }
+      )
+
+    assert %{"name" => "vector store 3"} = List.first(result.data["VectorStores"])
+
+    # search by name
+    {:ok, result} =
+      auth_query_gql_by(:vector_stores, attrs.user,
+        variables: %{
+          "filter" => %{
+            "name" => "3"
+          }
+        }
+      )
+
+    assert %{"name" => "vector store 3"} = List.first(result.data["VectorStores"])
+  end
+
+  test "fetch a vector store", attrs do
+    valid_attrs = %{
+      vector_store_id: "vs_abcdef",
+      name: "vector store 1",
+      files: %{},
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
+
+    {:ok, result} =
+      auth_query_gql_by(:vector_store, attrs.user,
+        variables: %{
+          "id" => vector_store.id
+        }
+      )
+
+    assert result.data["vector_store"]["vectorStore"]["vector_store_id"] == "vs_abcdef"
+
+    {:ok, result} =
+      auth_query_gql_by(:vector_store, attrs.user,
+        variables: %{
+          "id" => 0
+        }
+      )
+
+    assert List.first(result.data["vector_store"]["errors"])["message"] == "Resource not found"
+  end
+
+  test "update vector store", attrs do
+    valid_attrs = %{
+      vector_store_id: "vs_abcdef",
+      name: "vector store 1",
+      files: %{},
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "file-Cbfk7rPQG6geG8nfUCcn4zJm"
+          }
+        }
+    end)
+
+    {:ok, result} =
+      auth_query_gql_by(:update_vector_store, attrs.user,
+        variables: %{
+          "input" => %{
+            "name" => "new vector store"
+          },
+          "id" => vector_store.id
+        }
+      )
+
+    assert result.data["UpdateVectorStore"]["vectorStore"]["name"] == "new vector store"
+  end
 end

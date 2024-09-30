@@ -52,7 +52,6 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :name, :string
     field :model, :string
     field :instructions, :string
-    # TODO: add setting later
     # field :settings
   end
 

@@ -73,7 +73,7 @@ defmodule Glific.Filesearch.VectorStore do
     do: Repo.fetch_by(VectorStore, %{id: id})
 
   @doc """
-    Returns the list of vector_stores
+  Returns the list of vector_stores
   """
   @spec list_vector_stores(map()) :: [VectorStore.t()]
   def list_vector_stores(args) do

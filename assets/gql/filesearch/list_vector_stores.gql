@@ -1,0 +1,18 @@
+query VectorStores($filter: VectorStoreFilter, $opts: Opts) {
+  VectorStores(filter: $filter, opts: $opts) {
+      id
+      name
+      vectorStoreId,
+      files {
+        id
+      	name
+        size
+      }
+      assistants {
+        id
+      }
+      size
+      inserted_at
+      updated_at
+    }
+  }
