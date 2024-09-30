@@ -25,8 +25,8 @@ defmodule Glific.ERP do
 
   @spec get_erp_auth_token() :: String.t()
   defp get_erp_auth_token do
-    api_key = Application.get_env(:glific, :ERP_API_KEY)
-    secret = Application.get_env(:glific, :ERP_SECRET)
+    api_key = "b6cdc829b48ec4f"
+    secret = "e92d4e557eafed1"
     "#{api_key}:#{secret}"
   end
 
