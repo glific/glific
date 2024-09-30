@@ -5,11 +5,11 @@ defmodule GlificWeb.API.V1.OnboardController do
 
   alias Glific.{
     ERP,
+    ERP,
     Partners,
     Partners.Organization,
     Repo,
-    Saas.Onboard,
-    ERP
+    Saas.Onboard
   }
 
   use GlificWeb, :controller
