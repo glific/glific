@@ -7,9 +7,7 @@ defmodule Glific.ERP do
   use Tesla
 
   @erp_base_url "https://t4d-erp.frappe.cloud/api/resource"
-  @erp_auth_token "xx"
 
-  # Tesla client with middleware
   @client Tesla.client([
             {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
             Tesla.Middleware.FollowRedirects
@@ -17,10 +15,19 @@ defmodule Glific.ERP do
 
   @spec headers() :: list()
   defp headers do
+    erp_auth_token = get_erp_auth_token()
+
     [
       {"Content-Type", "application/json"},
-      {"Authorization", "token #{@erp_auth_token}"}
+      {"Authorization", "token #{erp_auth_token}"}
     ]
+  end
+
+  @spec get_erp_auth_token() :: String.t()
+  defp get_erp_auth_token do
+    api_key = Application.get_env(:glific, :ERP_API_KEY)
+    secret = Application.get_env(:glific, :ERP_SECRET)
+    "#{api_key}:#{secret}"
   end
 
   @doc """
