@@ -80,9 +80,6 @@ defmodule Glific.Filesearch.VectorStore do
     args
     |> Repo.list_filter_query(VectorStore, &Repo.opts_with_inserted_at/2, &filter_with/2)
     |> Repo.all()
-
-    # |> Enum.group_by(&DateTime.to_date(&1.inserted_at))
-    # |> IO.inspect()
   end
 
   @doc """

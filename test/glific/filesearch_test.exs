@@ -42,7 +42,7 @@ defmodule Glific.FilesearchTest do
       auth_query_gql_by(:create_vector_store, user, variables: %{})
 
     assert {:ok, query_data} = result
-    assert "vector_store" <> _ = query_data.data["createVectorStore"]["vectorStore"]["name"]
+    assert "vectorStore" <> _ = query_data.data["createVectorStore"]["vectorStore"]["name"]
   end
 
   @tag :vs_api
@@ -175,6 +175,16 @@ defmodule Glific.FilesearchTest do
 
     {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
 
+    Tesla.Mock.mock(fn
+      %{method: :delete} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            deleted: true
+          }
+        }
+    end)
+
     result =
       auth_query_gql_by(:delete_vector_store, attrs.user,
         variables: %{
@@ -294,4 +304,6 @@ defmodule Glific.FilesearchTest do
 
     assert "Removing vector store failed" <> _ = List.first(result.errors) |> Map.get(:message)
   end
+
+
 end

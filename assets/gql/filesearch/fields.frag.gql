@@ -5,14 +5,16 @@ fragment VectorStoreFields on VectorStoreResult {
     vector_store_id
     files {
       id
-      info {
-        id
-      }
+      name
+      size
     }
     assistants {
       id
       name
     }
+    inserted_at
+    updated_at
+    size
   }
 }
 

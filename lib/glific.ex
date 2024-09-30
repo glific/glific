@@ -353,6 +353,7 @@ defmodule Glific do
     create_request(token)
     |> then(&Tesla.post(@captcha_verify_url, &1))
     |> handle_response()
+
     {:ok, "success"}
   end
 
@@ -435,6 +436,18 @@ defmodule Glific do
   @spec get_open_ai_key() :: String.t()
   def get_open_ai_key do
     Application.get_env(:glific, :open_ai)
+  end
+
+  # TODO: doc
+  @spec get_open_ai_filesearch_key() :: String.t()
+  def get_open_ai_filesearch_key() do
+    Application.get_env(:glific, :open_ai_filesearch)
+  end
+
+  # TODO: doc
+  @spec get_open_ai_filesearch_project() :: String.t()
+  def get_open_ai_filesearch_project() do
+    Application.get_env(:glific, :open_ai_filesearch_proj)
   end
 
   @doc """

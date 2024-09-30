@@ -42,7 +42,7 @@ defmodule Glific.Filesearch.VectorStoreTest do
 
     assert {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
 
-    assert %VectorStore{} = VectorStore.get_vector_store(vector_store.id)
+    assert {:ok, %VectorStore{}} = VectorStore.get_vector_store(vector_store.id)
   end
 
   test "list_vector_stores/1 with returns list of vector stores matching the filters", attrs do

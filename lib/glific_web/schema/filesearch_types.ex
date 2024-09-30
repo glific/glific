@@ -31,7 +31,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       resolve(&Resolvers.Filesearch.calculate_vector_store_size/3)
     end
 
-    field :inserted_at, :date
+    field :inserted_at, :datetime
     field :updated_at, :datetime
   end
 
