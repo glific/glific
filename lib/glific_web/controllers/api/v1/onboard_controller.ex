@@ -8,7 +8,8 @@ defmodule GlificWeb.API.V1.OnboardController do
     Partners,
     Partners.Organization,
     Repo,
-    Saas.Onboard
+    Saas.Onboard,
+    ERP
   }
 
   use GlificWeb, :controller
