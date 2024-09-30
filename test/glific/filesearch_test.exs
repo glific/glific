@@ -15,9 +15,15 @@ defmodule Glific.FilesearchTest do
   )
 
   load_gql(
-    :update_vector_store_files,
+    :delete_vector_store,
     GlificWeb.Schema,
-    "assets/gql/filesearch/update_vector_store_files.gql"
+    "assets/gql/filesearch/delete_vector_store.gql"
+  )
+
+  load_gql(
+    :remove_vector_store_file,
+    GlificWeb.Schema,
+    "assets/gql/filesearch/remove_vector_store_file.gql"
   )
 
   @tag :vs_api
@@ -33,16 +39,10 @@ defmodule Glific.FilesearchTest do
     end)
 
     result =
-      auth_query_gql_by(:create_vector_store, user,
-        variables: %{
-          "input" => %{
-            "name" => "vs_1"
-          }
-        }
-      )
+      auth_query_gql_by(:create_vector_store, user, variables: %{})
 
     assert {:ok, query_data} = result
-    assert query_data.data["createVectorStore"]["vectorStore"]["name"] == "vs_1"
+    assert "vector_store" <> _ = query_data.data["createVectorStore"]["vectorStore"]["name"]
   end
 
   @tag :vs_api
@@ -56,13 +56,7 @@ defmodule Glific.FilesearchTest do
     end)
 
     result =
-      auth_query_gql_by(:create_vector_store, user,
-        variables: %{
-          "input" => %{
-            "name" => "vs_1"
-          }
-        }
-      )
+      auth_query_gql_by(:create_vector_store, user, variables: %{})
 
     assert {:ok, query_data} = result
     assert length(query_data.errors) == 1
@@ -166,7 +160,138 @@ defmodule Glific.FilesearchTest do
           }
       end)
 
-      {:ok, %VectorStore{}} = Filesearch.add_vector_store_files(params) |> IO.inspect()
+      {:ok, %VectorStore{}} = Filesearch.add_vector_store_files(params)
     end
+  end
+
+  @tag :del_vs
+  test "delete_vector_store/1, valid deletion", attrs do
+    valid_attrs = %{
+      vector_store_id: "vs_abcde",
+      name: "new vector store",
+      files: %{},
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
+
+    result =
+      auth_query_gql_by(:delete_vector_store, attrs.user,
+        variables: %{
+          "id" => vector_store.id
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert query_data.data["deleteVectorStore"]["vectorStore"]["name"] == "new vector store"
+  end
+
+  @tag :del_vs
+  test "delete_vector_store/1, invalid deletion", attrs do
+    result =
+      auth_query_gql_by(:delete_vector_store, attrs.user,
+        variables: %{
+          "id" => 0
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert length(query_data.data["deleteVectorStore"]["errors"]) == 1
+  end
+
+  @tag :remove_vs_file
+  test "remove vector store file, valid removal", attrs do
+    valid_attrs = %{
+      vector_store_id: "vs_abcde",
+      name: "new vector store",
+      files: %{},
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
+
+    VectorStore.update_vector_store(vector_store, %{
+      files: %{
+        "file-Cbfk7rPQG6geG8nfUCcn4zJm" => %{
+          id: "file-Cbfk7rPQG6geG8nfUCcn4zJm",
+          size: 54836,
+          status: "in_progress",
+          filename: "sample.pdf"
+        },
+        "file-Cbfk7rPQG6geG8nfUCcn4zabc" => %{
+          id: "file-Cbfk7rPQG6geG8nfUCcn4zabc",
+          size: 54836,
+          status: "in_progress",
+          filename: "sample2.pdf"
+        }
+      }
+    })
+
+    Tesla.Mock.mock(fn
+      %{method: :delete} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "file-Cbfk7rPQG6geG8nfUCcn4zJm",
+            object: "vector_store.file.deleted",
+            deleted: true
+          }
+        }
+    end)
+
+    {:ok, result} =
+      auth_query_gql_by(:remove_vector_store_file, attrs.user,
+        variables: %{
+          "id" => vector_store.id,
+          "file_id" => "file-Cbfk7rPQG6geG8nfUCcn4zJm"
+        }
+      )
+
+    assert length(result.data["RemoveVectorStoreFile"]["vectorStore"]["files"]) == 1
+  end
+
+  @tag :remove_vs_file
+  test "remove vector store file, invalid fileId", attrs do
+    valid_attrs = %{
+      vector_store_id: "vs_abcdef",
+      name: "new vector store",
+      files: %{},
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
+
+    VectorStore.update_vector_store(vector_store, %{
+      files: %{
+        "file-Cbfk7rPQG6geG8nfUCcn4zJm" => %{
+          id: "file-Cbfk7rPQG6geG8nfUCcn4zJm",
+          size: 54836,
+          status: "in_progress",
+          filename: "sample.pdf"
+        }
+      }
+    })
+
+    Tesla.Mock.mock(fn
+      %{method: :delete} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "file-Cbfk7rPQG6geG8nfUCcn4zJm",
+            object: "vector_store.file.deleted",
+            deleted: true
+          }
+        }
+    end)
+
+    {:ok, result} =
+      auth_query_gql_by(:remove_vector_store_file, attrs.user,
+        variables: %{
+          "id" => vector_store.id,
+          "file_id" => "file-Cbfk7rPQG6geG8"
+        }
+      )
+
+    assert "Removing vector store failed" <> _ = List.first(result.errors) |> Map.get(:message)
   end
 end

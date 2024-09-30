@@ -127,6 +127,8 @@ defmodule GlificWeb.Schema do
     import_fields(:wa_group_queries)
 
     import_fields(:llm4dev_queries)
+
+    import_fields(:filesearch_queries)
   end
 
   mutation do

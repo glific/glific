@@ -35,6 +35,14 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
+  @spec delete_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
+  def delete_vector_store(vector_store_id) do
+    url = @endpoint <> "/vector_stores/#{vector_store_id}"
+
+    delete(url, headers: headers())
+    |> parse_response()
+  end
+
   @spec upload_file(map()) :: {:ok, map()} | {:error, String.t()}
   def upload_file(media_info) do
     url = @endpoint <> "/files"
@@ -54,6 +62,34 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
 
     payload =
       %{"file_id" => params.file_id}
+      |> Jason.encode!()
+
+    post(url, payload, headers: headers())
+    |> parse_response()
+  end
+
+  @spec delete_vector_store_file(map()) :: {:ok, map()} | {:error, String.t()}
+  def delete_vector_store_file(params) do
+    url = @endpoint <> "/vector_stores/#{params.vector_store_id}/files/#{params.file_id}"
+
+    delete(url, headers: headers())
+    |> parse_response()
+  end
+
+  @spec delete_file(String.t()) :: {:ok, map()} | {:error, String.t()}
+  def delete_file(file_id) do
+    url = @endpoint <> "/files/#{file_id}"
+
+    delete(url, headers: headers())
+    |> parse_response()
+  end
+
+  @spec modify_vector_store(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
+  def modify_vector_store(vector_store_id, params) do
+    url = @endpoint <> "/vector_stores/#{vector_store_id}"
+
+    payload =
+      params
       |> Jason.encode!()
 
     post(url, payload, headers: headers())

@@ -28,10 +28,11 @@ defmodule Glific.Repo.Migrations.FilesearchTables do
         null: false,
         comment: "Unique organization ID."
 
-      timestamps()
+      timestamps(type: :utc_datetime)
     end
 
     create unique_index(:openai_assistants, [:assistant_id, :organization_id])
+    create unique_index(:openai_assistants, [:name, :organization_id])
   end
 
   defp create_vector_stores() do
@@ -49,9 +50,10 @@ defmodule Glific.Repo.Migrations.FilesearchTables do
         null: false,
         comment: "Unique organization ID."
 
-      timestamps()
+      timestamps(type: :utc_datetime)
     end
 
     create unique_index(:openai_vector_stores, [:vector_store_id, :organization_id])
+    create unique_index(:openai_vector_stores, [:name, :organization_id])
   end
 end

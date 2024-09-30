@@ -1,0 +1,49 @@
+meta {
+  name: Remove VectorStore file
+  type: graphql
+  seq: 5
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  Authorization: {{auth_token}}
+}
+
+body:graphql {
+  mutation RemoveVectorStoreFile($id: ID!, $file_id: String!) {
+    RemoveVectorStoreFile(id: $id, file_id: $file_id) {
+      vectorStore {
+        id
+        name
+        vectorStoreId,
+        files {
+          id
+        	name
+          size
+        }
+        assistants {
+          id
+        }
+      }
+      
+      errors {
+        key
+        message
+      }
+      
+    }
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "file_id": "file-ND38KqEDAUQznlZjfkZqA0eE",
+    "id": 1
+  }
+}

@@ -40,7 +40,7 @@ defmodule Glific.Filesearch.VectorStore do
     field :files, :map
     belongs_to :organization, Organization
     has_many :assistants, Assistant
-    timestamps()
+    timestamps(type: :utc_datetime)
   end
 
   @doc """
@@ -52,6 +52,7 @@ defmodule Glific.Filesearch.VectorStore do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:vector_store_id, :organization_id])
+    |> unique_constraint([:name, :organization_id])
   end
 
   @doc """
@@ -67,9 +68,9 @@ defmodule Glific.Filesearch.VectorStore do
   @doc """
     Retrieves a vector_store
   """
-  @spec get_vector_store(integer()) :: VectorStore.t() | nil
+  @spec get_vector_store(integer()) :: {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}
   def get_vector_store(id),
-    do: Repo.get(VectorStore, id)
+    do: Repo.fetch_by(VectorStore, %{id: id})
 
   @doc """
     Returns the list of vector_stores
@@ -79,6 +80,9 @@ defmodule Glific.Filesearch.VectorStore do
     args
     |> Repo.list_filter_query(VectorStore, &Repo.opts_with_inserted_at/2, &filter_with/2)
     |> Repo.all()
+
+    # |> Enum.group_by(&DateTime.to_date(&1.inserted_at))
+    # |> IO.inspect()
   end
 
   @doc """

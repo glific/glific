@@ -1,5 +1,6 @@
 fragment VectorStoreFields on VectorStoreResult {
   vectorStore {
+    id
     name
     vector_store_id
     files {
@@ -7,6 +8,10 @@ fragment VectorStoreFields on VectorStoreResult {
       info {
         id
       }
+    }
+    assistants {
+      id
+      name
     }
   }
 }
