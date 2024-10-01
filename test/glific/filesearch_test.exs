@@ -49,6 +49,12 @@ defmodule Glific.FilesearchTest do
     "assets/gql/filesearch/update_vector_store.gql"
   )
 
+  load_gql(
+    :create_assistant,
+    GlificWeb.Schema,
+    "assets/gql/filesearch/create_assistant.gql"
+  )
+
   test "valid create vector_store", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://api.openai.com/v1/vector_stores"} ->
@@ -568,5 +574,69 @@ defmodule Glific.FilesearchTest do
       )
 
     assert result.data["UpdateVectorStore"]["vectorStore"]["name"] == "new VectorStore"
+  end
+
+  @tag :asst
+  test "valid create assistant", %{user: user} do
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://api.openai.com/v1/assistants"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "asst_123"
+          }
+        }
+    end)
+
+    result =
+      auth_query_gql_by(:create_assistant, user, variables: %{})
+
+    assert {:ok, query_data} = result
+    assert "Assistant" <> _ = query_data.data["createAssistant"]["assistant"]["name"]
+  end
+
+  @tag :asst
+  test "create assistant failed due to api failure", %{user: user} do
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://api.openai.com/v1/assistants"} ->
+        %Tesla.Env{
+          status: 500,
+          body: %{}
+        }
+    end)
+
+    result =
+      auth_query_gql_by(:create_assistant, user, variables: %{})
+
+    assert {:ok, query_data} = result
+    assert length(query_data.errors) == 1
+  end
+
+  @tag :asst_1
+  test "valid create assistant with vector_store", %{user: user} do
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://api.openai.com/v1/assistants"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "asst_123"
+          }
+        }
+    end)
+
+    # invalid vector_store_id
+    result =
+      auth_query_gql_by(:create_assistant, user,
+        variables: %{
+          "input" => %{
+            "vector_store_id" => 3
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    assert "Vector_store_id: does not exist" =
+             List.first(query_data.data["createAssistant"]["errors"])["message"]
   end
 end

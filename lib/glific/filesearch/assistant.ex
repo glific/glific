@@ -61,6 +61,7 @@ defmodule Glific.Filesearch.Assistant do
     |> validate_required(@required_fields)
     |> unique_constraint([:assistant_id, :organization_id])
     |> unique_constraint([:name, :organization_id])
+    |> foreign_key_constraint(:vector_store_id)
   end
 
   @doc """
@@ -70,6 +71,7 @@ defmodule Glific.Filesearch.Assistant do
   def create_assistant(attrs) do
     %Assistant{}
     |> changeset(attrs)
+    |> IO.inspect()
     |> Repo.insert()
   end
 

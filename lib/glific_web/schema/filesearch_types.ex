@@ -47,16 +47,44 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :size, :integer
   end
 
+  object :assistant_result do
+    field :assistant, :assistant
+    field :errors, list_of(:input_error)
+  end
+
   object :assistant do
     field :id, :id
     field :name, :string
     field :model, :string
     field :instructions, :string
-    # field :settings
+    field :settings, :settings
+
+    field :vector_store, :vector_store do
+      resolve(dataloader(Repo))
+    end
+
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+  end
+
+  object :settings do
+    field :temperature, :float
   end
 
   input_object :vector_store_input do
     field :name, :string
+  end
+
+  input_object :assistant_input do
+    field :name, :string
+    field :vector_store_id, :id
+    field :model, :string
+    field :instructions, :string
+    field :settings, :input_settings
+  end
+
+  input_object :input_settings do
+    field :temperature, :float
   end
 
   @desc "Filtering options for VectorStore"
@@ -109,6 +137,13 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.delete_vector_store/3)
+    end
+
+    @desc "Create Assistant"
+    field :create_assistant, :assistant_result do
+      arg(:input, :assistant_input)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.create_assistant/3)
     end
   end
 

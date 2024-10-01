@@ -1,0 +1,19 @@
+
+fragment AssistantFields on AssistantResult {
+  assistant {
+    id
+    name
+    vector_store {
+      id
+    }
+    inserted_at
+    updated_at
+  }
+}
+
+fragment ErrorFields on AssistantResult {
+  errors {
+    key
+    message
+  }
+}

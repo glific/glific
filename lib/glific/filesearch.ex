@@ -2,18 +2,22 @@ defmodule Glific.Filesearch do
   @moduledoc """
   Main module to interact with filesearch
   """
+  alias Glific.Filesearch.Assistant
+
   alias Glific.{
     Filesearch.VectorStore,
     OpenAI.Filesearch.ApiClient,
     Repo
   }
 
+  @default_model "gpt-4o"
+
   @doc """
   Creates an empty VectorStore
   """
   @spec create_vector_store(map()) :: {:ok, map()} | {:error, String.t()}
   def create_vector_store(params) do
-    params = Map.put(params, :name, generate_temp_vector_store_name(params))
+    params = Map.put(params, :name, generate_temp_name(params[:name], "VectorStore"))
 
     with {:ok, %{id: store_id}} <- ApiClient.create_vector_store(params.name),
          {:ok, vector_store} <-
@@ -117,6 +121,39 @@ defmodule Glific.Filesearch do
   end
 
   @doc """
+  Creates an Assistant
+  """
+  @spec create_assistant(map()) :: {:ok, map()} | {:error, String.t()}
+  def create_assistant(params) do
+    IO.inspect(params)
+    params = Map.put(params, :name, generate_temp_name(params[:name], "Assistant"))
+
+    params =
+      %{
+        settings: %{
+          # default temperature for assistants in openAI
+          temperature: 1
+        },
+        model: @default_model,
+        organization_id: Repo.get_organization_id()
+      }
+      |> Map.merge(params)
+      |> IO.inspect()
+
+    with {:ok, %{id: assistant_id}} <- ApiClient.create_assistant(params.name),
+         {:ok, assistant} <-
+           Assistant.create_assistant(Map.put(params, :assistant_id, assistant_id)) do
+      {:ok, %{assistant: assistant}}
+    else
+      {:error, %Ecto.Changeset{} = err} ->
+        {:error, err}
+
+      {:error, reason} ->
+        {:error, "Assistant ID creation failed due to #{reason}"}
+    end
+  end
+
+  @doc """
   Fetch VectorStores with given filters and options
   """
   @spec list_vector_stores(map()) :: list(VectorStore.t())
@@ -135,13 +172,13 @@ defmodule Glific.Filesearch do
     end
   end
 
-  @spec generate_temp_vector_store_name(map()) :: String.t()
-  defp generate_temp_vector_store_name(%{name: name} = params) when name in [nil, ""] do
+  @spec generate_temp_name(map(), String.t()) :: String.t()
+  defp generate_temp_name(name, artifact) when name in [nil, ""] do
     uid = Ecto.UUID.generate() |> String.split("-") |> List.first()
-    "vectorStore#{params.organization_id}-#{uid}"
+    "#{artifact}-#{uid}"
   end
 
-  defp generate_temp_vector_store_name(params), do: params.name
+  defp generate_temp_name(name, _artifact), do: name
 
   @spec bulk_upload_vector_store_files(VectorStore.t(), map()) :: map()
   defp bulk_upload_vector_store_files(vector_store, params) do
