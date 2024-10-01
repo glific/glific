@@ -1,0 +1,26 @@
+fragment VectorStoreFields on VectorStoreResult {
+  vectorStore {
+    id
+    name
+    vector_store_id
+    files {
+      id
+      name
+      size
+    }
+    assistants {
+      id
+      name
+    }
+    inserted_at
+    updated_at
+    size
+  }
+}
+
+fragment ErrorFields on VectorStoreResult {
+  errors {
+    key
+    message
+  }
+}

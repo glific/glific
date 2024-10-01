@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query VectorStore($id: ID!) {
+  VectorStore(id: $id) {
+    ...VectorStoreFields
+
+    ...ErrorFields
+  }
+}

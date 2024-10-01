@@ -1,0 +1,49 @@
+meta {
+  name: Get VectorStore
+  type: graphql
+  seq: 3
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  Authorization: {{auth_token}}
+}
+
+body:graphql {
+  query VectorStore($id: ID!) {
+    VectorStore(id: $id) {
+       vectorStore {
+        id
+        name
+        vectorStoreId,
+        files {
+          id
+        	name
+          size
+        }
+        assistants {
+          id
+        }
+        size
+        inserted_at
+        updated_at
+      }
+  
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": "1"
+  }
+}

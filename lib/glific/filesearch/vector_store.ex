@@ -1,6 +1,6 @@
 defmodule Glific.Filesearch.VectorStore do
   @moduledoc """
-  VectorStore schema that maps openAI vector stores
+  VectorStore schema that maps openAI VectorStores
   """
 
   use Ecto.Schema
@@ -40,7 +40,7 @@ defmodule Glific.Filesearch.VectorStore do
     field :files, :map
     belongs_to :organization, Organization
     has_many :assistants, Assistant
-    timestamps()
+    timestamps(type: :utc_datetime)
   end
 
   @doc """
@@ -52,10 +52,11 @@ defmodule Glific.Filesearch.VectorStore do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:vector_store_id, :organization_id])
+    |> unique_constraint([:name, :organization_id])
   end
 
   @doc """
-  Creates Vector Store
+  Creates VectorStore
   """
   @spec create_vector_store(map()) :: {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}
   def create_vector_store(attrs) do
@@ -67,12 +68,12 @@ defmodule Glific.Filesearch.VectorStore do
   @doc """
     Retrieves a vector_store
   """
-  @spec get_vector_store(integer()) :: VectorStore.t() | nil
+  @spec get_vector_store(integer()) :: {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}
   def get_vector_store(id),
-    do: Repo.get(VectorStore, id)
+    do: Repo.fetch_by(VectorStore, %{id: id})
 
   @doc """
-    Returns the list of vector_stores
+  Returns the list of vector_stores
   """
   @spec list_vector_stores(map()) :: [VectorStore.t()]
   def list_vector_stores(args) do
@@ -102,7 +103,7 @@ defmodule Glific.Filesearch.VectorStore do
   end
 
   @doc """
-    Deletes vector store
+    Deletes VectorStore
   """
   @spec delete_vector_store(VectorStore.t()) ::
           {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}

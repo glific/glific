@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation UpdateVectorStore($id: ID!, $input: VectorStoreInput!) {
+  UpdateVectorStore(id: $id, input: $input) {
+    ...VectorStoreFields
+
+    ...ErrorFields
+  }
+}

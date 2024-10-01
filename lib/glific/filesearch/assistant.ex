@@ -48,7 +48,7 @@ defmodule Glific.Filesearch.Assistant do
     field :settings, :map
     belongs_to :organization, Organization
     belongs_to :vector_store, VectorStore
-    timestamps()
+    timestamps(type: :utc_datetime)
   end
 
   @doc """
@@ -60,6 +60,7 @@ defmodule Glific.Filesearch.Assistant do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:assistant_id, :organization_id])
+    |> unique_constraint([:name, :organization_id])
   end
 
   @doc """
