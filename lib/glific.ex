@@ -353,8 +353,6 @@ defmodule Glific do
     create_request(token)
     |> then(&Tesla.post(@captcha_verify_url, &1))
     |> handle_response()
-
-    {:ok, "success"}
   end
 
   @spec create_request(String.t()) :: Tesla.Multipart.t()
@@ -438,13 +436,17 @@ defmodule Glific do
     Application.get_env(:glific, :open_ai)
   end
 
-  # TODO: doc
+  @doc """
+  Get open AI key used for Assistants and VectorStores
+  """
   @spec get_open_ai_filesearch_key :: String.t()
   def get_open_ai_filesearch_key do
     Application.get_env(:glific, :open_ai_filesearch)
   end
 
-  # TODO: doc
+  @doc """
+  Get the projectId related to the project where we store Glific NGO's Assistants and VectorStores
+  """
   @spec get_open_ai_filesearch_project :: String.t()
   def get_open_ai_filesearch_project do
     Application.get_env(:glific, :open_ai_filesearch_proj)

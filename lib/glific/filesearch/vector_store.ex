@@ -1,6 +1,6 @@
 defmodule Glific.Filesearch.VectorStore do
   @moduledoc """
-  VectorStore schema that maps openAI vector stores
+  VectorStore schema that maps openAI VectorStores
   """
 
   use Ecto.Schema
@@ -56,7 +56,7 @@ defmodule Glific.Filesearch.VectorStore do
   end
 
   @doc """
-  Creates Vector Store
+  Creates VectorStore
   """
   @spec create_vector_store(map()) :: {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}
   def create_vector_store(attrs) do
@@ -103,7 +103,7 @@ defmodule Glific.Filesearch.VectorStore do
   end
 
   @doc """
-    Deletes vector store
+    Deletes VectorStore
   """
   @spec delete_vector_store(VectorStore.t()) ::
           {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}

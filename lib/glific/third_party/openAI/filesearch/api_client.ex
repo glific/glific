@@ -23,7 +23,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
 
   @doc """
-  Creates vector store
+  Create a VectorStore
   """
   @spec create_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
   def create_vector_store(name) do
@@ -37,6 +37,9 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
+  @doc """
+  Delete a VectorStore
+  """
   @spec delete_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
   def delete_vector_store(vector_store_id) do
     url = @endpoint <> "/vector_stores/#{vector_store_id}"
@@ -45,6 +48,9 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
+  @doc """
+  Upload file to openAI
+  """
   @spec upload_file(map()) :: {:ok, map()} | {:error, String.t()}
   def upload_file(media_info) do
     url = @endpoint <> "/files"
@@ -58,6 +64,9 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
+  @doc """
+  Add an openAI file to VectorStore
+  """
   @spec create_vector_store_file(map()) :: {:ok, map()} | {:error, String.t()}
   def create_vector_store_file(params) do
     url = @endpoint <> "/vector_stores/#{params.vector_store_id}/files"
@@ -70,6 +79,9 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
+  @doc """
+  Remove an openAI file from VectorStore
+  """
   @spec delete_vector_store_file(map()) :: {:ok, map()} | {:error, String.t()}
   def delete_vector_store_file(params) do
     url = @endpoint <> "/vector_stores/#{params.vector_store_id}/files/#{params.file_id}"
@@ -78,6 +90,9 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
+  @doc """
+  Delete an openAI file
+  """
   @spec delete_file(String.t()) :: {:ok, map()} | {:error, String.t()}
   def delete_file(file_id) do
     url = @endpoint <> "/files/#{file_id}"
@@ -86,6 +101,9 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
+  @doc """
+  Modify a VectorStore
+  """
   @spec modify_vector_store(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
   def modify_vector_store(vector_store_id, params) do
     url = @endpoint <> "/vector_stores/#{vector_store_id}"

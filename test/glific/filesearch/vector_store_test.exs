@@ -1,6 +1,6 @@
 defmodule Glific.Filesearch.VectorStoreTest do
   @moduledoc """
-  Tests for Vector stores
+  Tests for VectorStores
   """
   alias Glific.Filesearch.Assistant
 
@@ -14,7 +14,7 @@ defmodule Glific.Filesearch.VectorStoreTest do
   test "create_vector_store/1 with valid data creates a vector_store", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abc",
-      name: "temp vector store",
+      name: "temp VectorStore",
       files: %{},
       organization_id: attrs.organization_id
     }
@@ -24,7 +24,7 @@ defmodule Glific.Filesearch.VectorStoreTest do
 
   test "create_vector_store/1 with invalid data not create a vector_store", attrs do
     valid_attrs = %{
-      name: "temp vector store",
+      name: "temp VectorStore",
       files: %{},
       organization_id: attrs.organization_id
     }
@@ -35,7 +35,7 @@ defmodule Glific.Filesearch.VectorStoreTest do
   test "get_vector_store/1 with valid id returns a vector_store", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abc",
-      name: "temp vector store",
+      name: "temp VectorStore",
       files: %{},
       organization_id: attrs.organization_id
     }
@@ -45,10 +45,10 @@ defmodule Glific.Filesearch.VectorStoreTest do
     assert {:ok, %VectorStore{}} = VectorStore.get_vector_store(vector_store.id)
   end
 
-  test "list_vector_stores/1 with returns list of vector stores matching the filters", attrs do
+  test "list_vector_stores/1 with returns list of VectorStores matching the filters", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abc",
-      name: "temp vector store",
+      name: "temp VectorStore",
       files: %{},
       organization_id: attrs.organization_id
     }
@@ -57,7 +57,7 @@ defmodule Glific.Filesearch.VectorStoreTest do
 
     valid_attrs = %{
       vector_store_id: "vs_abcd",
-      name: "new vector store",
+      name: "new VectorStore",
       files: %{},
       organization_id: attrs.organization_id
     }
@@ -65,15 +65,15 @@ defmodule Glific.Filesearch.VectorStoreTest do
     assert {:ok, _vector_store} = VectorStore.create_vector_store(valid_attrs)
 
     assert vector_stores =
-             VectorStore.list_vector_stores(%{filter: %{name: "vector store"}})
+             VectorStore.list_vector_stores(%{filter: %{name: "VectorStore"}})
 
     assert length(vector_stores) == 2
   end
 
-  test "update_vector_store/1, updates vector store", attrs do
+  test "update_vector_store/1, updates VectorStore", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcd",
-      name: "new vector store",
+      name: "new VectorStore",
       files: %{},
       organization_id: attrs.organization_id
     }
@@ -81,7 +81,7 @@ defmodule Glific.Filesearch.VectorStoreTest do
     assert {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
 
     valid_attrs = %{
-      name: "vector store 3",
+      name: "VectorStore 3",
       files: %{
         "file_1234" => %{
           "name" => "1.pdf"
@@ -91,13 +91,13 @@ defmodule Glific.Filesearch.VectorStoreTest do
 
     assert {:ok, vector_store} = VectorStore.update_vector_store(vector_store, valid_attrs)
     assert vector_store.vector_store_id == "vs_abcd"
-    assert vector_store.name == "vector store 3"
+    assert vector_store.name == "VectorStore 3"
   end
 
-  test "assitants and vector store associations", attrs do
+  test "assitants and VectorStore associations", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcd",
-      name: "new vector store",
+      name: "new VectorStore",
       files: %{},
       organization_id: attrs.organization_id
     }

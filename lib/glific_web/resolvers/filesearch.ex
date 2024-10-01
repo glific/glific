@@ -9,9 +9,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   }
 
   @doc """
-  Create a Vector Store
-
-  Returns a Vector Store struct
+  Create a VectorStore
   """
   @spec create_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
@@ -29,6 +27,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
 
   @doc """
   Uploads a file to openAI
+
   Returns the File details
   """
   @spec upload_file(Absinthe.Resolution.t(), map(), %{context: map()}) ::
@@ -37,6 +36,9 @@ defmodule GlificWeb.Resolvers.Filesearch do
     Filesearch.upload_file(params)
   end
 
+  @doc """
+  Upload and add the files to the VectorStore
+  """
   def add_vector_store_files(_, params, %{context: %{current_user: user}}) do
     Repo.put_process_state(user.organization_id)
     params = Map.put(params, :organization_id, user.organization_id)
@@ -47,7 +49,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
-  Deletes the vector store for the given ID
+  Deletes the VectorStore for the given ID
   """
   @spec delete_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
@@ -59,7 +61,9 @@ defmodule GlificWeb.Resolvers.Filesearch do
     end
   end
 
-  # TODO: doc
+  @doc """
+  Removes the given file from the VectorStore
+  """
   @spec remove_vector_store_file(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def remove_vector_store_file(_, params, %{context: %{current_user: user}}) do
@@ -70,6 +74,9 @@ defmodule GlificWeb.Resolvers.Filesearch do
     end
   end
 
+  @doc """
+  Fetch the details for the given VectorStore
+  """
   @spec get_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def get_vector_store(_, params, %{context: %{current_user: user}}) do
@@ -80,6 +87,9 @@ defmodule GlificWeb.Resolvers.Filesearch do
     end
   end
 
+  @doc """
+  Fetch VectorStores with given filters and options
+  """
   @spec list_vector_stores(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def list_vector_stores(_, params, %{context: %{current_user: user}}) do
@@ -88,6 +98,9 @@ defmodule GlificWeb.Resolvers.Filesearch do
     {:ok, Filesearch.list_vector_stores(params)}
   end
 
+  @doc """
+  Updates the VectorStore with given attrs
+  """
   @spec update_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def update_vector_store(_, %{id: id, input: attrs}, %{context: %{current_user: user}}) do
@@ -98,6 +111,9 @@ defmodule GlificWeb.Resolvers.Filesearch do
     end
   end
 
+  @doc """
+  Return the details of the files in a VectorStore
+  """
   @spec list_files(VectorStore.t(), map(), map()) :: {:ok, list()}
   def list_files(vector_store, _args, _context) do
     Enum.map(vector_store.files, fn {id, info} ->
@@ -106,6 +122,9 @@ defmodule GlificWeb.Resolvers.Filesearch do
     |> then(&{:ok, &1})
   end
 
+  @doc """
+  Calculate the total file size linked to the VectorStore
+  """
   @spec calculate_vector_store_size(VectorStore.t(), map(), map()) :: {:ok, String.t()}
   def calculate_vector_store_size(vector_store, _args, _context) do
     total_size =

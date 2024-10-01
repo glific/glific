@@ -9,7 +9,7 @@ defmodule Glific.Filesearch do
   }
 
   @doc """
-  Creates an empty vector store
+  Creates an empty VectorStore
   """
   @spec create_vector_store(map()) :: {:ok, map()} | {:error, String.t()}
   def create_vector_store(params) do
@@ -24,7 +24,7 @@ defmodule Glific.Filesearch do
         {:error, err}
 
       {:error, reason} ->
-        {:error, "Vector store creation failed due to #{reason}"}
+        {:error, "VectorStore creation failed due to #{reason}"}
     end
   end
 
@@ -44,6 +44,9 @@ defmodule Glific.Filesearch do
     end
   end
 
+  @doc """
+  Upload and add the files to the VectorStore
+  """
   @spec add_vector_store_files(map()) :: {:ok, map()} | {:error, Ecto.Changeset.t()}
   def add_vector_store_files(params) do
     with {:ok, vector_store} <- VectorStore.get_vector_store(params.id),
@@ -56,7 +59,7 @@ defmodule Glific.Filesearch do
   end
 
   @doc """
-  Deletes the vector store for the given ID
+  Deletes the VectorStore for the given ID
   """
   @spec delete_vector_store(integer()) :: {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}
   def delete_vector_store(id) do
@@ -66,7 +69,11 @@ defmodule Glific.Filesearch do
     end
   end
 
-  # TODO: doc
+  @doc """
+  Removes the given file from the VectorStore
+
+  Also deletes the file from the openAI
+  """
   @spec remove_vector_store_file(map()) :: {:ok, VectorStore.t()} | {:error, String.t()}
   def remove_vector_store_file(params) do
     with {:ok, %VectorStore{} = vector_store} <- VectorStore.get_vector_store(params.id),
@@ -90,10 +97,13 @@ defmodule Glific.Filesearch do
         {:error, err}
 
       {:error, reason} ->
-        {:error, "Removing vector store failed due to #{reason}"}
+        {:error, "Removing VectorStore failed due to #{reason}"}
     end
   end
 
+  @doc """
+  Updates the VectorStore with given attrs
+  """
   @spec update_vector_store(integer(), map()) :: {:ok, map()} | {:error, Ecto.Changeset.t()}
   def update_vector_store(id, attrs) do
     with {:ok, %VectorStore{} = vector_store} <- VectorStore.get_vector_store(id),
@@ -106,6 +116,9 @@ defmodule Glific.Filesearch do
     end
   end
 
+  @doc """
+  Fetch VectorStores with given filters and options
+  """
   @spec list_vector_stores(map()) :: list(VectorStore.t())
   def list_vector_stores(params) do
     VectorStore.list_vector_stores(params)

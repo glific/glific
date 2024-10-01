@@ -113,11 +113,11 @@ defmodule Glific.FilesearchTest do
              })
   end
 
-  describe "Add files to vector store" do
+  describe "Add files to VectorStore" do
     setup attrs do
       valid_attrs = %{
         vector_store_id: "vs_abcd",
-        name: "new vector store",
+        name: "new VectorStore",
         files: %{},
         organization_id: attrs.organization_id
       }
@@ -217,7 +217,7 @@ defmodule Glific.FilesearchTest do
             status: 200,
             body: %{
               error: %{
-                message: "attach vector store failed"
+                message: "attach VectorStore failed"
               }
             }
           }
@@ -263,7 +263,7 @@ defmodule Glific.FilesearchTest do
             status: 400,
             body: %{
               error: %{
-                message: "attach vector store failed"
+                message: "attach VectorStore failed"
               }
             }
           }
@@ -277,7 +277,7 @@ defmodule Glific.FilesearchTest do
   test "delete_vector_store/1, valid deletion", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcde",
-      name: "new vector store",
+      name: "new VectorStore",
       files: %{},
       organization_id: attrs.organization_id
     }
@@ -302,7 +302,7 @@ defmodule Glific.FilesearchTest do
       )
 
     assert {:ok, query_data} = result
-    assert query_data.data["deleteVectorStore"]["vectorStore"]["name"] == "new vector store"
+    assert query_data.data["deleteVectorStore"]["vectorStore"]["name"] == "new VectorStore"
   end
 
   test "delete_vector_store/1, invalid deletion", attrs do
@@ -317,10 +317,10 @@ defmodule Glific.FilesearchTest do
     assert length(query_data.data["deleteVectorStore"]["errors"]) == 1
   end
 
-  test "remove vector store file, valid removal", attrs do
+  test "remove VectorStore file, valid removal", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcde",
-      name: "new vector store",
+      name: "new VectorStore",
       files: %{},
       organization_id: attrs.organization_id
     }
@@ -367,10 +367,10 @@ defmodule Glific.FilesearchTest do
     assert length(result.data["RemoveVectorStoreFile"]["vectorStore"]["files"]) == 1
   end
 
-  test "remove vector store file, invalid fileId", attrs do
+  test "remove VectorStore file, invalid fileId", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcdef",
-      name: "new vector store",
+      name: "new VectorStore",
       files: %{},
       organization_id: attrs.organization_id
     }
@@ -408,7 +408,7 @@ defmodule Glific.FilesearchTest do
         }
       )
 
-    assert "Removing vector store failed" <> _ = List.first(result.errors) |> Map.get(:message)
+    assert "Removing VectorStore failed" <> _ = List.first(result.errors) |> Map.get(:message)
   end
 
   test "list vector_stores", attrs do
@@ -420,7 +420,7 @@ defmodule Glific.FilesearchTest do
 
     valid_attrs = %{
       vector_store_id: "vs_abcdef",
-      name: "vector store 1",
+      name: "VectorStore 1",
       files: %{},
       organization_id: attrs.organization_id
     }
@@ -429,7 +429,7 @@ defmodule Glific.FilesearchTest do
 
     valid_attrs = %{
       vector_store_id: "vs_xyz",
-      name: "vector store 2",
+      name: "VectorStore 2",
       files: %{},
       organization_id: attrs.organization_id
     }
@@ -456,7 +456,7 @@ defmodule Glific.FilesearchTest do
 
     valid_attrs = %{
       vector_store_id: "vs_xyzw",
-      name: "vector store 3",
+      name: "VectorStore 3",
       files: %{},
       organization_id: attrs.organization_id
     }
@@ -493,7 +493,7 @@ defmodule Glific.FilesearchTest do
         }
       )
 
-    assert %{"name" => "vector store 3"} = List.first(result.data["VectorStores"])
+    assert %{"name" => "VectorStore 3"} = List.first(result.data["VectorStores"])
 
     # search by name
     {:ok, result} =
@@ -505,13 +505,13 @@ defmodule Glific.FilesearchTest do
         }
       )
 
-    assert %{"name" => "vector store 3"} = List.first(result.data["VectorStores"])
+    assert %{"name" => "VectorStore 3"} = List.first(result.data["VectorStores"])
   end
 
-  test "fetch a vector store", attrs do
+  test "fetch a VectorStore", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcdef",
-      name: "vector store 1",
+      name: "VectorStore 1",
       files: %{},
       organization_id: attrs.organization_id
     }
@@ -537,10 +537,10 @@ defmodule Glific.FilesearchTest do
     assert List.first(result.data["vector_store"]["errors"])["message"] == "Resource not found"
   end
 
-  test "update vector store", attrs do
+  test "update VectorStore", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcdef",
-      name: "vector store 1",
+      name: "VectorStore 1",
       files: %{},
       organization_id: attrs.organization_id
     }
@@ -561,12 +561,12 @@ defmodule Glific.FilesearchTest do
       auth_query_gql_by(:update_vector_store, attrs.user,
         variables: %{
           "input" => %{
-            "name" => "new vector store"
+            "name" => "new VectorStore"
           },
           "id" => vector_store.id
         }
       )
 
-    assert result.data["UpdateVectorStore"]["vectorStore"]["name"] == "new vector store"
+    assert result.data["UpdateVectorStore"]["vectorStore"]["name"] == "new VectorStore"
   end
 end

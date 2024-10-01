@@ -66,7 +66,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   end
 
   object :filesearch_mutations do
-    @desc "Create vector store"
+    @desc "Create VectorStore"
     field :create_vector_store, :vector_store_result do
       arg(:input, :vector_store_input)
       middleware(Authorize, :staff)
@@ -80,7 +80,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       resolve(&Resolvers.Filesearch.upload_file/3)
     end
 
-    @desc "Add files to vector store"
+    @desc "Add files to VectorStore"
     field :add_vector_store_files, :vector_store_result do
       arg(:media, non_null(list_of(non_null(:upload))))
       arg(:id, non_null(:id))
@@ -88,7 +88,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       resolve(&Resolvers.Filesearch.add_vector_store_files/3)
     end
 
-    @desc "Remove files from vector store"
+    @desc "Remove files from VectorStore"
     field :remove_vector_store_file, :vector_store_result do
       arg(:file_id, non_null(:string))
       arg(:id, non_null(:id))
@@ -96,7 +96,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       resolve(&Resolvers.Filesearch.remove_vector_store_file/3)
     end
 
-    @desc "Update Vector store"
+    @desc "Update VectorStore"
     field :update_vector_store, :vector_store_result do
       arg(:input, non_null(:vector_store_input))
       arg(:id, non_null(:id))
@@ -104,7 +104,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       resolve(&Resolvers.Filesearch.update_vector_store/3)
     end
 
-    @desc "Delete Vector store"
+    @desc "Delete VectorStore"
     field :delete_vector_store, :vector_store_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
@@ -113,14 +113,14 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   end
 
   object :filesearch_queries do
-    @desc "Get vector store"
+    @desc "Get VectorStore"
     field :vector_store, :vector_store_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.get_vector_store/3)
     end
 
-    @desc "List vector stores"
+    @desc "List VectorStores"
     field :vector_stores, list_of(:vector_store) do
       arg(:filter, :vector_store_filter)
       arg(:opts, :opts)
