@@ -313,7 +313,7 @@ defmodule Glific.OnboardTest do
           "name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email()
         },
-        "terms_agreed" => "true"
+        "terms_agreed" => true
       }
 
       assert %{

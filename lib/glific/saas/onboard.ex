@@ -375,8 +375,8 @@ defmodule Glific.Saas.Onboard do
   defp update_is_disputed(params, registration) do
     case {params["terms_agreed"], registration.is_disputed} do
       {false, _} -> Map.put(params, "is_disputed", true)
-      {true, true} -> params
       {true, false} -> Map.put(params, "is_disputed", false)
+      _ -> params
     end
   end
 end
