@@ -39,6 +39,8 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @doc """
   Upload and add the files to the VectorStore
   """
+  @spec add_vector_store_files(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
   def add_vector_store_files(_, params, %{context: %{current_user: user}}) do
     Repo.put_process_state(user.organization_id)
     params = Map.put(params, :organization_id, user.organization_id)
