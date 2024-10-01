@@ -613,7 +613,7 @@ defmodule Glific.FilesearchTest do
   end
 
   @tag :asst_1
-  test "valid create assistant with vector_store", %{user: user} do
+  test "valid create assistant with vector_store", attrs do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://api.openai.com/v1/assistants"} ->
         %Tesla.Env{
@@ -626,10 +626,34 @@ defmodule Glific.FilesearchTest do
 
     # invalid vector_store_id
     result =
-      auth_query_gql_by(:create_assistant, user,
+      auth_query_gql_by(:create_assistant, attrs.user,
         variables: %{
           "input" => %{
             "vector_store_id" => 3
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    assert "Vector_store_id: does not exist" =
+             List.first(query_data.data["createAssistant"]["errors"])["message"]
+
+    valid_attrs = %{
+      vector_store_id: "vs_abcdef",
+      name: "VectorStore 1",
+      files: %{},
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
+
+    # valid vector_store_id
+    result =
+      auth_query_gql_by(:create_assistant, attrs.user,
+        variables: %{
+          "input" => %{
+            "vector_store_id" => vector_store.id
           }
         }
       )
