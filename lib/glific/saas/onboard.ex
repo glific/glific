@@ -316,6 +316,7 @@ defmodule Glific.Saas.Onboard do
   defp update_registration_details(params, registration) do
     # updates the `Dispute in T&C` column in Notion whenever user disagrees with T&C
     update_tc_dispute(params["terms_agreed"], registration)
+    params = update_is_disputed(params, registration)
 
     case params do
       %{"org_details" => org_details} ->
@@ -369,4 +370,13 @@ defmodule Glific.Saas.Onboard do
   end
 
   defp update_tc_dispute(_terms_agreed, _registration), do: :ok
+
+  @spec update_is_disputed(map(), Registration.t()) :: map()
+  defp update_is_disputed(params, registration) do
+    case {params["terms_agreed"], registration.is_disputed} do
+      {false, _} -> Map.put(params, "is_disputed", true)
+      {true, true} -> params
+      {true, false} -> Map.put(params, "is_disputed", false)
+    end
+  end
 end
