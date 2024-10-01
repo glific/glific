@@ -2,9 +2,11 @@ defmodule Glific.Filesearch do
   @moduledoc """
   Main module to interact with filesearch
   """
-  alias Glific.Repo
-  alias Glific.Filesearch.VectorStore
-  alias Glific.OpenAI.Filesearch.ApiClient
+  alias Glific.{
+    Filesearch.VectorStore,
+    OpenAI.Filesearch.ApiClient,
+    Repo
+  }
 
   @doc """
   Creates an empty vector store

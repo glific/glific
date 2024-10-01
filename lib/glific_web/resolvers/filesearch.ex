@@ -2,9 +2,11 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @moduledoc """
   Filesearch Resolver which sits between the GraphQL schema and Glific Filesearch API.
   """
-  alias Glific.Repo
-  alias Glific.Filesearch.VectorStore
-  alias Glific.Filesearch
+  alias Glific.{
+    Filesearch,
+    Filesearch.VectorStore,
+    Repo
+  }
 
   @doc """
   Create a Vector Store

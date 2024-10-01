@@ -92,7 +92,7 @@ defmodule Glific.FilesearchTest do
             id: "file-XNgygnDzO9cTs3YZLJWRscoq",
             status: "processed",
             filename: "sample.pdf",
-            bytes: 54836,
+            bytes: 54_836,
             object: "file",
             created_at: 1_727_027_487,
             purpose: "assistants",
@@ -156,7 +156,7 @@ defmodule Glific.FilesearchTest do
               id: "file-XNgygnDzO9cTs3YZLJWRscoq",
               status: "processed",
               filename: "sample.pdf",
-              bytes: 54836,
+              bytes: 54_836,
               object: "file",
               created_at: 1_727_027_487,
               purpose: "assistants",
@@ -331,13 +331,13 @@ defmodule Glific.FilesearchTest do
       files: %{
         "file-Cbfk7rPQG6geG8nfUCcn4zJm" => %{
           id: "file-Cbfk7rPQG6geG8nfUCcn4zJm",
-          size: 54836,
+          size: 54_836,
           status: "in_progress",
           filename: "sample.pdf"
         },
         "file-Cbfk7rPQG6geG8nfUCcn4zabc" => %{
           id: "file-Cbfk7rPQG6geG8nfUCcn4zabc",
-          size: 54836,
+          size: 54_836,
           status: "in_progress",
           filename: "sample2.pdf"
         }
@@ -381,7 +381,7 @@ defmodule Glific.FilesearchTest do
       files: %{
         "file-Cbfk7rPQG6geG8nfUCcn4zJm" => %{
           id: "file-Cbfk7rPQG6geG8nfUCcn4zJm",
-          size: 54836,
+          size: 54_836,
           status: "in_progress",
           filename: "sample.pdf"
         }

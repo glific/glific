@@ -439,14 +439,14 @@ defmodule Glific do
   end
 
   # TODO: doc
-  @spec get_open_ai_filesearch_key() :: String.t()
-  def get_open_ai_filesearch_key() do
+  @spec get_open_ai_filesearch_key :: String.t()
+  def get_open_ai_filesearch_key do
     Application.get_env(:glific, :open_ai_filesearch)
   end
 
   # TODO: doc
-  @spec get_open_ai_filesearch_project() :: String.t()
-  def get_open_ai_filesearch_project() do
+  @spec get_open_ai_filesearch_project :: String.t()
+  def get_open_ai_filesearch_project do
     Application.get_env(:glific, :open_ai_filesearch_proj)
   end
 
