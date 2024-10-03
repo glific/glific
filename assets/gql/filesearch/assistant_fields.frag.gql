@@ -3,8 +3,14 @@ fragment AssistantFields on AssistantResult {
   assistant {
     id
     name
+    assistant_id
+    settings {
+      temperature
+    }
     vector_store {
       id
+      vector_store_id
+      name
     }
     inserted_at
     updated_at

@@ -139,6 +139,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
 
     post(url, payload, headers: headers())
     |> parse_response()
+    |> IO.inspect()
   end
 
   @doc """
@@ -158,12 +159,12 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   @spec modify_assistant(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
   def modify_assistant(assistant_id, params) do
     url = @endpoint <> "/assistants/#{assistant_id}"
-    IO.inspect(params)
+
     payload =
       %{
         "name" => params.name,
         "model" => params.model,
-        "instructions" => params.instructions,
+        "instructions" => params.instructions || "",
         "temperature" => params.settings["temperature"]
       }
 

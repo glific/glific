@@ -249,14 +249,16 @@ defmodule Glific.Filesearch do
   @spec parse_assistant_attrs(Assistant.t(), map()) :: {:ok, map()} | {:error, any()}
   defp parse_assistant_attrs(assistant, attrs) do
     with {:ok, parsed_attrs} <- add_vector_store_ids(attrs) do
-      assistant
+      Map.from_struct(assistant)
       |> Map.merge(parsed_attrs)
       |> then(&{:ok, &1})
+      |> IO.inspect()
     end
   end
 
   @spec add_vector_store_ids(map()) :: {:ok, map()} | {:error, any()}
-  defp add_vector_store_ids(%{vector_store_id: vector_store_id} = params) do
+  defp add_vector_store_ids(%{vector_store_id: vector_store_id} = params)
+       when vector_store_id != nil do
     with {:ok, vector_store} <- VectorStore.get_vector_store(vector_store_id) do
       params = Map.put(params, :vector_store_ids, [vector_store.vector_store_id])
       {:ok, params}

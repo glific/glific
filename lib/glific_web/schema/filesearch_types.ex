@@ -78,7 +78,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
 
   input_object :assistant_input do
     field :name, :string
-    field :vector_store_id, :id
+    field :vector_store_id, :integer
     field :model, :string
     field :instructions, :string
     field :settings, :input_settings

@@ -1,7 +1,7 @@
 meta {
-  name: Create Assistant
+  name: Update Assistant
   type: graphql
-  seq: 8
+  seq: 10
 }
 
 post {
@@ -15,8 +15,8 @@ headers {
 }
 
 body:graphql {
-  mutation createAssistant($input:AssistantInput! = {}) {
-    createAssistant(input: $input) {
+  mutation updateAssistant($id: ID!, $input:AssistantInput! = {}) {
+    updateAssistant(id: $id, input: $input) {
       assistant {
         id
         name
@@ -44,6 +44,7 @@ body:graphql {
 
 body:graphql:vars {
   {
-    "input": {}
+    "input": {},
+    "id": "1"
   }
 }

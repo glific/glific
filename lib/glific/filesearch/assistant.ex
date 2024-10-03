@@ -124,6 +124,7 @@ defmodule Glific.Filesearch.Assistant do
     assistant
     |> Assistant.changeset(attrs)
     |> Repo.update()
+
   end
 
   @spec filter_with(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()

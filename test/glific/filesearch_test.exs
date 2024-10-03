@@ -745,7 +745,6 @@ defmodule Glific.FilesearchTest do
 
   @tag :up_ass
   test "update assistant", attrs do
-    # updating with empty input variables
     valid_attrs = %{
       assistant_id: "asst_abc",
       name: "new assistant",
@@ -768,6 +767,7 @@ defmodule Glific.FilesearchTest do
         }
     end)
 
+    # updating with empty input variables
     {:ok, query_data} =
       auth_query_gql_by(:update_assistant, attrs.user,
         variables: %{
@@ -777,5 +777,68 @@ defmodule Glific.FilesearchTest do
       )
 
     assert query_data.data["updateAssistant"]["assistant"]["assistant_id"] == "asst_abc"
+
+    # # updating with some input variables except vector_store_id
+    {:ok, query_data} =
+      auth_query_gql_by(:update_assistant, attrs.user,
+        variables: %{
+          "input" => %{
+            "name" => "assistant2",
+            "instructions" => "no instruction",
+            "settings" => %{
+              "temperature" => 1.8
+            }
+          },
+          "id" => assistant.id
+        }
+      )
+
+    assert {:ok, %{settings: %{"temperature" => 1.8}}} = Assistant.get_assistant(assistant.id)
+
+    assert %{"name" => "assistant2", "settings" => %{"temperature" => 1.8}} =
+             query_data.data["updateAssistant"]["assistant"]
+
+    # updating with some input variables and vector_store_id null
+    {:ok, _query_data} =
+      auth_query_gql_by(:update_assistant, attrs.user,
+        variables: %{
+          "input" => %{
+            "name" => "assistant2",
+            "instructions" => "no instruction",
+            "vector_store_id" => nil
+          },
+          "id" => assistant.id
+        }
+      )
+
+    assert {:ok, %{settings: %{"temperature" => 1.8}}} = Assistant.get_assistant(assistant.id)
+
+    # assert %{"name" => "assistant2", "vector_store" => nil, "settings" => %{"temperature" => 1.8}} =
+    #          query_data.data["updateAssistant"]["assistant"]
+
+    # attach a vector_store
+    valid_attrs = %{
+      vector_store_id: "vs_abcdef",
+      name: "VectorStore 1",
+      files: %{},
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
+
+    {:ok, _query_data} =
+      auth_query_gql_by(:update_assistant, attrs.user,
+        variables: %{
+          "input" => %{
+            "name" => "assistant2",
+            "instructions" => "no instruction",
+            "vector_store_id" => vector_store.id
+          },
+          "id" => assistant.id
+        }
+      )
+
+    assert %{"name" => "assistant2", "vector_store" => %{"name" => "VectorStore 1"}} =
+             query_data.data["updateAssistant"]["assistant"]
   end
 end
