@@ -120,14 +120,35 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   Create an Assistant
   """
   @spec create_assistant(map()) :: {:ok, map()} | {:error, String.t()}
-  def create_assistant(name) do
+  def create_assistant(params) do
     url = @endpoint <> "/assistants"
 
     payload =
-      %{"name" => name}
+      %{
+        "name" => params.name,
+        "model" => params.model,
+        "instructions" => params[:instructions],
+        "temperature" => params.settings.temperature,
+        "tool_resources" => %{
+          "file_search" => %{
+            "vector_store_ids" => params.vector_store_ids
+          }
+        }
+      }
       |> Jason.encode!()
 
     post(url, payload, headers: headers())
+    |> parse_response()
+  end
+
+  @doc """
+  Delete an Assistant
+  """
+  @spec delete_assistant(String.t()) :: {:ok, map()} | {:error, String.t()}
+  def delete_assistant(assistant_id) do
+    url = @endpoint <> "/assistants/#{assistant_id}"
+
+    delete(url, headers: headers())
     |> parse_response()
   end
 

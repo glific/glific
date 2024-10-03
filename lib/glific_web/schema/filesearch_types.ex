@@ -55,6 +55,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   object :assistant do
     field :id, :id
     field :name, :string
+    field :assistant_id, :string
     field :model, :string
     field :instructions, :string
     field :settings, :settings
@@ -144,6 +145,21 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       arg(:input, :assistant_input)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.create_assistant/3)
+    end
+
+    @desc "Delete Assistant"
+    field :delete_assistant, :assistant_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.delete_assistant/3)
+    end
+
+    @desc "Update Assistant"
+    field :update_assistant, :assistant_result do
+      arg(:input, :assistant_input)
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.update_assistant/3)
     end
   end
 

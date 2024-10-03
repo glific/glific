@@ -71,16 +71,15 @@ defmodule Glific.Filesearch.Assistant do
   def create_assistant(attrs) do
     %Assistant{}
     |> changeset(attrs)
-    |> IO.inspect()
     |> Repo.insert()
   end
 
   @doc """
   Get an assistant
   """
-  @spec get_assistant(integer()) :: Assistant.t() | nil
+  @spec get_assistant(integer()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
   def get_assistant(id),
-    do: Repo.get(Assistant, id)
+    do: Repo.fetch_by(Assistant, %{id: id})
 
   @doc """
   Deletes assistant

@@ -114,12 +114,38 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
-  Create a Assistant
+  Create an Assistant
   """
   @spec create_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_assistant(_, %{input: params}, %{context: %{current_user: _user}}) do
+  def create_assistant(_, %{input: params}, %{context: %{current_user: user}}) do
+    Repo.put_process_state(user.organization_id)
+
     Filesearch.create_assistant(params)
+  end
+
+  @doc """
+  Deletes the Assistant for the given ID
+  """
+  @spec delete_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any()} | {:error, any()}
+  def delete_assistant(_, params, %{context: %{current_user: user}}) do
+    Repo.put_process_state(user.organization_id)
+
+    with {:ok, assistant} <- Filesearch.delete_assistant(params.id) do
+      {:ok, %{assistant: assistant}}
+    end
+  end
+
+  @doc """
+  Updates an Assistant
+  """
+  @spec update_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_assistant(_, %{id: id, input: attrs}, %{context: %{current_user: _user}}) do
+    with {:ok, assistant} <- Filesearch.update_assistant(id, attrs) do
+      {:ok, %{assistant: assistant}}
+    end
   end
 
   @doc """

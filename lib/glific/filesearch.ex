@@ -15,7 +15,7 @@ defmodule Glific.Filesearch do
   @doc """
   Creates an empty VectorStore
   """
-  @spec create_vector_store(map()) :: {:ok, map()} | {:error, String.t()}
+  @spec create_vector_store(map()) :: {:ok, map()} | {:error, any()}
   def create_vector_store(params) do
     params = Map.put(params, :name, generate_temp_name(params[:name], "VectorStore"))
 
@@ -123,26 +123,35 @@ defmodule Glific.Filesearch do
   @doc """
   Creates an Assistant
   """
-  @spec create_assistant(map()) :: {:ok, map()} | {:error, String.t()}
+  @spec create_assistant(map()) :: {:ok, map()} | {:error, any()}
   def create_assistant(params) do
-    IO.inspect(params)
     params = Map.put(params, :name, generate_temp_name(params[:name], "Assistant"))
 
-    params =
+    # We can pass vector_store_ids while creating assistant, if available
+    vector_store_ids =
+      with %{vector_store_id: vs_id} <- params,
+           {:ok, vector_store} <- VectorStore.get_vector_store(vs_id) do
+        [vector_store.vector_store_id]
+      else
+        _ ->
+          []
+      end
+
+    attrs =
       %{
         settings: %{
           # default temperature for assistants in openAI
           temperature: 1
         },
         model: @default_model,
-        organization_id: Repo.get_organization_id()
+        organization_id: Repo.get_organization_id(),
+        vector_store_ids: vector_store_ids
       }
       |> Map.merge(params)
-      |> IO.inspect()
 
-    with {:ok, %{id: assistant_id}} <- ApiClient.create_assistant(params.name),
+    with {:ok, %{id: assistant_id}} <- ApiClient.create_assistant(attrs),
          {:ok, assistant} <-
-           Assistant.create_assistant(Map.put(params, :assistant_id, assistant_id)) do
+           Assistant.create_assistant(Map.put(attrs, :assistant_id, assistant_id)) do
       {:ok, %{assistant: assistant}}
     else
       {:error, %Ecto.Changeset{} = err} ->
@@ -150,6 +159,38 @@ defmodule Glific.Filesearch do
 
       {:error, reason} ->
         {:error, "Assistant ID creation failed due to #{reason}"}
+    end
+  end
+
+  @doc """
+  Deletes the Assistant for the given ID
+  """
+  @spec delete_assistant(integer()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
+  def delete_assistant(id) do
+    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
+         {:ok, _} <- ApiClient.delete_assistant(assistant.assistant_id) do
+      Repo.delete(assistant)
+    end
+  end
+
+  @spec update_assistant(integer(), map()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
+  def update_assistant(id, attrs) do
+    with {:ok, %Assistant{} = assistant} <- Assistant.get_assistant(id),
+         {:ok, _} <-
+           ApiClient.modify_vector_store(assistant.assistant_id, %{name: attrs.name}) do
+
+            # field :name, :string
+            # field :vector_store_id, :id, if present get vector_store_ids
+            # field :model, :string
+            # field :instructions, :string
+            # field :settings, :input_settings
+            # all optional
+
+
+      Assistant.update_assistant(
+        assistant,
+        attrs
+      )
     end
   end
 

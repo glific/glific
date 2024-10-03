@@ -3,6 +3,8 @@ defmodule Glific.FilesearchTest do
   Tests for public filesearch APIs
   """
 
+  alias Glific.Filesearch.Assistant
+
   alias Glific.{
     Filesearch,
     Filesearch.VectorStore,
@@ -53,6 +55,12 @@ defmodule Glific.FilesearchTest do
     :create_assistant,
     GlificWeb.Schema,
     "assets/gql/filesearch/create_assistant.gql"
+  )
+
+  load_gql(
+    :delete_assistant,
+    GlificWeb.Schema,
+    "assets/gql/filesearch/delete_assistant.gql"
   )
 
   test "valid create vector_store", %{user: user} do
@@ -660,7 +668,53 @@ defmodule Glific.FilesearchTest do
 
     assert {:ok, query_data} = result
 
-    assert "Vector_store_id: does not exist" =
-             List.first(query_data.data["createAssistant"]["errors"])["message"]
+    assert "Assistant" <> _ =
+             query_data.data["createAssistant"]["assistant"]["name"]
+  end
+
+  @tag :asst_1
+  test "delete_assistant/1, valid deletion", attrs do
+    valid_attrs = %{
+      assistant_id: "asst_abc",
+      name: "new assistant",
+      settings: %{},
+      model: "gpt-4o",
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, assistant} = Assistant.create_assistant(valid_attrs)
+
+    Tesla.Mock.mock(fn
+      %{method: :delete} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            deleted: true
+          }
+        }
+    end)
+
+    result =
+      auth_query_gql_by(:delete_assistant, attrs.user,
+        variables: %{
+          "id" => assistant.id
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert query_data.data["deleteAssistant"]["assistant"]["name"] == "new assistant"
+  end
+
+  @tag :asst_1
+  test "delete_assistant/1, invalid deletion", attrs do
+    result =
+      auth_query_gql_by(:delete_assistant, attrs.user,
+        variables: %{
+          "id" => 0
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert length(query_data.data["deleteAssistant"]["errors"]) == 1
   end
 end
