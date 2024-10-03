@@ -173,13 +173,12 @@ defmodule Glific.Filesearch do
     end
   end
 
-  @spec update_assistant(integer(), map()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_assistant(integer(), map()) :: {:ok, Assistant.t()} | {:error, any()}
   def update_assistant(id, attrs) do
     with {:ok, %Assistant{} = assistant} <- Assistant.get_assistant(id),
          {:ok, params} <- parse_assistant_attrs(assistant, attrs),
          {:ok, _} <-
            ApiClient.modify_assistant(assistant.assistant_id, params) do
-
       Assistant.update_assistant(
         assistant,
         params
@@ -249,20 +248,20 @@ defmodule Glific.Filesearch do
 
   @spec parse_assistant_attrs(Assistant.t(), map()) :: {:ok, map()} | {:error, any()}
   defp parse_assistant_attrs(assistant, attrs) do
-    with {:ok, parsed_attrs} <- get_vector_store_ids(attrs) do
+    with {:ok, parsed_attrs} <- add_vector_store_ids(attrs) do
       assistant
       |> Map.merge(parsed_attrs)
       |> then(&{:ok, &1})
     end
   end
 
-  @spec get_vector_store_ids(map()) :: {:ok, map()} | {:error, any()}
-  defp get_vector_store_ids(%{vector_store_id: vector_store_id} = params) do
+  @spec add_vector_store_ids(map()) :: {:ok, map()} | {:error, any()}
+  defp add_vector_store_ids(%{vector_store_id: vector_store_id} = params) do
     with {:ok, vector_store} <- VectorStore.get_vector_store(vector_store_id) do
       params = Map.put(params, :vector_store_ids, [vector_store.vector_store_id])
       {:ok, params}
     end
   end
 
-  defp get_vector_store_ids(params), do: {:ok, params}
+  defp add_vector_store_ids(params), do: {:ok, params}
 end

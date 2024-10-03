@@ -63,6 +63,12 @@ defmodule Glific.FilesearchTest do
     "assets/gql/filesearch/delete_assistant.gql"
   )
 
+  load_gql(
+    :update_assistant,
+    GlificWeb.Schema,
+    "assets/gql/filesearch/update_assistant.gql"
+  )
+
   test "valid create vector_store", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://api.openai.com/v1/vector_stores"} ->
@@ -673,17 +679,29 @@ defmodule Glific.FilesearchTest do
 
     # after deleting the attached vectorStore
     assert {:ok, _} = VectorStore.delete_vector_store(vector_store)
-    {:ok, _assistant} = Assistant.get_assistant(query_data.data["createAssistant"]["assistant"]["id"])
+
+    {:ok, %Assistant{vector_store_id: nil}} =
+      Assistant.get_assistant(query_data.data["createAssistant"]["assistant"]["id"])
   end
 
   @tag :asst_1
   test "delete_assistant/1, valid deletion", attrs do
     valid_attrs = %{
+      vector_store_id: "vs_abcdef",
+      name: "VectorStore 1",
+      files: %{},
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
+
+    valid_attrs = %{
       assistant_id: "asst_abc",
       name: "new assistant",
       settings: %{},
       model: "gpt-4o",
-      organization_id: attrs.organization_id
+      organization_id: attrs.organization_id,
+      vector_store_id: vector_store.id
     }
 
     {:ok, assistant} = Assistant.create_assistant(valid_attrs)
@@ -707,6 +725,9 @@ defmodule Glific.FilesearchTest do
 
     assert {:ok, query_data} = result
     assert query_data.data["deleteAssistant"]["assistant"]["name"] == "new assistant"
+
+    # deleting assistant shouldnot delete attached vector store
+    assert {:ok, _} = VectorStore.get_vector_store(vector_store.id)
   end
 
   @tag :asst_1
@@ -720,5 +741,41 @@ defmodule Glific.FilesearchTest do
 
     assert {:ok, query_data} = result
     assert length(query_data.data["deleteAssistant"]["errors"]) == 1
+  end
+
+  @tag :up_ass
+  test "update assistant", attrs do
+    # updating with empty input variables
+    valid_attrs = %{
+      assistant_id: "asst_abc",
+      name: "new assistant",
+      settings: %{
+        temperature: 1
+      },
+      model: "gpt-4o",
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, assistant} = Assistant.create_assistant(valid_attrs)
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "asst_abc"
+          }
+        }
+    end)
+
+    {:ok, query_data} =
+      auth_query_gql_by(:update_assistant, attrs.user,
+        variables: %{
+          "input" => %{},
+          "id" => assistant.id
+        }
+      )
+
+    assert query_data.data["updateAssistant"]["assistant"]["assistant_id"] == "asst_abc"
   end
 end
