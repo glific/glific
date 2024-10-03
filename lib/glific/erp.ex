@@ -48,7 +48,7 @@ defmodule Glific.ERP do
 
       {:ok, %Tesla.Env{status: status, body: body}} ->
         Logger.error("Unexpected response: status #{status}, body: #{inspect(body)}")
-        {:error, "Unexpected response from ERP: Status #{status}, Body: #{inspect(body)}"}
+        {:error, "Unexpected response from ERP: Status #{status}, Body: #{body.exception}"}
 
       {:error, reason} ->
         Logger.error("Failed to fetch organizations: #{inspect(reason)}")
