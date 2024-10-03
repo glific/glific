@@ -670,6 +670,10 @@ defmodule Glific.FilesearchTest do
 
     assert "Assistant" <> _ =
              query_data.data["createAssistant"]["assistant"]["name"]
+
+    # after deleting the attached vectorStore
+    assert {:ok, _} = VectorStore.delete_vector_store(vector_store)
+    {:ok, _assistant} = Assistant.get_assistant(query_data.data["createAssistant"]["assistant"]["id"])
   end
 
   @tag :asst_1

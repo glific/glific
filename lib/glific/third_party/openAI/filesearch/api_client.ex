@@ -152,6 +152,37 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
+  @doc """
+  Update an Assistant
+  """
+  @spec modify_assistant(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
+  def modify_assistant(assistant_id, params) do
+    url = @endpoint <> "/assistants/#{assistant_id}"
+
+    payload =
+      %{
+        "name" => params.name,
+        "model" => params.model,
+        "instructions" => params[:instructions],
+        "temperature" => params.settings.temperature
+      }
+
+    if Map.has_key?(params, :vector_store_ids) do
+      Map.merge(payload, %{
+        "tool_resources" => %{
+          "file_search" => %{
+            "vector_store_ids" => params.vector_store_ids
+          }
+        }
+      })
+    else
+      payload
+    end
+    |> Jason.encode!()
+    |> then(&post(url, &1, headers: headers()))
+    |> parse_response()
+  end
+
   @spec parse_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t()}
   defp parse_response({:ok, %{body: resp_body, status: status}})
        when status >= 200 and status < 300 do

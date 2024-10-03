@@ -20,7 +20,7 @@ defmodule Glific.Repo.Migrations.FilesearchTables do
         null: false,
         comment: "Additional assistant settings such as temperature, chunks etc"
 
-      add :vector_store_id, references(:openai_vector_stores, on_delete: :nothing),
+      add :vector_store_id, references(:openai_vector_stores, on_delete: :nilify_all),
         comment: "Unique VectorStore id"
 
       # Foreign key to organization, restricting the scope of this table to the specified organization.
