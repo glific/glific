@@ -57,7 +57,9 @@ defmodule GlificWeb.API.V1.OnboardController do
     json(conn, Onboard.reachout(params))
   end
 
-  @doc false
+  @doc """
+  Fetches the list of existing organizations from ERP.
+  """
   @spec fetch_erp_organizations(Conn.t(), map()) :: Conn.t()
   def fetch_erp_organizations(conn, _params) do
     case ERP.fetch_organizations() do
