@@ -113,17 +113,22 @@ defmodule Glific.Processor.ConsumerFlow do
         start_new_flow(message, message.body, state, opts)
 
       # making sure that user is not in any flow.
-      context_nil?(context) && match_with_regex?(state.regx_flow, message.body) ->
-        flow_id = Glific.parse_maybe_integer!(state.regx_flow.flow_id)
-        flow_params = {:flow_id, flow_id, @final_phrase}
-        start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
-
       context_nil?(context) ->
-        state = Periodic.run_flows(state, message)
-        {message, state}
+        handle_nil_context(state, message, body)
 
       true ->
         continue_current_context(context, message, body, state)
+    end
+  end
+
+  defp handle_nil_context(state, message, body) do
+    if match_with_regex?(state.regx_flow, message.body) do
+      flow_id = Glific.parse_maybe_integer!(state.regx_flow.flow_id)
+      flow_params = {:flow_id, flow_id, @final_phrase}
+      start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
+    else
+      state = Periodic.run_flows(state, message)
+      {message, state}
     end
   end
 
@@ -294,7 +299,8 @@ defmodule Glific.Processor.ConsumerFlow do
     end
   end
 
-  @spec context_nil?(FlowContext.t() | nil) :: boolean()
+  @spec context_nil?(any()) :: boolean()
   ## not sure why this is giving dialyzer error. Ignoring for now
-  defp context_nil?(context), do: is_nil(context)
+  defp context_nil?(context) when is_nil(context), do: true
+  defp context_nil?(_context), do: false
 end
