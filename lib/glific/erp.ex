@@ -1,6 +1,6 @@
 defmodule Glific.ERP do
   @moduledoc """
-  ERP API integration utilities for fetching organization data.
+  ERP API integration utilities
   """
 
   require Logger
