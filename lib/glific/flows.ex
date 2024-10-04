@@ -888,15 +888,18 @@ defmodule Glific.Flows do
         keyword = Glific.string_clean(keyword)
         acc = update_flow_keyword_map(acc, flow.status, keyword, flow.id)
 
-        # always add to draft status if published
-        if flow.status == "published" && flow.is_template == true,
-          do: update_flow_keyword_map(acc, "draft", keyword, flow.id),
-          else: acc
+        cond do
+          # always add to draft status if published
+          flow.status == "published" ->
+            update_flow_keyword_map(acc, "draft", keyword, flow.id)
 
-        # add template flows
-        if flow.is_template == true,
-          do: update_flow_keyword_map(acc, "template", flow.name, flow.id),
-          else: acc
+          # add template flows
+          flow.is_template == true ->
+            update_flow_keyword_map(acc, "template", flow.name, flow.id)
+
+          true ->
+            acc
+        end
       end
     )
   end
