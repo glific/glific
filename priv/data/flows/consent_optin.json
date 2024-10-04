@@ -1,0 +1,312 @@
+{
+    "interactive_templates": [
+        {
+            "send_with_title": false,
+            "source_id": 14026,
+            "language_id": 1,
+            "interactive_content": {
+                "type": "quick_reply",
+                "options": [
+                    {
+                        "type": "text",
+                        "title": "Yes"
+                    }
+                ],
+                "content": {
+                    "type": "text",
+                    "text": "Are you okay receiving messages from Glific?\n\n",
+                    "header": "Consent- Glific",
+                    "caption": "Type STOP if you don't want to receive messages from us"
+                }
+            },
+            "translations": {
+                "1": {
+                    "type": "quick_reply",
+                    "options": [
+                        {
+                            "type": "text",
+                            "title": "Yes"
+                        }
+                    ],
+                    "content": {
+                        "type": "text",
+                        "text": "Are you okay receiving messages from Glific?\n\n",
+                        "header": "Consent- Glific",
+                        "caption": "Type STOP if you don't want to receive messages from us"
+                    }
+                }
+            },
+            "type": "quick_reply",
+            "label": "Consent- Glific"
+        }
+    ],
+    "flows": [
+        {
+            "definition": {
+                "vars": [
+                    "6480c77a-e3f9-42ec-a1d3-020826a3f9b5"
+                ],
+                "uuid": "6480c77a-e3f9-42ec-a1d3-020826a3f9b5",
+                "type": "messaging",
+                "spec_version": "13.2.0",
+                "nodes": [
+                    {
+                        "uuid": "a1d76940-fe6c-4993-b80c-efbe38085500",
+                        "exits": [
+                            {
+                                "uuid": "17758590-cfc3-42b8-a492-cbaf10d90fec",
+                                "destination_uuid": "da3d041b-8c13-44de-98d4-3764b2fd2903"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "e36b18e0-d6dd-41d4-a9c0-9ab53b3329b6",
+                                "type": "send_interactive_msg",
+                                "text": "{\"content\":{\"caption\":\"Type STOP if you don't want to receive messages from us\",\"header\":\"Consent- Glific\",\"text\":\"Are you okay receiving messages from Glific?\\n\\n\",\"type\":\"text\"},\"options\":[{\"title\":\"Yes\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+                                "name": "Consent- Glific",
+                                "labels": [],
+                                "id": 14026,
+                                "attachment_url": "",
+                                "attachment_type": ""
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "da3d041b-8c13-44de-98d4-3764b2fd2903",
+                        "router": {
+                            "wait": {
+                                "type": "msg"
+                            },
+                            "type": "switch",
+                            "result_name": "consent",
+                            "operand": "@input.text",
+                            "default_category_uuid": "4a24c00e-b171-49d9-9b30-08a2cc4b8327",
+                            "categories": [
+                                {
+                                    "uuid": "72b3c90a-f74e-4106-ac4f-b5563ef1bf18",
+                                    "name": "Yes",
+                                    "exit_uuid": "f2682652-f652-4480-9564-2fe2ee3d5613"
+                                },
+                                {
+                                    "uuid": "4a24c00e-b171-49d9-9b30-08a2cc4b8327",
+                                    "name": "Other",
+                                    "exit_uuid": "9f223686-0aa4-4535-afd3-c99fee9507ac"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "9c6a6bed-975d-4cf9-9d36-241de8997b2e",
+                                    "type": "has_any_word",
+                                    "category_uuid": "72b3c90a-f74e-4106-ac4f-b5563ef1bf18",
+                                    "arguments": [
+                                        "Yes"
+                                    ]
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "f2682652-f652-4480-9564-2fe2ee3d5613",
+                                "destination_uuid": "ff3f0531-3203-4bca-8bbc-6c8bd45c81f0"
+                            },
+                            {
+                                "uuid": "9f223686-0aa4-4535-afd3-c99fee9507ac",
+                                "destination_uuid": "858da854-8064-41ab-bb8c-c825f7f6385b"
+                            }
+                        ],
+                        "actions": []
+                    },
+                    {
+                        "uuid": "ff3f0531-3203-4bca-8bbc-6c8bd45c81f0",
+                        "exits": [
+                            {
+                                "uuid": "3a483b96-05df-4f75-bcae-faa8737e3984",
+                                "destination_uuid": "f4e04ed1-9f51-4c69-84e7-88c045237c44"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "9e2dd0e0-bc70-4f66-ba0a-7371092b5a26",
+                                "type": "send_msg",
+                                "text": "Thank you for joining me",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "858da854-8064-41ab-bb8c-c825f7f6385b",
+                        "exits": [
+                            {
+                                "uuid": "41f057fa-33e3-4975-8a18-a9ded9671457",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "114bea64-5058-4c51-bbdd-fd33501e0d53",
+                                "type": "send_msg",
+                                "text": "That's sad to see you leave. We have many helpful information for you on the bot.\nPlease type *Register* if you decide to come back.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "f4e04ed1-9f51-4c69-84e7-88c045237c44",
+                        "exits": [
+                            {
+                                "uuid": "859ea22b-5e94-4386-8d02-308716188d07",
+                                "destination_uuid": "e48e239f-2981-419e-a2d5-020269cb6147"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "value": "optin",
+                                "uuid": "7fd2a20b-f1ba-4e04-8b60-e6ddd09af58d",
+                                "type": "set_contact_field",
+                                "field": {
+                                    "name": "Consent status",
+                                    "key": "settings"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "e48e239f-2981-419e-a2d5-020269cb6147",
+                        "exits": [
+                            {
+                                "uuid": "446007b1-ea47-4a5b-8ff5-9fff649bc9ac",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "771186e3-84fe-40b7-b782-a4c2c07a3947",
+                                "type": "add_contact_groups",
+                                "groups": [
+                                    {
+                                        "uuid": "106",
+                                        "type": "group",
+                                        "name": "Optin contacts"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "name": "Consent_Optin flow",
+                "localization": {
+                    "hi": {
+                        "9e2dd0e0-bc70-4f66-ba0a-7371092b5a26": {
+                            "text": [
+                                "हमसे जुडने के लिए तुम्हारा शुक्रिया!"
+                            ]
+                        },
+                        "114bea64-5058-4c51-bbdd-fd33501e0d53": {
+                            "text": [
+                                "आपको जाते हुए देखकर दुख हुआ। हमारे पास बॉट पर आपके लिए कई उपयोगी जानकारी है। अगर आप वापस आने का फैसला करते हैं तो कृपया *Register* टाइप करें।"
+                            ]
+                        }
+                    },
+                    "en": {
+                        "9e2dd0e0-bc70-4f66-ba0a-7371092b5a26": {
+                            "text": [
+                                "Thank you for joining us!"
+                            ]
+                        },
+                        "114bea64-5058-4c51-bbdd-fd33501e0d53": {
+                            "text": [
+                                "That's sad to see you leave. We have many helpful information for you on the bot.\nPlease type *Register* if you decide to come back."
+                            ]
+                        }
+                    }
+                },
+                "language": "base",
+                "expire_after_minutes": 10080,
+                "_ui": {
+                    "stickies": {
+                        "7039f6e1-d462-42cd-b212-372d73ab16e2": {
+                            "title": "Good to have : Node 3865b",
+                            "position": {
+                                "top": 160,
+                                "left": 780
+                            },
+                            "color": "purple",
+                            "body": "If in node 5500 you have a Yes/ No option instead of footer option, you can also add a cross confirmation question at Node 385b explaining how bot will be helpful for them and ask consent again."
+                        },
+                        "3fb353de-b530-45bd-b02a-67e8af8b3ca4": {
+                            "title": "Explainer : Node 5500",
+                            "position": {
+                                "top": 220,
+                                "right": null,
+                                "left": 20,
+                                "bottom": null
+                            },
+                            "color": "yellow",
+                            "body": "Instead of providing Yes and No options, it's better to add them in the footer. This reduces the chances of users accidentally clicking No when trying to click Yes. Therefore, adding them as a footer option is more effective."
+                        }
+                    },
+                    "nodes": {
+                        "ff3f0531-3203-4bca-8bbc-6c8bd45c81f0": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 360,
+                                "left": 420
+                            }
+                        },
+                        "f4e04ed1-9f51-4c69-84e7-88c045237c44": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 480,
+                                "left": 420
+                            }
+                        },
+                        "e48e239f-2981-419e-a2d5-020269cb6147": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 600,
+                                "left": 420
+                            }
+                        },
+                        "da3d041b-8c13-44de-98d4-3764b2fd2903": {
+                            "type": "wait_for_response",
+                            "position": {
+                                "top": 180,
+                                "left": 500
+                            },
+                            "config": {
+                                "cases": {}
+                            }
+                        },
+                        "a1d76940-fe6c-4993-b80c-efbe38085500": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 0,
+                                "left": 0
+                            }
+                        },
+                        "858da854-8064-41ab-bb8c-c825f7f6385b": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 400,
+                                "left": 720
+                            }
+                        }
+                    }
+                }
+            },
+            "keywords": [
+                
+            ]
+        }
+    ],
+    "contact_field": [
+        "settings"
+    ],
+    "collections": [
+        "Optin contacts"
+    ]
+}

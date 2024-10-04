@@ -524,9 +524,8 @@ defmodule GlificWeb.Schema.FlowTest do
       )
 
     assert {:ok, query_data} = result
-
-    assert get_in(query_data, [:errors, Access.at(0), :message]) ==
-             "could not initiate broadcast"
+    # Even if the contact_ids is empty, it doesn't have to return error
+    assert get_in(query_data, [:data, "startGroupFlow", "success"]) == true
   end
 
   test "copy a flow and test possible scenarios and errors", %{manager: user} do
