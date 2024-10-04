@@ -884,25 +884,32 @@ defmodule Glific.Flows do
     Enum.reduce(
       flow.keywords,
       acc,
-      fn keyword, acc ->
-        keyword = Glific.string_clean(keyword)
-        acc = update_flow_keyword_map(acc, flow.status, keyword, flow.id)
+      fn
+        keyword, acc ->
+          keyword = Glific.string_clean(keyword)
+          acc = update_flow_keyword_map(acc, flow.status, keyword, flow.id)
 
-        cond do
           # always add to draft status if published
-          flow.status == "published" ->
+
+          if flow.status == "published" do
             update_flow_keyword_map(acc, "draft", keyword, flow.id)
-
-          # add template flows
-          flow.is_template == true ->
-            update_flow_keyword_map(acc, "template", flow.name, flow.id)
-
-          true ->
+          else
             acc
-        end
+          end
       end
     )
+    |> update_flow_keyword_map_with_template_flow(flow)
   end
+
+  @spec update_flow_keyword_map_with_template_flow(map(), map()) :: map()
+  defp update_flow_keyword_map_with_template_flow(
+         flow_keyword_map,
+         %{is_template: true} = flow
+       ) do
+    update_flow_keyword_map(flow_keyword_map, "template", flow.name, flow.id)
+  end
+
+  defp update_flow_keyword_map_with_template_flow(flow_keyword_map, _flow), do: flow_keyword_map
 
   @spec load_flow_keywords_map(tuple()) :: tuple()
   defp load_flow_keywords_map(cache_key) do
