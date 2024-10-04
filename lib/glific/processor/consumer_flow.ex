@@ -3,7 +3,7 @@ defmodule Glific.Processor.ConsumerFlow do
   Given a message, run it thru the flow engine. This is an auxilary module to help
   consumer_worker which is the main workhorse
   """
-
+  @dialyzer {:nowarn_function, context_nil?: 1}
   import Ecto.Query, warn: false
 
   alias Glific.{
@@ -80,7 +80,7 @@ defmodule Glific.Processor.ConsumerFlow do
   @doc """
   In case contact is not in optin flow let's move ahead with the regular processing.
   """
-  @spec move_forward({Message.t(), map()}, String.t(), FlowContext.t(), Keyword.t()) ::
+  @spec move_forward({Message.t(), map()}, String.t(), FlowContext.t() | nil, Keyword.t()) ::
           {Message.t(), map()}
   def move_forward({message, state}, body, context, opts) do
     cond do
