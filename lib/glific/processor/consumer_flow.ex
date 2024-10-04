@@ -299,8 +299,7 @@ defmodule Glific.Processor.ConsumerFlow do
     end
   end
 
-  @spec context_nil?(any()) :: boolean()
+  @spec context_nil?(FlowContext.t() | nil) :: boolean()
   ## not sure why this is giving dialyzer error. Ignoring for now
-  defp context_nil?(context) when is_nil(context), do: true
-  defp context_nil?(_context), do: false
+  defp context_nil?(context), do: is_nil(context)
 end
