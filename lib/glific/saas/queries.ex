@@ -425,12 +425,22 @@ defmodule Glific.Saas.Queries do
       shortcode: params["shortcode"]
     }
 
-    %{
+    registration_map = %{
       org_details: org_details,
       organization_id: result.organization.id,
       platform_details: platform_details,
       ip_address: params["client_ip"]
     }
+
+    # if the org already exists in ERP we store the erp-org id in glific db to update the same entry in ERP
+    registration_map =
+      if Map.has_key?(params, "erp_page_id") do
+        Map.put(registration_map, :erp_page_id, params["erp_page_id"])
+      else
+        registration_map
+      end
+
+    registration_map
     |> Registrations.create_registration()
     |> case do
       {:ok, %{id: id} = registration} ->
