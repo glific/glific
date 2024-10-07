@@ -13,7 +13,6 @@ defmodule Glific.OpenAI.ChatGPT do
   @default_params %{
     "model" => "gpt-4o",
     "temperature" => 0.7,
-    "max_tokens" => 250,
     "top_p" => 1,
     "frequency_penalty" => 0,
     "presence_penalty" => 0
