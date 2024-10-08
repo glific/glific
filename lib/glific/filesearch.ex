@@ -58,38 +58,6 @@ defmodule Glific.Filesearch do
   end
 
   @doc """
-  Removes the given file from the VectorStore
-
-  Also deletes the file from the openAI
-  """
-  @spec remove_vector_store_file(map()) :: {:ok, VectorStore.t()} | {:error, String.t()}
-  def remove_vector_store_file(params) do
-    with {:ok, %VectorStore{} = vector_store} <- VectorStore.get_vector_store(params.id),
-         {:ok, file} <- get_file(vector_store, params.file_id),
-         {:ok, _} <-
-           ApiClient.delete_vector_store_file(%{
-             file_id: file["id"],
-             vector_store_id: vector_store.vector_store_id
-           }) do
-      # We will initiate the file deletion async, since don't want to delay the main process
-      Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
-        ApiClient.delete_file(file["id"])
-      end)
-
-      VectorStore.update_vector_store(
-        vector_store,
-        %{files: Map.delete(vector_store.files, file["id"])}
-      )
-    else
-      {:error, %Ecto.Changeset{} = err} ->
-        {:error, err}
-
-      {:error, reason} ->
-        {:error, "Removing VectorStore failed due to #{reason}"}
-    end
-  end
-
-  @doc """
   Updates the VectorStore with given attrs
   """
   @spec update_vector_store(integer(), map()) :: {:ok, map()} | {:error, Ecto.Changeset.t()}
