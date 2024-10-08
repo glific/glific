@@ -38,13 +38,12 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   object :file_info do
     field :id, :string
     field :name, :string
-    field :size, :integer
+    field :uploaded_at, :string
   end
 
   object :file_result do
     field :file_id, :string
     field :filename, :string
-    field :size, :integer
   end
 
   object :assistant_result do
@@ -58,7 +57,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :assistant_id, :string
     field :model, :string
     field :instructions, :string
-    field :settings, :settings
+    field :settings, :settings_output
 
     field :vector_store, :vector_store do
       resolve(dataloader(Repo))
@@ -68,7 +67,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :updated_at, :datetime
   end
 
-  object :settings do
+  object :settings_output do
     field :temperature, :float
   end
 
@@ -86,6 +85,11 @@ defmodule GlificWeb.Schema.FilesearchTypes do
 
   input_object :input_settings do
     field :temperature, :float
+  end
+
+  input_object :file_info_input do
+    field :file_id, :string
+    field :filename, :string
   end
 
   @desc "Filtering options for VectorStore"
@@ -107,14 +111,6 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       arg(:media, non_null(:upload))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.upload_file/3)
-    end
-
-    @desc "Add files to VectorStore"
-    field :add_vector_store_files, :vector_store_result do
-      arg(:media, non_null(list_of(non_null(:upload))))
-      arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.add_vector_store_files/3)
     end
 
     @desc "Remove files from VectorStore"
@@ -152,6 +148,14 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.delete_assistant/3)
+    end
+
+    @desc "Add files to Assistant"
+    field :add_assistant_files, :assistant_result do
+      arg(:media_info, non_null(list_of(non_null(:file_info_input))))
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.add_assistant_files/3)
     end
 
     @desc "Update Assistant"

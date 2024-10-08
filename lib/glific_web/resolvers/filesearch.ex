@@ -37,20 +37,6 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
-  Upload and add the files to the VectorStore
-  """
-  @spec add_vector_store_files(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def add_vector_store_files(_, params, %{context: %{current_user: user}}) do
-    Repo.put_process_state(user.organization_id)
-    params = Map.put(params, :organization_id, user.organization_id)
-
-    with {:ok, vector_store} <- Filesearch.add_vector_store_files(params) do
-      {:ok, %{vector_store: vector_store}}
-    end
-  end
-
-  @doc """
   Deletes the VectorStore for the given ID
   """
   @spec delete_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
@@ -138,6 +124,20 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
+  Upload and add the files to the VectorStore
+  """
+  @spec add_assistant_files(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def add_assistant_files(_, params, %{context: %{current_user: user}}) do
+    Repo.put_process_state(user.organization_id)
+    params = Map.put(params, :organization_id, user.organization_id)
+
+    with {:ok, assistant} <- Filesearch.add_assistant_files(params) do
+      {:ok, %{assistant: assistant}}
+    end
+  end
+
+  @doc """
   Updates an Assistant
   """
   @spec update_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
@@ -154,7 +154,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec list_files(VectorStore.t(), map(), map()) :: {:ok, list()}
   def list_files(vector_store, _args, _context) do
     Enum.map(vector_store.files, fn {id, info} ->
-      %{id: id, name: info["filename"], size: info["size"]}
+      %{id: id, name: info["filename"], uploaded_at: info["uploaded_at"]}
     end)
     |> then(&{:ok, &1})
   end

@@ -18,11 +18,10 @@ defmodule Glific.Filesearch do
   @spec create_vector_store(map()) :: {:ok, map()} | {:error, any()}
   def create_vector_store(params) do
     params = Map.put(params, :name, generate_temp_name(params[:name], "VectorStore"))
+    api_params = params |> Map.take([:name, :file_ids])
 
-    with {:ok, %{id: store_id}} <- ApiClient.create_vector_store(params.name),
-         {:ok, vector_store} <-
-           VectorStore.create_vector_store(Map.put(params, :vector_store_id, store_id)) do
-      {:ok, %{vector_store: vector_store}}
+    with {:ok, %{id: store_id}} <- ApiClient.create_vector_store(api_params) do
+      VectorStore.create_vector_store(Map.put(params, :vector_store_id, store_id))
     else
       {:error, %Ecto.Changeset{} = err} ->
         {:error, err}
@@ -42,23 +41,8 @@ defmodule Glific.Filesearch do
       {:ok,
        %{
          file_id: file.id,
-         filename: file.filename,
-         size: file.bytes
+         filename: file.filename
        }}
-    end
-  end
-
-  @doc """
-  Upload and add the files to the VectorStore
-  """
-  @spec add_vector_store_files(map()) :: {:ok, map()} | {:error, Ecto.Changeset.t()}
-  def add_vector_store_files(params) do
-    with {:ok, vector_store} <- VectorStore.get_vector_store(params.id),
-         files_details <- bulk_upload_vector_store_files(vector_store, params) do
-      VectorStore.update_vector_store(
-        vector_store,
-        %{files: Map.merge(vector_store.files, files_details)}
-      )
     end
   end
 
@@ -173,7 +157,19 @@ defmodule Glific.Filesearch do
     end
   end
 
-  @spec update_assistant(integer(), map()) :: {:ok, Assistant.t()} | {:error, any()}
+  @doc """
+  Upload and add the files to the Assistant
+  """
+  @spec add_assistant_files(map()) :: {:ok, map()} | {:error, Ecto.Changeset.t()}
+  def add_assistant_files(params) do
+    with {:ok, assistant} <- Assistant.get_assistant(params.id),
+         assistant = Repo.preload(assistant, :vector_store),
+         {:ok, vector_store} <- bulk_upload_vector_store_files(assistant.vector_store, params) do
+      update_assistant(assistant.id, %{vector_store_id: vector_store.id})
+    end
+  end
+
+  @spec update_assistant(integer(), map()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
   def update_assistant(id, attrs) do
     with {:ok, %Assistant{} = assistant} <- Assistant.get_assistant(id),
          {:ok, params} <- parse_assistant_attrs(assistant, attrs),
@@ -213,37 +209,52 @@ defmodule Glific.Filesearch do
 
   defp generate_temp_name(name, _artifact), do: name
 
-  @spec bulk_upload_vector_store_files(VectorStore.t(), map()) :: map()
+  @spec bulk_upload_vector_store_files(VectorStore.t() | nil, map()) ::
+          {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}
+  defp bulk_upload_vector_store_files(nil, params) do
+    file_ids = Enum.map(params.media_info, fn info -> info.file_id end)
+
+    vector_store_params = %{
+      file_ids: file_ids,
+      organization_id: Repo.get_organization_id(),
+      files: %{}
+    }
+
+    with {:ok, vector_store} <- create_vector_store(vector_store_params) do
+      update_vector_store_files(vector_store, params)
+    end
+  end
+
   defp bulk_upload_vector_store_files(vector_store, params) do
-    Task.async_stream(
-      params.media,
-      fn media_info ->
-        with {:ok, file} <- ApiClient.upload_file(media_info),
-             {:ok, vector_store_file} <-
-               ApiClient.create_vector_store_file(%{
-                 vector_store_id: vector_store.vector_store_id,
-                 file_id: file.id
-               }) do
-          %{
-            id: file.id,
-            filename: file.filename,
-            size: file.bytes,
-            status: vector_store_file.status
-          }
-        else
-          _ -> %{}
-        end
-      end,
-      timeout: 10_000,
-      on_timeout: :kill_task
+    file_ids = Enum.map(params.media_info, fn media_info -> media_info.file_id end)
+
+    vector_store_batch_params = %{
+      file_ids: file_ids
+    }
+
+    with {:ok, _} <-
+           ApiClient.create_vector_store_batch(
+             vector_store.vector_store_id,
+             vector_store_batch_params
+           ) do
+      update_vector_store_files(vector_store, params)
+    end
+  end
+
+  @spec update_vector_store_files(VectorStore.t(), map()) ::
+          {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}
+  defp update_vector_store_files(vector_store, params) do
+    uploaded_at = DateTime.utc_now() |> DateTime.to_iso8601()
+
+    files_details =
+      Enum.reduce(params.media_info, %{}, fn info, files ->
+        Map.put(files, info.file_id, Map.put(info, :uploaded_at, uploaded_at))
+      end)
+
+    VectorStore.update_vector_store(
+      vector_store,
+      %{files: Map.merge(vector_store.files, files_details)}
     )
-    |> Enum.reduce(%{}, fn response, acc ->
-      case response do
-        {:ok, file} when file == %{} -> acc
-        {:ok, file} -> Map.put(acc, file.id, file)
-        _ -> acc
-      end
-    end)
   end
 
   @spec parse_assistant_attrs(Assistant.t(), map()) :: {:ok, map()} | {:error, any()}

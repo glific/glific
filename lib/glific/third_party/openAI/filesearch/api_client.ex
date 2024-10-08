@@ -25,12 +25,12 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   @doc """
   Create a VectorStore
   """
-  @spec create_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
-  def create_vector_store(name) do
+  @spec create_vector_store(map()) :: {:ok, map()} | {:error, String.t()}
+  def create_vector_store(params) do
     url = @endpoint <> "/vector_stores"
 
     payload =
-      %{"name" => name}
+      params
       |> Jason.encode!()
 
     post(url, payload, headers: headers())
@@ -129,6 +129,11 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
         "model" => params.model,
         "instructions" => params[:instructions],
         "temperature" => params.settings.temperature,
+        "tools" => [
+          %{
+            "type" => "file_search"
+          }
+        ],
         "tool_resources" => %{
           "file_search" => %{
             "vector_store_ids" => params.vector_store_ids
@@ -180,6 +185,18 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     end
     |> Jason.encode!()
     |> then(&post(url, &1, headers: headers()))
+    |> parse_response()
+  end
+
+  @spec create_vector_store_batch(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
+  def create_vector_store_batch(vector_store_id, params) do
+    url = @endpoint <> "/vector_stores/#{vector_store_id}/file_batches"
+
+    payload =
+      params
+      |> Jason.encode!()
+
+    post(url, payload, headers: headers())
     |> parse_response()
   end
 

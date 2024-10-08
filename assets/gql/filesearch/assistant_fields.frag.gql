@@ -11,6 +11,11 @@ fragment AssistantFields on AssistantResult {
       id
       vector_store_id
       name
+      files {
+        id
+        name
+        uploaded_at
+      }
     }
     inserted_at
     updated_at

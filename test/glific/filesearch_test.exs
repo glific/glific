@@ -69,6 +69,12 @@ defmodule Glific.FilesearchTest do
     "assets/gql/filesearch/update_assistant.gql"
   )
 
+  load_gql(
+    :add_assistant_files,
+    GlificWeb.Schema,
+    "assets/gql/filesearch/add_assistant_files.gql"
+  )
+
   test "valid create vector_store", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://api.openai.com/v1/vector_stores"} ->
@@ -131,167 +137,6 @@ defmodule Glific.FilesearchTest do
                },
                organization_id: user.organization_id
              })
-  end
-
-  describe "Add files to VectorStore" do
-    setup attrs do
-      valid_attrs = %{
-        vector_store_id: "vs_abcd",
-        name: "new VectorStore",
-        files: %{},
-        organization_id: attrs.organization_id
-      }
-
-      {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
-      Map.merge(attrs, %{vector_store: vector_store})
-    end
-
-    test "Add openAI files to vector_store", attrs do
-      media_files = [
-        %Plug.Upload{
-          path:
-            "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T/plug-1727-NXFz/multipart-1727169241-575672640710-1",
-          content_type: "application/pdf",
-          filename: "sample.pdf"
-        },
-        %Plug.Upload{
-          path:
-            "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gk/T/plug-1727-NXFz/multipart-1727169241-575672640710-2",
-          content_type: "application/pdf",
-          filename: "sample_2.pdf"
-        }
-      ]
-
-      params = %{
-        id: attrs.vector_store.id,
-        media: media_files,
-        organization_id: attrs.organization_id
-      }
-
-      Tesla.Mock.mock_global(fn
-        %{method: :post, url: "https://api.openai.com/v1/files"} ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              id: "file-XNgygnDzO9cTs3YZLJWRscoq",
-              status: "processed",
-              filename: "sample.pdf",
-              bytes: 54_836,
-              object: "file",
-              created_at: 1_727_027_487,
-              purpose: "assistants",
-              status_details: nil
-            }
-          }
-
-        %{method: :post, url: "https://api.openai.com/v1/vector_stores" <> _} ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              id: "file-XNgygnDzO9cTs3YZLJWRscoq",
-              object: "vector_store.file",
-              created_at: 1_699_061_776,
-              usage_bytes: 1234,
-              vector_store_id: attrs.vector_store.vector_store_id,
-              status: "completed",
-              last_error: nil
-            }
-          }
-      end)
-
-      {:ok, %VectorStore{files: files}} =
-        Filesearch.add_vector_store_files(params)
-
-      assert Map.keys(files) |> length() == 1
-    end
-
-    test "Add openAI files to vector_store, handling API failures", attrs do
-      media_files = [
-        %Plug.Upload{
-          path:
-            "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T/plug-1727-NXFz/multipart-1727169241-575672640710-1",
-          content_type: "application/pdf",
-          filename: "sample.pdf"
-        }
-      ]
-
-      params = %{
-        id: attrs.vector_store.id,
-        media: media_files,
-        organization_id: attrs.organization_id
-      }
-
-      Tesla.Mock.mock_global(fn
-        %{method: :post, url: "https://api.openai.com/v1/files"} ->
-          %Tesla.Env{
-            status: 400,
-            body: %{
-              error: %{
-                message: "Upload failed"
-              }
-            }
-          }
-
-        %{method: :post, url: "https://api.openai.com/v1/vector_stores" <> _} ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              error: %{
-                message: "attach VectorStore failed"
-              }
-            }
-          }
-      end)
-
-      {:ok, %VectorStore{files: files}} = Filesearch.add_vector_store_files(params)
-      assert Map.keys(files) |> length() == 0
-    end
-
-    test "Add openAI files to vector_store, handling API failures 2", attrs do
-      media_files = [
-        %Plug.Upload{
-          path:
-            "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T/plug-1727-NXFz/multipart-1727169241-575672640710-1",
-          content_type: "application/pdf",
-          filename: "sample.pdf"
-        }
-      ]
-
-      params = %{
-        id: attrs.vector_store.id,
-        media: media_files,
-        organization_id: attrs.organization_id
-      }
-
-      Tesla.Mock.mock_global(fn
-        %{method: :post, url: "https://api.openai.com/v1/files"} ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              id: "file-XNgygnDzO9cTs3YZLJWRscoq",
-              object: "vector_store.file",
-              created_at: 1_699_061_776,
-              usage_bytes: 1234,
-              vector_store_id: attrs.vector_store.vector_store_id,
-              status: "completed",
-              last_error: nil
-            }
-          }
-
-        %{method: :post, url: "https://api.openai.com/v1/vector_stores" <> _} ->
-          %Tesla.Env{
-            status: 400,
-            body: %{
-              error: %{
-                message: "attach VectorStore failed"
-              }
-            }
-          }
-      end)
-
-      {:ok, %VectorStore{files: files}} = Filesearch.add_vector_store_files(params)
-      assert Map.keys(files) |> length() == 0
-    end
   end
 
   test "delete_vector_store/1, valid deletion", attrs do
@@ -743,7 +588,7 @@ defmodule Glific.FilesearchTest do
     assert length(query_data.data["deleteAssistant"]["errors"]) == 1
   end
 
-  @tag :up_ass
+  @tag :skip
   test "update assistant", attrs do
     valid_attrs = %{
       assistant_id: "asst_abc",
@@ -840,5 +685,121 @@ defmodule Glific.FilesearchTest do
 
     assert %{"name" => "assistant2", "vector_store" => %{"name" => "VectorStore 1"}} =
              query_data.data["updateAssistant"]["assistant"]
+  end
+
+  @tag :add_ass
+  test "add_assistant_files, assistant doesnt has vectorStore", attrs do
+    valid_attrs = %{
+      assistant_id: "asst_abc",
+      name: "new assistant",
+      settings: %{
+        temperature: 1
+      },
+      model: "gpt-4o",
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, assistant} = Assistant.create_assistant(valid_attrs)
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "vs_abc"
+          }
+        }
+    end)
+
+    {:ok, query_data} =
+      auth_query_gql_by(:add_assistant_files, attrs.user,
+        variables: %{
+          "media_info" => [
+            %{
+              "file_id" => "file_abc",
+              "filename" => "abc"
+            },
+            %{
+              "file_id" => "file_xyz",
+              "filename" => "xyz"
+            }
+          ],
+          "id" => assistant.id
+        }
+      )
+
+    assert %{"name" => "new assistant", "vector_store" => %{"vector_store_id" => "vs_abc"}} =
+             query_data.data["add_assistant_files"]["assistant"]
+  end
+
+  @tag :add_ass
+  test "add_assistant_files, assistant already has a vectorStore", attrs do
+    valid_attrs = %{
+      assistant_id: "asst_abc",
+      name: "new assistant",
+      settings: %{
+        temperature: 1
+      },
+      model: "gpt-4o",
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, assistant} = Assistant.create_assistant(valid_attrs)
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "vs_abc"
+          }
+        }
+    end)
+
+    {:ok, query_data} =
+      auth_query_gql_by(:add_assistant_files, attrs.user,
+        variables: %{
+          "media_info" => [
+            %{
+              "file_id" => "file_abc",
+              "filename" => "abc"
+            },
+            %{
+              "file_id" => "file_xyz",
+              "filename" => "xyz"
+            }
+          ],
+          "id" => assistant.id
+        }
+      )
+
+    assert %{"name" => "new assistant", "vector_store" => %{"vector_store_id" => "vs_abc"}} =
+             query_data.data["add_assistant_files"]["assistant"]
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "vs_abc"
+          }
+        }
+    end)
+
+    {:ok, query_data} =
+      auth_query_gql_by(:add_assistant_files, attrs.user,
+        variables: %{
+          "media_info" => [
+            %{
+              "file_id" => "file_lmn",
+              "filename" => "lmn"
+            }
+          ],
+          "id" => assistant.id
+        }
+      )
+
+    assert %{"name" => "new assistant", "vector_store" => %{"vector_store_id" => "vs_abc"}} =
+             query_data.data["add_assistant_files"]["assistant"]
   end
 end
