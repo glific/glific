@@ -41,10 +41,8 @@ defmodule Glific.Flows do
   def list_flows(args) do
     flows =
       Repo.list_filter_query(args, Flow, &opts_with_name/2, &filter_with/2)
-      |> IO.inspect()
       |> AccessControl.check_access(:flow)
       |> Repo.all()
-      |> IO.inspect()
 
     flows
     # get all the flow ids
@@ -175,10 +173,20 @@ defmodule Glific.Flows do
            name_or_keyword_or_tags: name_or_keyword_or_tags
          } = _filter
        ) do
+    sub_query =
+      Tag
+      |> where([t], ilike(t.label, ^"%#{name_or_keyword_or_tags}%"))
+      |> select([t], t.id)
+
     query
     |> or_where(
       [q],
       ^name_or_keyword_or_tags in q.keywords and
+        q.is_active == ^is_active and q.is_template == ^is_template
+    )
+    |> or_where(
+      [q],
+      q.tag_id in subquery(sub_query) and
         q.is_active == ^is_active and q.is_template == ^is_template
     )
   end
