@@ -219,13 +219,12 @@ defmodule Glific.Processor.ConsumerFlow do
   defp template_flow?(_state, nil), do: false
 
   defp template_flow?(state, body) do
-    if String.starts_with?(body, @template_phrase) and
-         Map.has_key?(
-           state.flow_keywords["template"],
-           String.replace_leading(body, @template_phrase, "")
-         ) and Map.get(state, :simulator, true),
-       do: true,
-       else: false
+    String.starts_with?(body, @template_phrase) and
+      Map.has_key?(
+        state.flow_keywords["template"],
+        String.replace_leading(body, @template_phrase, "")
+      ) and
+      Map.get(state, :simulator, true)
   end
 
   ## check if contact is not in the optin flow and has optout time

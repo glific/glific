@@ -28,11 +28,11 @@ defmodule Glific.Processor.ConsumerTagger do
 
     {message, state}
     |> new_contact_tagger()
-    |> simulater_tagger()
+    |> simulator_tagger()
   end
 
-  @spec simulater_tagger({atom() | Message.t(), map()}) :: {Message.t(), map()}
-  defp simulater_tagger({message, state}) do
+  @spec simulator_tagger({atom() | Message.t(), map()}) :: {Message.t(), map()}
+  defp simulator_tagger({message, state}) do
     if Contacts.simulator_contact?(message.contact.phone) do
       {message, state |> Map.put(:simulator, true)}
     else
