@@ -4,6 +4,7 @@ defmodule GlificWeb.API.V1.OnboardController do
   """
 
   alias Glific.{
+    ERP,
     Partners,
     Partners.Organization,
     Repo,
@@ -54,5 +55,21 @@ defmodule GlificWeb.API.V1.OnboardController do
   @spec reachout(Conn.t(), map()) :: Conn.t()
   def reachout(conn, params) do
     json(conn, Onboard.reachout(params))
+  end
+
+  @doc """
+  Fetches the list of existing organizations from ERP.
+  """
+  @spec fetch_erp_organizations(Conn.t(), map()) :: Conn.t()
+  def fetch_erp_organizations(conn, _params) do
+    case ERP.fetch_organizations() do
+      {:ok, organizations} ->
+        json(conn, organizations)
+
+      {:error, error_message} ->
+        conn
+        |> put_status(:internal_server_error)
+        |> json(%{error: error_message})
+    end
   end
 end

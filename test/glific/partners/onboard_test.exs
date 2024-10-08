@@ -313,7 +313,7 @@ defmodule Glific.OnboardTest do
           "name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email()
         },
-        "terms_agreed" => "true"
+        "terms_agreed" => true
       }
 
       assert %{
@@ -327,6 +327,33 @@ defmodule Glific.OnboardTest do
       assert %{"name" => _, "email" => _} = reg.submitter
       assert %{"name" => _, "email" => _, "phone" => _} = reg.finance_poc
       assert %{email: nil} = Partners.get_organization!(org.id)
+    end
+
+    test "update_registration, when terms_agreed is false", %{org: org, registration_id: reg_id} do
+      valid_params = %{
+        "registration_id" => reg_id,
+        "billing_frequency" => "yearly",
+        "finance_poc" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "Sr Accountant",
+          "phone" => Phone.PtBr.phone()
+        },
+        "submitter" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email()
+        },
+        "terms_agreed" => false
+      }
+
+      assert %{
+               messages: _,
+               is_valid: true
+             } =
+               Onboard.update_registration(valid_params, org)
+
+      {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
+      assert reg.is_disputed == true
     end
 
     test "update_registration, valid signing_details, update's org's email also", %{

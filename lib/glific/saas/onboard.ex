@@ -315,7 +315,8 @@ defmodule Glific.Saas.Onboard do
           {:ok, Registration.t()} | {:error, Ecto.Changeset.t()}
   defp update_registration_details(params, registration) do
     # updates the `Dispute in T&C` column in Notion whenever user disagrees with T&C
-    update_tc_dispute(params["terms_agreed"], registration)
+    confirm_terms_acceptance(params["terms_agreed"], registration)
+    params = update_is_disputed(params, registration)
 
     case params do
       %{"org_details" => org_details} ->
@@ -360,13 +361,21 @@ defmodule Glific.Saas.Onboard do
 
   defp update_org_details(org, _params, _registration), do: {:ok, org}
 
-  @spec update_tc_dispute(boolean() | nil, Registration.t()) :: any()
-  defp update_tc_dispute(false, registration) do
+  @spec confirm_terms_acceptance(boolean() | nil, Registration.t()) :: any()
+  defp confirm_terms_acceptance(false, registration) do
     Task.start(fn ->
       Notion.update_tc_dispute_property()
       |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
     end)
   end
 
-  defp update_tc_dispute(_terms_agreed, _registration), do: :ok
+  defp confirm_terms_acceptance(_terms_agreed, _registration), do: :ok
+
+  @spec update_is_disputed(map(), Registration.t()) :: map()
+  defp update_is_disputed(params, registration) do
+    case {params["terms_agreed"], registration.is_disputed} do
+      {false, _} -> Map.put(params, "is_disputed", true)
+      _ -> params
+    end
+  end
 end
