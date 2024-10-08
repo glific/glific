@@ -33,31 +33,27 @@ defmodule Glific.Processor.ConsumerFlow do
   def process_message({message, state}, body) do
     # check if draft keyword, if so bypass ignore keywords
     # and start draft flow, issue #621
+
     is_draft = draft_keyword?(state, body)
 
     if is_draft,
       do:
-        FlowContext.mark_flows_complete(message.contact_id, false,
-          source: "process_message",
-          event_meta: %{
-            is_draft: is_draft,
-            body: body
-          }
-        )
+        mark_flows_complete(message.contact_id, %{
+          is_draft: true,
+          body: body
+        })
 
-    # check if draft keyword, if so bypass ignore keywords
-    # and start draft flow, issue #621
+    # check if template keyword, if so bypass ignore keywords
+    # and start template flow, issue #3792
+
     is_template = template_flow?(state, message.body)
 
     if is_template,
       do:
-        FlowContext.mark_flows_complete(message.contact_id, false,
-          source: "process_message",
-          event_meta: %{
-            is_template: is_template,
-            body: body
-          }
-        )
+        mark_flows_complete(message.contact_id, %{
+          is_template: true,
+          body: body
+        })
 
     context = FlowContext.active_context(message.contact_id)
 
@@ -68,6 +64,13 @@ defmodule Glific.Processor.ConsumerFlow do
     if start_optin_flow?(message.contact, context, body),
       do: start_optin_flow(message, state),
       else: move_forward({message, state}, body, context, is_draft: is_draft)
+  end
+
+  defp mark_flows_complete(contact_id, event_meta) do
+    FlowContext.mark_flows_complete(contact_id, false,
+      source: "process_message",
+      event_meta: event_meta
+    )
   end
 
   # Setting this to 0 since we are pushing out our own optin flow
@@ -121,6 +124,8 @@ defmodule Glific.Processor.ConsumerFlow do
     end
   end
 
+  @spec handle_nil_context(map(), Message.t(), String.t()) ::
+          {Message.t(), map()}
   defp handle_nil_context(state, message, body) do
     if match_with_regex?(state.regx_flow, message.body) do
       flow_id = Glific.parse_maybe_integer!(state.regx_flow.flow_id)
