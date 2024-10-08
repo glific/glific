@@ -252,7 +252,6 @@ defmodule Glific.Filesearch do
       Map.from_struct(assistant)
       |> Map.merge(parsed_attrs)
       |> then(&{:ok, &1})
-      |> IO.inspect()
     end
   end
 

@@ -139,7 +139,6 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
 
     post(url, payload, headers: headers())
     |> parse_response()
-    |> IO.inspect()
   end
 
   @doc """

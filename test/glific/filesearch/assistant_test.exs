@@ -39,11 +39,11 @@ defmodule Glific.Filesearch.AssistantTest do
 
     assert {:ok, assistant} = Assistant.create_assistant(valid_attrs)
 
-    assert %Assistant{} = Assistant.get_assistant(assistant.id)
+    assert {:ok, %Assistant{}} = Assistant.get_assistant(assistant.id)
   end
 
   test "get_assistant/1 with invalid id not return an assistant", _attrs do
-    assert is_nil(Assistant.get_assistant(100))
+    assert {:error, _} = Assistant.get_assistant(0)
   end
 
   test "list_assistants/1 returns list of assistants matching the filters", attrs do
