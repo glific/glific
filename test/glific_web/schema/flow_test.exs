@@ -170,7 +170,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert {:ok, query_data} = result
     flows = get_in(query_data, [:data, "flows"])
-    assert length(flows) == 0
+    assert Enum.empty?(flows) == false
   end
 
   test "flows field returns list of flows filtered by isPinned flag", %{manager: user} do
