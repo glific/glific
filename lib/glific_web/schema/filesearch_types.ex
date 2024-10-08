@@ -158,6 +158,14 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       resolve(&Resolvers.Filesearch.add_assistant_files/3)
     end
 
+    @desc "Remove files from VectorStore"
+    field :remove_assistant_file, :assistant_result do
+      arg(:file_id, non_null(:string))
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.remove_assistant_file/3)
+    end
+
     @desc "Update Assistant"
     field :update_assistant, :assistant_result do
       arg(:input, :assistant_input)

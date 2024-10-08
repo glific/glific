@@ -169,6 +169,43 @@ defmodule Glific.Filesearch do
     end
   end
 
+  # TODO: Need to add test
+  @doc """
+  Removes the given file from the Assistant's VectorStore
+
+  Also deletes the file from the openAI
+  """
+  @spec remove_assistant_file(map()) :: {:ok, Assistant.t()} | {:error, String.t()}
+  def remove_assistant_file(params) do
+    with {:ok, assistant} <- Assistant.get_assistant(params.id),
+         assistant <- Repo.preload(assistant, :vector_store),
+         {:ok, file} <- get_file(assistant.vector_store, params.file_id),
+         {:ok, _} <-
+           ApiClient.delete_vector_store_file(%{
+             file_id: file["file_id"],
+             vector_store_id: assistant.vector_store.vector_store_id
+           }) do
+      # We will initiate the file deletion async, since don't want to delay the main process
+      Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
+        ApiClient.delete_file(file["file_id"])
+      end)
+
+      {:ok, _} =
+        VectorStore.update_vector_store(
+          assistant.vector_store,
+          %{files: Map.delete(assistant.vector_store.files, file["file_id"])}
+        )
+
+      {:ok, Repo.preload(assistant, :vector_store, force: true)}
+    else
+      {:error, %Ecto.Changeset{} = err} ->
+        {:error, err}
+
+      {:error, reason} ->
+        {:error, "Removing file from assistant failed due to #{reason}"}
+    end
+  end
+
   @spec update_assistant(integer(), map()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
   def update_assistant(id, attrs) do
     with {:ok, %Assistant{} = assistant} <- Assistant.get_assistant(id),
