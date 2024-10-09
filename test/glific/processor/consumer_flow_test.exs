@@ -90,6 +90,24 @@ defmodule Glific.Processor.ConsumerFlowTest do
     assert new_message_count > message_count + 1
   end
 
+  test "test template flows" do
+    state = ConsumerFlow.load_state(Fixtures.get_org_id())
+
+    # keep track of current messages
+    message_count = Repo.aggregate(Message, :count)
+
+    sender = Repo.get_by(Contact, %{name: "Chrissy Cron"})
+
+    message =
+      Fixtures.message_fixture(%{body: "template:Language Workflow", sender_id: sender.id})
+      |> Repo.preload([:contact])
+
+    ConsumerFlow.process_message({message, state}, "templatelanguageworkflow")
+
+    new_message_count = Repo.aggregate(Message, :count)
+    assert new_message_count > message_count + 1
+  end
+
   @checks_1 [
     "optin",
     "👍",
