@@ -154,22 +154,44 @@ defmodule Glific.Flows do
         from(q in query, where: q.tag_id in ^tag_ids)
 
       {:name_or_keyword_or_tags, name_or_keyword_or_tags}, query ->
-        sub_query =
-          Tag
-          |> where([t], ilike(t.label, ^"%#{name_or_keyword_or_tags}%"))
-          |> select([t], t.id)
-
         query
-        |> where([fr], ilike(fr.name, ^"%#{name_or_keyword_or_tags}%"))
-        |> or_where(
-          [fr],
-          ^name_or_keyword_or_tags in fr.keywords or fr.tag_id in subquery(sub_query)
-        )
+        |> where([q], ilike(q.name, ^"%#{name_or_keyword_or_tags}%"))
 
       _, query ->
         query
     end)
+    |> add_name_or_keyword_or_tags(filter)
   end
+
+  # 3840
+  @spec add_name_or_keyword_or_tags(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp add_name_or_keyword_or_tags(
+         query,
+         %{
+           is_active: is_active,
+           is_template: is_template,
+           name_or_keyword_or_tags: name_or_keyword_or_tags
+         } = _filter
+       ) do
+    sub_query =
+      Tag
+      |> where([t], ilike(t.label, ^"%#{name_or_keyword_or_tags}%"))
+      |> select([t], t.id)
+
+    query
+    |> or_where(
+      [q],
+      ^name_or_keyword_or_tags in q.keywords and
+        q.is_active == ^is_active and q.is_template == ^is_template
+    )
+    |> or_where(
+      [q],
+      q.tag_id in subquery(sub_query) and
+        q.is_active == ^is_active and q.is_template == ^is_template
+    )
+  end
+
+  defp add_name_or_keyword_or_tags(query, _filter), do: query
 
   @doc """
   Return the count of flows, using the same filter as list_flows

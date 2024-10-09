@@ -66,7 +66,7 @@ defmodule Glific.FLowsTest do
       flows =
         Flows.list_flows(%{
           opts: %{order_with: "is_pinned"},
-          filter: %{name_or_keyword_or_tags: "testkeyword"},
+          filter: %{is_active: true, is_template: false, name_or_keyword_or_tags: "testkeyword"},
           organization_id: attrs.organization_id
         })
 
@@ -134,12 +134,26 @@ defmodule Glific.FLowsTest do
       f1 = flow_fixture(@valid_more_attrs |> Map.merge(%{name: "testkeyword"}))
 
       flows =
-        Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword_or_tags: "testkeyword"})})
+        Flows.list_flows(%{
+          filter:
+            Map.merge(attrs, %{
+              is_active: true,
+              is_template: false,
+              name_or_keyword_or_tags: "testkeyword"
+            })
+        })
 
       assert flows == [f0, f1] || flows == [f1, f0]
 
       flows =
-        Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword_or_tags: "wrongkeyword"})})
+        Flows.list_flows(%{
+          filter:
+            Map.merge(attrs, %{
+              is_active: true,
+              is_template: false,
+              name_or_keyword_or_tags: "wrongkeyword"
+            })
+        })
 
       assert flows == []
 
