@@ -86,7 +86,7 @@ defmodule Glific.Jobs.UserJob do
   def list_user_jobs(args \\ %{}) do
     args
     |> Repo.list_filter_query(UserJob, &Repo.opts_with_name/2, &filter_with/2)
-    |> Repo.all(skip_organization_id: true)
+    |> Repo.all()
   end
 
   @spec filter_with(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
@@ -97,6 +97,9 @@ defmodule Glific.Jobs.UserJob do
 
       {:all_tasks_created, all_tasks_created}, query ->
         from(u in query, where: u.all_tasks_created == ^all_tasks_created)
+
+      {:organization_id, organization_id}, query ->
+        from(u in query, where: u.organization_id == ^organization_id)
 
       {:id, id}, query ->
         from(u in query, where: u.id == ^id)
