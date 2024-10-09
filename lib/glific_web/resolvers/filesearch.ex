@@ -164,6 +164,17 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
+  Fetch Assistants with given filters and options
+  """
+  @spec list_assistants(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any()} | {:error, any()}
+  def list_assistants(_, params, %{context: %{current_user: user}}) do
+    Repo.put_process_state(user.organization_id)
+
+    {:ok, Filesearch.list_assistants(params)}
+  end
+
+  @doc """
   Return the details of the files in a VectorStore
   """
   @spec list_files(VectorStore.t(), map(), map()) :: {:ok, list()}

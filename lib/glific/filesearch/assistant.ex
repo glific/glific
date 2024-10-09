@@ -102,7 +102,7 @@ defmodule Glific.Filesearch.Assistant do
   @spec list_assistants(map()) :: [Assistant.t()]
   def list_assistants(args) do
     args
-    |> Repo.list_filter_query(Assistant, &Repo.opts_with_inserted_at/2, &filter_with/2)
+    |> Repo.list_filter_query(Assistant, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)
     |> Repo.all()
   end
 
@@ -124,19 +124,5 @@ defmodule Glific.Filesearch.Assistant do
     assistant
     |> Assistant.changeset(attrs)
     |> Repo.update()
-
-  end
-
-  @spec filter_with(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
-  defp filter_with(query, filter) do
-    query = Repo.filter_with(query, filter)
-
-    Enum.reduce(filter, query, fn
-      {:assistant_id, assistant_id}, query ->
-        from(q in query, where: q.assistant_id == ^assistant_id)
-
-      _, query ->
-        query
-    end)
   end
 end

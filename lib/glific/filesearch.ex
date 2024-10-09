@@ -195,6 +195,14 @@ defmodule Glific.Filesearch do
     VectorStore.list_vector_stores(params)
   end
 
+  @doc """
+  Fetch Assistants with given filters and options
+  """
+  @spec list_assistants(map()) :: list(Assistant.t())
+  def list_assistants(params) do
+    Assistant.list_assistants(params)
+  end
+
   @spec get_file(VectorStore.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
   defp get_file(vector_store, file_id) do
     case Map.get(vector_store.files, file_id) do

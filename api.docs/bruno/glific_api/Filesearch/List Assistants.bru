@@ -1,7 +1,7 @@
 meta {
-  name: Remove Files from Assistant
+  name: List Assistants
   type: graphql
-  seq: 12
+  seq: 14
 }
 
 post {
@@ -15,9 +15,8 @@ headers {
 }
 
 body:graphql {
-  mutation RemoveAssistantFile($id: ID!, $file_id: String!) {
-    RemoveAssistantFile(id: $id, file_id: $file_id) {
-      assistant {
+  query Assistants($filter: VectorStoreFilter, $opts: Opts) {
+    Assistants(filter: $filter, opts: $opts) {
         id
         name
         assistant_id,
@@ -37,20 +36,19 @@ body:graphql {
         }
         inserted_at
         updated_at
-      }
       
-      errors {
-        key
-        message
       }
     }
-  }
   
 }
 
 body:graphql:vars {
   {
-    "file_id": "file-j4PTsxgDZGRypLG86WtL9wKf",
-    "id": "6"
+    "opts": {
+      "order": "DESC"
+    },
+    "filter": {
+      "name": "vector"
+    }
   }
 }

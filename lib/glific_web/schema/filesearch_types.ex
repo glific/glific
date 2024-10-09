@@ -98,6 +98,12 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field(:name, :string)
   end
 
+  @desc "Filtering options for Assistants"
+  input_object :assistant_filter do
+    @desc "Match the name"
+    field(:name, :string)
+  end
+
   object :filesearch_mutations do
     @desc "Create VectorStore"
     field :create_vector_store, :vector_store_result do
@@ -188,6 +194,14 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.get_assistant/3)
+    end
+
+    @desc "List Assistants"
+    field :assistants, list_of(:assistant) do
+      arg(:filter, :assistant_filter)
+      arg(:opts, :opts)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.list_assistants/3)
     end
   end
 end
