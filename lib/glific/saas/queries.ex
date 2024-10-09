@@ -10,6 +10,7 @@ defmodule Glific.Saas.Queries do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    ERP,
     Flows.FlowContext,
     Flows.FlowResult,
     Messages.Message,
@@ -181,39 +182,57 @@ defmodule Glific.Saas.Queries do
   defp organization(%{is_valid: false} = result, _params), do: result
 
   defp organization(result, params) do
-    {:ok, provider} =
-      Repo.fetch_by(Provider, %{shortcode: @default_provider, group: "bsp"},
-        skip_organization_id: true
-      )
+    with {:ok, %{data: %{customer_name: customer_name}}} <-
+           fetch_erp_organizations(params["name"]) do
+      {:ok, provider} =
+        Repo.fetch_by(Provider, %{shortcode: @default_provider, group: "bsp"},
+          skip_organization_id: true
+        )
 
-    attrs = %{
-      name: params["name"],
-      shortcode: params["shortcode"],
-      email: params["email"],
-      bsp_id: provider.id,
-      default_language_id: 1,
-      active_language_ids: [1],
-      timezone: "Asia/Kolkata",
-      is_active: false,
-      is_approved: false,
-      status: :inactive,
-      parent_org: params["name"],
-      setting: %{"send_warning_mail" => false, "run_flow_each_time" => false},
-      team_emails: %{
-        "finance" => params["email"],
-        "analytics" => params["email"],
-        "chatbot_design" => params["email"],
-        "operations" => params["email"]
+      attrs = %{
+        name: params["name"],
+        shortcode: params["shortcode"],
+        email: params["email"],
+        bsp_id: provider.id,
+        default_language_id: 1,
+        active_language_ids: [1],
+        timezone: "Asia/Kolkata",
+        is_active: false,
+        is_approved: false,
+        status: :inactive,
+        parent_org: params["name"],
+        setting: %{"send_warning_mail" => false, "run_flow_each_time" => false},
+        team_emails: %{
+          "finance" => params["email"],
+          "analytics" => params["email"],
+          "chatbot_design" => params["email"],
+          "operations" => params["email"]
+        },
+        erp_page_id: customer_name
       }
-    }
 
-    case Partners.create_organization(attrs) do
-      {:ok, organization} ->
-        Repo.put_organization_id(organization.id)
-        Map.put(result, :organization, organization)
+      case Partners.create_organization(attrs) do
+        {:ok, organization} ->
+          Repo.put_organization_id(organization.id)
+          Map.put(result, :organization, organization)
 
-      {:error, errors} ->
-        error(inspect(errors), result, :global)
+        {:error, errors} ->
+          error(inspect(errors), result, :global)
+      end
+    else
+      {:error, error_message} ->
+        error(inspect(error_message), result, :global)
+    end
+  end
+
+  @spec fetch_erp_organizations(String.t()):: {:ok, map()} | {:error, String.t()}
+  defp fetch_erp_organizations(org_name) do
+    case ERP.fetch_organization_detail(org_name) do
+      {:ok, organizations} ->
+        {:ok, organizations}
+
+      {:error, error_message} ->
+        {:error, error_message}
     end
   end
 
@@ -429,23 +448,14 @@ defmodule Glific.Saas.Queries do
       org_details: org_details,
       organization_id: result.organization.id,
       platform_details: platform_details,
-      ip_address: params["client_ip"]
+      ip_address: params["client_ip"],
     }
-
-    # if the org already exists in ERP we store the erp-org id in glific db to update the same entry in ERP
-    registration_map =
-      if Map.has_key?(params, "erp_page_id") do
-        Map.put(registration_map, :erp_page_id, params["erp_page_id"])
-      else
-        registration_map
-      end
 
     registration_map
     |> Registrations.create_registration()
     |> case do
       {:ok, %{id: id} = registration} ->
         :ok = create_registration_in_notion(result.organization.id, registration)
-
         Map.put(result, :registration_id, id)
 
       {:error, errors} ->
