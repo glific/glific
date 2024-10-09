@@ -12,6 +12,7 @@ defmodule Glific.Saas.Onboard do
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
+    ERP,
     Mails.NewPartnerOnboardedMail,
     Notion,
     Partners,
@@ -234,6 +235,8 @@ defmodule Glific.Saas.Onboard do
 
         Notion.update_table_properties(registration)
         |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
+
+        ERP.create_organization(registration)
       end)
 
       result

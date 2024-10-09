@@ -29,7 +29,6 @@ defmodule Glific.Registrations.Registration do
     :terms_agreed,
     :support_staff_account,
     :notion_page_id,
-    :erp_page_id,
     :is_disputed
   ]
 
@@ -52,7 +51,6 @@ defmodule Glific.Registrations.Registration do
           terms_agreed: boolean() | false,
           support_staff_account: boolean() | true,
           notion_page_id: String.t() | nil,
-          erp_page_id: String.t() | nil,
           is_disputed: boolean() | false
         }
 
@@ -76,7 +74,6 @@ defmodule Glific.Registrations.Registration do
     field(:support_staff_account, :boolean, default: true)
     field(:notion_page_id, :string)
     field(:is_disputed, :boolean, default: false)
-    field(:erp_page_id, :string)
     belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
