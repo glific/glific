@@ -1,7 +1,7 @@
 meta {
-  name: Delete Assistant
+  name: Get Assistant
   type: graphql
-  seq: 9
+  seq: 13
 }
 
 post {
@@ -15,8 +15,8 @@ headers {
 }
 
 body:graphql {
-  mutation DeleteAssistant($id: ID!) {
-    DeleteAssistant(id: $id) {
+  query Assistant($id: ID!) {
+    assistant(id: $id) {
       assistant {
         id
         name
@@ -29,6 +29,11 @@ body:graphql {
         vector_store {
           id
           vector_store_id
+          files {
+            id
+            name
+            uploaded_at
+          }
         }
         inserted_at
         updated_at
@@ -45,6 +50,6 @@ body:graphql {
 
 body:graphql:vars {
   {
-    "id": 2
+    "id": 6
   }
 }

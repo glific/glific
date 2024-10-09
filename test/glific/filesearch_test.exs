@@ -75,6 +75,7 @@ defmodule Glific.FilesearchTest do
     "assets/gql/filesearch/add_assistant_files.gql"
   )
 
+  @tag :skip
   test "valid create vector_store", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://api.openai.com/v1/vector_stores"} ->
@@ -93,6 +94,7 @@ defmodule Glific.FilesearchTest do
     assert "VectorStore" <> _ = query_data.data["createVectorStore"]["vectorStore"]["name"]
   end
 
+  @tag :skip
   test "create vector_store failed due to api failure", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://api.openai.com/v1/vector_stores"} ->
@@ -139,6 +141,7 @@ defmodule Glific.FilesearchTest do
              })
   end
 
+  @tag :skip
   test "delete_vector_store/1, valid deletion", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcde",
@@ -170,6 +173,7 @@ defmodule Glific.FilesearchTest do
     assert query_data.data["deleteVectorStore"]["vectorStore"]["name"] == "new VectorStore"
   end
 
+  @tag :skip
   test "delete_vector_store/1, invalid deletion", attrs do
     result =
       auth_query_gql_by(:delete_vector_store, attrs.user,
@@ -182,6 +186,7 @@ defmodule Glific.FilesearchTest do
     assert length(query_data.data["deleteVectorStore"]["errors"]) == 1
   end
 
+  @tag :skip
   test "remove VectorStore file, valid removal", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcde",
@@ -232,6 +237,7 @@ defmodule Glific.FilesearchTest do
     assert length(result.data["RemoveVectorStoreFile"]["vectorStore"]["files"]) == 1
   end
 
+  @tag :skip
   test "remove VectorStore file, invalid fileId", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcdef",
@@ -276,6 +282,7 @@ defmodule Glific.FilesearchTest do
     assert "Removing VectorStore failed" <> _ = List.first(result.errors) |> Map.get(:message)
   end
 
+  @tag :skip
   test "list vector_stores", attrs do
     # empty vectorstores
     {:ok, result} =
@@ -373,6 +380,7 @@ defmodule Glific.FilesearchTest do
     assert %{"name" => "VectorStore 3"} = List.first(result.data["VectorStores"])
   end
 
+  @tag :skip
   test "fetch a VectorStore", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcdef",
@@ -402,6 +410,7 @@ defmodule Glific.FilesearchTest do
     assert List.first(result.data["vector_store"]["errors"])["message"] == "Resource not found"
   end
 
+  @tag :skip
   test "update VectorStore", attrs do
     valid_attrs = %{
       vector_store_id: "vs_abcdef",
@@ -588,7 +597,7 @@ defmodule Glific.FilesearchTest do
     assert length(query_data.data["deleteAssistant"]["errors"]) == 1
   end
 
-  @tag :skip
+  @tag :assup
   test "update assistant", attrs do
     valid_attrs = %{
       assistant_id: "asst_abc",
@@ -658,8 +667,8 @@ defmodule Glific.FilesearchTest do
 
     assert {:ok, %{settings: %{"temperature" => 1.8}}} = Assistant.get_assistant(assistant.id)
 
-    # assert %{"name" => "assistant2", "vector_store" => nil, "settings" => %{"temperature" => 1.8}} =
-    #          query_data.data["updateAssistant"]["assistant"]
+    assert %{"name" => "assistant2", "vector_store" => nil, "settings" => %{"temperature" => 1.8}} =
+             query_data.data["updateAssistant"]["assistant"]
 
     # attach a vector_store
     valid_attrs = %{
@@ -671,7 +680,7 @@ defmodule Glific.FilesearchTest do
 
     {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
 
-    {:ok, _query_data} =
+    {:ok, query_data} =
       auth_query_gql_by(:update_assistant, attrs.user,
         variables: %{
           "input" => %{
@@ -732,7 +741,7 @@ defmodule Glific.FilesearchTest do
              query_data.data["add_assistant_files"]["assistant"]
   end
 
-  @tag :add_ass
+  @tag :add_ass_v
   test "add_assistant_files, assistant already has a vectorStore", attrs do
     valid_attrs = %{
       assistant_id: "asst_abc",

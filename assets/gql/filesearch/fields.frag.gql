@@ -14,7 +14,6 @@ fragment VectorStoreFields on VectorStoreResult {
     }
     inserted_at
     updated_at
-    size
   }
 }
 

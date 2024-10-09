@@ -14,6 +14,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :errors, list_of(:input_error)
   end
 
+  # TODO: add size and status
   object :vector_store do
     field :id, :id
     field :vector_store_id, :string
@@ -25,10 +26,6 @@ defmodule GlificWeb.Schema.FilesearchTypes do
 
     field :assistants, list_of(:assistant) do
       resolve(dataloader(Repo))
-    end
-
-    field :size, :string do
-      resolve(&Resolvers.Filesearch.calculate_vector_store_size/3)
     end
 
     field :inserted_at, :datetime
@@ -57,7 +54,10 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :assistant_id, :string
     field :model, :string
     field :instructions, :string
-    field :settings, :settings_output
+    # do
+    field :settings, :settings_output do
+      resolve(&Resolvers.Filesearch.parse_settings/3)
+    end
 
     field :vector_store, :vector_store do
       resolve(dataloader(Repo))
@@ -111,14 +111,6 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       arg(:media, non_null(:upload))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.upload_file/3)
-    end
-
-    @desc "Remove files from VectorStore"
-    field :remove_vector_store_file, :vector_store_result do
-      arg(:file_id, non_null(:string))
-      arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.remove_vector_store_file/3)
     end
 
     @desc "Update VectorStore"
@@ -189,6 +181,13 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       arg(:opts, :opts)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.list_vector_stores/3)
+    end
+
+    @desc "Get Assistant"
+    field :assistant, :assistant_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.get_assistant/3)
     end
   end
 end

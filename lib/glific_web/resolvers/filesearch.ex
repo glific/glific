@@ -2,6 +2,8 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @moduledoc """
   Filesearch Resolver which sits between the GraphQL schema and Glific Filesearch API.
   """
+  alias Glific.Filesearch.Assistant
+
   alias Glific.{
     Filesearch,
     Filesearch.VectorStore,
@@ -45,19 +47,6 @@ defmodule GlificWeb.Resolvers.Filesearch do
     Repo.put_process_state(user.organization_id)
 
     with {:ok, vector_store} <- Filesearch.delete_vector_store(params.id) do
-      {:ok, %{vector_store: vector_store}}
-    end
-  end
-
-  @doc """
-  Removes the given file from the VectorStore
-  """
-  @spec remove_vector_store_file(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any()} | {:error, any()}
-  def remove_vector_store_file(_, params, %{context: %{current_user: user}}) do
-    Repo.put_process_state(user.organization_id)
-
-    with {:ok, vector_store} <- Filesearch.remove_vector_store_file(params) do
       {:ok, %{vector_store: vector_store}}
     end
   end
@@ -162,6 +151,19 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
+  Fetch the details for the given Assistant
+  """
+  @spec get_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any()} | {:error, any()}
+  def get_assistant(_, params, %{context: %{current_user: user}}) do
+    Repo.put_process_state(user.organization_id)
+
+    with {:ok, assistant} <- Assistant.get_assistant(params.id) do
+      {:ok, %{assistant: assistant}}
+    end
+  end
+
+  @doc """
   Return the details of the files in a VectorStore
   """
   @spec list_files(VectorStore.t(), map(), map()) :: {:ok, list()}
@@ -173,35 +175,19 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
-  Calculate the total file size linked to the VectorStore
+  Converts the string keys to atoms for resolver to work correctly
   """
-  @spec calculate_vector_store_size(VectorStore.t(), map(), map()) :: {:ok, String.t()}
-  def calculate_vector_store_size(vector_store, _args, _context) do
-    total_size =
-      Enum.reduce(vector_store.files, 0, fn {_id, info}, size ->
-        size + info["size"]
-      end)
+  @spec parse_settings(Assistant.t(), map(), map()) :: {:ok, map()}
+  def parse_settings(assistant, _args, _context) do
+    settings =
+      for {key, val} <- assistant.settings, into: %{} do
+        if is_binary(key) do
+          {String.to_atom(key), val}
+        else
+          {key, val}
+        end
+      end
 
-    kb = 1_024
-    mb = 1_048_576
-    gb = 1_073_741_824
-
-    cond do
-      total_size >= gb ->
-        size = (total_size / gb) |> Float.round(2)
-        to_string(size) <> " GB"
-
-      total_size >= mb ->
-        size = (total_size / mb) |> Float.round(2)
-        to_string(size) <> " MB"
-
-      total_size >= kb ->
-        size = (total_size / kb) |> Float.round(2)
-        to_string(size) <> " KB"
-
-      true ->
-        to_string(total_size) <> " B"
-    end
-    |> then(&{:ok, &1})
+    {:ok, settings}
   end
 end
