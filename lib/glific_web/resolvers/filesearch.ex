@@ -175,6 +175,17 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
+  Fetch available openai models
+  """
+  @spec list_models(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any()} | {:error, any()}
+  def list_models(_, _params, %{context: %{current_user: user}}) do
+    Repo.put_process_state(user.organization_id)
+
+    {:ok, Filesearch.list_models()}
+  end
+
+  @doc """
   Return the details of the files in a VectorStore
   """
   @spec list_files(VectorStore.t(), map(), map()) :: {:ok, list()}

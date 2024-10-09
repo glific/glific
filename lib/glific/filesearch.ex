@@ -203,6 +203,22 @@ defmodule Glific.Filesearch do
     Assistant.list_assistants(params)
   end
 
+  @doc """
+  Fetch available openai models
+  """
+  @spec list_models() :: list(Assistant.t())
+  def list_models() do
+    case ApiClient.list_models() do
+      {:ok, %{data: models}} ->
+        models
+        |> Stream.filter(fn model -> model.owned_by not in ["project-tech4dev"] end)
+        |> Enum.map(fn model -> model.id end)
+
+      _ ->
+        [@default_model]
+    end
+  end
+
   @spec get_file(VectorStore.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
   defp get_file(vector_store, file_id) do
     case Map.get(vector_store.files, file_id) do

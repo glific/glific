@@ -203,5 +203,11 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.list_assistants/3)
     end
+
+    @desc "List models"
+    field :list_openai_models, list_of(:string) do
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.list_models/3)
+    end
   end
 end

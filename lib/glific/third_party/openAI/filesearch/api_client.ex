@@ -163,11 +163,13 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   @spec modify_assistant(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
   def modify_assistant(assistant_id, params) do
     url = @endpoint <> "/assistants/#{assistant_id}"
+
     payload =
       %{
         "name" => params.name,
         "model" => params.model,
         "instructions" => params.instructions || "",
+        # TODO, still sus on temperature key
         "temperature" => params.settings["temperature"]
       }
 
@@ -187,6 +189,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
+  # TODO: doc
   @spec create_vector_store_batch(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
   def create_vector_store_batch(vector_store_id, params) do
     url = @endpoint <> "/vector_stores/#{vector_store_id}/file_batches"
@@ -196,6 +199,15 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
       |> Jason.encode!()
 
     post(url, payload, headers: headers())
+    |> parse_response()
+  end
+
+  # TODO: doc
+  @spec list_models :: {:ok, map()} | {:error, String.t()}
+  def list_models do
+    url = @endpoint <> "/models"
+
+    get(url, headers: headers())
     |> parse_response()
   end
 
