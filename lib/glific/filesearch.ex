@@ -91,10 +91,7 @@ defmodule Glific.Filesearch do
 
     attrs =
       %{
-        settings: %{
-          # default temperature for assistants in openAI
-          temperature: 1
-        },
+        temperature: 1,
         model: @default_model,
         organization_id: Repo.get_organization_id(),
         vector_store_ids: vector_store_ids
@@ -121,6 +118,10 @@ defmodule Glific.Filesearch do
   def delete_assistant(id) do
     with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
          {:ok, _} <- ApiClient.delete_assistant(assistant.assistant_id) do
+      if assistant.vector_store_id do
+        delete_vector_store(assistant.vector_store_id)
+      end
+
       Repo.delete(assistant)
     end
   end

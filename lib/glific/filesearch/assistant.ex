@@ -20,7 +20,7 @@ defmodule Glific.Filesearch.Assistant do
     :name,
     :organization_id,
     :model,
-    :settings
+    :temperature
   ]
   @optional_fields [
     :instructions,
@@ -37,7 +37,7 @@ defmodule Glific.Filesearch.Assistant do
           vector_store: VectorStore.t() | Ecto.Association.NotLoaded.t() | nil,
           model: String.t() | nil,
           instructions: String.t() | nil,
-          settings: map() | nil
+          temperature: float() | nil
         }
 
   schema "openai_assistants" do
@@ -45,7 +45,7 @@ defmodule Glific.Filesearch.Assistant do
     field :name, :string
     field :model, :string
     field :instructions, :string
-    field :settings, :map
+    field :temperature, :float
     belongs_to :organization, Organization
     belongs_to :vector_store, VectorStore
     timestamps(type: :utc_datetime)

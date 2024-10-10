@@ -1,6 +1,6 @@
 #import "./assistant_fields.frag.gql"
 
-mutation Assistant($id: ID!) {
+query Assistant($id: ID!) {
   assistant(id: $id) {
     ...AssistantFields
 

@@ -14,7 +14,6 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :errors, list_of(:input_error)
   end
 
-  # TODO: add size and status
   object :vector_store do
     field :id, :id
     field :vector_store_id, :string
@@ -24,9 +23,11 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       resolve(&Resolvers.Filesearch.list_files/3)
     end
 
-    field :assistants, list_of(:assistant) do
-      resolve(dataloader(Repo))
+    field :size, :string do
+      resolve(&Resolvers.Filesearch.calculate_vector_store_size/3)
     end
+
+    field :status, :string
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -54,10 +55,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :assistant_id, :string
     field :model, :string
     field :instructions, :string
-    # do
-    field :settings, :settings_output do
-      resolve(&Resolvers.Filesearch.parse_settings/3)
-    end
+    field :temperature, :float
 
     field :vector_store, :vector_store do
       resolve(dataloader(Repo))
@@ -67,9 +65,6 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :updated_at, :datetime
   end
 
-  object :settings_output do
-    field :temperature, :float
-  end
 
   input_object :vector_store_input do
     field :name, :string
@@ -77,13 +72,8 @@ defmodule GlificWeb.Schema.FilesearchTypes do
 
   input_object :assistant_input do
     field :name, :string
-    field :vector_store_id, :integer
     field :model, :string
     field :instructions, :string
-    field :settings, :input_settings
-  end
-
-  input_object :input_settings do
     field :temperature, :float
   end
 

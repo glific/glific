@@ -1,6 +1,5 @@
-
-fragment AssistantFields on AssistantResult {
-  assistant {
+query Assistants($filter: AssistantFilter, $opts: Opts) {
+  Assistants(filter: $filter, opts: $opts) {
     id
     name
     assistant_id
@@ -17,12 +16,5 @@ fragment AssistantFields on AssistantResult {
     }
     inserted_at
     updated_at
-  }
-}
-
-fragment ErrorFields on AssistantResult {
-  errors {
-    key
-    message
   }
 }

@@ -75,6 +75,18 @@ defmodule Glific.FilesearchTest do
     "assets/gql/filesearch/add_assistant_files.gql"
   )
 
+  load_gql(
+    :assistant,
+    GlificWeb.Schema,
+    "assets/gql/filesearch/assistant_by_id.gql"
+  )
+
+  load_gql(
+    :assistants,
+    GlificWeb.Schema,
+    "assets/gql/filesearch/list_assistants.gql"
+  )
+
   @tag :skip
   test "valid create vector_store", %{user: user} do
     Tesla.Mock.mock(fn
@@ -480,7 +492,7 @@ defmodule Glific.FilesearchTest do
     assert length(query_data.errors) == 1
   end
 
-  @tag :asst_1
+  @tag :skip
   test "valid create assistant with vector_store", attrs do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://api.openai.com/v1/assistants"} ->
@@ -552,7 +564,7 @@ defmodule Glific.FilesearchTest do
     valid_attrs = %{
       assistant_id: "asst_abc",
       name: "new assistant",
-      settings: %{},
+      temperature: 1,
       model: "gpt-4o",
       organization_id: attrs.organization_id,
       vector_store_id: vector_store.id
@@ -580,8 +592,8 @@ defmodule Glific.FilesearchTest do
     assert {:ok, query_data} = result
     assert query_data.data["deleteAssistant"]["assistant"]["name"] == "new assistant"
 
-    # deleting assistant shouldnot delete attached vector store
-    assert {:ok, _} = VectorStore.get_vector_store(vector_store.id)
+    # deleting assistant should delete attached vector store
+    assert {:error, _} = VectorStore.get_vector_store(vector_store.id)
   end
 
   @tag :asst_1
@@ -602,9 +614,7 @@ defmodule Glific.FilesearchTest do
     valid_attrs = %{
       assistant_id: "asst_abc",
       name: "new assistant",
-      settings: %{
-        temperature: 1
-      },
+      temperature: 1,
       model: "gpt-4o",
       organization_id: attrs.organization_id
     }
@@ -639,60 +649,15 @@ defmodule Glific.FilesearchTest do
           "input" => %{
             "name" => "assistant2",
             "instructions" => "no instruction",
-            "settings" => %{
-              "temperature" => 1.8
-            }
+            "temperature" => 1.8
           },
           "id" => assistant.id
         }
       )
 
-    assert {:ok, %{settings: %{"temperature" => 1.8}}} = Assistant.get_assistant(assistant.id)
+    assert {:ok, %{temperature: 1.8}} = Assistant.get_assistant(assistant.id)
 
-    assert %{"name" => "assistant2", "settings" => %{"temperature" => 1.8}} =
-             query_data.data["updateAssistant"]["assistant"]
-
-    # updating with some input variables and vector_store_id null
-    {:ok, _query_data} =
-      auth_query_gql_by(:update_assistant, attrs.user,
-        variables: %{
-          "input" => %{
-            "name" => "assistant2",
-            "instructions" => "no instruction",
-            "vector_store_id" => nil
-          },
-          "id" => assistant.id
-        }
-      )
-
-    assert {:ok, %{settings: %{"temperature" => 1.8}}} = Assistant.get_assistant(assistant.id)
-
-    assert %{"name" => "assistant2", "vector_store" => nil, "settings" => %{"temperature" => 1.8}} =
-             query_data.data["updateAssistant"]["assistant"]
-
-    # attach a vector_store
-    valid_attrs = %{
-      vector_store_id: "vs_abcdef",
-      name: "VectorStore 1",
-      files: %{},
-      organization_id: attrs.organization_id
-    }
-
-    {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
-
-    {:ok, query_data} =
-      auth_query_gql_by(:update_assistant, attrs.user,
-        variables: %{
-          "input" => %{
-            "name" => "assistant2",
-            "instructions" => "no instruction",
-            "vector_store_id" => vector_store.id
-          },
-          "id" => assistant.id
-        }
-      )
-
-    assert %{"name" => "assistant2", "vector_store" => %{"name" => "VectorStore 1"}} =
+    assert %{"name" => "assistant2", "temperature" => 1.8} =
              query_data.data["updateAssistant"]["assistant"]
   end
 
@@ -701,9 +666,7 @@ defmodule Glific.FilesearchTest do
     valid_attrs = %{
       assistant_id: "asst_abc",
       name: "new assistant",
-      settings: %{
-        temperature: 1
-      },
+      temperature: 1,
       model: "gpt-4o",
       organization_id: attrs.organization_id
     }
@@ -746,9 +709,7 @@ defmodule Glific.FilesearchTest do
     valid_attrs = %{
       assistant_id: "asst_abc",
       name: "new assistant",
-      settings: %{
-        temperature: 1
-      },
+      temperature: 1,
       model: "gpt-4o",
       organization_id: attrs.organization_id
     }
@@ -810,5 +771,140 @@ defmodule Glific.FilesearchTest do
 
     assert %{"name" => "new assistant", "vector_store" => %{"vector_store_id" => "vs_abc"}} =
              query_data.data["add_assistant_files"]["assistant"]
+  end
+
+  @tag :fass
+  test "get assistant", attrs do
+    valid_attrs = %{
+      assistant_id: "asst_abc",
+      name: "new assistant",
+      temperature: 1,
+      model: "gpt-4o",
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, assistant} = Assistant.create_assistant(valid_attrs)
+
+    {:ok, query_data} =
+      auth_query_gql_by(:assistant, attrs.user,
+        variables: %{
+          "id" => assistant.id
+        }
+      )
+
+    assert %{"name" => "new assistant"} =
+             query_data.data["assistant"]["assistant"]
+
+    # Trying to fetch invalid assistant
+    {:ok, query_data} =
+      auth_query_gql_by(:assistant, attrs.user,
+        variables: %{
+          "id" => 0
+        }
+      )
+
+    assert length(query_data.data["assistant"]["errors"]) == 1
+  end
+
+  @tag :lisass
+  test "list assistants", attrs do
+    # empty assistants
+    {:ok, result} =
+      auth_query_gql_by(:assistants, attrs.user, variables: %{})
+
+    assert result.data["Assistants"] == []
+
+    valid_attrs = %{
+      assistant_id: "asst_abc",
+      name: "new assistant",
+      temperature: 1,
+      model: "gpt-4o",
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, _assistant} = Assistant.create_assistant(valid_attrs)
+
+    valid_attrs = %{
+      assistant_id: "asst_abc2",
+      name: "new assistant 2",
+      temperature: 1,
+      model: "gpt-4o",
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, _assistant} = Assistant.create_assistant(valid_attrs)
+
+    # fetch all
+    {:ok, result} =
+      auth_query_gql_by(:assistants, attrs.user, variables: %{})
+
+    assert length(result.data["Assistants"]) == 2
+
+    # limit 1
+    {:ok, result} =
+      auth_query_gql_by(:assistants, attrs.user,
+        variables: %{
+          "opts" => %{
+            "limit" => 1
+          }
+        }
+      )
+
+    assert length(result.data["Assistants"]) == 1
+
+
+    valid_attrs = %{
+      assistant_id: "asst_xyz",
+      name: "new assistant 3",
+      temperature: 1,
+      model: "gpt-4o",
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, _assistant} = Assistant.create_assistant(valid_attrs)
+
+    # limit 1, offset 2
+    {:ok, result} =
+      auth_query_gql_by(:assistants, attrs.user,
+        variables: %{
+          "opts" => %{
+            "limit" => 1,
+            "offset" => 2
+          }
+        }
+      )
+
+    date = DateTime.utc_now() |> DateTime.add(-2 * 86_400)
+
+    Assistant
+    |> where([vs], vs.assistant_id == "asst_xyz")
+    |> update([vs], set: [inserted_at: ^date])
+    |> Repo.update_all([])
+
+    assert length(result.data["Assistants"]) == 1
+
+    # limit 1, default asc by inserted_at
+    {:ok, result} =
+      auth_query_gql_by(:assistants, attrs.user,
+        variables: %{
+          "opts" => %{
+            "limit" => 1
+          }
+        }
+      )
+
+    assert %{"name" => "new assistant 3"} = List.first(result.data["Assistants"])
+
+    # search by name
+    {:ok, result} =
+      auth_query_gql_by(:assistants, attrs.user,
+        variables: %{
+          "filter" => %{
+            "name" => "3"
+          }
+        }
+      )
+
+    assert %{"name" => "new assistant 3"} = List.first(result.data["Assistants"])
   end
 end

@@ -16,9 +16,7 @@ defmodule Glific.Repo.Migrations.FilesearchTables do
 
       add :instructions, :string, comment: "Prompt for the agent"
 
-      add :settings, :map,
-        null: false,
-        comment: "Additional assistant settings such as temperature, chunks etc"
+      add :temperature, :float, comment: "model determinism range from 0 to 2"
 
       add :vector_store_id, references(:openai_vector_stores, on_delete: :nilify_all),
         comment: "Unique VectorStore id"
@@ -49,6 +47,13 @@ defmodule Glific.Repo.Migrations.FilesearchTables do
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
         comment: "Unique organization ID."
+
+      add :size, :bigint, default: 0, comment: "Size of the vectorStore"
+
+      add :status, :string,
+        default: "in_progress",
+        comment:
+          "The readiness state of VectorStore, any of the given statuses - in_progress, completed, cancelled"
 
       timestamps(type: :utc_datetime)
     end

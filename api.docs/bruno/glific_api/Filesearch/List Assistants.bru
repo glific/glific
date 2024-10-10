@@ -15,16 +15,14 @@ headers {
 }
 
 body:graphql {
-  query Assistants($filter: VectorStoreFilter, $opts: Opts) {
+  query Assistants($filter: AssistantFilter, $opts: Opts) {
     Assistants(filter: $filter, opts: $opts) {
         id
         name
         assistant_id,
      		model
         instructions
-        settings {
-          temperature
-        }
+        temperature
         vector_store {
           id
           vector_store_id
@@ -48,7 +46,7 @@ body:graphql:vars {
       "order": "DESC"
     },
     "filter": {
-      "name": "vector"
+     
     }
   }
 }

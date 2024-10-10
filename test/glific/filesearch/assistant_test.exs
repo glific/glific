@@ -10,7 +10,7 @@ defmodule Glific.Filesearch.AssistantTest do
       assistant_id: "asst_abc",
       name: "temp assistant",
       model: "gpt-4o",
-      settings: %{},
+      temperature: 1,
       organization_id: attrs.organization_id
     }
 
@@ -33,7 +33,7 @@ defmodule Glific.Filesearch.AssistantTest do
       assistant_id: "asst_abc",
       name: "temp assistant",
       model: "gpt-4o",
-      settings: %{},
+      temperature: 1,
       organization_id: attrs.organization_id
     }
 
@@ -51,7 +51,7 @@ defmodule Glific.Filesearch.AssistantTest do
       assistant_id: "asst_abc",
       name: "temp assistant",
       model: "gpt-4o",
-      settings: %{},
+      temperature: 1,
       organization_id: attrs.organization_id
     }
 
@@ -61,7 +61,7 @@ defmodule Glific.Filesearch.AssistantTest do
       assistant_id: "asst_def",
       name: "assistant 2",
       model: "gpt-4o",
-      settings: %{},
+      temperature: 1,
       organization_id: attrs.organization_id
     }
 
@@ -76,7 +76,7 @@ defmodule Glific.Filesearch.AssistantTest do
       assistant_id: "asst_abc",
       name: "temp assistant",
       model: "gpt-4o",
-      settings: %{},
+      temperature: 1,
       organization_id: attrs.organization_id
     }
 

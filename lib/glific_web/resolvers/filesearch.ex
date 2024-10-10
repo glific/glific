@@ -212,4 +212,33 @@ defmodule GlificWeb.Resolvers.Filesearch do
 
     {:ok, settings}
   end
+
+  @doc """
+  Calculate the total file size linked to the VectorStore
+  """
+  @spec calculate_vector_store_size(VectorStore.t(), map(), map()) :: {:ok, String.t()}
+  def calculate_vector_store_size(vector_store, _args, _context) do
+    total_size = vector_store.size
+    kb = 1_024
+    mb = 1_048_576
+    gb = 1_073_741_824
+
+    cond do
+      total_size >= gb ->
+        size = (total_size / gb) |> Float.round(2)
+        to_string(size) <> " GB"
+
+      total_size >= mb ->
+        size = (total_size / mb) |> Float.round(2)
+        to_string(size) <> " MB"
+
+      total_size >= kb ->
+        size = (total_size / kb) |> Float.round(2)
+        to_string(size) <> " KB"
+
+      true ->
+        to_string(total_size) <> " B"
+    end
+    |> then(&{:ok, &1})
+  end
 end

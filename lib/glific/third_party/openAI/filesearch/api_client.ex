@@ -128,7 +128,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
         "name" => params.name,
         "model" => params.model,
         "instructions" => params[:instructions],
-        "temperature" => params.settings.temperature,
+        "temperature" => params.temperature,
         "tools" => [
           %{
             "type" => "file_search"
@@ -169,8 +169,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
         "name" => params.name,
         "model" => params.model,
         "instructions" => params.instructions || "",
-        # TODO, still sus on temperature key
-        "temperature" => params.settings["temperature"]
+        "temperature" => params.temperature
       }
 
     if Map.has_key?(params, :vector_store_ids) do
