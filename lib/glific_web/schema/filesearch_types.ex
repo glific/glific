@@ -23,13 +23,11 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       resolve(&Resolvers.Filesearch.list_files/3)
     end
 
-    field :assistants, list_of(:assistant) do
-      resolve(dataloader(Repo))
-    end
-
     field :size, :string do
       resolve(&Resolvers.Filesearch.calculate_vector_store_size/3)
     end
+
+    field :status, :string
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -38,25 +36,50 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   object :file_info do
     field :id, :string
     field :name, :string
-    field :size, :integer
+    field :uploaded_at, :string
   end
 
   object :file_result do
     field :file_id, :string
     field :filename, :string
-    field :size, :integer
+  end
+
+  object :assistant_result do
+    field :assistant, :assistant
+    field :errors, list_of(:input_error)
   end
 
   object :assistant do
     field :id, :id
     field :name, :string
+    field :assistant_id, :string
     field :model, :string
     field :instructions, :string
-    # field :settings
+    field :temperature, :float
+
+    field :vector_store, :vector_store do
+      resolve(dataloader(Repo))
+    end
+
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
   end
+
 
   input_object :vector_store_input do
     field :name, :string
+  end
+
+  input_object :assistant_input do
+    field :name, :string
+    field :model, :string
+    field :instructions, :string
+    field :temperature, :float
+  end
+
+  input_object :file_info_input do
+    field :file_id, :string
+    field :filename, :string
   end
 
   @desc "Filtering options for VectorStore"
@@ -65,14 +88,13 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field(:name, :string)
   end
 
-  object :filesearch_mutations do
-    @desc "Create VectorStore"
-    field :create_vector_store, :vector_store_result do
-      arg(:input, :vector_store_input)
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.create_vector_store/3)
-    end
+  @desc "Filtering options for Assistants"
+  input_object :assistant_filter do
+    @desc "Match the name"
+    field(:name, :string)
+  end
 
+  object :filesearch_mutations do
     @desc "Upload filesearch file"
     field :upload_filesearch_file, :file_result do
       arg(:media, non_null(:upload))
@@ -80,52 +102,65 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       resolve(&Resolvers.Filesearch.upload_file/3)
     end
 
-    @desc "Add files to VectorStore"
-    field :add_vector_store_files, :vector_store_result do
-      arg(:media, non_null(list_of(non_null(:upload))))
-      arg(:id, non_null(:id))
+    @desc "Create Assistant"
+    field :create_assistant, :assistant_result do
+      arg(:input, :assistant_input)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.add_vector_store_files/3)
+      resolve(&Resolvers.Filesearch.create_assistant/3)
     end
 
-    @desc "Remove files from VectorStore"
-    field :remove_vector_store_file, :vector_store_result do
+    @desc "Delete Assistant"
+    field :delete_assistant, :assistant_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.delete_assistant/3)
+    end
+
+    @desc "Add files to Assistant"
+    field :add_assistant_files, :assistant_result do
+      arg(:media_info, non_null(list_of(non_null(:file_info_input))))
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.add_assistant_files/3)
+    end
+
+    @desc "Remove files from Assistant"
+    field :remove_assistant_file, :assistant_result do
       arg(:file_id, non_null(:string))
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.remove_vector_store_file/3)
+      resolve(&Resolvers.Filesearch.remove_assistant_file/3)
     end
 
-    @desc "Update VectorStore"
-    field :update_vector_store, :vector_store_result do
-      arg(:input, non_null(:vector_store_input))
+    @desc "Update Assistant"
+    field :update_assistant, :assistant_result do
+      arg(:input, :assistant_input)
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.update_vector_store/3)
-    end
-
-    @desc "Delete VectorStore"
-    field :delete_vector_store, :vector_store_result do
-      arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.delete_vector_store/3)
+      resolve(&Resolvers.Filesearch.update_assistant/3)
     end
   end
 
   object :filesearch_queries do
-    @desc "Get VectorStore"
-    field :vector_store, :vector_store_result do
+    @desc "Get Assistant"
+    field :assistant, :assistant_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.get_vector_store/3)
+      resolve(&Resolvers.Filesearch.get_assistant/3)
     end
 
-    @desc "List VectorStores"
-    field :vector_stores, list_of(:vector_store) do
-      arg(:filter, :vector_store_filter)
+    @desc "List Assistants"
+    field :assistants, list_of(:assistant) do
+      arg(:filter, :assistant_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.list_vector_stores/3)
+      resolve(&Resolvers.Filesearch.list_assistants/3)
+    end
+
+    @desc "List models"
+    field :list_openai_models, list_of(:string) do
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.list_models/3)
     end
   end
 end

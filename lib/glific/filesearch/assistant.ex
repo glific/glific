@@ -20,7 +20,7 @@ defmodule Glific.Filesearch.Assistant do
     :name,
     :organization_id,
     :model,
-    :settings
+    :temperature
   ]
   @optional_fields [
     :instructions,
@@ -37,7 +37,7 @@ defmodule Glific.Filesearch.Assistant do
           vector_store: VectorStore.t() | Ecto.Association.NotLoaded.t() | nil,
           model: String.t() | nil,
           instructions: String.t() | nil,
-          settings: map() | nil
+          temperature: float() | nil
         }
 
   schema "openai_assistants" do
@@ -45,7 +45,7 @@ defmodule Glific.Filesearch.Assistant do
     field :name, :string
     field :model, :string
     field :instructions, :string
-    field :settings, :map
+    field :temperature, :float
     belongs_to :organization, Organization
     belongs_to :vector_store, VectorStore
     timestamps(type: :utc_datetime)
@@ -61,6 +61,7 @@ defmodule Glific.Filesearch.Assistant do
     |> validate_required(@required_fields)
     |> unique_constraint([:assistant_id, :organization_id])
     |> unique_constraint([:name, :organization_id])
+    |> foreign_key_constraint(:vector_store_id)
   end
 
   @doc """
@@ -76,9 +77,9 @@ defmodule Glific.Filesearch.Assistant do
   @doc """
   Get an assistant
   """
-  @spec get_assistant(integer()) :: Assistant.t() | nil
+  @spec get_assistant(integer()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
   def get_assistant(id),
-    do: Repo.get(Assistant, id)
+    do: Repo.fetch_by(Assistant, %{id: id})
 
   @doc """
   Deletes assistant
@@ -101,7 +102,7 @@ defmodule Glific.Filesearch.Assistant do
   @spec list_assistants(map()) :: [Assistant.t()]
   def list_assistants(args) do
     args
-    |> Repo.list_filter_query(Assistant, &Repo.opts_with_inserted_at/2, &filter_with/2)
+    |> Repo.list_filter_query(Assistant, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)
     |> Repo.all()
   end
 
@@ -123,18 +124,5 @@ defmodule Glific.Filesearch.Assistant do
     assistant
     |> Assistant.changeset(attrs)
     |> Repo.update()
-  end
-
-  @spec filter_with(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
-  defp filter_with(query, filter) do
-    query = Repo.filter_with(query, filter)
-
-    Enum.reduce(filter, query, fn
-      {:assistant_id, assistant_id}, query ->
-        from(q in query, where: q.assistant_id == ^assistant_id)
-
-      _, query ->
-        query
-    end)
   end
 end

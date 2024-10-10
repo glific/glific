@@ -25,12 +25,12 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   @doc """
   Create a VectorStore
   """
-  @spec create_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
-  def create_vector_store(name) do
+  @spec create_vector_store(map()) :: {:ok, map()} | {:error, String.t()}
+  def create_vector_store(params) do
     url = @endpoint <> "/vector_stores"
 
     payload =
-      %{"name" => name}
+      params
       |> Jason.encode!()
 
     post(url, payload, headers: headers())
@@ -113,6 +113,100 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
       |> Jason.encode!()
 
     post(url, payload, headers: headers())
+    |> parse_response()
+  end
+
+  @doc """
+  Create an Assistant
+  """
+  @spec create_assistant(map()) :: {:ok, map()} | {:error, String.t()}
+  def create_assistant(params) do
+    url = @endpoint <> "/assistants"
+
+    payload =
+      %{
+        "name" => params.name,
+        "model" => params.model,
+        "instructions" => params[:instructions],
+        "temperature" => params.temperature,
+        "tools" => [
+          %{
+            "type" => "file_search"
+          }
+        ],
+        "tool_resources" => %{
+          "file_search" => %{
+            "vector_store_ids" => params.vector_store_ids
+          }
+        }
+      }
+      |> Jason.encode!()
+
+    post(url, payload, headers: headers())
+    |> parse_response()
+  end
+
+  @doc """
+  Delete an Assistant
+  """
+  @spec delete_assistant(String.t()) :: {:ok, map()} | {:error, String.t()}
+  def delete_assistant(assistant_id) do
+    url = @endpoint <> "/assistants/#{assistant_id}"
+
+    delete(url, headers: headers())
+    |> parse_response()
+  end
+
+  @doc """
+  Update an Assistant
+  """
+  @spec modify_assistant(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
+  def modify_assistant(assistant_id, params) do
+    url = @endpoint <> "/assistants/#{assistant_id}"
+
+    payload =
+      %{
+        "name" => params.name,
+        "model" => params.model,
+        "instructions" => params.instructions || "",
+        "temperature" => params.temperature
+      }
+
+    if Map.has_key?(params, :vector_store_ids) do
+      Map.merge(payload, %{
+        "tool_resources" => %{
+          "file_search" => %{
+            "vector_store_ids" => params.vector_store_ids
+          }
+        }
+      })
+    else
+      payload
+    end
+    |> Jason.encode!()
+    |> then(&post(url, &1, headers: headers()))
+    |> parse_response()
+  end
+
+  # TODO: doc
+  @spec create_vector_store_batch(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
+  def create_vector_store_batch(vector_store_id, params) do
+    url = @endpoint <> "/vector_stores/#{vector_store_id}/file_batches"
+
+    payload =
+      params
+      |> Jason.encode!()
+
+    post(url, payload, headers: headers())
+    |> parse_response()
+  end
+
+  # TODO: doc
+  @spec list_models :: {:ok, map()} | {:error, String.t()}
+  def list_models do
+    url = @endpoint <> "/models"
+
+    get(url, headers: headers())
     |> parse_response()
   end
 

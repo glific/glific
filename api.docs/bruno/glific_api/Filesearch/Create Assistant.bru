@@ -1,7 +1,7 @@
 meta {
-  name: Get VectorStore
+  name: Create Assistant
   type: graphql
-  seq: 3
+  seq: 8
 }
 
 post {
@@ -15,26 +15,24 @@ headers {
 }
 
 body:graphql {
-  query VectorStore($id: ID!) {
-    VectorStore(id: $id) {
-       vectorStore {
+  mutation createAssistant($input:AssistantInput! = {}) {
+    createAssistant(input: $input) {
+      assistant {
         id
         name
-        vectorStoreId,
-        files {
+        assistant_id,
+     		model
+        instructions
+        temperature
+        vector_store {
           id
-        	name
-          size
+          vector_store_id
         }
-        assistants {
-          id
-        }
-        size
         inserted_at
         updated_at
       }
   
-      errors {
+       errors {
         key
         message
       }
@@ -44,6 +42,7 @@ body:graphql {
 
 body:graphql:vars {
   {
-    "id": "1"
+    "input": {
+    }
   }
 }

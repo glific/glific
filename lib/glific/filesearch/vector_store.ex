@@ -21,7 +21,9 @@ defmodule Glific.Filesearch.VectorStore do
     :name
   ]
   @optional_fields [
-    :files
+    :files,
+    :size,
+    :status
   ]
 
   @type t() :: %__MODULE__{
@@ -29,6 +31,8 @@ defmodule Glific.Filesearch.VectorStore do
           vector_store_id: String.t() | nil,
           name: String.t() | nil,
           files: map() | nil,
+          size: integer() | nil,
+          status: String.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           assistants: [Assistant.t()] | Ecto.Association.NotLoaded.t() | nil
@@ -38,6 +42,8 @@ defmodule Glific.Filesearch.VectorStore do
     field :vector_store_id, :string
     field :name, :string
     field :files, :map
+    field :size, :integer
+    field :status, :string
     belongs_to :organization, Organization
     has_many :assistants, Assistant
     timestamps(type: :utc_datetime)

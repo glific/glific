@@ -10,7 +10,7 @@ defmodule Glific.Filesearch.AssistantTest do
       assistant_id: "asst_abc",
       name: "temp assistant",
       model: "gpt-4o",
-      settings: %{},
+      temperature: 1,
       organization_id: attrs.organization_id
     }
 
@@ -33,17 +33,17 @@ defmodule Glific.Filesearch.AssistantTest do
       assistant_id: "asst_abc",
       name: "temp assistant",
       model: "gpt-4o",
-      settings: %{},
+      temperature: 1,
       organization_id: attrs.organization_id
     }
 
     assert {:ok, assistant} = Assistant.create_assistant(valid_attrs)
 
-    assert %Assistant{} = Assistant.get_assistant(assistant.id)
+    assert {:ok, %Assistant{}} = Assistant.get_assistant(assistant.id)
   end
 
   test "get_assistant/1 with invalid id not return an assistant", _attrs do
-    assert is_nil(Assistant.get_assistant(100))
+    assert {:error, _} = Assistant.get_assistant(0)
   end
 
   test "list_assistants/1 returns list of assistants matching the filters", attrs do
@@ -51,7 +51,7 @@ defmodule Glific.Filesearch.AssistantTest do
       assistant_id: "asst_abc",
       name: "temp assistant",
       model: "gpt-4o",
-      settings: %{},
+      temperature: 1,
       organization_id: attrs.organization_id
     }
 
@@ -61,7 +61,7 @@ defmodule Glific.Filesearch.AssistantTest do
       assistant_id: "asst_def",
       name: "assistant 2",
       model: "gpt-4o",
-      settings: %{},
+      temperature: 1,
       organization_id: attrs.organization_id
     }
 
@@ -76,7 +76,7 @@ defmodule Glific.Filesearch.AssistantTest do
       assistant_id: "asst_abc",
       name: "temp assistant",
       model: "gpt-4o",
-      settings: %{},
+      temperature: 1,
       organization_id: attrs.organization_id
     }
 

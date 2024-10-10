@@ -108,7 +108,7 @@ defmodule Glific.Filesearch.VectorStoreTest do
       assistant_id: "asst_abc",
       name: "temp assistant",
       model: "gpt-4o",
-      settings: %{},
+      temperature: 1,
       organization_id: attrs.organization_id,
       vector_store_id: vector_store.id
     }

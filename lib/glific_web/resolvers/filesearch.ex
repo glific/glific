@@ -2,28 +2,13 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @moduledoc """
   Filesearch Resolver which sits between the GraphQL schema and Glific Filesearch API.
   """
+  alias Glific.Filesearch.Assistant
+
   alias Glific.{
     Filesearch,
     Filesearch.VectorStore,
     Repo
   }
-
-  @doc """
-  Create a VectorStore
-  """
-  @spec create_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def create_vector_store(_, %{input: params}, %{context: %{current_user: user}}) do
-    Repo.put_process_state(user.organization_id)
-
-    attrs = %{
-      name: params[:name],
-      organization_id: user.organization_id,
-      files: %{}
-    }
-
-    Filesearch.create_vector_store(attrs)
-  end
 
   @doc """
   Uploads a file to openAI
@@ -37,80 +22,100 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
+  Create an Assistant
+  """
+  @spec create_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def create_assistant(_, %{input: params}, %{context: %{current_user: user}}) do
+    Repo.put_process_state(user.organization_id)
+
+    Filesearch.create_assistant(params)
+  end
+
+  @doc """
+  Deletes the Assistant for the given ID
+  """
+  @spec delete_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any()} | {:error, any()}
+  def delete_assistant(_, params, %{context: %{current_user: user}}) do
+    Repo.put_process_state(user.organization_id)
+
+    with {:ok, assistant} <- Filesearch.delete_assistant(params.id) do
+      {:ok, %{assistant: assistant}}
+    end
+  end
+
+  @doc """
   Upload and add the files to the VectorStore
   """
-  @spec add_vector_store_files(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec add_assistant_files(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def add_vector_store_files(_, params, %{context: %{current_user: user}}) do
+  def add_assistant_files(_, params, %{context: %{current_user: user}}) do
     Repo.put_process_state(user.organization_id)
     params = Map.put(params, :organization_id, user.organization_id)
 
-    with {:ok, vector_store} <- Filesearch.add_vector_store_files(params) do
-      {:ok, %{vector_store: vector_store}}
+    with {:ok, assistant} <- Filesearch.add_assistant_files(params) do
+      {:ok, %{assistant: assistant}}
     end
   end
 
   @doc """
-  Deletes the VectorStore for the given ID
+  Removes the given file from the Assistant's VectorStore
   """
-  @spec delete_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec remove_assistant_file(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
-  def delete_vector_store(_, params, %{context: %{current_user: user}}) do
+  def remove_assistant_file(_, params, %{context: %{current_user: user}}) do
     Repo.put_process_state(user.organization_id)
 
-    with {:ok, vector_store} <- Filesearch.delete_vector_store(params.id) do
-      {:ok, %{vector_store: vector_store}}
+    with {:ok, assistant} <- Filesearch.remove_assistant_file(params) do
+      {:ok, %{assistant: assistant}}
     end
   end
 
   @doc """
-  Removes the given file from the VectorStore
+  Updates an Assistant
   """
-  @spec remove_vector_store_file(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any()} | {:error, any()}
-  def remove_vector_store_file(_, params, %{context: %{current_user: user}}) do
-    Repo.put_process_state(user.organization_id)
-
-    with {:ok, vector_store} <- Filesearch.remove_vector_store_file(params) do
-      {:ok, %{vector_store: vector_store}}
+  @spec update_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_assistant(_, %{id: id, input: attrs}, %{context: %{current_user: _user}}) do
+    with {:ok, assistant} <- Filesearch.update_assistant(id, attrs) do
+      {:ok, %{assistant: assistant}}
     end
   end
 
   @doc """
-  Fetch the details for the given VectorStore
+  Fetch the details for the given Assistant
   """
-  @spec get_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec get_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
-  def get_vector_store(_, params, %{context: %{current_user: user}}) do
+  def get_assistant(_, params, %{context: %{current_user: user}}) do
     Repo.put_process_state(user.organization_id)
 
-    with {:ok, vector_store} <- VectorStore.get_vector_store(params.id) do
-      {:ok, %{vector_store: vector_store}}
+    with {:ok, assistant} <- Assistant.get_assistant(params.id) do
+      {:ok, %{assistant: assistant}}
     end
   end
 
   @doc """
-  Fetch VectorStores with given filters and options
+  Fetch Assistants with given filters and options
   """
-  @spec list_vector_stores(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec list_assistants(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
-  def list_vector_stores(_, params, %{context: %{current_user: user}}) do
+  def list_assistants(_, params, %{context: %{current_user: user}}) do
     Repo.put_process_state(user.organization_id)
 
-    {:ok, Filesearch.list_vector_stores(params)}
+    {:ok, Filesearch.list_assistants(params)}
   end
 
   @doc """
-  Updates the VectorStore with given attrs
+  Fetch available openai models
   """
-  @spec update_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec list_models(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
-  def update_vector_store(_, %{id: id, input: attrs}, %{context: %{current_user: user}}) do
+  def list_models(_, _params, %{context: %{current_user: user}}) do
     Repo.put_process_state(user.organization_id)
 
-    with {:ok, vector_store} <- Filesearch.update_vector_store(id, attrs) do
-      {:ok, %{vector_store: vector_store}}
-    end
+    {:ok, Filesearch.list_models()}
   end
 
   @doc """
@@ -119,7 +124,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec list_files(VectorStore.t(), map(), map()) :: {:ok, list()}
   def list_files(vector_store, _args, _context) do
     Enum.map(vector_store.files, fn {id, info} ->
-      %{id: id, name: info["filename"], size: info["size"]}
+      %{id: id, name: info["filename"], uploaded_at: info["uploaded_at"]}
     end)
     |> then(&{:ok, &1})
   end
@@ -129,11 +134,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   """
   @spec calculate_vector_store_size(VectorStore.t(), map(), map()) :: {:ok, String.t()}
   def calculate_vector_store_size(vector_store, _args, _context) do
-    total_size =
-      Enum.reduce(vector_store.files, 0, fn {_id, info}, size ->
-        size + info["size"]
-      end)
-
+    total_size = vector_store.size
     kb = 1_024
     mb = 1_048_576
     gb = 1_073_741_824
