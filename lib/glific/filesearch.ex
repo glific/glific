@@ -11,7 +11,7 @@ defmodule Glific.Filesearch do
   }
 
   @default_model "gpt-4o"
-
+  @excluded_models_prefix ["dall", "tts", "babbage", "whisper", "text", "davinci"]
   @doc """
   Creates an empty VectorStore
   """
@@ -213,6 +213,7 @@ defmodule Glific.Filesearch do
       {:ok, %{data: models}} ->
         models
         |> Stream.filter(fn model -> model.owned_by not in ["project-tech4dev"] end)
+        |> Stream.filter(fn model -> not String.starts_with?(model.id, @excluded_models_prefix) end)
         |> Enum.map(fn model -> model.id end)
 
       _ ->
