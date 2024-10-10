@@ -11,23 +11,6 @@ defmodule GlificWeb.Resolvers.Filesearch do
   }
 
   @doc """
-  Create a VectorStore
-  """
-  @spec create_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def create_vector_store(_, %{input: params}, %{context: %{current_user: user}}) do
-    Repo.put_process_state(user.organization_id)
-
-    attrs = %{
-      name: params[:name],
-      organization_id: user.organization_id,
-      files: %{}
-    }
-
-    Filesearch.create_vector_store(attrs)
-  end
-
-  @doc """
   Uploads a file to openAI
 
   Returns the File details
@@ -36,56 +19,6 @@ defmodule GlificWeb.Resolvers.Filesearch do
           {:ok, any} | {:error, any}
   def upload_file(_, params, %{context: %{current_user: _user}}) do
     Filesearch.upload_file(params)
-  end
-
-  @doc """
-  Deletes the VectorStore for the given ID
-  """
-  @spec delete_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any()} | {:error, any()}
-  def delete_vector_store(_, params, %{context: %{current_user: user}}) do
-    Repo.put_process_state(user.organization_id)
-
-    with {:ok, vector_store} <- Filesearch.delete_vector_store(params.id) do
-      {:ok, %{vector_store: vector_store}}
-    end
-  end
-
-  @doc """
-  Fetch the details for the given VectorStore
-  """
-  @spec get_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any()} | {:error, any()}
-  def get_vector_store(_, params, %{context: %{current_user: user}}) do
-    Repo.put_process_state(user.organization_id)
-
-    with {:ok, vector_store} <- VectorStore.get_vector_store(params.id) do
-      {:ok, %{vector_store: vector_store}}
-    end
-  end
-
-  @doc """
-  Fetch VectorStores with given filters and options
-  """
-  @spec list_vector_stores(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any()} | {:error, any()}
-  def list_vector_stores(_, params, %{context: %{current_user: user}}) do
-    Repo.put_process_state(user.organization_id)
-
-    {:ok, Filesearch.list_vector_stores(params)}
-  end
-
-  @doc """
-  Updates the VectorStore with given attrs
-  """
-  @spec update_vector_store(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any()} | {:error, any()}
-  def update_vector_store(_, %{id: id, input: attrs}, %{context: %{current_user: user}}) do
-    Repo.put_process_state(user.organization_id)
-
-    with {:ok, vector_store} <- Filesearch.update_vector_store(id, attrs) do
-      {:ok, %{vector_store: vector_store}}
-    end
   end
 
   @doc """
@@ -194,23 +127,6 @@ defmodule GlificWeb.Resolvers.Filesearch do
       %{id: id, name: info["filename"], uploaded_at: info["uploaded_at"]}
     end)
     |> then(&{:ok, &1})
-  end
-
-  @doc """
-  Converts the string keys to atoms for resolver to work correctly
-  """
-  @spec parse_settings(Assistant.t(), map(), map()) :: {:ok, map()}
-  def parse_settings(assistant, _args, _context) do
-    settings =
-      for {key, val} <- assistant.settings, into: %{} do
-        if is_binary(key) do
-          {String.to_atom(key), val}
-        else
-          {key, val}
-        end
-      end
-
-    {:ok, settings}
   end
 
   @doc """

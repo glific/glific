@@ -12,24 +12,6 @@ defmodule Glific.Filesearch do
 
   @default_model "gpt-4o"
   @excluded_models_prefix ["dall", "tts", "babbage", "whisper", "text", "davinci"]
-  @doc """
-  Creates an empty VectorStore
-  """
-  @spec create_vector_store(map()) :: {:ok, map()} | {:error, any()}
-  def create_vector_store(params) do
-    params = Map.put(params, :name, generate_temp_name(params[:name], "VectorStore"))
-    api_params = params |> Map.take([:name, :file_ids])
-
-    with {:ok, %{id: store_id}} <- ApiClient.create_vector_store(api_params) do
-      VectorStore.create_vector_store(Map.put(params, :vector_store_id, store_id))
-    else
-      {:error, %Ecto.Changeset{} = err} ->
-        {:error, err}
-
-      {:error, reason} ->
-        {:error, "VectorStore creation failed due to #{reason}"}
-    end
-  end
 
   @doc """
   Upload file to openAI
@@ -43,32 +25,6 @@ defmodule Glific.Filesearch do
          file_id: file.id,
          filename: file.filename
        }}
-    end
-  end
-
-  @doc """
-  Deletes the VectorStore for the given ID
-  """
-  @spec delete_vector_store(integer()) :: {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}
-  def delete_vector_store(id) do
-    with {:ok, vector_store} <- Repo.fetch_by(VectorStore, %{id: id}),
-         {:ok, _} <- ApiClient.delete_vector_store(vector_store.vector_store_id) do
-      Repo.delete(vector_store)
-    end
-  end
-
-  @doc """
-  Updates the VectorStore with given attrs
-  """
-  @spec update_vector_store(integer(), map()) :: {:ok, map()} | {:error, Ecto.Changeset.t()}
-  def update_vector_store(id, attrs) do
-    with {:ok, %VectorStore{} = vector_store} <- VectorStore.get_vector_store(id),
-         {:ok, _} <-
-           ApiClient.modify_vector_store(vector_store.vector_store_id, %{name: attrs.name}) do
-      VectorStore.update_vector_store(
-        vector_store,
-        attrs
-      )
     end
   end
 
@@ -189,14 +145,6 @@ defmodule Glific.Filesearch do
   end
 
   @doc """
-  Fetch VectorStores with given filters and options
-  """
-  @spec list_vector_stores(map()) :: list(VectorStore.t())
-  def list_vector_stores(params) do
-    VectorStore.list_vector_stores(params)
-  end
-
-  @doc """
   Fetch Assistants with given filters and options
   """
   @spec list_assistants(map()) :: list(Assistant.t())
@@ -213,11 +161,37 @@ defmodule Glific.Filesearch do
       {:ok, %{data: models}} ->
         models
         |> Stream.filter(fn model -> model.owned_by not in ["project-tech4dev"] end)
-        |> Stream.filter(fn model -> not String.starts_with?(model.id, @excluded_models_prefix) end)
+        |> Stream.filter(fn model ->
+          not String.starts_with?(model.id, @excluded_models_prefix)
+        end)
         |> Enum.map(fn model -> model.id end)
 
       _ ->
         [@default_model]
+    end
+  end
+
+  @spec create_vector_store(map()) :: {:ok, map()} | {:error, any()}
+  defp create_vector_store(params) do
+    params = Map.put(params, :name, generate_temp_name(params[:name], "VectorStore"))
+    api_params = params |> Map.take([:name, :file_ids])
+
+    with {:ok, %{id: store_id}} <- ApiClient.create_vector_store(api_params) do
+      VectorStore.create_vector_store(Map.put(params, :vector_store_id, store_id))
+    else
+      {:error, %Ecto.Changeset{} = err} ->
+        {:error, err}
+
+      {:error, reason} ->
+        {:error, "VectorStore creation failed due to #{reason}"}
+    end
+  end
+
+  @spec delete_vector_store(integer()) :: {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}
+  defp delete_vector_store(id) do
+    with {:ok, vector_store} <- Repo.fetch_by(VectorStore, %{id: id}),
+         {:ok, _} <- ApiClient.delete_vector_store(vector_store.vector_store_id) do
+      Repo.delete(vector_store)
     end
   end
 

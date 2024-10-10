@@ -95,33 +95,11 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   end
 
   object :filesearch_mutations do
-    @desc "Create VectorStore"
-    field :create_vector_store, :vector_store_result do
-      arg(:input, :vector_store_input)
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.create_vector_store/3)
-    end
-
     @desc "Upload filesearch file"
     field :upload_filesearch_file, :file_result do
       arg(:media, non_null(:upload))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.upload_file/3)
-    end
-
-    @desc "Update VectorStore"
-    field :update_vector_store, :vector_store_result do
-      arg(:input, non_null(:vector_store_input))
-      arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.update_vector_store/3)
-    end
-
-    @desc "Delete VectorStore"
-    field :delete_vector_store, :vector_store_result do
-      arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.delete_vector_store/3)
     end
 
     @desc "Create Assistant"
@@ -146,7 +124,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       resolve(&Resolvers.Filesearch.add_assistant_files/3)
     end
 
-    @desc "Remove files from VectorStore"
+    @desc "Remove files from Assistant"
     field :remove_assistant_file, :assistant_result do
       arg(:file_id, non_null(:string))
       arg(:id, non_null(:id))
@@ -164,21 +142,6 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   end
 
   object :filesearch_queries do
-    @desc "Get VectorStore"
-    field :vector_store, :vector_store_result do
-      arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.get_vector_store/3)
-    end
-
-    @desc "List VectorStores"
-    field :vector_stores, list_of(:vector_store) do
-      arg(:filter, :vector_store_filter)
-      arg(:opts, :opts)
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.list_vector_stores/3)
-    end
-
     @desc "Get Assistant"
     field :assistant, :assistant_result do
       arg(:id, non_null(:id))
