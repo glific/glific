@@ -15,31 +15,9 @@ headers {
 }
 
 body:graphql {
-  query Assistants($filter: AssistantFilter, $opts: Opts) {
-    Assistants(filter: $filter, opts: $opts) {
-        id
-        name
-        assistant_id,
-     		model
-        instructions
-        settings {
-          temperature
-        }
-        vector_store {
-          id
-          vector_store_id
-          files {
-            id
-            name
-            uploaded_at
-          }
-        }
-        inserted_at
-        updated_at
-      
-      }
-    }
-  
+  query{
+    ListOpenaiModels
+  }
 }
 
 body:graphql:vars {

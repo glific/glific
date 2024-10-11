@@ -65,7 +65,6 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :updated_at, :datetime
   end
 
-
   input_object :vector_store_input do
     field :name, :string
   end

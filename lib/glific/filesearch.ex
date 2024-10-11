@@ -155,8 +155,8 @@ defmodule Glific.Filesearch do
   @doc """
   Fetch available openai models
   """
-  @spec list_models() :: list(Assistant.t())
-  def list_models() do
+  @spec list_models :: list(Assistant.t())
+  def list_models do
     case ApiClient.list_models() do
       {:ok, %{data: models}} ->
         models
@@ -176,11 +176,9 @@ defmodule Glific.Filesearch do
     params = Map.put(params, :name, generate_temp_name(params[:name], "VectorStore"))
     api_params = params |> Map.take([:name, :file_ids])
 
-    with {:ok, %{id: store_id}} <- ApiClient.create_vector_store(api_params) do
-      VectorStore.create_vector_store(Map.put(params, :vector_store_id, store_id))
-    else
-      {:error, %Ecto.Changeset{} = err} ->
-        {:error, err}
+    case ApiClient.create_vector_store(api_params) do
+      {:ok, %{id: store_id}} ->
+        VectorStore.create_vector_store(Map.put(params, :vector_store_id, store_id))
 
       {:error, reason} ->
         {:error, "VectorStore creation failed due to #{reason}"}
