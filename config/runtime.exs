@@ -101,4 +101,8 @@ config :glific,
   google_maps_api_key: env!("GOOGLE_MAPS_API_KEY", :string!, "This is not a secret")
 
 config :glific,
+  ERP_API_KEY: env!("ERP_API_KEY", :string!, "This is not the ERP API key"),
+  ERP_SECRET: env!("ERP_SECRET", :string!, "This is not the ERP secret")
+
+config :glific,
   open_ai_filesearch_proj: env!("OPEN_AI_FILESEARCH_PROJECT", :string!, "This is not a secret")

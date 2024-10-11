@@ -28,7 +28,9 @@ defmodule Glific.Registrations.Registration do
     :ip_address,
     :terms_agreed,
     :support_staff_account,
-    :notion_page_id
+    :notion_page_id,
+    :erp_page_id,
+    :is_disputed
   ]
 
   @type t() :: %__MODULE__{
@@ -49,7 +51,9 @@ defmodule Glific.Registrations.Registration do
           ip_address: String.t() | nil,
           terms_agreed: boolean() | false,
           support_staff_account: boolean() | true,
-          notion_page_id: String.t() | nil
+          notion_page_id: String.t() | nil,
+          erp_page_id: String.t() | nil,
+          is_disputed: boolean() | false
         }
 
   schema "registrations" do
@@ -71,6 +75,8 @@ defmodule Glific.Registrations.Registration do
     field(:terms_agreed, :boolean, default: false)
     field(:support_staff_account, :boolean, default: true)
     field(:notion_page_id, :string)
+    field(:is_disputed, :boolean, default: false)
+    field(:erp_page_id, :string)
     belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)

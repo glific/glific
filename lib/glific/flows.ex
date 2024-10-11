@@ -154,22 +154,44 @@ defmodule Glific.Flows do
         from(q in query, where: q.tag_id in ^tag_ids)
 
       {:name_or_keyword_or_tags, name_or_keyword_or_tags}, query ->
-        sub_query =
-          Tag
-          |> where([t], ilike(t.label, ^"%#{name_or_keyword_or_tags}%"))
-          |> select([t], t.id)
-
         query
-        |> where([fr], ilike(fr.name, ^"%#{name_or_keyword_or_tags}%"))
-        |> or_where(
-          [fr],
-          ^name_or_keyword_or_tags in fr.keywords or fr.tag_id in subquery(sub_query)
-        )
+        |> where([q], ilike(q.name, ^"%#{name_or_keyword_or_tags}%"))
 
       _, query ->
         query
     end)
+    |> add_name_or_keyword_or_tags(filter)
   end
+
+  # 3840
+  @spec add_name_or_keyword_or_tags(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp add_name_or_keyword_or_tags(
+         query,
+         %{
+           is_active: is_active,
+           is_template: is_template,
+           name_or_keyword_or_tags: name_or_keyword_or_tags
+         } = _filter
+       ) do
+    sub_query =
+      Tag
+      |> where([t], ilike(t.label, ^"%#{name_or_keyword_or_tags}%"))
+      |> select([t], t.id)
+
+    query
+    |> or_where(
+      [q],
+      ^name_or_keyword_or_tags in q.keywords and
+        q.is_active == ^is_active and q.is_template == ^is_template
+    )
+    |> or_where(
+      [q],
+      q.tag_id in subquery(sub_query) and
+        q.is_active == ^is_active and q.is_template == ^is_template
+    )
+  end
+
+  defp add_name_or_keyword_or_tags(query, _filter), do: query
 
   @doc """
   Return the count of flows, using the same filter as list_flows
@@ -861,6 +883,15 @@ defmodule Glific.Flows do
   end
 
   @spec update_flow_keyword_map(map(), String.t(), String.t(), non_neg_integer) :: map()
+  defp update_flow_keyword_map(map, "template", name, flow_id) do
+    map
+    |> Map.update(
+      "template",
+      %{name => flow_id},
+      fn m -> Map.put(m, name, flow_id) end
+    )
+  end
+
   defp update_flow_keyword_map(map, status, keyword, flow_id) do
     map
     |> Map.update(
@@ -875,17 +906,32 @@ defmodule Glific.Flows do
     Enum.reduce(
       flow.keywords,
       acc,
-      fn keyword, acc ->
-        keyword = Glific.string_clean(keyword)
-        acc = update_flow_keyword_map(acc, flow.status, keyword, flow.id)
+      fn
+        keyword, acc ->
+          keyword = Glific.string_clean(keyword)
+          acc = update_flow_keyword_map(acc, flow.status, keyword, flow.id)
 
-        # always add to draft status if published
-        if flow.status == "published",
-          do: update_flow_keyword_map(acc, "draft", keyword, flow.id),
-          else: acc
+          # always add to draft status if published
+
+          if flow.status == "published" do
+            update_flow_keyword_map(acc, "draft", keyword, flow.id)
+          else
+            acc
+          end
       end
     )
+    |> update_flow_keyword_map_with_template_flow(flow)
   end
+
+  @spec update_flow_keyword_map_with_template_flow(map(), map()) :: map()
+  defp update_flow_keyword_map_with_template_flow(
+         flow_keyword_map,
+         %{is_template: true} = flow
+       ) do
+    update_flow_keyword_map(flow_keyword_map, "template", flow.name, flow.id)
+  end
+
+  defp update_flow_keyword_map_with_template_flow(flow_keyword_map, _flow), do: flow_keyword_map
 
   @spec load_flow_keywords_map(tuple()) :: tuple()
   defp load_flow_keywords_map(cache_key) do
@@ -899,7 +945,13 @@ defmodule Glific.Flows do
       |> where([f], f.organization_id == ^organization_id)
       |> where([f], f.is_active == true)
       |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
-      |> select([f, fr], %{keywords: f.keywords, id: f.id, status: fr.status})
+      |> select([f, fr], %{
+        name: f.name,
+        is_template: f.is_template,
+        keywords: f.keywords,
+        id: f.id,
+        status: fr.status
+      })
       # the revisions table is potentially large, so we really want just a few rows from
       # it, hence this where clause
       |> where([f, fr], fr.status == "published" or fr.revision_number == 0)
@@ -907,7 +959,7 @@ defmodule Glific.Flows do
       |> Enum.reduce(
         # create empty arrays always, so all map operations works
         # and wont throw an exception of "expected map, got nil"
-        %{"published" => %{}, "draft" => %{}},
+        %{"published" => %{}, "draft" => %{}, "template" => %{}},
         fn flow, acc -> add_flow_keyword_map(flow, acc) end
       )
       |> add_default_flows(organization.out_of_office)
@@ -998,6 +1050,8 @@ defmodule Glific.Flows do
               {:name, {message, _}} -> message
               _ -> "Something went wrong"
             end
+
+          Logger.error("Failed to import flow #{flow_name}: #{message}, #{inspect(errors)}")
 
           %{flow_name: flow_name, status: message}
       end
