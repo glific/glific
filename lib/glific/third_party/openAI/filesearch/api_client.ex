@@ -9,7 +9,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
 
   @spec headers() :: list()
   defp headers do
-    open_ai_key = Glific.get_open_ai_filesearch_key()
+    open_ai_key = Glific.get_open_ai_key()
     open_ai_project = Glific.get_open_ai_filesearch_project()
 
     [

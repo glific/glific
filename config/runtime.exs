@@ -101,7 +101,4 @@ config :glific,
   google_maps_api_key: env!("GOOGLE_MAPS_API_KEY", :string!, "This is not a secret")
 
 config :glific,
-  open_ai_filesearch: env!("OPEN_AI_FILESEARCH_KEY", :string!, "This is not a secret")
-
-config :glific,
   open_ai_filesearch_proj: env!("OPEN_AI_FILESEARCH_PROJECT", :string!, "This is not a secret")

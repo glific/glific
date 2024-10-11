@@ -437,14 +437,6 @@ defmodule Glific do
   end
 
   @doc """
-  Get open AI key used for Assistants and VectorStores
-  """
-  @spec get_open_ai_filesearch_key :: String.t()
-  def get_open_ai_filesearch_key do
-    Application.get_env(:glific, :open_ai_filesearch)
-  end
-
-  @doc """
   Get the projectId related to the project where we store Glific NGO's Assistants and VectorStores
   """
   @spec get_open_ai_filesearch_project :: String.t()
