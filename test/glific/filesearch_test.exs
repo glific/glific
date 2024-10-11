@@ -40,6 +40,12 @@ defmodule Glific.FilesearchTest do
   )
 
   load_gql(
+    :remove_assistant_file,
+    GlificWeb.Schema,
+    "assets/gql/filesearch/remove_assistant_file.gql"
+  )
+
+  load_gql(
     :assistant,
     GlificWeb.Schema,
     "assets/gql/filesearch/assistant_by_id.gql"
@@ -229,7 +235,7 @@ defmodule Glific.FilesearchTest do
              query_data.data["updateAssistant"]["assistant"]
   end
 
-  test "add_assistant_files, assistant doesnt has vectorStore", attrs do
+  test "add_assistant_files and remove assistant file, assistant doesnt has vectorStore", attrs do
     valid_attrs = %{
       assistant_id: "asst_abc",
       name: "new assistant",
@@ -246,6 +252,14 @@ defmodule Glific.FilesearchTest do
           status: 200,
           body: %{
             id: "vs_abc"
+          }
+        }
+
+      %{method: :delete} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            deleted: true
           }
         }
     end)
@@ -269,6 +283,39 @@ defmodule Glific.FilesearchTest do
 
     assert %{"name" => "new assistant", "vector_store" => %{"vector_store_id" => "vs_abc"}} =
              query_data.data["add_assistant_files"]["assistant"]
+
+    {:ok, query_data} =
+      auth_query_gql_by(:remove_assistant_file, attrs.user,
+        variables: %{
+          "file_id" => "file_abc",
+          "id" => assistant.id
+        }
+      )
+
+    assert length(query_data.data["RemoveAssistantFile"]["assistant"]["vector_store"]["files"]) ==
+             1
+
+    # If deleted: false from openAI
+
+    Tesla.Mock.mock(fn
+      %{method: :delete} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            deleted: false
+          }
+        }
+    end)
+
+    {:ok, query_data} =
+      auth_query_gql_by(:remove_assistant_file, attrs.user,
+        variables: %{
+          "file_id" => "file_xyz",
+          "id" => assistant.id
+        }
+      )
+
+    assert length(query_data.errors) == 1
   end
 
   test "add_assistant_files, assistant already has a vectorStore", attrs do

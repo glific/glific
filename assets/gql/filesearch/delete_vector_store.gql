@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-mutation deleteVectorStore($id: ID!) {
-  deleteVectorStore(id: $id) {
-    ...VectorStoreFields
-
-    ...ErrorFields
-  }
-}

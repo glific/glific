@@ -94,7 +94,6 @@ defmodule Glific.Filesearch do
     end
   end
 
-  # TODO: Need to add test
   @doc """
   Removes the given file from the Assistant's VectorStore
 
@@ -131,6 +130,9 @@ defmodule Glific.Filesearch do
     end
   end
 
+  @doc """
+  Updates the assistant details and configurations with the given Assistant ID
+  """
   @spec update_assistant(integer(), map()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
   def update_assistant(id, attrs) do
     with {:ok, %Assistant{} = assistant} <- Assistant.get_assistant(id),
@@ -236,7 +238,7 @@ defmodule Glific.Filesearch do
     }
 
     with {:ok, _} <-
-           ApiClient.create_vector_store_batch(
+           ApiClient.create_vector_store_file_batch(
              vector_store.vector_store_id,
              vector_store_batch_params
            ) do

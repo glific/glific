@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-mutation RemoveVectorStoreFile($id: ID!, $file_id: String!) {
-  RemoveVectorStoreFile(id: $id, file_id: $file_id) {
-    ...VectorStoreFields
-
-    ...ErrorFields
-  }
-}

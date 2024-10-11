@@ -88,6 +88,16 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
 
     delete(url, headers: headers())
     |> parse_response()
+    |> case do
+      {:ok, %{deleted: true} = body} ->
+        {:ok, body}
+
+      {:ok, _} ->
+        {:error, "Not able to delete the file from openAI"}
+
+      err ->
+        err
+    end
   end
 
   @doc """
@@ -172,25 +182,19 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
         "temperature" => params.temperature
       }
 
-    if Map.has_key?(params, :vector_store_ids) do
-      Map.merge(payload, %{
-        "tool_resources" => %{
-          "file_search" => %{
-            "vector_store_ids" => params.vector_store_ids
-          }
-        }
-      })
-    else
-      payload
-    end
+    payload
     |> Jason.encode!()
     |> then(&post(url, &1, headers: headers()))
     |> parse_response()
   end
 
-  # TODO: doc
-  @spec create_vector_store_batch(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
-  def create_vector_store_batch(vector_store_id, params) do
+  @doc """
+  Create vectorStore files in batch.
+
+  We can pass a list of fileIds to be attached to the given VectorStore
+  """
+  @spec create_vector_store_file_batch(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
+  def create_vector_store_file_batch(vector_store_id, params) do
     url = @endpoint <> "/vector_stores/#{vector_store_id}/file_batches"
 
     payload =
@@ -201,7 +205,9 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
-  # TODO: doc
+  @doc """
+  Fetch all available openAI models
+  """
   @spec list_models :: {:ok, map()} | {:error, String.t()}
   def list_models do
     url = @endpoint <> "/models"

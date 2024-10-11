@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-mutation createVectorStore($input:VectorStoreInput! = {}) {
-  createVectorStore(input: $input) {
-    ...VectorStoreFields
-
-    ...ErrorFields
-  }
-}
