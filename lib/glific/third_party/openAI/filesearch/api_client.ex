@@ -10,13 +10,11 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   @spec headers() :: list()
   defp headers do
     open_ai_key = Glific.get_open_ai_key()
-    open_ai_project = Glific.get_open_ai_filesearch_project()
 
     [
       {"Authorization", "Bearer #{open_ai_key}"},
       {"Content-Type", "application/json"},
-      {"OpenAI-Beta", "assistants=v2"},
-      {"OpenAI-Project", open_ai_project}
+      {"OpenAI-Beta", "assistants=v2"}
     ]
   end
 
@@ -182,7 +180,17 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
         "temperature" => params.temperature
       }
 
-    payload
+    if Map.has_key?(params, :vector_store_ids) do
+      Map.merge(payload, %{
+        "tool_resources" => %{
+          "file_search" => %{
+            "vector_store_ids" => params.vector_store_ids
+          }
+        }
+      })
+    else
+      payload
+    end
     |> Jason.encode!()
     |> then(&post(url, &1, headers: headers()))
     |> parse_response()
