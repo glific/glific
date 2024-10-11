@@ -500,7 +500,8 @@ defmodule Glific.OpenAI.ChatGPT do
     [
       {"Authorization", "Bearer #{open_ai_key}"},
       {"Content-Type", "application/json"},
-      {"OpenAI-Beta", "assistants=v2"}
+      {"OpenAI-Beta", "assistants=v2"},
+      {"OpenAI-Project", Glific.get_open_ai_filesearch_project()}
     ]
   end
 
