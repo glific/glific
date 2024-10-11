@@ -54,7 +54,7 @@ defmodule Glific.Saas.Onboard do
 
       {:ok, org} = update_org_details(org, params, registration)
 
-      process_on_submission(result, org, registration)
+      process_on_submission(result, org, registration) |> IO.inspect()
       |> Map.put(:registration, Registration.to_minimal_map(registration))
     else
       {:error, _} ->
@@ -233,10 +233,10 @@ defmodule Glific.Saas.Onboard do
         notify_on_submission(org, registration)
         notify_saas_team(org)
 
-        Notion.update_table_properties(registration)
-        |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
+        # Notion.update_table_properties(registration)
+        # |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
 
-        ERP.create_organization(registration)
+        ERP.update_organization(registration)
       end)
 
       result

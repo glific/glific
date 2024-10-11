@@ -68,11 +68,7 @@ defmodule Glific.ERP do
     customer_name = registration.org_details["name"]
     erp_url = "#{@erp_base_url}/Customer/#{customer_name}"
 
-      payload = %{
-      payload = %{
-        "customer_name" => registration.org_details["name"],
     payload = %{
-        "customer_name" => registration.org_details["name"],
       "custom_chatbot_number" => registration.platform_details["phone"],
       "custom_gupshup_api_key" => registration.platform_details["api_key"],
       "custom_app_name" => registration.platform_details["app_name"],
@@ -80,12 +76,17 @@ defmodule Glific.ERP do
         %{
           "product" => "Glific",
           "service_type" => "SaaS",
-          "billing_frequency" => registration.billing_frequency
+          "billing_frequency" => registration.billing_frequency,
         }
       ]
     }
 
-    case Tesla.post(@client, erp_url, payload, headers: headers()) do
+    if registration.org_details["gstin"] != nil and registration.org_details["gstin"] != "" do
+      Map.put(payload, "gstin", registration.org_details["gstin"])
+      |> Map.put("gst_category", "Registered Regular")
+    end
+
+    case Tesla.put(@client, erp_url, payload, headers: headers()) do
       {:ok, %Tesla.Env{status: 200, body: _response}} ->
         update_address(registration, customer_name)
 
@@ -111,7 +112,7 @@ defmodule Glific.ERP do
 
       {:ok, %Tesla.Env{status: status, body: body}} ->
         Logger.error("Failed to update address: status #{status}, body: #{inspect(body)}")
-        {:error, "Failed to update address in ERP"}
+        {:error, "Failed to update address in ERP #{body.exception}"}
 
       {:error, reason} ->
         Logger.error("Error occurred while updating address: #{inspect(reason)}")
@@ -120,18 +121,17 @@ defmodule Glific.ERP do
   end
 
   defp build_address_payload(registration) do
+    registered_address = registration.org_details["registered_address"]
+
     %{
-      "address_title" => registration.org_details["name"],
-      "address_type" => "Billing",
-      "gst_category" => "Unregistered",
-      "address_line1" => "123 Main Street",
-      "address_line2" => "Suite 100",
-      "city" => "Haldwani",
-      "state" => "Uttarakhand",
-      "country" => "India",
-      "pincode" => "262402",
-      "phone" => registration.platform_details["phone"],
-      "email_id" => "contact@test-glific.org",
+      "address_title" => registered_address["address_title"],
+      "address_type" => registered_address["address_type"],
+      "address_line1" => registered_address["address_line1"],
+      "address_line2" => registered_address["address_line2"],
+      "city" => registered_address["city"],
+      "state" => registered_address["state"],
+      "country" => registered_address["country"],
+      "pincode" => registered_address["pincode"],
       "links" => [
         %{
           "link_doctype" => "Customer",

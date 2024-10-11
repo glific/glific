@@ -46,8 +46,7 @@ defmodule Glific.Partners.Organization do
     :optin_flow_id,
     :is_suspended,
     :suspended_until,
-    :parent_org,
-    :erp_page_id
+    :parent_org
   ]
 
   @type t() :: %__MODULE__{
@@ -87,8 +86,7 @@ defmodule Glific.Partners.Organization do
           is_suspended: boolean() | false,
           suspended_until: DateTime.t() | nil,
           parent_org: String.t() | nil,
-          setting: Setting.t() | nil,
-          erp_page_id: String.t() | nil
+          setting: Setting.t() | nil
         }
 
   schema "organizations" do
@@ -152,7 +150,6 @@ defmodule Glific.Partners.Organization do
     # lets add support for suspending orgs briefly
     field(:is_suspended, :boolean, default: false)
     field(:suspended_until, :utc_datetime)
-    field(:erp_page_id, :string)
 
     # 2085
     # Lets create a virtual field for now to conditionally enable
