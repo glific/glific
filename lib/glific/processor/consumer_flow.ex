@@ -3,7 +3,7 @@ defmodule Glific.Processor.ConsumerFlow do
   Given a message, run it thru the flow engine. This is an auxilary module to help
   consumer_worker which is the main workhorse
   """
-
+  @dialyzer {:nowarn_function, context_nil?: 1}
   import Ecto.Query, warn: false
 
   alias Glific.{
@@ -33,17 +33,27 @@ defmodule Glific.Processor.ConsumerFlow do
   def process_message({message, state}, body) do
     # check if draft keyword, if so bypass ignore keywords
     # and start draft flow, issue #621
+
     is_draft = draft_keyword?(state, body)
 
     if is_draft,
       do:
-        FlowContext.mark_flows_complete(message.contact_id, false,
-          source: "process_message",
-          event_meta: %{
-            is_draft: is_draft,
-            body: body
-          }
-        )
+        mark_flows_complete(message.contact_id, %{
+          is_draft: true,
+          body: body
+        })
+
+    # check if template keyword, if so bypass ignore keywords
+    # and start template flow, issue #3792
+
+    is_template = template_flow?(state, message.body)
+
+    if is_template,
+      do:
+        mark_flows_complete(message.contact_id, %{
+          is_template: true,
+          body: body
+        })
 
     context = FlowContext.active_context(message.contact_id)
 
@@ -56,21 +66,39 @@ defmodule Glific.Processor.ConsumerFlow do
       else: move_forward({message, state}, body, context, is_draft: is_draft)
   end
 
+  defp mark_flows_complete(contact_id, event_meta) do
+    FlowContext.mark_flows_complete(contact_id, false,
+      source: "process_message",
+      event_meta: event_meta
+    )
+  end
+
   # Setting this to 0 since we are pushing out our own optin flow
   @delay_time 0
   @draft_phrase "draft"
+  @template_phrase "template:"
   @final_phrase "published"
   @optin_flow_keyword "optin"
 
   @doc """
   In case contact is not in optin flow let's move ahead with the regular processing.
   """
-  @spec move_forward({Message.t(), map()}, String.t(), FlowContext.t(), Keyword.t()) ::
+  @spec move_forward({Message.t(), map()}, String.t(), FlowContext.t() | nil, Keyword.t()) ::
           {Message.t(), map()}
   def move_forward({message, state}, body, context, opts) do
     cond do
       continue_the_context?(context) ->
         continue_current_context(context, message, body, state)
+
+      template_flow?(state, message.body) ->
+        flow_id =
+          Map.get(
+            state.flow_keywords["template"],
+            String.replace_leading(message.body, @template_phrase, "")
+          )
+
+        flow_params = {:flow_id, flow_id, @final_phrase}
+        start_new_flow(message, body, state, flow_params: flow_params)
 
       start_new_contact_flow?(state) ->
         flow_id = state.flow_keywords["org_default_new_contact"]
@@ -88,17 +116,24 @@ defmodule Glific.Processor.ConsumerFlow do
         start_new_flow(message, message.body, state, opts)
 
       # making sure that user is not in any flow.
-      context_nil?(context) && match_with_regex?(state.regx_flow, message.body) ->
-        flow_id = Glific.parse_maybe_integer!(state.regx_flow.flow_id)
-        flow_params = {:flow_id, flow_id, @final_phrase}
-        start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
-
       context_nil?(context) ->
-        state = Periodic.run_flows(state, message)
-        {message, state}
+        handle_nil_context(state, message, body)
 
       true ->
         continue_current_context(context, message, body, state)
+    end
+  end
+
+  @spec handle_nil_context(map(), Message.t(), String.t()) ::
+          {Message.t(), map()}
+  defp handle_nil_context(state, message, body) do
+    if match_with_regex?(state.regx_flow, message.body) do
+      flow_id = Glific.parse_maybe_integer!(state.regx_flow.flow_id)
+      flow_params = {:flow_id, flow_id, @final_phrase}
+      start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
+    else
+      state = Periodic.run_flows(state, message)
+      {message, state}
     end
   end
 
@@ -178,6 +213,18 @@ defmodule Glific.Processor.ConsumerFlow do
          ),
        do: true,
        else: false
+  end
+
+  @spec template_flow?(map(), String.t()) :: boolean()
+  defp template_flow?(_state, nil), do: false
+
+  defp template_flow?(state, body) do
+    String.starts_with?(body, @template_phrase) and
+      Map.has_key?(
+        state.flow_keywords["template"],
+        String.replace_leading(body, @template_phrase, "")
+      ) and
+      Map.get(state, :simulator, true)
   end
 
   ## check if contact is not in the optin flow and has optout time
