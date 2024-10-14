@@ -76,7 +76,7 @@ defmodule Glific.ERP do
         %{
           "product" => "Glific",
           "service_type" => "SaaS",
-          "billing_frequency" => registration.billing_frequency,
+          "billing_frequency" => registration.billing_frequency
         }
       ]
     }
@@ -88,7 +88,7 @@ defmodule Glific.ERP do
 
     case Tesla.put(@client, erp_url, payload, headers: headers()) do
       {:ok, %Tesla.Env{status: 200, body: _response}} ->
-        update_address(registration, customer_name)
+        create_or_update_address(registration, customer_name)
 
       {:ok, %Tesla.Env{status: _status, body: body}} ->
         Logger.error("Failed to update organization due to: #{inspect(body)}")
@@ -100,19 +100,101 @@ defmodule Glific.ERP do
     end
   end
 
-  defp update_address(registration, customer_name) do
+  defp create_or_update_address(registration, customer_name) do
     address_type = "Billing"
     erp_url = "#{@erp_base_url}/Address/#{customer_name}-#{address_type}"
 
-    payload = build_address_payload(registration)
+    case Tesla.get(@client, erp_url, headers: headers()) do
+      {:ok, %Tesla.Env{status: 200}} ->
+        update_address(registration, customer_name)
 
-    case Tesla.put(@client, erp_url, payload, headers: headers()) do
+      {:ok, %Tesla.Env{status: 404}} ->
+        create_address(registration, customer_name)
+
+      {:error, reason} ->
+        Logger.error("Error occurred while checking address existence: #{inspect(reason)}")
+        {:error, "Error while checking address"}
+    end
+  end
+
+  defp update_address(registration, customer_name) do
+    current_address = registration.org_details["current_address"]
+    registered_address = registration.org_details["registered_address"]
+    are_addresses_same = compare_addresses(current_address, registered_address)
+
+    erp_url = "#{@erp_base_url}/Address/#{customer_name}-Billing"
+    billing_payload = build_payload(current_address, "Billing", registration.org_details["name"])
+
+    result = update_or_log_error(erp_url, billing_payload)
+
+    # If addresses differ, create/update the Permanent/Registered address
+    if not are_addresses_same do
+      permanent_payload =
+        build_payload(
+          registered_address,
+          "Permanent/Registered",
+          registration.org_details["name"]
+        )
+
+      erp_url = "#{@erp_base_url}/Address"
+      create_or_log_error(erp_url, permanent_payload)
+    end
+
+    result
+  end
+
+  defp create_address(registration, _customer_name) do
+    current_address = registration.org_details["current_address"]
+    registered_address = registration.org_details["registered_address"]
+    are_addresses_same = compare_addresses(current_address, registered_address)
+
+    erp_url = "#{@erp_base_url}/Address"
+
+    billing_payload = build_payload(current_address, "Billing", registration.org_details["name"])
+    result = create_or_log_error(erp_url, billing_payload)
+
+    # If addresses differ, create Permanent/Registered address
+    if not are_addresses_same do
+      permanent_payload =
+        build_payload(
+          registered_address,
+          "Permanent/Registered",
+          registration.org_details["name"]
+        )
+
+      create_or_log_error(erp_url, permanent_payload)
+    end
+
+    result
+  end
+
+  defp build_payload(address, address_type, customer_name) do
+    %{
+      "address_title" => address["address_title"],
+      "address_type" => address_type,
+      "address_line1" => address["address_line1"],
+      "address_line2" => address["address_line2"],
+      "city" => address["city"],
+      "state" => address["state"],
+      "country" => address["country"],
+      "pincode" => address["pincode"],
+      "links" => [
+        %{
+          "link_doctype" => "Customer",
+          "link_name" => customer_name
+        }
+      ]
+    }
+  end
+
+  defp update_or_log_error(url, payload) do
+    case Tesla.put(@client, url, payload, headers: headers()) do
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
         {:ok, response_body}
 
       {:ok, %Tesla.Env{status: status, body: body}} ->
         Logger.error("Failed to update address: status #{status}, body: #{inspect(body)}")
-        {:error, "Failed to update address in ERP #{body.exception}"}
+        {:error, "Failed to update address"}
 
       {:error, reason} ->
         Logger.error("Error occurred while updating address: #{inspect(reason)}")
@@ -120,24 +202,24 @@ defmodule Glific.ERP do
     end
   end
 
-  defp build_address_payload(registration) do
-    registered_address = registration.org_details["registered_address"]
+  defp create_or_log_error(url, payload) do
+    case Tesla.post(@client, url, payload, headers: headers()) do
+      {:ok, %Tesla.Env{status: 200, body: response_body}} ->
+        {:ok, response_body}
 
-    %{
-      "address_title" => registered_address["address_title"],
-      "address_type" => registered_address["address_type"],
-      "address_line1" => registered_address["address_line1"],
-      "address_line2" => registered_address["address_line2"],
-      "city" => registered_address["city"],
-      "state" => registered_address["state"],
-      "country" => registered_address["country"],
-      "pincode" => registered_address["pincode"],
-      "links" => [
-        %{
-          "link_doctype" => "Customer",
-          "link_name" => registration.org_details["name"]
-        }
-      ]
-    }
+      {:ok, %Tesla.Env{status: status, body: body}} ->
+        Logger.error("Failed to create address: status #{status}, body: #{inspect(body)}")
+        {:error, "Failed to create address"}
+
+      {:error, reason} ->
+        Logger.error("Error occurred while creating address: #{inspect(reason)}")
+        {:error, "Error while creating address"}
+    end
+  end
+
+  defp compare_addresses(current_address, registered_address) do
+    Enum.all?(Map.keys(current_address), fn key ->
+      Map.get(current_address, key) == Map.get(registered_address, key)
+    end)
   end
 end
