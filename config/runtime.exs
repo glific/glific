@@ -105,4 +105,4 @@ config :glific,
   ERP_SECRET: env!("ERP_SECRET", :string!, "This is not the ERP secret")
 
 config :glific,
-  open_ai_filesearch_proj: env!("OPEN_AI_FILESEARCH_PROJECT", :string!, "This is not a secret")
+  open_ai_project: env!("OPEN_AI_PROJECT", :string!, "This is not a secret")

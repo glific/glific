@@ -437,11 +437,11 @@ defmodule Glific do
   end
 
   @doc """
-  Get the projectId related to the project where we store Glific NGO's Assistants and VectorStores
+  Get the Open AI ProjectID where we store Glific NGO's Assistants and VectorStores
   """
-  @spec get_open_ai_filesearch_project :: String.t()
-  def get_open_ai_filesearch_project do
-    Application.get_env(:glific, :open_ai_filesearch_proj)
+  @spec get_open_ai_project :: String.t()
+  def get_open_ai_project do
+    Application.get_env(:glific, :open_ai_project)
   end
 
   @doc """
