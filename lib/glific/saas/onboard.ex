@@ -54,7 +54,7 @@ defmodule Glific.Saas.Onboard do
 
       {:ok, org} = update_org_details(org, params, registration)
 
-      process_on_submission(result, org, registration) |> IO.inspect()
+      process_on_submission(result, org, registration)
       |> Map.put(:registration, Registration.to_minimal_map(registration))
     else
       {:error, _} ->

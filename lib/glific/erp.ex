@@ -89,6 +89,7 @@ defmodule Glific.ERP do
     case Tesla.put(@client, erp_url, payload, headers: headers()) do
       {:ok, %Tesla.Env{status: 200, body: _response}} ->
         create_or_update_address(registration, customer_name)
+        create_contact(registration, customer_name)
 
       {:ok, %Tesla.Env{status: _status, body: body}} ->
         Logger.error("Failed to update organization due to: #{inspect(body)}")
@@ -168,6 +169,61 @@ defmodule Glific.ERP do
     result
   end
 
+  defp create_contact(registration, customer_name) do
+    erp_url = "#{@erp_base_url}/Contact"
+
+    payload = %{
+      "custom_product" => [
+        %{
+          "product_type" => "Glific"
+        }
+      ],
+      "first_name" => registration.submitter["first_name"],
+      "last_name" => registration.submitter["last_name"],
+      "designation" => registration.submitter["designation"],
+      "email_ids" => [
+        %{
+          "email_id" => registration.submitter["email"],
+          "is_primary" => 1
+        }
+      ],
+      "custom_signing_authority" => [
+        %{
+          "name1" => registration.signing_authority["name"],
+          "designation" => registration.signing_authority["designation"],
+          "email" => registration.signing_authority["email"]
+        }
+      ],
+      "custom_finance_team" => [
+        %{
+          "name1" => registration.finance_poc["name"],
+          "designation" => registration.finance_poc["designation"],
+          "email" => registration.finance_poc["email"],
+          "phone" => registration.finance_poc["phone"]
+        }
+      ],
+      "links" => [
+        %{
+          "link_doctype" => "Customer",
+          "link_name" => customer_name
+        }
+      ]
+    }
+
+    case Tesla.post(@client, erp_url, payload, headers: headers()) do
+      {:ok, %Tesla.Env{status: 200, body: response_body}} ->
+        {:ok, response_body}
+
+      {:ok, %Tesla.Env{status: status, body: body}} ->
+        Logger.error("Failed to create contact: status #{status}, body: #{inspect(body)}")
+        {:error, "Failed to create contact due to: #{body.exception}"}
+
+      {:error, reason} ->
+        Logger.error("Error occurred while creating address: #{inspect(reason)}")
+        {:error, "Error while creating address"}
+    end
+  end
+
   defp build_payload(address, address_type, customer_name) do
     %{
       "address_title" => address["address_title"],
@@ -194,7 +250,7 @@ defmodule Glific.ERP do
 
       {:ok, %Tesla.Env{status: status, body: body}} ->
         Logger.error("Failed to update address: status #{status}, body: #{inspect(body)}")
-        {:error, "Failed to update address"}
+        {:error, "Failed to update address due to: #{body.exception}"}
 
       {:error, reason} ->
         Logger.error("Error occurred while updating address: #{inspect(reason)}")
@@ -209,7 +265,7 @@ defmodule Glific.ERP do
 
       {:ok, %Tesla.Env{status: status, body: body}} ->
         Logger.error("Failed to create address: status #{status}, body: #{inspect(body)}")
-        {:error, "Failed to create address"}
+        {:error, "Failed to create address due to: #{body.exception}"}
 
       {:error, reason} ->
         Logger.error("Error occurred while creating address: #{inspect(reason)}")

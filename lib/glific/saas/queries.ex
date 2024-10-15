@@ -496,7 +496,7 @@ defmodule Glific.Saas.Queries do
 
   defp validate_submitter_details(result, params) do
     result
-    |> validate_text_field(params["name"], :submitter_name, {1, 25})
+    |> validate_text_field(params["first_name"], :submitter_name, {1, 25})
     |> validate_email(params["email"], :submitter_name)
   end
 
