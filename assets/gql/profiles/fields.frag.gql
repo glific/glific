@@ -4,6 +4,12 @@ fragment ProfileFields on ProfileResult {
     name
     type
     fields
+    contact {
+      id
+      language {
+        label
+      }
+    }
   }
 }
 

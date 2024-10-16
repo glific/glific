@@ -22,7 +22,9 @@ defmodule Glific.WAGroup.WAManagedPhone do
 
   @optional_fields [
     :label,
-    :is_active
+    :is_active,
+    :status,
+    :product_id
   ]
 
   @type t() :: %__MODULE__{
@@ -36,6 +38,8 @@ defmodule Glific.WAGroup.WAManagedPhone do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          status: String.t() | nil,
+          product_id: String.t() | nil,
           inserted_at: :utc_datetime_usec | nil,
           updated_at: :utc_datetime_usec | nil
         }
@@ -48,6 +52,9 @@ defmodule Glific.WAGroup.WAManagedPhone do
     # these are associated with the whatsapp api provider
     # using maytapi as template
     field :phone_id, :integer
+
+    field :status, :string
+    field :product_id, :string
 
     belongs_to(:organization, Organization)
     belongs_to(:contact, Contact)

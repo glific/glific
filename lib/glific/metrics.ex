@@ -11,6 +11,7 @@ defmodule Glific.Metrics do
   @registry Glific.Metrics.Registry
   @supervisor Glific.Metrics.WorkerSupervisor
 
+  require Logger
   @doc false
   def start_link(_opts) do
     Supervisor.start_link(__MODULE__, :ok, name: __MODULE__)
@@ -79,6 +80,10 @@ defmodule Glific.Metrics do
       if organization_id == nil,
         do: Glific.Repo.get_organization_id(),
         else: organization_id
+
+    if is_nil(organization_id) do
+      Logger.error("Organization id nil for the event #{event}")
+    end
 
     bump(%{
       type: :tracker,

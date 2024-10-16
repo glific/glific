@@ -3,6 +3,7 @@ defmodule Glific.Bhasini do
   Bhasini Integration Module
   """
 
+  require Logger
   alias Glific.GCS.GcsWorker
 
   @language_codes %{
@@ -25,7 +26,11 @@ defmodule Glific.Bhasini do
   returns iso_code for a language given the standard
   """
   @spec get_iso_code(String.t(), String.t()) :: String.t()
-  def get_iso_code(language, standard), do: @language_codes["#{language}"][standard]
+  def get_iso_code(language, standard) do
+    language
+    |> String.downcase()
+    |> then(&@language_codes["#{&1}"][standard])
+  end
 
   @doc """
   This function makes an API call to the Bhasini ASR service for NMT and TTS using the provided configuration parameters and returns the public media URL of the file.
@@ -95,24 +100,33 @@ defmodule Glific.Bhasini do
             "target"
           ])
 
-        uuid = Ecto.UUID.generate()
-        path = download_encoded_file(response, uuid)
+        process_media(translated_text, response, org_id)
 
-        remote_name = "Bhasini/outbound/#{uuid}.mp3"
+      {:ok, %Tesla.Env{status: 500, body: body}} ->
+        %{success: false, reason: body}
 
-        {:ok, media_meta} =
-          GcsWorker.upload_media(
-            path,
-            remote_name,
-            org_id
-          )
-
-        %{success: true}
-        |> Map.put(:media_url, media_meta.url)
-        |> Map.put(:translated_text, translated_text)
-
-      _ ->
+      error ->
+        Logger.info("Error from Bhashini: #{error}")
         %{success: false, reason: "could not fetch data"}
+    end
+  end
+
+  defp process_media(translated_text, response, org_id) do
+    uuid = Ecto.UUID.generate()
+    remote_name = "Bhasini/outbound/#{uuid}.mp3"
+
+    with {:ok, path} <- download_encoded_file(response, uuid),
+         {:ok, media_meta} <-
+           GcsWorker.upload_media(
+             path,
+             remote_name,
+             org_id
+           ) do
+      File.rm(path)
+
+      %{success: true}
+      |> Map.put(:media_url, media_meta.url)
+      |> Map.put(:translated_text, translated_text)
     end
   end
 
@@ -183,30 +197,35 @@ defmodule Glific.Bhasini do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         response = Jason.decode!(body)
         uuid = Ecto.UUID.generate()
-        path = download_encoded_file(response, uuid)
-
         remote_name = "Bhasini/outbound/#{uuid}.mp3"
 
-        {:ok, media_meta} =
-          GcsWorker.upload_media(
-            path,
-            remote_name,
-            org_id
-          )
+        with {:ok, path} <- download_encoded_file(response, uuid),
+             {:ok, media_meta} <-
+               GcsWorker.upload_media(
+                 path,
+                 remote_name,
+                 org_id
+               ) do
+          %{success: true}
+          |> Map.put(:media_url, media_meta.url)
+          |> Map.put(:translated_text, text)
+        end
 
-        %{success: true}
-        |> Map.put(:media_url, media_meta.url)
-        |> Map.put(:translated_text, text)
+      {:ok, %Tesla.Env{body: body}} ->
+        %{success: false, reason: body}
 
-      _ ->
+      error ->
+        Logger.info("Error from Bhashini: #{error}")
         %{success: false, reason: "could not fetch data"}
     end
   end
 
-  # Basically saving decoding the encoded audio and saving it
-  # locally before uploading it to GCS to get public URL of file to be used at flow level
-  @spec download_encoded_file(map(), String.t()) :: String.t()
-  defp download_encoded_file(response, uuid) do
+  @doc """
+  Basically saving decoding the encoded audio and saving it
+  locally before uploading it to GCS to get public URL of file to be used at flow level
+  """
+  @spec download_encoded_file(map(), String.t()) :: {:ok, String.t()} | String.t()
+  def download_encoded_file(response, uuid) do
     pipeline_response =
       get_in(response, ["pipelineResponse"])
       |> Enum.filter(fn response -> response["taskType"] == "tts" end)
@@ -215,9 +234,19 @@ defmodule Glific.Bhasini do
       get_in(pipeline_response, [Access.at(0), "audio", Access.at(0), "audioContent"])
 
     decoded_audio = Base.decode64!(encoded_audio)
-    path = System.tmp_dir!() <> "#{uuid}.mp3"
-    :ok = File.write!(path, decoded_audio)
-    path
+    wav_file = System.tmp_dir!() <> "#{uuid}.wav"
+    mp3_file = System.tmp_dir!() <> "#{uuid}.mp3"
+    File.write!(wav_file, decoded_audio)
+
+    try do
+      System.cmd("ffmpeg", ["-i", wav_file, mp3_file], stderr_to_stdout: true)
+      File.rm(wav_file)
+      {:ok, mp3_file}
+    catch
+      error, reason ->
+        Logger.info("Bhasini Downloaded with error: #{error} and reason: #{reason}")
+        "Error while converting file"
+    end
   end
 
   @doc """

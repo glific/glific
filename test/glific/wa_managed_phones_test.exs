@@ -1,11 +1,17 @@
 defmodule Glific.WAManagedPhonesTest do
-  use Glific.DataCase
+  use GlificWeb.ConnCase
+  use Wormwood.GQLCase
 
   alias Glific.{
+    Fixtures,
+    Notifications.Notification,
     Partners,
+    Repo,
     WAGroup.WAManagedPhone,
     WAManagedPhones
   }
+
+  alias GlificWeb.Providers.Maytapi.Controllers.StatusController
 
   describe "wa_managed_phones" do
     import Glific.Fixtures
@@ -33,6 +39,7 @@ defmodule Glific.WAManagedPhonesTest do
         phone: "some phone",
         is_active: true,
         phone_id: 242,
+        product_id: "5a441f2-f033-40f4-8a6sd34ns-a8sr58",
         organization_id: 1,
         provider_id: 1,
         contact_id: 1
@@ -44,6 +51,7 @@ defmodule Glific.WAManagedPhonesTest do
       assert wa_managed_phone.label == "some label"
       assert wa_managed_phone.phone == "some phone"
       assert wa_managed_phone.is_active == true
+      assert wa_managed_phone.product_id == "5a441f2-f033-40f4-8a6sd34ns-a8sr58"
     end
 
     test "create_wa_managed_phone/1 with invalid data returns error changeset" do
@@ -162,5 +170,78 @@ defmodule Glific.WAManagedPhonesTest do
       assert {:error, "Product id is wrong! Please check your Account information."} ==
                WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
     end
+  end
+
+  test "status/2 webhook should update the status on wa_managed_phone", %{
+    staff: user,
+    conn: conn
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+    params = %{
+      "phoneId" => wa_managed_phone.phone_id,
+      "phone_id" => wa_managed_phone.phone_id,
+      "pid" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d",
+      "product_id" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d",
+      "status" => "active",
+      "type" => "status"
+    }
+
+    conn = StatusController.status(conn, params)
+
+    assert conn.status == 200
+  end
+
+  test "status/2 should update the status on wa_managed_phone check all the possible errors", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+    new_status = "active"
+    phone_id = wa_managed_phone.phone_id
+
+    {:ok, updated_phone} = WAManagedPhones.status(new_status, phone_id)
+
+    assert updated_phone.status == new_status
+
+    # should give an error if phone id does not exist
+    new_status = "active"
+    phone_id = 999
+
+    assert WAManagedPhones.status(new_status, phone_id) == {:error, "Phone ID not found"}
+  end
+
+  test "status/2 should create a notification when status is not 'active' or loading", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+    new_status = "qr-screen"
+    phone_id = wa_managed_phone.phone_id
+
+    {:ok, _updated_phone} = WAManagedPhones.status(new_status, phone_id)
+
+    {:ok, notification} =
+      Repo.fetch_by(Notification, %{
+        organization_id: organization_id
+      })
+
+    assert notification.message ==
+             "Cannot send messages. WhatsApp phone 9829627508 is not connected with Maytapi. Current status: qr-screen"
+  end
+
+  test "status/2 shouldn't create a notification when status is 'active' or loading", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+    new_status = wa_managed_phone.status
+    phone_id = wa_managed_phone.phone_id
+
+    {:ok, _updated_phone} = WAManagedPhones.status(new_status, phone_id)
+
+    fetch_result = Repo.fetch_by(Notification, %{organization_id: organization_id})
+
+    assert fetch_result ==
+             {:error, ["Elixir.Glific.Notifications.Notification", "Resource not found"]}
   end
 end

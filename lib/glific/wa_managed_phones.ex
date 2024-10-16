@@ -7,6 +7,7 @@ defmodule Glific.WAManagedPhones do
 
   alias Glific.{
     Contacts,
+    Notifications,
     Providers.Maytapi.ApiClient,
     Repo,
     WAGroup.WAManagedPhone
@@ -51,6 +52,28 @@ defmodule Glific.WAManagedPhones do
   """
   @spec get_wa_managed_phone!(non_neg_integer()) :: WAManagedPhone.t()
   def get_wa_managed_phone!(id), do: Repo.get!(WAManagedPhone, id)
+
+  @doc """
+  Gets a single wa_managed_phone.
+
+  Returns nil if the Wa managed phone does not exist.
+
+  ## Examples
+
+      iex> get_wa_managed_phone(45323)
+      %WAManagedPhone{}
+
+      iex> get_wa_managed_phone(156)
+      ** nil
+
+  """
+  @spec get_wa_managed_phone(non_neg_integer()) :: WAManagedPhone.t()
+  def get_wa_managed_phone(phone_id) do
+    from(p in WAManagedPhone,
+      where: p.phone_id == ^phone_id
+    )
+    |> Repo.one()
+  end
 
   @doc """
   Creates a wa_managed_phone.
@@ -139,13 +162,15 @@ defmodule Glific.WAManagedPhones do
 
       Enum.each(wa_managed_phones, fn wa_managed_phone ->
         phone = wa_managed_phone["number"]
+        status = wa_managed_phone["status"]
+        product_id = secrets["product_id"]
 
         params =
           %{
             label: wa_managed_phone["name"],
             phone: phone,
             phone_id: wa_managed_phone["id"],
-            product_id: secrets["product_id"],
+            product_id: product_id,
             organization_id: org_id,
             contact_type: "WA"
           }
@@ -156,7 +181,7 @@ defmodule Glific.WAManagedPhones do
                  phone: phone,
                  organization_id: params.organization_id
                }) do
-          Map.put(params, :contact_id, contact.id)
+          Map.merge(params, %{contact_id: contact.id, status: status})
           |> create_wa_managed_phone()
         end
 
@@ -183,4 +208,40 @@ defmodule Glific.WAManagedPhones do
   @spec has_any_phones(list()) :: {:ok, list()} | {:error, String.t()}
   defp has_any_phones([]), do: {:error, "No active phones available"}
   defp has_any_phones(wa_managed_phones), do: {:ok, wa_managed_phones}
+
+  @doc """
+  add the phone status
+  """
+  @spec status(String.t(), non_neg_integer()) :: {:ok, WAManagedPhone} | {:error, String.t()}
+  def status(new_status, phone_id) do
+    organization_id = Repo.get_organization_id()
+
+    with %WAManagedPhone{} = phone <- get_wa_managed_phone(phone_id),
+         {:ok, wa_managed_phone} <-
+           phone
+           |> WAManagedPhone.changeset(%{status: new_status})
+           |> Repo.update() do
+      if new_status not in ["active", "loading"] do
+        Notifications.create_notification(%{
+          category: "WhatsApp Groups",
+          message:
+            "Cannot send messages. WhatsApp phone #{wa_managed_phone.phone} is not connected with Maytapi. Current status: #{wa_managed_phone.status}",
+          severity: Notifications.types().critical,
+          organization_id: organization_id,
+          entity: %{
+            phone: wa_managed_phone.phone,
+            status: new_status
+          }
+        })
+      end
+
+      {:ok, wa_managed_phone}
+    else
+      nil ->
+        {:error, "Phone ID not found"}
+
+      {:error, changeset} ->
+        {:error, "Failed to update status: #{inspect(changeset.errors)}"}
+    end
+  end
 end

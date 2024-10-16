@@ -1,0 +1,28 @@
+meta {
+  name: Fetch all the orgs name and customer name from ERP
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_url}}/v1/onboard/organizations
+  body: none
+  auth: none
+}
+
+docs {
+  ### Success Response
+  ```json
+  {
+  "data": [
+    {
+      "name": "new-glific",
+      "customer_name": "new-glific"
+    },
+    {
+      "name": "glific",
+      "customer_name": "glific"
+    }
+   ]
+  }
+}

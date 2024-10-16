@@ -17,7 +17,7 @@ defmodule Glific.Clients.KEF do
     Sheets.ApiClient
   }
 
-  @worksheet_flow_ids [8880, 8176]
+  @worksheet_flow_ids [15_955, 15_507, 16_171, 16_175, 17_479]
 
   @props %{
     worksheets: %{
@@ -39,8 +39,6 @@ defmodule Glific.Clients.KEF do
   """
   @spec gcs_file_name(map()) :: String.t()
   def gcs_file_name(media) do
-    flow_id = media["flow_id"]
-
     media_subfolder =
       case media["type"] do
         "image" -> "Images"
@@ -58,20 +56,18 @@ defmodule Glific.Clients.KEF do
     })
     |> case do
       {:ok, contact} ->
-        contact_type = get_in(contact.fields, ["contact_type", "value"])
+        contact_type =
+          get_in(contact.fields, ["contact_type2425", "value"])
 
         phone = contact.phone
 
         folder_structure = get_folder_structure(media, contact_type, contact.fields)
 
-        if flow_id == 15_436 do
-          "Year end campaign/#{media_subfolder}/#{phone}/" <> media["remote_name"]
-        else
-          "#{folder_structure}/#{media_subfolder}/#{phone}/" <> media["remote_name"]
-        end
+        "2024/#{folder_structure}/#{media_subfolder}/" <>
+          generate_filename(media["remote_name"], phone)
 
       {:error, _} ->
-        "/#{media_subfolder}/" <> media["remote_name"]
+        "2024/#{media_subfolder}/" <> media["remote_name"]
     end
   end
 
@@ -79,53 +75,27 @@ defmodule Glific.Clients.KEF do
   defp get_folder_structure(media, contact_type, fields) do
     current_worksheet_code = get_in(fields, ["current_worksheet_code", "value"])
 
-    with {:ok, school_id} <- get_school_id(contact_type, fields),
-         {:ok, school_name} <- get_school_name(contact_type, fields),
+    with {:ok, school_name} <- get_school_name(contact_type, fields),
          {:ok, flow_subfolder} <- get_flow_subfolder(media["flow_id"], current_worksheet_code) do
-      "#{school_name}/#{school_id}/#{flow_subfolder}"
+      "#{school_name}/#{flow_subfolder}"
     else
       _ -> "Ungrouped users"
     end
   end
 
-  @spec get_school_id(nil | String.t(), map()) :: {:error, String.t()} | {:ok, String.t()}
-  defp get_school_id(nil, _fields), do: {:error, "Invalid contact_type"}
-
-  defp get_school_id("Parent", fields) do
-    school_id = get_in(fields, ["usersschoolid", "value"])
-    {:ok, school_id}
-  end
-
-  defp get_school_id("Teacher", fields) do
-    school_id = get_in(fields, ["child_school_id", "value"])
-    {:ok, school_id}
-  end
-
   @spec get_school_name(nil | String.t(), map()) :: {:error, String.t()} | {:ok, String.t()}
-  defp get_school_name(nil, _fields), do: {:error, "Invalid contact_type"}
-
-  defp get_school_name("Parent", fields) do
-    school_name = get_in(fields, ["child_school_name", "value"])
+  defp get_school_name(contact_type, fields)
+       when contact_type in ["Parent", "Teacher", "Teacher and Parent"] do
+    school_name = get_in(fields, ["school_name_2425", "value"])
     {:ok, school_name}
   end
 
-  defp get_school_name("Teacher", fields) do
-    school_name = get_in(fields, ["school_name", "value"])
-    {:ok, school_name}
-  end
+  defp get_school_name(_, _fields), do: {:error, "Invalid contact_type"}
 
   @spec get_flow_subfolder(non_neg_integer(), String.t()) ::
           {:error, String.t()} | {:ok, String.t()}
   defp get_flow_subfolder(flow_id, current_worksheet_code) when flow_id in @worksheet_flow_ids do
     {:ok, "Worksheets/#{current_worksheet_code}"}
-  end
-
-  defp get_flow_subfolder(8842, _current_worksheet_code) do
-    {:ok, "Videos/Video 1"}
-  end
-
-  defp get_flow_subfolder(9870, _current_worksheet_code) do
-    {:ok, "Videos/Video 2"}
   end
 
   defp get_flow_subfolder(_flow_id, nil), do: {:ok, "Others"}
@@ -647,5 +617,13 @@ defmodule Glific.Clients.KEF do
       |> Repo.preload([:language])
 
     contact.language
+  end
+
+  # We need the ending part of the file name to be phonenumber
+  @spec generate_filename(String.t(), String.t()) :: String.t()
+  defp generate_filename(remote_name, phone_number) do
+    [datetime, _, _, message_id] = String.split(remote_name, "_")
+    [message_id, ext] = String.split(message_id, ".")
+    datetime <> "_" <> message_id <> "_" <> phone_number <> "." <> ext
   end
 end

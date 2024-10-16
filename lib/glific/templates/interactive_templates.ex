@@ -113,15 +113,85 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec create_interactive_template(map()) ::
           {:ok, InteractiveTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_interactive_template(attrs) do
-    case validate_interactive_content_length(attrs) do
-      :ok ->
-        %InteractiveTemplate{}
-        |> InteractiveTemplate.changeset(attrs)
-        |> Repo.insert()
-
-      {:error, message} ->
-        {:error, message}
+    with :ok <- contains_markdown_syntax?(attrs),
+         :ok <- validate_interactive_content_length(attrs) do
+      %InteractiveTemplate{}
+      |> InteractiveTemplate.changeset(attrs)
+      |> Repo.insert()
     end
+  end
+
+  @spec contains_markdown_syntax?(map()) :: :ok | {:error, String.t()}
+  defp contains_markdown_syntax?(attrs) do
+    check_interactive_content(attrs)
+  end
+
+  defp check_interactive_content(%{interactive_content: interactive_content}) do
+    with :ok <- check_global_buttons(interactive_content) do
+      check_options(interactive_content)
+    end
+  end
+
+  defp check_interactive_content(_), do: :ok
+
+  @spec check_global_buttons(map()) :: :ok | {:error, String.t()}
+  defp check_global_buttons(%{"globalButtons" => global_buttons}) when is_list(global_buttons) do
+    check_options_for_markdown(global_buttons)
+  end
+
+  defp check_global_buttons(_), do: :ok
+
+  @spec check_options(map()) :: :ok | {:error, String.t()}
+  defp check_options(%{"options" => options}) do
+    check_options_for_markdown(options)
+  end
+
+  @spec check_options(map()) :: :ok | {:error, String.t()}
+  defp check_options(%{"items" => items}) do
+    options_lists =
+      Enum.flat_map(items, fn item ->
+        Map.get(item, "options", []) ++
+          [
+            %{"title" => item["title"] || "", "description" => ""},
+            %{"title" => item["subtitle"] || "", "description" => ""}
+          ] ++
+          Enum.flat_map(item, fn {key, value} ->
+            if key != "options" and is_list(value), do: value, else: []
+          end)
+      end)
+
+    check_options_for_markdown(options_lists)
+  end
+
+  defp check_options(_), do: :ok
+
+  @spec check_options_for_markdown(list()) :: :ok | {:error, String.t()}
+  defp check_options_for_markdown(options) when is_list(options) do
+    case Enum.any?(options, &markdown_in_option?/1) do
+      true ->
+        {:error,
+         "Button text cannot contain any markdown characters (e.g., **bold**, _italics_, etc)."}
+
+      false ->
+        :ok
+    end
+  end
+
+  defp check_options_for_markdown(_), do: :ok
+
+  @spec markdown_in_option?(map()) :: boolean()
+  defp markdown_in_option?(option) when is_map(option) do
+    title = option["title"] || ""
+    description = option["description"] || ""
+
+    has_markdown?(title) or has_markdown?(description)
+  end
+
+  defp markdown_in_option?(_), do: false
+
+  @spec has_markdown?(String.t()) :: boolean()
+  defp has_markdown?(text) do
+    Regex.match?(~r/(\*\*.*?\*\*)|(\*.*?\*)|(__.*?__)|(_.*?_)|(#.*?\n)|(\[.*?\]\(.*?\))/, text)
   end
 
   @spec calculate_total_length(map() | nil) :: integer()
@@ -196,14 +266,12 @@ defmodule Glific.Templates.InteractiveTemplates do
     {:ok, message, trimmed_contents} = trim_contents_with_error(translations, label)
     updated_attrs = Map.put(attrs, :translations, trimmed_contents)
 
-    case interactive
-         |> InteractiveTemplate.changeset(updated_attrs)
-         |> Repo.update() do
-      {:ok, updated_interactive} ->
-        {:ok, updated_interactive, message}
-
-      {:error, changeset} ->
-        {:error, changeset}
+    with :ok <- contains_markdown_syntax?(updated_attrs),
+         {:ok, updated_interactive} <-
+           interactive
+           |> InteractiveTemplate.changeset(updated_attrs)
+           |> Repo.update() do
+      {:ok, updated_interactive, message}
     end
   end
 
