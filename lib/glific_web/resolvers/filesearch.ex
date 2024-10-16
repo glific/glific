@@ -25,7 +25,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   """
   @spec create_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_assistant(_, %{input: params}, %{context: %{current_user: user}}) do
+  def create_assistant(_, %{input: params}, _) do
     Filesearch.create_assistant(params)
   end
 
@@ -34,7 +34,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   """
   @spec delete_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
-  def delete_assistant(_, params, %{context: %{current_user: user}}) do
+  def delete_assistant(_, params, _) do
     with {:ok, assistant} <- Filesearch.delete_assistant(params.id) do
       {:ok, %{assistant: assistant}}
     end
@@ -45,9 +45,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   """
   @spec add_assistant_files(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def add_assistant_files(_, params, %{context: %{current_user: user}}) do
-    params = Map.put(params, :organization_id, user.organization_id)
-
+  def add_assistant_files(_, params, _) do
     with {:ok, assistant} <- Filesearch.add_assistant_files(params) do
       {:ok, %{assistant: assistant}}
     end
@@ -58,7 +56,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   """
   @spec remove_assistant_file(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
-  def remove_assistant_file(_, params, %{context: %{current_user: user}}) do
+  def remove_assistant_file(_, params, _) do
     with {:ok, assistant} <- Filesearch.remove_assistant_file(params) do
       {:ok, %{assistant: assistant}}
     end
@@ -80,7 +78,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   """
   @spec get_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
-  def get_assistant(_, params, %{context: %{current_user: user}}) do
+  def get_assistant(_, params, _) do
     with {:ok, assistant} <- Assistant.get_assistant(params.id) do
       {:ok, %{assistant: assistant}}
     end
@@ -91,7 +89,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   """
   @spec list_assistants(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
-  def list_assistants(_, params, %{context: %{current_user: user}}) do
+  def list_assistants(_, params, _) do
     {:ok, Filesearch.list_assistants(params)}
   end
 
@@ -100,7 +98,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   """
   @spec list_models(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
-  def list_models(_, _params, %{context: %{current_user: user}}) do
+  def list_models(_, _params, _) do
     {:ok, Filesearch.list_models()}
   end
 
