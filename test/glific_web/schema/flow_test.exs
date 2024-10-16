@@ -173,6 +173,23 @@ defmodule GlificWeb.Schema.FlowTest do
     assert Enum.empty?(flows) == true
   end
 
+  test "is_template should be true for template flows", %{manager: user} do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Help Workflow", organization_id: user.organization_id})
+
+    assert flow.is_template == true
+
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: user.organization_id})
+
+    assert flow.is_template == true
+
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Registration Workflow", organization_id: user.organization_id})
+
+    assert flow.is_template == true
+  end
+
   test "flows field returns list of flows filtered by isPinned flag", %{manager: user} do
     # Create a new flow
     old_results = auth_query_gql_by(:list, user, variables: %{"filter" => %{"isPinned" => true}})

@@ -312,22 +312,19 @@ defmodule Glific.Seeds.SeedsFlows do
         Map.merge(acc, %{name => interactive_template.id})
       end)
 
-    Enum.with_index(data)
-    |> Enum.each(fn {flow_item, index} ->
-      is_template = index < 4
-
-      flow(flow_item, organization,
+    Enum.each(
+      data,
+      &flow(&1, organization,
         uuid_map: uuid_map,
         id_map: flow_labels_id_map,
-        label_map: interactive_template_map,
-        is_template: is_template
+        label_map: interactive_template_map
       )
-    end)
+    )
   end
 
   @spec flow(tuple(), Organization.t(), Keyword.t()) :: nil
   defp flow({name, keywords, uuid, ignore_keywords, file}, organization, opts) do
-    is_template = Keyword.get(opts, :is_template, false)
+    is_template = name in ["Help Workflow", "Language Workflow", "Registration Workflow"]
 
     f =
       Repo.insert!(%Flow{
@@ -431,15 +428,5 @@ defmodule Glific.Seeds.SeedsFlows do
     ]
 
     {uuid_map, data}
-  end
-
-  @doc false
-  @spec seed_flows([Organization.t()]) :: :ok
-  def seed_flows([organization]) do
-    Glific.Repo.put_organization_id(organization.id)
-    {opt_uuid_map, opt_data} = get_opt_data(organization)
-
-    SeedsDev.seed_optin_interactives(organization)
-    add_flow(organization, opt_data, opt_uuid_map)
   end
 end
