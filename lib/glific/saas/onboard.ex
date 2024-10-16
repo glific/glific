@@ -12,6 +12,7 @@ defmodule Glific.Saas.Onboard do
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
+    ERP,
     Mails.NewPartnerOnboardedMail,
     Notion,
     Partners,
@@ -232,8 +233,10 @@ defmodule Glific.Saas.Onboard do
         notify_on_submission(org, registration)
         notify_saas_team(org)
 
-        Notion.update_table_properties(registration)
-        |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
+        # Notion.update_table_properties(registration)
+        # |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
+
+        ERP.update_organization(registration)
       end)
 
       result
