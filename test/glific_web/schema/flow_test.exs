@@ -136,7 +136,7 @@ defmodule GlificWeb.Schema.FlowTest do
           "filter" => %{
             "is_active" => true,
             "is_template" => true,
-            "name_or_keyword_or_tags" => "help"
+            "name_or_keyword_or_tags" => "Other"
           }
         }
       )
@@ -147,7 +147,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
     # Marking flow as inactive
     {:ok, flow} =
-      Repo.fetch_by(Flow, %{name: "Help Workflow", organization_id: user.organization_id})
+      Repo.fetch_by(Flow, %{name: "Other options flow", organization_id: user.organization_id})
 
     auth_query_gql_by(:update, user,
       variables: %{
@@ -163,7 +163,7 @@ defmodule GlificWeb.Schema.FlowTest do
           "filter" => %{
             "is_active" => true,
             "is_template" => true,
-            "name_or_keyword_or_tags" => "help"
+            "name_or_keyword_or_tags" => "other"
           }
         }
       )
@@ -175,17 +175,12 @@ defmodule GlificWeb.Schema.FlowTest do
 
   test "is_template should be true for template flows", %{manager: user} do
     {:ok, flow} =
-      Repo.fetch_by(Flow, %{name: "Help Workflow", organization_id: user.organization_id})
+      Repo.fetch_by(Flow, %{name: "Clear_Variables flow", organization_id: user.organization_id})
 
     assert flow.is_template == true
 
     {:ok, flow} =
-      Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: user.organization_id})
-
-    assert flow.is_template == true
-
-    {:ok, flow} =
-      Repo.fetch_by(Flow, %{name: "Registration Workflow", organization_id: user.organization_id})
+      Repo.fetch_by(Flow, %{name: "Other options flow", organization_id: user.organization_id})
 
     assert flow.is_template == true
   end
