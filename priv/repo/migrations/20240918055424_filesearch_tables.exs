@@ -14,7 +14,7 @@ defmodule Glific.Repo.Migrations.FilesearchTables do
 
       add :model, :string, null: false, comment: "OpenAI model version used by this assistant"
 
-      add :instructions, :string, comment: "Prompt for the agent"
+      add :instructions, :text, comment: "Prompt for the agent"
 
       add :temperature, :float, comment: "model determinism range from 0 to 2"
 
