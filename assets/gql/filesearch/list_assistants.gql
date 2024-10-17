@@ -1,0 +1,20 @@
+query Assistants($filter: AssistantFilter, $opts: Opts) {
+  Assistants(filter: $filter, opts: $opts) {
+    id
+    name
+    assistant_id
+    temperature
+    vector_store {
+      id
+      vector_store_id
+      name
+      files {
+        id
+        name
+        uploaded_at
+      }
+    }
+    inserted_at
+    updated_at
+  }
+}

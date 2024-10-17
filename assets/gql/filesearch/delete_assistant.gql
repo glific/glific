@@ -1,0 +1,9 @@
+#import "./assistant_fields.frag.gql"
+
+mutation DeleteAssistant($id: ID!) {
+  deleteAssistant(id: $id) {
+    ...AssistantFields
+
+    ...ErrorFields
+  }
+}

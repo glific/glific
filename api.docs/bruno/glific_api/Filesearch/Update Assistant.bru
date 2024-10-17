@@ -1,0 +1,51 @@
+meta {
+  name: Update Assistant
+  type: graphql
+  seq: 10
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  Authorization: {{auth_token}}
+}
+
+body:graphql {
+  mutation updateAssistant($id: ID!, $input:AssistantInput! = {}) {
+    updateAssistant(id: $id, input: $input) {
+      assistant {
+        id
+        name
+        assistant_id,
+     		model
+        instructions
+        temperature
+        vector_store {
+          id
+          vector_store_id
+        }
+        inserted_at
+        updated_at
+      }
+  
+       errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "instructions": "Some nonrandom instructionz",
+     "temperature": 1
+    },
+    "id": "2"
+  }
+}

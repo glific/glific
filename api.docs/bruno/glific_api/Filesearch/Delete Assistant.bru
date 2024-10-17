@@ -1,0 +1,48 @@
+meta {
+  name: Delete Assistant
+  type: graphql
+  seq: 9
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  Authorization: {{auth_token}}
+}
+
+body:graphql {
+  mutation DeleteAssistant($id: ID!) {
+    DeleteAssistant(id: $id) {
+      assistant {
+        id
+        name
+        assistant_id,
+     		model
+        instructions
+        temperature
+        vector_store {
+          id
+          vector_store_id
+        }
+        inserted_at
+        updated_at
+      }
+  
+       errors {
+        key
+        message
+      }
+      
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": 1
+  }
+}
