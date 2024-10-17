@@ -6,11 +6,14 @@ defmodule Glific.Reports do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    BigQuery.BigQueryJob,
     Contacts,
     Contacts.Contact,
     Flows.FlowContext,
     Flows.MessageBroadcast,
+    GCS.GcsJob,
     Messages.Message,
+    Messages.MessageMedia,
     Notifications.Notification,
     Organization,
     Partners,
@@ -269,6 +272,66 @@ defmodule Glific.Reports do
   end
 
   @doc false
+  @spec get_sync_data(atom(), non_neg_integer()) :: list(map) | map()
+  def get_sync_data(:bigquery, org_id) do
+    timezone = Partners.organization_timezone(org_id)
+    Repo.put_process_state(org_id)
+
+    query =
+      BigQueryJob
+      |> select([b], %{table_id: b.table_id, table: b.table, last_updated_at: b.last_updated_at})
+
+    Repo.all(query)
+    |> Enum.map(fn x ->
+      Map.update(x, :table, 0, fn name -> format_table_name(name) end)
+      |> Map.update(:last_updated_at, 0, fn date ->
+        date
+        |> Timex.Timezone.convert(timezone)
+        |> Timex.format!("{0D}-{0M}-{YYYY} {0h12}:{0m}{AM}")
+      end)
+    end)
+  end
+
+  def get_sync_data(:media_sync, org_id) do
+    Repo.put_process_state(org_id)
+
+    total_media =
+      MessageMedia
+      |> select([q], count(q.id))
+      |> where([q], q.organization_id == ^org_id)
+      |> Repo.one()
+
+    media_synced =
+      MessageMedia
+      |> select([q], count(q.id))
+      |> where([q], not is_nil(q.gcs_url))
+      |> where([q], q.organization_id == ^org_id)
+      |> Repo.one()
+
+    last_synced_at =
+      GcsJob
+      |> where([q], q.organization_id == ^org_id)
+      |> where([q], q.type == "incremental")
+      |> select([q], q.updated_at)
+      |> Repo.one()
+
+    timezone = Partners.organization_timezone(org_id)
+
+    last_synced_at_string =
+      case last_synced_at do
+        nil ->
+          "No date available"
+
+        datetime ->
+          datetime
+          |> Timex.Timezone.convert(timezone)
+          |> Timex.format!("{0D}-{0M}-{YYYY} {0h12}:{0m}{AM}")
+      end
+
+    %{media_synced: media_synced, total_media: total_media, last_synced_at: last_synced_at_string}
+  end
+
+  @doc false
   @spec get_messages_data(non_neg_integer(), map()) :: map()
   def get_messages_data(org_id, date_range) do
     timezone = Partners.organization_timezone(org_id)
@@ -496,5 +559,13 @@ defmodule Glific.Reports do
     time
     |> Timex.beginning_of_day()
     |> Timex.shift(days: days)
+  end
+
+  @doc false
+  @spec format_table_name(String.t()) :: String.t()
+  def format_table_name(table_name) do
+    table_name
+    |> String.split("_")
+    |> Enum.map_join(" ", &String.capitalize/1)
   end
 end
