@@ -136,7 +136,7 @@ defmodule GlificWeb.Schema.FlowTest do
           "filter" => %{
             "is_active" => true,
             "is_template" => true,
-            "name_or_keyword_or_tags" => "Other"
+            "name_or_keyword_or_tags" => "direct"
           }
         }
       )
@@ -147,7 +147,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
     # Marking flow as inactive
     {:ok, flow} =
-      Repo.fetch_by(Flow, %{name: "Other options flow", organization_id: user.organization_id})
+      Repo.fetch_by(Flow, %{name: "Direct with GPT", organization_id: user.organization_id})
 
     auth_query_gql_by(:update, user,
       variables: %{
@@ -163,7 +163,7 @@ defmodule GlificWeb.Schema.FlowTest do
           "filter" => %{
             "is_active" => true,
             "is_template" => true,
-            "name_or_keyword_or_tags" => "other"
+            "name_or_keyword_or_tags" => "direct"
           }
         }
       )
@@ -180,7 +180,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert flow.is_template == true
 
     {:ok, flow} =
-      Repo.fetch_by(Flow, %{name: "Other options flow", organization_id: user.organization_id})
+      Repo.fetch_by(Flow, %{name: "Direct with GPT", organization_id: user.organization_id})
 
     assert flow.is_template == true
   end

@@ -923,7 +923,7 @@ if Code.ensure_loaded?(Faker) do
         intent: "56c4d7c4-4884-45e2-b4f9-82ddc4553519",
         interactive: "b87dafcf-a316-4da6-b1f4-2714a199aab7",
         clear_var: "3ac6ec5e-041a-4b0f-9dad-9b2b9a9545ce",
-        other: "21cbe6b8-ec85-4d3b-9364-a5154ab40dd0"
+        direct_gpt: "0d51efbb-a8b4-4c32-828c-47ac915da479"
       }
 
       data = [

@@ -324,7 +324,7 @@ defmodule Glific.Seeds.SeedsFlows do
 
   @spec flow(tuple(), Organization.t(), Keyword.t()) :: nil
   defp flow({name, keywords, uuid, ignore_keywords, file}, organization, opts) do
-    is_template = name in ["Other options flow", "Clear_Variables flow"]
+    is_template = name in ["Direct with GPT", "Clear_Variables flow"]
 
     f =
       Repo.insert!(%Flow{
@@ -410,7 +410,7 @@ defmodule Glific.Seeds.SeedsFlows do
         generate_uuid(organization, "15666d20-7ba9-4698-adf1-50e91cee2b6b"),
       ab_test: generate_uuid(organization, "5f3fd8c6-2ec3-4945-8e7c-314db8c04c31"),
       clear_var: generate_uuid(organization, "3ac6ec5e-041a-4b0f-9dad-9b2b9a9545ce"),
-      other: generate_uuid(organization, "21cbe6b8-ec85-4d3b-9364-a5154ab40dd0")
+      direct_gpt: generate_uuid(organization, "0d51efbb-a8b4-4c32-828c-47ac915da479")
     }
 
     data = [
@@ -428,7 +428,7 @@ defmodule Glific.Seeds.SeedsFlows do
        false, "multiple_profile_creation.json"},
       {"AB Test Workflow", ["abtest"], uuid_map.ab_test, false, "ab_test.json"},
       {"Clear_Variables flow", [], uuid_map.clear_var, false, "clear_var.json"},
-      {"Other options flow", [], uuid_map.other, false, "other.json"}
+      {"Direct with GPT", [], uuid_map.direct_gpt, false, "direct_gpt.json"}
     ]
 
     {uuid_map, data}
