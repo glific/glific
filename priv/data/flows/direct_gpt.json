@@ -1,0 +1,366 @@
+{
+    "_ui": {
+        "nodes": {
+            "163346ee-31f5-4896-ab6e-611482f30bd7": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 80,
+                    "left": 40
+                }
+            },
+            "26598ef6-e475-4cc4-9290-3c8082f8085a": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 1080,
+                    "left": 160
+                }
+            },
+            "413786be-a8e1-4db3-9a69-959f87f80c58": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 920,
+                    "left": 560
+                }
+            },
+            "a0c0ecb7-f13a-4a1c-8f7e-5dd394f5569b": {
+                "type": "split_by_webhook",
+                "config": {},
+                "position": {
+                    "top": 320,
+                    "left": 680
+                }
+            },
+            "ac08ec0f-e945-48de-90b3-1d3e4e7d5af3": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 660,
+                    "left": 720
+                }
+            },
+            "c988fc74-3292-4a3c-9635-8c99de745e48": {
+                "type": "wait_for_response",
+                "config": {
+                    "cases": {}
+                },
+                "position": {
+                    "top": 640,
+                    "left": 40
+                }
+            },
+            "cb8674ce-ce3d-4137-be0f-26297aa03206": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 440,
+                    "left": 180
+                }
+            },
+            "d4015b66-fab5-413a-a2b3-9e256b8f4076": {
+                "type": "split_by_webhook",
+                "config": {},
+                "position": {
+                    "top": 720,
+                    "left": 400
+                }
+            },
+            "ee604a07-6c39-43ed-8fbe-ac9e9d0c42d0": {
+                "type": "wait_for_response",
+                "config": {
+                    "cases": {}
+                },
+                "position": {
+                    "top": 180,
+                    "left": 260
+                }
+            }
+        },
+        "stickies": {
+            "3b68fc9a-089a-4067-b7df-a76b888b2e38": {
+                "body": "...",
+                "color": "yellow",
+                "title": "New Note",
+                "position": {
+                    "top": 260,
+                    "left": 900
+                }
+            },
+            "a96ef8c1-8b5d-4b8d-b954-17d4a5ecc4f7": {
+                "body": "This is an example flow, please make changes to these to capture handle the error conditions",
+                "color": "purple",
+                "title": "New Note",
+                "position": {
+                    "top": 500,
+                    "left": 880
+                }
+            }
+        }
+    },
+    "name": "Direct with GPT",
+    "type": "messaging",
+    "uuid": "0d51efbb-a8b4-4c32-828c-47ac915da479",
+    "vars": [
+        "0d51efbb-a8b4-4c32-828c-47ac915da479"
+    ],
+    "nodes": [
+        {
+            "uuid": "163346ee-31f5-4896-ab6e-611482f30bd7",
+            "exits": [
+                {
+                    "uuid": "4a9ce98a-8cf8-4b9c-9b76-818c7cd0e9f1",
+                    "destination_uuid": "ee604a07-6c39-43ed-8fbe-ac9e9d0c42d0"
+                }
+            ],
+            "actions": [
+                {
+                    "text": "Pls ask a question to GPT.",
+                    "type": "send_msg",
+                    "uuid": "cf6b10c0-5e03-4ceb-b6ed-b1ac034f3f9a",
+                    "labels": [],
+                    "attachments": [],
+                    "quick_replies": []
+                }
+            ]
+        },
+        {
+            "uuid": "ee604a07-6c39-43ed-8fbe-ac9e9d0c42d0",
+            "exits": [
+                {
+                    "uuid": "198f53d6-703d-4ecf-9136-600bd4183c0d",
+                    "destination_uuid": "a0c0ecb7-f13a-4a1c-8f7e-5dd394f5569b"
+                }
+            ],
+            "router": {
+                "type": "switch",
+                "wait": {
+                    "type": "msg"
+                },
+                "cases": [],
+                "operand": "@input.text",
+                "categories": [
+                    {
+                        "name": "All Responses",
+                        "uuid": "74886171-644c-404b-8843-69c71cf609bf",
+                        "exit_uuid": "198f53d6-703d-4ecf-9136-600bd4183c0d"
+                    }
+                ],
+                "result_name": "question_1",
+                "default_category_uuid": "74886171-644c-404b-8843-69c71cf609bf"
+            },
+            "actions": []
+        },
+        {
+            "uuid": "a0c0ecb7-f13a-4a1c-8f7e-5dd394f5569b",
+            "exits": [
+                {
+                    "uuid": "2712ea42-0229-431c-88af-b2afad0fc0e8",
+                    "destination_uuid": "cb8674ce-ce3d-4137-be0f-26297aa03206"
+                },
+                {
+                    "uuid": "11e3122f-70ae-441d-948b-eead30a3fbdf",
+                    "destination_uuid": "ac08ec0f-e945-48de-90b3-1d3e4e7d5af3"
+                }
+            ],
+            "router": {
+                "type": "switch",
+                "cases": [
+                    {
+                        "type": "has_only_text",
+                        "uuid": "b9d267bf-6205-4475-be64-0b7490f40e31",
+                        "arguments": [
+                            "Success"
+                        ],
+                        "category_uuid": "6b4b3662-14b6-436b-9a1a-a492cc9e61d1"
+                    }
+                ],
+                "operand": "@results.gpt_response.category",
+                "categories": [
+                    {
+                        "name": "Success",
+                        "uuid": "6b4b3662-14b6-436b-9a1a-a492cc9e61d1",
+                        "exit_uuid": "2712ea42-0229-431c-88af-b2afad0fc0e8"
+                    },
+                    {
+                        "name": "Failure",
+                        "uuid": "36ef4f6a-b2dc-4180-b4fb-0697d41e2dcd",
+                        "exit_uuid": "11e3122f-70ae-441d-948b-eead30a3fbdf"
+                    }
+                ],
+                "default_category_uuid": "36ef4f6a-b2dc-4180-b4fb-0697d41e2dcd"
+            },
+            "actions": [
+                {
+                    "url": "parse_via_chat_gpt",
+                    "body": "{\n  \"question_text\": \"@results.question_1\",\n   \"gpt_model\":\"gpt-4o\",\n    \"prompt\":\"Answer in less than 5 sentences. Answer in the same language as the langugage of the question\"\n   \n}",
+                    "type": "call_webhook",
+                    "uuid": "86264339-845a-4612-b1af-f542b5509678",
+                    "method": "FUNCTION",
+                    "headers": {
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    },
+                    "result_name": "gpt_response"
+                }
+            ]
+        },
+        {
+            "uuid": "cb8674ce-ce3d-4137-be0f-26297aa03206",
+            "exits": [
+                {
+                    "uuid": "e027d7ae-15cb-43f6-981b-8cae188de520",
+                    "destination_uuid": "c988fc74-3292-4a3c-9635-8c99de745e48"
+                }
+            ],
+            "actions": [
+                {
+                    "text": "@results.gpt_response.parsed_msg",
+                    "type": "send_msg",
+                    "uuid": "2e68ba84-ac73-4ddc-9d96-271ecab60515",
+                    "labels": [],
+                    "attachments": [],
+                    "quick_replies": []
+                }
+            ]
+        },
+        {
+            "uuid": "c988fc74-3292-4a3c-9635-8c99de745e48",
+            "exits": [
+                {
+                    "uuid": "a08c151e-67ad-4ff1-a78f-0c11bb9efb59",
+                    "destination_uuid": "d4015b66-fab5-413a-a2b3-9e256b8f4076"
+                }
+            ],
+            "router": {
+                "type": "switch",
+                "wait": {
+                    "type": "msg"
+                },
+                "cases": [],
+                "operand": "@input.text",
+                "categories": [
+                    {
+                        "name": "All Responses",
+                        "uuid": "1653affa-e89a-40fa-8356-6d0721afbe86",
+                        "exit_uuid": "a08c151e-67ad-4ff1-a78f-0c11bb9efb59"
+                    }
+                ],
+                "result_name": "result_3",
+                "default_category_uuid": "1653affa-e89a-40fa-8356-6d0721afbe86"
+            },
+            "actions": []
+        },
+        {
+            "uuid": "ac08ec0f-e945-48de-90b3-1d3e4e7d5af3",
+            "exits": [
+                {
+                    "uuid": "7c4036c9-79a7-4fcf-89d9-8f60ef662503",
+                    "destination_uuid": null
+                }
+            ],
+            "actions": [
+                {
+                    "text": "GPT api failed",
+                    "type": "send_msg",
+                    "uuid": "0d82a1a9-90a4-4705-ae06-1449f1319b94",
+                    "labels": [],
+                    "attachments": [],
+                    "quick_replies": []
+                }
+            ]
+        },
+        {
+            "uuid": "d4015b66-fab5-413a-a2b3-9e256b8f4076",
+            "exits": [
+                {
+                    "uuid": "beac14e4-2113-4c34-979c-4c889e99f8a3",
+                    "destination_uuid": "26598ef6-e475-4cc4-9290-3c8082f8085a"
+                },
+                {
+                    "uuid": "5212a36f-97e9-49d0-b71b-77a404251884",
+                    "destination_uuid": "413786be-a8e1-4db3-9a69-959f87f80c58"
+                }
+            ],
+            "router": {
+                "type": "switch",
+                "cases": [
+                    {
+                        "type": "has_only_text",
+                        "uuid": "c8b17f7b-7cc7-4309-b91a-99e75f5dc125",
+                        "arguments": [
+                            "Success"
+                        ],
+                        "category_uuid": "081b1050-281d-4afd-b5c5-5f0f4e748301"
+                    }
+                ],
+                "operand": "@results.gpt_response2.category",
+                "categories": [
+                    {
+                        "name": "Success",
+                        "uuid": "081b1050-281d-4afd-b5c5-5f0f4e748301",
+                        "exit_uuid": "beac14e4-2113-4c34-979c-4c889e99f8a3"
+                    },
+                    {
+                        "name": "Failure",
+                        "uuid": "ce8e492a-ced1-429c-b9f9-0a453ab17570",
+                        "exit_uuid": "5212a36f-97e9-49d0-b71b-77a404251884"
+                    }
+                ],
+                "default_category_uuid": "ce8e492a-ced1-429c-b9f9-0a453ab17570"
+            },
+            "actions": [
+                {
+                    "url": "parse_via_chat_gpt",
+                    "body": "{\n \"question_text\":\"@results.result_3\",\n\"gpt_model\":\"gpt-4o\",\n\"prompt\":\" User has answering to this query, @results.gpt_response.parsed_msg, can you rate the answer provided and give a feedback\"\n}",
+                    "type": "call_webhook",
+                    "uuid": "9557ad16-0643-46e8-8c83-3f2167f18cce",
+                    "method": "FUNCTION",
+                    "headers": {
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    },
+                    "result_name": "gpt_response2"
+                }
+            ]
+        },
+        {
+            "uuid": "413786be-a8e1-4db3-9a69-959f87f80c58",
+            "exits": [
+                {
+                    "uuid": "8b0019e8-d45d-46e9-b605-c49c21d5d9d2",
+                    "destination_uuid": null
+                }
+            ],
+            "actions": [
+                {
+                    "text": "GPT api failed",
+                    "type": "send_msg",
+                    "uuid": "be063c1e-1c49-401b-a6ad-c82dbb1047a8",
+                    "labels": [],
+                    "attachments": [],
+                    "quick_replies": []
+                }
+            ]
+        },
+        {
+            "uuid": "26598ef6-e475-4cc4-9290-3c8082f8085a",
+            "exits": [
+                {
+                    "uuid": "0eaa8b08-c1c5-4b02-881e-52df9d22b5e6",
+                    "destination_uuid": null
+                }
+            ],
+            "actions": [
+                {
+                    "text": "@results.gpt_response2.parsed_msg",
+                    "type": "send_msg",
+                    "uuid": "2beede24-0107-4700-859d-fbd65c2464ce",
+                    "labels": [],
+                    "attachments": [],
+                    "quick_replies": []
+                }
+            ]
+        }
+    ],
+    "language": "base",
+    "localization": {},
+    "spec_version": "13.2.0",
+    "expire_after_minutes": 10080
+}

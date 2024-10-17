@@ -645,8 +645,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   def flows(organization) do
     if Application.get_env(:glific, :environment) in [:dev, :test] do
       SeedsFlows.seed([organization])
-    else
-      SeedsFlows.seed_flows([organization])
     end
   end
 

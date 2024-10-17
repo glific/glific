@@ -136,7 +136,7 @@ defmodule GlificWeb.Schema.FlowTest do
           "filter" => %{
             "is_active" => true,
             "is_template" => true,
-            "name_or_keyword_or_tags" => "help"
+            "name_or_keyword_or_tags" => "direct"
           }
         }
       )
@@ -147,7 +147,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
     # Marking flow as inactive
     {:ok, flow} =
-      Repo.fetch_by(Flow, %{name: "Help Workflow", organization_id: user.organization_id})
+      Repo.fetch_by(Flow, %{name: "Direct with GPT", organization_id: user.organization_id})
 
     auth_query_gql_by(:update, user,
       variables: %{
@@ -163,7 +163,7 @@ defmodule GlificWeb.Schema.FlowTest do
           "filter" => %{
             "is_active" => true,
             "is_template" => true,
-            "name_or_keyword_or_tags" => "help"
+            "name_or_keyword_or_tags" => "direct"
           }
         }
       )
@@ -171,6 +171,18 @@ defmodule GlificWeb.Schema.FlowTest do
     assert {:ok, query_data} = result
     flows = get_in(query_data, [:data, "flows"])
     assert Enum.empty?(flows) == true
+  end
+
+  test "is_template should be true for template flows", %{manager: user} do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Clear_Variables flow", organization_id: user.organization_id})
+
+    assert flow.is_template == true
+
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Direct with GPT", organization_id: user.organization_id})
+
+    assert flow.is_template == true
   end
 
   test "flows field returns list of flows filtered by isPinned flag", %{manager: user} do

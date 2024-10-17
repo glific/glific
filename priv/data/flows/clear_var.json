@@ -1,0 +1,171 @@
+{
+    "_ui": {
+        "nodes": {
+            "3359099e-c8a1-414f-970a-6961dc768a3b": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 460,
+                    "left": 0
+                }
+            },
+            "3acbace1-2aa9-4321-96af-3e2aab2ecf67": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 340,
+                    "left": 0
+                }
+            },
+            "610aa79d-3205-4139-a70f-282d48637ce3": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 120,
+                    "left": 0
+                }
+            },
+            "a0090854-3c15-4826-8c3c-3dc56cef94bd": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 240,
+                    "left": 0
+                }
+            },
+            "d6d1dab2-39a7-4813-ba02-b48fe7302b72": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 0,
+                    "left": 0
+                }
+            }
+        },
+        "stickies": {
+            "61c9ff43-82dc-4144-a4b7-549ab68d96b4": {
+                "body": "As the default language of Post clearing all pre-filled variables, it is suggested to Update Contact in the Default language of the platform (in this case it is english), so that the users (or testing team) will get the messages of default language flow",
+                "color": "purple",
+                "title": "Good to have : 8a3b",
+                "position": {
+                    "top": 460,
+                    "left": 360,
+                    "right": 20,
+                    "bottom": -120
+                }
+            },
+            "8d0a15bc-1995-4fa4-9d4b-3e45c6897502": {
+                "body": "Update Contact can be used both ways \n1) to update user profile \n2) to remove user profile\n\nHere we have used it in such a way so that this flow clears all the pre filled variables in individual user profiles by overwriting them with blank values. \n\nIt is particularly useful for internal testing purposes. This can also be used as background flows for some usecases",
+                "color": "yellow",
+                "title": "Explainer Node 2b72, 7ce3, 94bd, cf67 & 8a3b",
+                "position": {
+                    "top": 100,
+                    "left": 500
+                }
+            }
+        }
+    },
+    "name": "Clear_Variables flow",
+    "type": "messaging",
+    "uuid": "3ac6ec5e-041a-4b0f-9dad-9b2b9a9545ce",
+    "vars": [
+        "4fb2c18c-ac23-45fa-bf48-1f46095ba6d2"
+    ],
+    "nodes": [
+        {
+            "uuid": "d6d1dab2-39a7-4813-ba02-b48fe7302b72",
+            "exits": [
+                {
+                    "uuid": "2e7a3660-a6fb-4219-8027-6b6ec5586a37",
+                    "destination_uuid": "610aa79d-3205-4139-a70f-282d48637ce3"
+                }
+            ],
+            "actions": [
+                {
+                    "type": "set_contact_field",
+                    "uuid": "91adc341-42ed-433c-8fc6-9445ea105ec8",
+                    "field": {
+                        "key": "is_registered",
+                        "name": "is_registered"
+                    },
+                    "value": ""
+                }
+            ]
+        },
+        {
+            "uuid": "610aa79d-3205-4139-a70f-282d48637ce3",
+            "exits": [
+                {
+                    "uuid": "2834b208-3c00-4ffc-83c6-72c4174e0fd8",
+                    "destination_uuid": "a0090854-3c15-4826-8c3c-3dc56cef94bd"
+                }
+            ],
+            "actions": [
+                {
+                    "type": "set_contact_field",
+                    "uuid": "0b5db0c7-2931-4f5b-93c4-4cdccf157be8",
+                    "field": {
+                        "key": "city",
+                        "name": "city"
+                    },
+                    "value": ""
+                }
+            ]
+        },
+        {
+            "uuid": "a0090854-3c15-4826-8c3c-3dc56cef94bd",
+            "exits": [
+                {
+                    "uuid": "743c5a18-ea03-41ae-8b71-09817fb279de",
+                    "destination_uuid": "3acbace1-2aa9-4321-96af-3e2aab2ecf67"
+                }
+            ],
+            "actions": [
+                {
+                    "type": "set_contact_field",
+                    "uuid": "41675731-2869-48eb-8a8c-f929572862de",
+                    "field": {
+                        "key": "gender",
+                        "name": "Gender"
+                    },
+                    "value": ""
+                }
+            ]
+        },
+        {
+            "uuid": "3acbace1-2aa9-4321-96af-3e2aab2ecf67",
+            "exits": [
+                {
+                    "uuid": "d3236400-822f-4fab-896b-0432e36e64ab",
+                    "destination_uuid": "3359099e-c8a1-414f-970a-6961dc768a3b"
+                }
+            ],
+            "actions": [
+                {
+                    "type": "set_contact_field",
+                    "uuid": "72290efe-bc92-4bc8-9120-c409f14546e4",
+                    "field": {
+                        "key": "preferred_name",
+                        "name": "preferred_name"
+                    },
+                    "value": ""
+                }
+            ]
+        },
+        {
+            "uuid": "3359099e-c8a1-414f-970a-6961dc768a3b",
+            "exits": [
+                {
+                    "uuid": "ded26ee7-1c05-464e-afd3-3d695aa8a374",
+                    "destination_uuid": null
+                }
+            ],
+            "actions": [
+                {
+                    "type": "set_contact_language",
+                    "uuid": "16002abd-7567-4726-8fbf-e79841ebaea4",
+                    "language": "en"
+                }
+            ]
+        }
+    ],
+    "language": "base",
+    "localization": {},
+    "spec_version": "13.2.0",
+    "expire_after_minutes": 10080
+}
