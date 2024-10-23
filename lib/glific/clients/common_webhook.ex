@@ -501,14 +501,7 @@ defmodule Glific.Clients.CommonWebhook do
       |> Repo.insert()
 
     if result != :ok do
-      # there must be code somewhere for this, cant find it
-      # please fix lobo's crappy code
-      error =
-        Enum.reduce(flow.errors, "", fn {attr, message}, error ->
-          "#{error} #{attr} #{elem(message, 0)}\n"
-        end)
-
-      %{error: error}
+      %{error: collect_errors(flow.errors)}
     else
       Glific.State.reset(flow.organization_id)
 
@@ -524,15 +517,19 @@ defmodule Glific.Clients.CommonWebhook do
         })
 
       if result != :ok do
-        error =
-          Enum.reduce(flow.errors, "", fn {attr, message}, error ->
-            "#{error} #{attr} #{elem(message, 0)}\n"
-          end)
-
-        %{error: error}
+        %{error: collect_errors(flow.errors)}
       else
         %{url: "#{Application.get_env(:glific, :app_base_url)}flow/configure/#{flow.uuid}"}
       end
     end
+  end
+
+  defp collect_errors(errors) do
+    errors
+    |> Enum.reduce([], fn {attr, message}, errors ->
+      ["#{attr} #{elem(message, 0)}" | errors]
+    end)
+    |> Enum.reverse()
+    |> Enum.join("\n")
   end
 end
