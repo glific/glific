@@ -486,7 +486,6 @@ defmodule Glific.Flows do
       },
       [{:send_revision_alert, organization_id}]
     )
-    |> IO.inspect(label: :published)
   end
 
   defp check_field(json, field, acc),
