@@ -212,5 +212,3 @@ defmodule Glific.MixProject do
     ]
   end
 end
-
-# DeltaCrdt.put(crdt1, "a", %{"nodes": [1, 2, 3, 4]})

@@ -167,25 +167,6 @@ defmodule GlificWeb.Resolvers.Flows do
   end
 
   @doc """
-  transfer a flow or nil if possible for this user
-  """
-  @spec transfer(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def transfer(_, params, %{context: %{current_user: user}}) do
-    flow = State.release_flow(user)
-
-    Absinthe.Subscription.publish(
-      GlificWeb.Endpoint,
-      %{
-        user_id: user.id
-      },
-      [{:send_transfer_alert, params.organization_id}]
-    )
-
-    {:ok, flow}
-  end
-
-  @doc """
   Publish a flow
   """
   @spec publish_flow(Absinthe.Resolution.t(), %{uuid: String.t()}, %{context: map()}) ::
@@ -331,10 +312,7 @@ defmodule GlificWeb.Resolvers.Flows do
   end
 
   def publish_revision_alert(args, _, _) do
-    {:ok, args}
-  end
-
-  def publish_transfer_alert(args, _, _) do
+    IO.inspect(args)
     {:ok, args}
   end
 
