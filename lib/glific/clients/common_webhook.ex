@@ -495,24 +495,35 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   defp create_text2flow(flow_json, attrs) do
-    {:ok, flow} =
+    {result, flow} =
       %Flow{}
       |> Flow.changeset(attrs)
       |> Repo.insert()
 
-    Glific.State.reset(flow.organization_id)
+    if result != :ok do
+      # there must be code somewhere for this, cant find it
+      # please fix lobo's crappy code
+      error =
+        Enum.reduce(flow.errors, "", fn {attr, message}, error ->
+          "#{error} #{attr} #{elem(message, 0)}\n"
+        end)
 
-    user = Repo.get_current_user()
-    flow_json = Map.put(flow_json, "uuid", flow.uuid)
+      %{error: error}
+    else
+      Glific.State.reset(flow.organization_id)
 
-    {:ok, _} =
-      FlowRevision.create_flow_revision(%{
-        definition: flow_json,
-        flow_id: flow.id,
-        organization_id: flow.organization_id,
-        user_id: user.id
-      })
+      user = Repo.get_current_user()
+      flow_json = Map.put(flow_json, "uuid", flow.uuid)
 
-    flow
+      {:ok, _} =
+        FlowRevision.create_flow_revision(%{
+          definition: flow_json,
+          flow_id: flow.id,
+          organization_id: flow.organization_id,
+          user_id: user.id
+        })
+
+      %{url: "/flow/configure/#{flow.uuid}"}
+    end
   end
 end
