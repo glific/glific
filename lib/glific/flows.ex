@@ -448,7 +448,7 @@ defmodule Glific.Flows do
   @spec get_flow_revision(String.t(), String.t()) :: map()
   def get_flow_revision(_flow_uuid, revision_id) do
     revision = Repo.get!(FlowRevision, revision_id)
-    %{definition: revision.definition, metadata: %{issues: []}}
+    %{definition: revision.definition, metadata: %{issues: []}, glific_db_id: revision.id}
   end
 
   @doc """

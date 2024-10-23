@@ -501,8 +501,12 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec revisions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def revisions(conn, %{"vars" => vars}) do
     case vars do
-      [flow_uuid] -> json(conn, Flows.get_flow_revision_list(flow_uuid))
-      [flow_uuid, revision_id] -> json(conn, Flows.get_flow_revision(flow_uuid, revision_id))
+      [flow_uuid] ->
+        json(conn, Flows.get_flow_revision_list(flow_uuid))
+
+      [flow_uuid, revision_id] ->
+        IO.inspect(Flows.get_flow_revision(flow_uuid, revision_id))
+        json(conn, Flows.get_flow_revision(flow_uuid, revision_id))
     end
   end
 
