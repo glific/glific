@@ -515,7 +515,7 @@ defmodule Glific.Clients.CommonWebhook do
       user = Repo.get_current_user()
       flow_json = Map.put(flow_json, "uuid", flow.uuid)
 
-      {:ok, _} =
+      {result, _revsion} =
         FlowRevision.create_flow_revision(%{
           definition: flow_json,
           flow_id: flow.id,
@@ -523,7 +523,16 @@ defmodule Glific.Clients.CommonWebhook do
           user_id: user.id
         })
 
-      %{url: "/flow/configure/#{flow.uuid}"}
+      if result != :ok do
+        error =
+          Enum.reduce(flow.errors, "", fn {attr, message}, error ->
+            "#{error} #{attr} #{elem(message, 0)}\n"
+          end)
+
+        %{error: error}
+      else
+        %{url: "#{Application.get_env(:glific, :app_base_url)}/flow/configure/#{flow.uuid}"}
+      end
     end
   end
 end
