@@ -291,5 +291,13 @@ defmodule GlificWeb.Schema.FlowTypes do
 
       resolve(&Resolvers.Flows.publish_revision_alert/3)
     end
+
+    field :send_revision_history, :json do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(&Resolvers.Flows.publish_revision_history/3)
+    end
   end
 end

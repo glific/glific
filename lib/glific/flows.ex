@@ -484,9 +484,9 @@ defmodule Glific.Flows do
         org_id: organization_id,
         user_id: user_id
       },
-      [{:flow_revised, organization_id}]
+      [{:send_revision_alert, organization_id}]
     )
-    |> IO.inspect()
+    |> IO.inspect(label: :published)
   end
 
   defp check_field(json, field, acc),
