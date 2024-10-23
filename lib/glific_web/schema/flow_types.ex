@@ -179,6 +179,12 @@ defmodule GlificWeb.Schema.FlowTypes do
       resolve(&Resolvers.Flows.flow_release/3)
     end
 
+    @desc "transfer the ownership of a flow"
+    field :transfer_ownership, :flow do
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Flows.transfer/3)
+    end
+
     @desc "Get broadcast flow stats"
     field :broadcast_stats, :json do
       arg(:message_broadcast_id, non_null(:id))
@@ -290,6 +296,14 @@ defmodule GlificWeb.Schema.FlowTypes do
       config(&Schema.config_fun/2)
 
       resolve(&Resolvers.Flows.publish_revision_alert/3)
+    end
+
+    field :send_transfer_alert, :json do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(&Resolvers.Flows.publish_transfer_alert/3)
     end
 
     field :send_revision_history, :json do
