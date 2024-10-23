@@ -6,8 +6,12 @@ defmodule GlificWeb.Schema.FlowTypes do
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 1, dataloader: 2]
   alias Glific.Repo
-  alias GlificWeb.Resolvers
-  alias GlificWeb.Schema.Middleware.Authorize
+
+  alias GlificWeb.{
+    Resolvers,
+    Schema,
+    Schema.Middleware.Authorize
+  }
 
   object :flow_result do
     field :flow, :flow
@@ -276,6 +280,16 @@ defmodule GlificWeb.Schema.FlowTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.inline_flow_localization/3)
+    end
+  end
+
+  object :flow_subscriptions do
+    field :send_revision_alert, :string do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(&Resolvers.Flows.publish_revision_alert/3)
     end
   end
 end

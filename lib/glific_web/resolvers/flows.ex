@@ -311,6 +311,11 @@ defmodule GlificWeb.Resolvers.Flows do
     do_copy_flow(id, params, &Flows.copy_flow/2)
   end
 
+  def publish_revision_alert(args, _, _) do
+    IO.inspect(args)
+    {:ok, args}
+  end
+
   @spec do_copy_flow(
           non_neg_integer,
           map(),

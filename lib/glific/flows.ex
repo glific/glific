@@ -456,6 +456,7 @@ defmodule Glific.Flows do
   """
   @spec create_flow_revision(map(), non_neg_integer()) :: FlowRevision.t()
   def create_flow_revision(definition, user_id) do
+    IO.inspect("creating flow revision")
     {:ok, flow} = Repo.fetch_by(Flow, %{uuid: definition["uuid"]})
 
     {:ok, revision} =
@@ -472,8 +473,20 @@ defmodule Glific.Flows do
     # note that we don't bother reloading the cache, since we don't expect
     # draft simulator to run often, and drafts are being saved quite often
     Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "draft"))
-
+    publish_flow_revised(flow.organization_id, user_id)
     revision
+  end
+
+  defp publish_flow_revised(organization_id, user_id) do
+    Absinthe.Subscription.publish(
+      GlificWeb.Endpoint,
+      %{
+        org_id: organization_id,
+        user_id: user_id
+      },
+      [{:flow_revised, organization_id}]
+    )
+    |> IO.inspect()
   end
 
   defp check_field(json, field, acc),

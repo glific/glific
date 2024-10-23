@@ -316,13 +316,32 @@ defmodule Glific.Seeds.SeedsMigration do
     :ok
   end
 
+  @spec add_saas_user_2() :: :ok
+  def add_saas_user_2() do
+    org = Glific.Partners.get_organization! 1
+    {:ok, lang} = Glific.Repo.fetch(Glific.Settings.Language, 1)
+    name = "temp user"
+
+    if !has_contact?(org, name) do
+      # lets pre compute common values
+      utc_now = DateTime.utc_now()
+
+      org
+      |> get_common_attrs(lang, utc_now)
+      |> create_saas_contact(name)
+      |> create_saas_user()
+    end
+
+    :ok
+  end
+
   @spec create_saas_contact(map(), String.t()) :: Contact.t()
   defp create_saas_contact(attrs, name) do
     attrs =
       Map.merge(
         attrs,
         %{
-          phone: Saas.phone(),
+          phone: "918546789651",#Saas.phone(),
           name: name
         }
       )
