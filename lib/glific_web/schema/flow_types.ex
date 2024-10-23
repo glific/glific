@@ -284,7 +284,7 @@ defmodule GlificWeb.Schema.FlowTypes do
   end
 
   object :flow_subscriptions do
-    field :send_revision_alert, :string do
+    field :send_revision_alert, :json do
       arg(:organization_id, non_null(:id))
 
       config(&Schema.config_fun/2)
