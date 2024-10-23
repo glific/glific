@@ -172,7 +172,7 @@ defmodule GlificWeb.Resolvers.Flows do
   @spec transfer(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def transfer(_, params, %{context: %{current_user: user}}) do
-    flow = State.release_flow(user)
+    # flow = State.release_flow(user)
 
     Absinthe.Subscription.publish(
       GlificWeb.Endpoint,
@@ -182,7 +182,7 @@ defmodule GlificWeb.Resolvers.Flows do
       [{:send_transfer_alert, params.organization_id}]
     )
 
-    {:ok, flow}
+    {:ok, %{}}
   end
 
   @doc """
