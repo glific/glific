@@ -301,7 +301,7 @@ defmodule Glific.Clients.CommonWebhook do
     # now create a flow revision in draft mode
     # and a flow with flow_keyword
     attrs = %{
-      version_number: "13.1.0",
+      version_number: "13.2.0",
       flow_type: "message",
       name: fields["flow_name"],
       keywords: [fields["flow_keywords"]],
@@ -531,7 +531,7 @@ defmodule Glific.Clients.CommonWebhook do
 
         %{error: error}
       else
-        %{url: "#{Application.get_env(:glific, :app_base_url)}/flow/configure/#{flow.uuid}"}
+        %{url: "#{Application.get_env(:glific, :app_base_url)}flow/configure/#{flow.uuid}"}
       end
     end
   end
