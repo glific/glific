@@ -8,7 +8,7 @@ defmodule Glific.ERPTest do
 
   alias Glific.ERP
 
-  describe "fetch_organizations/0" do
+  describe "fetch_organization_details/1" do
     test "returns organizations when the request is successful" do
       mock(fn
         %{method: :get} ->
@@ -16,16 +16,14 @@ defmodule Glific.ERPTest do
             status: 200,
             body: %{
               "data" => [
-                %{"name" => "Org1", "customer_name" => "Organization 1"},
-                %{"name" => "Org2", "customer_name" => "Organization 2"}
+                %{"name" => "Org1", "customer_name" => "Organization 1"}
               ]
             }
           }
       end)
 
-      assert {:ok, %{"data" => organizations}} = ERP.fetch_organizations()
-      assert length(organizations) == 2
-      assert %{"name" => "Org1", "customer_name" => "Organization 1"} = hd(organizations)
+      assert {:ok, %{"data" => [%{"customer_name" => "Organization 1", "name" => "Org1"}]}} =
+               ERP.fetch_organization_detail("org1")
     end
   end
 
@@ -33,13 +31,16 @@ defmodule Glific.ERPTest do
     mock(fn
       %{method: :get} ->
         %Tesla.Env{
-          status: 401,
+          status: 404,
           body: %{
-            exception: "AuthenticationError"
+            _server_messages:
+              "[\"{\\\"message\\\": \\\"Customer org1 not found\\\", \\\"title\\\": \\\"Message\\\", \\\"indicator\\\": \\\"red\\\", \\\"raise_exception\\\": 1, \\\"__frappe_exc_id\\\": \\\"xxx\\\"}\"]",
+            exc_type: "DoesNotExistError"
           }
         }
     end)
 
-    assert {:error, _} = ERP.fetch_organizations()
+    assert {:error, "Failed to fetch organization due to Customer org1 not found"} =
+             ERP.fetch_organization_detail("org1")
   end
 end

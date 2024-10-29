@@ -34,7 +34,15 @@ defmodule GlificWeb.API.V1.OnboardController do
     case Partners.organization(org_id) do
       %Organization{root_user: root_user} = org ->
         Repo.put_current_user(root_user)
-        json(conn, Onboard.update_registration(params, org))
+        response = Onboard.update_registration(params, org)
+
+        if Map.get(response, :is_valid, true) do
+          json(conn, response)
+        else
+          conn
+          |> put_status(400)
+          |> json(%{error: %{status: 400, message: Map.get(response, :error)}})
+        end
 
       _ ->
         conn

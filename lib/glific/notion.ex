@@ -114,7 +114,7 @@ defmodule Glific.Notion do
         "rich_text" => [
           %{
             "type" => "text",
-            "text" => %{"content" => "#{registration.org_details["current_address"]}"}
+            "text" => %{"content" => inspect(registration.org_details["current_address"])}
           }
         ]
       },
@@ -123,7 +123,7 @@ defmodule Glific.Notion do
         "rich_text" => [
           %{
             "type" => "text",
-            "text" => %{"content" => "#{registration.org_details["registered_address"]}"}
+            "text" => %{"content" => inspect(registration.org_details["registered_address"])}
           }
         ]
       },

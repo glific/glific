@@ -51,11 +51,15 @@ defmodule Glific.Saas.Onboard do
     with {:ok, registration} <- Registrations.get_registration(reg_id),
          %{is_valid: true} = result <- Queries.validate_registration_details(result, params) do
       {:ok, registration} = update_registration_details(params, registration)
-
       {:ok, org} = update_org_details(org, params, registration)
 
-      process_on_submission(result, org, registration)
-      |> Map.put(:registration, Registration.to_minimal_map(registration))
+      process_result = process_on_submission(result, org, registration)
+
+      if Map.get(process_result, :is_valid, true) do
+        Map.put(process_result, :registration, Registration.to_minimal_map(registration))
+      else
+        process_result
+      end
     else
       {:error, _} ->
         dgettext("error", "Registration doesn't exist for given registration ID.")
@@ -229,17 +233,22 @@ defmodule Glific.Saas.Onboard do
   @spec process_on_submission(map(), Organization.t(), Registration.t()) :: map()
   defp process_on_submission(result, org, %{has_submitted: true} = registration) do
     with %{is_valid: true} = result <- Queries.eligible_for_submission?(result, registration) do
-      Task.start(fn ->
-        notify_on_submission(org, registration)
-        notify_saas_team(org)
+      case ERP.update_organization(registration) do
+        {:ok, erp_response} ->
+          notify_on_submission(org, registration)
+          notify_saas_team(org)
 
-        # Notion.update_table_properties(registration)
-        # |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
+          Task.start(fn ->
+            Notion.update_table_properties(registration)
+            |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
+          end)
 
-        ERP.update_organization(registration)
-      end)
+          Map.put(result, :erp_response, erp_response)
 
-      result
+        {:error, erp_error} ->
+          Map.put(result, :is_valid, false)
+          |> Map.put(:error, erp_error)
+      end
     end
   end
 

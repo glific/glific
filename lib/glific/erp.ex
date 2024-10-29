@@ -51,8 +51,8 @@ defmodule Glific.ERP do
 
         extracted_message = Map.get(decoded_message, "message")
 
-        Logger.error("Failed to fetch organizations: #{inspect(body)}")
-        {:error, "Failed to fetch organizations due to #{extracted_message}"}
+        Logger.error("Failed to fetch organization: #{inspect(body)}")
+        {:error, "Failed to fetch organization due to #{extracted_message}"}
 
       {:error, reason} ->
         Logger.error("Unexpected response: body: #{inspect(reason)}")
@@ -81,112 +81,88 @@ defmodule Glific.ERP do
       ]
     }
 
-    if registration.org_details["gstin"] != nil and registration.org_details["gstin"] != "" do
+    if registration.org_details["gstin"] not in [nil, ""] do
       Map.put(payload, "gstin", registration.org_details["gstin"])
       |> Map.put("gst_category", "Registered Regular")
     end
 
     case Tesla.put(@client, erp_url, payload, headers: headers()) do
-      {:ok, %Tesla.Env{status: 200, body: _response}} ->
+      {:ok, %Tesla.Env{status: 200}} ->
         create_or_update_address(registration, customer_name)
         create_contact(registration, customer_name)
 
       {:ok, %Tesla.Env{status: _status, body: body}} ->
-        Logger.error("Failed to update organization due to: #{inspect(body)}")
-        {:error, "Failed to update organization in ERP due to: #{body.exception}"}
+        Logger.error("Failed to update organization: #{inspect(body)}")
+        {:error, "Failed to update organization due to: #{body.exception}"}
 
       {:error, reason} ->
-        Logger.error("Error occurred while updating organization: #{inspect(reason)}")
+        Logger.error("Error updating organization: #{inspect(reason)}")
         {:error, "Error while updating organization"}
     end
   end
 
   defp create_or_update_address(registration, customer_name) do
-    address_type = "Billing"
+    billing_exists? = address_exists?(customer_name, "Billing")
+    permanent_exists? = address_exists?(customer_name, "Permanent/Registered")
+
+    current_address = registration.org_details["current_address"]
+    registered_address = registration.org_details["registered_address"]
+    are_addresses_same = compare_addresses(current_address, registered_address)
+
+    if billing_exists? do
+      update_address(current_address, "Billing", customer_name)
+    else
+      create_address(current_address, "Billing", customer_name)
+    end
+
+    if not are_addresses_same do
+      if permanent_exists? do
+        update_address(registered_address, "Permanent/Registered", customer_name)
+      else
+        create_address(registered_address, "Permanent/Registered", customer_name)
+      end
+    end
+
+    {:ok, "Addresses handled successfully"}
+  end
+
+  defp address_exists?(customer_name, address_type) do
     erp_url = "#{@erp_base_url}/Address/#{customer_name}-#{address_type}"
 
     case Tesla.get(@client, erp_url, headers: headers()) do
       {:ok, %Tesla.Env{status: 200}} ->
-        update_address(registration, customer_name)
+        true
 
       {:ok, %Tesla.Env{status: 404}} ->
-        create_address(registration, customer_name)
+        false
 
       {:error, reason} ->
-        Logger.error("Error occurred while checking address existence: #{inspect(reason)}")
-        {:error, "Error while checking address"}
+        Logger.error("Error checking address existence: #{inspect(reason)}")
+        false
     end
   end
 
-  defp update_address(registration, customer_name) do
-    current_address = registration.org_details["current_address"]
-    registered_address = registration.org_details["registered_address"]
-    are_addresses_same = compare_addresses(current_address, registered_address)
-
-    erp_url = "#{@erp_base_url}/Address/#{customer_name}-Billing"
-    billing_payload = build_payload(current_address, "Billing", registration.org_details["name"])
-
-    result = update_or_log_error(erp_url, billing_payload)
-
-    # If addresses differ, create/update the Permanent/Registered address
-    if not are_addresses_same do
-      permanent_payload =
-        build_payload(
-          registered_address,
-          "Permanent/Registered",
-          registration.org_details["name"]
-        )
-
-      erp_url = "#{@erp_base_url}/Address"
-      create_or_log_error(erp_url, permanent_payload)
-    end
-
-    result
-  end
-
-  defp create_address(registration, _customer_name) do
-    current_address = registration.org_details["current_address"]
-    registered_address = registration.org_details["registered_address"]
-    are_addresses_same = compare_addresses(current_address, registered_address)
-
+  defp create_address(address, address_type, customer_name) do
     erp_url = "#{@erp_base_url}/Address"
+    payload = build_payload(address, address_type, customer_name)
+    create_or_log_error(erp_url, payload)
+  end
 
-    billing_payload = build_payload(current_address, "Billing", registration.org_details["name"])
-    result = create_or_log_error(erp_url, billing_payload)
-
-    # If addresses differ, create Permanent/Registered address
-    if not are_addresses_same do
-      permanent_payload =
-        build_payload(
-          registered_address,
-          "Permanent/Registered",
-          registration.org_details["name"]
-        )
-
-      create_or_log_error(erp_url, permanent_payload)
-    end
-
-    result
+  defp update_address(address, address_type, customer_name) do
+    erp_url = "#{@erp_base_url}/Address/#{customer_name}-#{address_type}"
+    payload = build_payload(address, address_type, customer_name)
+    update_or_log_error(erp_url, payload)
   end
 
   defp create_contact(registration, customer_name) do
     erp_url = "#{@erp_base_url}/Contact"
 
     payload = %{
-      "custom_product" => [
-        %{
-          "product_type" => "Glific"
-        }
-      ],
+      "custom_product" => [%{"product_type" => "Glific"}],
       "first_name" => registration.submitter["first_name"],
       "last_name" => registration.submitter["last_name"],
       "designation" => registration.submitter["designation"],
-      "email_ids" => [
-        %{
-          "email_id" => registration.submitter["email"],
-          "is_primary" => 1
-        }
-      ],
+      "email_ids" => [%{"email_id" => registration.submitter["email"], "is_primary" => 1}],
       "custom_signing_authority" => [
         %{
           "name1" => registration.signing_authority["name"],
@@ -202,31 +178,25 @@ defmodule Glific.ERP do
           "phone" => registration.finance_poc["phone"]
         }
       ],
-      "links" => [
-        %{
-          "link_doctype" => "Customer",
-          "link_name" => customer_name
-        }
-      ]
+      "links" => [%{"link_doctype" => "Customer", "link_name" => customer_name}]
     }
 
     case Tesla.post(@client, erp_url, payload, headers: headers()) do
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
         {:ok, response_body}
 
-      {:ok, %Tesla.Env{status: status, body: body}} ->
-        Logger.error("Failed to create contact: status #{status}, body: #{inspect(body)}")
-        {:error, "Failed to create contact due to: #{body.exception}"}
+      {:ok, %Tesla.Env{status: _status, body: body}} ->
+        Logger.error("Failed to create contact: #{inspect(body)}")
+        {:error, "Failed to create contact: #{body.exception}"}
 
       {:error, reason} ->
-        Logger.error("Error occurred while creating address: #{inspect(reason)}")
-        {:error, "Error while creating address"}
+        Logger.error("Error creating contact: #{inspect(reason)}")
+        {:error, "Error creating contact"}
     end
   end
 
   defp build_payload(address, address_type, customer_name) do
     %{
-      "address_title" => address["address_title"],
       "address_type" => address_type,
       "address_line1" => address["address_line1"],
       "address_line2" => address["address_line2"],
@@ -234,28 +204,8 @@ defmodule Glific.ERP do
       "state" => address["state"],
       "country" => address["country"],
       "pincode" => address["pincode"],
-      "links" => [
-        %{
-          "link_doctype" => "Customer",
-          "link_name" => customer_name
-        }
-      ]
+      "links" => [%{"link_doctype" => "Customer", "link_name" => customer_name}]
     }
-  end
-
-  defp update_or_log_error(url, payload) do
-    case Tesla.put(@client, url, payload, headers: headers()) do
-      {:ok, %Tesla.Env{status: 200, body: response_body}} ->
-        {:ok, response_body}
-
-      {:ok, %Tesla.Env{status: status, body: body}} ->
-        Logger.error("Failed to update address: status #{status}, body: #{inspect(body)}")
-        {:error, "Failed to update address due to: #{body.exception}"}
-
-      {:error, reason} ->
-        Logger.error("Error occurred while updating address: #{inspect(reason)}")
-        {:error, "Error while updating address"}
-    end
   end
 
   defp create_or_log_error(url, payload) do
@@ -263,13 +213,28 @@ defmodule Glific.ERP do
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
         {:ok, response_body}
 
-      {:ok, %Tesla.Env{status: status, body: body}} ->
-        Logger.error("Failed to create address: status #{status}, body: #{inspect(body)}")
-        {:error, "Failed to create address due to: #{body.exception}"}
+      {:ok, %Tesla.Env{status: _status, body: body}} ->
+        Logger.error("Failed to create address: #{inspect(body)}")
+        {:error, "Failed to create address: #{body.exception}"}
 
       {:error, reason} ->
-        Logger.error("Error occurred while creating address: #{inspect(reason)}")
-        {:error, "Error while creating address"}
+        Logger.error("Error creating address: #{inspect(reason)}")
+        {:error, "Error creating address"}
+    end
+  end
+
+  defp update_or_log_error(url, payload) do
+    case Tesla.put(@client, url, payload, headers: headers()) do
+      {:ok, %Tesla.Env{status: 200, body: response_body}} ->
+        {:ok, response_body}
+
+      {:ok, %Tesla.Env{status: _status, body: body}} ->
+        Logger.error("Failed to update address: #{inspect(body)}")
+        {:error, "Failed to update address: #{body.exception}"}
+
+      {:error, reason} ->
+        Logger.error("Error updating address: #{inspect(reason)}")
+        {:error, "Error updating address"}
     end
   end
 
