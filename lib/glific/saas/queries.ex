@@ -182,46 +182,46 @@ defmodule Glific.Saas.Queries do
   defp organization(%{is_valid: false} = result, _params), do: result
 
   defp organization(result, params) do
-    with {:ok, %{data: %{customer_name: customer_name}}} <-
-           fetch_erp_organizations(params["name"]) do
-      {:ok, provider} =
-        Repo.fetch_by(Provider, %{shortcode: @default_provider, group: "bsp"},
-          skip_organization_id: true
-        )
+    case fetch_erp_organizations(params["name"]) do
+      {:ok, %{data: %{customer_name: customer_name}}} ->
+        {:ok, provider} =
+          Repo.fetch_by(Provider, %{shortcode: @default_provider, group: "bsp"},
+            skip_organization_id: true
+          )
 
-      attrs = %{
-        name: params["name"],
-        shortcode: params["shortcode"],
-        email: params["email"],
-        bsp_id: provider.id,
-        default_language_id: 1,
-        active_language_ids: [1],
-        timezone: "Asia/Kolkata",
-        is_active: false,
-        is_approved: false,
-        status: :inactive,
-        parent_org: params["name"],
-        setting: %{"send_warning_mail" => false, "run_flow_each_time" => false},
-        team_emails: %{
-          "finance" => params["email"],
-          "analytics" => params["email"],
-          "chatbot_design" => params["email"],
-          "operations" => params["email"]
+        attrs = %{
+          name: params["name"],
+          shortcode: params["shortcode"],
+          email: params["email"],
+          bsp_id: provider.id,
+          default_language_id: 1,
+          active_language_ids: [1],
+          timezone: "Asia/Kolkata",
+          is_active: false,
+          is_approved: false,
+          status: :inactive,
+          parent_org: params["name"],
+          setting: %{"send_warning_mail" => false, "run_flow_each_time" => false},
+          team_emails: %{
+            "finance" => params["email"],
+            "analytics" => params["email"],
+            "chatbot_design" => params["email"],
+            "operations" => params["email"]
+          }
         }
-      }
 
-      case Partners.create_organization(attrs) do
-        {:ok, organization} ->
-          Repo.put_organization_id(organization.id)
+        case Partners.create_organization(attrs) do
+          {:ok, organization} ->
+            Repo.put_organization_id(organization.id)
 
-          result
-          |> Map.put(:organization, organization)
-          |> Map.put_new(:erp_page_id, customer_name)
+            result
+            |> Map.put(:organization, organization)
+            |> Map.put_new(:erp_page_id, customer_name)
 
-        {:error, errors} ->
-          error(inspect(errors), result, :global)
-      end
-    else
+          {:error, errors} ->
+            error(inspect(errors), result, :global)
+        end
+
       {:error, error_message} ->
         error(inspect(error_message), result, :global)
     end
