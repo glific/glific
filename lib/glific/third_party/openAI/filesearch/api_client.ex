@@ -10,13 +10,11 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   @spec headers() :: list()
   defp headers do
     open_ai_key = Glific.get_open_ai_key()
-    open_ai_project = Glific.get_open_ai_project()
 
     [
       {"Authorization", "Bearer #{open_ai_key}"},
       {"Content-Type", "application/json"},
-      {"OpenAI-Beta", "assistants=v2"},
-      {"OpenAI-Project", open_ai_project}
+      {"OpenAI-Beta", "assistants=v2"}
     ]
   end
 
