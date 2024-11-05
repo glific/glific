@@ -7,11 +7,8 @@ defmodule Glific.Clients.CommonWebhook do
     ASR.Bhasini,
     ASR.GoogleASR,
     Contacts,
-    Flows.Flow,
-    Flows.FlowRevision,
     LLM4Dev,
     OpenAI.ChatGPT,
-    Repo,
     Sheets.GoogleSheets
   }
 
@@ -297,23 +294,6 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  def webhook("text2flow", fields) do
-    # now create a flow revision in draft mode
-    # and a flow with flow_keyword
-    attrs = %{
-      version_number: "13.2.0",
-      flow_type: "message",
-      name: fields["flow_name"],
-      keywords: [fields["flow_keywords"]],
-      organization_id: fields["organization_id"],
-      uuid: Ecto.UUID.generate()
-    }
-
-    fields["flow_json"]
-    |> clean_up_json()
-    |> create_text2flow(attrs)
-  end
-
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
   @spec find_component(list(map()), String.t()) :: String.t()
@@ -474,63 +454,5 @@ defmodule Glific.Clients.CommonWebhook do
          "response_format" => Map.get(fields, "response_format", nil)
        }}
     end
-  end
-
-  @spec clean_up_json(String.t()) :: map()
-  defp clean_up_json(json_string) do
-    json_string
-    |> Jason.decode!()
-    |> do_clean_up_json()
-    |> validate_flow_json()
-  end
-
-  @spec do_clean_up_json(map()) :: map()
-  defp do_clean_up_json(json) do
-    json
-  end
-
-  @spec validate_flow_json(map()) :: map()
-  defp validate_flow_json(json) do
-    json
-  end
-
-  defp create_text2flow(flow_json, attrs) do
-    {result, flow} =
-      %Flow{}
-      |> Flow.changeset(attrs)
-      |> Repo.insert()
-
-    if result != :ok do
-      %{error: collect_errors(flow.errors)}
-    else
-      Glific.State.reset(flow.organization_id)
-
-      user = Repo.get_current_user()
-      flow_json = Map.put(flow_json, "uuid", flow.uuid)
-
-      {result, _revsion} =
-        FlowRevision.create_flow_revision(%{
-          definition: flow_json,
-          flow_id: flow.id,
-          organization_id: flow.organization_id,
-          user_id: user.id
-        })
-
-      if result != :ok do
-        %{error: collect_errors(flow.errors)}
-      else
-        %{url: "#{Application.get_env(:glific, :app_base_url)}flow/configure/#{flow.uuid}"}
-      end
-    end
-  end
-
-  @spec collect_errors(map()) :: String.t()
-  defp collect_errors(errors) do
-    errors
-    |> Enum.reduce([], fn {attr, message}, errors ->
-      ["#{attr} #{elem(message, 0)}" | errors]
-    end)
-    |> Enum.reverse()
-    |> Enum.join("\n")
   end
 end
