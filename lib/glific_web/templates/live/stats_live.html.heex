@@ -418,7 +418,9 @@
         </thead>
         <tbody>
           <tr>
-            <td><%= @media_sync_data.media_synced %> out of <%= @media_sync_data.total_media %> media files</td>
+            <td>
+              <%= @media_sync_data.media_synced %> out of <%= @media_sync_data.total_media %> media files
+            </td>
             <td><%= @media_sync_data.last_synced_at %></td>
           </tr>
         </tbody>
