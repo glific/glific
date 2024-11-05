@@ -25,10 +25,9 @@ defmodule Glific.ERP do
 
   @spec get_erp_auth_token() :: String.t()
   defp get_erp_auth_token do
-    "374a2098cd39e2b:6e6476842aa899e"
-    # api_key = Application.get_env(:glific, :ERP_API_KEY)
-    # secret = Application.get_env(:glific, :ERP_SECRET)
-    # "#{api_key}:#{secret}"
+    api_key = Application.get_env(:glific, :ERP_API_KEY)
+    secret = Application.get_env(:glific, :ERP_SECRET)
+    "#{api_key}:#{secret}"
   end
 
   @doc """
@@ -67,7 +66,8 @@ defmodule Glific.ERP do
   @spec update_organization(map()) :: {:ok, map()} | {:error, String.t()}
   def update_organization(registration) do
     customer_name = registration.org_details["name"]
-    erp_url = "#{@erp_base_url}/Customer/#{customer_name}"
+    encoded_customer_name = URI.encode(customer_name)
+    erp_url = "#{@erp_base_url}/Customer/#{encoded_customer_name}"
 
     payload = %{
       "custom_chatbot_number" => registration.platform_details["phone"],
@@ -128,7 +128,8 @@ defmodule Glific.ERP do
   end
 
   defp address_exists?(customer_name, address_type) do
-    erp_url = "#{@erp_base_url}/Address/#{customer_name}-#{address_type}"
+    encoded_customer_name = URI.encode(customer_name)
+    erp_url = "#{@erp_base_url}/Address/#{encoded_customer_name}-#{address_type}"
 
     case Tesla.get(@client, erp_url, headers: headers()) do
       {:ok, %Tesla.Env{status: 200}} ->
@@ -150,7 +151,8 @@ defmodule Glific.ERP do
   end
 
   defp update_address(address, address_type, customer_name) do
-    erp_url = "#{@erp_base_url}/Address/#{customer_name}-#{address_type}"
+    encoded_customer_name = URI.encode(customer_name)
+    erp_url = "#{@erp_base_url}/Address/#{encoded_customer_name}-#{address_type}"
     payload = build_payload(address, address_type, customer_name)
     update_or_log_error(erp_url, payload)
   end
