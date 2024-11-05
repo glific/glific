@@ -524,6 +524,7 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  @spec collect_errors(map()) :: String.t()
   defp collect_errors(errors) do
     errors
     |> Enum.reduce([], fn {attr, message}, errors ->
