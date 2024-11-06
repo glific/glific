@@ -524,7 +524,6 @@ defmodule Glific.Saas.Queries do
   defp validate_address_fields(result, address_map, field_prefix) do
     result
     |> validate_text_field(address_map["address_line1"], :"#{field_prefix}_line1", {1, 300})
-    |> validate_text_field(address_map["address_line2"], :"#{field_prefix}_line2", {0, 300})
     |> validate_text_field(address_map["city"], :"#{field_prefix}_city", {1, 100})
     |> validate_text_field(address_map["pincode"], :"#{field_prefix}_pincode", {1, 10})
   end
