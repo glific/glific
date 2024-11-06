@@ -89,8 +89,13 @@ defmodule Glific.ERP do
 
     case Tesla.put(@client, erp_url, payload, headers: headers()) do
       {:ok, %Tesla.Env{status: 200}} ->
-        create_or_update_address(registration, customer_name)
-        create_contact(registration, customer_name)
+        case create_or_update_address(registration, customer_name) do
+          {:error, reason} ->
+            {:error, reason}
+
+          _ ->
+            create_contact(registration, customer_name)
+        end
 
       {:ok, %Tesla.Env{status: _status, body: body}} ->
         Logger.error("Failed to update organization: #{inspect(body)}")
@@ -123,8 +128,6 @@ defmodule Glific.ERP do
         create_address(registered_address, "Permanent/Registered", customer_name)
       end
     end
-
-    {:ok, "Addresses handled successfully"}
   end
 
   defp address_exists?(customer_name, address_type) do
