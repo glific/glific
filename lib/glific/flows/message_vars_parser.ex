@@ -179,20 +179,45 @@ defmodule Glific.Flows.MessageVarParser do
   end
 
   defp load_vars(binding, "@calendar") do
-    default_format = "{D}/{0M}/{YYYY}"
-    today = Timex.today()
+    today = Timex.now()
+    org_id = Repo.get_organization_id()
+    timezone = Partners.organization_timezone(org_id)
 
     calendar_vars = %{
-      current_date: today |> Timex.format!(default_format) |> to_string(),
-      yesterday: Timex.shift(today, days: -1) |> Timex.format!(default_format) |> to_string(),
-      tomorrow: Timex.shift(today, days: 1) |> Timex.format!(default_format) |> to_string(),
-      current_day: today |> Timex.weekday() |> Timex.day_name() |> String.downcase(),
-      current_month: Timex.now().month |> Timex.month_name() |> String.downcase(),
-      current_year: Timex.now().year
+      current_date: format_time(today, timezone),
+      yesterday:
+        today
+        |> Timex.shift(days: -1)
+        |> format_time(timezone),
+      tomorrow:
+        today
+        |> Timex.shift(days: 1)
+        |> format_time(timezone),
+      current_day:
+        today
+        |> Timex.Timezone.convert(timezone)
+        |> Timex.weekday()
+        |> Timex.day_name()
+        |> String.downcase(),
+      current_month:
+        Timex.now()
+        |> Timex.Timezone.convert(timezone)
+        |> then(& &1.month)
+        |> Timex.month_name()
+        |> String.downcase(),
+      current_year: Timex.now() |> Timex.Timezone.convert(timezone) |> then(& &1.year)
     }
 
     Map.put(binding, "calendar", calendar_vars)
   end
 
   defp load_vars(binding, _), do: binding
+
+  @spec format_time(DateTime.t(), String.t()) :: String.t()
+  defp format_time(time, timezone) do
+    time
+    |> Timex.Timezone.convert(timezone)
+    |> Timex.format!("{D}/{0M}/{YYYY}")
+    |> to_string()
+  end
 end
