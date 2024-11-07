@@ -440,7 +440,7 @@ defmodule Glific.Flows.FlowContext do
   Count the number of times we have sent the same message in the recent past
   """
   @spec match_outbound(FlowContext.t(), String.t(), integer) :: integer
-  def match_outbound(context, _body, go_back \\ 6) do
+  def match_outbound(context, body, go_back \\ 6) do
     since = Glific.go_back_time(go_back)
 
     Enum.filter(
@@ -449,7 +449,10 @@ defmodule Glific.Flows.FlowContext do
         date = get_datetime(item)
 
         # comparing node uuids is a lot more powerful than comparing message body
+        # but for webhooks, the function can return something different every time
+        # so we check for both node uuid and body
         item["node_uuid"] == context.node_uuid and
+          item["body"] == body and
           DateTime.compare(date, since) in [:gt, :eq]
       end
     )
