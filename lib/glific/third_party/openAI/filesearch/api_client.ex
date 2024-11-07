@@ -224,6 +224,14 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
+  @spec retrieve_assistant(String.t()) :: {:ok, map()} | {:error, String.t()}
+  def retrieve_assistant(assistant_id) do
+    url = @endpoint <> "/assistants/#{assistant_id}"
+
+    get(url, headers: headers())
+    |> parse_response()
+  end
+
   @spec parse_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t()}
   defp parse_response({:ok, %{body: resp_body, status: status}})
        when status >= 200 and status < 300 do

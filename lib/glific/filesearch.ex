@@ -173,6 +173,16 @@ defmodule Glific.Filesearch do
     end
   end
 
+  def sync_assistant(assistant_id) do
+    # retrieve assistant
+    # if it has vector_store_id
+    # then create_vector_store
+    # - retrive vs
+    # - retrieve vs file
+    # - retrieve filenames
+    # cretate assistant with the vs_id or not.
+  end
+
   @spec create_vector_store(map()) :: {:ok, map()} | {:error, any()}
   defp create_vector_store(params) do
     params = Map.put(params, :name, generate_temp_name(params[:name], "VectorStore"))
