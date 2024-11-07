@@ -97,7 +97,7 @@ defmodule Glific.ERP do
           {:error, reason} ->
             {:error, reason}
 
-          _ ->
+          {:ok, _result} ->
             create_contact(registration, customer_name)
         end
 
@@ -157,7 +157,7 @@ defmodule Glific.ERP do
   defp create_address(address, address_type, customer_name) do
     erp_url = "#{@erp_base_url}/Address"
     payload = build_payload(address, address_type, customer_name)
-    create_or_log_error(erp_url, payload)
+    do_create_address(erp_url, payload)
   end
 
   @spec update_address(map(), String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
@@ -165,7 +165,7 @@ defmodule Glific.ERP do
     encoded_customer_name = URI.encode(customer_name)
     erp_url = "#{@erp_base_url}/Address/#{encoded_customer_name}-#{address_type}"
     payload = build_payload(address, address_type, customer_name)
-    update_or_log_error(erp_url, payload)
+    do_update_address(erp_url, payload)
   end
 
   @spec create_contact(map(), String.t()) :: {:ok, map()} | {:error, String.t()}
@@ -224,8 +224,8 @@ defmodule Glific.ERP do
     }
   end
 
-  @spec create_or_log_error(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
-  defp create_or_log_error(url, payload) do
+  @spec do_create_address(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp do_create_address(url, payload) do
     case Tesla.post(@client, url, payload, headers: headers()) do
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
         {:ok, response_body}
@@ -240,8 +240,8 @@ defmodule Glific.ERP do
     end
   end
 
-  @spec update_or_log_error(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
-  defp update_or_log_error(url, payload) do
+  @spec do_update_address(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp do_update_address(url, payload) do
     case Tesla.put(@client, url, payload, headers: headers()) do
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
         {:ok, response_body}
