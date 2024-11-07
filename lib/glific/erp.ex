@@ -68,6 +68,7 @@ defmodule Glific.ERP do
     customer_name = registration.org_details["name"]
     encoded_customer_name = URI.encode(customer_name)
     erp_url = "#{@erp_base_url}/Customer/#{encoded_customer_name}"
+    gstin = registration.org_details["gstin"]
 
     payload = %{
       "custom_chatbot_number" => registration.platform_details["phone"],
@@ -82,10 +83,13 @@ defmodule Glific.ERP do
       ]
     }
 
-    if registration.org_details["gstin"] not in [nil, ""] do
-      Map.put(payload, "gstin", registration.org_details["gstin"])
-      |> Map.put("gst_category", "Registered Regular")
-    end
+    payload =
+      if gstin in ["", nil] do
+        payload
+      else
+        Map.put(payload, "gstin", gstin)
+        |> Map.put("gst_category", "Registered Regular")
+      end
 
     case Tesla.put(@client, erp_url, payload, headers: headers()) do
       {:ok, %Tesla.Env{status: 200}} ->
@@ -107,6 +111,7 @@ defmodule Glific.ERP do
     end
   end
 
+  @spec create_or_update_address(map(), String.t()) :: :ok | {:error, String.t()}
   defp create_or_update_address(registration, customer_name) do
     billing_exists? = address_exists?(customer_name, "Billing")
     permanent_exists? = address_exists?(customer_name, "Permanent/Registered")
@@ -130,6 +135,7 @@ defmodule Glific.ERP do
     end
   end
 
+  @spec address_exists?(String.t(), String.t()) :: boolean()
   defp address_exists?(customer_name, address_type) do
     encoded_customer_name = URI.encode(customer_name)
     erp_url = "#{@erp_base_url}/Address/#{encoded_customer_name}-#{address_type}"
@@ -147,12 +153,14 @@ defmodule Glific.ERP do
     end
   end
 
+  @spec create_address(map(), String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
   defp create_address(address, address_type, customer_name) do
     erp_url = "#{@erp_base_url}/Address"
     payload = build_payload(address, address_type, customer_name)
     create_or_log_error(erp_url, payload)
   end
 
+  @spec update_address(map(), String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
   defp update_address(address, address_type, customer_name) do
     encoded_customer_name = URI.encode(customer_name)
     erp_url = "#{@erp_base_url}/Address/#{encoded_customer_name}-#{address_type}"
@@ -160,6 +168,7 @@ defmodule Glific.ERP do
     update_or_log_error(erp_url, payload)
   end
 
+  @spec create_contact(map(), String.t()) :: {:ok, map()} | {:error, String.t()}
   defp create_contact(registration, customer_name) do
     erp_url = "#{@erp_base_url}/Contact"
 
@@ -201,6 +210,7 @@ defmodule Glific.ERP do
     end
   end
 
+  @spec build_payload(map(), String.t(), String.t()) :: map()
   defp build_payload(address, address_type, customer_name) do
     %{
       "address_type" => address_type,
@@ -214,6 +224,7 @@ defmodule Glific.ERP do
     }
   end
 
+  @spec create_or_log_error(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
   defp create_or_log_error(url, payload) do
     case Tesla.post(@client, url, payload, headers: headers()) do
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
@@ -229,6 +240,7 @@ defmodule Glific.ERP do
     end
   end
 
+  @spec update_or_log_error(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
   defp update_or_log_error(url, payload) do
     case Tesla.put(@client, url, payload, headers: headers()) do
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
@@ -244,6 +256,7 @@ defmodule Glific.ERP do
     end
   end
 
+  @spec compare_addresses(map(), map()) :: boolean()
   defp compare_addresses(current_address, registered_address) do
     Enum.all?(Map.keys(current_address), fn key ->
       Map.get(current_address, key) == Map.get(registered_address, key)
