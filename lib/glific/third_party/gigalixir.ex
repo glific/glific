@@ -9,7 +9,7 @@ defmodule Glific.Gigalixir do
   require Logger
 
   plug Tesla.Middleware.BaseUrl,
-       "#{@base_url}/#{Application.get_env(:glific, :gigalixir_app_name)}"
+       "#{@base_url}/#{Application.get_env(:glific, :gigalixir_app_name)}/domains"
 
   plug Tesla.Middleware.Headers, [{"Content-Type", "application/json"}]
 
