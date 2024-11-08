@@ -232,6 +232,30 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
+  @spec retrieve_vector_store(String.t()) :: {:ok, map()} | {:error, String.t()}
+  def retrieve_vector_store(vector_store_id) do
+    url = @endpoint <> "/vector_stores/#{vector_store_id}"
+
+    get(url, headers: headers())
+    |> parse_response()
+  end
+
+  @spec retrieve_vector_store_files(String.t()) :: {:ok, map()} | {:error, String.t()}
+  def retrieve_vector_store_files(vector_store_id) do
+    url = @endpoint <> "/vector_stores/#{vector_store_id}/files"
+
+    get(url, headers: headers())
+    |> parse_response()
+  end
+
+  @spec retrieve_file(String.t()) :: {:ok, map()} | {:error, String.t()}
+  def retrieve_file(file_id) do
+    url = @endpoint <> "/files/#{file_id}"
+
+    get(url, headers: headers())
+    |> parse_response()
+  end
+
   @spec parse_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t()}
   defp parse_response({:ok, %{body: resp_body, status: status}})
        when status >= 200 and status < 300 do

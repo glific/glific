@@ -2,6 +2,7 @@ defmodule Glific.Filesearch do
   @moduledoc """
   Main module to interact with filesearch
   """
+  alias Ecto.Multi
   alias Glific.Filesearch.Assistant
 
   alias Glific.{
@@ -173,14 +174,106 @@ defmodule Glific.Filesearch do
     end
   end
 
+  @spec sync_assistant(String.t()) :: {:ok, map()} | {:error, any()}
   def sync_assistant(assistant_id) do
-    # retrieve assistant
-    # if it has vector_store_id
-    # then create_vector_store
-    # - retrive vs
-    # - retrieve vs file
-    # - retrieve filenames
-    # cretate assistant with the vs_id or not.
+    with {:ok, assistant_data} <- ApiClient.retrieve_assistant(assistant_id),
+         {:ok, _} <- filesearch_enabled?(assistant_data) do
+      vector_store_id = List.first(assistant_data.tool_resources.file_search.vector_store_ids)
+
+      if not is_nil(vector_store_id) do
+        with {:ok, vector_store_data} <- sync_vector_store(vector_store_id) do
+          create_filesearch_artifacts_on_sync(assistant_data, vector_store_data)
+        end
+      else
+        {:ok, _assistant} =
+          Assistant.create_assistant(
+            %{
+              assistant_id: assistant_id,
+              inserted_at: DateTime.from_unix!(assistant_data.created_at),
+              organization_id: Repo.get_organization_id()
+            }
+            |> Map.merge(assistant_data)
+          )
+      end
+    end
+  end
+
+  defp filesearch_enabled?(%{tool_resources: %{file_search: _}}), do: {:ok, "enabled"}
+
+  defp filesearch_enabled?(_),
+    do: {:error, "Please enable filesearch for this assistant"}
+
+  defp sync_vector_store(vector_store_id) do
+    with {:ok, vector_store_data} <- ApiClient.retrieve_vector_store(vector_store_id),
+         {:ok, %{data: vector_store_files}} <-
+           ApiClient.retrieve_vector_store_files(vector_store_id) do
+      case retrieve_vector_store_files(vector_store_files) do
+        :error ->
+          {:error, "Failed to retrieve file"}
+
+        vs_files_info ->
+          {:ok, Map.put(vector_store_data, :vs_files_info, vs_files_info)}
+      end
+    end
+  end
+
+  # We halt and error out, if we get an api error while retrieving the file details
+  defp retrieve_vector_store_files(vector_store_files) do
+    Enum.reduce_while(vector_store_files, %{}, fn vs_file, file_info ->
+      if vs_file.status in ["completed", "pending"] do
+        case ApiClient.retrieve_file(vs_file.id) do
+          {:ok, file} ->
+            {:cont,
+             Map.put(file_info, file.id, %{
+               file_id: file.id,
+               filename: file.filename,
+               uploaded_at: DateTime.from_unix!(file.created_at) |> DateTime.to_iso8601()
+             })}
+
+          _ ->
+            {:halt, :error}
+        end
+      else
+        {:cont, file_info}
+      end
+    end)
+  end
+
+  defp create_filesearch_artifacts_on_sync(assistant_data, vector_store_data) do
+    Multi.new()
+    |> Multi.run(:create_assistant, fn _, _ ->
+      Assistant.create_assistant(
+        %{
+          assistant_id: assistant_data.assistant_id,
+          inserted_at: DateTime.from_unix!(assistant_data.created_at),
+          organization_id: Repo.get_organization_id()
+        }
+        |> Map.merge(assistant_data)
+      )
+    end)
+    |> Multi.run(:create_vector_store, fn _, _ ->
+      VectorStore.create_vector_store(
+        %{
+          vector_store_id: vector_store_data.vector_store_id,
+          inserted_at: DateTime.from_unix!(vector_store_data.created_at),
+          organization_id: Repo.get_organization_id(),
+          size: vector_store_data.usage_bytes,
+          files: vector_store_data.vs_files_info
+        }
+        |> Map.merge(vector_store_data)
+      )
+    end)
+    |> Multi.run(:update_assistant, fn _, _ ->
+      Assistant.create_assistant(
+        %{
+          assistant_id: assistant_data.assistant_id,
+          inserted_at: DateTime.from_unix!(assistant_data.created_at),
+          organization_id: Repo.get_organization_id()
+        }
+        |> Map.merge(assistant_data)
+      )
+    end)
+    |> Repo.transaction()
   end
 
   @spec create_vector_store(map()) :: {:ok, map()} | {:error, any()}
