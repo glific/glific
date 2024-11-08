@@ -253,6 +253,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     url = @endpoint <> "/files/#{file_id}"
 
     get(url, headers: headers())
+    |> IO.inspect()
     |> parse_response()
   end
 
