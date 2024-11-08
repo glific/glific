@@ -25,9 +25,10 @@ defmodule Glific.ERP do
 
   @spec get_erp_auth_token() :: String.t()
   defp get_erp_auth_token do
-    api_key = Application.get_env(:glific, :ERP_API_KEY)
-    secret = Application.get_env(:glific, :ERP_SECRET)
-    "#{api_key}:#{secret}"
+    "374a2098cd39e2b:6e6476842aa899e"
+    # api_key = Application.get_env(:glific, :ERP_API_KEY)
+    # secret = Application.get_env(:glific, :ERP_SECRET)
+    # "#{api_key}:#{secret}"
   end
 
   @doc """
@@ -74,6 +75,7 @@ defmodule Glific.ERP do
       "custom_chatbot_number" => registration.platform_details["phone"],
       "custom_gupshup_api_key" => registration.platform_details["api_key"],
       "custom_app_name" => registration.platform_details["app_name"],
+      "custom_start_date" => DateTime.utc_now() |> DateTime.to_date() |> Date.to_iso8601(),
       "custom_product_detail" => [
         %{
           "product" => "Glific",
@@ -97,7 +99,7 @@ defmodule Glific.ERP do
           {:error, reason} ->
             {:error, reason}
 
-          {:ok, _result} ->
+          :ok ->
             create_contact(registration, customer_name)
         end
 
@@ -120,17 +122,25 @@ defmodule Glific.ERP do
     registered_address = registration.org_details["registered_address"]
     are_addresses_same = compare_addresses(current_address, registered_address)
 
-    if billing_exists? do
-      update_address(current_address, "Billing", customer_name)
-    else
-      create_address(current_address, "Billing", customer_name)
+    case (if billing_exists? do
+            update_address(current_address, "Billing", customer_name)
+          else
+            create_address(current_address, "Billing", customer_name)
+          end) do
+      {:ok, _} -> :ok
+      {:error, reason} -> {:error, reason}
     end
 
-    if not are_addresses_same do
-      if permanent_exists? do
-        update_address(registered_address, "Permanent/Registered", customer_name)
-      else
-        create_address(registered_address, "Permanent/Registered", customer_name)
+    if are_addresses_same do
+      :ok
+    else
+      case (if permanent_exists? do
+              update_address(registered_address, "Permanent/Registered", customer_name)
+            else
+              create_address(registered_address, "Permanent/Registered", customer_name)
+            end) do
+        {:ok, _} -> :ok
+        {:error, reason} -> {:error, reason}
       end
     end
   end

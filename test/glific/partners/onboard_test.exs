@@ -43,6 +43,18 @@ defmodule Glific.OnboardTest do
       %{method: :put, url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Billing"} ->
         {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
 
+      %{
+        method: :post,
+        url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Permanent/Registered"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+
+      %{
+        method: :put,
+        url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Permanent/Registered"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+
       %{method: :get} ->
         %Tesla.Env{
           status: 200,
@@ -503,30 +515,30 @@ defmodule Glific.OnboardTest do
       assert !is_nil(email)
 
       valid_params = %{
+        "org_id" => 8,
         "registration_id" => reg_id,
         "org_details" => %{
           "gstin" => "",
           "registered_address" => %{
-            "address_title" => "first",
             "address_type" => "Billing",
             "address_line1" => "123 Main Street",
             "address_line2" => "Suite 100",
             "city" => "NY",
             "state" => "Uttarakhand",
             "country" => "India",
-            "pincode" => "264401"
+            "pincode" => "262402"
           },
           "current_address" => %{
-            "address_title" => "first",
             "address_type" => "Billing",
-            "address_line1" => "123 Main Street",
-            "address_line2" => "Suite 100",
+            "address_line1" => "12345 Main Street",
+            "address_line2" => "Suite 1002",
             "city" => "NY",
             "state" => "Uttarakhand",
             "country" => "India",
-            "pincode" => "264401"
+            "pincode" => "262402"
           }
         },
+        "billing_frequency" => "Monthly",
         "finance_poc" => %{
           "name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email(),
@@ -535,10 +547,17 @@ defmodule Glific.OnboardTest do
         },
         "submitter" => %{
           "first_name" => Faker.Person.name() |> String.slice(0, 10),
-          "email" => Faker.Internet.email()
+          "email" => Faker.Internet.email(),
+          "designation" => "designation"
         },
+        "signing_authority" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "designation"
+        },
+        "has_submitted" => true,
         "terms_agreed" => true,
-        "has_submitted" => true
+        "support_staff_account" => true
       }
 
       assert %{

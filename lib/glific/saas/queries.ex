@@ -521,6 +521,7 @@ defmodule Glific.Saas.Queries do
     |> validate_address_fields(current_address, :current_address)
   end
 
+  @spec validate_address_fields(map(), map(), atom()) :: map()
   defp validate_address_fields(result, address_map, field_prefix) do
     result
     |> validate_text_field(address_map["address_line1"], :"#{field_prefix}_line1", {1, 300})

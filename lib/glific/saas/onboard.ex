@@ -232,23 +232,25 @@ defmodule Glific.Saas.Onboard do
 
   @spec process_on_submission(map(), Organization.t(), Registration.t()) :: map()
   defp process_on_submission(result, org, %{has_submitted: true} = registration) do
-    with %{is_valid: true} = result <- Queries.eligible_for_submission?(result, registration) do
-      case ERP.update_organization(registration) do
-        {:ok, erp_response} ->
-          notify_on_submission(org, registration)
-          notify_saas_team(org)
+    with %{is_valid: true} = result <- Queries.eligible_for_submission?(result, registration),
+         {:ok, erp_response} <- ERP.update_organization(registration) do
+      notify_on_submission(org, registration)
+      notify_saas_team(org)
 
-          Task.start(fn ->
-            Notion.update_table_properties(registration)
-            |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
-          end)
+      Task.start(fn ->
+        Notion.update_table_properties(registration)
+        |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
+      end)
 
-          Map.put(result, :erp_response, erp_response)
+      Map.put(result, :erp_response, erp_response)
+    else
+      {:error, erp_error} ->
+        Map.put(result, :is_valid, false)
+        |> Map.put(:error, erp_error)
 
-        {:error, erp_error} ->
-          Map.put(result, :is_valid, false)
-          |> Map.put(:error, erp_error)
-      end
+      _ ->
+        Map.put(result, :is_valid, false)
+        |> Map.put(:error, "Unexpected response from ERP update")
     end
   end
 

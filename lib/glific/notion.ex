@@ -276,13 +276,12 @@ defmodule Glific.Notion do
   end
 
   @spec format_address(nil | map()) :: String.t()
-  def format_address(address) when is_map(address) do
+  defp format_address(address) when is_map(address) do
     address
-    |> Enum.map(fn {key, value} -> "#{key}: #{value}" end)
-    |> Enum.join(", ")
+    |> Enum.map_join(", ", fn {key, value} -> "#{key}: #{value}" end)
   end
 
-  def format_address(nil), do: ""
+  defp format_address(nil), do: ""
 
   # simple function to handle FunctionClauseError when date conversion fail to return empty string
   @spec convert(Registration.t()) :: String.t()
