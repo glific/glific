@@ -99,10 +99,10 @@ defmodule Glific.Processor.ConsumerFlowTest do
     sender = Repo.get_by(Contact, %{name: "Chrissy Cron"})
 
     message =
-      Fixtures.message_fixture(%{body: "template:Language Workflow", sender_id: sender.id})
+      Fixtures.message_fixture(%{body: "template:Direct with GPT", sender_id: sender.id})
       |> Repo.preload([:contact])
 
-    ConsumerFlow.process_message({message, state}, "templatelanguageworkflow")
+    ConsumerFlow.process_message({message, state}, "templatedirectwithgpt")
 
     new_message_count = Repo.aggregate(Message, :count)
     assert new_message_count > message_count + 1

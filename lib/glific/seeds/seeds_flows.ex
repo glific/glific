@@ -312,22 +312,19 @@ defmodule Glific.Seeds.SeedsFlows do
         Map.merge(acc, %{name => interactive_template.id})
       end)
 
-    Enum.with_index(data)
-    |> Enum.each(fn {flow_item, index} ->
-      is_template = index < 4
-
-      flow(flow_item, organization,
+    Enum.each(
+      data,
+      &flow(&1, organization,
         uuid_map: uuid_map,
         id_map: flow_labels_id_map,
-        label_map: interactive_template_map,
-        is_template: is_template
+        label_map: interactive_template_map
       )
-    end)
+    )
   end
 
   @spec flow(tuple(), Organization.t(), Keyword.t()) :: nil
   defp flow({name, keywords, uuid, ignore_keywords, file}, organization, opts) do
-    is_template = Keyword.get(opts, :is_template, false)
+    is_template = name in ["Direct with GPT", "Clear_Variables flow"]
 
     f =
       Repo.insert!(%Flow{
@@ -411,7 +408,9 @@ defmodule Glific.Seeds.SeedsFlows do
       multiple_profile: generate_uuid(organization, "3c50b79a-0420-4ced-bcd7-f37e0577cca6"),
       multiple_profile_creation:
         generate_uuid(organization, "15666d20-7ba9-4698-adf1-50e91cee2b6b"),
-      ab_test: generate_uuid(organization, "5f3fd8c6-2ec3-4945-8e7c-314db8c04c31")
+      ab_test: generate_uuid(organization, "5f3fd8c6-2ec3-4945-8e7c-314db8c04c31"),
+      clear_var: generate_uuid(organization, "3ac6ec5e-041a-4b0f-9dad-9b2b9a9545ce"),
+      direct_gpt: generate_uuid(organization, "0d51efbb-a8b4-4c32-828c-47ac915da479")
     }
 
     data = [
@@ -427,19 +426,11 @@ defmodule Glific.Seeds.SeedsFlows do
        "multiple_profile.json"},
       {"Multiple Profile Creation Flow", ["profilecreation"], uuid_map.multiple_profile_creation,
        false, "multiple_profile_creation.json"},
-      {"AB Test Workflow", ["abtest"], uuid_map.ab_test, false, "ab_test.json"}
+      {"AB Test Workflow", ["abtest"], uuid_map.ab_test, false, "ab_test.json"},
+      {"Clear_Variables flow", [], uuid_map.clear_var, false, "clear_var.json"},
+      {"Direct with GPT", [], uuid_map.direct_gpt, false, "direct_gpt.json"}
     ]
 
     {uuid_map, data}
-  end
-
-  @doc false
-  @spec seed_flows([Organization.t()]) :: :ok
-  def seed_flows([organization]) do
-    Glific.Repo.put_organization_id(organization.id)
-    {opt_uuid_map, opt_data} = get_opt_data(organization)
-
-    SeedsDev.seed_optin_interactives(organization)
-    add_flow(organization, opt_data, opt_uuid_map)
   end
 end
