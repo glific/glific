@@ -1,11 +1,11 @@
 defmodule GlificWeb.Resolvers.Helper do
   @moduledoc """
-  Helper funcations for GQL resolvers
+  Helper functions for GQL resolvers
   """
 
   @doc """
-   Will use this helper funcation to add the organization in into the
-   filters for all the list and count funcations
+   Will use this helper function to add the organization in into the
+   filters for all the list and count functions
   """
   @spec add_org_filter(map(), map()) :: map()
   def add_org_filter(args, %{context: %{current_user: current_user}}) do

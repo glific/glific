@@ -1,0 +1,55 @@
+meta {
+  name: Get Assistant
+  type: graphql
+  seq: 13
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  Authorization: {{auth_token}}
+}
+
+body:graphql {
+  query Assistant($id: ID!) {
+    assistant(id: $id) {
+      assistant {
+        id
+        name
+        assistant_id,
+     		model
+        instructions
+        temperature
+        vector_store {
+          id
+          vector_store_id
+          files {
+            id
+            name
+            uploaded_at
+          }
+          size
+          status
+        }
+        inserted_at
+        updated_at
+      }
+  
+       errors {
+        key
+        message
+      }
+      
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": 1
+  }
+}

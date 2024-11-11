@@ -1,0 +1,52 @@
+meta {
+  name: List Assistants
+  type: graphql
+  seq: 14
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  Authorization: {{auth_token}}
+}
+
+body:graphql {
+  query Assistants($filter: AssistantFilter, $opts: Opts) {
+    Assistants(filter: $filter, opts: $opts) {
+        id
+        name
+        assistant_id,
+     		model
+        instructions
+        temperature
+        vector_store {
+          id
+          vector_store_id
+          files {
+            id
+            name
+            uploaded_at
+          }
+        }
+        inserted_at
+        updated_at
+      
+      }
+    }
+  
+}
+
+body:graphql:vars {
+  {
+    "opts": {
+      "order": "DESC"
+    },
+    "filter": {
+     
+    }
+  }
+}

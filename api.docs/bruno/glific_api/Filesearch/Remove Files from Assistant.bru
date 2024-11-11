@@ -1,0 +1,54 @@
+meta {
+  name: Remove Files from Assistant
+  type: graphql
+  seq: 12
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  Authorization: {{auth_token}}
+}
+
+body:graphql {
+  mutation RemoveAssistantFile($id: ID!, $file_id: String!) {
+    RemoveAssistantFile(id: $id, file_id: $file_id) {
+      assistant {
+        id
+        name
+        assistant_id,
+     		model
+        instructions
+        temperature
+        vector_store {
+          id
+          vector_store_id
+          files {
+            id
+            name
+            uploaded_at
+          }
+        }
+        inserted_at
+        updated_at
+      }
+      
+      errors {
+        key
+        message
+      }
+    }
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "file_id": "file-W0RSFEk899NDEyZQfwAi2mM9",
+    "id": "1"
+  }
+}
