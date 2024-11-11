@@ -58,7 +58,7 @@ defmodule Glific.Dialogflow.SessionsTest do
     :ok
   end
 
-  ## We will come back on this one after completing the create credentials funcationality
+  ## We will come back on this one after completing the create credentials functionality
   test "detect_intent/2 will add the message to queue" do
     with_mock(
       Goth.Token,

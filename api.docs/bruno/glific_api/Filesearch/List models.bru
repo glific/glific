@@ -1,0 +1,32 @@
+meta {
+  name: List models
+  type: graphql
+  seq: 15
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  Authorization: {{auth_token}}
+}
+
+body:graphql {
+  query{
+    ListOpenaiModels
+  }
+}
+
+body:graphql:vars {
+  {
+    "opts": {
+      "order": "DESC"
+    },
+    "filter": {
+     
+    }
+  }
+}

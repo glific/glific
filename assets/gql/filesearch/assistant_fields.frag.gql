@@ -1,0 +1,28 @@
+
+fragment AssistantFields on AssistantResult {
+  assistant {
+    id
+    name
+    assistant_id
+    temperature
+    vector_store {
+      id
+      vector_store_id
+      name
+      files {
+        id
+        name
+        uploaded_at
+      }
+    }
+    inserted_at
+    updated_at
+  }
+}
+
+fragment ErrorFields on AssistantResult {
+  errors {
+    key
+    message
+  }
+}
