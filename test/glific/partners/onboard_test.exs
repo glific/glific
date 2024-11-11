@@ -19,7 +19,7 @@ defmodule Glific.OnboardTest do
   }
 
   @valid_attrs %{
-    "name" => "First Organization",
+    "name" => "First",
     "phone" => "+911234567890",
     "api_key" => "fake api key",
     "app_name" => "fake app name",
@@ -34,6 +34,27 @@ defmodule Glific.OnboardTest do
     ExVCR.Config.cassette_library_dir("test/support/ex_vcr")
 
     Tesla.Mock.mock_global(fn
+      %{method: :get, url: "https://t4d-erp.frappe.cloud/api/resource/Customer/First"} ->
+        {:ok, %Tesla.Env{status: 200, body: %{data: %{customer_name: "First"}}}}
+
+      %{method: :put, url: "https://t4d-erp.frappe.cloud/api/resource/Customer/First"} ->
+        {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+
+      %{method: :put, url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Billing"} ->
+        {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+
+      %{
+        method: :post,
+        url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Permanent/Registered"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+
+      %{
+        method: :put,
+        url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Permanent/Registered"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+
       %{method: :get} ->
         %Tesla.Env{
           status: 200,
@@ -178,10 +199,7 @@ defmodule Glific.OnboardTest do
 
   describe "update_registration/1" do
     setup do
-      with_mock(
-        GcsWorker,
-        upload_media: fn _, _, _ -> {:ok, %{url: "url"}} end
-      ) do
+      with_mock(GcsWorker, upload_media: fn _, _, _ -> {:ok, %{url: "url"}} end) do
         attrs =
           @valid_attrs
           |> Map.put("shortcode", "new_glific")
@@ -259,7 +277,8 @@ defmodule Glific.OnboardTest do
 
       assert %{
                messages: %{
-                 billing_frequency: "Value should be one of yearly, monthly, or quarterly.",
+                 billing_frequency:
+                   "Value should be one of Monthly , Quarterly, Half-Yearly, Annually.",
                  finance_poc_name: "Field cannot be more than 25 letters.",
                  finance_poc_designation: "Field cannot be empty.",
                  finance_poc_email: "Email is not valid.",
@@ -273,7 +292,7 @@ defmodule Glific.OnboardTest do
     test "update_registration, valid params", %{org: org, registration_id: reg_id} do
       valid_params = %{
         "registration_id" => reg_id,
-        "billing_frequency" => "yearly",
+        "billing_frequency" => "Annually",
         "finance_poc" => %{
           "name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email(),
@@ -281,7 +300,7 @@ defmodule Glific.OnboardTest do
           "phone" => Phone.PtBr.phone()
         },
         "submitter" => %{
-          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "first_name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email()
         }
       }
@@ -293,8 +312,8 @@ defmodule Glific.OnboardTest do
                Onboard.update_registration(valid_params, org)
 
       {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
-      assert reg.billing_frequency == "yearly"
-      assert %{"name" => _, "email" => _} = reg.submitter
+      assert reg.billing_frequency == "Annually"
+      assert %{"first_name" => _, "email" => _} = reg.submitter
       assert %{"name" => _, "email" => _, "phone" => _} = reg.finance_poc
       assert %{email: nil} = Partners.get_organization!(org.id)
     end
@@ -302,7 +321,7 @@ defmodule Glific.OnboardTest do
     test "update_registration, valid params in map", %{org: org, registration_id: reg_id} do
       valid_params = %{
         "registration_id" => reg_id,
-        "billing_frequency" => "yearly",
+        "billing_frequency" => "Annually",
         "finance_poc" => %{
           "name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email(),
@@ -310,7 +329,7 @@ defmodule Glific.OnboardTest do
           "phone" => Phone.PtBr.phone()
         },
         "submitter" => %{
-          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "first_name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email()
         },
         "terms_agreed" => true
@@ -323,8 +342,8 @@ defmodule Glific.OnboardTest do
                Onboard.update_registration(valid_params, org)
 
       {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
-      assert reg.billing_frequency == "yearly"
-      assert %{"name" => _, "email" => _} = reg.submitter
+      assert reg.billing_frequency == "Annually"
+      assert %{"first_name" => _, "email" => _} = reg.submitter
       assert %{"name" => _, "email" => _, "phone" => _} = reg.finance_poc
       assert %{email: nil} = Partners.get_organization!(org.id)
     end
@@ -332,7 +351,7 @@ defmodule Glific.OnboardTest do
     test "update_registration, when terms_agreed is false", %{org: org, registration_id: reg_id} do
       valid_params = %{
         "registration_id" => reg_id,
-        "billing_frequency" => "yearly",
+        "billing_frequency" => "Annually",
         "finance_poc" => %{
           "name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email(),
@@ -340,7 +359,7 @@ defmodule Glific.OnboardTest do
           "phone" => Phone.PtBr.phone()
         },
         "submitter" => %{
-          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "first_name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email()
         },
         "terms_agreed" => false
@@ -397,7 +416,7 @@ defmodule Glific.OnboardTest do
           "phone" => Phone.PtBr.phone()
         },
         "submitter" => %{
-          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "first_name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email()
         }
       }
@@ -496,7 +515,30 @@ defmodule Glific.OnboardTest do
       assert !is_nil(email)
 
       valid_params = %{
+        "org_id" => 8,
         "registration_id" => reg_id,
+        "org_details" => %{
+          "gstin" => "",
+          "registered_address" => %{
+            "address_type" => "Billing",
+            "address_line1" => "123 Main Street",
+            "address_line2" => "Suite 100",
+            "city" => "NY",
+            "state" => "Uttarakhand",
+            "country" => "India",
+            "pincode" => "262402"
+          },
+          "current_address" => %{
+            "address_type" => "Billing",
+            "address_line1" => "12345 Main Street",
+            "address_line2" => "Suite 1002",
+            "city" => "NY",
+            "state" => "Uttarakhand",
+            "country" => "India",
+            "pincode" => "262402"
+          }
+        },
+        "billing_frequency" => "Monthly",
         "finance_poc" => %{
           "name" => Faker.Person.name() |> String.slice(0, 10),
           "email" => Faker.Internet.email(),
@@ -504,11 +546,18 @@ defmodule Glific.OnboardTest do
           "phone" => Phone.PtBr.phone()
         },
         "submitter" => %{
-          "name" => Faker.Person.name() |> String.slice(0, 10),
-          "email" => Faker.Internet.email()
+          "first_name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "designation"
         },
+        "signing_authority" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "designation"
+        },
+        "has_submitted" => true,
         "terms_agreed" => true,
-        "has_submitted" => true
+        "support_staff_account" => true
       }
 
       assert %{

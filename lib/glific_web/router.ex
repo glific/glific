@@ -73,7 +73,6 @@ defmodule GlificWeb.Router do
     post("/onboard/setup", OnboardController, :setup)
     post("/onboard/update-registration-details", OnboardController, :update_registration)
     post("/onboard/reachout", OnboardController, :reachout)
-    get("/onboard/organizations", OnboardController, :fetch_erp_organizations)
   end
 
   # Enables LiveDashboard only for development

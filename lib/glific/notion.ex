@@ -114,7 +114,7 @@ defmodule Glific.Notion do
         "rich_text" => [
           %{
             "type" => "text",
-            "text" => %{"content" => "#{registration.org_details["current_address"]}"}
+            "text" => %{"content" => format_address(registration.org_details["current_address"])}
           }
         ]
       },
@@ -123,7 +123,9 @@ defmodule Glific.Notion do
         "rich_text" => [
           %{
             "type" => "text",
-            "text" => %{"content" => "#{registration.org_details["registered_address"]}"}
+            "text" => %{
+              "content" => format_address(registration.org_details["registered_address"])
+            }
           }
         ]
       },
@@ -272,6 +274,14 @@ defmodule Glific.Notion do
       }
     }
   end
+
+  @spec format_address(nil | map()) :: String.t()
+  defp format_address(address) when is_map(address) do
+    address
+    |> Enum.map_join(", ", fn {key, value} -> "#{key}: #{value}" end)
+  end
+
+  defp format_address(nil), do: ""
 
   # simple function to handle FunctionClauseError when date conversion fail to return empty string
   @spec convert(Registration.t()) :: String.t()
