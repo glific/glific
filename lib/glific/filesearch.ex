@@ -3,10 +3,10 @@ defmodule Glific.Filesearch do
   Main module to interact with filesearch
   """
 
-  alias Glific.Filesearch.Assistant
   alias Ecto.Multi
 
   alias Glific.{
+    Filesearch.Assistant,
     Filesearch.VectorStore,
     OpenAI.Filesearch.ApiClient,
     Repo
@@ -177,26 +177,28 @@ defmodule Glific.Filesearch do
     end
   end
 
-  @spec import_assistant(String.t()) :: {:ok, map()} | {:error, any()}
-  def import_assistant(assistant_id) do
+  @doc """
+  Imports existing assistants from openAI to Glific platform.
+  """
+  @spec import_assistant(String.t(), integer()) :: {:ok, map()} | {:error, any()}
+  def import_assistant(assistant_id, org_id) do
+    Repo.put_process_state(org_id)
+
     with {:ok, assistant_data} <- ApiClient.retrieve_assistant(assistant_id),
          {:ok, _} <- filesearch_enabled?(assistant_data) do
       vector_store_id = List.first(assistant_data.tool_resources.file_search.vector_store_ids)
 
-      if not is_nil(vector_store_id) do
-        with {:ok, vector_store_data} <- import_vector_store(vector_store_id) do
-          create_filesearch_artifacts_on_import(assistant_data, vector_store_data)
-        end
+      if is_nil(vector_store_id) do
+        Assistant.create_assistant(
+          %{
+            assistant_id: assistant_id,
+            inserted_at: DateTime.from_unix!(assistant_data.created_at),
+            organization_id: Repo.get_organization_id()
+          }
+          |> Map.merge(assistant_data)
+        )
       else
-        {:ok, _assistant} =
-          Assistant.create_assistant(
-            %{
-              assistant_id: assistant_id,
-              inserted_at: DateTime.from_unix!(assistant_data.created_at),
-              organization_id: Repo.get_organization_id()
-            }
-            |> Map.merge(assistant_data)
-          )
+        create_assistant_and_vector_store(vector_store_id, assistant_data)
       end
     end
   end
@@ -310,12 +312,15 @@ defmodule Glific.Filesearch do
 
   defp add_vector_store_ids(params), do: {:ok, params}
 
+  @spec filesearch_enabled?(map()) :: {:ok, String.t()} | {:error, String.t()}
   defp filesearch_enabled?(%{tool_resources: %{file_search: _}}), do: {:ok, "enabled"}
 
   defp filesearch_enabled?(_),
     do: {:error, "Please enable filesearch for this assistant"}
 
-  defp import_vector_store(vector_store_id) do
+  @spec create_assistant_and_vector_store(String.t(), map()) ::
+          {:ok, map()} | {:error, String.t(0)}
+  defp create_assistant_and_vector_store(vector_store_id, assistant_data) do
     with {:ok, vector_store_data} <- ApiClient.retrieve_vector_store(vector_store_id),
          {:ok, %{data: vector_store_files}} <-
            ApiClient.retrieve_vector_store_files(vector_store_id) do
@@ -324,12 +329,15 @@ defmodule Glific.Filesearch do
           {:error, "Failed to retrieve file"}
 
         vs_files_info ->
-          {:ok, Map.put(vector_store_data, :vs_files_info, vs_files_info)}
+          vector_store_data = Map.put(vector_store_data, :vs_files_info, vs_files_info)
+          create_filesearch_artifacts_on_import(assistant_data, vector_store_data)
       end
     end
   end
 
   # We halt and error out, if we get an api error while retrieving the file details
+  # Since we don't want partial data in DB
+  @spec retrieve_vector_store_files(list()) :: map() | :error
   defp retrieve_vector_store_files(vector_store_files) do
     Enum.reduce_while(vector_store_files, %{}, fn vs_file, file_info ->
       if vs_file.status in ["completed", "pending"] do
@@ -353,16 +361,6 @@ defmodule Glific.Filesearch do
 
   defp create_filesearch_artifacts_on_import(assistant_data, vector_store_data) do
     Multi.new()
-    |> Multi.run(:create_assistant, fn _, _ ->
-      Assistant.create_assistant(
-        %{
-          assistant_id: assistant_data.id,
-          inserted_at: DateTime.from_unix!(assistant_data.created_at),
-          organization_id: Repo.get_organization_id()
-        }
-        |> Map.merge(assistant_data)
-      )
-    end)
     |> Multi.run(:create_vector_store, fn _, _ ->
       VectorStore.create_vector_store(
         %{
@@ -375,22 +373,23 @@ defmodule Glific.Filesearch do
         |> Map.merge(vector_store_data)
       )
     end)
-    |> Multi.run(:update_assistant, fn _,
-                                       %{
-                                         create_assistant: assistant,
-                                         create_vector_store: vector_store
-                                       } ->
-      Assistant.update_assistant(
-        assistant,
-        %{vector_store_id: vector_store.id}
+    |> Multi.run(:create_assistant, fn _, %{create_vector_store: vector_store} ->
+      Assistant.create_assistant(
+        %{
+          assistant_id: assistant_data.id,
+          inserted_at: DateTime.from_unix!(assistant_data.created_at),
+          organization_id: Repo.get_organization_id(),
+          vector_store_id: vector_store.id
+        }
+        |> Map.merge(assistant_data)
       )
     end)
     |> Repo.transaction()
     |> case do
-      {:ok, %{update_assistant: assistant}} ->
+      {:ok, %{create_assistant: assistant}} ->
         {:ok, assistant}
 
-      {:error, _, err} ->
+      {:error, _, err, _} ->
         Logger.error("Error on importing assistant due to #{inspect(err)}")
         {:error, "Error on importing assistant"}
     end

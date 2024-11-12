@@ -568,23 +568,24 @@ defmodule Glific.FilesearchTest do
     assert length(result.data["ListOpenaiModels"]) == 1
   end
 
-  @tag :import
-  test "import_assistant/1, invalid assistant" do
+  test "import_assistant/2, invalid assistant", attrs do
     Tesla.Mock.mock(fn
       %{method: :get} ->
         %Tesla.Env{
           status: 404,
           body: %{
-            message: "No assistant found with id 'asst_ljpFv60NIlSmXZdnVYHMNu'."
+            error: %{
+              message: "No assistant found with id 'asst_ljpFv60NIlSmXZdnVYHMNu'."
+            }
           }
         }
     end)
 
     {:error, "No assistant found" <> _} =
-      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNu")
+      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNu", attrs.user.organization_id)
   end
 
-  test "import_assistant/1, assistant not enabled filesearch" do
+  test "import_assistant/2, assistant not enabled filesearch", attrs do
     Tesla.Mock.mock(fn
       %{method: :get} ->
         %Tesla.Env{
@@ -608,10 +609,10 @@ defmodule Glific.FilesearchTest do
     end)
 
     {:error, "Please enable filesearch for this assistant"} =
-      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNu")
+      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNu", attrs.user.organization_id)
   end
 
-  test "import_assistant/1, valid assistant but without vector_store" do
+  test "import_assistant/2, valid assistant but without vector_store", attrs do
     Tesla.Mock.mock(fn
       %{method: :get} ->
         %Tesla.Env{
@@ -640,10 +641,11 @@ defmodule Glific.FilesearchTest do
        temperature: 1.0,
        assistant_id: "asst_ljpFv60NIlSmXZdnVYHMNuq2"
      }} =
-      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNu")
+      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2", attrs.user.organization_id)
   end
 
-  test "import_assistant/1, valid assistant and vector_store but vector_store api failure" do
+  test "import_assistant/2, valid assistant and vector_store but vector_store api failure",
+       attrs do
     Tesla.Mock.mock(fn
       %{method: :get, url: "https://api.openai.com/v1/assistants/" <> _} ->
         %Tesla.Env{
@@ -668,16 +670,19 @@ defmodule Glific.FilesearchTest do
         %Tesla.Env{
           status: 404,
           body: %{
-            message: "vector store fetch failed"
+            error: %{
+              message: "vector store fetch failed"
+            }
           }
         }
     end)
 
     {:error, "vector store fetch failed"} =
-      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNu")
+      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNu", attrs.user.organization_id)
   end
 
-  test "import_assistant/1, valid assistant and vector_store but vector_store_files api failure" do
+  test "import_assistant/2, valid assistant and vector_store but vector_store_files api failure",
+       attrs do
     Tesla.Mock.mock(fn
       %{method: :get, url: "https://api.openai.com/v1/assistants/" <> _} ->
         %Tesla.Env{
@@ -705,7 +710,9 @@ defmodule Glific.FilesearchTest do
         %Tesla.Env{
           status: 404,
           body: %{
-            message: "vector store file fetch failed"
+            error: %{
+              message: "vector store file fetch failed"
+            }
           }
         }
 
@@ -723,11 +730,11 @@ defmodule Glific.FilesearchTest do
         }
     end)
 
-    {:error, "vector store fetch failed"} =
-      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2")
+    {:error, "vector store file fetch failed"} =
+      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2", attrs.user.organization_id)
   end
 
-  test "import_assistant/1, valid assistant and vector_store but files api failure" do
+  test "import_assistant/2, valid assistant and vector_store but files api failure", attrs do
     Tesla.Mock.mock(fn
       %{method: :get, url: "https://api.openai.com/v1/assistants/" <> _} ->
         %Tesla.Env{
@@ -791,16 +798,18 @@ defmodule Glific.FilesearchTest do
         %Tesla.Env{
           status: 404,
           body: %{
-            message: "file fetch failed"
+            error: %{
+              message: "file fetch failed"
+            }
           }
         }
     end)
 
     {:error, "Failed to retrieve file"} =
-      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2")
+      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2", attrs.user.organization_id)
   end
 
-  test "import_assistant/1, valid assistant and vector_store" do
+  test "import_assistant/2, valid assistant and vector_store", attrs do
     Tesla.Mock.mock(fn
       %{method: :get, url: "https://api.openai.com/v1/assistants/" <> _} ->
         %Tesla.Env{
@@ -866,7 +875,7 @@ defmodule Glific.FilesearchTest do
           body: %{
             id: "file-sNDXUc9cysWhFDBF3ftsDnPB",
             filename: "Dev Policies.pdf",
-            bytes: 78063,
+            bytes: 78_063,
             object: "file",
             created_at: 1_731_062_487,
             purpose: "assistants"
@@ -875,11 +884,43 @@ defmodule Glific.FilesearchTest do
     end)
 
     {:ok, %Assistant{vector_store_id: vs_id}} =
-      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2")
+      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2", attrs.user.organization_id)
 
     assert is_integer(vs_id)
   end
 
-  # TODO: import_assistant, handling error on importing duplicate assistant
+  test "import_assistant/2, trying to import an assistant which exists in Glific", attrs do
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "asst_ljpFv60NIlSmXZdnVYHMNuq2",
+            name: "test-sync",
+            instructions: "",
+            description: nil,
+            metadata: %{},
+            object: "assistant",
+            model: "gpt-4o",
+            temperature: 1.0,
+            tool_resources: %{file_search: %{vector_store_ids: []}},
+            created_at: 1_730_961_252,
+            response_format: %{type: "text"},
+            top_p: 1.0
+          }
+        }
+    end)
 
+    {:ok,
+     %Assistant{
+       vector_store_id: nil,
+       name: "test-sync",
+       temperature: 1.0,
+       assistant_id: "asst_ljpFv60NIlSmXZdnVYHMNuq2"
+     }} =
+      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2", attrs.user.organization_id)
+
+    {:error, _} =
+      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2", attrs.user.organization_id)
+  end
 end
