@@ -105,7 +105,8 @@ defmodule Glific.StateTest do
     %{flow: %{free: free_flows, busy: busy_flows}} = State.state(1)
 
     # we have 13 flows in our dev seeder
-    assert length(free_flows) == 17
+    # two template flows
+    assert length(free_flows) == 19
     assert Enum.empty?(busy_flows)
   end
 

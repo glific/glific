@@ -126,17 +126,4 @@ defmodule Glific.Filesearch.Assistant do
     |> Assistant.changeset(attrs)
     |> Repo.update()
   end
-
-  # @spec filter_with(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
-  # defp filter_with(query, filter) do
-  #   query = Repo.filter_with(query, filter)
-
-  #   Enum.reduce(filter, query, fn
-  #     {:assistant_id, assistant_id}, query ->
-  #       from(q in query, where: q.assistant_id == ^assistant_id)
-
-  #     _, query ->
-  #       query
-  #   end)
-  # end
 end

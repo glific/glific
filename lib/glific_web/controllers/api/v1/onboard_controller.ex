@@ -4,7 +4,6 @@ defmodule GlificWeb.API.V1.OnboardController do
   """
 
   alias Glific.{
-    ERP,
     Partners,
     Partners.Organization,
     Repo,
@@ -16,7 +15,6 @@ defmodule GlificWeb.API.V1.OnboardController do
   alias Plug.Conn
 
   @doc false
-  @spec setup(Conn.t(), map()) :: Conn.t()
   def setup(conn, %{"token" => token} = params) do
     case Glific.verify_google_captcha(token) do
       {:ok, "success"} ->
@@ -36,7 +34,15 @@ defmodule GlificWeb.API.V1.OnboardController do
     case Partners.organization(org_id) do
       %Organization{root_user: root_user} = org ->
         Repo.put_current_user(root_user)
-        json(conn, Onboard.update_registration(params, org))
+        response = Onboard.update_registration(params, org)
+
+        if Map.get(response, :is_valid, true) do
+          json(conn, response)
+        else
+          conn
+          |> put_status(400)
+          |> json(%{error: %{status: 400, message: Map.get(response, :error)}})
+        end
 
       _ ->
         conn
@@ -55,21 +61,5 @@ defmodule GlificWeb.API.V1.OnboardController do
   @spec reachout(Conn.t(), map()) :: Conn.t()
   def reachout(conn, params) do
     json(conn, Onboard.reachout(params))
-  end
-
-  @doc """
-  Fetches the list of existing organizations from ERP.
-  """
-  @spec fetch_erp_organizations(Conn.t(), map()) :: Conn.t()
-  def fetch_erp_organizations(conn, _params) do
-    case ERP.fetch_organizations() do
-      {:ok, organizations} ->
-        json(conn, organizations)
-
-      {:error, error_message} ->
-        conn
-        |> put_status(:internal_server_error)
-        |> json(%{error: error_message})
-    end
   end
 end

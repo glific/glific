@@ -10,6 +10,7 @@ defmodule Glific.Saas.Queries do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    ERP,
     Flows.FlowContext,
     Flows.FlowResult,
     Messages.Message,
@@ -181,39 +182,59 @@ defmodule Glific.Saas.Queries do
   defp organization(%{is_valid: false} = result, _params), do: result
 
   defp organization(result, params) do
-    {:ok, provider} =
-      Repo.fetch_by(Provider, %{shortcode: @default_provider, group: "bsp"},
-        skip_organization_id: true
-      )
+    case fetch_erp_organizations(params["name"]) do
+      {:ok, %{data: %{customer_name: customer_name}}} ->
+        {:ok, provider} =
+          Repo.fetch_by(Provider, %{shortcode: @default_provider, group: "bsp"},
+            skip_organization_id: true
+          )
 
-    attrs = %{
-      name: params["name"],
-      shortcode: params["shortcode"],
-      email: params["email"],
-      bsp_id: provider.id,
-      default_language_id: 1,
-      active_language_ids: [1],
-      timezone: "Asia/Kolkata",
-      is_active: false,
-      is_approved: false,
-      status: :inactive,
-      parent_org: params["name"],
-      setting: %{"send_warning_mail" => false, "run_flow_each_time" => false},
-      team_emails: %{
-        "finance" => params["email"],
-        "analytics" => params["email"],
-        "chatbot_design" => params["email"],
-        "operations" => params["email"]
-      }
-    }
+        attrs = %{
+          name: params["name"],
+          shortcode: params["shortcode"],
+          email: params["email"],
+          bsp_id: provider.id,
+          default_language_id: 1,
+          active_language_ids: [1],
+          timezone: "Asia/Kolkata",
+          is_active: false,
+          is_approved: false,
+          status: :inactive,
+          parent_org: params["name"],
+          setting: %{"send_warning_mail" => false, "run_flow_each_time" => false},
+          team_emails: %{
+            "finance" => params["email"],
+            "analytics" => params["email"],
+            "chatbot_design" => params["email"],
+            "operations" => params["email"]
+          }
+        }
 
-    case Partners.create_organization(attrs) do
-      {:ok, organization} ->
-        Repo.put_organization_id(organization.id)
-        Map.put(result, :organization, organization)
+        case Partners.create_organization(attrs) do
+          {:ok, organization} ->
+            Repo.put_organization_id(organization.id)
 
-      {:error, errors} ->
-        error(inspect(errors), result, :global)
+            result
+            |> Map.put(:organization, organization)
+            |> Map.put_new(:erp_page_id, customer_name)
+
+          {:error, errors} ->
+            error(inspect(errors), result, :global)
+        end
+
+      {:error, error_message} ->
+        error(inspect(error_message), result, :global)
+    end
+  end
+
+  @spec fetch_erp_organizations(String.t()) :: {:ok, map()} | {:error, String.t()}
+  defp fetch_erp_organizations(org_name) do
+    case ERP.fetch_organization_detail(org_name) do
+      {:ok, organizations} ->
+        {:ok, organizations}
+
+      {:error, error_message} ->
+        {:error, error_message}
     end
   end
 
@@ -429,23 +450,15 @@ defmodule Glific.Saas.Queries do
       org_details: org_details,
       organization_id: result.organization.id,
       platform_details: platform_details,
-      ip_address: params["client_ip"]
+      ip_address: params["client_ip"],
+      erp_page_id: result |> Map.get(:erp_page_id)
     }
-
-    # if the org already exists in ERP we store the erp-org id in glific db to update the same entry in ERP
-    registration_map =
-      if Map.has_key?(params, "erp_page_id") do
-        Map.put(registration_map, :erp_page_id, params["erp_page_id"])
-      else
-        registration_map
-      end
 
     registration_map
     |> Registrations.create_registration()
     |> case do
       {:ok, %{id: id} = registration} ->
         :ok = create_registration_in_notion(result.organization.id, registration)
-
         Map.put(result, :registration_id, id)
 
       {:error, errors} ->
@@ -460,8 +473,8 @@ defmodule Glific.Saas.Queries do
         dgettext("error", "Billing frequency cannot be empty.")
         |> error(result, :billing_frequency)
 
-      value not in ["yearly", "monthly", "quarterly"] ->
-        dgettext("error", "Value should be one of yearly, monthly, or quarterly.")
+      value not in ["Monthly", "Quarterly", "Half-Yearly", "Annually"] ->
+        dgettext("error", "Value should be one of Monthly , Quarterly, Half-Yearly, Annually.")
         |> error(result, :billing_frequency)
 
       true ->
@@ -483,7 +496,7 @@ defmodule Glific.Saas.Queries do
 
   defp validate_submitter_details(result, params) do
     result
-    |> validate_text_field(params["name"], :submitter_name, {1, 25})
+    |> validate_text_field(params["first_name"], :submitter_name, {1, 25})
     |> validate_email(params["email"], :submitter_name)
   end
 
@@ -499,14 +512,21 @@ defmodule Glific.Saas.Queries do
   @spec validate_org_details(map(), map()) :: map()
 
   defp validate_org_details(result, params) do
+    current_address = params["current_address"]
+    registered_address = params["registered_address"]
+
     result
     |> validate_text_field(params["gstin"], :gstin, {15, 15}, true)
-    |> validate_text_field(
-      params["registered_address"],
-      :registered_address,
-      {1, 300}
-    )
-    |> validate_text_field(params["current_address"], :current_address, {0, 300})
+    |> validate_address_fields(registered_address, :registered_address)
+    |> validate_address_fields(current_address, :current_address)
+  end
+
+  @spec validate_address_fields(map(), map(), atom()) :: map()
+  defp validate_address_fields(result, address_map, field_prefix) do
+    result
+    |> validate_text_field(address_map["address_line1"], :"#{field_prefix}_line1", {1, 300})
+    |> validate_text_field(address_map["city"], :"#{field_prefix}_city", {1, 100})
+    |> validate_text_field(address_map["pincode"], :"#{field_prefix}_pincode", {1, 10})
   end
 
   @spec create_registration_in_notion(String.t(), Registration.t()) :: :ok
