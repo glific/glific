@@ -319,7 +319,7 @@ defmodule Glific.Filesearch do
     do: {:error, "Please enable filesearch for this assistant"}
 
   @spec create_assistant_and_vector_store(String.t(), map()) ::
-          {:ok, map()} | {:error, String.t(0)}
+          {:ok, map()} | {:error, String.t()}
   defp create_assistant_and_vector_store(vector_store_id, assistant_data) do
     with {:ok, vector_store_data} <- ApiClient.retrieve_vector_store(vector_store_id),
          {:ok, %{data: vector_store_files}} <-
