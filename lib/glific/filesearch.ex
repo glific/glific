@@ -17,13 +17,39 @@ defmodule Glific.Filesearch do
   @default_model "gpt-4o"
   @excluded_models_prefix ["dall", "tts", "babbage", "whisper", "text", "davinci"]
 
+  # https://platform.openai.com/docs/assistants/tools/file-search#supported-files
+  @assistant_supported_file_extensions [
+    "c",
+    "cpp",
+    "cs",
+    "css",
+    "doc",
+    "docx",
+    "go",
+    "html",
+    "java",
+    "js",
+    "json",
+    "md",
+    "pdf",
+    "php",
+    "pptx",
+    "py",
+    "rb",
+    "sh",
+    "tex",
+    "ts",
+    "txt"
+  ]
+
   @doc """
   Upload file to openAI
   """
   @spec upload_file(map()) ::
           {:ok, map()} | {:error, String.t()}
   def upload_file(params) do
-    with {:ok, file} <- ApiClient.upload_file(params.media) do
+    with {:ok, _} <- validate_file_format(params.media.filename),
+         {:ok, file} <- ApiClient.upload_file(params.media) do
       {:ok,
        %{
          file_id: file.id,
@@ -392,6 +418,17 @@ defmodule Glific.Filesearch do
       {:error, _, err, _} ->
         Logger.error("Error on importing assistant due to #{inspect(err)}")
         {:error, "Error on importing assistant"}
+    end
+  end
+
+  @spec validate_file_format(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  defp validate_file_format(filename) do
+    extension = String.split(filename, ".") |> List.last()
+
+    if extension in @assistant_supported_file_extensions do
+      {:ok, filename}
+    else
+      {:error, "Files with extension '.#{extension}' not supported in Filesearch"}
     end
   end
 end
