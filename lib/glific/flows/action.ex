@@ -616,9 +616,15 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
 
+  def execute(%{type: "link_google_sheet"} = action, context, _messages) do
+    {context, message} = Sheets.execute(action, context)
+    {:ok, context, [message]}
+  end
+
   def execute(%{type: "send_msg"} = action, %{wa_group_id: wa_group_id} = context, messages)
       when wa_group_id != nil do
     action = Map.put(action, :templating, nil)
+
     event_label = "Marking flow as completed after single node for WA group"
 
     WAGroupAction.send_message(context, action, messages)
@@ -743,12 +749,6 @@ defmodule Glific.Flows.Action do
       # this clears any potential errors
       {:ok, context, []}
     end
-  end
-
-  def execute(%{type: "link_google_sheet"} = action, context, _messages) do
-    {context, message} = Sheets.execute(action, context)
-
-    {:ok, context, [message]}
   end
 
   def execute(%{type: "open_ticket"} = action, context, _messages) do
