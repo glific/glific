@@ -40,7 +40,7 @@ defmodule Glific.ERPTest do
         }
     end)
 
-    assert {:error, "Failed to fetch organization due to Customer org1 not found"} =
+    assert {:error, "Customer org1 not found"} =
              ERP.fetch_organization_detail("org1")
   end
 
