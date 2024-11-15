@@ -52,7 +52,7 @@ defmodule Glific.ERP do
         extracted_message = Map.get(decoded_message, "message")
 
         Logger.error("Failed to fetch organization: #{inspect(body)}")
-        {:error, "Failed to fetch organization due to #{extracted_message}"}
+        {:error, "#{extracted_message}"}
 
       {:error, reason} ->
         Logger.error("Unexpected response: body: #{inspect(reason)}")
@@ -72,14 +72,13 @@ defmodule Glific.ERP do
 
     payload = %{
       "custom_chatbot_number" => registration.platform_details["phone"],
-      "custom_gupshup_api_key" => registration.platform_details["api_key"],
-      "custom_app_name" => registration.platform_details["app_name"],
-      "custom_start_date" => DateTime.utc_now() |> DateTime.to_date() |> Date.to_iso8601(),
       "custom_product_detail" => [
         %{
           "product" => "Glific",
           "service_type" => "SaaS",
-          "billing_frequency" => registration.billing_frequency
+          "billing_frequency" => registration.billing_frequency,
+          "subscription_start_date" =>
+            DateTime.utc_now() |> DateTime.to_date() |> Date.to_iso8601()
         }
       ]
     }
