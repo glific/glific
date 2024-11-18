@@ -68,6 +68,7 @@ defmodule Glific.Flows.Action do
   @required_fields_waittime [:delay]
   @required_fields_interactive_template [:name | @required_field_common]
   @required_fields_set_results [:name, :category, :value | @required_field_common]
+  @required_fields_set_wa_group_field [:value, :field | @required_field_common]
 
   # They fall under actions, thus not using "wait for response" with them, as that is a router.
   @wait_for ["wait_for_time", "wait_for_result"]
@@ -290,6 +291,23 @@ defmodule Glific.Flows.Action do
 
   def process(%{"type" => "set_contact_field"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_set_contact_field)
+
+    name =
+      if is_nil(json["field"]["name"]),
+        do: json["field"]["key"],
+        else: json["field"]["name"]
+
+    process(json, uuid_map, node, %{
+      value: json["value"],
+      field: %{
+        name: name,
+        key: json["field"]["key"]
+      }
+    })
+  end
+
+  def process(%{"type" => "set_wa_group_field"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_wa_group_field)
 
     name =
       if is_nil(json["field"]["name"]),
