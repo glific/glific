@@ -641,4 +641,22 @@ defmodule Glific.OnboardTest do
     assert updated_organization.is_suspended == false
     assert updated_organization.suspended_until == nil
   end
+
+  test "ensure that shortcode and org name are handled correctly" do
+    with_mock(
+      GcsWorker,
+      upload_media: fn _, _, _ -> {:ok, %{url: "url"}} end
+    ) do
+      attrs =
+        @valid_attrs
+        |> Map.put("name", " First")
+        |> Map.put("shortcode", "NEW_Glific")
+        |> Map.put("phone", "919917443995")
+
+      result = Onboard.setup(attrs)
+
+      assert result.organization.name == "First"
+      assert result.organization.shortcode == "new_glific"
+    end
+  end
 end

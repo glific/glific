@@ -224,9 +224,9 @@ defmodule Glific.ERP do
       "address_type" => address_type,
       "address_line1" => address["address_line1"],
       "address_line2" => address["address_line2"],
-      "city" => address["city"],
-      "state" => address["state"],
-      "country" => address["country"],
+      "city" => capitalize_first_letter(address["city"]),
+      "state" => capitalize_first_letter(address["state"]),
+      "country" => capitalize_first_letter(address["country"]),
       "pincode" => address["pincode"],
       "links" => [%{"link_doctype" => "Customer", "link_name" => customer_name}]
     }
@@ -269,5 +269,10 @@ defmodule Glific.ERP do
     Enum.all?(Map.keys(current_address), fn key ->
       Map.get(current_address, key) == Map.get(registered_address, key)
     end)
+  end
+
+  @spec capitalize_first_letter(String.t()) :: String.t()
+  defp capitalize_first_letter(string) do
+    String.upcase(String.slice(string, 0, 1)) <> String.downcase(String.slice(string, 1..-1))
   end
 end
