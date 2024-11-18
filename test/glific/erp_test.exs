@@ -141,7 +141,6 @@ defmodule Glific.ERPTest do
       }
     }
 
-    IO.inspect(ERP.update_organization(registration) )
     assert {:ok, _response} = ERP.update_organization(registration)
   end
 end

@@ -118,9 +118,9 @@ defmodule Glific.ERP do
     are_addresses_same = compare_addresses(current_address, registered_address)
 
     with {:ok, _} <- handle_address(current_address, "Billing", customer_name),
-         :ok <-
+         {:ok, _} <-
            if(are_addresses_same,
-             do: :ok,
+             do: {:ok, nil},
              else: handle_address(registered_address, "Permanent/Registered", customer_name)
            ) do
       :ok
