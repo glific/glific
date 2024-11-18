@@ -72,6 +72,7 @@ defmodule Glific.ERP do
 
     payload = %{
       "custom_chatbot_number" => registration.platform_details["phone"],
+      "custom_status" => "Active",
       "custom_product_detail" => [
         %{
           "product" => "Glific",
