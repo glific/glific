@@ -6,15 +6,14 @@ defmodule Glific.Flows.ContactField do
   import Ecto.Query, warn: false
   import Ecto.Changeset
 
-  alias Glific.Groups.WAGroups
-  alias Glific.Groups.WAGroup
-
   alias Glific.{
     Contacts,
     Contacts.Contact,
     Contacts.ContactsField,
     Flows.FlowContext,
     Flows.MessageVarParser,
+    Groups.WAGroup,
+    Groups.WAGroups,
     Profiles,
     Repo
   }
@@ -481,7 +480,7 @@ defmodule Glific.Flows.ContactField do
       {:scope, scope}, query ->
         from(q in query, where: q.scope == ^scope)
 
-      _, _ ->
+      _, query ->
         query
     end)
   end

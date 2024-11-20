@@ -185,9 +185,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
     assert length(contacts_fields) == 0
 
     result =
-      auth_query_gql_by(:list, user,
-        variables: %{"filter" => %{"scope" => "GROUP"}}
-      )
+      auth_query_gql_by(:list, user, variables: %{"filter" => %{"scope" => "GROUP"}})
 
     assert {:ok, query_data} = result
     contacts_fields = get_in(query_data, [:data, "contactsFields"])
@@ -196,6 +194,24 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
 
   test "update a contact fields", %{manager: user} = attrs do
     contacts_field = Fixtures.contacts_field_fixture(%{organization_id: attrs.organization_id})
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => contacts_field.id,
+          "input" => %{"name" => "Age category"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    name = get_in(query_data, [:data, "updateContactsField", "contactsField", "name"])
+    assert name == "Age category"
+  end
+
+  @tag :cf
+  test "update a contact fields when scope is GROUP", %{manager: user} = attrs do
+    contacts_field = Fixtures.contacts_field_fixture(%{organization_id: attrs.organization_id, scope: :group})
 
     result =
       auth_query_gql_by(:update, user,
