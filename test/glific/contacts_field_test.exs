@@ -109,16 +109,23 @@ defmodule Glific.ContactsFieldTest do
     assert_raise Ecto.NoResultsError, fn -> Repo.get!(ContactsField, contacts_field.id) end
   end
 
+  @tag :cff
   test "delete_associated_contacts_field/2 deletes data associated with contacts_field",
        %{organization_id: organization_id} = _attrs do
     contact =
       Fixtures.contact_fixture()
       |> ContactField.do_add_contact_field("test", "Test Field", "it works")
 
+    [contact_field | _] =
+      ContactField.list_contacts_fields(%{
+        filter: %{name: "Test Field", shortcode: "test"},
+        organization_id: organization_id
+      })
+
     assert get_in(contact.fields, ["test", :value]) == "it works"
 
     # Deleting the contact field and its associated data
-    ContactField.delete_associated_contacts_field("test", organization_id)
+    ContactField.delete_associated_contacts_field(contact_field, organization_id)
     assert Contacts.get_contact(contact.id).fields == %{}
   end
 
