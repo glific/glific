@@ -24,7 +24,8 @@ defmodule Glific.Filesearch.Assistant do
   ]
   @optional_fields [
     :instructions,
-    :vector_store_id
+    :vector_store_id,
+    :inserted_at
   ]
 
   @type t() :: %__MODULE__{
