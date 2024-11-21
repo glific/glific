@@ -118,12 +118,9 @@ defmodule Glific.ERP do
     registered_address = registration.org_details["registered_address"]
     are_addresses_same = compare_addresses(current_address, registered_address)
 
-    case do_create_or_update_address(current_address, "Billing", customer_name) do
-      {:ok, _billing} ->
-        handle_registered_address(are_addresses_same, registered_address, customer_name)
-
-      {:error, reason} ->
-        {:error, reason}
+    with {:ok, _billing} <-
+           do_create_or_update_address(current_address, "Billing", customer_name) do
+      handle_registered_address(are_addresses_same, registered_address, customer_name)
     end
   end
 
