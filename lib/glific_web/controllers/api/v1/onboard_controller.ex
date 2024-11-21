@@ -41,7 +41,7 @@ defmodule GlificWeb.API.V1.OnboardController do
         else
           conn
           |> put_status(400)
-          |> json(%{error: %{status: 400, message: Map.get(response, :error)}})
+          |> json(%{error: %{status: 400, message: Map.get(response, :error), is_valid: false}})
         end
 
       _ ->
