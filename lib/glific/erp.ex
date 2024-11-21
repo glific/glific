@@ -98,7 +98,7 @@ defmodule Glific.ERP do
           {:error, reason} ->
             {:error, reason}
 
-          :ok ->
+          {:ok, _} ->
             create_contact(registration, customer_name)
         end
 
@@ -112,26 +112,31 @@ defmodule Glific.ERP do
     end
   end
 
-  @spec create_or_update_address(map(), String.t()) :: :ok | {:error, String.t()}
+  @spec create_or_update_address(map(), String.t()) :: {:ok, any} | {:error, String.t()}
   defp create_or_update_address(registration, customer_name) do
     current_address = registration.org_details["current_address"]
     registered_address = registration.org_details["registered_address"]
     are_addresses_same = compare_addresses(current_address, registered_address)
 
-    with {:ok, _} <- handle_address(current_address, "Billing", customer_name),
-         {:ok, _} <-
-           if(are_addresses_same,
-             do: {:ok, nil},
-             else: handle_address(registered_address, "Permanent/Registered", customer_name)
-           ) do
-      :ok
-    else
-      {:error, reason} -> {:error, reason}
+    case do_create_or_update_address(current_address, "Billing", customer_name) do
+      {:ok, _billing} ->
+        handle_registered_address(are_addresses_same, registered_address, customer_name)
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
-  @spec handle_address(map(), String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
-  defp handle_address(address, type, customer_name) do
+  @spec handle_registered_address(boolean(), map(), String.t()) ::
+          {:ok, map()} | {:error, String.t()}
+  defp handle_registered_address(false, registered_address, customer_name),
+    do: do_create_or_update_address(registered_address, "Permanent/Registered", customer_name)
+
+  defp handle_registered_address(true, _registered_address, _customer_name), do: {:ok, nil}
+
+  @spec do_create_or_update_address(map(), String.t(), String.t()) ::
+          {:ok, map()} | {:error, String.t()}
+  defp do_create_or_update_address(address, type, customer_name) do
     if address_exists?(customer_name, type) do
       update_address(address, type, customer_name)
     else
