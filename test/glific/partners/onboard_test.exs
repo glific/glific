@@ -259,7 +259,7 @@ defmodule Glific.OnboardTest do
         "registration_id" => reg_id,
         "billing_frequency" => "twice",
         "finance_poc" => %{
-          "name" => String.duplicate(Faker.Person.name(), 20),
+          "name" => String.duplicate(Faker.Person.name(), 50),
           "email" => "invalid@.com",
           "designation" => "",
           "phone" => "23"
@@ -279,7 +279,7 @@ defmodule Glific.OnboardTest do
                messages: %{
                  billing_frequency:
                    "Value should be one of Monthly , Quarterly, Half-Yearly, Annually.",
-                 finance_poc_name: "Field cannot be more than 25 letters.",
+                 finance_poc_name: "Field cannot be more than 50 letters.",
                  finance_poc_designation: "Field cannot be empty.",
                  finance_poc_email: "Email is not valid.",
                  submitter_name: "Field cannot be empty."
