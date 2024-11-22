@@ -488,7 +488,7 @@ defmodule Glific.Saas.Queries do
 
   defp validate_finance_poc(result, params) do
     result
-    |> validate_text_field(params["name"], :finance_poc_name, {1, 25})
+    |> validate_text_field(params["name"], :finance_poc_name, {1, 50})
     |> validate_text_field(params["designation"], :finance_poc_designation, {1, 25})
     |> validate_phone(params["phone"], :finance_poc_phone)
     |> validate_email(params["email"], :finance_poc_email)
@@ -506,7 +506,7 @@ defmodule Glific.Saas.Queries do
 
   defp validate_signer_details(result, params) do
     result
-    |> validate_text_field(params["name"], :signer_name, {1, 25})
+    |> validate_text_field(params["name"], :signer_name, {1, 50})
     |> validate_text_field(params["designation"], :signer_designation, {1, 25})
     |> validate_email(params["email"], :signer_email)
   end
