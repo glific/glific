@@ -240,7 +240,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
             type: interactive.type,
             interactive_content: interactive.interactive_content,
             created_on: interactive.inserted_at,
-            modified_on: interactive.updated_at
+            modified_on: interactive.updated_at,
+            translations: get_interactive_translations(interactive.translations)
           }
           | acc
         ]
