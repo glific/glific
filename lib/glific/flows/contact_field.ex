@@ -302,7 +302,6 @@ defmodule Glific.Flows.ContactField do
     Repo.update_all(query, [])
   end
 
-  # TODO: make it such a way that we can support WAGroup table update too
   @doc """
   Update contacts_field label or shortcode in the contacts table
   """
@@ -441,13 +440,13 @@ defmodule Glific.Flows.ContactField do
   @spec do_add_wa_group_field(WAGroup.t(), String.t(), String.t(), any(), String.t()) ::
           WAGroup.t()
   def do_add_wa_group_field(wa_group, field, label, value, type \\ "string") do
-    contact_fields =
+    wa_group_fields =
       if is_nil(wa_group.fields),
         do: %{},
         else: wa_group.fields
 
     fields =
-      contact_fields
+      wa_group_fields
       |> Map.put(String.trim(field), %{
         value: value,
         label: label,

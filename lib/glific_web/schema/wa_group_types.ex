@@ -25,6 +25,8 @@ defmodule GlificWeb.Schema.WaGroupTypes do
     field :wa_managed_phone, :wa_managed_phone do
       resolve(dataloader(Repo))
     end
+
+    field :fields, :json
   end
 
   @desc "Filtering options for wa groups"
@@ -40,6 +42,10 @@ defmodule GlificWeb.Schema.WaGroupTypes do
 
     @desc "Searches based on wa group label"
     field :label, :string
+  end
+
+  input_object :wa_group_input do
+    field :fields, :json
   end
 
   object :wa_group_queries do
@@ -62,6 +68,14 @@ defmodule GlificWeb.Schema.WaGroupTypes do
       arg(:filter, :wa_group_filter)
       middleware(Authorize, :staff)
       resolve(&Resolvers.WaGroup.wa_groups_count/3)
+    end
+  end
+
+  object :wa_group_mutations do
+    field :update_wa_group, :wa_group_result do
+      arg(:input, non_null(:wa_group_input))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.WaGroup.update_wa_group/3)
     end
   end
 end
