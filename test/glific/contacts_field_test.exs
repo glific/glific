@@ -1,6 +1,4 @@
 defmodule Glific.ContactsFieldTest do
-  alias Glific.Groups.WAGroups
-  alias Glific.Groups.WAGroup
   use Glific.DataCase
   use ExUnit.Case
 
@@ -10,6 +8,8 @@ defmodule Glific.ContactsFieldTest do
     Contacts.ContactsField,
     Fixtures,
     Flows.ContactField,
+    Groups.WAGroup,
+    Groups.WAGroups,
     Repo
   }
 
@@ -34,7 +34,6 @@ defmodule Glific.ContactsFieldTest do
     }
   end
 
-  @tag :cf
   test "count_contacts_fields/1 returns count of all contacts_field",
        %{organization_id: _organization_id} = attrs do
     contacts_field_count = ContactField.count_contacts_fields(%{filter: attrs})
@@ -120,7 +119,6 @@ defmodule Glific.ContactsFieldTest do
              Contacts.get_contact(contact.id)
   end
 
-  @tag :cf
   test "update_contacts_field/2 with valid data updates the contacts_field when scope is group",
        %{
          organization_id: organization_id
@@ -163,7 +161,6 @@ defmodule Glific.ContactsFieldTest do
     assert_raise Ecto.NoResultsError, fn -> Repo.get!(ContactsField, contacts_field.id) end
   end
 
-  @tag :cf
   test "contacts_field/1 deletes the contacts_field where scope is group", %{
     organization_id: organization_id
   } do
@@ -175,7 +172,6 @@ defmodule Glific.ContactsFieldTest do
     assert_raise Ecto.NoResultsError, fn -> Repo.get!(ContactsField, contacts_field.id) end
   end
 
-  @tag :cf
   test "delete_associated_contacts_field/2 deletes data associated with contacts_field",
        %{organization_id: organization_id} = _attrs do
     contact =
@@ -195,7 +191,6 @@ defmodule Glific.ContactsFieldTest do
     assert Contacts.get_contact(contact.id).fields == %{}
   end
 
-  @tag :cf
   test "delete_associated_contacts_field/2 deletes data associated with contacts_field where scope is group",
        %{organization_id: organization_id} = _attrs do
     wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
@@ -244,10 +239,10 @@ defmodule Glific.ContactsFieldTest do
     assert Contacts.get_contact(contact.id).fields["old"] == nil
   end
 
-  @tag :cf
   test "merge_contacts_fields/2 merge old contact field with new field where scope is group",
        attrs do
-    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+    wa_managed_phone =
+      Fixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
 
     wa_group =
       Fixtures.wa_group_fixture(%{

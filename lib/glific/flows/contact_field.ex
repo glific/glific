@@ -30,6 +30,9 @@ defmodule Glific.Flows.ContactField do
     Map.put(context, :contact, contact)
   end
 
+  @doc """
+  Add new field to wa_group
+  """
   @spec add_wa_group_field(FlowContext.t(), String.t(), String.t(), String.t(), String.t()) ::
           FlowContext.t()
   def add_wa_group_field(context, field, label, value, type) do

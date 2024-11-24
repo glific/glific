@@ -11,7 +11,6 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
   load_gql(:list, GlificWeb.Schema, "assets/gql/contacts_field/list.gql")
   load_gql(:count, GlificWeb.Schema, "assets/gql/contacts_field/count.gql")
 
-  @tag :cf
   test "create a contact field", %{manager: user} do
     result =
       auth_query_gql_by(:create, user,
@@ -31,7 +30,6 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
     assert contacts_field["scope"] == "CONTACT"
   end
 
-  @tag :cf
   test "create a contact field with group scope", %{manager: user} do
     result =
       auth_query_gql_by(:create, user,
@@ -52,7 +50,6 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
     assert contacts_field["scope"] == "GROUP"
   end
 
-  @tag :cf
   test "create a contact field, can have same shortcode but with different scope", %{
     manager: user
   } do
@@ -91,7 +88,6 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
     assert contacts_field["scope"] == "GROUP"
   end
 
-  @tag :cf
   test "count returns the number of contact fields", %{manager: user} = attrs do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     initial_count = get_in(query_data, [:data, "countContactsFields"])
@@ -143,7 +139,6 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
     assert get_in(query_data, [:data, "countContactsFields"]) == 1
   end
 
-  @tag :cf
   test "contact fields returns list of contact fields", %{manager: user} = attrs do
     _contacts_field_2 =
       Fixtures.contacts_field_fixture(%{
@@ -182,7 +177,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
 
     assert {:ok, query_data} = result
     contacts_fields = get_in(query_data, [:data, "contactsFields"])
-    assert length(contacts_fields) == 0
+    assert Enum.empty?(contacts_fields)
 
     result =
       auth_query_gql_by(:list, user, variables: %{"filter" => %{"scope" => "GROUP"}})
@@ -209,9 +204,9 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
     assert name == "Age category"
   end
 
-  @tag :cf
   test "update a contact fields when scope is GROUP", %{manager: user} = attrs do
-    contacts_field = Fixtures.contacts_field_fixture(%{organization_id: attrs.organization_id, scope: :group})
+    contacts_field =
+      Fixtures.contacts_field_fixture(%{organization_id: attrs.organization_id, scope: :group})
 
     result =
       auth_query_gql_by(:update, user,

@@ -76,13 +76,4 @@ defmodule GlificWeb.Resolvers.WaGroup do
   @spec wa_groups_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def wa_groups_count(_, args, _), do: {:ok, WAGroups.wa_groups_count(args)}
-
-  # TODO: update doc
-  @doc """
-
-  """
-  @spec update_wa_group(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def update_wa_group(_, args, _) do
-  end
 end

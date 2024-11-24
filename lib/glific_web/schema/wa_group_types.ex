@@ -70,12 +70,4 @@ defmodule GlificWeb.Schema.WaGroupTypes do
       resolve(&Resolvers.WaGroup.wa_groups_count/3)
     end
   end
-
-  object :wa_group_mutations do
-    field :update_wa_group, :wa_group_result do
-      arg(:input, non_null(:wa_group_input))
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.WaGroup.update_wa_group/3)
-    end
-  end
 end
