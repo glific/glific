@@ -404,7 +404,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         [
           %{
             id: row.id,
-            message_broadcast_id: row.id,
+            message_broadcast_id: row.message_broadcast_id,
             phone: row.phone,
             status: row.status,
             processed_at: BigQuery.format_date(row.processed_at, organization_id),
@@ -1232,7 +1232,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> join(:left, [mbc], c in Contact, as: :c, on: mbc.contact_id == c.id)
       |> select([mbc, c], %{
         id: mbc.id,
-        message_broadcast_id: mbc.id,
+        message_broadcast_id: mbc.message_broadcast_id,
         phone: c.phone,
         status: mbc.status,
         processed_at: mbc.processed_at,
