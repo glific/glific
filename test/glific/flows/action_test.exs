@@ -1,4 +1,5 @@
 defmodule Glific.Flows.ActionTest do
+  alias Glific.Groups.WAGroups
   alias Glific.Messages
   use Glific.DataCase
 
@@ -29,6 +30,8 @@ defmodule Glific.Flows.ActionTest do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_contacts()
     SeedsDev.seed_interactives(organization)
+    SeedsDev.seed_wa_managed_phones()
+    SeedsDev.seed_wa_groups()
     :ok
   end
 
@@ -981,6 +984,7 @@ defmodule Glific.Flows.ActionTest do
              Glific.delete_multiple(context, [:delay, :uuids_seen])
   end
 
+  # TODO: Add a test where flow_context is for wa_group
   test "execute an action when type is link_google_sheet", attrs do
     sheet =
       Repo.insert!(%Glific.Sheets.Sheet{
@@ -1352,5 +1356,138 @@ defmodule Glific.Flows.ActionTest do
     assert_raise UndefinedFunctionError, fn ->
       Action.execute(action, context, message_stream)
     end
+  end
+
+  @tag :up_wa
+  test "process extracts the right values from json for set_wa_group_field action" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "set_wa_group_field",
+      "value" => "Test Value",
+      "field" => %{"name" => "Test Name", "key" => "Test Key"}
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "set_wa_group_field"
+    assert action.node_uuid == node.uuid
+    assert action.value == "Test Value"
+    assert action.field.name == "Test Name"
+    assert action.field.key == "Test Key"
+
+    # ensure we can send key instead of name
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "set_wa_group_field",
+      "value" => "Test Value",
+      "field" => %{"key" => "Test Key"}
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "set_wa_group_field"
+    assert action.node_uuid == node.uuid
+    assert action.field.name == "Test Key"
+    assert action.field.key == "Test Key"
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "set_wa_group_field", "value" => "Test Value"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "set_wa_group_field",
+      "field" => %{"name" => "Test Name", "key" => "Test Key"}
+    }
+
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+
+    json = %{
+      "uuid" => "UUID 1",
+      "value" => "Test Value",
+      "field" => %{"name" => "Test Name", "key" => "Test Key"}
+    }
+
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+
+    json = %{}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  @tag :up_wa
+  test "execute an action when type is set_wa_group_field to add wa_group field", _attrs do
+    [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
+
+    context =
+      %FlowContext{wa_group_id: wa_group.id, flow_id: 1, results: %{"test_result" => "field1"}}
+      |> Repo.preload([:wa_group, :flow])
+
+    action = %Action{
+      type: "set_wa_group_field",
+      value: "@results.test_result",
+      field: %{key: "not_settings", name: "Not Settings"}
+    }
+
+    message_stream = []
+
+    result = Action.execute(action, context, message_stream)
+
+    assert {:ok, updated_context, _updated_message_stream} = result
+
+    assert updated_context.wa_group.fields[action.field.key].value == "field1"
+    assert updated_context.wa_group.fields[action.field.key].type == "string"
+    assert updated_context.wa_group.fields[action.field.key].label == "Not Settings"
+  end
+
+  @tag :up_waa
+  test "execute an action when type is set_wa_group_field to add wa_group field, with @wa_group variable",
+       _attrs do
+    [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
+
+    context =
+      %FlowContext{wa_group_id: wa_group.id, flow_id: 1, results: %{"test_result" => "field1"}}
+      |> Repo.preload([:wa_group, :flow])
+
+    context = ContactField.add_wa_group_field(context, "var", "var", 30, "string")
+
+    action = %Action{
+      type: "set_wa_group_field",
+      value: "<%= @wa_group.fields.var + 1 %>",
+      field: %{key: "var", name: "var"}
+    }
+
+    message_stream = []
+
+    result = Action.execute(action, context, message_stream)
+
+    assert {:ok, updated_context, _updated_message_stream} = result
+
+    assert updated_context.wa_group.fields[action.field.key].value == "31"
+    assert updated_context.wa_group.fields[action.field.key].type == "string"
+    assert updated_context.wa_group.fields[action.field.key].label == "var"
+  end
+
+  @tag :up_waa
+  test "execute an action when type is set_wa_group_field to add contact field, but its a contact flow",
+       _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1, results: %{"test_result" => "field1"}}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_wa_group_field",
+      value: "@results.test_result",
+      field: %{key: "not_settings", name: "Not Settings"}
+    }
+
+    message_stream = []
+
+    assert_raise(UndefinedFunctionError,fn -> Action.execute(action, context, message_stream) end)
   end
 end

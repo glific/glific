@@ -120,7 +120,6 @@ defmodule Glific.Flows.ContactField do
   @spec parse_contact_field_value(FlowContext.t(), String.t()) :: String.t()
   def parse_contact_field_value(context, value) do
     message_vars = FlowContext.get_vars_to_parse(context)
-
     value
     |> MessageVarParser.parse(message_vars)
     |> Glific.execute_eex()
@@ -140,7 +139,7 @@ defmodule Glific.Flows.ContactField do
   @spec add_variable_field(ContactsField.t()) :: map()
   defp add_variable_field(%{scope: :group} = contacts_field) do
     contacts_field
-    |> Map.put(:variable, "@group.fields.#{contacts_field.shortcode}")
+    |> Map.put(:variable, "@wa_group.fields.#{contacts_field.shortcode}")
   end
 
   defp add_variable_field(contacts_field) do
@@ -463,7 +462,7 @@ defmodule Glific.Flows.ContactField do
         %{fields: fields}
       )
 
-    # create contact fields if not already created
+    # create wa_group field if not already created
     maybe_create_contact_field(%{
       shortcode: field,
       name: label,

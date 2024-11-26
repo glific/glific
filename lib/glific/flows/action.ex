@@ -542,6 +542,7 @@ defmodule Glific.Flows.Action do
     end
   end
 
+  # TODO: should we add a validate for set_wa_group_field?
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
 
@@ -637,6 +638,25 @@ defmodule Glific.Flows.Action do
   def execute(%{type: "link_google_sheet"} = action, context, _messages) do
     {context, message} = Sheets.execute(action, context)
     {:ok, context, [message]}
+  end
+
+  def execute(
+        %{type: "set_wa_group_field"} = action,
+        %{wa_group_id: wa_group_id} = context,
+        messages
+      ) do
+    # we raise error if this action is runnning for a contact flow
+    if is_nil(wa_group_id) do
+      execute(%{action | type: "invalid action"}, context, messages)
+    else
+      name = action.field.name
+      key = action.field[:key] || String.downcase(name) |> String.replace(" ", "_")
+      value = ContactField.parse_contact_field_value(context, action.value)
+
+      context = ContactField.add_wa_group_field(context, key, name, value, "string")
+
+      {:ok, context, messages}
+    end
   end
 
   def execute(%{type: "send_msg"} = action, %{wa_group_id: wa_group_id} = context, messages)

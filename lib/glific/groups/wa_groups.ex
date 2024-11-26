@@ -356,4 +356,12 @@ defmodule Glific.Groups.WAGroups do
     |> WAGroup.changeset(attrs)
     |> Repo.update()
   end
+
+  # TODO: docs
+
+  @spec get_wa_group_map(integer()) :: map()
+  def get_wa_group_map(wa_group_id) do
+    get_wa_group!(wa_group_id)
+    |> Map.from_struct()
+  end
 end
