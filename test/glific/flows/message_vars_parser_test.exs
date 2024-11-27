@@ -324,12 +324,12 @@ defmodule Glific.Flows.MessageVarParserTest do
     assert true = MessageVarParser.parse_map(action_body_map, fields) |> is_map()
   end
 
+  @tag :tz
   test "message var parser will obey the calender events", %{organization_id: org_id} = _attrs do
     timezone = Glific.Partners.organization_timezone(org_id)
     default_format = "{D}/{0M}/{YYYY}"
-
     current_date =
-      Timex.today()
+      Timex.now()
       |> Timex.Timezone.convert(timezone)
       |> Timex.format!(default_format)
       |> to_string()
