@@ -103,6 +103,15 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       assert length(json_response(conn, 200)["results"]) > 0
     end
 
+    @tag :up
+    test "fields with scope group", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/fields", %{"scope" => "group"})
+
+      assert Enum.empty?(json_response(conn, 200)["results"])
+    end
+
     test "fields_post", %{conn: conn, access_token: token} do
       conn =
         get_auth_token(conn, token)
@@ -112,7 +121,22 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
                "key" => "some_field_name",
                "name" => "Some Field name",
                "label" => "Some Field name",
-               "value_type" => "text"
+               "value_type" => "text",
+               "scope" => "contact"
+             }
+    end
+
+    test "fields_post with scope group", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> post("/flow-editor/fields", %{"label" => "Some Field name", "scope" => "group"})
+
+      assert json_response(conn, 200) == %{
+               "key" => "some_field_name",
+               "name" => "Some Field name",
+               "label" => "Some Field name",
+               "value_type" => "text",
+               "scope" => "group"
              }
     end
 
