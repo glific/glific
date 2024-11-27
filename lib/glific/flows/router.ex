@@ -223,7 +223,9 @@ defmodule Glific.Flows.Router do
 
   def execute(%{type: type} = router, context, messages) when type == "switch" do
     Node.bump_count(router.node, context)
-
+    # IO.inspect(messages, label: :msg)
+    # IO.inspect(type)
+    # IO.inspect(router.operand)
     {msg, rest} =
       if messages == [] do
         ## split by group is also calling the same function.
@@ -256,6 +258,7 @@ defmodule Glific.Flows.Router do
           {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   defp execute_category(_router, context, {msg, _rest}, {nil, _is_checkbox}) do
     # lets reset the context tree
+    IO.inspect("Could not find category")
     FlowContext.reset_all_contexts(context, "Could not find category for: #{msg.body}")
 
     # This error is logged and sent upstream to the reporting engine
@@ -327,6 +330,7 @@ defmodule Glific.Flows.Router do
 
   defp find_category(router, context, msg) do
     # go thru the cases and find the first one that succeeds
+
     c =
       Enum.find(
         router.cases,

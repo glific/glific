@@ -711,6 +711,25 @@ defmodule Glific.Flows.Action do
     {:ok, context, messages}
   end
 
+  def execute(
+        %{type: "set_contact_field_valid"} = action,
+        %{wa_group_id: wa_group_id} = context,
+        messages
+      )
+      when wa_group_id != nil do
+    # name = action.field.name
+    # key = action.field[:key] || String.downcase(name) |> String.replace(" ", "_")
+    # value = ContactField.parse_contact_field_value(context, action.value)
+
+    # context =
+    #   if key == "settings",
+    #     do: settings(context, value),
+    #     else: ContactField.add_contact_field(context, key, name, value, "string")
+
+    # {:ok, context, messages}
+    execute(%{action | type: "set_wa_group_field"}, context, messages)
+  end
+
   # Fake the valid key so we can have the same function signature and simplify the code base
   def execute(%{type: "set_contact_field_valid"} = action, context, messages) do
     name = action.field.name
@@ -731,6 +750,7 @@ defmodule Glific.Flows.Action do
     # lets prevent the error from happening
     # if we don't recognize it, we just ignore it, and avoid an error being thrown
     # Issue #858
+    # TODO: Do we need this check for set_wa_group_field
     if Map.get(action.field, :name) in ["", nil] do
       {:ok, context, messages}
     else

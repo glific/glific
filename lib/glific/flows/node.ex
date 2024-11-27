@@ -265,6 +265,7 @@ defmodule Glific.Flows.Node do
       }
     )
 
+    IO.inspect(node.actions)
     cond do
       # check if we are looping forever, if so abort early
       check_infinite_loop(node, context) ->
@@ -304,7 +305,10 @@ defmodule Glific.Flows.Node do
     # this is a hack for now
     action = hd(node.actions)
 
+    IO.inspect(node.router.categories, label: :router_categ)
+
     if maybe_router_message(messages) do
+      # IO.inspect(messages, label: :router_msg)
       Router.execute(node.router, context, messages)
     else
       result = Action.execute(action, context, messages)
