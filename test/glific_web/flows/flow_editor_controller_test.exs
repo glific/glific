@@ -103,7 +103,6 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       assert length(json_response(conn, 200)["results"]) > 0
     end
 
-    @tag :up
     test "fields with scope group", %{conn: conn, access_token: token} do
       conn =
         get_auth_token(conn, token)
