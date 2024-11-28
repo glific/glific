@@ -147,7 +147,7 @@ defmodule Glific.WAGroup.WAMessage do
     media_id = changeset.changes[:media_id] || message.media_id
 
     cond do
-      type in [nil, :text, :location, :list, :quick_reply, :location_request_message] ->
+      type in [nil, :text, :location, :list, :quick_reply, :location_request_message, :reaction] ->
         changeset
 
       media_id == nil ->

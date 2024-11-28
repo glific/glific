@@ -30,7 +30,19 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
   @spec update_statuses(map(), non_neg_integer()) :: any()
   defp update_statuses(%{"data" => response} = _params, org_id) do
     response
-    |> Enum.each(&do_update_status(&1, &1["ackType"], org_id))
+    |> Enum.each(fn item ->
+      if Map.has_key?(item, "reaction") do
+        reaction(item, org_id)
+      else
+        do_update_status(item, item["ackType"], org_id)
+      end
+    end)
+  end
+
+  @spec reaction(map(), non_neg_integer()) :: any()
+  defp reaction(params, org_id) do
+    params
+    |> Communications.GroupMessage.receive_reaction_msg(org_id)
   end
 
   # Updates the provider message statuses based on provider message id

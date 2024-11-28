@@ -216,4 +216,46 @@ defmodule Glific.Communications.GroupMessage do
 
     wa_group.id
   end
+
+  # handler for receiving the reaction message
+  @spec receive_reaction_msg(map(), non_neg_integer()) :: :ok
+  def receive_reaction_msg(params, org_id) do
+    contact = Map.get(params, "reactorId")
+    reaction = Map.get(params, "reaction")
+    bsp_message_id = Map.get(params, "msgId")
+    # splitting because we are getting the contact number like 919xxxx22555@c.us this
+    [phone | _] = String.split(contact, "@")
+
+    contact =
+      Contact
+      |> where([c], c.phone == ^phone and c.organization_id == ^org_id)
+      |> Repo.one()
+
+    original_message =
+      WAMessage
+      |> where([wa_msg], wa_msg.bsp_id == ^bsp_message_id and wa_msg.organization_id == ^org_id)
+      |> Repo.one()
+
+    if original_message do
+      attrs =
+        %{
+          body: reaction,
+          type: "reaction",
+          contact_id: contact.id,
+          context_message_id: original_message.id,
+          bsp_id: bsp_message_id,
+          organization_id: org_id,
+          wa_group_id: original_message.wa_group_id,
+          wa_managed_phone_id: original_message.wa_managed_phone_id
+        }
+        |> Map.put_new(:flow, :inbound)
+        |> Map.put_new(:bsp_status, :received)
+
+      WAMessages.create_message(attrs)
+    else
+      {:error, "Message not found"}
+    end
+
+    :ok
+  end
 end
