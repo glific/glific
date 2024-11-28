@@ -42,7 +42,11 @@ defmodule Glific.Enums.Constants do
         :error,
         :read,
         :received,
-        :contact_opt_out
+        :contact_opt_out,
+        :reached,
+        :seen,
+        :played,
+        :deleted
       ]
 
       # the different possible types of message
