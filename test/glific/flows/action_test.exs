@@ -1358,7 +1358,6 @@ defmodule Glific.Flows.ActionTest do
     end
   end
 
-  @tag :up_wa
   test "process extracts the right values from json for set_wa_group_field action" do
     node = %Node{uuid: "Test UUID"}
 
@@ -1418,7 +1417,6 @@ defmodule Glific.Flows.ActionTest do
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
-  @tag :up_wa
   test "execute an action when type is set_wa_group_field to add wa_group field", _attrs do
     [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
 
@@ -1443,7 +1441,6 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.wa_group.fields[action.field.key].label == "Not Settings"
   end
 
-  @tag :up_waa
   test "execute an action when type is set_wa_group_field to add wa_group field, with @wa_group variable",
        _attrs do
     [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
@@ -1471,7 +1468,6 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.wa_group.fields[action.field.key].label == "var"
   end
 
-  @tag :up_waa
   test "execute an action when type is set_wa_group_field to add contact field, but its a contact flow",
        _attrs do
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
