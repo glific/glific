@@ -984,7 +984,6 @@ defmodule Glific.Flows.ActionTest do
              Glific.delete_multiple(context, [:delay, :uuids_seen])
   end
 
-  # TODO: Add a test where flow_context is for wa_group
   test "execute an action when type is link_google_sheet", attrs do
     sheet =
       Repo.insert!(%Glific.Sheets.Sheet{
