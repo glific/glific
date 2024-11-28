@@ -297,12 +297,12 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
         }
       )
 
-    message =
+    message1 =
       WAMessage
       |> where([wa], wa.body == "Message body testing send")
       |> Repo.one()
 
-    WAMessages.update_message(message, %{
+    WAMessages.update_message(message1, %{
       bsp_id: "6606f5c3-e3a2-abce-20a8-e7e0b5060ae1",
       bsp_status: :enqueued,
       status: :sent,
@@ -312,9 +312,15 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
 
     MessageEventController.update_statuses(reaction_response, user.organization_id)
 
-    _message =
+    message =
       WAMessage
-      |> where([wa], wa.bsp_id == "6606f5c3-e3a2-abce-20a8-e7e0b5060ae1")
+      |> where(
+        [wa],
+        wa.bsp_id == "false_120363257477740000@g.us_3EB0D6348BCB67E1055857_919719266288@c.us"
+      )
       |> Repo.one()
+
+    assert message.body == "👍"
+    assert message.context_message_id == message1.id
   end
 end
