@@ -749,6 +749,8 @@ defmodule Glific.Flows.FlowContext do
     {:ok, context} = seed_wa_group_context(flow, wa_group_id, status, opts)
 
     context
+    |> Repo.preload(:wa_group)
+    |> Map.put(:flow, flow)
     |> execute([])
   end
 
@@ -998,7 +1000,7 @@ defmodule Glific.Flows.FlowContext do
     A single place to parse the variable in a string related to flows.
   """
   @spec get_vars_to_parse(FlowContext.t()) :: map()
-    def get_vars_to_parse(%{wa_group_id: wa_group_id} = context) when wa_group_id != nil do
+  def get_vars_to_parse(%{wa_group_id: wa_group_id} = context) when wa_group_id != nil do
     %{
       "results" => context.results,
       "wa_group" => WAGroups.get_wa_group_map(wa_group_id),

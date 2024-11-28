@@ -649,6 +649,7 @@ defmodule Glific.Flows.Action do
     if is_nil(wa_group_id) do
       execute(%{action | type: "invalid action"}, context, messages)
     else
+      IO.inspect("Executing wa_group")
       name = action.field.name
       key = action.field[:key] || String.downcase(name) |> String.replace(" ", "_")
       value = ContactField.parse_contact_field_value(context, action.value)
@@ -659,14 +660,34 @@ defmodule Glific.Flows.Action do
     end
   end
 
+  def execute(
+        %{type: "set_contact_field"} = action,
+        %{wa_group_id: wa_group_id} = context,
+        messages
+      )
+      when wa_group_id != nil do
+    # name = action.field.name
+    # key = action.field[:key] || String.downcase(name) |> String.replace(" ", "_")
+    # value = ContactField.parse_contact_field_value(context, action.value)
+
+    # context =
+    #   if key == "settings",
+    #     do: settings(context, value),
+    #     else: ContactField.add_contact_field(context, key, name, value, "string")
+
+    # {:ok, context, messages}
+    IO.inspect("Routing to wa_group")
+    execute(%{action | type: "set_wa_group_field"}, context, messages)
+  end
+
   def execute(%{type: "send_msg"} = action, %{wa_group_id: wa_group_id} = context, messages)
       when wa_group_id != nil do
     action = Map.put(action, :templating, nil)
 
-    event_label = "Marking flow as completed after single node for WA group"
+    # event_label = "Marking flow as completed after single node for WA group"
 
     WAGroupAction.send_message(context, action, messages)
-    FlowContext.mark_wa_flows_complete(event_label, wa_group_id)
+    # FlowContext.mark_wa_flows_complete(event_label, wa_group_id)
     {:ok, context, []}
   end
 
@@ -709,25 +730,6 @@ defmodule Glific.Flows.Action do
     value = ContactField.parse_contact_field_value(context, action.value)
     context = ContactSetting.set_contact_name(context, value)
     {:ok, context, messages}
-  end
-
-  def execute(
-        %{type: "set_contact_field_valid"} = action,
-        %{wa_group_id: wa_group_id} = context,
-        messages
-      )
-      when wa_group_id != nil do
-    # name = action.field.name
-    # key = action.field[:key] || String.downcase(name) |> String.replace(" ", "_")
-    # value = ContactField.parse_contact_field_value(context, action.value)
-
-    # context =
-    #   if key == "settings",
-    #     do: settings(context, value),
-    #     else: ContactField.add_contact_field(context, key, name, value, "string")
-
-    # {:ok, context, messages}
-    execute(%{action | type: "set_wa_group_field"}, context, messages)
   end
 
   # Fake the valid key so we can have the same function signature and simplify the code base

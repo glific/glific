@@ -94,18 +94,25 @@ defmodule Glific.Flows.Exit do
       type: "exit",
       recent_message: get_recent_messages(context.recent_inbound)
     })
+    cond do
+      is_nil(exit.destination_node_uuid) and context.wa_group_id != nil ->
+        event_label = "Marking flow as completed for WA group"
+        IO.inspect("FLOW ending")
+        FlowContext.mark_wa_flows_complete(event_label, context.wa_group_id)
+        {:ok, nil, []}
 
-    if is_nil(exit.destination_node_uuid) do
-      FlowContext.reset_context(context)
-      {:ok, nil, []}
-    else
-      {:ok, {:node, node}} = Map.fetch(context.uuid_map, exit.destination_node_uuid)
+      is_nil(exit.destination_node_uuid) ->
+        FlowContext.reset_context(context)
+        {:ok, nil, []}
 
-      Node.execute(
-        node,
-        FlowContext.set_node(context, node),
-        messages
-      )
+      true ->
+        {:ok, {:node, node}} = Map.fetch(context.uuid_map, exit.destination_node_uuid)
+
+        Node.execute(
+          node,
+          FlowContext.set_node(context, node),
+          messages
+        )
     end
   end
 

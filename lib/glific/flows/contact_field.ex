@@ -52,12 +52,6 @@ defmodule Glific.Flows.ContactField do
         do: %{},
         else: contact.fields
 
-    value =
-      if is_nil(contact_fields[field]) do
-        "1"
-      else
-        value
-      end
 
     fields =
       contact_fields
@@ -127,7 +121,6 @@ defmodule Glific.Flows.ContactField do
   @spec parse_contact_field_value(FlowContext.t(), String.t()) :: String.t()
   def parse_contact_field_value(context, value) do
     message_vars = FlowContext.get_vars_to_parse(context)
-
     value
     |> MessageVarParser.parse(message_vars)
     |> Glific.execute_eex()
