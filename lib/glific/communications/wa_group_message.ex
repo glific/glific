@@ -217,9 +217,12 @@ defmodule Glific.Communications.GroupMessage do
     wa_group.id
   end
 
-  # handler for receiving the reaction message
+  @doc """
+  handler for receiving the reaction message
+  """
   @spec receive_reaction_msg(map(), non_neg_integer()) :: :ok
   def receive_reaction_msg(params, org_id) do
+    IO.inspect(params)
     contact = Map.get(params, "reactorId")
     reaction = Map.get(params, "reaction")
     bsp_message_id = Map.get(params, "msgId")
@@ -233,7 +236,11 @@ defmodule Glific.Communications.GroupMessage do
 
     original_message =
       WAMessage
-      |> where([wa_msg], wa_msg.bsp_id == ^bsp_message_id and wa_msg.organization_id == ^org_id)
+      |> where(
+        [wa_msg],
+        wa_msg.bsp_id == ^bsp_message_id and wa_msg.type != :reaction and
+          wa_msg.organization_id == ^org_id
+      )
       |> Repo.one()
 
     if original_message do
