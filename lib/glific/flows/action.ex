@@ -542,7 +542,6 @@ defmodule Glific.Flows.Action do
     end
   end
 
-  # TODO: should we add a validate for set_wa_group_field?
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
 
@@ -649,7 +648,6 @@ defmodule Glific.Flows.Action do
     if is_nil(wa_group_id) do
       execute(%{action | type: "invalid action"}, context, messages)
     else
-      IO.inspect("Executing wa_group")
       name = action.field.name
       key = action.field[:key] || String.downcase(name) |> String.replace(" ", "_")
       value = ContactField.parse_contact_field_value(context, action.value)
@@ -660,43 +658,19 @@ defmodule Glific.Flows.Action do
     end
   end
 
-  def execute(
-        %{type: "set_contact_field"} = action,
-        %{wa_group_id: wa_group_id} = context,
-        messages
-      )
-      when wa_group_id != nil do
-    # name = action.field.name
-    # key = action.field[:key] || String.downcase(name) |> String.replace(" ", "_")
-    # value = ContactField.parse_contact_field_value(context, action.value)
-
-    # context =
-    #   if key == "settings",
-    #     do: settings(context, value),
-    #     else: ContactField.add_contact_field(context, key, name, value, "string")
-
-    # {:ok, context, messages}
-    IO.inspect("Routing to wa_group")
-    execute(%{action | type: "set_wa_group_field"}, context, messages)
-  end
-
   def execute(%{type: "send_msg"} = action, %{wa_group_id: wa_group_id} = context, messages)
       when wa_group_id != nil do
     action = Map.put(action, :templating, nil)
-
-    # event_label = "Marking flow as completed after single node for WA group"
-
     WAGroupAction.send_message(context, action, messages)
-    # FlowContext.mark_wa_flows_complete(event_label, wa_group_id)
-    {:ok, context, []}
   end
 
-  def execute(_action, %{wa_group_id: wa_group_id} = context, _messages)
+  def execute(action, %{wa_group_id: wa_group_id} = context, messages)
       when wa_group_id != nil do
-    event_label = "Flow terminated as unsupported node used for WA group"
+    Logger.error(
+      "Unsupported action type: for flow_id #{inspect(context.flow_id)} wa_group_id #{inspect(context.wa_group_id)} and the message is #{inspect(messages)}"
+    )
 
-    FlowContext.mark_wa_flows_complete(event_label, wa_group_id, true)
-    {:ok, context, []}
+    raise(UndefinedFunctionError, message: "Unsupported action type #{action.type} for WA group")
   end
 
   def execute(%{type: "send_msg"} = action, context, messages) do
@@ -752,7 +726,6 @@ defmodule Glific.Flows.Action do
     # lets prevent the error from happening
     # if we don't recognize it, we just ignore it, and avoid an error being thrown
     # Issue #858
-    # TODO: Do we need this check for set_wa_group_field
     if Map.get(action.field, :name) in ["", nil] do
       {:ok, context, messages}
     else

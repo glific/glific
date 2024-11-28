@@ -94,10 +94,12 @@ defmodule Glific.Flows.Exit do
       type: "exit",
       recent_message: get_recent_messages(context.recent_inbound)
     })
+
     cond do
+      # Since we only support 3 nodes for WA groups rn, we are doing the flow ending
+      # process seprately, eventually we can use the second clause for this too
       is_nil(exit.destination_node_uuid) and context.wa_group_id != nil ->
         event_label = "Marking flow as completed for WA group"
-        IO.inspect("FLOW ending")
         FlowContext.mark_wa_flows_complete(event_label, context.wa_group_id)
         {:ok, nil, []}
 

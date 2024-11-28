@@ -1488,6 +1488,24 @@ defmodule Glific.Flows.ActionTest do
 
     message_stream = []
 
-    assert_raise(UndefinedFunctionError,fn -> Action.execute(action, context, message_stream) end)
+    assert_raise(UndefinedFunctionError, fn -> Action.execute(action, context, message_stream) end)
+  end
+
+  test "execute an wa group unsupported action",
+       _attrs do
+    [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
+
+    context =
+      %FlowContext{wa_group_id: wa_group.id, flow_id: 1, results: %{"test_result" => "field1"}}
+      |> Repo.preload([:wa_group, :flow])
+
+    action = %Action{
+      type: "add_input_labels",
+      value: ["@results.test_result"]
+    }
+
+    message_stream = []
+
+    assert_raise(UndefinedFunctionError, fn -> Action.execute(action, context, message_stream) end)
   end
 end

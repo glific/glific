@@ -334,15 +334,11 @@ defmodule Glific.Flows.Node do
         end
       )
 
-    # IO.inspect(result)
     do_execute_node_actions(result, node, context)
   end
 
   @spec do_execute_node_actions({:ok, any()} | {:error, any()}, Node.t(), FlowContext.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
-  # defp do_execute_node_actions(_result, _node, %{wa_group_id: wa_group_id} = context)
-  #      when wa_group_id != nil,
-  #      do: {:ok, context, []}
 
   defp do_execute_node_actions({:error, _error} = result, _node, _context), do: result
 

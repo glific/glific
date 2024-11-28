@@ -357,8 +357,9 @@ defmodule Glific.Groups.WAGroups do
     |> Repo.update()
   end
 
-  # TODO: docs
-
+  @doc """
+  Returns a WAGroup.t() as map
+  """
   @spec get_wa_group_map(integer()) :: map()
   def get_wa_group_map(wa_group_id) do
     get_wa_group!(wa_group_id)

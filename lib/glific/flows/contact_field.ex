@@ -52,7 +52,6 @@ defmodule Glific.Flows.ContactField do
         do: %{},
         else: contact.fields
 
-
     fields =
       contact_fields
       |> Map.put(String.trim(field), %{
@@ -121,6 +120,7 @@ defmodule Glific.Flows.ContactField do
   @spec parse_contact_field_value(FlowContext.t(), String.t()) :: String.t()
   def parse_contact_field_value(context, value) do
     message_vars = FlowContext.get_vars_to_parse(context)
+
     value
     |> MessageVarParser.parse(message_vars)
     |> Glific.execute_eex()
