@@ -182,7 +182,9 @@ defmodule Glific.Saas.Queries do
   defp organization(%{is_valid: false} = result, _params), do: result
 
   defp organization(result, params) do
-    case fetch_erp_organizations(params["name"]) do
+    org_name = String.trim(params["name"])
+
+    case fetch_erp_organizations(org_name) do
       {:ok, %{data: %{customer_name: customer_name}}} ->
         {:ok, provider} =
           Repo.fetch_by(Provider, %{shortcode: @default_provider, group: "bsp"},
@@ -190,8 +192,8 @@ defmodule Glific.Saas.Queries do
           )
 
         attrs = %{
-          name: params["name"],
-          shortcode: params["shortcode"],
+          name: org_name,
+          shortcode: String.downcase(params["shortcode"]),
           email: params["email"],
           bsp_id: provider.id,
           default_language_id: 1,
@@ -486,7 +488,7 @@ defmodule Glific.Saas.Queries do
 
   defp validate_finance_poc(result, params) do
     result
-    |> validate_text_field(params["name"], :finance_poc_name, {1, 25})
+    |> validate_text_field(params["name"], :finance_poc_name, {1, 50})
     |> validate_text_field(params["designation"], :finance_poc_designation, {1, 25})
     |> validate_phone(params["phone"], :finance_poc_phone)
     |> validate_email(params["email"], :finance_poc_email)
@@ -504,7 +506,7 @@ defmodule Glific.Saas.Queries do
 
   defp validate_signer_details(result, params) do
     result
-    |> validate_text_field(params["name"], :signer_name, {1, 25})
+    |> validate_text_field(params["name"], :signer_name, {1, 50})
     |> validate_text_field(params["designation"], :signer_designation, {1, 25})
     |> validate_email(params["email"], :signer_email)
   end

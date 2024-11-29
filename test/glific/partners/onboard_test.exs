@@ -259,7 +259,7 @@ defmodule Glific.OnboardTest do
         "registration_id" => reg_id,
         "billing_frequency" => "twice",
         "finance_poc" => %{
-          "name" => String.duplicate(Faker.Person.name(), 20),
+          "name" => String.duplicate(Faker.Person.name(), 50),
           "email" => "invalid@.com",
           "designation" => "",
           "phone" => "23"
@@ -279,7 +279,7 @@ defmodule Glific.OnboardTest do
                messages: %{
                  billing_frequency:
                    "Value should be one of Monthly , Quarterly, Half-Yearly, Annually.",
-                 finance_poc_name: "Field cannot be more than 25 letters.",
+                 finance_poc_name: "Field cannot be more than 50 letters.",
                  finance_poc_designation: "Field cannot be empty.",
                  finance_poc_email: "Email is not valid.",
                  submitter_name: "Field cannot be empty."
@@ -640,5 +640,18 @@ defmodule Glific.OnboardTest do
 
     assert updated_organization.is_suspended == false
     assert updated_organization.suspended_until == nil
+  end
+
+  test "ensure that shortcode and org name are handled correctly" do
+    attrs =
+      @valid_attrs
+      |> Map.put("name", " First")
+      |> Map.put("shortcode", "NEW_Glific")
+      |> Map.put("phone", "919917443995")
+
+    result = Onboard.setup(attrs)
+
+    assert result.organization.name == "First"
+    assert result.organization.shortcode == "new_glific"
   end
 end
