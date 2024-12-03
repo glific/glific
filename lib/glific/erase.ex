@@ -70,7 +70,8 @@ defmodule Glific.Erase do
       {"webhook_logs", "week"},
       {"flow_contexts", "month"},
       {"flow_results", "month"},
-      {"messages_conversations", "month"}
+      {"messages_conversations", "month"},
+      {"user_jobs", "month"}
     ]
     |> Enum.each(fn {table, duration} ->
       Repo.delete_all(
