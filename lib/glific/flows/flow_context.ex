@@ -453,7 +453,7 @@ defmodule Glific.Flows.FlowContext do
         # but for webhooks, the function can return something different every time
         # so we check for both node uuid and body
         item["node_uuid"] == context.node_uuid and
-          item["body"] == body and
+          item["message"] == body and
           DateTime.compare(date, since) in [:gt, :eq]
       end
     )
