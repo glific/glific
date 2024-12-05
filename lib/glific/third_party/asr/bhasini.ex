@@ -9,6 +9,7 @@ defmodule Glific.ASR.Bhasini do
 
   @config_url "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model"
   @meity_pipeline_id "64392f96daac500b55c543cd"
+  @language_detect_url "https://dhruva-api.bhashini.gov.in/services/inference/audiolangdetection"
   # @ai4bharat_pipeline_id "643930aa521a4b1ba0f4c41d"
 
   @doc """
@@ -36,6 +37,58 @@ defmodule Glific.ASR.Bhasini do
 
       error ->
         {:error, error}
+    end
+  end
+
+  @doc """
+  Detects a language
+  """
+  @spec detect_language(String.t()) :: map()
+  def detect_language(url) do
+    bhasini_keys = Glific.get_bhasini_keys()
+
+    payload = %{
+      "config" => %{"serviceId" => "bhashini/iitmandi/audio-lang-detection/gpu"},
+      "audio" => [%{"audioUri" => url}]
+    }
+
+    case Tesla.post(@language_detect_url, Jason.encode!(payload),
+           headers: [
+             {"Authorization", bhasini_keys.inference_key},
+             {"Content-Type", "application/json"}
+           ],
+           opts: [adapter: [recv_timeout: 300_000]]
+         ) do
+      {:ok, %Tesla.Env{status: 200, body: asr_response_body}} ->
+        # Handle the new API response with status code 200
+        decoded_response = Jason.decode!(asr_response_body)
+
+        detected_language_code =
+          get_in(decoded_response, [
+            "output",
+            Access.at(0),
+            "langPrediction",
+            Access.at(0),
+            "langCode"
+          ])
+
+        language = Glific.Settings.get_language_by_label_or_locale(detected_language_code)
+
+        %{success: true, detected_language: get_in(language, [Access.at(0), "label"])}
+
+      {:ok, %Tesla.Env{status: status, body: body}} ->
+        Logger.info(
+          "Invalid status received from Bhashini while detecting language for url: #{url} status: #{status}  body: #{body}"
+        )
+
+        %{success: false, detected_language: "Could not detect language"}
+
+      {:error, reason} ->
+        Logger.info(
+          "Invalid status received from Bhashini while detecting language for url: #{url} reason: #{reason}"
+        )
+
+        %{success: false, detected_language: "Could not detect language"}
     end
   end
 
@@ -176,7 +229,6 @@ defmodule Glific.ASR.Bhasini do
          ) do
       {:ok, %Tesla.Env{status: 200, body: asr_response_body}} ->
         # Handle the new API response with status code 200
-        Jason.decode!(asr_response_body)
         decoded_response = Jason.decode!(asr_response_body)
         output_value = get_output_from_response(decoded_response)
         %{success: true, asr_response_text: output_value}
