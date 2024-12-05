@@ -2,6 +2,7 @@ defmodule Glific.WAGroup.WAMessage do
   @moduledoc false
   use Ecto.Schema
   import Ecto.Query, warn: false
+  alias Glific.WaGroup.WaReaction
   alias Glific.Contacts.Location
   alias __MODULE__
 
@@ -106,7 +107,7 @@ defmodule Glific.WAGroup.WAMessage do
     belongs_to(:message_broadcast, MessageBroadcast, foreign_key: :message_broadcast_id)
     belongs_to(:context_message, WAMessage, foreign_key: :context_message_id)
     has_one(:location, Location)
-
+    has_many(:reactions, WaReaction)
     timestamps(type: :utc_datetime_usec)
   end
 
@@ -147,7 +148,7 @@ defmodule Glific.WAGroup.WAMessage do
     media_id = changeset.changes[:media_id] || message.media_id
 
     cond do
-      type in [nil, :text, :location, :list, :quick_reply, :location_request_message, :reaction] ->
+      type in [nil, :text, :location, :list, :quick_reply, :location_request_message] ->
         changeset
 
       media_id == nil ->
