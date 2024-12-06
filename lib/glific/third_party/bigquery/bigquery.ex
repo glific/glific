@@ -741,6 +741,7 @@ defmodule Glific.BigQuery do
         table_id: "registration"
       })
 
+      # fetching data from db for organization_id
       registration_data =
         Registration
         |> select([r], %{
