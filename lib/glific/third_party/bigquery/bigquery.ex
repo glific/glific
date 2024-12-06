@@ -6,6 +6,8 @@ defmodule Glific.BigQuery do
   require Logger
   use Publicist
 
+  import Ecto.Query, warn: false
+
   alias Glific.{
     BigQuery.BigQueryJob,
     BigQuery.Schema,
@@ -28,6 +30,7 @@ defmodule Glific.BigQuery do
     Partners,
     Partners.Saas,
     Profiles.Profile,
+    Registrations.Registration,
     Repo,
     Stats.Stat,
     Tickets.Ticket,
@@ -738,8 +741,21 @@ defmodule Glific.BigQuery do
         table_id: "registration"
       })
 
-      # syncing data to BQ
+      registration_data =
+        Registration
+        |> select([r], %{
+          org_details: r.org_details,
+          platform_details: r.platform_details,
+          billing_frequency: r.billing_frequency,
+          finance_poc: r.finance_poc,
+          submitter: r.submitter,
+          signing_authority: r.signing_authority,
+          ip_address: r.ip_address
+        })
+        |> where([r], r.organization_id == ^organization_id)
+        |> Repo.one()
 
+      # syncing data to BQ
       Tabledata.bigquery_tabledata_insert_all(
         conn,
         project_id,
@@ -750,13 +766,13 @@ defmodule Glific.BigQuery do
             rows: [
               %{
                 json: %{
-                  org_details: organization_id,
-                  platform_details: "Kentucky ogres",
-                  finance_poc: "2024-12-05 14:46:28",
-                  submitter: "2024-12-05 14:46:28",
-                  signing_authority: "2024-12-05 14:46:28",
-                  billing_frequency: "2024-12-06 22:29:29.745340",
-                  ip_address: "a84837cc-6043-48f4-8d5d-d0ceb5c3b579"
+                  org_details: format_json(registration_data.org_details),
+                  platform_details: format_json(registration_data.platform_details),
+                  finance_poc: format_json(registration_data.finance_poc),
+                  submitter: format_json(registration_data.submitter),
+                  signing_authority: format_json(registration_data.signing_authority),
+                  billing_frequency: registration_data.billing_frequency,
+                  ip_address: registration_data.ip_address
                 }
               }
             ]
