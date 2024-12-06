@@ -737,6 +737,33 @@ defmodule Glific.BigQuery do
         project_id: project_id,
         table_id: "registration"
       })
+
+      # syncing data to BQ
+
+      Tabledata.bigquery_tabledata_insert_all(
+        conn,
+        project_id,
+        dataset_id,
+        "registration",
+        [
+          body: %{
+            rows: [
+              %{
+                json: %{
+                  org_details: organization_id,
+                  platform_details: "Kentucky ogres",
+                  finance_poc: "2024-12-05 14:46:28",
+                  submitter: "2024-12-05 14:46:28",
+                  signing_authority: "2024-12-05 14:46:28",
+                  billing_frequency: "2024-12-06 22:29:29.745340",
+                  ip_address: "a84837cc-6043-48f4-8d5d-d0ceb5c3b579"
+                }
+              }
+            ]
+          }
+        ],
+        []
+      )
     end
   end
 end
