@@ -1,6 +1,6 @@
 defmodule Glific.ASR.Bhasini do
   @moduledoc """
-  This is a module to convert speech to text by using Bhasini API
+  This is a module to convert speech to text by using Bhashini API
   """
   use Tesla
   require Logger
@@ -41,11 +41,11 @@ defmodule Glific.ASR.Bhasini do
   end
 
   @doc """
-  Detects a language
+  Detects a language from voice notes using Bhashini
   """
   @spec detect_language(String.t()) :: map()
   def detect_language(url) do
-    bhasini_keys = Glific.get_bhasini_keys()
+    bhashini_keys = Glific.get_bhashini_keys()
 
     payload = %{
       "config" => %{"serviceId" => "bhashini/iitmandi/audio-lang-detection/gpu"},
@@ -54,14 +54,13 @@ defmodule Glific.ASR.Bhasini do
 
     case Tesla.post(@language_detect_url, Jason.encode!(payload),
            headers: [
-             {"Authorization", bhasini_keys.inference_key},
+             {"Authorization", bhashini_keys.inference_key},
              {"Content-Type", "application/json"}
            ],
            opts: [adapter: [recv_timeout: 300_000]]
          ) do
-      {:ok, %Tesla.Env{status: 200, body: asr_response_body}} ->
-        # Handle the new API response with status code 200
-        decoded_response = Jason.decode!(asr_response_body)
+      {:ok, %Tesla.Env{status: 200, body: bhashini_response}} ->
+        decoded_response = Jason.decode!(bhashini_response)
 
         detected_language_code =
           get_in(decoded_response, [
@@ -72,9 +71,9 @@ defmodule Glific.ASR.Bhasini do
             "langCode"
           ])
 
-        language = Glific.Settings.get_language_by_label_or_locale(detected_language_code)
+        [language] = Glific.Settings.get_language_by_label_or_locale(detected_language_code)
 
-        %{success: true, detected_language: get_in(language, [Access.at(0), "label"])}
+        %{success: true, detected_language: language.label}
 
       {:ok, %Tesla.Env{status: status, body: body}} ->
         Logger.info(
@@ -95,18 +94,18 @@ defmodule Glific.ASR.Bhasini do
   @doc """
   Performs an ASR (Automatic Speech Recognition) API call with configuration request.
 
-  This function makes an API call to the Bhasini ASR service using the provided configuration parameters and returns the ASR response text.
+  This function makes an API call to the Bhashini ASR service using the provided configuration parameters and returns the ASR response text.
   """
   @spec with_config_request(Keyword.t()) :: {:ok, map()} | map()
   def with_config_request(params) do
     source_language = Keyword.get(params, :source_language)
     target_language = Keyword.get(params, :target_language)
     task_type = Keyword.get(params, :task_type)
-    bhasini_keys = Glific.get_bhasini_keys()
+    bhashini_keys = Glific.get_bhashini_keys()
 
     default_headers = [
-      {"userID", bhasini_keys.user_id},
-      {"ulcaApiKey", bhasini_keys.ulca_api_key},
+      {"userID", bhashini_keys.user_id},
+      {"ulcaApiKey", bhashini_keys.ulca_api_key},
       {"Content-Type", "application/json"}
     ]
 
@@ -256,7 +255,7 @@ defmodule Glific.ASR.Bhasini do
   end
 
   @doc """
-  Subsequent API call to Bhasini for ASR after config call
+  Subsequent API call to Bhashini for ASR after config call
   """
   @spec handle_response(map(), String.t()) :: map()
   def handle_response(%{status: 200} = response, content) do
@@ -294,11 +293,11 @@ defmodule Glific.ASR.Bhasini do
   end
 
   def handle_response(response, _content) do
-    Logger.error("Bhasini API call failed: #{response}")
+    Logger.error("Bhashini API call failed: #{response}")
 
     %{
       success: false,
-      msg: "API call to Bhasini failed"
+      msg: "API call to Bhashini failed"
     }
   end
 end
