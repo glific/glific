@@ -240,21 +240,17 @@ defmodule Glific.Communications.GroupMessage do
         wa_msg.bsp_id == ^msg_id and
           wa_msg.organization_id == ^org_id
       )
-      |> Repo.one()
+      |> Repo.one!()
 
-    if context_message do
-      attrs =
-        %{
-          reaction: reaction,
-          wa_message_id: context_message.id,
-          contact_id: contact.id,
-          bsp_id: bsp_msg_id,
-          organization_id: org_id
-        }
+    attrs =
+      %{
+        reaction: reaction,
+        wa_message_id: context_message.id,
+        contact_id: contact.id,
+        bsp_id: bsp_msg_id,
+        organization_id: org_id
+      }
 
-      WaReaction.create_wa_reaction(attrs)
-    else
-      {:error, "Message not found"}
-    end
+    WaReaction.create_wa_reaction(attrs)
   end
 end

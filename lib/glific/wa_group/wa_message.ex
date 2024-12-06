@@ -2,7 +2,6 @@ defmodule Glific.WAGroup.WAMessage do
   @moduledoc false
   use Ecto.Schema
   import Ecto.Query, warn: false
-  alias Glific.WaGroup.WaReaction
   alias Glific.Contacts.Location
   alias __MODULE__
 
@@ -14,7 +13,8 @@ defmodule Glific.WAGroup.WAMessage do
     Messages.MessageMedia,
     Partners.Organization,
     WAGroup.WAManagedPhone,
-    WAGroup.WAMessage
+    WAGroup.WAMessage,
+    WaGroup.WaReaction
   }
 
   alias Glific.Enums.{MessageFlow, MessageStatus, MessageType}

@@ -8,8 +8,8 @@ defmodule Glific.WaGroup.WaReaction do
     Contacts.Contact,
     Partners.Organization,
     Repo,
-    WaGroup.WaReaction,
-    WAGroup.WAMessage
+    WAGroup.WAMessage,
+    WaGroup.WaReaction
   }
 
   @type t() :: %__MODULE__{
