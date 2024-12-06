@@ -722,4 +722,21 @@ defmodule Glific.BigQuery do
       "Error while removing duplicate entries from the table #{table} on bigquery. #{inspect(error)}"
     )
   end
+
+  @doc """
+    Syncing registration details to BQ instance
+  """
+  @spec sync_registration_details(non_neg_integer) :: :ok
+  def sync_registration_details(organization_id) do
+    with {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} <-
+           fetch_bigquery_credentials(organization_id) do
+      # creating table in BQ
+      create_table(Schema.registration_schema(), %{
+        conn: conn,
+        dataset_id: dataset_id,
+        project_id: project_id,
+        table_id: "registration"
+      })
+    end
+  end
 end
