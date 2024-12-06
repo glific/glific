@@ -2104,6 +2104,28 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for the registration table
+  """
+  @spec registration_schema :: list()
+  def registration_schema do
+    registration_schema() ++
+      [
+        %{
+          description: "Organization ID",
+          name: "organization_id",
+          type: "INTEGER",
+          mode: "REQUIRED"
+        },
+        %{
+          description: "Organization Name",
+          name: "organization_name",
+          type: "STRING",
+          mode: "NULLABLE"
+        }
+      ]
+  end
+
+  @doc """
   Procedure for flat fields
   """
   @spec flat_fields_procedure(String.t(), String.t()) :: String.t()
