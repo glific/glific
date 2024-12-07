@@ -138,7 +138,7 @@ defmodule Glific.Flows.ContactField do
   end
 
   @spec add_variable_field(ContactsField.t()) :: map()
-  defp add_variable_field(%{scope: :group} = contacts_field) do
+  defp add_variable_field(%{scope: :wa_group} = contacts_field) do
     contacts_field
     |> Map.put(:variable, "@wa_group.fields.#{contacts_field.shortcode}")
   end
