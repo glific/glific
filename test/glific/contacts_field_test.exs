@@ -30,7 +30,7 @@ defmodule Glific.ContactsFieldTest do
     @wa_group_attrs %{
       name: "Nationality",
       shortcode: "nationality",
-      scope: :group
+      scope: :wa_group
     }
   end
 
@@ -165,7 +165,7 @@ defmodule Glific.ContactsFieldTest do
     organization_id: organization_id
   } do
     contacts_field =
-      Fixtures.contacts_field_fixture(%{organization_id: organization_id, scope: :group})
+      Fixtures.contacts_field_fixture(%{organization_id: organization_id, scope: :wa_group})
 
     assert {:ok, %ContactsField{}} = ContactField.delete_contacts_field(contacts_field)
 

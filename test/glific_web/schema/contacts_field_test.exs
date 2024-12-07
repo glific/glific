@@ -37,7 +37,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
           "input" => %{
             "name" => "Age",
             "shortcode" => "age",
-            "scope" => "GROUP"
+            "scope" => "WA_GROUP"
           }
         }
       )
@@ -47,7 +47,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
     assert contacts_field["name"] == "Age"
     assert contacts_field["shortcode"] == "age"
     assert contacts_field["organization"]["name"] == "Glific"
-    assert contacts_field["scope"] == "GROUP"
+    assert contacts_field["scope"] == "WA_GROUP"
   end
 
   test "create a contact field, can have same shortcode but with different scope", %{
@@ -76,7 +76,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
           "input" => %{
             "name" => "Age",
             "shortcode" => "age",
-            "scope" => "GROUP"
+            "scope" => "WA_GROUP"
           }
         }
       )
@@ -85,7 +85,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
     contacts_field = get_in(query_data, [:data, "createContactsField", "contactsField"])
     assert contacts_field["shortcode"] == "age"
     assert contacts_field["organization"]["name"] == "Glific"
-    assert contacts_field["scope"] == "GROUP"
+    assert contacts_field["scope"] == "WA_GROUP"
   end
 
   test "count returns the number of contact fields", %{manager: user} = attrs do
@@ -105,7 +105,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
         organization_id: attrs.organization_id,
         name: "Nationality",
         shortcode: "nationality",
-        scope: :group
+        scope: :wa_group
       })
 
     {:ok, query_data} = auth_query_gql_by(:count, user)
@@ -133,7 +133,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
     # scoped query group
     {:ok, query_data} =
       auth_query_gql_by(:count, user,
-        variables: %{"filter" => %{"name" => "Nationality", "scope" => "GROUP"}}
+        variables: %{"filter" => %{"name" => "Nationality", "scope" => "WA_GROUP"}}
       )
 
     assert get_in(query_data, [:data, "countContactsFields"]) == 1
@@ -145,7 +145,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
         organization_id: attrs.organization_id,
         name: "Nationality",
         shortcode: "nationality",
-        scope: :group
+        scope: :wa_group
       })
 
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
@@ -172,7 +172,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
     # fetching with scopes
     result =
       auth_query_gql_by(:list, user,
-        variables: %{"filter" => %{"name" => "Name", "scope" => "GROUP"}}
+        variables: %{"filter" => %{"name" => "Name", "scope" => "WA_GROUP"}}
       )
 
     assert {:ok, query_data} = result
@@ -180,7 +180,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
     assert Enum.empty?(contacts_fields)
 
     result =
-      auth_query_gql_by(:list, user, variables: %{"filter" => %{"scope" => "GROUP"}})
+      auth_query_gql_by(:list, user, variables: %{"filter" => %{"scope" => "WA_GROUP"}})
 
     assert {:ok, query_data} = result
     contacts_fields = get_in(query_data, [:data, "contactsFields"])
@@ -206,7 +206,7 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
 
   test "update a contact fields when scope is GROUP", %{manager: user} = attrs do
     contacts_field =
-      Fixtures.contacts_field_fixture(%{organization_id: attrs.organization_id, scope: :group})
+      Fixtures.contacts_field_fixture(%{organization_id: attrs.organization_id, scope: :wa_group})
 
     result =
       auth_query_gql_by(:update, user,
