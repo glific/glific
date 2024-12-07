@@ -2008,6 +2008,12 @@ defmodule Glific.BigQuery.Schema do
         name: "wa_group_name",
         type: "STRING",
         mode: "NULLABLE"
+      },
+      %{
+        description: "Flow label associated with the message",
+        name: "flow_label",
+        type: "STRING",
+        mode: "NULLABLE"
       }
     ]
   end
