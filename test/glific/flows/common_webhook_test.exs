@@ -74,6 +74,45 @@ defmodule Glific.Flows.CommonWebhookTest do
     assert result[:error] == "Received status code 500"
   end
 
+  test "detect_language/1 detects correct language from voice note using Bhashini" do
+    fields = %{
+      "speech" =>
+        "https://filemanager.gupshup.io/wa/69d27dd2-46d2-4872-b18e-f6aeeb2ec64d/wa/media/8656858131106230?download=false"
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            "{\"taskType\":\"audio-lang-detection\",\"output\":[{\"audio\":{\"audioContent\":null,\"audioUri\":\"https://filemanager.gupshup.io/wa/69d27dd2-46d2-4872-b18e-f6aeeb2ec64d/wa/media/8656858131106230?download=false\"},\"langPrediction\":[{\"langCode\":\"en\",\"scriptCode\":null,\"langScore\":null}]}],\"config\":null}"
+        }
+    end)
+
+    result = CommonWebhook.webhook("detect_language", fields)
+    assert result[:success] == true
+    assert result[:detected_language] == "English"
+  end
+
+  test "detect_language/1 throws error when error from Bhashini" do
+    fields = %{
+      "speech" =>
+        "https://filemanager.gupshup.io/wa/69d27dd2-46d2-4872-b18e-f6aeeb2ec64d/wa/media/8656858131106230?download=false"
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 500,
+          body: "Internal Server Error"
+        }
+    end)
+
+    result = CommonWebhook.webhook("detect_language", fields)
+    assert result[:success] == false
+    assert result[:detected_language] == "Could not detect language"
+  end
+
   test "parse_via_gpt_vision without response_format params, trying to get valid json" do
     with_mock(
       Messages,
