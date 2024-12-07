@@ -4,6 +4,7 @@ defmodule Glific.Flows.FlowContext do
   contact and/or a conversation (or other Glific data types). Let encapsulate
   this in a module and isolate the flow from the other aspects of Glific
   """
+  alias Glific.Groups.WAGroups
   alias __MODULE__
 
   use Ecto.Schema
@@ -748,6 +749,8 @@ defmodule Glific.Flows.FlowContext do
     {:ok, context} = seed_wa_group_context(flow, wa_group_id, status, opts)
 
     context
+    |> Repo.preload(:wa_group)
+    |> Map.put(:flow, flow)
     |> execute([])
   end
 
@@ -1000,6 +1003,7 @@ defmodule Glific.Flows.FlowContext do
   def get_vars_to_parse(%{wa_group_id: wa_group_id} = context) when wa_group_id != nil do
     %{
       "results" => context.results,
+      "wa_group" => WAGroups.get_wa_group_map(wa_group_id),
       "flow" => %{name: context.flow.name, id: context.flow.id, uuid: context.flow.uuid}
     }
   end
