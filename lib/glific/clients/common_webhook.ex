@@ -230,6 +230,11 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  def webhook("detect_language", fields) do
+    speech = fields["speech"]
+    Bhasini.detect_language(speech)
+  end
+
   def webhook("get_buttons", fields) do
     buttons =
       fields["buttons_data"]
