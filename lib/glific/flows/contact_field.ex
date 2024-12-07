@@ -468,7 +468,7 @@ defmodule Glific.Flows.ContactField do
       shortcode: field,
       name: label,
       organization_id: wa_group.organization_id,
-      scope: :group
+      scope: :wa_group
     })
 
     wa_group
@@ -487,6 +487,6 @@ defmodule Glific.Flows.ContactField do
     end)
   end
 
-  defp get_schema_by_scope(:group), do: WAGroup
+  defp get_schema_by_scope(:wa_group), do: WAGroup
   defp get_schema_by_scope(:contact), do: Contact
 end
