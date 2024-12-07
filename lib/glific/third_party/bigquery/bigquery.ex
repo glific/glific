@@ -729,10 +729,11 @@ defmodule Glific.BigQuery do
   @doc """
     Syncing registration details to BQ instance
   """
-  @spec sync_registration_details(non_neg_integer) :: :ok
+  @spec sync_registration_details(non_neg_integer) :: {:ok, any()} | {:error, any()}
   def sync_registration_details(organization_id) do
     with {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} <-
-           fetch_bigquery_credentials(organization_id) do
+           fetch_bigquery_credentials(organization_id),
+         {:ok, registration_data} <- fetch_registration_details(organization_id) do
       # creating table in BQ
       create_table(Schema.registration_schema(), %{
         conn: conn,
@@ -740,21 +741,6 @@ defmodule Glific.BigQuery do
         project_id: project_id,
         table_id: "registration"
       })
-
-      # fetching data from db for organization_id
-      registration_data =
-        Registration
-        |> select([r], %{
-          org_details: r.org_details,
-          platform_details: r.platform_details,
-          billing_frequency: r.billing_frequency,
-          finance_poc: r.finance_poc,
-          submitter: r.submitter,
-          signing_authority: r.signing_authority,
-          ip_address: r.ip_address
-        })
-        |> where([r], r.organization_id == ^organization_id)
-        |> Repo.one()
 
       # syncing data to BQ
       Tabledata.bigquery_tabledata_insert_all(
@@ -781,6 +767,32 @@ defmodule Glific.BigQuery do
         ],
         []
       )
+      |> case do
+        {:ok, _} -> "Synced registration details"
+        _ -> "Error while syncing details"
+      end
     end
+  end
+
+  # fetching data from db for organization_id
+  @spec fetch_registration_details(non_neg_integer) :: {:ok, map()} | {:error, String.t()}
+  defp fetch_registration_details(organization_id) do
+    data =
+      Registration
+      |> select([r], %{
+        org_details: r.org_details,
+        platform_details: r.platform_details,
+        billing_frequency: r.billing_frequency,
+        finance_poc: r.finance_poc,
+        submitter: r.submitter,
+        signing_authority: r.signing_authority,
+        ip_address: r.ip_address
+      })
+      |> where([r], r.organization_id == ^organization_id)
+      |> Repo.one()
+
+    if is_nil(data),
+      do: {:error, "Registration details for org_id: #{organization_id} not found"},
+      else: {:ok, data}
   end
 end
