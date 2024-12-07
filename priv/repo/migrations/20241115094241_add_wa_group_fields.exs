@@ -3,7 +3,11 @@ defmodule Glific.Repo.Migrations.AddWaGroupFields do
 
   def change do
     alter table(:wa_groups) do
-      add :fields, :map, default: %{}
+      add :fields, :map, default: %{}, comment: "Labels and values of the NGO generated fields for the WA group"
+    end
+
+    alter table(:wa_messages) do
+      add :flow_label, :string, comment: "Tagged flow label for WA messages"
     end
 
     # Adding group type to contact_field_scope enum
