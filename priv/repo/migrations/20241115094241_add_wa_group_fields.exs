@@ -3,7 +3,9 @@ defmodule Glific.Repo.Migrations.AddWaGroupFields do
 
   def change do
     alter table(:wa_groups) do
-      add :fields, :map, default: %{}, comment: "Labels and values of the NGO generated fields for the WA group"
+      add :fields, :map,
+        default: %{},
+        comment: "Labels and values of the NGO generated fields for the WA group"
     end
 
     alter table(:wa_messages) do
