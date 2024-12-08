@@ -68,6 +68,7 @@ defmodule Glific.Flows.Action do
   @required_fields_waittime [:delay]
   @required_fields_interactive_template [:name | @required_field_common]
   @required_fields_set_results [:name, :category, :value | @required_field_common]
+  @required_fields_set_wa_group_field [:value, :field | @required_field_common]
 
   # They fall under actions, thus not using "wait for response" with them, as that is a router.
   @wait_for ["wait_for_time", "wait_for_result"]
@@ -290,6 +291,23 @@ defmodule Glific.Flows.Action do
 
   def process(%{"type" => "set_contact_field"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_set_contact_field)
+
+    name =
+      if is_nil(json["field"]["name"]),
+        do: json["field"]["key"],
+        else: json["field"]["name"]
+
+    process(json, uuid_map, node, %{
+      value: json["value"],
+      field: %{
+        name: name,
+        key: json["field"]["key"]
+      }
+    })
+  end
+
+  def process(%{"type" => "set_wa_group_field"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_wa_group_field)
 
     name =
       if is_nil(json["field"]["name"]),
@@ -616,9 +634,15 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
 
+  def execute(%{type: "link_google_sheet"} = action, context, _messages) do
+    {context, message} = Sheets.execute(action, context)
+    {:ok, context, [message]}
+  end
+
   def execute(%{type: "send_msg"} = action, %{wa_group_id: wa_group_id} = context, messages)
       when wa_group_id != nil do
     action = Map.put(action, :templating, nil)
+
     event_label = "Marking flow as completed after single node for WA group"
 
     WAGroupAction.send_message(context, action, messages)
@@ -743,12 +767,6 @@ defmodule Glific.Flows.Action do
       # this clears any potential errors
       {:ok, context, []}
     end
-  end
-
-  def execute(%{type: "link_google_sheet"} = action, context, _messages) do
-    {context, message} = Sheets.execute(action, context)
-
-    {:ok, context, [message]}
   end
 
   def execute(%{type: "open_ticket"} = action, context, _messages) do

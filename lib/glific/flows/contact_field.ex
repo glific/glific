@@ -12,6 +12,8 @@ defmodule Glific.Flows.ContactField do
     Contacts.ContactsField,
     Flows.FlowContext,
     Flows.MessageVarParser,
+    Groups.WAGroup,
+    Groups.WAGroups,
     Profiles,
     Repo
   }
@@ -26,6 +28,17 @@ defmodule Glific.Flows.ContactField do
     contact = do_add_contact_field(context.contact, field, label, value, type)
 
     Map.put(context, :contact, contact)
+  end
+
+  @doc """
+  Add new field to wa_group
+  """
+  @spec add_wa_group_field(FlowContext.t(), String.t(), String.t(), String.t(), String.t()) ::
+          FlowContext.t()
+  def add_wa_group_field(context, field, label, value, type) do
+    wa_group = do_add_wa_group_field(context.wa_group, field, label, value, type)
+
+    Map.put(context, :wa_group, wa_group)
   end
 
   @doc """
@@ -61,7 +74,8 @@ defmodule Glific.Flows.ContactField do
     maybe_create_contact_field(%{
       shortcode: field,
       name: label,
-      organization_id: contact.organization_id
+      organization_id: contact.organization_id,
+      scope: :contact
     })
 
     {:ok, _} =
@@ -117,13 +131,18 @@ defmodule Glific.Flows.ContactField do
   """
   @spec list_contacts_fields(map()) :: [ContactsField.t()]
   def list_contacts_fields(args) do
-    Repo.list_filter(args, ContactsField, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)
+    Repo.list_filter(args, ContactsField, &Repo.opts_with_inserted_at/2, &filter_with/2)
     |> Enum.map(fn contacts_field ->
       add_variable_field(contacts_field)
     end)
   end
 
   @spec add_variable_field(ContactsField.t()) :: map()
+  defp add_variable_field(%{scope: :wa_group} = contacts_field) do
+    contacts_field
+    |> Map.put(:variable, "@wa_group.fields.#{contacts_field.shortcode}")
+  end
+
   defp add_variable_field(contacts_field) do
     contacts_field
     |> Map.put(:variable, "@contact.fields.#{contacts_field.shortcode}")
@@ -134,7 +153,7 @@ defmodule Glific.Flows.ContactField do
   """
   @spec count_contacts_fields(map()) :: integer
   def count_contacts_fields(args),
-    do: Repo.count_filter(args, ContactsField, &Repo.filter_with/2)
+    do: Repo.count_filter(args, ContactsField, &filter_with/2)
 
   @doc """
   Create contact field
@@ -156,7 +175,7 @@ defmodule Glific.Flows.ContactField do
   @spec maybe_create_contact_field(map()) ::
           {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
   def maybe_create_contact_field(attrs) do
-    case Repo.get_by(ContactsField, %{shortcode: attrs.shortcode},
+    case Repo.get_by(ContactsField, %{shortcode: attrs.shortcode, scope: attrs.scope},
            organization_id: attrs.organization_id
          ) do
       nil ->
@@ -210,7 +229,7 @@ defmodule Glific.Flows.ContactField do
       label = get_change(changeset, :name)
 
       update_field_label_shortcode(
-        contacts_field.shortcode,
+        contacts_field,
         shortcode,
         label,
         attrs.organization_id
@@ -235,14 +254,14 @@ defmodule Glific.Flows.ContactField do
 
     # replacing old field with new field where new field is not present
     update_field_label_shortcode(
-      contacts_field.shortcode,
+      contacts_field,
       shortcode,
       label,
       attrs.organization_id
     )
 
     # delete the old field if both old and new field is there
-    delete_prev_field(contacts_field.shortcode, shortcode, attrs.organization_id)
+    delete_prev_field(contacts_field, shortcode, attrs.organization_id)
     # delete the old field from the contacts_fields table
     delete_contacts_field(contacts_field)
   end
@@ -263,8 +282,7 @@ defmodule Glific.Flows.ContactField do
           {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
   def delete_contacts_field(%ContactsField{} = contacts_field, delete_assoc \\ false) do
     if delete_assoc,
-      do:
-        delete_associated_contacts_field(contacts_field.shortcode, contacts_field.organization_id)
+      do: delete_associated_contacts_field(contacts_field, contacts_field.organization_id)
 
     contacts_field
     |> ContactsField.changeset(%{})
@@ -274,12 +292,14 @@ defmodule Glific.Flows.ContactField do
   @doc """
   Delete data associated with the given field in the contacts table
   """
-  @spec delete_associated_contacts_field(String.t(), non_neg_integer()) :: tuple()
-  def delete_associated_contacts_field(shortcode, organization_id) do
+  @spec delete_associated_contacts_field(ContactsField.t(), non_neg_integer()) :: tuple()
+  def delete_associated_contacts_field(contacts_field, organization_id) do
+    schema = get_schema_by_scope(contacts_field.scope)
+
     query =
-      from(c in Contact,
+      from(c in schema,
         where: c.organization_id == ^organization_id,
-        update: [set: [fields: fragment("fields - ?", ^shortcode)]]
+        update: [set: [fields: fragment("fields - ?", ^contacts_field.shortcode)]]
       )
 
     Repo.update_all(query, [])
@@ -288,14 +308,21 @@ defmodule Glific.Flows.ContactField do
   @doc """
   Update contacts_field label or shortcode in the contacts table
   """
-  @spec update_field_label_shortcode(String.t(), String.t(), String.t(), non_neg_integer()) ::
+  @spec update_field_label_shortcode(ContactsField.t(), String.t(), String.t(), non_neg_integer()) ::
           :error | tuple()
   def update_field_label_shortcode(_, nil, nil, _), do: :error
 
-  def update_field_label_shortcode(prev_shortcode, nil, label, organization_id) do
+  def update_field_label_shortcode(
+        %{shortcode: prev_shortcode} = contacts_field,
+        nil,
+        label,
+        organization_id
+      ) do
+    schema = get_schema_by_scope(contacts_field.scope)
+
     # only update the label
     query =
-      from(c in Contact,
+      from(c in schema,
         where:
           c.organization_id == ^organization_id and
             not is_nil(fragment("fields->?", type(^prev_shortcode, :string))),
@@ -314,12 +341,19 @@ defmodule Glific.Flows.ContactField do
     Repo.update_all(query, [])
   end
 
-  def update_field_label_shortcode(prev_shortcode, shortcode, nil, organization_id) do
+  def update_field_label_shortcode(
+        %{shortcode: prev_shortcode} = contacts_field,
+        shortcode,
+        nil,
+        organization_id
+      ) do
     # only update the shortcode
     shortcode = Glific.string_snake_case(shortcode)
 
+    schema = get_schema_by_scope(contacts_field.scope)
+
     query =
-      from(c in Contact,
+      from(c in schema,
         where:
           c.organization_id == ^organization_id and
             not is_nil(fragment("fields->?", type(^prev_shortcode, :string))) and
@@ -340,12 +374,19 @@ defmodule Glific.Flows.ContactField do
     Repo.update_all(query, [])
   end
 
-  def update_field_label_shortcode(prev_shortcode, shortcode, label, organization_id) do
+  def update_field_label_shortcode(
+        %{shortcode: prev_shortcode} = contacts_field,
+        shortcode,
+        label,
+        organization_id
+      ) do
     # update shortcode and label
     shortcode = Glific.string_snake_case(shortcode)
 
+    schema = get_schema_by_scope(contacts_field.scope)
+
     query =
-      from(c in Contact,
+      from(c in schema,
         where:
           c.organization_id == ^organization_id and
             not is_nil(fragment("fields->?", type(^prev_shortcode, :string))) and
@@ -370,12 +411,14 @@ defmodule Glific.Flows.ContactField do
   @doc """
   When merging two contact fields, delete the previous field
   """
-  @spec delete_prev_field(String.t(), String.t(), non_neg_integer()) :: any
-  def delete_prev_field(prev_shortcode, shortcode, organization_id) do
+  @spec delete_prev_field(ContactsField.t(), String.t(), non_neg_integer()) :: any
+  def delete_prev_field(%{shortcode: prev_shortcode} = contacts_field, shortcode, organization_id) do
     shortcode = Glific.string_snake_case(shortcode)
 
+    schema = get_schema_by_scope(contacts_field.scope)
+
     query =
-      from(c in Contact,
+      from(c in schema,
         where:
           c.organization_id == ^organization_id and
             not is_nil(fragment("fields->?", type(^prev_shortcode, :string))) and
@@ -393,4 +436,57 @@ defmodule Glific.Flows.ContactField do
 
     Repo.update_all(query, [])
   end
+
+  @doc """
+  Add wa_group field taking WAGroup as parameter
+  """
+  @spec do_add_wa_group_field(WAGroup.t(), String.t(), String.t(), any(), String.t()) ::
+          WAGroup.t()
+  def do_add_wa_group_field(wa_group, field, label, value, type \\ "string") do
+    wa_group_fields =
+      if is_nil(wa_group.fields),
+        do: %{},
+        else: wa_group.fields
+
+    fields =
+      wa_group_fields
+      |> Map.put(String.trim(field), %{
+        value: value,
+        label: label,
+        type: type,
+        inserted_at: DateTime.utc_now()
+      })
+
+    {:ok, wa_group} =
+      WAGroups.update_wa_group(
+        wa_group,
+        %{fields: fields}
+      )
+
+    # create contact fields if not already created
+    maybe_create_contact_field(%{
+      shortcode: field,
+      name: label,
+      organization_id: wa_group.organization_id,
+      scope: :wa_group
+    })
+
+    wa_group
+  end
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:scope, scope}, query ->
+        from(q in query, where: q.scope == ^scope)
+
+      _, query ->
+        query
+    end)
+  end
+
+  defp get_schema_by_scope(:wa_group), do: WAGroup
+  defp get_schema_by_scope(:contact), do: Contact
 end

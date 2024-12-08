@@ -891,7 +891,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             message_broadcast_id: row.message_broadcast_id,
             bsp_status: row.bsp_status,
             wa_group_id: row.wa_group_id,
-            wa_group_name: if(!is_nil(row.wa_group), do: row.wa_group.label)
+            wa_group_name: if(!is_nil(row.wa_group), do: row.wa_group.label),
+            flow_label: if(!is_nil(row.flow_label), do: row.flow_label)
           }
           |> Map.merge(message_media_info(row.media))
           |> Map.merge(bq_fields(organization_id))

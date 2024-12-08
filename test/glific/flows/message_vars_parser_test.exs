@@ -329,7 +329,7 @@ defmodule Glific.Flows.MessageVarParserTest do
     default_format = "{D}/{0M}/{YYYY}"
 
     current_date =
-      Timex.today()
+      Timex.now()
       |> Timex.Timezone.convert(timezone)
       |> Timex.format!(default_format)
       |> to_string()

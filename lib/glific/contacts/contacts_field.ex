@@ -54,8 +54,8 @@ defmodule Glific.Contacts.ContactsField do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> shortcode_to_snakecase()
-    |> unique_constraint([:name, :organization_id])
-    |> unique_constraint([:shortcode, :organization_id])
+    |> unique_constraint([:name, :organization_id, :scope])
+    |> unique_constraint([:shortcode, :organization_id, :scope])
   end
 
   defp shortcode_to_snakecase(changeset) do
