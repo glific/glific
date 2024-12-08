@@ -2179,6 +2179,57 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for the registration table
+  """
+  @spec registration_schema :: list()
+  def registration_schema do
+    [
+      %{
+        description: "JSON object for storing details about the organization.",
+        name: "org_details",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "JSON object for storing details about the Gupshup platform.",
+        name: "platform_details",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "JSON object for storing billing details.",
+        name: "finance_poc",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "JSON object for storing submitter details",
+        name: "submitter",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "JSON object for storing signing authority details.",
+        name: "signing_authority",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Frequency of billing one of yearly, monthly, quarterly",
+        name: "billing_frequency",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "IP address of the submitter",
+        name: "ip_address",
+        type: "STRING",
+        mode: "REQUIRED"
+      }
+    ]
+  end
+
+  @doc """
   Procedure for flat fields
   """
   @spec flat_fields_procedure(String.t(), String.t()) :: String.t()
