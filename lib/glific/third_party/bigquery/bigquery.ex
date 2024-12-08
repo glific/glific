@@ -32,7 +32,8 @@ defmodule Glific.BigQuery do
     Stats.Stat,
     Tickets.Ticket,
     Trackers.Tracker,
-    WAGroup.WAMessage
+    WAGroup.WAMessage,
+    WaGroup.WaReaction
   }
 
   alias GoogleApi.BigQuery.V2.{
@@ -63,7 +64,8 @@ defmodule Glific.BigQuery do
     "wa_messages" => :wa_message_schema,
     "wa_groups" => :wa_group_schema,
     "wa_groups_collections" => :wa_groups_collection_schema,
-    "contacts_groups" => :contact_groups_schema
+    "contacts_groups" => :contact_groups_schema,
+    "wa_reactions" => :wa_reactions_schema
   }
 
   @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
@@ -193,7 +195,8 @@ defmodule Glific.BigQuery do
     "wa_messages" => WAMessage,
     "wa_groups" => WAGroup,
     "wa_groups_collections" => WAGroupsCollection,
-    "contacts_groups" => ContactGroup
+    "contacts_groups" => ContactGroup,
+    "wa_reactions" => WaReaction
   }
 
   @doc false
