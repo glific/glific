@@ -130,6 +130,7 @@ defmodule Glific.Communications.GroupMessage do
     case type do
       :text -> receive_text(message_params)
       :location -> receive_location(message_params)
+      :poll -> receive_poll(message_params)
       _ -> receive_media(message_params)
     end
   end
@@ -178,6 +179,20 @@ defmodule Glific.Communications.GroupMessage do
 
     message
     |> Communications.publish_data(:received_wa_group_message, message_params.organization_id)
+
+    :ok
+  end
+
+  # handler for receiving the poll response
+  @spec receive_poll(map()) :: :ok
+  defp receive_poll(message_params) do
+    message_params
+    |> Map.put_new(:flow, :inbound)
+    |> WAMessages.create_message()
+    |> Communications.publish_data(
+      :received_wa_group_message,
+      message_params.organization_id
+    )
 
     :ok
   end
