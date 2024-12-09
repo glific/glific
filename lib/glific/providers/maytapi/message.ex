@@ -197,4 +197,29 @@ defmodule Glific.Providers.Maytapi.Message do
   end
 
   defp validate_phone_number(_phone, _payload), do: :ok
+
+  @doc false
+  @spec receive_poll(map()) :: map()
+  def receive_poll(%{"message" => %{"fromMe" => from_me}} = params) do
+    payload = params["message"]
+
+    {flow, status} = if from_me, do: {:outbound, :sent}, else: {:inbound, :received}
+
+    poll_content = %{
+      "options" => payload["options"]
+    }
+
+    %{
+      bsp_id: payload["id"],
+      body: payload["text"],
+      poll_content: poll_content,
+      type: payload["type"],
+      sender: %{
+        phone: params["user"]["phone"],
+        name: params["user"]["name"]
+      },
+      flow: flow,
+      status: status
+    }
+  end
 end

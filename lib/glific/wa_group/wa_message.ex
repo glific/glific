@@ -50,6 +50,7 @@ defmodule Glific.WAGroup.WAMessage do
           message_broadcast: MessageBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
           wa_managed_phone_id: non_neg_integer | nil,
           wa_managed_phone: WAManagedPhone.t() | Ecto.Association.NotLoaded.t() | nil,
+          poll_content: map() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
           is_dm: :boolean | nil,
@@ -79,7 +80,8 @@ defmodule Glific.WAGroup.WAMessage do
     :media_id,
     :send_at,
     :sent_at,
-    :is_dm
+    :is_dm,
+    :poll_content
   ]
 
   schema "wa_messages" do
@@ -96,6 +98,7 @@ defmodule Glific.WAGroup.WAMessage do
     field(:context_id, :string)
     field(:bsp_id, :string)
     field(:is_dm, :boolean)
+    field(:poll_content, :map, default: %{})
 
     belongs_to(:contact, Contact)
     belongs_to(:wa_managed_phone, WAManagedPhone)
@@ -147,7 +150,7 @@ defmodule Glific.WAGroup.WAMessage do
     media_id = changeset.changes[:media_id] || message.media_id
 
     cond do
-      type in [nil, :text, :location, :list, :quick_reply, :location_request_message] ->
+      type in [nil, :text, :location, :list, :quick_reply, :location_request_message, :poll] ->
         changeset
 
       media_id == nil ->
