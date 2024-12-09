@@ -52,6 +52,7 @@ defmodule Glific.WAGroup.WAMessage do
           wa_managed_phone_id: non_neg_integer | nil,
           wa_managed_phone: WAManagedPhone.t() | Ecto.Association.NotLoaded.t() | nil,
           poll_content: map() | nil,
+          poll_content: map() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
           is_dm: :boolean | nil,
