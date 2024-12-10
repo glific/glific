@@ -40,12 +40,16 @@ defmodule GlificWeb.Schema.ContactsFieldTypes do
 
     @desc "Match the shortcode"
     field :shortcode, :string
+
+    @desc "Scope of the contact field"
+    field :scope, :contact_field_scope_enum
   end
 
   input_object :contacts_field_input do
     field :name, :string
     field :shortcode, :string
     field :value_type, :contact_field_value_type_enum
+    field :scope, :contact_field_scope_enum
   end
 
   object :contacts_field_queries do
