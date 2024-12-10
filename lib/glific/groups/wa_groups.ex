@@ -281,10 +281,17 @@ defmodule Glific.Groups.WAGroups do
     |> Repo.all()
   end
 
+  @spec update_wa_group(WAGroup.t(), map()) ::
+          {:ok, WAGroup.t()} | {:error, Ecto.Changeset.t()}
+  def update_wa_group(%WAGroup{} = wa_group, attrs) do
+    wa_group
+    |> Ecto.Changeset.change(attrs)
+    |> Repo.update()
+  end
+
   @doc """
   Fetches a group with given bsp_id and organization_id (Creates a group if doesnt exist)
   """
-  @spec maybe_create_group(map()) :: {:ok, WAGroup.t()} | {:error, Ecto.Changeset.t()}
   def maybe_create_group(params) do
     case Repo.get_by(WAGroup, %{
            bsp_id: params.bsp_id,
@@ -295,19 +302,11 @@ defmodule Glific.Groups.WAGroups do
         create_wa_group(params)
 
       wa_group ->
-        update_wa_group(wa_group, params)
-    end
-  end
-
-  @spec update_wa_group(WAGroup.t(), map()) ::
-          {:ok, WAGroup.t()} | {:error, Ecto.Changeset.t()}
-  defp update_wa_group(wa_group, params) do
-    if wa_group.label != params.label do
-      wa_group
-      |> Ecto.Changeset.change(%{label: params.label})
-      |> Repo.update()
-    else
-      {:ok, wa_group}
+        if wa_group.label != params.label do
+          update_wa_group(wa_group, %{label: params.label})
+        else
+          {:ok, wa_group}
+        end
     end
   end
 
