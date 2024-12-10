@@ -215,8 +215,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       "name" => "user_a",
       "phone" => "919917443994"
     },
-    "phoneId" => 43876,
-    "phone_id" => 43876,
+    "phoneId" => 43_876,
+    "phone_id" => 43_876,
     "productId" => "5c5941f2-f083-40f4-8a67-cc5e1a8daa88",
     "product_id" => "5c5941f2-f083-40f4-8a67-cc5e1a8daa88",
     "receiver" => "917834811114",
