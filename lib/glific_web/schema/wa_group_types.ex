@@ -3,7 +3,7 @@ defmodule GlificWeb.Schema.WaGroupTypes do
   GraphQL Representation of Glific's whatsapp Groups DataType
   """
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
+  import Absinthe.Resolution.Helpers, only: [dataloader: 1, dataloader: 2]
 
   alias Glific.Repo
 
@@ -21,12 +21,15 @@ defmodule GlificWeb.Schema.WaGroupTypes do
     field :bsp_id, :string
 
     field :last_communication_at, :datetime
+    field :fields, :json
 
     field :wa_managed_phone, :wa_managed_phone do
       resolve(dataloader(Repo))
     end
 
-    field :fields, :json
+    field :groups, list_of(:group) do
+      resolve(dataloader(Repo, use_parent: true))
+    end
   end
 
   @desc "Filtering options for wa groups"
