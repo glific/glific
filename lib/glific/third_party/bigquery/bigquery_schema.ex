@@ -654,6 +654,69 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for wa_reaction table
+  """
+  @spec wa_reactions_schema :: list()
+  def wa_reactions_schema do
+    [
+      %{
+        description: "Unique ID generated for each  wa_reactions",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Phone number of the contact",
+        name: "phone",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "reaction message",
+        name: "reaction",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "WA message ID",
+        name: "wa_message_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Body of the message",
+        name: "body",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for messages media table
   """
   @spec messages_media_schema :: list()

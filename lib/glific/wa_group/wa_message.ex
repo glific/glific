@@ -13,7 +13,8 @@ defmodule Glific.WAGroup.WAMessage do
     Messages.MessageMedia,
     Partners.Organization,
     WAGroup.WAManagedPhone,
-    WAGroup.WAMessage
+    WAGroup.WAMessage,
+    WaGroup.WaReaction
   }
 
   alias Glific.Enums.{MessageFlow, MessageStatus, MessageType}
@@ -108,7 +109,7 @@ defmodule Glific.WAGroup.WAMessage do
     belongs_to(:message_broadcast, MessageBroadcast, foreign_key: :message_broadcast_id)
     belongs_to(:context_message, WAMessage, foreign_key: :context_message_id)
     has_one(:location, Location)
-
+    has_many(:reactions, WaReaction)
     timestamps(type: :utc_datetime_usec)
   end
 
