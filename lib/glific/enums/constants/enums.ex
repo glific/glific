@@ -82,7 +82,7 @@ defmodule Glific.Enums.Constants do
       @contact_field_value_type_const [:text, :integer, :number, :boolean, :date]
 
       # Contact fields scope types
-      @contact_field_scope_const [:contact, :globals]
+      @contact_field_scope_const [:contact, :globals, :wa_group]
 
       # User roles
       @user_roles_const [:none, :staff, :manager, :admin, :glific_admin]
