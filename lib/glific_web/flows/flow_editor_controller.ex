@@ -83,13 +83,26 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
   @doc false
   @spec fields(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def fields(conn, _params) do
+  def fields(conn, params) do
     fields =
       ContactField.list_contacts_fields(%{
-        filter: %{organization_id: conn.assigns[:organization_id]}
+        filter:
+          %{
+            organization_id: conn.assigns[:organization_id]
+          }
+          |> Map.merge(add_scope_filter(params))
       })
       |> Enum.reduce([], fn cf, acc ->
-        [%{key: cf.shortcode, name: cf.name, value_type: cf.value_type, label: cf.name} | acc]
+        [
+          %{
+            key: cf.shortcode,
+            name: cf.name,
+            value_type: cf.value_type,
+            label: cf.name,
+            scope: cf.scope
+          }
+          | acc
+        ]
       end)
 
     json(conn, %{results: fields})
@@ -106,11 +119,14 @@ defmodule GlificWeb.Flows.FlowEditorController do
   def fields_post(conn, params) do
     # need to store this into DB, the value_type will default to text in this case
     # the shortcode is the name, lower cased, and camelized
-    ContactField.create_contact_field(%{
-      name: params["label"],
-      shortcode: String.downcase(params["label"]) |> String.replace(" ", "_"),
-      organization_id: conn.assigns[:organization_id]
-    })
+    ContactField.create_contact_field(
+      %{
+        name: params["label"],
+        shortcode: String.downcase(params["label"]) |> String.replace(" ", "_"),
+        organization_id: conn.assigns[:organization_id]
+      }
+      |> Map.merge(add_scope_filter(params))
+    )
     |> case do
       {:ok, contact_field} ->
         conn
@@ -118,7 +134,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
           key: contact_field.shortcode,
           name: contact_field.name,
           label: contact_field.name,
-          value_type: contact_field.value_type
+          value_type: contact_field.value_type,
+          scope: contact_field.scope
         })
 
       {:error, _} ->
@@ -611,4 +628,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
     {year, week} = Timex.iso_week(Timex.now())
     "outbound/#{year}-#{week}/#{user.name}/#{uuid}.#{extension}"
   end
+
+  @spec add_scope_filter(map()) :: map()
+  defp add_scope_filter(%{"scope" => scope}), do: %{scope: scope}
+  defp add_scope_filter(_params), do: %{}
 end

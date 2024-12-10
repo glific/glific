@@ -337,4 +337,32 @@ defmodule Glific.Groups.WAGroups do
         {:error, "Failed to set maytapi webhook. Try Again"}
     end
   end
+
+  @doc """
+  Updates a wa_group.
+
+  ## Examples
+
+      iex> update_wa_group(%{field: value})
+      {:ok, %WAGroup{}}
+
+      iex> update_wa_group(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec update_wa_group(WAGroup.t(), map()) :: {:ok, WAGroup.t()} | {:error, Ecto.Changeset.t()}
+  def update_wa_group(wa_group, attrs \\ %{}) do
+    wa_group
+    |> WAGroup.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns a WAGroup.t() as map
+  """
+  @spec get_wa_group_map(integer()) :: map()
+  def get_wa_group_map(wa_group_id) do
+    get_wa_group!(wa_group_id)
+    |> Map.from_struct()
+  end
 end

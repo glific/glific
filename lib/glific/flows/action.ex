@@ -68,6 +68,7 @@ defmodule Glific.Flows.Action do
   @required_fields_waittime [:delay]
   @required_fields_interactive_template [:name | @required_field_common]
   @required_fields_set_results [:name, :category, :value | @required_field_common]
+  @required_fields_set_wa_group_field [:value, :field | @required_field_common]
 
   # They fall under actions, thus not using "wait for response" with them, as that is a router.
   @wait_for ["wait_for_time", "wait_for_result"]
@@ -290,6 +291,23 @@ defmodule Glific.Flows.Action do
 
   def process(%{"type" => "set_contact_field"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_set_contact_field)
+
+    name =
+      if is_nil(json["field"]["name"]),
+        do: json["field"]["key"],
+        else: json["field"]["name"]
+
+    process(json, uuid_map, node, %{
+      value: json["value"],
+      field: %{
+        name: name,
+        key: json["field"]["key"]
+      }
+    })
+  end
+
+  def process(%{"type" => "set_wa_group_field"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_wa_group_field)
 
     name =
       if is_nil(json["field"]["name"]),
@@ -616,22 +634,43 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
 
+  def execute(%{type: "link_google_sheet"} = action, context, _messages) do
+    {context, message} = Sheets.execute(action, context)
+    {:ok, context, [message]}
+  end
+
+  def execute(
+        %{type: "set_wa_group_field"} = action,
+        %{wa_group_id: wa_group_id} = context,
+        messages
+      ) do
+    # we raise error if this action is runnning for a contact flow
+    if is_nil(wa_group_id) do
+      execute(%{action | type: "invalid action"}, context, messages)
+    else
+      name = action.field.name
+      key = action.field[:key] || String.downcase(name) |> String.replace(" ", "_")
+      value = ContactField.parse_contact_field_value(context, action.value)
+
+      context = ContactField.add_wa_group_field(context, key, name, value, "string")
+
+      {:ok, context, messages}
+    end
+  end
+
   def execute(%{type: "send_msg"} = action, %{wa_group_id: wa_group_id} = context, messages)
       when wa_group_id != nil do
     action = Map.put(action, :templating, nil)
-    event_label = "Marking flow as completed after single node for WA group"
-
     WAGroupAction.send_message(context, action, messages)
-    FlowContext.mark_wa_flows_complete(event_label, wa_group_id)
-    {:ok, context, []}
   end
 
-  def execute(_action, %{wa_group_id: wa_group_id} = context, _messages)
+  def execute(action, %{wa_group_id: wa_group_id} = context, messages)
       when wa_group_id != nil do
-    event_label = "Flow terminated as unsupported node used for WA group"
+    Logger.error(
+      "Unsupported action type: for flow_id #{inspect(context.flow_id)} wa_group_id #{inspect(context.wa_group_id)} and the message is #{inspect(messages)}"
+    )
 
-    FlowContext.mark_wa_flows_complete(event_label, wa_group_id, true)
-    {:ok, context, []}
+    raise(UndefinedFunctionError, message: "Unsupported action type #{action.type} for WA group")
   end
 
   def execute(%{type: "send_msg"} = action, context, messages) do
@@ -743,12 +782,6 @@ defmodule Glific.Flows.Action do
       # this clears any potential errors
       {:ok, context, []}
     end
-  end
-
-  def execute(%{type: "link_google_sheet"} = action, context, _messages) do
-    {context, message} = Sheets.execute(action, context)
-
-    {:ok, context, [message]}
   end
 
   def execute(%{type: "open_ticket"} = action, context, _messages) do
