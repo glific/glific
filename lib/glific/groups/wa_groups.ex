@@ -295,15 +295,19 @@ defmodule Glific.Groups.WAGroups do
         create_wa_group(params)
 
       wa_group ->
-        # If the group exists, check if the name has changed
-        if wa_group.label != params.label do
-          _updated_group =
-            wa_group
-            |> Ecto.Changeset.change(%{label: params.label})
-            |> Repo.update()
-        else
-          {:ok, wa_group}
-        end
+        update_wa_group(wa_group, params)
+    end
+  end
+
+  @spec update_wa_group(WAGroup.t(), map()) ::
+          {:ok, WAGroup.t()} | {:error, Ecto.Changeset.t()}
+  defp update_wa_group(wa_group, params) do
+    if wa_group.label != params.label do
+      wa_group
+      |> Ecto.Changeset.change(%{label: params.label})
+      |> Repo.update()
+    else
+      {:ok, wa_group}
     end
   end
 
