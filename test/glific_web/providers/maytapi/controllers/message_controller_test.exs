@@ -195,6 +195,37 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     "phoneId" => 1_150
   }
 
+  @poll_message_webhook %{
+    "conversation" => "120363257477740000@g.us",
+    "conversation_name" => "Default group name",
+    "message" => %{
+      "_serialized" => "false_120363257477740000@g.us_3EB08972A5F7D0836263_918547689517@c.us",
+      "fromMe" => false,
+      "id" => "false_120363257477740000@g.us_3EB08972A5F7D0836263_918547689517@c.us",
+      "only_one" => false,
+      "options" => [
+        %{"id" => 0, "name" => "okay", "voters" => [], "votes" => 0},
+        %{"id" => 1, "name" => "huh", "voters" => [], "votes" => 0}
+      ],
+      "text" => "testing poll",
+      "type" => "poll"
+    },
+    "user" => %{
+      "id" => "919917443994@c.us",
+      "name" => "user_a",
+      "phone" => "919917443994"
+    },
+    "phoneId" => 43876,
+    "phone_id" => 43876,
+    "productId" => "5c5941f2-f083-40f4-8a67-cc5e1a8daa88",
+    "product_id" => "5c5941f2-f083-40f4-8a67-cc5e1a8daa88",
+    "receiver" => "917834811114",
+    "reply" =>
+      "https://api.maytapi.com/api/5c5941f2-f083-40f4-8a67-cc5e1a8daa88/43876/sendMessage",
+    "timestamp" => 1_733_828_890,
+    "type" => "message"
+  }
+
   @location_message_webhook %{
     "conversation" => "120363213149844251@g.us",
     "conversation_name" => "Default group name",
@@ -222,6 +253,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       "phone" => "919917443994"
     }
   }
+
   setup do
     default_provider = SeedsDev.seed_providers()
     organization = SeedsDev.seed_organizations(default_provider)
@@ -947,5 +979,36 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     assert {:ok, query_data} = result
     messages = get_in(query_data, [:data, "WaSearchMulti", "waMessages"])
     assert Enum.count(messages) == 1
+  end
+
+  test "Incoming poll message should be stored in the database", %{conn: conn} do
+    message_params =
+      @poll_message_webhook
+      |> put_in(["message", "id"], Ecto.UUID.generate())
+
+    conn = post(conn, "/maytapi", message_params)
+    assert conn.halted
+
+    bsp_message_id = get_in(message_params, ["message", "id"])
+
+    {:ok, message} =
+      Repo.fetch_by(WAMessage, %{
+        bsp_id: bsp_message_id,
+        organization_id: conn.assigns[:organization_id]
+      })
+
+    message = Repo.preload(message, [:contact])
+
+    assert message.bsp_status == :delivered
+    assert message.type == :poll
+
+    assert message.contact.contact_type == "WA"
+
+    assert message.poll_content == %{
+             "options" => [
+               %{"id" => 0, "name" => "okay", "voters" => [], "votes" => 0},
+               %{"id" => 1, "name" => "huh", "voters" => [], "votes" => 0}
+             ]
+           }
   end
 end
