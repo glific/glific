@@ -286,7 +286,8 @@ defmodule Glific.Groups.WAGroups do
   @doc """
   Fetches a group with given bsp_id and organization_id (Creates a group if doesnt exist)
   """
-  @spec maybe_create_group(map()) :: {:ok, Glific.Groups.WAGroup.t()} | {:error, Ecto.Changeset.t()}
+  @spec maybe_create_group(map()) ::
+          {:ok, Glific.Groups.WAGroup.t()} | {:error, Ecto.Changeset.t()}
   def maybe_create_group(params) do
     case Repo.get_by(WAGroup, %{
            bsp_id: params.bsp_id,
