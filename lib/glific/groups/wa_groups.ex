@@ -281,6 +281,9 @@ defmodule Glific.Groups.WAGroups do
     |> Repo.all()
   end
 
+  @doc """
+  Updates the wa_group with given attrs
+  """
   @spec update_wa_group(WAGroup.t(), map()) ::
           {:ok, WAGroup.t()} | {:error, Ecto.Changeset.t()}
   def update_wa_group(%WAGroup{} = wa_group, attrs) do
