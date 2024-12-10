@@ -463,7 +463,7 @@ defmodule Glific.Flows.ContactField do
         %{fields: fields}
       )
 
-    # create contact fields if not already created
+    # create wa_group field if not already created
     maybe_create_contact_field(%{
       shortcode: field,
       name: label,
