@@ -50,7 +50,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Tickets.Ticket,
     Trackers.Tracker,
     Users.User,
-    WAGroup.WAMessage
+    WAGroup.WAMessage,
+    WaGroup.WaReaction
   }
 
   @per_min_limit 500
@@ -95,7 +96,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         "wa_messages",
         "wa_groups",
         "wa_groups_collections",
-        "contacts_groups"
+        "contacts_groups",
+        "wa_reactions"
       ]
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
@@ -387,6 +389,38 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :wa_groups_collections, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("wa_reactions", organization_id, attrs) do
+    Logger.info(
+      "fetching wa_reactions data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("wa_reactions", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            phone: row.contact.phone,
+            reaction: row.reaction,
+            wa_message_id: row.wa_message.id,
+            body: row.wa_message.body,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :wa_reactions, organization_id, attrs))
 
     :ok
   end
@@ -1292,6 +1326,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:wa_group, :group])
+
+  defp get_query("wa_reactions", organization_id, attrs),
+    do:
+      WaReaction
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+      |> preload([:wa_message, :contact])
 
   defp get_query("contacts", organization_id, attrs),
     do:

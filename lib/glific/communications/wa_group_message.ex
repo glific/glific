@@ -5,6 +5,8 @@ defmodule Glific.Communications.GroupMessage do
 
   require Logger
 
+  alias Glific.WaGroup.WaReaction
+
   alias Glific.{
     Communications,
     Contacts,
@@ -230,6 +232,41 @@ defmodule Glific.Communications.GroupMessage do
       })
 
     wa_group.id
+  end
+
+  @doc """
+  handler for receiving the reaction message
+  """
+  @spec receive_reaction_msg(map(), non_neg_integer()) :: any()
+  def receive_reaction_msg(params, org_id) do
+    contact = Map.get(params, "reactorId")
+    reaction = Map.get(params, "reaction")
+    msg_id = Map.get(params, "msgId")
+    bsp_msg_id = Map.get(params, "reactionId")
+    # splitting because we are getting the contact number like 919xxxx22555@c.us this
+    [phone | _] = String.split(contact, "@")
+
+    contact = Contacts.get_contact_by_phone!(phone)
+
+    context_message =
+      WAMessage
+      |> where(
+        [wa_msg],
+        wa_msg.bsp_id == ^msg_id and
+          wa_msg.organization_id == ^org_id
+      )
+      |> Repo.one!()
+
+    attrs =
+      %{
+        reaction: reaction,
+        wa_message_id: context_message.id,
+        contact_id: contact.id,
+        bsp_id: bsp_msg_id,
+        organization_id: org_id
+      }
+
+    WaReaction.create_wa_reaction(attrs)
   end
 
   @doc """
