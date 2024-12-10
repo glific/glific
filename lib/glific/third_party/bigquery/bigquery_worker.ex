@@ -407,11 +407,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
           %{
             id: row.id,
             phone: row.contact.phone,
-            group_id: row.wa_group.id,
-            group_label: row.wa_group.label,
-            reaction: row.wa_reaction.reaction,
-            wa_message_id: row.wa_messages.id,
-            wa_message: row.wa_messages.body,
+            reaction: row.reaction,
+            wa_message_id: row.wa_message.id,
+            body: row.wa_message.body,
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
@@ -1334,7 +1332,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([m], m.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
-      |> preload([:wa_group, :wa_message])
+      |> preload([:wa_message, :contact])
 
   defp get_query("contacts", organization_id, attrs),
     do:

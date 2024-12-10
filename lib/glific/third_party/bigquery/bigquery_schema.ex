@@ -684,18 +684,6 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "WA Group ID",
-        name: "group_id",
-        type: "INTEGER",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "label of WhatsApp group",
-        name: "group_label",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
         description: "reaction message",
         name: "reaction",
         type: "STRING",

@@ -37,15 +37,15 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
     response
     |> Enum.each(fn item ->
       if Map.has_key?(item, "reaction") do
-        handle_reaction(item, org_id)
+        handle_reactions(item, org_id)
       else
         do_update_status(item, item["ackType"], org_id)
       end
     end)
   end
 
-  @spec handle_reaction(map(), non_neg_integer()) :: any()
-  defp handle_reaction(params, org_id) do
+  @spec handle_reactions(map(), non_neg_integer()) :: any()
+  defp handle_reactions(params, org_id) do
     params
     |> Communications.GroupMessage.receive_reaction_msg(org_id)
   end
