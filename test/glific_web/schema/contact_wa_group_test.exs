@@ -6,6 +6,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
     Contacts,
     Fixtures,
     Groups.ContactWAGroups,
+    Groups.WAGroups,
     Partners,
     Seeds.SeedsDev
   }
@@ -233,5 +234,30 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
     assert {:ok, query_data} = result
     count = get_in(query_data, [:data, "countContactWaGroup"])
     assert count == 1
+  end
+
+  test "update WA group", %{staff: user} do
+    wa_managed_phone =
+      Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+    wa_group =
+      Fixtures.wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    # Define params with a different label
+    params = %{
+      label: "New Group Label",
+      organization_id: user.organization_id,
+      bsp_id: wa_group.bsp_id,
+      wa_managed_phone_id: wa_managed_phone.id
+    }
+
+    {:ok, updated_group} = WAGroups.maybe_create_group(params)
+
+    assert updated_group.id == wa_group.id
+    assert updated_group.label == "New Group Label"
+    assert updated_group.bsp_id == wa_group.bsp_id
   end
 end

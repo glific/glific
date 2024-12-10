@@ -121,7 +121,9 @@ defmodule Glific.Groups.WAGroups do
     end)
   end
 
-  @doc false
+  @doc """
+  Syncs the WA groups and contacts in it.
+  """
   @spec sync_wa_groups_with_contacts(list(), non_neg_integer()) :: :ok | {:error, any()}
   def sync_wa_groups_with_contacts(group_details, org_id) do
     Enum.each(group_details, fn group ->
@@ -284,7 +286,8 @@ defmodule Glific.Groups.WAGroups do
   @doc """
   Fetches a group with given bsp_id and organization_id (Creates a group if doesnt exist)
   """
-  @spec maybe_create_group(map()) :: {:ok, WAGroup.t()} | {:error, Ecto.Changeset.t()}
+  @spec maybe_create_group(map()) ::
+          {:ok, Glific.Groups.WAGroup.t()} | {:error, Ecto.Changeset.t()}
   def maybe_create_group(params) do
     case Repo.get_by(WAGroup, %{
            bsp_id: params.bsp_id,
@@ -295,7 +298,11 @@ defmodule Glific.Groups.WAGroups do
         create_wa_group(params)
 
       wa_group ->
-        {:ok, wa_group}
+        if wa_group.label != params.label do
+          update_wa_group(wa_group, %{label: params.label})
+        else
+          {:ok, wa_group}
+        end
     end
   end
 
@@ -343,12 +350,11 @@ defmodule Glific.Groups.WAGroups do
 
   ## Examples
 
-      iex> update_wa_group(%{field: value})
-      {:ok, %WAGroup{}}
+    iex> update_wa_group(%{fields: value})
+    {:ok, %WAGroup{}}
 
-      iex> update_wa_group(%{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
+    iex> update_wa_group(%{fields: bad_value})
+    {:error, %Ecto.Changeset{}}
   """
   @spec update_wa_group(WAGroup.t(), map()) :: {:ok, WAGroup.t()} | {:error, Ecto.Changeset.t()}
   def update_wa_group(wa_group, attrs \\ %{}) do
