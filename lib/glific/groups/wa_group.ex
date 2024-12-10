@@ -7,6 +7,7 @@ defmodule Glific.Groups.WAGroup do
   import Ecto.Changeset
 
   alias Glific.Groups.Group
+
   alias Glific.{
     Contacts.Contact,
     Groups.WAGroup,
