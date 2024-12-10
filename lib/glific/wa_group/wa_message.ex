@@ -53,6 +53,7 @@ defmodule Glific.WAGroup.WAMessage do
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
           is_dm: :boolean | nil,
+          flow_label: String.t() | nil,
           inserted_at: :utc_datetime_usec | nil,
           updated_at: :utc_datetime_usec | nil
         }
@@ -79,7 +80,8 @@ defmodule Glific.WAGroup.WAMessage do
     :media_id,
     :send_at,
     :sent_at,
-    :is_dm
+    :is_dm,
+    :flow_label
   ]
 
   schema "wa_messages" do
@@ -96,7 +98,7 @@ defmodule Glific.WAGroup.WAMessage do
     field(:context_id, :string)
     field(:bsp_id, :string)
     field(:is_dm, :boolean)
-
+    field(:flow_label, :string)
     belongs_to(:contact, Contact)
     belongs_to(:wa_managed_phone, WAManagedPhone)
     belongs_to(:media, MessageMedia)

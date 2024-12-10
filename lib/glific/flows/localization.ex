@@ -175,6 +175,12 @@ defmodule Glific.Flows.Localization do
   one exists, else return the original text
   """
   @spec get_translated_category_name(FlowContext.t(), Category.t()) :: String.t() | nil
+  def get_translated_category_name(%{wa_group_id: wa_group_id} = _context, category)
+      when wa_group_id != nil do
+    # Since right now WA group doesnt have a concept of language like contact
+    category.name
+  end
+
   def get_translated_category_name(context, category) do
     language_id = context.contact.language_id
 
