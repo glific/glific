@@ -231,4 +231,14 @@ defmodule Glific.Communications.GroupMessage do
 
     wa_group.id
   end
+
+  @doc """
+  Callback to update the poll response for a message
+  """
+  @spec update_poll_content(String.t(), map(), non_neg_integer()) :: any()
+  def update_poll_content(bsp_message_id, poll_content, org_id) do
+    WAMessage
+    |> where([wa_msg], wa_msg.bsp_id == ^bsp_message_id and wa_msg.organization_id == ^org_id)
+    |> Repo.update_all(set: [poll_content: poll_content, updated_at: DateTime.utc_now()])
+  end
 end

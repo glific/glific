@@ -33,9 +33,17 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
   end
 
   @spec update_statuses(map(), non_neg_integer()) :: any()
-  defp update_statuses(%{"data" => response} = _params, org_id) do
-    response
-    |> Enum.each(&do_update_status(&1, &1["ackType"], org_id))
+  defp update_statuses(%{"data" => responses} = _params, org_id) do
+    responses
+    |> Enum.each(fn response ->
+      case response do
+        %{"options" => _options} ->
+          update_poll_response(response, org_id)
+
+        %{"ackType" => ack_type} ->
+          do_update_status(response, ack_type, org_id)
+      end
+    end)
   end
 
   # Updates the provider message statuses based on provider message id
@@ -44,5 +52,15 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
     status = Map.get(@message_event_type, ack_type)
     bsp_message_id = Map.get(params, "msgId")
     Communications.GroupMessage.update_bsp_status(bsp_message_id, status, org_id)
+  end
+
+  @spec update_poll_response(map(), non_neg_integer()) :: any()
+  defp update_poll_response(response, org_id) do
+    bsp_message_id = Map.get(response, "msgId")
+    options = Map.get(response, "options")
+    poll_content = %{
+      "options" =>options
+    }
+    Communications.GroupMessage.update_poll_content(bsp_message_id, poll_content, org_id)
   end
 end

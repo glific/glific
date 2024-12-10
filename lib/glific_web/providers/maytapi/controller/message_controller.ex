@@ -61,6 +61,9 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
   @spec sticker(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def sticker(conn, params), do: media(conn, params, :sticker)
 
+  @doc """
+  Callback for maytapi poll message
+  """
   @spec poll(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def poll(conn, params) do
     params
