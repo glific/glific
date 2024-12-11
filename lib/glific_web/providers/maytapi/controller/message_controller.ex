@@ -62,6 +62,19 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
   def sticker(conn, params), do: media(conn, params, :sticker)
 
   @doc """
+  Callback for maytapi poll message
+  """
+  @spec poll(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def poll(conn, params) do
+    params
+    |> Maytapi.Message.receive_poll()
+    |> update_message_params(conn.assigns[:organization_id], params)
+    |> Communications.GroupMessage.receive_message(:poll)
+
+    handler(conn, params, "poll handler")
+  end
+
+  @doc """
   Callback for maytapi location message
   """
   @spec location(Plug.Conn.t(), map()) :: Plug.Conn.t()

@@ -42,7 +42,7 @@ defmodule Glific.Enums do
   [:sent, :delivered, :enqueued, :error, :read, :received, :contact_opt_out, :reached, :seen, :played, :deleted]
 
   iex> Glific.Enums.message_type_const()
-  [:audio, :contact, :document, :hsm, :image, :location, :list, :quick_reply, :text, :video, :sticker, :location_request_message]
+  [:audio, :contact, :document, :hsm, :image, :location, :list, :quick_reply, :text, :video, :sticker, :location_request_message, :poll]
 
   iex> Glific.Enums.question_type_const()
   [:text, :numeric, :date]
