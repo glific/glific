@@ -47,7 +47,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
           do_update_status(response, ack_type, org_id)
       end
     end)
-  end
 
   # Updates the provider message statuses based on provider message id
   @spec do_update_status(map(), String.t(), non_neg_integer()) :: any()
