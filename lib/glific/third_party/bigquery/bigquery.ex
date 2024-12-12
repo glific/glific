@@ -752,13 +752,13 @@ defmodule Glific.BigQuery do
           error = Jason.decode!(body)
 
           if error["error"]["status"] == "ALREADY_EXISTS" do
+            Logger.info("Deleting old registration data in BQ for org_id: #{organization_id}")
+
             sql = "TRUNCATE TABLE `#{dataset_id}.registration`"
 
             GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
               body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
             )
-
-            Logger.info("Deleting old registration data in BQ for org_id: #{organization_id}")
           end
       end
 
