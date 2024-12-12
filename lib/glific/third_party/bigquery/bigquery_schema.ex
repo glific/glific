@@ -2219,6 +2219,30 @@ defmodule Glific.BigQuery.Schema do
         name: "ip_address",
         type: "STRING",
         mode: "REQUIRED"
+      },
+      %{
+        description: "Flag indicating if the registration has been submitted.",
+        name: "has_submitted",
+        type: "Boolean",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Flag indicating if the user agreed or disagreed with the T&C",
+        name: "terms_agreed",
+        type: "Boolean",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Flag indicating if user agrees to create a support staff account",
+        name: "support_staff_account",
+        type: "Boolean",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "if the user disputed the T&C",
+        name: "is_disputed",
+        type: "Boolean",
+        mode: "REQUIRED"
       }
     ]
   end
