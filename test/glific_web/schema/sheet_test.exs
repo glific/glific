@@ -20,6 +20,13 @@ defmodule GlificWeb.Schema.SheetTest do
 
   setup do
     Tesla.Mock.mock(fn
+      %{method: :get, url: "https://docs.google.com/spreadsheets/d/partial" <> _} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            "Key,Day,Message English,Video link,Message Hindi\r\n1/10/2022,1,Hi welcome to Glific. ,http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4,Glific में आपका स्वागत है।\r\n\n\n<!DOCTYPE html><html lang=\"en\"><head><meta name=\"description\" content=\"Web word processing, presentations and spreadsheets\"><meta name=\"viewport\" content=\"width=device-width"
+        }
+
       %{method: :get} ->
         %Tesla.Env{
           status: 200,
@@ -74,6 +81,29 @@ defmodule GlificWeb.Schema.SheetTest do
 
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "syncSheet", "sheet", "sheetDataCount"]) == 4
+  end
+
+  test "create a sheet only sync partially due to errors in csv decode", %{manager: user} do
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "partial sheet",
+            "url" => "https://docs.google.com/spreadsheets/d/partial/edit#gid=0",
+            "type" => "READ"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    label = get_in(query_data, [:data, "createSheet", "sheet", "label"])
+    assert label == "partial sheet"
+    id = get_in(query_data, [:data, "createSheet", "sheet", "id"])
+
+    result = auth_query_gql_by(:sync_sheet, user, variables: %{"id" => id})
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "syncSheet", "sheet", "sheetDataCount"]) == 1
   end
 
   test "create a sheet with type as write and test possible scenarios and errors ",

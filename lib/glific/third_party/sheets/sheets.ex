@@ -180,20 +180,30 @@ defmodule Glific.Sheets do
 
     media_warnings =
       ApiClient.get_csv_content(url: export_url)
-      |> Enum.reduce(%{}, fn {_, row}, acc ->
-        parsed_rows = parse_row_values(row)
+      |> Enum.reduce_while(%{}, fn
+        {:ok, row}, acc ->
+          parsed_rows = parse_row_values(row)
 
-        %{
-          ## we can also think in case we need first column.
-          key: row["Key"],
-          row_data: parsed_rows.values,
-          sheet_id: sheet.id,
-          organization_id: sheet.organization_id,
-          last_synced_at: last_synced_at
-        }
-        |> create_sheet_data()
+          %{
+            ## we can also think in case we need first column.
+            key: row["Key"],
+            row_data: parsed_rows.values,
+            sheet_id: sheet.id,
+            organization_id: sheet.organization_id,
+            last_synced_at: last_synced_at
+          }
+          |> create_sheet_data()
 
-        Map.merge(acc, parsed_rows.errors)
+          {:cont, Map.merge(acc, parsed_rows.errors)}
+
+        {:error, err}, acc ->
+          # If we get any error, we stop executing the current sheet further, log it.
+          Logger.error(
+            "Error while syncing google sheet, org id: #{sheet.organization_id}, url: #{sheet.url}"
+          )
+
+          create_sync_fail_notification(sheet.organization_id, sheet.url)
+          {:halt, Map.put(acc, export_url, err)}
       end)
 
     remove_stale_sheet_data(sheet, last_synced_at)
@@ -367,5 +377,18 @@ defmodule Glific.Sheets do
     |> Enum.each(fn sheet ->
       sync_sheet_data(sheet)
     end)
+  end
+
+  @spec create_sync_fail_notification(integer(), String.t()) :: :ok
+  defp create_sync_fail_notification(organization_id, url) do
+    Notifications.create_notification(%{
+      category: "Google sheets",
+      message: "Google sheet sync failed",
+      severity: Notifications.types().warning,
+      organization_id: organization_id,
+      entity: %{url: url}
+    })
+
+    :ok
   end
 end
