@@ -1008,7 +1008,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
              "options" => [
                %{"id" => 0, "name" => "okay", "voters" => [], "votes" => 0},
                %{"id" => 1, "name" => "huh", "voters" => [], "votes" => 0}
-             ]
+             ],
+             "text" => "testing poll"
            }
   end
 end

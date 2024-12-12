@@ -206,6 +206,7 @@ defmodule Glific.Providers.Maytapi.Message do
     {flow, status} = if from_me, do: {:outbound, :sent}, else: {:inbound, :received}
 
     poll_content = %{
+      "text" => payload["text"],
       "options" => payload["options"]
     }
 

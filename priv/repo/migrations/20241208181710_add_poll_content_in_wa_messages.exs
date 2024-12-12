@@ -3,7 +3,7 @@ defmodule Glific.Repo.Migrations.AddPollContentInWaMessages do
 
   def change do
     alter table(:wa_messages) do
-      add :poll_content, :jsonb, default: fragment("'[]'")
+      add :poll_content, :map, default: %{}
     end
   end
 end
