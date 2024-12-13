@@ -778,7 +778,7 @@ defmodule Glific.BigQuery do
     end
   end
 
-  @spec do_sync_registration_details(Tesla.Client.t(), String.t(), String.t(), String.t()) ::
+  @spec do_sync_registration_details(Tesla.Env.client(), String.t(), String.t(), map()) ::
           {:ok, any()} | {:error, any()}
   defp do_sync_registration_details(conn, project_id, dataset_id, registration_data) do
     Tabledata.bigquery_tabledata_insert_all(
