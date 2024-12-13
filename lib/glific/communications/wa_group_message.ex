@@ -268,17 +268,10 @@ defmodule Glific.Communications.GroupMessage do
   @doc """
   Callback to update the poll response for a message
   """
-  @spec update_poll_content(String.t(), list(map()), non_neg_integer()) :: any()
-  def update_poll_content(bsp_message_id, new_options, org_id) do
-    wa_message =
-      Repo.get_by(WAMessage, bsp_id: bsp_message_id, organization_id: org_id)
-
-    updated_poll_content =
-      wa_message.poll_content
-      |> Map.put("options", new_options)
-
-    wa_message
-    |> Ecto.Changeset.change(poll_content: updated_poll_content, updated_at: DateTime.utc_now())
-    |> Repo.update()
+  @spec update_poll_content(String.t(), map(), non_neg_integer()) :: any()
+  def update_poll_content(bsp_message_id, poll_content, org_id) do
+    WAMessage
+    |> where([wa_msg], wa_msg.bsp_id == ^bsp_message_id and wa_msg.organization_id == ^org_id)
+    |> Repo.update_all(set: [poll_content: poll_content, updated_at: DateTime.utc_now()])
   end
 end

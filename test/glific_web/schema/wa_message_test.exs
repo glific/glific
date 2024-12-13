@@ -212,7 +212,8 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
                %{"id" => 0, "name" => "Hola", "votes" => 0},
                %{"id" => 1, "name" => "hoop", "votes" => 0},
                %{"id" => 2, "name" => "hola hoop", "votes" => 1}
-             ]
+             ],
+             "text" => "hola or hoop?"
            }
   end
 

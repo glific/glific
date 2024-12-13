@@ -66,8 +66,11 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
   @spec update_poll_response(map(), non_neg_integer()) :: any()
   defp update_poll_response(response, org_id) do
     bsp_message_id = Map.get(response, "msgId")
-    options = Map.get(response, "options")
+    poll_content = %{
+      "text" => response["text"],
+      "options" => response["options"]
+    }
 
-    Communications.GroupMessage.update_poll_content(bsp_message_id, options, org_id)
+    Communications.GroupMessage.update_poll_content(bsp_message_id, poll_content, org_id)
   end
 end
