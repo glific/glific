@@ -33,21 +33,20 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
   end
 
   @spec update_statuses(map(), non_neg_integer()) :: any()
-  defp update_statuses(%{"data" => response} = _params, org_id) do
-    response
-    |> Enum.each(fn item ->
-      if Map.has_key?(item, "reaction") do
-        handle_reactions(item, org_id)
-      else
-        do_update_status(item, item["ackType"], org_id)
+  defp update_statuses(%{"data" => responses} = _params, org_id) do
+    responses
+    |> Enum.each(fn response ->
+      case response do
+        %{"options" => _options} ->
+          update_poll_response(response, org_id)
+
+        %{"reaction" => _reaction} ->
+          handle_reactions(response, org_id)
+
+        %{"ackType" => ack_type} ->
+          do_update_status(response, ack_type, org_id)
       end
     end)
-  end
-
-  @spec handle_reactions(map(), non_neg_integer()) :: any()
-  defp handle_reactions(params, org_id) do
-    params
-    |> Communications.GroupMessage.receive_reaction_msg(org_id)
   end
 
   # Updates the provider message statuses based on provider message id
@@ -56,5 +55,22 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
     status = Map.get(@message_event_type, ack_type)
     bsp_message_id = Map.get(params, "msgId")
     Communications.GroupMessage.update_bsp_status(bsp_message_id, status, org_id)
+  end
+
+  @spec handle_reactions(map(), non_neg_integer()) :: any()
+  defp handle_reactions(params, org_id) do
+    params
+    |> Communications.GroupMessage.receive_reaction_msg(org_id)
+  end
+
+  @spec update_poll_response(map(), non_neg_integer()) :: any()
+  defp update_poll_response(response, org_id) do
+    bsp_message_id = Map.get(response, "msgId")
+    poll_content = %{
+      "text" => response["text"],
+      "options" => response["options"]
+    }
+
+    Communications.GroupMessage.update_poll_content(bsp_message_id, poll_content, org_id)
   end
 end
