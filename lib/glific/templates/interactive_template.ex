@@ -53,7 +53,7 @@ defmodule Glific.Templates.InteractiveTemplate do
     field :translations, :map, default: %{}
     field :send_with_title, :boolean, default: true
 
-    belongs_to(:tag, Tag)
+    belongs_to :tag, Tag
     belongs_to :language, Language
     belongs_to :organization, Organization
 

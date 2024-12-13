@@ -423,7 +423,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             translations: BigQuery.format_json(row.translations),
             language: row.language.label,
             send_with_title: row.send_with_title,
-            tag: row.tag.label,
+            tag: if(!is_nil(row.tag), do: row.tag.label),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
@@ -434,7 +434,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :webhook_logs, organization_id, attrs))
+    |> Enum.each(&make_job(&1, :interactive_templates, organization_id, attrs))
 
     :ok
   end
@@ -1415,11 +1415,11 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp get_query("interactive_templates", organization_id, attrs),
     do:
-      WaReaction
+      InteractiveTemplate
       |> where([m], m.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
-      |> preload([:language, :tags])
+      |> preload([:language, :tag])
 
   defp get_query("contacts", organization_id, attrs),
     do:
