@@ -801,7 +801,8 @@ defmodule Glific.BigQuery do
                 has_submitted: registration_data.has_submitted,
                 terms_agreed: registration_data.terms_agreed,
                 support_staff_account: registration_data.support_staff_account,
-                is_disputed: registration_data.is_disputed
+                is_disputed: registration_data.is_disputed,
+                inserted_at: registration_data.inserted_at
               }
             }
           ]
@@ -827,7 +828,8 @@ defmodule Glific.BigQuery do
         has_submitted: r.has_submitted,
         terms_agreed: r.terms_agreed,
         support_staff_account: r.support_staff_account,
-        is_disputed: r.is_disputed
+        is_disputed: r.is_disputed,
+        inserted_at: r.inserted_at
       })
       |> where([r], r.organization_id == ^organization_id)
       |> Repo.one()

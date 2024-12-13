@@ -2243,6 +2243,12 @@ defmodule Glific.BigQuery.Schema do
         name: "is_disputed",
         type: "Boolean",
         mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
       }
     ]
   end
