@@ -19,7 +19,7 @@ defmodule Glific.BigQuery do
     Flows.FlowRevision,
     Flows.MessageBroadcast,
     Flows.MessageBroadcastContact,
-    Flows.Webhook,
+    Flows.WebhookLog,
     Groups.ContactGroup,
     Groups.ContactWAGroup,
     Groups.WAGroup,
@@ -202,7 +202,7 @@ defmodule Glific.BigQuery do
     "wa_groups_collections" => WAGroupsCollection,
     "wa_messages" => WAMessage,
     "wa_reactions" => WaReaction,
-    "webhook_logs" => Webhook
+    "webhook_logs" => WebhookLog
   }
 
   @doc false

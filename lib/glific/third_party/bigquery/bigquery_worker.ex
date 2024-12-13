@@ -34,7 +34,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Flows.FlowRevision,
     Flows.MessageBroadcast,
     Flows.MessageBroadcastContact,
-    Flows.Webhook,
+    Flows.WebhookLog,
     Groups.ContactGroup,
     Groups.ContactWAGroup,
     Groups.Group,
@@ -84,6 +84,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     if credential do
       [
         "contacts",
+        "contacts_groups",
         "contacts_wa_groups",
         "messages",
         "flow_results",
@@ -97,8 +98,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         "wa_messages",
         "wa_groups",
         "wa_groups_collections",
-        "contacts_groups",
-        "wa_reactions"
+        "wa_reactions",
+        "webhook_logs"
       ]
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
@@ -396,7 +397,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :wa_groups, organization_id, attrs))
+    |> Enum.each(&make_job(&1, :webhook_logs, organization_id, attrs))
 
     :ok
   end
@@ -1410,7 +1411,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp get_query("webhook_logs", organization_id, attrs),
     do:
-      Webhook
+      WebhookLog
       |> where([p], p.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([p], [p.inserted_at, p.id])
