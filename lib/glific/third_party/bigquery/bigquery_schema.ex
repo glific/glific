@@ -2219,34 +2219,111 @@ defmodule Glific.BigQuery.Schema do
         name: "ip_address",
         type: "STRING",
         mode: "REQUIRED"
-      },
+      }
+    ]
+  end
+
+  @doc """
+  Schema for the webhook logs table
+  """
+  @spec webhook_logs_schema :: list()
+  def webhook_logs_schema do
+    [
       %{
-        description: "Flag indicating if the registration has been submitted.",
-        name: "has_submitted",
-        type: "Boolean",
+        description: "Unique ID for the webhook logs",
+        name: "id",
+        type: "INTEGER",
         mode: "REQUIRED"
       },
       %{
-        description: "Flag indicating if the user agreed or disagreed with the T&C",
-        name: "terms_agreed",
-        type: "Boolean",
+        description: "URL of endpoint",
+        name: "url",
+        type: "STRING",
         mode: "REQUIRED"
       },
       %{
-        description: "Flag indicating if user agrees to create a support staff account",
-        name: "support_staff_account",
-        type: "Boolean",
+        description: "HTTP request method indicating the purpose of the request",
+        name: "method",
+        type: "STRING",
         mode: "REQUIRED"
       },
       %{
-        description: "if the user disputed the T&C",
-        name: "is_disputed",
-        type: "Boolean",
+        description: "JSON object for HTTP request header",
+        name: "request_headers",
+        type: "STRING",
         mode: "REQUIRED"
+      },
+      %{
+        description: "JSON object for HTTP request json",
+        name: "request_json",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "JSON object for HTTP response json",
+        name: "response_json",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description:
+          "Status codes indicate whether a the HTTP request has been successfully completed",
+        name: "status_code",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Error received while making the HTTP request",
+        name: "error",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "The Flow ID refers to the flow table where the webhook was triggered",
+        name: "flow_id",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Name of the Flow",
+        name: "flow_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description:
+          "The Contact ID refers to the contact table for whom the webhook was triggered.",
+        name: "contact_id",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Phone number of the contact",
+        name: "phone",
+        type: "STRING",
+        mode: "NULLABLE"
       },
       %{
         description: "Time when the record entry was first made",
         name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
         type: "DATETIME",
         mode: "NULLABLE"
       }
