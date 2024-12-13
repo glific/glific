@@ -2285,9 +2285,21 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
+        description: "Name of the Flow",
+        name: "flow_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
         description:
           "The Contact ID refers to the contact table for whom the webhook was triggered.",
         name: "contact_id",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Phone number of the contact",
+        name: "phone",
         type: "STRING",
         mode: "NULLABLE"
       },
