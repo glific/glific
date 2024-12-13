@@ -19,6 +19,7 @@ defmodule GlificWeb.Providers.Maytapi.Router do
       post("/document", MessageController, :document)
       post("/location", MessageController, :location)
       post("/sticker", MessageController, :sticker)
+      post("/poll", MessageController, :poll)
     end
 
     scope "/message-event" do

@@ -31,7 +31,28 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
     ],
     "phoneId" => 47_309,
     "phone_id" => 47_309,
-    "product_id" => "5bb39ba2-d0f4-4fb5-8bd3-a1f26c50559c",
+    "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+    "type" => "ack"
+  }
+
+  @poll_response_ack %{
+    "data" => [
+      %{
+        "chatId" => "918657048983@c.us",
+        "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d",
+        "options" => [
+          %{"id" => 0, "name" => "Hola", "votes" => 0},
+          %{"id" => 1, "name" => "hoop", "votes" => 0},
+          %{"id" => 2, "name" => "hola hoop", "votes" => 1}
+        ],
+        "rxid" => "false_120363257477740000@g.us_3EB0B6B66EDCB1C27C60_918547689517@c.us",
+        "text" => "hola or hoop?",
+        "time" => 1_733_818_876
+      }
+    ],
+    "phoneId" => 47_309,
+    "phone_id" => 47_309,
+    "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
     "type" => "ack"
   }
 
@@ -178,6 +199,22 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       |> Repo.one()
 
     assert message.bsp_status == :delivered
+
+    MessageEventController.update_statuses(@poll_response_ack, user.organization_id)
+
+    message =
+      WAMessage
+      |> where([wa], wa.bsp_id == "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d")
+      |> Repo.one()
+
+    assert message.poll_content == %{
+             "options" => [
+               %{"id" => 0, "name" => "Hola", "votes" => 0},
+               %{"id" => 1, "name" => "hoop", "votes" => 0},
+               %{"id" => 2, "name" => "hola hoop", "votes" => 1}
+             ],
+             "text" => "hola or hoop?"
+           }
   end
 
   test "send media message with caption", %{staff: user, conn: _conn} do
