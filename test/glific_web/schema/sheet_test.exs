@@ -5,6 +5,7 @@ defmodule GlificWeb.Schema.SheetTest do
 
   alias Glific.{
     Fixtures,
+    Notifications,
     Partners,
     Repo,
     Sheets.Sheet
@@ -104,6 +105,9 @@ defmodule GlificWeb.Schema.SheetTest do
 
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "syncSheet", "sheet", "sheetDataCount"]) == 1
+
+    # We get 2 notification, since we are creating and syncing in this test case
+    assert length(Notifications.list_notifications(%{filter: %{category: "Google sheets"}})) == 2
   end
 
   test "create a sheet with type as write and test possible scenarios and errors ",

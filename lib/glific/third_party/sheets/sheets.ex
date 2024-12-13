@@ -199,10 +199,10 @@ defmodule Glific.Sheets do
         {:error, err}, acc ->
           # If we get any error, we stop executing the current sheet further, log it.
           Logger.error(
-            "Error while syncing google sheet, org id: #{sheet.organization_id}, url: #{sheet.url}"
+            "Error while syncing google sheet, org id: #{sheet.organization_id}, url: #{sheet.url}, sheet_id: #{sheet.id}"
           )
 
-          create_sync_fail_notification(sheet.organization_id, sheet.url)
+          create_sync_fail_notification(sheet)
           {:halt, Map.put(acc, export_url, err)}
       end)
 
@@ -379,14 +379,14 @@ defmodule Glific.Sheets do
     end)
   end
 
-  @spec create_sync_fail_notification(integer(), String.t()) :: :ok
-  defp create_sync_fail_notification(organization_id, url) do
+  @spec create_sync_fail_notification(Sheet.t()) :: :ok
+  defp create_sync_fail_notification(sheet) do
     Notifications.create_notification(%{
       category: "Google sheets",
       message: "Google sheet sync failed",
       severity: Notifications.types().warning,
-      organization_id: organization_id,
-      entity: %{url: url}
+      organization_id: sheet.organization_id,
+      entity: %{url: sheet.url, id: sheet.id}
     })
 
     :ok
