@@ -103,7 +103,6 @@ defmodule Glific.WAGroup.WAMessage do
     field(:is_dm, :boolean)
     field(:flow_label, :string)
     field(:poll_content, :map, default: %{})
-    
     belongs_to(:contact, Contact)
     belongs_to(:wa_managed_phone, WAManagedPhone)
     belongs_to(:media, MessageMedia)
