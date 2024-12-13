@@ -2224,6 +2224,75 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for the notification table
+  """
+  @spec notification_schema :: list()
+  def notification_schema do
+    [
+      %{
+        description: "Unique ID for the interactive template",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "A map of objects that are involved in this notification",
+        name: "entity",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "The category that this falls under: Flow, Message, BigQuery, etc",
+        name: "category",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "The specific error message that caused this notification",
+        name: "message",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "The severity level. We'll include a few info notifications",
+        name: "severity",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Has the user read the notifications.",
+        name: "is_read",
+        type: "Boolean",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for the webhook logs table
   """
   @spec webhook_logs_schema :: list()

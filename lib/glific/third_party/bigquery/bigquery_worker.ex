@@ -44,6 +44,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Messages.Message,
     Messages.MessageConversation,
     Messages.MessageMedia,
+    Notifications.Notification,
     Partners,
     Profiles.Profile,
     Repo,
@@ -94,6 +95,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         "profiles",
         "message_broadcasts",
         "message_broadcast_contacts",
+        "notification",
         "tickets",
         "wa_messages",
         "wa_groups",
@@ -398,6 +400,39 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :webhook_logs, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("notification", organization_id, attrs) do
+    Logger.info(
+      "fetching notification data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("notification", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            entity: BigQuery.format_json(row.entity),
+            category: row.category,
+            message: row.message,
+            severity: row.severity,
+            is_read: row.is_read,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :notification, organization_id, attrs))
 
     :ok
   end
@@ -1412,6 +1447,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp get_query("webhook_logs", organization_id, attrs),
     do:
       WebhookLog
+      |> where([p], p.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([p], [p.inserted_at, p.id])
+      |> preload([:flow, :contact])
+
+  defp get_query("notification", organization_id, attrs),
+    do:
+      Notification
       |> where([p], p.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([p], [p.inserted_at, p.id])
