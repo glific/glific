@@ -132,6 +132,7 @@ defmodule Glific.Communications.GroupMessage do
     case type do
       :text -> receive_text(message_params)
       :location -> receive_location(message_params)
+      :poll -> receive_poll(message_params)
       _ -> receive_media(message_params)
     end
   end
@@ -180,6 +181,16 @@ defmodule Glific.Communications.GroupMessage do
 
     message
     |> Communications.publish_data(:received_wa_group_message, message_params.organization_id)
+
+    :ok
+  end
+
+  # handler for receiving the poll response
+  @spec receive_poll(map()) :: :ok
+  defp receive_poll(message_params) do
+    message_params
+    |> Map.put_new(:flow, :inbound)
+    |> WAMessages.create_message()
 
     :ok
   end
@@ -252,5 +263,15 @@ defmodule Glific.Communications.GroupMessage do
       }
 
     WaReaction.create_wa_reaction(attrs)
+  end
+
+  @doc """
+  Callback to update the poll response for a message
+  """
+  @spec update_poll_content(String.t(), map(), non_neg_integer()) :: any()
+  def update_poll_content(bsp_message_id, poll_content, org_id) do
+    WAMessage
+    |> where([wa_msg], wa_msg.bsp_id == ^bsp_message_id and wa_msg.organization_id == ^org_id)
+    |> Repo.update_all(set: [poll_content: poll_content, updated_at: DateTime.utc_now()])
   end
 end
