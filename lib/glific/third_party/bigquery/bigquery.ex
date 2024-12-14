@@ -13,6 +13,7 @@ defmodule Glific.BigQuery do
     BigQuery.Schema,
     Contacts.Contact,
     Contacts.ContactHistory,
+    Contacts.ContactsField,
     Flows,
     Flows.FlowCount,
     Flows.FlowResult,
@@ -50,6 +51,7 @@ defmodule Glific.BigQuery do
 
   @bigquery_tables %{
     "contacts" => :contact_schema,
+    "contact_fields" => :contact_fields_schema,
     "contacts_groups" => :contact_groups_schema,
     "contact_histories" => :contact_history_schema,
     "contacts_wa_groups" => :contacts_wa_group_schema,
@@ -179,6 +181,7 @@ defmodule Glific.BigQuery do
   end
 
   @table_lookup %{
+    "contact_field" => ContactsField,
     "contact_histories" => ContactHistory,
     "contacts" => Contact,
     "contacts_groups" => ContactGroup,

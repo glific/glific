@@ -223,6 +223,66 @@ defmodule Glific.BigQuery.Schema do
     ]
   end
 
+  @spec contact_field_schema :: list()
+  def contact_field_schema do
+    [
+      %{
+        description: "Unique ID for the contact",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "name of contact field",
+        name: "name",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "shortcode of contact field",
+        name: "shortcode",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "value type of contact field",
+        name: "value_type",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "scope contact field which can be contact, global or wa_group",
+        name: "scope",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time of entry of the recorded field",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
   @doc """
   Schema for messages table
   """
