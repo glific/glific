@@ -27,6 +27,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Contacts,
     Contacts.Contact,
     Contacts.ContactHistory,
+    Contacts.ContactsField,
     Flows,
     Flows.Flow,
     Flows.FlowCount,
@@ -83,6 +84,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     if credential do
       [
+        "contact_fields",
         "contacts",
         "contacts_groups",
         "contacts_wa_groups",
@@ -295,6 +297,35 @@ defmodule Glific.BigQuery.BigQueryWorker do
     end)
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :messages, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("contact_fields", organization_id, attrs) do
+    Logger.info(
+      "fetching contact_fields data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("contact_fields", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce([], fn row, acc ->
+      [
+        %{
+          id: row.id,
+          name: row.name,
+          shortcode: row.shortcode,
+          value_type: row.value_type,
+          scope: row.scope,
+          inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+          updated_at: BigQuery.format_date(row.updated_at, organization_id)
+        }
+        |> Map.merge(bq_fields(organization_id))
+        |> then(&%{json: &1})
+        | acc
+      ]
+    end)
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :contact_fields, organization_id, attrs))
 
     :ok
   end
@@ -1359,6 +1390,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:wa_managed_phone])
+
+  defp get_query("contact_fields", organization_id, attrs),
+    do:
+      ContactsField
+      |> where([cf], cf.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([cf], [cf.inserted_at, cf.id])
 
   defp get_query("wa_groups_collections", organization_id, attrs),
     do:

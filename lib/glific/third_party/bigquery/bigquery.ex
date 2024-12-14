@@ -181,7 +181,7 @@ defmodule Glific.BigQuery do
   end
 
   @table_lookup %{
-    "contact_field" => ContactsField,
+    "contact_fields" => ContactsField,
     "contact_histories" => ContactHistory,
     "contacts" => Contact,
     "contacts_groups" => ContactGroup,

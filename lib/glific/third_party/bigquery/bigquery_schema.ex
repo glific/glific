@@ -223,8 +223,8 @@ defmodule Glific.BigQuery.Schema do
     ]
   end
 
-  @spec contact_field_schema :: list()
-  def contact_field_schema do
+  @spec contact_fields_schema :: list()
+  def contact_fields_schema do
     [
       %{
         description: "Unique ID for the contact",
