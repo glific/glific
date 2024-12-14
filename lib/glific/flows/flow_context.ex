@@ -10,7 +10,7 @@ defmodule Glific.Flows.FlowContext do
   use Ecto.Schema
   import Ecto.Changeset
   import Ecto.Query, warn: false
-  use Gettext, backend: Glific.Gettext
+  use Gettext, backend: GlificWeb.Gettext
   require Logger
 
   alias Glific.{

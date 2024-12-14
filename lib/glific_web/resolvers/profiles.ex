@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Profiles do
   This layer basically stitches together one or more calls to resolve the incoming queries.
   """
 
-  use Gettext, backend: Glific.Gettext
+  use Gettext, backend: GlificWeb.Gettext
 
   alias Glific.{
     Profiles,

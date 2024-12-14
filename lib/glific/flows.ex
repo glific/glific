@@ -4,7 +4,7 @@ defmodule Glific.Flows do
   """
 
   import Ecto.Query, warn: false
-  use Gettext, backend: Glific.Gettext
+  use Gettext, backend: GlificWeb.Gettext
 
   require Logger
 

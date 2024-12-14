@@ -5,7 +5,7 @@ defmodule GlificWeb.Gettext do
   By using [Gettext](https://hexdocs.pm/gettext),
   your module gains a set of macros for translations, for example:
 
-      use Gettext, backend: Glific.Gettext
+      use Gettext, backend: GlificWeb.Gettext
 
       # Simple translation
       gettext("Here is the string to translate")

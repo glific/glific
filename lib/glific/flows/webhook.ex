@@ -3,7 +3,7 @@ defmodule Glific.Flows.Webhook do
   Lets wrap all webhook functionality here as we try and get
   a better handle on the breadth and depth of webhooks.
   """
-  use Gettext, backend: Glific.Gettext
+  use Gettext, backend: GlificWeb.Gettext
   require Logger
 
   alias Glific.{Messages, Repo}

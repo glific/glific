@@ -5,7 +5,7 @@ defmodule Glific.Flows.Node do
   alias __MODULE__
 
   use Ecto.Schema
-  use Gettext, backend: Glific.Gettext
+  use Gettext, backend: GlificWeb.Gettext
 
   alias Glific.{
     Flows,

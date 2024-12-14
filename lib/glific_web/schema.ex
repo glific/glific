@@ -5,7 +5,7 @@ defmodule GlificWeb.Schema do
   """
 
   use Absinthe.Schema
-  use Gettext, backend: Glific.Gettext
+  use Gettext, backend: GlificWeb.Gettext
 
   alias Glific.Repo
 
