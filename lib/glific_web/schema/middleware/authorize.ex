@@ -3,7 +3,7 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
   Implementing middleware functions to transform errors from Ecto Changeset into a format
   consumable and displayable to the API user. This version is specifically for mutations.
   """
-  import GlificWeb.Gettext
+  use Gettext, backend: Glific.Gettext
 
   @behaviour Absinthe.Middleware
 

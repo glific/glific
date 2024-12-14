@@ -3,7 +3,7 @@ defmodule GlificWeb.Resolvers.Partners do
   Partners Resolver which sits between the GraphQL schema and Glific Partners Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
-  import GlificWeb.Gettext
+  use Gettext, backend: Glific.Gettext
 
   alias Glific.{
     Partners,

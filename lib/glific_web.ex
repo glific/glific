@@ -24,7 +24,7 @@ defmodule GlificWeb do
       use Phoenix.Controller, namespace: GlificWeb
 
       import Plug.Conn
-      import GlificWeb.Gettext
+      use Gettext, backend: Glific.Gettext
       alias GlificWeb.Router.Helpers, as: Routes
       unquote(verified_routes())
     end
@@ -80,7 +80,7 @@ defmodule GlificWeb do
   def channel do
     quote do
       use Phoenix.Channel
-      import GlificWeb.Gettext
+      use Gettext, backend: Glific.Gettext
     end
   end
 
@@ -98,7 +98,7 @@ defmodule GlificWeb do
       import Phoenix.View
 
       import GlificWeb.ErrorHelpers
-      import GlificWeb.Gettext
+      use Gettext, backend: Glific.Gettext
       alias GlificWeb.Router.Helpers, as: Routes
     end
   end

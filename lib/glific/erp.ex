@@ -272,11 +272,6 @@ defmodule Glific.ERP do
   @spec capitalize_words(String.t()) :: String.t()
   defp capitalize_words(string) do
     String.split(string, " ")
-    |> Enum.map_join(" ", &capitalize_first_letter/1)
-  end
-
-  @spec capitalize_first_letter(String.t()) :: String.t()
-  defp capitalize_first_letter(string) do
-    String.upcase(String.slice(string, 0, 1)) <> String.downcase(String.slice(string, 1..-1))
+    |> Enum.map_join(" ", &String.capitalize/1)
   end
 end

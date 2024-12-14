@@ -6,7 +6,7 @@ defmodule Glific.Partners do
   use Publicist
 
   import Ecto.Query, warn: false
-  import GlificWeb.Gettext
+  use Gettext, backend: Glific.Gettext
   require Logger
 
   alias __MODULE__

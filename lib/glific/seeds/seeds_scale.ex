@@ -279,7 +279,7 @@ if Code.ensure_loaded?(Faker) do
 
     @contact_range 10..40
     @dropout_percent 10
-    @day_range 31..0
+    @day_range 31..0//-1
 
     defp seed_flows(contact_ids, sender_id, organization_id) do
       # lets cheat here and use an ets table to keep track of

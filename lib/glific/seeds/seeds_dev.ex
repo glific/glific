@@ -1239,7 +1239,7 @@ if Code.ensure_loaded?(Faker) do
 
         date =
           DateTime.utc_now()
-          |> Timex.shift(days: Enum.random(-1..-5))
+          |> Timex.shift(days: Enum.random(-1..-5//-1))
           |> DateTime.to_date()
 
         Repo.insert!(%Stat{

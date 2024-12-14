@@ -3,7 +3,7 @@ defmodule GlificWeb.Resolvers.Groups do
   Group Resolver which sits between the GraphQL schema and Glific Group Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
-  import GlificWeb.Gettext
+  use Gettext, backend: Glific.Gettext
 
   alias Glific.{Groups, Repo}
   alias Glific.Groups.{ContactGroups, Group, UserGroups}

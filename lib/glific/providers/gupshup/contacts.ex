@@ -7,7 +7,7 @@ defmodule Glific.Providers.GupshupContacts do
 
   @behaviour Glific.Providers.ContactBehaviour
 
-  import GlificWeb.Gettext
+  use Gettext, backend: Glific.Gettext
 
   alias Glific.{
     Contacts,

@@ -6,7 +6,7 @@ defmodule GlificWeb.Misc.HTTPSignature do
   @behaviour Plug
 
   import Plug.Conn
-  import GlificWeb.Gettext
+  use Gettext, backend: Glific.Gettext
 
   @impl true
   @doc false

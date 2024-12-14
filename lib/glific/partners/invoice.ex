@@ -5,7 +5,7 @@ defmodule Glific.Partners.Invoice do
   use Ecto.Schema
   import Ecto.Changeset
   import Ecto.Query, warn: false
-  import GlificWeb.Gettext
+  use Gettext, backend: Glific.Gettext
 
   alias Glific.{Partners.Billing, Partners.Organization, Repo}
   alias __MODULE__

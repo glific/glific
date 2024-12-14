@@ -3,7 +3,7 @@ defmodule GlificWeb.Resolvers.Flows do
   Flow Resolver which sits between the GraphQL schema and Glific Flow Context API.
   This layer basically stitches together one or more calls to resolve the incoming queries.
   """
-  import GlificWeb.Gettext
+  use Gettext, backend: Glific.Gettext
 
   alias Glific.{
     Contacts.Contact,

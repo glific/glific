@@ -4,7 +4,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   """
   alias Glific.Partners
   alias Plug.Conn.Query
-  import GlificWeb.Gettext
+  use Gettext, backend: Glific.Gettext
 
   @gupshup_enterprise_url "https://media.smsgupshup.com/GatewayAPI/rest"
   @common_params %{"format" => "json", "v" => "1.1", "auth_scheme" => "plain"}

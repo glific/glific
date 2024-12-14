@@ -2,7 +2,7 @@ defmodule Glific.Providers.Gupshup.GupshupWallet do
   @moduledoc """
   Module for checking gupshup remaining balance
   """
-  import GlificWeb.Gettext
+  use Gettext, backend: Glific.Gettext
 
   @gupshup_balance_url "https://api.gupshup.io/sm/api/v2/wallet/balance"
 
