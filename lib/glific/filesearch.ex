@@ -152,9 +152,6 @@ defmodule Glific.Filesearch do
 
       {:ok, Repo.preload(assistant, :vector_store, force: true)}
     else
-      {:error, %Ecto.Changeset{} = err} ->
-        {:error, err}
-
       {:error, reason} ->
         {:error, "Removing file from assistant failed due to #{reason}"}
     end
