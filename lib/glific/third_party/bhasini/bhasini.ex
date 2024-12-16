@@ -65,7 +65,6 @@ defmodule Glific.Bhasini do
           %{
             "taskType" => "tts",
             "config" => %{
-              "audioFormat" => "mp3",
               "language" => %{
                 # If TTS comes after Translation, and Translation is done, say from Marathi to Hindi
                 # then Source Language of TTS should be Hindi (ISO Code hi) because
@@ -235,10 +234,19 @@ defmodule Glific.Bhasini do
       get_in(pipeline_response, [Access.at(0), "audio", Access.at(0), "audioContent"])
 
     decoded_audio = Base.decode64!(encoded_audio)
+    wav_file = System.tmp_dir!() <> "#{uuid}.wav"
     mp3_file = System.tmp_dir!() <> "#{uuid}.mp3"
-    File.write!(mp3_file, decoded_audio)
+    File.write!(wav_file, decoded_audio)
 
-    {:ok, mp3_file}
+    try do
+      System.cmd("ffmpeg", ["-i", wav_file, mp3_file], stderr_to_stdout: true)
+      File.rm(wav_file)
+      {:ok, mp3_file}
+    catch
+      error, reason ->
+        Logger.info("Bhasini Downloaded with error: #{error} and reason: #{reason}")
+        "Error while converting file"
+    end
   end
 
   @doc """
