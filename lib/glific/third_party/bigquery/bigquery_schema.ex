@@ -2315,7 +2315,7 @@ defmodule Glific.BigQuery.Schema do
           "Status codes indicate whether a the HTTP request has been successfully completed",
         name: "status_code",
         type: "STRING",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description: "Error received while making the HTTP request",
