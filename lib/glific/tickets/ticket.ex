@@ -15,8 +15,8 @@ defmodule Glific.Tickets.Ticket do
     Users.User
   }
 
-  @required_fields [:body, :contact_id, :status, :organization_id]
-  @optional_fields [:user_id, :topic, :remarks, :message_number, :flow_id]
+  @required_fields [:contact_id, :status, :organization_id]
+  @optional_fields [:body, :user_id, :topic, :remarks, :message_number, :flow_id]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
