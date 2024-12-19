@@ -2299,6 +2299,87 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for the interactive templates table
+  """
+  @spec interactive_templates_schema :: list()
+  def interactive_templates_schema do
+    [
+      %{
+        description: "Unique ID for the interactive template",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "The label of the interactive message",
+        name: "label",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "The type of interactive message- quick_reply or list",
+        name: "type",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Interactive content of the message stored in form of json",
+        name: "interactive_content",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Translation of interactive content stored in form of json",
+        name: "translations",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "The language interactive message is created in",
+        name: "language",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Field to check if title needs to be send in the interactive message",
+        name: "send_with_title",
+        type: "Boolean",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Tag added to the interactive message",
+        name: "tag",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Procedure for flat fields
   """
   @spec flat_fields_procedure(String.t(), String.t()) :: String.t()

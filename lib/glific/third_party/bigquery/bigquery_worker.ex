@@ -47,6 +47,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Profiles.Profile,
     Repo,
     Stats.Stat,
+    Templates.InteractiveTemplate,
     Tickets.Ticket,
     Trackers.Tracker,
     Users.User,
@@ -83,20 +84,22 @@ defmodule Glific.BigQuery.BigQueryWorker do
     if credential do
       [
         "contacts",
+        "contacts_groups",
         "contacts_wa_groups",
-        "messages",
         "flow_results",
         "flow_counts",
-        "messages_media",
         "flow_contexts",
-        "profiles",
+        "interactive_templates",
+        "messages_media",
         "message_broadcasts",
         "message_broadcast_contacts",
+        "messages",
+        "profiles",
         "tickets",
-        "wa_messages",
         "wa_groups",
         "wa_groups_collections",
-        "contacts_groups",
+        "wa_messages",
+        "wa_reactions",
         "wa_reactions"
       ]
       |> Enum.each(&init_removal_job(&1, organization_id))
@@ -358,6 +361,41 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :wa_groups, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("interactive_templates", organization_id, attrs) do
+    Logger.info(
+      "fetching interactive_templates data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("interactive_templates", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            label: row.label,
+            type: row.type,
+            interactive_content: BigQuery.format_json(row.interactive_content),
+            translations: BigQuery.format_json(row.translations),
+            language: row.language.label,
+            send_with_title: row.send_with_title,
+            tag: if(!is_nil(row.tag), do: row.tag.label),
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :interactive_templates, organization_id, attrs))
 
     :ok
   end
@@ -1337,6 +1375,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:wa_message, :contact])
+
+  defp get_query("interactive_templates", organization_id, attrs),
+    do:
+      InteractiveTemplate
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+      |> preload([:language, :tag])
 
   defp get_query("contacts", organization_id, attrs),
     do:
