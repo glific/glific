@@ -344,9 +344,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
         [
           %{
             id: row.id,
-            name: row.contact.name,
-            shortcode: row.contact.shortcode,
-            scope: row.contact.scope,
+            name: row.name,
+            shortcode: row.shortcode,
+            scope: row.scope,
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
