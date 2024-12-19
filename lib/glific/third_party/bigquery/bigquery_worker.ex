@@ -34,7 +34,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Flows.FlowRevision,
     Flows.MessageBroadcast,
     Flows.MessageBroadcastContact,
-    Flows.WebhookLog,
     Groups.ContactGroup,
     Groups.ContactWAGroup,
     Groups.Group,
@@ -84,7 +83,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
     if credential do
       [
         "contacts",
-        "contacts_groups",
         "contacts_wa_groups",
         "messages",
         "flow_results",
@@ -98,8 +96,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         "wa_messages",
         "wa_groups",
         "wa_groups_collections",
-        "wa_reactions",
-        "webhook_logs"
+        "contacts_groups",
+        "wa_reactions"
       ]
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
@@ -360,45 +358,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :wa_groups, organization_id, attrs))
-
-    :ok
-  end
-
-  defp queue_table_data("webhook_logs", organization_id, attrs) do
-    Logger.info(
-      "fetching webhook_logs data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
-    )
-
-    get_query("webhook_logs", organization_id, attrs)
-    |> Repo.all()
-    |> Enum.reduce(
-      [],
-      fn row, acc ->
-        [
-          %{
-            id: row.id,
-            url: row.url,
-            method: row.method,
-            request_headers: BigQuery.format_json(row.request_headers),
-            request_json: BigQuery.format_json(row.request_json),
-            response_json: BigQuery.format_json(row.response_json),
-            status_code: row.status_code,
-            error: row.error,
-            flow_id: row.flow_id,
-            flow_name: row.flow.name,
-            contact_id: row.contact_id,
-            phone: row.contact.phone,
-            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
-            updated_at: BigQuery.format_date(row.updated_at, organization_id)
-          }
-          |> Map.merge(bq_fields(organization_id))
-          |> then(&%{json: &1})
-          | acc
-        ]
-      end
-    )
-    |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :webhook_logs, organization_id, attrs))
 
     :ok
   end
@@ -1411,14 +1370,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([p], [p.inserted_at, p.id])
       |> preload([:language, :contact])
-
-  defp get_query("webhook_logs", organization_id, attrs),
-    do:
-      WebhookLog
-      |> where([p], p.organization_id == ^organization_id)
-      |> apply_action_clause(attrs)
-      |> order_by([p], [p.inserted_at, p.id])
-      |> preload([:flow, :contact])
 
   defp get_query("flows", organization_id, attrs),
     do:
