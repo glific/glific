@@ -91,6 +91,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         "flow_results",
         "flow_counts",
         "flow_contexts",
+        "groups",
         "interactive_templates",
         "messages_media",
         "message_broadcasts",
@@ -361,6 +362,40 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :contacts_fields, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("groups", organization_id, attrs) do
+    Logger.info(
+      "fetching groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("groups", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            label: row.label,
+            description: row.description,
+            is_restricted: row.is_restricted,
+            group_type: row.group_type,
+            last_communication_at:
+              BigQuery.format_date(row.last_communication_at, organization_id),
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :groups, organization_id, attrs))
 
     :ok
   end
@@ -1399,6 +1434,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:wa_managed_phone])
+
+  defp get_query("groups", organization_id, attrs),
+    do:
+      Group
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
 
   defp get_query("wa_groups_collections", organization_id, attrs),
     do:

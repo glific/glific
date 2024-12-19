@@ -567,6 +567,75 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for group table
+  """
+  @spec group_schema :: list()
+  def group_schema do
+    [
+      %{
+        description: "Unique ID generated for each WA Group",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "label of Group",
+        name: "label",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "description of Group",
+        name: "description",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Flag indicating if the group is restricted",
+        name: "is_restricted",
+        type: "Boolean",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Type of Group either WABA or WA",
+        name: "group_type",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when last message was sent/received from group",
+        name: "last_communication_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for wa_group_collections table
   """
   @spec wa_groups_collection_schema :: list()
