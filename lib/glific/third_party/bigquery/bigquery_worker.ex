@@ -351,7 +351,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             last_communication_at:
               BigQuery.format_date(row.last_communication_at, organization_id),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
-            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+            updated_at: BigQuery.format_date(row.updated_at, organization_id),
+            fields: process_row(row, organization_id)
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
@@ -610,7 +611,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
                 end),
               tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end),
               raw_fields: BigQuery.format_json(row.fields),
-              group_labels: Enum.map_join(row.groups, ",", &Map.get(&1, :label))
+              group_labels: Enum.map_join(row.groups, ",", &Map.get(&1, :label)),
+              contact_type: if(!is_nil(row.contact_type), do: row.contact_type)
             }
             |> Map.merge(bq_fields(organization_id))
             |> then(&%{json: &1})
@@ -1004,7 +1006,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             bsp_status: row.bsp_status,
             wa_group_id: row.wa_group_id,
             wa_group_name: if(!is_nil(row.wa_group), do: row.wa_group.label),
-            flow_label: if(!is_nil(row.flow_label), do: row.flow_label)
+            flow_label: if(!is_nil(row.flow_label), do: row.flow_label),
+            poll_content: BigQuery.format_json(row.poll_content)
           }
           |> Map.merge(message_media_info(row.media))
           |> Map.merge(bq_fields(organization_id))

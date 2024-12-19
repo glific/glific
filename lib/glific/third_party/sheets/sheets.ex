@@ -199,7 +199,7 @@ defmodule Glific.Sheets do
         {:error, err}, acc ->
           # If we get any error, we stop executing the current sheet further, log it.
           Logger.error(
-            "Error while syncing google sheet, org id: #{sheet.organization_id}, url: #{sheet.url}, sheet_id: #{sheet.id}"
+            "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{inspect(err)}"
           )
 
           create_sync_fail_notification(sheet)

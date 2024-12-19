@@ -219,6 +219,12 @@ defmodule Glific.BigQuery.Schema do
         name: "group_labels",
         type: "STRING",
         mode: "NULLABLE"
+      },
+      %{
+        description: "Type of contact, valid values are WA, WABA, WABA+WA",
+        name: "contact_type",
+        type: "STRING",
+        mode: "NULLABLE"
       }
     ]
   end
@@ -523,6 +529,39 @@ defmodule Glific.BigQuery.Schema do
         name: "updated_at",
         type: "DATETIME",
         mode: "NULLABLE"
+      },
+      %{
+        description: "NGO generated fields for the wa group generated as a map",
+        name: "fields",
+        type: "RECORD",
+        mode: "REPEATED",
+        fields: [
+          %{
+            description: "Labels for NGO generated fields for the wa group",
+            name: "label",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description:
+              "Values of the NGO generated fields (mapped for each wa group and label)",
+            name: "value",
+            type: "string",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Type of the generated fields; example - string",
+            name: "type",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Time of entry of the recorded field",
+            name: "inserted_at",
+            type: "DATETIME",
+            mode: "NULLABLE"
+          }
+        ]
       }
     ]
   end
@@ -2075,6 +2114,12 @@ defmodule Glific.BigQuery.Schema do
       %{
         description: "Flow label associated with the message",
         name: "flow_label",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Poll content",
+        name: "poll_content",
         type: "STRING",
         mode: "NULLABLE"
       }
