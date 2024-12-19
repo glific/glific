@@ -2196,6 +2196,63 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for the contact_fields table
+  """
+  @spec contact_fields_schema :: list()
+  def contact_fields_schema do
+    [
+      %{
+        description: "Unique ID for the contact field",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Contact Field name",
+        name: "name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Contact Field shortcode",
+        name: "shortcode",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Scope of Contact Field",
+        name: "scope",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the contact was added in group",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the contact group was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for the trackers_all_schema table
   """
   @spec trackers_all_schema :: list()

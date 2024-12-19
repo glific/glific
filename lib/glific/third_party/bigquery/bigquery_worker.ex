@@ -27,6 +27,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Contacts,
     Contacts.Contact,
     Contacts.ContactHistory,
+    Contacts.ContactsField,
     Flows,
     Flows.Flow,
     Flows.FlowCount,
@@ -83,6 +84,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     if credential do
       [
         "contacts",
+        "contacts_fields",
         "contacts_wa_groups",
         "messages",
         "flow_results",
@@ -325,6 +327,37 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :contacts_wa_groups, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("contacts_fields", organization_id, attrs) do
+    Logger.info(
+      "fetching contacts_fields data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("contacts_fields", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            name: row.contact.name,
+            shortcode: row.contact.shortcode,
+            scope: row.contact.scope,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :contacts_fields, organization_id, attrs))
 
     :ok
   end
@@ -1313,6 +1346,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:contact, :wa_group])
+
+  defp get_query("contacts_fields", organization_id, attrs),
+    do:
+      ContactsField
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
 
   defp get_query("wa_groups", organization_id, attrs),
     do:
