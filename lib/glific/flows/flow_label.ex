@@ -16,12 +16,14 @@ defmodule Glific.Flows.FlowLabel do
   }
 
   @required_fields [:uuid, :name, :organization_id]
+  @optional_fields [:type]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           uuid: Ecto.UUID.t() | nil,
           name: String.t() | nil,
+          type: String.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -31,6 +33,7 @@ defmodule Glific.Flows.FlowLabel do
   schema "flow_labels" do
     field :uuid, Ecto.UUID
     field :name, :string
+    field :type, :string
 
     belongs_to :organization, Organization
 
@@ -45,7 +48,7 @@ defmodule Glific.Flows.FlowLabel do
   @spec changeset(any(), map()) :: Ecto.Changeset.t()
   def changeset(flow_label, attrs) do
     flow_label
-    |> cast(attrs, @required_fields)
+    |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:name, :organization_id])
   end

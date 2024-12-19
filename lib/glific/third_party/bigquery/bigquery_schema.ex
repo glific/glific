@@ -636,6 +636,51 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for flow label table
+  """
+  @spec flow_label_schema :: list()
+  def flow_label_schema do
+    [
+      %{
+        description: "Unique ID generated for each Flow Label",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "name of Flow Label",
+        name: "name",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "UUID of Flow Label",
+        name: "uuid",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "type of Flow Label",
+        name: "type",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for wa_group_collections table
   """
   @spec wa_groups_collection_schema :: list()

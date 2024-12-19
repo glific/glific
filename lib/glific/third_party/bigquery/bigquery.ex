@@ -58,6 +58,7 @@ defmodule Glific.BigQuery do
     "flows" => :flow_schema,
     "flow_counts" => :flow_count_schema,
     "flow_contexts" => :flow_context_schema,
+    "flow_labels" => :flow_label_schema,
     "flow_results" => :flow_result_schema,
     "groups" => :group_schema,
     "interactive_templates" => :interactive_templates_schema,
@@ -97,6 +98,7 @@ defmodule Glific.BigQuery do
     [
       "message_conversations",
       "contact_histories",
+      "flow_labels",
       "flows",
       "stats",
       "stats_all"
@@ -190,6 +192,7 @@ defmodule Glific.BigQuery do
     "contacts_wa_groups" => ContactWAGroup,
     "flow_counts" => FlowCount,
     "flow_contexts" => Flows.FlowContext,
+    "flow_labels" => Flows.FlowLabel,
     "flow_results" => FlowResult,
     "flows" => FlowRevision,
     "groups" => Group,

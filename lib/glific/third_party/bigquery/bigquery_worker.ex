@@ -31,6 +31,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Flows,
     Flows.Flow,
     Flows.FlowCount,
+    Flows.FlowLabel,
     Flows.FlowResult,
     Flows.FlowRevision,
     Flows.MessageBroadcast,
@@ -88,9 +89,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
         "contacts_fields",
         "contacts_groups",
         "contacts_wa_groups",
-        "flow_results",
         "flow_counts",
         "flow_contexts",
+        "flow_labels",
+        "flow_results",
         "groups",
         "interactive_templates",
         "messages_media",
@@ -331,6 +333,36 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :contacts_wa_groups, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("flow_labels", organization_id, attrs) do
+    Logger.info(
+      "fetching flow_labels data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("flow_labels", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            name: row.name,
+            uuid: row.uuid,
+            type: row.type,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :flow_labels, organization_id, attrs))
 
     :ok
   end
@@ -1489,6 +1521,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:contact, :group])
+
+  defp get_query("flow_labels", organization_id, attrs),
+    do:
+      FlowLabel
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
 
   defp get_query("profiles", organization_id, attrs),
     # We are creating a query here with the fields which are required instead of loading all the data.
