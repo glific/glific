@@ -1090,7 +1090,8 @@ defmodule Glific.Fixtures do
       label: "sample sheet",
       url:
         "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
-      type: "READ"
+      type: "READ",
+      auto_sync: true
     }
 
     attrs = Map.merge(valid_attrs, attrs)
