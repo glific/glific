@@ -27,14 +27,15 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Contacts,
     Contacts.Contact,
     Contacts.ContactHistory,
+    Contacts.ContactsField,
     Flows,
     Flows.Flow,
     Flows.FlowCount,
+    Flows.FlowLabel,
     Flows.FlowResult,
     Flows.FlowRevision,
     Flows.MessageBroadcast,
     Flows.MessageBroadcastContact,
-    Flows.WebhookLog,
     Groups.ContactGroup,
     Groups.ContactWAGroup,
     Groups.Group,
@@ -48,6 +49,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Profiles.Profile,
     Repo,
     Stats.Stat,
+    Templates.InteractiveTemplate,
     Tickets.Ticket,
     Trackers.Tracker,
     Users.User,
@@ -84,22 +86,26 @@ defmodule Glific.BigQuery.BigQueryWorker do
     if credential do
       [
         "contacts",
+        "contacts_fields",
         "contacts_groups",
         "contacts_wa_groups",
-        "messages",
-        "flow_results",
         "flow_counts",
-        "messages_media",
         "flow_contexts",
-        "profiles",
+        "flow_labels",
+        "flow_results",
+        "groups",
+        "interactive_templates",
+        "messages_media",
         "message_broadcasts",
         "message_broadcast_contacts",
+        "messages",
+        "profiles",
         "tickets",
-        "wa_messages",
         "wa_groups",
         "wa_groups_collections",
+        "wa_messages",
         "wa_reactions",
-        "webhook_logs"
+        "wa_reactions"
       ]
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
@@ -331,6 +337,101 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
+  defp queue_table_data("flow_labels", organization_id, attrs) do
+    Logger.info(
+      "fetching flow_labels data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("flow_labels", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            name: row.name,
+            uuid: row.uuid,
+            type: row.type,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :flow_labels, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("contacts_fields", organization_id, attrs) do
+    Logger.info(
+      "fetching contacts_fields data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("contacts_fields", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            name: row.name,
+            shortcode: row.shortcode,
+            scope: row.scope,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :contacts_fields, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("groups", organization_id, attrs) do
+    Logger.info(
+      "fetching groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("groups", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            label: row.label,
+            description: row.description,
+            is_restricted: row.is_restricted,
+            group_type: row.group_type,
+            last_communication_at:
+              BigQuery.format_date(row.last_communication_at, organization_id),
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :groups, organization_id, attrs))
+
+    :ok
+  end
+
   defp queue_table_data("wa_groups", organization_id, attrs) do
     Logger.info(
       "fetching wa_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
@@ -364,12 +465,12 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
-  defp queue_table_data("webhook_logs", organization_id, attrs) do
+  defp queue_table_data("interactive_templates", organization_id, attrs) do
     Logger.info(
-      "fetching webhook_logs data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching interactive_templates data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("webhook_logs", organization_id, attrs)
+    get_query("interactive_templates", organization_id, attrs)
     |> Repo.all()
     |> Enum.reduce(
       [],
@@ -377,17 +478,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
         [
           %{
             id: row.id,
-            url: row.url,
-            method: row.method,
-            request_headers: BigQuery.format_json(row.request_headers),
-            request_json: BigQuery.format_json(row.request_json),
-            response_json: BigQuery.format_json(row.response_json),
-            status_code: row.status_code,
-            error: row.error,
-            flow_id: row.flow_id,
-            flow_name: row.flow.name,
-            contact_id: row.contact_id,
-            phone: row.contact.phone,
+            label: row.label,
+            type: row.type,
+            interactive_content: BigQuery.format_json(row.interactive_content),
+            translations: BigQuery.format_json(row.translations),
+            language: row.language.label,
+            send_with_title: row.send_with_title,
+            tag: if(!is_nil(row.tag), do: row.tag.label),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
@@ -398,7 +495,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :webhook_logs, organization_id, attrs))
+    |> Enum.each(&make_job(&1, :interactive_templates, organization_id, attrs))
 
     :ok
   end
@@ -1355,6 +1452,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:contact, :wa_group])
 
+  defp get_query("contacts_fields", organization_id, attrs),
+    do:
+      ContactsField
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+
   defp get_query("wa_groups", organization_id, attrs),
     do:
       WAGroup
@@ -1362,6 +1466,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:wa_managed_phone])
+
+  defp get_query("groups", organization_id, attrs),
+    do:
+      Group
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
 
   defp get_query("wa_groups_collections", organization_id, attrs),
     do:
@@ -1378,6 +1489,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:wa_message, :contact])
+
+  defp get_query("interactive_templates", organization_id, attrs),
+    do:
+      InteractiveTemplate
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+      |> preload([:language, :tag])
 
   defp get_query("contacts", organization_id, attrs),
     do:
@@ -1403,6 +1522,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:contact, :group])
 
+  defp get_query("flow_labels", organization_id, attrs),
+    do:
+      FlowLabel
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+
   defp get_query("profiles", organization_id, attrs),
     # We are creating a query here with the fields which are required instead of loading all the data.
     do:
@@ -1411,14 +1537,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([p], [p.inserted_at, p.id])
       |> preload([:language, :contact])
-
-  defp get_query("webhook_logs", organization_id, attrs),
-    do:
-      WebhookLog
-      |> where([p], p.organization_id == ^organization_id)
-      |> apply_action_clause(attrs)
-      |> order_by([p], [p.inserted_at, p.id])
-      |> preload([:flow, :contact])
 
   defp get_query("flows", organization_id, attrs),
     do:

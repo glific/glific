@@ -567,6 +567,120 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for group table
+  """
+  @spec group_schema :: list()
+  def group_schema do
+    [
+      %{
+        description: "Unique ID generated for each WA Group",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "label of Group",
+        name: "label",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "description of Group",
+        name: "description",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Flag indicating if the group is restricted",
+        name: "is_restricted",
+        type: "Boolean",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Type of Group either WABA or WA",
+        name: "group_type",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when last message was sent/received from group",
+        name: "last_communication_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for flow label table
+  """
+  @spec flow_label_schema :: list()
+  def flow_label_schema do
+    [
+      %{
+        description: "Unique ID generated for each Flow Label",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "name of Flow Label",
+        name: "name",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "UUID of Flow Label",
+        name: "uuid",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "type of Flow Label",
+        name: "type",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for wa_group_collections table
   """
   @spec wa_groups_collection_schema :: list()
@@ -2196,6 +2310,63 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for the contact_fields table
+  """
+  @spec contact_fields_schema :: list()
+  def contact_fields_schema do
+    [
+      %{
+        description: "Unique ID for the contact field",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Contact Field name",
+        name: "name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Contact Field shortcode",
+        name: "shortcode",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Scope of Contact Field",
+        name: "scope",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the contact was added in group",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the contact group was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for the trackers_all_schema table
   """
   @spec trackers_all_schema :: list()
@@ -2264,87 +2435,91 @@ defmodule Glific.BigQuery.Schema do
         name: "ip_address",
         type: "STRING",
         mode: "REQUIRED"
+      },
+      %{
+        description: "Flag indicating if the registration has been submitted.",
+        name: "has_submitted",
+        type: "Boolean",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Flag indicating if the user agreed or disagreed with the T&C",
+        name: "terms_agreed",
+        type: "Boolean",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Flag indicating if user agrees to create a support staff account",
+        name: "support_staff_account",
+        type: "Boolean",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "if the user disputed the T&C",
+        name: "is_disputed",
+        type: "Boolean",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
       }
     ]
   end
 
   @doc """
-  Schema for the webhook logs table
+  Schema for the interactive templates table
   """
-  @spec webhook_logs_schema :: list()
-  def webhook_logs_schema do
+  @spec interactive_templates_schema :: list()
+  def interactive_templates_schema do
     [
       %{
-        description: "Unique ID for the webhook logs",
+        description: "Unique ID for the interactive template",
         name: "id",
         type: "INTEGER",
         mode: "REQUIRED"
       },
       %{
-        description: "URL of endpoint",
-        name: "url",
+        description: "The label of the interactive message",
+        name: "label",
         type: "STRING",
         mode: "REQUIRED"
       },
       %{
-        description: "HTTP request method indicating the purpose of the request",
-        name: "method",
+        description: "The type of interactive message- quick_reply or list",
+        name: "type",
         type: "STRING",
         mode: "REQUIRED"
       },
       %{
-        description: "JSON object for HTTP request header",
-        name: "request_headers",
+        description: "Interactive content of the message stored in form of json",
+        name: "interactive_content",
         type: "STRING",
         mode: "REQUIRED"
       },
       %{
-        description: "JSON object for HTTP request json",
-        name: "request_json",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "JSON object for HTTP response json",
-        name: "response_json",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description:
-          "Status codes indicate whether a the HTTP request has been successfully completed",
-        name: "status_code",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "Error received while making the HTTP request",
-        name: "error",
+        description: "Translation of interactive content stored in form of json",
+        name: "translations",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        description: "The Flow ID refers to the flow table where the webhook was triggered",
-        name: "flow_id",
+        description: "The language interactive message is created in",
+        name: "language",
         type: "STRING",
-        mode: "NULLABLE"
+        mode: "REQUIRED"
       },
       %{
-        description: "Name of the Flow",
-        name: "flow_name",
-        type: "STRING",
-        mode: "NULLABLE"
+        description: "Field to check if title needs to be send in the interactive message",
+        name: "send_with_title",
+        type: "Boolean",
+        mode: "REQUIRED"
       },
       %{
-        description:
-          "The Contact ID refers to the contact table for whom the webhook was triggered.",
-        name: "contact_id",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Phone number of the contact",
-        name: "phone",
+        description: "Tag added to the interactive message",
+        name: "tag",
         type: "STRING",
         mode: "NULLABLE"
       },
@@ -2352,13 +2527,13 @@ defmodule Glific.BigQuery.Schema do
         description: "Time when the record entry was first made",
         name: "inserted_at",
         type: "DATETIME",
-        mode: "NULLABLE"
+        mode: "REQUIRED"
       },
       %{
         description: "Time when the record entry was last updated",
         name: "updated_at",
         type: "DATETIME",
-        mode: "NULLABLE"
+        mode: "REQUIRED"
       },
       %{
         description: "Unique UUID for the row (allows us to delete duplicates)",

@@ -13,15 +13,16 @@ defmodule Glific.BigQuery do
     BigQuery.Schema,
     Contacts.Contact,
     Contacts.ContactHistory,
+    Contacts.ContactsField,
     Flows,
     Flows.FlowCount,
     Flows.FlowResult,
     Flows.FlowRevision,
     Flows.MessageBroadcast,
     Flows.MessageBroadcastContact,
-    Flows.WebhookLog,
     Groups.ContactGroup,
     Groups.ContactWAGroup,
+    Groups.Group,
     Groups.WAGroup,
     Groups.WAGroupsCollection,
     Jobs,
@@ -34,6 +35,7 @@ defmodule Glific.BigQuery do
     Registrations.Registration,
     Repo,
     Stats.Stat,
+    Templates.InteractiveTemplate,
     Tickets.Ticket,
     Trackers.Tracker,
     WAGroup.WAMessage,
@@ -50,13 +52,16 @@ defmodule Glific.BigQuery do
 
   @bigquery_tables %{
     "contacts" => :contact_schema,
-    "contacts_groups" => :contact_groups_schema,
     "contact_histories" => :contact_history_schema,
+    "contacts_fields" => :contact_fields_schema,
     "contacts_wa_groups" => :contacts_wa_group_schema,
     "flows" => :flow_schema,
     "flow_counts" => :flow_count_schema,
     "flow_contexts" => :flow_context_schema,
+    "flow_labels" => :flow_label_schema,
     "flow_results" => :flow_result_schema,
+    "groups" => :group_schema,
+    "interactive_templates" => :interactive_templates_schema,
     "message_broadcasts" => :message_broadcasts_schema,
     "message_broadcast_contacts" => :message_broadcast_contacts_schema,
     "message_conversations" => :message_conversation_schema,
@@ -66,11 +71,11 @@ defmodule Glific.BigQuery do
     "stats" => :stats_schema,
     "tickets" => :ticket_schema,
     "trackers" => :trackers_schema,
+    "wa_messages" => :wa_message_schema,
     "wa_groups" => :wa_group_schema,
     "wa_groups_collections" => :wa_groups_collection_schema,
-    "wa_messages" => :wa_message_schema,
-    "wa_reactions" => :wa_reactions_schema,
-    "webhook_logs" => :webhook_logs_schema
+    "contacts_groups" => :contact_groups_schema,
+    "wa_reactions" => :wa_reactions_schema
   }
 
   @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
@@ -93,6 +98,7 @@ defmodule Glific.BigQuery do
     [
       "message_conversations",
       "contact_histories",
+      "flow_labels",
       "flows",
       "stats",
       "stats_all"
@@ -181,17 +187,21 @@ defmodule Glific.BigQuery do
   @table_lookup %{
     "contact_histories" => ContactHistory,
     "contacts" => Contact,
+    "contacts_fields" => ContactsField,
     "contacts_groups" => ContactGroup,
     "contacts_wa_groups" => ContactWAGroup,
     "flow_counts" => FlowCount,
     "flow_contexts" => Flows.FlowContext,
+    "flow_labels" => Flows.FlowLabel,
     "flow_results" => FlowResult,
     "flows" => FlowRevision,
-    "messages" => Message,
-    "messages_media" => MessageMedia,
+    "groups" => Group,
+    "interactive_templates" => InteractiveTemplate,
     "message_broadcasts" => MessageBroadcast,
     "message_broadcast_contacts" => MessageBroadcastContact,
     "message_conversations" => MessageConversation,
+    "messages" => Message,
+    "messages_media" => MessageMedia,
     "profiles" => Profile,
     "stats" => Stat,
     "stats_all" => Stat,
@@ -201,8 +211,7 @@ defmodule Glific.BigQuery do
     "wa_groups" => WAGroup,
     "wa_groups_collections" => WAGroupsCollection,
     "wa_messages" => WAMessage,
-    "wa_reactions" => WaReaction,
-    "webhook_logs" => WebhookLog
+    "wa_reactions" => WaReaction
   }
 
   @doc false
