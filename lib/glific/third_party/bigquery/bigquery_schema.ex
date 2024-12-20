@@ -681,6 +681,63 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for tag table
+  """
+  @spec tag_schema :: list()
+  def tag_schema do
+    [
+      %{
+        description: "Unique ID generated for each tag",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "label of tag",
+        name: "label",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "shortcode of tag",
+        name: "shortcode",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "description of tag",
+        name: "description",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Check for tag if it is active",
+        name: "is_active",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Check for tag if it is reserved",
+        name: "is_reserved",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for wa_group_collections table
   """
   @spec wa_groups_collection_schema :: list()

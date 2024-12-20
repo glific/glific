@@ -49,6 +49,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Profiles.Profile,
     Repo,
     Stats.Stat,
+    Tags.Tag,
     Templates.InteractiveTemplate,
     Tickets.Ticket,
     Trackers.Tracker,
