@@ -780,15 +780,126 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "shortcode of tag",
+        description: "shortcode of saved_search",
         name: "shortcode",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        description: "Check for tag if it is reserved",
+        description: "Check for saved_search if it is reserved",
         name: "is_reserved",
         type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for speed_send table
+  """
+  @spec speed_send_schema :: list()
+  def speed_send_schema do
+    [
+      %{
+        description: "Unique ID generated for each speed send",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "UUID of speed send",
+        name: "UUID",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "label of speed send",
+        name: "label",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "body of speed send",
+        name: "body",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "type of speed send",
+        name: "type",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Check for speed send if it is reserved",
+        name: "is_reserved",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Check for speed send if it is active",
+        name: "is_active",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "shortcode of speed send",
+        name: "shortcode",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Opted language of the speed send",
+        name: "language",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of media file in database",
+        name: "media_id",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "URL of media file stored in GCS",
+        name: "gcs_url",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Media URL if it is media speed spend",
+        name: "media_url",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "JSON object for storing translations of speed send",
+        name: "translations",
+        type: "STRING",
         mode: "NULLABLE"
       },
       %{
