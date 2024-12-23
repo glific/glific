@@ -48,8 +48,11 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Partners,
     Profiles.Profile,
     Repo,
+    Searches.SavedSearch,
     Stats.Stat,
+    Tags.Tag,
     Templates.InteractiveTemplate,
+    Templates.SessionTemplate,
     Tickets.Ticket,
     Trackers.Tracker,
     Users.User,
@@ -432,6 +435,108 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
+  defp queue_table_data("tags", organization_id, attrs) do
+    Logger.info(
+      "fetching tags data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("tags", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            label: row.label,
+            shortcode: row.shortcode,
+            description: row.description,
+            is_active: row.is_active,
+            is_reserved: row.is_reserved,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :tags, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("saved_searches", organization_id, attrs) do
+    Logger.info(
+      "fetching saved_searches data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("saved_searches", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            label: row.label,
+            args: BigQuery.format_json(row.args),
+            shortcode: row.shortcode,
+            is_reserved: row.is_reserved,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :saved_searches, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("speed_sends", organization_id, attrs) do
+    Logger.info(
+      "fetching speed_sends data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("speed_sends", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            uuid: row.uuid,
+            label: row.label,
+            body: row.body,
+            type: row.type,
+            is_reserved: row.is_reserved,
+            is_active: row.is_active,
+            shortcode: row.shortcode,
+            language: row.language.label,
+            translations: BigQuery.format_json(row.translations),
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> Map.merge(message_media_info(row.message_media))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :speed_sends, organization_id, attrs))
+
+    :ok
+  end
+
   defp queue_table_data("wa_groups", organization_id, attrs) do
     Logger.info(
       "fetching wa_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
@@ -665,6 +770,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
               settings: nil,
               user_name: if(!is_nil(row.user), do: row.user.name),
               user_role: if(!is_nil(row.user), do: BigQuery.format_json(row.user.roles)),
+              last_login_as_staff_at: if(!is_nil(row.user), do: row.user.last_login_at),
+              last_login_from_as_staff: if(!is_nil(row.user), do: row.user.last_login_from),
+              is_restricted_user: if(!is_nil(row.user), do: row.user.is_restricted),
               groups:
                 Enum.map(row.groups, fn group ->
                   %{label: group.label, description: group.description}
@@ -1459,6 +1567,20 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
 
+  defp get_query("tags", organization_id, attrs),
+    do:
+      Tag
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+
+  defp get_query("saved_searches", organization_id, attrs),
+    do:
+      SavedSearch
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+
   defp get_query("wa_groups", organization_id, attrs),
     do:
       WAGroup
@@ -1600,6 +1722,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:organization])
+
+  defp get_query("speed_sends", organization_id, attrs),
+    do:
+      SessionTemplate
+      |> where([f], f.organization_id == ^organization_id)
+      |> where([f], f.is_hsm == false)
+      |> apply_action_clause(attrs)
+      |> preload([:message_media, :language])
 
   defp get_query("trackers", organization_id, attrs),
     do:
