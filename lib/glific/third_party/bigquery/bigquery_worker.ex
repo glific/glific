@@ -525,7 +525,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
           |> Map.merge(bq_fields(organization_id))
-          |> Map.merge(message_media_info(row.media))
+          |> Map.merge(message_media_info(row.message_media))
           |> then(&%{json: &1})
           | acc
         ]
@@ -1729,7 +1729,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([f], f.organization_id == ^organization_id)
       |> where([f], f.is_hsm == false)
       |> apply_action_clause(attrs)
-      |> preload([:messages_media, :language])
+      |> preload([:message_media, :language])
 
   defp get_query("trackers", organization_id, attrs),
     do:
