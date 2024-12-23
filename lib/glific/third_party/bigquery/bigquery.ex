@@ -103,7 +103,8 @@ defmodule Glific.BigQuery do
       "flows",
       "message_conversations",
       "stats",
-      "stats_all"
+      "stats_all",
+      "tags"
     ]
   end
 
