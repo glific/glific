@@ -698,6 +698,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
               settings: nil,
               user_name: if(!is_nil(row.user), do: row.user.name),
               user_role: if(!is_nil(row.user), do: BigQuery.format_json(row.user.roles)),
+              last_login_as_staff_at: if(!is_nil(row.user), do: row.user.last_login_at),
+              last_login_from_as_staff: if(!is_nil(row.user), do: row.user.last_login_from),
+              is_restricted_user: if(!is_nil(row.user), do: row.user.is_restricted),
               groups:
                 Enum.map(row.groups, fn group ->
                   %{label: group.label, description: group.description}
