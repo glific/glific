@@ -175,6 +175,24 @@ defmodule Glific.BigQuery.Schema do
         ]
       },
       %{
+        description: "Last login date of the staff member",
+        name: "last_login_as_staff_at",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "IP address of the device last login from",
+        name: "last_login_from_as_staff",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Flag indicating if the user is restricted",
+        name: "is_restricted_user",
+        type: "Boolean",
+        mode: "NULLABLE"
+      },
+      %{
         description: "Groups that the contact belongs to",
         name: "groups",
         type: "RECORD",
