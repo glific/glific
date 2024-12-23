@@ -756,6 +756,69 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for saved_search table
+  """
+  @spec saved_search_schema :: list()
+  def saved_search_schema do
+    [
+      %{
+        description: "Unique ID generated for each saved_search",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "label of saved_search",
+        name: "label",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "JSON object for storing the JSON of saved_search",
+        name: "args",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "shortcode of tag",
+        name: "shortcode",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Check for tag if it is reserved",
+        name: "is_reserved",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for wa_group_collections table
   """
   @spec wa_groups_collection_schema :: list()
