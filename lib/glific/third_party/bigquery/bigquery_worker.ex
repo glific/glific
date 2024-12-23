@@ -49,6 +49,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Profiles.Profile,
     Repo,
     Stats.Stat,
+    Tags.Tag,
     Templates.InteractiveTemplate,
     Tickets.Ticket,
     Trackers.Tracker,
@@ -428,6 +429,38 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :groups, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("tags", organization_id, attrs) do
+    Logger.info(
+      "fetching tags data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("tags", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            label: row.label,
+            shortcode: row.shortcode,
+            description: row.description,
+            is_active: row.is_active,
+            is_reserved: row.is_reserved,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :tags, organization_id, attrs))
 
     :ok
   end
@@ -1455,6 +1488,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp get_query("contacts_fields", organization_id, attrs),
     do:
       ContactsField
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+
+  defp get_query("tags", organization_id, attrs),
+    do:
+      Tag
       |> where([m], m.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])

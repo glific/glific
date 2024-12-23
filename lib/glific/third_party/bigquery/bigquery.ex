@@ -35,6 +35,7 @@ defmodule Glific.BigQuery do
     Registrations.Registration,
     Repo,
     Stats.Stat,
+    Tags.Tag,
     Templates.InteractiveTemplate,
     Tickets.Ticket,
     Trackers.Tracker,
@@ -54,12 +55,13 @@ defmodule Glific.BigQuery do
     "contacts" => :contact_schema,
     "contact_histories" => :contact_history_schema,
     "contacts_fields" => :contact_fields_schema,
+    "contacts_groups" => :contact_groups_schema,
     "contacts_wa_groups" => :contacts_wa_group_schema,
-    "flows" => :flow_schema,
-    "flow_counts" => :flow_count_schema,
     "flow_contexts" => :flow_context_schema,
+    "flow_counts" => :flow_count_schema,
     "flow_labels" => :flow_label_schema,
     "flow_results" => :flow_result_schema,
+    "flows" => :flow_schema,
     "groups" => :group_schema,
     "interactive_templates" => :interactive_templates_schema,
     "message_broadcasts" => :message_broadcasts_schema,
@@ -69,12 +71,12 @@ defmodule Glific.BigQuery do
     "messages_media" => :messages_media_schema,
     "profiles" => :profile_schema,
     "stats" => :stats_schema,
+    "tags" => :tag_schema,
     "tickets" => :ticket_schema,
     "trackers" => :trackers_schema,
-    "wa_messages" => :wa_message_schema,
     "wa_groups" => :wa_group_schema,
     "wa_groups_collections" => :wa_groups_collection_schema,
-    "contacts_groups" => :contact_groups_schema,
+    "wa_messages" => :wa_message_schema,
     "wa_reactions" => :wa_reactions_schema
   }
 
@@ -96,12 +98,13 @@ defmodule Glific.BigQuery do
   @spec ignore_updates_for_table() :: list()
   def ignore_updates_for_table do
     [
-      "message_conversations",
       "contact_histories",
       "flow_labels",
       "flows",
+      "message_conversations",
       "stats",
-      "stats_all"
+      "stats_all",
+      "tags"
     ]
   end
 
@@ -190,21 +193,22 @@ defmodule Glific.BigQuery do
     "contacts_fields" => ContactsField,
     "contacts_groups" => ContactGroup,
     "contacts_wa_groups" => ContactWAGroup,
-    "flow_counts" => FlowCount,
     "flow_contexts" => Flows.FlowContext,
+    "flow_counts" => FlowCount,
     "flow_labels" => Flows.FlowLabel,
     "flow_results" => FlowResult,
     "flows" => FlowRevision,
     "groups" => Group,
     "interactive_templates" => InteractiveTemplate,
-    "message_broadcasts" => MessageBroadcast,
     "message_broadcast_contacts" => MessageBroadcastContact,
+    "message_broadcasts" => MessageBroadcast,
     "message_conversations" => MessageConversation,
     "messages" => Message,
     "messages_media" => MessageMedia,
     "profiles" => Profile,
     "stats" => Stat,
     "stats_all" => Stat,
+    "tags" => Tag,
     "tickets" => Ticket,
     "trackers" => Tracker,
     "trackers_all" => Tracker,
