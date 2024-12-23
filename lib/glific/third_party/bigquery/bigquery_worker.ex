@@ -52,6 +52,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Stats.Stat,
     Tags.Tag,
     Templates.InteractiveTemplate,
+    Templates.SessionTemplate,
     Tickets.Ticket,
     Trackers.Tracker,
     Users.User,
@@ -494,6 +495,44 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :saved_searches, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("speed_sends", organization_id, attrs) do
+    Logger.info(
+      "fetching speed_sends data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("speed_sends", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            uuid: row.uuid,
+            label: row.label,
+            body: row.body,
+            type: row.type,
+            is_reserved: row.is_reserved,
+            is_active: row.is_active,
+            shortcode: row.shortcode,
+            language: row.language.label,
+            translations: BigQuery.format_json(row.translations),
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> Map.merge(message_media_info(row.media))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :speed_sends, organization_id, attrs))
 
     :ok
   end
@@ -1683,6 +1722,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:organization])
+
+  defp get_query("speed_sends", organization_id, attrs),
+    do:
+      SessionTemplate
+      |> where([f], f.organization_id == ^organization_id)
+      |> where([f], f.is_hsm == false)
+      |> apply_action_clause(attrs)
+      |> preload([:messages_media, :language])
 
   defp get_query("trackers", organization_id, attrs),
     do:
