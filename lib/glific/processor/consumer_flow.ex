@@ -256,15 +256,11 @@ defmodule Glific.Processor.ConsumerFlow do
         do: {:flow_id, flow_id, @final_phrase},
         else: {:flow_keyword, @optin_flow_keyword, @final_phrase}
 
-    Flows.get_cached_flow(
-      message.organization_id,
-      args
-    )
-    |> case do
-      {:ok, flow} ->
+    case Flows.get_cached_flow(message.organization_id, args) do
+      {:ok, flow} when flow.is_active ->
         FlowContext.init_context(flow, message.contact, @final_phrase, is_draft: false)
 
-      {:error, _} ->
+      _ ->
         nil
     end
 
