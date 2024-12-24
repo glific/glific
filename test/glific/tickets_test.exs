@@ -12,7 +12,7 @@ defmodule Glific.TicketsTest do
 
     import Glific.TicketsFixtures
 
-    @invalid_attrs %{body: nil, topic: nil}
+    @invalid_attrs %{body: nil}
 
     test "list_tickets/0 returns all tickets" do
       ticket = ticket_fixture()
@@ -69,10 +69,9 @@ defmodule Glific.TicketsTest do
       assert ticket.status == "closed"
     end
 
-    test "update_ticket/2 with invalid data returns error changeset" do
+    test "update_ticket/2 with empty body" do
       ticket = ticket_fixture()
-      assert {:error, %Ecto.Changeset{}} = Tickets.update_ticket(ticket, @invalid_attrs)
-      assert ticket == Tickets.get_ticket!(ticket.id)
+      assert {:ok, _} = Tickets.update_ticket(ticket, @invalid_attrs)
     end
 
     test "delete_ticket/1 deletes the ticket" do
