@@ -5,6 +5,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
     Contacts,
     Contacts.Contact,
     Fixtures,
+    Flows.Flow,
     Messages.Message,
     Processor.ConsumerFlow,
     Repo,
@@ -173,5 +174,39 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
     new_message_count = Repo.aggregate(Message, :count)
     assert new_message_count > message_count + 1
+  end
+
+  test "should not start optin flow when flow is inactive" do
+    state = ConsumerFlow.load_state(Fixtures.get_org_id())
+
+    # user should be opted out
+    sender =
+      Repo.get_by(Contact, %{name: "Chrissy Cron"})
+      |> Map.put(:status, :invalid)
+      |> Map.put(:optin_time, nil)
+      |> Map.put(:optout_time, ~U[2023-12-22 12:00:00Z])
+      |> Map.put(:optin_method, nil)
+      |> Map.put(:optin_status, false)
+      |> Map.put(:is_contact_replied, false)
+
+    _flow =
+      Repo.get_by(Flow, name: "Optin Workflow")
+      |> Map.put(:is_active, false)
+
+    message =
+      Fixtures.message_fixture(%{body: "hey", sender_id: sender.id})
+      |> Repo.preload([:contact])
+
+    ConsumerFlow.process_message({message, state}, message.body)
+
+    latest_message =
+      Repo.one(
+        from m in Message,
+          order_by: [desc: m.inserted_at],
+          limit: 1
+      )
+
+    # here shouldn't be any messages after the user sends the message, if the user has opted out.
+    assert latest_message.body == "hey"
   end
 end

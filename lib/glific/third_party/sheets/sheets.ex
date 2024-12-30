@@ -199,7 +199,7 @@ defmodule Glific.Sheets do
         {:error, err}, acc ->
           # If we get any error, we stop executing the current sheet further, log it.
           Logger.error(
-            "Error while syncing google sheet, org id: #{sheet.organization_id}, url: #{sheet.url}, sheet_id: #{sheet.id}"
+            "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{inspect(err)}"
           )
 
           create_sync_fail_notification(sheet)
@@ -375,7 +375,17 @@ defmodule Glific.Sheets do
     |> where([sh], sh.type in ["ALL", "READ"])
     |> Repo.all()
     |> Enum.each(fn sheet ->
-      sync_sheet_data(sheet)
+      # catching the error and logging since we don't know what error is happening here..
+      try do
+        sync_sheet_data(sheet)
+      rescue
+        err ->
+          Logger.error(
+            "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{inspect(err)}"
+          )
+
+          create_sync_fail_notification(sheet)
+      end
     end)
   end
 
@@ -386,7 +396,7 @@ defmodule Glific.Sheets do
       message: "Google sheet sync failed",
       severity: Notifications.types().warning,
       organization_id: sheet.organization_id,
-      entity: %{url: sheet.url, id: sheet.id}
+      entity: %{url: sheet.url, id: sheet.id, name: sheet.label}
     })
 
     :ok
