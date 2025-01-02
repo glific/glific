@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Roles do
   This layer basically stitches together one or more calls to resolve the incoming queries.
   """
 
-  # import GlificWeb.Gettext
+  # use Gettext, backend: GlificWeb.Gettext
 
   alias Glific.{
     AccessControl,

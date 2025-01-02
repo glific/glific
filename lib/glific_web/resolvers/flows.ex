@@ -3,7 +3,7 @@ defmodule GlificWeb.Resolvers.Flows do
   Flow Resolver which sits between the GraphQL schema and Glific Flow Context API.
   This layer basically stitches together one or more calls to resolve the incoming queries.
   """
-  import GlificWeb.Gettext
+  use Gettext, backend: GlificWeb.Gettext
 
   alias Glific.{
     Contacts.Contact,
@@ -176,14 +176,8 @@ defmodule GlificWeb.Resolvers.Flows do
          {:ok, _flow} <- Flows.publish_flow(flow, user.id) do
       {:ok, %{success: true, errors: nil}}
     else
-      {:errors, errors} ->
-        {:ok, %{success: false, errors: errors}}
-
       {:error, errors} ->
         {:ok, %{success: false, errors: make_error(errors)}}
-
-      _ ->
-        {:error, dgettext("errors", "Something went wrong.")}
     end
   end
 

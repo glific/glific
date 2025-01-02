@@ -30,7 +30,7 @@ defmodule Glific.BigQueryTest do
 
     default_goth_json = """
     {
-    "project_id": "DEFAULT PROJECT ID",
+    "project_id": "DEFAULTPROJECTID",
     "private_key_id": "DEFAULT API KEY",
     "client_email": "DEFAULT CLIENT EMAIL",
     "private_key": "DEFAULT PRIVATE KEY"
@@ -361,7 +361,7 @@ defmodule Glific.BigQueryTest do
       }
     ]) do
       url =
-        "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULT%20PROJECT%20ID/datasets/917834811114/tables/contacts/insertAll"
+        "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets/917834811114/tables/contacts/insertAll"
 
       Tesla.Mock.mock(fn
         %Tesla.Env{method: :post, url: ^url} ->

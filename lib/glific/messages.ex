@@ -3,7 +3,7 @@ defmodule Glific.Messages do
   The Messages context.
   """
   import Ecto.Query, warn: false
-  import GlificWeb.Gettext
+  use Gettext, backend: GlificWeb.Gettext
 
   require Logger
 
