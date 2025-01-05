@@ -5,7 +5,7 @@ defmodule Glific.Flows.Router do
   alias __MODULE__
 
   use Ecto.Schema
-  import GlificWeb.Gettext
+  use Gettext, backend: GlificWeb.Gettext
   require Logger
 
   alias Glific.{

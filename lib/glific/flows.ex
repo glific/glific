@@ -4,7 +4,7 @@ defmodule Glific.Flows do
   """
 
   import Ecto.Query, warn: false
-  import GlificWeb.Gettext
+  use Gettext, backend: GlificWeb.Gettext
 
   require Logger
 
@@ -1210,7 +1210,7 @@ defmodule Glific.Flows do
     )
   rescue
     e ->
-      {:error, e.message}
+      {:error, Exception.message(e)}
   end
 
   @doc """

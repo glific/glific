@@ -3,7 +3,7 @@ defmodule Glific.Contacts do
   The Contacts context.
   """
   import Ecto.Query, warn: false
-  import GlificWeb.Gettext
+  use Gettext, backend: GlificWeb.Gettext
 
   use Tesla
   plug(Tesla.Middleware.FormUrlencoded)

@@ -4,7 +4,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   """
   alias Glific.Partners
   alias Plug.Conn.Query
-  import GlificWeb.Gettext
+  use Gettext, backend: GlificWeb.Gettext
 
   @gupshup_msg_url "https://api.gupshup.io/wa/api/v1"
   @gupshup_api_url "https://api.gupshup.io/sm/api/v1"

@@ -3,7 +3,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   Contact Resolver which sits between the GraphQL schema and Glific Contact Context API.
   This layer basically stitches together one or more calls to resolve the incoming queries.
   """
-  import GlificWeb.Gettext
+  use Gettext, backend: GlificWeb.Gettext
 
   alias Glific.{Contacts, Contacts.Contact, Contacts.Import, Repo, State}
 
