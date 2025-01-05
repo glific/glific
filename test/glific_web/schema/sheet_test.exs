@@ -82,6 +82,28 @@ defmodule GlificWeb.Schema.SheetTest do
 
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "syncSheet", "sheet", "sheetDataCount"]) == 4
+
+    # Test with an invalid URL
+    invalid_result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "invalid sheet",
+            "url" => "https://invalid-url.example.com",
+            "type" => "READ"
+          }
+        }
+      )
+
+    assert {:ok, %{data: %{"createSheet" => %{"errors" => errors}}}} = invalid_result
+
+    message =
+      errors
+      |> List.first()
+      |> Map.get("message")
+
+    assert message ==
+             "Url: Sheet URL is invalid"
   end
 
   test "create a sheet only sync partially due to errors in csv decode", %{manager: user} do
@@ -207,5 +229,33 @@ defmodule GlificWeb.Schema.SheetTest do
 
     message = get_in(query_data, [:data, "deleteSheet", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
+  end
+
+  test "validate_sheet returns appropriate error for inaccessible URL", %{manager: user} do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://docs.google.com/spreadsheets/d/restricted_id/edit#gid=0"} ->
+        {:ok, %Tesla.Env{status: 403, body: "Forbidden"}}
+    end)
+
+    inaccessible_result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "restricted sheet",
+            "url" => "https://docs.google.com/spreadsheets/d/restricted_id/edit#gid=0",
+            "type" => "READ"
+          }
+        }
+      )
+
+    assert {:ok, %{errors: errors}} = inaccessible_result
+
+    message =
+      errors
+      |> List.first()
+      |> Map.get(:message)
+
+    assert message ==
+             "Please double-check the URL and make sure the sharing access for the sheet is at least set to 'Anyone with the link' can view."
   end
 end
