@@ -41,6 +41,8 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
   @spec create_interactive_template(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_interactive_template(_, %{input: params}, _) do
+    IO.inspect(params)
+
     with {:ok, interactive_template} <-
            InteractiveTemplates.create_interactive_template(params) do
       {:ok, %{interactive_template: interactive_template}}
