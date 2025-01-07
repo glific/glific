@@ -2,7 +2,7 @@ defmodule Glific.ConfigTest do
   use ExUnit.Case
 
   import Dotenvy
-  @tag :dotenv
+
   test "dotenvy source now needs explicitly set system_env" do
     System.put_env("DB_URL", "url")
     {:ok, _} = source([])
