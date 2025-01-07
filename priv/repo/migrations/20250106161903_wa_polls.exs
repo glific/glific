@@ -10,6 +10,8 @@ defmodule Glific.Repo.Migrations.WaPolls do
         null: false,
         comment: "poll content"
 
+      add :only_one, :boolean, default: false, comment: "Allow multiple answers"
+
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
         comment: "Unique organization ID."

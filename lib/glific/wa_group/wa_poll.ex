@@ -12,11 +12,16 @@ defmodule Glific.WaGroup.WaPoll do
     :organization_id
   ]
 
+  @optional_fields [
+    :only_one
+  ]
+
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           label: String.t() | nil,
           poll_content: map() | nil,
+          only_one: boolean(),
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -26,6 +31,7 @@ defmodule Glific.WaGroup.WaPoll do
   schema "wa_polls" do
     field :label, :string
     field :poll_content, :map, default: %{}
+    field :only_one, :boolean, default: false
 
     belongs_to :organization, Organization
 
@@ -38,7 +44,7 @@ defmodule Glific.WaGroup.WaPoll do
   @spec changeset(WaPoll.t(), map()) :: Ecto.Changeset.t()
   def changeset(wa_poll, attrs) do
     wa_poll
-    |> cast(attrs, @required_fields)
+    |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:label, :organisation_id],
       name: :wa_poll_label_organization_id_index

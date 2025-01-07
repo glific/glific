@@ -12,6 +12,7 @@ defmodule GlificWeb.Schema.WaPollTypes do
     field :id, :id
     field :label, :string
     field :poll_content, :json
+    field :only_one, :boolean
     field :inserted_at, :datetime
     field :updated_at, :datetime
   end
@@ -26,6 +27,7 @@ defmodule GlificWeb.Schema.WaPollTypes do
     field :id, :id
     field :label, :string
     field :poll_content, :json
+    field :only_one, :boolean
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
