@@ -2,7 +2,7 @@ defmodule Glific.WaPoll do
   @moduledoc """
   The whatsapp poll Context, which encapsulates and manages whatsapp poll
   """
-  alias Glific.{WaGroup.WaPoll, Repo}
+  alias Glific.{Repo, WaGroup.WaPoll}
 
   @doc """
   Creates an interactive template
