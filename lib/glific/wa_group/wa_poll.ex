@@ -46,9 +46,7 @@ defmodule Glific.WaGroup.WaPoll do
     wa_poll
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint([:label, :organization_id],
-      name: :wa_poll_label_organization_id_index
-    )
+    |> unique_constraint([:label, :organization_id])
     |> foreign_key_constraint(:organization_id)
   end
 end

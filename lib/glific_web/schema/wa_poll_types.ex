@@ -19,7 +19,6 @@ defmodule GlificWeb.Schema.WaPollTypes do
 
   object :wa_poll_result do
     field :wa_poll, :wa_poll
-    field :message, :string
     field :errors, list_of(:input_error)
   end
 

@@ -3,7 +3,6 @@ fragment WaPollFields on WaPollResult{
       key
       message
     }
-    message
     waPoll {
       id
       onlyOne

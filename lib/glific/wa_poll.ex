@@ -16,11 +16,9 @@ defmodule Glific.WaPoll do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_wa_poll(map()) ::
-          {:ok, WaPoll.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_wa_poll(map()) :: {:ok, WaPoll.t()} | {:error, Ecto.Changeset.t()}
   def create_wa_poll(attrs) do
-    with :ok <-
-           validate_options(attrs) do
+    with :ok <- validate_options(attrs) do
       %WaPoll{}
       |> WaPoll.changeset(attrs)
       |> Repo.insert()
@@ -30,21 +28,32 @@ defmodule Glific.WaPoll do
   @spec validate_options(map()) :: :ok | {:error, String.t()}
   defp validate_options(attrs) do
     options = attrs[:poll_content]["options"]
-    options_count = length(options)
 
-    # Check if there are more than 12 options
-    if options_count > 12 do
-      {:error, "The number of options should be up to 12 only, but got #{options_count}."}
+    validate_option_count(options)
+    |> validate_option_uniqueness()
+  end
+
+  @spec validate_option_count(list()) :: {:ok, list()} | {:error, String.t()}
+  defp validate_option_count(options) do
+    if length(options) > 12 do
+      {:error, "The number of options should be up to 12 only, but got #{length(options)}."}
     else
-      # Check for duplicate option names
-      option_names = Enum.map(options, fn option -> option["name"] end)
-      duplicates = option_names -- Enum.uniq(option_names)
+      {:ok, options}
+    end
+  end
 
-      if duplicates != [] do
-        {:error, "Duplicate options detected: #{Enum.join(duplicates, ", ")}."}
-      else
-        :ok
-      end
+  @spec validate_option_uniqueness({:ok, list()} | {:error, String.t()}) ::
+          :ok | {:error, String.t()}
+  defp validate_option_uniqueness({:error, _} = error), do: error
+
+  defp validate_option_uniqueness({:ok, options}) do
+    option_names = Enum.map(options, & &1["name"])
+    unique_names = Enum.uniq(option_names)
+
+    if length(option_names) != length(unique_names) do
+      {:error, "Duplicate options detected"}
+    else
+      :ok
     end
   end
 end

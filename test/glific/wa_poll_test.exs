@@ -49,7 +49,7 @@ defmodule Glific.WAPollTest do
         })
 
       assert {:error, message} = WaPoll.create_wa_poll(attrs)
-      assert message == "Duplicate options detected: Duplicate Option."
+      assert message == "Duplicate options detected"
     end
   end
 end
