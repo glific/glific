@@ -6,6 +6,17 @@ defmodule GlificWeb.Resolvers.WaPoll do
 
   alias Glific.WaPoll
 
+  @doc """
+  Get a specific whatsapp poll by id
+  """
+  @spec wa_poll(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def wa_poll(_, %{id: id}, _) do
+    with {:ok, wa_poll} <-
+           WaPoll.fetch_wa_poll(id),
+         do: {:ok, %{wa_poll: wa_poll}}
+  end
+
   @doc false
   @spec create_wa_poll(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}

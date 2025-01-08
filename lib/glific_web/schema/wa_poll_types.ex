@@ -32,6 +32,15 @@ defmodule GlificWeb.Schema.WaPollTypes do
     field :updated_at, :datetime
   end
 
+  object :wa_poll_queries do
+    @desc "get the details of one whatsapp poll"
+    field :wa_poll, :wa_poll_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.WaPoll.wa_poll/3)
+    end
+  end
+
   object :wa_poll_mutations do
     field :create_wa_poll, :wa_poll_result do
       arg(:input, non_null(:wa_poll_input))

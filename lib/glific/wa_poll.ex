@@ -5,7 +5,7 @@ defmodule Glific.WaPoll do
   alias Glific.{Repo, WaGroup.WaPoll}
 
   @doc """
-  Creates an interactive template
+  Creates an wa_poll
 
   ## Examples
 
@@ -56,4 +56,22 @@ defmodule Glific.WaPoll do
       :ok
     end
   end
+
+  @doc """
+  Fetches a single wa_poll
+
+  Returns `Resource not found` if the wa_poll does not exist.
+
+  ## Examples
+
+      iex> fetch_wa_poll(123)
+        {:ok, %WaPol{}}
+
+      iex> fetch_wa_poll(456)
+        {:error, ["Elixir.Glific.WaGroup.WaPol", "Resource not found"]}
+
+  """
+  @spec fetch_wa_poll(integer) :: {:ok, WaPoll.t()} | {:error, any}
+  def fetch_wa_poll(id),
+    do: Repo.fetch_by(WaPoll, %{id: id})
 end
