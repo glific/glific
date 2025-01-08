@@ -55,9 +55,15 @@ defmodule Glific.Sheets do
   end
 
   defp validate_sheet(attrs) do
-    Tesla.get(attrs.url)
+    client =
+      Tesla.client([
+        {Tesla.Middleware.FollowRedirects, max_redirects: 5}
+      ])
+
+    Tesla.get(client, attrs.url)
     |> case do
-      {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
+      # Accept both 200s and 300s
+      {:ok, %Tesla.Env{status: status}} when status in 200..399 ->
         {:ok, true}
 
       _ ->
