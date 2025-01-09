@@ -25,7 +25,7 @@ defmodule GlificWeb.Schema.WAPollTest do
 
     assert wa_poll["label"] == "Test Poll"
 
-    # by default the allow multiple answer should be false
+    # by default the only one should be false
     assert wa_poll["allowMultipleAnswer"] == false
 
     # allow multiple answer should be true
