@@ -17,6 +17,15 @@ defmodule GlificWeb.Resolvers.WaPoll do
          do: {:ok, %{wa_poll: wa_poll}}
   end
 
+  @doc """
+  Get the list of session Interactives filtered by args
+  """
+  @spec wa_polls(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def wa_polls(_, args, _) do
+    {:ok, WaPoll.list_wa_polls(args)}
+  end
+
   @doc false
   @spec create_wa_poll(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}

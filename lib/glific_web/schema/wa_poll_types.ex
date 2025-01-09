@@ -22,6 +22,15 @@ defmodule GlificWeb.Schema.WaPollTypes do
     field :errors, list_of(:input_error)
   end
 
+  @desc "Filtering options for wa polls"
+  input_object :wa_poll_filter do
+    @desc "Match the label"
+    field(:label, :string)
+
+    @desc "Match the allow multiple answer"
+    field(:allow_multiple_answer, :boolean)
+  end
+
   input_object :wa_poll_input do
     field :id, :id
     field :label, :string
@@ -38,6 +47,14 @@ defmodule GlificWeb.Schema.WaPollTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.WaPoll.wa_poll/3)
+    end
+
+    @desc "Get a list of all wa polls filtered by various criteria"
+    field :wa_polls, list_of(:wa_poll) do
+      arg(:filter, :wa_poll_filter)
+      arg(:opts, :opts)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.WaPoll.wa_polls/3)
     end
   end
 

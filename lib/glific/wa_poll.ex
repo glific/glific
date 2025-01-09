@@ -3,6 +3,7 @@ defmodule Glific.WaPoll do
   The whatsapp poll Context, which encapsulates and manages whatsapp poll
   """
   alias Glific.{Repo, WaGroup.WaPoll}
+  import Ecto.Query, warn: false
 
   @doc """
   Creates an wa_poll
@@ -73,4 +74,31 @@ defmodule Glific.WaPoll do
   @spec fetch_wa_poll(integer) :: {:ok, WaPoll.t()} | {:error, any}
   def fetch_wa_poll(id),
     do: Repo.fetch_by(WaPoll, %{id: id})
+
+  @doc """
+  Returns the list of wa poll
+
+  ## Examples
+
+      iex> list_wa_polls()
+      [%WaPoll{}, ...]
+
+  """
+  @spec list_wa_polls(map()) :: [WaPoll.t()]
+  def list_wa_polls(args),
+    do: Repo.list_filter(args, WaPoll, &Repo.opts_with_label/2, &filter_with/2)
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    Enum.reduce(filter, query, fn
+      {:label, label}, query ->
+        from(q in query, where: ilike(field(q, :label), ^"%#{label}%"))
+
+      {:allow_multiple_answer, allow_multiple_answer}, query ->
+        from(q in query, where: q.allow_multiple_answer == ^allow_multiple_answer)
+
+      _, query ->
+        query
+    end)
+  end
 end
