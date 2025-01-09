@@ -22,10 +22,10 @@ defmodule GlificWeb.Schema.WAPollTest do
 
     assert wa_poll["label"] == "Test Poll"
 
-    # by default the only one should be false
+    # by default the allow multiple answer should be false
     assert wa_poll["allowMultipleAnswer"] == false
 
-    # only one should be true
+    # allow multiple answer should be true
     result =
       auth_query_gql_by(:create, user,
         variables: %{
