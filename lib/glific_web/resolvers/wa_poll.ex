@@ -18,7 +18,7 @@ defmodule GlificWeb.Resolvers.WaPoll do
   end
 
   @doc """
-  Get the list of session Interactives filtered by args
+  Get the list of wa polls filtered by args
   """
   @spec wa_polls(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
