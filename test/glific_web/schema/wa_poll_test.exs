@@ -42,6 +42,43 @@ defmodule GlificWeb.Schema.WAPollTest do
     assert {:ok, query_data} = result
     wa_poll = query_data |> get_in([:data, "CreateWaPoll", "waPoll"])
 
-    assert wa_poll["onlyOne"] == true
+    assert wa_poll["allowMultipleAnswer"] == true
+
+    # Create a poll with duplicate options
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "Duplicate Options Poll",
+            "poll_content" =>
+              "{\"options\":[{\"id\":0,\"name\":\"duplicate\",\"voters\":[],\"votes\":0},{\"id\":1,
+            \"name\":\"duplicate\",\"voters\":[],\"votes\":0}],\"text\":\"poll with duplicates\"}"
+          }
+        }
+      )
+
+    assert {:ok, result_data} = result
+    assert result_data |> get_in([:data, "CreateWaPoll"]) == nil
+
+    # Create a poll with more than 12 options
+    long_options =
+      Enum.map(0..12, fn i ->
+        %{"id" => i, "name" => "Option #{i}", "voters" => [], "votes" => 0}
+      end)
+      |> Jason.encode!()
+
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "Too Many Options Poll",
+            "poll_content" =>
+              "{\"options\":#{long_options},\"text\":\"poll with too many options\"}"
+          }
+        }
+      )
+
+    assert {:ok, result_data} = result
+    assert result_data |> get_in([:data, "CreateWaPoll"]) == nil
   end
 end

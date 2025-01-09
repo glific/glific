@@ -9,6 +9,10 @@ defmodule Glific.Repo.Migrations.WaPolls do
         default: %{},
         comment: "poll content"
 
+      add :allow_multiple_answer, :boolean,
+        default: false,
+        comment: "if users can select multiple answers in a WhatsApp poll or not"
+
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
         comment: "Unique organization ID."
