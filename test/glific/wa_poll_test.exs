@@ -8,7 +8,7 @@ defmodule Glific.WAPollTest do
     @valid_attrs %{
       label: "Test Poll",
       organization_id: 1,
-      only_one: true,
+      allow_multiple_answer: true,
       poll_content: %{
         "options" => [
           %{"id" => 0, "name" => "Option 1", "voters" => [], "votes" => 0},

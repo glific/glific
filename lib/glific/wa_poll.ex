@@ -47,10 +47,9 @@ defmodule Glific.WaPoll do
   defp validate_option_uniqueness({:error, _} = error), do: error
 
   defp validate_option_uniqueness({:ok, options}) do
-    option_names = Enum.map(options, & &1["name"])
-    unique_names = Enum.uniq(option_names)
+    unique_names = Enum.uniq_by(options, & &1["name"])
 
-    if length(option_names) != length(unique_names) do
+    if length(options) != length(unique_names) do
       {:error, "Duplicate options detected"}
     else
       :ok
