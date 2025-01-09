@@ -13,7 +13,7 @@ defmodule Glific.WaGroup.WaPoll do
   ]
 
   @optional_fields [
-    :only_one
+    :allow_multiple_answer
   ]
 
   @type t() :: %__MODULE__{
@@ -21,7 +21,7 @@ defmodule Glific.WaGroup.WaPoll do
           id: non_neg_integer | nil,
           label: String.t() | nil,
           poll_content: map() | nil,
-          only_one: boolean(),
+          allow_multiple_answer: boolean(),
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -31,7 +31,7 @@ defmodule Glific.WaGroup.WaPoll do
   schema "wa_polls" do
     field :label, :string
     field :poll_content, :map, default: %{}
-    field :only_one, :boolean, default: false
+    field :allow_multiple_answer, :boolean, default: false
 
     belongs_to :organization, Organization
 

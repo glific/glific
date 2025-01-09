@@ -23,7 +23,7 @@ defmodule GlificWeb.Schema.WAPollTest do
     assert wa_poll["label"] == "Test Poll"
 
     # by default the only one should be false
-    assert wa_poll["onlyOne"] == false
+    assert wa_poll["allowMultipleAnswer"] == false
 
     # only one should be true
     result =
@@ -34,7 +34,7 @@ defmodule GlificWeb.Schema.WAPollTest do
             "poll_content" =>
               "{\"options\":[{\"id\":0,\"name\":\"okay\",\"voters\":[],\"votes\":0},{\"id\":1,
               \"name\":\"huh\",\"voters\":[],\"votes\":0}],\"text\":\"testing poll\"}",
-            "only_one" => true
+            "allow_multiple_answer" => true
           }
         }
       )
