@@ -1,0 +1,78 @@
+## "msgid"s in this file come from POT (.pot) files.
+###
+### Do not add, change, or remove "msgid"s manually here as
+### they're tied to the ones in the corresponding POT file
+### (with the same domain).
+###
+### Use "mix gettext.extract --merge" or "mix gettext.merge"
+### to merge POT files into PO files.
+msgid ""
+msgstr ""
+"Language: hi\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: lib/glific/saas/queries.ex:342
+#, elixir-autogen, elixir-format
+msgid "API Key or App Name is empty."
+msgstr ""
+
+#: lib/glific/saas/queries.ex:475
+#, elixir-autogen, elixir-format
+msgid "Billing frequency cannot be empty."
+msgstr ""
+
+#: lib/glific/saas/queries.ex:386
+#, elixir-autogen, elixir-format
+msgid "Email is not valid."
+msgstr ""
+
+#: lib/glific/saas/queries.ex:137
+#: lib/glific/saas/queries.ex:159
+#, elixir-autogen, elixir-format
+msgid "Field cannot be empty."
+msgstr ""
+
+#: lib/glific/saas/queries.ex:551
+#, elixir-autogen, elixir-format
+msgid "Field cannot be false."
+msgstr ""
+
+#: lib/glific/saas/queries.ex:163
+#, elixir-autogen, elixir-format
+msgid "Field cannot be less than %{length} letters."
+msgstr ""
+
+#: lib/glific/saas/queries.ex:170
+#, elixir-autogen, elixir-format
+msgid "Field cannot be more than %{length} letters."
+msgstr ""
+
+#: lib/glific/saas/queries.ex:398
+#, elixir-autogen, elixir-format
+msgid "Phone is not valid."
+msgstr ""
+
+#: lib/glific/saas/onboard.ex:76
+#, elixir-autogen, elixir-format
+msgid "Registration ID is empty."
+msgstr ""
+
+#: lib/glific/saas/onboard.ex:65
+#, elixir-autogen, elixir-format
+msgid "Registration doesn't exist for given registration ID."
+msgstr ""
+
+#: lib/glific/saas/queries.ex:364
+#, elixir-autogen, elixir-format
+msgid "Shortcode cannot be empty."
+msgstr ""
+
+#: lib/glific/saas/queries.ex:371
+#, elixir-autogen, elixir-format
+msgid "Shortcode has already been taken."
+msgstr ""
+
+#: lib/glific/saas/queries.ex:479
+#, elixir-autogen, elixir-format
+msgid "Value should be one of Monthly , Quarterly, Half-Yearly, Annually."
+msgstr ""
