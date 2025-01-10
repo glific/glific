@@ -158,6 +158,9 @@ defmodule Glific.Bhasini do
     authorization_name = params["pipelineInferenceAPIEndPoint"]["inferenceApiKey"]["name"]
     authorization_value = params["pipelineInferenceAPIEndPoint"]["inferenceApiKey"]["value"]
     url = params["pipelineInferenceAPIEndPoint"]["callbackUrl"]
+    IO.inspect(authorization_name)
+    IO.inspect(authorization_value)
+    IO.inspect(url)
 
     config =
       get_in(params, ["pipelineResponseConfig", Access.at(0), "config", Access.at(0)])

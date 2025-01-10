@@ -174,10 +174,10 @@ defmodule Glific.ASR.Bhasini do
     }
   end
 
+  @doc """
+  Performs an ASR (Automatic Speech Recognition) API call to Bhashini
+  """
   @spec make_asr_api_call(
-          authorization_key :: String.t(),
-          authorization_value :: String.t(),
-          callback_url :: String.t(),
           asr_service_id :: String.t(),
           source_language :: String.t(),
           base64_data :: String.t()
@@ -185,11 +185,11 @@ defmodule Glific.ASR.Bhasini do
           success: boolean(),
           asr_response_text: String.t() | integer()
         }
-  defp make_asr_api_call(
-         asr_service_id,
-         source_language,
-         base64_data
-       ) do
+  def make_asr_api_call(
+        asr_service_id,
+        source_language,
+        base64_data
+      ) do
     bhashini_keys = Glific.get_bhashini_keys()
     bhashini_keys.inference_key
 
@@ -244,7 +244,7 @@ defmodule Glific.ASR.Bhasini do
     end
   end
 
-  @spec get_output_from_response(decoded_response :: map()) :: String.t() | nil
+  @spec get_output_from_response(map()) :: String.t() | nil
   defp get_output_from_response(decoded_response) do
     case decoded_response["pipelineResponse"] do
       [%{"output" => [%{"source" => source}]} | _rest] ->
