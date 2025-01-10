@@ -10,6 +10,7 @@ defmodule Glific.ASR.Bhasini do
   @config_url "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model"
   @meity_pipeline_id "64392f96daac500b55c543cd"
   @language_detect_url "https://dhruva-api.bhashini.gov.in/services/inference/audiolangdetection"
+  @callback_url "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
   # @ai4bharat_pipeline_id "643930aa521a4b1ba0f4c41d"
 
   @doc """
@@ -185,15 +186,15 @@ defmodule Glific.ASR.Bhasini do
           asr_response_text: String.t() | integer()
         }
   defp make_asr_api_call(
-         authorization_key,
-         authorization_value,
-         callback_url,
          asr_service_id,
          source_language,
          base64_data
        ) do
+    bhashini_keys = Glific.get_bhashini_keys()
+    bhashini_keys.inference_key
+
     asr_headers = [
-      {"#{authorization_key}", "#{authorization_value}"},
+      {"Authorization", "#{bhashini_keys.inference_key}"},
       {"Content-Type", "application/json"}
     ]
 
@@ -222,7 +223,7 @@ defmodule Glific.ASR.Bhasini do
       }
     }
 
-    case Tesla.post(callback_url, Jason.encode!(asr_post_body),
+    case Tesla.post(@callback_url, Jason.encode!(asr_post_body),
            headers: asr_headers,
            opts: [adapter: [recv_timeout: 300_000]]
          ) do
@@ -252,52 +253,5 @@ defmodule Glific.ASR.Bhasini do
       _ ->
         nil
     end
-  end
-
-  @doc """
-  Subsequent API call to Bhashini for ASR after config call
-  """
-  @spec handle_response(map(), String.t()) :: map()
-  def handle_response(%{status: 200} = response, content) do
-    # Extract necessary data from the response
-    decoded_response = Jason.decode!(response.body)
-
-    callback_url = Map.get(decoded_response, "pipelineInferenceAPIEndPoint")["callbackUrl"]
-
-    inference_api_key =
-      Map.get(decoded_response, "pipelineInferenceAPIEndPoint")["inferenceApiKey"]
-
-    authorization_key = Map.get(inference_api_key, "name")
-    authorization_value = Map.get(inference_api_key, "value")
-
-    asr_service_id =
-      case Map.get(decoded_response, "pipelineResponseConfig") do
-        [%{"config" => [%{"serviceId" => service_id}]}] -> service_id
-        _ -> nil
-      end
-
-    source_language =
-      case Map.get(decoded_response, "languages") do
-        [%{"sourceLanguage" => source_language}] -> source_language
-        _ -> nil
-      end
-
-    make_asr_api_call(
-      authorization_key,
-      authorization_value,
-      callback_url,
-      asr_service_id,
-      source_language,
-      content
-    )
-  end
-
-  def handle_response(response, _content) do
-    Logger.error("Bhashini API call failed: #{response}")
-
-    %{
-      success: false,
-      msg: "API call to Bhashini failed"
-    }
   end
 end
