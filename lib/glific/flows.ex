@@ -606,7 +606,8 @@ defmodule Glific.Flows do
   Update latest flow revision status as published and increment the version
   Update cached flow definition
   """
-  @spec publish_flow(Flow.t(), non_neg_integer()) :: {:ok, Flow.t()} | {:error, any()}
+  @spec publish_flow(Flow.t(), non_neg_integer()) ::
+          {:ok, Flow.t()} | {:error, any()} | {:errors, list()}
   def publish_flow(%Flow{} = flow, user_id) do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
     errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
