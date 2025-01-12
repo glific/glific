@@ -9,6 +9,7 @@ defmodule GlificWeb.Schema.WAPollTest do
   load_gql(:copy, GlificWeb.Schema, "assets/gql/wa_poll/copy.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/wa_poll/delete.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/wa_poll/list.gql")
+  load_gql(:count, GlificWeb.Schema, "assets/gql/wa_poll/count.gql")
 
   test "create a poll and test possible scenarios", %{manager: user} do
     result =
@@ -113,6 +114,59 @@ defmodule GlificWeb.Schema.WAPollTest do
     assert {:ok, query_data} = result
     fetched_wa_poll = query_data |> get_in([:data, "waPoll", "waPoll"])
     assert fetched_wa_poll["label"] == label
+  end
+
+  test "count wa_polls with and without filters", %{manager: user} do
+    for i <- 1..3 do
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "Test Poll #{i}",
+            "poll_content" =>
+              "{\"options\":[{\"id\":0,\"name\":\"option1\",\"voters\":[],\"votes\":0}],\"text\":\"poll #{i}\"}",
+            "allow_multiple_answer" => i == 3
+          }
+        }
+      )
+    end
+
+    # Count all polls without filters
+    {:ok, query_data} = auth_query_gql_by(:count, user, variables: %{})
+    total_count = query_data |> get_in([:data, "countWaPolls"])
+    assert total_count == 3
+
+    # Filter polls by label
+    {:ok, query_data} =
+      auth_query_gql_by(:count, user,
+        variables: %{
+          "filter" => %{"label" => "Test Poll 1"}
+        }
+      )
+
+    filtered_count = query_data |> get_in([:data, "countWaPolls"])
+    assert filtered_count == 1
+
+    # Filter polls by `allow_multiple_answer`
+    {:ok, query_data} =
+      auth_query_gql_by(:count, user,
+        variables: %{
+          "filter" => %{"allow_multiple_answer" => true}
+        }
+      )
+
+    filtered_count = query_data |> get_in([:data, "countWaPolls"])
+    assert filtered_count == 1
+
+    # Fetch polls with invalid filter
+    {:ok, query_data} =
+      auth_query_gql_by(:count, user,
+        variables: %{
+          "filter" => %{"label" => "Nonexistent Poll"}
+        }
+      )
+
+    filtered_count = query_data |> get_in([:data, "countWaPolls"])
+    assert filtered_count == 0
   end
 
   test "list wa_polls with and without filters", %{manager: user} do
