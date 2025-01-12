@@ -56,6 +56,13 @@ defmodule GlificWeb.Schema.WaPollTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.WaPoll.wa_polls/3)
     end
+
+    @desc "Get a count of all wa polls filtered by various criteria"
+    field :count_wa_polls, :integer do
+      arg(:filter, :wa_poll_filter)
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.WaPoll.count_wa_polls/3)
+    end
   end
 
   object :wa_poll_mutations do
@@ -63,6 +70,19 @@ defmodule GlificWeb.Schema.WaPollTypes do
       arg(:input, non_null(:wa_poll_input))
       middleware(Authorize, :manager)
       resolve(&Resolvers.WaPoll.create_wa_poll/3)
+    end
+
+    field :delete_wa_poll, :wa_poll_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.WaPoll.delete_wa_poll/3)
+    end
+
+    field :copy_wa_poll, :wa_poll_result do
+      arg(:id, non_null(:id))
+      arg(:input, :wa_poll_input)
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.WaPoll.copy_wa_poll/3)
     end
   end
 end

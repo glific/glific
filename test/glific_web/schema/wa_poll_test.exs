@@ -6,6 +6,9 @@ defmodule GlificWeb.Schema.WAPollTest do
 
   load_gql(:create, GlificWeb.Schema, "assets/gql/wa_poll/create.gql")
   load_gql(:fetch, GlificWeb.Schema, "assets/gql/wa_poll/fetch.gql")
+  load_gql(:copy, GlificWeb.Schema, "assets/gql/wa_poll/copy.gql")
+  load_gql(:delete, GlificWeb.Schema, "assets/gql/wa_poll/delete.gql")
+  load_gql(:list, GlificWeb.Schema, "assets/gql/wa_poll/list.gql")
 
   test "create a poll and test possible scenarios", %{manager: user} do
     result =
@@ -110,5 +113,121 @@ defmodule GlificWeb.Schema.WAPollTest do
     assert {:ok, query_data} = result
     fetched_wa_poll = query_data |> get_in([:data, "waPoll", "waPoll"])
     assert fetched_wa_poll["label"] == label
+  end
+
+  test "list wa_polls with and without filters", %{manager: user} do
+    for i <- 1..3 do
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "Test Poll #{i}",
+            "poll_content" =>
+              "{\"options\":[{\"id\":0,\"name\":\"option1\",\"voters\":[],\"votes\":0}],\"text\":\"poll #{i}\"}",
+            "allow_multiple_answer" => i == 3
+          }
+        }
+      )
+    end
+
+    # Fetch all polls without filters
+    result = auth_query_gql_by(:list, user, variables: %{})
+    assert {:ok, query_data} = result
+
+    polls = query_data |> get_in([:data, "waPolls"])
+    assert length(polls) == 3
+
+    # Filter polls by label
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"label" => "Test Poll 1"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    filtered_polls = query_data |> get_in([:data, "waPolls"])
+    assert length(filtered_polls) == 1
+    assert hd(filtered_polls)["label"] == "Test Poll 1"
+
+    # Filter polls by `allow_multiple_answer`
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"allow_multiple_answer" => true}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    filtered_polls = query_data |> get_in([:data, "waPolls"])
+    assert length(filtered_polls) == 1
+    assert hd(filtered_polls)["label"] == "Test Poll 3"
+
+    # Fetch polls with invalid filter
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"label" => "Nonexistent Poll"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    filtered_polls = query_data |> get_in([:data, "waPolls"])
+    assert Enum.empty?(filtered_polls) == true
+  end
+
+  test "copy an existing wa_poll", %{manager: user} do
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "Poll to Copy",
+            "poll_content" =>
+              "{\"options\":[{\"id\":0,\"name\":\"opt1\",\"voters\":[],\"votes\":0}],\"text\":\"poll to copy\"}"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    wa_poll = query_data |> get_in([:data, "CreateWaPoll", "waPoll"])
+
+    result =
+      auth_query_gql_by(:copy, user,
+        variables: %{
+          "copyWaPollId" => wa_poll["id"],
+          "input" => %{"label" => "Copied Poll"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    copied_wa_poll = query_data |> get_in([:data, "copyWaPoll", "waPoll"])
+    assert copied_wa_poll["label"] == "Copied Poll"
+  end
+
+  test "delete an existing wa_poll and possible scenarios", %{manager: user} do
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "Poll to Delete",
+            "poll_content" =>
+              "{\"options\":[{\"id\":0,\"name\":\"delete_opt\",\"voters\":[],\"votes\":0}],\"text\":\"poll to delete\"}"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    wa_poll = query_data |> get_in([:data, "CreateWaPoll", "waPoll"])
+
+    result = auth_query_gql_by(:delete, user, variables: %{"deleteWaPollId" => wa_poll["id"]})
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "deleteWaPoll", "errors"]) == nil
+    result = auth_query_gql_by(:delete, user, variables: %{"deleteWaPollId" => 123_444})
+    assert {:ok, query_data} = result
+
+    message =
+      get_in(query_data, [:data, "deleteWaPoll", "errors", Access.at(0), "message"])
+
+    assert message == "Resource not found"
   end
 end

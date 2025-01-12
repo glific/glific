@@ -88,6 +88,13 @@ defmodule Glific.WaPoll do
   def list_wa_polls(args),
     do: Repo.list_filter(args, WaPoll, &Repo.opts_with_label/2, &filter_with/2)
 
+  @doc """
+  Return the count of wa polls, using the same filter as list_wa_polls
+  """
+  @spec count_wa_polls(map()) :: integer
+  def count_wa_polls(args),
+    do: Repo.count_filter(args, WaPoll, &filter_with/2)
+
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn
@@ -100,5 +107,42 @@ defmodule Glific.WaPoll do
       _, query ->
         query
     end)
+  end
+
+  @doc """
+  Deletes an whatsapp poll
+  ## Examples
+
+      iex> delete_wa_poll(waPoll)
+      {:ok, %waPoll{}}
+
+      iex> delete_wa_poll(waPoll)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec delete_wa_poll(WaPoll.t()) ::
+          {:ok, WaPoll.t()} | {:error, Ecto.Changeset.t()}
+  def delete_wa_poll(%WaPoll{} = waPoll) do
+    waPoll
+    |> WaPoll.changeset(%{})
+    |> Repo.delete()
+  end
+
+  @doc """
+  Make a copy of a wa_poll
+  """
+  @spec copy_wa_poll(WaPoll.t(), map()) ::
+          {:ok, WaPoll.t()} | {:error, String.t()}
+  def copy_wa_poll(wa_poll, attrs) do
+    attrs =
+      %{
+        poll_content: wa_poll.poll_content,
+        allow_multiple_answer: wa_poll.allow_multiple_answer
+      }
+      |> Map.merge(attrs)
+
+    %WaPoll{}
+    |> WaPoll.changeset(attrs)
+    |> Repo.insert()
   end
 end

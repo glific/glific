@@ -26,12 +26,60 @@ defmodule GlificWeb.Resolvers.WaPoll do
     {:ok, WaPoll.list_wa_polls(args)}
   end
 
+  @doc """
+  Get the count of session wa polls filtered by args
+  """
+  @spec count_wa_polls(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, integer}
+  def count_wa_polls(_, args, _) do
+    {:ok, WaPoll.count_wa_polls(args)}
+  end
+
   @doc false
   @spec create_wa_poll(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_wa_poll(_, %{input: params}, _) do
     with {:ok, wa_poll} <-
            WaPoll.create_wa_poll(params) do
+      {:ok, %{wa_poll: wa_poll}}
+    end
+  end
+
+  @doc false
+  @spec delete_wa_poll(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def delete_wa_poll(_, %{id: id}, _) do
+    with {:ok, wa_poll} <-
+           WaPoll.fetch_wa_poll(id) do
+      WaPoll.delete_wa_poll(wa_poll)
+    end
+  end
+
+  @doc """
+  Make a copy of whatsapp poll
+  """
+  @spec copy_wa_poll(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def copy_wa_poll(_, %{id: id, input: params}, _) do
+    do_copy_wa_poll(
+      id,
+      params,
+      &WaPoll.copy_wa_poll/2
+    )
+  end
+
+  @spec do_copy_wa_poll(
+          non_neg_integer,
+          map(),
+          (Glific.WaGroup.WaPoll.t(), map() ->
+             {:ok, Glific.WaGroup.WaPoll.t()} | {:error, String.t()})
+        ) :: {:ok, any} | {:error, any}
+  defp do_copy_wa_poll(id, params, fun) do
+    with {:ok, wa_poll} <-
+           WaPoll.fetch_wa_poll(id),
+         {:ok, wa_poll} <- fun.(wa_poll, params) do
       {:ok, %{wa_poll: wa_poll}}
     end
   end
