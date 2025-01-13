@@ -109,7 +109,7 @@ defmodule GlificWeb.Schema.WAPollTest do
     {:ok, wa_poll} =
       Repo.fetch_by(WaPoll, %{label: label, organization_id: user.organization_id})
 
-    result = auth_query_gql_by(:fetch, user, variables: %{"waPollId" => wa_poll.id})
+    result = auth_query_gql_by(:fetch, user, variables: %{"id" => wa_poll.id})
 
     assert {:ok, query_data} = result
     fetched_wa_poll = query_data |> get_in([:data, "waPoll", "waPoll"])

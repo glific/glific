@@ -1,12 +1,12 @@
-query WaPoll($waPollId: ID!) {
-  waPoll(id: $waPollId) {
-    errors {
-      key
-      message
-    }
+query WaPollIdOnly($id: ID!) {
+  waPoll(id: $id) {
     waPoll {
       id
       label
+    }
+    errors {
+      key
+      message
     }
   }
 }
