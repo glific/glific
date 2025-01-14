@@ -471,6 +471,16 @@ defmodule GlificWeb.Schema.FlowTest do
     assert message == "Resource not found"
   end
 
+  test "Publish a flow which has warnings", %{manager: user} do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:publish, user, variables: %{"uuid" => flow.uuid})
+    assert {:ok, query_data} = result
+    assert is_list(get_in(query_data, [:data, "publishFlow", "errors"]))
+    assert get_in(query_data, [:data, "publishFlow", "success"]) == false
+  end
+
   test "Start flow for a contact", %{manager: user} = attrs do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})

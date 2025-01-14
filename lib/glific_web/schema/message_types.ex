@@ -137,6 +137,7 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :group_id, :integer
     field :context_id, :string
+    field :poll_content, :json
 
     field :context_message, :wa_message do
       resolve(dataloader(Repo, use_parent: true))

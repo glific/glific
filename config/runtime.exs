@@ -5,7 +5,7 @@
 import Config
 import Dotenvy
 
-source(["config/.env", "config/.env.#{config_env()}"])
+source(["config/.env", "config/.env.#{config_env()}", System.get_env()])
 
 ssl_port = env!("SSL_PORT", :integer, 443)
 http_port = env!("HTTP_PORT", :integer, 4000)
