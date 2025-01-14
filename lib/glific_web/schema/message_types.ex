@@ -382,7 +382,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     end
 
     # These are used to send the status such as error for
-    # a particular message to the FE, so it can flag it (in error's case)s
+    # a particular message to the FE, so it can flag it (in error's case)
     field :update_message_status, :message do
       arg(:organization_id, non_null(:id))
 
