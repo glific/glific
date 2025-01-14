@@ -137,7 +137,7 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :group_id, :integer
     field :context_id, :string
-
+    field :poll_content, :json
     field :context_message, :wa_message do
       resolve(dataloader(Repo, use_parent: true))
     end
@@ -380,8 +380,8 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(&Resolvers.Messages.publish_message/3)
     end
 
-    # the below two are null ops but used by frontend, not exactly
-    # sure how they work, but will comment when i remember
+    # These are null ops, these are used to send the status such as error for
+    # a particular message to the FE, so it can flag it (in error's case)s
     field :update_message_status, :message do
       arg(:organization_id, non_null(:id))
 

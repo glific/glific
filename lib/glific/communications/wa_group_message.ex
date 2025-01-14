@@ -191,6 +191,11 @@ defmodule Glific.Communications.GroupMessage do
     message_params
     |> Map.put_new(:flow, :inbound)
     |> WAMessages.create_message()
+    |> IO.inspect()
+    |> Communications.publish_data(
+      :received_wa_group_message,
+      message_params.organization_id
+    )
 
     :ok
   end
@@ -273,5 +278,24 @@ defmodule Glific.Communications.GroupMessage do
     WAMessage
     |> where([wa_msg], wa_msg.bsp_id == ^bsp_message_id and wa_msg.organization_id == ^org_id)
     |> Repo.update_all(set: [poll_content: poll_content, updated_at: DateTime.utc_now()])
+
+    fetch_and_publish_message_status(bsp_message_id)
+  end
+
+  @spec fetch_and_publish_message_status(String.t()) :: any()
+  defp fetch_and_publish_message_status(bsp_message_id) do
+    with {:ok, message} <- Repo.fetch_by(WAMessage, %{bsp_id: bsp_message_id}) do
+      publish_message_status(message)
+    end
+  end
+
+  @spec publish_message_status(WAMessage.t()) :: any()
+  defp publish_message_status(message) do
+    Repo.preload(message, [:contact])
+    |> IO.inspect()
+    |> Communications.publish_data(
+      :update_wa_message_status,
+      message.organization_id
+    )
   end
 end
