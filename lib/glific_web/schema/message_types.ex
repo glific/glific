@@ -381,7 +381,7 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(&Resolvers.Messages.publish_message/3)
     end
 
-    # These are null ops, these are used to send the status such as error for
+    # These are used to send the status such as error for
     # a particular message to the FE, so it can flag it (in error's case)s
     field :update_message_status, :message do
       arg(:organization_id, non_null(:id))

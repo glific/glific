@@ -191,7 +191,6 @@ defmodule Glific.Communications.GroupMessage do
     message_params
     |> Map.put_new(:flow, :inbound)
     |> WAMessages.create_message()
-    |> IO.inspect()
     |> Communications.publish_data(
       :received_wa_group_message,
       message_params.organization_id
@@ -292,7 +291,6 @@ defmodule Glific.Communications.GroupMessage do
   @spec publish_message_status(WAMessage.t()) :: any()
   defp publish_message_status(message) do
     Repo.preload(message, [:contact])
-    |> IO.inspect()
     |> Communications.publish_data(
       :update_wa_message_status,
       message.organization_id
