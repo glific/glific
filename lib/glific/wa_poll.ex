@@ -68,7 +68,7 @@ defmodule Glific.WaPoll do
         {:ok, %WaPol{}}
 
       iex> fetch_wa_poll(456)
-        {:error, ["Elixir.Glific.WaGroup.WaPol", "Resource not found"]}
+        {:error, ["Elixir.Glific.WaGroup.WaPoll", "Resource not found"]}
 
   """
   @spec fetch_wa_poll(integer) :: {:ok, WaPoll.t()} | {:error, any}
