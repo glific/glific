@@ -176,6 +176,9 @@ defmodule GlificWeb.Resolvers.Flows do
          {:ok, _flow} <- Flows.publish_flow(flow, user.id) do
       {:ok, %{success: true, errors: nil}}
     else
+      {:errors, errors} ->
+        {:ok, %{success: false, errors: errors}}
+
       {:error, errors} ->
         {:ok, %{success: false, errors: make_error(errors)}}
     end
