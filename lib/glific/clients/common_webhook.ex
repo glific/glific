@@ -190,7 +190,6 @@ defmodule Glific.Clients.CommonWebhook do
       content = Base.encode64(media_content.body)
 
       Bhasini.make_asr_api_call(
-        "ai4bharat/whisper-medium-en--gpu--t4",
         source_language,
         content
       )

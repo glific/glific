@@ -5,7 +5,10 @@ defmodule Glific.ASR.Bhasini do
   use Tesla
   require Logger
 
-  alias Glific.Contacts
+  alias Glific.{
+    Contacts,
+    Caches
+  }
 
   @config_url "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model"
   @meity_pipeline_id "64392f96daac500b55c543cd"
@@ -174,11 +177,49 @@ defmodule Glific.ASR.Bhasini do
     }
   end
 
+  @global_organization_id 0
+  defp get_service_id(source_language) do
+    case Caches.get(@global_organization_id, "bhashini_asr_service_id", refresh_cache: false) do
+      {:ok, false} ->
+        load_asr_service_id_cache(%{}, source_language)
+
+      {:ok, cached_asr_service_ids} ->
+        if Map.has_key?(cached_asr_service_ids, source_language) do
+          Map.get(cached_asr_service_ids, source_language)
+        else
+          load_asr_service_id_cache(cached_asr_service_ids, source_language)
+        end
+    end
+  end
+
+  defp load_asr_service_id_cache(cached_asr_service_ids, source_language) do
+    {:ok, response} =
+      with_config_request(
+        source_language: source_language,
+        task_type: "asr"
+      )
+
+    decoded_response = Jason.decode!(response.body)
+
+    asr_service_id =
+      case Map.get(decoded_response, "pipelineResponseConfig") do
+        [%{"config" => [%{"serviceId" => service_id}]}] -> service_id
+        _ -> nil
+      end
+
+    Caches.set(
+      @global_organization_id,
+      "bhashini_asr_service_id",
+      Map.put(cached_asr_service_ids, source_language, asr_service_id)
+    )
+
+    asr_service_id
+  end
+
   @doc """
   Performs an ASR (Automatic Speech Recognition) API call to Bhashini
   """
   @spec make_asr_api_call(
-          asr_service_id :: String.t(),
           source_language :: String.t(),
           base64_data :: String.t()
         ) :: %{
@@ -186,10 +227,10 @@ defmodule Glific.ASR.Bhasini do
           asr_response_text: String.t() | integer()
         }
   def make_asr_api_call(
-        asr_service_id,
         source_language,
         base64_data
       ) do
+    asr_service_id = get_service_id(source_language)
     bhashini_keys = Glific.get_bhashini_keys()
     bhashini_keys.inference_key
 
