@@ -178,6 +178,7 @@ defmodule Glific.ASR.Bhasini do
   end
 
   @global_organization_id 0
+  @spec get_service_id(String.t()) :: String.t()
   defp get_service_id(source_language) do
     case Caches.get(@global_organization_id, "bhashini_asr_service_id", refresh_cache: false) do
       {:ok, false} ->
@@ -192,28 +193,34 @@ defmodule Glific.ASR.Bhasini do
     end
   end
 
+  @spec load_asr_service_id_cache(map(), String.t()) :: String.t()
   defp load_asr_service_id_cache(cached_asr_service_ids, source_language) do
-    {:ok, response} =
-      with_config_request(
-        source_language: source_language,
-        task_type: "asr"
-      )
-
-    decoded_response = Jason.decode!(response.body)
-
-    asr_service_id =
-      case Map.get(decoded_response, "pipelineResponseConfig") do
-        [%{"config" => [%{"serviceId" => service_id}]}] -> service_id
-        _ -> nil
-      end
-
-    Caches.set(
-      @global_organization_id,
-      "bhashini_asr_service_id",
-      Map.put(cached_asr_service_ids, source_language, asr_service_id)
+    with_config_request(
+      source_language: source_language,
+      task_type: "asr"
     )
+    |> case do
+      {:ok, response} ->
+        decoded_response = Jason.decode!(response.body)
 
-    asr_service_id
+        asr_service_id =
+          case Map.get(decoded_response, "pipelineResponseConfig") do
+            [%{"config" => [%{"serviceId" => service_id}]}] -> service_id
+            _ -> nil
+          end
+
+        Caches.set(
+          @global_organization_id,
+          "bhashini_asr_service_id",
+          Map.put(cached_asr_service_ids, source_language, asr_service_id)
+        )
+
+        asr_service_id
+
+      _ ->
+        # Passing a default model incase Bhashini config API fail, but not updating the cache
+        "ai4bharat/whisper-medium-en--gpu--t4"
+    end
   end
 
   @doc """
