@@ -181,7 +181,7 @@ defmodule Glific.Clients.CommonWebhook do
     |> GoogleASR.speech_to_text(fields["results"], contact.language.locale)
   end
 
-  # This webhook will call Bhasini speech-to-text API
+  # This webhook will call Bhashini speech-to-text API
   def webhook("speech_to_text_with_bhasini", fields) do
     with {:ok, contact} <- Bhasini.validate_params(fields) do
       source_language = contact.language.locale
@@ -199,7 +199,7 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  # This webhook will call Bhasini text-to-speech API
+  # This webhook will call Bhashini text-to-speech API
   def webhook("text_to_speech_with_bhasini", fields) do
     text = fields["text"]
     org_id = fields["organization_id"]
@@ -392,12 +392,8 @@ defmodule Glific.Clients.CommonWebhook do
     organization = Glific.Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
 
-    with false <- is_nil(services),
-         {:ok, response} <-
-           Bhasini.with_config_request(source_language: source_language, task_type: "tts"),
-         %{"feedbackUrl" => _feedback_url, "pipelineInferenceAPIEndPoint" => _endpoint} = params <-
-           Jason.decode!(response.body) do
-      Glific.Bhasini.text_to_speech(params, text, org_id)
+    with false <- is_nil(services) do
+      Glific.Bhasini.text_to_speech(source_language, org_id, text)
     else
       true ->
         "Enable GCS is use Bhasini text to speech"

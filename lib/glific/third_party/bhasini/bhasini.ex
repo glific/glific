@@ -6,6 +6,8 @@ defmodule Glific.Bhasini do
   require Logger
   alias Glific.GCS.GcsWorker
 
+  @callback_url "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
+  @service_id "Bhashini/IITM/TTS"
   @language_codes %{
     "tamil" => %{"iso_639_1" => "ta", "iso_639_2" => "tam"},
     "kannada" => %{"iso_639_1" => "kn", "iso_639_2" => "kan"},
@@ -151,22 +153,16 @@ defmodule Glific.Bhasini do
   end
 
   @doc """
-  This function makes an API call to the Bhasini ASR service using the provided configuration parameters and returns the public media URL of the file.
+  This function makes an API call to the Bhashini ASR service using the provided configuration parameters and returns the public media URL of the file.
   """
-  @spec text_to_speech(map(), String.t(), non_neg_integer()) :: map()
-  def text_to_speech(params, text, org_id) do
-    authorization_name = params["pipelineInferenceAPIEndPoint"]["inferenceApiKey"]["name"]
-    authorization_value = params["pipelineInferenceAPIEndPoint"]["inferenceApiKey"]["value"]
-    url = params["pipelineInferenceAPIEndPoint"]["callbackUrl"]
+  @spec text_to_speech(String.t(), non_neg_integer(), String.t()) :: map()
+  def text_to_speech(source_language, org_id, text) do
+    bhashini_keys = Glific.get_bhashini_keys()
 
-    config =
-      get_in(params, ["pipelineResponseConfig", Access.at(0), "config", Access.at(0)])
-
-    source_language = config["language"]["sourceLanguage"]
-    service_id = config["serviceId"]
+    source_language = get_iso_code(source_language, "iso_639_1")
 
     default_headers = [
-      {authorization_name, authorization_value},
+      {"Authorization", bhashini_keys.inference_key},
       {"Content-Type", "application/json"}
     ]
 
@@ -177,7 +173,7 @@ defmodule Glific.Bhasini do
             "taskType" => "tts",
             "config" => %{
               "language" => %{"sourceLanguage" => source_language},
-              "serviceId" => service_id,
+              "serviceId" => @service_id,
               "gender" => "female",
               "samplingRate" => 8000
             }
@@ -190,7 +186,7 @@ defmodule Glific.Bhasini do
         }
       }
 
-    case Tesla.post(url, Jason.encode!(body),
+    case Tesla.post(@callback_url, Jason.encode!(body),
            headers: default_headers,
            opts: [adapter: [recv_timeout: 300_000]]
          ) do
