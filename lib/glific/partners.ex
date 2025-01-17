@@ -1188,7 +1188,6 @@ defmodule Glific.Partners do
       "roles_and_permission" => Flags.get_roles_and_permission(organization),
       "contact_profile_enabled" => Flags.get_contact_profile_enabled(organization),
       "ticketing_enabled" => Flags.get_ticketing_enabled(organization),
-      "llm4dev_enabled" => Flags.get_llm4dev_enabled(organization),
       "whatsapp_group_enabled" => Flags.get_whatsapp_group_enabled(organization),
       "auto_translation_enabled" =>
         Flags.get_open_ai_auto_translation_enabled(organization) or
