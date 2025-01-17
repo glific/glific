@@ -366,7 +366,7 @@ defmodule Glific.Clients.CommonWebhook do
       |> Map.put(:translated_text, text)
     else
       true ->
-        "Enable GCS is use Bhasini text to speech"
+        "Enable GCS is use Bhashini text to speech"
 
       error ->
         error
@@ -378,7 +378,7 @@ defmodule Glific.Clients.CommonWebhook do
     services = organization.services["google_cloud_storage"]
 
     if is_nil(services) do
-      "Enable GCS is use Bhasini text to speech"
+      "Enable GCS is use Bhashini text to speech"
     else
       Glific.Bhasini.text_to_speech(source_language, org_id, text)
     end
