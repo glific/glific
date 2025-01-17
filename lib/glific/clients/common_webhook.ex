@@ -7,9 +7,7 @@ defmodule Glific.Clients.CommonWebhook do
     ASR.Bhasini,
     ASR.GoogleASR,
     Contacts,
-    LLM4Dev,
-    OpenAI.ChatGPT,
-    Sheets.GoogleSheets
+    OpenAI.ChatGPT
   }
 
   require Logger
@@ -88,56 +86,6 @@ defmodule Glific.Clients.CommonWebhook do
       ChatGPT.handle_conversation(params)
     else
       {:error, error} -> error
-    end
-  end
-
-  def webhook("llm4dev", fields) do
-    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
-    question = fields["question"]
-    session_id = Map.get(fields, "session_id", nil)
-    category_id = Map.get(fields, "category_id", nil)
-    system_prompt = Map.get(fields, "system_prompt", nil)
-
-    params = %{
-      question: question,
-      session_id: session_id,
-      category_id: category_id,
-      system_prompt: system_prompt
-    }
-
-    with {:ok, %{api_key: api_key, api_url: api_url}} <- LLM4Dev.get_credentials(org_id),
-         {:ok, response} <-
-           LLM4Dev.parse(api_key, api_url, params) do
-      response
-    else
-      {:error, error} ->
-        %{success: false, error: error}
-    end
-  end
-
-  def webhook("sheets.insert_row", fields) do
-    org_id = fields["organization_id"]
-    range = fields["range"] || "A:Z"
-    spreadsheet_id = fields["spreadsheet_id"]
-    row_data = fields["row_data"]
-
-    with {:ok, response} <-
-           GoogleSheets.insert_row(org_id, spreadsheet_id, %{range: range, data: [row_data]}) do
-      %{response: "#{inspect(response)}"}
-    end
-  end
-
-  def webhook("openllm", fields) do
-    mp = Tesla.Multipart.add_field(Tesla.Multipart.new(), "prompt", fields["prompt"])
-
-    Tesla.post(fields["url"], mp, opts: [adapter: [recv_timeout: 100_000]])
-    |> case do
-      {:ok, %Tesla.Env{status: 201, body: body}} ->
-        Jason.decode!(body)
-        |> Map.take(["answer", "session_id"])
-
-      {_status, response} ->
-        %{success: false, response: "Invalid response #{response}"}
     end
   end
 

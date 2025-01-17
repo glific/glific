@@ -474,7 +474,6 @@ defmodule Glific.Partners do
       |> Flags.set_contact_profile_enabled()
       |> Flags.set_whatsapp_group_enabled()
       |> Flags.set_ticketing_enabled()
-      |> Flags.set_llm4dev_enabled()
 
     Caches.set(
       @global_organization_id,
