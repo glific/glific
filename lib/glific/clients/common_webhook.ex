@@ -340,17 +340,8 @@ defmodule Glific.Clients.CommonWebhook do
     services = organization.services["google_cloud_storage"]
 
     with false <- is_nil(services),
-         true <- Glific.Bhasini.valid_language?(source_language, target_language),
-         {:ok, response} <-
-           Bhasini.with_config_request(
-             source_language: source_language,
-             target_language: target_language,
-             task_type: "nmt_tts"
-           ),
-         %{"feedbackUrl" => _feedback_url, "pipelineResponseConfig" => _pipelineresponseconfig} =
-           params <-
-           Jason.decode!(response.body) do
-      Glific.Bhasini.nmt_tts(params, text, source_language, target_language, org_id)
+         true <- Glific.Bhasini.valid_language?(source_language, target_language) do
+      Glific.Bhasini.nmt_tts(text, source_language, target_language, org_id)
     else
       true ->
         %{success: false, reason: "GCS is disabled"}

@@ -7,7 +7,8 @@ defmodule Glific.Bhasini do
   alias Glific.GCS.GcsWorker
 
   @callback_url "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
-  @service_id "Bhashini/IITM/TTS"
+  @tts_service_id "Bhashini/IITM/TTS"
+  @translation_service_id "ai4bharat/indictrans-v2-all-gpu--t4"
   @language_codes %{
     "tamil" => %{"iso_639_1" => "ta", "iso_639_2" => "tam"},
     "kannada" => %{"iso_639_1" => "kn", "iso_639_2" => "kan"},
@@ -37,12 +38,9 @@ defmodule Glific.Bhasini do
   @doc """
   This function makes an API call to the Bhashini ASR service for NMT and TTS using the provided configuration parameters and returns the public media URL of the file.
   """
-  @spec nmt_tts(map(), String.t(), String.t(), String.t(), non_neg_integer()) :: map()
-  def nmt_tts(params, text, source_language, target_language, org_id) do
+  @spec nmt_tts(String.t(), String.t(), String.t(), non_neg_integer()) :: map()
+  def nmt_tts(text, source_language, target_language, org_id) do
     bhashini_keys = Glific.get_bhashini_keys()
-
-    {nmt_service_id, tts_service_id} =
-      get_pipeline_config(params, source_language, target_language)
 
     default_headers = [
       {"Authorization", bhashini_keys.inference_key},
@@ -59,7 +57,7 @@ defmodule Glific.Bhasini do
                 "sourceLanguage" => get_iso_code(source_language, "iso_639_1"),
                 "targetLanguage" => get_iso_code(target_language, "iso_639_1")
               },
-              "serviceId" => nmt_service_id
+              "serviceId" => @translation_service_id
             }
           },
           %{
@@ -71,7 +69,7 @@ defmodule Glific.Bhasini do
                 # the output of Translation (Translated text in Hindi) will be fed to Translation Model.
                 "sourceLanguage" => get_iso_code(target_language, "iso_639_1")
               },
-              "serviceId" => tts_service_id,
+              "serviceId" => @tts_service_id,
               "gender" => "female",
               "samplingRate" => 8000
             }
@@ -130,26 +128,6 @@ defmodule Glific.Bhasini do
     end
   end
 
-  @spec get_pipeline_config(map(), String.t(), String.t()) :: {String.t(), String.t()}
-  defp get_pipeline_config(params, source_language, target_language) do
-    [%{"taskType" => "translation"} = nmt_config, %{"taskType" => "tts"} = tts_config] =
-      get_in(params, ["pipelineResponseConfig"])
-
-    [nmt_service_json] =
-      Enum.filter(nmt_config["config"], fn config ->
-        config["language"]["sourceLanguage"] == get_iso_code(source_language, "iso_639_1") and
-          config["language"]["targetLanguage"] ==
-            get_iso_code(target_language, "iso_639_1")
-      end)
-
-    [tts_service_json] =
-      Enum.filter(tts_config["config"], fn config ->
-        config["language"]["sourceLanguage"] == get_iso_code(target_language, "iso_639_1")
-      end)
-
-    {nmt_service_json["serviceId"], tts_service_json["serviceId"]}
-  end
-
   @doc """
   This function makes an API call to the Bhashini ASR service using the provided configuration parameters and returns the public media URL of the file.
   """
@@ -171,7 +149,7 @@ defmodule Glific.Bhasini do
             "taskType" => "tts",
             "config" => %{
               "language" => %{"sourceLanguage" => source_language},
-              "serviceId" => @service_id,
+              "serviceId" => @tts_service_id,
               "gender" => "female",
               "samplingRate" => 8000
             }
