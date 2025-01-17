@@ -76,8 +76,8 @@ defmodule Glific.Clients.CommonWebhook do
     assistant_id = Map.get(fields, "assistant_id", nil)
     remove_citation = Map.get(fields, "remove_citation", false)
 
-    with {:ok, _assistant_name} <- ChatGPT.retrieve_assistant(assistant_id),
-         {:ok, thread_id} <- ChatGPT.validate_thread_id(thread_id) do
+    with {:ok, _assistant_name} <- ChatGPT.retrieve_assistant(assistant_id) |> IO.inspect(),
+         {:ok, thread_id} <- ChatGPT.validate_thread_id(thread_id) |> IO.inspect() do
       params = %{
         thread_id: thread_id,
         assistant_id: assistant_id,
@@ -297,6 +297,19 @@ defmodule Glific.Clients.CommonWebhook do
         Glific.Metrics.increment("Geolocation API Failure")
         %{success: false, error: "HTTP request failed: #{reason}"}
     end
+  end
+
+  # webhook for sending whatsapp group polls in a flow
+  def webhook("send_wa_poll", fields) do
+    # fields will have
+    # poll_id
+    # wa_group_id (we get from wa_group.id)
+    # wa_managedPhone (maybe this too)
+    # the other details need to call send_msg function
+    # fetch only correct org's pollId
+    # just follow send_message_in_wa_group
+    # check how send_msg node executes
+
   end
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}

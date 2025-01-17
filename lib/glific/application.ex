@@ -110,7 +110,7 @@ defmodule Glific.Application do
   end
 
   defp in_console? do
-    Code.ensure_loaded?(IEx) && IEx.started?()
+    not Code.ensure_loaded?(IEx) && IEx.started?()
   end
 
   defp attach_oban_telemetry_event do
