@@ -1,6 +1,6 @@
 defmodule Glific.Bhasini do
   @moduledoc """
-  Bhasini Integration Module
+  Bhashini Integration Module
   """
 
   require Logger
@@ -35,19 +35,17 @@ defmodule Glific.Bhasini do
   end
 
   @doc """
-  This function makes an API call to the Bhasini ASR service for NMT and TTS using the provided configuration parameters and returns the public media URL of the file.
+  This function makes an API call to the Bhashini ASR service for NMT and TTS using the provided configuration parameters and returns the public media URL of the file.
   """
   @spec nmt_tts(map(), String.t(), String.t(), String.t(), non_neg_integer()) :: map()
   def nmt_tts(params, text, source_language, target_language, org_id) do
-    authorization_name = params["pipelineInferenceAPIEndPoint"]["inferenceApiKey"]["name"]
-    authorization_value = params["pipelineInferenceAPIEndPoint"]["inferenceApiKey"]["value"]
-    url = params["pipelineInferenceAPIEndPoint"]["callbackUrl"]
+    bhashini_keys = Glific.get_bhashini_keys()
 
     {nmt_service_id, tts_service_id} =
       get_pipeline_config(params, source_language, target_language)
 
     default_headers = [
-      {authorization_name, authorization_value},
+      {"Authorization", bhashini_keys.inference_key},
       {"Content-Type", "application/json"}
     ]
 
@@ -86,7 +84,7 @@ defmodule Glific.Bhasini do
         }
       }
 
-    case Tesla.post(url, Jason.encode!(body),
+    case Tesla.post(@callback_url, Jason.encode!(body),
            headers: default_headers,
            opts: [adapter: [recv_timeout: 300_000]]
          ) do
