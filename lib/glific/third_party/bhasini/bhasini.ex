@@ -7,22 +7,13 @@ defmodule Glific.Bhasini do
   alias Glific.GCS.GcsWorker
 
   @callback_url "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
-  @tts_service_id_map %{
-    "en" => "Bhashini/IITM/TTS",
-    "hi" => "ai4bharat/indic-tts-coqui-misc-gpu--t4",
-    "ta" => "ai4bharat/indic-tts-coqui-dravidian-gpu--t4",
-    "kn" => "ai4bharat/indic-tts-coqui-dravidian-gpu--t4",
-    "ml" => "ai4bharat/indic-tts-coqui-dravidian-gpu--t4",
-    "te" => "ai4bharat/indic-tts-coqui-dravidian-gpu--t4",
-    "or" => "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4",
-    "as" => "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4",
-    "gu" => "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4",
-    "bn" => "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4",
-    "pa" => "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4",
-    "mr" => "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4",
-    "ur" => "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4"
-  }
+
+  @iit_tts_model "Bhashini/IITM/TTS"
+  @dravidian_tts_model "ai4bharat/indic-tts-coqui-dravidian-gpu--t4"
+  @indo_aryan_tts_model "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4"
+
   @translation_service_id "ai4bharat/indictrans-v2-all-gpu--t4"
+
   @language_codes %{
     "tamil" => %{"iso_639_1" => "ta", "iso_639_2" => "tam"},
     "kannada" => %{"iso_639_1" => "kn", "iso_639_2" => "kan"},
@@ -38,6 +29,13 @@ defmodule Glific.Bhasini do
     "english" => %{"iso_639_1" => "en", "iso_639_2" => "eng"},
     "hindi" => %{"iso_639_1" => "hi", "iso_639_2" => "hin"}
   }
+
+  @spec get_tts_model(String.t()) :: String.t()
+  def get_tts_model("en"), do: @iit_tts_model
+  def get_tts_model(lang) when lang in ["ta", "kn", "ml", "te", "or"], do: @dravidian_tts_model
+
+  def get_tts_model(lang) when lang in ["hi", "as", "gu", "bn", "pa", "mr", "ur"],
+    do: @indo_aryan_tts_model
 
   @doc """
   returns iso_code for a language given the standard
@@ -85,7 +83,7 @@ defmodule Glific.Bhasini do
                 # the output of Translation (Translated text in Hindi) will be fed to Translation Model.
                 "sourceLanguage" => target_language
               },
-              "serviceId" => Map.get(@tts_service_id_map, target_language),
+              "serviceId" => get_tts_model(target_language),
               "gender" => "female",
               "samplingRate" => 8000
             }
@@ -165,7 +163,7 @@ defmodule Glific.Bhasini do
             "taskType" => "tts",
             "config" => %{
               "language" => %{"sourceLanguage" => source_language},
-              "serviceId" => Map.get(@tts_service_id_map, source_language),
+              "serviceId" => get_tts_model(source_language),
               "gender" => "female",
               "samplingRate" => 8000
             }
@@ -177,7 +175,6 @@ defmodule Glific.Bhasini do
           ]
         }
       }
-      |> IO.inspect()
 
     case Tesla.post(@callback_url, Jason.encode!(body),
            headers: default_headers,

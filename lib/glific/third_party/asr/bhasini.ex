@@ -14,7 +14,6 @@ defmodule Glific.ASR.Bhasini do
   @meity_pipeline_id "64392f96daac500b55c543cd"
   @language_detect_url "https://dhruva-api.bhashini.gov.in/services/inference/audiolangdetection"
   @callback_url "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
-  # @ai4bharat_pipeline_id "643930aa521a4b1ba0f4c41d"
 
   @doc """
   Validate audio url
