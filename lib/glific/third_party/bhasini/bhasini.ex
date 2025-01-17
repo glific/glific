@@ -7,7 +7,21 @@ defmodule Glific.Bhasini do
   alias Glific.GCS.GcsWorker
 
   @callback_url "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
-  @tts_service_id "Bhashini/IITM/TTS"
+  @tts_service_id_map %{
+    "en" => "Bhashini/IITM/TTS",
+    "hi" => "ai4bharat/indic-tts-coqui-misc-gpu--t4",
+    "ta" => "ai4bharat/indic-tts-coqui-dravidian-gpu--t4",
+    "kn" => "ai4bharat/indic-tts-coqui-dravidian-gpu--t4",
+    "ml" => "ai4bharat/indic-tts-coqui-dravidian-gpu--t4",
+    "te" => "ai4bharat/indic-tts-coqui-dravidian-gpu--t4",
+    "or" => "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4",
+    "as" => "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4",
+    "gu" => "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4",
+    "bn" => "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4",
+    "pa" => "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4",
+    "mr" => "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4",
+    "ur" => "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4"
+  }
   @translation_service_id "ai4bharat/indictrans-v2-all-gpu--t4"
   @language_codes %{
     "tamil" => %{"iso_639_1" => "ta", "iso_639_2" => "tam"},
@@ -47,6 +61,8 @@ defmodule Glific.Bhasini do
       {"Content-Type", "application/json"}
     ]
 
+    target_language = get_iso_code(target_language, "iso_639_1")
+
     body =
       %{
         "pipelineTasks" => [
@@ -55,7 +71,7 @@ defmodule Glific.Bhasini do
             "config" => %{
               "language" => %{
                 "sourceLanguage" => get_iso_code(source_language, "iso_639_1"),
-                "targetLanguage" => get_iso_code(target_language, "iso_639_1")
+                "targetLanguage" => target_language
               },
               "serviceId" => @translation_service_id
             }
@@ -67,9 +83,9 @@ defmodule Glific.Bhasini do
                 # If TTS comes after Translation, and Translation is done, say from Marathi to Hindi
                 # then Source Language of TTS should be Hindi (ISO Code hi) because
                 # the output of Translation (Translated text in Hindi) will be fed to Translation Model.
-                "sourceLanguage" => get_iso_code(target_language, "iso_639_1")
+                "sourceLanguage" => target_language
               },
-              "serviceId" => @tts_service_id,
+              "serviceId" => Map.get(@tts_service_id_map, target_language),
               "gender" => "female",
               "samplingRate" => 8000
             }
@@ -149,7 +165,7 @@ defmodule Glific.Bhasini do
             "taskType" => "tts",
             "config" => %{
               "language" => %{"sourceLanguage" => source_language},
-              "serviceId" => @tts_service_id,
+              "serviceId" => Map.get(@tts_service_id_map, source_language),
               "gender" => "female",
               "samplingRate" => 8000
             }
@@ -161,6 +177,7 @@ defmodule Glific.Bhasini do
           ]
         }
       }
+      |> IO.inspect()
 
     case Tesla.post(@callback_url, Jason.encode!(body),
            headers: default_headers,
