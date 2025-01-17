@@ -183,17 +183,18 @@ defmodule Glific.Clients.CommonWebhook do
 
   # This webhook will call Bhashini speech-to-text API
   def webhook("speech_to_text_with_bhasini", fields) do
-    with {:ok, contact} <- Bhasini.validate_params(fields) do
-      source_language = contact.language.locale
-      {:ok, media_content} = Tesla.get(fields["speech"])
+    case Bhasini.validate_params(fields) do
+      {:ok, contact} ->
+        source_language = contact.language.locale
+        {:ok, media_content} = Tesla.get(fields["speech"])
 
-      content = Base.encode64(media_content.body)
+        content = Base.encode64(media_content.body)
 
-      Bhasini.make_asr_api_call(
-        source_language,
-        content
-      )
-    else
+        Bhasini.make_asr_api_call(
+          source_language,
+          content
+        )
+
       {:error, error} ->
         error
     end
@@ -347,14 +348,7 @@ defmodule Glific.Clients.CommonWebhook do
         %{success: false, reason: "GCS is disabled"}
 
       false ->
-        %{success: false, reason: "Language not supported in Bhasini"}
-
-      {:error, error} ->
-        Map.put(error, "success", false)
-
-      error ->
-        Logger.error("Error received from Bhasini: #{error["message"]}")
-        Map.put(error, "success", false)
+        %{success: false, reason: "Language not supported in Bhashini"}
     end
   end
 
@@ -383,18 +377,10 @@ defmodule Glific.Clients.CommonWebhook do
     organization = Glific.Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
 
-    with false <- is_nil(services) do
-      Glific.Bhasini.text_to_speech(source_language, org_id, text)
+    if is_nil(services) do
+      "Enable GCS is use Bhasini text to speech"
     else
-      true ->
-        "Enable GCS is use Bhasini text to speech"
-
-      {:error, error} ->
-        Map.put(error, "success", false)
-
-      error ->
-        Logger.error("Error received from Bhasini: #{error["message"]}")
-        Map.put(error, "success", false)
+      Glific.Bhasini.text_to_speech(source_language, org_id, text)
     end
   end
 

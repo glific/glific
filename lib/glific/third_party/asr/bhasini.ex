@@ -6,8 +6,8 @@ defmodule Glific.ASR.Bhasini do
   require Logger
 
   alias Glific.{
-    Contacts,
-    Caches
+    Caches,
+    Contacts
   }
 
   @config_url "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model"
@@ -99,7 +99,7 @@ defmodule Glific.ASR.Bhasini do
 
   This function makes an API call to the Bhashini ASR service using the provided configuration parameters and returns the ASR response text.
   """
-  @spec with_config_request(Keyword.t()) :: {:ok, map()} | map()
+  @spec with_config_request(Keyword.t()) :: {:ok, map()} | {:error, String.t()}
   def with_config_request(params) do
     source_language = Keyword.get(params, :source_language)
     target_language = Keyword.get(params, :target_language)
@@ -138,8 +138,8 @@ defmodule Glific.ASR.Bhasini do
           "taskType" => "translation",
           "config" => %{
             "language" => %{
-              "sourceLanguage" => "#{source_language}",
-              "targetLanguage" => "#{target_language}"
+              "sourceLanguage" => source_language,
+              "targetLanguage" => target_language
             }
           }
         },
@@ -147,7 +147,7 @@ defmodule Glific.ASR.Bhasini do
           "taskType" => "tts",
           "config" => %{
             "language" => %{
-              "sourceLanguage" => "#{source_language}"
+              "sourceLanguage" => source_language
             }
           }
         }
@@ -241,7 +241,7 @@ defmodule Glific.ASR.Bhasini do
     bhashini_keys.inference_key
 
     asr_headers = [
-      {"Authorization", "#{bhashini_keys.inference_key}"},
+      {"Authorization", bhashini_keys.inference_key},
       {"Content-Type", "application/json"}
     ]
 
@@ -251,9 +251,9 @@ defmodule Glific.ASR.Bhasini do
           "taskType" => "asr",
           "config" => %{
             "language" => %{
-              "sourceLanguage" => "#{source_language}"
+              "sourceLanguage" => source_language
             },
-            "serviceId" => "#{asr_service_id}",
+            "serviceId" => asr_service_id,
             "audioFormat" => "flac",
             "samplingRate" => 16_000,
             "preProcessors" => ["vad"],
@@ -264,7 +264,7 @@ defmodule Glific.ASR.Bhasini do
       "inputData" => %{
         "audio" => [
           %{
-            "audioContent" => "#{base64_data}"
+            "audioContent" => base64_data
           }
         ]
       }

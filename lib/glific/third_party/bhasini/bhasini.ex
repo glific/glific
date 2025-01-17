@@ -31,10 +31,10 @@ defmodule Glific.Bhasini do
   }
 
   @spec get_tts_model(String.t()) :: String.t()
-  def get_tts_model("en"), do: @iit_tts_model
-  def get_tts_model(lang) when lang in ["ta", "kn", "ml", "te", "or"], do: @dravidian_tts_model
+  defp get_tts_model("en"), do: @iit_tts_model
+  defp get_tts_model(lang) when lang in ["ta", "kn", "ml", "te", "or"], do: @dravidian_tts_model
 
-  def get_tts_model(lang) when lang in ["hi", "as", "gu", "bn", "pa", "mr", "ur"],
+  defp get_tts_model(lang) when lang in ["hi", "as", "gu", "bn", "pa", "mr", "ur"],
     do: @indo_aryan_tts_model
 
   @doc """
