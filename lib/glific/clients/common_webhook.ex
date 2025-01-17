@@ -127,31 +127,6 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  def webhook("jugalbandi", fields) do
-    prompt = if Map.has_key?(fields, "prompt"), do: [prompt: fields["prompt"]], else: []
-
-    query =
-      [
-        query_string: fields["query_string"],
-        uuid_number: fields["uuid_number"]
-      ] ++ prompt
-
-    Tesla.get(fields["url"],
-      headers: [{"Accept", "application/json"}],
-      query: query,
-      opts: [adapter: [recv_timeout: 100_000]]
-    )
-    |> case do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        Jason.decode!(body)
-        |> Map.take(["answer"])
-        |> Map.merge(%{success: true})
-
-      {_status, response} ->
-        %{success: false, response: "Invalid response #{response}"}
-    end
-  end
-
   def webhook("openllm", fields) do
     mp = Tesla.Multipart.add_field(Tesla.Multipart.new(), "prompt", fields["prompt"])
 
@@ -165,12 +140,6 @@ defmodule Glific.Clients.CommonWebhook do
         %{success: false, response: "Invalid response #{response}"}
     end
   end
-
-  def webhook("jugalbandi-voice", %{"query_text" => query_text} = fields),
-    do: query_jugalbandi_api(fields, query_text: query_text)
-
-  def webhook("jugalbandi-voice", %{"audio_url" => audio_url} = fields),
-    do: query_jugalbandi_api(fields, audio_url: audio_url)
 
   # This webhook will call Google speech-to-text API
   def webhook("speech_to_text", fields) do
@@ -306,31 +275,6 @@ defmodule Glific.Clients.CommonWebhook do
     case Enum.find(components, fn component -> type in component["types"] end) do
       nil -> "N/A"
       component -> component["long_name"]
-    end
-  end
-
-  @spec query_jugalbandi_api(map(), list()) :: map()
-  defp query_jugalbandi_api(fields, input) do
-    query =
-      [
-        uuid_number: fields["uuid_number"],
-        input_language: fields["input_language"],
-        output_format: fields["output_format"]
-      ] ++ input
-
-    Tesla.get(fields["url"],
-      headers: [{"Accept", "application/json"}],
-      query: query,
-      opts: [adapter: [recv_timeout: 200_000]]
-    )
-    |> case do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        Jason.decode!(body)
-        |> Map.take(["answer", "audio_output_url"])
-        |> Map.merge(%{success: true})
-
-      {_status, response} ->
-        %{success: false, response: "Invalid response #{response}"}
     end
   end
 
