@@ -5,15 +5,26 @@ defmodule Glific.ASR.Bhasini do
   use Tesla
   require Logger
 
-  alias Glific.{
-    Caches,
-    Contacts
-  }
+  alias Glific.Contacts
 
   @config_url "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model"
   @meity_pipeline_id "64392f96daac500b55c543cd"
   @language_detect_url "https://dhruva-api.bhashini.gov.in/services/inference/audiolangdetection"
   @callback_url "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
+  @english_stt_model "ai4bharat/whisper-medium-en--gpu--t4"
+  @hindi_stt_model "ai4bharat/conformer-hi-gpu--t4"
+  @dravidian_stt_model "ai4bharat/conformer-multilingual-dravidian-gpu--t4"
+  @indo_aryan_stt_model "ai4bharat/conformer-multilingual-indo_aryan-gpu--t4"
+
+  @spec get_stt_model(String.t()) :: String.t()
+  defp get_stt_model("en"), do: @english_stt_model
+  defp get_stt_model("hi"), do: @hindi_stt_model
+  defp get_stt_model(lang) when lang in ["ta", "kn", "ml", "te"], do: @dravidian_stt_model
+
+  defp get_stt_model(lang) when lang in ["gu", "bn", "pa", "mr", "ur"],
+    do: @indo_aryan_stt_model
+
+  defp get_stt_model(_lang), do: @hindi_stt_model
 
   @doc """
   Validate audio url
@@ -176,52 +187,6 @@ defmodule Glific.ASR.Bhasini do
     }
   end
 
-  @global_organization_id 0
-  @spec get_service_id(String.t()) :: String.t()
-  defp get_service_id(source_language) do
-    case Caches.get(@global_organization_id, "bhashini_asr_service_id", refresh_cache: false) do
-      {:ok, false} ->
-        load_asr_service_id_cache(%{}, source_language)
-
-      {:ok, cached_asr_service_ids} ->
-        if Map.has_key?(cached_asr_service_ids, source_language) do
-          Map.get(cached_asr_service_ids, source_language)
-        else
-          load_asr_service_id_cache(cached_asr_service_ids, source_language)
-        end
-    end
-  end
-
-  @spec load_asr_service_id_cache(map(), String.t()) :: String.t()
-  defp load_asr_service_id_cache(cached_asr_service_ids, source_language) do
-    with_config_request(
-      source_language: source_language,
-      task_type: "asr"
-    )
-    |> case do
-      {:ok, response} ->
-        decoded_response = Jason.decode!(response.body)
-
-        asr_service_id =
-          case Map.get(decoded_response, "pipelineResponseConfig") do
-            [%{"config" => [%{"serviceId" => service_id}]}] -> service_id
-            _ -> nil
-          end
-
-        Caches.set(
-          @global_organization_id,
-          "bhashini_asr_service_id",
-          Map.put(cached_asr_service_ids, source_language, asr_service_id)
-        )
-
-        asr_service_id
-
-      _ ->
-        # Passing a default model incase Bhashini config API fail, but not updating the cache
-        "ai4bharat/whisper-medium-en--gpu--t4"
-    end
-  end
-
   @doc """
   Performs an ASR (Automatic Speech Recognition) API call to Bhashini
   """
@@ -236,7 +201,7 @@ defmodule Glific.ASR.Bhasini do
         source_language,
         base64_data
       ) do
-    asr_service_id = get_service_id(source_language)
+    asr_service_id = get_stt_model(source_language)
     bhashini_keys = Glific.get_bhashini_keys()
     bhashini_keys.inference_key
 

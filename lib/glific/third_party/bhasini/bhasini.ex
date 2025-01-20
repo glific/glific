@@ -37,6 +37,8 @@ defmodule Glific.Bhasini do
   defp get_tts_model(lang) when lang in ["hi", "as", "gu", "bn", "pa", "mr", "ur"],
     do: @indo_aryan_tts_model
 
+  defp get_tts_model(_lang), do: @indo_aryan_tts_model
+
   @doc """
   returns iso_code for a language given the standard
   """
