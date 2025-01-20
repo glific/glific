@@ -223,6 +223,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :media_id, :id
     field :wa_managed_phone_id, :id
     field :wa_group_id, :id
+    field :poll_id, :integer
   end
 
   input_object :collection_wa_message_input do

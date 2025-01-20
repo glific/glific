@@ -88,6 +88,22 @@ defmodule Glific.Providers.Maytapi.WAMessages do
     |> send_message(message, attrs)
   end
 
+  @spec send_poll(WAMessage.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
+  def send_poll(wa_message, attrs \\ %{}) do
+    # maybe parse the poll_content map here..
+    options = Enum.map(wa_message.poll_content["options"], fn option -> option["name"] end)
+
+    %{
+      type: :poll,
+      message: attrs.poll.poll_content["text"],
+      options: options,
+      # wa_message.allow_multiple_answer
+      only_one: !attrs.poll.allow_multiple_answer
+    }
+    |> send_message(wa_message, attrs)
+  end
+
   @doc false
   @spec format_sender(map()) :: map()
   defp format_sender(attrs) do
@@ -118,18 +134,11 @@ defmodule Glific.Providers.Maytapi.WAMessages do
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
   defp send_message(payload, message, attrs) do
-    request_body =
+    # request_body =
       format_sender(attrs)
       |> Map.put("phone_id", attrs.phone_id)
-      |> Map.put("type", payload.type)
-      |> Map.put("message", payload.message)
-
-    if Map.has_key?(payload, :text) && payload.text != "" do
-      Map.put(request_body, "text", payload.text)
-    else
-      request_body
-    end
-    |> then(&create_oban_job(message, &1))
+      |> Map.merge(payload)
+      |> then(&create_oban_job(message, &1))
   end
 
   @doc false

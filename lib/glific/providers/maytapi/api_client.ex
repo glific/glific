@@ -4,20 +4,16 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   """
 
   alias Glific.Partners
-  alias Plug.Conn.Query
 
   @maytapi_url "https://api.maytapi.com/api"
 
   use Tesla
 
-  plug(Tesla.Middleware.FormUrlencoded,
-    encode: &Query.encode/1
-  )
-
   @spec headers(String.t()) :: list()
   defp headers(token),
     do: [
       {"accept", "application/json"},
+      {"Content-Type", "application/json"},
       {"x-maytapi-key", token}
     ]
 
@@ -99,7 +95,7 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
       url = @maytapi_url <> "/#{product_id}/#{phone_id}/sendMessage"
       Glific.Metrics.increment("Sent WAGroup msg")
-      maytapi_post(url, payload, token)
+      maytapi_post(url, Jason.encode!(payload), token)
     end
   end
 
@@ -113,7 +109,7 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       token = secrets["token"]
 
       url = @maytapi_url <> "/#{product_id}/#{phone_id}/group/remove"
-      maytapi_post(url, payload, token)
+      maytapi_post(url, Jason.encode!(payload), token)
     end
   end
 
@@ -127,7 +123,7 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       token = secrets["token"]
 
       url = @maytapi_url <> "/#{product_id}/setWebhook"
-      maytapi_post(url, payload, token)
+      maytapi_post(url, Jason.encode!(payload), token)
     end
   end
 end

@@ -5,6 +5,8 @@ defmodule Glific.Providers.Maytapi.Message do
 
   import Ecto.Query, warn: false
 
+  alias Glific.WaGroup.WaPoll
+
   alias Glific.{
     Communications,
     Communications.GroupMessage,
@@ -21,6 +23,8 @@ defmodule Glific.Providers.Maytapi.Message do
   @doc false
   @spec create_and_send_wa_message(WAManagedPhone.t(), WAGroup.t(), map()) :: any()
   def create_and_send_wa_message(wa_phone, wa_group, attrs) do
+    {attrs, poll} = add_poll_details(attrs)
+
     {:ok, message} =
       attrs
       |> Map.put_new(:type, :text)
@@ -38,9 +42,24 @@ defmodule Glific.Providers.Maytapi.Message do
     GroupMessage.send_message(message, %{
       wa_group_bsp_id: wa_group.bsp_id,
       phone_id: wa_phone.phone_id,
-      phone: wa_phone.phone
+      phone: wa_phone.phone,
+      poll: poll
     })
   end
+
+  @spec add_poll_details(map()) :: {map(), WaPoll.t() | nil}
+  defp add_poll_details(%{poll_id: poll_id} = attrs) when not is_nil(poll_id) do
+    {:ok, poll} = Repo.fetch(WaPoll, poll_id)
+
+    {Map.merge(attrs, %{
+       poll_id: poll_id,
+       poll_content: poll.poll_content,
+       message: poll.poll_content["text"],
+       type: :poll
+     }), poll}
+  end
+
+  defp add_poll_details(attrs), do: {attrs, nil}
 
   @doc """
   Send message to wa_group collection

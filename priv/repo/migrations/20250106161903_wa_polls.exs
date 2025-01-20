@@ -20,6 +20,12 @@ defmodule Glific.Repo.Migrations.WaPolls do
       timestamps(type: :utc_datetime)
     end
 
+    alter table(:wa_messages) do
+      add :poll_id, references(:wa_polls, on_delete: :nilify_all),
+        comment: "Reference for the Whatsapp groups poll"
+    end
+
     create unique_index(:wa_polls, [:label, :organization_id])
+    create index(:wa_messages, [:poll_id], where: "poll_id IS NOT NULL")
   end
 end

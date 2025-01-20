@@ -33,6 +33,10 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
   end
 
   @spec update_statuses(map(), non_neg_integer()) :: any()
+  defp update_statuses(%{"type" => "error", "data" => data} = _params, org_id) do
+    do_update_error_status(data, org_id)
+  end
+
   defp update_statuses(%{"data" => responses} = _params, org_id) do
     responses
     |> Enum.each(fn response ->
@@ -55,6 +59,12 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
     status = Map.get(@message_event_type, ack_type)
     bsp_message_id = Map.get(params, "msgId")
     Communications.GroupMessage.update_bsp_status(bsp_message_id, status, org_id)
+  end
+
+  @spec do_update_error_status(map(), non_neg_integer()) :: any()
+  defp do_update_error_status(params, org_id) do
+    bsp_message_id = Map.get(params, "id")
+    Communications.GroupMessage.update_bsp_error_status(bsp_message_id, params, org_id)
   end
 
   @spec handle_reactions(map(), non_neg_integer()) :: any()
