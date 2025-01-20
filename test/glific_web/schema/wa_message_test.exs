@@ -277,4 +277,51 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
                phone: wa_phone.phone
              })
   end
+
+  @tag :send_poll
+  test "send poll in a whatsapp group", %{staff: user, conn: _conn} do
+    mock_maytapi_response(200, %{
+      "success" => true,
+      "data" => %{
+        "chatId" => "120363238104@g.us",
+        "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"
+      }
+    })
+
+    wa_phone =
+      Fixtures.wa_managed_phone_fixture(%{
+        organization_id: user.organization_id
+      })
+
+    wa_grp =
+      Fixtures.wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_phone.id
+      })
+
+    wa_poll = Fixtures.wa_poll_fixture(%{label: "poll_a"})
+
+    result =
+      auth_query_gql_by(:send_msg, user,
+        variables: %{
+          "input" => %{
+            "message" => "Message body testing send",
+            "wa_group_id" => wa_grp.id,
+            "wa_managed_phone_id" => wa_phone.id,
+            "poll_id" => wa_poll.id
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "sendMessageInWaGroup", "error"])
+    assert message == nil
+
+    %WAMessage{body: "Poll question?", poll_content: content} =
+      WAMessage
+      |> where([wa], wa.poll_id == ^wa_poll.id)
+      |> Repo.one()
+
+    assert is_map(content)
+  end
 end
