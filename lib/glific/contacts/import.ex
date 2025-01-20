@@ -405,7 +405,14 @@ defmodule Glific.Contacts.Import do
 
   @spec add_language(map(), String.t() | nil) :: map()
   defp add_language(results, language) when language in [nil, ""] do
-    add_default_language(results)
+    # Check if contacts have a language other than English; if so, don't update it
+    case Repo.fetch_by(Contact, %{phone: results.phone}) do
+      {:error, _error} ->
+        add_default_language(results)
+
+      {:ok, contact} ->
+        Map.put(results, :language_id, contact.language_id)
+    end
   end
 
   defp add_language(results, language) do
