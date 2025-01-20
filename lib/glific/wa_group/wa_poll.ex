@@ -19,6 +19,7 @@ defmodule Glific.WaGroup.WaPoll do
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
+          uuid: Ecto.UUID.t() | nil,
           label: String.t() | nil,
           poll_content: map() | nil,
           allow_multiple_answer: boolean(),
@@ -29,6 +30,7 @@ defmodule Glific.WaGroup.WaPoll do
         }
 
   schema "wa_polls" do
+    field :uuid, Ecto.UUID, autogenerate: true
     field :label, :string
     field :poll_content, :map, default: %{}
     field :allow_multiple_answer, :boolean, default: false
