@@ -21,45 +21,49 @@ defmodule Glific.Providers.Maytapi.Message do
   }
 
   @doc false
-  @spec create_and_send_wa_message(WAManagedPhone.t(), WAGroup.t(), map()) :: any()
+  @spec create_and_send_wa_message(WAManagedPhone.t(), WAGroup.t(), map()) ::
+          {:ok, WAMessage.t()} | {:error, any()}
   def create_and_send_wa_message(wa_phone, wa_group, attrs) do
-    {attrs, poll} = add_poll_details(attrs)
-
-    {:ok, message} =
-      attrs
-      |> Map.put_new(:type, :text)
-      |> Map.merge(%{
-        body: Map.get(attrs, :message),
-        contact_id: wa_phone.contact_id,
-        organization_id: wa_phone.organization_id,
-        bsp_status: "sent",
-        wa_group_id: wa_group.id,
-        wa_managed_phone_id: wa_phone.id,
-        send_at: DateTime.utc_now()
+    with {:ok, {attrs, poll}} <- add_poll_details(attrs),
+         {:ok, message} <- create_wa_message(attrs, wa_phone, wa_group) do
+      GroupMessage.send_message(message, %{
+        wa_group_bsp_id: wa_group.bsp_id,
+        phone_id: wa_phone.phone_id,
+        phone: wa_phone.phone,
+        poll: poll
       })
-      |> WAMessages.create_message()
+    end
+  end
 
-    GroupMessage.send_message(message, %{
-      wa_group_bsp_id: wa_group.bsp_id,
-      phone_id: wa_phone.phone_id,
-      phone: wa_phone.phone,
-      poll: poll
+  defp create_wa_message(attrs, wa_phone, wa_group) do
+    attrs
+    |> Map.put_new(:type, :text)
+    |> Map.merge(%{
+      body: Map.get(attrs, :message),
+      contact_id: wa_phone.contact_id,
+      organization_id: wa_phone.organization_id,
+      bsp_status: "sent",
+      wa_group_id: wa_group.id,
+      wa_managed_phone_id: wa_phone.id,
+      send_at: DateTime.utc_now()
     })
+    |> WAMessages.create_message()
   end
 
-  @spec add_poll_details(map()) :: {map(), WaPoll.t() | nil}
+  @spec add_poll_details(map()) :: {:ok, {map(), WaPoll.t() | nil}} | {:error, any()}
   defp add_poll_details(%{poll_id: poll_id} = attrs) when not is_nil(poll_id) do
-    {:ok, poll} = Repo.fetch(WaPoll, poll_id)
-
-    {Map.merge(attrs, %{
-       poll_id: poll_id,
-       poll_content: poll.poll_content,
-       message: poll.poll_content["text"],
-       type: :poll
-     }), poll}
+    with {:ok, poll} <- Repo.fetch(WaPoll, poll_id) do
+      {:ok,
+       {Map.merge(attrs, %{
+          poll_id: poll_id,
+          poll_content: poll.poll_content,
+          message: poll.poll_content["text"],
+          type: :poll
+        }), poll}}
+    end
   end
 
-  defp add_poll_details(attrs), do: {attrs, nil}
+  defp add_poll_details(attrs), do: {:ok, {attrs, nil}}
 
   @doc """
   Send message to wa_group collection

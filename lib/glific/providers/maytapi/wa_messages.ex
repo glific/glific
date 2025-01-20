@@ -135,10 +135,10 @@ defmodule Glific.Providers.Maytapi.WAMessages do
 
   defp send_message(payload, message, attrs) do
     # request_body =
-      format_sender(attrs)
-      |> Map.put("phone_id", attrs.phone_id)
-      |> Map.merge(payload)
-      |> then(&create_oban_job(message, &1))
+    format_sender(attrs)
+    |> Map.put("phone_id", attrs.phone_id)
+    |> Map.merge(payload)
+    |> then(&create_oban_job(message, &1))
   end
 
   @doc false

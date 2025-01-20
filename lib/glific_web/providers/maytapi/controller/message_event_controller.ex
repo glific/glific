@@ -33,8 +33,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
   end
 
   @spec update_statuses(map(), non_neg_integer()) :: any()
-  defp update_statuses(%{"type" => "error", "data" => data} = _params, org_id) do
-    do_update_error_status(data, org_id)
+  defp update_statuses(%{"type" => "error"} = params, org_id) do
+    do_update_error_status(params, org_id)
   end
 
   defp update_statuses(%{"data" => responses} = _params, org_id) do
@@ -63,7 +63,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
 
   @spec do_update_error_status(map(), non_neg_integer()) :: any()
   defp do_update_error_status(params, org_id) do
-    bsp_message_id = Map.get(params, "id")
+    bsp_message_id = Map.get(params["data"], "id")
     Communications.GroupMessage.update_bsp_error_status(bsp_message_id, params, org_id)
   end
 

@@ -1015,7 +1015,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
   test "Incoming GET request from maytapi webhook should be handled", %{conn: conn} do
     conn = get(conn, "/maytapi", %{})
-    assert conn.halted
+    assert json_response(conn, 200) == nil
   end
-
 end
