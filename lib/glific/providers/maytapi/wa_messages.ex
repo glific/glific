@@ -27,7 +27,7 @@ defmodule Glific.Providers.Maytapi.WAMessages do
       message: message_media.source_url,
       type: :image
     }
-    |> Map.put_new(:text, message_media.caption || "")
+    |> add_text(message_media.caption)
     |> check_size_of_caption()
     |> send_message(message, attrs)
   end
@@ -55,7 +55,7 @@ defmodule Glific.Providers.Maytapi.WAMessages do
       message: message_media.source_url,
       type: :media
     }
-    |> Map.put_new(:text, message_media.caption || "")
+    |> add_text(message_media.caption)
     |> check_size_of_caption()
     |> send_message(message, attrs)
   end
@@ -70,7 +70,7 @@ defmodule Glific.Providers.Maytapi.WAMessages do
       type: :media,
       message: message_media.source_url
     }
-    |> Map.put_new(:text, message_media.caption || "")
+    |> add_text(message_media.caption)
     |> check_size_of_caption()
     |> send_message(message, attrs)
   end
@@ -88,23 +88,30 @@ defmodule Glific.Providers.Maytapi.WAMessages do
     |> send_message(message, attrs)
   end
 
+  @doc false
   @spec send_poll(WAMessage.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_poll(wa_message, attrs \\ %{}) do
-    # maybe parse the poll_content map here..
     options = Enum.map(wa_message.poll_content["options"], fn option -> option["name"] end)
 
     %{
       type: :poll,
       message: attrs.poll.poll_content["text"],
       options: options,
-      # wa_message.allow_multiple_answer
       only_one: !attrs.poll.allow_multiple_answer
     }
     |> send_message(wa_message, attrs)
   end
 
-  @doc false
+  @spec add_text(map(), String.t() | nil) :: map()
+  defp add_text(payload, text) when text in [nil, ""] do
+    payload
+  end
+
+  defp add_text(payload, text) do
+    Map.put_new(payload, :text, text)
+  end
+
   @spec format_sender(map()) :: map()
   defp format_sender(attrs) do
     %{
@@ -114,7 +121,6 @@ defmodule Glific.Providers.Maytapi.WAMessages do
   end
 
   @max_size 6000
-  @doc false
   @spec check_size(map()) :: map()
   defp check_size(%{message: text} = attrs) do
     if String.length(text) < @max_size,
@@ -128,13 +134,13 @@ defmodule Glific.Providers.Maytapi.WAMessages do
       else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
   end
 
-  @doc false
+  defp check_size_of_caption(attrs), do: attrs
+
   @spec send_message(map(), WAMessage.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
   defp send_message(payload, message, attrs) do
-    # request_body =
     format_sender(attrs)
     |> Map.put("phone_id", attrs.phone_id)
     |> Map.merge(payload)

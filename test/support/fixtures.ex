@@ -64,9 +64,9 @@ defmodule Glific.Fixtures do
     WAGroup.WAManagedPhone,
     WAGroup.WAMessage,
     WaGroup.WaPoll,
-    WaPoll,
     WAManagedPhones,
-    WAMessages
+    WAMessages,
+    WaPoll
   }
 
   @doc """
