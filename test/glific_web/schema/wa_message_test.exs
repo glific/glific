@@ -295,7 +295,6 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
              })
   end
 
-  @tag :send_poll2
   test "send poll in a whatsapp group", %{staff: user, conn: _conn} do
     mock_maytapi_response(200, %{
       "success" => true,
@@ -345,7 +344,6 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
     assert is_map(content)
   end
 
-  @tag :send_poll
   test "send poll in a whatsapp group, invalid poll_id", %{staff: user, conn: _conn} do
     mock_maytapi_response(200, %{
       "success" => true,
@@ -383,7 +381,6 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
     refute is_nil(message)
   end
 
-  @tag :send_poll2
   test "error after sending poll in a whatsapp group", %{staff: user, conn: conn} do
     mock_maytapi_response(200, %{
       "success" => true,
