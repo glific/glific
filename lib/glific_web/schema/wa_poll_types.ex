@@ -11,6 +11,7 @@ defmodule GlificWeb.Schema.WaPollTypes do
   object :wa_poll do
     field :id, :id
     field :label, :string
+    field :uuid, :string
     field :poll_content, :json
     field :allow_multiple_answer, :boolean
     field :inserted_at, :datetime

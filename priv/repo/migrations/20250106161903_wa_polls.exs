@@ -3,6 +3,10 @@ defmodule Glific.Repo.Migrations.WaPolls do
 
   def change do
     create table(:wa_polls) do
+      add :uuid, :uuid,
+        null: false,
+        comment: "Uniquely generated message UUID, primarily needed for using in a flow webhook"
+
       add :label, :string, null: false, comment: "Title of the whatsapp poll"
 
       add :poll_content, :map,
@@ -21,5 +25,6 @@ defmodule Glific.Repo.Migrations.WaPolls do
     end
 
     create unique_index(:wa_polls, [:label, :organization_id])
+    create unique_index(:wa_polls, [:uuid])
   end
 end
