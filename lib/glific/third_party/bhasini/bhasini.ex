@@ -4,7 +4,11 @@ defmodule Glific.Bhasini do
   """
 
   require Logger
-  alias Glific.GCS.GcsWorker
+
+  alias Glific.{
+    GCS.GcsWorker,
+    OpenAI.ChatGPT
+  }
 
   @callback_url "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
 
@@ -114,7 +118,11 @@ defmodule Glific.Bhasini do
             "target"
           ])
 
-        process_media(translated_text, response, org_id)
+        if source_language == "english" do
+          ChatGPT.text_to_speech_with_open_ai(org_id, text)
+        else
+          process_media(translated_text, response, org_id)
+        end
 
       {:ok, %Tesla.Env{status: 500, body: body}} ->
         %{success: false, reason: body}
@@ -234,6 +242,22 @@ defmodule Glific.Bhasini do
       error, reason ->
         Logger.info("Bhasini Downloaded with error: #{error} and reason: #{reason}")
         "Error while converting file"
+    end
+  end
+
+  @doc """
+  This function check if GCS credentials are valid and then proceed to convert text to speech using Bhashini
+  """
+  @spec text_to_speech_with_bhashini(String.t(), non_neg_integer(), String.t()) ::
+          map()
+  def text_to_speech_with_bhashini(source_language, org_id, text) do
+    organization = Glific.Partners.organization(org_id)
+    services = organization.services["google_cloud_storage"]
+
+    if is_nil(services) do
+      "Enable GCS is use Bhashini text to speech"
+    else
+      text_to_speech(source_language, org_id, text)
     end
   end
 
