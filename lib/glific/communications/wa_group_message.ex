@@ -33,7 +33,8 @@ defmodule Glific.Communications.GroupMessage do
     video: :send_video,
     document: :send_document,
     sticker: :send_sticker,
-    location_request_message: :send_interactive
+    location_request_message: :send_interactive,
+    poll: :send_poll
   }
 
   @doc """
@@ -100,6 +101,18 @@ defmodule Glific.Communications.GroupMessage do
     WAMessage
     |> where([wa_msg], wa_msg.bsp_id == ^bsp_message_id and wa_msg.organization_id == ^org_id)
     |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
+  end
+
+  @doc """
+  Callback to update the provider error status for a message
+  """
+  @spec update_bsp_error_status(String.t(), map(), non_neg_integer()) :: any()
+  def update_bsp_error_status(bsp_message_id, error_details, org_id) do
+    WAMessage
+    |> where([wa_msg], wa_msg.bsp_id == ^bsp_message_id and wa_msg.organization_id == ^org_id)
+    |> Repo.update_all(
+      set: [bsp_status: :error, updated_at: DateTime.utc_now(), errors: error_details]
+    )
   end
 
   @spec log_error(WAMessage.t(), String.t()) :: {:error, String.t()}

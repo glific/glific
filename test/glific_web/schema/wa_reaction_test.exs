@@ -19,7 +19,6 @@ defmodule GlificWeb.Schema.WaReactionTest do
     :ok
   end
 
-  @tag :reac
   test "receive reaction success", %{staff: user} do
     contact = Fixtures.contact_fixture(organization_id: user.organization_id)
 

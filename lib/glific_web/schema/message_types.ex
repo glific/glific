@@ -162,6 +162,10 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :location, :locations do
       resolve(dataloader(Repo, use_parent: true))
     end
+
+    field :poll, :wa_poll do
+      resolve(dataloader(Repo, use_parent: true))
+    end
   end
 
   @desc "Filtering options for messages"
@@ -223,6 +227,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :media_id, :id
     field :wa_managed_phone_id, :id
     field :wa_group_id, :id
+    field :poll_id, :integer
   end
 
   input_object :collection_wa_message_input do
