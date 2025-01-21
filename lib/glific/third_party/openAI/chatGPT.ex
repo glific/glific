@@ -573,4 +573,27 @@ defmodule Glific.OpenAI.ChatGPT do
         {:error, error_response["error"]["message"]}
     end
   end
+
+  @doc """
+  This function check if GCS credentials are valid and then proceed to convert text to speech using OpenAI
+  """
+  @spec text_to_speech_with_open_ai(non_neg_integer(), String.t()) ::
+          map()
+  def text_to_speech_with_open_ai(org_id, text) do
+    organization = Glific.Partners.organization(org_id)
+    services = organization.services["google_cloud_storage"]
+
+    with false <- is_nil(services),
+         %{media_url: media_url} <- text_to_speech(org_id, text) do
+      %{success: true}
+      |> Map.put(:media_url, media_url)
+      |> Map.put(:translated_text, text)
+    else
+      true ->
+        "Enable GCS is use Open AI text to speech"
+
+      error ->
+        error
+    end
+  end
 end
