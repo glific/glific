@@ -181,32 +181,45 @@ defmodule Glific.Clients.CommonWebhook do
     |> GoogleASR.speech_to_text(fields["results"], contact.language.locale)
   end
 
-  # This webhook will call Bhasini speech-to-text API
+  # This webhook will call Bhashini speech-to-text API
   def webhook("speech_to_text_with_bhasini", fields) do
     with {:ok, contact} <- Bhasini.validate_params(fields),
-         {:ok, response} <-
-           Bhasini.with_config_request(
-             source_language: contact.language.label,
-             task_type: "asr"
-           ) do
-      {:ok, media_content} = Tesla.get(fields["speech"])
-
+         {:ok, media_content} <- Tesla.get(fields["speech"]) do
+      source_language = contact.language.locale
       content = Base.encode64(media_content.body)
-      Bhasini.handle_response(response, content)
+
+      Bhasini.make_asr_api_call(
+        source_language,
+        content
+      )
     else
       {:error, error} ->
         error
     end
   end
 
-  # This webhook will call Bhasini text-to-speech API
+  # This webhook will call Bhashini text-to-speech API
   def webhook("text_to_speech_with_bhasini", fields) do
     text = fields["text"]
     org_id = fields["organization_id"]
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
     contact = Contacts.preload_contact_language(contact_id)
-    source_language = contact.language.label
-    do_text_to_speech_with_bhasini(source_language, org_id, text)
+    source_language = contact.language.label |> String.downcase()
+    speech_engine = Map.get(fields, "speech_engine", "")
+
+    cond do
+      speech_engine == "open_ai" ->
+        ChatGPT.text_to_speech_with_open_ai(org_id, text)
+
+      speech_engine == "bhashini" ->
+        Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
+
+      source_language == "english" ->
+        ChatGPT.text_to_speech_with_open_ai(org_id, text)
+
+      true ->
+        Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
+    end
   end
 
   def webhook("nmt_tts_with_bhasini", fields) do
@@ -223,10 +236,22 @@ defmodule Glific.Clients.CommonWebhook do
       |> Map.get("target_language", nil)
       |> then(&if(!is_nil(&1), do: String.downcase(&1)))
 
-    if source_language == target_language do
-      do_text_to_speech_with_bhasini(source_language, org_id, text)
-    else
-      do_nmt_tts_with_bhasini(source_language, target_language, org_id, text)
+    speech_engine = Map.get(fields, "speech_engine", "")
+
+    cond do
+      speech_engine == "bhashini" && source_language == target_language ->
+        Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
+
+      source_language == target_language && source_language == "english" ->
+        ChatGPT.text_to_speech_with_open_ai(org_id, text)
+
+      source_language == target_language ->
+        Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
+
+      true ->
+        do_nmt_tts_with_bhasini(source_language, target_language, org_id, text,
+          speech_engine: speech_engine
+        )
     end
   end
 
@@ -334,80 +359,26 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  @spec do_nmt_tts_with_bhasini(String.t(), String.t(), non_neg_integer(), String.t()) :: map()
-  defp do_nmt_tts_with_bhasini(source_language, target_language, org_id, text) do
+  @spec do_nmt_tts_with_bhasini(
+          String.t(),
+          String.t(),
+          non_neg_integer(),
+          String.t(),
+          Keyword.t()
+        ) :: map()
+  defp do_nmt_tts_with_bhasini(source_language, target_language, org_id, text, opts) do
     organization = Glific.Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
 
     with false <- is_nil(services),
-         true <- Glific.Bhasini.valid_language?(source_language, target_language),
-         {:ok, response} <-
-           Bhasini.with_config_request(
-             source_language: source_language,
-             target_language: target_language,
-             task_type: "nmt_tts"
-           ),
-         %{"feedbackUrl" => _feedback_url, "pipelineResponseConfig" => _pipelineresponseconfig} =
-           params <-
-           Jason.decode!(response.body) do
-      Glific.Bhasini.nmt_tts(params, text, source_language, target_language, org_id)
+         true <- Glific.Bhasini.valid_language?(source_language, target_language) do
+      Glific.Bhasini.nmt_tts(text, source_language, target_language, org_id, opts)
     else
       true ->
         %{success: false, reason: "GCS is disabled"}
 
       false ->
-        %{success: false, reason: "Language not supported in Bhasini"}
-
-      {:error, error} ->
-        Map.put(error, "success", false)
-
-      error ->
-        Logger.error("Error received from Bhasini: #{error["message"]}")
-        Map.put(error, "success", false)
-    end
-  end
-
-  @spec do_text_to_speech_with_bhasini(String.t(), non_neg_integer(), String.t()) ::
-          map()
-  defp do_text_to_speech_with_bhasini("english", org_id, text) do
-    organization = Glific.Partners.organization(org_id)
-    services = organization.services["google_cloud_storage"]
-
-    with false <- is_nil(services),
-         %{media_url: media_url} <-
-           ChatGPT.text_to_speech(org_id, text) do
-      %{success: true}
-      |> Map.put(:media_url, media_url)
-      |> Map.put(:translated_text, text)
-    else
-      true ->
-        "Enable GCS is use Bhasini text to speech"
-
-      error ->
-        error
-    end
-  end
-
-  defp do_text_to_speech_with_bhasini(source_language, org_id, text) do
-    organization = Glific.Partners.organization(org_id)
-    services = organization.services["google_cloud_storage"]
-
-    with false <- is_nil(services),
-         {:ok, response} <-
-           Bhasini.with_config_request(source_language: source_language, task_type: "tts"),
-         %{"feedbackUrl" => _feedback_url, "pipelineInferenceAPIEndPoint" => _endpoint} = params <-
-           Jason.decode!(response.body) do
-      Glific.Bhasini.text_to_speech(params, text, org_id)
-    else
-      true ->
-        "Enable GCS is use Bhasini text to speech"
-
-      {:error, error} ->
-        Map.put(error, "success", false)
-
-      error ->
-        Logger.error("Error received from Bhasini: #{error["message"]}")
-        Map.put(error, "success", false)
+        %{success: false, reason: "Language not supported in Bhashini"}
     end
   end
 
