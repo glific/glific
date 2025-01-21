@@ -10,7 +10,21 @@ defmodule Glific.ASR.Bhasini do
   @config_url "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model"
   @meity_pipeline_id "64392f96daac500b55c543cd"
   @language_detect_url "https://dhruva-api.bhashini.gov.in/services/inference/audiolangdetection"
-  # @ai4bharat_pipeline_id "643930aa521a4b1ba0f4c41d"
+  @callback_url "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
+  @english_stt_model "ai4bharat/whisper-medium-en--gpu--t4"
+  @hindi_stt_model "ai4bharat/conformer-hi-gpu--t4"
+  @dravidian_stt_model "ai4bharat/conformer-multilingual-dravidian-gpu--t4"
+  @indo_aryan_stt_model "ai4bharat/conformer-multilingual-indo_aryan-gpu--t4"
+
+  @spec get_stt_model(String.t()) :: String.t()
+  defp get_stt_model("en"), do: @english_stt_model
+  defp get_stt_model("hi"), do: @hindi_stt_model
+  defp get_stt_model(lang) when lang in ["ta", "kn", "ml", "te"], do: @dravidian_stt_model
+
+  defp get_stt_model(lang) when lang in ["gu", "bn", "pa", "mr", "ur"],
+    do: @indo_aryan_stt_model
+
+  defp get_stt_model(_lang), do: @hindi_stt_model
 
   @doc """
   Validate audio url
@@ -96,7 +110,7 @@ defmodule Glific.ASR.Bhasini do
 
   This function makes an API call to the Bhashini ASR service using the provided configuration parameters and returns the ASR response text.
   """
-  @spec with_config_request(Keyword.t()) :: {:ok, map()} | map()
+  @spec with_config_request(Keyword.t()) :: {:ok, map()} | {:error, String.t()}
   def with_config_request(params) do
     source_language = Keyword.get(params, :source_language)
     target_language = Keyword.get(params, :target_language)
@@ -135,8 +149,8 @@ defmodule Glific.ASR.Bhasini do
           "taskType" => "translation",
           "config" => %{
             "language" => %{
-              "sourceLanguage" => "#{source_language}",
-              "targetLanguage" => "#{target_language}"
+              "sourceLanguage" => source_language,
+              "targetLanguage" => target_language
             }
           }
         },
@@ -144,7 +158,7 @@ defmodule Glific.ASR.Bhasini do
           "taskType" => "tts",
           "config" => %{
             "language" => %{
-              "sourceLanguage" => "#{source_language}"
+              "sourceLanguage" => source_language
             }
           }
         }
@@ -173,27 +187,26 @@ defmodule Glific.ASR.Bhasini do
     }
   end
 
+  @doc """
+  Performs an ASR (Automatic Speech Recognition) API call to Bhashini
+  """
   @spec make_asr_api_call(
-          authorization_key :: String.t(),
-          authorization_value :: String.t(),
-          callback_url :: String.t(),
-          asr_service_id :: String.t(),
           source_language :: String.t(),
           base64_data :: String.t()
         ) :: %{
           success: boolean(),
           asr_response_text: String.t() | integer()
         }
-  defp make_asr_api_call(
-         authorization_key,
-         authorization_value,
-         callback_url,
-         asr_service_id,
-         source_language,
-         base64_data
-       ) do
+  def make_asr_api_call(
+        source_language,
+        base64_data
+      ) do
+    asr_service_id = get_stt_model(source_language)
+    bhashini_keys = Glific.get_bhashini_keys()
+    bhashini_keys.inference_key
+
     asr_headers = [
-      {"#{authorization_key}", "#{authorization_value}"},
+      {"Authorization", bhashini_keys.inference_key},
       {"Content-Type", "application/json"}
     ]
 
@@ -203,9 +216,9 @@ defmodule Glific.ASR.Bhasini do
           "taskType" => "asr",
           "config" => %{
             "language" => %{
-              "sourceLanguage" => "#{source_language}"
+              "sourceLanguage" => source_language
             },
-            "serviceId" => "#{asr_service_id}",
+            "serviceId" => asr_service_id,
             "audioFormat" => "flac",
             "samplingRate" => 16_000,
             "preProcessors" => ["vad"],
@@ -216,13 +229,13 @@ defmodule Glific.ASR.Bhasini do
       "inputData" => %{
         "audio" => [
           %{
-            "audioContent" => "#{base64_data}"
+            "audioContent" => base64_data
           }
         ]
       }
     }
 
-    case Tesla.post(callback_url, Jason.encode!(asr_post_body),
+    case Tesla.post(@callback_url, Jason.encode!(asr_post_body),
            headers: asr_headers,
            opts: [adapter: [recv_timeout: 300_000]]
          ) do
@@ -243,7 +256,7 @@ defmodule Glific.ASR.Bhasini do
     end
   end
 
-  @spec get_output_from_response(decoded_response :: map()) :: String.t() | nil
+  @spec get_output_from_response(map()) :: String.t() | nil
   defp get_output_from_response(decoded_response) do
     case decoded_response["pipelineResponse"] do
       [%{"output" => [%{"source" => source}]} | _rest] ->
@@ -252,52 +265,5 @@ defmodule Glific.ASR.Bhasini do
       _ ->
         nil
     end
-  end
-
-  @doc """
-  Subsequent API call to Bhashini for ASR after config call
-  """
-  @spec handle_response(map(), String.t()) :: map()
-  def handle_response(%{status: 200} = response, content) do
-    # Extract necessary data from the response
-    decoded_response = Jason.decode!(response.body)
-
-    callback_url = Map.get(decoded_response, "pipelineInferenceAPIEndPoint")["callbackUrl"]
-
-    inference_api_key =
-      Map.get(decoded_response, "pipelineInferenceAPIEndPoint")["inferenceApiKey"]
-
-    authorization_key = Map.get(inference_api_key, "name")
-    authorization_value = Map.get(inference_api_key, "value")
-
-    asr_service_id =
-      case Map.get(decoded_response, "pipelineResponseConfig") do
-        [%{"config" => [%{"serviceId" => service_id}]}] -> service_id
-        _ -> nil
-      end
-
-    source_language =
-      case Map.get(decoded_response, "languages") do
-        [%{"sourceLanguage" => source_language}] -> source_language
-        _ -> nil
-      end
-
-    make_asr_api_call(
-      authorization_key,
-      authorization_value,
-      callback_url,
-      asr_service_id,
-      source_language,
-      content
-    )
-  end
-
-  def handle_response(response, _content) do
-    Logger.error("Bhashini API call failed: #{response}")
-
-    %{
-      success: false,
-      msg: "API call to Bhashini failed"
-    }
   end
 end
