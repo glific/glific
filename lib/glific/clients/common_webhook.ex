@@ -185,6 +185,7 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("speech_to_text_with_bhasini", fields) do
     with {:ok, contact} <- Bhasini.validate_params(fields),
          {:ok, media_content} <- Tesla.get(fields["speech"]) do
+      source_language = contact.language.locale
       content = Base.encode64(media_content.body)
 
       Bhasini.make_asr_api_call(
@@ -194,9 +195,6 @@ defmodule Glific.Clients.CommonWebhook do
     else
       {:error, error} ->
         error
-
-      _ ->
-        %{success: "false", error: "Error while fetching media file"}
     end
   end
 
