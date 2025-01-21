@@ -183,20 +183,20 @@ defmodule Glific.Clients.CommonWebhook do
 
   # This webhook will call Bhashini speech-to-text API
   def webhook("speech_to_text_with_bhasini", fields) do
-    case Bhasini.validate_params(fields) do
-      {:ok, contact} ->
-        source_language = contact.language.locale
-        {:ok, media_content} = Tesla.get(fields["speech"])
+    with {:ok, contact} <- Bhasini.validate_params(fields),
+         {:ok, media_content} <- Tesla.get(fields["speech"]) do
+      content = Base.encode64(media_content.body)
 
-        content = Base.encode64(media_content.body)
-
-        Bhasini.make_asr_api_call(
-          source_language,
-          content
-        )
-
+      Bhasini.make_asr_api_call(
+        source_language,
+        content
+      )
+    else
       {:error, error} ->
         error
+
+      _ ->
+        %{success: "false", error: "Error while fetching media file"}
     end
   end
 
