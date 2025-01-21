@@ -1702,12 +1702,6 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "JSON object for storing the recent messages",
-        name: "recent_messages",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
         description: "Time when the flow results entry was first created for a user",
         name: "inserted_at",
         type: "DATETIME",
