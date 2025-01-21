@@ -8,31 +8,7 @@ defmodule Glific.Clients.Bandhu do
   alias Glific.Clients.CommonWebhook
 
   @housing_url "https://housing.bandhumember.work/api/housing/create_sql_glific_query"
-  @housing_params [
-    :language_code,
-    :city_name,
-    :area_name,
-    :price_monthly_max,
-    :price_monthly_min,
-    :deposit,
-    :brokerage,
-    :rooms,
-    :sleeping_spaces,
-    :max_guests,
-    :guest_type,
-    :housing_type,
-    :diet,
-    :shift_in,
-    :stay_until,
-    :electricity,
-    :electricity_type,
-    :toilet,
-    :kitchen,
-    :bathroom,
-    :part_of_house,
-    :latitude,
-    :longitude
-  ]
+
   @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
