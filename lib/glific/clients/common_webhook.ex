@@ -207,11 +207,20 @@ defmodule Glific.Clients.CommonWebhook do
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
     contact = Contacts.preload_contact_language(contact_id)
     source_language = contact.language.label |> String.downcase()
+    speech_engine = Map.get(fields, "speech_engine", "")
 
-    if source_language == "english" do
-      ChatGPT.text_to_speech_with_open_ai(org_id, text)
-    else
-      Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
+    cond do
+      speech_engine == "open_ai" ->
+        ChatGPT.text_to_speech_with_open_ai(org_id, text)
+
+      speech_engine == "bhashini" ->
+        Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
+
+      source_language == "english" ->
+        ChatGPT.text_to_speech_with_open_ai(org_id, text)
+
+      true ->
+        Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
     end
   end
 
@@ -229,7 +238,12 @@ defmodule Glific.Clients.CommonWebhook do
       |> Map.get("target_language", nil)
       |> then(&if(!is_nil(&1), do: String.downcase(&1)))
 
+    speech_engine = Map.get(fields, "speech_engine", "")
+
     cond do
+      speech_engine == "bhashini" && source_language == target_language ->
+        Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
+
       source_language == target_language && source_language == "english" ->
         ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
@@ -237,7 +251,9 @@ defmodule Glific.Clients.CommonWebhook do
         Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
 
       true ->
-        do_nmt_tts_with_bhasini(source_language, target_language, org_id, text)
+        do_nmt_tts_with_bhasini(source_language, target_language, org_id, text,
+          speech_engine: speech_engine
+        )
     end
   end
 
@@ -345,14 +361,20 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  @spec do_nmt_tts_with_bhasini(String.t(), String.t(), non_neg_integer(), String.t()) :: map()
-  defp do_nmt_tts_with_bhasini(source_language, target_language, org_id, text) do
+  @spec do_nmt_tts_with_bhasini(
+          String.t(),
+          String.t(),
+          non_neg_integer(),
+          String.t(),
+          Keyword.t()
+        ) :: map()
+  defp do_nmt_tts_with_bhasini(source_language, target_language, org_id, text, opts) do
     organization = Glific.Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
 
     with false <- is_nil(services),
          true <- Glific.Bhasini.valid_language?(source_language, target_language) do
-      Glific.Bhasini.nmt_tts(text, source_language, target_language, org_id)
+      Glific.Bhasini.nmt_tts(text, source_language, target_language, org_id, opts)
     else
       true ->
         %{success: false, reason: "GCS is disabled"}

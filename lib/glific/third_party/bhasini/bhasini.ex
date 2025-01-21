@@ -56,8 +56,10 @@ defmodule Glific.Bhasini do
   @doc """
   This function makes an API call to the Bhashini ASR service for NMT and TTS using the provided configuration parameters and returns the public media URL of the file.
   """
-  @spec nmt_tts(String.t(), String.t(), String.t(), non_neg_integer()) :: map()
-  def nmt_tts(text, source_language, target_language, org_id) do
+  @spec nmt_tts(String.t(), String.t(), String.t(), non_neg_integer(), Keyword.t()) :: map()
+  def nmt_tts(text, source_language, target_language, org_id, opts) do
+    speech_engine = Keyword.get(opts, :speech_engine, "")
+
     bhashini_keys = Glific.get_bhashini_keys()
 
     default_headers = [
@@ -118,10 +120,18 @@ defmodule Glific.Bhasini do
             "target"
           ])
 
-        if source_language == "english" do
-          ChatGPT.text_to_speech_with_open_ai(org_id, text)
-        else
-          process_media(translated_text, response, org_id)
+        cond do
+          speech_engine == "bhashini" ->
+            process_media(translated_text, response, org_id)
+
+          speech_engine == "open_ai" ->
+            ChatGPT.text_to_speech_with_open_ai(org_id, text)
+
+          source_language == "english" ->
+            ChatGPT.text_to_speech_with_open_ai(org_id, text)
+
+          true ->
+            process_media(translated_text, response, org_id)
         end
 
       {:ok, %Tesla.Env{status: 500, body: body}} ->
