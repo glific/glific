@@ -7,6 +7,7 @@ defmodule Glific.Flows.WebhookLog do
 
   import Ecto.Query, warn: false
 
+  alias Glific.Groups.WAGroup
   alias __MODULE__
 
   alias Glific.{
@@ -16,8 +17,8 @@ defmodule Glific.Flows.WebhookLog do
     Repo
   }
 
-  @required_fields [:url, :method, :request_headers, :flow_id, :contact_id, :organization_id]
-  @optional_fields [:request_json, :response_json, :status_code, :error]
+  @required_fields [:url, :method, :request_headers, :flow_id, :organization_id]
+  @optional_fields [:request_json, :response_json, :status_code, :error, :contact_id, :wa_group_id]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -33,6 +34,8 @@ defmodule Glific.Flows.WebhookLog do
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          wa_group_id: non_neg_integer | nil,
+          wa_group: WAGroup.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -53,7 +56,7 @@ defmodule Glific.Flows.WebhookLog do
     belongs_to :flow, Flow
     belongs_to :contact, Contact
     belongs_to :organization, Organization
-
+    belongs_to :wa_group, WAGroup
     timestamps(type: :utc_datetime)
   end
 

@@ -140,12 +140,8 @@ defmodule Glific.Flows.Webhook do
   @spec do_create_body(FlowContext.t(), map()) :: {map(), String.t()} | {:error, String.t()}
   defp do_create_body(context, action_body_map) do
     default_payload = %{
-      contact: %{
-        id: context.contact.id,
-        name: context.contact.name,
-        phone: context.contact.phone,
-        fields: context.contact.fields
-      },
+      contact: get_contact(context),
+      wa_group: get_wa_group(context),
       results: context.results,
       flow: %{name: context.flow.name, id: context.flow.id}
     }
@@ -156,6 +152,7 @@ defmodule Glific.Flows.Webhook do
       MessageVarParser.parse_map(action_body_map, fields)
       |> Enum.map(fn
         {k, "@contact"} -> {k, default_payload.contact}
+        {k, "@wa_group"} -> {k, default_payload.wa_group}
         {k, "@results"} -> {k, default_payload.results}
         {k, v} -> {k, v}
       end)
@@ -176,6 +173,27 @@ defmodule Glific.Flows.Webhook do
            "Error in encoding webhook body. Please check the json body in floweditor"
          )}
     end
+  end
+
+  defp get_contact(%FlowContext{wa_group_id: nil} = context) do
+    %{
+      id: context.contact.id,
+      name: context.contact.name,
+      phone: context.contact.phone,
+      fields: context.contact.fields
+    }
+  end
+
+  defp get_contact(_context), do: %{}
+
+  defp get_wa_group(%FlowContext{wa_group_id: nil} = _context), do: %{}
+
+  defp get_wa_group(context) do
+    %{
+      id: context.wa_group.id,
+      label: context.wa_group.label,
+      wa_managed_phone_id: context.wa_group.wa_managed_phone_id
+    }
   end
 
   # method can be either a get or a post. The do_oban function

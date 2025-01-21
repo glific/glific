@@ -509,7 +509,7 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec handle_conversation(map()) :: map()
   def handle_conversation(%{thread_id: nil, remove_citation: remove_citation} = params) do
-    run_thread = create_and_run_thread(params) |> IO.inspect()
+    run_thread = create_and_run_thread(params)
     Process.sleep(4_000)
 
     case retrieve_run_and_wait(
@@ -522,14 +522,10 @@ defmodule Glific.OpenAI.ChatGPT do
         list_thread_messages(%{thread_id: run_thread["thread_id"]})
         |> remove_citation(remove_citation)
         |> Map.put_new("success", false)
-        |> dbg()
 
       {:error, error} ->
         error
     end
-  rescue
-    _error ->
-      %{error: "thread rnu failed"}
   end
 
   def handle_conversation(%{thread_id: thread_id, remove_citation: remove_citation} = params) do
