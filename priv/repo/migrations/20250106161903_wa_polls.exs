@@ -30,9 +30,8 @@ defmodule Glific.Repo.Migrations.WaPolls do
     end
 
     alter table(:webhook_logs) do
-      add :wa_group_id, references(:wa_groups, on_delete: :nilify_all)
-      modify :contact_id, null: false
-      modify :title, null: false, from: {:string, null: true}
+      add :wa_group_id, references(:wa_groups, on_delete: :delete_all)
+      modify :contact_id, :integer, null: true
     end
 
     create unique_index(:wa_polls, [:label, :organization_id])

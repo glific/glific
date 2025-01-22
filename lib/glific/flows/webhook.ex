@@ -63,7 +63,8 @@ defmodule Glific.Flows.Webhook do
         method: action.method,
         organization_id: context.organization_id,
         flow_id: context.flow_id,
-        contact_id: context.contact.id
+        contact_id: if(is_nil(context.contact_id), do: nil, else: context.contact.id),
+        wa_group_id: if(is_nil(context.wa_group_id), do: nil, else: context.wa_group.id)
       }
       |> WebhookLog.create_webhook_log()
 
@@ -175,6 +176,7 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
+  @spec get_contact(FlowContext.t()) :: map()
   defp get_contact(%FlowContext{wa_group_id: nil} = context) do
     %{
       id: context.contact.id,
@@ -186,6 +188,7 @@ defmodule Glific.Flows.Webhook do
 
   defp get_contact(_context), do: %{}
 
+  @spec get_wa_group(FlowContext.t()) :: map()
   defp get_wa_group(%FlowContext{wa_group_id: nil} = _context), do: %{}
 
   defp get_wa_group(context) do

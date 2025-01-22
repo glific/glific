@@ -3,6 +3,12 @@ defmodule Glific.Clients.CommonWebhook do
   Common webhooks which we can call with any clients.
   """
 
+  alias Glific.Groups.WAGroup
+  alias Glific.WAGroup.WAManagedPhone
+  alias Glific.WaGroup.WaPoll
+  alias Glific.Repo
+  alias Glific.Providers.Maytapi
+
   alias Glific.{
     ASR.Bhasini,
     ASR.GoogleASR,
@@ -301,18 +307,28 @@ defmodule Glific.Clients.CommonWebhook do
 
   # webhook for sending whatsapp group polls in a flow
   def webhook("send_wa_poll", fields) do
-    IO.inspect(fields)
-    %{success: true}
-    # fields will have
-    # poll_uuid
-
-    # wa_group_id (we get from wa_group.id)
-    # wa_managedPhone (maybe this too)
-    # the other details need to call send_msg function
-    # fetch only correct org's pollId
-    # just follow send_message_in_wa_group
-    # check how send_msg node executes
-
+    with {:ok, wa_phone} <-
+           Repo.fetch_by(WAManagedPhone, %{
+             id: fields["wa_group"]["wa_managed_phone_id"],
+             organization_id: fields["organization_id"]
+           }),
+         {:ok, wa_group} <-
+           Repo.fetch_by(WAGroup, %{
+             id: fields["wa_group"]["id"],
+             organization_id: fields["organization_id"]
+           }),
+         {:ok, wa_poll} <-
+           Repo.fetch_by(WaPoll, %{
+             uuid: fields["poll_uuid"],
+             organization_id: fields["organization_id"]
+           }),
+         {:ok, wa_message} <-
+           Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, %{poll_id: wa_poll.id}) do
+      %{success: true, poll: wa_message.poll_content}
+    else
+      {:error, reason} ->
+        %{success: false, error: "#{inspect(reason)}"}
+    end
   end
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
