@@ -127,7 +127,7 @@ defmodule Glific.Bhasini do
           speech_engine == "open_ai" ->
             ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
-          source_language == "english" ->
+          target_language == "english" ->
             ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
           true ->
