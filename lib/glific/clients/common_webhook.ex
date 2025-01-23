@@ -3,19 +3,18 @@ defmodule Glific.Clients.CommonWebhook do
   Common webhooks which we can call with any clients.
   """
 
-  alias Glific.Groups.WAGroup
-  alias Glific.WAGroup.WAManagedPhone
-  alias Glific.WaGroup.WaPoll
-  alias Glific.Repo
-  alias Glific.Providers.Maytapi
-
   alias Glific.{
     ASR.Bhasini,
     ASR.GoogleASR,
     Contacts,
+    Groups.WAGroup,
     LLM4Dev,
     OpenAI.ChatGPT,
-    Sheets.GoogleSheets
+    Providers.Maytapi,
+    Repo,
+    Sheets.GoogleSheets,
+    WAGroup.WAManagedPhone,
+    WaGroup.WaPoll
   }
 
   require Logger
@@ -306,26 +305,30 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   # webhook for sending whatsapp group polls in a flow
-  def webhook("send_wa_poll", fields) do
-    with {:ok, wa_phone} <-
+  def webhook("send_wa_group_poll", fields) do
+    with {:ok, fields} <- parse_wa_poll_params(fields),
+         {:ok, wa_phone} <-
            Repo.fetch_by(WAManagedPhone, %{
-             id: fields["wa_group"]["wa_managed_phone_id"],
-             organization_id: fields["organization_id"]
+             id: fields.wa_group["wa_managed_phone_id"],
+             organization_id: fields.organization_id
            }),
          {:ok, wa_group} <-
            Repo.fetch_by(WAGroup, %{
-             id: fields["wa_group"]["id"],
-             organization_id: fields["organization_id"]
+             id: fields.wa_group["id"],
+             organization_id: fields.organization_id
            }),
          {:ok, wa_poll} <-
            Repo.fetch_by(WaPoll, %{
-             uuid: fields["poll_uuid"],
-             organization_id: fields["organization_id"]
+             uuid: fields.poll_uuid,
+             organization_id: fields.organization_id
            }),
          {:ok, wa_message} <-
            Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, %{poll_id: wa_poll.id}) do
       %{success: true, poll: wa_message.poll_content}
     else
+      {:error, reason} when is_binary(reason) ->
+        %{success: false, error: "#{reason}"}
+
       {:error, reason} ->
         %{success: false, error: "#{inspect(reason)}"}
     end
@@ -490,6 +493,29 @@ defmodule Glific.Clients.CommonWebhook do
          "temperature" => Map.get(fields, "temperature", 0),
          "response_format" => Map.get(fields, "response_format", nil)
        }}
+    end
+  end
+
+  @spec parse_wa_poll_params(map()) :: {:ok, map()} | {:error, String.t()}
+  defp parse_wa_poll_params(fields) do
+    # if wa_group is in the map, then the related will be already filled by
+    # webhook module
+    with {true, _} <- {is_map(fields["wa_group"]), :wa_group},
+         {true, _} <- {is_integer(fields["organization_id"]), :organization_id},
+         {:ok, _} <-
+           Ecto.UUID.cast(fields["poll_uuid"]) do
+      {:ok,
+       %{
+         wa_group: fields["wa_group"],
+         poll_uuid: fields["poll_uuid"],
+         organization_id: fields["organization_id"]
+       }}
+    else
+      :error ->
+        {:error, "poll_uuid is invalid"}
+
+      {false, field} ->
+        {:error, "#{field} is invalid"}
     end
   end
 end

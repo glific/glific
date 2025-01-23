@@ -365,7 +365,6 @@ defmodule Glific.Flows.Webhook do
   @spec handle(String.t(), map(), String.t()) :: :ok
   defp handle(result, context_data, result_name) do
     context_id = context_data["id"]
-
     ## In case the context already carries a delay before webhook,
     ## we are going to use that.
 

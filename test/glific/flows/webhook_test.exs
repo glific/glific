@@ -382,4 +382,39 @@ defmodule Glific.Flows.WebhookTest do
     # although we had 2 webhook calls for geolocation, only 1 job got enqueued
     assert 1 == length(jobs)
   end
+
+  test "execute a webhook function send_wa_group_poll",
+       attrs do
+    wa_phone = Fixtures.wa_managed_phone_fixture(attrs)
+    flow = Fixtures.flow_fixture(%{name: "polls"})
+
+    attrs = %{
+      flow_id: flow.id,
+      flow_uuid: flow.uuid,
+      wa_group_id:
+        Fixtures.wa_group_fixture(attrs |> Map.put(:wa_managed_phone_id, wa_phone.id)).id,
+      organization_id: attrs.organization_id
+    }
+
+    poll = Fixtures.wa_poll_fixture(%{label: "poll_a"})
+
+    action_body = %{
+      wa_group: "@wa_group",
+      poll_uuid: "#{poll.uuid}"
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+    context = Repo.preload(context, [:wa_group, :flow])
+
+    action = %Action{
+      headers: %{"Accept" => "application/json"},
+      method: "FUNCTION",
+      url: "send_wa_group_poll",
+      body: Jason.encode!(action_body)
+    }
+
+    assert Webhook.execute(action, context) == nil
+    jobs = all_enqueued(worker: Webhook, prefix: "global")
+    assert 1 == length(jobs)
+  end
 end
