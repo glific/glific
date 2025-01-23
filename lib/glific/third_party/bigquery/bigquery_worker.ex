@@ -1027,7 +1027,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
             flow_uuid: row.flow.uuid,
             type: row.type,
             count: row.count,
-            recent_messages: BigQuery.format_json(row.recent_messages),
             inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
             updated_at: format_date_with_millisecond(row.updated_at, organization_id)
           }
