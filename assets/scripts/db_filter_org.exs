@@ -17,6 +17,7 @@ defmodule Glific.Migrations do
     Groups.Group,
     Groups.UserGroup,
     Jobs.BigqueryJob,
+    Jobs.ChatbaseJob,
     Jobs.GcsJob,
     Messages.Message,
     Messages.MessageMedia,
@@ -43,6 +44,7 @@ defmodule Glific.Migrations do
 
     [
       BigqueryJob,
+      ChatbaseJob,
       GcsJob,
       Extension,
       Credential,
@@ -84,5 +86,5 @@ end
 if Mix.env() in [:dev, :test] do
   Glific.Migrations.execute()
 else
-  IO.inspect("Can't run the script in production")
+  IO.inspect "Can't run the script in production"
 end
