@@ -8,7 +8,31 @@ defmodule Glific.Clients.Bandhu do
   alias Glific.Clients.CommonWebhook
 
   @housing_url "https://housing.bandhumember.work/api/housing/create_sql_glific_query"
-
+  @housing_params [
+    :language_code,
+    :city_name,
+    :area_name,
+    :price_monthly_max,
+    :price_monthly_min,
+    :deposit,
+    :brokerage,
+    :rooms,
+    :sleeping_spaces,
+    :max_guests,
+    :guest_type,
+    :housing_type,
+    :diet,
+    :shift_in,
+    :stay_until,
+    :electricity,
+    :electricity_type,
+    :toilet,
+    :kitchen,
+    :bathroom,
+    :part_of_house,
+    :latitude,
+    :longitude
+  ]
   @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
@@ -61,8 +85,17 @@ defmodule Glific.Clients.Bandhu do
         "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png"
     }
 
+  def webhook("jugalbandi", fields), do: CommonWebhook.webhook("jugalbandi", fields)
+  def webhook("jugalbandi-voice", fields), do: CommonWebhook.webhook("jugalbandi-voice", fields)
+
   def webhook("speech_to_text_with_bhasini", fields),
     do: CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
+
+  def webhook("jugalbandi-json", fields) do
+    CommonWebhook.webhook("jugalbandi", fields)
+    |> parse_bandhu_json()
+    |> add_presets()
+  end
 
   def webhook("housing_sql", fields) do
     header = [{"Content-Type", "application/json"}]
@@ -88,6 +121,27 @@ defmodule Glific.Clients.Bandhu do
     do: %{success: false, message: response["message"]}
 
   defp handle_response(response), do: response
+
+  @spec parse_bandhu_json(map()) :: map()
+  defp parse_bandhu_json(%{success: true} = json) do
+    case Jason.decode(json["answer"]) do
+      {:ok, decoded_response} ->
+        Map.put(decoded_response, :success, true)
+
+      {:error, _} ->
+        Map.put(%{response: json["answer"]}, :success, false)
+    end
+  end
+
+  defp parse_bandhu_json(%{success: false} = _json),
+    do: %{success: false, response: "Error Json received"}
+
+  @spec add_presets(map()) :: map()
+  defp add_presets(parsed_response) do
+    Enum.reduce(@housing_params, parsed_response, fn housing_param, response ->
+      Map.put_new(response, housing_param, "")
+    end)
+  end
 
   @spec clean_fields(map()) :: map()
   defp clean_fields(fields) do
