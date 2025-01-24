@@ -372,8 +372,6 @@ defmodule Glific.OpenAI.ChatGPT do
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         run = Jason.decode!(body)
-        # Waiting for atleast 10 seconds after running the thread to generate the response
-        Process.sleep(10_000)
         retrieve_run_and_wait(run["thread_id"], params.assistant_id, run["id"], re_run)
 
       {_status, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
@@ -386,7 +384,7 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
-  @max_attempts 10
+  @max_attempts 30
   @doc """
   API call to retrieve a run and check status
   """
@@ -437,14 +435,17 @@ defmodule Glific.OpenAI.ChatGPT do
             "OpenAI run completed after #{attempt} attempts in #{run_attempt} run for thread: #{thread_id}"
           )
 
+          IO.inspect(run)
+
           {:ok, run_id}
 
         run["status"] in ["in_progress", "queued"] ->
-          Process.sleep(5_000)
+          Process.sleep(3_000)
           retrieve_run_and_wait(thread_id, assistant_id, run_id, attempt + 1, re_run)
 
         run["status"] == "failed" ->
-          {:error, "Token limit reached for this thread"}
+          error = run["last_error"]
+          {:error, "#{error["code"]}: #{error["message"]}"}
 
         true ->
           run_status = run["status"]
@@ -510,7 +511,6 @@ defmodule Glific.OpenAI.ChatGPT do
   @spec handle_conversation(map()) :: map()
   def handle_conversation(%{thread_id: nil, remove_citation: remove_citation} = params) do
     run_thread = create_and_run_thread(params)
-    Process.sleep(4_000)
 
     case retrieve_run_and_wait(
            run_thread["thread_id"],
@@ -530,7 +530,6 @@ defmodule Glific.OpenAI.ChatGPT do
 
   def handle_conversation(%{thread_id: thread_id, remove_citation: remove_citation} = params) do
     add_message_to_thread(%{thread_id: thread_id, question: params.question})
-    Process.sleep(12_000)
 
     case run_thread(%{thread_id: thread_id, assistant_id: params.assistant_id}) do
       {:ok, _run_id} ->
