@@ -858,7 +858,6 @@ defmodule Glific.Flows.FlowContext do
         ## Currently to restrict the number changes in the context
         |> set_last_message()
 
-      # TODO: need to handle this for wa_group
       :error ->
         # Seems like the flow changed underneath us
         # so this node no longer exists. Lets reset the context

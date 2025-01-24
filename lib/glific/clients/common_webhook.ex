@@ -498,7 +498,7 @@ defmodule Glific.Clients.CommonWebhook do
 
   @spec parse_wa_poll_params(map()) :: {:ok, map()} | {:error, String.t()}
   defp parse_wa_poll_params(fields) do
-    # if wa_group is in the map, then the related will be already filled by
+    # if wa_group is in the map, then the inner keys will be already filled by
     # webhook module
     with {true, _} <- {is_map(fields["wa_group"]), :wa_group},
          {true, _} <- {is_integer(fields["organization_id"]), :organization_id},

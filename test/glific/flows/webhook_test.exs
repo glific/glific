@@ -5,6 +5,7 @@ defmodule Glific.Flows.WebhookTest do
   alias Glific.Flows.{
     Action,
     FlowContext,
+    FlowRevision,
     Webhook,
     WebhookLog
   }
@@ -186,6 +187,21 @@ defmodule Glific.Flows.WebhookTest do
       valid_attrs =
         @valid_attrs
         |> Map.put(:contact_id, contact.id)
+        |> Map.put(:flow_id, flow.id)
+        |> Map.put(:organization_id, flow.organization_id)
+
+      assert {:ok, %WebhookLog{}} = WebhookLog.create_webhook_log(valid_attrs)
+    end
+
+    test "create_webhook_log/1 with valid data creates a webhook_log for wa_group",
+         %{organization_id: _organization_id} = attrs do
+      flow = Fixtures.flow_fixture(attrs)
+      wa_phone = Fixtures.wa_managed_phone_fixture(attrs)
+      wa_group = Fixtures.wa_group_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
+
+      valid_attrs =
+        @valid_attrs
+        |> Map.put(:wa_group_id, wa_group.id)
         |> Map.put(:flow_id, flow.id)
         |> Map.put(:organization_id, flow.organization_id)
 
@@ -387,6 +403,11 @@ defmodule Glific.Flows.WebhookTest do
        attrs do
     wa_phone = Fixtures.wa_managed_phone_fixture(attrs)
     flow = Fixtures.flow_fixture(%{name: "polls"})
+
+    FlowRevision
+    |> where([f], f.flow_id == ^flow.id)
+    |> update([f], set: [status: "published"])
+    |> Repo.update_all([])
 
     attrs = %{
       flow_id: flow.id,

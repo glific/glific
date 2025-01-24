@@ -546,7 +546,9 @@ defmodule Glific.Flows do
     Repo.put_organization_id(organization_id)
     Logger.info("Loading flow cache: #{organization_id}, #{inspect(key)}")
     args = make_args(key, value)
+
     flow = Flow.get_loaded_flow(organization_id, status, args)
+
     Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
     # We are setting the cache in the above statement with multiple keys
     # hence we are asking Cachex to just ignore this aspect. All the other
