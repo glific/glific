@@ -205,6 +205,10 @@ defmodule Glific.Flows.FlowContext do
       notification(context, message)
     end
 
+    IO.inspect(context.is_background_flow, label: :is_bg)
+    IO.inspect(context.contact_id, label: :contact_id)
+    IO.inspect(context.wa_group_id, label: :contact_id)
+
     # lets reset the entire flow tree complete if this context is a child
     if context.parent_id,
       do:
@@ -536,9 +540,9 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Set all other flows for the same wa_group as completed on waking up
   """
-  @spec mark_pending_wa_flows_complete(non_neg_integer(), boolean(), Keyword.t()) :: :ok
+  @spec mark_pending_wa_flows_complete(non_neg_integer(), boolean(), Keyword.t()) :: nil
   def mark_pending_wa_flows_complete(_wa_group_id, _is_background_flow, _opts \\ [])
-  def mark_pending_wa_flows_complete(_wa_group_id, true, _opts), do: :ok
+  def mark_pending_wa_flows_complete(_wa_group_id, true, _opts), do: nil
 
   def mark_pending_wa_flows_complete(wa_group_id, false, opts) do
     after_insert_date = Keyword.get(opts, :after_insert_date, nil)
@@ -556,9 +560,12 @@ defmodule Glific.Flows.FlowContext do
       set: [completed_at: now, updated_at: now, is_killed: true, reason: event_label]
     )
 
-    :ok
+    nil
   end
 
+  @doc """
+  Set all the flows for a specific context to be completed given the flow_context
+  """
   @spec mark_flows_complete(FlowContext.t(), Keyword.t()) :: nil
   def mark_flows_complete(%FlowContext{wa_group_id: wa_group_id} = context, opts)
       when wa_group_id != nil do
@@ -566,6 +573,7 @@ defmodule Glific.Flows.FlowContext do
   end
 
   def mark_flows_complete(%FlowContext{} = context, opts) do
+    IO.inspect(opts, label: :opts)
     mark_flows_complete(context.contact_id, context.is_background_flow, opts)
   end
 
@@ -577,7 +585,9 @@ defmodule Glific.Flows.FlowContext do
   def mark_flows_complete(_contact_id, true, _opts), do: nil
 
   def mark_flows_complete(contact_id, false, opts) do
-    after_insert_date = Keyword.get(opts, :after_insert_date, nil)
+    after_insert_date =
+      Keyword.get(opts, :after_insert_date, nil) |> IO.inspect(label: :after_insert)
+
     source = Keyword.get(opts, :source, "")
 
     now = DateTime.utc_now()

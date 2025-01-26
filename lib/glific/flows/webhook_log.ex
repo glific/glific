@@ -18,7 +18,14 @@ defmodule Glific.Flows.WebhookLog do
   }
 
   @required_fields [:url, :method, :request_headers, :flow_id, :organization_id]
-  @optional_fields [:request_json, :response_json, :status_code, :error, :contact_id, :wa_group_id]
+  @optional_fields [
+    :request_json,
+    :response_json,
+    :status_code,
+    :error,
+    :contact_id,
+    :wa_group_id
+  ]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
