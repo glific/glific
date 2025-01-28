@@ -384,7 +384,7 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
-  @max_attempts 30
+  @max_attempts 60
   @doc """
   API call to retrieve a run and check status
   """
@@ -408,7 +408,7 @@ defmodule Glific.OpenAI.ChatGPT do
     )
 
     cancel_run(thread_id, run_id)
-    Process.sleep(3_000)
+    Process.sleep(1_000)
     run_thread(%{thread_id: thread_id, re_run: true, assistant_id: assistant_id})
   end
 
@@ -435,12 +435,10 @@ defmodule Glific.OpenAI.ChatGPT do
             "OpenAI run completed after #{attempt} attempts in #{run_attempt} run for thread: #{thread_id}"
           )
 
-          IO.inspect(run)
-
           {:ok, run_id}
 
         run["status"] in ["in_progress", "queued"] ->
-          Process.sleep(3_000)
+          Process.sleep(1_000)
           retrieve_run_and_wait(thread_id, assistant_id, run_id, attempt + 1, re_run)
 
         run["status"] == "failed" ->
