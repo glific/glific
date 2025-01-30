@@ -948,7 +948,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       fn row, acc ->
         [
           %{
-            id: row.id,
+            id: row.flow.id,
             name: row.flow.name,
             uuid: row.flow.uuid,
             inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
