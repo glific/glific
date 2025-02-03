@@ -9,6 +9,7 @@ defmodule Glific.PartnersTest do
     Partners,
     Partners.Credential,
     Partners.Provider,
+    Providers.Gupshup.ApiClient,
     Providers.Gupshup.PartnerAPI,
     Repo,
     Seeds.SeedsDev
@@ -204,6 +205,24 @@ defmodule Glific.PartnersTest do
 
       {:ok, result} = PartnerAPI.link_gupshup_app(org.id)
       assert %{"partnerId" => 49, "status" => "success"} == result
+    end
+
+    test "successfully fetches HSM templates" do
+      org = SeedsDev.seed_organizations()
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"status\":\"success\",\"templates\":[]}"
+          }
+      end)
+
+      {:ok, response} = ApiClient.get_templates(org.id)
+
+      decoded_body = Jason.decode!(response.body)
+
+      assert decoded_body["status"] == "success"
     end
 
     test "recharge_partner/2 should transfer balance from ISV partner to app" do
