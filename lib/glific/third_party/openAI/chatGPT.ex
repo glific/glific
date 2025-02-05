@@ -547,7 +547,7 @@ defmodule Glific.OpenAI.ChatGPT do
   def remove_citation(thread_messages, false), do: thread_messages
 
   def remove_citation(thread_messages, _true) do
-    cleaned_message = Regex.replace(~r/【\d+(:\d+)?+†source】/, thread_messages["message"], "")
+    cleaned_message = Regex.replace(~r/【\d+(?::\d+)?†[^】]*】/, thread_messages["message"], "")
     Map.put(thread_messages, "message", cleaned_message)
   end
 
