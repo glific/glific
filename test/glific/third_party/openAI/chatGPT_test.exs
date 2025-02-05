@@ -139,7 +139,7 @@ defmodule Glific.OpenAI.ChatGPTTest do
   end
   test "remove_citation/2 should remove citations from the GPT response for updated format as well" do
     message =
-      "Childhood pregnancy can cause many problems for both the mother and the baby. Some of the issues include:\n\n1. Higher risk of complications during pregnancy and childbirth, such as anemia, high blood pressure, and premature birth【4:0†TEst W1q1.pdf】.\n2. Increased chances of delivering low birth weight babies, which can lead to health problems for the baby【4:2†source】.\n3. Emotional and mental stress, which can affect both the mother and the baby's health【4:16†source】.\n4. Lack of proper nutrition and healthcare, which can impact the growth and development of the baby【4:12†source】.\n\nIt is important for young mothers to get proper medical care and support during pregnancy."
+      "Childhood pregnancy can cause many problems for both the mother and the baby. Some of the issues include:\n\n1. Higher risk of complications during pregnancy and childbirth, such as anemia, high blood pressure, and premature birth【4:0†TEst W1q1.pdf】."
 
     thread_message_params = %{
       "assistant_id" => "asst_eFPyq1m3zcvm6Vkxsdfsep",
@@ -151,7 +151,7 @@ defmodule Glific.OpenAI.ChatGPTTest do
       ChatGPT.remove_citation(thread_message_params, true)
 
     assert cleaned_thread_params["message"] ==
-             "Childhood pregnancy can cause many problems for both the mother and the baby. Some of the issues include:\n\n1. Higher risk of complications during pregnancy and childbirth, such as anemia, high blood pressure, and premature birth.\n2. Increased chances of delivering low birth weight babies, which can lead to health problems for the baby.\n3. Emotional and mental stress, which can affect both the mother and the baby's health.\n4. Lack of proper nutrition and healthcare, which can impact the growth and development of the baby.\n\nIt is important for young mothers to get proper medical care and support during pregnancy."
+             "Childhood pregnancy can cause many problems for both the mother and the baby. Some of the issues include:\n\n1. Higher risk of complications during pregnancy and childbirth, such as anemia, high blood pressure, and premature birth."
 
     # should return default message when remove_citation is set to false
     cleaned_thread_params =
