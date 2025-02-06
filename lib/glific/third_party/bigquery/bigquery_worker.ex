@@ -518,7 +518,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
             type: row.type,
             is_reserved: row.is_reserved,
             is_active: row.is_active,
-            shortcode: row.shortcode,
             language: row.language.label,
             translations: BigQuery.format_json(row.translations),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
