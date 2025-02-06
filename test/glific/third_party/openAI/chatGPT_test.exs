@@ -174,6 +174,28 @@ defmodule Glific.OpenAI.ChatGPTTest do
 
     assert cleaned_thread_params["message"] == message
   end
+  test "remove_citation/2 should remove citations from the GPT response for updated format as well" do
+    message =
+      "Childhood pregnancy can cause many problems for both the mother and the baby. Some of the issues include:\n\n1. Higher risk of complications during pregnancy and childbirth, such as anemia, high blood pressure, and premature birth【4:0†TEst W1q1.pdf】."
+
+    thread_message_params = %{
+      "assistant_id" => "asst_eFPyq1m3zcvm6Vkxsdfsep",
+      "message" => message,
+      "success" => true
+    }
+
+    cleaned_thread_params =
+      ChatGPT.remove_citation(thread_message_params, true)
+
+    assert cleaned_thread_params["message"] ==
+             "Childhood pregnancy can cause many problems for both the mother and the baby. Some of the issues include:\n\n1. Higher risk of complications during pregnancy and childbirth, such as anemia, high blood pressure, and premature birth."
+
+    # should return default message when remove_citation is set to false
+    cleaned_thread_params =
+      ChatGPT.remove_citation(thread_message_params, false)
+
+    assert cleaned_thread_params["message"] == message
+  end
 
   test "retrieve_assistant/1  fetches an existing assistant with incorrect id and returns map with error message" do
     Tesla.Mock.mock(fn _env ->
