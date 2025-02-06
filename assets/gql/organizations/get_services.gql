@@ -9,7 +9,6 @@ query organizationServices {
     flow_uuid_display
     contact_profile_enabled
     auto_translation_enabled
-    llm4dev_enabled
     whatsapp_group_enabled
     errors {
       key
