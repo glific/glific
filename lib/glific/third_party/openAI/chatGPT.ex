@@ -242,7 +242,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   API call to create thread with message and run once
   """
-  @spec create_and_run_thread(map()) :: map() | {:error, String.t()}
+  @spec create_and_run_thread(map()) :: {:ok, map()} | {:error, String.t()}
   def create_and_run_thread(params) do
     url = @endpoint <> "/threads/runs"
 
@@ -260,10 +260,12 @@ defmodule Glific.OpenAI.ChatGPT do
     Tesla.post(url, payload, headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        Jason.decode!(body)
+        {:ok, Jason.decode!(body)}
 
-      {_status, response} ->
-        {:error, "Invalid response while creating and running thread #{inspect(response)}"}
+      {_status, %{body: body}} ->
+        error = Jason.decode!(body)
+
+        {:error, "Invalid response while creating and running thread #{inspect(error["error"]["message"])}"}
     end
   end
 
@@ -506,21 +508,20 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   Handling filesearch openai conversation, basically checks if a thread id is passed then continue appending followup questions else create a new thread, add message and run thread to generate response
   """
-  @spec handle_conversation(map()) :: map()
+  @spec handle_conversation(map()) :: map() | {:error, String.t()}
   def handle_conversation(%{thread_id: nil, remove_citation: remove_citation} = params) do
-    run_thread = create_and_run_thread(params)
-
-    case retrieve_run_and_wait(
-           run_thread["thread_id"],
-           params.assistant_id,
-           run_thread["id"],
-           false
-         ) do
-      {:ok, _run_id} ->
-        list_thread_messages(%{thread_id: run_thread["thread_id"]})
-        |> remove_citation(remove_citation)
-        |> Map.put_new("success", false)
-
+    with {:ok, run_thread} <- create_and_run_thread(params),
+         {:ok, _run_id} <-
+           retrieve_run_and_wait(
+             run_thread["thread_id"],
+             params.assistant_id,
+             run_thread["id"],
+             false
+           ) do
+      list_thread_messages(%{thread_id: run_thread["thread_id"]})
+      |> remove_citation(remove_citation)
+      |> Map.put_new("success", false)
+    else
       {:error, error} ->
         error
     end

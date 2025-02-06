@@ -58,7 +58,6 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.WAManagedPhoneTypes)
   import_types(__MODULE__.WAGroupsCollectionTypes)
   import_types(__MODULE__.WaGroupTypes)
-  import_types(__MODULE__.LLM4DevTypes)
   import_types(__MODULE__.FilesearchTypes)
 
   query do
@@ -125,8 +124,6 @@ defmodule GlificWeb.Schema do
     import_fields(:wa_search_queries)
 
     import_fields(:wa_group_queries)
-
-    import_fields(:llm4dev_queries)
 
     import_fields(:filesearch_queries)
   end
@@ -195,8 +192,6 @@ defmodule GlificWeb.Schema do
     import_fields(:contact_wa_group_mutations)
 
     import_fields(:wa_groups_collection_mutations)
-
-    import_fields(:llm4dev_mutations)
 
     import_fields(:filesearch_mutations)
   end

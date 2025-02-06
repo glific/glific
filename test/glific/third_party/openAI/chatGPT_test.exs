@@ -100,6 +100,43 @@ defmodule Glific.OpenAI.ChatGPTTest do
              "how  to get started with creating flow"
   end
 
+  test "create_and_run_thread/1 should create a new thread with message and return run_id" do
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body:
+          "{\"assistant_id\":\"asst_fz7oIQ2goRLfrP1mWceasdfse\",\"created_at\":1738814284,\"expires_at\":1738814884,\"id\":\"run_eJmCMSEHx4tQEeWVA6XqvTRU\",\"instructions\":\"**You are an AI assistant designed to help officials by answering their questions based on provided policy documents\",\"model\":\"gpt-4o\",\"object\":\"thread.run\",\"status\":\"queued\",\"thread_id\":\"thread_M3tgrpBy5mtsFx3YWBpQn4FH\"}"
+      }
+    end)
+
+    params = %{
+      question: "What is the role of VGF for CLF",
+      assistant_id: "asst_fz7oIQ2goRLfrP1mWceasdfse"
+    }
+
+    {:ok, response} = ChatGPT.create_and_run_thread(params)
+
+    assert get_in(response, ["id"]) == "run_eJmCMSEHx4tQEeWVA6XqvTRU"
+  end
+
+  test "create_and_run_thread/1 with empty message should return error" do
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 400,
+        body:
+          "{\n  \"error\": {\n    \"message\": \"Message content must be non-empty.\",\n    \"type\": \"invalid_request_error\",\n    \"param\": \"content\",\n    \"code\": null\n  }\n}"
+      }
+    end)
+
+    params = %{
+      question: "",
+      assistant_id: "asst_fz7oIQ2goRLfrP1mWceasdfse"
+    }
+
+    {:error, error} = ChatGPT.create_and_run_thread(params)
+    assert error == "Invalid response while creating and running thread \"Message content must be non-empty.\""
+  end
+
   test "list_thread_messages/1 should list all the messages in the thread" do
     Tesla.Mock.mock(fn _env ->
       %Tesla.Env{
