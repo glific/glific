@@ -241,7 +241,48 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  def webhook("call_and_wait", fields) do
+    question = fields["question"]
+    thread_id = Map.get(fields, "thread_id", nil)
+    assistant_id = Map.get(fields, "assistant_id", nil)
+    remove_citation = Map.get(fields, "remove_citation", false)
+    callback_url = Map.get(fields, "callback_url", nil)
+    endpoint = Map.get(fields, "endpoint", nil)
+
+    payload =
+      %{
+        message: question,
+        thread_id: thread_id,
+        assistant_id: assistant_id,
+        callback_url: callback_url,
+        contact_id: 10,
+        remove_citation: remove_citation
+      }
+      |> Jason.encode!()
+      |> IO.inspect()
+
+    Tesla.post(endpoint, payload, headers: headers(), opts: [adapter: [recv_timeout: 300_000]])
+    |> IO.inspect()
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        %{success: true, response: body}
+
+      {:ok, %Tesla.Env{status: _status, body: body}} ->
+        %{success: false, response: body}
+
+      {:error, reason} ->
+        %{success: false, reason: reason}
+    end
+  end
+
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
+
+  defp headers do
+    [
+      {"Content-Type", "application/json"},
+      {"accept", "application/json"}
+    ]
+  end
 
   @spec find_component(list(map()), String.t()) :: String.t()
   defp find_component(components, type) do
