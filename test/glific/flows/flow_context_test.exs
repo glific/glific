@@ -240,7 +240,6 @@ defmodule Glific.Flows.FlowContextTest do
     assert {:error, _} = Repo.fetch(FlowContext, flow_context.id)
   end
 
-  @tag :tt
   test "reset_all_contexts/1 will resets all the context for the contact",
        %{organization_id: organization_id} = _attrs do
     flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
