@@ -251,18 +251,15 @@ defmodule Glific.Clients.CommonWebhook do
 
     payload =
       %{
-        message: question,
+        question: question,
         thread_id: thread_id,
         assistant_id: assistant_id,
         callback_url: callback_url,
-        contact_id: 10,
         remove_citation: remove_citation
       }
       |> Jason.encode!()
-      |> IO.inspect()
 
     Tesla.post(endpoint, payload, headers: headers(), opts: [adapter: [recv_timeout: 300_000]])
-    |> IO.inspect()
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         %{success: true, response: body}
