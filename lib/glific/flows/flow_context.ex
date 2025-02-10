@@ -205,10 +205,6 @@ defmodule Glific.Flows.FlowContext do
       notification(context, message)
     end
 
-    IO.inspect(context.is_background_flow, label: :is_bg)
-    IO.inspect(context.contact_id, label: :contact_id)
-    IO.inspect(context.wa_group_id, label: :contact_id)
-
     # lets reset the entire flow tree complete if this context is a child
     if context.parent_id,
       do:
@@ -573,7 +569,6 @@ defmodule Glific.Flows.FlowContext do
   end
 
   def mark_flows_complete(%FlowContext{} = context, opts) do
-    IO.inspect(opts, label: :opts)
     mark_flows_complete(context.contact_id, context.is_background_flow, opts)
   end
 
@@ -586,7 +581,7 @@ defmodule Glific.Flows.FlowContext do
 
   def mark_flows_complete(contact_id, false, opts) do
     after_insert_date =
-      Keyword.get(opts, :after_insert_date, nil) |> IO.inspect(label: :after_insert)
+      Keyword.get(opts, :after_insert_date, nil)
 
     source = Keyword.get(opts, :source, "")
 
