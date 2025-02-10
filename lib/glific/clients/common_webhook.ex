@@ -242,21 +242,13 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   def webhook("call_and_wait", fields) do
-    question = fields["question"]
-    thread_id = Map.get(fields, "thread_id", nil)
-    assistant_id = Map.get(fields, "assistant_id", nil)
-    remove_citation = Map.get(fields, "remove_citation", false)
-    callback_url = Map.get(fields, "callback_url", nil)
-    endpoint = Map.get(fields, "endpoint", nil)
+    endpoint = fields["endpoint"]
+    flow_id = fields["flow_id"] |> String.to_integer()
+    contact_id = fields["contact_id"] |> String.to_integer()
 
     payload =
-      %{
-        question: question,
-        thread_id: thread_id,
-        assistant_id: assistant_id,
-        callback_url: callback_url,
-        remove_citation: remove_citation
-      }
+      fields
+      |> Map.merge(%{"flow_id" => flow_id, "contact_id" => contact_id})
       |> Jason.encode!()
 
     Tesla.post(endpoint, payload, headers: headers(), opts: [adapter: [recv_timeout: 300_000]])
