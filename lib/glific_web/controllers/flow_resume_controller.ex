@@ -1,4 +1,4 @@
-defmodule GlificWeb.ResumeController do
+defmodule GlificWeb.FlowResumeController do
   @moduledoc """
   The controller to process events received from 3rd party services to resume the flow
   """
@@ -11,23 +11,23 @@ defmodule GlificWeb.ResumeController do
   @doc """
   Implementation of resuming the flow after the flow was waiting for result from 3rd party service
   """
-  @spec resume_with_results(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def resume_with_results(
+  @spec flow_resume_with_results(Plug.Conn.t(), map) :: Plug.Conn.t()
+  def flow_resume_with_results(
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
-        params
+        response
       ) do
     organization = Partners.organization(organization_id)
     Repo.put_process_state(organization.id)
 
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{
-             id: params["contact_id"],
+             id: response["contact_id"],
              organization_id: organization.id
            }) do
       FlowContext.resume_contact_flow(
         contact,
         params["flow_id"],
-        %{result: params},
+        %{response: response},
         nil
       )
     end

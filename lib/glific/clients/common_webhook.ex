@@ -254,7 +254,8 @@ defmodule Glific.Clients.CommonWebhook do
     Tesla.post(endpoint, payload, headers: headers(), opts: [adapter: [recv_timeout: 300_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        %{success: true, response: body}
+        response = Jason.decode!(body)
+        Map.merge(%{success: true}, response)
 
       {:ok, %Tesla.Env{status: _status, body: body}} ->
         %{success: false, response: body}
