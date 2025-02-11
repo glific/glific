@@ -26,7 +26,7 @@ defmodule GlificWeb.FlowResumeController do
            }) do
       FlowContext.resume_contact_flow(
         contact,
-        params["flow_id"],
+        response["flow_id"],
         %{response: response},
         nil
       )
