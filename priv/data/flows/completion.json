@@ -140,7 +140,7 @@
         },
         {
           "key": "name",
-          "help": "the name of the contact",
+          "help": "the 1 of the contact",
           "type": "text"
         },
         {
@@ -213,6 +213,31 @@
           "key": "optin_method",
           "help": "mode of optin",
           "type": "text"
+        }
+      ]
+    },
+    {
+      "name": "lala",
+      "properties": [
+        {
+          "key": "__default__",
+          "help": "the name or URN",
+          "type": "text"
+        },
+        {
+          "key": "id",
+          "help": "the numeric ID of the group",
+          "type": "text"
+        },
+        {
+          "key": "label",
+          "help": "the name of the group",
+          "type": "text"
+        },
+        {
+          "key": "fields",
+          "help": "the custom field values of the contact",
+          "type": "fields"
         }
       ]
     },
@@ -317,7 +342,7 @@
         },
         {
           "key": "contact",
-          "help": "the contact of the run",
+          "help": "the contact 2 of the run",
           "type": "contact"
         },
         {
@@ -387,7 +412,7 @@
         },
         {
           "key": "contact",
-          "help": "the contact of the run",
+          "help": "the contact of  3  the run",
           "type": "contact"
         },
         {
@@ -440,7 +465,7 @@
       "type": "flow"
     },
     {
-      "key": "contact",
+      "key": "contact1",
       "help": "the contact",
       "type": "contact"
     },
@@ -460,6 +485,11 @@
       "key": "calendar",
       "help": "the calendar values.",
       "type": "calendar"
+    },
+    {
+      "key": "lala",
+      "help": "the whatsapp group",
+      "type": "lala"
     }
   ],
   "root_no_session": [
@@ -493,6 +523,11 @@
       "key": "calendar",
       "help": "the calendar values",
       "type": "calendar"
+    },
+    {
+      "key": "lala",
+      "help": "the whatsapp group",
+      "type": "lala"
     }
   ]
 }

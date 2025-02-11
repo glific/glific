@@ -42,14 +42,14 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec groups(Plug.Conn.t(), map) :: Plug.Conn.t()
   def groups(conn, _params) do
-    group_list =
-      Groups.list_groups(
-        %{filter: %{organization_id: conn.assigns[:organization_id]}},
-        true
-      )
-      |> Enum.reduce([], fn group, acc ->
-        [%{uuid: "#{group.id}", name: group.label, type: "group"} | acc]
-      end)
+    group_list = []
+      # Groups.list_groups(
+      #   %{filter: %{organization_id: conn.assigns[:organization_id]}},
+      #   true
+      # )
+      # |> Enum.reduce([], fn group, acc ->
+      #   [%{uuid: "#{group.id}", name: group.label, type: "group"} | acc]
+      # end)
 
     conn
     |> json(%{results: group_list})
