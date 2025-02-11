@@ -1191,7 +1191,10 @@ defmodule Glific.Clients.Stir do
     Repo.fetch_by(Group, %{label: group_label, organization_id: organization_id})
     |> case do
       {:ok, group} ->
-        Contacts.list_contacts(%{filter: %{include_groups: [group.id]}, opts: %{"order" => "ASC"}})
+        Contacts.list_contacts(%{
+          filter: %{include_groups: [group.id]},
+          opts: %{"order" => "ASC"}
+        })
         |> Enum.with_index(1)
 
       _ ->

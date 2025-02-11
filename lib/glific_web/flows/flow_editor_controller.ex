@@ -59,10 +59,10 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec groups_post(Plug.Conn.t(), map) :: Plug.Conn.t()
   def groups_post(conn, params) do
     {:ok, group} =
-       Groups.create_group(%{
+      Groups.create_group(%{
         label: params["name"],
         organization_id: conn.assigns[:organization_id]
-    })
+      })
 
     conn
     |> json(%{

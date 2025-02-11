@@ -89,9 +89,9 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     test "groups_post", %{conn: conn, access_token: token} do
       conn =
         get_auth_token(conn, token)
-        |> post("/flow-editor/groups", %{"name" => "test group"})
+        |> post("/flow-editor/groups", %{"name" => "testgroup"})
 
-      assert json_response(conn, 200)["name"] == "test-group"
+      assert json_response(conn, 200)["name"] == "testgroup"
     end
 
     test "fields", %{conn: conn, access_token: token} do
