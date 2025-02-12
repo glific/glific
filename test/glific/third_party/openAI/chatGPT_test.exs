@@ -134,7 +134,9 @@ defmodule Glific.OpenAI.ChatGPTTest do
     }
 
     {:error, error} = ChatGPT.create_and_run_thread(params)
-    assert error == "Invalid response while creating and running thread \"Message content must be non-empty.\""
+
+    assert error ==
+             "Invalid response while creating and running thread \"Message content must be non-empty.\""
   end
 
   test "list_thread_messages/1 should list all the messages in the thread" do
@@ -174,6 +176,7 @@ defmodule Glific.OpenAI.ChatGPTTest do
 
     assert cleaned_thread_params["message"] == message
   end
+
   test "remove_citation/2 should remove citations from the GPT response for updated format as well" do
     message =
       "Childhood pregnancy can cause many problems for both the mother and the baby. Some of the issues include:\n\n1. Higher risk of complications during pregnancy and childbirth, such as anemia, high blood pressure, and premature birth【4:0†TEst W1q1.pdf】."
