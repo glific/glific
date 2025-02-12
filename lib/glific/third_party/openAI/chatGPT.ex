@@ -265,7 +265,8 @@ defmodule Glific.OpenAI.ChatGPT do
       {_status, %{body: body}} ->
         error = Jason.decode!(body)
 
-        {:error, "Invalid response while creating and running thread #{inspect(error["error"]["message"])}"}
+        {:error,
+         "Invalid response while creating and running thread #{inspect(error["error"]["message"])}"}
     end
   end
 
