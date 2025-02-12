@@ -56,7 +56,7 @@ defmodule Glific.Saas.Queries do
     |> validate_bsp_keys(params)
     |> validate_shortcode(params["shortcode"])
     |> validate_phone(params["phone"])
-    |> validate_text_field(params["name"], :name, {1, 40})
+    |> validate_text_field(params["name"], :name, {1, 250})
   end
 
   @doc """
@@ -93,9 +93,9 @@ defmodule Glific.Saas.Queries do
   @spec validate_reachout_details(map(), map()) :: map()
   def validate_reachout_details(result, params) do
     result
-    |> validate_text_field(params["name"], :name, {1, 25})
+    |> validate_text_field(params["name"], :name, {1, 100})
     |> validate_text_field(params["message"], :message, {1, 300})
-    |> validate_text_field(params["org_name"], :org_name, {1, 40}, true)
+    |> validate_text_field(params["org_name"], :org_name, {1, 250}, true)
     |> validate_email(params["email"] || "")
   end
 
@@ -488,8 +488,8 @@ defmodule Glific.Saas.Queries do
 
   defp validate_finance_poc(result, params) do
     result
-    |> validate_text_field(params["name"], :finance_poc_name, {1, 50})
-    |> validate_text_field(params["designation"], :finance_poc_designation, {1, 25})
+    |> validate_text_field(params["name"], :finance_poc_name, {1, 100})
+    |> validate_text_field(params["designation"], :finance_poc_designation, {1, 100})
     |> validate_phone(params["phone"], :finance_poc_phone)
     |> validate_email(params["email"], :finance_poc_email)
   end
@@ -498,7 +498,7 @@ defmodule Glific.Saas.Queries do
 
   defp validate_submitter_details(result, params) do
     result
-    |> validate_text_field(params["first_name"], :submitter_name, {1, 25})
+    |> validate_text_field(params["first_name"], :submitter_name, {1, 100})
     |> validate_email(params["email"], :submitter_name)
   end
 
@@ -506,8 +506,8 @@ defmodule Glific.Saas.Queries do
 
   defp validate_signer_details(result, params) do
     result
-    |> validate_text_field(params["name"], :signer_name, {1, 50})
-    |> validate_text_field(params["designation"], :signer_designation, {1, 25})
+    |> validate_text_field(params["name"], :signer_name, {1, 100})
+    |> validate_text_field(params["designation"], :signer_designation, {1, 100})
     |> validate_email(params["email"], :signer_email)
   end
 
