@@ -517,30 +517,13 @@ defmodule Glific.Flows.FlowContext do
     do: query |> where([fc], fc.inserted_at > ^after_insert)
 
   @doc """
-  Set all the flows for a specific context to be completed
-  """
-  @spec mark_wa_flows_complete(String.t(), non_neg_integer, boolean()) :: :ok
-  def mark_wa_flows_complete(event_label, wa_group_id, is_killed \\ false) do
-    now = DateTime.utc_now()
-
-    FlowContext
-    |> where([fc], fc.wa_group_id == ^wa_group_id)
-    |> where([fc], is_nil(fc.completed_at))
-    |> Repo.update_all(
-      set: [completed_at: now, updated_at: now, is_killed: is_killed, reason: event_label]
-    )
-
-    :ok
-  end
-
-  @doc """
   Set all other flows for the same wa_group as completed on waking up
   """
-  @spec mark_pending_wa_flows_complete(non_neg_integer(), boolean(), Keyword.t()) :: nil
-  def mark_pending_wa_flows_complete(_wa_group_id, _is_background_flow, _opts \\ [])
-  def mark_pending_wa_flows_complete(_wa_group_id, true, _opts), do: nil
+  @spec mark_wa_flows_complete(non_neg_integer(), boolean(), Keyword.t()) :: nil
+  def mark_wa_flows_complete(_wa_group_id, _is_background_flow, _opts \\ [])
+  def mark_wa_flows_complete(_wa_group_id, true, _opts), do: nil
 
-  def mark_pending_wa_flows_complete(wa_group_id, false, opts) do
+  def mark_wa_flows_complete(wa_group_id, false, opts) do
     after_insert_date = Keyword.get(opts, :after_insert_date, nil)
     source = Keyword.get(opts, :source, "")
     event_label = get_event_label(source, after_insert_date)
@@ -565,7 +548,7 @@ defmodule Glific.Flows.FlowContext do
   @spec mark_flows_complete(FlowContext.t(), Keyword.t()) :: nil
   def mark_flows_complete(%FlowContext{wa_group_id: wa_group_id} = context, opts)
       when wa_group_id != nil do
-    mark_pending_wa_flows_complete(wa_group_id, context.is_background_flow, opts)
+    mark_wa_flows_complete(wa_group_id, context.is_background_flow, opts)
   end
 
   def mark_flows_complete(%FlowContext{} = context, opts) do
