@@ -4,6 +4,7 @@ defmodule Glific.Erase do
   """
   import Ecto.Query
 
+  alias Glific.Contacts.Contact
   alias Glific.Repo
 
   require Logger
@@ -216,5 +217,50 @@ defmodule Glific.Erase do
     end
 
     :ok
+  end
+
+  @doc """
+  Deletes all the data related to a contact
+  """
+  @spec delete_benefeciary_data(non_neg_integer(), String.t()) :: any()
+  def delete_benefeciary_data(org_id, phone) do
+    get_value =
+      if Application.get_env(:glific, :environment) in [:prod, :dev] do
+        Task.async(fn ->
+          IO.gets(
+            "Are you sure want to delete data for #{phone} of org_id #{org_id}\nPress Y or y to continue, auto aborts if idle for 10s\n"
+          )
+        end)
+        |> Task.await(10_000)
+      else
+        "y"
+      end
+
+    Repo.put_process_state(org_id)
+
+    with "y" <- String.trim_trailing(get_value, "\n") |> String.downcase(),
+         {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone}) do
+      Logger.warning(
+        "Deleting beneficiary data for contact #{phone} and organization_id #{org_id}"
+      )
+
+      delete_messages_query = """
+      DELETE FROM messages where organization_id = #{org_id} and contact_id = #{contact.id}
+      """
+
+      delete_contact_query =
+        """
+        DELETE FROM contacts where organization_id = #{org_id}  and id = #{contact.id}
+        """
+
+      [delete_messages_query, delete_contact_query]
+      |> Enum.each(fn query ->
+        Repo.query!(query, [], timeout: 400_000, skip_organization_id: true)
+      end)
+
+      Logger.info("Deleted beneficiary data for contact #{phone} and organization_id #{org_id}")
+
+      :ok
+    end
   end
 end
