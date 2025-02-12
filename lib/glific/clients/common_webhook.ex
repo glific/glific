@@ -7,7 +7,8 @@ defmodule Glific.Clients.CommonWebhook do
     ASR.Bhasini,
     ASR.GoogleASR,
     Contacts,
-    OpenAI.ChatGPT
+    OpenAI.ChatGPT,
+    Partners
   }
 
   require Logger
@@ -245,13 +246,47 @@ defmodule Glific.Clients.CommonWebhook do
     endpoint = fields["endpoint"]
     flow_id = fields["flow_id"] |> String.to_integer()
     contact_id = fields["contact_id"] |> String.to_integer()
+    organization_id = fields["organization_id"] |> String.to_integer()
+    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+    signature_payload = %{
+      "organization_id" => organization_id,
+      "flow_id" => flow_id,
+      "contact_id" => contact_id,
+      "timestamp" => timestamp
+    }
+
+    signature =
+      Glific.signature(
+        organization_id,
+        Jason.encode!(signature_payload),
+        signature_payload["timestamp"]
+      )
+
+    organization = Partners.organization(organization_id)
+
+    callback =
+      "https://api.#{organization.shortcode}.glific.com" <>
+        "/webhook/flow_resume?" <>
+        "organization_id=#{organization_id}&" <>
+        "flow_id=#{flow_id}&" <>
+        "contact_id=#{contact_id}&" <>
+        "timestamp=#{timestamp}&" <>
+        "signature=#{signature}"
 
     payload =
       fields
-      |> Map.merge(%{"flow_id" => flow_id, "contact_id" => contact_id})
+      |> Map.merge(signature_payload)
+      |> Map.put("signature", signature)
+      |> Map.put("callback", callback)
       |> Jason.encode!()
 
-    Tesla.post(endpoint, payload, headers: headers(), opts: [adapter: [recv_timeout: 300_000]])
+    endpoint
+    |> Tesla.post(
+      payload,
+      headers: headers(),
+      opts: [adapter: [recv_timeout: 300_000]]
+    )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         response = Jason.decode!(body)
@@ -290,7 +325,7 @@ defmodule Glific.Clients.CommonWebhook do
           Keyword.t()
         ) :: map()
   defp do_nmt_tts_with_bhasini(source_language, target_language, org_id, text, opts) do
-    organization = Glific.Partners.organization(org_id)
+    organization = Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
 
     with false <- is_nil(services),
