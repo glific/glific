@@ -94,6 +94,7 @@ msgid "must be equal to %{number}"
 msgstr ""
 
 #: lib/glific_web/schema.ex:280
+
 #, elixir-format, elixir-autogen
 msgid "Auth Credentials mismatch"
 msgstr ""
@@ -189,7 +190,7 @@ msgstr ""
 
 #: lib/glific/partners.ex:423
 #: lib/glific/partners.ex:443
-#: lib/glific/providers/gupshup/api_client.ex:37
+#: lib/glific/providers/gupshup/api_client.ex:38
 #: lib/glific/providers/gupshup_enterprise/api_client.ex:36
 #, elixir-format, elixir-autogen
 msgid "No active BSP available"

@@ -144,16 +144,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "send otp", %{conn: conn} do
-      receiver = Fixtures.contact_fixture()
-
-      Contacts.contact_opted_in(
-        %{phone: receiver.phone},
-        receiver.organization_id,
-        DateTime.utc_now()
-      )
-
       valid_params = %{
-        "user" => %{"phone" => receiver.phone, "registration" => "true", "token" => "some_token"}
+        "user" => %{"phone" => "918456732456", "registration" => "true", "token" => "some_token"}
       }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))

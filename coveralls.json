@@ -54,8 +54,6 @@
     "lib/glific/providers/gupshup/contact_worker.ex",
     "lib/glific_web/controllers/user_auth.ex",
     "lib/glific_web/controllers/user_session_controller.ex",
-    "lib/glific_web/providers/airtel",
-    "lib/glific/providers/airtel",
     "lib/glific/tags/contact_tags.ex",
     "lib/glific/metrics.ex",
     "lib/glific/reports.ex",
