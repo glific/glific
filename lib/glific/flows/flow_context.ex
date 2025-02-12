@@ -620,7 +620,7 @@ defmodule Glific.Flows.FlowContext do
     )
   end
 
-  @spec get_event_label(String.t(), DateTime.t()) :: String.t()
+  @spec get_event_label(String.t(), DateTime.t() | nil) :: String.t()
   defp get_event_label(source, after_insert_date) do
     cond do
       source == "terminate_contact_flows" ->
