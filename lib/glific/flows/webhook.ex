@@ -177,7 +177,7 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec get_contact(FlowContext.t()) :: map()
-  defp get_contact(%FlowContext{wa_group_id: nil} = context) do
+  defp get_contact(%FlowContext{contact_id: contact_id} = context) when contact_id != nil do
     %{
       id: context.contact.id,
       name: context.contact.name,
@@ -189,15 +189,15 @@ defmodule Glific.Flows.Webhook do
   defp get_contact(_context), do: %{}
 
   @spec get_wa_group(FlowContext.t()) :: map()
-  defp get_wa_group(%FlowContext{wa_group_id: nil} = _context), do: %{}
-
-  defp get_wa_group(context) do
+  defp get_wa_group(%FlowContext{wa_group_id: wa_group_id} = context) when wa_group_id != nil do
     %{
       id: context.wa_group.id,
       label: context.wa_group.label,
       wa_managed_phone_id: context.wa_group.wa_managed_phone_id
     }
   end
+
+  defp get_wa_group(_context), do: %{}
 
   # method can be either a get or a post. The do_oban function
   # does the right thing based on if it is a get or post
