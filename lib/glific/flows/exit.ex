@@ -95,19 +95,17 @@ defmodule Glific.Flows.Exit do
       recent_message: get_recent_messages(context.recent_inbound)
     })
 
-    cond do
-      is_nil(exit.destination_node_uuid) ->
-        FlowContext.reset_context(context)
-        {:ok, nil, []}
+    if is_nil(exit.destination_node_uuid) do
+      FlowContext.reset_context(context)
+      {:ok, nil, []}
+    else
+      {:ok, {:node, node}} = Map.fetch(context.uuid_map, exit.destination_node_uuid)
 
-      true ->
-        {:ok, {:node, node}} = Map.fetch(context.uuid_map, exit.destination_node_uuid)
-
-        Node.execute(
-          node,
-          FlowContext.set_node(context, node),
-          messages
-        )
+      Node.execute(
+        node,
+        FlowContext.set_node(context, node),
+        messages
+      )
     end
   end
 
