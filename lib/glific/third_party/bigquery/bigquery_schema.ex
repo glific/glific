@@ -867,12 +867,6 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "shortcode of speed send",
-        name: "shortcode",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
         description: "Opted language of the speed send",
         name: "language",
         type: "STRING",

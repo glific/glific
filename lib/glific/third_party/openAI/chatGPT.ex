@@ -242,7 +242,7 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   API call to create thread with message and run once
   """
-  @spec create_and_run_thread(map()) :: map() | {:error, String.t()}
+  @spec create_and_run_thread(map()) :: {:ok, map()} | {:error, String.t()}
   def create_and_run_thread(params) do
     url = @endpoint <> "/threads/runs"
 
@@ -260,10 +260,12 @@ defmodule Glific.OpenAI.ChatGPT do
     Tesla.post(url, payload, headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        Jason.decode!(body)
+        {:ok, Jason.decode!(body)}
 
-      {_status, response} ->
-        {:error, "Invalid response while creating and running thread #{inspect(response)}"}
+      {_status, %{body: body}} ->
+        error = Jason.decode!(body)
+
+        {:error, "Invalid response while creating and running thread #{inspect(error["error"]["message"])}"}
     end
   end
 
@@ -372,8 +374,6 @@ defmodule Glific.OpenAI.ChatGPT do
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         run = Jason.decode!(body)
-        # Waiting for atleast 10 seconds after running the thread to generate the response
-        Process.sleep(10_000)
         retrieve_run_and_wait(run["thread_id"], params.assistant_id, run["id"], re_run)
 
       {_status, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
@@ -386,7 +386,7 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
-  @max_attempts 10
+  @max_attempts 60
   @doc """
   API call to retrieve a run and check status
   """
@@ -410,7 +410,7 @@ defmodule Glific.OpenAI.ChatGPT do
     )
 
     cancel_run(thread_id, run_id)
-    Process.sleep(3_000)
+    Process.sleep(1_000)
     run_thread(%{thread_id: thread_id, re_run: true, assistant_id: assistant_id})
   end
 
@@ -440,11 +440,12 @@ defmodule Glific.OpenAI.ChatGPT do
           {:ok, run_id}
 
         run["status"] in ["in_progress", "queued"] ->
-          Process.sleep(5_000)
+          Process.sleep(1_000)
           retrieve_run_and_wait(thread_id, assistant_id, run_id, attempt + 1, re_run)
 
         run["status"] == "failed" ->
-          {:error, "Token limit reached for this thread"}
+          error = run["last_error"]
+          {:error, "#{error["code"]}: #{error["message"]}"}
 
         true ->
           run_status = run["status"]
@@ -507,22 +508,20 @@ defmodule Glific.OpenAI.ChatGPT do
   @doc """
   Handling filesearch openai conversation, basically checks if a thread id is passed then continue appending followup questions else create a new thread, add message and run thread to generate response
   """
-  @spec handle_conversation(map()) :: map()
+  @spec handle_conversation(map()) :: map() | {:error, String.t()}
   def handle_conversation(%{thread_id: nil, remove_citation: remove_citation} = params) do
-    run_thread = create_and_run_thread(params)
-    Process.sleep(4_000)
-
-    case retrieve_run_and_wait(
-           run_thread["thread_id"],
-           params.assistant_id,
-           run_thread["id"],
-           false
-         ) do
-      {:ok, _run_id} ->
-        list_thread_messages(%{thread_id: run_thread["thread_id"]})
-        |> remove_citation(remove_citation)
-        |> Map.put_new("success", false)
-
+    with {:ok, run_thread} <- create_and_run_thread(params),
+         {:ok, _run_id} <-
+           retrieve_run_and_wait(
+             run_thread["thread_id"],
+             params.assistant_id,
+             run_thread["id"],
+             false
+           ) do
+      list_thread_messages(%{thread_id: run_thread["thread_id"]})
+      |> remove_citation(remove_citation)
+      |> Map.put_new("success", false)
+    else
       {:error, error} ->
         error
     end
@@ -530,7 +529,6 @@ defmodule Glific.OpenAI.ChatGPT do
 
   def handle_conversation(%{thread_id: thread_id, remove_citation: remove_citation} = params) do
     add_message_to_thread(%{thread_id: thread_id, question: params.question})
-    Process.sleep(12_000)
 
     case run_thread(%{thread_id: thread_id, assistant_id: params.assistant_id}) do
       {:ok, _run_id} ->
@@ -550,7 +548,7 @@ defmodule Glific.OpenAI.ChatGPT do
   def remove_citation(thread_messages, false), do: thread_messages
 
   def remove_citation(thread_messages, _true) do
-    cleaned_message = Regex.replace(~r/【\d+(:\d+)?+†source】/, thread_messages["message"], "")
+    cleaned_message = Regex.replace(~r/【\d+(?::\d+)?†[^】]*】/, thread_messages["message"], "")
     Map.put(thread_messages, "message", cleaned_message)
   end
 

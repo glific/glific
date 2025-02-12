@@ -518,7 +518,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
             type: row.type,
             is_reserved: row.is_reserved,
             is_active: row.is_active,
-            shortcode: row.shortcode,
             language: row.language.label,
             translations: BigQuery.format_json(row.translations),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
@@ -948,7 +947,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       fn row, acc ->
         [
           %{
-            id: row.id,
+            id: row.flow.id,
             name: row.flow.name,
             uuid: row.flow.uuid,
             inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),

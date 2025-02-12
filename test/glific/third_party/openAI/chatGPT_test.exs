@@ -100,6 +100,43 @@ defmodule Glific.OpenAI.ChatGPTTest do
              "how  to get started with creating flow"
   end
 
+  test "create_and_run_thread/1 should create a new thread with message and return run_id" do
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body:
+          "{\"assistant_id\":\"asst_fz7oIQ2goRLfrP1mWceasdfse\",\"created_at\":1738814284,\"expires_at\":1738814884,\"id\":\"run_eJmCMSEHx4tQEeWVA6XqvTRU\",\"instructions\":\"**You are an AI assistant designed to help officials by answering their questions based on provided policy documents\",\"model\":\"gpt-4o\",\"object\":\"thread.run\",\"status\":\"queued\",\"thread_id\":\"thread_M3tgrpBy5mtsFx3YWBpQn4FH\"}"
+      }
+    end)
+
+    params = %{
+      question: "What is the role of VGF for CLF",
+      assistant_id: "asst_fz7oIQ2goRLfrP1mWceasdfse"
+    }
+
+    {:ok, response} = ChatGPT.create_and_run_thread(params)
+
+    assert get_in(response, ["id"]) == "run_eJmCMSEHx4tQEeWVA6XqvTRU"
+  end
+
+  test "create_and_run_thread/1 with empty message should return error" do
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 400,
+        body:
+          "{\n  \"error\": {\n    \"message\": \"Message content must be non-empty.\",\n    \"type\": \"invalid_request_error\",\n    \"param\": \"content\",\n    \"code\": null\n  }\n}"
+      }
+    end)
+
+    params = %{
+      question: "",
+      assistant_id: "asst_fz7oIQ2goRLfrP1mWceasdfse"
+    }
+
+    {:error, error} = ChatGPT.create_and_run_thread(params)
+    assert error == "Invalid response while creating and running thread \"Message content must be non-empty.\""
+  end
+
   test "list_thread_messages/1 should list all the messages in the thread" do
     Tesla.Mock.mock(fn _env ->
       %Tesla.Env{
@@ -130,6 +167,28 @@ defmodule Glific.OpenAI.ChatGPTTest do
 
     assert cleaned_thread_params["message"] ==
              "Childhood pregnancy can cause many problems for both the mother and the baby. Some of the issues include:\n\n1. Higher risk of complications during pregnancy and childbirth, such as anemia, high blood pressure, and premature birth.\n2. Increased chances of delivering low birth weight babies, which can lead to health problems for the baby.\n3. Emotional and mental stress, which can affect both the mother and the baby's health.\n4. Lack of proper nutrition and healthcare, which can impact the growth and development of the baby.\n\nIt is important for young mothers to get proper medical care and support during pregnancy."
+
+    # should return default message when remove_citation is set to false
+    cleaned_thread_params =
+      ChatGPT.remove_citation(thread_message_params, false)
+
+    assert cleaned_thread_params["message"] == message
+  end
+  test "remove_citation/2 should remove citations from the GPT response for updated format as well" do
+    message =
+      "Childhood pregnancy can cause many problems for both the mother and the baby. Some of the issues include:\n\n1. Higher risk of complications during pregnancy and childbirth, such as anemia, high blood pressure, and premature birth【4:0†TEst W1q1.pdf】."
+
+    thread_message_params = %{
+      "assistant_id" => "asst_eFPyq1m3zcvm6Vkxsdfsep",
+      "message" => message,
+      "success" => true
+    }
+
+    cleaned_thread_params =
+      ChatGPT.remove_citation(thread_message_params, true)
+
+    assert cleaned_thread_params["message"] ==
+             "Childhood pregnancy can cause many problems for both the mother and the baby. Some of the issues include:\n\n1. Higher risk of complications during pregnancy and childbirth, such as anemia, high blood pressure, and premature birth."
 
     # should return default message when remove_citation is set to false
     cleaned_thread_params =

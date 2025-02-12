@@ -6,6 +6,7 @@ defmodule Glific.EraseTest do
     Fixtures,
     Flows.FlowRevision,
     Flows.WebhookLog,
+    Messages.Message,
     Notifications,
     Notifications.Notification,
     Repo
@@ -58,5 +59,31 @@ defmodule Glific.EraseTest do
     flow_revision_count = Repo.count_filter(%{}, FlowRevision, &Repo.filter_with/2)
     Erase.clean_old_records()
     assert Repo.count_filter(%{}, FlowRevision, &Repo.filter_with/2) == flow_revision_count - 6
+  end
+
+  test "delete beneficiary data", attrs do
+    contact_1 = Fixtures.contact_fixture()
+    contact_2 = Fixtures.contact_fixture()
+
+    Fixtures.message_fixture(%{sender_id: contact_1.id})
+    Fixtures.message_fixture(%{sender_id: contact_1.id})
+    Fixtures.message_fixture(%{sender_id: contact_2.id})
+
+    assert Message
+           |> where([m], m.contact_id == ^contact_1.id)
+           |> Repo.aggregate(:count) == 2
+
+    assert :ok = Erase.delete_benefeciary_data(attrs.organization_id, contact_1.phone)
+
+    assert Message
+           |> where([m], m.contact_id == ^contact_1.id)
+           |> Repo.aggregate(:count) == 0
+
+    assert Message
+           |> where([m], m.contact_id == ^contact_2.id)
+           |> Repo.aggregate(:count) == 1
+
+    assert {:error, ["Elixir.Glific.Contacts.Contact", "Resource not found"]} =
+             Erase.delete_benefeciary_data(attrs.organization_id, contact_1.phone)
   end
 end

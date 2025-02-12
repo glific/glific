@@ -367,8 +367,9 @@ defmodule Glific.Contacts.Import do
   defp optin_contact(user, contact, contact_attrs) do
     if should_optin_contact?(user, contact, contact_attrs) do
       contact_attrs
-      |> Map.put(:method, "Import")
-      |> Contacts.optin_contact()
+      |> Contacts.contact_opted_in(contact_attrs.organization_id, contact_attrs[:optin_time],
+        method: "Import"
+      )
       |> case do
         {:ok, contact} ->
           contact

@@ -125,10 +125,10 @@ defmodule Glific.Bhasini do
             process_media(translated_text, response, org_id)
 
           speech_engine == "open_ai" ->
-            ChatGPT.text_to_speech_with_open_ai(org_id, text)
+            ChatGPT.text_to_speech_with_open_ai(org_id, translated_text)
 
-          source_language == "english" ->
-            ChatGPT.text_to_speech_with_open_ai(org_id, text)
+          target_language == "en" ->
+            ChatGPT.text_to_speech_with_open_ai(org_id, translated_text)
 
           true ->
             process_media(translated_text, response, org_id)
