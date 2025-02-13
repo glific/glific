@@ -1,4 +1,5 @@
 defmodule Glific.ContactsTest do
+  alias Glific.Fixtures
   use Glific.DataCase, async: true
   use Oban.Pro.Testing, repo: Glific.Repo
 
@@ -1484,6 +1485,42 @@ defmodule Glific.ContactsTest do
 
       [contact | _] = Contacts.list_contacts(%{filter: %{phone: 9_989_329_297}})
       assert contact.language_id == 1
+    end
+
+    test "import_contact/3 should not update the language of user if not given in csv" do
+      file = get_tmp_file()
+      [organization | _] = Partners.list_organizations()
+
+      contact =
+        Fixtures.contact_fixture(%{
+          organization_id: organization.id,
+          language_id: 2
+        })
+
+      [
+        ~w(name phone opt_in collection),
+        ["test", contact.phone, @optin_date, "collection"]
+      ]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:glific_admin])
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        file_path: get_tmp_path()
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      imported_contact = Contacts.get_contact_by_phone!(contact.phone)
+
+      assert imported_contact.language_id == 2
     end
   end
 end
