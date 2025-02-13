@@ -246,7 +246,7 @@ defmodule Glific.Clients.CommonWebhook do
     endpoint = fields["endpoint"]
     flow_id = fields["flow_id"] |> String.to_integer()
     contact_id = fields["contact_id"] |> String.to_integer()
-    organization_id = fields["organization_id"] |> String.to_integer()
+    organization_id = fields["organization_id"]
     timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
     signature_payload = %{
@@ -287,6 +287,7 @@ defmodule Glific.Clients.CommonWebhook do
       headers: headers(),
       opts: [adapter: [recv_timeout: 300_000]]
     )
+    |> IO.inspect()
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         response = Jason.decode!(body)

@@ -41,10 +41,10 @@ defmodule GlificWeb.FlowResumeController do
   end
 
   defp validate_request(new_organization_id, fields) do
-    flow_id = fields["flow_id"] |> String.to_integer()
-    contact_id = fields["contact_id"] |> String.to_integer()
-    organization_id = fields["organization_id"] |> String.to_integer()
-    timestamp = fields["timestamp"] |> String.to_integer()
+    flow_id = fields["flow_id"]
+    contact_id = fields["contact_id"]
+    organization_id = fields["organization_id"]
+    timestamp = fields["timestamp"]
     signature = fields["signature"]
 
     signature_payload = %{
