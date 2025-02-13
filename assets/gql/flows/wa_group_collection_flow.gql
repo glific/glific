@@ -1,0 +1,9 @@
+mutation StartWaGroupCollectionFlow($flowId: ID!, $groupId: ID!) {
+  startWaGroupCollectionFlow(flowId: $flowId, groupId: $groupId) {
+    errors {
+      key
+      message
+    }
+    success
+  }
+}

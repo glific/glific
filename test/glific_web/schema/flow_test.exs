@@ -15,6 +15,7 @@ defmodule GlificWeb.Schema.FlowTest do
     Flows.Node,
     Groups,
     Groups.GroupContacts,
+    Groups.WaGroupsCollections,
     Repo,
     Seeds.SeedsDev,
     State,
@@ -63,6 +64,12 @@ defmodule GlificWeb.Schema.FlowTest do
   )
 
   load_gql(:wa_group_flow, GlificWeb.Schema, "assets/gql/flows/wa_group_flow.gql")
+
+  load_gql(
+    :wa_group_collection_flow,
+    GlificWeb.Schema,
+    "assets/gql/flows/wa_group_collection_flow.gql"
+  )
 
   test "flows field returns list of flows", %{manager: user} do
     result = auth_query_gql_by(:list, user)
@@ -773,5 +780,34 @@ defmodule GlificWeb.Schema.FlowTest do
     result = auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:errors])) == 1
+  end
+
+  test "Start flow for a whatsapp group collection", %{manager: user} = _attrs do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Whatsapp Group", organization_id: user.organization_id})
+
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+    wa_group_1 =
+      Fixtures.wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    group = Fixtures.group_fixture(%{organization_id: user.organization_id})
+
+    WaGroupsCollections.update_collection_wa_group(%{
+      organization_id: user.organization_id,
+      group_id: group.id,
+      add_wa_group_ids: [wa_group_1.id, wa_group_1.id],
+      delete_wa_group_ids: []
+    })
+
+    result =
+      auth_query_gql_by(:wa_group_collection_flow, user,
+        variables: %{"flowId" => flow.id, "groupId" => group.id}
+      )
+
+    assert {:ok, _query_data} = result
   end
 end
