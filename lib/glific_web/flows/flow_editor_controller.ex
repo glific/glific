@@ -42,14 +42,14 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec groups(Plug.Conn.t(), map) :: Plug.Conn.t()
   def groups(conn, _params) do
-    group_list =
-      Groups.list_groups(
-        %{filter: %{organization_id: conn.assigns[:organization_id]}},
-        true
-      )
-      |> Enum.reduce([], fn group, acc ->
-        [%{uuid: "#{group.id}", name: group.label, type: "group"} | acc]
-      end)
+    group_list = []
+      # Groups.list_groups(
+      #   %{filter: %{organization_id: conn.assigns[:organization_id]}},
+      #   true
+      # )
+      # |> Enum.reduce([], fn group, acc ->
+      #   [%{uuid: "#{group.id}", name: group.label, type: "group"} | acc]
+      # end)
 
     conn
     |> json(%{results: group_list})
@@ -57,14 +57,24 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
   @doc false
   def groups_post(conn, params) do
-    {:ok, group} =
       Groups.create_group(%{
         label: params["name"],
         organization_id: conn.assigns[:organization_id]
       })
+      |> case do
+      {:ok, group} ->
+        conn
+        |> json(%{
+          name: group.label, uuid: group.id, type: "group"
+        })
 
-    conn
-    |> json(%{ name: group.label, uuid: group.id, type: "group" })
+      {:error, _} ->
+        conn
+        |> put_status(400)
+        |> json(%{
+          error: %{status: 400, message: "Cannot create new collection with name #{params["name"]}"}
+        })
+    end
 
   end
 
