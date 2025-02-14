@@ -21,7 +21,6 @@ defmodule Glific.WaPoll do
   def create_wa_poll(attrs) do
     with :ok <- validate_options(attrs) do
       %WaPoll{}
-      |> Map.put_new(:uuid, Ecto.UUID.generate())
       |> WaPoll.changeset(attrs)
       |> Repo.insert()
     end

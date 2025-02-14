@@ -53,6 +53,11 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
     end)
   end
 
+  defp update_statuses(_payload, _org_id) do
+    # catch-all for payloads we dont want to handle
+    nil
+  end
+
   # Updates the provider message statuses based on provider message id
   @spec do_update_status(map(), String.t(), non_neg_integer()) :: any()
   defp do_update_status(params, ack_type, org_id) do

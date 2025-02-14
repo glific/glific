@@ -63,7 +63,8 @@ defmodule Glific.Flows.Webhook do
         method: action.method,
         organization_id: context.organization_id,
         flow_id: context.flow_id,
-        contact_id: context.contact.id
+        contact_id: context.contact_id,
+        wa_group_id: context.wa_group_id
       }
       |> WebhookLog.create_webhook_log()
 
@@ -140,12 +141,8 @@ defmodule Glific.Flows.Webhook do
   @spec do_create_body(FlowContext.t(), map()) :: {map(), String.t()} | {:error, String.t()}
   defp do_create_body(context, action_body_map) do
     default_payload = %{
-      contact: %{
-        id: context.contact.id,
-        name: context.contact.name,
-        phone: context.contact.phone,
-        fields: context.contact.fields
-      },
+      contact: get_contact(context),
+      wa_group: get_wa_group(context),
       results: context.results,
       flow: %{name: context.flow.name, id: context.flow.id}
     }
@@ -156,6 +153,7 @@ defmodule Glific.Flows.Webhook do
       MessageVarParser.parse_map(action_body_map, fields)
       |> Enum.map(fn
         {k, "@contact"} -> {k, default_payload.contact}
+        {k, "@wa_group"} -> {k, default_payload.wa_group}
         {k, "@results"} -> {k, default_payload.results}
         {k, v} -> {k, v}
       end)
@@ -177,6 +175,29 @@ defmodule Glific.Flows.Webhook do
          )}
     end
   end
+
+  @spec get_contact(FlowContext.t()) :: map()
+  defp get_contact(%FlowContext{contact_id: contact_id} = context) when contact_id != nil do
+    %{
+      id: context.contact.id,
+      name: context.contact.name,
+      phone: context.contact.phone,
+      fields: context.contact.fields
+    }
+  end
+
+  defp get_contact(_context), do: %{}
+
+  @spec get_wa_group(FlowContext.t()) :: map()
+  defp get_wa_group(%FlowContext{wa_group_id: wa_group_id} = context) when wa_group_id != nil do
+    %{
+      id: context.wa_group.id,
+      label: context.wa_group.label,
+      wa_managed_phone_id: context.wa_group.wa_managed_phone_id
+    }
+  end
+
+  defp get_wa_group(_context), do: %{}
 
   # method can be either a get or a post. The do_oban function
   # does the right thing based on if it is a get or post
@@ -344,7 +365,6 @@ defmodule Glific.Flows.Webhook do
   @spec handle(String.t(), map(), String.t()) :: :ok
   defp handle(result, context_data, result_name) do
     context_id = context_data["id"]
-
     ## In case the context already carries a delay before webhook,
     ## we are going to use that.
 

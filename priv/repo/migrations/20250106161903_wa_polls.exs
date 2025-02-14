@@ -29,6 +29,11 @@ defmodule Glific.Repo.Migrations.WaPolls do
         comment: "Reference for the Whatsapp groups poll"
     end
 
+    alter table(:webhook_logs) do
+      add :wa_group_id, references(:wa_groups, on_delete: :delete_all)
+      modify :contact_id, :integer, null: true
+    end
+
     create unique_index(:wa_polls, [:label, :organization_id])
     create unique_index(:wa_polls, [:uuid])
     create index(:wa_messages, [:poll_id], where: "poll_id IS NOT NULL")
