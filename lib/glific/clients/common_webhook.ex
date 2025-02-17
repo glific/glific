@@ -266,7 +266,6 @@ defmodule Glific.Clients.CommonWebhook do
            }),
          {:ok, wa_message} <-
            Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, %{poll_id: wa_poll.id}) do
-      Glific.Metrics.increment("Sent WAGroup Poll", fields.organization_id)
       %{success: true, poll: wa_message.poll_content}
     else
       {:error, reason} when is_binary(reason) ->
