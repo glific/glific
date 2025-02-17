@@ -247,7 +247,6 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-
   def webhook("call_and_wait", fields) do
     endpoint = fields["endpoint"]
     flow_id = fields["flow_id"] |> String.to_integer()
@@ -293,7 +292,6 @@ defmodule Glific.Clients.CommonWebhook do
       headers: headers(),
       opts: [adapter: [recv_timeout: 300_000]]
     )
-    |> IO.inspect()
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         response = Jason.decode!(body)
@@ -306,7 +304,7 @@ defmodule Glific.Clients.CommonWebhook do
         %{success: false, reason: reason}
     end
   end
-  
+
   # webhook for sending whatsapp group polls in a flow
   def webhook("send_wa_group_poll", fields) do
     with {:ok, fields} <- parse_wa_poll_params(fields),
