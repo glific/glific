@@ -1,4 +1,4 @@
-defmodule Glific.WaGroup.WaReaction do
+defmodule Glific.WAGroup.WaReaction do
   @moduledoc false
   use Ecto.Schema
   import Ecto.Query, warn: false
@@ -9,7 +9,7 @@ defmodule Glific.WaGroup.WaReaction do
     Partners.Organization,
     Repo,
     WAGroup.WAMessage,
-    WaGroup.WaReaction
+    WAGroup.WaReaction
   }
 
   @type t() :: %__MODULE__{

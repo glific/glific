@@ -2,7 +2,7 @@ defmodule GlificWeb.Schema.WAPollTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
-  alias Glific.{Repo, WaGroup.WaPoll}
+  alias Glific.{Repo, WAGroup.WaPoll}
 
   load_gql(:create, GlificWeb.Schema, "assets/gql/wa_poll/create.gql")
   load_gql(:fetch, GlificWeb.Schema, "assets/gql/wa_poll/fetch.gql")

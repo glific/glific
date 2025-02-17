@@ -63,7 +63,6 @@ defmodule Glific.Fixtures do
     Users,
     WAGroup.WAManagedPhone,
     WAGroup.WAMessage,
-    WaGroup.WaPoll,
     WAManagedPhones,
     WAMessages,
     WaPoll
@@ -1308,7 +1307,7 @@ defmodule Glific.Fixtures do
     registration
   end
 
-  @spec wa_poll_fixture(map()) :: WaPoll.t()
+  @spec wa_poll_fixture(map()) :: Glific.WAGroup.WaPoll.t()
   def wa_poll_fixture(attrs \\ %{}) do
     %{
       label: "Test Poll",
