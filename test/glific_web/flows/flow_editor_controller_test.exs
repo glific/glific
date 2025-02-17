@@ -94,14 +94,14 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       assert json_response(conn, 200)["name"] == "testgroup"
     end
 
-    test "creating a group with error", %{conn: conn, access_token: token} do
+    test "creating a group with duplicate name", %{conn: conn, access_token: token} do
       conn =
         get_auth_token(conn, token)
-        |> post("/flow-editor/groups", %{"name" => "testgroup"})
+        |> post("/flow-editor/groups", %{"name" => "Optin contacts"})
 
       assert json_response(conn, 400) == %{
           "error" => %{
-          "message" => "Cannot create new collection with name testgroup",
+          "message" => "Cannot create new collection with name Optin contacts",
           "status" => 400
           }
       }
