@@ -33,5 +33,6 @@ defmodule GlificWeb.Providers.Maytapi.Router do
     end
 
     post("/*unknown", DefaultController, :unknown)
+    get("/*unknown", DefaultController, :unknown)
   end
 end

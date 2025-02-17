@@ -1,0 +1,12 @@
+mutation CopyWaPoll($copyWaPollId: ID!, $input: WaPollInput) {
+  copyWaPoll(id: $copyWaPollId, input: $input) {
+    errors {
+      key
+      message
+    }
+    waPoll {
+      allowMultipleAnswer
+      label
+    }
+  }
+}

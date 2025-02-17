@@ -5,6 +5,7 @@ defmodule Glific.Flows.WebhookTest do
   alias Glific.Flows.{
     Action,
     FlowContext,
+    FlowRevision,
     Webhook,
     WebhookLog
   }
@@ -186,6 +187,21 @@ defmodule Glific.Flows.WebhookTest do
       valid_attrs =
         @valid_attrs
         |> Map.put(:contact_id, contact.id)
+        |> Map.put(:flow_id, flow.id)
+        |> Map.put(:organization_id, flow.organization_id)
+
+      assert {:ok, %WebhookLog{}} = WebhookLog.create_webhook_log(valid_attrs)
+    end
+
+    test "create_webhook_log/1 with valid data creates a webhook_log for wa_group",
+         %{organization_id: _organization_id} = attrs do
+      flow = Fixtures.flow_fixture(attrs)
+      wa_phone = Fixtures.wa_managed_phone_fixture(attrs)
+      wa_group = Fixtures.wa_group_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
+
+      valid_attrs =
+        @valid_attrs
+        |> Map.put(:wa_group_id, wa_group.id)
         |> Map.put(:flow_id, flow.id)
         |> Map.put(:organization_id, flow.organization_id)
 
@@ -380,6 +396,46 @@ defmodule Glific.Flows.WebhookTest do
     assert Webhook.execute(action, context) == nil
     jobs = all_enqueued(worker: Webhook, prefix: "global")
     # although we had 2 webhook calls for geolocation, only 1 job got enqueued
+    assert 1 == length(jobs)
+  end
+
+  test "execute a webhook function send_wa_group_poll",
+       attrs do
+    wa_phone = Fixtures.wa_managed_phone_fixture(attrs)
+    flow = Fixtures.flow_fixture(%{name: "polls"})
+
+    FlowRevision
+    |> where([f], f.flow_id == ^flow.id)
+    |> update([f], set: [status: "published"])
+    |> Repo.update_all([])
+
+    attrs = %{
+      flow_id: flow.id,
+      flow_uuid: flow.uuid,
+      wa_group_id:
+        Fixtures.wa_group_fixture(attrs |> Map.put(:wa_managed_phone_id, wa_phone.id)).id,
+      organization_id: attrs.organization_id
+    }
+
+    poll = Fixtures.wa_poll_fixture(%{label: "poll_a"})
+
+    action_body = %{
+      wa_group: "@wa_group",
+      poll_uuid: "#{poll.uuid}"
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+    context = Repo.preload(context, [:wa_group, :flow])
+
+    action = %Action{
+      headers: %{"Accept" => "application/json"},
+      method: "FUNCTION",
+      url: "send_wa_group_poll",
+      body: Jason.encode!(action_body)
+    }
+
+    assert Webhook.execute(action, context) == nil
+    jobs = all_enqueued(worker: Webhook, prefix: "global")
     assert 1 == length(jobs)
   end
 end

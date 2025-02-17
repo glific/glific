@@ -1,4 +1,5 @@
 defmodule Glific.Flows.CommonWebhookTest do
+  alias Glific.Fixtures
   use Glific.DataCase, async: true
   use Oban.Pro.Testing, repo: Glific.Repo
 
@@ -526,5 +527,58 @@ defmodule Glific.Flows.CommonWebhookTest do
              }
            } =
              CommonWebhook.webhook("parse_via_chat_gpt", fields)
+  end
+
+  test "send_wa_group_poll", attrs do
+    fields = %{}
+
+    assert %{success: false, error: "wa_group is invalid"} =
+             CommonWebhook.webhook("send_wa_group_poll", fields)
+
+    fields = %{
+      "wa_group" => %{
+        "wa_managed_phone_id" => 0,
+        "id" => 0
+      },
+      "organization_id" => attrs.organization_id
+    }
+
+    assert %{success: false, error: "poll_uuid is invalid"} =
+             CommonWebhook.webhook("send_wa_group_poll", fields)
+
+    poll = Fixtures.wa_poll_fixture(%{label: "poll_a"})
+
+    fields = %{
+      "wa_group" => %{
+        "wa_managed_phone_id" => 0,
+        "id" => 0
+      },
+      "organization_id" => attrs.organization_id,
+      "poll_uuid" => poll.uuid
+    }
+
+    assert %{
+             success: false,
+             error: "[\"Elixir.Glific.WAGroup.WAManagedPhone\", \"Resource not found\"]"
+           } =
+             CommonWebhook.webhook("send_wa_group_poll", fields)
+
+    wa_phone = Fixtures.wa_managed_phone_fixture(attrs)
+    wa_group = Fixtures.wa_group_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
+
+    fields = %{
+      "wa_group" => %{
+        "wa_managed_phone_id" => wa_phone.id,
+        "id" => wa_group.id
+      },
+      "organization_id" => attrs.organization_id,
+      "poll_uuid" => poll.uuid
+    }
+
+    assert %{
+             success: true,
+             poll: _
+           } =
+             CommonWebhook.webhook("send_wa_group_poll", fields)
   end
 end
