@@ -14,6 +14,7 @@ defmodule Glific.WAGroup.WAMessage do
     Partners.Organization,
     WAGroup.WAManagedPhone,
     WAGroup.WAMessage,
+    WaGroup.WaPoll,
     WaGroup.WaReaction
   }
 
@@ -52,6 +53,8 @@ defmodule Glific.WAGroup.WAMessage do
           wa_managed_phone_id: non_neg_integer | nil,
           wa_managed_phone: WAManagedPhone.t() | Ecto.Association.NotLoaded.t() | nil,
           poll_content: map() | nil,
+          poll_id: non_neg_integer() | nil,
+          poll: WaPoll.t() | Ecto.Association.NotLoaded.t() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
           is_dm: :boolean | nil,
@@ -84,7 +87,8 @@ defmodule Glific.WAGroup.WAMessage do
     :sent_at,
     :is_dm,
     :flow_label,
-    :poll_content
+    :poll_content,
+    :poll_id
   ]
 
   schema "wa_messages" do
@@ -111,6 +115,7 @@ defmodule Glific.WAGroup.WAMessage do
     belongs_to(:organization, Organization)
     belongs_to(:message_broadcast, MessageBroadcast, foreign_key: :message_broadcast_id)
     belongs_to(:context_message, WAMessage, foreign_key: :context_message_id)
+    belongs_to(:poll, WaPoll)
     has_one(:location, Location)
     has_many(:reactions, WaReaction)
     timestamps(type: :utc_datetime_usec)

@@ -7,7 +7,12 @@ defmodule Glific.Clients.CommonWebhook do
     ASR.Bhasini,
     ASR.GoogleASR,
     Contacts,
-    OpenAI.ChatGPT
+    Groups.WAGroup,
+    OpenAI.ChatGPT,
+    Providers.Maytapi,
+    Repo,
+    WAGroup.WAManagedPhone,
+    WaGroup.WaPoll
   }
 
   require Logger
@@ -241,6 +246,36 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  # webhook for sending whatsapp group polls in a flow
+  def webhook("send_wa_group_poll", fields) do
+    with {:ok, fields} <- parse_wa_poll_params(fields),
+         {:ok, wa_phone} <-
+           Repo.fetch_by(WAManagedPhone, %{
+             id: fields.wa_group["wa_managed_phone_id"],
+             organization_id: fields.organization_id
+           }),
+         {:ok, wa_group} <-
+           Repo.fetch_by(WAGroup, %{
+             id: fields.wa_group["id"],
+             organization_id: fields.organization_id
+           }),
+         {:ok, wa_poll} <-
+           Repo.fetch_by(WaPoll, %{
+             uuid: fields.poll_uuid,
+             organization_id: fields.organization_id
+           }),
+         {:ok, wa_message} <-
+           Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, %{poll_id: wa_poll.id}) do
+      %{success: true, poll: wa_message.poll_content}
+    else
+      {:error, reason} when is_binary(reason) ->
+        %{success: false, error: "#{reason}"}
+
+      {:error, reason} ->
+        %{success: false, error: "#{inspect(reason)}"}
+    end
+  end
+
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
   @spec find_component(list(map()), String.t()) :: String.t()
@@ -321,6 +356,29 @@ defmodule Glific.Clients.CommonWebhook do
          "temperature" => Map.get(fields, "temperature", 0),
          "response_format" => Map.get(fields, "response_format", nil)
        }}
+    end
+  end
+
+  @spec parse_wa_poll_params(map()) :: {:ok, map()} | {:error, String.t()}
+  defp parse_wa_poll_params(fields) do
+    # if wa_group is in the map, then the inner keys will be already filled by
+    # webhook module
+    with {true, _} <- {is_map(fields["wa_group"]), :wa_group},
+         {true, _} <- {is_integer(fields["organization_id"]), :organization_id},
+         {:ok, _} <-
+           Ecto.UUID.cast(fields["poll_uuid"]) do
+      {:ok,
+       %{
+         wa_group: fields["wa_group"],
+         poll_uuid: fields["poll_uuid"],
+         organization_id: fields["organization_id"]
+       }}
+    else
+      :error ->
+        {:error, "poll_uuid is invalid"}
+
+      {false, field} ->
+        {:error, "#{field} is invalid"}
     end
   end
 end

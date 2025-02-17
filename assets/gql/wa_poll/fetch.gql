@@ -1,0 +1,12 @@
+query WaPollIdOnly($id: ID!) {
+  waPoll(id: $id) {
+    waPoll {
+      id
+      label
+    }
+    errors {
+      key
+      message
+    }
+  }
+}

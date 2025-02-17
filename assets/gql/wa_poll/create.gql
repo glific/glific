@@ -1,0 +1,7 @@
+#import "./fields.frag.gql"
+
+mutation CreateWaPoll($input: WaPollInput!) {
+  CreateWaPoll(input: $input) {
+    ...WaPollFields
+  }
+}
