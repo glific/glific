@@ -19,7 +19,8 @@ defmodule Glific.WaPoll do
   """
   @spec create_wa_poll(map()) :: {:ok, WaPoll.t()} | {:error, Ecto.Changeset.t()}
   def create_wa_poll(attrs) do
-    with :ok <- validate_options(attrs) do
+    with :ok <- validate_options(attrs),
+         :ok <- validate_character_limit(attrs.poll_content) do
       %WaPoll{}
       |> WaPoll.changeset(attrs)
       |> Repo.insert()
@@ -54,6 +55,29 @@ defmodule Glific.WaPoll do
       {:error, "Duplicate options detected"}
     else
       :ok
+    end
+  end
+
+  @spec validate_character_limit(map()) :: :ok | {:error, String.t()}
+  defp validate_character_limit(poll_content) do
+    text = poll_content["text"]
+    options = poll_content["options"]
+
+    text_length = String.length(text)
+    exceeded_options = Enum.filter(options, fn %{"name" => name} -> String.length(name) > 100 end)
+
+    cond do
+      text_length > 255 ->
+        {:error, "The body characters should be up to 255 only, but got #{text_length}."}
+
+      exceeded_options != [] ->
+        exceeded_option_names = Enum.map(exceeded_options, fn %{"name" => name} -> name end)
+
+        {:error,
+         "The following poll options exceed 100 characters: #{Enum.join(exceeded_option_names, ", ")}"}
+
+      true ->
+        :ok
     end
   end
 
