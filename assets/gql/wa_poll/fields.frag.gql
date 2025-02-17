@@ -1,0 +1,11 @@
+fragment WaPollFields on WaPollResult{
+    errors {
+      key
+      message
+    }
+    waPoll {
+      id
+      allowMultipleAnswer
+      label
+    }
+  }

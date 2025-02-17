@@ -43,6 +43,22 @@ defmodule Glific.Flows.FlowContextTest do
     |> Repo.preload(:flow)
   end
 
+  def wa_flow_context_fixture(attrs \\ %{}) do
+    wa_phone = Fixtures.wa_managed_phone_fixture(attrs)
+    wa_group = Fixtures.wa_group_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
+
+    {:ok, flow_context} =
+      attrs
+      |> Map.put(:wa_group_id, wa_group.id)
+      |> Map.put(:organization_id, wa_group.organization_id)
+      |> Enum.into(@valid_attrs)
+      |> FlowContext.create_flow_context()
+
+    flow_context
+    |> Repo.preload(:wa_group)
+    |> Repo.preload(:flow)
+  end
+
   test "create_flow_context/1 will create a new flow context", attrs do
     # create a simple flow context
     {:ok, context} =
@@ -164,11 +180,36 @@ defmodule Glific.Flows.FlowContextTest do
     assert flow_context.uuid_map == flow.uuid_map
   end
 
+  test "load_context/2 will load all the nodes and actions in memory for the context for wa_group",
+       %{organization_id: organization_id} = _attrs do
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+    [node | _tail] = flow.nodes
+
+    flow_context =
+      wa_flow_context_fixture(%{node_uuid: node.uuid, organization_id: organization_id})
+
+    flow_context = FlowContext.load_context(flow_context, flow)
+    assert flow_context.uuid_map == flow.uuid_map
+  end
+
   test "step_forward/2 will set the context to next node ",
        %{organization_id: organization_id} = _attrs do
     flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
     [node | _tail] = flow.nodes
     flow_context = flow_context_fixture(%{node_uuid: node.uuid})
+    flow_context = FlowContext.load_context(flow_context, flow)
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "help")
+    assert {:ok, _map} = FlowContext.step_forward(flow_context, message)
+  end
+
+  test "step_forward/2 will set the context to next node, wa_group ",
+       %{organization_id: organization_id} = _attrs do
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+    [node | _tail] = flow.nodes
+
+    flow_context =
+      wa_flow_context_fixture(%{node_uuid: node.uuid, organization_id: organization_id})
+
     flow_context = FlowContext.load_context(flow_context, flow)
     message = Messages.create_temp_message(Fixtures.get_org_id(), "help")
     assert {:ok, _map} = FlowContext.step_forward(flow_context, message)
@@ -231,6 +272,31 @@ defmodule Glific.Flows.FlowContextTest do
         is_background_flow: true,
         flow_uuid: flow.uuid,
         flow_id: flow.id
+      })
+
+    assert {:ok, _context, []} = FlowContext.wakeup_one(flow_context, message)
+
+    flow_context = Repo.get!(FlowContext, flow_context.id)
+    assert flow_context.wakeup_at == nil
+    assert flow_context.is_background_flow == false
+  end
+
+  test "wakeup_one/1 will process all the context for the contact, wa_group",
+       %{organization_id: organization_id} = _attrs do
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+    [node | _tail] = flow.nodes
+
+    message = Messages.create_temp_message(organization_id, "1")
+    wakeup_at = Timex.shift(Timex.now(), minutes: -3)
+
+    flow_context =
+      wa_flow_context_fixture(%{
+        node_uuid: node.uuid,
+        wakeup_at: wakeup_at,
+        is_background_flow: true,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id,
+        organization_id: organization_id
       })
 
     assert {:ok, _context, []} = FlowContext.wakeup_one(flow_context, message)
