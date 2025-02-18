@@ -56,6 +56,23 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
     "type" => "ack"
   }
 
+  @error_event %{
+    "code" => "F04",
+    "data" => %{
+      "id" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d",
+      "message" => "Is it a Yes or No?",
+      "only_one" => "true",
+      "options[]" => ["Yes 😀", "No 😑"],
+      "phone_id" => "47309",
+      "to_number" => "120363238104@g.us",
+      "type" => "poll"
+    },
+    "message" => "Options are required.",
+    "phoneId" => 47_309,
+    "phone_id" => 47_309,
+    "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+    "type" => "error"
+  }
   setup do
     organization = SeedsDev.seed_organizations()
 
@@ -77,9 +94,9 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
     Tesla.Mock.mock(fn
       %Tesla.Env{
         method: :post,
-        url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/42093/sendMessage"
+        url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/242/sendMessage"
       } ->
-        {:ok, %Tesla.Env{status: status, body: body}}
+        {:ok, %Tesla.Env{status: status, body: Jason.encode!(body)}}
     end)
   end
 
@@ -276,5 +293,147 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
                phone_id: wa_phone.phone_id,
                phone: wa_phone.phone
              })
+  end
+
+  test "send poll in a whatsapp group", %{staff: user, conn: _conn} do
+    mock_maytapi_response(200, %{
+      "success" => true,
+      "data" => %{
+        "chatId" => "120363238104@g.us",
+        "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"
+      }
+    })
+
+    wa_phone =
+      Fixtures.wa_managed_phone_fixture(%{
+        organization_id: user.organization_id
+      })
+
+    wa_grp =
+      Fixtures.wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_phone.id
+      })
+
+    wa_poll = Fixtures.wa_poll_fixture(%{label: "poll_a"})
+
+    result =
+      auth_query_gql_by(:send_msg, user,
+        variables: %{
+          "input" => %{
+            "message" => "Message body testing send",
+            "wa_group_id" => wa_grp.id,
+            "wa_managed_phone_id" => wa_phone.id,
+            "poll_id" => wa_poll.id
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "sendMessageInWaGroup", "errors"])
+    assert message == nil
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :wa_group, with_scheduled: true)
+
+    %WAMessage{body: "Poll question?", poll_content: content} =
+      WAMessage
+      |> where([wa], wa.bsp_id == "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d")
+      |> Repo.one()
+
+    assert is_map(content)
+  end
+
+  test "send poll in a whatsapp group, invalid poll_id", %{staff: user, conn: _conn} do
+    mock_maytapi_response(200, %{
+      "success" => true,
+      "data" => %{
+        "chatId" => "120363238104@g.us",
+        "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"
+      }
+    })
+
+    wa_phone =
+      Fixtures.wa_managed_phone_fixture(%{
+        organization_id: user.organization_id
+      })
+
+    wa_grp =
+      Fixtures.wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_phone.id
+      })
+
+    result =
+      auth_query_gql_by(:send_msg, user,
+        variables: %{
+          "input" => %{
+            "message" => "Message body testing send",
+            "wa_group_id" => wa_grp.id,
+            "wa_managed_phone_id" => wa_phone.id,
+            "poll_id" => 0
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "sendMessageInWaGroup", "errors"])
+    refute is_nil(message)
+  end
+
+  test "error after sending poll in a whatsapp group", %{staff: user, conn: conn} do
+    mock_maytapi_response(200, %{
+      "success" => true,
+      "data" => %{
+        "chatId" => "120363238104@g.us",
+        "msgId" => "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d"
+      }
+    })
+
+    wa_phone =
+      Fixtures.wa_managed_phone_fixture(%{
+        organization_id: user.organization_id
+      })
+
+    wa_grp =
+      Fixtures.wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_phone.id
+      })
+
+    wa_poll = Fixtures.wa_poll_fixture(%{label: "poll_a"})
+
+    result =
+      auth_query_gql_by(:send_msg, user,
+        variables: %{
+          "input" => %{
+            "message" => "Message body testing send",
+            "wa_group_id" => wa_grp.id,
+            "wa_managed_phone_id" => wa_phone.id,
+            "poll_id" => wa_poll.id
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "sendMessageInWaGroup", "errors"])
+    assert message == nil
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :wa_group, with_scheduled: true)
+
+    %WAMessage{body: "Poll question?", poll_content: content} =
+      WAMessage
+      |> where([wa], wa.bsp_id == "a3ff8460-c710-11ee-a8e7-5fbaaf152c1d")
+      |> Repo.one()
+
+    assert is_map(content)
+
+    assert %Plug.Conn{} = post(conn, "/maytapi", @error_event)
+
+    assert %WAMessage{errors: _err, bsp_status: :error} =
+             WAMessage
+             |> where([wa], wa.poll_id == ^wa_poll.id)
+             |> Repo.one()
   end
 end

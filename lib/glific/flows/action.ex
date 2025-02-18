@@ -639,6 +639,20 @@ defmodule Glific.Flows.Action do
     {:ok, context, [message]}
   end
 
+  def execute(%{type: "call_webhook"} = action, context, messages) do
+    # just call the webhook, and ask the caller to wait
+    # we are processing the webhook using Oban and this happens asynchronously
+
+    # Webhooks don't consume message, so if we send a message while a webhook node is running
+    # this check will prevent webhook node from running again
+    if Enum.empty?(messages) do
+      Webhook.execute(action, context)
+    end
+
+    # webhooks don't consume a message, so we send it forward
+    {:wait, context, messages}
+  end
+
   def execute(
         %{type: "set_wa_group_field"} = action,
         %{wa_group_id: wa_group_id} = context,
@@ -788,20 +802,6 @@ defmodule Glific.Flows.Action do
     {context, message} = Tickets.execute(action, context)
 
     {:ok, context, [message]}
-  end
-
-  def execute(%{type: "call_webhook"} = action, context, messages) do
-    # just call the webhook, and ask the caller to wait
-    # we are processing the webhook using Oban and this happens asynchronously
-
-    # Webhooks don't consume message, so if we send a message while a webhook node is running
-    # this check will prevent webhook node from running again
-    if Enum.empty?(messages) do
-      Webhook.execute(action, context)
-    end
-
-    # webhooks don't consume a message, so we send it forward
-    {:wait, context, messages}
   end
 
   def execute(%{type: "call_classifier"} = action, context, messages) do

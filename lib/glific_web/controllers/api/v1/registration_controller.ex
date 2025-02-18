@@ -277,7 +277,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
           organization_id: organization_id,
           method: "registration"
         }
-        |> Contacts.optin_contact()
+        |> Contacts.contact_opted_in(organization_id, DateTime.utc_now(), method: "registration")
     end
   end
 end

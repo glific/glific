@@ -1,0 +1,6 @@
+query WaPolls($filter: WaPollFilter) {
+  waPolls(filter: $filter) {
+    id
+    label
+  }
+}

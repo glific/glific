@@ -867,12 +867,6 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "shortcode of speed send",
-        name: "shortcode",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
         description: "Opted language of the speed send",
         name: "language",
         type: "STRING",
@@ -1699,12 +1693,6 @@ defmodule Glific.BigQuery.Schema do
         description: "Travel count for a node",
         name: "count",
         type: "INTEGER",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "JSON object for storing the recent messages",
-        name: "recent_messages",
-        type: "STRING",
         mode: "NULLABLE"
       },
       %{
