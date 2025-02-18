@@ -232,6 +232,28 @@ defmodule GlificWeb.Resolvers.Flows do
   end
 
   @doc """
+  Start a flow for all groups of a wa group collection
+  """
+  @spec start_wa_group_collection_flow(
+          Absinthe.Resolution.t(),
+          %{flow_id: integer, group_id: String.t()},
+          %{
+            context: map()
+          }
+        ) ::
+          {:ok, any} | {:error, any}
+  def start_wa_group_collection_flow(_, %{flow_id: flow_id, group_id: group_id} = _params, %{
+        context: %{current_user: _user}
+      }) do
+    group_id = [String.to_integer(group_id)]
+
+    with {:ok, flow} <- Flows.fetch_flow(flow_id),
+         {:ok, _flow} <- Flows.start_wa_group_flow(flow, group_id) do
+      {:ok, %{success: true}}
+    end
+  end
+
+  @doc """
   Resume a flow for a contact
   """
   @spec resume_contact_flow(

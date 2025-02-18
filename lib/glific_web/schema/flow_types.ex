@@ -259,6 +259,13 @@ defmodule GlificWeb.Schema.FlowTypes do
       resolve(&Resolvers.Flows.start_group_flow/3)
     end
 
+    field :start_wa_group_collection_flow, :common_flow_result do
+      arg(:flow_id, non_null(:id))
+      arg(:group_id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Flows.start_wa_group_collection_flow/3)
+    end
+
     field :import_flow, :import_flow_result do
       arg(:flow, :json)
       middleware(Authorize, :manager)
