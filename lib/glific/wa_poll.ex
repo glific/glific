@@ -155,8 +155,7 @@ defmodule Glific.WaPoll do
   @doc """
   Make a copy of a wa_poll
   """
-  @spec copy_wa_poll(WaPoll.t(), map()) ::
-          {:ok, WaPoll.t()} | {:error, String.t()}
+  @spec copy_wa_poll(WaPoll.t(), map()) :: {:ok, WaPoll.t()} | {:error, String.t()}
   def copy_wa_poll(wa_poll, attrs) do
     attrs =
       %{
@@ -165,11 +164,6 @@ defmodule Glific.WaPoll do
       }
       |> Map.merge(attrs)
 
-    with :ok <- validate_options(attrs),
-         :ok <- validate_character_limit(attrs.poll_content) do
-      %WaPoll{}
-      |> WaPoll.changeset(attrs)
-      |> Repo.insert()
-    end
+    create_wa_poll(attrs)
   end
 end
