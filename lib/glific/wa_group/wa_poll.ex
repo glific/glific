@@ -1,4 +1,4 @@
-defmodule Glific.WaGroup.WaPoll do
+defmodule Glific.WAGroup.WaPoll do
   @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset

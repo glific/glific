@@ -42,7 +42,7 @@ defmodule Glific.BigQuery do
     Tickets.Ticket,
     Trackers.Tracker,
     WAGroup.WAMessage,
-    WaGroup.WaReaction
+    WAGroup.WaReaction
   }
 
   alias GoogleApi.BigQuery.V2.{

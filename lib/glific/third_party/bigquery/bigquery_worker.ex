@@ -57,7 +57,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Trackers.Tracker,
     Users.User,
     WAGroup.WAMessage,
-    WaGroup.WaReaction
+    WAGroup.WaReaction
   }
 
   @per_min_limit 500

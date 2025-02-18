@@ -93,6 +93,7 @@ defmodule Glific.Providers.Maytapi.WAMessages do
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_poll(wa_message, attrs \\ %{}) do
     options = Enum.map(wa_message.poll_content["options"], fn option -> option["name"] end)
+    Glific.Metrics.increment("Sent WAGroup Poll", wa_message.organization_id)
 
     %{
       type: :poll,
