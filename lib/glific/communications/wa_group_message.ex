@@ -5,8 +5,6 @@ defmodule Glific.Communications.GroupMessage do
 
   require Logger
 
-  alias Glific.WaGroup.WaReaction
-
   alias Glific.{
     Communications,
     Contacts,
@@ -16,6 +14,7 @@ defmodule Glific.Communications.GroupMessage do
     Repo,
     WAGroup.WAManagedPhone,
     WAGroup.WAMessage,
+    WAGroup.WaReaction,
     WAMessages
   }
 

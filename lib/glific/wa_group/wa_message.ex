@@ -14,8 +14,8 @@ defmodule Glific.WAGroup.WAMessage do
     Partners.Organization,
     WAGroup.WAManagedPhone,
     WAGroup.WAMessage,
-    WaGroup.WaPoll,
-    WaGroup.WaReaction
+    WAGroup.WaPoll,
+    WAGroup.WaReaction
   }
 
   alias Glific.Enums.{MessageFlow, MessageStatus, MessageType}

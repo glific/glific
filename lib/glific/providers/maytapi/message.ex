@@ -5,8 +5,6 @@ defmodule Glific.Providers.Maytapi.Message do
 
   import Ecto.Query, warn: false
 
-  alias Glific.WaGroup.WaPoll
-
   alias Glific.{
     Communications,
     Communications.GroupMessage,
@@ -17,6 +15,7 @@ defmodule Glific.Providers.Maytapi.Message do
     Repo,
     WAGroup.WAManagedPhone,
     WAGroup.WAMessage,
+    WAGroup.WaPoll,
     WAMessages
   }
 
