@@ -1307,6 +1307,7 @@ defmodule Glific.Fixtures do
     registration
   end
 
+  @doc false
   @spec wa_poll_fixture(map()) :: Glific.WAGroup.WaPoll.t()
   def wa_poll_fixture(attrs \\ %{}) do
     %{
