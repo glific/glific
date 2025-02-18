@@ -31,12 +31,13 @@ defmodule Glific.Bhasini do
     "urdu" => %{"iso_639_1" => "ur", "iso_639_2" => "urd"},
     "spanish" => %{"iso_639_1" => "es", "iso_639_2" => "spa"},
     "english" => %{"iso_639_1" => "en", "iso_639_2" => "eng"},
-    "hindi" => %{"iso_639_1" => "hi", "iso_639_2" => "hin"}
+    "hindi" => %{"iso_639_1" => "hi", "iso_639_2" => "hin"},
+    "odia" => %{"iso_639_1" => "or", "iso_639_2" => "ori"}
   }
 
   @spec get_tts_model(String.t()) :: String.t()
-  defp get_tts_model("en"), do: @iit_tts_model
-  defp get_tts_model(lang) when lang in ["ta", "kn", "ml", "te", "or"], do: @dravidian_tts_model
+  defp get_tts_model(lang) when lang in ["en", "or"], do: @iit_tts_model
+  defp get_tts_model(lang) when lang in ["ta", "kn", "ml", "te"], do: @dravidian_tts_model
 
   defp get_tts_model(lang) when lang in ["hi", "as", "gu", "bn", "pa", "mr", "ur"],
     do: @indo_aryan_tts_model
@@ -93,7 +94,7 @@ defmodule Glific.Bhasini do
               },
               "serviceId" => get_tts_model(target_language),
               "gender" => "female",
-              "samplingRate" => 8000
+              "samplingRate" => 16_000
             }
           }
         ],
@@ -185,7 +186,7 @@ defmodule Glific.Bhasini do
               "language" => %{"sourceLanguage" => source_language},
               "serviceId" => get_tts_model(source_language),
               "gender" => "female",
-              "samplingRate" => 8000
+              "samplingRate" => 16_000
             }
           }
         ],
@@ -241,6 +242,7 @@ defmodule Glific.Bhasini do
 
     decoded_audio = Base.decode64!(encoded_audio)
     wav_file = System.tmp_dir!() <> "#{uuid}.wav"
+
     mp3_file = System.tmp_dir!() <> "#{uuid}.mp3"
     File.write!(wav_file, decoded_audio)
 
