@@ -165,8 +165,11 @@ defmodule Glific.WaPoll do
       }
       |> Map.merge(attrs)
 
-    %WaPoll{}
-    |> WaPoll.changeset(attrs)
-    |> Repo.insert()
+    with :ok <- validate_options(attrs),
+         :ok <- validate_character_limit(attrs.poll_content) do
+      %WaPoll{}
+      |> WaPoll.changeset(attrs)
+      |> Repo.insert()
+    end
   end
 end
