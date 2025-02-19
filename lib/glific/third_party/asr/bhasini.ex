@@ -221,8 +221,8 @@ defmodule Glific.ASR.Bhasini do
             "serviceId" => asr_service_id,
             "audioFormat" => "flac",
             "samplingRate" => 16_000,
-            "preProcessors" => ["vad"],
-            "postProcessors" => ["punctuation"]
+            "preProcessors" => ["vad", "denoiser"],
+            "postProcessors" => ["punctuation", "itn"]
           }
         }
       ],
