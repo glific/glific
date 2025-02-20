@@ -73,8 +73,8 @@ defmodule GlificWeb.Resolvers.WaPoll do
   @spec do_copy_wa_poll(
           non_neg_integer,
           map(),
-          (Glific.WaGroup.WaPoll.t(), map() ->
-             {:ok, Glific.WaGroup.WaPoll.t()} | {:error, String.t()})
+          (Glific.WAGroup.WaPoll.t(), map() ->
+             {:ok, Glific.WAGroup.WaPoll.t()} | {:error, String.t()})
         ) :: {:ok, any} | {:error, any}
   defp do_copy_wa_poll(id, params, fun) do
     with {:ok, wa_poll} <-

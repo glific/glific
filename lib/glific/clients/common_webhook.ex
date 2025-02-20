@@ -13,7 +13,7 @@ defmodule Glific.Clients.CommonWebhook do
     Providers.Maytapi,
     Repo,
     WAGroup.WAManagedPhone,
-    WaGroup.WaPoll
+    WAGroup.WaPoll
   }
 
   require Logger

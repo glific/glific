@@ -133,7 +133,9 @@ defmodule Glific.Clients.DigitalGreen do
       %{error: false, message: "Geography set successfully for #{type}"}
     else
       index_map
-      |> Enum.find(fn {_index, value} -> String.downcase(value) == String.downcase(user_input) end)
+      |> Enum.find(fn {_index, value} ->
+        String.downcase(value) == String.downcase(user_input)
+      end)
       |> case do
         nil ->
           %{error: true, message: "Invalid selected index"}
