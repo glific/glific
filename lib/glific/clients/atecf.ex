@@ -4,8 +4,6 @@ defmodule Glific.Clients.Atecf do
   """
 
   @endpoint "https://staging.rwb.avniproject.org"
-  @username Application.get_env(:glific, :avni_username)
-  @password Application.get_env(:glific, :avni_password)
   use Tesla
   @spec headers(String.t() | nil) :: list()
   defp headers(token \\ nil) do
@@ -16,7 +14,7 @@ defmodule Glific.Clients.Atecf do
     if is_nil(token) do
       header_list
     else
-      header_list ++ [{"Authorization", token}]
+      header_list ++ [{"auth-token", token}]
     end
   end
 
@@ -24,8 +22,8 @@ defmodule Glific.Clients.Atecf do
 
   def webhook("enable_avni_user", fields) do
     with {:ok, %{authToken: token}} <- get_auth_token(),
-         {:ok, _} <- enable_user(token, fields.username) do
-      %{success: true, username: fields.username}
+         {:ok, _} <- enable_user(token, fields["username"]) do
+      %{success: true, username: fields["username"]}
     else
       {:error, reason} ->
         %{success: false, error: reason}
@@ -36,12 +34,12 @@ defmodule Glific.Clients.Atecf do
   defp get_auth_token() do
     payload =
       %{
-        "username" => @username,
-        "password" => @password
+        "username" => Application.get_env(:glific, :avni_username),
+        "password" => Application.get_env(:glific, :avni_password)
       }
-      |> Jason.encode!()
 
     post(@endpoint <> "/api/user/generateToken", payload, headers: headers())
+    |> IO.inspect()
     |> parse_api_response()
   end
 
@@ -49,11 +47,13 @@ defmodule Glific.Clients.Atecf do
   defp enable_user(token, username) do
     payload =
       %{
-        "username" => username
+        "Username" => username
       }
       |> Jason.encode!()
+      |> IO.inspect()
 
-    post(@endpoint <> "/api/user/enable", payload, headers: headers())
+    post(@endpoint <> "/api/user/enable", payload, headers: headers(token))
+    |> IO.inspect()
     |> parse_api_response()
   end
 
@@ -64,6 +64,7 @@ defmodule Glific.Clients.Atecf do
   end
 
   defp parse_api_response({:ok, %{body: body, status: _status}}) do
+    IO.inspect(body)
     {:error, body.error}
   end
 
