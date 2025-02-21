@@ -101,11 +101,6 @@ msgid "Cannot send hsm message to contact, not opted in."
 msgstr "संपर्क करने के लिए hsm संदेश नहीं भेजा जा सकता, नहीं चुना गया।"
 
 #, elixir-format
-#: lib/glific/jobs/chatbase/chatbase_worker.ex:115
-msgid "Chatbase returned an unexpected result"
-msgstr "चैटबेस ने अप्रत्याशित परिणाम दिया"
-
-#, elixir-format
 #: lib/glific/contacts.ex:468 lib/glific/contacts.ex:487
 msgid "Contact status is not valid."
 msgstr "संपर्क स्थिति मान्य नहीं है।"
