@@ -1,4 +1,4 @@
-defmodule GlificWeb.FlowResumeController do
+defmodule GlificWeb.Flows.FlowResumeController do
   @moduledoc """
   The controller to process events received from 3rd party services to resume the flow
   """

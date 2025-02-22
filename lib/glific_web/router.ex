@@ -119,7 +119,7 @@ defmodule GlificWeb.Router do
 
   scope "/webhook", GlificWeb do
     post("/stripe", StripeController, :stripe_webhook)
-    post("/flow_resume", FlowResumeController, :flow_resume_with_results)
+    post("/flow_resume", Flows.FlowResumeController, :flow_resume_with_results)
     get("/exotel/optin", ExotelController, :optin)
   end
 
