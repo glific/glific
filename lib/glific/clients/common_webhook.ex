@@ -276,6 +276,14 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  def webhook("create_certificate", fields) do
+    Glific.ThirdParty.GoogleSlide.Slide.create_certificate(
+      fields["organization_id"],
+      fields["presentation_id"],
+      fields["replace_texts"]
+    ) |> IO.inspect()
+  end
+
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
   @spec find_component(list(map()), String.t()) :: String.t()
