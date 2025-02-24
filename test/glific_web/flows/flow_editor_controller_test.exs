@@ -100,11 +100,11 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
         |> post("/flow-editor/groups", %{"name" => "Optin contacts"})
 
       assert json_response(conn, 400) == %{
-          "error" => %{
-          "message" => "Cannot create new collection with name Optin contacts",
-          "status" => 400
-          }
-      }
+               "error" => %{
+                 "message" => "Cannot create new collection with name Optin contacts",
+                 "status" => 400
+               }
+             }
     end
 
     test "fields", %{conn: conn, access_token: token} do

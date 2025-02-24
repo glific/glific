@@ -57,25 +57,29 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
   @doc false
   def groups_post(conn, params) do
-      Groups.create_group(%{
-        label: params["name"],
-        organization_id: conn.assigns[:organization_id]
-      })
-      |> case do
+    Groups.create_group(%{
+      label: params["name"],
+      organization_id: conn.assigns[:organization_id]
+    })
+    |> case do
       {:ok, group} ->
         conn
         |> json(%{
-          name: group.label, uuid: group.id, type: "group"
+          name: group.label,
+          uuid: group.id,
+          type: "group"
         })
 
       {:error, _} ->
         conn
         |> put_status(400)
         |> json(%{
-          error: %{status: 400, message: "Cannot create new collection with name #{params["name"]}"}
+          error: %{
+            status: 400,
+            message: "Cannot create new collection with name #{params["name"]}"
+          }
         })
     end
-
   end
 
   @doc false
