@@ -1,0 +1,11 @@
+mutation DeleteWaPoll($deleteWaPollId: ID!) {
+  deleteWaPoll(id: $deleteWaPollId) {
+    errors {
+      key
+      message
+    }
+    waPoll {
+      id
+    }
+  }
+}

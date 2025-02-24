@@ -239,13 +239,6 @@ defmodule Glific.Flags do
       FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: organization.id})
 
   @doc """
-  Get llm4dev value for organization flag
-  """
-  @spec get_llm4dev_enabled(map()) :: boolean
-  def get_llm4dev_enabled(organization),
-    do: FunWithFlags.enabled?(:is_llm4dev_enabled, for: %{organization_id: organization.id})
-
-  @doc """
   Set fun_with_flag toggle for ticketing for an organization
   """
   @spec set_ticketing_enabled(map()) :: map()
@@ -341,18 +334,6 @@ defmodule Glific.Flags do
     )
   end
 
-  @doc """
-  Set fun_with_flag toggle for llm4dev enabled for an organization
-  """
-  @spec set_llm4dev_enabled(map()) :: map()
-  def set_llm4dev_enabled(organization) do
-    Map.put(
-      organization,
-      :is_llm4dev_enabled,
-      get_llm4dev_enabled(organization)
-    )
-  end
-
   # setting default fun_with_flags values as disabled for an organization except for out_of_office
   @spec init_fun_with_flags(Organization.t()) :: :ok
   defp init_fun_with_flags(organization) do
@@ -366,7 +347,6 @@ defmodule Glific.Flags do
       :flow_uuid_display,
       :roles_and_permission,
       :is_ticketing_enabled,
-      :is_llm4dev_enabled,
       :is_open_ai_auto_translation_enabled,
       :is_google_auto_translation_enabled,
       :is_whatsapp_group_enabled

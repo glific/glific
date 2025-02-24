@@ -64,7 +64,8 @@ defmodule Glific.Fixtures do
     WAGroup.WAManagedPhone,
     WAGroup.WAMessage,
     WAManagedPhones,
-    WAMessages
+    WAMessages,
+    WaPoll
   }
 
   @doc """
@@ -1304,5 +1305,25 @@ defmodule Glific.Fixtures do
 
     {:ok, registration} = Registrations.create_registration(valid_args)
     registration
+  end
+
+  @doc false
+  @spec wa_poll_fixture(map()) :: Glific.WAGroup.WaPoll.t()
+  def wa_poll_fixture(attrs \\ %{}) do
+    %{
+      label: "Test Poll",
+      organization_id: 1,
+      allow_multiple_answer: true,
+      poll_content: %{
+        "options" => [
+          %{"id" => 0, "name" => "Option 1", "voters" => [], "votes" => 0},
+          %{"id" => 1, "name" => "Option 2", "voters" => [], "votes" => 0}
+        ],
+        "text" => "Poll question?"
+      }
+    }
+    |> Map.merge(attrs)
+    |> WaPoll.create_wa_poll()
+    |> then(fn {:ok, wa_poll} -> wa_poll end)
   end
 end

@@ -283,6 +283,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert Contacts.count_contacts(%{filter: %{phone: "918979120220"}}) == 0
   end
 
+  @tag :conn
   test "import contacts and test possible scenarios and errors", %{manager: user} do
     test_name = "test"
     test_phone = "test phone"
@@ -342,6 +343,8 @@ defmodule GlificWeb.Schema.ContactTest do
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :default, with_scheduled: true)
 
+    contact = assert Contacts.get_contact_by_phone!(test_phone)
+    assert contact.optin_method == "Import"
     count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
     assert count == 1
 

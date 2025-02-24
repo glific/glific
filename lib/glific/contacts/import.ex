@@ -367,8 +367,9 @@ defmodule Glific.Contacts.Import do
   defp optin_contact(user, contact, contact_attrs) do
     if should_optin_contact?(user, contact, contact_attrs) do
       contact_attrs
-      |> Map.put(:method, "Import")
-      |> Contacts.optin_contact()
+      |> Contacts.contact_opted_in(contact_attrs.organization_id, contact_attrs[:optin_time],
+        method: "Import"
+      )
       |> case do
         {:ok, contact} ->
           contact
@@ -405,7 +406,14 @@ defmodule Glific.Contacts.Import do
 
   @spec add_language(map(), String.t() | nil) :: map()
   defp add_language(results, language) when language in [nil, ""] do
-    add_default_language(results)
+    # Check if contacts have a language other than English; if so, don't update it
+    case Repo.fetch_by(Contact, %{phone: results.phone}) do
+      {:error, _error} ->
+        add_default_language(results)
+
+      {:ok, contact} ->
+        Map.put(results, :language_id, contact.language_id)
+    end
   end
 
   defp add_language(results, language) do
