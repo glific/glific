@@ -77,7 +77,8 @@ config :glific, Oban,
   repo: Glific.Repo,
   engine: oban_engine,
   queues: oban_queues,
-  plugins: oban_plugins
+  plugins: oban_plugins,
+  shutdown_grace_period: :timer.seconds(60)
 
 # Adding ssl_options to fix #3037. However I dont understand this or the implications
 # We will revisit it once we build a better understanding
