@@ -75,7 +75,9 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
   @spec setup_flow(non_neg_integer()) :: :ok
   def setup_flow(organization_id) do
-    # creates a new flow named wait for result with only two nodes, starting with wait for result and then sending a message
+    # creates a new flow named `Wait for result` with only two nodes
+    # starting with `Wait for result` node and then `Send Message` node
+
     wait_for_result_flow =
       Repo.insert!(%Flow{
         name: "Wait for result",
