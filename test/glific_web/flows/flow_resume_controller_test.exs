@@ -66,7 +66,12 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert json_response(conn, 200) == ""
 
       # once a response is received the flow moves to next node i.e. send the message which is @results.response.message
-      [message | _messages] = Glific.Messages.list_messages(%{})
+
+      [message | _messages] =
+        Glific.Messages.list_messages(%{
+          filter: %{contact_id: contact.id},
+          opts: %{limit: 1, order: :desc}
+        })
 
       # Checking the latest message should be same as the one received at the endpoint
       assert message.body == @ai_response
