@@ -1,0 +1,73 @@
+{
+  "_ui": {
+    "nodes": {
+      "601e9bfe-0a2d-4ba5-8548-a09e212ade8f": {
+        "type": "wait_for_result",
+        "config": { "cases": {} },
+        "position": { "top": 40, "left": 80 }
+      },
+      "c56b1d5d-a046-4ba3-a861-1ed3f166b692": {
+        "type": "execute_actions",
+        "position": { "top": 400, "left": 280 }
+      }
+    }
+  },
+  "name": "Wait for result",
+  "type": "messaging",
+  "uuid": "6a0bd92c-3e6e-4cd5-84b2-d4e140175a90",
+  "vars": ["6a0bd92c-3e6e-4cd5-84b2-d4e140175a90"],
+  "nodes": [
+    {
+      "uuid": "601e9bfe-0a2d-4ba5-8548-a09e212ade8f",
+      "exits": [
+        {
+          "uuid": "8e163851-52c5-4306-b3e4-046f1afe8903",
+          "destination_uuid": "c56b1d5d-a046-4ba3-a861-1ed3f166b692"
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "cases": [],
+        "operand": "@input.text",
+        "categories": [
+          {
+            "name": "Completed",
+            "uuid": "db3bfebd-b117-46d2-8f59-a41974a01e13",
+            "exit_uuid": "8e163851-52c5-4306-b3e4-046f1afe8903"
+          }
+        ],
+        "default_category_uuid": "db3bfebd-b117-46d2-8f59-a41974a01e13"
+      },
+      "actions": [
+        {
+          "type": "wait_for_result",
+          "uuid": "273db50c-7bcb-4736-98a8-829aae1d19f1",
+          "delay": "600"
+        }
+      ]
+    },
+    {
+      "uuid": "c56b1d5d-a046-4ba3-a861-1ed3f166b692",
+      "exits": [
+        {
+          "uuid": "b2ea6cbd-8b05-4d39-9d55-857205a1083c",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "text": "@results.response.message",
+          "type": "send_msg",
+          "uuid": "4c02c9b3-5910-435e-8961-f6d33d4ddf14",
+          "labels": [],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    }
+  ],
+  "language": "base",
+  "localization": {},
+  "spec_version": "13.2.0",
+  "expire_after_minutes": 10080
+}
