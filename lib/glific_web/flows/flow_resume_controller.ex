@@ -21,7 +21,6 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
     # need to validate signature
     # need to validate timestamp
-
     with true <- validate_request(organization_id, response),
          {:ok, contact} <-
            Repo.fetch_by(Contact, %{
@@ -31,8 +30,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
       FlowContext.resume_contact_flow(
         contact,
         response["flow_id"],
-        %{response: response},
-        nil
+        %{response: response}
       )
     end
 
