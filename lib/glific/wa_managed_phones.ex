@@ -156,9 +156,16 @@ defmodule Glific.WAManagedPhones do
            ApiClient.list_wa_managed_phones(org_id),
          {:ok, response} <- Jason.decode(body),
          {:ok, wa_managed_phones} <- validate_response(response) do
-      WAManagedPhone
-      |> where([wam], wam.organization_id == ^org_id)
-      |> Repo.delete_all()
+      delete_task =
+        Task.async(fn ->
+          Repo.put_process_state(org_id)
+
+          WAManagedPhone
+          |> where([wam], wam.organization_id == ^org_id)
+          |> Repo.delete_all()
+        end)
+
+      Task.await(delete_task)
 
       Enum.each(wa_managed_phones, fn wa_managed_phone ->
         phone = wa_managed_phone["number"]
