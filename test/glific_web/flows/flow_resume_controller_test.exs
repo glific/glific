@@ -18,7 +18,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
   @ai_response "Glific is an open-source, two-way messaging platform designed for nonprofits to scale their outreach via WhatsApp. It helps organizations automate conversations, manage contacts, and measure impact, all in one centralized tool"
 
   describe "flow_resume_routes" do
-    test "resuming and existing flow once receive webhook event", %{
+    test "resumes an existing flow on receiving webhook event", %{
       conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
       setup_flow(organization_id)

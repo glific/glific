@@ -38,6 +38,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
     json(conn, "")
   end
 
+  @spec validate_request(non_neg_integer(), map()) :: boolean()
   defp validate_request(new_organization_id, fields) do
     flow_id = fields["flow_id"]
     contact_id = fields["contact_id"]
