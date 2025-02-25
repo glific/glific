@@ -10,18 +10,6 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     Seeds.SeedsDev
   }
 
-  alias Glific.Flows.{
-    Flow,
-    FlowContext
-  }
-
-  @valid_attrs %{
-    flow_id: 1,
-    flow_uuid: Ecto.UUID.generate(),
-    uuid_map: %{},
-    node_uuid: Ecto.UUID.generate()
-  }
-
   setup do
     SeedsDev.seed_organizations()
     :ok
@@ -85,19 +73,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     end
   end
 
-  def flow_context_fixture(contact, attrs \\ %{}) do
-    {:ok, flow_context} =
-      attrs
-      |> Map.put(:contact_id, contact.id)
-      |> Map.put(:organization_id, contact.organization_id)
-      |> Enum.into(@valid_attrs)
-      |> FlowContext.create_flow_context()
-
-    flow_context
-    |> Repo.preload(:contact)
-    |> Repo.preload(:flow)
-  end
-
+  @spec setup_flow(non_neg_integer()) :: :ok
   def setup_flow(organization_id) do
     # creates a new flow named wait for result with only two nodes, starting with wait for result and then sending a message
     wait_for_result_flow =
@@ -119,5 +95,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       status: "published",
       organization_id: organization_id
     })
+
+    :ok
   end
 end
