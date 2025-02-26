@@ -4,6 +4,8 @@ defmodule Glific.Clients.Atecf do
   """
 
   @endpoint "https://staging.rwb.avniproject.org"
+  # @endpoint_prod "https://app.rwb.avniproject.org"
+
   use Tesla
   @spec headers(String.t() | nil) :: list()
   defp headers(token \\ nil) do
@@ -39,7 +41,6 @@ defmodule Glific.Clients.Atecf do
       }
 
     post(@endpoint <> "/api/user/generateToken", payload, headers: headers())
-    |> IO.inspect()
     |> parse_api_response()
   end
 
@@ -50,10 +51,8 @@ defmodule Glific.Clients.Atecf do
         "Username" => username
       }
       |> Jason.encode!()
-      |> IO.inspect()
 
     post(@endpoint <> "/api/user/enable", payload, headers: headers(token))
-    |> IO.inspect()
     |> parse_api_response()
   end
 
@@ -64,8 +63,7 @@ defmodule Glific.Clients.Atecf do
   end
 
   defp parse_api_response({:ok, %{body: body, status: _status}}) do
-    IO.inspect(body)
-    {:error, body.error}
+    {:error, Jason.encode!(body)}
   end
 
   defp parse_api_response({:error, _}) do
