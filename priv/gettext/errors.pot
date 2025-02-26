@@ -109,11 +109,6 @@ msgstr ""
 msgid "Cannot send hsm message to contact, not opted in."
 msgstr ""
 
-#: lib/glific/jobs/chatbase/chatbase_worker.ex:115
-#, elixir-format
-msgid "Chatbase returned an unexpected result"
-msgstr ""
-
 #: lib/glific/contacts.ex:639
 #: lib/glific/contacts.ex:668
 #, elixir-format, elixir-autogen
