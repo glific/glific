@@ -422,11 +422,8 @@ defmodule Glific.Partners do
     if is_nil(organization.services["bsp"]) do
       {:error, dgettext("errors", "No active BSP available")}
     else
-      credentials = organization.services["bsp"]
-      api_key = credentials.secrets["api_key"]
-
       case organization.bsp.shortcode do
-        "gupshup" -> GupshupWallet.balance(api_key)
+        "gupshup" -> GupshupWallet.balance(organization_id)
         _ -> {:error, dgettext("errors", "Invalid BSP provider")}
       end
     end

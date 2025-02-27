@@ -190,7 +190,8 @@ defmodule GlificWeb.Schema.ProviderTest do
       %{method: :get} ->
         %Tesla.Env{
           status: 200,
-          body: "{\"balance\":0.787,\"status\":\"success\"}"
+          body:
+            "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":0.787,\"overDraftLimit\":-20.0}}"
         }
     end)
 

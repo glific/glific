@@ -141,7 +141,13 @@ defmodule GlificWeb.Resolvers.Contacts do
   @spec optin_contact(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def optin_contact(_, params, _) do
-    with {:ok, contact} <- Contacts.optin_contact(params) do
+    with {:ok, contact} <-
+           Contacts.contact_opted_in(
+             params,
+             params.organization_id,
+             DateTime.utc_now(),
+             method: "BSP"
+           ) do
       {:ok, %{contact: contact}}
     end
   end

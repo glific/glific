@@ -118,17 +118,25 @@ defmodule Glific.PartnersTest do
     end
 
     test "bspbalance/1 for checking bsp balance" do
+      org = SeedsDev.seed_organizations()
+
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "{\"balance\":0.787,\"status\":\"success\"}"
+            body:
+              "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":0.787,\"overDraftLimit\":-20.0}}"
+          }
+
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"status\":\"success\"}"
           }
       end)
 
-      organization = Fixtures.organization_fixture()
-      {:ok, data} = Partners.get_bsp_balance(organization.id)
-      assert %{"balance" => 0.787, "status" => "success"} == data
+      {:ok, data} = Partners.get_bsp_balance(org.id)
+      assert %{"balance" => 0.787} == data
     end
 
     test "set business profile" do

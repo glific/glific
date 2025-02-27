@@ -304,6 +304,20 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @doc """
+  Gets the remaining Gupshup balance
+  """
+  @spec get_balance(non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
+  def get_balance(org_id) do
+    with {:ok, resp} <-
+           get_request(
+             app_url(org_id) <> "/wallet/balance",
+             org_id: org_id
+           ) do
+      {:ok, %{"balance" => resp["walletResponse"]["currentBalance"]}}
+    end
+  end
+
   @global_organization_id 0
   @spec get_partner_token :: {:ok, map()} | {:error, any}
   defp get_partner_token do
