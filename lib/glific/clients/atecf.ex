@@ -22,6 +22,7 @@ defmodule Glific.Clients.Atecf do
 
   plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
 
+  @spec webhook(String.t(), map()) :: map()
   def webhook("enable_avni_user", fields) do
     with {:ok, %{authToken: token}} <- get_auth_token(),
          {:ok, _} <- enable_user(token, fields["username"]) do
@@ -32,7 +33,7 @@ defmodule Glific.Clients.Atecf do
     end
   end
 
-  @spec get_auth_token() :: :ok
+  @spec get_auth_token() :: {:ok, map()} | {:error, String.t()}
   defp get_auth_token() do
     payload =
       %{
@@ -63,7 +64,7 @@ defmodule Glific.Clients.Atecf do
   end
 
   defp parse_api_response({:ok, %{body: body, status: _status}}) do
-    {:error, Jason.encode!(body)}
+    {:error, "Error due to #{inspect(body)}"}
   end
 
   defp parse_api_response({:error, _}) do
