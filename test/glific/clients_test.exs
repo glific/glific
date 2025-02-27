@@ -3,6 +3,7 @@ defmodule Glific.ClientsTest do
 
   alias Glific.{
     Clients,
+    Clients.Atecf,
     Clients.Bandhu,
     Clients.CommonWebhook,
     Clients.KEF,
@@ -490,7 +491,7 @@ defmodule Glific.ClientsTest do
     end)
 
     assert %{success: true, username: "user@ngo"} =
-             Glific.Clients.Atecf.webhook("enable_avni_user", %{"username" => username})
+             Atecf.webhook("enable_avni_user", %{"username" => username})
   end
 
   test "enable_avni_user fail due to apis" do
@@ -512,7 +513,7 @@ defmodule Glific.ClientsTest do
     end)
 
     assert %{success: false, error: "Error due to" <> _} =
-             Glific.Clients.Atecf.webhook("enable_avni_user", %{"username" => username})
+             Atecf.webhook("enable_avni_user", %{"username" => username})
   end
 
   test "enable_avni_user fail due to apis - 2" do
@@ -534,6 +535,6 @@ defmodule Glific.ClientsTest do
     end)
 
     assert %{success: false, error: "Error due to" <> _} =
-             Glific.Clients.Atecf.webhook("enable_avni_user", %{"username" => username})
+             Atecf.webhook("enable_avni_user", %{"username" => username})
   end
 end
