@@ -21,6 +21,7 @@ defmodule Glific.Clients.Atecf do
 
   plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
 
+  @doc false
   @spec webhook(String.t(), map()) :: map()
   def webhook("enable_avni_user", fields) do
     with {:ok, %{authToken: token}} <- get_auth_token(fields["username"]),
