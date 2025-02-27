@@ -111,7 +111,4 @@ config :glific,
   open_ai_project: env!("OPEN_AI_PROJECT", :string!, "This is not a secret")
 
 config :glific,
-  avni_username: env!("AVNI_USERNAME", :string!, "This is not a secret")
-
-config :glific,
   avni_password: env!("AVNI_PASSWORD", :string!, "This is not a secret")

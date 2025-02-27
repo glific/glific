@@ -470,4 +470,70 @@ defmodule Glific.ClientsTest do
     assert ext == "pdf"
     assert contact.phone == phone_num
   end
+
+  test "enable_avni_user success" do
+    username = "user@ngo"
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://app.rwb.avniproject.org/api/user/generateToken"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            authToken: "authToken"
+          }
+        }
+
+      %{method: :post, url: "https://app.rwb.avniproject.org/api/user/enable"} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    assert %{success: true, username: "user@ngo"} =
+             Glific.Clients.Atecf.webhook("enable_avni_user", %{"username" => username})
+  end
+
+  test "enable_avni_user fail due to apis" do
+    username = "user@ngo"
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://app.rwb.avniproject.org/api/user/generateToken"} ->
+        %Tesla.Env{
+          status: 400,
+          body: %{
+            authToken: "authToken"
+          }
+        }
+
+      %{method: :post, url: "https://app.rwb.avniproject.org/api/user/enable"} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    assert %{success: false, error: "Error due to" <> _} =
+             Glific.Clients.Atecf.webhook("enable_avni_user", %{"username" => username})
+  end
+
+  test "enable_avni_user fail due to apis - 2" do
+    username = "user@ngo"
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://app.rwb.avniproject.org/api/user/generateToken"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            authToken: "authToken"
+          }
+        }
+
+      %{method: :post, url: "https://app.rwb.avniproject.org/api/user/enable"} ->
+        %Tesla.Env{
+          status: 500
+        }
+    end)
+
+    assert %{success: false, error: "Error due to" <> _} =
+             Glific.Clients.Atecf.webhook("enable_avni_user", %{"username" => username})
+  end
 end

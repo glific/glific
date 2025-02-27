@@ -3,8 +3,7 @@ defmodule Glific.Clients.Atecf do
   Custom client functions for ATECF
   """
 
-  @endpoint "https://staging.rwb.avniproject.org"
-  # @endpoint_prod "https://app.rwb.avniproject.org"
+  @endpoint "https://app.rwb.avniproject.org"
 
   use Tesla
   @spec headers(String.t() | nil) :: list()
@@ -24,7 +23,7 @@ defmodule Glific.Clients.Atecf do
 
   @spec webhook(String.t(), map()) :: map()
   def webhook("enable_avni_user", fields) do
-    with {:ok, %{authToken: token}} <- get_auth_token(),
+    with {:ok, %{authToken: token}} <- get_auth_token(fields["username"]),
          {:ok, _} <- enable_user(token, fields["username"]) do
       %{success: true, username: fields["username"]}
     else
@@ -33,11 +32,11 @@ defmodule Glific.Clients.Atecf do
     end
   end
 
-  @spec get_auth_token() :: {:ok, map()} | {:error, String.t()}
-  defp get_auth_token() do
+  @spec get_auth_token(String.t()) :: {:ok, map()} | {:error, String.t()}
+  defp get_auth_token(username) do
     payload =
       %{
-        "username" => Application.get_env(:glific, :avni_username),
+        "username" => "api" <> username,
         "password" => Application.get_env(:glific, :avni_password)
       }
 

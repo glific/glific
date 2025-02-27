@@ -19,7 +19,7 @@ defmodule Glific.Clients do
     name: "Glific",
     gcs_file_name: Glific.Clients.Tap,
     broadcast: Glific.Clients.Weunlearn,
-    webhook: Glific.Clients.Atecf,
+    webhook: Glific.Clients.Tap,
     daily_tasks: Glific.Clients.DigitalGreen,
     trigger_condition: Glific.Clients.ArogyaWorld
   }
