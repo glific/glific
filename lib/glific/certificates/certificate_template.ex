@@ -16,7 +16,8 @@ defmodule Glific.Certificates.CertificateTemplate do
   ]
 
   @optional_fields [
-    :description
+    :description,
+    :type
   ]
 
   @type t() :: %__MODULE__{
@@ -25,6 +26,7 @@ defmodule Glific.Certificates.CertificateTemplate do
           label: String.t() | nil,
           url: String.t() | nil,
           description: String.t() | nil,
+          type: String.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -35,7 +37,7 @@ defmodule Glific.Certificates.CertificateTemplate do
     field :label, :string
     field :url, :string
     field :description, :string
-
+    field :type, :string
     belongs_to :organization, Organization
 
     timestamps(type: :utc_datetime)
@@ -49,8 +51,8 @@ defmodule Glific.Certificates.CertificateTemplate do
     wa_poll
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_length(:label, min: 1)
-    |> validate_length(:description, min: 1)
+    |> validate_length(:label, min: 1, max: 40)
+    |> validate_length(:description, min: 1, max: 150)
     |> validate_length(:url, min: 1)
     |> unique_constraint([:label, :organization_id])
     |> foreign_key_constraint(:organization_id)

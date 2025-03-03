@@ -7,6 +7,10 @@ defmodule Glific.Repo.Migrations.CertificateTemplates do
       add :url, :string, null: false, comment: "Url of the certificate template"
       add :description, :text, comment: "Details about the certificate template"
 
+      add :type, :string,
+        default: "slides",
+        comment: "Format of template used for ex: slides, pdf etc.."
+
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
         comment: "Unique organization ID."

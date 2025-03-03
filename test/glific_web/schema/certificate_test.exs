@@ -84,5 +84,69 @@ defmodule GlificWeb.Schema.CertificateTest do
       )
 
     assert {:ok, %{errors: [%{message: "Invalid Template url"}]}} = result
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    # Other validations
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => String.duplicate("slides", 100),
+            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p"
+          }
+        }
+      )
+
+    assert {:ok,
+            %{
+              data: %{
+                "CreateCertificateTemplate" => %{
+                  "errors" => [
+                    %{"message" => "Label: should be at most 40 character(s)"}
+                  ]
+                }
+              }
+            }} =
+             result
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    # Other validations
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "slides",
+            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
+            "description" => String.duplicate("lorum ipsum", 250)
+          }
+        }
+      )
+
+    assert {:ok,
+            %{
+              data: %{
+                "CreateCertificateTemplate" => %{
+                  "errors" => [
+                    %{"message" => "Description: should be at most 150 character(s)"}
+                  ]
+                }
+              }
+            }} =
+             result
   end
+
+  # test "" do
+  # end
 end
