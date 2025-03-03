@@ -9,12 +9,15 @@ defmodule Glific.Certificates.CertificateTemplate do
     Repo
   }
 
+  @slides_url_prefix "https://docs.google.com/presentation/"
+
   @required_fields [
     :label,
     :url,
     :organization_id
   ]
 
+  # TODO: maybe we can make the type as enum, probably better.
   @optional_fields [
     :description,
     :type
@@ -54,6 +57,7 @@ defmodule Glific.Certificates.CertificateTemplate do
     |> validate_length(:label, min: 1, max: 40)
     |> validate_length(:description, min: 1, max: 150)
     |> validate_length(:url, min: 1)
+    |> validate_url(attrs)
     |> unique_constraint([:label, :organization_id])
     |> foreign_key_constraint(:organization_id)
   end
@@ -82,8 +86,8 @@ defmodule Glific.Certificates.CertificateTemplate do
   """
   @spec delete_certificate_template(CertificateTemplate.t()) ::
           {:ok, CertificateTemplate.t()} | {:error, Ecto.Changeset.t()}
-  def delete_certificate_template(%CertificateTemplate{} = assistant) do
-    Repo.delete(assistant)
+  def delete_certificate_template(%CertificateTemplate{} = certificate_template) do
+    Repo.delete(certificate_template)
   end
 
   @doc """
@@ -132,4 +136,45 @@ defmodule Glific.Certificates.CertificateTemplate do
     |> CertificateTemplate.changeset(attrs)
     |> Repo.update()
   end
+
+  @spec validate_url(Ecto.Changeset.t(), map()) :: Ecto.Changeset.t()
+  defp validate_url(%{changes: changes} = changeset, attrs) when not is_nil(changes.url) do
+    url = changeset.changes[:url]
+    type = attrs.type
+
+    with :ok <- Glific.URI.cast(url),
+         :ok <- validate_by_type(url, type),
+         {:ok, %Tesla.Env{status: status}} when status in 200..299 <-
+           Tesla.get(url, opts: [adapter: [recv_timeout: 10_000]]) do
+      changeset
+    else
+      {:error, _type, reason} ->
+        add_error(
+          changeset,
+          :url,
+          reason
+        )
+
+      _ ->
+        add_error(
+          changeset,
+          :url,
+          "Invalid Template url"
+        )
+    end
+  end
+
+  defp validate_url(changeset, _), do: changeset
+
+  @spec validate_by_type(String.t(), String.t()) :: :ok | {:error, String.t(), String.t()}
+  defp validate_by_type(url, "slides") do
+    if String.starts_with?(url, @slides_url_prefix) do
+      :ok
+    else
+      {:error, "slides", "Template url not a valid Google Slides"}
+    end
+  end
+
+  defp validate_by_type(_url, type),
+    do: {:error, type, "Template of type #{type} not supported yet"}
 end
