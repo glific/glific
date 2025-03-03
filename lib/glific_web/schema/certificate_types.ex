@@ -3,9 +3,7 @@ defmodule GlificWeb.Schema.CertificateTypes do
    GraphQL Representation of Glific's Certificates
   """
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers
 
-  alias Glific.Repo
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -24,16 +22,18 @@ defmodule GlificWeb.Schema.CertificateTypes do
   end
 
   input_object :certificate_template_input do
-    field :label, :string
-    field :url, :string
+    field :label, non_null(:string)
+    field :url, non_null(:string)
     field :description, :string
+    field :type, :string
   end
 
   object :certificate_mutations do
     @desc "Create certificate template"
     field :create_certificate_template, :certificate_template_result do
+      arg(:input, :certificate_template_input)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.create_assistant/3)
+      resolve(&Resolvers.Certificate.create_certificate_template/3)
     end
   end
 end

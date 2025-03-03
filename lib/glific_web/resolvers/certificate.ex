@@ -2,14 +2,14 @@ defmodule GlificWeb.Resolvers.Certificate do
   @moduledoc """
   Certificate Resolver which sits between the GraphQL schema and Glific Certificate APIs.
   """
-  alias Glific.Certificates.CertificateTemplate
+  alias Glific.Certificates.Certificate
 
   @doc """
-  Create an Assistant
+  Create a certificate template
   """
   @spec create_certificate_template(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_certificate_template(_, %{input: params}, _) do
-    CertificateTemplate.create_certificate_template(params)
+    Certificate.create_certificate_template(params)
   end
 end

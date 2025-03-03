@@ -49,6 +49,9 @@ defmodule Glific.Certificates.CertificateTemplate do
     wa_poll
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_length(:label, min: 1)
+    |> validate_length(:description, min: 1)
+    |> validate_length(:url, min: 1)
     |> unique_constraint([:label, :organization_id])
     |> foreign_key_constraint(:organization_id)
   end
