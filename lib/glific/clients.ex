@@ -177,6 +177,12 @@ defmodule Glific.Clients do
     webhook: Glific.Clients.BharatRohan
   }
 
+  @atecf %{
+    id: 253,
+    name: "A.T.E. Chandra Foundation",
+    webhook: Glific.Clients.Atecf
+  }
+
   ## we should move this also to databases.
   @plugins %{
     @sol[:id] => @sol,
@@ -201,7 +207,8 @@ defmodule Glific.Clients do
     @quest_tcec[:id] => @quest_tcec,
     @quest_alliance[:id] => @quest_alliance,
     @oblf[:id] => @oblf,
-    @bharat_rohan[:id] => @bharat_rohan
+    @bharat_rohan[:id] => @bharat_rohan,
+    @atecf[:id] => @atecf
   }
 
   @spec env(atom() | nil) :: atom()
