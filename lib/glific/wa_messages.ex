@@ -9,9 +9,9 @@ defmodule Glific.WAMessages do
     Flows.MessageVarParser,
     Groups.WAGroup,
     Messages,
+    Partners,
     Repo,
     WAGroup.WAMessage,
-    Partners
   }
 
   import Ecto.Query
@@ -229,7 +229,7 @@ defmodule Glific.WAMessages do
   Record a message sent to a group in the wa_message table. This message is actually not
   sent, but is used for display purposes in the group listings
   """
-  @spec create_group_message(map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_group_message(map()) :: {:ok, WAMessage.t()} | {:error, Ecto.Changeset.t()}
   def create_group_message(attrs) do
     organization_id = Repo.get_organization_id()
     sender_id = Partners.organization_contact_id(organization_id)
