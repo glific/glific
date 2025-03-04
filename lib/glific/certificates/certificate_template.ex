@@ -5,6 +5,7 @@ defmodule Glific.Certificates.CertificateTemplate do
   alias __MODULE__
 
   alias Glific.{
+    Enums.CertificateTemplateType,
     Partners.Organization,
     Repo
   }
@@ -17,7 +18,6 @@ defmodule Glific.Certificates.CertificateTemplate do
     :organization_id
   ]
 
-  # TODO: maybe we can make the type as enum, probably better.
   @optional_fields [
     :description,
     :type
@@ -40,7 +40,7 @@ defmodule Glific.Certificates.CertificateTemplate do
     field :label, :string
     field :url, :string
     field :description, :string
-    field :type, :string
+    field :type, CertificateTemplateType
     belongs_to :organization, Organization
 
     timestamps(type: :utc_datetime)
@@ -167,11 +167,11 @@ defmodule Glific.Certificates.CertificateTemplate do
   defp validate_url(changeset, _), do: changeset
 
   @spec validate_by_type(String.t(), String.t()) :: :ok | {:error, String.t(), String.t()}
-  defp validate_by_type(url, "slides") do
+  defp validate_by_type(url, :slides) do
     if String.starts_with?(url, @slides_url_prefix) do
       :ok
     else
-      {:error, "slides", "Template url not a valid Google Slides"}
+      {:error, :slides, "Template url not a valid Google Slides"}
     end
   end
 

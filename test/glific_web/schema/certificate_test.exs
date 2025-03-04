@@ -77,13 +77,12 @@ defmodule GlificWeb.Schema.CertificateTest do
 
     assert {:ok,
             %{
-              data: %{
-                "CreateCertificateTemplate" => %{
-                  "errors" => [
-                    %{"message" => "Url: Template of type pdf not supported yet"}
-                  ]
+              errors: [
+                %{
+                  message:
+                    "Argument \"input\" has invalid value $input.\nIn field \"type\": Expected type \"CertificateTemplateTypeEnum\", found \"pdf\"."
                 }
-              }
+              ]
             }} =
              result
 
@@ -505,7 +504,7 @@ defmodule GlificWeb.Schema.CertificateTest do
             }} =
              result
 
-    assert length(cert_templates) == 0
+    assert Enum.empty?(cert_templates)
   end
 
   @tag :cert

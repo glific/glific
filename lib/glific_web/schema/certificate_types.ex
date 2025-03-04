@@ -16,6 +16,7 @@ defmodule GlificWeb.Schema.CertificateTypes do
     field :id, :id
     field :label, :string
     field :url, :string
+    field :type, :certificate_template_type_enum
     field :description, :string
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -25,7 +26,7 @@ defmodule GlificWeb.Schema.CertificateTypes do
     field :label, :string
     field :url, :string
     field :description, :string
-    field :type, :string
+    field :type, :certificate_template_type_enum
   end
 
   @desc "Filtering options for Certificate templates"

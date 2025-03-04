@@ -62,6 +62,9 @@ defmodule GlificWeb.Resolvers.Certificate do
     {:ok, CertificateTemplate.count_certificate_templates(params)}
   end
 
+  @doc """
+  Deletes a certificate template
+  """
   @spec delete_certificate_template(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_certificate_template(_, %{id: id}, _) do
