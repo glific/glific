@@ -60,6 +60,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.WaGroupTypes)
   import_types(__MODULE__.FilesearchTypes)
   import_types(__MODULE__.WaPollTypes)
+  import_types(__MODULE__.CertificateTypes)
 
   query do
     import_fields(:profile_queries)
@@ -129,6 +130,8 @@ defmodule GlificWeb.Schema do
     import_fields(:filesearch_queries)
 
     import_fields(:wa_poll_queries)
+
+    import_fields(:certificate_queries)
   end
 
   mutation do
@@ -199,6 +202,8 @@ defmodule GlificWeb.Schema do
     import_fields(:filesearch_mutations)
 
     import_fields(:wa_poll_mutations)
+
+    import_fields(:certificate_mutations)
   end
 
   subscription do

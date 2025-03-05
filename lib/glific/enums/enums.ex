@@ -108,6 +108,9 @@ defmodule Glific.Enums do
 
   iex> Glific.Enums.ImportContactsType.__enum_map__()
   Glific.Enums.import_contacts_type_const()
+
+  iex> Glific.Enums.certificate_template_type_const()
+  [:slides]
   """
 
   defmacro api_status_const,
@@ -166,4 +169,7 @@ defmodule Glific.Enums do
 
   defmacro import_contacts_type_const,
     do: Macro.expand(@import_contacts_type_const, __CALLER__)
+
+  defmacro certificate_template_type_const,
+    do: Macro.expand(@certificate_template_type_const, __CALLER__)
 end
