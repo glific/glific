@@ -28,9 +28,9 @@ defmodule Glific.Certificates.IssuedCertificate do
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           certificate_template_id: non_neg_integer() | nil,
-          certificate_template: CertificateTemplate.t() | nil,
+          certificate_template: CertificateTemplate.t() | Ecto.Association.NotLoaded.t() | nil,
           contact_id: non_neg_integer() | nil,
-          contact: Contact.t() | nil,
+          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           gcs_url: String.t() | nil,
           errors: map() | nil,
           status: String.t() | nil,
@@ -54,7 +54,7 @@ defmodule Glific.Certificates.IssuedCertificate do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(CertificateTemplate.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(IssuedCertificate.t(), map()) :: Ecto.Changeset.t()
   def changeset(wa_poll, attrs) do
     wa_poll
     |> cast(attrs, @required_fields ++ @optional_fields)
