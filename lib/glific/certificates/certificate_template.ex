@@ -143,9 +143,7 @@ defmodule Glific.Certificates.CertificateTemplate do
     type = attrs.type
 
     with :ok <- Glific.URI.cast(url),
-         :ok <- validate_by_type(url, type),
-         {:ok, %Tesla.Env{status: status}} when status in 200..299 <-
-           Tesla.get(url, opts: [adapter: [recv_timeout: 10_000]]) do
+         :ok <- validate_by_type(url, type) do
       changeset
     else
       {:error, _type, reason} ->
