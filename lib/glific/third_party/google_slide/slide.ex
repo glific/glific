@@ -13,7 +13,8 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
     "https://www.googleapis.com/auth/drive.readonly",
     "https://www.googleapis.com/auth/presentations",
     "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/spreadsheets.readonly"
+    "https://www.googleapis.com/auth/spreadsheets.readonly",
+    "https://www.googleapis.com/auth/devstorage.full_control"
   ]
 
   @drive_url "https://www.googleapis.com/drive/v3/files"
@@ -132,10 +133,10 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode(body)
 
-      {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
-        {:error, body}
+      {:ok, %Tesla.Env{status: status, body: body}} ->
+        {:error, "Failed to fetch thumbnail. Status: #{status_code}, Response: #{inspect(body)}"}
 
-      _ ->
+      {:error, error} ->
         {:error, "Failed to fetch thumbnail"}
     end
   end

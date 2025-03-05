@@ -8,6 +8,7 @@ defmodule Glific.Clients.CommonWebhook do
     ASR.GoogleASR,
     Contacts,
     Groups.WAGroup,
+    GCS.GcsWorker,
     OpenAI.ChatGPT,
     Providers.Maytapi,
     Repo,
@@ -277,11 +278,29 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   def webhook("create_certificate", fields) do
-    Glific.ThirdParty.GoogleSlide.Slide.create_certificate(
-      fields["organization_id"],
-      fields["presentation_id"],
-      fields["replace_texts"]
-    ) |> IO.inspect()
+    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+
+    with {:ok, thumbnail} <-
+           Glific.ThirdParty.GoogleSlide.Slide.create_certificate(
+             fields["organization_id"],
+             fields["presentation_id"],
+             fields["replace_texts"]
+           ),
+         {:ok, image} <-
+           download_file(
+             thumbnail,
+             fields["presentation_id"],
+             contact_id,
+             fields["organization_id"]
+           ) do
+      %{success: true, certificate_url: image}
+    else
+      {:error, error} ->
+        %{
+          success: false,
+          parsed_msg: error
+        }
+    end
   end
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
@@ -387,6 +406,32 @@ defmodule Glific.Clients.CommonWebhook do
 
       {false, field} ->
         {:error, "#{field} is invalid"}
+    end
+  end
+
+  @spec download_file(
+          String.t(),
+          String.t(),
+          non_neg_integer(),
+          non_neg_integer() :: {:ok, String.t()} | {:error, String.t()}
+        )
+  defp download_file(thumbnail_url, presentation_id, contact_id, org_id) do
+    remote_name = "certificate/#{presentation_id}/#{contact_id}.png"
+    uuid = Ecto.UUID.generate()
+    temp_path = Path.join(System.tmp_dir!(), "#{uuid}.png")
+
+    with {:ok, %Tesla.Env{status: 200, body: image_data}} <- Tesla.get(thumbnail_url),
+         :ok <- File.write(temp_path, image_data),
+         {:ok, media_meta} <- GcsWorker.upload_media(temp_path, remote_name, org_id) do
+      File.rm(temp_path)
+      {:ok, media_meta.url}
+    else
+      {:error, reason} ->
+        File.rm(temp_path)
+        {:error, reason}
+
+      {:ok, %Tesla.Env{status: status}} when status != 200 ->
+        {:error, :download_failed}
     end
   end
 end
