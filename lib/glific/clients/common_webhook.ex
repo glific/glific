@@ -485,13 +485,9 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  @spec download_file(String.t(), String.t(), integer(), integer()) :: {:ok, String.t()} | {:error, term()}
+  @spec download_file(String.t(), String.t(), integer(), integer()) ::
+          {:ok, String.t()} | {:error, term()}
   defp download_file(thumbnail_url, presentation_id, contact_id, org_id) do
-    Glific.Caches.remove(
-      0,
-      ["organization_services"]
-    )
-
     remote_name = "certificate/#{presentation_id}/#{contact_id}.png"
     uuid = Ecto.UUID.generate()
     temp_path = Path.join(System.tmp_dir!(), "#{uuid}.png")

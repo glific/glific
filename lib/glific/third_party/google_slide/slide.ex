@@ -12,7 +12,8 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
     "https://www.googleapis.com/auth/drive.readonly",
     "https://www.googleapis.com/auth/presentations",
     "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/spreadsheets.readonly"
+    "https://www.googleapis.com/auth/spreadsheets.readonly",
+    "https://www.googleapis.com/auth/devstorage.full_control"
   ]
 
   @drive_url "https://www.googleapis.com/drive/v3/files"
