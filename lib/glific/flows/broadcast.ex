@@ -20,7 +20,8 @@ defmodule Glific.Flows.Broadcast do
     Messages,
     Messages.Message,
     Partners,
-    Repo
+    Repo,
+    WAMessages
   }
 
   @status "published"
@@ -70,6 +71,16 @@ defmodule Glific.Flows.Broadcast do
     })
   end
 
+  @spec create_broadcast_wa_message(Flow.t(), Group.t()) ::
+          {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
+  defp create_broadcast_wa_message(flow, group) do
+    WAMessages.create_group_message(%{
+      body: "Starting flow: *#{flow.name}* for group: *#{group.label}*",
+      type: :text,
+      group_id: group.id
+    })
+  end
+
   @spec broadcast_message_payload(list(integer()), Message.t(), Flow.t(), map(), boolean()) ::
           {:ok, any()} | {:error, String.t()}
   defp broadcast_message_payload(group_ids, group_message, flow, default_results, exclusion) do
@@ -99,6 +110,11 @@ defmodule Glific.Flows.Broadcast do
       })
       |> Enum.map(& &1.wa_group_id)
       |> then(&broadcast_wa_groups(flow, &1))
+
+      case Repo.fetch_by(Group, %{id: group_id}) do
+        {:ok, group} ->
+          [create_broadcast_wa_message(flow, group)]
+      end
     end)
     |> Stream.run()
   end
