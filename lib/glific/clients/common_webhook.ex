@@ -6,13 +6,15 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.{
     ASR.Bhasini,
     ASR.GoogleASR,
+    Certificates.CertificateTemplate,
     Contacts,
-    Groups.WAGroup,
     GCS.GcsWorker,
+    Groups.WAGroup,
     OpenAI.ChatGPT,
     Partners,
     Providers.Maytapi,
     Repo,
+    ThirdParty.GoogleSlide.Slide,
     WAGroup.WAManagedPhone,
     WAGroup.WaPoll
   }
@@ -337,18 +339,26 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   def webhook("create_certificate", fields) do
+    certificate_id = fields["certificate_id"]
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
 
+    certificate_template = Repo.get_by!(CertificateTemplate, id: certificate_id)
+    certificate_url = certificate_template.url
+
+    presentation_id = presentation_id(certificate_url)
+    slide_id = slide_id(certificate_url)
+
     with {:ok, thumbnail} <-
-           Glific.ThirdParty.GoogleSlide.Slide.create_certificate(
+           Slide.create_certificate(
              fields["organization_id"],
-             fields["presentation_id"],
-             fields["replace_texts"]
+             presentation_id,
+             fields["replace_texts"],
+             slide_id
            ),
          {:ok, image} <-
            download_file(
              thumbnail,
-             fields["presentation_id"],
+             presentation_id,
              contact_id,
              fields["organization_id"]
            ) do
@@ -475,13 +485,13 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  @spec download_file(
-          String.t(),
-          String.t(),
-          non_neg_integer(),
-          non_neg_integer() :: {:ok, String.t()} | {:error, String.t()}
-        )
+  @spec download_file(String.t(), String.t(), integer(), integer()) :: {:ok, String.t()} | {:error, term()}
   defp download_file(thumbnail_url, presentation_id, contact_id, org_id) do
+    Glific.Caches.remove(
+      0,
+      ["organization_services"]
+    )
+
     remote_name = "certificate/#{presentation_id}/#{contact_id}.png"
     uuid = Ecto.UUID.generate()
     temp_path = Path.join(System.tmp_dir!(), "#{uuid}.png")
@@ -498,6 +508,22 @@ defmodule Glific.Clients.CommonWebhook do
 
       {:ok, %Tesla.Env{status: status}} when status != 200 ->
         {:error, :download_failed}
+    end
+  end
+
+  @spec presentation_id(String.t()) :: String.t() | nil
+  defp presentation_id(url) do
+    case Regex.run(~r{/d/([a-zA-Z0-9_-]+)/}, url) do
+      [_, id] -> id
+      _ -> nil
+    end
+  end
+
+  @spec slide_id(String.t()) :: String.t() | nil
+  defp slide_id(url) do
+    case Regex.run(~r/#slide=id\.([a-zA-Z0-9_-]+)/, url) do
+      [_, id] -> id
+      _ -> nil
     end
   end
 end

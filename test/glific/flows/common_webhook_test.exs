@@ -4,12 +4,18 @@ defmodule Glific.Flows.CommonWebhookTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
+    Certificates.CertificateTemplate,
     Clients.CommonWebhook,
     Messages,
+    Repo,
     Seeds.SeedsDev
   }
 
   import Mock
+
+  @mock_presentation_id "copied_presentation123"
+  @mock_copied_slide %{"id" => @mock_presentation_id}
+  @mock_thumbnail %{"contentUrl" => "image_url"}
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -580,5 +586,118 @@ defmodule Glific.Flows.CommonWebhookTest do
              poll: _
            } =
              CommonWebhook.webhook("send_wa_group_poll", fields)
+  end
+
+  test "successfully creates a certificate" do
+    Tesla.Mock.mock(fn
+      %Tesla.Env{
+        method: :post,
+        url: "https://storage.googleapis.com/upload/storage/v1/b/mock-bucket-name/o",
+        query: [uploadType: "multipart"]
+      } ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body:
+             Jason.encode!(%{
+               "name" => "uploads/certificate/copied_presentation123/123.png",
+               "mediaLink" =>
+                 "https://storage.googleapis.com/mock-bucket-name/uploads/certificate/copied_presentation123/123.png",
+               "selfLink" =>
+                 "https://storage.googleapis.com/mock-bucket-name/uploads/certificate/copied_presentation123/123.png"
+             })
+         }}
+
+      %{
+        method: :get,
+        url:
+          "https://storage.googleapis.com/mock-bucket-name/uploads/certificate/copied_presentation123/123.png"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: "<<binary image data>>"}}
+
+      %{
+        method: :post,
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_copied_slide)}}
+
+      %{
+        method: :post,
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/permissions"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{"success" => true})}}
+
+      %{
+        method: :post,
+        url: "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}:batchUpdate"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{"success" => true})}}
+
+      %{
+        method: :get,
+        url:
+          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/p2/thumbnail"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_thumbnail)}}
+
+      %{
+        method: :get,
+        url: "image_url"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: "<<binary image data>>"}}
+    end)
+
+    attrs = %{
+      label: "test",
+      type: :slides,
+      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.p2",
+      organization_id: 1
+    }
+
+    {:ok, certificate} = CertificateTemplate.create_certificate_template(attrs)
+
+    fields = %{
+      "certificate_id" => certificate.id,
+      "contact" => %{"id" => "123"},
+      "organization_id" => 1,
+      "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
+    }
+
+    mock_certificate_template = %{
+      id: certificate.id,
+      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.p2"
+    }
+
+    with_mocks([
+      {Repo, [], [get_by!: fn _, _ -> mock_certificate_template end]},
+      {Glific.Partners, [],
+       [
+         get_goth_token: fn _, _, _ -> %{token: "mock_access_token"} end
+       ]},
+      {Glific.Partners, [],
+       [
+         get_goth_token: fn _, _ -> %{token: "mock_access_token"} end,
+         organization: fn _ ->
+           %{
+             id: 1,
+             name: "Test Org",
+             services: %{
+               "google_cloud_storage" => %{
+                 secrets: %{
+                   "bucket" => "mock-bucket-name",
+                   "service_account" =>
+                     "{   \"type\": \"service_account\",   \"project_id\": \"mock-project\",   \"private_key_id\": \"mock-private-key-id\",   \"private_key\": \"-----BEGIN PRIVATE KEY-----\\nMOCK_PRIVATE_KEY\\n-----END PRIVATE KEY-----\\n\",   \"client_email\": \"mock-email@mock-project.iam.gserviceaccount.com\",   \"client_id\": \"1234567890\",   \"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\",   \"token_uri\": \"https://oauth2.googleapis.com/token\",   \"auth_provider_x509_cert_url\": \"https://www.googleapis.com/oauth2/v1/certs\",   \"client_x509_cert_url\": \"https://www.googleapis.com/robot/v1/metadata/x509/mock-email%40mock-project.iam.gserviceaccount.com\" }"
+                 }
+               }
+             }
+           }
+         end
+       ]}
+    ]) do
+      result = CommonWebhook.webhook("create_certificate", fields)
+
+      assert result[:success] == true
+      assert result[:certificate_url] == "https:storage.googleapis.com"
+    end
   end
 end
