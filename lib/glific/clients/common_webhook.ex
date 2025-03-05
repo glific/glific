@@ -10,6 +10,7 @@ defmodule Glific.Clients.CommonWebhook do
     Groups.WAGroup,
     GCS.GcsWorker,
     OpenAI.ChatGPT,
+    Partners,
     Providers.Maytapi,
     Repo,
     WAGroup.WAManagedPhone,
@@ -247,6 +248,64 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  def webhook("call_and_wait", fields) do
+    endpoint = fields["endpoint"]
+    flow_id = fields["flow_id"] |> String.to_integer()
+    contact_id = fields["contact_id"] |> String.to_integer()
+    organization_id = fields["organization_id"]
+    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+    signature_payload = %{
+      "organization_id" => organization_id,
+      "flow_id" => flow_id,
+      "contact_id" => contact_id,
+      "timestamp" => timestamp
+    }
+
+    signature =
+      Glific.signature(
+        organization_id,
+        Jason.encode!(signature_payload),
+        signature_payload["timestamp"]
+      )
+
+    organization = Partners.organization(organization_id)
+
+    callback =
+      "https://api.#{organization.shortcode}.glific.com" <>
+        "/webhook/flow_resume?" <>
+        "organization_id=#{organization_id}&" <>
+        "flow_id=#{flow_id}&" <>
+        "contact_id=#{contact_id}&" <>
+        "timestamp=#{timestamp}&" <>
+        "signature=#{signature}"
+
+    payload =
+      fields
+      |> Map.merge(signature_payload)
+      |> Map.put("signature", signature)
+      |> Map.put("callback", callback)
+      |> Jason.encode!()
+
+    endpoint
+    |> Tesla.post(
+      payload,
+      headers: headers(),
+      opts: [adapter: [recv_timeout: 300_000]]
+    )
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        response = Jason.decode!(body)
+        Map.merge(%{success: true}, response)
+
+      {:ok, %Tesla.Env{status: _status, body: body}} ->
+        %{success: false, response: body}
+
+      {:error, reason} ->
+        %{success: false, reason: reason}
+    end
+  end
+
   # webhook for sending whatsapp group polls in a flow
   def webhook("send_wa_group_poll", fields) do
     with {:ok, fields} <- parse_wa_poll_params(fields),
@@ -305,6 +364,13 @@ defmodule Glific.Clients.CommonWebhook do
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
+  defp headers do
+    [
+      {"Content-Type", "application/json"},
+      {"accept", "application/json"}
+    ]
+  end
+
   @spec find_component(list(map()), String.t()) :: String.t()
   defp find_component(components, type) do
     case Enum.find(components, fn component -> type in component["types"] end) do
@@ -321,7 +387,7 @@ defmodule Glific.Clients.CommonWebhook do
           Keyword.t()
         ) :: map()
   defp do_nmt_tts_with_bhasini(source_language, target_language, org_id, text, opts) do
-    organization = Glific.Partners.organization(org_id)
+    organization = Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
 
     with false <- is_nil(services),
