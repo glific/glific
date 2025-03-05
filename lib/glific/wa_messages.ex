@@ -10,9 +10,9 @@ defmodule Glific.WAMessages do
     Groups.WAGroup,
     Messages,
     Partners,
+    Providers.Maytapi.Message,
     Repo,
     WAGroup.WAMessage,
-    Providers.Maytapi.Message
   }
 
   import Ecto.Query
