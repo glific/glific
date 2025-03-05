@@ -130,16 +130,7 @@ defmodule Glific.Providers.Maytapi.Message do
       send_at: DateTime.utc_now()
     })
     |> WAMessages.create_message()
-    |> then(fn {:ok, wa_message} -> wa_group_message_subscription(wa_message) end)
-  end
-
-  @spec wa_group_message_subscription(WAMessage.t()) :: any()
-  defp wa_group_message_subscription(wa_message) do
-    Communications.publish_data(
-      wa_message,
-      :sent_wa_group_collection_message,
-      wa_message.organization_id
-    )
+    |> then(fn {:ok, wa_message} -> WAMessages.wa_group_message_subscription(wa_message) end)
   end
 
   @doc false

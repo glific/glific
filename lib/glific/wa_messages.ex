@@ -4,6 +4,8 @@ defmodule Glific.WAMessages do
   """
 
   alias Glific.{
+    Communications,
+    Communications.GroupMessage,
     Contacts,
     Conversations.WAConversation,
     Flows.MessageVarParser,
@@ -225,6 +227,15 @@ defmodule Glific.WAMessages do
     [WAConversation.new(wa_group, nil, []) | results]
   end
 
+  @spec wa_group_message_subscription(WAMessage.t()) :: any()
+  def wa_group_message_subscription(wa_message) do
+    Communications.publish_data(
+      wa_message,
+      :sent_wa_group_collection_message,
+      wa_message.organization_id
+    )
+  end
+
   @doc """
   Record a message sent to a group in the wa_message table. This message is actually not
   sent, but is used for display purposes in the group listings
@@ -244,6 +255,7 @@ defmodule Glific.WAMessages do
     |> create_message()
     |> case do
       {:ok, message} ->
+       wa_group_message_subscription(message)
         {:ok, message}
 
       {:error, error} ->
