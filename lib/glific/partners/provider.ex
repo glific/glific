@@ -73,6 +73,7 @@ defmodule Glific.Partners.Provider do
       "gupshup_enterprise" -> Glific.Providers.GupshupEnterprise.Template
       _ -> raise("#{organization.bsp.shortcode} Provider Not found.")
     end
+    |> Code.ensure_loaded!()
   end
 
   def bsp_module(org_id, :contact) do
@@ -84,6 +85,7 @@ defmodule Glific.Partners.Provider do
       "gupshup_enterprise" -> Glific.Providers.GupshupEnterpriseContacts
       _ -> raise("#{organization.bsp.shortcode} Provider Not found.")
     end
+    |> Code.ensure_loaded!()
   end
 
   def bsp_module(org_id, _) do
@@ -95,5 +97,6 @@ defmodule Glific.Partners.Provider do
       "gupshup_enterprise" -> Glific.Providers.GupshupEnterprise
       _ -> raise("#{organization.bsp.shortcode} Provider Not found.")
     end
+    |> Code.ensure_loaded!()
   end
 end
