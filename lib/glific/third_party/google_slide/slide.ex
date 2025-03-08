@@ -34,11 +34,6 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   @spec create_certificate(non_neg_integer(), String.t(), map(), String.t()) ::
           {:ok, String.t()} | {:error, String.t()}
   def create_certificate(org_id, presentation_id, fields, slide_id) do
-    Glific.Caches.remove(
-      0,
-      ["organization_services"]
-    )
-
     with token <-
            Partners.get_goth_token(org_id, "google_cloud_storage", scopes: @drive_scopes).token,
          {:ok, copied_slide} <- copy_slide(token, presentation_id),

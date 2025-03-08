@@ -342,7 +342,12 @@ defmodule Glific.Clients.CommonWebhook do
     certificate_id = fields["certificate_id"]
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
 
-    certificate_template = Repo.get_by!(CertificateTemplate, id: certificate_id)
+    {:ok, certificate_template} =
+      Repo.fetch_by(CertificateTemplate, %{
+        id: certificate_id,
+        organization_id: fields["organization_id"]
+      })
+
     certificate_url = certificate_template.url
 
     presentation_id = presentation_id(certificate_url)

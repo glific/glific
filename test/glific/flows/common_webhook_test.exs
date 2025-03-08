@@ -7,7 +7,6 @@ defmodule Glific.Flows.CommonWebhookTest do
     Certificates.CertificateTemplate,
     Clients.CommonWebhook,
     Messages,
-    Repo,
     Seeds.SeedsDev
   }
 
@@ -663,13 +662,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
     }
 
-    mock_certificate_template = %{
-      id: certificate.id,
-      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.p2"
-    }
-
     with_mocks([
-      {Repo, [], [get_by!: fn _, _ -> mock_certificate_template end]},
       {Glific.Partners, [],
        [
          get_goth_token: fn _, _, _ -> %{token: "mock_access_token"} end
