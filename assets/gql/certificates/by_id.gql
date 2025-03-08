@@ -1,0 +1,7 @@
+#import "./fields.frag.gql"
+
+query CertificateTemplate($id: ID!) {
+  CertificateTemplate(id: $id) {
+    ...CertificateTemplateFields
+  }
+}

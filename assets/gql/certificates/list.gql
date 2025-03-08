@@ -1,0 +1,10 @@
+query CertificateTemplates($filter: CertificateTemplateFilter, $opts: Opts) {
+  CertificateTemplates(filter: $filter, opts: $opts) {
+   id
+   label
+   url
+   description
+   inserted_at
+   updated_at
+  }
+}
