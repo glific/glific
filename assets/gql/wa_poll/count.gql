@@ -1,0 +1,3 @@
+query RootQueryType($filter: WaPollFilter) {
+  countWaPolls(filter: $filter)
+}

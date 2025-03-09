@@ -93,7 +93,7 @@ msgstr ""
 msgid "must be equal to %{number}"
 msgstr ""
 
-#: lib/glific_web/schema.ex:270
+#: lib/glific_web/schema.ex:275
 #, elixir-format, elixir-autogen
 msgid "Auth Credentials mismatch"
 msgstr ""
@@ -107,11 +107,6 @@ msgstr ""
 #: lib/glific/contacts.ex:645
 #, elixir-format, elixir-autogen
 msgid "Cannot send hsm message to contact, not opted in."
-msgstr ""
-
-#: lib/glific/jobs/chatbase/chatbase_worker.ex:115
-#, elixir-format
-msgid "Chatbase returned an unexpected result"
 msgstr ""
 
 #: lib/glific/contacts.ex:639
@@ -130,7 +125,7 @@ msgstr ""
 msgid "Could not find invoice for %{invoice_id}"
 msgstr ""
 
-#: lib/glific/flows/webhook.ex:133
+#: lib/glific/flows/webhook.ex:134
 #, elixir-format, elixir-autogen
 msgid "Error in decoding webhook body. Please check the json body in floweditor"
 msgstr ""
@@ -171,13 +166,12 @@ msgid "Error while fetching the BSP balance"
 msgstr ""
 
 #: lib/glific/providers/gupshup/contacts.ex:93
-#: lib/glific/providers/gupshup/wallet.ex:22
 #, elixir-format, elixir-autogen
 msgid "Invalid BSP API key"
 msgstr ""
 
-#: lib/glific/partners.ex:430
-#: lib/glific/partners.ex:447
+#: lib/glific/partners.ex:427
+#: lib/glific/partners.ex:444
 #, elixir-format, elixir-autogen
 msgid "Invalid BSP provider"
 msgstr ""
@@ -188,7 +182,7 @@ msgid "Invoice status updated for %{invoice_id}"
 msgstr ""
 
 #: lib/glific/partners.ex:423
-#: lib/glific/partners.ex:443
+#: lib/glific/partners.ex:440
 #: lib/glific/providers/gupshup/api_client.ex:38
 #: lib/glific/providers/gupshup_enterprise/api_client.ex:36
 #, elixir-format, elixir-autogen
@@ -250,7 +244,7 @@ msgstr ""
 msgid "Unsupported node type"
 msgstr ""
 
-#: lib/glific/flows/flow_context.ex:478
+#: lib/glific/flows/flow_context.ex:482
 #, elixir-format, elixir-autogen
 msgid "We have finished the flow"
 msgstr ""
@@ -281,7 +275,7 @@ msgstr ""
 msgid "Does not have access to the user"
 msgstr ""
 
-#: lib/glific/flows/webhook.ex:174
+#: lib/glific/flows/webhook.ex:172
 #, elixir-autogen, elixir-format
 msgid "Error in encoding webhook body. Please check the json body in floweditor"
 msgstr ""
@@ -291,15 +285,15 @@ msgstr ""
 msgid "Error while fetching Quality Rating details"
 msgstr ""
 
-#: lib/glific/flows.ex:745
-#: lib/glific/flows.ex:777
+#: lib/glific/flows.ex:747
+#: lib/glific/flows.ex:779
 #, elixir-autogen, elixir-format
 msgid "Flow is not active"
 msgstr ""
 
-#: lib/glific/flows.ex:718
-#: lib/glific/flows.ex:735
-#: lib/glific/flows.ex:764
+#: lib/glific/flows.ex:720
+#: lib/glific/flows.ex:737
+#: lib/glific/flows.ex:766
 #, elixir-autogen, elixir-format
 msgid "Flow not found"
 msgstr ""

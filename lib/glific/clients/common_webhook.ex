@@ -7,7 +7,13 @@ defmodule Glific.Clients.CommonWebhook do
     ASR.Bhasini,
     ASR.GoogleASR,
     Contacts,
-    OpenAI.ChatGPT
+    Groups.WAGroup,
+    OpenAI.ChatGPT,
+    Partners,
+    Providers.Maytapi,
+    Repo,
+    WAGroup.WAManagedPhone,
+    WAGroup.WaPoll
   }
 
   require Logger
@@ -241,7 +247,102 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  def webhook("call_and_wait", fields) do
+    endpoint = fields["endpoint"]
+    flow_id = fields["flow_id"] |> String.to_integer()
+    contact_id = fields["contact_id"] |> String.to_integer()
+    organization_id = fields["organization_id"]
+    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+    signature_payload = %{
+      "organization_id" => organization_id,
+      "flow_id" => flow_id,
+      "contact_id" => contact_id,
+      "timestamp" => timestamp
+    }
+
+    signature =
+      Glific.signature(
+        organization_id,
+        Jason.encode!(signature_payload),
+        signature_payload["timestamp"]
+      )
+
+    organization = Partners.organization(organization_id)
+
+    callback =
+      "https://api.#{organization.shortcode}.glific.com" <>
+        "/webhook/flow_resume?" <>
+        "organization_id=#{organization_id}&" <>
+        "flow_id=#{flow_id}&" <>
+        "contact_id=#{contact_id}&" <>
+        "timestamp=#{timestamp}&" <>
+        "signature=#{signature}"
+
+    payload =
+      fields
+      |> Map.merge(signature_payload)
+      |> Map.put("signature", signature)
+      |> Map.put("callback", callback)
+      |> Jason.encode!()
+
+    endpoint
+    |> Tesla.post(
+      payload,
+      headers: headers(),
+      opts: [adapter: [recv_timeout: 300_000]]
+    )
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        response = Jason.decode!(body)
+        Map.merge(%{success: true}, response)
+
+      {:ok, %Tesla.Env{status: _status, body: body}} ->
+        %{success: false, response: body}
+
+      {:error, reason} ->
+        %{success: false, reason: reason}
+    end
+  end
+
+  # webhook for sending whatsapp group polls in a flow
+  def webhook("send_wa_group_poll", fields) do
+    with {:ok, fields} <- parse_wa_poll_params(fields),
+         {:ok, wa_phone} <-
+           Repo.fetch_by(WAManagedPhone, %{
+             id: fields.wa_group["wa_managed_phone_id"],
+             organization_id: fields.organization_id
+           }),
+         {:ok, wa_group} <-
+           Repo.fetch_by(WAGroup, %{
+             id: fields.wa_group["id"],
+             organization_id: fields.organization_id
+           }),
+         {:ok, wa_poll} <-
+           Repo.fetch_by(WaPoll, %{
+             uuid: fields.poll_uuid,
+             organization_id: fields.organization_id
+           }),
+         {:ok, wa_message} <-
+           Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, %{poll_id: wa_poll.id}) do
+      %{success: true, poll: wa_message.poll_content}
+    else
+      {:error, reason} when is_binary(reason) ->
+        %{success: false, error: "#{reason}"}
+
+      {:error, reason} ->
+        %{success: false, error: "#{inspect(reason)}"}
+    end
+  end
+
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
+
+  defp headers do
+    [
+      {"Content-Type", "application/json"},
+      {"accept", "application/json"}
+    ]
+  end
 
   @spec find_component(list(map()), String.t()) :: String.t()
   defp find_component(components, type) do
@@ -259,7 +360,7 @@ defmodule Glific.Clients.CommonWebhook do
           Keyword.t()
         ) :: map()
   defp do_nmt_tts_with_bhasini(source_language, target_language, org_id, text, opts) do
-    organization = Glific.Partners.organization(org_id)
+    organization = Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
 
     with false <- is_nil(services),
@@ -321,6 +422,29 @@ defmodule Glific.Clients.CommonWebhook do
          "temperature" => Map.get(fields, "temperature", 0),
          "response_format" => Map.get(fields, "response_format", nil)
        }}
+    end
+  end
+
+  @spec parse_wa_poll_params(map()) :: {:ok, map()} | {:error, String.t()}
+  defp parse_wa_poll_params(fields) do
+    # if wa_group is in the map, then the inner keys will be already filled by
+    # webhook module
+    with {true, _} <- {is_map(fields["wa_group"]), :wa_group},
+         {true, _} <- {is_integer(fields["organization_id"]), :organization_id},
+         {:ok, _} <-
+           Ecto.UUID.cast(fields["poll_uuid"]) do
+      {:ok,
+       %{
+         wa_group: fields["wa_group"],
+         poll_uuid: fields["poll_uuid"],
+         organization_id: fields["organization_id"]
+       }}
+    else
+      :error ->
+        {:error, "poll_uuid is invalid"}
+
+      {false, field} ->
+        {:error, "#{field} is invalid"}
     end
   end
 end
