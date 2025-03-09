@@ -16,7 +16,9 @@ defmodule Glific.Providers.Maytapi.WAWorker do
     Partners.Organization,
     Providers.Maytapi.ApiClient,
     Providers.Maytapi.ResponseHandler,
-    Providers.Worker
+    Providers.Worker,
+    Notifications,
+    WAManagedPhones
   }
 
   require Logger
@@ -34,6 +36,10 @@ defmodule Glific.Providers.Maytapi.WAWorker do
     else
       perform(job, organization)
     end
+  end
+
+  def perform(%Oban.Job{args: %{"organization_id" => org_id}}) do
+    perform_credential_update(org_id)
   end
 
   @spec perform(Oban.Job.t(), Organization.t()) ::
@@ -65,6 +71,45 @@ defmodule Glific.Providers.Maytapi.WAWorker do
 
     ApiClient.send_message(org_id, payload, phone_id)
     |> ResponseHandler.handle_response(message)
+  end
+
+  # @spec perform_credential_update(non_neg_integer()) :: :ok | {:error, String.t()}
+  defp perform_credential_update(org_id) do
+    case update_credentials(org_id) do
+      :ok ->
+        send_notification(org_id, "Credentials updated successfully", Notifications.types().info)
+
+      {:error, reason} ->
+        Logger.error("Credential update failed: #{inspect(reason)}")
+
+        send_notification(
+          org_id,
+          "Credential update failed: #{inspect(reason)}",
+          Notifications.types().critical
+        )
+    end
+  end
+
+  defp update_credentials(org_id) do
+    with :ok <- WAManagedPhones.fetch_wa_managed_phones(org_id),
+         :ok <- WAGroups.fetch_wa_groups(org_id),
+         :ok <- WAGroups.set_webhook_endpoint(Partners.organization(org_id)) do
+      :ok
+    else
+      error -> {:error, error}
+    end
+  end
+
+  defp send_notification(org_id, message, severity) do
+    Notifications.create_notification(%{
+      category: "WhatsApp Groups",
+      message: message,
+      severity: severity,
+      organization_id: org_id,
+      entity: %{
+        Provider: "Maytapi"
+      }
+    })
   end
 
   @doc """

@@ -19,7 +19,6 @@ defmodule Glific.Partners do
     Flows,
     Flows.Flow,
     GCS,
-    Groups.WAGroups,
     Notifications,
     Partners.Credential,
     Partners.Organization,
@@ -32,7 +31,7 @@ defmodule Glific.Partners do
     Settings.Language,
     Stats,
     Users.User,
-    WAManagedPhones
+    Providers.Maytapi.WAWorker
   }
 
   # We cache organization info under this id since when we want to retrieve
@@ -935,10 +934,25 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(organization, credential, "maytapi") do
-    with :ok <- WAManagedPhones.fetch_wa_managed_phones(organization.id),
-         :ok <- WAGroups.fetch_wa_groups(organization.id),
-         :ok <- WAGroups.set_webhook_endpoint(organization) do
-      {:ok, credential}
+    args = %{"organization_id" => organization.id}
+
+    case Oban.insert(WAWorker.new(args)) do
+      {:ok, _job} ->
+        Notifications.create_notification(%{
+          category: "WhatsApp Groups",
+          message: "Credential update has started in the background.",
+          severity: Notifications.types().info,
+          organization_id: organization.id,
+          entity: %{
+            Provider: "Maytapi"
+          }
+        })
+
+        {:ok, credential}
+
+      {:error, reason} ->
+        Logger.error("Failed to enqueue credential update job: #{inspect(reason)}")
+        {:error, reason}
     end
   end
 
