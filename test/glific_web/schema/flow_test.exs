@@ -1,5 +1,4 @@
 defmodule GlificWeb.Schema.FlowTest do
-  alias Glific.Groups.WAGroup
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
@@ -15,7 +14,10 @@ defmodule GlificWeb.Schema.FlowTest do
     Flows.Node,
     Groups,
     Groups.GroupContacts,
+    Groups.WAGroup,
     Groups.WaGroupsCollections,
+    Partners,
+    Partners.Credential,
     Repo,
     Seeds.SeedsDev,
     State,
@@ -809,5 +811,38 @@ defmodule GlificWeb.Schema.FlowTest do
       )
 
     assert {:ok, _query_data} = result
+  end
+
+  @tag :start
+  test "Start flow for a whatsapp group when gupshup creds are inactive",
+       %{manager: user} = _attrs do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Whatsapp Group", organization_id: user.organization_id})
+
+    # clearing the org cache that's setup at the beginning of test
+    Partners.remove_organization_cache(1, "glific")
+
+    # Setting the gupshup cred active status to false, which will then not create
+    # a bsp key in the organization.services map
+
+    {1, _} =
+      Credential
+      |> where([c], c.organization_id == ^user.organization_id and c.provider_id == 1)
+      |> update([c], set: [is_active: false])
+      |> select([c], {c.provider_id})
+      |> Repo.update_all([])
+
+    [wa_grp | _] =
+      WAGroup
+      |> where([wa_group], wa_group.organization_id == 1)
+      |> limit(1)
+      |> Repo.all()
+
+    result =
+      auth_query_gql_by(:wa_group_flow, user,
+        variables: %{"flowId" => flow.id, "waGroupId" => wa_grp.id}
+      )
+
+    assert {:ok, %{data: _}} = result
   end
 end
