@@ -813,7 +813,6 @@ defmodule GlificWeb.Schema.FlowTest do
     assert {:ok, _query_data} = result
   end
 
-  @tag :start
   test "Start flow for a whatsapp group when gupshup creds are inactive",
        %{manager: user} = _attrs do
     {:ok, flow} =
