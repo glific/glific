@@ -12,12 +12,13 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   alias Glific.{
     Groups.WAGroups,
     Messages.Message,
+    Notifications,
+    Notifications.Notification,
     Partners,
     Partners.Organization,
     Providers.Maytapi.ApiClient,
     Providers.Maytapi.ResponseHandler,
     Providers.Worker,
-    Notifications,
     WAManagedPhones
   }
 
@@ -73,7 +74,8 @@ defmodule Glific.Providers.Maytapi.WAWorker do
     |> ResponseHandler.handle_response(message)
   end
 
-  # @spec perform_credential_update(non_neg_integer()) :: :ok | {:error, String.t()}
+  @spec perform_credential_update(non_neg_integer()) ::
+          {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
   defp perform_credential_update(org_id) do
     case update_credentials(org_id) do
       :ok ->
@@ -90,16 +92,19 @@ defmodule Glific.Providers.Maytapi.WAWorker do
     end
   end
 
+  @spec update_credentials(non_neg_integer()) :: :ok | {:error, String.t()}
   defp update_credentials(org_id) do
     with :ok <- WAManagedPhones.fetch_wa_managed_phones(org_id),
          :ok <- WAGroups.fetch_wa_groups(org_id),
          :ok <- WAGroups.set_webhook_endpoint(Partners.organization(org_id)) do
       :ok
     else
-      error -> {:error, error}
+      error -> error
     end
   end
 
+  @spec send_notification(non_neg_integer(), String.t(), String.t()) ::
+          {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
   defp send_notification(org_id, message, severity) do
     Notifications.create_notification(%{
       category: "WhatsApp Groups",

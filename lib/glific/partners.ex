@@ -27,11 +27,11 @@ defmodule Glific.Partners do
     Providers.Gupshup.GupshupWallet,
     Providers.Gupshup.PartnerAPI,
     Providers.GupshupContacts,
+    Providers.Maytapi.WAWorker,
     Repo,
     Settings.Language,
     Stats,
-    Users.User,
-    Providers.Maytapi.WAWorker
+    Users.User
   }
 
   # We cache organization info under this id since when we want to retrieve

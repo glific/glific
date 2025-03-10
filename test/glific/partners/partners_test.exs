@@ -12,9 +12,9 @@ defmodule Glific.PartnersTest do
     Partners.Provider,
     Providers.Gupshup.ApiClient,
     Providers.Gupshup.PartnerAPI,
+    Providers.Maytapi.WAWorker,
     Repo,
-    Seeds.SeedsDev,
-    Providers.Maytapi.WAWorker
+    Seeds.SeedsDev
   }
 
   describe "provider" do
@@ -1083,6 +1083,93 @@ defmodule Glific.PartnersTest do
 
       assert notification.message == "Credentials updated successfully"
       assert notification.severity == Notifications.types().info
+    end
+
+    test "update_credential/2 for maytapi should not update credentials with wrong payload" do
+      org = SeedsDev.seed_organizations()
+
+      {:ok, credential} =
+        Partners.create_credential(%{
+          organization_id: org.id,
+          shortcode: "maytapi",
+          keys: %{},
+          secrets: %{
+            "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+            "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+          }
+        })
+
+      valid_update_attrs = %{
+        keys: %{},
+        secrets: %{
+          "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+          "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+        },
+        is_active: true,
+        organization_id: org.id,
+        shortcode: "maytapi"
+      }
+
+      assert {:ok, _cred} = Partners.update_credential(credential, valid_update_attrs)
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :get,
+          url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/listPhones"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: ~s([
+            {
+              "id": 45976,
+              "name": "",
+              "number": "918887048283",
+              "type": "whatsapp",
+              "data": {"mobile_proxy": true},
+              "multi_device": true
+            }
+          ])}}
+
+        %{
+          method: :get,
+          url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/45976/getGroups"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: ~s({
+            "count": 1,
+            "data": [
+              {
+                "id": "120363411352918646@g.us",
+                "name": "test",
+                "admins": ["918887048283@c.us"],
+                "participants": ["918887048283@c.us", "914287925084@c.us"],
+                "config": {
+                  "approveNewMembers": false,
+                  "disappear": false,
+                  "edit": "all",
+                  "membersCanAddMembers": false,
+                  "send": "all"
+                }
+              }
+            ]
+          })}}
+
+        %{
+          method: :post,
+          url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/setWebhook"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: ~s({"success": true})}}
+      end)
+
+      # Verify first notification (Credential update started)
+      {:ok, notification} =
+        Repo.fetch_by(Notification, %{organization_id: org.id, category: "WhatsApp Groups"})
+
+      assert notification.message == "Credential update has started in the background."
+      assert notification.severity == Notifications.types().info
+
+      job = %Oban.Job{args: %{"organization_id" => org.id}}
+      {:ok, notification} = WAWorker.perform(job)
+
+      assert notification.message == "Credential update failed: \"No active phones available\""
+      assert notification.severity == Notifications.types().critical
     end
 
     test "get_global_field_map/2 for organization should return global fields map" do
