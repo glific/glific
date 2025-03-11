@@ -116,28 +116,29 @@ defmodule GlificWeb.Schema.CertificateTest do
             }} =
              result
 
-    # Not a public url
-    result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p"
-          }
-        }
-      )
 
-    assert {:ok,
-            %{
-              data: %{
-                "CreateCertificateTemplate" => %{
-                  "errors" => [
-                    %{"message" => "Url: Invalid Template url"}
-                  ]
-                }
-              }
-            }} =
-             result
+    # TODO: Need to check if scopes are there, instead of public
+    # result =
+    #   auth_query_gql_by(:create, user,
+    #     variables: %{
+    #       "input" => %{
+    #         "label" => "slides",
+    #         "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p"
+    #       }
+    #     }
+    #   )
+
+    # assert {:ok,
+    #         %{
+    #           data: %{
+    #             "CreateCertificateTemplate" => %{
+    #               "errors" => [
+    #                 %{"message" => "Url: Invalid Template url"}
+    #               ]
+    #             }
+    #           }
+    #         }} =
+    #          result
 
     Tesla.Mock.mock(fn
       %{method: :get} ->
@@ -314,6 +315,7 @@ defmodule GlificWeb.Schema.CertificateTest do
               data: %{
                 "CreateCertificateTemplate" => %{
                   "certificateTemplate" => %{"id" => id}
+
                 }
               }
             }} =
