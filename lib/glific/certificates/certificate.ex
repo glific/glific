@@ -2,7 +2,18 @@ defmodule Glific.Certificates.Certificate do
   @moduledoc """
   Functions related to certificate templates and managing issued certificates
   """
-  alias Glific.Certificates.CertificateTemplate
+  alias Glific.{
+    Certificates.IssuedCertificate,
+    Certificates.CertificateTemplate,
+    Notifications
+  }
+
+  @cert_status_to_string %{
+    1 => "copied_to_drive",
+    2 => "replaced_text",
+    3 => "thumbnail_created",
+    4 => "uploaded_to_gcs"
+  }
 
   @doc """
   Creates a certificate template
@@ -15,5 +26,52 @@ defmodule Glific.Certificates.Certificate do
     with {:ok, cert_template} <- CertificateTemplate.create_certificate_template(params) do
       {:ok, %{certificate_template: cert_template}}
     end
+  end
+
+  @spec issue_certificate(
+          %{
+            template_id: non_neg_integer(),
+            contact_id: non_neg_integer(),
+            url: String.t(),
+            error: %{error: String.t(), reason: String.t()},
+            status: non_neg_integer()
+          },
+          non_neg_integer()
+        ) :: {:ok, IssuedCertificate.t()}
+  def issue_certificate(attrs, organization_id) do
+    {:ok, issued_certificate} =
+      attrs
+      |> Map.merge(%{
+        certificate_template_id: attrs.template_id,
+        status: @cert_status_to_string[attrs.status],
+        organization_id: organization_id
+      })
+      |> IssuedCertificate.create_issued_certificate()
+
+    if issued_certificate.error != %{} do
+      create_cert_generation_fail_notification(issued_certificate)
+    end
+
+    {:ok, issued_certificate}
+  end
+
+  @spec create_cert_generation_fail_notification(IssuedCertificate.t()) :: :ok
+  defp create_cert_generation_fail_notification(issued_certificate) do
+    Notifications.create_notification(%{
+      category: "Custom Certificates",
+      message: """
+      Custom certificate generation with template_id: #{issued_certificate.template_id} failed
+      for contact_id: #{issued_certificate.contact_id} due to #{issued_certificate.errors["reason"]}.
+      """,
+      severity: Notifications.types().warning,
+      organization_id: issued_certificate.organization_id,
+      entity: %{
+        template_id: issued_certificate.certificate_template_id,
+        contact_id: issued_certificate.contact_id,
+        last_status: issued_certificate.status
+      }
+    })
+
+    :ok
   end
 end

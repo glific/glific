@@ -55,8 +55,8 @@ defmodule Glific.Certificates.IssuedCertificate do
   Standard changeset pattern we use for all data types
   """
   @spec changeset(IssuedCertificate.t(), map()) :: Ecto.Changeset.t()
-  def changeset(wa_poll, attrs) do
-    wa_poll
+  def changeset(issued_certificate, attrs) do
+    issued_certificate
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:organization_id)

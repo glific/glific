@@ -41,11 +41,11 @@ defmodule Glific.Repo.Migrations.CertificateTemplates do
 
       add :gcs_url, :string, comment: "GCS url of the final generated certificate"
 
-      add :errors, :map, default: %{}, comment: "Errors during certificate generation"
+      add :error, :map, default: %{}, comment: "Error and reason during certificate generation"
 
       add :status, :string,
         comment:
-          "Incremental status while certificate generation, available options are: copied_to_drive, replaced_text, thumbnail_created, gcs_uploaded"
+          "Incremental status while certificate generation, available options are: copied_to_drive, replaced_text, thumbnail_created, uploaded_to_gcs"
 
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
