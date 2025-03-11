@@ -29,7 +29,7 @@ defmodule Glific.Certificates.CertificateTemplate do
           label: String.t() | nil,
           url: String.t() | nil,
           description: String.t() | nil,
-          type: String.t() | nil,
+          type: CertificateTemplateType,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -172,7 +172,4 @@ defmodule Glific.Certificates.CertificateTemplate do
       {:error, :slides, "Template url not a valid Google Slides"}
     end
   end
-
-  defp validate_by_type(_url, type),
-    do: {:error, type, "Template of type #{type} not supported yet"}
 end

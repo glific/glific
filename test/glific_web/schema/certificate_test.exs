@@ -334,7 +334,7 @@ defmodule GlificWeb.Schema.CertificateTest do
           "id" => id,
           "input" => %{
             "label" => "slides2",
-            "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.p"
+            "url" => "ht://docs.google.com/presentation/d/id2/edit#slide=id.p"
           }
         }
       )
