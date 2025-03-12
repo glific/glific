@@ -20,8 +20,7 @@ defmodule Glific.Certificates.IssuedCertificate do
 
   @optional_fields [
     :gcs_url,
-    :errors,
-    :status
+    :errors
   ]
 
   @type t() :: %__MODULE__{
@@ -33,7 +32,6 @@ defmodule Glific.Certificates.IssuedCertificate do
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           gcs_url: String.t() | nil,
           errors: map() | nil,
-          status: String.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -43,7 +41,6 @@ defmodule Glific.Certificates.IssuedCertificate do
   schema "issued_certificates" do
     field :gcs_url, :string
     field :errors, :map
-    field :status, :string
     belongs_to :certificate_template, CertificateTemplate
     belongs_to :contact, Contact
     belongs_to :organization, Organization

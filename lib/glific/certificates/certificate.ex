@@ -8,13 +8,6 @@ defmodule Glific.Certificates.Certificate do
     Notifications
   }
 
-  @cert_status_to_string %{
-    1 => "copied_to_drive",
-    2 => "replaced_text",
-    3 => "thumbnail_created",
-    4 => "uploaded_to_gcs"
-  }
-
   @doc """
   Creates a certificate template
   """
@@ -32,30 +25,32 @@ defmodule Glific.Certificates.Certificate do
           %{
             template_id: non_neg_integer(),
             contact_id: non_neg_integer(),
-            url: String.t(),
-            error: %{error: String.t(), reason: String.t()},
-            status: non_neg_integer()
+            url: String.t() | nil,
+            errors: map()
           },
           non_neg_integer()
         ) :: {:ok, IssuedCertificate.t()}
+  @doc """
+  Add an entry in issue_certificates table which helps us to track the issued certificates
+  """
   def issue_certificate(attrs, organization_id) do
     {:ok, issued_certificate} =
       attrs
       |> Map.merge(%{
         certificate_template_id: attrs.template_id,
-        status: @cert_status_to_string[attrs.status],
         organization_id: organization_id
       })
       |> IssuedCertificate.create_issued_certificate()
 
-    if issued_certificate.error != %{} do
-      create_cert_generation_fail_notification(issued_certificate)
+    if not is_nil(issued_certificate.error) do
+      {:ok, _} = create_cert_generation_fail_notification(issued_certificate)
     end
 
     {:ok, issued_certificate}
   end
 
-  @spec create_cert_generation_fail_notification(IssuedCertificate.t()) :: :ok
+  @spec create_cert_generation_fail_notification(IssuedCertificate.t()) ::
+          {:ok, map()} | {:error, Ecto.Changeset.t()}
   defp create_cert_generation_fail_notification(issued_certificate) do
     Notifications.create_notification(%{
       category: "Custom Certificates",
@@ -67,11 +62,8 @@ defmodule Glific.Certificates.Certificate do
       organization_id: issued_certificate.organization_id,
       entity: %{
         template_id: issued_certificate.certificate_template_id,
-        contact_id: issued_certificate.contact_id,
-        last_status: issued_certificate.status
+        contact_id: issued_certificate.contact_id
       }
     })
-
-    :ok
   end
 end

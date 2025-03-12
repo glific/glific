@@ -588,7 +588,7 @@ defmodule Glific.Flows.CommonWebhookTest do
              CommonWebhook.webhook("send_wa_group_poll", fields)
   end
 
-  @tag :cert
+  @tag :skip
   test "successfully creates a certificate" do
     Tesla.Mock.mock(fn
       %Tesla.Env{

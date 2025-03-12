@@ -3,6 +3,8 @@ defmodule Glific.Clients.CommonWebhook do
   Common webhooks which we can call with any clients.
   """
 
+  alias Glific.Certificates.Certificate
+
   alias Glific.{
     ASR.Bhasini,
     ASR.GoogleASR,
@@ -360,9 +362,31 @@ defmodule Glific.Clients.CommonWebhook do
                ),
              {:ok, image} <-
                download_file(thumbnail, presentation_id, contact_id, fields["organization_id"]) do
+          {:ok, _} =
+            Certificate.issue_certificate(
+              %{
+                template_id: certificate_id,
+                contact_id: contact_id,
+                url: image,
+                errors: %{}
+              },
+              fields["organization_id"]
+            )
+
           %{success: true, certificate_url: image}
         else
           {:error, error} ->
+            {:ok, _} =
+              Certificate.issue_certificate(
+                %{
+                  template_id: certificate_id,
+                  contact_id: contact_id,
+                  url: nil,
+                  errors: %{reason: error}
+                },
+                fields["organization_id"]
+              )
+
             %{success: false, reason: error}
         end
 
