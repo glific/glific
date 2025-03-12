@@ -42,7 +42,7 @@ defmodule Glific.Certificates.Certificate do
       })
       |> IssuedCertificate.create_issued_certificate()
 
-    if not is_nil(issued_certificate.error) do
+    if issued_certificate.errors != %{} do
       {:ok, _} = create_cert_generation_fail_notification(issued_certificate)
     end
 
