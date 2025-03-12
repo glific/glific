@@ -116,8 +116,8 @@ defmodule GlificWeb.Schema.CertificateTest do
             }} =
              result
 
-
     # TODO: Need to check if scopes are there, instead of public
+
     # result =
     #   auth_query_gql_by(:create, user,
     #     variables: %{
@@ -315,7 +315,6 @@ defmodule GlificWeb.Schema.CertificateTest do
               data: %{
                 "CreateCertificateTemplate" => %{
                   "certificateTemplate" => %{"id" => id}
-
                 }
               }
             }} =
