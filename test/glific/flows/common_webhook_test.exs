@@ -588,6 +588,7 @@ defmodule Glific.Flows.CommonWebhookTest do
              CommonWebhook.webhook("send_wa_group_poll", fields)
   end
 
+  @tag :cert
   test "successfully creates a certificate" do
     Tesla.Mock.mock(fn
       %Tesla.Env{
@@ -686,9 +687,25 @@ defmodule Glific.Flows.CommonWebhookTest do
         organization_id: 1
       }
 
-      Glific.Caches.remove(1, [{:provider_token, "google_cloud_storage"}])
+      valid_attrs_slides = %{
+        shortcode: "google_slides",
+        secrets: %{
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "DEFAULT PROJECT ID",
+              private_key_id: "DEFAULT API KEY",
+              client_email: "DEFAULT CLIENT EMAIL",
+              private_key: "DEFAULT PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: 1
+      }
+
+      # Glific.Caches.remove(1, [{:provider_token, "google_cloud_storage"}])
 
       {:ok, _credential} = Partners.create_credential(valid_attrs)
+      {:ok, _credential} = Partners.create_credential(valid_attrs_slides)
 
       result = CommonWebhook.webhook("create_certificate", fields)
       assert result[:success] == true

@@ -13,8 +13,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
     "https://www.googleapis.com/auth/drive.readonly",
     "https://www.googleapis.com/auth/presentations",
     "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/spreadsheets.readonly",
-    "https://www.googleapis.com/auth/devstorage.full_control"
+    "https://www.googleapis.com/auth/spreadsheets.readonly"
   ]
 
   @drive_url "https://www.googleapis.com/drive/v3/files"
@@ -36,7 +35,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
           {:ok, String.t()} | {:error, String.t()}
   def create_certificate(org_id, presentation_id, fields, slide_id) do
     with token <-
-           Partners.get_goth_token(org_id, "google_cloud_storage", scopes: @drive_scopes).token,
+           Partners.get_goth_token(org_id, "google_slides", scopes: @drive_scopes).token,
          {:ok, copied_slide} <- copy_slide(token, presentation_id),
          {:ok, _} <- make_public(token, copied_slide["id"]),
          {:ok, _} <- replace_text(token, copied_slide["id"], fields),
