@@ -37,7 +37,6 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
     with token <-
            Partners.get_goth_token(org_id, "google_slides", scopes: @drive_scopes).token,
          {:ok, copied_slide} <- copy_slide(token, presentation_id),
-         {:ok, _} <- make_public(token, copied_slide["id"]),
          {:ok, _} <- replace_text(token, copied_slide["id"], fields),
          {:ok, data} <- fetch_thumbnail(token, copied_slide["id"], slide_id) do
       {:ok, data["contentUrl"]}
