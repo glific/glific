@@ -342,38 +342,36 @@ defmodule Glific.Clients.CommonWebhook do
     certificate_id = fields["certificate_id"]
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
 
-    {:ok, certificate_template} =
-      Repo.fetch_by(CertificateTemplate, %{
-        id: certificate_id,
-        organization_id: fields["organization_id"]
-      })
+    case Repo.fetch_by(CertificateTemplate, %{
+           id: certificate_id,
+           organization_id: fields["organization_id"]
+         }) do
+      {:ok, certificate_template} ->
+        certificate_url = certificate_template.url
+        presentation_id = presentation_id(certificate_url)
+        slide_id = slide_id(certificate_url)
 
-    certificate_url = certificate_template.url
+        with {:ok, thumbnail} <-
+               Slide.create_certificate(
+                 fields["organization_id"],
+                 presentation_id,
+                 fields["replace_texts"],
+                 slide_id
+               ),
+             {:ok, image} <-
+               download_file(thumbnail, presentation_id, contact_id, fields["organization_id"]) do
+          %{success: true, certificate_url: image}
+        else
+          {:error, error} ->
+            %{success: false, reason: error}
+        end
 
-    presentation_id = presentation_id(certificate_url)
-    slide_id = slide_id(certificate_url)
+      {:error, _reason} ->
+        Logger.error(
+          "Certificate template not found for ID: #{certificate_id} and organization: #{fields["organization_id"]}"
+        )
 
-    with {:ok, thumbnail} <-
-           Slide.create_certificate(
-             fields["organization_id"],
-             presentation_id,
-             fields["replace_texts"],
-             slide_id
-           ),
-         {:ok, image} <-
-           download_file(
-             thumbnail,
-             presentation_id,
-             contact_id,
-             fields["organization_id"]
-           ) do
-      %{success: true, certificate_url: image}
-    else
-      {:error, error} ->
-        %{
-          success: false,
-          parsed_msg: error
-        }
+        %{success: false, reason: "Certificate template not found for ID: #{certificate_id}"}
     end
   end
 

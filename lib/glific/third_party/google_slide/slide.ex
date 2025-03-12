@@ -2,6 +2,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   @moduledoc """
   Glific Google slide API layer
   """
+  require Logger
 
   alias Glific.Partners
   alias Tesla
@@ -42,14 +43,18 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
          {:ok, data} <- fetch_thumbnail(token, copied_slide["id"], slide_id) do
       {:ok, data["contentUrl"]}
     else
-      {:error, reason} -> {:error, reason}
+      {:error, reason} ->
+        Logger.error(
+          "Certificate creation failed for Org ID: #{org_id}, Error: #{inspect(reason)}"
+        )
+
+        {:error, reason}
     end
   end
 
   @spec copy_slide(String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
   defp copy_slide(token, presentation_id) do
     url = "#{@drive_url}/#{presentation_id}/copy"
-
     headers = auth_headers(token)
 
     case Tesla.post(url, "{}", headers: headers) do
@@ -64,7 +69,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
          "Failed to copy slide. Status: #{status_code}, Response: #{inspect(response_body)}"}
 
       {:error, error} ->
-        {:error, "HTTP request failed: #{inspect(error)}"}
+        {:error, "HTTP request failed while copying slide: #{inspect(error)}"}
     end
   end
 
@@ -81,7 +86,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
         {:error, "Failed to update permissions. Status: #{status}, Response: #{inspect(body)}"}
 
       {:error, error} ->
-        {:error, "HTTP request failed: #{inspect(error)}"}
+        {:error, "HTTP request failed while updating permissions: #{inspect(error)}"}
     end
   end
 
@@ -114,7 +119,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
          "Failed to update text. Status: #{status_code}, Response: #{inspect(response_body)}"}
 
       {:error, error} ->
-        {:error, "HTTP request failed: #{inspect(error)}"}
+        {:error, "HTTP request failed while replacing text: #{inspect(error)}"}
     end
   end
 
@@ -130,7 +135,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
         {:error, "Failed to fetch thumbnail. Status: #{status}, Response: #{inspect(body)}"}
 
       {:error, error} ->
-        {:error, "HTTP request failed: #{inspect(error)}"}
+        {:error, "HTTP request failed while fetching thumbnail: #{inspect(error)}"}
     end
   end
 end

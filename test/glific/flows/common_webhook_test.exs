@@ -1,12 +1,13 @@
 defmodule Glific.Flows.CommonWebhookTest do
   alias Glific.Fixtures
-  use Glific.DataCase, async: true
+  use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
     Certificates.CertificateTemplate,
     Clients.CommonWebhook,
     Messages,
+    Partners,
     Seeds.SeedsDev
   }
 
@@ -662,35 +663,52 @@ defmodule Glific.Flows.CommonWebhookTest do
       "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
     }
 
-    with_mocks([
-      {Glific.Partners, [],
-       [
-         get_goth_token: fn _, _, _ -> %{token: "mock_access_token"} end
-       ]},
-      {Glific.Partners, [],
-       [
-         get_goth_token: fn _, _ -> %{token: "mock_access_token"} end,
-         organization: fn _ ->
-           %{
-             id: 1,
-             name: "Test Org",
-             services: %{
-               "google_cloud_storage" => %{
-                 secrets: %{
-                   "bucket" => "mock-bucket-name",
-                   "service_account" =>
-                     "{   \"type\": \"service_account\",   \"project_id\": \"mock-project\",   \"private_key_id\": \"mock-private-key-id\",   \"private_key\": \"-----BEGIN PRIVATE KEY-----\\nMOCK_PRIVATE_KEY\\n-----END PRIVATE KEY-----\\n\",   \"client_email\": \"mock-email@mock-project.iam.gserviceaccount.com\",   \"client_id\": \"1234567890\",   \"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\",   \"token_uri\": \"https://oauth2.googleapis.com/token\",   \"auth_provider_x509_cert_url\": \"https://www.googleapis.com/oauth2/v1/certs\",   \"client_x509_cert_url\": \"https://www.googleapis.com/robot/v1/metadata/x509/mock-email%40mock-project.iam.gserviceaccount.com\" }"
-                 }
-               }
-             }
-           }
-         end
-       ]}
-    ]) do
-      result = CommonWebhook.webhook("create_certificate", fields)
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      valid_attrs = %{
+        shortcode: "google_cloud_storage",
+        secrets: %{
+          "bucket" => "mock-bucket-name",
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "DEFAULT PROJECT ID",
+              private_key_id: "DEFAULT API KEY",
+              client_email: "DEFAULT CLIENT EMAIL",
+              private_key: "DEFAULT PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: 1
+      }
 
+      Glific.Caches.remove(1, [{:provider_token, "google_cloud_storage"}])
+
+      {:ok, _credential} = Partners.create_credential(valid_attrs)
+
+      result = CommonWebhook.webhook("create_certificate", fields)
       assert result[:success] == true
       assert result[:certificate_url] == "https:storage.googleapis.com"
     end
+  end
+
+  test "webhook/2 for creates_certificate should give error when certificate doesn't exist" do
+    certificate_id = 111
+
+    fields = %{
+      "certificate_id" => certificate_id,
+      "contact" => %{"id" => "123"},
+      "organization_id" => 1,
+      "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
+    }
+
+    result = CommonWebhook.webhook("create_certificate", fields)
+
+    assert result[:success] == false
+    assert result[:reason] == "Certificate template not found for ID: #{certificate_id}"
   end
 end
