@@ -34,8 +34,8 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   @spec create_certificate(non_neg_integer(), String.t(), map(), String.t()) ::
           {:ok, String.t()} | {:error, String.t()}
   def create_certificate(org_id, presentation_id, fields, slide_id) do
-    with token <-
-           Partners.get_goth_token(org_id, "google_slides", scopes: @drive_scopes).token,
+    with %{token: token} <-
+           Partners.get_goth_token(org_id, "google_slides", scopes: @drive_scopes),
          {:ok, copied_slide} <- copy_slide(token, presentation_id),
          {:ok, _} <- replace_text(token, copied_slide["id"], fields),
          {:ok, data} <- fetch_thumbnail(token, copied_slide["id"], slide_id) do
@@ -43,10 +43,17 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
     else
       {:error, reason} ->
         Logger.error(
-          "Certificate creation failed for Org ID: #{org_id}, Error: #{inspect(reason)}"
+          "Certificate creation failed for org_id: #{org_id}, Error: #{inspect(reason)}"
         )
 
         {:error, reason}
+
+      _ ->
+        Logger.error(
+          "Certificate creation failed for org_id: #{org_id}, Error: Failed to get goth token"
+        )
+
+        {:error, "Failed to get goth token"}
     end
   end
 
