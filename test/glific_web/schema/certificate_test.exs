@@ -9,7 +9,6 @@ defmodule GlificWeb.Schema.CertificateTest do
   load_gql(:count, GlificWeb.Schema, "assets/gql/certificates/count.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/certificates/delete.gql")
 
-  @tag :cert
   test "create certificate template failures", %{user: user} do
     result = auth_query_gql_by(:create, user, variables: %{})
     assert {:ok, query_data} = result
@@ -202,7 +201,6 @@ defmodule GlificWeb.Schema.CertificateTest do
              result
   end
 
-  @tag :cert
   test "create certificate template success", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :get} ->
@@ -234,7 +232,6 @@ defmodule GlificWeb.Schema.CertificateTest do
              result
   end
 
-  @tag :cert
   test "update certificate template success", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :get} ->
@@ -290,7 +287,6 @@ defmodule GlificWeb.Schema.CertificateTest do
              result
   end
 
-  @tag :cert
   test "update certificate template failure", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :get} ->
@@ -351,7 +347,6 @@ defmodule GlificWeb.Schema.CertificateTest do
              result
   end
 
-  @tag :cert
   test "get certificate template", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :get} ->
@@ -421,7 +416,6 @@ defmodule GlificWeb.Schema.CertificateTest do
              result
   end
 
-  @tag :cert
   test "list certificate templates", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :get} ->
@@ -508,7 +502,6 @@ defmodule GlificWeb.Schema.CertificateTest do
     assert Enum.empty?(cert_templates)
   end
 
-  @tag :cert
   test "count certificate templates", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :get} ->
@@ -575,7 +568,6 @@ defmodule GlificWeb.Schema.CertificateTest do
              result
   end
 
-  @tag :cert
   test "delete certificate template", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :get} ->
