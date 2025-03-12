@@ -489,7 +489,7 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   @spec download_file(String.t(), String.t(), integer(), integer()) ::
-          {:ok, String.t()} | {:error, term()}
+          {:ok, String.t()} | {:error, String.t()}
   defp download_file(thumbnail_url, presentation_id, contact_id, org_id) do
     remote_name = "certificate/#{presentation_id}/#{contact_id}.png"
     uuid = Ecto.UUID.generate()
@@ -503,10 +503,10 @@ defmodule Glific.Clients.CommonWebhook do
     else
       {:error, reason} ->
         File.rm(temp_path)
-        {:error, reason}
+        {:error, "#{inspect(reason)}"}
 
       {:ok, %Tesla.Env{status: status}} when status != 200 ->
-        {:error, :download_failed}
+        {:error, "Failed to download gcs url"}
     end
   end
 

@@ -588,7 +588,6 @@ defmodule Glific.Flows.CommonWebhookTest do
              CommonWebhook.webhook("send_wa_group_poll", fields)
   end
 
-  @tag :cert
   test "successfully creates a certificate" do
     Tesla.Mock.mock(fn
       %Tesla.Env{
@@ -656,10 +655,11 @@ defmodule Glific.Flows.CommonWebhookTest do
     }
 
     {:ok, certificate} = CertificateTemplate.create_certificate_template(attrs)
+    contact = Fixtures.contact_fixture()
 
     fields = %{
       "certificate_id" => certificate.id,
-      "contact" => %{"id" => "123"},
+      "contact" => %{"id" => contact.id},
       "organization_id" => 1,
       "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
     }
