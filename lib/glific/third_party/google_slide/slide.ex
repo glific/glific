@@ -71,23 +71,6 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
     end
   end
 
-  @spec make_public(String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
-  defp make_public(token, presentation_id) do
-    url = "#{@drive_url}/#{presentation_id}/permissions"
-    body = Jason.encode!(%{"role" => "writer", "type" => "anyone"})
-
-    case Tesla.post(url, body, headers: auth_headers(token)) do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        {:ok, Jason.decode!(body)}
-
-      {:ok, %Tesla.Env{status: status, body: body}} ->
-        {:error, "Failed to update permissions. Status: #{status}, Response: #{inspect(body)}"}
-
-      {:error, error} ->
-        {:error, "HTTP request failed while updating permissions: #{inspect(error)}"}
-    end
-  end
-
   @spec replace_text(String.t(), String.t(), map()) :: {:ok, map()} | {:error, String.t()}
   defp replace_text(token, presentation_id, fields) do
     url = "#{@slide_url}/#{presentation_id}:batchUpdate"
