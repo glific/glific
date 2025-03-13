@@ -2,6 +2,7 @@ defmodule Glific.Certificates.Certificate do
   @moduledoc """
   Functions related to certificate templates and managing issued certificates
   """
+
   alias Glific.{
     Certificates.IssuedCertificate,
     Certificates.CertificateTemplate,
@@ -55,8 +56,8 @@ defmodule Glific.Certificates.Certificate do
     Notifications.create_notification(%{
       category: "Custom Certificates",
       message: """
-      Custom certificate generation with template_id: #{issued_certificate.template_id} failed
-      for contact_id: #{issued_certificate.contact_id} due to #{issued_certificate.errors["reason"]}.
+      Custom certificate generation with template_id: #{issued_certificate.certificate_template_id} failed
+      for contact_id: #{issued_certificate.contact_id} due to #{issued_certificate.errors.reason}.
       """,
       severity: Notifications.types().warning,
       organization_id: issued_certificate.organization_id,
