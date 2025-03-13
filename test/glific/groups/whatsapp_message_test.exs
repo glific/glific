@@ -4,11 +4,13 @@ defmodule Glific.Groups.WhatsappMessageTest do
 
   alias Glific.{
     Fixtures,
+    Flows.Broadcast,
     Groups.WaGroupsCollections,
     Partners,
     Providers.Maytapi.Message,
     Seeds.SeedsDev,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    WAGroup.WAMessage,
   }
 
   setup do
@@ -313,4 +315,16 @@ defmodule Glific.Groups.WhatsappMessageTest do
 
     assert error_message == "Cannot send message: No WhatsApp group found in the collection"
   end
+
+  test "create_broadcast_wa_message/2 should create a collection message",
+    attrs do
+      flow = Fixtures.flow_fixture(attrs);
+      group =
+      Fixtures.group_fixture(%{organization_id: attrs.organization_id, group_type: "WA"})
+
+      assert {:ok, %WAMessage{}} = Broadcast.create_broadcast_wa_message(flow, group)
+
+    end
+
+
 end
