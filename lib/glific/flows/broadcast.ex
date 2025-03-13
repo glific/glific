@@ -71,9 +71,12 @@ defmodule Glific.Flows.Broadcast do
     })
   end
 
+  @doc """
+  Create a broadcast message for the group
+  """
   @spec create_broadcast_wa_message(Flow.t(), Group.t()) ::
           {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
-  defp create_broadcast_wa_message(flow, group) do
+  def create_broadcast_wa_message(flow, group) do
     WAMessages.create_group_message(%{
       body: "Starting flow: *#{flow.name}* for group: *#{group.label}*",
       type: :text,
