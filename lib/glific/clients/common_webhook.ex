@@ -3,6 +3,8 @@ defmodule Glific.Clients.CommonWebhook do
   Common webhooks which we can call with any clients.
   """
 
+  alias Glific.Certificates.Certificate
+
   alias Glific.{
     ASR.Bhasini,
     ASR.GoogleASR,
@@ -360,9 +362,31 @@ defmodule Glific.Clients.CommonWebhook do
                ),
              {:ok, image} <-
                download_file(thumbnail, presentation_id, contact_id, fields["organization_id"]) do
+          {:ok, _} =
+            Certificate.issue_certificate(
+              %{
+                template_id: certificate_id,
+                contact_id: contact_id,
+                url: image,
+                errors: %{}
+              },
+              fields["organization_id"]
+            )
+
           %{success: true, certificate_url: image}
         else
           {:error, error} ->
+            {:ok, _} =
+              Certificate.issue_certificate(
+                %{
+                  template_id: certificate_id,
+                  contact_id: contact_id,
+                  url: nil,
+                  errors: %{reason: error}
+                },
+                fields["organization_id"]
+              )
+
             %{success: false, reason: error}
         end
 
@@ -491,8 +515,10 @@ defmodule Glific.Clients.CommonWebhook do
   @spec download_file(String.t(), String.t(), integer(), integer()) ::
           {:ok, String.t()} | {:error, String.t()}
   defp download_file(thumbnail_url, presentation_id, contact_id, org_id) do
-    remote_name = "certificate/#{presentation_id}/#{contact_id}.png"
     uuid = Ecto.UUID.generate()
+    img_timestamp = Timex.now() |> Timex.format!("%Y_%m_%d_%H_%M_%S", :strftime)
+    remote_name = "certificate/#{presentation_id}/#{img_timestamp}_#{contact_id}.png"
+
     temp_path = Path.join(System.tmp_dir!(), "#{uuid}.png")
 
     with {:ok, %Tesla.Env{status: 200, body: image_data}} <- Tesla.get(thumbnail_url),
