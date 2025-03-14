@@ -164,7 +164,7 @@ defmodule Glific.Certificates.CertificateTemplate do
 
   defp validate_url(changeset, _), do: changeset
 
-  @spec validate_by_type(String.t(), String.t()) :: :ok | {:error, String.t(), String.t()}
+  @spec validate_by_type(String.t(), atom()) :: :ok | {:error, atom(), String.t()}
   defp validate_by_type(url, :slides) do
     if String.starts_with?(url, @slides_url_prefix) do
       :ok
