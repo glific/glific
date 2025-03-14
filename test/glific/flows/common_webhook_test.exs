@@ -1,15 +1,21 @@
 defmodule Glific.Flows.CommonWebhookTest do
   alias Glific.Fixtures
-  use Glific.DataCase, async: true
+  use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
+    Certificates.CertificateTemplate,
     Clients.CommonWebhook,
     Messages,
+    Partners,
     Seeds.SeedsDev
   }
 
   import Mock
+
+  @mock_presentation_id "copied_presentation123"
+  @mock_copied_slide %{"id" => @mock_presentation_id}
+  @mock_thumbnail %{"contentUrl" => "image_url"}
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -580,5 +586,146 @@ defmodule Glific.Flows.CommonWebhookTest do
              poll: _
            } =
              CommonWebhook.webhook("send_wa_group_poll", fields)
+  end
+
+  test "successfully creates a certificate" do
+    Tesla.Mock.mock(fn
+      %Tesla.Env{
+        method: :post,
+        url: "https://storage.googleapis.com/upload/storage/v1/b/mock-bucket-name/o",
+        query: [uploadType: "multipart"]
+      } ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body:
+             Jason.encode!(%{
+               "name" => "uploads/certificate/copied_presentation123/123.png",
+               "mediaLink" =>
+                 "https://storage.googleapis.com/mock-bucket-name/uploads/certificate/copied_presentation123/123.png",
+               "selfLink" =>
+                 "https://storage.googleapis.com/mock-bucket-name/uploads/certificate/copied_presentation123/123.png"
+             })
+         }}
+
+      %{
+        method: :get,
+        url:
+          "https://storage.googleapis.com/mock-bucket-name/uploads/certificate/copied_presentation123/123.png"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: "<<binary image data>>"}}
+
+      %{
+        method: :post,
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_copied_slide)}}
+
+      %{
+        method: :post,
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/permissions"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{"success" => true})}}
+
+      %{
+        method: :post,
+        url: "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}:batchUpdate"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{"success" => true})}}
+
+      %{
+        method: :get,
+        url:
+          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/p2/thumbnail"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_thumbnail)}}
+
+      %{
+        method: :get,
+        url: "image_url"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: "<<binary image data>>"}}
+    end)
+
+    attrs = %{
+      label: "test",
+      type: :slides,
+      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.p2",
+      organization_id: 1
+    }
+
+    {:ok, certificate} = CertificateTemplate.create_certificate_template(attrs)
+    contact = Fixtures.contact_fixture()
+
+    fields = %{
+      "certificate_id" => certificate.id,
+      "contact" => %{"id" => contact.id},
+      "organization_id" => 1,
+      "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
+    }
+
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      valid_attrs = %{
+        shortcode: "google_cloud_storage",
+        secrets: %{
+          "bucket" => "mock-bucket-name",
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "DEFAULT PROJECT ID",
+              private_key_id: "DEFAULT API KEY",
+              client_email: "DEFAULT CLIENT EMAIL",
+              private_key: "DEFAULT PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: 1
+      }
+
+      valid_attrs_slides = %{
+        shortcode: "google_slides",
+        secrets: %{
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "DEFAULT PROJECT ID",
+              private_key_id: "DEFAULT API KEY",
+              client_email: "DEFAULT CLIENT EMAIL",
+              private_key: "DEFAULT PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: 1
+      }
+
+      # Glific.Caches.remove(1, [{:provider_token, "google_cloud_storage"}])
+
+      {:ok, _credential} = Partners.create_credential(valid_attrs)
+      {:ok, _credential} = Partners.create_credential(valid_attrs_slides)
+
+      result = CommonWebhook.webhook("create_certificate", fields)
+      assert result[:success] == true
+      assert result[:certificate_url] == "https:storage.googleapis.com"
+    end
+  end
+
+  test "webhook/2 for creates_certificate should give error when certificate doesn't exist" do
+    certificate_id = 111
+
+    fields = %{
+      "certificate_id" => certificate_id,
+      "contact" => %{"id" => "123"},
+      "organization_id" => 1,
+      "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
+    }
+
+    result = CommonWebhook.webhook("create_certificate", fields)
+
+    assert result[:success] == false
+    assert result[:reason] == "Certificate template not found for ID: #{certificate_id}"
   end
 end
