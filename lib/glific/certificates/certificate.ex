@@ -39,7 +39,8 @@ defmodule Glific.Certificates.Certificate do
       attrs
       |> Map.merge(%{
         certificate_template_id: attrs.template_id,
-        organization_id: organization_id
+        organization_id: organization_id,
+        gcs_url: attrs.url
       })
       |> IssuedCertificate.create_issued_certificate()
 

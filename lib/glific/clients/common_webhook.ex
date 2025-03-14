@@ -515,8 +515,9 @@ defmodule Glific.Clients.CommonWebhook do
   @spec download_file(String.t(), String.t(), integer(), integer()) ::
           {:ok, String.t()} | {:error, String.t()}
   defp download_file(thumbnail_url, presentation_id, contact_id, org_id) do
-    remote_name = "certificate/#{presentation_id}/#{contact_id}.png"
     uuid = Ecto.UUID.generate()
+    img_timestamp = Timex.now() |> Timex.format!("%Y_%m_%d_%H_%M_%S", :strftime)
+    remote_name = "certificate/#{presentation_id}/#{img_timestamp}_#{contact_id}.png"
     temp_path = Path.join(System.tmp_dir!(), "#{uuid}.png")
 
     with {:ok, %Tesla.Env{status: 200, body: image_data}} <- Tesla.get(thumbnail_url),
