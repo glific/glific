@@ -362,7 +362,6 @@ defmodule Glific.Clients.CommonWebhook do
                ),
              {:ok, image} <-
                download_file(thumbnail, presentation_id, contact_id, fields["organization_id"]) do
-<<<<<<< HEAD
           {:ok, _} =
             Certificate.issue_certificate(
               %{
@@ -388,11 +387,6 @@ defmodule Glific.Clients.CommonWebhook do
                 fields["organization_id"]
               )
 
-=======
-          %{success: true, certificate_url: image}
-        else
-          {:error, error} ->
->>>>>>> feat/custom-certificates
             %{success: false, reason: error}
         end
 

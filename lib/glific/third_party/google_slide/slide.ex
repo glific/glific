@@ -63,7 +63,6 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
     headers = auth_headers(token)
 
     case Tesla.post(client(), url, "{}", headers: headers) do
-
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
         case Jason.decode(response_body) do
           {:ok, decoded_body} -> {:ok, decoded_body}
@@ -100,7 +99,6 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
     body = Jason.encode!(%{"requests" => requests})
 
     case Tesla.post(client(), url, body, headers: auth_headers(token)) do
-
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
         {:ok, response_body}
 
@@ -118,7 +116,6 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
     url = "#{@slide_url}/#{presentation_id}/pages/#{slide_id}/thumbnail"
 
     case Tesla.get(client(), url, headers: auth_headers(token)) do
-
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode(body)
 
@@ -151,5 +148,4 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
       }
     ])
   end
-
 end
