@@ -4,8 +4,8 @@ defmodule Glific.Certificates.Certificate do
   """
 
   alias Glific.{
-    Certificates.IssuedCertificate,
     Certificates.CertificateTemplate,
+    Certificates.IssuedCertificate,
     Notifications
   }
 

@@ -29,7 +29,7 @@ defmodule Glific.Certificates.CertificateTemplate do
           label: String.t() | nil,
           url: String.t() | nil,
           description: String.t() | nil,
-          type: CertificateTemplateType,
+          type: CertificateTemplateType | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -50,8 +50,8 @@ defmodule Glific.Certificates.CertificateTemplate do
   Standard changeset pattern we use for all data types
   """
   @spec changeset(CertificateTemplate.t(), map()) :: Ecto.Changeset.t()
-  def changeset(wa_poll, attrs) do
-    wa_poll
+  def changeset(certificate_template, attrs) do
+    certificate_template
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_length(:label, min: 1, max: 40)

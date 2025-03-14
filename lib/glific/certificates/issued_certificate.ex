@@ -3,13 +3,12 @@ defmodule Glific.Certificates.IssuedCertificate do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Glific.Repo
-  alias Glific.Certificates.IssuedCertificate
-
   alias Glific.{
     Certificates.CertificateTemplate,
+    Certificates.IssuedCertificate,
     Contacts.Contact,
-    Partners.Organization
+    Partners.Organization,
+    Repo
   }
 
   @required_fields [
