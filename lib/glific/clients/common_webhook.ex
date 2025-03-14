@@ -6,12 +6,15 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.{
     ASR.Bhasini,
     ASR.GoogleASR,
+    Certificates.CertificateTemplate,
     Contacts,
+    GCS.GcsWorker,
     Groups.WAGroup,
     OpenAI.ChatGPT,
     Partners,
     Providers.Maytapi,
     Repo,
+    ThirdParty.GoogleSlide.Slide,
     WAGroup.WAManagedPhone,
     WAGroup.WaPoll
   }
@@ -335,6 +338,43 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  def webhook("create_certificate", fields) do
+    certificate_id = fields["certificate_id"]
+    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+
+    case Repo.fetch_by(CertificateTemplate, %{
+           id: certificate_id,
+           organization_id: fields["organization_id"]
+         }) do
+      {:ok, certificate_template} ->
+        certificate_url = certificate_template.url
+        presentation_id = presentation_id(certificate_url)
+        slide_id = slide_id(certificate_url)
+
+        with {:ok, thumbnail} <-
+               Slide.create_certificate(
+                 fields["organization_id"],
+                 presentation_id,
+                 fields["replace_texts"],
+                 slide_id
+               ),
+             {:ok, image} <-
+               download_file(thumbnail, presentation_id, contact_id, fields["organization_id"]) do
+          %{success: true, certificate_url: image}
+        else
+          {:error, error} ->
+            %{success: false, reason: error}
+        end
+
+      {:error, _reason} ->
+        Logger.error(
+          "Certificate template not found for ID: #{certificate_id} and organization: #{fields["organization_id"]}"
+        )
+
+        %{success: false, reason: "Certificate template not found for ID: #{certificate_id}"}
+    end
+  end
+
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
   defp headers do
@@ -445,6 +485,44 @@ defmodule Glific.Clients.CommonWebhook do
 
       {false, field} ->
         {:error, "#{field} is invalid"}
+    end
+  end
+
+  @spec download_file(String.t(), String.t(), integer(), integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  defp download_file(thumbnail_url, presentation_id, contact_id, org_id) do
+    remote_name = "certificate/#{presentation_id}/#{contact_id}.png"
+    uuid = Ecto.UUID.generate()
+    temp_path = Path.join(System.tmp_dir!(), "#{uuid}.png")
+
+    with {:ok, %Tesla.Env{status: 200, body: image_data}} <- Tesla.get(thumbnail_url),
+         :ok <- File.write(temp_path, image_data),
+         {:ok, media_meta} <- GcsWorker.upload_media(temp_path, remote_name, org_id) do
+      File.rm(temp_path)
+      {:ok, media_meta.url}
+    else
+      {:error, reason} ->
+        File.rm(temp_path)
+        {:error, "#{inspect(reason)}"}
+
+      {:ok, %Tesla.Env{status: status}} when status != 200 ->
+        {:error, "Failed to download gcs url"}
+    end
+  end
+
+  @spec presentation_id(String.t()) :: String.t() | nil
+  defp presentation_id(url) do
+    case Regex.run(~r{/d/([a-zA-Z0-9_-]+)/}, url) do
+      [_, id] -> id
+      _ -> nil
+    end
+  end
+
+  @spec slide_id(String.t()) :: String.t() | nil
+  defp slide_id(url) do
+    case Regex.run(~r/#slide=id\.([a-zA-Z0-9_-]+)/, url) do
+      [_, id] -> id
+      _ -> nil
     end
   end
 end
