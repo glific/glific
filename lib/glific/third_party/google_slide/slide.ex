@@ -128,8 +128,8 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   end
 
   # https://hexdocs.pm/tesla/Tesla.Middleware.Retry.html
-  @spec client() :: Tesla.Client.t()
-  defp client() do
+  @spec client :: Tesla.Client.t()
+  defp client do
     Tesla.client([
       {
         Tesla.Middleware.Retry,
