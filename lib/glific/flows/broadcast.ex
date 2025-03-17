@@ -115,10 +115,9 @@ defmodule Glific.Flows.Broadcast do
       |> Enum.map(& &1.wa_group_id)
       |> then(&broadcast_wa_groups(flow, &1))
 
-      case Repo.fetch_by(Group, %{id: group_id}) do
-        {:ok, group} ->
-          [create_broadcast_wa_message(flow, group)]
-      end
+      {:ok, group}  =  Repo.fetch_by(Group, %{id: group_id})
+      [create_broadcast_wa_message(flow, group)]
+
     end)
     |> Stream.run()
   end
