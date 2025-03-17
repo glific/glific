@@ -362,6 +362,8 @@ defmodule Glific.Clients.CommonWebhook do
                ),
              {:ok, image} <-
                download_file(thumbnail, presentation_id, contact_id, fields["organization_id"]) do
+          Glific.Metrics.increment("Certificate issued")
+
           {:ok, _} =
             Certificate.issue_certificate(
               %{
