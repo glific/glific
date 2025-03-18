@@ -341,25 +341,32 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   def webhook("create_certificate", fields) do
-    certificate_id = fields["certificate_id"]
-    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+    case parse_certificate_params(fields) do
+      {:ok, fields} ->
+        certificate_id = fields.certificate_id
+        contact_id = Glific.parse_maybe_integer!(fields.contact["id"])
 
-    case Repo.fetch_by(CertificateTemplate, %{
-           id: certificate_id,
-           organization_id: fields["organization_id"]
-         }) do
-      {:ok, certificate_template} ->
-        certificate_url = certificate_template.url
-        presentation_id = presentation_id(certificate_url)
-        slide_id = slide_id(certificate_url)
-        do_create_certificate(fields, contact_id, presentation_id, slide_id)
+        case Repo.fetch_by(CertificateTemplate, %{
+               id: certificate_id,
+               organization_id: fields.organization_id
+             }) do
+          {:ok, certificate_template} ->
+            certificate_url = certificate_template.url
+            presentation_id = presentation_id(certificate_url)
+            slide_id = slide_id(certificate_url)
+            do_create_certificate(fields, contact_id, presentation_id, slide_id)
 
-      {:error, _reason} ->
-        Logger.error(
-          "Certificate template not found for ID: #{certificate_id} and organization: #{fields["organization_id"]}"
-        )
+          {:error, _reason} ->
+            Logger.error(
+              "Certificate template not found for ID: #{certificate_id} and organization: #{fields.organization_id}"
+            )
 
-        %{success: false, reason: "Certificate template not found for ID: #{certificate_id}"}
+            %{success: false, reason: "Certificate template not found for ID: #{certificate_id}"}
+        end
+
+      {:error, reason} when is_binary(reason) ->
+        Logger.error("Error in certificate creation webhook: #{reason}")
+        %{success: false, error: reason}
     end
   end
 
@@ -476,26 +483,47 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  @spec parse_certificate_params(map()) :: {:ok, map()} | {:error, String.t()}
+  defp parse_certificate_params(fields) do
+    with {true, _} <-
+           {is_integer(fields["certificate_id"]) or is_binary(fields["certificate_id"]),
+            :certificate_id},
+         {true, _} <- {is_integer(fields["organization_id"]), :organization_id},
+         {true, _} <- {is_map(fields["contact"]), :contact},
+         {true, _} <- {is_map(fields["replace_texts"]), :replace_texts} do
+      {:ok,
+       %{
+         organization_id: fields["organization_id"],
+         certificate_id: fields["certificate_id"],
+         contact: fields["contact"],
+         replace_texts: fields["replace_texts"]
+       }}
+    else
+      {false, field} ->
+        {:error, "#{field} is invalid"}
+    end
+  end
+
   @spec do_create_certificate(map(), integer(), String.t(), String.t()) :: map()
   defp do_create_certificate(fields, contact_id, presentation_id, slide_id) do
     with {:ok, thumbnail} <-
            Slide.create_certificate(
-             fields["organization_id"],
+             fields.organization_id,
              presentation_id,
-             fields["replace_texts"],
+             fields.replace_texts,
              slide_id
            ),
          {:ok, image} <-
-           download_file(thumbnail, presentation_id, contact_id, fields["organization_id"]) do
+           download_file(thumbnail, presentation_id, contact_id, fields.organization_id) do
       {:ok, _} =
         Certificate.issue_certificate(
           %{
-            template_id: fields["certificate_id"],
+            template_id: fields.certificate_id,
             contact_id: contact_id,
             url: image,
             errors: %{}
           },
-          fields["organization_id"]
+          fields.organization_id
         )
 
       %{success: true, certificate_url: image}
@@ -504,12 +532,12 @@ defmodule Glific.Clients.CommonWebhook do
         {:ok, _} =
           Certificate.issue_certificate(
             %{
-              template_id: fields["certificate_id"],
+              template_id: fields.certificate_id,
               contact_id: contact_id,
               url: nil,
               errors: %{reason: error}
             },
-            fields["organization_id"]
+            fields.organization_id
           )
 
         %{success: false, reason: error}

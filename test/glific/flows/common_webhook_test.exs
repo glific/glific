@@ -799,4 +799,33 @@ defmodule Glific.Flows.CommonWebhookTest do
     assert result[:success] == false
     assert result[:reason] == "Certificate template not found for ID: #{certificate_id}"
   end
+
+  test "webhook/2 for certificate should fail when validation fails" do
+    # when certificate is invalid
+    invalid_fields = %{}
+
+    assert %{success: false, error: "certificate_id is invalid"} =
+             CommonWebhook.webhook("create_certificate", invalid_fields)
+
+    # replace text
+    invalid_fields = %{
+      "certificate_id" => "1",
+      "organization_id" => 1,
+      "contact" => %{"id" => "123"},
+      "replace_texts" => "John Doe"
+    }
+
+    # contact is missing
+    assert %{success: false, error: "replace_texts is invalid"} =
+             CommonWebhook.webhook("create_certificate", invalid_fields)
+
+    invalid_fields = %{
+      "certificate_id" => "1",
+      "organization_id" => 1,
+      "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
+    }
+
+    assert %{success: false, error: "contact is invalid"} =
+             CommonWebhook.webhook("create_certificate", invalid_fields)
+  end
 end
