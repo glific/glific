@@ -702,14 +702,85 @@ defmodule Glific.Flows.CommonWebhookTest do
         organization_id: 1
       }
 
-      # Glific.Caches.remove(1, [{:provider_token, "google_cloud_storage"}])
-
       {:ok, _credential} = Partners.create_credential(valid_attrs)
       {:ok, _credential} = Partners.create_credential(valid_attrs_slides)
 
       result = CommonWebhook.webhook("create_certificate", fields)
       assert result[:success] == true
       assert result[:certificate_url] == "https:storage.googleapis.com"
+    end
+  end
+
+  test "Failure in creating a certificate" do
+    Tesla.Mock.mock(fn
+      %{
+        method: :post,
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy"
+      } ->
+        {:ok, %Tesla.Env{status: 400, body: Jason.encode!(@mock_copied_slide)}}
+    end)
+
+    attrs = %{
+      label: "test",
+      type: :slides,
+      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.p2",
+      organization_id: 1
+    }
+
+    {:ok, certificate} = CertificateTemplate.create_certificate_template(attrs)
+    contact = Fixtures.contact_fixture()
+
+    fields = %{
+      "certificate_id" => certificate.id,
+      "contact" => %{"id" => contact.id},
+      "organization_id" => 1,
+      "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
+    }
+
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      valid_attrs = %{
+        shortcode: "google_cloud_storage",
+        secrets: %{
+          "bucket" => "mock-bucket-name",
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "DEFAULT PROJECT ID",
+              private_key_id: "DEFAULT API KEY",
+              client_email: "DEFAULT CLIENT EMAIL",
+              private_key: "DEFAULT PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: 1
+      }
+
+      valid_attrs_slides = %{
+        shortcode: "google_slides",
+        secrets: %{
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "DEFAULT PROJECT ID",
+              private_key_id: "DEFAULT API KEY",
+              client_email: "DEFAULT CLIENT EMAIL",
+              private_key: "DEFAULT PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: 1
+      }
+
+      {:ok, _credential} = Partners.create_credential(valid_attrs)
+      {:ok, _credential} = Partners.create_credential(valid_attrs_slides)
+
+      result = CommonWebhook.webhook("create_certificate", fields)
+      assert result[:success] == false
+      assert result[:certificate_url] == nil
     end
   end
 
