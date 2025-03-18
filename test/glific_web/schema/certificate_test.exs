@@ -255,7 +255,8 @@ defmodule GlificWeb.Schema.CertificateTest do
                   "certificateTemplate" => %{
                     "id" => ^id,
                     "label" => "slides2",
-                    "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.p"
+                    "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.p",
+                    "description" => "lorum ipsum"
                   }
                 }
               }

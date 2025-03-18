@@ -353,44 +353,7 @@ defmodule Glific.Clients.CommonWebhook do
         presentation_id = presentation_id(certificate_url)
         slide_id = slide_id(certificate_url)
 
-        with {:ok, thumbnail} <-
-               Slide.create_certificate(
-                 fields["organization_id"],
-                 presentation_id,
-                 fields["replace_texts"],
-                 slide_id
-               ),
-             {:ok, image} <-
-               download_file(thumbnail, presentation_id, contact_id, fields["organization_id"]) do
-          Glific.Metrics.increment("Certificate issued")
-
-          {:ok, _} =
-            Certificate.issue_certificate(
-              %{
-                template_id: certificate_id,
-                contact_id: contact_id,
-                url: image,
-                errors: %{}
-              },
-              fields["organization_id"]
-            )
-
-          %{success: true, certificate_url: image}
-        else
-          {:error, error} ->
-            {:ok, _} =
-              Certificate.issue_certificate(
-                %{
-                  template_id: certificate_id,
-                  contact_id: contact_id,
-                  url: nil,
-                  errors: %{reason: error}
-                },
-                fields["organization_id"]
-              )
-
-            %{success: false, reason: error}
-        end
+        do_create_certificate(fields, contact_id, presentation_id, slide_id)
 
       {:error, _reason} ->
         Logger.error(
@@ -511,6 +474,46 @@ defmodule Glific.Clients.CommonWebhook do
 
       {false, field} ->
         {:error, "#{field} is invalid"}
+    end
+  end
+
+  @spec do_create_certificate(map(), integer(), String.t(), String.t()) :: map()
+  defp do_create_certificate(fields, contact_id, presentation_id, slide_id) do
+    with {:ok, thumbnail} <-
+           Slide.create_certificate(
+             fields["organization_id"],
+             presentation_id,
+             fields["replace_texts"],
+             slide_id
+           ),
+         {:ok, image} <-
+           download_file(thumbnail, presentation_id, contact_id, fields["organization_id"]) do
+      {:ok, _} =
+        Certificate.issue_certificate(
+          %{
+            template_id: fields["certificate_id"],
+            contact_id: contact_id,
+            url: image,
+            errors: %{}
+          },
+          fields["organization_id"]
+        )
+
+      %{success: true, certificate_url: image}
+    else
+      {:error, error} ->
+        {:ok, _} =
+          Certificate.issue_certificate(
+            %{
+              template_id: fields["certificate_id"],
+              contact_id: contact_id,
+              url: nil,
+              errors: %{reason: error}
+            },
+            fields["organization_id"]
+          )
+
+        %{success: false, reason: error}
     end
   end
 

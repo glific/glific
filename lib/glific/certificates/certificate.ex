@@ -45,15 +45,15 @@ defmodule Glific.Certificates.Certificate do
       |> IssuedCertificate.create_issued_certificate()
 
     if issued_certificate.errors != %{} do
-      {:ok, _} = create_cert_generation_fail_notification(issued_certificate)
+      {:ok, _} = notify_certificate_generation(issued_certificate)
     end
 
     {:ok, issued_certificate}
   end
 
-  @spec create_cert_generation_fail_notification(IssuedCertificate.t()) ::
+  @spec notify_certificate_generation(IssuedCertificate.t()) ::
           {:ok, map()} | {:error, Ecto.Changeset.t()}
-  defp create_cert_generation_fail_notification(issued_certificate) do
+  defp notify_certificate_generation(issued_certificate) do
     Notifications.create_notification(%{
       category: "Custom Certificates",
       message: """
