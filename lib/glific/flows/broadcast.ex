@@ -20,8 +20,9 @@ defmodule Glific.Flows.Broadcast do
     Messages,
     Messages.Message,
     Partners,
+    Providers.Maytapi,
     Repo,
-    WAMessages
+    WAGroup.WAMessage
   }
 
   @status "published"
@@ -72,19 +73,6 @@ defmodule Glific.Flows.Broadcast do
     })
   end
 
-  @doc """
-  Create a broadcast message for the group
-  """
-  @spec create_broadcast_wa_message(Flow.t(), Group.t()) ::
-          {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
-  def create_broadcast_wa_message(flow, group) do
-    WAMessages.create_group_message(%{
-      body: "Starting flow: *#{flow.name}* for group: *#{group.label}*",
-      type: :text,
-      group_id: group.id
-    })
-  end
-
   @spec broadcast_message_payload(list(integer()), Message.t(), Flow.t(), map(), boolean()) ::
           {:ok, any()} | {:error, String.t()}
   defp broadcast_message_payload(group_ids, group_message, flow, default_results, exclusion) do
@@ -109,15 +97,22 @@ defmodule Glific.Flows.Broadcast do
     Task.async_stream(group_ids, fn group_id ->
       Repo.put_process_state(flow.organization_id)
 
-      WaGroupsCollections.list_wa_groups_collection(%{
-        filter: %{group_id: group_id, organization_id: flow.organization_id}
-      })
+      wa_group_collections =
+        WaGroupsCollections.list_wa_groups_collection(%{
+          filter: %{group_id: group_id, organization_id: flow.organization_id}
+        })
+        |> Repo.preload([:wa_group])
+
+      wa_group_collections
       |> Enum.map(& &1.wa_group_id)
       |> then(&broadcast_wa_groups(flow, &1))
 
-      {:ok, group}  =  Repo.fetch_by(Group, %{id: group_id})
-      [create_broadcast_wa_message(flow, group)]
+      {:ok, group} = Repo.fetch_by(Group, %{id: group_id})
 
+      {:ok, %WAMessage{}} =
+        Maytapi.Message.create_wa_group_message(wa_group_collections, group, %{
+          message: "Starting flow: *#{flow.name}* for group: *#{group.label}*"
+        })
     end)
     |> Stream.run()
   end

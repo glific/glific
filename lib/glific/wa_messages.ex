@@ -12,7 +12,7 @@ defmodule Glific.WAMessages do
     Partners,
     Providers.Maytapi.Message,
     Repo,
-    WAGroup.WAMessage,
+    WAGroup.WAMessage
   }
 
   import Ecto.Query
@@ -224,32 +224,5 @@ defmodule Glific.WAMessages do
   @spec add_conversation([WAConversation.t()], WAGroup.t()) :: [WAConversation.t()]
   defp add_conversation(results, wa_group) do
     [WAConversation.new(wa_group, nil, []) | results]
-  end
-
-  @doc """
-  Record a message sent to a group in the wa_message table. This message is actually not
-  sent, but is used for display purposes in the group listings
-  """
-  @spec create_group_message(map()) :: {:ok, WAMessage.t()} | {:error, Ecto.Changeset.t()}
-  def create_group_message(attrs) do
-    organization_id = Repo.get_organization_id()
-    sender_id = Partners.organization_contact_id(organization_id)
-
-    attrs
-    |> Map.merge(%{
-      organization_id: organization_id,
-      contact_id: sender_id,
-      bsp_status: "sent",
-      send_at: DateTime.utc_now()
-    })
-    |> create_message()
-    |> case do
-      {:ok, message} ->
-       Message.wa_group_message_subscription(message)
-        {:ok, message}
-
-      {:error, error} ->
-        {:error, error}
-    end
   end
 end
