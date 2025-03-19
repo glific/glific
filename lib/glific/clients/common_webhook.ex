@@ -2,7 +2,6 @@ defmodule Glific.Clients.CommonWebhook do
   @moduledoc """
   Common webhooks which we can call with any clients.
   """
-
   alias Glific.Certificates.Certificate
 
   alias Glific.{
@@ -22,6 +21,13 @@ defmodule Glific.Clients.CommonWebhook do
   }
 
   require Logger
+
+  @certificate_params_schema %{
+    certificate_id: [type: :integer, required: true],
+    contact: [type: :map, required: true],
+    replace_texts: [type: :map, required: true],
+    organization_id: [type: :integer, required: true]
+  }
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -341,30 +347,15 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   def webhook("create_certificate", fields) do
-    case parse_certificate_params(fields) do
-      {:ok, fields} ->
-        certificate_id = fields.certificate_id
-        contact_id = Glific.parse_maybe_integer!(fields.contact["id"])
-
-        case Repo.fetch_by(CertificateTemplate, %{
-               id: certificate_id,
-               organization_id: fields.organization_id
-             }) do
-          {:ok, certificate_template} ->
-            certificate_url = certificate_template.url
-            presentation_id = presentation_id(certificate_url)
-            slide_id = slide_id(certificate_url)
-            do_create_certificate(fields, contact_id, presentation_id, slide_id)
-
-          {:error, _reason} ->
-            Logger.error(
-              "Certificate template not found for ID: #{certificate_id} and organization: #{fields.organization_id}"
-            )
-
-            %{success: false, reason: "Certificate template not found for ID: #{certificate_id}"}
-        end
-
-      {:error, reason} when is_binary(reason) ->
+    with {:ok, fields} <- handle_certificate_id(fields),
+         {:ok, parsed_fields} <- parse_certificate_params(fields),
+         {:ok, certificate_template} <- fetch_certificate_template(parsed_fields) do
+      certificate_url = certificate_template.url
+      presentation_id = presentation_id(certificate_url)
+      slide_id = slide_id(certificate_url)
+      do_create_certificate(parsed_fields, parsed_fields.contact["id"], presentation_id, slide_id)
+    else
+      {:error, reason} ->
         Logger.error("Error in certificate creation webhook: #{reason}")
         %{success: false, error: reason}
     end
@@ -483,24 +474,20 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  @spec parse_certificate_params(map()) :: {:ok, map()} | {:error, String.t()}
+  @spec parse_certificate_params(map()) :: {:ok, map(), {:error, String.t()}}
   defp parse_certificate_params(fields) do
-    with {true, _} <-
-           {is_integer(fields["certificate_id"]) or is_binary(fields["certificate_id"]),
-            :certificate_id},
-         {true, _} <- {is_integer(fields["organization_id"]), :organization_id},
-         {true, _} <- {is_map(fields["contact"]), :contact},
-         {true, _} <- {is_map(fields["replace_texts"]), :replace_texts} do
-      {:ok,
-       %{
-         organization_id: fields["organization_id"],
-         certificate_id: fields["certificate_id"],
-         contact: fields["contact"],
-         replace_texts: fields["replace_texts"]
-       }}
-    else
-      {false, field} ->
-        {:error, "#{field} is invalid"}
+    case Tarams.cast(fields, @certificate_params_schema) do
+      {:ok, fields} ->
+        {:ok,
+         %{
+           organization_id: fields.organization_id,
+           certificate_id: fields.certificate_id,
+           contact: fields.contact,
+           replace_texts: fields.replace_texts
+         }}
+
+      {:error, errors} ->
+        {:error, errors}
     end
   end
 
@@ -581,6 +568,39 @@ defmodule Glific.Clients.CommonWebhook do
     case Regex.run(~r/#slide=id\.([a-zA-Z0-9_-]+)/, url) do
       [_, id] -> id
       _ -> nil
+    end
+  end
+
+  @spec handle_certificate_id(map()) :: {:ok, map()}
+  defp handle_certificate_id(fields) do
+    case fields["certificate_id"] do
+      nil ->
+        {:ok, fields}
+
+      certificate_id when is_binary(certificate_id) ->
+        parsed_certificate_id = Glific.parse_maybe_integer!(certificate_id)
+        {:ok, Map.put(fields, "certificate_id", parsed_certificate_id)}
+
+      _ ->
+        {:ok, fields}
+    end
+  end
+
+  @spec fetch_certificate_template(map()) :: {:ok, CertificateTemplate.t()} | {:error, String.t()}
+  defp fetch_certificate_template(fields) do
+    case Repo.fetch_by(CertificateTemplate, %{
+           id: fields.certificate_id,
+           organization_id: fields.organization_id
+         })do
+      {:ok, certificate_template} ->
+        {:ok, certificate_template}
+
+      {:error, _reason} ->
+        Logger.error(
+          "Certificate template not found for ID: #{fields.certificate_id} and organization: #{fields.organization_id}"
+        )
+
+        {:error, "Certificate template not found for ID: #{fields.certificate_id}"}
     end
   end
 end
