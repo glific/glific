@@ -4,7 +4,6 @@ on:
   push:
     branches: [master]
   pull_request:
-    branches: [master]
 
 jobs:
   test:
@@ -82,5 +81,5 @@ jobs:
       - name: Coveralls for code coverage
         run: mix do compile --warnings-as-errors, coveralls.json
 
-      - name: Code coverage
-        run: bash <(curl -s https://codecov.io/bash)
+      - name: Codecov
+        uses: codecov/codecov-action@v5.4.0
