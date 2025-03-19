@@ -7,7 +7,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     Groups.WaGroupsCollections,
     Partners,
     Providers.Maytapi.Message,
-    Seeds.SeedsDev,
+    Seeds.SeedsDev
   }
 
   setup do

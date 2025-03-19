@@ -134,7 +134,7 @@ defmodule Glific.Providers.Maytapi.Message do
       send_at: DateTime.utc_now()
     })
     |> WAMessages.create_message()
-    |>  case do
+    |> case do
       {:ok, wa_message} ->
         wa_group_message_subscription(wa_message)
         {:ok, wa_message}
