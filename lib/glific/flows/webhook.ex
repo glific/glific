@@ -26,7 +26,8 @@ defmodule Glific.Flows.Webhook do
     "filesearch-gpt",
     "voice-filesearch-gpt",
     "speech_to_text_with_bhasini",
-    "nmt_tts_with_bhasini"
+    "nmt_tts_with_bhasini",
+    "call_and_wait"
   ]
 
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
