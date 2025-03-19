@@ -1,6 +1,4 @@
 defmodule Glific.Groups.WhatsappMessageTest do
-  alias Glific.Providers.Maytapi.WAWorker
-  alias Glific.Partners.Credential
   use Glific.DataCase, async: false
   use ExUnit.Case
   use Oban.Pro.Testing, repo: Glific.Repo
@@ -9,7 +7,9 @@ defmodule Glific.Groups.WhatsappMessageTest do
     Fixtures,
     Groups.WaGroupsCollections,
     Partners,
+    Partners.Credential,
     Providers.Maytapi.Message,
+    Providers.Maytapi.WAWorker,
     Seeds.SeedsDev,
     Seeds.SeedsDev
   }
