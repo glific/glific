@@ -1,6 +1,9 @@
 defmodule Glific.Groups.WhatsappMessageTest do
+  alias Glific.Providers.Maytapi.WAWorker
+  alias Glific.Partners.Credential
   use Glific.DataCase, async: false
   use ExUnit.Case
+  use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
     Fixtures,
@@ -32,7 +35,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     Tesla.Mock.mock(fn
       %Tesla.Env{
         method: :post,
-        url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/42093/sendMessage"
+        url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/242/sendMessage"
       } ->
         {:ok, %Tesla.Env{status: status, body: body}}
     end)
@@ -166,6 +169,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     }
 
     {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+
     assert wa_message.type == :audio
     assert is_nil(wa_message.media_id) == false
 
@@ -312,5 +316,59 @@ defmodule Glific.Groups.WhatsappMessageTest do
     {:error, error_message} = Message.send_message_to_wa_group_collection(group, params)
 
     assert error_message == "Cannot send message: No WhatsApp group found in the collection"
+  end
+
+  @tag :gup
+  test "create_and_send_wa_message/3 send media message successfully, even when gupshup is inactive",
+       attrs do
+    # clearing the org cache that's setup at the beginning of test
+    Partners.remove_organization_cache(1, "glific")
+
+    # Setting the gupshup cred active status to false, which will then not create
+    # a bsp key in the organization.services map
+
+    {1, _} =
+      Credential
+      |> where([c], c.organization_id == ^attrs.organization_id and c.provider_id == 1)
+      |> update([c], set: [is_active: false])
+      |> select([c], {c.provider_id})
+      |> Repo.update_all([])
+
+    wa_managed_phone =
+      Fixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+
+    wa_group =
+      Fixtures.wa_group_fixture(%{
+        organization_id: attrs.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    mock_maytapi_response(
+      200,
+      "{\"success\": true, \"data\": {\"chatId\": \"120363238104@g.us\", \"msgId\": \"a3ff8460-c710-11ee-a8e7-5fbaaf152c1d\"}}"
+    )
+
+    # sending image
+    message_media =
+      Fixtures.message_media_fixture(%{
+        organization_id: attrs.organization_id,
+        caption: "image caption"
+      })
+
+    params = %{
+      wa_group_id: wa_group.id,
+      wa_managed_phone_id: wa_managed_phone.id,
+      media_id: message_media.id,
+      type: :image
+    }
+
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+
+    assert_enqueued(worker: WAWorker, prefix: "global")
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :wa_group, with_scheduled: true, with_safety: false)
+
+    assert wa_message.type == :image
   end
 end

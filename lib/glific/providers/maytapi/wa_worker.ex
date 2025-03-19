@@ -29,6 +29,7 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   def perform(%Oban.Job{args: %{"message" => message}} = job) do
     organization = Partners.organization(message["organization_id"])
 
+    # organization.services["bsp"] was relying on Gupshup being active or not
     if is_nil(organization.services["maytapi"]) do
       Worker.handle_credential_error(message)
     else
