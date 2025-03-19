@@ -9,8 +9,6 @@ defmodule Glific.WAMessages do
     Flows.MessageVarParser,
     Groups.WAGroup,
     Messages,
-    Partners,
-    Providers.Maytapi.Message,
     Repo,
     WAGroup.WAMessage
   }

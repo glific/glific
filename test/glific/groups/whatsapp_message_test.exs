@@ -4,11 +4,9 @@ defmodule Glific.Groups.WhatsappMessageTest do
 
   alias Glific.{
     Fixtures,
-    Flows.Broadcast,
     Groups.WaGroupsCollections,
     Partners,
     Providers.Maytapi.Message,
-    Seeds.SeedsDev,
     Seeds.SeedsDev,
   }
 

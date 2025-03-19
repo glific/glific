@@ -144,9 +144,8 @@ defmodule Glific.Providers.Maytapi.Message do
     end
   end
 
-  @doc false
   @spec wa_group_message_subscription(WAMessage.t()) :: any()
-  def wa_group_message_subscription(wa_message) do
+  defp wa_group_message_subscription(wa_message) do
     Communications.publish_data(
       wa_message,
       :sent_wa_group_collection_message,
