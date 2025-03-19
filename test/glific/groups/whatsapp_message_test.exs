@@ -318,7 +318,6 @@ defmodule Glific.Groups.WhatsappMessageTest do
     assert error_message == "Cannot send message: No WhatsApp group found in the collection"
   end
 
-  @tag :gup
   test "create_and_send_wa_message/3 send media message successfully, even when gupshup is inactive",
        attrs do
     # clearing the org cache that's setup at the beginning of test
