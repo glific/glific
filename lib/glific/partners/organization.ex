@@ -171,6 +171,9 @@ defmodule Glific.Partners.Organization do
     # A virtual field for now to conditionally enable whatsapp group feature for an organization
     field(:is_whatsapp_group_enabled, :boolean, default: false, virtual: true)
 
+    # A virtual field for now to conditionally enable custom certificate feature for an organization
+    field(:is_custom_certificate_enabled, :boolean, default: false, virtual: true)
+
     timestamps(type: :utc_datetime)
   end
 
