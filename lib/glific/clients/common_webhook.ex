@@ -481,10 +481,7 @@ defmodule Glific.Clients.CommonWebhook do
       organization_id: [type: :integer, required: true]
     }
 
-    case Tarams.cast(fields, certificate_params_schema) do
-      {:ok, fields} -> {:ok, fields}
-      {:error, errors} -> {:error, errors}
-    end
+    Tarams.cast(fields, certificate_params_schema)
   end
 
   @spec do_create_certificate(map(), integer(), String.t(), String.t()) :: map()
