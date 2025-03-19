@@ -22,13 +22,6 @@ defmodule Glific.Clients.CommonWebhook do
 
   require Logger
 
-  @certificate_params_schema %{
-    certificate_id: [type: :integer, required: true],
-    contact: [type: :map, required: true],
-    replace_texts: [type: :map, required: true],
-    organization_id: [type: :integer, required: true]
-  }
-
   @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
@@ -347,8 +340,7 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   def webhook("create_certificate", fields) do
-    with {:ok, fields} <- handle_certificate_id(fields),
-         {:ok, parsed_fields} <- parse_certificate_params(fields),
+    with {:ok, parsed_fields} <- parse_certificate_params(fields),
          {:ok, certificate_template} <- fetch_certificate_template(parsed_fields) do
       certificate_url = certificate_template.url
       presentation_id = presentation_id(certificate_url)
@@ -474,20 +466,24 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  @spec parse_certificate_params(map()) :: {:ok, map(), {:error, String.t()}}
+  @spec parse_certificate_params(map()) :: {:ok, map()} | {:error, map()}
   defp parse_certificate_params(fields) do
-    case Tarams.cast(fields, @certificate_params_schema) do
-      {:ok, fields} ->
-        {:ok,
-         %{
-           organization_id: fields.organization_id,
-           certificate_id: fields.certificate_id,
-           contact: fields.contact,
-           replace_texts: fields.replace_texts
-         }}
+    certificate_params_schema = %{
+      certificate_id: [
+        type: :integer,
+        required: true,
+        cast_func: fn value ->
+          {:ok, if(is_binary(value), do: Glific.parse_maybe_integer!(value), else: value)}
+        end
+      ],
+      contact: [type: :map, required: true],
+      replace_texts: [type: :map, required: true],
+      organization_id: [type: :integer, required: true]
+    }
 
-      {:error, errors} ->
-        {:error, errors}
+    case Tarams.cast(fields, certificate_params_schema) do
+      {:ok, fields} -> {:ok, fields}
+      {:error, errors} -> {:error, errors}
     end
   end
 
@@ -571,27 +567,12 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  @spec handle_certificate_id(map()) :: {:ok, map()}
-  defp handle_certificate_id(fields) do
-    case fields["certificate_id"] do
-      nil ->
-        {:ok, fields}
-
-      certificate_id when is_binary(certificate_id) ->
-        parsed_certificate_id = Glific.parse_maybe_integer!(certificate_id)
-        {:ok, Map.put(fields, "certificate_id", parsed_certificate_id)}
-
-      _ ->
-        {:ok, fields}
-    end
-  end
-
   @spec fetch_certificate_template(map()) :: {:ok, CertificateTemplate.t()} | {:error, String.t()}
   defp fetch_certificate_template(fields) do
     case Repo.fetch_by(CertificateTemplate, %{
            id: fields.certificate_id,
            organization_id: fields.organization_id
-         })do
+         }) do
       {:ok, certificate_template} ->
         {:ok, certificate_template}
 
