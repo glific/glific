@@ -10,7 +10,6 @@ defmodule Glific.Groups.WhatsappMessageTest do
     Partners.Credential,
     Providers.Maytapi.Message,
     Providers.Maytapi.WAWorker,
-    Seeds.SeedsDev,
     Seeds.SeedsDev
   }
 

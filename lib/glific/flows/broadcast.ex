@@ -20,7 +20,9 @@ defmodule Glific.Flows.Broadcast do
     Messages,
     Messages.Message,
     Partners,
-    Repo
+    Providers.Maytapi,
+    Repo,
+    WAGroup.WAMessage
   }
 
   @status "published"
@@ -95,11 +97,22 @@ defmodule Glific.Flows.Broadcast do
     Task.async_stream(group_ids, fn group_id ->
       Repo.put_process_state(flow.organization_id)
 
-      WaGroupsCollections.list_wa_groups_collection(%{
-        filter: %{group_id: group_id, organization_id: flow.organization_id}
-      })
+      wa_group_collections =
+        WaGroupsCollections.list_wa_groups_collection(%{
+          filter: %{group_id: group_id, organization_id: flow.organization_id}
+        })
+        |> Repo.preload([:wa_group])
+
+      wa_group_collections
       |> Enum.map(& &1.wa_group_id)
       |> then(&broadcast_wa_groups(flow, &1))
+
+      {:ok, group} = Repo.fetch_by(Group, %{id: group_id})
+
+      {:ok, %WAMessage{}} =
+        Maytapi.Message.create_wa_group_message(wa_group_collections, group, %{
+          message: "Starting flow: *#{flow.name}* for group: *#{group.label}*"
+        })
     end)
     |> Stream.run()
   end
