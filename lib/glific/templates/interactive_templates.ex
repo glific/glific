@@ -124,7 +124,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec contains_markdown_syntax?(map()) :: :ok | {:error, String.t()}
   defp contains_markdown_syntax?(attrs) do
     with :ok <- check_interactive_content(attrs),
-        :ok <- check_translations(attrs) do
+         :ok <- check_translations(attrs) do
       :ok
     end
   end
