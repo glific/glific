@@ -164,7 +164,7 @@ defmodule Glific.MixProject do
       {:resvg, "~> 0.3.0"},
       {:google_api_translate, "~> 0.15"},
       {:passgen, "~> 0.1.1"},
-      {:tarams, "~> 1.0.0"}
+      {:tarams, "~> 1.8"}
     ]
   end
 
