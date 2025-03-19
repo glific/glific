@@ -195,6 +195,16 @@ defmodule Glific.Templates.InteractiveTemplateTest do
         ],
         "type" => "quick_reply"
       },
+      translations: %{
+        "1" => %{
+          "content" => %{"text" => String.duplicate("A", 1025), "type" => "text"},
+          "options" => [
+            %{"title" => "Option 1", "type" => "text"},
+            %{"title" => "Option 2", "type" => "text"}
+          ],
+          "type" => "quick_reply"
+        }
+      },
       organization_id: org_id,
       language_id: language_fixture().id
     }
@@ -222,7 +232,24 @@ defmodule Glific.Templates.InteractiveTemplateTest do
               %{"type" => "text", "title" => "Option 2", "description" => "Description"}
             ]
           }
-        ]
+        ],
+      },
+      translations: %{
+        "1" => %{
+          "title" => "Interactive list",
+          "body" => String.duplicate("A", 1025),
+          "globalButtons" => [%{"type" => "text", "title" => "button text"}],
+          "items" => [
+            %{
+              "title" => "Item Title",
+              "subtitle" => "Subtitle",
+              "options" => [
+                %{"type" => "text", "title" => "Option 1", "description" => "Description"},
+                %{"type" => "text", "title" => "Option 2", "description" => "Description"}
+              ]
+            }
+          ],
+        }
       },
       organization_id: org_id,
       language_id: language_fixture().id
@@ -244,6 +271,17 @@ defmodule Glific.Templates.InteractiveTemplateTest do
         },
         "action" => %{
           "name" => "send_location"
+        }
+      },
+      translations: %{
+         "1" => %{
+            "body" => %{
+            "type" => "text",
+            "text" => String.duplicate("A", 1025)
+          },
+          "action" => %{
+            "name" => "send_location"
+          }
         }
       },
       organization_id: org_id,
@@ -406,6 +444,21 @@ defmodule Glific.Templates.InteractiveTemplateTest do
           }
         ]
       },
+      translations: %{
+          "title" => "Interactive list",
+          "body" => "some body",
+          "globalButtons" => [%{"type" => "text", "title" => "button text"}],
+          "items" => [
+            %{
+              "title" => "Item Title",
+              "subtitle" => "Subtitle",
+              "options" => [
+                %{"type" => "text", "title" => "Option 1", "description" => "Description"},
+                %{"type" => "text", "title" => "Option 2", "description" => "Description"}
+              ]
+            }
+          ]
+      },
       organization_id: org_id,
       language_id: language_fixture().id
     }
@@ -431,6 +484,23 @@ defmodule Glific.Templates.InteractiveTemplateTest do
             ]
           }
         ]
+      },
+      translations: %{
+        "1" => %{
+        "title" => "Interactive list",
+        "body" => "some body",
+        "globalButtons" => [%{"type" => "text", "title" => "**button text**"}],
+        "items" => [
+          %{
+            "title" => "Item Title",
+            "subtitle" => "Subtitle",
+            "options" => [
+              %{"type" => "text", "title" => "Option 1", "description" => "Description"},
+              %{"type" => "text", "title" => "Option 2", "description" => "Description"}
+            ]
+          }
+        ]
+        }
       },
       organization_id: org_id,
       language_id: language_fixture().id
@@ -459,6 +529,23 @@ defmodule Glific.Templates.InteractiveTemplateTest do
           }
         ]
       },
+      translations: %{
+        "1" => %{
+          "title" => "Interactive list",
+          "body" => "some body",
+          "globalButtons" => [%{"type" => "text", "title" => "button text"}],
+          "items" => [
+            %{
+              "title" => "Item Title",
+              "subtitle" => "Subtitle",
+              "options" => [
+                %{"type" => "text", "title" => "Option 1", "description" => "**Description**"},
+                %{"type" => "text", "title" => "Option 2", "description" => "Description"}
+              ]
+            }
+          ]
+        }
+      },
       organization_id: org_id,
       language_id: language_fixture().id
     }
@@ -485,6 +572,23 @@ defmodule Glific.Templates.InteractiveTemplateTest do
             ]
           }
         ]
+      },
+      translations: %{
+        "1" => %{
+          "title" => "Interactive list",
+          "body" => "some body",
+          "globalButtons" => [%{"type" => "text", "title" => "button text"}],
+          "items" => [
+            %{
+              "title" => "**Item Title**",
+              "subtitle" => "Subtitle",
+              "options" => [
+                %{"type" => "text", "title" => "Option 1", "description" => "Description"},
+                %{"type" => "text", "title" => "Option 2", "description" => "Description"}
+              ]
+            }
+        ]
+        }
       },
       organization_id: org_id,
       language_id: language_fixture().id
@@ -513,6 +617,23 @@ defmodule Glific.Templates.InteractiveTemplateTest do
           }
         ]
       },
+      translations: %{
+        "1" => %{
+          "title" => "Interactive list",
+          "body" => "some body",
+          "globalButtons" => [%{"type" => "text", "title" => "button text"}],
+          "items" => [
+            %{
+              "title" => "Item Title",
+              "subtitle" => "Subtitle",
+              "options" => [
+                %{"type" => "text", "title" => "**Option 1**", "description" => "Description"},
+                %{"type" => "text", "title" => "Option 2", "description" => "Description"}
+              ]
+            }
+          ]
+        }
+      },
       organization_id: org_id,
       language_id: language_fixture().id
     }
@@ -534,6 +655,16 @@ defmodule Glific.Templates.InteractiveTemplateTest do
         "type" => "quick_reply"
       },
       organization_id: org_id,
+      translations: %{
+        "1" => %{
+          "content" => %{"text" => "some text", "type" => "text"},
+          "options" => [
+            %{"title" => "Option 1", "type" => "text"},
+            %{"title" => "Option 2", "type" => "text"}
+          ],
+          "type" => "quick_reply"
+        }
+      },
       language_id: language_fixture().id
     }
 
@@ -549,6 +680,15 @@ defmodule Glific.Templates.InteractiveTemplateTest do
           %{"title" => "Option 2", "type" => "text"}
         ],
         "type" => "quick_reply"
+      },
+      translations: %{
+        "1" => %{
+          "options" => [
+          %{"title" => "**Option 1**", "type" => "text"},
+          %{"title" => "Option 2", "type" => "text"}
+          ],
+          "type" => "quick_reply"
+        }
       },
       organization_id: org_id,
       language_id: language_fixture().id
