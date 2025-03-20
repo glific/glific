@@ -125,8 +125,8 @@ defmodule Glific.Templates.InteractiveTemplates do
   defp contains_markdown_syntax?(attrs) do
     with :ok <- check_interactive_content(attrs),
          :ok <- check_translations(attrs) do
-      :ok
-    end
+    :ok
+  end
   end
 
   defp check_interactive_content(%{interactive_content: interactive_content}) do
@@ -146,6 +146,8 @@ defmodule Glific.Templates.InteractiveTemplates do
       end
     end)
   end
+
+  defp check_translations(_), do: :ok
 
   @spec check_global_buttons(map()) :: :ok | {:error, String.t()}
   defp check_global_buttons(%{"globalButtons" => global_buttons}) when is_list(global_buttons) do
