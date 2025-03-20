@@ -10,7 +10,7 @@ query organizationServices {
     contact_profile_enabled
     auto_translation_enabled
     whatsapp_group_enabled
-    custom_certificate_enabled
+    certificate_enabled
     errors {
       key
       message

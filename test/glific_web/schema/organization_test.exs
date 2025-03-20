@@ -508,7 +508,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert services["contact_profile_enabled"] == false
     assert services["auto_translation_enabled"] == false
     assert services["whatsapp_group_enabled"] == false
-    assert services["custom_certificate_enabled"] == false
+    assert services["certificate_enabled"] == false
   end
 
   test "update an organization with organization settings", %{user: user} do

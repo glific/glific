@@ -213,12 +213,12 @@ defmodule Glific.Flags do
   @doc """
   Get custom certificate value for organization flag
   """
-  @spec get_custom_certificate_enabled(map()) :: boolean
-  def get_custom_certificate_enabled(organization) do
+  @spec get_certificate_enabled(map()) :: boolean
+  def get_certificate_enabled(organization) do
     app_env = Application.get_env(:glific, :environment)
 
     cond do
-      FunWithFlags.enabled?(:is_custom_certificate_enabled,
+      FunWithFlags.enabled?(:is_certificate_enabled,
         for: %{organization_id: organization.id}
       ) ->
         true
@@ -286,12 +286,12 @@ defmodule Glific.Flags do
   @doc """
   Set fun_with_flag toggle forcustom certificate for an organization
   """
-  @spec set_custom_certificate_enabled(map()) :: map()
-  def set_custom_certificate_enabled(organization) do
+  @spec set_certificate_enabled(map()) :: map()
+  def set_certificate_enabled(organization) do
     Map.put(
       organization,
-      :is_custom_certificate_enabled,
-      get_custom_certificate_enabled(organization)
+      :is_certificate_enabled,
+      get_certificate_enabled(organization)
     )
   end
 
@@ -383,7 +383,7 @@ defmodule Glific.Flags do
       :is_open_ai_auto_translation_enabled,
       :is_google_auto_translation_enabled,
       :is_whatsapp_group_enabled,
-      :is_custom_certificate_enabled
+      :is_certificate_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(
