@@ -1,7 +1,7 @@
 [
   {":0:unknown_function Function ExUnit.Callbacks.__merge__/3 does not exist."},
   {":0:unknown_function Function ExUnit.CaseTemplate.__proxy__/2 does not exist."},
-  {":0:unknown_function Function IEx.started?/0 does not exist."},
+  {"lib/glific/application.ex", "Function IEx.started?/0 does not exist."},
   {"lib/glific/application.ex", :unknown_function, 113},
   {"lib/glific/processor/consumer_flow.ex", :exact_eq, 261},
   {":0:unknown_function Function Mix.PhilColumns.seeds_path/1 does not exist."},
