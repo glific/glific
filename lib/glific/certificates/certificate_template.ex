@@ -29,7 +29,7 @@ defmodule Glific.Certificates.CertificateTemplate do
           label: String.t() | nil,
           url: String.t() | nil,
           description: String.t() | nil,
-          type: String.t() | nil,
+          type: CertificateTemplateType | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -50,8 +50,8 @@ defmodule Glific.Certificates.CertificateTemplate do
   Standard changeset pattern we use for all data types
   """
   @spec changeset(CertificateTemplate.t(), map()) :: Ecto.Changeset.t()
-  def changeset(wa_poll, attrs) do
-    wa_poll
+  def changeset(certificate_template, attrs) do
+    certificate_template
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_length(:label, min: 1, max: 40)
@@ -164,7 +164,7 @@ defmodule Glific.Certificates.CertificateTemplate do
 
   defp validate_url(changeset, _), do: changeset
 
-  @spec validate_by_type(String.t(), String.t()) :: :ok | {:error, String.t(), String.t()}
+  @spec validate_by_type(String.t(), atom()) :: :ok | {:error, atom(), String.t()}
   defp validate_by_type(url, :slides) do
     if String.starts_with?(url, @slides_url_prefix) do
       :ok
@@ -172,7 +172,4 @@ defmodule Glific.Certificates.CertificateTemplate do
       {:error, :slides, "Template url not a valid Google Slides"}
     end
   end
-
-  defp validate_by_type(_url, type),
-    do: {:error, type, "Template of type #{type} not supported yet"}
 end

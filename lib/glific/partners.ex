@@ -471,6 +471,7 @@ defmodule Glific.Partners do
       |> Flags.set_contact_profile_enabled()
       |> Flags.set_whatsapp_group_enabled()
       |> Flags.set_ticketing_enabled()
+      |> Flags.set_custom_certificate_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -1188,7 +1189,8 @@ defmodule Glific.Partners do
       "whatsapp_group_enabled" => Flags.get_whatsapp_group_enabled(organization),
       "auto_translation_enabled" =>
         Flags.get_open_ai_auto_translation_enabled(organization) or
-          Flags.get_google_auto_translation_enabled(organization)
+          Flags.get_google_auto_translation_enabled(organization),
+      "custom_certificate_enabled" => Flags.get_custom_certificate_enabled(organization)
     }
   end
 

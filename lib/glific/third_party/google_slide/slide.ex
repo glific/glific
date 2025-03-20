@@ -62,7 +62,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
     url = "#{@drive_url}/#{presentation_id}/copy"
     headers = auth_headers(token)
 
-    case Tesla.post(url, "{}", headers: headers) do
+    case Tesla.post(client(), url, "{}", headers: headers) do
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
         case Jason.decode(response_body) do
           {:ok, decoded_body} -> {:ok, decoded_body}
@@ -98,7 +98,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
 
     body = Jason.encode!(%{"requests" => requests})
 
-    case Tesla.post(url, body, headers: auth_headers(token)) do
+    case Tesla.post(client(), url, body, headers: auth_headers(token)) do
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
         {:ok, response_body}
 
@@ -115,7 +115,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   defp fetch_thumbnail(token, presentation_id, slide_id) do
     url = "#{@slide_url}/#{presentation_id}/pages/#{slide_id}/thumbnail"
 
-    case Tesla.get(url, headers: auth_headers(token)) do
+    case Tesla.get(client(), url, headers: auth_headers(token)) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode(body)
 
@@ -125,5 +125,27 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
       {:error, error} ->
         {:error, "HTTP request failed while fetching thumbnail: #{inspect(error)}"}
     end
+  end
+
+  # https://hexdocs.pm/tesla/Tesla.Middleware.Retry.html
+  @spec client :: Tesla.Client.t()
+  defp client do
+    Tesla.client([
+      {
+        Tesla.Middleware.Retry,
+        delay: 500,
+        max_retries: 3,
+        should_retry: fn
+          {:ok, %{status: status}}, _, _ when status in 501..504 ->
+            true
+
+          {:error, reason}, _, _ when reason in [:timeout, :connrefused, :nxdomain] ->
+            true
+
+          _, _, _ ->
+            false
+        end
+      }
+    ])
   end
 end

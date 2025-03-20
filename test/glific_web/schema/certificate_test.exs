@@ -9,7 +9,6 @@ defmodule GlificWeb.Schema.CertificateTest do
   load_gql(:count, GlificWeb.Schema, "assets/gql/certificates/count.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/certificates/delete.gql")
 
-  @tag :cert
   test "create certificate template failures", %{user: user} do
     result = auth_query_gql_by(:create, user, variables: %{})
     assert {:ok, query_data} = result
@@ -116,29 +115,6 @@ defmodule GlificWeb.Schema.CertificateTest do
             }} =
              result
 
-    # Need to check if scopes are there, instead of public
-    # result =
-    #   auth_query_gql_by(:create, user,
-    #     variables: %{
-    #       "input" => %{
-    #         "label" => "slides",
-    #         "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p"
-    #       }
-    #     }
-    #   )
-
-    # assert {:ok,
-    #         %{
-    #           data: %{
-    #             "CreateCertificateTemplate" => %{
-    #               "errors" => [
-    #                 %{"message" => "Url: Invalid Template url"}
-    #               ]
-    #             }
-    #           }
-    #         }} =
-    #          result
-
     Tesla.Mock.mock(fn
       %{method: :get} ->
         %Tesla.Env{
@@ -201,7 +177,6 @@ defmodule GlificWeb.Schema.CertificateTest do
              result
   end
 
-  @tag :cert
   test "create certificate template success", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :get} ->
@@ -233,7 +208,6 @@ defmodule GlificWeb.Schema.CertificateTest do
              result
   end
 
-  @tag :cert
   test "update certificate template success", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :get} ->
@@ -281,7 +255,8 @@ defmodule GlificWeb.Schema.CertificateTest do
                   "certificateTemplate" => %{
                     "id" => ^id,
                     "label" => "slides2",
-                    "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.p"
+                    "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.p",
+                    "description" => "lorum ipsum"
                   }
                 }
               }
@@ -289,7 +264,6 @@ defmodule GlificWeb.Schema.CertificateTest do
              result
   end
 
-  @tag :cert
   test "update certificate template failure", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :get} ->
@@ -313,44 +287,43 @@ defmodule GlificWeb.Schema.CertificateTest do
             %{
               data: %{
                 "CreateCertificateTemplate" => %{
-                  "certificateTemplate" => %{"id" => _id}
+                  "certificateTemplate" => %{"id" => id}
                 }
               }
             }} =
              result
 
-    # Tesla.Mock.mock(fn
-    #   %{method: :get} ->
-    #     %Tesla.Env{
-    #       status: 400
-    #     }
-    # end)
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 400
+        }
+    end)
 
-    # result =
-    #   auth_query_gql_by(:update, user,
-    #     variables: %{
-    #       "id" => id,
-    #       "input" => %{
-    #         "label" => "slides2",
-    #         "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.p"
-    #       }
-    #     }
-    #   )
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => id,
+          "input" => %{
+            "label" => "slides2",
+            "url" => "ht://docs.google.com/presentation/d/id2/edit#slide=id.p"
+          }
+        }
+      )
 
-    # assert {:ok,
-    #         %{
-    #           data: %{
-    #             "UpdateCertificateTemplate" => %{
-    #               "errors" => [
-    #                 %{"message" => "Url: Invalid Template url"}
-    #               ]
-    #             }
-    #           }
-    #         }} =
-    #          result
+    assert {:ok,
+            %{
+              data: %{
+                "UpdateCertificateTemplate" => %{
+                  "errors" => [
+                    %{"message" => "Url: Invalid Template url"}
+                  ]
+                }
+              }
+            }} =
+             result
   end
 
-  @tag :cert
   test "get certificate template", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :get} ->
@@ -420,7 +393,6 @@ defmodule GlificWeb.Schema.CertificateTest do
              result
   end
 
-  @tag :cert
   test "list certificate templates", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :get} ->
@@ -507,7 +479,6 @@ defmodule GlificWeb.Schema.CertificateTest do
     assert Enum.empty?(cert_templates)
   end
 
-  @tag :cert
   test "count certificate templates", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :get} ->
@@ -574,7 +545,6 @@ defmodule GlificWeb.Schema.CertificateTest do
              result
   end
 
-  @tag :cert
   test "delete certificate template", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :get} ->
