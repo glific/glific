@@ -125,8 +125,8 @@ defmodule Glific.Templates.InteractiveTemplates do
   defp contains_markdown_syntax?(attrs) do
     with :ok <- check_interactive_content(attrs),
          :ok <- check_translations(attrs) do
-    :ok
-  end
+      :ok
+    end
   end
 
   defp check_interactive_content(%{interactive_content: interactive_content}) do
