@@ -84,4 +84,4 @@ jobs:
       - name: Upload test results to Codecov
         uses: codecov/codecov-action@v5.4.0
         with:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}
