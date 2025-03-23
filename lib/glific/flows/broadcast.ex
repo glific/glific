@@ -20,11 +20,14 @@ defmodule Glific.Flows.Broadcast do
     Messages,
     Messages.Message,
     Partners,
-    Repo
+    Providers.Maytapi,
+    Repo,
+    WAGroup.WAMessage
   }
 
   @status "published"
   @contact_chunk 1000
+  @default_bsp_limit 30
   @doc """
   The one simple public interface to broadcast a group
   """
@@ -94,11 +97,22 @@ defmodule Glific.Flows.Broadcast do
     Task.async_stream(group_ids, fn group_id ->
       Repo.put_process_state(flow.organization_id)
 
-      WaGroupsCollections.list_wa_groups_collection(%{
-        filter: %{group_id: group_id, organization_id: flow.organization_id}
-      })
+      wa_group_collections =
+        WaGroupsCollections.list_wa_groups_collection(%{
+          filter: %{group_id: group_id, organization_id: flow.organization_id}
+        })
+        |> Repo.preload([:wa_group])
+
+      wa_group_collections
       |> Enum.map(& &1.wa_group_id)
       |> then(&broadcast_wa_groups(flow, &1))
+
+      {:ok, group} = Repo.fetch_by(Group, %{id: group_id})
+
+      {:ok, %WAMessage{}} =
+        Maytapi.Message.create_wa_group_message(wa_group_collections, group, %{
+          message: "Starting flow: *#{flow.name}* for group: *#{group.label}*"
+        })
     end)
     |> Stream.run()
   end
@@ -259,8 +273,16 @@ defmodule Glific.Flows.Broadcast do
   defp opts(organization_id) do
     organization = Partners.organization(organization_id)
 
-    bsp_limit = organization.services["bsp"].keys["bsp_limit"]
-    bsp_limit = if is_nil(bsp_limit), do: 30, else: bsp_limit
+    # nil check on organization.services["bsp"] will allow us to set Gupshup to inactive for WA groups only orgs.
+    # because the value of its taken from organization.services["gupshup"] during fill_cache (lib/glific/partners.ex:608)
+    # only when the credentials are active.
+
+    bsp_limit =
+      if is_nil(organization.services["bsp"]) do
+        @default_bsp_limit
+      else
+        organization.services["bsp"].keys["bsp_limit"] || @default_bsp_limit
+      end
 
     # lets do 80% of organization bsp limit to allow replies to come in and be processed
     bsp_limit = div(bsp_limit * 80, 100)
