@@ -472,7 +472,6 @@ defmodule Glific.ClientsTest do
     assert contact.phone == phone_num
   end
 
-  @tag :campaign
   test "gcs_file_name/1, for campaign flow" do
     contact =
       Fixtures.contact_fixture(%{
