@@ -176,7 +176,6 @@ defmodule Glific.Processor.ConsumerFlowTest do
     assert new_message_count > message_count + 1
   end
 
-  @tag :skip
   test "should not start optin flow when flow is inactive" do
     state = ConsumerFlow.load_state(Fixtures.get_org_id())
 
