@@ -35,9 +35,11 @@ defmodule Glific.Clients.Atecf do
 
   @spec get_auth_token(String.t()) :: {:ok, map()} | {:error, String.t()}
   defp get_auth_token(username) do
+    [_, suffix] = String.split(username, "@")
+
     payload =
       %{
-        "username" => "api" <> username,
+        "username" => "apiuser" <> "@" <> suffix,
         "password" => Application.get_env(:glific, :avni_password)
       }
 
