@@ -475,6 +475,7 @@ defmodule Glific.ClientsTest do
   test "gcs_file_name/1, for campaign flow" do
     contact =
       Fixtures.contact_fixture(%{
+        phone: "918634278954",
         fields: %{
           "contact_type2425" => %{
             type: "string",
