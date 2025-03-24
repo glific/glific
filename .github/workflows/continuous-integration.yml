@@ -81,5 +81,8 @@ jobs:
       - name: Coveralls for code coverage
         run: mix do compile --warnings-as-errors, coveralls.json
 
-      - name: Code coverage
-        run: bash <(curl -s https://codecov.io/bash)
+      - name: Upload test results to Codecov
+        uses: codecov/codecov-action@v5.4.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: cover/excoveralls.json
