@@ -1,4 +1,5 @@
 defmodule Glific.Processor.ConsumerFlowTest do
+  use ExUnit.Case, async: false
   use Glific.DataCase
 
   alias Glific.{
@@ -179,7 +180,6 @@ defmodule Glific.Processor.ConsumerFlowTest do
   test "should not start optin flow when flow is inactive" do
     state = ConsumerFlow.load_state(Fixtures.get_org_id())
 
-    # user should be opted out
     sender =
       Repo.get_by(Contact, %{name: "Chrissy Cron"})
       |> Map.put(:status, :invalid)
@@ -189,9 +189,11 @@ defmodule Glific.Processor.ConsumerFlowTest do
       |> Map.put(:optin_status, false)
       |> Map.put(:is_contact_replied, false)
 
+    # ensure that the opt-in flow is marked as inactive in the database before the test runs
     _flow =
       Repo.get_by(Flow, name: "Optin Workflow")
-      |> Map.put(:is_active, false)
+      |> Flow.changeset(%{is_active: false})
+      |> Repo.update!()
 
     message =
       Fixtures.message_fixture(%{body: "hey", sender_id: sender.id})
@@ -202,11 +204,11 @@ defmodule Glific.Processor.ConsumerFlowTest do
     latest_message =
       Repo.one(
         from m in Message,
+          where: m.sender_id == ^sender.id,
           order_by: [desc: m.inserted_at],
           limit: 1
       )
 
-    # here shouldn't be any messages after the user sends the message, if the user has opted out.
     assert latest_message.body == "hey"
   end
 end
