@@ -934,13 +934,13 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(organization, credential, "maytapi") do
-    args = %{"organization_id" => organization.id}
+    args = %{"organization_id" => organization.id, "update_credential" => true}
 
     case Oban.insert(WAWorker.new(args)) do
       {:ok, _job} ->
         Notifications.create_notification(%{
           category: "WhatsApp Groups",
-          message: "Credential update has started in the background.",
+          message: "Syncing of WhatsApp groups and contacts has started in the background.",
           severity: Notifications.types().info,
           organization_id: organization.id,
           entity: %{
@@ -952,7 +952,7 @@ defmodule Glific.Partners do
 
       {:error, reason} ->
         Logger.error("Failed to enqueue credential update job: #{inspect(reason)}")
-        {:error, reason}
+        {:error, "Failed to sync WhatsApp data to Glific. Please reach out to Glific Support"}
     end
   end
 

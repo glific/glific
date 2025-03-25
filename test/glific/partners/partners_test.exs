@@ -1,5 +1,6 @@
 defmodule Glific.PartnersTest do
   alias Faker.{Person, Phone}
+  use Oban.Pro.Testing, repo: Glific.Repo
   use Glific.DataCase
   import Mock
 
@@ -1000,30 +1001,6 @@ defmodule Glific.PartnersTest do
     test "update_credential/2 for maytapi should update credentials" do
       org = SeedsDev.seed_organizations()
 
-      {:ok, credential} =
-        Partners.create_credential(%{
-          organization_id: org.id,
-          shortcode: "maytapi",
-          keys: %{},
-          secrets: %{
-            "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
-            "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
-          }
-        })
-
-      valid_update_attrs = %{
-        keys: %{},
-        secrets: %{
-          "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
-          "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
-        },
-        is_active: true,
-        organization_id: org.id,
-        shortcode: "maytapi"
-      }
-
-      assert {:ok, _cred} = Partners.update_credential(credential, valid_update_attrs)
-
       Tesla.Mock.mock(fn
         %{
           method: :get,
@@ -1071,17 +1048,51 @@ defmodule Glific.PartnersTest do
           {:ok, %Tesla.Env{status: 200, body: ~s({"success": true})}}
       end)
 
-      # Verify first notification (Credential update started)
-      {:ok, notification} =
-        Repo.fetch_by(Notification, %{organization_id: org.id, category: "WhatsApp Groups"})
+      {:ok, credential} =
+        Partners.create_credential(%{
+          organization_id: org.id,
+          shortcode: "maytapi",
+          keys: %{},
+          secrets: %{
+            "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+            "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+          }
+        })
 
-      assert notification.message == "Credential update has started in the background."
+      valid_update_attrs = %{
+        keys: %{},
+        secrets: %{
+          "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+          "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+        },
+        is_active: true,
+        organization_id: org.id,
+        shortcode: "maytapi"
+      }
+
+      assert {:ok, _cred} = Partners.update_credential(credential, valid_update_attrs)
+
+      assert_enqueued(worker: WAWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :wa_group, with_scheduled: true)
+
+      # Verify the first notification (Credential update started)
+      notification =
+        Repo.one(
+          from n in Notification,
+            where: n.organization_id == ^org.id and n.category == "WhatsApp Groups",
+            order_by: [desc: n.inserted_at],
+            limit: 1
+        )
+
+      assert notification.message == "Syncing of WhatsApp groups and contacts has started in the background."
       assert notification.severity == Notifications.types().info
 
-      job = %Oban.Job{args: %{"organization_id" => org.id}}
+      job = %Oban.Job{args: %{"organization_id" => org.id, "update_credential" => true}}
       {:ok, notification} = WAWorker.perform(job)
 
-      assert notification.message == "Credentials updated successfully"
+      assert notification.message == "Syncing of WhatsApp groups and contacts has been completed successfully."
       assert notification.severity == Notifications.types().info
     end
 
@@ -1162,13 +1173,13 @@ defmodule Glific.PartnersTest do
       {:ok, notification} =
         Repo.fetch_by(Notification, %{organization_id: org.id, category: "WhatsApp Groups"})
 
-      assert notification.message == "Credential update has started in the background."
+      assert notification.message == "Syncing of WhatsApp groups and contacts has started in the background."
       assert notification.severity == Notifications.types().info
 
-      job = %Oban.Job{args: %{"organization_id" => org.id}}
+      job = %Oban.Job{args: %{"organization_id" => org.id, "update_credential" => true}}
       {:ok, notification} = WAWorker.perform(job)
 
-      assert notification.message == "Credential update failed: \"No active phones available\""
+      assert notification.message == "WhatsApp group data sync failed: \"No active phones available\""
       assert notification.severity == Notifications.types().critical
     end
 

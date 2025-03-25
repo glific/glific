@@ -39,7 +39,7 @@ defmodule Glific.Providers.Maytapi.WAWorker do
     end
   end
 
-  def perform(%Oban.Job{args: %{"organization_id" => org_id}}) do
+  def perform(%Oban.Job{args: %{"organization_id" => org_id, "update_credential" => true}}) do
     perform_credential_update(org_id)
   end
 
@@ -79,14 +79,14 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   defp perform_credential_update(org_id) do
     case update_credentials(org_id) do
       :ok ->
-        send_notification(org_id, "Credentials updated successfully", Notifications.types().info)
+        send_notification(org_id, "Syncing of WhatsApp groups and contacts has been completed successfully.", Notifications.types().info)
 
       {:error, reason} ->
-        Logger.error("Credential update failed: #{inspect(reason)}")
+        Logger.error("WhatsApp group data sync failed: #{inspect(reason)}")
 
         send_notification(
           org_id,
-          "Credential update failed: #{inspect(reason)}",
+          "WhatsApp group data sync failed: #{inspect(reason)}",
           Notifications.types().critical
         )
     end
@@ -98,8 +98,6 @@ defmodule Glific.Providers.Maytapi.WAWorker do
          :ok <- WAGroups.fetch_wa_groups(org_id),
          :ok <- WAGroups.set_webhook_endpoint(Partners.organization(org_id)) do
       :ok
-    else
-      error -> error
     end
   end
 
