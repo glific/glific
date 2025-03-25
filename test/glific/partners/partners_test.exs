@@ -1119,8 +1119,6 @@ defmodule Glific.PartnersTest do
         shortcode: "maytapi"
       }
 
-      assert {:ok, _cred} = Partners.update_credential(credential, valid_update_attrs)
-
       Tesla.Mock.mock(fn
         %{
           method: :get,
@@ -1136,53 +1134,31 @@ defmodule Glific.PartnersTest do
               "multi_device": true
             }
           ])}}
-
-        %{
-          method: :get,
-          url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/45976/getGroups"
-        } ->
-          {:ok, %Tesla.Env{status: 200, body: ~s({
-            "count": 1,
-            "data": [
-              {
-                "id": "120363411352918646@g.us",
-                "name": "test",
-                "admins": ["918887048283@c.us"],
-                "participants": ["918887048283@c.us", "914287925084@c.us"],
-                "config": {
-                  "approveNewMembers": false,
-                  "disappear": false,
-                  "edit": "all",
-                  "membersCanAddMembers": false,
-                  "send": "all"
-                }
-              }
-            ]
-          })}}
-
-        %{
-          method: :post,
-          url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/setWebhook"
-        } ->
-          {:ok, %Tesla.Env{status: 200, body: ~s({"success": true})}}
       end)
 
-      # Verify first notification (Credential update started)
-      {:ok, notification} =
-        Repo.fetch_by(Notification, %{organization_id: org.id, category: "WhatsApp Groups"})
+      assert {:ok, _cred} = Partners.update_credential(credential, valid_update_attrs)
 
-      assert notification.message ==
-               "Syncing of WhatsApp groups and contacts has started in the background."
+      assert_enqueued(worker: WAWorker, prefix: "global")
 
-      assert notification.severity == Notifications.types().info
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :wa_group, with_scheduled: true)
 
-      job = %Oban.Job{args: %{"organization_id" => org.id, "update_credential" => true}}
-      {:ok, notification} = WAWorker.perform(job)
+      notifications =
+        Repo.all(
+          from n in Notification,
+            where: n.organization_id == ^org.id and n.category == "WhatsApp Groups",
+            order_by: [desc: n.inserted_at]
+        )
 
-      assert notification.message ==
-               "WhatsApp group data sync failed: \"No active phones available\""
+      messages = Enum.map(notifications, & &1.message)
 
-      assert notification.severity == Notifications.types().critical
+      assert "Syncing of WhatsApp groups and contacts has started in the background." in messages
+
+      assert "WhatsApp group data sync failed: \"No active phones available\"" in messages
+
+      severities = Enum.map(notifications, & &1.severity)
+      assert Notifications.types().info in severities
+      assert Notifications.types().critical in severities
     end
 
     test "get_global_field_map/2 for organization should return global fields map" do
