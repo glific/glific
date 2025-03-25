@@ -80,7 +80,11 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   defp perform_credential_update(org_id) do
     case update_credentials(org_id) do
       :ok ->
-        send_notification(org_id, "Syncing of WhatsApp groups and contacts has been completed successfully.", Notifications.types().info)
+        send_notification(
+          org_id,
+          "Syncing of WhatsApp groups and contacts has been completed successfully.",
+          Notifications.types().info
+        )
 
       {:error, reason} ->
         Logger.error("WhatsApp group data sync failed: #{inspect(reason)}")
@@ -96,9 +100,8 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   @spec update_credentials(non_neg_integer()) :: :ok | {:error, String.t()}
   defp update_credentials(org_id) do
     with :ok <- WAManagedPhones.fetch_wa_managed_phones(org_id),
-         :ok <- WAGroups.fetch_wa_groups(org_id),
-         :ok <- WAGroups.set_webhook_endpoint(Partners.organization(org_id)) do
-      :ok
+         :ok <- WAGroups.fetch_wa_groups(org_id) do
+      WAGroups.set_webhook_endpoint(Partners.organization(org_id))
     end
   end
 

@@ -1086,13 +1086,17 @@ defmodule Glific.PartnersTest do
             limit: 1
         )
 
-      assert notification.message == "Syncing of WhatsApp groups and contacts has started in the background."
+      assert notification.message ==
+               "Syncing of WhatsApp groups and contacts has started in the background."
+
       assert notification.severity == Notifications.types().info
 
       job = %Oban.Job{args: %{"organization_id" => org.id, "update_credential" => true}}
       {:ok, notification} = WAWorker.perform(job)
 
-      assert notification.message == "Syncing of WhatsApp groups and contacts has been completed successfully."
+      assert notification.message ==
+               "Syncing of WhatsApp groups and contacts has been completed successfully."
+
       assert notification.severity == Notifications.types().info
     end
 
@@ -1173,13 +1177,17 @@ defmodule Glific.PartnersTest do
       {:ok, notification} =
         Repo.fetch_by(Notification, %{organization_id: org.id, category: "WhatsApp Groups"})
 
-      assert notification.message == "Syncing of WhatsApp groups and contacts has started in the background."
+      assert notification.message ==
+               "Syncing of WhatsApp groups and contacts has started in the background."
+
       assert notification.severity == Notifications.types().info
 
       job = %Oban.Job{args: %{"organization_id" => org.id, "update_credential" => true}}
       {:ok, notification} = WAWorker.perform(job)
 
-      assert notification.message == "WhatsApp group data sync failed: \"No active phones available\""
+      assert notification.message ==
+               "WhatsApp group data sync failed: \"No active phones available\""
+
       assert notification.severity == Notifications.types().critical
     end
 
