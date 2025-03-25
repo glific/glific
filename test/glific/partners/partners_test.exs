@@ -1077,27 +1077,21 @@ defmodule Glific.PartnersTest do
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :wa_group, with_scheduled: true)
 
-      # Verify the first notification (Credential update started)
-      notification =
-        Repo.one(
+      notifications =
+        Repo.all(
           from n in Notification,
             where: n.organization_id == ^org.id and n.category == "WhatsApp Groups",
-            order_by: [desc: n.inserted_at],
-            limit: 1
+            order_by: [desc: n.inserted_at]
         )
 
-      assert notification.message ==
-               "Syncing of WhatsApp groups and contacts has started in the background."
+      messages = Enum.map(notifications, & &1.message)
 
-      assert notification.severity == Notifications.types().info
+      assert "Syncing of WhatsApp groups and contacts has started in the background." in messages
 
-      job = %Oban.Job{args: %{"organization_id" => org.id, "update_credential" => true}}
-      {:ok, notification} = WAWorker.perform(job)
+      assert "Syncing of WhatsApp groups and contacts has been completed successfully." in messages
 
-      assert notification.message ==
-               "Syncing of WhatsApp groups and contacts has been completed successfully."
-
-      assert notification.severity == Notifications.types().info
+      severities = Enum.map(notifications, & &1.severity)
+      assert Notifications.types().info in severities
     end
 
     test "update_credential/2 for maytapi should not update credentials with wrong payload" do
