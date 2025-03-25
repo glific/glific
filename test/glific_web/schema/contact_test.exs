@@ -283,7 +283,6 @@ defmodule GlificWeb.Schema.ContactTest do
     assert Contacts.count_contacts(%{filter: %{phone: "918979120220"}}) == 0
   end
 
-  @tag :conn
   test "import contacts and test possible scenarios and errors", %{manager: user} do
     test_name = "test"
     test_phone = "test phone"
