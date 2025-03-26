@@ -396,8 +396,7 @@ defmodule Glific.BigQuery do
   def format_date(date, organization_id) when is_binary(date) do
     timezone = Partners.organization(organization_id).timezone
 
-    Timex.parse(date, "{RFC3339z}")
-    |> elem(1)
+    parse_datetime(date)
     |> Timex.Timezone.convert(timezone)
     |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}")
   end
@@ -859,5 +858,18 @@ defmodule Glific.BigQuery do
     if is_nil(data),
       do: {:error, "Registration details for org_id: #{organization_id} not found"},
       else: {:ok, data}
+  end
+
+  # Handling datetime and date formats
+  @spec parse_datetime(String.t()) :: DateTime.t() | NaiveDateTime.t() | nil
+  defp parse_datetime(date) do
+    with {:error, _} <- Timex.parse(date, "{RFC3339z}"),
+         {:error, _} <- Timex.parse(date, "{YYYY}-{0M}-{D}") do
+      nil
+    else
+      {:ok, %DateTime{} = datetime} -> datetime
+      {:ok, %NaiveDateTime{} = datetime} -> datetime
+      _ -> nil
+    end
   end
 end
