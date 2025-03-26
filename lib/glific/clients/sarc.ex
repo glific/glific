@@ -5,6 +5,11 @@ defmodule Glific.Clients.Sarc do
 
   import Ecto.Query, warn: false
 
+  alias Glific.{
+    Contacts,
+    Repo
+  }
+
   @acp_submission_flow_id 26_384
 
   @doc """
