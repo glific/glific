@@ -186,7 +186,7 @@ defmodule Glific.Clients do
   @sarc %{
     id: 135,
     name: "Saturday Art Class",
-    webhook: Glific.Clients.Sarc
+    gcs_file_name: Glific.Clients.Sarc
   }
 
   ## we should move this also to databases.
