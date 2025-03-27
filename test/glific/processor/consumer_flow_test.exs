@@ -1,5 +1,6 @@
 defmodule Glific.Processor.ConsumerFlowTest do
   use ExUnit.Case, async: false
+  alias Glific.Flows.FlowContext
   use Glific.DataCase
 
   alias Glific.{
@@ -182,15 +183,18 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
     sender =
       Repo.get_by(Contact, %{name: "Chrissy Cron"})
-      |> Map.put(:status, :invalid)
-      |> Map.put(:optin_time, nil)
-      |> Map.put(:optout_time, ~U[2023-12-22 12:00:00Z])
-      |> Map.put(:optin_method, nil)
-      |> Map.put(:optin_status, false)
-      |> Map.put(:is_contact_replied, false)
+      |> Contact.changeset(%{
+        status: :invalid,
+        optin_time: nil,
+        optout_time: ~U[2023-12-22 12:00:00Z],
+        optin_method: nil,
+        optin_status: false,
+        is_contact_replied: false
+      })
 
-    # ensure that the opt-in flow is marked as inactive in the database before the test runs
-    _flow =
+    sender = Repo.update!(sender)
+
+    flow =
       Repo.get_by(Flow, name: "Optin Workflow")
       |> Flow.changeset(%{is_active: false})
       |> Repo.update!()
@@ -210,5 +214,10 @@ defmodule Glific.Processor.ConsumerFlowTest do
       )
 
     assert latest_message.body == "hey"
+
+    flow_context =
+      Repo.get_by(FlowContext, contact_id: sender.id, flow_id: flow.id)
+
+    assert flow_context == nil
   end
 end
