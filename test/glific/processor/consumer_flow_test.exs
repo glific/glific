@@ -199,6 +199,10 @@ defmodule Glific.Processor.ConsumerFlowTest do
       |> Flow.changeset(%{is_active: false})
       |> Repo.update!()
 
+    # Ensure there is no existing FlowContext before the test proceeds
+    FlowContext
+    |> Repo.delete_all(contact_id: sender.id, flow_id: flow.id)
+
     message =
       Fixtures.message_fixture(%{body: "hey", sender_id: sender.id})
       |> Repo.preload([:contact])
