@@ -199,7 +199,6 @@ defmodule Glific.Processor.ConsumerFlowTest do
       |> Flow.changeset(%{is_active: false})
       |> Repo.update!()
 
-    # Ensure there is no existing FlowContext before the test proceeds
     FlowContext
     |> Repo.delete_all(contact_id: sender.id, flow_id: flow.id)
 
@@ -208,6 +207,11 @@ defmodule Glific.Processor.ConsumerFlowTest do
       |> Repo.preload([:contact])
 
     ConsumerFlow.process_message({message, state}, message.body)
+
+    flow_context_after =
+      Repo.get_by(FlowContext, contact_id: sender.id, flow_id: flow.id)
+
+    assert flow_context_after == nil
 
     latest_message =
       Repo.one(
@@ -218,10 +222,5 @@ defmodule Glific.Processor.ConsumerFlowTest do
       )
 
     assert latest_message.body == "hey"
-
-    flow_context =
-      Repo.get_by(FlowContext, contact_id: sender.id, flow_id: flow.id)
-
-    assert flow_context == nil
   end
 end
