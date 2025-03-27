@@ -117,7 +117,6 @@ defmodule GlificWeb.Schema.WaReactionTest do
     assert is_nil(MessageEventController.update_statuses(payload, user.organization_id))
   end
 
-  @tag :payload_2
   test "handling ignored payload-2", user do
     payload =
       %{
