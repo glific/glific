@@ -145,8 +145,9 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
         |> CSV.decode!(escape_max_lines: 50)
         |> Enum.into([])
 
-         with {:ok, updated_template, message} <- InteractiveTemplates.import_interactive_template(data_list, interactive_template) do
-          {:ok, %{interactive_template: updated_template, message: message}}
+      with {:ok, updated_template, message} <-
+             InteractiveTemplates.import_interactive_template(data_list, interactive_template) do
+        {:ok, %{interactive_template: updated_template, message: message}}
       end
     end
   end
