@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "7.1.2",
+      version: "7.1.3",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -43,6 +43,7 @@ defmodule Glific.MixProject do
       preferred_cli_env: [
         coveralls: :test,
         "coveralls.html": :test,
+        "coveralls.json": :test,
         test_full: :test
       ],
       # Lets add meta information on project
