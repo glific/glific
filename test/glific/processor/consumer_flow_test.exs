@@ -1,13 +1,14 @@
 defmodule Glific.Processor.ConsumerFlowTest do
   use ExUnit.Case, async: false
-  alias Glific.Flows.FlowContext
   use Glific.DataCase
 
   alias Glific.{
     Contacts,
     Contacts.Contact,
     Fixtures,
+    Flows,
     Flows.Flow,
+    Flows.FlowContext,
     Messages.Message,
     Processor.ConsumerFlow,
     Repo,
@@ -201,6 +202,9 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
     FlowContext
     |> Repo.delete_all(contact_id: sender.id, flow_id: flow.id)
+
+    # Clearing the cache to ensure the flow reflects its inactive state
+    Flows.update_cached_flow(flow, "published")
 
     message =
       Fixtures.message_fixture(%{body: "hey", sender_id: sender.id})
