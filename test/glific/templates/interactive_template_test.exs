@@ -559,7 +559,7 @@ defmodule Glific.Templates.InteractiveTemplateTest do
              InteractiveTemplates.update_interactive_template(interactive, markdown_attrs)
   end
 
-  test "create_interactive_template\1 returns error for markdown characters in translations",
+  test "create_interactive_template/1 returns error for markdown characters in translations",
     %{organization_id: org_id} do
 
       # for interactive list
