@@ -389,24 +389,27 @@ defmodule Glific.BigQuery do
   @doc """
   Format dates for the bigquery.
   """
-  @spec format_date(DateTime.t() | nil, non_neg_integer()) :: String.t()
+  @spec format_date(DateTime.t() | nil, non_neg_integer()) :: String.t() | nil
   def format_date(nil, _),
     do: nil
 
   def format_date(date, organization_id) when is_binary(date) do
     timezone = Partners.organization(organization_id).timezone
 
-    parse_datetime(date)
-    |> Timex.Timezone.convert(timezone)
-    |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}")
+    # Handling datetime and date formats
+    with {:error, _} <- Timex.parse(date, "{RFC3339z}"),
+         {:error, _} <- Timex.parse(date, "{YYYY}-{0M}-{D}") do
+      nil
+    else
+      {:ok, %DateTime{} = datetime} -> format_datetime(datetime, timezone)
+      {:ok, %NaiveDateTime{} = datetime} -> format_datetime(datetime, timezone)
+      _ -> nil
+    end
   end
 
   def format_date(date, organization_id) do
     timezone = Partners.organization(organization_id).timezone
-
-    date
-    |> Timex.Timezone.convert(timezone)
-    |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}")
+    format_datetime(date, timezone)
   end
 
   @doc """
@@ -860,16 +863,10 @@ defmodule Glific.BigQuery do
       else: {:ok, data}
   end
 
-  # Handling datetime and date formats
-  @spec parse_datetime(String.t()) :: DateTime.t() | NaiveDateTime.t() | nil
-  defp parse_datetime(date) do
-    with {:error, _} <- Timex.parse(date, "{RFC3339z}"),
-         {:error, _} <- Timex.parse(date, "{YYYY}-{0M}-{D}") do
-      nil
-    else
-      {:ok, %DateTime{} = datetime} -> datetime
-      {:ok, %NaiveDateTime{} = datetime} -> datetime
-      _ -> nil
-    end
+  @spec format_datetime(DateTime.t() | NaiveDateTime.t(), String.t()) :: String.t() | no_return()
+  defp format_datetime(date, timezone) do
+    date
+    |> Timex.Timezone.convert(timezone)
+    |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}")
   end
 end
