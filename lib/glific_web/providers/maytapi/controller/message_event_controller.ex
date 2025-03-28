@@ -49,6 +49,9 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
 
         %{"ackType" => ack_type} ->
           do_update_status(response, ack_type, org_id)
+
+        _ ->
+          nil
       end
     end)
   end

@@ -346,6 +346,10 @@ defmodule Glific.BigQueryTest do
 
     assert @formatted_time ==
              BigQuery.format_date(DateTime.to_string(datetime), attrs.organization_id)
+
+    # There are cases where we get date as a iso date only type, so handling that too
+    assert "#{String.split(@formatted_time, " ") |> List.first()} 00:00:00" ==
+             BigQuery.format_date(DateTime.to_date(datetime) |> to_string, attrs.organization_id)
   end
 
   test "queue_table_data/3 should process and queue data correctly", %{organization_id: org_id} do
