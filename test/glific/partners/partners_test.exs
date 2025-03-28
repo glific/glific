@@ -1075,7 +1075,7 @@ defmodule Glific.PartnersTest do
       assert_enqueued(worker: WAWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :wa_group, with_scheduled: true)
+               Oban.drain_queue(queue: :wa_group)
 
       notifications =
         Repo.all(
@@ -1141,7 +1141,7 @@ defmodule Glific.PartnersTest do
       assert_enqueued(worker: WAWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :wa_group, with_scheduled: true)
+               Oban.drain_queue(queue: :wa_group)
 
       notifications =
         Repo.all(
