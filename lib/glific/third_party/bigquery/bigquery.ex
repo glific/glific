@@ -403,7 +403,6 @@ defmodule Glific.BigQuery do
     else
       {:ok, %DateTime{} = datetime} -> format_datetime(datetime, timezone)
       {:ok, %NaiveDateTime{} = datetime} -> format_datetime(datetime, timezone)
-      _ -> nil
     end
   end
 
