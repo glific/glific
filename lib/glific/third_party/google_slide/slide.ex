@@ -4,7 +4,11 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   """
   require Logger
 
-  alias Glific.Partners
+  alias Glific.{
+    Partners,
+    Repo
+  }
+
   alias Tesla
 
   @drive_scopes [
@@ -39,6 +43,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
          {:ok, copied_slide} <- copy_slide(token, presentation_id),
          {:ok, _} <- replace_text(token, copied_slide["id"], fields),
          {:ok, data} <- fetch_thumbnail(token, copied_slide["id"], slide_id) do
+      delete_template_copy(token, copied_slide["id"], org_id)
       {:ok, data["contentUrl"]}
     else
       {:error, reason} ->
@@ -144,7 +149,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   @spec fetch_thumbnail(String.t(), String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
   defp fetch_thumbnail(token, presentation_id, slide_id) do
     url = "#{@slide_url}/#{presentation_id}/pages/#{slide_id}/thumbnail"
-    IO.inspect(url)
+
     case Tesla.get(client(), url, headers: auth_headers(token)) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode(body)
@@ -177,5 +182,26 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
         end
       }
     ])
+  end
+
+  @spec delete_template_copy(String.t(), String.t(), integer()) :: any()
+  defp delete_template_copy(token, presentation_id, org_id) do
+    Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
+      Repo.put_process_state(org_id)
+      delete_url = "#{@drive_url}/#{presentation_id}"
+
+      case Tesla.delete(client(), delete_url, headers: auth_headers(token)) do
+        {:ok, %Tesla.Env{status: status, body: _body}} when status >= 200 and status < 400 ->
+          :ok
+
+        {:ok, %Tesla.Env{status: status, body: body}} ->
+          Logger.error(
+            "Failed to delete the template copy. Status: #{status}, Response: #{inspect(body)} "
+          )
+
+        {:error, error} ->
+          Logger.error("Failed to delete the template copy: #{inspect(error)}")
+      end
+    end)
   end
 end
