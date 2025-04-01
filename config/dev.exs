@@ -30,6 +30,8 @@ config :glific, GlificWeb.Endpoint,
 # config :absinthe, Absinthe.Logger,
 #   pipeline: true,
 #   level: :debug
+config :logger,
+  level: :error
 
 # Watch static and templates for browser reloading.
 config :glific, GlificWeb.Endpoint,
