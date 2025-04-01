@@ -108,7 +108,7 @@ defmodule GlificWeb.Schema.CertificateTest do
               data: %{
                 "CreateCertificateTemplate" => %{
                   "errors" => [
-                    %{"message" => "Url: Template url not a valid Google Slides"}
+                    %{"message" => "Url: Template url not a valid Google Slides url"}
                   ]
                 }
               }
@@ -316,7 +316,7 @@ defmodule GlificWeb.Schema.CertificateTest do
               data: %{
                 "UpdateCertificateTemplate" => %{
                   "errors" => [
-                    %{"message" => "Url: Template url not a valid Google Slides"}
+                    %{"message" => "Url: Template url not a valid Google Slides url"}
                   ]
                 }
               }

@@ -170,7 +170,7 @@ defmodule Glific.Certificates.CertificateTemplate do
         :ok
 
       _ ->
-        {:error, :slides, "Template url not a valid Google Slides"}
+        {:error, :slides, "Template url not a valid Google Slides url"}
     end
   end
 end

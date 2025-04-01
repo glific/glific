@@ -144,7 +144,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   @spec fetch_thumbnail(String.t(), String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
   defp fetch_thumbnail(token, presentation_id, slide_id) do
     url = "#{@slide_url}/#{presentation_id}/pages/#{slide_id}/thumbnail"
-
+    IO.inspect(url)
     case Tesla.get(client(), url, headers: auth_headers(token)) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode(body)
