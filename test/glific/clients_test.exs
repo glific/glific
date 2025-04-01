@@ -3,6 +3,7 @@ defmodule Glific.ClientsTest do
 
   alias Glific.{
     Clients,
+    Clients.Atecf,
     Clients.Bandhu,
     Clients.CommonWebhook,
     Clients.KEF,
@@ -469,5 +470,117 @@ defmodule Glific.ClientsTest do
     [phone_num, ext] = String.split(message_id, ".")
     assert ext == "pdf"
     assert contact.phone == phone_num
+  end
+
+  test "gcs_file_name/1, for campaign flow" do
+    contact =
+      Fixtures.contact_fixture(%{
+        phone: "918634278954",
+        fields: %{
+          "contact_type2425" => %{
+            type: "string",
+            label: "contact_type2425",
+            value: "Parent",
+            inserted_at: ~U[2024-09-07 15:17:53.964448Z]
+          },
+          "school_name_2425" => %{
+            type: "string",
+            label: "School Name 2425",
+            value: "ABC School",
+            inserted_at: ~U[2024-09-07 15:17:53.964448Z]
+          },
+          "campaign2425" => %{
+            type: "string",
+            label: "campaign2425",
+            value: "EPPE_Campaign",
+            inserted_at: ~U[2024-09-07 15:17:53.964448Z]
+          }
+        }
+      })
+
+    media = %{
+      "contact_id" => contact.id,
+      "flow_id" => 27_579,
+      "id" => 6,
+      "local_name" =>
+        "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T//20240907150900_C20_F18_M6.pdf",
+      "organization_id" => 1,
+      "remote_name" => "20240907150900_C20_F18_M6.pdf",
+      "type" => "document",
+      "url" =>
+        "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
+    }
+
+    "Campaign_24-25/EPPE_Campaign/ABC School/Others/" <> document = KEF.gcs_file_name(media)
+    [_, _, message_id] = String.split(document, "_")
+    [phone_num, ext] = String.split(message_id, ".")
+    assert ext == "pdf"
+    assert contact.phone == phone_num
+  end
+
+  test "enable_avni_user success" do
+    username = "user@ngo"
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://app.rwb.avniproject.org/api/user/generateToken"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            authToken: "authToken"
+          }
+        }
+
+      %{method: :post, url: "https://app.rwb.avniproject.org/api/user/enable"} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    assert %{success: true, username: "user@ngo"} =
+             Atecf.webhook("enable_avni_user", %{"username" => username})
+  end
+
+  test "enable_avni_user fail due to apis" do
+    username = "user@ngo"
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://app.rwb.avniproject.org/api/user/generateToken"} ->
+        %Tesla.Env{
+          status: 400,
+          body: %{
+            authToken: "authToken"
+          }
+        }
+
+      %{method: :post, url: "https://app.rwb.avniproject.org/api/user/enable"} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    assert %{success: false, error: "Error due to" <> _} =
+             Atecf.webhook("enable_avni_user", %{"username" => username})
+  end
+
+  test "enable_avni_user fail due to apis - 2" do
+    username = "user@ngo"
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://app.rwb.avniproject.org/api/user/generateToken"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            authToken: "authToken"
+          }
+        }
+
+      %{method: :post, url: "https://app.rwb.avniproject.org/api/user/enable"} ->
+        %Tesla.Env{
+          status: 500
+        }
+    end)
+
+    assert %{success: false, error: "Error due to" <> _} =
+             Atecf.webhook("enable_avni_user", %{"username" => username})
   end
 end

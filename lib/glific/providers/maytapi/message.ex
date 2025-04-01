@@ -110,8 +110,12 @@ defmodule Glific.Providers.Maytapi.Message do
     end
   end
 
+  @doc """
+  Record a message sent to a group in the wa_message table.
+  """
+
   @spec create_wa_group_message([WAGroupsCollection.t()], Group.t(), map()) :: any()
-  defp create_wa_group_message([wa_group_collection | _wa_groups], group, attrs) do
+  def create_wa_group_message([wa_group_collection | _wa_groups], group, attrs) do
     {:ok, wa_managed_phone} =
       Repo.fetch_by(WAManagedPhone, %{
         id: wa_group_collection.wa_group.wa_managed_phone_id,
@@ -130,7 +134,14 @@ defmodule Glific.Providers.Maytapi.Message do
       send_at: DateTime.utc_now()
     })
     |> WAMessages.create_message()
-    |> then(fn {:ok, wa_message} -> wa_group_message_subscription(wa_message) end)
+    |> case do
+      {:ok, wa_message} ->
+        wa_group_message_subscription(wa_message)
+        {:ok, wa_message}
+
+      {:error, error} ->
+        {:error, error}
+    end
   end
 
   @spec wa_group_message_subscription(WAMessage.t()) :: any()

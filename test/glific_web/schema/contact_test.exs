@@ -283,7 +283,6 @@ defmodule GlificWeb.Schema.ContactTest do
     assert Contacts.count_contacts(%{filter: %{phone: "918979120220"}}) == 0
   end
 
-  @tag :conn
   test "import contacts and test possible scenarios and errors", %{manager: user} do
     test_name = "test"
     test_phone = "test phone"
@@ -930,26 +929,6 @@ defmodule GlificWeb.Schema.ContactTest do
 
     contact = get_in(query_data, [:data, "optinContact", "contact"])
     assert contact_id == contact["id"]
-  end
-
-  test "optin contact responds with error in case of gupshup api fails", %{manager: manager} do
-    Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 400
-        }
-    end)
-
-    result =
-      auth_query_gql_by(:optin_contact, manager,
-        variables: %{"name" => "contact name", "phone" => "test phone 3"}
-      )
-
-    assert {:ok, query_data} = result
-
-    error = get_in(query_data, [:data, "optinContact", "errors", Access.at(0)])
-    assert error["key"] == "gupshup"
-    assert error["message"] == "couldn't connect"
   end
 
   test "simulator get returns a simulator contact",

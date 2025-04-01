@@ -109,11 +109,6 @@ msgstr ""
 msgid "Cannot send hsm message to contact, not opted in."
 msgstr ""
 
-#: lib/glific/jobs/chatbase/chatbase_worker.ex:115
-#, elixir-format
-msgid "Chatbase returned an unexpected result"
-msgstr ""
-
 #: lib/glific/contacts.ex:639
 #: lib/glific/contacts.ex:668
 #, elixir-format, elixir-autogen
@@ -130,7 +125,7 @@ msgstr ""
 msgid "Could not find invoice for %{invoice_id}"
 msgstr ""
 
-#: lib/glific/flows/webhook.ex:134
+#: lib/glific/flows/webhook.ex:135
 #, elixir-format, elixir-autogen
 msgid "Error in decoding webhook body. Please check the json body in floweditor"
 msgstr ""
@@ -171,13 +166,12 @@ msgid "Error while fetching the BSP balance"
 msgstr ""
 
 #: lib/glific/providers/gupshup/contacts.ex:93
-#: lib/glific/providers/gupshup/wallet.ex:22
 #, elixir-format, elixir-autogen
 msgid "Invalid BSP API key"
 msgstr ""
 
-#: lib/glific/partners.ex:430
-#: lib/glific/partners.ex:447
+#: lib/glific/partners.ex:427
+#: lib/glific/partners.ex:444
 #, elixir-format, elixir-autogen
 msgid "Invalid BSP provider"
 msgstr ""
@@ -188,7 +182,7 @@ msgid "Invoice status updated for %{invoice_id}"
 msgstr ""
 
 #: lib/glific/partners.ex:423
-#: lib/glific/partners.ex:443
+#: lib/glific/partners.ex:440
 #: lib/glific/providers/gupshup/api_client.ex:38
 #: lib/glific/providers/gupshup_enterprise/api_client.ex:36
 #, elixir-format, elixir-autogen
@@ -281,7 +275,7 @@ msgstr ""
 msgid "Does not have access to the user"
 msgstr ""
 
-#: lib/glific/flows/webhook.ex:172
+#: lib/glific/flows/webhook.ex:173
 #, elixir-autogen, elixir-format
 msgid "Error in encoding webhook body. Please check the json body in floweditor"
 msgstr ""
