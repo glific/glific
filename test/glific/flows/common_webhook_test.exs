@@ -8,10 +8,13 @@ defmodule Glific.Flows.CommonWebhookTest do
     Clients.CommonWebhook,
     Messages,
     Partners,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    ThirdParty.GoogleSlide.Slide
   }
 
   import Mock
+
+  doctest Slide
 
   @mock_presentation_id "copied_presentation123"
   @mock_copied_slide %{"id" => @mock_presentation_id}
@@ -636,7 +639,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       %{
         method: :get,
         url:
-          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/p2/thumbnail"
+          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/g2/thumbnail"
       } ->
         {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_thumbnail)}}
 
@@ -650,7 +653,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     attrs = %{
       label: "test",
       type: :slides,
-      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.p2",
+      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.g2",
       organization_id: 1
     }
 
@@ -759,7 +762,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       %{
         method: :get,
         url:
-          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/p2/thumbnail"
+          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/g2/thumbnail"
       } ->
         {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_thumbnail)}}
 
@@ -773,7 +776,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     attrs = %{
       label: "test",
       type: :slides,
-      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.p2",
+      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.g2",
       organization_id: 1
     }
 
@@ -878,7 +881,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       %{
         method: :get,
         url:
-          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/p2/thumbnail"
+          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/g2/thumbnail"
       } ->
         {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_thumbnail)}}
 
@@ -892,7 +895,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     attrs = %{
       label: "test",
       type: :slides,
-      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.p2",
+      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.g2",
       organization_id: 1
     }
 
@@ -964,7 +967,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     attrs = %{
       label: "test",
       type: :slides,
-      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.p2",
+      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.g2",
       organization_id: 1
     }
 

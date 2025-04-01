@@ -14,6 +14,7 @@ defmodule Glific.Clients.CommonWebhook do
     Partners,
     Providers.Maytapi,
     Repo,
+    ThirdParty.GoogleSlide.Slide,
     WAGroup.WAManagedPhone,
     WAGroup.WaPoll
   }
@@ -339,16 +340,14 @@ defmodule Glific.Clients.CommonWebhook do
 
   def webhook("create_certificate", fields) do
     with {:ok, parsed_fields} <- parse_certificate_params(fields),
-         {:ok, certificate_template} <- fetch_certificate_template(parsed_fields) do
-      certificate_url = certificate_template.url
-      presentation_id = presentation_id(certificate_url)
-      slide_id = slide_id(certificate_url)
-
+         {:ok, certificate_template} <- fetch_certificate_template(parsed_fields),
+         {:ok, slide_details} <-
+           Slide.parse_slides_url(certificate_template.url) do
       Certificate.generate_certificate(
         parsed_fields,
         parsed_fields.contact["id"],
-        presentation_id,
-        slide_id
+        slide_details.presentation_id,
+        slide_details.page_id
       )
     else
       {:error, reason} ->
@@ -486,22 +485,6 @@ defmodule Glific.Clients.CommonWebhook do
     }
 
     Tarams.cast(fields, certificate_params_schema) |> Glific.handle_tarams_result()
-  end
-
-  @spec presentation_id(String.t()) :: String.t() | nil
-  defp presentation_id(url) do
-    case Regex.run(~r{/d/([a-zA-Z0-9_-]+)/}, url) do
-      [_, id] -> id
-      _ -> nil
-    end
-  end
-
-  @spec slide_id(String.t()) :: String.t() | nil
-  defp slide_id(url) do
-    case Regex.run(~r/#slide=id\.([a-zA-Z0-9_-]+)/, url) do
-      [_, id] -> id
-      _ -> nil
-    end
   end
 
   @spec fetch_certificate_template(map()) :: {:ok, CertificateTemplate.t()} | {:error, String.t()}

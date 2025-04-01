@@ -108,7 +108,7 @@ defmodule GlificWeb.Schema.CertificateTest do
               data: %{
                 "CreateCertificateTemplate" => %{
                   "errors" => [
-                    %{"message" => "Url: Template url not a valid Google Slides"}
+                    %{"message" => "Url: Template url not a valid Google Slides url"}
                   ]
                 }
               }
@@ -128,7 +128,7 @@ defmodule GlificWeb.Schema.CertificateTest do
         variables: %{
           "input" => %{
             "label" => String.duplicate("slides", 100),
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p"
+            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123"
           }
         }
       )
@@ -158,7 +158,7 @@ defmodule GlificWeb.Schema.CertificateTest do
         variables: %{
           "input" => %{
             "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
+            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
             "description" => String.duplicate("lorum ipsum", 250)
           }
         }
@@ -191,7 +191,7 @@ defmodule GlificWeb.Schema.CertificateTest do
         variables: %{
           "input" => %{
             "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
+            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
             "description" => "lorum ipsum"
           }
         }
@@ -221,7 +221,7 @@ defmodule GlificWeb.Schema.CertificateTest do
         variables: %{
           "input" => %{
             "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
+            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g1223",
             "description" => "lorum ipsum"
           }
         }
@@ -243,7 +243,7 @@ defmodule GlificWeb.Schema.CertificateTest do
           "id" => id,
           "input" => %{
             "label" => "slides2",
-            "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.p"
+            "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.g123"
           }
         }
       )
@@ -255,7 +255,7 @@ defmodule GlificWeb.Schema.CertificateTest do
                   "certificateTemplate" => %{
                     "id" => ^id,
                     "label" => "slides2",
-                    "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.p",
+                    "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.g123",
                     "description" => "lorum ipsum"
                   }
                 }
@@ -277,7 +277,7 @@ defmodule GlificWeb.Schema.CertificateTest do
         variables: %{
           "input" => %{
             "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
+            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g093e4290",
             "description" => "lorum ipsum"
           }
         }
@@ -306,7 +306,7 @@ defmodule GlificWeb.Schema.CertificateTest do
           "id" => id,
           "input" => %{
             "label" => "slides2",
-            "url" => "ht://docs.google.com/presentation/d/id2/edit#slide=id.p"
+            "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.p"
           }
         }
       )
@@ -316,7 +316,7 @@ defmodule GlificWeb.Schema.CertificateTest do
               data: %{
                 "UpdateCertificateTemplate" => %{
                   "errors" => [
-                    %{"message" => "Url: Invalid Template url"}
+                    %{"message" => "Url: Template url not a valid Google Slides url"}
                   ]
                 }
               }
@@ -337,7 +337,7 @@ defmodule GlificWeb.Schema.CertificateTest do
         variables: %{
           "input" => %{
             "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
+            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
             "description" => "lorum ipsum"
           }
         }
@@ -406,7 +406,7 @@ defmodule GlificWeb.Schema.CertificateTest do
         variables: %{
           "input" => %{
             "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
+            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
             "description" => "lorum ipsum"
           }
         }
@@ -417,7 +417,7 @@ defmodule GlificWeb.Schema.CertificateTest do
         variables: %{
           "input" => %{
             "label" => "LMS",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
+            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
             "description" => "lorum ipsum2"
           }
         }
@@ -492,7 +492,7 @@ defmodule GlificWeb.Schema.CertificateTest do
         variables: %{
           "input" => %{
             "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
+            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
             "description" => "lorum ipsum"
           }
         }
@@ -503,7 +503,7 @@ defmodule GlificWeb.Schema.CertificateTest do
         variables: %{
           "input" => %{
             "label" => "LMS",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
+            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
             "description" => "lorum ipsum2"
           }
         }
@@ -558,7 +558,7 @@ defmodule GlificWeb.Schema.CertificateTest do
         variables: %{
           "input" => %{
             "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
+            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
             "description" => "lorum ipsum"
           }
         }

@@ -88,7 +88,7 @@ defmodule Glific.Certificates.Certificate do
       |> IssuedCertificate.create_issued_certificate()
 
     if issued_certificate.errors != %{} do
-      {:ok, _} = notify_certificate_generation(issued_certificate)
+      notify_certificate_generation(issued_certificate)
     end
 
     {:ok, issued_certificate}
