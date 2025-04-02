@@ -160,6 +160,14 @@ defmodule Glific.Flows.Localization do
   Given a language id and an case uuid, return the translation if
   one exists, else return the original text
   """
+
+  @spec get_translated_case_arguments(FlowContext.t(), Case.t()) :: any()
+  def get_translated_case_arguments(%{wa_group_id: wa_group_id} = _context, flow_case)
+      when wa_group_id != nil do
+    # Right now WA group doesnt have a concept of language like in Contact
+    flow_case.arguments
+  end
+
   @spec get_translated_case_arguments(FlowContext.t(), Case.t()) :: any()
   def get_translated_case_arguments(context, flow_case) do
     language_id = context.contact.language_id
