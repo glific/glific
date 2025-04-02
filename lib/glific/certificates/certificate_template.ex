@@ -164,7 +164,7 @@ defmodule Glific.Certificates.CertificateTemplate do
   defp validate_url(changeset, _), do: changeset
 
   @spec validate_by_type(String.t(), non_neg_integer(), atom()) ::
-          {:ok, map()} | {:error, atom(), String.t()}
+          :ok | {:error, atom(), String.t()}
   defp validate_by_type(url, organization_id, :slides) do
     with {:ok, parsed_url} <- Slide.parse_slides_url(url),
          {:ok, _} <- Slide.get_file(organization_id, parsed_url.presentation_id) do
