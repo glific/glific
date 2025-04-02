@@ -396,7 +396,10 @@ defmodule Glific.BigQuery do
   def format_date(date, organization_id) when is_binary(date) do
     timezone = Partners.organization(organization_id).timezone
 
-    # Handling datetime and date formats
+    # We try to parse a string into date or datetime, since there
+    # were cases where we have seen both formats, which is weird.
+    # This will handle that until we can find the RCA.
+
     with {:error, _} <- Timex.parse(date, "{RFC3339z}"),
          {:error, _} <- Timex.parse(date, "{YYYY}-{0M}-{D}") do
       nil
