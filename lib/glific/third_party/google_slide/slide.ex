@@ -55,10 +55,10 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
 
       _ ->
         Logger.error(
-          "Certificate creation failed for org_id: #{org_id}, Error: Failed to get goth token"
+          "Certificate creation failed for org_id: #{org_id}, Error: Failed to get Google Slides goth token"
         )
 
-        {:error, "Failed to get goth token"}
+        {:error, "Failed to get Google Slides goth token"}
     end
   end
 
@@ -67,7 +67,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
 
   ## Examples
       iex> Glific.ThirdParty.GoogleSlide.Slide.parse_slides_url("https://docs.google.com/presentation/d/1aF1ldS4zjEHmM4LqHfGEW7TfGacBL4dyBfgIadp4/edit#slide=id.p")
-      {:error, "Invalid url"}
+      {:error, "Template url not a valid Google Slides url"}
       iex> Glific.ThirdParty.GoogleSlide.Slide.parse_slides_url("https://docs.google.com/presentation/d/1UllxeYCFhetMS6_WwkmuKeWRiwbttXfJU1bp22aiaOk/edit#slide=id.g33e095ed7be_2_75")
       {:ok, %{presentation_id: "1UllxeYCFhetMS6_WwkmuKeWRiwbttXfJU1bp22aiaOk", page_id: "g33e095ed7be_2_75"}}
       iex> Glific.ThirdParty.GoogleSlide.Slide.parse_slides_url("https://docs.google.com/presentation/d/1UllxeYCFhetMS6_WwkmuKeWRiwbttXfJU1bp22aiaOk/edit#slide=id.g33e095ed7be_2_75")
@@ -88,7 +88,30 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
          page_id: page_id
        }}
     else
-      _ -> {:error, "Invalid url"}
+      _ -> {:error, "Template url not a valid Google Slides url"}
+    end
+  end
+
+  @doc """
+  Get the details of the slide, given presentation_id
+
+  The details are fetched from google drive using drives api.
+  """
+  @spec get_file(non_neg_integer(), String.t()) :: {:ok, any()} | {:error, String.t()}
+  def get_file(org_id, presentation_id) do
+    url = "#{@drive_url}/#{presentation_id}"
+
+    with %{token: token} <-
+           Partners.get_goth_token(org_id, "google_slides", scopes: @drive_scopes),
+         {:ok, %Tesla.Env{status: 200, body: body}} <-
+           Tesla.get(client(), url, headers: auth_headers(token)) do
+      {:ok, body}
+    else
+      err when is_tuple(err) ->
+        {:error, "Unable to fetch the slide"}
+
+      _ ->
+        {:error, "Failed to get Google Slides goth token"}
     end
   end
 

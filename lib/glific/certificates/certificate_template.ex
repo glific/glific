@@ -142,7 +142,7 @@ defmodule Glific.Certificates.CertificateTemplate do
     type = attrs.type
 
     with :ok <- Glific.URI.cast(url),
-         :ok <- validate_by_type(url, type) do
+         :ok <- validate_by_type(url, attrs.organization_id, type) do
       changeset
     else
       {:error, _type, reason} ->
@@ -156,21 +156,22 @@ defmodule Glific.Certificates.CertificateTemplate do
         add_error(
           changeset,
           :url,
-          "Invalid Template url"
+          "Invalid url"
         )
     end
   end
 
   defp validate_url(changeset, _), do: changeset
 
-  @spec validate_by_type(String.t(), atom()) :: :ok | {:error, atom(), String.t()}
-  defp validate_by_type(url, :slides) do
-    case Slide.parse_slides_url(url) do
-      {:ok, _} ->
-        :ok
-
-      _ ->
-        {:error, :slides, "Template url not a valid Google Slides url"}
+  @spec validate_by_type(String.t(), non_neg_integer(), atom()) ::
+          {:ok, map()} | {:error, atom(), String.t()}
+  defp validate_by_type(url, organization_id, :slides) do
+    with {:ok, parsed_url} <- Slide.parse_slides_url(url),
+         {:ok, _} <- Slide.get_file(organization_id, parsed_url.presentation_id) do
+      :ok
+    else
+      {:error, reason} ->
+        {:error, :slides, reason}
     end
   end
 end
