@@ -288,11 +288,11 @@ defmodule Glific.Flows.Webhook do
         opts: [adapter: [recv_timeout: 10_000]]
       )
 
-  defp do_action("function", function, body, _headers) do
+  defp do_action("function", function, body, headers) do
     {
       :ok,
       :function,
-      Glific.Clients.webhook(function, Jason.decode!(body))
+      Glific.Clients.webhook(function, Jason.decode!(body), headers)
     }
   rescue
     error ->

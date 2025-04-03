@@ -22,6 +22,68 @@ defmodule Glific.Clients.CommonWebhook do
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
   """
+  @spec webhook(String.t(), map(), list()) :: map()
+  def webhook("call_and_wait", fields, headers) do
+    IO.inspect(headers)
+    endpoint = fields["endpoint"]
+    flow_id = fields["flow_id"] |> String.to_integer()
+    contact_id = fields["contact_id"] |> String.to_integer()
+    organization_id = fields["organization_id"]
+    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+    signature_payload = %{
+      "organization_id" => organization_id,
+      "flow_id" => flow_id,
+      "contact_id" => contact_id,
+      "timestamp" => timestamp
+    }
+
+    signature =
+      Glific.signature(
+        organization_id,
+        Jason.encode!(signature_payload),
+        signature_payload["timestamp"]
+      )
+
+    organization = Partners.organization(organization_id)
+
+    callback =
+      "https://api.#{organization.shortcode}.glific.com" <>
+        "/webhook/flow_resume?" <>
+        "organization_id=#{organization_id}&" <>
+        "flow_id=#{flow_id}&" <>
+        "contact_id=#{contact_id}&" <>
+        "timestamp=#{timestamp}&" <>
+        "signature=#{signature}"
+
+    payload =
+      fields
+      |> Map.merge(signature_payload)
+      |> Map.put("signature", signature)
+      |> Map.put("callback", callback)
+      |> Jason.encode!()
+
+    endpoint
+    |> Tesla.post(
+      payload,
+      headers: headers(),
+      opts: [adapter: [recv_timeout: 300_000]]
+    )
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        response = Jason.decode!(body)
+        Map.merge(%{success: true}, response)
+
+      {:ok, %Tesla.Env{status: _status, body: body}} ->
+        %{success: false, response: body}
+
+      {:error, reason} ->
+        %{success: false, reason: reason}
+    end
+  end
+
+  def webhook(function, fields, _headers), do: webhook(function, fields)
+
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_chat_gpt", fields) do
     with {:ok, fields} <- parse_chatgpt_fields(fields),
@@ -244,64 +306,6 @@ defmodule Glific.Clients.CommonWebhook do
       {:error, reason} ->
         Glific.Metrics.increment("Geolocation API Failure")
         %{success: false, error: "HTTP request failed: #{reason}"}
-    end
-  end
-
-  def webhook("call_and_wait", fields) do
-    endpoint = fields["endpoint"]
-    flow_id = fields["flow_id"] |> String.to_integer()
-    contact_id = fields["contact_id"] |> String.to_integer()
-    organization_id = fields["organization_id"]
-    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-
-    signature_payload = %{
-      "organization_id" => organization_id,
-      "flow_id" => flow_id,
-      "contact_id" => contact_id,
-      "timestamp" => timestamp
-    }
-
-    signature =
-      Glific.signature(
-        organization_id,
-        Jason.encode!(signature_payload),
-        signature_payload["timestamp"]
-      )
-
-    organization = Partners.organization(organization_id)
-
-    callback =
-      "https://api.#{organization.shortcode}.glific.com" <>
-        "/webhook/flow_resume?" <>
-        "organization_id=#{organization_id}&" <>
-        "flow_id=#{flow_id}&" <>
-        "contact_id=#{contact_id}&" <>
-        "timestamp=#{timestamp}&" <>
-        "signature=#{signature}"
-
-    payload =
-      fields
-      |> Map.merge(signature_payload)
-      |> Map.put("signature", signature)
-      |> Map.put("callback", callback)
-      |> Jason.encode!()
-
-    endpoint
-    |> Tesla.post(
-      payload,
-      headers: headers(),
-      opts: [adapter: [recv_timeout: 300_000]]
-    )
-    |> case do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        response = Jason.decode!(body)
-        Map.merge(%{success: true}, response)
-
-      {:ok, %Tesla.Env{status: _status, body: body}} ->
-        %{success: false, response: body}
-
-      {:error, reason} ->
-        %{success: false, reason: reason}
     end
   end
 
