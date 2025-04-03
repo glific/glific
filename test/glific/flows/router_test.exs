@@ -39,22 +39,6 @@ defmodule Glific.Flows.RouterTest do
     |> Repo.preload(:flow)
   end
 
-  def wa_flow_context_fixture(attrs \\ %{}) do
-    wa_phone = Fixtures.wa_managed_phone_fixture(attrs)
-    wa_group = Fixtures.wa_group_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
-
-    {:ok, flow_context} =
-      attrs
-      |> Map.put(:wa_group_id, wa_group.id)
-      |> Map.put(:organization_id, wa_phone.organization_id)
-      |> Enum.into(@valid_attrs)
-      |> FlowContext.create_flow_context()
-
-    flow_context
-    |> Repo.preload(:wa_group)
-    |> Repo.preload(:flow)
-  end
-
   test "process extracts the right values from json" do
     json = %{
       "operand" => "@input.text",
