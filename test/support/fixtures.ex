@@ -1334,6 +1334,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
+  @spec wa_flow_context_fixture(map()) :: FlowContext.t()
   def wa_flow_context_fixture(attrs \\ %{}) do
     wa_phone = wa_managed_phone_fixture(attrs)
     wa_group = wa_group_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
