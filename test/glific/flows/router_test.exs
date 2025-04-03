@@ -1,5 +1,4 @@
 defmodule Glific.Flows.RouterTest do
-  alias Glific.Flows.FlowContextTest
   use Glific.DataCase, async: true
 
   alias Glific.{
@@ -361,7 +360,7 @@ defmodule Glific.Flows.RouterTest do
       |> Router.process(uuid_map, node)
 
     context =
-      FlowContextTest.wa_flow_context_fixture(%{
+      Fixtures.wa_flow_context_fixture(%{
         uuid_map: uuid_map,
         organization_id: attrs.organization_id,
         phone: Phone.EnUs.phone()
@@ -387,7 +386,7 @@ defmodule Glific.Flows.RouterTest do
       |> Router.process(uuid_map, node)
 
     context =
-      FlowContextTest.flow_context_fixture(%{
+      flow_context_fixture(%{
         uuid_map: uuid_map,
         organization_id: attrs.organization_id,
         phone: Phone.EnUs.phone()
