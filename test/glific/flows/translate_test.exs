@@ -35,21 +35,48 @@ defmodule Glific.Flows.TranslateTest do
         assert type == "Action"
         assert String.length(uuid) == 36
 
-        if uuid != "e319cd39-f764-4680-9199-4cb7da647166",
-          do: assert(dst == "Hindi #{src} English")
+        if not Enum.member?(
+             ["e319cd39-f764-4680-9199-4cb7da647166", "a970d5d9-2951-48dc-8c66-ee6833c4b21e"],
+             uuid
+           ) do
+          assert dst == "Hindi #{src} English"
+        end
       end
     )
+  end
+
+  test "ensure that import doesn't change the attachment url", attrs do
+    flow_before_import = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
+
+    attachment_url_before =
+      get_in(flow_before_import.definition, [
+        "localization",
+        "hi",
+        "a970d5d9-2951-48dc-8c66-ee6833c4b21e"
+      ])
+
+    csv = Export.export_localization(flow_before_import)
+    Import.import_localization(csv, flow_before_import)
+
+    flow_after_import = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
+
+    attachment_url_after =
+      get_in(flow_after_import.definition, [
+        "localization",
+        "hi",
+        "a970d5d9-2951-48dc-8c66-ee6833c4b21e"
+      ])
+
+    assert attachment_url_before == attachment_url_after
   end
 
   test "ensure that import updates the localization structure", attrs do
     flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
     assert map_size(flow.definition["localization"]) == 1
-    assert map_size(flow.definition["localization"]["hi"]) == 1
+    assert map_size(flow.definition["localization"]["hi"]) == 2
     csv = Export.export_localization(flow)
-
     Import.import_localization(csv, flow)
 
-    # get the latest revision
     flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
 
     assert map_size(flow.definition["localization"]) == 2
