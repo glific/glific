@@ -58,7 +58,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
           "Certificate creation failed for org_id: #{org_id}, Error: Failed to get Google Slides goth token"
         )
 
-        {:error, "Failed to get Google Slides goth token"}
+        {:error, "Failed to get Google Slides goth token, please check Google Slides credentials"}
     end
   end
 
@@ -108,10 +108,10 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
       {:ok, body}
     else
       err when is_tuple(err) ->
-        {:error, "Unable to fetch the slide"}
+        {:error, "Insufficient permissions to access this slide"}
 
       _ ->
-        {:error, "Failed to get Google Slides goth token"}
+        {:error, "Failed to get Google Slides goth token, please check Google Slides credentials"}
     end
   end
 

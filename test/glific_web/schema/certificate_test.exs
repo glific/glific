@@ -434,7 +434,7 @@ defmodule GlificWeb.Schema.CertificateTest do
                 data: %{
                   "UpdateCertificateTemplate" => %{
                     "errors" => [
-                      %{"message" => "Url: Unable to fetch the slide"}
+                      %{"message" => "Url: Insufficient permissions to access this slide"}
                     ]
                   }
                 }
@@ -451,65 +451,73 @@ defmodule GlificWeb.Schema.CertificateTest do
         }
     end)
 
-    result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
-            "description" => "lorum ipsum"
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      result =
+        auth_query_gql_by(:create, user,
+          variables: %{
+            "input" => %{
+              "label" => "slides",
+              "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
+              "description" => "lorum ipsum"
+            }
           }
-        }
-      )
+        )
 
-    assert {:ok,
-            %{
-              data: %{
-                "CreateCertificateTemplate" => %{
-                  "certificateTemplate" => %{"id" => id}
-                }
-              }
-            }} =
-             result
-
-    result =
-      auth_query_gql_by(:get, user,
-        variables: %{
-          "id" => id
-        }
-      )
-
-    assert {:ok,
-            %{
-              data: %{
-                "CertificateTemplate" => %{
-                  "certificateTemplate" => %{
-                    "id" => ^id,
-                    "label" => "slides"
+      assert {:ok,
+              %{
+                data: %{
+                  "CreateCertificateTemplate" => %{
+                    "certificateTemplate" => %{"id" => id}
                   }
                 }
-              }
-            }} =
-             result
+              }} =
+               result
 
-    result =
-      auth_query_gql_by(:get, user,
-        variables: %{
-          "id" => 0
-        }
-      )
+      result =
+        auth_query_gql_by(:get, user,
+          variables: %{
+            "id" => id
+          }
+        )
 
-    assert {:ok,
-            %{
-              data: %{
-                "CertificateTemplate" => %{
-                  "errors" => [
-                    %{"message" => "Resource not found"}
-                  ]
+      assert {:ok,
+              %{
+                data: %{
+                  "CertificateTemplate" => %{
+                    "certificateTemplate" => %{
+                      "id" => ^id,
+                      "label" => "slides"
+                    }
+                  }
                 }
-              }
-            }} =
-             result
+              }} =
+               result
+
+      result =
+        auth_query_gql_by(:get, user,
+          variables: %{
+            "id" => 0
+          }
+        )
+
+      assert {:ok,
+              %{
+                data: %{
+                  "CertificateTemplate" => %{
+                    "errors" => [
+                      %{"message" => "Resource not found"}
+                    ]
+                  }
+                }
+              }} =
+               result
+    end
   end
 
   test "list certificate templates", %{user: user} do
