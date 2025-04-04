@@ -43,17 +43,19 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         )
 
       params = %{
-        "callback" =>
-          "https://api.glific.glific.com/webhook/flow_resume?organization_id=1&flow_id=20&contact_id=5&timestamp=1740203086735839&signature=b0bbfcc5e80830da9ce8603a2f1ee4089723544d44d748fa7fc73ca5106e6bf6",
-        "contact_id" => contact.id,
-        "endpoint" => "http://127.0.0.1:8000/api/v1/threads",
-        "flow_id" => flow.id,
-        "message" => @ai_response,
-        "organization_id" => organization_id,
-        "signature" => signature,
-        "status" => "success",
-        "thread_id" => "thread_yJxZazJ0bcXvFAsglific",
-        "timestamp" => timestamp
+        "data" => %{
+          "callback" =>
+            "https://api.glific.glific.com/webhook/flow_resume?organization_id=1&flow_id=20&contact_id=5&timestamp=1740203086735839&signature=b0bbfcc5e80830da9ce8603a2f1ee4089723544d44d748fa7fc73ca5106e6bf6",
+          "contact_id" => contact.id,
+          "endpoint" => "http://127.0.0.1:8000/api/v1/threads",
+          "flow_id" => flow.id,
+          "message" => @ai_response,
+          "organization_id" => organization_id,
+          "signature" => signature,
+          "status" => "success",
+          "thread_id" => "thread_yJxZazJ0bcXvFAsglific",
+          "timestamp" => timestamp
+        }
       }
 
       # starting the flow so the waiting for result node is executed and the flow is waiting for response
