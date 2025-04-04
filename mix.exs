@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "7.1.2",
+      version: "7.1.3",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -43,6 +43,7 @@ defmodule Glific.MixProject do
       preferred_cli_env: [
         coveralls: :test,
         "coveralls.html": :test,
+        "coveralls.json": :test,
         test_full: :test
       ],
       # Lets add meta information on project
@@ -163,7 +164,8 @@ defmodule Glific.MixProject do
       {:password_validator, "~> 0.5"},
       {:resvg, "~> 0.3.0"},
       {:google_api_translate, "~> 0.15"},
-      {:passgen, "~> 0.1.1"}
+      {:passgen, "~> 0.1.1"},
+      {:tarams, "~> 1.8"}
     ]
   end
 

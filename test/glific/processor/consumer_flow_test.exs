@@ -1,11 +1,14 @@
 defmodule Glific.Processor.ConsumerFlowTest do
+  use ExUnit.Case, async: false
   use Glific.DataCase
 
   alias Glific.{
     Contacts,
     Contacts.Contact,
     Fixtures,
+    Flows,
     Flows.Flow,
+    Flows.FlowContext,
     Messages.Message,
     Processor.ConsumerFlow,
     Repo,
@@ -179,19 +182,29 @@ defmodule Glific.Processor.ConsumerFlowTest do
   test "should not start optin flow when flow is inactive" do
     state = ConsumerFlow.load_state(Fixtures.get_org_id())
 
-    # user should be opted out
     sender =
       Repo.get_by(Contact, %{name: "Chrissy Cron"})
-      |> Map.put(:status, :invalid)
-      |> Map.put(:optin_time, nil)
-      |> Map.put(:optout_time, ~U[2023-12-22 12:00:00Z])
-      |> Map.put(:optin_method, nil)
-      |> Map.put(:optin_status, false)
-      |> Map.put(:is_contact_replied, false)
+      |> Contact.changeset(%{
+        status: :invalid,
+        optin_time: nil,
+        optout_time: ~U[2023-12-22 12:00:00Z],
+        optin_method: nil,
+        optin_status: false,
+        is_contact_replied: false
+      })
 
-    _flow =
+    sender = Repo.update!(sender)
+
+    flow =
       Repo.get_by(Flow, name: "Optin Workflow")
-      |> Map.put(:is_active, false)
+      |> Flow.changeset(%{is_active: false})
+      |> Repo.update!()
+
+    FlowContext
+    |> Repo.delete_all(contact_id: sender.id, flow_id: flow.id)
+
+    # Clearing the cache to ensure the flow reflects its inactive state
+    Flows.update_cached_flow(flow, "published")
 
     message =
       Fixtures.message_fixture(%{body: "hey", sender_id: sender.id})
@@ -199,14 +212,19 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
     ConsumerFlow.process_message({message, state}, message.body)
 
+    flow_context_after =
+      Repo.get_by(FlowContext, contact_id: sender.id, flow_id: flow.id)
+
+    assert flow_context_after == nil
+
     latest_message =
       Repo.one(
         from m in Message,
+          where: m.sender_id == ^sender.id,
           order_by: [desc: m.inserted_at],
           limit: 1
       )
 
-    # here shouldn't be any messages after the user sends the message, if the user has opted out.
     assert latest_message.body == "hey"
   end
 end

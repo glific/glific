@@ -495,4 +495,25 @@ defmodule Glific do
   def trusted_env?(:dev, 1), do: true
   def trusted_env?(:prod, 2), do: true
   def trusted_env?(_env, _id), do: false
+
+  @doc """
+  Converts Tarams result into {:ok, map()} or {:error, String.t()}
+
+  ## Examples
+
+      iex> handle_tarams_result({:ok, %{a: "a"}})
+      {:ok, %{a: "a"}}
+
+      iex> handle_tarams_result({:error, %{a: ["is required"]}})
+      {:error, a is required}
+  """
+  @spec handle_tarams_result({:ok, map()} | {:ok, map()}) :: {:ok, map()} | {:ok, String.t()}
+  def handle_tarams_result({:error, error}) do
+    Enum.map_join(error, ",", fn {key, reason} ->
+      "#{key} #{reason}"
+    end)
+    |> then(&{:error, &1})
+  end
+
+  def handle_tarams_result(result), do: result
 end

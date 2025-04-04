@@ -20,7 +20,7 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   }
 
   require Logger
-
+  @default_bsp_limit 30
   @doc """
   Standard perform method to use Oban worker
   """
@@ -29,7 +29,8 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   def perform(%Oban.Job{args: %{"message" => message}} = job) do
     organization = Partners.organization(message["organization_id"])
 
-    if is_nil(organization.services["bsp"]) do
+    # organization.services["bsp"] was relying on Gupshup being active or not
+    if is_nil(organization.services["maytapi"]) do
       Worker.handle_credential_error(message)
     else
       perform(job, organization)
@@ -48,7 +49,7 @@ defmodule Glific.Providers.Maytapi.WAWorker do
            organization.shortcode,
            # the bsp limit is per organization per shortcode
            1000,
-           organization.services["bsp"].keys["bsp_limit"]
+           @default_bsp_limit
          ) do
       {:ok, _} ->
         process_maytapi(organization.id, payload, message)

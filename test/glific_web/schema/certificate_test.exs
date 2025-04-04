@@ -1,13 +1,35 @@
 defmodule GlificWeb.Schema.CertificateTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
+  import Mock
 
+  alias Glific.Partners
   load_gql(:create, GlificWeb.Schema, "assets/gql/certificates/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/certificates/update.gql")
   load_gql(:get, GlificWeb.Schema, "assets/gql/certificates/by_id.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/certificates/list.gql")
   load_gql(:count, GlificWeb.Schema, "assets/gql/certificates/count.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/certificates/delete.gql")
+
+  setup do
+    valid_attrs_slides = %{
+      shortcode: "google_slides",
+      secrets: %{
+        "service_account" =>
+          Jason.encode!(%{
+            project_id: "DEFAULT PROJECT ID",
+            private_key_id: "DEFAULT API KEY",
+            client_email: "DEFAULT CLIENT EMAIL",
+            private_key: "DEFAULT PRIVATE KEY"
+          })
+      },
+      is_active: true,
+      organization_id: 1
+    }
+
+    {:ok, _credential} = Partners.create_credential(valid_attrs_slides)
+    :ok
+  end
 
   test "create certificate template failures", %{user: user} do
     result = auth_query_gql_by(:create, user, variables: %{})
@@ -55,7 +77,7 @@ defmodule GlificWeb.Schema.CertificateTest do
               data: %{
                 "CreateCertificateTemplate" => %{
                   "errors" => [
-                    %{"message" => "Url: Invalid Template url"}
+                    %{"message" => "Url: Invalid url"}
                   ]
                 }
               }
@@ -108,7 +130,7 @@ defmodule GlificWeb.Schema.CertificateTest do
               data: %{
                 "CreateCertificateTemplate" => %{
                   "errors" => [
-                    %{"message" => "Url: Template url not a valid Google Slides"}
+                    %{"message" => "Url: Template url not a valid Google Slides url"}
                   ]
                 }
               }
@@ -128,7 +150,7 @@ defmodule GlificWeb.Schema.CertificateTest do
         variables: %{
           "input" => %{
             "label" => String.duplicate("slides", 100),
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p"
+            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123"
           }
         }
       )
@@ -158,7 +180,7 @@ defmodule GlificWeb.Schema.CertificateTest do
         variables: %{
           "input" => %{
             "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
+            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
             "description" => String.duplicate("lorum ipsum", 250)
           }
         }
@@ -185,27 +207,35 @@ defmodule GlificWeb.Schema.CertificateTest do
         }
     end)
 
-    # Other validations
-    result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
-            "description" => "lorum ipsum"
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      # Other validations
+      result =
+        auth_query_gql_by(:create, user,
+          variables: %{
+            "input" => %{
+              "label" => "slides",
+              "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
+              "description" => "lorum ipsum"
+            }
           }
-        }
-      )
+        )
 
-    assert {:ok,
-            %{
-              data: %{
-                "CreateCertificateTemplate" => %{
-                  "certificateTemplate" => %{"id" => _}
+      assert {:ok,
+              %{
+                data: %{
+                  "CreateCertificateTemplate" => %{
+                    "certificateTemplate" => %{"id" => _}
+                  }
                 }
-              }
-            }} =
-             result
+              }} =
+               result
+    end
   end
 
   test "update certificate template success", %{user: user} do
@@ -216,52 +246,60 @@ defmodule GlificWeb.Schema.CertificateTest do
         }
     end)
 
-    result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
-            "description" => "lorum ipsum"
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      result =
+        auth_query_gql_by(:create, user,
+          variables: %{
+            "input" => %{
+              "label" => "slides",
+              "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g1223",
+              "description" => "lorum ipsum"
+            }
           }
-        }
-      )
+        )
 
-    assert {:ok,
-            %{
-              data: %{
-                "CreateCertificateTemplate" => %{
-                  "certificateTemplate" => %{"id" => id}
-                }
-              }
-            }} =
-             result
-
-    result =
-      auth_query_gql_by(:update, user,
-        variables: %{
-          "id" => id,
-          "input" => %{
-            "label" => "slides2",
-            "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.p"
-          }
-        }
-      )
-
-    assert {:ok,
-            %{
-              data: %{
-                "UpdateCertificateTemplate" => %{
-                  "certificateTemplate" => %{
-                    "id" => ^id,
-                    "label" => "slides2",
-                    "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.p",
-                    "description" => "lorum ipsum"
+      assert {:ok,
+              %{
+                data: %{
+                  "CreateCertificateTemplate" => %{
+                    "certificateTemplate" => %{"id" => id}
                   }
                 }
-              }
-            }} =
-             result
+              }} =
+               result
+
+      result =
+        auth_query_gql_by(:update, user,
+          variables: %{
+            "id" => id,
+            "input" => %{
+              "label" => "slides2",
+              "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.g123"
+            }
+          }
+        )
+
+      assert {:ok,
+              %{
+                data: %{
+                  "UpdateCertificateTemplate" => %{
+                    "certificateTemplate" => %{
+                      "id" => ^id,
+                      "label" => "slides2",
+                      "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.g123",
+                      "description" => "lorum ipsum"
+                    }
+                  }
+                }
+              }} =
+               result
+    end
   end
 
   test "update certificate template failure", %{user: user} do
@@ -272,56 +310,137 @@ defmodule GlificWeb.Schema.CertificateTest do
         }
     end)
 
-    result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
-            "description" => "lorum ipsum"
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      result =
+        auth_query_gql_by(:create, user,
+          variables: %{
+            "input" => %{
+              "label" => "slides",
+              "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g093e4290",
+              "description" => "lorum ipsum"
+            }
           }
-        }
-      )
+        )
 
-    assert {:ok,
-            %{
-              data: %{
-                "CreateCertificateTemplate" => %{
-                  "certificateTemplate" => %{"id" => id}
+      assert {:ok,
+              %{
+                data: %{
+                  "CreateCertificateTemplate" => %{
+                    "certificateTemplate" => %{"id" => id}
+                  }
                 }
-              }
-            }} =
-             result
+              }} =
+               result
 
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 400
+          }
+      end)
+
+      result =
+        auth_query_gql_by(:update, user,
+          variables: %{
+            "id" => id,
+            "input" => %{
+              "label" => "slides2",
+              "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.p"
+            }
+          }
+        )
+
+      assert {:ok,
+              %{
+                data: %{
+                  "UpdateCertificateTemplate" => %{
+                    "errors" => [
+                      %{"message" => "Url: Template url not a valid Google Slides url"}
+                    ]
+                  }
+                }
+              }} =
+               result
+    end
+  end
+
+  test "update certificate template failure while fetching file details from drive", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :get} ->
         %Tesla.Env{
-          status: 400
+          status: 200
         }
     end)
 
-    result =
-      auth_query_gql_by(:update, user,
-        variables: %{
-          "id" => id,
-          "input" => %{
-            "label" => "slides2",
-            "url" => "ht://docs.google.com/presentation/d/id2/edit#slide=id.p"
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      result =
+        auth_query_gql_by(:create, user,
+          variables: %{
+            "input" => %{
+              "label" => "slides",
+              "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g093e4290",
+              "description" => "lorum ipsum"
+            }
           }
-        }
-      )
+        )
 
-    assert {:ok,
-            %{
-              data: %{
-                "UpdateCertificateTemplate" => %{
-                  "errors" => [
-                    %{"message" => "Url: Invalid Template url"}
-                  ]
+      assert {:ok,
+              %{
+                data: %{
+                  "CreateCertificateTemplate" => %{
+                    "certificateTemplate" => %{"id" => id}
+                  }
                 }
-              }
-            }} =
-             result
+              }} =
+               result
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://www.googleapis.com/drive/v3/files/id2"} ->
+          %Tesla.Env{
+            status: 400
+          }
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
+
+      result =
+        auth_query_gql_by(:update, user,
+          variables: %{
+            "id" => id,
+            "input" => %{
+              "label" => "slides2",
+              "url" => "https://docs.google.com/presentation/d/id2/edit#slide=id.g093e4290"
+            }
+          }
+        )
+
+      assert {:ok,
+              %{
+                data: %{
+                  "UpdateCertificateTemplate" => %{
+                    "errors" => [
+                      %{"message" => "Url: Insufficient permissions to access this slide"}
+                    ]
+                  }
+                }
+              }} =
+               result
+    end
   end
 
   test "get certificate template", %{user: user} do
@@ -332,65 +451,73 @@ defmodule GlificWeb.Schema.CertificateTest do
         }
     end)
 
-    result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
-            "description" => "lorum ipsum"
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      result =
+        auth_query_gql_by(:create, user,
+          variables: %{
+            "input" => %{
+              "label" => "slides",
+              "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
+              "description" => "lorum ipsum"
+            }
           }
-        }
-      )
+        )
 
-    assert {:ok,
-            %{
-              data: %{
-                "CreateCertificateTemplate" => %{
-                  "certificateTemplate" => %{"id" => id}
-                }
-              }
-            }} =
-             result
-
-    result =
-      auth_query_gql_by(:get, user,
-        variables: %{
-          "id" => id
-        }
-      )
-
-    assert {:ok,
-            %{
-              data: %{
-                "CertificateTemplate" => %{
-                  "certificateTemplate" => %{
-                    "id" => ^id,
-                    "label" => "slides"
+      assert {:ok,
+              %{
+                data: %{
+                  "CreateCertificateTemplate" => %{
+                    "certificateTemplate" => %{"id" => id}
                   }
                 }
-              }
-            }} =
-             result
+              }} =
+               result
 
-    result =
-      auth_query_gql_by(:get, user,
-        variables: %{
-          "id" => 0
-        }
-      )
+      result =
+        auth_query_gql_by(:get, user,
+          variables: %{
+            "id" => id
+          }
+        )
 
-    assert {:ok,
-            %{
-              data: %{
-                "CertificateTemplate" => %{
-                  "errors" => [
-                    %{"message" => "Resource not found"}
-                  ]
+      assert {:ok,
+              %{
+                data: %{
+                  "CertificateTemplate" => %{
+                    "certificateTemplate" => %{
+                      "id" => ^id,
+                      "label" => "slides"
+                    }
+                  }
                 }
-              }
-            }} =
-             result
+              }} =
+               result
+
+      result =
+        auth_query_gql_by(:get, user,
+          variables: %{
+            "id" => 0
+          }
+        )
+
+      assert {:ok,
+              %{
+                data: %{
+                  "CertificateTemplate" => %{
+                    "errors" => [
+                      %{"message" => "Resource not found"}
+                    ]
+                  }
+                }
+              }} =
+               result
+    end
   end
 
   test "list certificate templates", %{user: user} do
@@ -401,27 +528,35 @@ defmodule GlificWeb.Schema.CertificateTest do
         }
     end)
 
-    _result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
-            "description" => "lorum ipsum"
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      _result =
+        auth_query_gql_by(:create, user,
+          variables: %{
+            "input" => %{
+              "label" => "slides",
+              "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
+              "description" => "lorum ipsum"
+            }
           }
-        }
-      )
+        )
 
-    _result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "label" => "LMS",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
-            "description" => "lorum ipsum2"
+      _result =
+        auth_query_gql_by(:create, user,
+          variables: %{
+            "input" => %{
+              "label" => "LMS",
+              "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
+              "description" => "lorum ipsum2"
+            }
           }
-        }
-      )
+        )
+    end
 
     result =
       auth_query_gql_by(:list, user, variables: %{})
@@ -487,27 +622,35 @@ defmodule GlificWeb.Schema.CertificateTest do
         }
     end)
 
-    _result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
-            "description" => "lorum ipsum"
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      _result =
+        auth_query_gql_by(:create, user,
+          variables: %{
+            "input" => %{
+              "label" => "slides",
+              "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
+              "description" => "lorum ipsum"
+            }
           }
-        }
-      )
+        )
 
-    _result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "label" => "LMS",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
-            "description" => "lorum ipsum2"
+      _result =
+        auth_query_gql_by(:create, user,
+          variables: %{
+            "input" => %{
+              "label" => "LMS",
+              "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
+              "description" => "lorum ipsum2"
+            }
           }
-        }
-      )
+        )
+    end
 
     result =
       auth_query_gql_by(:count, user, variables: %{})
@@ -553,46 +696,54 @@ defmodule GlificWeb.Schema.CertificateTest do
         }
     end)
 
-    result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "label" => "slides",
-            "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.p",
-            "description" => "lorum ipsum"
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      result =
+        auth_query_gql_by(:create, user,
+          variables: %{
+            "input" => %{
+              "label" => "slides",
+              "url" => "https://docs.google.com/presentation/d/id/edit#slide=id.g123",
+              "description" => "lorum ipsum"
+            }
           }
-        }
-      )
+        )
 
-    assert {:ok,
-            %{
-              data: %{
-                "CreateCertificateTemplate" => %{
-                  "certificateTemplate" => %{"id" => id}
-                }
-              }
-            }} =
-             result
-
-    result =
-      auth_query_gql_by(:delete, user,
-        variables: %{
-          "id" => id
-        }
-      )
-
-    assert {:ok,
-            %{
-              data: %{
-                "deleteCertificateTemplate" => %{
-                  "certificateTemplate" => %{
-                    "id" => ^id,
-                    "label" => "slides"
+      assert {:ok,
+              %{
+                data: %{
+                  "CreateCertificateTemplate" => %{
+                    "certificateTemplate" => %{"id" => id}
                   }
                 }
-              }
-            }} =
-             result
+              }} =
+               result
+
+      result =
+        auth_query_gql_by(:delete, user,
+          variables: %{
+            "id" => id
+          }
+        )
+
+      assert {:ok,
+              %{
+                data: %{
+                  "deleteCertificateTemplate" => %{
+                    "certificateTemplate" => %{
+                      "id" => ^id,
+                      "label" => "slides"
+                    }
+                  }
+                }
+              }} =
+               result
+    end
 
     # invalid ID
     result =

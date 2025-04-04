@@ -8,10 +8,13 @@ defmodule Glific.Flows.CommonWebhookTest do
     Clients.CommonWebhook,
     Messages,
     Partners,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    ThirdParty.GoogleSlide.Slide
   }
 
   import Mock
+
+  doctest Slide
 
   @mock_presentation_id "copied_presentation123"
   @mock_copied_slide %{"id" => @mock_presentation_id}
@@ -20,6 +23,40 @@ defmodule Glific.Flows.CommonWebhookTest do
   setup do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
+
+    valid_attrs = %{
+      shortcode: "google_cloud_storage",
+      secrets: %{
+        "bucket" => "mock-bucket-name",
+        "service_account" =>
+          Jason.encode!(%{
+            project_id: "DEFAULT PROJECT ID",
+            private_key_id: "DEFAULT API KEY",
+            client_email: "DEFAULT CLIENT EMAIL",
+            private_key: "DEFAULT PRIVATE KEY"
+          })
+      },
+      is_active: true,
+      organization_id: 1
+    }
+
+    valid_attrs_slides = %{
+      shortcode: "google_slides",
+      secrets: %{
+        "service_account" =>
+          Jason.encode!(%{
+            project_id: "DEFAULT PROJECT ID",
+            private_key_id: "DEFAULT API KEY",
+            client_email: "DEFAULT CLIENT EMAIL",
+            private_key: "DEFAULT PRIVATE KEY"
+          })
+      },
+      is_active: true,
+      organization_id: 1
+    }
+
+    {:ok, _credential} = Partners.create_credential(valid_attrs)
+    {:ok, _credential} = Partners.create_credential(valid_attrs_slides)
     :ok
   end
 
@@ -636,9 +673,15 @@ defmodule Glific.Flows.CommonWebhookTest do
       %{
         method: :get,
         url:
-          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/p2/thumbnail"
+          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/g2/thumbnail"
       } ->
         {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_thumbnail)}}
+
+      %{
+        method: :get,
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: ""}}
 
       %{
         method: :get,
@@ -650,18 +693,8 @@ defmodule Glific.Flows.CommonWebhookTest do
     attrs = %{
       label: "test",
       type: :slides,
-      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.p2",
+      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.g2",
       organization_id: 1
-    }
-
-    {:ok, certificate} = CertificateTemplate.create_certificate_template(attrs)
-    contact = Fixtures.contact_fixture()
-
-    fields = %{
-      "certificate_id" => certificate.id,
-      "contact" => %{"id" => contact.id},
-      "organization_id" => 1,
-      "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
     }
 
     with_mock(
@@ -671,39 +704,15 @@ defmodule Glific.Flows.CommonWebhookTest do
         {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
       end
     ) do
-      valid_attrs = %{
-        shortcode: "google_cloud_storage",
-        secrets: %{
-          "bucket" => "mock-bucket-name",
-          "service_account" =>
-            Jason.encode!(%{
-              project_id: "DEFAULT PROJECT ID",
-              private_key_id: "DEFAULT API KEY",
-              client_email: "DEFAULT CLIENT EMAIL",
-              private_key: "DEFAULT PRIVATE KEY"
-            })
-        },
-        is_active: true,
-        organization_id: 1
-      }
+      {:ok, certificate} = CertificateTemplate.create_certificate_template(attrs)
+      contact = Fixtures.contact_fixture()
 
-      valid_attrs_slides = %{
-        shortcode: "google_slides",
-        secrets: %{
-          "service_account" =>
-            Jason.encode!(%{
-              project_id: "DEFAULT PROJECT ID",
-              private_key_id: "DEFAULT API KEY",
-              client_email: "DEFAULT CLIENT EMAIL",
-              private_key: "DEFAULT PRIVATE KEY"
-            })
-        },
-        is_active: true,
-        organization_id: 1
+      fields = %{
+        "certificate_id" => certificate.id,
+        "contact" => %{"id" => contact.id},
+        "organization_id" => 1,
+        "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
       }
-
-      {:ok, _credential} = Partners.create_credential(valid_attrs)
-      {:ok, _credential} = Partners.create_credential(valid_attrs_slides)
 
       result = CommonWebhook.webhook("create_certificate", fields)
       assert result[:success] == true
@@ -711,8 +720,199 @@ defmodule Glific.Flows.CommonWebhookTest do
     end
   end
 
+  test "Failed to create a certificate, thumbnail download failure" do
+    Tesla.Mock.mock(fn
+      %Tesla.Env{
+        method: :post,
+        url: "https://storage.googleapis.com/upload/storage/v1/b/mock-bucket-name/o",
+        query: [uploadType: "multipart"]
+      } ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body:
+             Jason.encode!(%{
+               "name" => "uploads/certificate/copied_presentation123/123.png",
+               "mediaLink" =>
+                 "https://storage.googleapis.com/mock-bucket-name/uploads/certificate/copied_presentation123/123.png",
+               "selfLink" =>
+                 "https://storage.googleapis.com/mock-bucket-name/uploads/certificate/copied_presentation123/123.png"
+             })
+         }}
+
+      %{
+        method: :get,
+        url:
+          "https://storage.googleapis.com/mock-bucket-name/uploads/certificate/copied_presentation123/123.png"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: "<<binary image data>>"}}
+
+      %{
+        method: :post,
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_copied_slide)}}
+
+      %{
+        method: :post,
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/permissions"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{"success" => true})}}
+
+      %{
+        method: :post,
+        url: "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}:batchUpdate"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{"success" => true})}}
+
+      %{
+        method: :get,
+        url:
+          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/g2/thumbnail"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_thumbnail)}}
+
+      %{
+        method: :get,
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: ""}}
+
+      %{
+        method: :get,
+        url: "image_url"
+      } ->
+        {:ok, %Tesla.Env{status: 400, body: "<<binary image data>>"}}
+    end)
+
+    attrs = %{
+      label: "test",
+      type: :slides,
+      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.g2",
+      organization_id: 1
+    }
+
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      {:ok, certificate} = CertificateTemplate.create_certificate_template(attrs)
+      contact = Fixtures.contact_fixture()
+
+      fields = %{
+        "certificate_id" => certificate.id,
+        "contact" => %{"id" => contact.id},
+        "organization_id" => 1,
+        "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
+      }
+
+      result = CommonWebhook.webhook("create_certificate", fields)
+      assert result[:success] == false
+      assert result[:reason] == "Failed to download thumbnail url"
+    end
+  end
+
+  test "Failed to create a certificate, GCSWorker upload failure" do
+    Tesla.Mock.mock(fn
+      %Tesla.Env{
+        method: :post,
+        url: "https://storage.googleapis.com/upload/storage/v1/b/mock-bucket-name/o",
+        query: [uploadType: "multipart"]
+      } ->
+        {:ok,
+         %Tesla.Env{
+           status: 400,
+           body:
+             Jason.encode!(%{
+               "error" => %{"errors" => [%{"reason" => "something went wrong"}]}
+             })
+         }}
+
+      %{
+        method: :get,
+        url:
+          "https://storage.googleapis.com/mock-bucket-name/uploads/certificate/copied_presentation123/123.png"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: "<<binary image data>>"}}
+
+      %{
+        method: :post,
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_copied_slide)}}
+
+      %{
+        method: :post,
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/permissions"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{"success" => true})}}
+
+      %{
+        method: :post,
+        url: "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}:batchUpdate"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{"success" => true})}}
+
+      %{
+        method: :get,
+        url:
+          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/g2/thumbnail"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_thumbnail)}}
+
+      %{
+        method: :get,
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: ""}}
+
+      %{
+        method: :get,
+        url: "image_url"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: "<<binary image data>>"}}
+    end)
+
+    attrs = %{
+      label: "test",
+      type: :slides,
+      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.g2",
+      organization_id: 1
+    }
+
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      {:ok, certificate} = CertificateTemplate.create_certificate_template(attrs)
+      contact = Fixtures.contact_fixture()
+
+      fields = %{
+        "certificate_id" => certificate.id,
+        "contact" => %{"id" => contact.id},
+        "organization_id" => 1,
+        "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
+      }
+
+      result = CommonWebhook.webhook("create_certificate", fields)
+      assert result[:success] == false
+    end
+  end
+
   test "Failure in creating a certificate" do
     Tesla.Mock.mock(fn
+      %{
+        method: :get,
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: ""}}
+
       %{
         method: :post,
         url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy"
@@ -723,18 +923,8 @@ defmodule Glific.Flows.CommonWebhookTest do
     attrs = %{
       label: "test",
       type: :slides,
-      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.p2",
+      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.g2",
       organization_id: 1
-    }
-
-    {:ok, certificate} = CertificateTemplate.create_certificate_template(attrs)
-    contact = Fixtures.contact_fixture()
-
-    fields = %{
-      "certificate_id" => certificate.id,
-      "contact" => %{"id" => contact.id},
-      "organization_id" => 1,
-      "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
     }
 
     with_mock(
@@ -744,39 +934,15 @@ defmodule Glific.Flows.CommonWebhookTest do
         {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
       end
     ) do
-      valid_attrs = %{
-        shortcode: "google_cloud_storage",
-        secrets: %{
-          "bucket" => "mock-bucket-name",
-          "service_account" =>
-            Jason.encode!(%{
-              project_id: "DEFAULT PROJECT ID",
-              private_key_id: "DEFAULT API KEY",
-              client_email: "DEFAULT CLIENT EMAIL",
-              private_key: "DEFAULT PRIVATE KEY"
-            })
-        },
-        is_active: true,
-        organization_id: 1
-      }
+      {:ok, certificate} = CertificateTemplate.create_certificate_template(attrs)
+      contact = Fixtures.contact_fixture()
 
-      valid_attrs_slides = %{
-        shortcode: "google_slides",
-        secrets: %{
-          "service_account" =>
-            Jason.encode!(%{
-              project_id: "DEFAULT PROJECT ID",
-              private_key_id: "DEFAULT API KEY",
-              client_email: "DEFAULT CLIENT EMAIL",
-              private_key: "DEFAULT PRIVATE KEY"
-            })
-        },
-        is_active: true,
-        organization_id: 1
+      fields = %{
+        "certificate_id" => certificate.id,
+        "contact" => %{"id" => contact.id},
+        "organization_id" => 1,
+        "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
       }
-
-      {:ok, _credential} = Partners.create_credential(valid_attrs)
-      {:ok, _credential} = Partners.create_credential(valid_attrs_slides)
 
       result = CommonWebhook.webhook("create_certificate", fields)
       assert result[:success] == false
@@ -797,6 +963,46 @@ defmodule Glific.Flows.CommonWebhookTest do
     result = CommonWebhook.webhook("create_certificate", fields)
 
     assert result[:success] == false
-    assert result[:reason] == "Certificate template not found for ID: #{certificate_id}"
+    assert result[:error] == "Certificate template not found for ID: #{certificate_id}"
+  end
+
+  test "webhook/2 for certificate should fail when validation fails" do
+    # when certificate is invalid
+    invalid_fields = %{}
+
+    assert %{success: false, error: error} =
+             CommonWebhook.webhook("create_certificate", invalid_fields)
+
+    assert String.split(error, "is required") |> length() == 5
+
+    # replace text
+    invalid_fields = %{
+      "certificate_id" => "1",
+      "organization_id" => 1,
+      "contact" => %{"id" => "123"},
+      "replace_texts" => "John Doe"
+    }
+
+    assert %{error: "replace_texts is invalid", success: false} =
+             CommonWebhook.webhook("create_certificate", invalid_fields)
+
+    invalid_fields = %{
+      "certificate_id" => "1",
+      "organization_id" => 1,
+      "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
+    }
+
+    assert %{error: "contact is required", success: false} =
+             CommonWebhook.webhook("create_certificate", invalid_fields)
+
+    invalid_fields = %{
+      "certificate_id" => 0,
+      "organization_id" => 1,
+      "contact" => %{"id" => "123"},
+      "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
+    }
+
+    assert %{error: "Certificate template not found" <> _} =
+             CommonWebhook.webhook("create_certificate", invalid_fields)
   end
 end

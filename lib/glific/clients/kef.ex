@@ -34,6 +34,8 @@ defmodule Glific.Clients.KEF do
       "https://docs.google.com/spreadsheets/d/e/2PACX-1vQPzJ4BruF8RFMB0DwBgM8Rer7MC0fiL_IVC0rrLtZT7rsa3UnGE3ZTVBRtNdZI9zGXGlQevCajwNcn/pub?gid=1503063199&single=true&output=csv"
   }
 
+  @campaign_flow_id 27_579
+
   @doc """
   Generate custom GCS bucket name based on group that the contact is in (if any)
   """
@@ -59,12 +61,16 @@ defmodule Glific.Clients.KEF do
         contact_type =
           get_in(contact.fields, ["contact_type2425", "value"])
 
-        phone = contact.phone
+        # KEF wants media coming through campaign flow to have
+        # a different GCS files structure
+        if media["flow_id"] == @campaign_flow_id do
+          "#{get_campaign_folder_structure(contact.fields)}#{media_subfolder}/#{generate_filename(media["remote_name"], contact.phone)}"
+        else
+          folder_structure = get_folder_structure(media, contact_type, contact.fields)
 
-        folder_structure = get_folder_structure(media, contact_type, contact.fields)
-
-        "2024/#{folder_structure}/#{media_subfolder}/" <>
-          generate_filename(media["remote_name"], phone)
+          "2024/#{folder_structure}/#{media_subfolder}/" <>
+            generate_filename(media["remote_name"], contact.phone)
+        end
 
       {:error, _} ->
         "2024/#{media_subfolder}/" <> media["remote_name"]
@@ -625,5 +631,12 @@ defmodule Glific.Clients.KEF do
     [datetime, _, _, message_id] = String.split(remote_name, "_")
     [message_id, ext] = String.split(message_id, ".")
     datetime <> "_" <> message_id <> "_" <> phone_number <> "." <> ext
+  end
+
+  @spec get_campaign_folder_structure(map()) :: String.t()
+  defp get_campaign_folder_structure(contact_fields) do
+    campaign_name = get_in(contact_fields, ["campaign2425", "value"])
+    school_name = get_in(contact_fields, ["school_name_2425", "value"])
+    "Campaign_24-25/#{campaign_name}/#{school_name}/"
   end
 end
