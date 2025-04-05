@@ -170,8 +170,8 @@ msgstr ""
 msgid "Invalid BSP API key"
 msgstr ""
 
-#: lib/glific/partners.ex:427
-#: lib/glific/partners.ex:444
+#: lib/glific/partners.ex:426
+#: lib/glific/partners.ex:443
 #, elixir-format, elixir-autogen
 msgid "Invalid BSP provider"
 msgstr ""
@@ -181,8 +181,8 @@ msgstr ""
 msgid "Invoice status updated for %{invoice_id}"
 msgstr ""
 
-#: lib/glific/partners.ex:423
-#: lib/glific/partners.ex:440
+#: lib/glific/partners.ex:422
+#: lib/glific/partners.ex:439
 #: lib/glific/providers/gupshup/api_client.ex:38
 #: lib/glific/providers/gupshup_enterprise/api_client.ex:36
 #, elixir-format, elixir-autogen
