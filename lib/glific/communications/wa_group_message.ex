@@ -251,14 +251,14 @@ defmodule Glific.Communications.GroupMessage do
   """
   @spec receive_reaction_msg(map(), non_neg_integer()) :: any()
   def receive_reaction_msg(params, org_id) do
+    org_id = Repo.get_organization_id()
+
     contact = Map.get(params, "reactorId")
     reaction = Map.get(params, "reaction")
     msg_id = Map.get(params, "msgId")
     bsp_msg_id = Map.get(params, "reactionId")
     # splitting because we are getting the contact number like 919xxxx22555@c.us this
     [phone | _] = String.split(contact, "@")
-
-    contact = Contacts.get_contact_by_phone!(phone)
 
     context_message =
       WAMessage
@@ -268,6 +268,17 @@ defmodule Glific.Communications.GroupMessage do
           wa_msg.organization_id == ^org_id
       )
       |> Repo.one!()
+
+    contact_attrs = %{
+      name: nil,
+      phone: phone,
+      contact_type: "WA",
+      wa_group_id: context_message.wa_group_id,
+      organization_id: org_id
+    }
+
+    {:ok, contact} =
+      Contacts.maybe_create_contact(contact_attrs)
 
     attrs =
       %{
