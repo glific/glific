@@ -45,6 +45,13 @@ defmodule Glific.FLowsTest do
       keywords: ["update_keyword"]
     }
 
+    @flow_attrs %{
+      name: "Test Flow cache",
+      keywords: ["test"],
+      flow_type: :message,
+      version_number: "13.1.0"
+    }
+
     def flow_fixture(attrs \\ %{}),
       do: Fixtures.flow_fixture(attrs)
 
@@ -769,5 +776,27 @@ defmodule Glific.FLowsTest do
 
     new_message_count = Repo.aggregate(Message, :count)
     assert new_message_count > message_count + 1
+  end
+
+  test "get_cached_flow/3 should return the skip_validation field in flow cache",
+       %{organization_id: organization_id} = _attrs do
+    {:ok, flow} =
+      @flow_attrs
+      |> Map.merge(%{
+        organization_id: organization_id,
+        skip_validation: true
+      })
+      |> Flows.create_flow()
+
+    flow = Repo.preload(flow, [:revisions])
+
+    [revision] = flow.revisions
+
+    revision
+    |> Ecto.Changeset.change(status: "published")
+    |> Repo.update()
+
+    {:ok, _loaded_flow} =
+      Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
   end
 end
