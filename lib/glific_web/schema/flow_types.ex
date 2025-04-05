@@ -56,6 +56,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :ignore_keywords, :boolean
     field :is_active, :boolean
     field :is_template, :boolean
+    field :skip_validation, :boolean
     field :version_number, :string
     field :flow_type, :flow_type_enum
     field :inserted_at, :datetime

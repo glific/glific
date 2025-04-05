@@ -39,6 +39,7 @@ defmodule Glific.Flows.Flow do
     :is_template,
     :respond_other,
     :respond_no_response,
+    :skip_validation,
     :tag_id,
     :description
   ]
@@ -59,6 +60,7 @@ defmodule Glific.Flows.Flow do
           is_template: boolean() | nil,
           flow_type: String.t() | nil,
           status: String.t(),
+          skip_validation: boolean() | nil,
           definition: map() | nil,
           localization: Localization.t() | nil,
           start_node: Node.t() | nil,
@@ -103,6 +105,7 @@ defmodule Glific.Flows.Flow do
     field(:is_template, :boolean, default: false)
     field(:respond_other, :boolean, default: false)
     field(:respond_no_response, :boolean, default: false)
+    field(:skip_validation, :boolean, default: false)
     # we use this to store the latest definition and version from flow_revisions for this flow
     field(:definition, :map, virtual: true)
 
