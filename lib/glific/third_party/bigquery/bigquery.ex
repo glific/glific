@@ -395,25 +395,29 @@ defmodule Glific.BigQuery do
   @doc """
   Format dates for the bigquery.
   """
-  @spec format_date(DateTime.t() | nil, non_neg_integer()) :: String.t()
+  @spec format_date(DateTime.t() | nil, non_neg_integer()) :: String.t() | nil
   def format_date(nil, _),
     do: nil
 
   def format_date(date, organization_id) when is_binary(date) do
     timezone = Partners.organization(organization_id).timezone
 
-    Timex.parse(date, "{RFC3339z}")
-    |> elem(1)
-    |> Timex.Timezone.convert(timezone)
-    |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}")
+    # We try to parse a string into date or datetime, since there
+    # were cases where we have seen both formats, which is weird.
+    # This will handle that until we can find the RCA.
+
+    with {:error, _} <- Timex.parse(date, "{RFC3339z}"),
+         {:error, _} <- Timex.parse(date, "{YYYY}-{0M}-{D}") do
+      nil
+    else
+      {:ok, %DateTime{} = datetime} -> format_datetime(datetime, timezone)
+      {:ok, %NaiveDateTime{} = datetime} -> format_datetime(datetime, timezone)
+    end
   end
 
   def format_date(date, organization_id) do
     timezone = Partners.organization(organization_id).timezone
-
-    date
-    |> Timex.Timezone.convert(timezone)
-    |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}")
+    format_datetime(date, timezone)
   end
 
   @doc """
@@ -865,5 +869,12 @@ defmodule Glific.BigQuery do
     if is_nil(data),
       do: {:error, "Registration details for org_id: #{organization_id} not found"},
       else: {:ok, data}
+  end
+
+  @spec format_datetime(DateTime.t() | NaiveDateTime.t(), String.t()) :: String.t() | no_return()
+  defp format_datetime(date, timezone) do
+    date
+    |> Timex.Timezone.convert(timezone)
+    |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}")
   end
 end
