@@ -328,6 +328,7 @@ defmodule Glific.Flows.Flow do
           ignore_keywords: f.ignore_keywords,
           respond_other: f.respond_other,
           respond_no_response: f.respond_no_response,
+          skip_validation: f.skip_validation,
           organization_id: f.organization_id,
           definition: fr.definition,
           version: fr.version

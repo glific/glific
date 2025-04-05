@@ -88,6 +88,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :delete_role_ids, list_of(:id)
     field :is_pinned, :boolean
     field :is_template, :boolean
+    field :skip_validation, :boolean
     field :description, :string
   end
 
