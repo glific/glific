@@ -2788,6 +2788,138 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for the certificate templates table
+  """
+  @spec certificate_templates_schema :: list()
+  def certificate_templates_schema do
+    [
+      %{
+        description: "Unique ID for the certificate template",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "The label of the certificate template",
+        name: "label",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "The description of the certificate template",
+        name: "description",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "The url of the certificate template",
+        name: "url",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "The type of the template",
+        name: "type",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for the issued certificates table
+  """
+  @spec issued_certificates_schema :: list()
+  def issued_certificates_schema do
+    [
+      %{
+        description: "Unique ID for the certificate template",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "The ID of the certificate template used",
+        name: "template_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "The label of the certificate template used",
+        name: "template_label",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "The contact phone to which certificate was issued",
+        name: "phone",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "The GCS url of the issued certificate",
+        name: "gcs_url",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Error while issuing certificate, if any",
+        name: "errors",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Procedure for flat fields
   """
   @spec flat_fields_procedure(String.t(), String.t()) :: String.t()
