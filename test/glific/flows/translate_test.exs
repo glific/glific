@@ -3,8 +3,10 @@ defmodule Glific.Flows.TranslateTest do
 
   alias Glific.{
     Flows,
+    Flows.Flow,
     Flows.Translate.Export,
     Flows.Translate.Import,
+    Repo,
     Seeds.SeedsDev
   }
 
@@ -45,8 +47,23 @@ defmodule Glific.Flows.TranslateTest do
     )
   end
 
+  test "ensure that import updates the localization structure", attrs do
+    flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
+    assert map_size(flow.definition["localization"]) == 1
+    assert map_size(flow.definition["localization"]["hi"]) == 1
+    csv = Export.export_localization(flow)
+    Import.import_localization(csv, flow)
+
+    flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
+
+    assert map_size(flow.definition["localization"]) == 2
+    assert map_size(flow.definition["localization"]["hi"]) == 6
+    assert map_size(flow.definition["localization"]["en"]) == 6
+  end
+
   test "ensure that import doesn't change the attachment url", attrs do
-    flow_before_import = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Media flow"})
+    flow_before_import = Flows.get_complete_flow(attrs.organization_id, flow.id)
 
     attachment_url_before =
       get_in(flow_before_import.definition, [
@@ -58,7 +75,7 @@ defmodule Glific.Flows.TranslateTest do
     csv = Export.export_localization(flow_before_import)
     Import.import_localization(csv, flow_before_import)
 
-    flow_after_import = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
+    flow_after_import = Flows.get_complete_flow(attrs.organization_id, flow.id)
 
     attachment_url_after =
       get_in(flow_after_import.definition, [
@@ -68,19 +85,5 @@ defmodule Glific.Flows.TranslateTest do
       ])
 
     assert attachment_url_before == attachment_url_after
-  end
-
-  test "ensure that import updates the localization structure", attrs do
-    flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
-    assert map_size(flow.definition["localization"]) == 1
-    assert map_size(flow.definition["localization"]["hi"]) == 2
-    csv = Export.export_localization(flow)
-    Import.import_localization(csv, flow)
-
-    flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
-
-    assert map_size(flow.definition["localization"]) == 2
-    assert map_size(flow.definition["localization"]["hi"]) == 6
-    assert map_size(flow.definition["localization"]["en"]) == 6
   end
 end

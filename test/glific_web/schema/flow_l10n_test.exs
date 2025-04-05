@@ -19,7 +19,7 @@ defmodule GlificWeb.Schema.FlowL10NTest do
   Type,UUID,en,hi,Node_uuid
   Type,UUID,English,Hindi,Node_uuid
   Action,4cbb069d-99b0-4493-826a-13558107e366,We hope that helped you out.,Hindi We hope that helped you out. English,0abf3b1c-5f79-48bf-9076-a72828d3bb39
-  Action,a970d5d9-2951-48dc-8c66-ee6833c4b21e,Message for option 2. You can add them to a group based on their response.,विकल्प 2 के लिए संदेश। आप उनकी प्रतिक्रिया के आधार पर उन्हें समूह में जोड़ सकते हैं।,85e897d2-49e4-42b7-8574-8dc2aee97121
+  Action,a970d5d9-2951-48dc-8c66-ee6833c4b21e,Message for option 2. You can add them to a group based on their response.,Hindi Message for option 2. You can add them to a group based on their response. English,85e897d2-49e4-42b7-8574-8dc2aee97121
   Action,36051723-7d00-422e-8846-2336a9ecbc9d,Message for option 4,Hindi Message for option 4 English,a5105a7c-0917-4900-a0ce-cb5d3be2ffc5
   Action,10196f43-87f0-4205-aabd-1549aaa7e242,Message for option 3,Hindi Message for option 3 English,6d39df59-4572-4f4c-99b7-f667ea112e03
   Action,ed7d10f7-6298-4d84-a8d2-7b1f6e91da07,Message for option 1,Hindi Message for option 1 English,f189f142-6d39-40fa-bf11-95578daeceea
