@@ -116,4 +116,23 @@ defmodule GlificWeb.Schema.WaReactionTest do
 
     assert is_nil(MessageEventController.update_statuses(payload, user.organization_id))
   end
+
+  test "handling ignored payload-2", user do
+    payload =
+      %{
+        "data" => [
+          %{
+            "chatId" => "120363257477740000@g.us",
+            "msgId" =>
+              "false_120363257477740000@g.us_DA8E37F4819D2982F3FAD894DBB287F3_919783328334@c.us",
+            "rxid" =>
+              "false_120363257477740000@g.us_DA8E37F4819D2982F3FAD894DBB287F3_919783328334@c.us",
+            "time" => 1_739_257_237
+          }
+        ],
+        "type" => "ack"
+      }
+
+    assert :ok = MessageEventController.update_statuses(payload, user.organization_id)
+  end
 end
