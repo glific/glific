@@ -796,7 +796,9 @@ defmodule Glific.FLowsTest do
     |> Ecto.Changeset.change(status: "published")
     |> Repo.update()
 
-    {:ok, _loaded_flow} =
+    {:ok, loaded_flow} =
       Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
+
+    assert loaded_flow.skip_validation == true
   end
 end
