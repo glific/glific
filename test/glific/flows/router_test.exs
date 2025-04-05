@@ -7,6 +7,8 @@ defmodule Glific.Flows.RouterTest do
     Messages
   }
 
+  alias Faker.Phone
+
   alias Glific.Flows.{
     Flow,
     FlowContext,
@@ -299,6 +301,98 @@ defmodule Glific.Flows.RouterTest do
 
     context = flow_context_fixture(%{uuid_map: uuid_map})
     {:ok, _, _} = Router.execute(router, context, [])
+  end
+
+  test "router with split by expression with EEx code for wa_group flow", attrs do
+    flow = %Flow{uuid: "Flow UUID 1", id: 1}
+    exit_uuid = Ecto.UUID.generate()
+    uuid_map = %{}
+
+    json = %{
+      "uuid" => "Node UUID",
+      "actions" => [],
+      "exits" => [
+        %{"uuid" => exit_uuid, "destination_uuid" => nil}
+      ]
+    }
+
+    {node, uuid_map} = Node.process(json, uuid_map, flow)
+
+    json = %{
+      "type" => "switch",
+      "default_category_uuid" => "Default Cat UUID",
+      "result_name" => "Language",
+      "categories" => [
+        %{
+          "uuid" => "Default Cat UUID",
+          "exit_uuid" => exit_uuid,
+          "name" => "Default Category"
+        }
+      ],
+      "cases" => [
+        %{
+          "id" => nil,
+          "uuid" => "e254c8f0-69e7-4911-9b65-577a54b9de7e",
+          "name" => nil,
+          "type" => "has_only_phrase",
+          "arguments" => ["true"],
+          "parsed_arguments" => nil,
+          "category_uuid" => "Default Cat UUID",
+          "category" => nil
+        },
+        %{
+          "id" => nil,
+          "uuid" => "e254c8f0-69e7-4911-9b65-577a54b9de7e",
+          "name" => nil,
+          "type" => "has_number_eq",
+          "arguments" => ["true"],
+          "parsed_arguments" => nil,
+          "category_uuid" => "Default Cat UUID",
+          "category" => nil
+        }
+      ]
+    }
+
+    # correct EEx expression
+    {router, uuid_map} =
+      json
+      |> Map.merge(%{"operand" => "<%= rem(5, 2) %>"})
+      |> Router.process(uuid_map, node)
+
+    context =
+      Fixtures.wa_flow_context_fixture(%{
+        uuid_map: uuid_map,
+        organization_id: attrs.organization_id,
+        phone: Phone.EnUs.phone()
+      })
+
+    assert {:ok, _, _} = Router.execute(router, context, [])
+
+    {router, uuid_map} =
+      json
+      |> Map.put("cases", [
+        %{
+          "id" => nil,
+          "uuid" => "e254c8f0-69e7-4911-9b65-577a54b9de7e",
+          "name" => nil,
+          "type" => "has_number_eq",
+          "arguments" => ["true"],
+          "parsed_arguments" => nil,
+          "category_uuid" => "Default Cat UUID",
+          "category" => nil
+        }
+      ])
+      |> Map.merge(%{"operand" => "<%= rem(5, 2) %>"})
+      |> Router.process(uuid_map, node)
+
+    context =
+      flow_context_fixture(%{
+        uuid_map: uuid_map,
+        organization_id: attrs.organization_id,
+        phone: Phone.EnUs.phone()
+      })
+
+    assert {:ok, _, _} = Router.execute(router, context, [])
   end
 
   test "router with split by groups" do

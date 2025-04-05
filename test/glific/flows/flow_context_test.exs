@@ -43,22 +43,6 @@ defmodule Glific.Flows.FlowContextTest do
     |> Repo.preload(:flow)
   end
 
-  def wa_flow_context_fixture(attrs \\ %{}) do
-    wa_phone = Fixtures.wa_managed_phone_fixture(attrs)
-    wa_group = Fixtures.wa_group_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
-
-    {:ok, flow_context} =
-      attrs
-      |> Map.put(:wa_group_id, wa_group.id)
-      |> Map.put(:organization_id, wa_group.organization_id)
-      |> Enum.into(@valid_attrs)
-      |> FlowContext.create_flow_context()
-
-    flow_context
-    |> Repo.preload(:wa_group)
-    |> Repo.preload(:flow)
-  end
-
   test "create_flow_context/1 will create a new flow context", attrs do
     # create a simple flow context
     {:ok, context} =
@@ -186,7 +170,7 @@ defmodule Glific.Flows.FlowContextTest do
     [node | _tail] = flow.nodes
 
     flow_context =
-      wa_flow_context_fixture(%{node_uuid: node.uuid, organization_id: organization_id})
+      Fixtures.wa_flow_context_fixture(%{node_uuid: node.uuid, organization_id: organization_id})
 
     flow_context = FlowContext.load_context(flow_context, flow)
     assert flow_context.uuid_map == flow.uuid_map
@@ -208,7 +192,7 @@ defmodule Glific.Flows.FlowContextTest do
     [node | _tail] = flow.nodes
 
     flow_context =
-      wa_flow_context_fixture(%{node_uuid: node.uuid, organization_id: organization_id})
+      Fixtures.wa_flow_context_fixture(%{node_uuid: node.uuid, organization_id: organization_id})
 
     flow_context = FlowContext.load_context(flow_context, flow)
     message = Messages.create_temp_message(Fixtures.get_org_id(), "help")
@@ -290,7 +274,7 @@ defmodule Glific.Flows.FlowContextTest do
     wakeup_at = Timex.shift(Timex.now(), minutes: -3)
 
     flow_context =
-      wa_flow_context_fixture(%{
+      Fixtures.wa_flow_context_fixture(%{
         node_uuid: node.uuid,
         wakeup_at: wakeup_at,
         is_background_flow: true,
