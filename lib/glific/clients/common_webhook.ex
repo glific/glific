@@ -24,11 +24,10 @@ defmodule Glific.Clients.CommonWebhook do
   """
   @spec webhook(String.t(), map(), list()) :: map()
   def webhook("call_and_wait", fields, headers) do
-    IO.inspect(headers)
     endpoint = fields["endpoint"]
-    flow_id = fields["flow_id"] |> String.to_integer()
-    contact_id = fields["contact_id"] |> String.to_integer()
-    organization_id = fields["organization_id"]
+    {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
+    {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
+    {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
     timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
     signature_payload = %{
@@ -66,7 +65,7 @@ defmodule Glific.Clients.CommonWebhook do
     endpoint
     |> Tesla.post(
       payload,
-      headers: headers(),
+      headers: headers,
       opts: [adapter: [recv_timeout: 300_000]]
     )
     |> case do
@@ -340,13 +339,6 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
-
-  defp headers do
-    [
-      {"Content-Type", "application/json"},
-      {"accept", "application/json"}
-    ]
-  end
 
   @spec find_component(list(map()), String.t()) :: String.t()
   defp find_component(components, type) do
