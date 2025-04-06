@@ -324,9 +324,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec get_templates(non_neg_integer()) :: {:ok, any()} | {:error, String.t()}
   def get_templates(org_id) do
-    with {:ok, %{partner_app_token: token}} <- get_partner_app_token(org_id),
-         url <- app_url(org_id) <> "/templates",
-         headers = [{"Authorization", token}] do
+    with {:ok, %{partner_app_token: token}} <- get_partner_app_token(org_id) do
+      url = app_url(org_id) <> "/templates"
+      headers = [{"Authorization", token}]
       get(url, headers: headers)
     end
   end
