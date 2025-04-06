@@ -251,8 +251,6 @@ defmodule Glific.Communications.GroupMessage do
   """
   @spec receive_reaction_msg(map(), non_neg_integer()) :: any()
   def receive_reaction_msg(params, org_id) do
-    org_id = Repo.get_organization_id()
-
     contact = Map.get(params, "reactorId")
     reaction = Map.get(params, "reaction")
     msg_id = Map.get(params, "msgId")
