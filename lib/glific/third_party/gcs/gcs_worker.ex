@@ -59,12 +59,17 @@ defmodule Glific.GCS.GcsWorker do
 
     limit = files_per_minute_count()
 
+    # Gupshup expires files older than 30 days, so we have to make sure
+    # the starting message_media is always greater than last 30 days to prevent
+    # rate-limiting errors from gupshup.
+
     data =
       MessageMedia
       |> select([m], m.id)
       |> where([m], m.organization_id == ^organization_id and m.id > ^message_media_id)
       |> where([m], m.flow == :inbound)
       |> where([m], is_nil(m.gcs_url))
+      |> where([m], m.inserted_at > fragment("NOW() - INTERVAL '30 day'"))
       |> order_by([m], asc: m.id)
       |> limit(^limit)
       |> check_phase(organization_id, phase)

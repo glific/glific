@@ -114,6 +114,8 @@ defmodule Glific.GCS do
     |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
     |> where([m, _msg], m.organization_id == ^organization_id)
     |> where([m, _msg], m.flow == :inbound)
+    # handling gupshup 30 day file expiry
+    |> where([m], m.inserted_at > fragment("NOW() - INTERVAL '30 day'"))
     |> order_by([m], [m.inserted_at, m.id])
   end
 
