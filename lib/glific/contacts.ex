@@ -450,22 +450,11 @@ defmodule Glific.Contacts do
     case Repo.get_by(Contact, %{phone: sender.phone}) do
       nil ->
         case create_contact(sender) do
-          {:ok, contact} ->
-          #   if contact.contact_type == "WA" do
-          #     ContactWAGroups.create_contact_wa_group(%{
-          #       contact_id: contact.id,
-          #       wa_group_id: sender.wa_group_id,
-          #       organization_id: sender.organization_id
-          #     })
-          #   end
-
-            {:ok, contact}
-
+          {:ok, contact} -> {:ok, contact}
           # there is a small chance that due to the opt-in and first message
           # arriving at the same time, we fire this twice, which results in an error
           # Issue #850
-          {:error, changeset} ->
-            handle_phone_error(sender, changeset)
+          {:error, changeset} -> handle_phone_error(sender, changeset)
         end
 
       contact ->
