@@ -76,7 +76,7 @@ defmodule Glific.Certificates.CertificateTemplate do
   Get an certificate_template
   """
   @spec get_certificate_template(integer()) ::
-          {:ok, CertificateTemplate.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, CertificateTemplate.t()} | {:error, any()}
   def get_certificate_template(id),
     do: Repo.fetch_by(CertificateTemplate, %{id: id})
 

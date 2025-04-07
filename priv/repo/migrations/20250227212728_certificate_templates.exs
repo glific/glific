@@ -4,7 +4,7 @@ defmodule Glific.Repo.Migrations.CertificateTemplates do
   def change do
     Glific.Enums.CertificateTemplateType.create_type()
     create_certificate_template()
-    create_issued_certfifcates()
+    create_issued_certificates()
   end
 
   @spec create_certificate_template() :: any()
@@ -28,7 +28,7 @@ defmodule Glific.Repo.Migrations.CertificateTemplates do
     create unique_index(:certificate_templates, [:label, :organization_id])
   end
 
-  defp create_issued_certfifcates do
+  defp create_issued_certificates do
     create table(:issued_certificates) do
       # we doing cascade delete, since we sync these tables to BQ, so will be available for tracking
       add :certificate_template_id, references(:certificate_templates, on_delete: :delete_all),

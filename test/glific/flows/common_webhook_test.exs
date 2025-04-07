@@ -15,7 +15,7 @@ defmodule Glific.Flows.CommonWebhookTest do
   import Mock
 
   doctest Slide
-
+  doctest Glific
   @mock_presentation_id "copied_presentation123"
   @mock_copied_slide %{"id" => @mock_presentation_id}
   @mock_thumbnail %{"contentUrl" => "image_url"}

@@ -501,16 +501,19 @@ defmodule Glific do
 
   ## Examples
 
-      iex> handle_tarams_result({:ok, %{a: "a"}})
+      iex> Glific.handle_tarams_result({:ok, %{a: "a"}})
       {:ok, %{a: "a"}}
 
-      iex> handle_tarams_result({:error, %{a: ["is required"]}})
-      {:error, a is required}
+      iex> Glific.handle_tarams_result({:error, %{a: ["is required"]}})
+      {:error, "a is required"}
+
+      iex> Glific.handle_tarams_result({:error, %{a: ["is required"], b: ["is required"]}})
+      {:error, "a is required, b is required"}
   """
   @spec handle_tarams_result({:ok, map()} | {:error, map()}) ::
           {:ok, map()} | {:error, String.t()}
   def handle_tarams_result({:error, error}) do
-    Enum.map_join(error, ",", fn {key, reason} ->
+    Enum.map_join(error, ", ", fn {key, reason} ->
       "#{key} #{reason}"
     end)
     |> then(&{:error, &1})

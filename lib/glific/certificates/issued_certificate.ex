@@ -61,7 +61,7 @@ defmodule Glific.Certificates.IssuedCertificate do
   end
 
   @doc """
-  Creates an certificate_template
+  Creates an issued certificate
   """
   @spec create_issued_certificate(map()) ::
           {:ok, IssuedCertificate.t()} | {:error, Ecto.Changeset.t()}

@@ -3,8 +3,6 @@ defmodule Glific.Clients.CommonWebhook do
   Common webhooks which we can call with any clients.
   """
 
-  alias Glific.Certificates.Certificate
-
   alias Glific.{
     ASR.Bhasini,
     ASR.GoogleASR,
