@@ -27,7 +27,8 @@ defmodule Glific.Messages.MessageMedia do
     :caption,
     :gcs_url,
     :content_type,
-    :is_template_media
+    :is_template_media,
+    :error
   ]
 
   @type t() :: %__MODULE__{
@@ -44,7 +45,8 @@ defmodule Glific.Messages.MessageMedia do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           flow: String.t() | nil,
-          is_template_media: boolean()
+          is_template_media: boolean(),
+          error: String.t() | nil
         }
 
   schema "messages_media" do
@@ -56,7 +58,7 @@ defmodule Glific.Messages.MessageMedia do
     field(:content_type, :string)
     field(:flow, MessageFlow)
     field(:is_template_media, :boolean, default: false)
-
+    field(:error, :string)
     belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)

@@ -212,7 +212,7 @@ defmodule Glific.GCS.GcsWorker do
           "GCSWORKER: GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
 
         Logger.info(error)
-
+        add_message_media_error(media, error)
         {:error, error}
 
       {:error, error} ->
@@ -220,7 +220,7 @@ defmodule Glific.GCS.GcsWorker do
           "GCSWORKER: GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}"
 
         Logger.info(error)
-
+        add_message_media_error(media, error)
         {:discard, error}
     end
   end
@@ -237,6 +237,7 @@ defmodule Glific.GCS.GcsWorker do
 
       {:error, error} ->
         handle_gcs_error(media["organization_id"], error)
+        |> then(&add_message_media_error(media, &1))
     end
 
     :ok
@@ -388,5 +389,13 @@ defmodule Glific.GCS.GcsWorker do
       error ->
         {:error, error}
     end
+  end
+
+  @spec add_message_media_error(map(), String.t()) :: {non_neg_integer(), nil | [term()]}
+  defp add_message_media_error(media, error) do
+    MessageMedia
+    |> where([mm], mm.id == ^media["id"])
+    |> update([mm], set: [error: ^error])
+    |> Repo.update_all([])
   end
 end
