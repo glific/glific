@@ -507,7 +507,8 @@ defmodule Glific do
       iex> handle_tarams_result({:error, %{a: ["is required"]}})
       {:error, a is required}
   """
-  @spec handle_tarams_result({:ok, map()} | {:ok, map()}) :: {:ok, map()} | {:ok, String.t()}
+  @spec handle_tarams_result({:ok, map()} | {:error, map()}) ::
+          {:ok, map()} | {:error, String.t()}
   def handle_tarams_result({:error, error}) do
     Enum.map_join(error, ",", fn {key, reason} ->
       "#{key} #{reason}"

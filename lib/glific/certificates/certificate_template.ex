@@ -29,7 +29,6 @@ defmodule Glific.Certificates.CertificateTemplate do
           url: String.t() | nil,
           description: String.t() | nil,
           type: CertificateTemplateType | nil,
-          type: CertificateTemplateType | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
