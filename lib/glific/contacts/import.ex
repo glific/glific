@@ -419,10 +419,21 @@ defmodule Glific.Contacts.Import do
   defp add_language(results, language) do
     case Settings.get_language_by_label_or_locale(language) do
       [] ->
+        capture_language_history(results.phone, "English")
         add_default_language(results)
 
       [lang | _] ->
+        capture_language_history(results.phone, lang.label)
         Map.put(results, :language_id, lang.id)
+    end
+  end
+
+  @spec capture_language_history(String.t(), String.t()) :: :ok
+  defp capture_language_history(phone, lang) do
+    with {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone}) do
+      Contacts.capture_history(contact, :contact_language_updated, %{
+        event_label: "Changed contact language to #{lang}, via import.",
+      })
     end
   end
 
