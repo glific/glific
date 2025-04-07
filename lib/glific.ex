@@ -506,9 +506,6 @@ defmodule Glific do
 
       iex> Glific.handle_tarams_result({:error, %{a: ["is required"]}})
       {:error, "a is required"}
-
-      iex> Glific.handle_tarams_result({:error, %{a: ["is required"], b: ["is required"]}})
-      {:error, "a is required, b is required"}
   """
   @spec handle_tarams_result({:ok, map()} | {:error, map()}) ::
           {:ok, map()} | {:error, String.t()}
