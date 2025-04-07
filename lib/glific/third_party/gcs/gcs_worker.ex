@@ -31,6 +31,7 @@ defmodule Glific.GCS.GcsWorker do
 
   @provider_shortcode "google_cloud_storage"
 
+  @rewind_hr 20
   @doc """
   This is called from the cron job on a regular schedule. we sweep the message media url  table
   and queue them up for delivery to gcs
@@ -53,7 +54,24 @@ defmodule Glific.GCS.GcsWorker do
   defp jobs(organization_id, phase) do
     gcs_job = Jobs.get_gcs_job(organization_id, phase)
 
-    message_media_id = if gcs_job == nil, do: 0, else: gcs_job.message_media_id
+    # For unsynced phase, every day we rewind the starter unsync message_media_id to
+    # the oldest unsynced, so that we make sure we don't skip unsynced files at all
+    message_media_id =
+      cond do
+        gcs_job == nil ->
+          0
+
+        gcs_job.type == "unsynced" ->
+          if DateTime.diff(DateTime.utc_now(), gcs_job.updated_at, :hour) > @rewind_hr do
+            GCS.get_first_unsynced_file(organization_id)
+          else
+            gcs_job.message_media_id
+          end
+
+        # incremental
+        true ->
+          gcs_job.message_media_id
+      end
 
     message_media_id = message_media_id || 0
 
@@ -66,7 +84,7 @@ defmodule Glific.GCS.GcsWorker do
     data =
       MessageMedia
       |> select([m], m.id)
-      |> where([m], m.organization_id == ^organization_id and m.id > ^message_media_id)
+      |> where([m], m.organization_id == ^organization_id and m.id >= ^message_media_id)
       |> where([m], m.flow == :inbound)
       |> where([m], is_nil(m.gcs_url))
       |> where([m], m.inserted_at > fragment("NOW() - INTERVAL '30 day'"))
