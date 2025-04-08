@@ -39,7 +39,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
       bsp_credentials = organization.services["bsp"]
 
       with false <- is_nil(bsp_credentials.secrets["api_key"]),
-           false <- is_nil(bsp_credentials.secrets["api_key"]) do
+           false <- is_nil(bsp_credentials.secrets["app_name"]) do
         api_key = bsp_credentials.secrets["api_key"]
         app_name = bsp_credentials.secrets["app_name"]
         {:ok, %{api_key: api_key, app_name: app_name}}
