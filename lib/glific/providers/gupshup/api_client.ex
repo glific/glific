@@ -67,8 +67,6 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   """
   @spec optin_contact(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
   def optin_contact(org_id, payload) do
-    get_credentials(org_id)
-
     with {:ok, credentials} <- get_credentials(org_id) do
       url = @gupshup_api_url <> "/app/opt/in/" <> credentials.app_name
       gupshup_post(url, payload, credentials.api_key)
