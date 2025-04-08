@@ -31,7 +31,7 @@ defmodule Glific.GCS.GcsWorker do
 
   @provider_shortcode "google_cloud_storage"
 
-  @rewind_hr 20
+  @nightly_interval 20
   @doc """
   This is called from the cron job on a regular schedule. we sweep the message media url  table
   and queue them up for delivery to gcs
@@ -54,19 +54,13 @@ defmodule Glific.GCS.GcsWorker do
   defp jobs(organization_id, phase) do
     gcs_job = Jobs.get_gcs_job(organization_id, phase)
 
-    # For unsynced phase, every day we rewind the starter unsync message_media_id to
-    # the oldest unsynced, so that we make sure we don't skip unsynced files at all
     message_media_id =
       cond do
         gcs_job == nil ->
           0
 
         gcs_job.type == "unsynced" ->
-          if DateTime.diff(DateTime.utc_now(), gcs_job.updated_at, :hour) > @rewind_hr do
-            GCS.get_first_unsynced_file(organization_id)
-          else
-            gcs_job.message_media_id
-          end
+          get_unsynced_media_id(gcs_job, organization_id)
 
         # incremental
         true ->
@@ -78,7 +72,7 @@ defmodule Glific.GCS.GcsWorker do
     limit = files_per_minute_count()
 
     # Gupshup expires files older than 30 days, so we have to make sure
-    # the starting message_media is always greater than last 30 days to prevent
+    # the we try to sync medias which are not older than last 30 days to prevent
     # rate-limiting errors from gupshup.
 
     data =
@@ -92,6 +86,7 @@ defmodule Glific.GCS.GcsWorker do
       |> limit(^limit)
       |> check_phase(organization_id, phase)
       |> Repo.all()
+      |> IO.inspect()
 
     max_id = if is_list(data), do: List.last(data), else: message_media_id
 
@@ -415,5 +410,16 @@ defmodule Glific.GCS.GcsWorker do
     |> where([mm], mm.id == ^media["id"])
     |> update([mm], set: [error: ^error])
     |> Repo.update_all([])
+  end
+
+  # For unsynced phase, every night we start syncing the media from the oldest
+  # unsynced media_id, so that we make sure we don't skip unsynced files at all
+  @spec get_unsynced_media_id(GcsJob.t(), non_neg_integer()) :: non_neg_integer()
+  defp get_unsynced_media_id(gcs_job, organization_id) do
+    if DateTime.diff(DateTime.utc_now(), gcs_job.updated_at, :hour) >= @nightly_interval do
+      GCS.get_first_unsynced_file(organization_id)
+    else
+      gcs_job.message_media_id
+    end
   end
 end
