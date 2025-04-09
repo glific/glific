@@ -8,7 +8,6 @@ defmodule Glific.Providers.Gupshup.ApiClient do
 
   @gupshup_msg_url "https://api.gupshup.io/wa/api/v1"
   @gupshup_api_url "https://api.gupshup.io/sm/api/v1"
-  @gupshup_temp_url "https://api.gupshup.io/wa/app/"
 
   use Tesla
   # you can add , log_level: :debug to the below if you want debugging info
@@ -40,27 +39,15 @@ defmodule Glific.Providers.Gupshup.ApiClient do
       bsp_credentials = organization.services["bsp"]
 
       with false <- is_nil(bsp_credentials.secrets["api_key"]),
-           false <- is_nil(bsp_credentials.secrets["api_key"]) do
+           false <- is_nil(bsp_credentials.secrets["app_name"]) do
         api_key = bsp_credentials.secrets["api_key"]
         app_name = bsp_credentials.secrets["app_name"]
-        app_id = bsp_credentials.secrets["app_id"]
-        {:ok, %{api_key: api_key, app_name: app_name, app_id: app_id}}
+        {:ok, %{api_key: api_key, app_name: app_name}}
       else
         _ ->
           {:error,
            "Please check your credential settings and ensure you have added the API Key and App Name also"}
       end
-    end
-  end
-
-  @doc """
-  Fetching HSM templates for an organization
-  """
-  @spec get_templates(non_neg_integer()) :: Tesla.Env.result() | {:error, String.t()}
-  def get_templates(org_id) do
-    with {:ok, credentials} <- get_credentials(org_id) do
-      template_url = @gupshup_temp_url <> credentials.app_id <> "/template"
-      gupshup_get(template_url, credentials.api_key)
     end
   end
 
@@ -80,8 +67,6 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   """
   @spec optin_contact(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
   def optin_contact(org_id, payload) do
-    get_credentials(org_id)
-
     with {:ok, credentials} <- get_credentials(org_id) do
       url = @gupshup_api_url <> "/app/opt/in/" <> credentials.app_name
       gupshup_post(url, payload, credentials.api_key)

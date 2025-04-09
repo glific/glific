@@ -30,7 +30,6 @@ defmodule Glific.Providers.Gupshup.Template do
     Messages.MessageMedia,
     Partners,
     Partners.Organization,
-    Providers.Gupshup.ApiClient,
     Providers.Gupshup.PartnerAPI,
     Repo,
     Settings.Language,
@@ -390,7 +389,7 @@ defmodule Glific.Providers.Gupshup.Template do
     organization = Partners.organization(org_id)
 
     with {:ok, response} <-
-           ApiClient.get_templates(org_id),
+           PartnerAPI.get_templates(org_id),
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
       response_data["templates"]

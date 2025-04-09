@@ -9,7 +9,6 @@ defmodule Glific.PartnersTest do
     Partners,
     Partners.Credential,
     Partners.Provider,
-    Providers.Gupshup.ApiClient,
     Providers.Gupshup.PartnerAPI,
     Repo,
     Seeds.SeedsDev
@@ -219,15 +218,45 @@ defmodule Glific.PartnersTest do
       org = SeedsDev.seed_organizations()
 
       Tesla.Mock.mock(fn
-        %{method: :get} ->
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
           %Tesla.Env{
             status: 200,
-            body: "{\"status\":\"success\",\"templates\":[]}"
+            body:
+              Jason.encode!(%{
+                status: "success",
+                data: %{
+                  token: "sk_test_partner_token"
+                }
+              })
           }
+
+        %{method: :get, url: url} ->
+          cond do
+            String.contains?(url, "/token") ->
+              %Tesla.Env{
+                status: 200,
+                body:
+                  Jason.encode!(%{
+                    partner_app_token: "sk_test_partner_app_token"
+                  })
+              }
+
+            String.contains?(url, "/templates") ->
+              %Tesla.Env{
+                status: 200,
+                body:
+                  Jason.encode!(%{
+                    status: "success",
+                    templates: []
+                  })
+              }
+
+            true ->
+              raise "Unexpected GET request to: #{url}"
+          end
       end)
 
-      {:ok, response} = ApiClient.get_templates(org.id)
-
+      {:ok, response} = PartnerAPI.get_templates(org.id)
       decoded_body = Jason.decode!(response.body)
 
       assert decoded_body["status"] == "success"
