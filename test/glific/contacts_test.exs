@@ -1524,13 +1524,13 @@ defmodule Glific.ContactsTest do
     end
   end
 
-  test "import_contact/3 with valid data from file logs language change",
+  test "import_contact/3 logs language change for a contact if language exists",
        attrs do
     {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
     file = get_tmp_file()
 
     [
-      ~w(name phone Language opt_in collection),
+      ~w(name phone language opt_in collection),
       ["test", "#{contact.phone}", "hindi", @optin_date, "collection"]
     ]
     |> CSV.encode()
@@ -1554,6 +1554,39 @@ defmodule Glific.ContactsTest do
     [history | _tail] =
       Contacts.list_contact_history(Map.merge(attrs, %{filter: %{contact_id: contact.id}}))
 
-    assert history.event_label == "Value for language is updated to hindi"
+    assert history.event_label == "Changed contact language to Hindi, via import."
+  end
+
+  test "import_contact/3 logs language change for a contact if language doesn't exists",
+       attrs do
+    {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+    file = get_tmp_file()
+
+    [
+      ~w(name phone language opt_in collection),
+      ["test", "#{contact.phone}", "french", @optin_date, "collection"]
+    ]
+    |> CSV.encode()
+    |> Enum.each(&IO.write(file, &1))
+
+    [organization | _] = Partners.list_organizations()
+    {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+    user = Map.put(user, :roles, [:glific_admin])
+
+    Import.import_contacts(
+      organization.id,
+      %{user: user, collection: "collection", type: :import_contact},
+      file_path: get_tmp_path()
+    )
+
+    assert_enqueued(worker: ImportWorker, prefix: "global")
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default, with_scheduled: true)
+
+    [history | _tail] =
+      Contacts.list_contact_history(Map.merge(attrs, %{filter: %{contact_id: contact.id}}))
+
+    assert history.event_label == "Changed contact language to English, via import."
   end
 end
