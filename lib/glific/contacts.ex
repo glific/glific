@@ -1051,6 +1051,13 @@ defmodule Glific.Contacts do
     %{name: sender_name}
   end
 
+  defp get_contact_update_attrs(
+         %Contact{contact_type: "WABA"} = _contact,
+         %{contact_type: "WA"} = _sender
+       ) do
+    %{contact_type: "WABA+WA"}
+  end
+
   defp get_contact_update_attrs(%Contact{}, _), do: nil
 
   @doc """

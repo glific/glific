@@ -268,10 +268,8 @@ defmodule Glific.Communications.GroupMessage do
       |> Repo.one!()
 
     contact_attrs = %{
-      name: nil,
       phone: phone,
       contact_type: "WA",
-      wa_group_id: context_message.wa_group_id,
       organization_id: org_id
     }
 
