@@ -31,7 +31,7 @@ defmodule Glific.GcsWorkerTest do
 
     with_mock(
       Goth.Token,
-      [],
+      [:passthrough],
       fetch: fn _url ->
         {:error, RuntimeError.exception(err_response)}
       end

@@ -62,7 +62,7 @@ defmodule Glific.Dialogflow.SessionsTest do
   test "detect_intent/2 will add the message to queue" do
     with_mock(
       Goth.Token,
-      [],
+      [:passthrough],
       fetch: fn _url ->
         {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
       end

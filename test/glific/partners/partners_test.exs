@@ -1112,7 +1112,7 @@ defmodule Glific.PartnersTest do
          %{organization_id: organization_id} = _attrs do
       with_mock(
         Goth.Token,
-        [],
+        [:passthrough],
         fetch: fn _url ->
           {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
         end
@@ -1146,7 +1146,7 @@ defmodule Glific.PartnersTest do
          %{organization_id: organization_id} = _attrs do
       with_mock(
         Goth.Token,
-        [],
+        [:passthrough],
         fetch: fn _url ->
           {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
         end
