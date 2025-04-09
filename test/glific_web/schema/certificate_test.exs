@@ -209,7 +209,7 @@ defmodule GlificWeb.Schema.CertificateTest do
 
     with_mock(
       Goth.Token,
-      [],
+      [:passthrough],
       fetch: fn _url ->
         {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
       end
@@ -248,7 +248,7 @@ defmodule GlificWeb.Schema.CertificateTest do
 
     with_mock(
       Goth.Token,
-      [],
+      [:passthrough],
       fetch: fn _url ->
         {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
       end
@@ -312,7 +312,7 @@ defmodule GlificWeb.Schema.CertificateTest do
 
     with_mock(
       Goth.Token,
-      [],
+      [:passthrough],
       fetch: fn _url ->
         {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
       end
@@ -380,7 +380,7 @@ defmodule GlificWeb.Schema.CertificateTest do
 
     with_mock(
       Goth.Token,
-      [],
+      [:passthrough],
       fetch: fn _url ->
         {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
       end
@@ -453,7 +453,7 @@ defmodule GlificWeb.Schema.CertificateTest do
 
     with_mock(
       Goth.Token,
-      [],
+      [:passthrough],
       fetch: fn _url ->
         {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
       end
@@ -530,7 +530,7 @@ defmodule GlificWeb.Schema.CertificateTest do
 
     with_mock(
       Goth.Token,
-      [],
+      [:passthrough],
       fetch: fn _url ->
         {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
       end
@@ -624,7 +624,7 @@ defmodule GlificWeb.Schema.CertificateTest do
 
     with_mock(
       Goth.Token,
-      [],
+      [:passthrough],
       fetch: fn _url ->
         {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
       end
@@ -698,7 +698,7 @@ defmodule GlificWeb.Schema.CertificateTest do
 
     with_mock(
       Goth.Token,
-      [],
+      [:passthrough],
       fetch: fn _url ->
         {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
       end
