@@ -7,6 +7,9 @@ defmodule Glific.GCS do
   require Logger
   import Ecto.Query
 
+  alias Glific.Partners.Credential
+  alias Glific.Partners.Organization
+
   alias Glific.{
     GCS.GcsJob,
     Messages.Message,
@@ -217,6 +220,32 @@ defmodule Glific.GCS do
             {:error, error}
         end
     end
+  end
+
+  @doc """
+  Sending a weekly gcs medi sync report
+  """
+  def send_internal_media_sync_report() do
+    get_active_gcs_orgs =
+      Credential
+      |> where([c], c.provider == 6 and c.is_active == true)
+      |> select([c], c.organization_id)
+
+    media_sync_report =
+      MessageMedia
+      |> join(:left, [m], orgs in Organization, as: :orgs, on: m.organization_id == orgs.id)
+      |> where([m, _orgs], m.inserted_at >= fragment("NOW() - INTERVAL '7 day'"))
+      |> where([m, _orgs], m.inserted_at < fragment("NOW()"))
+      |> where([m, orgs], m.organization_id in subquery(get_active_gcs_orgs))
+      |> select([m, orgs], %{
+        name: orgs.name,
+        organization_id: m.organization_id,
+        all_files: fragment("CASE WHEN ? = 'inbound' THEN 1", m.flow),
+        unsynced_files:
+          fragment("CASE WHEN ? = 'inbound' AND ? IS NULL THEN 1", m.flow, m.gcs_url)
+      })
+      |> order_by([m, orgs], [m.organization_id, orgs.name])
+
   end
 
   @spec do_enable_bucket_logs(String.t(), String.t(), String.t()) ::
