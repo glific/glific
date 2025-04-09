@@ -19,7 +19,7 @@ defmodule Glific.Clients.CommonWebhook do
   require Logger
 
   @doc """
-  Create a webhook with different signatures, so we can easily implement
+  Create a webhook with different signatures along with header, so we can easily implement
   additional functionality as needed
   """
   @spec webhook(String.t(), map(), list()) :: map()
@@ -83,6 +83,10 @@ defmodule Glific.Clients.CommonWebhook do
 
   def webhook(function, fields, _headers), do: webhook(function, fields)
 
+  @doc """
+  Create a webhook with different signatures, so we can easily implement
+  additional functionality as needed
+  """
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_chat_gpt", fields) do
     with {:ok, fields} <- parse_chatgpt_fields(fields),

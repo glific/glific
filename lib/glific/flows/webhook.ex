@@ -274,6 +274,7 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
+  @spec do_action(String.t(), String.t(), map(), list()) :: any
   defp do_action("post", url, body, headers),
     do: Tesla.post(url, body, headers: headers)
 
