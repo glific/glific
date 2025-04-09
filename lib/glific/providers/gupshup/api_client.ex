@@ -39,7 +39,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
       bsp_credentials = organization.services["bsp"]
 
       with false <- is_nil(bsp_credentials.secrets["api_key"]),
-           false <- is_nil(bsp_credentials.secrets["api_key"]) do
+           false <- is_nil(bsp_credentials.secrets["app_name"]) do
         api_key = bsp_credentials.secrets["api_key"]
         app_name = bsp_credentials.secrets["app_name"]
         {:ok, %{api_key: api_key, app_name: app_name}}
@@ -67,8 +67,6 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   """
   @spec optin_contact(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
   def optin_contact(org_id, payload) do
-    get_credentials(org_id)
-
     with {:ok, credentials} <- get_credentials(org_id) do
       url = @gupshup_api_url <> "/app/opt/in/" <> credentials.app_name
       gupshup_post(url, payload, credentials.api_key)
