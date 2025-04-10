@@ -1,11 +1,11 @@
 defmodule Glific.Flows.CommonWebhookTest do
-  alias Glific.Fixtures
   use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
     Certificates.CertificateTemplate,
     Clients.CommonWebhook,
+    Fixtures,
     Messages,
     Partners,
     Partners.Provider,
