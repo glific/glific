@@ -7,6 +7,9 @@ defmodule Glific.GCS do
   require Logger
   import Ecto.Query
 
+  alias Glific.Partners.Saas
+  alias Glific.Communications.Mailer
+  alias Glific.Mails.MediaSyncMail
   alias Glific.Partners.Credential
   alias Glific.Partners.Organization
 
@@ -223,29 +226,21 @@ defmodule Glific.GCS do
   end
 
   @doc """
-  Sending a weekly gcs medi sync report
+  Sending a weekly gcs media sync report
+
+  We take the data from the last week.
   """
   def send_internal_media_sync_report() do
-    get_active_gcs_orgs =
-      Credential
-      |> where([c], c.provider == 6 and c.is_active == true)
-      |> select([c], c.organization_id)
+    media_sync_data = generate_media_sync_data()
 
-    media_sync_report =
-      MessageMedia
-      |> join(:left, [m], orgs in Organization, as: :orgs, on: m.organization_id == orgs.id)
-      |> where([m, _orgs], m.inserted_at >= fragment("NOW() - INTERVAL '7 day'"))
-      |> where([m, _orgs], m.inserted_at < fragment("NOW()"))
-      |> where([m, orgs], m.organization_id in subquery(get_active_gcs_orgs))
-      |> select([m, orgs], %{
-        name: orgs.name,
-        organization_id: m.organization_id,
-        all_files: fragment("CASE WHEN ? = 'inbound' THEN 1", m.flow),
-        unsynced_files:
-          fragment("CASE WHEN ? = 'inbound' AND ? IS NULL THEN 1", m.flow, m.gcs_url)
-      })
-      |> order_by([m, orgs], [m.organization_id, orgs.name])
-
+    with {:error, err} <-
+           MediaSyncMail.new_mail(media_sync_data)
+           |> Mailer.send(%{
+             category: "media_sync_report",
+             organization_id: Saas.organization_id()
+           }) do
+      Logger.error("Sending gcs media sync report failed due to #{inspect(err)}")
+    end
   end
 
   @spec do_enable_bucket_logs(String.t(), String.t(), String.t()) ::
@@ -277,5 +272,27 @@ defmodule Glific.GCS do
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  @spec generate_media_sync_data :: list(map())
+  defp generate_media_sync_data do
+    get_active_gcs_orgs =
+      Credential
+      |> where([c], c.provider == 6 and c.is_active == true)
+      |> select([c], c.organization_id)
+
+    MessageMedia
+    |> join(:left, [m], orgs in Organization, as: :orgs, on: m.organization_id == orgs.id)
+    |> where([m, _orgs], m.inserted_at >= fragment("NOW() - INTERVAL '7 day'"))
+    |> where([m, _orgs], m.inserted_at < fragment("NOW()"))
+    |> where([m, orgs], m.organization_id in subquery(get_active_gcs_orgs))
+    |> select([m, orgs], %{
+      name: orgs.name,
+      organization_id: m.organization_id,
+      all_files: fragment("CASE WHEN ? = 'inbound' THEN 1", m.flow),
+      unsynced_files: fragment("CASE WHEN ? = 'inbound' AND ? IS NULL THEN 1", m.flow, m.gcs_url)
+    })
+    |> order_by([m, orgs], [m.organization_id, orgs.name])
+    |> Repo.all()
   end
 end
