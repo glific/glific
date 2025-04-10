@@ -9,6 +9,7 @@ defmodule Glific.Communications.GroupMessage do
     Communications,
     Contacts,
     Contacts.Contact,
+    Groups.ContactWAGroups,
     Groups.WAGroups,
     Messages,
     Repo,
@@ -275,6 +276,13 @@ defmodule Glific.Communications.GroupMessage do
 
     {:ok, contact} =
       Contacts.maybe_create_contact(contact_attrs)
+
+    {:ok, _contact_wa_group} =
+      ContactWAGroups.create_contact_wa_group(%{
+        contact_id: contact.id,
+        wa_group_id: context_message.wa_group_id,
+        organization_id: org_id
+      })
 
     attrs =
       %{

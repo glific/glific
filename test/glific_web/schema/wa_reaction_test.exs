@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.WaReactionTest do
 
   alias Glific.{
     Contacts.Contact,
+    Groups.ContactWAGroup,
     Fixtures,
     Seeds.SeedsDev,
     WAGroup.WAMessage
@@ -138,23 +139,24 @@ defmodule GlificWeb.Schema.WaReactionTest do
   end
 
   test "creates a contact when reacting to a message with a non-existent contact", user do
-    contact = Fixtures.contact_fixture(organization_id: user.organization_id)
+    org_id = user.organization_id
+    contact = Fixtures.contact_fixture(organization_id: org_id)
 
     wa_phone =
       Fixtures.wa_managed_phone_fixture(%{
-        organization_id: user.organization_id,
+        organization_id: org_id,
         contact_id: contact.id
       })
 
     wa_grp =
       Fixtures.wa_group_fixture(%{
-        organization_id: user.organization_id,
+        organization_id: org_id,
         wa_managed_phone_id: wa_phone.id
       })
 
     wa_message =
       Fixtures.wa_message_fixture(%{
-        organization_id: user.organization_id,
+        organization_id: org_id,
         wa_managed_phone_id: wa_phone.id,
         wa_group_id: wa_grp.id
       })
@@ -176,9 +178,12 @@ defmodule GlificWeb.Schema.WaReactionTest do
         "type" => "ack"
       }
 
-    assert :ok = MessageEventController.update_statuses(payload, user.organization_id)
+    assert :ok = MessageEventController.update_statuses(payload, org_id)
     contact = Repo.get_by(Contact, %{phone: "919425010449"})
-    assert contact != nil
+    contact_wa_group = Repo.get_by(ContactWAGroup, %{contact_id: contact.id})
 
+    assert contact != nil
+    assert contact_wa_group.wa_group_id == wa_grp.id
+    assert contact_wa_group.contact_id == contact.id
   end
 end
