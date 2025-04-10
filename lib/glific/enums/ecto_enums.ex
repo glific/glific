@@ -122,3 +122,9 @@ defenum(
   :import_contacts_type_enum,
   Glific.Enums.import_contacts_type_const()
 )
+
+defenum(
+  Glific.Enums.CertificateTemplateType,
+  :certificate_template_type_enum,
+  Glific.Enums.certificate_template_type_const()
+)
