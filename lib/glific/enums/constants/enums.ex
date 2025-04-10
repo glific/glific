@@ -105,6 +105,11 @@ defmodule Glific.Enums.Constants do
         # force suspend accounts in case of payment defaulting
         :forced_suspension
       ]
+
+      # types of template we can use for custom certificates
+      @certificate_template_type_const [
+        :slides
+      ]
     end
   end
 end
