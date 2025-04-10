@@ -230,7 +230,7 @@ defmodule Glific.GCS do
 
   We take the data from the last week.
   """
-  @spec send_internal_media_sync_report :: {:ok, map()} | {:error, any()}
+  @spec send_internal_media_sync_report :: :ok
   def send_internal_media_sync_report do
     media_sync_data = generate_media_sync_data()
 
@@ -242,6 +242,8 @@ defmodule Glific.GCS do
            }) do
       Logger.error("Sending gcs media sync report failed due to #{inspect(err)}")
     end
+
+    :ok
   end
 
   @spec do_enable_bucket_logs(String.t(), String.t(), String.t()) ::
