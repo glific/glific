@@ -422,7 +422,7 @@ defmodule Glific.GCS.GcsWorker do
   @spec get_unsynced_media_id(GcsJob.t(), non_neg_integer()) :: non_neg_integer()
   defp get_unsynced_media_id(gcs_job, organization_id) do
     if DateTime.diff(DateTime.utc_now(), gcs_job.updated_at, :hour) >= @nightly_interval_hrs do
-      GCS.get_first_unsynced_file(organization_id) |> IO.inspect()
+      GCS.get_first_unsynced_file(organization_id)
     else
       gcs_job.message_media_id
     end

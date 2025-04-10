@@ -292,7 +292,7 @@ defmodule Glific.GCS do
       all_files: fragment("CASE WHEN ? = 'inbound' THEN 1", m.flow),
       unsynced_files: fragment("CASE WHEN ? = 'inbound' AND ? IS NULL THEN 1", m.flow, m.gcs_url)
     })
-    |> order_by([m, orgs], [m.organization_id, orgs.name])
+    |> group_by([m, orgs], [m.organization_id, orgs.name])
     |> Repo.all()
   end
 end
