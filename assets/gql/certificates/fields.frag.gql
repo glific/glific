@@ -1,0 +1,12 @@
+fragment CertificateTemplateFields on CertificateTemplateResult{
+    errors {
+      key
+      message
+    }
+    certificateTemplate {
+      id
+      label
+      url
+      description
+    }
+  }

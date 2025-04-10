@@ -68,6 +68,12 @@ defmodule Glific.Fixtures do
     WaPoll
   }
 
+  @valid_attrs %{
+    flow_id: 1,
+    flow_uuid: Ecto.UUID.generate(),
+    uuid_map: %{},
+    node_uuid: Ecto.UUID.generate()
+  }
   @doc """
   temp function for test to get org id. use sparingly
   """
@@ -1325,5 +1331,23 @@ defmodule Glific.Fixtures do
     |> Map.merge(attrs)
     |> WaPoll.create_wa_poll()
     |> then(fn {:ok, wa_poll} -> wa_poll end)
+  end
+
+  @doc false
+  @spec wa_flow_context_fixture(map()) :: FlowContext.t()
+  def wa_flow_context_fixture(attrs \\ %{}) do
+    wa_phone = wa_managed_phone_fixture(attrs)
+    wa_group = wa_group_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
+
+    {:ok, flow_context} =
+      attrs
+      |> Map.put(:wa_group_id, wa_group.id)
+      |> Map.put(:organization_id, wa_group.organization_id)
+      |> Enum.into(@valid_attrs)
+      |> FlowContext.create_flow_context()
+
+    flow_context
+    |> Repo.preload(:wa_group)
+    |> Repo.preload(:flow)
   end
 end
