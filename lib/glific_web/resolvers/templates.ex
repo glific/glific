@@ -3,8 +3,15 @@ defmodule GlificWeb.Resolvers.Templates do
   Templates Resolver which sits between the GraphQL schema and Glific Templates Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
+  require Logger
 
-  alias Glific.{Repo, Templates, Templates.SessionTemplate}
+  alias Glific.{
+    Repo,
+    Templates,
+    Templates.SessionTemplate,
+    Templates.TemplateWorker,
+    Notifications
+  }
 
   @doc """
   Get a specific session template by id
@@ -114,13 +121,31 @@ defmodule GlificWeb.Resolvers.Templates do
   @doc """
   Sync hsm with bsp
   """
-
   @spec sync_hsm_template(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
+          {:ok, :queued} | {:error, String.t()}
   def sync_hsm_template(_, _, %{context: %{current_user: user}}) do
-    case Templates.sync_hsms_from_bsp(user.organization_id) do
-      :ok -> {:ok, %{message: "successful"}}
-      {:error, error} -> {:error, error}
+    queue_hsm_sync(user.organization_id)
+  end
+
+  @spec queue_hsm_sync(non_neg_integer()) :: {:ok, :queued} | {:error, String.t()}
+  defp queue_hsm_sync(organization_id) do
+    args = %{"organization_id" => organization_id, "sync_hsm" => true}
+
+    case Oban.insert(TemplateWorker.new(args)) do
+      {:ok, _job} ->
+        Notifications.create_notification(%{
+          category: "Session Template",
+          message: "Syncing of HSM templates has started in the background.",
+          severity: Notifications.types().info,
+          organization_id: organization_id,
+          entity: %{Provider: "Gupshup"}
+        })
+
+        {:ok, %{message: "successful"}}
+
+      {:error, reason} ->
+        Logger.error("Failed to queue sync job: #{inspect(reason)}")
+        {:error, "Failed to queue sync job: #{inspect(reason)}"}
     end
   end
 
