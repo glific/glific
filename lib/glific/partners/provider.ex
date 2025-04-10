@@ -62,6 +62,11 @@ defmodule Glific.Partners.Provider do
     A centralize function to get the currently active provider module.
     As this point of time we can not construct this module name dynamically
     that's why these are static for now.
+
+    ## Examples
+
+      iex> Glific.Partners.Provider.bsp_module(1, :test)
+      ** (ArgumentError) could not load module Glific.Providers.Gupshup due to reason :nofile
   """
   @spec bsp_module(binary | non_neg_integer, any) :: any()
   def bsp_module(org_id, :template) do
