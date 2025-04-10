@@ -1,14 +1,15 @@
 defmodule Glific.GcsWorkerTest do
-  alias Glific.Jobs
-  alias Glific.GCS
-  alias Glific.Repo
-  alias Glific.GCS.GcsWorker
-  alias Glific.Fixtures
   use GlificWeb.ConnCase
   use Oban.Pro.Testing, repo: Glific.Repo
   import Mock
+  import Ecto.Query
 
   alias Glific.{
+    Fixtures,
+    GCS,
+    GCS.GcsWorker,
+    Jobs,
+    Mails.MailLog,
     Partners,
     Seeds.SeedsDev
   }
@@ -163,7 +164,7 @@ defmodule Glific.GcsWorkerTest do
         })
         |> Repo.update()
 
-      _media_ids =
+      media_ids =
         for _i <- 0..5 do
           Fixtures.message_media_fixture(%{
             organization_id: attrs.organization_id
@@ -205,6 +206,26 @@ defmodule Glific.GcsWorkerTest do
 
       assert %{success: 0, failure: 4, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :gcs)
+
+      # Tests for adding gcs_error for message_media
+      [media_id | _] = media_ids
+      media = %{"id" => media_id.id, "sync_phase" => "unsynced"}
+      assert {1, _} = GcsWorker.add_message_media_error(media, "GCSWORKER failed")
+
+      media = %{"id" => media_id.id, "sync_phase" => "incremental"}
+      assert is_nil(GcsWorker.add_message_media_error(media, "GCSWORKER failed"))
+
+      # Tests for generating sync report data
+      assert [%{name: "Glific", all_files: 6, unsynced_files: 6}] = GCS.generate_media_sync_data()
+      assert {:ok, _} = GCS.send_internal_media_sync_report()
+
+      assert %MailLog{content: content} =
+               MailLog
+               |> where([ml], ml.category == "media_sync_report")
+               |> Repo.one()
+
+      # We ignore CCing support for this
+      refute String.contains?(content["data"], ["support@glific.org"])
     end
   end
 end

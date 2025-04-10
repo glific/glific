@@ -9,6 +9,7 @@ defmodule Glific.GCS.GcsWorker do
 
   import Ecto.Query
   require Logger
+  use Publicist
 
   use Oban.Worker,
     queue: :gcs,
@@ -404,14 +405,16 @@ defmodule Glific.GCS.GcsWorker do
     end
   end
 
+  # Updates the message_media with the gcs sync error
+
   # We are only adding error reason to messages_media table on unsynced phase
   # Since the incremental phase runs every min during peak hrs + It becomes critical
   # to log only when the media sync fails even on unsynced phase
   @spec add_message_media_error(map(), String.t()) :: {non_neg_integer(), nil | [term()]} | nil
-  defp add_message_media_error(%{sync_phase: "unsynced"} = media, error) do
+  defp add_message_media_error(%{"sync_phase" => "unsynced"} = media, error) do
     MessageMedia
     |> where([mm], mm.id == ^media["id"])
-    |> update([mm], set: [error: ^error])
+    |> update([mm], set: [gcs_error: ^error])
     |> Repo.update_all([])
   end
 
@@ -419,7 +422,7 @@ defmodule Glific.GCS.GcsWorker do
 
   # For unsynced phase, every night we start syncing the media from the oldest
   # unsynced media_id, so that we make sure we don't skip unsynced files at all
-  @spec get_unsynced_media_id(GcsJob.t(), non_neg_integer()) :: non_neg_integer()
+  @spec get_unsynced_media_id(GcsJob.t() | nil, non_neg_integer()) :: non_neg_integer()
   defp get_unsynced_media_id(gcs_job, organization_id) do
     if DateTime.diff(DateTime.utc_now(), gcs_job.updated_at, :hour) >= @nightly_interval_hrs do
       GCS.get_first_unsynced_file(organization_id)

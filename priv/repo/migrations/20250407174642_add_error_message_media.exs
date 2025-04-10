@@ -3,7 +3,7 @@ defmodule Glific.Repo.Migrations.AddErrorMessageMedia do
 
   def change do
     alter table(:messages_media) do
-      add :error, :text
+      add :gcs_error, :text, comment: "Failure reason while trying to sync to gcs"
     end
   end
 end

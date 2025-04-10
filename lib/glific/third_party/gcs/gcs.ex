@@ -6,18 +6,18 @@ defmodule Glific.GCS do
   @behaviour Waffle.Storage.Google.Token.Fetcher
   require Logger
   import Ecto.Query
-
-  alias Glific.Partners.Saas
-  alias Glific.Communications.Mailer
-  alias Glific.Mails.MediaSyncMail
-  alias Glific.Partners.Credential
-  alias Glific.Partners.Organization
+  use Publicist
 
   alias Glific.{
+    Communications.Mailer,
     GCS.GcsJob,
+    Mails.MediaSyncMail,
     Messages.Message,
     Messages.MessageMedia,
     Partners,
+    Partners.Credential,
+    Partners.Organization,
+    Partners.Saas,
     Repo
   }
 
@@ -230,7 +230,8 @@ defmodule Glific.GCS do
 
   We take the data from the last week.
   """
-  def send_internal_media_sync_report() do
+  @spec send_internal_media_sync_report :: {:ok, map()} | {:error, any()}
+  def send_internal_media_sync_report do
     media_sync_data = generate_media_sync_data()
 
     with {:error, err} <-
@@ -278,7 +279,7 @@ defmodule Glific.GCS do
   defp generate_media_sync_data do
     get_active_gcs_orgs =
       Credential
-      |> where([c], c.provider == 6 and c.is_active == true)
+      |> where([c], c.provider_id == 6 and c.is_active == true)
       |> select([c], c.organization_id)
 
     MessageMedia
@@ -289,10 +290,12 @@ defmodule Glific.GCS do
     |> select([m, orgs], %{
       name: orgs.name,
       organization_id: m.organization_id,
-      all_files: fragment("COUNT(CASE WHEN ? = 'inbound' THEN 1)", m.flow),
-      unsynced_files: fragment("COUNT(CASE WHEN ? = 'inbound' AND ? IS NULL THEN 1)", m.flow, m.gcs_url)
+      all_files: fragment("COUNT(CASE WHEN ? = 'inbound' THEN 1 END)", m.flow),
+      unsynced_files:
+        fragment("COUNT(CASE WHEN ? = 'inbound' AND ? IS NULL THEN 1 END)", m.flow, m.gcs_url)
     })
     |> group_by([m, orgs], [m.organization_id, orgs.name])
+    |> limit(100)
     |> Repo.all()
   end
 end

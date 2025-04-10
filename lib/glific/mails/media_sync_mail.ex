@@ -15,7 +15,7 @@ defmodule Glific.Mails.MediaSyncMail do
     subject = "GCS media sync weekly report"
     team = ""
     html_body = to_html(media_sync_data)
-    opts = [is_html: true, team: team, send_to: {"", @internal_dev_mail}, ignore_support: true]
+    opts = [is_html: true, team: team, send_to: {"", @internal_dev_mail}, ignore_cc_support: true]
 
     # Since we are passing send_to explicitly, we don't need an org
     Mailer.common_send(nil, subject, html_body, opts)
