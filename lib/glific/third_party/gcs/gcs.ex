@@ -289,8 +289,8 @@ defmodule Glific.GCS do
     |> select([m, orgs], %{
       name: orgs.name,
       organization_id: m.organization_id,
-      all_files: fragment("CASE WHEN ? = 'inbound' THEN 1", m.flow),
-      unsynced_files: fragment("CASE WHEN ? = 'inbound' AND ? IS NULL THEN 1", m.flow, m.gcs_url)
+      all_files: fragment("COUNT(CASE WHEN ? = 'inbound' THEN 1)", m.flow),
+      unsynced_files: fragment("COUNT(CASE WHEN ? = 'inbound' AND ? IS NULL THEN 1)", m.flow, m.gcs_url)
     })
     |> group_by([m, orgs], [m.organization_id, orgs.name])
     |> Repo.all()
