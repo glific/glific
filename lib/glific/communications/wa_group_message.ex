@@ -9,6 +9,7 @@ defmodule Glific.Communications.GroupMessage do
     Communications,
     Contacts,
     Contacts.Contact,
+    Groups.ContactWAGroups,
     Groups.WAGroups,
     Messages,
     Repo,
@@ -258,8 +259,6 @@ defmodule Glific.Communications.GroupMessage do
     # splitting because we are getting the contact number like 919xxxx22555@c.us this
     [phone | _] = String.split(contact, "@")
 
-    contact = Contacts.get_contact_by_phone!(phone)
-
     context_message =
       WAMessage
       |> where(
@@ -268,6 +267,22 @@ defmodule Glific.Communications.GroupMessage do
           wa_msg.organization_id == ^org_id
       )
       |> Repo.one!()
+
+    contact_attrs = %{
+      phone: phone,
+      contact_type: "WA",
+      organization_id: org_id
+    }
+
+    {:ok, contact} =
+      Contacts.maybe_create_contact(contact_attrs)
+
+    {:ok, _contact_wa_group} =
+      ContactWAGroups.create_contact_wa_group(%{
+        contact_id: contact.id,
+        wa_group_id: context_message.wa_group_id,
+        organization_id: org_id
+      })
 
     attrs =
       %{
