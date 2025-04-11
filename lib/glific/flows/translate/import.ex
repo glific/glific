@@ -32,12 +32,14 @@ defmodule Glific.Flows.Translate.Import do
 
     {:ok, _revision} =
       rows
-      |> collect_by_language(language_keys)
+      |> collect_by_language(language_keys, flow)
       |> merge_with_latest_localization(flow)
       |> Flows.update_flow_localization(flow)
   end
 
-  defp collect_by_language(rows, language_keys) do
+  defp collect_by_language(rows, language_keys, flow) do
+    flow.definition["localization"]
+
     rows
     |> Enum.reduce(
       %{},
@@ -49,8 +51,19 @@ defmodule Glific.Flows.Translate.Import do
         |> Enum.reduce(
           acc,
           fn {translation, lang_key}, acc ->
-            Map.update(acc, lang_key, [{uuid, %{text: [translation]}}], fn value ->
-              [{uuid, %{text: [translation]}} | value]
+            localized = Map.get(flow.definition["localization"], lang_key, %{})
+            translation_data = Map.get(localized, uuid, %{})
+
+            text = [translation]
+            attachments = Map.get(translation_data, "attachments", [])
+
+            data =
+              if attachments != [],
+                do: %{"text" => text, "attachments" => attachments},
+                else: %{"text" => text}
+
+            Map.update(acc, lang_key, %{uuid => data}, fn value ->
+              Map.put(value, uuid, data)
             end)
           end
         )
@@ -59,8 +72,7 @@ defmodule Glific.Flows.Translate.Import do
     |> Enum.reduce(
       %{},
       fn {k, v}, acc ->
-        # convert tuples to a map for json
-        Map.put(acc, k, Map.new(v))
+        Map.put(acc, k, v)
       end
     )
   end

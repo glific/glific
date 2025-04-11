@@ -1,0 +1,76 @@
+{
+    "_ui": {
+        "nodes": {
+            "85e897d2-49e4-42b7-8574-8dc2aee97121": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 80,
+                    "left": 140
+                }
+            }
+        },
+        "languages": [
+            {
+                "eng": "English"
+            },
+            {
+                "spa": "Spanish"
+            }
+        ]
+    },
+    "name": "Media flow",
+    "type": "message",
+    "uuid": "0b2d5b19-bd94-44e0-b2e6-0ea7d7033de5",
+    "vars": [
+        "0b2d5b19-bd94-44e0-b2e6-0ea7d7033de5"
+    ],
+    "nodes": [
+        {
+            "uuid": "85e897d2-49e4-42b7-8574-8dc2aee97121",
+            "exits": [
+                {
+                    "uuid": "37a545df-825b-4611-a7fe-b17dfb62c430",
+                    "destination_uuid": null
+                }
+            ],
+            "actions": [
+                {
+                    "text": "This is the flow to test the media attachement",
+                    "type": "send_msg",
+                    "uuid": "a970d5d9-2951-48dc-8c66-ee6833c4b21e",
+                    "labels": [],
+                    "attachments": [
+                        "image:https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg"
+                    ],
+                    "quick_replies": []
+                }
+            ]
+        }
+    ],
+    "language": "eng",
+    "localization": {
+        "en": {
+            "a970d5d9-2951-48dc-8c66-ee6833c4b21e": {
+                "text": [
+                    "This is the flow to test the media attachement"
+                ]
+            }
+        },
+        "hi": {
+            "a970d5d9-2951-48dc-8c66-ee6833c4b21e": {
+                "text": [
+                    "यह मीडिया अटैचमेंट का परीक्षण करने का प्रवाह है"
+                ],
+                "attachments": [
+                    "image:https://fastly.picsum.photos/id/866/200/300.jpg?hmac=rcadCENKh4rD6MAp6V_ma-AyWv641M4iiOpe1RyFHeI"
+                ]
+            },
+            "e319cd39-f764-4680-9199-4cb7da647166": {
+                "text": [
+                    "बाहर तक पहुँचने के लिए धन्यवाद। क्या यह आप के लिए देख रहे हैं- टाइप 1, ग्लिफ़ टाइप 2 के बारे में अधिक जानने के लिए, यदि आप ग्लिफ़ टाइप 3 के लिए शानदार वेबसीइट टाइप 4 से आउटपुट के लिए ऑनबोर्ड होना चाहते हैं"
+                ]
+            }
+        }
+    },
+    "spec_version": "13.2.0"
+}
