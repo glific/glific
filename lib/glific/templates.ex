@@ -411,6 +411,9 @@ defmodule Glific.Templates do
               |> existing_template?(template, organization)
               |> upsert_hsm(template, organization)
 
+            # this check is required,
+            # as is_active field can be updated by graphql API,
+            # and should not be reverted back
             Map.has_key?(db_templates, template["bsp_id"]) ->
               update_hsm(template, organization, @language_map)
 

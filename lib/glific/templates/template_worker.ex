@@ -4,7 +4,6 @@ defmodule Glific.Templates.TemplateWorker do
   """
 
   require Logger
-  alias Glific.Templates
 
   use Oban.Worker,
     queue: :default,
@@ -44,17 +43,6 @@ defmodule Glific.Templates.TemplateWorker do
 
     process_template(template)
     |> Glific.Templates.create_session_template()
-
-    :ok
-  end
-
-  def perform(%Oban.Job{args: %{"organization_id" => org_id}}) do
-    Logger.info("Starting background sync of HSM templates for org #{org_id}")
-
-    case Templates.sync_hsms_from_bsp(org_id) do
-      :ok -> Logger.info("HSM template sync completed successfully")
-      {:error, reason} -> Logger.error("Failed to sync HSM templates: #{reason}")
-    end
 
     :ok
   end
