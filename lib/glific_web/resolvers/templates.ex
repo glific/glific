@@ -3,13 +3,8 @@ defmodule GlificWeb.Resolvers.Templates do
   Templates Resolver which sits between the GraphQL schema and Glific Templates Context API. This layer basically stitches together
   one or more calls to resolve the incoming queries.
   """
-  require Logger
 
-  alias Glific.{
-    Repo,
-    Templates,
-    Templates.SessionTemplate
-  }
+  alias Glific.{Repo, Templates, Templates.SessionTemplate}
 
   @doc """
   Get a specific session template by id
