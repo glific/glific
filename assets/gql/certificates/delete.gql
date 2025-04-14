@@ -1,0 +1,7 @@
+#import "./fields.frag.gql"
+
+mutation deleteCertificateTemplate($id: ID!) {
+  deleteCertificateTemplate(id: $id) {
+    ...CertificateTemplateFields
+  }
+}

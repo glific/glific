@@ -67,4 +67,7 @@ defmodule GlificWeb.Schema.EnumTypes do
     value(:asc)
     value(:desc)
   end
+
+  @desc "The Certificate template Types enum"
+  enum(:certificate_template_type_enum, values: Glific.Enums.certificate_template_type_const())
 end
