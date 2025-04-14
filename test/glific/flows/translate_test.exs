@@ -37,12 +37,8 @@ defmodule Glific.Flows.TranslateTest do
         assert type == "Action"
         assert String.length(uuid) == 36
 
-        if not Enum.member?(
-             ["e319cd39-f764-4680-9199-4cb7da647166", "a970d5d9-2951-48dc-8c66-ee6833c4b21e"],
-             uuid
-           ) do
-          assert dst == "Hindi #{src} English"
-        end
+        if uuid != "e319cd39-f764-4680-9199-4cb7da647166",
+          do: assert(dst == "Hindi #{src} English")
       end
     )
   end

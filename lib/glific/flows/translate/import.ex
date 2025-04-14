@@ -37,44 +37,46 @@ defmodule Glific.Flows.Translate.Import do
       |> Flows.update_flow_localization(flow)
   end
 
+  @spec collect_by_language(list(), list(), map()) :: map()
   defp collect_by_language(rows, language_keys, flow) do
-    flow.definition["localization"]
-
     rows
-    |> Enum.reduce(
-      %{},
-      fn row, acc ->
-        [_type | [uuid | translations]] = row
+    |> Enum.reduce(%{}, fn row, acc ->
+      [_type | [uuid | translations]] = row
 
-        translations
-        |> Enum.zip(language_keys)
-        |> Enum.reduce(
-          acc,
-          fn {translation, lang_key}, acc ->
-            localized = Map.get(flow.definition["localization"], lang_key, %{})
-            translation_data = Map.get(localized, uuid, %{})
+      translations
+      |> Enum.zip(language_keys)
+      |> Enum.reduce(acc, fn {translation, lang_key}, acc ->
+        update_language_map(acc, %{
+          flow: flow,
+          lang_key: lang_key,
+          uuid: uuid,
+          translation: translation
+        })
+      end)
+    end)
+  end
 
-            text = [translation]
-            attachments = Map.get(translation_data, "attachments", [])
+  @spec update_language_map(map(), map()) :: map()
+  defp update_language_map(acc, %{
+         flow: flow,
+         lang_key: lang_key,
+         uuid: uuid,
+         translation: translation
+       }) do
+    localized = Map.get(flow.definition["localization"], lang_key, %{})
+    translation_data = Map.get(localized, uuid, %{})
 
-            data =
-              if attachments != [],
-                do: %{"text" => text, "attachments" => attachments},
-                else: %{"text" => text}
+    text = [translation]
+    attachments = Map.get(translation_data, "attachments", [])
 
-            Map.update(acc, lang_key, %{uuid => data}, fn value ->
-              Map.put(value, uuid, data)
-            end)
-          end
-        )
-      end
-    )
-    |> Enum.reduce(
-      %{},
-      fn {k, v}, acc ->
-        Map.put(acc, k, v)
-      end
-    )
+    data =
+      if attachments != [],
+        do: %{"text" => text, "attachments" => attachments},
+        else: %{"text" => text}
+
+    Map.update(acc, lang_key, %{uuid => data}, fn value ->
+      Map.put(value, uuid, data)
+    end)
   end
 
   # the flow might have changed between when we exported the localization
