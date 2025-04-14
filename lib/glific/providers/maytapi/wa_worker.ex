@@ -98,10 +98,13 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   end
 
   @spec update_credentials(non_neg_integer()) :: :ok | {:error, String.t()}
-  defp update_credentials(org_id) do
-    with :ok <- WAManagedPhones.fetch_wa_managed_phones(org_id),
+  def update_credentials(org_id) do
+    with :ok <- WAManagedPhones.delete_existing_wa_managed_phones(org_id),
+         :ok <- WAManagedPhones.fetch_wa_managed_phones(org_id),
          :ok <- WAGroups.fetch_wa_groups(org_id) do
       WAGroups.set_webhook_endpoint(Partners.organization(org_id))
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
