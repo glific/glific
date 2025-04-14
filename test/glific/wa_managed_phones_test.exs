@@ -259,7 +259,7 @@ defmodule Glific.WAManagedPhonesTest do
 
     assert Repo.get_by(WAManagedPhone, %{id: wa_managed_phone.id},
              organization_id: organization_id
-           ) != nil
+           )
 
     assert WAManagedPhones.delete_existing_wa_managed_phones(organization_id) == :ok
 
