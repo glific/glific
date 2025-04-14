@@ -6,17 +6,85 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.{
     ASR.Bhasini,
     ASR.GoogleASR,
+    Certificates.Certificate,
+    Certificates.CertificateTemplate,
     Contacts,
     Groups.WAGroup,
     OpenAI.ChatGPT,
     Partners,
     Providers.Maytapi,
     Repo,
+    ThirdParty.GoogleSlide.Slide,
     WAGroup.WAManagedPhone,
     WAGroup.WaPoll
   }
 
   require Logger
+
+  @doc """
+  Create a webhook with different signatures along with header, so we can easily implement
+  additional functionality as needed
+  """
+  @spec webhook(String.t(), map(), list()) :: map()
+  def webhook("call_and_wait", fields, headers) do
+    endpoint = fields["endpoint"]
+    {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
+    {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
+    {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
+    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+    signature_payload = %{
+      "organization_id" => organization_id,
+      "flow_id" => flow_id,
+      "contact_id" => contact_id,
+      "timestamp" => timestamp
+    }
+
+    signature =
+      Glific.signature(
+        organization_id,
+        Jason.encode!(signature_payload),
+        signature_payload["timestamp"]
+      )
+
+    organization = Partners.organization(organization_id)
+
+    callback =
+      "https://api.#{organization.shortcode}.glific.com" <>
+        "/webhook/flow_resume?" <>
+        "organization_id=#{organization_id}&" <>
+        "flow_id=#{flow_id}&" <>
+        "contact_id=#{contact_id}&" <>
+        "timestamp=#{timestamp}&" <>
+        "signature=#{signature}"
+
+    payload =
+      fields
+      |> Map.merge(signature_payload)
+      |> Map.put("signature", signature)
+      |> Map.put("callback", callback)
+      |> Jason.encode!()
+
+    endpoint
+    |> Tesla.post(
+      payload,
+      headers: headers,
+      opts: [adapter: [recv_timeout: 300_000]]
+    )
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        response = Jason.decode!(body)
+        Map.merge(%{success: true}, response)
+
+      {:ok, %Tesla.Env{status: _status, body: body}} ->
+        %{success: false, response: body}
+
+      {:error, reason} ->
+        %{success: false, reason: reason}
+    end
+  end
+
+  def webhook(function, fields, _headers), do: webhook(function, fields)
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -247,64 +315,6 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  def webhook("call_and_wait", fields) do
-    endpoint = fields["endpoint"]
-    flow_id = fields["flow_id"] |> String.to_integer()
-    contact_id = fields["contact_id"] |> String.to_integer()
-    organization_id = fields["organization_id"]
-    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-
-    signature_payload = %{
-      "organization_id" => organization_id,
-      "flow_id" => flow_id,
-      "contact_id" => contact_id,
-      "timestamp" => timestamp
-    }
-
-    signature =
-      Glific.signature(
-        organization_id,
-        Jason.encode!(signature_payload),
-        signature_payload["timestamp"]
-      )
-
-    organization = Partners.organization(organization_id)
-
-    callback =
-      "https://api.#{organization.shortcode}.glific.com" <>
-        "/webhook/flow_resume?" <>
-        "organization_id=#{organization_id}&" <>
-        "flow_id=#{flow_id}&" <>
-        "contact_id=#{contact_id}&" <>
-        "timestamp=#{timestamp}&" <>
-        "signature=#{signature}"
-
-    payload =
-      fields
-      |> Map.merge(signature_payload)
-      |> Map.put("signature", signature)
-      |> Map.put("callback", callback)
-      |> Jason.encode!()
-
-    endpoint
-    |> Tesla.post(
-      payload,
-      headers: headers(),
-      opts: [adapter: [recv_timeout: 300_000]]
-    )
-    |> case do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        response = Jason.decode!(body)
-        Map.merge(%{success: true}, response)
-
-      {:ok, %Tesla.Env{status: _status, body: body}} ->
-        %{success: false, response: body}
-
-      {:error, reason} ->
-        %{success: false, reason: reason}
-    end
-  end
-
   # webhook for sending whatsapp group polls in a flow
   def webhook("send_wa_group_poll", fields) do
     with {:ok, fields} <- parse_wa_poll_params(fields),
@@ -335,14 +345,25 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
-
-  defp headers do
-    [
-      {"Content-Type", "application/json"},
-      {"accept", "application/json"}
-    ]
+  def webhook("create_certificate", fields) do
+    with {:ok, parsed_fields} <- parse_certificate_params(fields),
+         {:ok, certificate_template} <- fetch_certificate_template(parsed_fields),
+         {:ok, slide_details} <-
+           Slide.parse_slides_url(certificate_template.url) do
+      Certificate.generate_certificate(
+        parsed_fields,
+        parsed_fields.contact["id"],
+        slide_details.presentation_id,
+        slide_details.page_id
+      )
+    else
+      {:error, reason} ->
+        Logger.error("Error in certificate creation webhook: #{reason}")
+        %{success: false, error: reason}
+    end
   end
+
+  def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
   @spec find_component(list(map()), String.t()) :: String.t()
   defp find_component(components, type) do
@@ -445,6 +466,42 @@ defmodule Glific.Clients.CommonWebhook do
 
       {false, field} ->
         {:error, "#{field} is invalid"}
+    end
+  end
+
+  @spec parse_certificate_params(map()) :: {:ok, map()} | {:error, String.t()}
+  defp parse_certificate_params(fields) do
+    certificate_params_schema = %{
+      certificate_id: [
+        type: :integer,
+        required: true,
+        cast_func: fn value ->
+          {:ok, if(is_binary(value), do: Glific.parse_maybe_integer!(value), else: value)}
+        end
+      ],
+      contact: [type: :map, required: true],
+      replace_texts: [type: :map, required: true],
+      organization_id: [type: :integer, required: true]
+    }
+
+    Tarams.cast(fields, certificate_params_schema) |> Glific.handle_tarams_result()
+  end
+
+  @spec fetch_certificate_template(map()) :: {:ok, CertificateTemplate.t()} | {:error, String.t()}
+  defp fetch_certificate_template(fields) do
+    case Repo.fetch_by(CertificateTemplate, %{
+           id: fields.certificate_id,
+           organization_id: fields.organization_id
+         }) do
+      {:ok, certificate_template} ->
+        {:ok, certificate_template}
+
+      {:error, _reason} ->
+        Logger.error(
+          "Certificate template not found for ID: #{fields.certificate_id} and organization: #{fields.organization_id}"
+        )
+
+        {:error, "Certificate template not found for ID: #{fields.certificate_id}"}
     end
   end
 end
