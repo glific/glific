@@ -23,7 +23,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   @drive_url "https://www.googleapis.com/drive/v3/files"
   @slide_url "https://slides.googleapis.com/v1/presentations"
 
-  @rety_error_codes [429, 501, 502, 503, 504]
+  @retry_error_codes [429, 501, 502, 503, 504]
 
   @spec auth_headers(String.t()) :: list()
   defp auth_headers(token) do
@@ -196,7 +196,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
         delay: 500,
         max_retries: 5,
         should_retry: fn
-          {:ok, %{status: status}}, _, _ when status in @rety_error_codes ->
+          {:ok, %{status: status}}, _, _ when status in @retry_error_codes ->
             true
 
           {:error, reason}, _, _ when reason in [:timeout, :connrefused, :nxdomain] ->
