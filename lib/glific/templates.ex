@@ -423,9 +423,9 @@ defmodule Glific.Templates do
         end)
       end,
       max_concurrency: 5,
-      timeout: 5 * 60 * 1000
+      timeout: 60_000
     )
-    |> Stream.run()
+    |> Enum.to_list()
 
     :ok
   end
@@ -466,8 +466,12 @@ defmodule Glific.Templates do
       SessionTemplate
       |> Repo.fetch_by(%{language_id: language_id, shortcode: template["elementName"]})
 
+    # If the template doesn't have a bsp_id, generate a new UUID for the template.
+    # This ensures that every template has a valid UUID, even if one was not provided.
+    uuid = if is_nil(template["bsp_id"]), do: Ecto.UUID.generate(), else: template["bsp_id"]
+
     session_template
-    |> SessionTemplate.changeset(%{uuid: template["bsp_id"]})
+    |> SessionTemplate.changeset(%{uuid: uuid})
     |> Repo.update()
 
     :ok

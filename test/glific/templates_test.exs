@@ -1429,14 +1429,12 @@ defmodule Glific.TemplatesTest do
     test "update_hsms/1 handles syncing 1000 templates without crashing", attrs do
       templates =
         Enum.map(1..1000, fn i ->
-          uuid = Ecto.UUID.generate()
-
           %{
             "category" => "TICKET_UPDATE",
             "createdOn" => 1_595_904_220_000 + i,
             "data" => "Your ticket no. {{#{i}}}",
             "elementName" => "ticket_update_status_#{i}",
-            "id" => uuid,
+            "id" => Ecto.UUID.generate(),
             "languageCode" => "en",
             "languagePolicy" => "deterministic",
             "master" => false,
@@ -1448,15 +1446,19 @@ defmodule Glific.TemplatesTest do
           }
         end)
 
-      Templates.update_hsms(templates, Partners.organization(attrs.organization_id))
+      Benchee.run(%{
+        "update_hsms" => fn ->
+          Templates.update_hsms(templates, Partners.organization(attrs.organization_id))
+        end
+      })
 
-      new_shortcodes = Enum.map(1..1000, fn i -> "ticket_update_status_#{i}" end)
+      updated_shortcode = Enum.map(1..1000, fn i -> "ticket_update_status_#{i}" end)
 
       count =
         SessionTemplate
         |> where(
           [t],
-          t.organization_id == ^attrs.organization_id and t.shortcode in ^new_shortcodes
+          t.organization_id == ^attrs.organization_id and t.shortcode in ^updated_shortcode
         )
         |> select([t], count(t.id))
         |> Repo.one()
