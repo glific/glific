@@ -139,6 +139,7 @@ defmodule Glific.GCS.GcsWorker do
     query =
       GCS.base_query(organization_id)
       |> where([m], m.id >= ^min_id and m.id <= ^max_id)
+      |> where([m, _msg], is_nil(m.gcs_url))
       |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id, msg.flow_id])
 
     query
