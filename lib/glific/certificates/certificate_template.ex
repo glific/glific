@@ -137,7 +137,8 @@ defmodule Glific.Certificates.CertificateTemplate do
   end
 
   @spec validate_url(Ecto.Changeset.t(), map()) :: Ecto.Changeset.t()
-  defp validate_url(%{changes: changes} = changeset, attrs) when not is_nil(changes.url) do
+  defp validate_url(%{changes: changes} = changeset, attrs)
+       when not is_nil(changes.url) and length(changeset.errors) == 0 do
     url = changeset.changes[:url]
     type = attrs.type
 
