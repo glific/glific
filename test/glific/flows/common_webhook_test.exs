@@ -8,7 +8,6 @@ defmodule Glific.Flows.CommonWebhookTest do
     Fixtures,
     Messages,
     Partners,
-    Partners.Provider,
     Seeds.SeedsDev,
     ThirdParty.GoogleSlide.Slide
   }
