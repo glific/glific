@@ -32,37 +32,51 @@ defmodule Glific.Flows.Translate.Import do
 
     {:ok, _revision} =
       rows
-      |> collect_by_language(language_keys)
+      |> collect_by_language(language_keys, flow)
       |> merge_with_latest_localization(flow)
       |> Flows.update_flow_localization(flow)
   end
 
-  defp collect_by_language(rows, language_keys) do
+  @spec collect_by_language(list(), list(), map()) :: map()
+  defp collect_by_language(rows, language_keys, flow) do
     rows
-    |> Enum.reduce(
-      %{},
-      fn row, acc ->
-        [_type | [uuid | translations]] = row
+    |> Enum.reduce(%{}, fn row, acc ->
+      [_type | [uuid | translations]] = row
 
-        translations
-        |> Enum.zip(language_keys)
-        |> Enum.reduce(
-          acc,
-          fn {translation, lang_key}, acc ->
-            Map.update(acc, lang_key, [{uuid, %{text: [translation]}}], fn value ->
-              [{uuid, %{text: [translation]}} | value]
-            end)
-          end
-        )
-      end
-    )
-    |> Enum.reduce(
-      %{},
-      fn {k, v}, acc ->
-        # convert tuples to a map for json
-        Map.put(acc, k, Map.new(v))
-      end
-    )
+      translations
+      |> Enum.zip(language_keys)
+      |> Enum.reduce(acc, fn {translation, lang_key}, acc ->
+        update_language_map(acc, %{
+          flow: flow,
+          lang_key: lang_key,
+          uuid: uuid,
+          translation: translation
+        })
+      end)
+    end)
+  end
+
+  @spec update_language_map(map(), map()) :: map()
+  defp update_language_map(acc, %{
+         flow: flow,
+         lang_key: lang_key,
+         uuid: uuid,
+         translation: translation
+       }) do
+    localized = Map.get(flow.definition["localization"], lang_key, %{})
+    translation_data = Map.get(localized, uuid, %{})
+
+    text = [translation]
+    attachments = Map.get(translation_data, "attachments", [])
+
+    data =
+      if attachments != [],
+        do: %{"text" => text, "attachments" => attachments},
+        else: %{"text" => text}
+
+    Map.update(acc, lang_key, %{uuid => data}, fn value ->
+      Map.put(value, uuid, data)
+    end)
   end
 
   # the flow might have changed between when we exported the localization
