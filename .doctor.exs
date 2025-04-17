@@ -6,7 +6,8 @@
     GlificWeb.Plugs.AppsignalAbsinthePlug,
     # i have no idea where this is coming from, most likely a bug in doctor
     Inspect.Glific.Users.User,
-    Glific.Users
+    Glific.Users,
+    Glific.Clients
   ],
   ignore_paths: [
     ~r(lib/glific_web/views/.*),
