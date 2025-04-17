@@ -147,6 +147,18 @@ defmodule Glific.WAManagedPhones do
   end
 
   @doc """
+  Deletes the existing WhatsApp data for an org
+  """
+  @spec delete_existing_wa_managed_phones(non_neg_integer()) :: :ok
+  def delete_existing_wa_managed_phones(org_id) do
+    WAManagedPhone
+    |> where([wam], wam.organization_id == ^org_id)
+    |> Repo.delete_all(organization_id: org_id)
+
+    :ok
+  end
+
+  @doc """
   fetches WhatsApp enabled phone added in Maytapi account
   """
   @spec fetch_wa_managed_phones(non_neg_integer()) :: :ok | {:error, String.t()}
@@ -156,41 +168,37 @@ defmodule Glific.WAManagedPhones do
            ApiClient.list_wa_managed_phones(org_id),
          {:ok, response} <- Jason.decode(body),
          {:ok, wa_managed_phones} <- validate_response(response) do
-      WAManagedPhone
-      |> where([wam], wam.organization_id == ^org_id)
-      |> Repo.delete_all()
-
       Enum.each(wa_managed_phones, fn wa_managed_phone ->
-        phone = wa_managed_phone["number"]
-        status = wa_managed_phone["status"]
-        product_id = secrets["product_id"]
-
-        params =
-          %{
-            label: wa_managed_phone["name"],
-            phone: phone,
-            phone_id: wa_managed_phone["id"],
-            product_id: product_id,
-            organization_id: org_id,
-            contact_type: "WA"
-          }
-
-        with {:ok, contact} <- Contacts.maybe_create_contact(params),
-             nil <-
-               Repo.get_by(WAManagedPhone, %{
-                 phone: phone,
-                 organization_id: params.organization_id
-               }) do
-          Map.merge(params, %{contact_id: contact.id, status: status})
-          |> create_wa_managed_phone()
-        end
-
-        {:ok, "success"}
+        insert_wa_managed_phone(wa_managed_phone, org_id, secrets["product_id"])
       end)
+
+      :ok
     else
-      {:error, error} ->
-        {:error, error}
+      {:error, error} -> {:error, error}
     end
+  end
+
+  @spec insert_wa_managed_phone(map(), non_neg_integer(), String.t()) :: {:ok, String.t()}
+  defp insert_wa_managed_phone(wa_managed_phone, org_id, product_id) do
+    phone = wa_managed_phone["number"]
+    status = wa_managed_phone["status"]
+
+    params = %{
+      label: wa_managed_phone["name"],
+      phone: phone,
+      phone_id: wa_managed_phone["id"],
+      product_id: product_id,
+      organization_id: org_id,
+      contact_type: "WA"
+    }
+
+    with {:ok, contact} <- Contacts.maybe_create_contact(params),
+         nil <- Repo.get_by(WAManagedPhone, %{phone: phone, organization_id: org_id}) do
+      Map.merge(params, %{contact_id: contact.id, status: status})
+      |> create_wa_managed_phone()
+    end
+
+    {:ok, "success"}
   end
 
   @spec validate_response(list() | map()) :: {:ok, list()} | {:error, String.t()}
