@@ -5,8 +5,8 @@ defmodule GlificWeb.Schema.WaReactionTest do
 
   alias Glific.{
     Contacts.Contact,
-    Groups.ContactWAGroup,
     Fixtures,
+    Groups.ContactWAGroup,
     Seeds.SeedsDev,
     WAGroup.WAMessage
   }
