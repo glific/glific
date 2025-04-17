@@ -398,23 +398,36 @@ defmodule Glific.Templates do
   def update_hsms(templates, organization) do
     db_templates = hsm_template_uuid_map()
 
-    Enum.each(templates, fn template ->
-      cond do
-        !Map.has_key?(db_templates, template["bsp_id"]) ->
-          db_templates
-          |> existing_template?(template, organization)
-          |> upsert_hsm(template, organization)
+    templates
+    |> Enum.chunk_every(500)
+    |> Task.async_stream(
+      fn chunk ->
+        Repo.put_process_state(organization.id)
 
-        # this check is required,
-        # as is_active field can be updated by graphql API,
-        # and should not be reverted back
-        Map.has_key?(db_templates, template["bsp_id"]) ->
-          update_hsm(template, organization, @language_map)
+        Enum.each(chunk, fn template ->
+          cond do
+            !Map.has_key?(db_templates, template["bsp_id"]) ->
+              db_templates
+              |> existing_template?(template, organization)
+              |> upsert_hsm(template, organization)
 
-        true ->
-          true
-      end
-    end)
+            # this check is required,
+            # as is_active field can be updated by graphql API,
+            # and should not be reverted back
+            Map.has_key?(db_templates, template["bsp_id"]) ->
+              update_hsm(template, organization, @language_map)
+
+            true ->
+              true
+          end
+        end)
+      end,
+      max_concurrency: 5,
+      timeout: 60_000
+    )
+    |> Enum.to_list()
+
+    :ok
   end
 
   @spec existing_template?(map(), map(), Organization.t()) :: boolean()
@@ -453,8 +466,12 @@ defmodule Glific.Templates do
       SessionTemplate
       |> Repo.fetch_by(%{language_id: language_id, shortcode: template["elementName"]})
 
+    # If the template doesn't have a bsp_id, generate a new UUID for the template.
+    # This ensures that every template has a valid UUID, even if one was not provided.
+    uuid = if is_nil(template["bsp_id"]), do: Ecto.UUID.generate(), else: template["bsp_id"]
+
     session_template
-    |> SessionTemplate.changeset(%{uuid: template["bsp_id"]})
+    |> SessionTemplate.changeset(%{uuid: uuid})
     |> Repo.update()
 
     :ok

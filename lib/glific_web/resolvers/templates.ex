@@ -114,7 +114,6 @@ defmodule GlificWeb.Resolvers.Templates do
   @doc """
   Sync hsm with bsp
   """
-
   @spec sync_hsm_template(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def sync_hsm_template(_, _, %{context: %{current_user: user}}) do
