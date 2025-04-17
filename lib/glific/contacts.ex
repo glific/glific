@@ -1046,16 +1046,16 @@ defmodule Glific.Contacts do
     %{name: sender_name, contact_type: "WABA+WA"}
   end
 
-  defp get_contact_update_attrs(%Contact{name: name} = _contact, %{name: sender_name} = _sender)
-       when name != sender_name do
-    %{name: sender_name}
-  end
-
   defp get_contact_update_attrs(
          %Contact{contact_type: "WABA"} = _contact,
          %{contact_type: "WA"} = _sender
        ) do
     %{contact_type: "WABA+WA"}
+  end
+
+  defp get_contact_update_attrs(%Contact{name: name} = _contact, %{name: sender_name} = _sender)
+       when name != sender_name do
+    %{name: sender_name}
   end
 
   defp get_contact_update_attrs(%Contact{}, _), do: nil

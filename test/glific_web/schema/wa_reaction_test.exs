@@ -9,6 +9,7 @@ defmodule GlificWeb.Schema.WaReactionTest do
     WAGroup.WAMessage
   }
 
+  alias Faker.Phone
   alias GlificWeb.Providers.Maytapi.Controllers.MessageEventController
 
   use GlificWeb.ConnCase
@@ -141,6 +142,7 @@ defmodule GlificWeb.Schema.WaReactionTest do
   test "creates a contact when reacting to a message with a non-existent contact", user do
     org_id = user.organization_id
     contact = Fixtures.contact_fixture(organization_id: org_id)
+    contact_phone = Phone.EnUs.phone()
 
     wa_phone =
       Fixtures.wa_managed_phone_fixture(%{
@@ -170,7 +172,7 @@ defmodule GlificWeb.Schema.WaReactionTest do
             "reaction" => "❤️",
             "reactionId" =>
               "false_120363253669863953@g.us_3AA9EF934027259C98F1_919425010449@c.us",
-            "reactorId" => "919425010449@c.us",
+            "reactorId" => "#{contact_phone}@.us",
             "rxid" => wa_message.bsp_id,
             "time" => 1_739_257_237
           }
@@ -179,7 +181,7 @@ defmodule GlificWeb.Schema.WaReactionTest do
       }
 
     assert :ok = MessageEventController.update_statuses(payload, org_id)
-    contact = Repo.get_by(Contact, %{phone: "919425010449"})
+    contact = Repo.get_by(Contact, %{phone: contact_phone})
     contact_wa_group = Repo.get_by(ContactWAGroup, %{contact_id: contact.id})
 
     assert contact != nil
