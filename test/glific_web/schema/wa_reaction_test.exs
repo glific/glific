@@ -1,6 +1,8 @@
 defmodule GlificWeb.Schema.WaReactionTest do
   @moduledoc false
 
+  alias Faker.Phone
+
   alias Glific.{
     Contacts.Contact,
     Groups.ContactWAGroup,
@@ -9,7 +11,6 @@ defmodule GlificWeb.Schema.WaReactionTest do
     WAGroup.WAMessage
   }
 
-  alias Faker.Phone
   alias GlificWeb.Providers.Maytapi.Controllers.MessageEventController
 
   use GlificWeb.ConnCase
