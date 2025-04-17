@@ -3,6 +3,8 @@ defmodule Glific.Jobs.MinuteWorker do
   Processes the tasks that need to be handled on a minute schedule
   """
 
+  alias Glific.GCS
+
   use Oban.Worker,
     queue: :crontab,
     max_attempts: 3
@@ -94,6 +96,7 @@ defmodule Glific.Jobs.MinuteWorker do
     case job do
       "weekly_report" ->
         Partners.perform_all(&Partners.send_dashboard_report/2, %{frequency: "WEEKLY"}, [])
+        GCS.send_internal_media_sync_report()
 
       "weekly_tasks" ->
         Partners.perform_all(&Glific.Clients.weekly_tasks/1, nil, [])
