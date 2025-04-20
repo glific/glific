@@ -422,11 +422,8 @@ defmodule Glific.Partners do
     if is_nil(organization.services["bsp"]) do
       {:error, dgettext("errors", "No active BSP available")}
     else
-      credentials = organization.services["bsp"]
-      api_key = credentials.secrets["api_key"]
-
       case organization.bsp.shortcode do
-        "gupshup" -> GupshupWallet.balance(api_key)
+        "gupshup" -> GupshupWallet.balance(organization_id)
         _ -> {:error, dgettext("errors", "Invalid BSP provider")}
       end
     end
@@ -474,6 +471,7 @@ defmodule Glific.Partners do
       |> Flags.set_contact_profile_enabled()
       |> Flags.set_whatsapp_group_enabled()
       |> Flags.set_ticketing_enabled()
+      |> Flags.set_certificate_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -1191,7 +1189,8 @@ defmodule Glific.Partners do
       "whatsapp_group_enabled" => Flags.get_whatsapp_group_enabled(organization),
       "auto_translation_enabled" =>
         Flags.get_open_ai_auto_translation_enabled(organization) or
-          Flags.get_google_auto_translation_enabled(organization)
+          Flags.get_google_auto_translation_enabled(organization),
+      "certificate_enabled" => Flags.get_certificate_enabled(organization)
     }
   end
 

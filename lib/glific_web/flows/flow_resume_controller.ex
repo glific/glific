@@ -14,11 +14,11 @@ defmodule GlificWeb.Flows.FlowResumeController do
   @spec flow_resume_with_results(Plug.Conn.t(), map) :: Plug.Conn.t()
   def flow_resume_with_results(
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
-        response
+        result
       ) do
+    response = result["data"]
     organization = Partners.organization(organization_id)
     Repo.put_process_state(organization.id)
-
     # need to validate signature
     # need to validate timestamp
     with true <- validate_request(organization_id, response),
@@ -30,7 +30,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
       FlowContext.resume_contact_flow(
         contact,
         response["flow_id"],
-        %{response: response}
+        %{"response" => response}
       )
     end
 

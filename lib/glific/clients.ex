@@ -177,6 +177,18 @@ defmodule Glific.Clients do
     webhook: Glific.Clients.BharatRohan
   }
 
+  @atecf %{
+    id: 253,
+    name: "A.T.E. Chandra Foundation",
+    webhook: Glific.Clients.Atecf
+  }
+
+  @sarc %{
+    id: 135,
+    name: "Saturday Art Class",
+    gcs_file_name: Glific.Clients.Sarc
+  }
+
   ## we should move this also to databases.
   @plugins %{
     @sol[:id] => @sol,
@@ -201,7 +213,9 @@ defmodule Glific.Clients do
     @quest_tcec[:id] => @quest_tcec,
     @quest_alliance[:id] => @quest_alliance,
     @oblf[:id] => @oblf,
-    @bharat_rohan[:id] => @bharat_rohan
+    @bharat_rohan[:id] => @bharat_rohan,
+    @atecf[:id] => @atecf,
+    @sarc[:id] => @sarc
   }
 
   @spec env(atom() | nil) :: atom()
@@ -259,11 +273,11 @@ defmodule Glific.Clients do
   Allow an organization to use glific functions to implement webhooks. A faster way
   of modifying the DB and doing some advanced stuff in an easy manner
   """
-  @spec webhook(String.t(), map()) :: map()
-  def webhook(name, fields) do
+  @spec webhook(String.t(), map(), list()) :: map()
+  def webhook(name, fields, headers \\ []) do
     module_name = get_in(plugins(), [fields["organization_id"], :webhook])
 
-    case CommonWebhook.webhook(name, fields) do
+    case CommonWebhook.webhook(name, fields, headers) do
       %{error: "Missing webhook function implementation"} -> module_name.webhook(name, fields)
       results -> results
     end

@@ -9,7 +9,6 @@ defmodule Glific.PartnersTest do
     Partners,
     Partners.Credential,
     Partners.Provider,
-    Providers.Gupshup.ApiClient,
     Providers.Gupshup.PartnerAPI,
     Repo,
     Seeds.SeedsDev
@@ -118,17 +117,25 @@ defmodule Glific.PartnersTest do
     end
 
     test "bspbalance/1 for checking bsp balance" do
+      org = SeedsDev.seed_organizations()
+
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "{\"balance\":0.787,\"status\":\"success\"}"
+            body:
+              "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":0.787,\"overDraftLimit\":-20.0}}"
+          }
+
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"status\":\"success\"}"
           }
       end)
 
-      organization = Fixtures.organization_fixture()
-      {:ok, data} = Partners.get_bsp_balance(organization.id)
-      assert %{"balance" => 0.787, "status" => "success"} == data
+      {:ok, data} = Partners.get_bsp_balance(org.id)
+      assert %{"balance" => 0.787} == data
     end
 
     test "set business profile" do
@@ -211,15 +218,45 @@ defmodule Glific.PartnersTest do
       org = SeedsDev.seed_organizations()
 
       Tesla.Mock.mock(fn
-        %{method: :get} ->
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
           %Tesla.Env{
             status: 200,
-            body: "{\"status\":\"success\",\"templates\":[]}"
+            body:
+              Jason.encode!(%{
+                status: "success",
+                data: %{
+                  token: "sk_test_partner_token"
+                }
+              })
           }
+
+        %{method: :get, url: url} ->
+          cond do
+            String.contains?(url, "/token") ->
+              %Tesla.Env{
+                status: 200,
+                body:
+                  Jason.encode!(%{
+                    partner_app_token: "sk_test_partner_app_token"
+                  })
+              }
+
+            String.contains?(url, "/templates") ->
+              %Tesla.Env{
+                status: 200,
+                body:
+                  Jason.encode!(%{
+                    status: "success",
+                    templates: []
+                  })
+              }
+
+            true ->
+              raise "Unexpected GET request to: #{url}"
+          end
       end)
 
-      {:ok, response} = ApiClient.get_templates(org.id)
-
+      {:ok, response} = PartnerAPI.get_templates(org.id)
       decoded_body = Jason.decode!(response.body)
 
       assert decoded_body["status"] == "success"

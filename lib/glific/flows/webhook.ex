@@ -26,7 +26,8 @@ defmodule Glific.Flows.Webhook do
     "filesearch-gpt",
     "voice-filesearch-gpt",
     "speech_to_text_with_bhasini",
-    "nmt_tts_with_bhasini"
+    "nmt_tts_with_bhasini",
+    "call_and_wait"
   ]
 
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
@@ -273,6 +274,7 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
+  @spec do_action(String.t(), String.t(), map(), list()) :: any
   defp do_action("post", url, body, headers),
     do: Tesla.post(url, body, headers: headers)
 
@@ -294,11 +296,11 @@ defmodule Glific.Flows.Webhook do
         opts: [adapter: [recv_timeout: 10_000]]
       )
 
-  defp do_action("function", function, body, _headers) do
+  defp do_action("function", function, body, headers) do
     {
       :ok,
       :function,
-      Glific.Clients.webhook(function, Jason.decode!(body))
+      Glific.Clients.webhook(function, Jason.decode!(body), headers)
     }
   rescue
     error ->
