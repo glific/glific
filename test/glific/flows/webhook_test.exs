@@ -121,6 +121,38 @@ defmodule Glific.Flows.WebhookTest do
       assert Webhook.execute(action, context) == nil
 
       assert_enqueued(worker: Webhook, prefix: "global")
+    end
+
+    test "execute a webhook for GET method with empty body should return the response body with results",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(@results)
+          }
+      end)
+
+      attrs = %{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: Fixtures.contact_fixture(attrs).id,
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, context} = FlowContext.create_flow_context(attrs)
+      context = Repo.preload(context, [:contact, :flow])
+
+      action = %Action{
+        headers: %{"Accept" => "application/json"},
+        method: "GET",
+        url: "some url",
+        body: Jason.encode!(%{})
+      }
+
+      assert Webhook.execute(action, context) == nil
+
+      assert_enqueued(worker: Webhook, prefix: "global")
 
       # we now need to wait for the Oban job and fire and then
       # check the results of the context
