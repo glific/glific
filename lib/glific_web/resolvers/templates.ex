@@ -4,7 +4,15 @@ defmodule GlificWeb.Resolvers.Templates do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Repo, Templates, Templates.SessionTemplate}
+  require Logger
+
+  alias Glific.{
+    Repo,
+    Templates,
+    Templates.SessionTemplate,
+    Templates.TemplateWorker,
+    Notifications
+  }
 
   @doc """
   Get a specific session template by id
@@ -115,11 +123,34 @@ defmodule GlificWeb.Resolvers.Templates do
   Sync hsm with bsp
   """
   @spec sync_hsm_template(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
+          {:ok, map()} | {:error, String.t()}
+  def sync_hsm_template(_, _, %{context: %{current_user: %{organization_id: nil}}}) do
+    {:error, "organization_id is not given"}
+  end
+
   def sync_hsm_template(_, _, %{context: %{current_user: user}}) do
-    case Templates.sync_hsms_from_bsp(user.organization_id) do
-      :ok -> {:ok, %{message: "successful"}}
-      {:error, error} -> {:error, error}
+    queue_hsm_sync(user.organization_id)
+  end
+
+  @spec queue_hsm_sync(non_neg_integer()) :: {:ok, :queued} | {:error, String.t()}
+  defp queue_hsm_sync(organization_id) do
+    args = %{"organization_id" => organization_id, "sync_hsm" => true}
+
+    case Oban.insert(TemplateWorker.new(args)) do
+      {:ok, _job} ->
+        Notifications.create_notification(%{
+          category: "HSM template",
+          message: "Syncing of HSM templates has started in the background.",
+          severity: Notifications.types().info,
+          organization_id: organization_id,
+          entity: %{Provider: "Gupshup"}
+        })
+
+        {:ok, %{message: "successful"}}
+
+      {:error, reason} ->
+        Logger.error("Failed to queue sync job: #{inspect(reason)}")
+        {:error, "Failed to queue sync job: #{inspect(reason)}"}
     end
   end
 

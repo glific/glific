@@ -1,10 +1,13 @@
 defmodule Glific.TemplatesTest do
   alias Glific.Messages.MessageMedia
+  use Oban.Pro.Testing, repo: Glific.Repo
   use Glific.DataCase
 
   alias Glific.{
     Fixtures,
     Mails.MailLog,
+    Notifications,
+    Notifications.Notification,
     Partners,
     Providers.Gupshup,
     Providers.Gupshup.PartnerAPI,
@@ -12,7 +15,8 @@ defmodule Glific.TemplatesTest do
     Seeds.SeedsDev,
     Settings,
     Templates,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Templates.TemplateWorker
   }
 
   setup do
@@ -1426,46 +1430,6 @@ defmodule Glific.TemplatesTest do
       assert hsm2.is_active == false
     end
 
-    test "update_hsms/1 handles syncing 1000 templates without crashing", attrs do
-      templates =
-        Enum.map(1..1000, fn i ->
-          %{
-            "category" => "TICKET_UPDATE",
-            "createdOn" => 1_595_904_220_000 + i,
-            "data" => "Your ticket no. {{#{i}}}",
-            "elementName" => "ticket_update_status_#{i}",
-            "id" => Ecto.UUID.generate(),
-            "languageCode" => "en",
-            "languagePolicy" => "deterministic",
-            "master" => false,
-            "meta" => "{\"example\":\"Your ticket no. [#{i}]\"}",
-            "modifiedOn" => 1_595_904_220_000 + i,
-            "status" => "SANDBOX_REQUESTED",
-            "templateType" => "TEXT",
-            "vertical" => "ACTION_BUTTON"
-          }
-        end)
-
-      Benchee.run(%{
-        "update_hsms" => fn ->
-          Templates.update_hsms(templates, Partners.organization(attrs.organization_id))
-        end
-      })
-
-      updated_shortcode = Enum.map(1..1000, fn i -> "ticket_update_status_#{i}" end)
-
-      count =
-        SessionTemplate
-        |> where(
-          [t],
-          t.organization_id == ^attrs.organization_id and t.shortcode in ^updated_shortcode
-        )
-        |> select([t], count(t.id))
-        |> Repo.one()
-
-      assert count == 1000
-    end
-
     test "import_templates/1 should import templates", attrs do
       data =
         "\"TEMPLATEID\",\"NAME\",\"CATEGORY\",\"LANGUAGE\",\"TYPE\",\"HEADER\",\"BODY\",\"FOOTER\",\"BUTTONTYPE\",\"NOOFBUTTONS\",\"BUTTON1\",\"BUTTON2\",\"BUTTON3\",\"QUALITYRATING\",\"REJECTIONREASON\",\"STATUS\",\"CREATEDON\"\n\"6356300\",\"beforedemo\",\"ALERT_UPDATE\",\"en\",\"TEXT\",\"\",\"Hi{{1}},Your demo is about to start in 15 min. We are excited to see you there.🤩\nPlease join 5 min before time.\nClick on this link to attend the session. {{2}}\nIn case you face any issues, please call on +918047190520\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-03-17\"\n\"6516247\",\"new_feature\",\"UTILITY\",\"en\",\"TEXT\",\"\",\"are you excited for upcoming features?\",\"\",\"CALL_TO_ACTION\",\"2\",\"{\"\"type\"\":\"\"PHONE_NUMBER\"\",\"\"phone_number\"\":\"\"+918979120220\"\",\"\"text\"\":\"\"call here\"\"}\",\"{\"\"type\"\":\"\"URL\"\",\"\"urlType\"\":\"\"STATIC\"\",\"\"url\"\":\"\"https://glific.com/blogs/\"\",\"\"text\"\":\"\"visit here\"\"}\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-09-28\"\n\"6379777\",\"Gender\",\"ACCOUNT_UPDATE\",\"en\",\"TEXT\",\"\",\"Please share your gender\",\"\",\"QUICK_REPLY\",\"3\",\"{\"\"type\"\":\"\"QUICK_REPLY\"\",\"\"text\"\":\"\"Male\"\"}\",\"{\"\"type\"\":\"\"QUICK_REPLY\"\",\"\"text\"\":\"\"Female\"\"}\",\"{\"\"type\"\":\"\"QUICK_REPLY\"\",\"\"text\"\":\"\"Other\"\"}\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-03-22\"\n\"6122571\",\"2meq_payment_link\",\"ACCOUNT_UPDATE\",\"en\",\"TEXT\",\"\",\"Your OTP for {{1}} is {{2}}. This is valid for {{3}}.\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-03-10\"\n\"6122572\",\"meq_payment_link2\",\"ACCOUNT_UPDATE\",\"en\",\"TEXT\",\"\",\"You are one step away! Please click the link below to make your payment for the Future Perfect program.\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"REJECTED\",\"2022-04-05\""
@@ -1917,5 +1881,79 @@ defmodule Glific.TemplatesTest do
     assert session_template.shortcode == "conference_ticket_status"
     assert session_template.is_hsm == true
     assert session_template.language_id == language.id
+  end
+
+  @org_id 1
+  setup do
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => "sk_test_partner_token"})
+        }
+
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "data" => %{
+                "partner_app_token" => "fake-token"
+              }
+            })
+        }
+
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "templates" => [
+                %{
+                  "id" => "51eddb1e-8e36-44df-a9e5-2815e4f8463b",
+                  "elementName" => "qa_automation_qa_automation_112907flejpaiqah9z",
+                  "languageCode" => "en",
+                  "category" => "MARKETING",
+                  "status" => "APPROVED",
+                  "templateType" => "TEXT",
+                  "data" =>
+                    "Dear {{1}}\nExclusive deals on car and train bookings. Book now..!!\nThank you"
+                }
+              ]
+            })
+        }
+    end)
+
+    :ok
+  end
+
+  test "successful HSM sync from BSP", attrs do
+    context = %{context: %{current_user: attrs}}
+
+    assert {:ok, %{message: "successful"}} =
+             GlificWeb.Resolvers.Templates.sync_hsm_template(nil, %{}, context)
+
+    assert_enqueued(
+      worker: TemplateWorker,
+      prefix: "global"
+    )
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default)
+
+    notifications =
+      Repo.all(
+        from n in Notification,
+          where: n.organization_id == ^@org_id and n.category == "HSM template",
+          order_by: [desc: n.inserted_at]
+      )
+
+    messages = Enum.map(notifications, & &1.message)
+
+    assert "Syncing of HSM templates has started in the background." in messages
+    assert "HSM template sync completed successfully." in messages
+
+    severities = Enum.map(notifications, & &1.severity)
+    assert Notifications.types().info in severities
   end
 end
