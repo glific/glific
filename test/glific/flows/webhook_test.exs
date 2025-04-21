@@ -110,6 +110,7 @@ defmodule Glific.Flows.WebhookTest do
 
       {:ok, context} = FlowContext.create_flow_context(attrs)
       context = Repo.preload(context, [:contact, :flow])
+      IO.inspect(context.flow_uuid)
 
       action = %Action{
         headers: %{"Accept" => "application/json"},
@@ -121,6 +122,11 @@ defmodule Glific.Flows.WebhookTest do
       assert Webhook.execute(action, context) == nil
 
       assert_enqueued(worker: Webhook, prefix: "global")
+
+      Oban.drain_queue(queue: :webhook)
+
+      webhook_log = List.first(WebhookLog.list_webhook_logs(%{filter: attrs}))
+      assert webhook_log.status == "Success"
     end
 
     test "execute a webhook for GET method with empty body should return the response body with results",
@@ -146,16 +152,17 @@ defmodule Glific.Flows.WebhookTest do
       action = %Action{
         headers: %{"Accept" => "application/json"},
         method: "GET",
-        url: "some url",
+        url: "url with no body",
         body: Jason.encode!(%{})
       }
 
       assert Webhook.execute(action, context) == nil
 
       assert_enqueued(worker: Webhook, prefix: "global")
+      Oban.drain_queue(queue: :webhook)
 
-      # we now need to wait for the Oban job and fire and then
-      # check the results of the context
+      webhook_log = List.first(WebhookLog.list_webhook_logs(%{filter: attrs}))
+      assert webhook_log.status == "Success"
     end
 
     test "execute a webhook for post method should not break and update the webhook log in case of error",
