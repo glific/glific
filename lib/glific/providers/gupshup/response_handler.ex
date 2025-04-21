@@ -40,7 +40,7 @@ defmodule Glific.Providers.Gupshup.ResponseHandler do
   def handle_response(error, message) do
     # Adding log when API Client fails
     Logger.info(
-      "Error calling API Client for org_id: #{message.organization_id} error: #{inspect(error)}"
+      "Error calling API Client for org_id: #{message["organization_id"]} error: #{inspect(error)}"
     )
 
     Communications.Message.handle_error_response(%{body: @default_tesla_error}, message)
