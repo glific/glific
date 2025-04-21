@@ -64,6 +64,7 @@ defmodule Glific.Certificates.Certificate do
             fields.organization_id
           )
 
+        Glific.Metrics.increment("certificate generation failed")
         %{success: false, reason: error}
     end
   end
