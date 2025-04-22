@@ -19,6 +19,7 @@ defmodule Glific.Providers.Maytapi.WAWorker do
     Providers.Maytapi.ApiClient,
     Providers.Maytapi.ResponseHandler,
     Providers.Worker,
+    Repo,
     WAManagedPhones
   }
 
@@ -78,6 +79,8 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   @spec perform_credential_update(non_neg_integer()) ::
           {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
   defp perform_credential_update(org_id) do
+    Repo.put_process_state(org_id)
+
     case update_credentials(org_id) do
       :ok ->
         send_notification(
