@@ -39,7 +39,7 @@ defmodule Glific.Providers.Gupshup.ResponseHandler do
   # Sending default error when API Client call fails for some reason
   def handle_response(error, message) do
     # Adding log when API Client fails
-    Logger.info(
+    Logger.error(
       "Error calling API Client for org_id: #{message["organization_id"]} error: #{inspect(error)}"
     )
 
