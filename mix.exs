@@ -14,7 +14,7 @@ defmodule Glific.MixProject do
     [
       app: :glific,
       version: "7.2.2",
-      elixir: "~> 1.15",
+      elixir: "~> 1.18.3",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
@@ -86,7 +86,7 @@ defmodule Glific.MixProject do
       {:phoenix_html, "~> 3.3"},
       {:phoenix_live_reload, "~> 1.4", only: [:dev | @test_envs]},
       {:phoenix_pubsub, "~> 2.0"},
-      {:phoenix_live_view, "~> 0.18"},
+      {:phoenix_live_view, "~> 1.0"},
       {:phoenix_live_dashboard, "~> 0.7"},
       {:phoenix_view, "~> 2.0"},
       {:pbkdf2_elixir, "~> 2.0"},
@@ -94,9 +94,9 @@ defmodule Glific.MixProject do
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
       {:ecto_sql, "~> 3.9"},
-      {:ecto_psql_extras, "~> 0.7"},
+      {:ecto_psql_extras, "~> 0.8"},
       {:esbuild, "~> 0.6", runtime: Mix.env() == :dev},
-      {:postgrex, "~> 0.16"},
+      {:postgrex, "~> 0.20"},
       {:floki, ">= 0.27.0", only: @test_envs},
       {:gettext, "~> 0.22"},
       {:decimal, "~> 2.0"},
@@ -116,9 +116,9 @@ defmodule Glific.MixProject do
       {:dataloader, "~> 2.0"},
       {:hackney, "~> 1.17"},
       {:tesla, "~> 1.5"},
-      {:oban, "~> 2.13"},
-      {:oban_web, "~> 2.9", repo: "oban", only: @oban_envs},
-      {:oban_pro, "~> 1.1", repo: "oban", only: @oban_envs},
+      {:oban, "~> 2.19"},
+      {:oban_web, "~> 2.11", only: @oban_envs},
+      {:oban_pro, "~> 1.5", repo: "oban", only: @oban_envs},
       {:faker, "~> 0.13"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.15", only: @test_envs},
@@ -208,7 +208,7 @@ defmodule Glific.MixProject do
         "ecto.create --quiet",
         "ecto.load --quiet --skip-if-loaded",
         "ecto.migrate --quiet",
-        "test"
+        "test --warnings-as-errors"
       ],
       "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
     ]
