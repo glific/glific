@@ -185,7 +185,7 @@
                 <%= for {key, value} <- @bookmarks do %>
                   <li class="p-2 mb-1 text-sm flex bg-gray-100 items-center rounded-xl justify-between font-semibold text-green-600 w-full">
                     <div>
-                      <a href={URI.parse(value)} target="_blank"><%= key %></a>
+                      <a href={URI.parse(value)} target="_blank">{key}</a>
                     </div>
                     <div>
                       <button
@@ -251,12 +251,12 @@
           <p class="font-bold">Daily Contacts</p>
           <button class="text-gray-800 font-semibold">
             <.link phx-click="export" phx-value-chart={:contacts}>
-              <%= GlificWeb.StatsLive.render_button_svg() %>
+              {GlificWeb.StatsLive.render_button_svg()}
             </.link>
           </button>
         </div>
         <div class="p-8 h-full">
-          <%= @contact_chart_svg %>
+          {@contact_chart_svg}
         </div>
       </div>
       <div id="conversation-chart" class="bar-chart">
@@ -264,12 +264,12 @@
           <p class="font-bold">Daily Conversations</p>
           <button class="text-gray-800 font-semibold">
             <.link phx-click="export" phx-value-chart={:conversations}>
-              <%= GlificWeb.StatsLive.render_button_svg() %>
+              {GlificWeb.StatsLive.render_button_svg()}
             </.link>
           </button>
         </div>
         <div class="p-8 h-full">
-          <%= @conversation_chart_svg %>
+          {@conversation_chart_svg}
         </div>
       </div>
     </div>
@@ -279,12 +279,12 @@
           <p class="font-bold">Most Active Hour</p>
           <button class="text-gray-800 font-semibold">
             <.link phx-click="export" phx-value-chart={:active_hour}>
-              <%= GlificWeb.StatsLive.render_button_svg() %>
+              {GlificWeb.StatsLive.render_button_svg()}
             </.link>
           </button>
         </div>
         <div class="p-8 h-full">
-          <%= @messages_chart_svg %>
+          {@messages_chart_svg}
         </div>
       </div>
     </div>
@@ -294,12 +294,12 @@
           <p class="font-bold">Opted-in, Opted-out & Non-Opted</p>
           <button class="text-gray-800 font-semibold">
             <.link phx-click="export" phx-value-chart={:optin}>
-              <%= GlificWeb.StatsLive.render_button_svg() %>
+              {GlificWeb.StatsLive.render_button_svg()}
             </.link>
           </button>
         </div>
         <div class="p-6">
-          <%= @optin_chart_svg %>
+          {@optin_chart_svg}
         </div>
       </div>
       <div id="notification-chart" class="pie-chart">
@@ -307,12 +307,12 @@
           <p class="font-bold">Notifications</p>
           <button class="text-gray-800 font-semibold">
             <.link phx-click="export" phx-value-chart={:notifications}>
-              <%= GlificWeb.StatsLive.render_button_svg() %>
+              {GlificWeb.StatsLive.render_button_svg()}
             </.link>
           </button>
         </div>
         <div class="p-4">
-          <%= @notification_chart_svg %>
+          {@notification_chart_svg}
         </div>
       </div>
     </div>
@@ -322,12 +322,12 @@
           <p class="font-bold">Inbound & Outbound Messages</p>
           <button class="text-gray-800 font-semibold">
             <.link phx-click="export" phx-value-chart={:messages}>
-              <%= GlificWeb.StatsLive.render_button_svg() %>
+              {GlificWeb.StatsLive.render_button_svg()}
             </.link>
           </button>
         </div>
         <div class="p-4">
-          <%= @message_chart_svg %>
+          {@message_chart_svg}
         </div>
       </div>
       <div id="contact-pie-chart" class="pie-chart">
@@ -335,12 +335,12 @@
           <p class="font-bold">Contact in Sessions</p>
           <button class="text-gray-800 font-semibold">
             <.link phx-click="export" phx-value-chart={:contact_type}>
-              <%= GlificWeb.StatsLive.render_button_svg() %>
+              {GlificWeb.StatsLive.render_button_svg()}
             </.link>
           </button>
         </div>
         <div class="p-4">
-          <%= @contact_type_chart_svg %>
+          {@contact_type_chart_svg}
         </div>
       </div>
     </div>
@@ -351,7 +351,7 @@
       <p class="text-md text-gray-500 font-bold">Broadcasts</p>
       <button class="text-gray-800 font-semibold">
         <.link phx-click="export" phx-value-chart={:table}>
-          <%= GlificWeb.StatsLive.render_button_svg() %>
+          {GlificWeb.StatsLive.render_button_svg()}
         </.link>
       </button>
     </div>
@@ -360,7 +360,7 @@
         <thead>
           <tr>
             <%= for header <- @broadcast_headers do %>
-              <th><%= header %></th>
+              <th>{header}</th>
             <% end %>
           </tr>
         </thead>
@@ -375,7 +375,7 @@
           <%= for item <- @broadcast_data do %>
             <tr>
               <%= for value <- item do %>
-                <td class="break-all"><%= value %></td>
+                <td class="break-all">{value}</td>
               <% end %>
             </tr>
           <% end %>
@@ -397,9 +397,9 @@
         <tbody>
           <%= for item <- @bigquery_sync_data do %>
             <tr>
-              <td class="break-all"><%= item.table %></td>
-              <td class="break-all"><%= item.table_id %></td>
-              <td class="break-all"><%= item.last_updated_at %></td>
+              <td class="break-all">{item.table}</td>
+              <td class="break-all">{item.table_id}</td>
+              <td class="break-all">{item.last_updated_at}</td>
             </tr>
           <% end %>
         </tbody>
@@ -419,9 +419,9 @@
         <tbody>
           <tr>
             <td>
-              <%= @media_sync_data.media_synced %> out of <%= @media_sync_data.total_media %> media files
+              {@media_sync_data.media_synced} out of {@media_sync_data.total_media} media files
             </td>
-            <td><%= @media_sync_data.last_synced_at %></td>
+            <td>{@media_sync_data.last_synced_at}</td>
           </tr>
         </tbody>
       </table>
@@ -433,7 +433,7 @@
       <div class="flex flex-wrap">
         <a class="card">
           <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-            <%= @conversation_count %>
+            {@conversation_count}
           </h3>
           <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
             Monthly Conversations
@@ -442,7 +442,7 @@
 
         <a class="card">
           <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-            <%= @active_flow_count %>
+            {@active_flow_count}
           </h3>
           <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
             Contacts In Flows
@@ -451,7 +451,7 @@
 
         <a class="card">
           <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-            <%= @flows_started %>
+            {@flows_started}
           </h3>
           <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
             Monthly Flows Started
@@ -460,7 +460,7 @@
 
         <a class="card">
           <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-            <%= @flows_completed %>
+            {@flows_completed}
           </h3>
           <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
             Monthly Flows Completed
@@ -474,7 +474,7 @@
       <div class="flex flex-wrap">
         <a class="card">
           <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-            <%= @valid_contact_count %>
+            {@valid_contact_count}
           </h3>
           <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
             Total Valid Contacts
@@ -483,7 +483,7 @@
 
         <a class="card">
           <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-            <%= @invalid_contact_count %>
+            {@invalid_contact_count}
           </h3>
           <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
             Total Invalid Contacts
@@ -492,7 +492,7 @@
 
         <a class="card">
           <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-            <%= @opted_in_contacts_count %>
+            {@opted_in_contacts_count}
           </h3>
           <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
             Opted In Contacts
@@ -501,7 +501,7 @@
 
         <a class="card">
           <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-            <%= @opted_out_contacts_count %>
+            {@opted_out_contacts_count}
           </h3>
           <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
             Opted Out Contacts
@@ -510,7 +510,7 @@
 
         <a class="card">
           <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-            <%= @non_opted_contacts_count %>
+            {@non_opted_contacts_count}
           </h3>
           <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
             Non Opted Contacts
@@ -524,7 +524,7 @@
       <div class="flex flex-wrap">
         <a class="card">
           <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-            <%= @inbound_messages_count %>
+            {@inbound_messages_count}
           </h3>
           <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
             Incoming Messages
@@ -533,7 +533,7 @@
 
         <a class="card">
           <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-            <%= @outbound_messages_count %>
+            {@outbound_messages_count}
           </h3>
           <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
             Outgoing Messages
@@ -542,7 +542,7 @@
 
         <a class="card">
           <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-            <%= @hsm_messages_count %>
+            {@hsm_messages_count}
           </h3>
           <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
             HSM Messages
@@ -551,7 +551,7 @@
 
         <a class="card">
           <h3 class="mb-4 text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-            <%= @monthly_error_count %>
+            {@monthly_error_count}
           </h3>
           <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
             Error Messages

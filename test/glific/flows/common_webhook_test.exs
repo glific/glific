@@ -1,13 +1,14 @@
 defmodule Glific.Flows.CommonWebhookTest do
-  alias Glific.Fixtures
   use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
     Certificates.CertificateTemplate,
     Clients.CommonWebhook,
+    Fixtures,
     Messages,
     Partners,
+    Partners.Provider,
     Seeds.SeedsDev,
     ThirdParty.GoogleSlide.Slide
   }
@@ -16,6 +17,8 @@ defmodule Glific.Flows.CommonWebhookTest do
 
   doctest Slide
   doctest Glific
+  doctest Provider
+
   @mock_presentation_id "copied_presentation123"
   @mock_copied_slide %{"id" => @mock_presentation_id}
   @mock_thumbnail %{"contentUrl" => "image_url"}
