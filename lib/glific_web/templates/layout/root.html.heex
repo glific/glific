@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <%= csrf_meta_tag() %>
+    {csrf_meta_tag()}
     <.live_title>
-      <%= assigns[:page_title] || "Glific Dashboard" %>
+      {assigns[:page_title] || "Glific Dashboard"}
     </.live_title>
     <link phx-track-static rel="stylesheet" href={Routes.static_path(@conn, "/assets/app.css")} />
     <script
@@ -58,14 +58,14 @@
             </div>
             <div class="dropdown-content absolute right-10">
               <ul class="p-2">
-                <li class="p-2"><%= @current_user.name %></li>
+                <li class="p-2">{@current_user.name}</li>
                 <li class="p-2">
                   <button class="text-red-700">
-                    <%= link("Log out",
+                    {link("Log out",
                       to: Routes.user_session_path(@conn, :delete),
                       method: :delete,
                       class: "mr-4 hover:underline md:mr-6"
-                    ) %>
+                    )}
                   </button>
                 </li>
               </ul>
@@ -74,6 +74,6 @@
         <% end %>
       </section>
     </header>
-    <%= @inner_content %>
+    {@inner_content}
   </body>
 </html>
