@@ -354,10 +354,13 @@ defmodule Glific.PartnersTest do
 
     @spec contact_fixture() :: Contacts.Contact.t()
     def contact_fixture do
+      organization = Fixtures.organization_fixture()
+
       {:ok, contact} =
         Glific.Contacts.create_contact(%{
           name: Person.name(),
-          phone: Phone.EnUs.phone()
+          phone: Phone.EnUs.phone(),
+          organization_id: organization.id
         })
 
       contact
