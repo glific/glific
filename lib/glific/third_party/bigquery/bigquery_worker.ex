@@ -24,6 +24,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   alias Glific.{
     BigQuery,
+    Certificates.CertificateTemplate,
+    Certificates.IssuedCertificate,
     Contacts,
     Contacts.Contact,
     Contacts.ContactHistory,
@@ -108,7 +110,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         "wa_groups_collections",
         "wa_messages",
         "wa_reactions",
-        "wa_reactions"
+        "certificate_templates",
+        "issued_certificates"
       ]
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
@@ -664,6 +667,71 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :wa_reactions, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("certificate_templates", organization_id, attrs) do
+    Logger.info(
+      "fetching certificate_templates data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("certificate_templates", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            label: row.label,
+            description: row.description,
+            url: row.url,
+            type: row.type,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :certificate_templates, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("issued_certificates", organization_id, attrs) do
+    Logger.info(
+      "fetching issued_certificates data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    get_query("issued_certificates", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            template_id: row.certificate_template_id,
+            template_label: row.certificate_template.label,
+            phone: row.contact.phone,
+            gcs_url: row.gcs_url,
+            errors: BigQuery.format_json(row.errors),
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :issued_certificates, organization_id, attrs))
 
     :ok
   end
@@ -1753,6 +1821,24 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :contact,
         :media,
         :wa_group
+      ])
+
+  defp get_query("certificate_templates", organization_id, attrs),
+    do:
+      CertificateTemplate
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+
+  defp get_query("issued_certificates", organization_id, attrs),
+    do:
+      IssuedCertificate
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+      |> preload([
+        :contact,
+        :certificate_template
       ])
 
   @spec format_value(map() | list() | struct() | any()) :: String.t()

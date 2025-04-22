@@ -26,8 +26,8 @@ jobs:
 
     strategy:
       matrix: # build matrix for the job
-        elixir: [1.17.3]
-        otp: [27.2]
+        elixir: [1.18.3]
+        otp: [27.3.3]
 
     steps:
       - name: Checkout the code

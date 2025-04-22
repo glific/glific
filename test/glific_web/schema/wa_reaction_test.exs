@@ -1,8 +1,12 @@
 defmodule GlificWeb.Schema.WaReactionTest do
   @moduledoc false
 
+  alias Faker.Phone
+
   alias Glific.{
+    Contacts.Contact,
     Fixtures,
+    Groups.ContactWAGroup,
     Seeds.SeedsDev,
     WAGroup.WAMessage
   }
@@ -134,5 +138,55 @@ defmodule GlificWeb.Schema.WaReactionTest do
       }
 
     assert :ok = MessageEventController.update_statuses(payload, user.organization_id)
+  end
+
+  test "creates a contact when reacting to a message with a non-existent contact", user do
+    org_id = user.organization_id
+    contact = Fixtures.contact_fixture(organization_id: org_id)
+    contact_phone = Phone.EnUs.phone()
+
+    wa_phone =
+      Fixtures.wa_managed_phone_fixture(%{
+        organization_id: org_id,
+        contact_id: contact.id
+      })
+
+    wa_grp =
+      Fixtures.wa_group_fixture(%{
+        organization_id: org_id,
+        wa_managed_phone_id: wa_phone.id
+      })
+
+    wa_message =
+      Fixtures.wa_message_fixture(%{
+        organization_id: org_id,
+        wa_managed_phone_id: wa_phone.id,
+        wa_group_id: wa_grp.id
+      })
+
+    payload =
+      %{
+        "data" => [
+          %{
+            "chatId" => "120363253669863953@g.us",
+            "msgId" => wa_message.bsp_id,
+            "reaction" => "❤️",
+            "reactionId" =>
+              "false_120363253669863953@g.us_3AA9EF934027259C98F1_919425010449@c.us",
+            "reactorId" => "#{contact_phone}@.us",
+            "rxid" => wa_message.bsp_id,
+            "time" => 1_739_257_237
+          }
+        ],
+        "type" => "ack"
+      }
+
+    assert :ok = MessageEventController.update_statuses(payload, org_id)
+    contact = Repo.get_by(Contact, %{phone: contact_phone})
+    contact_wa_group = Repo.get_by(ContactWAGroup, %{contact_id: contact.id})
+
+    assert contact != nil
+    assert contact_wa_group.wa_group_id == wa_grp.id
+    assert contact_wa_group.contact_id == contact.id
   end
 end

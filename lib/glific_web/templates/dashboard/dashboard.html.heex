@@ -71,11 +71,11 @@
               <tr>
                 <td style="padding:30px;background-color:#ffffff;">
                   <p style="margin-top:0;margin-bottom:30px;">
-                    Dear <%= @parent_org %> Team,
+                    Dear {@parent_org} Team,
                   </p>
                   <p style="margin: 0;">
                     We hope this message finds you well. As part of our commitment to provide you with valuable insights
-                    into the performance of your Glific-powered WhatsApp chatbot, we're pleased to share the <%= @duration %> Chatbot Performance Report for the period <%= @date_range %>.
+                    into the performance of your Glific-powered WhatsApp chatbot, we're pleased to share the {@duration} Chatbot Performance Report for the period {@date_range}.
                   </p>
                 </td>
               </tr>
@@ -112,7 +112,7 @@
                                 align="center"
                                 style="font-size: 2.25rem; font-weight: 700; color: #ffffff; padding: 20px 0;"
                               >
-                                <%= elem(Enum.at(@optin, 0), 1) %>
+                                {elem(Enum.at(@optin, 0), 1)}
                               </td>
                             </tr>
                             <tr>
@@ -138,7 +138,7 @@
                                 align="center"
                                 style="font-size: 2.25rem; font-weight: 700; color: #ffffff; padding: 20px 0;"
                               >
-                                <%= elem(Enum.at(@optin, 2), 1) %>
+                                {elem(Enum.at(@optin, 2), 1)}
                               </td>
                             </tr>
                             <tr>
@@ -164,7 +164,7 @@
                                 align="center"
                                 style="font-size: 2.25rem; font-weight: 700; color: #ffffff; padding: 20px 0;"
                               >
-                                <%= elem(Enum.at(@optin, 1), 1) %>
+                                {elem(Enum.at(@optin, 1), 1)}
                               </td>
                             </tr>
                             <tr>
@@ -210,7 +210,7 @@
                                 align="center"
                                 style="font-size: 2.25rem; font-weight: 700; color: #ffffff; padding: 20px 0;"
                               >
-                                <%= elem(Enum.at(@messages, 0), 1) %>
+                                {elem(Enum.at(@messages, 0), 1)}
                               </td>
                             </tr>
                             <tr>
@@ -234,7 +234,7 @@
                                 align="center"
                                 style="font-size: 2.25rem; font-weight: 700; color: #ffffff; padding: 20px 0;"
                               >
-                                <%= elem(Enum.at(@messages, 1), 1) %>
+                                {elem(Enum.at(@messages, 1), 1)}
                               </td>
                             </tr>
                             <tr>
@@ -280,7 +280,7 @@
                                 align="center"
                                 style="font-size: 2.25rem; font-weight: 700; color: #ffffff; padding: 20px 0;"
                               >
-                                <%= @contacts %>
+                                {@contacts}
                               </td>
                             </tr>
                             <tr>
@@ -326,7 +326,7 @@
                                 align="center"
                                 style="font-size: 2.25rem; font-weight: 700; color: #ffffff; padding: 20px 0;"
                               >
-                                <%= @conversations %>
+                                {@conversations}
                               </td>
                             </tr>
                             <tr>

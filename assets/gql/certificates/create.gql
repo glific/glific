@@ -1,0 +1,7 @@
+#import "./fields.frag.gql"
+
+mutation CreateCertificateTemplate($input: CertificateTemplateInput!) {
+  CreateCertificateTemplate(input: $input) {
+    ...CertificateTemplateFields
+  }
+}

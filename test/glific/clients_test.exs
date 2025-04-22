@@ -585,7 +585,6 @@ defmodule Glific.ClientsTest do
              Atecf.webhook("enable_avni_user", %{"username" => username})
   end
 
-  @tag :sarc
   test "gcs_file_name/1, non-default structure for a specific flow - sarc" do
     # Doesn't have schoolName in contact.fields
     contact =
@@ -633,7 +632,6 @@ defmodule Glific.ClientsTest do
     assert edu_name == "eduname"
   end
 
-  @tag :sarc
   test "gcs_file_name/1, default structure, if different flow - sarc" do
     # Doesn't have schoolName in contact.fields
     contact =
