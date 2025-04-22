@@ -4,7 +4,7 @@ defmodule Glific.Templates.TemplateWorker do
   """
 
   require Logger
-  alias Glific.{Templates, Notification, Notifications.Notification, Notifications}
+  alias Glific.{Notification, Notifications, Notifications.Notification, Templates}
 
   use Oban.Worker,
     queue: :default,

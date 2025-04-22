@@ -7,11 +7,11 @@ defmodule GlificWeb.Resolvers.Templates do
   require Logger
 
   alias Glific.{
+    Notifications,
     Repo,
     Templates,
     Templates.SessionTemplate,
-    Templates.TemplateWorker,
-    Notifications
+    Templates.TemplateWorker
   }
 
   @doc """
