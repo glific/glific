@@ -293,10 +293,14 @@ defmodule Glific.GCS do
       organization_id: m.organization_id,
       all_files: fragment("COUNT(CASE WHEN ? = 'inbound' THEN 1 END)", m.flow),
       unsynced_files:
-        fragment("COUNT(CASE WHEN ? = 'inbound' AND ? IS NULL THEN 1 END)", m.flow, m.gcs_url)
+        selected_as(
+          fragment("COUNT(CASE WHEN ? = 'inbound' AND ? IS NULL THEN 1 END)", m.flow, m.gcs_url),
+          :unsynced
+        )
     })
     |> group_by([m, orgs], [m.organization_id, orgs.name])
-    |> limit(100)
+    |> order_by([_, _], desc: selected_as(:unsynced))
+    |> limit(50)
     |> Repo.all()
   end
 end
