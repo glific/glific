@@ -244,4 +244,27 @@ defmodule Glific.WAManagedPhonesTest do
     assert fetch_result ==
              {:error, ["Elixir.Glific.Notifications.Notification", "Resource not found"]}
   end
+
+  test "delete_existing_wa_managed_phones/1 should delete the WhatsApp data", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone =
+      Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+    _wa_group =
+      Fixtures.wa_group_fixture(%{
+        organization_id: organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    assert Repo.get_by(WAManagedPhone, %{id: wa_managed_phone.id},
+             organization_id: organization_id
+           )
+
+    assert WAManagedPhones.delete_existing_wa_managed_phones(organization_id) == :ok
+
+    refute Repo.get_by(WAManagedPhone, %{id: wa_managed_phone.id},
+             organization_id: organization_id
+           )
+  end
 end
