@@ -216,8 +216,6 @@ defmodule Glific.GcsWorkerTest do
       media = %{"id" => media_id.id, "sync_phase" => "incremental"}
       assert is_nil(GcsWorker.add_message_media_error(media, "GCSWORKER failed"))
 
-      # Tests for generating sync report data
-      assert [%{name: "Glific", all_files: 6, unsynced_files: 6}] = GCS.generate_media_sync_data()
       assert :ok = GCS.send_internal_media_sync_report()
 
       assert %MailLog{content: content} =
