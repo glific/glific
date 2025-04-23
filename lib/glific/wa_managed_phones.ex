@@ -153,7 +153,7 @@ defmodule Glific.WAManagedPhones do
   def delete_existing_wa_managed_phones(org_id) do
     WAManagedPhone
     |> where([wam], wam.organization_id == ^org_id)
-    |> Repo.delete_all(organization_id: org_id)
+    |> Repo.delete_all(organization_id: org_id, timeout: 600_000)
 
     :ok
   end
