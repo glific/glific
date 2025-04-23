@@ -49,6 +49,7 @@ defmodule Glific.Certificates.Certificate do
           fields.organization_id
         )
 
+      Glific.Metrics.increment("certificates issued")
       %{success: true, certificate_url: image}
     else
       {:error, error} ->
@@ -63,6 +64,7 @@ defmodule Glific.Certificates.Certificate do
             fields.organization_id
           )
 
+        Glific.Metrics.increment("certificate generation failed")
         %{success: false, reason: error}
     end
   end
