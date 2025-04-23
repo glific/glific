@@ -6,7 +6,6 @@ defmodule Glific.GCS do
   @behaviour Waffle.Storage.Google.Token.Fetcher
   require Logger
   import Ecto.Query
-  use Publicist
 
   alias Glific.{
     Communications.Mailer,
