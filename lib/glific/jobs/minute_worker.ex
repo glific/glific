@@ -89,20 +89,6 @@ defmodule Glific.Jobs.MinuteWorker do
     :ok
   end
 
-  defp perform(%Oban.Job{args: %{"job" => job}} = _args, _services)
-       when job in ["weekly_report", "weekly_tasks"] do
-    case job do
-      "weekly_report" ->
-        Partners.perform_all(&Partners.send_dashboard_report/2, %{frequency: "WEEKLY"}, [])
-
-      "weekly_tasks" ->
-        Partners.perform_all(&Glific.Clients.weekly_tasks/1, nil, [])
-        Erase.perform_weekly()
-    end
-
-    :ok
-  end
-
   defp perform(%Oban.Job{args: %{"job" => job}} = _args, services)
        when job in [
               "daily_tasks",
@@ -159,6 +145,10 @@ defmodule Glific.Jobs.MinuteWorker do
           services["google_cloud_storage"],
           only_recent: true
         )
+
+      "weekly_tasks" ->
+        Partners.perform_all(&Glific.Clients.weekly_tasks/1, nil, [])
+        Erase.perform_weekly()
     end
 
     :ok
