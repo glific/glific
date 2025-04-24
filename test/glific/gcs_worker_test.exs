@@ -145,6 +145,7 @@ defmodule Glific.GcsWorkerTest do
     end
   end
 
+  @tag :tt
   test "perform_periodic/2, sweeping from start on every night for unsynced media_ids", attrs do
     with_mock(
       Goth.Token,
@@ -186,11 +187,10 @@ defmodule Glific.GcsWorkerTest do
 
       assert :ok = GcsWorker.perform_periodic(attrs.organization_id, %{phase: "unsynced"})
 
-      # When we run unsynced again after few mins, we see that only one jobs is
+      # When we run unsynced again after few mins, we see that no more jobs are
       # enqueued, this is due to the media_id pointer is ahead and we don't look
       # backwards. This is intended as once the nightly job starts then its incremental
-      # if the last max_id gcs_url was not null, then, no jobs would have been enqueued
-      assert %{success: 0, failure: 1, snoozed: 0, discard: 0, cancelled: 0} ==
+      assert %{success: 0, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :gcs)
 
       unsynced_gcs_job = Jobs.get_gcs_job(attrs.organization_id, "unsynced")
