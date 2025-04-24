@@ -301,6 +301,6 @@ defmodule Glific.GCS do
     |> group_by([m, orgs], [m.organization_id, orgs.name])
     |> order_by([_, _], desc: selected_as(:unsynced))
     |> limit(50)
-    |> Repo.all()
+    |> Repo.all(skip_organization_id: true)
   end
 end
