@@ -90,7 +90,12 @@ defmodule Glific.Communications.Mailer do
 
     send_to = get_team_email(org, team, send_to)
 
-    in_cc = in_cc ++ [glific_support()]
+    in_cc =
+      if Keyword.get(opts, :ignore_cc_support) do
+        in_cc
+      else
+        in_cc ++ [glific_support()]
+      end
 
     new()
     |> to(send_to)

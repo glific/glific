@@ -9,6 +9,7 @@ defmodule Glific.GCS.GcsWorker do
 
   import Ecto.Query
   require Logger
+  use Publicist
 
   use Oban.Worker,
     queue: :gcs,
@@ -31,6 +32,7 @@ defmodule Glific.GCS.GcsWorker do
 
   @provider_shortcode "google_cloud_storage"
 
+  @nightly_interval_hrs 20
   @doc """
   This is called from the cron job on a regular schedule. we sweep the message media url  table
   and queue them up for delivery to gcs
@@ -53,31 +55,47 @@ defmodule Glific.GCS.GcsWorker do
   defp jobs(organization_id, phase) do
     gcs_job = Jobs.get_gcs_job(organization_id, phase)
 
-    message_media_id = if gcs_job == nil, do: 0, else: gcs_job.message_media_id
+    message_media_id =
+      cond do
+        gcs_job == nil ->
+          0
+
+        gcs_job.type == "unsynced" ->
+          get_unsynced_media_id(gcs_job, organization_id)
+
+        # incremental
+        true ->
+          gcs_job.message_media_id
+      end
 
     message_media_id = message_media_id || 0
 
     limit = files_per_minute_count()
 
+    # Gupshup expires files older than 30 days, so we have to make sure
+    # the we try to sync medias which are not older than last 30 days to prevent
+    # rate-limiting errors from gupshup.
+
     data =
       MessageMedia
       |> select([m], m.id)
-      |> where([m], m.organization_id == ^organization_id and m.id > ^message_media_id)
+      |> where([m], m.organization_id == ^organization_id and m.id >= ^message_media_id)
       |> where([m], m.flow == :inbound)
       |> where([m], is_nil(m.gcs_url))
+      |> where([m], m.inserted_at > fragment("NOW() - INTERVAL '30 day'"))
       |> order_by([m], asc: m.id)
       |> limit(^limit)
       |> check_phase(organization_id, phase)
       |> Repo.all()
 
-    max_id = if is_list(data), do: List.last(data), else: message_media_id
+    max_id = List.last(data)
 
-    if !is_nil(max_id) and max_id > message_media_id do
+    if !is_nil(max_id) and max_id >= message_media_id do
       Logger.info(
         "GCSWORKER: Updating #{phase} GCS jobs with max id:  #{max_id} , min id: #{message_media_id} for org_id: #{organization_id}"
       )
 
-      queue_urls(organization_id, message_media_id, max_id)
+      queue_urls(organization_id, message_media_id, max_id, phase)
 
       Jobs.update_gcs_job(%{
         message_media_id: max_id,
@@ -116,11 +134,12 @@ defmodule Glific.GCS.GcsWorker do
   @doc """
     Queue urls for gcs jobs.
   """
-  @spec queue_urls(non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
-  def queue_urls(organization_id, min_id, max_id) do
+  @spec queue_urls(non_neg_integer, non_neg_integer, non_neg_integer, String.t()) :: :ok
+  def queue_urls(organization_id, min_id, max_id, phase) do
     query =
       GCS.base_query(organization_id)
-      |> where([m], m.id > ^min_id and m.id <= ^max_id)
+      |> where([m], m.id >= ^min_id and m.id <= ^max_id)
+      |> where([m, _msg], is_nil(m.gcs_url))
       |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id, msg.flow_id])
 
     query
@@ -129,14 +148,14 @@ defmodule Glific.GCS.GcsWorker do
       [],
       fn row, _acc ->
         row
-        |> make_media(organization_id)
+        |> make_media(organization_id, phase)
         |> make_job()
       end
     )
   end
 
-  @spec make_media(list(), non_neg_integer) :: map()
-  defp make_media(row, organization_id) do
+  @spec make_media(list(), non_neg_integer, String.t()) :: map()
+  defp make_media(row, organization_id, phase) do
     [id, url, type, contact_id, flow_id] = row
 
     Logger.info("GCSWORKER: Making media for media id: #{id}")
@@ -147,7 +166,8 @@ defmodule Glific.GCS.GcsWorker do
       type: type,
       contact_id: contact_id,
       flow_id: if(is_nil(flow_id), do: 0, else: flow_id),
-      organization_id: organization_id
+      organization_id: organization_id,
+      sync_phase: phase
     }
   end
 
@@ -207,7 +227,7 @@ defmodule Glific.GCS.GcsWorker do
           "GCSWORKER: GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
 
         Logger.info(error)
-
+        add_message_media_error(media, error)
         {:error, error}
 
       {:error, error} ->
@@ -215,7 +235,7 @@ defmodule Glific.GCS.GcsWorker do
           "GCSWORKER: GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}"
 
         Logger.info(error)
-
+        add_message_media_error(media, error)
         {:discard, error}
     end
   end
@@ -232,6 +252,7 @@ defmodule Glific.GCS.GcsWorker do
 
       {:error, error} ->
         handle_gcs_error(media["organization_id"], error)
+        |> then(&add_message_media_error(media, &1))
     end
 
     :ok
@@ -382,6 +403,32 @@ defmodule Glific.GCS.GcsWorker do
 
       error ->
         {:error, error}
+    end
+  end
+
+  # Updates the message_media with the gcs sync error
+
+  # We are only adding error reason to messages_media table on unsynced phase
+  # Since the incremental phase runs every min during peak hrs + It becomes critical
+  # to log only when the media sync fails even on unsynced phase
+  @spec add_message_media_error(map(), String.t()) :: {non_neg_integer(), nil | [term()]} | nil
+  defp add_message_media_error(%{"sync_phase" => "unsynced"} = media, error) do
+    MessageMedia
+    |> where([mm], mm.id == ^media["id"])
+    |> update([mm], set: [gcs_error: ^error])
+    |> Repo.update_all([])
+  end
+
+  defp add_message_media_error(_media, _error), do: nil
+
+  # For unsynced phase, every night we start syncing the media from the oldest
+  # unsynced media_id, so that we make sure we don't skip unsynced files at all
+  @spec get_unsynced_media_id(GcsJob.t() | nil, non_neg_integer()) :: non_neg_integer()
+  defp get_unsynced_media_id(gcs_job, organization_id) do
+    if DateTime.diff(DateTime.utc_now(), gcs_job.updated_at, :hour) >= @nightly_interval_hrs do
+      GCS.get_first_unsynced_file(organization_id)
+    else
+      gcs_job.message_media_id
     end
   end
 end
