@@ -90,7 +90,7 @@ defmodule Glific.GCS.GcsWorker do
 
     max_id = List.last(data)
 
-    if !is_nil(max_id) and max_id >= message_media_id do
+    if !is_nil(max_id) and max_id > message_media_id do
       Logger.info(
         "GCSWORKER: Updating #{phase} GCS jobs with max id:  #{max_id} , min id: #{message_media_id} for org_id: #{organization_id}"
       )
