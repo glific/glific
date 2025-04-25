@@ -255,7 +255,7 @@ defmodule Glific.ClientsTest do
     assert contact.phone == phone_num
   end
 
-  test "gcs_file_name/1, when contact_id is nil, raises error" do
+  test "gcs_file_name/1, when contact_id is nil, returns the remote_name" do
     # Doesn't have schoolName in contact.fields
 
     media = %{
