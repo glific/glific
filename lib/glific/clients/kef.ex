@@ -52,8 +52,6 @@ defmodule Glific.Clients.KEF do
         _ -> "Others"
       end
 
-    if is_nil(media["contact_id"]), do: Logger.error("Invalid media for KEF: #{inspect(media)}")
-
     Contacts.Contact
     |> Repo.fetch_by(%{
       id: media["contact_id"],
