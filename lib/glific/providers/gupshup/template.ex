@@ -234,6 +234,7 @@ defmodule Glific.Providers.Gupshup.Template do
     template
     |> Map.put(:buttons, buttons)
     |> Map.put(:button_type, :quick_reply)
+    |> Map.put(:has_buttons, true)
   end
 
   defp do_process_buttons("CALL_TO_ACTION", csv_template, template) do
@@ -255,6 +256,7 @@ defmodule Glific.Providers.Gupshup.Template do
     template
     |> Map.put(:buttons, buttons)
     |> Map.put(:button_type, :call_to_action)
+    |> Map.put(:has_buttons, true)
   end
 
   @spec validate_dropdowns(map()) :: {:ok, map()} | {String.t(), String.t()}
