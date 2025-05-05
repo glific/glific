@@ -944,13 +944,40 @@ defmodule Glific.TemplatesTest do
 
     test "bulk_apply_templates/2 should bulk apply templates", attrs do
       Tesla.Mock.mock(fn
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+          }
+
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
+            body: Jason.encode!(%{}),
             headers: %{
               "content-type" => "image",
               "content-length" => "1232"
             }
+          }
+
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"token\":\"abc123\"}"
+          }
+
+        %{method: :post, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
+          uuid = Ecto.UUID.generate()
+
+          %Tesla.Env{
+            status: 200,
+            body: "{\"template\":{\"id\":\"#{uuid}\"}}"
+          }
+
+        %{method: :post, url: "https://partner.gupshup.io/partner/app/Glific42/upload/media"} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"handleId\":{\"message\":\"123\"},\"status\":\"success\"}"
           }
       end)
 
@@ -962,6 +989,9 @@ defmodule Glific.TemplatesTest do
 
       assert csv_rows ==
                "Title,Status\r\nSignup Arogya,Invalid Category\r\nWelcome Arogya,Template has been applied successfully\r\nHelp Arogya,Invalid Language\r\nActivity,Template has been applied successfully\r\nSignout Arogya,Message and Sample Message does not match\r\nOptin Arogya,Invalid Button Type\r\nHelp Arogya 2,Template has been applied successfully\r\nSignup Arogya 2,Template has been applied successfully\r\nWelcome Arogya 2,Template has been applied successfully"
+
+      assert %{success: 5, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default)
     end
 
     test "update_hsms/1 should insert newly received HSM", attrs do
