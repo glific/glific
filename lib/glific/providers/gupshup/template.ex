@@ -247,9 +247,9 @@ defmodule Glific.Providers.Gupshup.Template do
       ]
       |> Enum.map(fn {title, type, value} ->
         if type == "Phone Number" do
-          %{"text" => title, "type" => type, "phone_number" => value}
+          %{"text" => title, "type" => "PHONE_NUMBER", "phone_number" => value}
         else
-          %{"text" => title, "type" => type, "url" => value}
+          %{"text" => title, "type" => "URL", "url" => value}
         end
       end)
 
