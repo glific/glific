@@ -312,9 +312,18 @@ defmodule Glific.Contacts.Import do
 
   @spec may_update_contact(map()) :: {:ok, any} | {:error, any}
   defp may_update_contact(contact_attrs) do
+    {:ok, old_contact} = Repo.fetch_by(Contact, %{phone: contact_attrs.phone})
+
     case Contacts.maybe_update_contact(contact_attrs) do
       {:ok, contact} ->
         create_group_and_contact_fields(contact_attrs, contact)
+
+        capture_language_history(
+          contact_attrs.phone,
+          contact_attrs.language_id,
+          old_contact.language_id
+        )
+
         {:ok, %{contact.phone => "Contact has been updated"}}
 
       {:error, error} ->
@@ -419,21 +428,33 @@ defmodule Glific.Contacts.Import do
   defp add_language(results, language) do
     case Settings.get_language_by_label_or_locale(language) do
       [] ->
-        capture_language_history(results.phone, "English")
         add_default_language(results)
 
       [lang | _] ->
-        capture_language_history(results.phone, lang.label)
         Map.put(results, :language_id, lang.id)
     end
   end
 
-  @spec capture_language_history(String.t(), String.t()) :: :ok | {:error, any()}
-  defp capture_language_history(phone, lang) do
-    with {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone}) do
-      Contacts.capture_history(contact, :contact_language_updated, %{
-        event_label: "Changed contact language to #{lang}, via import."
-      })
+  @spec capture_language_history(String.t(), String.t(), String.t()) ::
+          {:ok, ContactHistory.t()} | {:error, any()}
+  defp capture_language_history(phone, language, old_language) do
+    changed_lang = Settings.get_language!(language)
+    old_lang = Settings.get_language!(old_language)
+
+    if(changed_lang.id !== old_lang.id) do
+      with {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone}) do
+        # IO.inspect(contact)
+        Contacts.capture_history(contact, :contact_language_updated, %{
+          event_label: "Changed contact language to #{changed_lang.label}, via import.",
+          event_meta: %{
+            language: %{
+              id: changed_lang.id,
+              label: changed_lang.label,
+              old_language: old_lang.id
+            }
+          }
+        })
+      end
     end
   end
 
