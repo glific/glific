@@ -1,15 +1,18 @@
 defmodule Glific.PartnersTest do
   alias Faker.{Person, Phone}
+  use Oban.Pro.Testing, repo: Glific.Repo
   use Glific.DataCase
   import Mock
 
   alias Glific.{
     Fixtures,
+    Notifications,
     Notifications.Notification,
     Partners,
     Partners.Credential,
     Partners.Provider,
     Providers.Gupshup.PartnerAPI,
+    Providers.Maytapi.WAWorker,
     Repo,
     Seeds.SeedsDev
   }
@@ -1025,6 +1028,169 @@ defmodule Glific.PartnersTest do
       }
 
       {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
+    end
+
+    test "update_credential/2 for maytapi should update credentials" do
+      org = SeedsDev.seed_organizations()
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :get,
+          url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/listPhones"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: ~s([
+            {
+              "id": 45976,
+              "name": "",
+              "number": "918887048283",
+              "status": "active",
+              "type": "whatsapp",
+              "data": {"mobile_proxy": true},
+              "multi_device": true
+            }
+          ])}}
+
+        %{
+          method: :get,
+          url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/45976/getGroups"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: ~s({
+            "count": 1,
+            "data": [
+              {
+                "id": "120363411352918646@g.us",
+                "name": "test",
+                "admins": ["918887048283@c.us"],
+                "participants": ["918887048283@c.us", "914287925084@c.us"],
+                "config": {
+                  "approveNewMembers": false,
+                  "disappear": false,
+                  "edit": "all",
+                  "membersCanAddMembers": false,
+                  "send": "all"
+                }
+              }
+            ]
+          })}}
+
+        %{
+          method: :post,
+          url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/setWebhook"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: ~s({"success": true})}}
+      end)
+
+      {:ok, credential} =
+        Partners.create_credential(%{
+          organization_id: org.id,
+          shortcode: "maytapi",
+          keys: %{},
+          secrets: %{
+            "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+            "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+          }
+        })
+
+      valid_update_attrs = %{
+        keys: %{},
+        secrets: %{
+          "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+          "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+        },
+        is_active: true,
+        organization_id: org.id,
+        shortcode: "maytapi"
+      }
+
+      assert {:ok, _cred} = Partners.update_credential(credential, valid_update_attrs)
+
+      assert_enqueued(worker: WAWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :wa_group)
+
+      notifications =
+        Repo.all(
+          from n in Notification,
+            where: n.organization_id == ^org.id and n.category == "WhatsApp Groups",
+            order_by: [desc: n.inserted_at]
+        )
+
+      messages = Enum.map(notifications, & &1.message)
+
+      assert "Syncing of WhatsApp groups and contacts has started in the background." in messages
+
+      assert "Syncing of WhatsApp groups and contacts has been completed successfully." in messages
+
+      severities = Enum.map(notifications, & &1.severity)
+      assert Notifications.types().info in severities
+    end
+
+    test "update_credential/2 for maytapi should not update credentials with wrong payload" do
+      org = SeedsDev.seed_organizations()
+
+      {:ok, credential} =
+        Partners.create_credential(%{
+          organization_id: org.id,
+          shortcode: "maytapi",
+          keys: %{},
+          secrets: %{
+            "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+            "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+          }
+        })
+
+      valid_update_attrs = %{
+        keys: %{},
+        secrets: %{
+          "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+          "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+        },
+        is_active: true,
+        organization_id: org.id,
+        shortcode: "maytapi"
+      }
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :get,
+          url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/listPhones"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: ~s([
+            {
+              "id": 45976,
+              "name": "",
+              "number": "918887048283",
+              "type": "whatsapp",
+              "data": {"mobile_proxy": true},
+              "multi_device": true
+            }
+          ])}}
+      end)
+
+      assert {:ok, _cred} = Partners.update_credential(credential, valid_update_attrs)
+
+      assert_enqueued(worker: WAWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :wa_group)
+
+      notifications =
+        Repo.all(
+          from n in Notification,
+            where: n.organization_id == ^org.id and n.category == "WhatsApp Groups",
+            order_by: [desc: n.inserted_at]
+        )
+
+      messages = Enum.map(notifications, & &1.message)
+
+      assert "Syncing of WhatsApp groups and contacts has started in the background." in messages
+
+      assert "WhatsApp group data sync failed: \"No active phones available\"" in messages
+
+      severities = Enum.map(notifications, & &1.severity)
+      assert Notifications.types().info in severities
+      assert Notifications.types().critical in severities
     end
 
     test "get_global_field_map/2 for organization should return global fields map" do

@@ -72,7 +72,8 @@ defmodule Glific.Erase do
       {"flow_contexts", "month"},
       {"flow_results", "month"},
       {"messages_conversations", "month"},
-      {"user_jobs", "month"}
+      {"user_jobs", "month"},
+      {"issued_certificates", "month"}
     ]
     |> Enum.each(fn {table, duration} ->
       Repo.delete_all(

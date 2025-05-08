@@ -8,10 +8,15 @@ defmodule Glific.GCS do
   import Ecto.Query
 
   alias Glific.{
+    Communications.Mailer,
     GCS.GcsJob,
+    Mails.MediaSyncMail,
     Messages.Message,
     Messages.MessageMedia,
     Partners,
+    Partners.Credential,
+    Partners.Organization,
+    Partners.Saas,
     Repo
   }
 
@@ -114,6 +119,8 @@ defmodule Glific.GCS do
     |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
     |> where([m, _msg], m.organization_id == ^organization_id)
     |> where([m, _msg], m.flow == :inbound)
+    # handling gupshup 30 day file expiry
+    |> where([m], m.inserted_at > fragment("NOW() - INTERVAL '30 day'"))
     |> order_by([m], [m.inserted_at, m.id])
   end
 
@@ -217,6 +224,27 @@ defmodule Glific.GCS do
     end
   end
 
+  @doc """
+  Sending a weekly gcs media sync report
+
+  We take the data from the last week.
+  """
+  @spec send_internal_media_sync_report :: :ok
+  def send_internal_media_sync_report do
+    media_sync_data = generate_media_sync_data()
+
+    with {:error, err} <-
+           MediaSyncMail.new_mail(media_sync_data)
+           |> Mailer.send(%{
+             category: "media_sync_report",
+             organization_id: Saas.organization_id()
+           }) do
+      Logger.error("Sending gcs media sync report failed due to #{inspect(err)}")
+    end
+
+    :ok
+  end
+
   @spec do_enable_bucket_logs(String.t(), String.t(), String.t()) ::
           {:ok, any()} | {:error, any()}
   defp do_enable_bucket_logs(bucket_name, log_bucket, log_object_prefix) do
@@ -246,5 +274,33 @@ defmodule Glific.GCS do
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  @spec generate_media_sync_data :: list(map())
+  defp generate_media_sync_data do
+    get_active_gcs_orgs =
+      Credential
+      |> where([c], c.provider_id == 6 and c.is_active == true)
+      |> select([c], c.organization_id)
+
+    MessageMedia
+    |> join(:left, [m], orgs in Organization, as: :orgs, on: m.organization_id == orgs.id)
+    |> where([m, _orgs], m.inserted_at >= fragment("NOW() - INTERVAL '7 day'"))
+    |> where([m, _orgs], m.inserted_at <= fragment("NOW()"))
+    |> where([m, orgs], m.organization_id in subquery(get_active_gcs_orgs))
+    |> select([m, orgs], %{
+      name: orgs.name,
+      organization_id: m.organization_id,
+      all_files: fragment("COUNT(CASE WHEN ? = 'inbound' THEN 1 END)", m.flow),
+      unsynced_files:
+        selected_as(
+          fragment("COUNT(CASE WHEN ? = 'inbound' AND ? IS NULL THEN 1 END)", m.flow, m.gcs_url),
+          :unsynced
+        )
+    })
+    |> group_by([m, orgs], [m.organization_id, orgs.name])
+    |> order_by([_, _], desc: selected_as(:unsynced))
+    |> limit(50)
+    |> Repo.all(skip_organization_id: true)
   end
 end

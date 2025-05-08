@@ -64,7 +64,6 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       token = secrets["token"]
 
       url = @maytapi_url <> "/#{product_id}/#{phone_id}/getGroups"
-
       maytapi_get(url, token)
     end
   end

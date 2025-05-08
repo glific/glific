@@ -191,6 +191,27 @@ defmodule Glific.CommunicationsTest do
       assert message.sent_at == nil
     end
 
+    test "handle connection refused error when API call fails",
+         %{global_schema: global_schema} = attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> {:error, :connrefused}
+      end)
+
+      message = message_fixture(attrs)
+      Communications.Message.send_message(message)
+      assert_enqueued(worker: Worker, prefix: global_schema)
+
+      # To verify the error is handled
+      assert %{success: 1, cancelled: 0, discard: 0, failure: 0, snoozed: 0} =
+               Oban.drain_queue(queue: :gupshup)
+
+      message = Messages.get_message!(message.id)
+      assert message.bsp_message_id == nil
+      assert message.bsp_status == :error
+      assert message.flow == :outbound
+      assert message.sent_at == nil
+    end
+
     test "send media message should update the provider message id",
          %{global_schema: global_schema} = attrs do
       message_media = message_media_fixture(%{organization_id: attrs.organization_id})
