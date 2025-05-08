@@ -14,6 +14,9 @@ defmodule Glific.Clients.Lahi do
   Tweak GCS Bucket name based Lahi usecase
   """
   @spec gcs_file_name(map()) :: String.t()
+  def gcs_file_name(%{"contact_id" => contact_id} = media) when is_nil(contact_id),
+    do: media["remote_name"]
+
   def gcs_file_name(media) do
     contact = Contact |> where([c], c.id == ^media["contact_id"]) |> Repo.one()
 

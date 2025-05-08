@@ -19,6 +19,9 @@ defmodule Glific.Clients.Sol do
   We add a contact id suffix to prevent name collisions
   """
   @spec gcs_file_name(map()) :: String.t()
+  def gcs_file_name(%{"contact_id" => contact_id} = media) when is_nil(contact_id),
+    do: media["remote_name"]
+
   def gcs_file_name(media) do
     {:ok, contact} =
       Repo.fetch_by(Contacts.Contact, %{

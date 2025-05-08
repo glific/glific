@@ -145,7 +145,6 @@ defmodule Glific.GcsWorkerTest do
     end
   end
 
-  @tag :tt
   test "perform_periodic/2, sweeping from start on every night for unsynced media_ids", attrs do
     with_mock(
       Goth.Token,
