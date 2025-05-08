@@ -234,6 +234,7 @@ defmodule Glific.Providers.Gupshup.Template do
     template
     |> Map.put(:buttons, buttons)
     |> Map.put(:button_type, :quick_reply)
+    |> Map.put(:has_buttons, true)
   end
 
   defp do_process_buttons("CALL_TO_ACTION", csv_template, template) do
@@ -246,15 +247,16 @@ defmodule Glific.Providers.Gupshup.Template do
       ]
       |> Enum.map(fn {title, type, value} ->
         if type == "Phone Number" do
-          %{"text" => title, "type" => type, "phone_number" => value}
+          %{"text" => title, "type" => "PHONE_NUMBER", "phone_number" => value}
         else
-          %{"text" => title, "type" => type, "url" => value}
+          %{"text" => title, "type" => "URL", "url" => value}
         end
       end)
 
     template
     |> Map.put(:buttons, buttons)
     |> Map.put(:button_type, :call_to_action)
+    |> Map.put(:has_buttons, true)
   end
 
   @spec validate_dropdowns(map()) :: {:ok, map()} | {String.t(), String.t()}
