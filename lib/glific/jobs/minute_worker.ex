@@ -95,7 +95,6 @@ defmodule Glific.Jobs.MinuteWorker do
        when job in ["weekly_report", "weekly_tasks"] do
     case job do
       "weekly_report" ->
-        Partners.perform_all(&Partners.send_dashboard_report/2, %{frequency: "WEEKLY"}, [])
         GCS.send_internal_media_sync_report()
 
       "weekly_tasks" ->
