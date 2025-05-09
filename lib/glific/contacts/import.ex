@@ -439,14 +439,13 @@ defmodule Glific.Contacts.Import do
   end
 
   @spec capture_language_history(String.t(), String.t(), String.t()) ::
-          {:ok, ContactHistory.t()} | {:error, any()}
+          {:ok, ContactHistory.t()} | {:error, any()} | :ok | nil
   defp capture_language_history(phone, language, old_language) do
     changed_lang = Settings.get_language!(language)
     old_lang = Settings.get_language!(old_language)
 
-    if(changed_lang.id !== old_lang.id) do
+    if changed_lang.id !== old_lang.id do
       with {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone}) do
-        # IO.inspect(contact)
         Contacts.capture_history(contact, :contact_language_updated, %{
           event_label: "Changed contact language to #{changed_lang.label}, via import.",
           event_meta: %{
