@@ -10,6 +10,7 @@ defmodule Glific.Contacts.Import do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.ContactHistory,
     Contacts.ImportWorker,
     Flows.ContactField,
     Groups,
