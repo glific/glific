@@ -10,6 +10,7 @@ defmodule Glific.Contacts.Import do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.ContactHistory,
     Contacts.ImportWorker,
     Flows.ContactField,
     Groups,
@@ -312,9 +313,20 @@ defmodule Glific.Contacts.Import do
 
   @spec may_update_contact(map()) :: {:ok, any} | {:error, any}
   defp may_update_contact(contact_attrs) do
+    old_contact_result = Repo.fetch_by(Contact, %{phone: contact_attrs.phone})
+
     case Contacts.maybe_update_contact(contact_attrs) do
       {:ok, contact} ->
         create_group_and_contact_fields(contact_attrs, contact)
+
+        with {:ok, old_contact} <- old_contact_result do
+          capture_language_history(
+            contact_attrs.phone,
+            contact_attrs.language_id,
+            old_contact.language_id
+          )
+        end
+
         {:ok, %{contact.phone => "Contact has been updated"}}
 
       {:error, error} ->
@@ -423,6 +435,32 @@ defmodule Glific.Contacts.Import do
 
       [lang | _] ->
         Map.put(results, :language_id, lang.id)
+    end
+  end
+
+  @spec capture_language_history(
+          String.t(),
+          non_neg_integer() | String.t(),
+          non_neg_integer() | String.t()
+        ) ::
+          {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()} | :ok
+  defp capture_language_history(phone, language, old_language) do
+    changed_lang = Settings.get_language!(language)
+    old_lang = Settings.get_language!(old_language)
+
+    if changed_lang.id !== old_lang.id do
+      with {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone}) do
+        Contacts.capture_history(contact, :contact_language_updated, %{
+          event_label: "Changed contact language to #{changed_lang.label}, via import.",
+          event_meta: %{
+            language: %{
+              id: changed_lang.id,
+              label: changed_lang.label,
+              old_language: old_lang.id
+            }
+          }
+        })
+      end
     end
   end
 
