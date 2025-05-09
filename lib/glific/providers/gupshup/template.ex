@@ -246,10 +246,10 @@ defmodule Glific.Providers.Gupshup.Template do
          csv_template["CTA Button 2 Value"]}
       ]
       |> Enum.map(fn {title, type, value} ->
-        if type == "Phone Number" do
-          %{"text" => title, "type" => "PHONE_NUMBER", "phone_number" => value}
+        if type == "PHONE_NUMBER" do
+          %{"text" => title, "type" => type, "phone_number" => value}
         else
-          %{"text" => title, "type" => "URL", "url" => value}
+          %{"text" => title, "type" => type, "url" => value}
         end
       end)
 
@@ -330,8 +330,8 @@ defmodule Glific.Providers.Gupshup.Template do
   defp has_valid_buttons?("TRUE", template) do
     case template["Button Type"] do
       "CALL_TO_ACTION" ->
-        if template["CTA Button 1 Type"] in ["Phone Number", "URL"] &&
-             template["CTA Button 2 Type"] in ["Phone Number", "URL"] do
+        if template["CTA Button 1 Type"] in ["PHONE_NUMBER", "URL"] &&
+             template["CTA Button 2 Type"] in ["PHONE_NUMBER", "URL"] do
           true
         else
           {:error, "Invalid Call To Action Button type"}
