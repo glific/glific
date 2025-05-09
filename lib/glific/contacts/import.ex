@@ -438,8 +438,12 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  @spec capture_language_history(String.t(), String.t(), String.t()) ::
-          {:ok, ContactHistory.t()} | {:error, any()} | :ok | nil
+  @spec capture_language_history(
+          String.t(),
+          non_neg_integer() | String.t(),
+          non_neg_integer() | String.t()
+        ) ::
+          {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()} | :ok
   defp capture_language_history(phone, language, old_language) do
     changed_lang = Settings.get_language!(language)
     old_lang = Settings.get_language!(old_language)
