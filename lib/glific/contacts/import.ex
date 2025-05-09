@@ -312,17 +312,19 @@ defmodule Glific.Contacts.Import do
 
   @spec may_update_contact(map()) :: {:ok, any} | {:error, any}
   defp may_update_contact(contact_attrs) do
-    {:ok, old_contact} = Repo.fetch_by(Contact, %{phone: contact_attrs.phone})
+    old_contact_result = Repo.fetch_by(Contact, %{phone: contact_attrs.phone})
 
     case Contacts.maybe_update_contact(contact_attrs) do
       {:ok, contact} ->
         create_group_and_contact_fields(contact_attrs, contact)
 
-        capture_language_history(
-          contact_attrs.phone,
-          contact_attrs.language_id,
-          old_contact.language_id
-        )
+        with {:ok, old_contact} <- old_contact_result do
+          capture_language_history(
+            contact_attrs.phone,
+            contact_attrs.language_id,
+            old_contact.language_id
+          )
+        end
 
         {:ok, %{contact.phone => "Contact has been updated"}}
 
