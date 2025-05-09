@@ -1,10 +1,13 @@
 defmodule Glific.TemplatesTest do
   alias Glific.Messages.MessageMedia
+  use Oban.Pro.Testing, repo: Glific.Repo
   use Glific.DataCase
 
   alias Glific.{
     Fixtures,
     Mails.MailLog,
+    Notifications,
+    Notifications.Notification,
     Partners,
     Providers.Gupshup,
     Providers.Gupshup.PartnerAPI,
@@ -12,7 +15,8 @@ defmodule Glific.TemplatesTest do
     Seeds.SeedsDev,
     Settings,
     Templates,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Templates.TemplateWorker
   }
 
   setup do
@@ -1877,5 +1881,79 @@ defmodule Glific.TemplatesTest do
     assert session_template.shortcode == "conference_ticket_status"
     assert session_template.is_hsm == true
     assert session_template.language_id == language.id
+  end
+
+  @org_id 1
+  setup do
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => "sk_test_partner_token"})
+        }
+
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "data" => %{
+                "partner_app_token" => "fake-token"
+              }
+            })
+        }
+
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "templates" => [
+                %{
+                  "id" => "51eddb1e-8e36-44df-a9e5-2815e4f8463b",
+                  "elementName" => "qa_automation_qa_automation_112907flejpaiqah9z",
+                  "languageCode" => "en",
+                  "category" => "MARKETING",
+                  "status" => "APPROVED",
+                  "templateType" => "TEXT",
+                  "data" =>
+                    "Dear {{1}}\nExclusive deals on car and train bookings. Book now..!!\nThank you"
+                }
+              ]
+            })
+        }
+    end)
+
+    :ok
+  end
+
+  test "successful HSM sync from BSP", attrs do
+    context = %{context: %{current_user: attrs}}
+
+    assert {:ok, %{message: "successful"}} =
+             GlificWeb.Resolvers.Templates.sync_hsm_template(nil, %{}, context)
+
+    assert_enqueued(
+      worker: TemplateWorker,
+      prefix: "global"
+    )
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default)
+
+    notifications =
+      Repo.all(
+        from n in Notification,
+          where: n.organization_id == ^@org_id and n.category == "HSM template",
+          order_by: [desc: n.inserted_at]
+      )
+
+    messages = Enum.map(notifications, & &1.message)
+
+    assert "Syncing of HSM templates has started in the background." in messages
+    assert "HSM template sync completed successfully." in messages
+
+    severities = Enum.map(notifications, & &1.severity)
+    assert Notifications.types().info in severities
   end
 end
