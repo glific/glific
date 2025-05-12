@@ -31,6 +31,9 @@ defmodule Glific.Clients.Tap do
   and set the remote name to be a sub-directory under that group (if one exists)
   """
   @spec gcs_file_name(map()) :: String.t()
+  def gcs_file_name(%{"contact_id" => contact_id} = media) when is_nil(contact_id),
+    do: media["remote_name"]
+
   def gcs_file_name(media) do
     group_name =
       Contact

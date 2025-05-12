@@ -40,6 +40,9 @@ defmodule Glific.Clients.KEF do
   Generate custom GCS bucket name based on group that the contact is in (if any)
   """
   @spec gcs_file_name(map()) :: String.t()
+  def gcs_file_name(%{"contact_id" => contact_id} = media) when is_nil(contact_id),
+    do: media["remote_name"]
+
   def gcs_file_name(media) do
     media_subfolder =
       case media["type"] do
@@ -48,8 +51,6 @@ defmodule Glific.Clients.KEF do
         "audio" -> "Audio note"
         _ -> "Others"
       end
-
-    if is_nil(media["contact_id"]), do: Logger.error("Invalid media for KEF: #{inspect(media)}")
 
     Contacts.Contact
     |> Repo.fetch_by(%{
