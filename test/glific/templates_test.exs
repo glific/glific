@@ -1884,7 +1884,8 @@ defmodule Glific.TemplatesTest do
   end
 
   @org_id 1
-  setup do
+
+  test "successful HSM sync from BSP", attrs do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
         %Tesla.Env{
@@ -1924,19 +1925,12 @@ defmodule Glific.TemplatesTest do
         }
     end)
 
-    :ok
-  end
-
-  test "successful HSM sync from BSP", attrs do
     context = %{context: %{current_user: attrs}}
 
-    assert {:ok, %{message: "successful"}} =
+    assert {:ok, %{message: "HSM sync job queued successfully"}} =
              GlificWeb.Resolvers.Templates.sync_hsm_template(nil, %{}, context)
 
-    assert_enqueued(
-      worker: TemplateWorker,
-      prefix: "global"
-    )
+    assert_enqueued(worker: TemplateWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :default)
@@ -1955,5 +1949,60 @@ defmodule Glific.TemplatesTest do
 
     severities = Enum.map(notifications, & &1.severity)
     assert Notifications.types().info in severities
+  end
+
+  test "handle the failure case when the sync fails", attrs do
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => "sk_test_partner_token"})
+        }
+
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "data" => %{
+                "partner_app_token" => "fake-token"
+              }
+            })
+        }
+
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
+        %Tesla.Env{
+          status: 500,
+          body: "Internal Server Error"
+        }
+    end)
+
+    context = %{context: %{current_user: attrs}}
+
+    assert {:ok, %{message: "HSM sync job queued successfully"}} =
+             GlificWeb.Resolvers.Templates.sync_hsm_template(nil, %{}, context)
+
+    assert_enqueued(worker: TemplateWorker, prefix: "global")
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default)
+
+    notifications =
+      Repo.all(
+        from n in Notification,
+          where: n.organization_id == ^@org_id and n.category == "HSM template",
+          order_by: [desc: n.inserted_at]
+      )
+
+    messages = Enum.map(notifications, & &1.message)
+
+    assert "Syncing of HSM templates has started in the background." in messages
+
+    assert Enum.any?(messages, fn msg ->
+             String.contains?(msg, "Failed to sync HSM templates")
+           end)
+
+    severities = Enum.map(notifications, & &1.severity)
+    assert Notifications.types().critical in severities
   end
 end

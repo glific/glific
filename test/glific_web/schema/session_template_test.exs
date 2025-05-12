@@ -109,7 +109,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     {:ok, updated_hsm2} =
       Repo.fetch_by(SessionTemplate, %{uuid: hsm2.uuid, organization_id: user.organization_id})
 
-    assert message == "successful"
+    assert message == "HSM sync job queued successfully"
     assert updated_hsm.category == "MARKETING"
     assert updated_hsm2.category == "AUTHENTICATION"
     assert updated_hsm.quality == "UNKNOWN"

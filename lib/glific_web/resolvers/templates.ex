@@ -132,7 +132,7 @@ defmodule GlificWeb.Resolvers.Templates do
     queue_hsm_sync(user.organization_id)
   end
 
-  @spec queue_hsm_sync(non_neg_integer()) :: {:ok, :queued} | {:error, String.t()}
+  @spec queue_hsm_sync(non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
   defp queue_hsm_sync(organization_id) do
     args = %{"organization_id" => organization_id, "sync_hsm" => true}
 
@@ -146,11 +146,14 @@ defmodule GlificWeb.Resolvers.Templates do
           entity: %{Provider: "Gupshup"}
         })
 
-        {:ok, %{message: "successful"}}
+        {:ok, %{message: "HSM sync job queued successfully"}}
 
       {:error, reason} ->
-        Logger.error("Failed to queue sync job: #{inspect(reason)}")
-        {:error, "Failed to queue sync job: #{inspect(reason)}"}
+        error_message =
+          "Failed to queue HSM sync job for organization #{organization_id}: #{inspect(reason)}"
+
+        Logger.error(error_message)
+        {:error, error_message}
     end
   end
 

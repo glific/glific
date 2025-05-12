@@ -49,8 +49,6 @@ defmodule Glific.Templates.TemplateWorker do
   end
 
   def perform(%Oban.Job{args: %{"organization_id" => org_id, "sync_hsm" => true}}) do
-    Logger.info("Starting background sync of HSM templates for org #{org_id}")
-
     case Templates.sync_hsms_from_bsp(org_id) do
       :ok ->
         Logger.info("HSM template sync completed successfully for org_id: #{org_id}")
