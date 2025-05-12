@@ -192,6 +192,7 @@ defmodule Glific.Communications.Message do
   @spec receive_message(map(), atom()) :: :ok | {:error, String.t()}
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
     Logger.info("Received message: type: '#{type}', id: '#{message_params[:bsp_message_id]}'")
+
     {:ok, contact} =
       message_params.sender
       |> Map.put(:organization_id, organization_id)
