@@ -321,8 +321,8 @@ defmodule Glific.Communications.Message do
   # lets have a default timeout of 5 seconds for each call
   @timeout 5000
 
-  @spec error(String.t(), any(), any(), list() | nil) :: nil
-  defp error(error, e, r \\ nil, stacktrace \\ nil) do
+  @spec error(String.t(), any(), any(), list() | nil, boolean()) :: nil
+  defp error(error, e, r \\ nil, stacktrace \\ nil, send_to_appsignal \\ true) do
     error = error <> ": #{inspect(e)}, #{inspect(r)}"
     Logger.error(error)
 
@@ -331,7 +331,10 @@ defmodule Glific.Communications.Message do
         do: Process.info(self(), :current_stacktrace) |> elem(1),
         else: stacktrace
 
-    Appsignal.send_error(:error, error, stacktrace)
+    if send_to_appsignal do
+      Appsignal.send_error(:error, error, stacktrace)
+    end
+
     nil
   end
 
@@ -362,7 +365,8 @@ defmodule Glific.Communications.Message do
                 "Poolboy genserver caught error while processing the message for flow.",
                 e,
                 r,
-                __STACKTRACE__
+                __STACKTRACE__,
+                false
               )
           end
         end
