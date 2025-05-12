@@ -321,9 +321,9 @@ defmodule Glific.Contacts.Import do
 
         with {:ok, old_contact} <- old_contact_result do
           capture_language_history(
-            contact_attrs.phone,
-            contact_attrs.language_id,
-            old_contact.language_id
+            contact,
+            old_contact.language_id,
+            contact_attrs.language_id
           )
         end
 
@@ -439,28 +439,26 @@ defmodule Glific.Contacts.Import do
   end
 
   @spec capture_language_history(
-          String.t(),
+          Contact.t(),
           non_neg_integer() | String.t(),
           non_neg_integer() | String.t()
         ) ::
-          {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()} | :ok
-  defp capture_language_history(phone, language, old_language) do
-    changed_lang = Settings.get_language!(language)
-    old_lang = Settings.get_language!(old_language)
+          {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()} | nil
+  defp capture_language_history(contact, old_language_id, language_id) do
+    changed_language = Settings.get_language!(language_id)
+    old_language = Settings.get_language!(old_language_id)
 
-    if changed_lang.id !== old_lang.id do
-      with {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone}) do
-        Contacts.capture_history(contact, :contact_language_updated, %{
-          event_label: "Changed contact language to #{changed_lang.label}, via import.",
-          event_meta: %{
-            language: %{
-              id: changed_lang.id,
-              label: changed_lang.label,
-              old_language: old_lang.id
-            }
+    if changed_language.id !== old_language.id do
+      Contacts.capture_history(contact, :contact_language_updated, %{
+        event_label: "Changed contact language to #{changed_language.label}, via import.",
+        event_meta: %{
+          language: %{
+            id: changed_language.id,
+            label: changed_language.label,
+            old_language: old_language.id
           }
-        })
-      end
+        }
+      })
     end
   end
 
