@@ -1,11 +1,11 @@
 defmodule Glific.TemplatesTest do
-  alias Glific.Messages.MessageMedia
-  use Oban.Pro.Testing, repo: Glific.Repo
   use Glific.DataCase
+  use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
     Fixtures,
     Mails.MailLog,
+    Messages.MessageMedia,
     Notifications,
     Notifications.Notification,
     Partners,
