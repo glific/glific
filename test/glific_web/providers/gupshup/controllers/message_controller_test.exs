@@ -117,8 +117,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
     test "Incoming text message should be stored in the database",
          %{conn: conn, message_params: message_params} do
-      conn = post(conn, "/gupshup", message_params)
-      assert conn.halted
+      conn2 = post(conn, "/gupshup", message_params)
+      assert conn2.halted
+
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
@@ -142,6 +143,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       # Sender should be stored into the db
       assert message.sender.phone ==
                get_in(message_params, ["payload", "sender", "phone"])
+
+      # This will call the lib/glific/communications/message.ex:error function for coverage
+      conn3 = post(conn, "/gupshup", message_params)
+      assert conn3.halted
     end
 
     test "Updating the contacts due to sender contact already existing", %{
