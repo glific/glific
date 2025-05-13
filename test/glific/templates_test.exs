@@ -709,46 +709,6 @@ defmodule Glific.TemplatesTest do
       assert session_template.language_id == language.id
     end
 
-    test "create_session_template/1 for apply template change category" do
-      Tesla.Mock.mock(fn
-        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
-          %Tesla.Env{
-            status: 200,
-            body: Jason.encode!(%{"access_token" => "mocked_token"})
-          }
-
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              Jason.encode!(%{
-                "status" => "success",
-                "template" => %{
-                  "allowTemplateCategoryChange" => true
-                }
-              })
-          }
-      end)
-
-      attrs = %{
-        label: "Default Template Label",
-        type: :text,
-        category: "AUTHENTICATION",
-        body: "some body",
-        is_hsm: true,
-        shortcode: "some_sc",
-        language_id: 1,
-        organization_id: 1,
-        example: "some example",
-        allow_template_category_change: true
-      }
-
-      result = Templates.create_session_template(attrs)
-
-      assert {:ok, template} = result
-      assert template.allow_template_category_change == true
-    end
-
     test "update_session_template/2 with invalid data returns error changeset", attrs do
       session_template = session_template_fixture(attrs)
 

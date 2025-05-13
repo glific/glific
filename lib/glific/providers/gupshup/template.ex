@@ -54,8 +54,7 @@ defmodule Glific.Providers.Gupshup.Template do
            PartnerAPI.apply_for_template(
              attrs.organization_id,
              # we don't need media_url for further processing
-             Map.delete(body, :media_url),
-             Map.get(attrs, :allow_template_category_change, true)
+             Map.delete(body, :media_url)
            ) do
       attrs
       |> Map.merge(%{

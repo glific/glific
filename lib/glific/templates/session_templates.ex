@@ -43,7 +43,6 @@ defmodule Glific.Templates.SessionTemplate do
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
           translations: map() | nil,
-          allow_template_category_change: boolean(),
           has_buttons: boolean(),
           button_type: String.t() | nil,
           buttons: [map()] | [],
@@ -78,8 +77,7 @@ defmodule Glific.Templates.SessionTemplate do
     :buttons,
     :bsp_id,
     :reason,
-    :quality,
-    :allow_template_category_change
+    :quality
   ]
 
   schema "session_templates" do
@@ -99,7 +97,6 @@ defmodule Glific.Templates.SessionTemplate do
     field(:is_source, :boolean, default: false)
     field(:is_active, :boolean, default: false)
     field(:is_reserved, :boolean, default: false)
-    field(:allow_template_category_change, :boolean, default: true)
     field(:translations, :map, default: %{})
 
     field(:has_buttons, :boolean, default: false)
