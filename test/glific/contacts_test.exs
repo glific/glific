@@ -1555,7 +1555,7 @@ defmodule Glific.ContactsTest do
 
       language_history =
         Enum.filter(contact_history, fn history ->
-          history.event_label == "Changed contact language to Hindi, via import." and
+          history.event_label == "Changed contact language to Hindi from English, via import." and
             history.event_type == "contact_language_updated"
         end)
 

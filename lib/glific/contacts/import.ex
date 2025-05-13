@@ -450,7 +450,8 @@ defmodule Glific.Contacts.Import do
 
     if changed_language.id !== old_language.id do
       Contacts.capture_history(contact, :contact_language_updated, %{
-        event_label: "Changed contact language to #{changed_language.label}, via import.",
+        event_label:
+          "Changed contact language to #{changed_language.label} from #{old_language.label}, via import.",
         event_meta: %{
           language: %{
             id: changed_language.id,
