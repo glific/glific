@@ -1545,7 +1545,7 @@ defmodule Glific.PartnersTest do
 
       assert {:error,
               "Template Already exists with same namespace and elementName and languageCode"} =
-               PartnerAPI.apply_for_template(1, %{elementName: "trial"}, false)
+               PartnerAPI.apply_for_template(1, %{elementName: "trial"})
     end
   end
 
@@ -1560,7 +1560,7 @@ defmodule Glific.PartnersTest do
       end)
 
       assert {:ok, %{"message" => "Success", "status" => "error"}} =
-               PartnerAPI.apply_for_template(1, %{elementName: "trial"}, false)
+               PartnerAPI.apply_for_template(1, %{elementName: "trial"})
     end
   end
 end
