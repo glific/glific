@@ -1,5 +1,6 @@
 defmodule GlificWeb.Schema.SessionTemplateTest do
   use GlificWeb.ConnCase
+  use Oban.Pro.Testing, repo: Glific.Repo
   use Wormwood.GQLCase
 
   alias Glific.{
@@ -8,7 +9,8 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     Repo,
     Seeds.SeedsDev,
     Templates,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Templates.TemplateWorker
   }
 
   setup do
@@ -93,13 +95,21 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     {:ok, %{data: %{"syncHSMTemplate" => %{"message" => message}}}} =
       auth_query_gql_by(:sync, user)
 
+    assert_enqueued(
+      worker: TemplateWorker,
+      prefix: "global"
+    )
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default)
+
     {:ok, updated_hsm} =
       Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid, organization_id: user.organization_id})
 
     {:ok, updated_hsm2} =
       Repo.fetch_by(SessionTemplate, %{uuid: hsm2.uuid, organization_id: user.organization_id})
 
-    assert message == "successful"
+    assert message == "HSM sync job queued successfully"
     assert updated_hsm.category == "MARKETING"
     assert updated_hsm2.category == "AUTHENTICATION"
     assert updated_hsm.quality == "UNKNOWN"
