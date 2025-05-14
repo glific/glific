@@ -1060,6 +1060,13 @@ defmodule Glific.Messages do
       {:include_users, user_ids}, query ->
         include_user_filter(query, user_ids)
 
+      {:date_range, %{from: from, to: to}}, query ->
+        {:ok, from_dt} = NaiveDateTime.new(from, ~T[00:00:00])
+        {:ok, to_dt} = NaiveDateTime.new(to, ~T[23:59:59])
+
+        query
+        |> where([m], m.inserted_at >= ^from_dt and m.inserted_at <= ^to_dt)
+
       _filter, query ->
         query
     end)
