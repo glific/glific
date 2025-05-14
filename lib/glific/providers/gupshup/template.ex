@@ -233,6 +233,7 @@ defmodule Glific.Providers.Gupshup.Template do
     template
     |> Map.put(:buttons, buttons)
     |> Map.put(:button_type, :quick_reply)
+    |> Map.put(:has_buttons, true)
   end
 
   defp do_process_buttons("CALL_TO_ACTION", csv_template, template) do
@@ -244,7 +245,7 @@ defmodule Glific.Providers.Gupshup.Template do
          csv_template["CTA Button 2 Value"]}
       ]
       |> Enum.map(fn {title, type, value} ->
-        if type == "Phone Number" do
+        if type == "PHONE_NUMBER" do
           %{"text" => title, "type" => type, "phone_number" => value}
         else
           %{"text" => title, "type" => type, "url" => value}
@@ -254,6 +255,7 @@ defmodule Glific.Providers.Gupshup.Template do
     template
     |> Map.put(:buttons, buttons)
     |> Map.put(:button_type, :call_to_action)
+    |> Map.put(:has_buttons, true)
   end
 
   @spec validate_dropdowns(map()) :: {:ok, map()} | {String.t(), String.t()}
@@ -327,8 +329,8 @@ defmodule Glific.Providers.Gupshup.Template do
   defp has_valid_buttons?("TRUE", template) do
     case template["Button Type"] do
       "CALL_TO_ACTION" ->
-        if template["CTA Button 1 Type"] in ["Phone Number", "URL"] &&
-             template["CTA Button 2 Type"] in ["Phone Number", "URL"] do
+        if template["CTA Button 1 Type"] in ["PHONE_NUMBER", "URL"] &&
+             template["CTA Button 2 Type"] in ["PHONE_NUMBER", "URL"] do
           true
         else
           {:error, "Invalid Call To Action Button type"}

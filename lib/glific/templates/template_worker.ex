@@ -89,10 +89,12 @@ defmodule Glific.Templates.TemplateWorker do
   defp process_template(template) do
     button_type = Glific.safe_string_to_atom(template["button_type"])
     type = Glific.safe_string_to_atom(template["type"])
+    buttons = template["buttons"] || []
 
     template
     |> Glific.atomize_keys()
     |> Map.put(:button_type, button_type)
     |> Map.put(:type, type)
+    |> Map.put(:buttons, buttons)
   end
 end
