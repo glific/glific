@@ -325,9 +325,8 @@ defmodule Glific.Contacts.Import do
 
       {:ok, %{contact.phone => "Contact has been updated"}}
     else
-      {:error, error} ->
-        Map.put(%{}, contact_attrs.phone, "#{error}")
-        {:error, %{contact_attrs.phone => "#{error}"}}
+      {:error, %Ecto.Changeset{}} -> {:error, %{contact_attrs.phone => "Contact not found"}}
+      {:error, error} -> {:error, %{contact_attrs.phone => "#{error}"}}
     end
   end
 
