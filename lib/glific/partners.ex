@@ -19,7 +19,6 @@ defmodule Glific.Partners do
     Flows,
     Flows.Flow,
     GCS,
-    Groups.WAGroups,
     Notifications,
     Partners.Credential,
     Partners.Organization,
@@ -28,11 +27,11 @@ defmodule Glific.Partners do
     Providers.Gupshup.GupshupWallet,
     Providers.Gupshup.PartnerAPI,
     Providers.GupshupContacts,
+    Providers.Maytapi.WAWorker,
     Repo,
     Settings.Language,
     Stats,
-    Users.User,
-    WAManagedPhones
+    Users.User
   }
 
   # We cache organization info under this id since when we want to retrieve
@@ -471,6 +470,7 @@ defmodule Glific.Partners do
       |> Flags.set_contact_profile_enabled()
       |> Flags.set_whatsapp_group_enabled()
       |> Flags.set_ticketing_enabled()
+      |> Flags.set_certificate_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -935,10 +935,25 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(organization, credential, "maytapi") do
-    with :ok <- WAManagedPhones.fetch_wa_managed_phones(organization.id),
-         :ok <- WAGroups.fetch_wa_groups(organization.id),
-         :ok <- WAGroups.set_webhook_endpoint(organization) do
-      {:ok, credential}
+    args = %{"organization_id" => organization.id, "update_credential" => true}
+
+    case Oban.insert(WAWorker.new(args)) do
+      {:ok, _job} ->
+        Notifications.create_notification(%{
+          category: "WhatsApp Groups",
+          message: "Syncing of WhatsApp groups and contacts has started in the background.",
+          severity: Notifications.types().info,
+          organization_id: organization.id,
+          entity: %{
+            Provider: "Maytapi"
+          }
+        })
+
+        {:ok, credential}
+
+      {:error, reason} ->
+        Logger.error("Failed to enqueue credential update job: #{inspect(reason)}")
+        {:error, "Failed to sync WhatsApp data to Glific. Please reach out to Glific Support"}
     end
   end
 
@@ -1188,7 +1203,8 @@ defmodule Glific.Partners do
       "whatsapp_group_enabled" => Flags.get_whatsapp_group_enabled(organization),
       "auto_translation_enabled" =>
         Flags.get_open_ai_auto_translation_enabled(organization) or
-          Flags.get_google_auto_translation_enabled(organization)
+          Flags.get_google_auto_translation_enabled(organization),
+      "certificate_enabled" => Flags.get_certificate_enabled(organization)
     }
   end
 

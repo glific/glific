@@ -1,16 +1,18 @@
 defmodule Glific.PartnersTest do
   alias Faker.{Person, Phone}
+  use Oban.Pro.Testing, repo: Glific.Repo
   use Glific.DataCase
   import Mock
 
   alias Glific.{
     Fixtures,
+    Notifications,
     Notifications.Notification,
     Partners,
     Partners.Credential,
     Partners.Provider,
-    Providers.Gupshup.ApiClient,
     Providers.Gupshup.PartnerAPI,
+    Providers.Maytapi.WAWorker,
     Repo,
     Seeds.SeedsDev
   }
@@ -219,15 +221,45 @@ defmodule Glific.PartnersTest do
       org = SeedsDev.seed_organizations()
 
       Tesla.Mock.mock(fn
-        %{method: :get} ->
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
           %Tesla.Env{
             status: 200,
-            body: "{\"status\":\"success\",\"templates\":[]}"
+            body:
+              Jason.encode!(%{
+                status: "success",
+                data: %{
+                  token: "sk_test_partner_token"
+                }
+              })
           }
+
+        %{method: :get, url: url} ->
+          cond do
+            String.contains?(url, "/token") ->
+              %Tesla.Env{
+                status: 200,
+                body:
+                  Jason.encode!(%{
+                    partner_app_token: "sk_test_partner_app_token"
+                  })
+              }
+
+            String.contains?(url, "/templates") ->
+              %Tesla.Env{
+                status: 200,
+                body:
+                  Jason.encode!(%{
+                    status: "success",
+                    templates: []
+                  })
+              }
+
+            true ->
+              raise "Unexpected GET request to: #{url}"
+          end
       end)
 
-      {:ok, response} = ApiClient.get_templates(org.id)
-
+      {:ok, response} = PartnerAPI.get_templates(org.id)
       decoded_body = Jason.decode!(response.body)
 
       assert decoded_body["status"] == "success"
@@ -325,10 +357,13 @@ defmodule Glific.PartnersTest do
 
     @spec contact_fixture() :: Contacts.Contact.t()
     def contact_fixture do
+      organization = Fixtures.organization_fixture()
+
       {:ok, contact} =
         Glific.Contacts.create_contact(%{
           name: Person.name(),
-          phone: Phone.EnUs.phone()
+          phone: Phone.EnUs.phone(),
+          organization_id: organization.id
         })
 
       contact
@@ -995,6 +1030,169 @@ defmodule Glific.PartnersTest do
       {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
     end
 
+    test "update_credential/2 for maytapi should update credentials" do
+      org = SeedsDev.seed_organizations()
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :get,
+          url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/listPhones"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: ~s([
+            {
+              "id": 45976,
+              "name": "",
+              "number": "918887048283",
+              "status": "active",
+              "type": "whatsapp",
+              "data": {"mobile_proxy": true},
+              "multi_device": true
+            }
+          ])}}
+
+        %{
+          method: :get,
+          url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/45976/getGroups"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: ~s({
+            "count": 1,
+            "data": [
+              {
+                "id": "120363411352918646@g.us",
+                "name": "test",
+                "admins": ["918887048283@c.us"],
+                "participants": ["918887048283@c.us", "914287925084@c.us"],
+                "config": {
+                  "approveNewMembers": false,
+                  "disappear": false,
+                  "edit": "all",
+                  "membersCanAddMembers": false,
+                  "send": "all"
+                }
+              }
+            ]
+          })}}
+
+        %{
+          method: :post,
+          url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/setWebhook"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: ~s({"success": true})}}
+      end)
+
+      {:ok, credential} =
+        Partners.create_credential(%{
+          organization_id: org.id,
+          shortcode: "maytapi",
+          keys: %{},
+          secrets: %{
+            "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+            "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+          }
+        })
+
+      valid_update_attrs = %{
+        keys: %{},
+        secrets: %{
+          "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+          "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+        },
+        is_active: true,
+        organization_id: org.id,
+        shortcode: "maytapi"
+      }
+
+      assert {:ok, _cred} = Partners.update_credential(credential, valid_update_attrs)
+
+      assert_enqueued(worker: WAWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :wa_group)
+
+      notifications =
+        Repo.all(
+          from n in Notification,
+            where: n.organization_id == ^org.id and n.category == "WhatsApp Groups",
+            order_by: [desc: n.inserted_at]
+        )
+
+      messages = Enum.map(notifications, & &1.message)
+
+      assert "Syncing of WhatsApp groups and contacts has started in the background." in messages
+
+      assert "Syncing of WhatsApp groups and contacts has been completed successfully." in messages
+
+      severities = Enum.map(notifications, & &1.severity)
+      assert Notifications.types().info in severities
+    end
+
+    test "update_credential/2 for maytapi should not update credentials with wrong payload" do
+      org = SeedsDev.seed_organizations()
+
+      {:ok, credential} =
+        Partners.create_credential(%{
+          organization_id: org.id,
+          shortcode: "maytapi",
+          keys: %{},
+          secrets: %{
+            "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+            "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+          }
+        })
+
+      valid_update_attrs = %{
+        keys: %{},
+        secrets: %{
+          "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+          "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+        },
+        is_active: true,
+        organization_id: org.id,
+        shortcode: "maytapi"
+      }
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :get,
+          url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/listPhones"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: ~s([
+            {
+              "id": 45976,
+              "name": "",
+              "number": "918887048283",
+              "type": "whatsapp",
+              "data": {"mobile_proxy": true},
+              "multi_device": true
+            }
+          ])}}
+      end)
+
+      assert {:ok, _cred} = Partners.update_credential(credential, valid_update_attrs)
+
+      assert_enqueued(worker: WAWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :wa_group)
+
+      notifications =
+        Repo.all(
+          from n in Notification,
+            where: n.organization_id == ^org.id and n.category == "WhatsApp Groups",
+            order_by: [desc: n.inserted_at]
+        )
+
+      messages = Enum.map(notifications, & &1.message)
+
+      assert "Syncing of WhatsApp groups and contacts has started in the background." in messages
+
+      assert "WhatsApp group data sync failed: \"No active phones available\"" in messages
+
+      severities = Enum.map(notifications, & &1.severity)
+      assert Notifications.types().info in severities
+      assert Notifications.types().critical in severities
+    end
+
     test "get_global_field_map/2 for organization should return global fields map" do
       organization = Fixtures.organization_fixture(%{fields: %{"org_name" => "Glific"}})
       global_fields = Partners.get_global_field_map(organization.id)
@@ -1347,7 +1545,7 @@ defmodule Glific.PartnersTest do
 
       assert {:error,
               "Template Already exists with same namespace and elementName and languageCode"} =
-               PartnerAPI.apply_for_template(1, %{elementName: "trial"}, false)
+               PartnerAPI.apply_for_template(1, %{elementName: "trial"})
     end
   end
 
@@ -1362,7 +1560,7 @@ defmodule Glific.PartnersTest do
       end)
 
       assert {:ok, %{"message" => "Success", "status" => "error"}} =
-               PartnerAPI.apply_for_template(1, %{elementName: "trial"}, false)
+               PartnerAPI.apply_for_template(1, %{elementName: "trial"})
     end
   end
 end

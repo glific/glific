@@ -8,14 +8,14 @@ if Code.ensure_loaded?(Ecto) do
     alias FunWithFlags.Store.Persistent.Ecto.Record
     alias FunWithFlags.Store.Serializer.Ecto, as: Serializer
 
-    alias Ecto.Adapters.{MySQL, MyXQL, Postgres, SQL}
+    alias Ecto.Adapters.{Postgres, SQL}
 
     import Ecto.Query
 
     require Logger
 
     @repo Config.ecto_repo()
-    @mysql_lock_timeout_s 3
+
     @table_name Config.ecto_table_name_determined_at_compile_time()
     @prefix_opts [prefix: "global"]
 
@@ -51,10 +51,7 @@ if Code.ensure_loaded?(Ecto) do
         )
 
       transaction_fn =
-        case db_type() do
-          :postgres -> &_transaction_with_lock_postgres/1
-          :mysql -> &_transaction_with_lock_mysql/1
-        end
+        &_transaction_with_lock_postgres/1
 
       out =
         transaction_fn.(fn ->
@@ -96,35 +93,6 @@ if Code.ensure_loaded?(Ecto) do
       @repo.transaction(fn ->
         postgres_table_lock!()
         upsert_fn.()
-      end)
-    end
-
-    defp _transaction_with_lock_mysql(upsert_fn) do
-      @repo.transaction(fn ->
-        if mysql_lock!() do
-          try do
-            upsert_fn.()
-          rescue
-            e ->
-              @repo.rollback("Exception: #{inspect(e)}")
-          else
-            {:error, reason} ->
-              @repo.rollback("Error while upserting the gate: #{inspect(reason)}")
-
-            {:ok, value} ->
-              {:ok, value}
-          after
-            # This is not guaranteed to run if the VM crashes, but at least the
-            # lock gets released when the MySQL client session is terminated.
-            mysql_unlock!()
-          end
-        else
-          Logger.error(
-            "Couldn't acquire lock with 'SELECT GET_LOCK()' after #{@mysql_lock_timeout_s} seconds"
-          )
-
-          @repo.rollback("couldn't acquire lock")
-        end
       end)
     end
 
@@ -233,28 +201,6 @@ if Code.ensure_loaded?(Ecto) do
       )
     end
 
-    defp mysql_lock! do
-      result =
-        SQL.query!(
-          @repo,
-          "SELECT GET_LOCK('fun_with_flags_percentage_gate_upsert', #{@mysql_lock_timeout_s})"
-        )
-
-      %{rows: [[i]]} = result
-      i == 1
-    end
-
-    defp mysql_unlock! do
-      result =
-        SQL.query!(
-          @repo,
-          "SELECT RELEASE_LOCK('fun_with_flags_percentage_gate_upsert');"
-        )
-
-      %{rows: [[i]]} = result
-      i == 1
-    end
-
     # PostgreSQL's UPSERTs require an explicit conflict target.
     # MySQL's UPSERTs don't need it.
     #
@@ -265,7 +211,7 @@ if Code.ensure_loaded?(Ecto) do
         :postgres ->
           options ++ [conflict_target: [:flag_name, :gate_type, :target]]
 
-        :mysql ->
+        _ ->
           options
       end
     end
@@ -273,10 +219,7 @@ if Code.ensure_loaded?(Ecto) do
     defp db_type do
       case @repo.__adapter__() do
         Postgres -> :postgres
-        # legacy, Mariaex
-        MySQL -> :mysql
-        # new in ecto_sql 3.1
-        MyXQL -> :mysql
+        # since we only support postgres
         other -> raise "Ecto adapter #{inspect(other)} is not supported"
       end
     end

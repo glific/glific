@@ -251,7 +251,8 @@ defmodule Glific.Saas.Queries do
       organization_id: result.organization.id
     }
 
-    password = (Ecto.UUID.generate() |> binary_part(16, 16)) <> "-ABC!"
+    {:ok, password} =
+      Passgen.create!(length: 15, numbers: true, uppercase: true, lowercase: true, symbols: true)
 
     case Contacts.create_contact(attrs) do
       {:ok, contact} ->

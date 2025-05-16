@@ -11,6 +11,8 @@ defmodule Glific.BigQuery do
   alias Glific.{
     BigQuery.BigQueryJob,
     BigQuery.Schema,
+    Certificates.CertificateTemplate,
+    Certificates.IssuedCertificate,
     Contacts.Contact,
     Contacts.ContactHistory,
     Contacts.ContactsField,
@@ -81,7 +83,9 @@ defmodule Glific.BigQuery do
     "wa_groups" => :wa_group_schema,
     "wa_groups_collections" => :wa_groups_collection_schema,
     "wa_messages" => :wa_message_schema,
-    "wa_reactions" => :wa_reactions_schema
+    "wa_reactions" => :wa_reactions_schema,
+    "certificate_templates" => :certificate_templates_schema,
+    "issued_certificates" => :issued_certificates_schema
   }
 
   @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
@@ -221,7 +225,9 @@ defmodule Glific.BigQuery do
     "wa_groups" => WAGroup,
     "wa_groups_collections" => WAGroupsCollection,
     "wa_messages" => WAMessage,
-    "wa_reactions" => WaReaction
+    "wa_reactions" => WaReaction,
+    "certificate_templates" => CertificateTemplate,
+    "issued_certificates" => IssuedCertificate
   }
 
   @doc false

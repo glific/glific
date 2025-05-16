@@ -20,6 +20,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   )
 
   @partner_url "https://partner.gupshup.io/partner/account"
+  @app_url "https://partner.gupshup.io/partner/app/"
 
   @doc """
     Fetch App details based on API key and App name
@@ -188,12 +189,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
   Remove hsm template from the WABA.
   """
-  @spec apply_for_template(non_neg_integer(), map, boolean()) :: tuple()
-  def apply_for_template(org_id, payload, allow_category_change) do
-    payload =
-      payload
-      |> Map.put("allowTemplateCategoryChange", allow_category_change)
-      |> Map.put("appId", app_id!(org_id))
+  @spec apply_for_template(non_neg_integer(), map) :: tuple()
+  def apply_for_template(org_id, payload) do
+    payload = Map.put(payload, "appId", app_id!(org_id))
 
     (app_url(org_id) <> "/templates")
     |> post_request(payload,
@@ -315,6 +313,18 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
              org_id: org_id
            ) do
       {:ok, %{"balance" => resp["walletResponse"]["currentBalance"]}}
+    end
+  end
+
+  @doc """
+  Fetch HSM templates using partner token (Gupshup partner API)
+  """
+  @spec get_templates(non_neg_integer()) :: {:ok, any()} | {:error, String.t()}
+  def get_templates(org_id) do
+    with {:ok, %{partner_app_token: token}} <- get_partner_app_token(org_id) do
+      url = app_url(org_id) <> "/templates"
+      headers = [{"Authorization", token}]
+      get(url, headers: headers)
     end
   end
 
@@ -492,8 +502,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     {:ok, app_id} = app_id(org_id)
     app_id
   end
-
-  @app_url "https://partner.gupshup.io/partner/app/"
 
   @spec app_url(non_neg_integer()) :: String.t()
   defp app_url(org_id),

@@ -274,25 +274,23 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
+  @spec do_action(String.t(), String.t(), map(), list()) :: any
   defp do_action("post", url, body, headers),
     do: Tesla.post(url, body, headers: headers)
 
-  ## We need to figure out a way to send the data with urls.
-  ## Currently we can not send the json map as a query string
-  ## We will come back on this one in the future.
   defp do_action("get", url, body, headers),
     do:
       Tesla.get(url,
         headers: headers,
-        query: [data: body],
+        query: Enum.into(Jason.decode!(body), []),
         opts: [adapter: [recv_timeout: 10_000]]
       )
 
-  defp do_action("function", function, body, _headers) do
+  defp do_action("function", function, body, headers) do
     {
       :ok,
       :function,
-      Glific.Clients.webhook(function, Jason.decode!(body))
+      Glific.Clients.webhook(function, Jason.decode!(body), headers)
     }
   rescue
     error ->

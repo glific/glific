@@ -255,7 +255,7 @@ defmodule Glific.ClientsTest do
     assert contact.phone == phone_num
   end
 
-  test "gcs_file_name/1, when contact_id is nil, raises error" do
+  test "gcs_file_name/1, when contact_id is nil, returns the remote_name" do
     # Doesn't have schoolName in contact.fields
 
     media = %{
@@ -265,15 +265,13 @@ defmodule Glific.ClientsTest do
       "local_name" =>
         "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T//20240907150900_C20_F18_M6.png",
       "organization_id" => 1,
-      "remote_name" => "20240907150900_C20_F18_M6.png",
+      "remote_name" => "20240907150900_C_F18_M6.png",
       "type" => "image",
       "url" =>
         "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
     }
 
-    assert_raise ArgumentError, fn ->
-      KEF.gcs_file_name(media)
-    end
+    assert KEF.gcs_file_name(media) == "20240907150900_C_F18_M6.png"
   end
 
   test "gcs_file_name/1, with invalid contact_type" do
@@ -585,7 +583,6 @@ defmodule Glific.ClientsTest do
              Atecf.webhook("enable_avni_user", %{"username" => username})
   end
 
-  @tag :sarc
   test "gcs_file_name/1, non-default structure for a specific flow - sarc" do
     # Doesn't have schoolName in contact.fields
     contact =
@@ -633,7 +630,6 @@ defmodule Glific.ClientsTest do
     assert edu_name == "eduname"
   end
 
-  @tag :sarc
   test "gcs_file_name/1, default structure, if different flow - sarc" do
     # Doesn't have schoolName in contact.fields
     contact =

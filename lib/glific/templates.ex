@@ -379,9 +379,6 @@ defmodule Glific.Templates do
   get and update list of hsm of an organization
   """
   @spec sync_hsms_from_bsp(non_neg_integer()) :: :ok | {:error, String.t()}
-  def sync_hsms_from_bsp(organization_id) when is_nil(organization_id),
-    do: {:error, "organization_id is not given"}
-
   def sync_hsms_from_bsp(organization_id) do
     bsp_module = Provider.bsp_module(organization_id, :template)
     res = bsp_module.update_hsm_templates(organization_id)
