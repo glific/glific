@@ -1522,5 +1522,44 @@ defmodule Glific.ContactsTest do
 
       assert imported_contact.language_id == 2
     end
+
+    test "import_contact/3 logs language change for a contact if language exists",
+         attrs do
+      {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+      file = get_tmp_file()
+
+      [
+        ~w(name phone language opt_in collection),
+        ["test", "#{contact.phone}", "hindi", @optin_date, "collection"]
+      ]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
+      [organization | _] = Partners.list_organizations()
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:glific_admin])
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        file_path: get_tmp_path()
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      contact_history =
+        Contacts.list_contact_history(Map.merge(attrs, %{filter: %{contact_id: contact.id}}))
+
+      language_history =
+        Enum.filter(contact_history, fn history ->
+          history.event_label == "Changed contact language to Hindi from English, via import." and
+            history.event_type == "contact_language_updated"
+        end)
+
+      assert length(language_history) == 1
+    end
   end
 end
