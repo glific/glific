@@ -1,4 +1,5 @@
 defmodule Glific.BigQueryTest do
+  alias Glific.BigQuery.BigQueryJob
   use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
   use ExUnit.Case
@@ -381,6 +382,82 @@ defmodule Glific.BigQueryTest do
 
       result = BigQueryWorker.queue_table_data("contacts", org_id, %{some_attr: "value"})
       assert result == :ok
+    end
+  end
+
+  @simulator_prefix "9876543210"
+
+  @valid_attrs %{
+    name: "Simulator Contact",
+    optin_time: ~U[2010-04-17 14:00:00Z],
+    optin_status: false,
+    optout_time: nil,
+    phone: "0000000000",
+    status: :valid,
+    bsp_status: :hsm,
+    language_id: 1,
+    fields: %{}
+  }
+
+  test "queue_table_data/3 should process and skip simulator contacts, ensuring table_id should be updated" do
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
+        ]
+      }
+    ]) do
+      url =
+        "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets/917834811114/tables/contacts/insertAll"
+
+      Tesla.Mock.mock(fn
+        %Tesla.Env{method: :post, url: ^url} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+                kind: "bigquery#tableDataInsertAllResponse",
+                insertErrors: nil
+              })
+          }
+      end)
+
+      org_id = 1
+
+      job_before =
+        BigQueryJob
+        |> where([b], b.organization_id == ^org_id and b.table == "contacts")
+        |> Repo.one()
+
+      initial_table_id = job_before.table_id
+
+      Enum.each(1..500, fn i ->
+        attrs =
+          Map.merge(@valid_attrs, %{
+            name: "Simulator Contact #{i}",
+            phone: "#{@simulator_prefix}#{i}",
+            language_id: 1,
+            organization_id: org_id
+          })
+
+        {:ok, _contact} = Glific.Contacts.create_contact(attrs)
+      end)
+
+      result =
+        BigQueryWorker.queue_table_data("contacts", org_id, %{some_attr: "value"}) |> IO.inspect()
+
+      assert result == :ok
+
+      job_after =
+        BigQueryJob
+        |> where([b], b.organization_id == ^org_id and b.table == "contacts")
+        |> Repo.one()
+
+      assert job_after.table_id == initial_table_id
     end
   end
 end

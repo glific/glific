@@ -57,6 +57,7 @@ defmodule Glific.Jobs do
   @spec update_bigquery_job(BigQueryJob.t(), map()) ::
           {:ok, BigQueryJob.t()} | {:error, Ecto.Changeset.t()}
   def update_bigquery_job(%BigQueryJob{} = bigquery_job, attrs) do
+    # IO.inspect(bigquery_job)
     bigquery_job
     |> BigQueryJob.changeset(attrs)
     |> Repo.update()
