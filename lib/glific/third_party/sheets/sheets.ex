@@ -19,6 +19,8 @@ defmodule Glific.Sheets do
     Sheets.SheetData
   }
 
+  # zero width unicode characters
+  @invisible_unicode_range ~r/[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2060}-\x{206F}\x{FEFF}]/u
   @doc """
   Creates a sheet
 
@@ -192,7 +194,7 @@ defmodule Glific.Sheets do
 
           %{
             ## we can also think in case we need first column.
-            key: row["Key"],
+            key: parsed_rows.values["key"],
             row_data: parsed_rows.values,
             sheet_id: sheet.id,
             organization_id: sheet.organization_id,
@@ -236,8 +238,13 @@ defmodule Glific.Sheets do
   defp parse_row_values(row) do
     clean_row_values =
       Enum.reduce(row, %{}, fn {key, value}, acc ->
-        key = key |> String.downcase() |> String.replace(" ", "_")
-        Map.put(acc, key, value)
+        key =
+          key
+          |> String.downcase()
+          |> String.replace(" ", "_")
+          |> String.replace(@invisible_unicode_range, "")
+
+        Map.put(acc, key, value |> String.replace(@invisible_unicode_range, ""))
       end)
 
     errors =
