@@ -189,12 +189,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
   Remove hsm template from the WABA.
   """
-  @spec apply_for_template(non_neg_integer(), map, boolean()) :: tuple()
-  def apply_for_template(org_id, payload, allow_category_change) do
-    payload =
-      payload
-      |> Map.put("allowTemplateCategoryChange", allow_category_change)
-      |> Map.put("appId", app_id!(org_id))
+  @spec apply_for_template(non_neg_integer(), map) :: tuple()
+  def apply_for_template(org_id, payload) do
+    payload = Map.put(payload, :appId, app_id!(org_id))
 
     (app_url(org_id) <> "/templates")
     |> post_request(payload,
