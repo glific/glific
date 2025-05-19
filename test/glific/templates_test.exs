@@ -908,24 +908,54 @@ defmodule Glific.TemplatesTest do
 
     test "bulk_apply_templates/2 should bulk apply templates", attrs do
       Tesla.Mock.mock(fn
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+          }
+
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
+            body: Jason.encode!(%{}),
             headers: %{
               "content-type" => "image",
               "content-length" => "1232"
             }
           }
+
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"token\":\"abc123\"}"
+          }
+
+        %{method: :post, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
+          uuid = Ecto.UUID.generate()
+
+          %Tesla.Env{
+            status: 200,
+            body: "{\"template\":{\"id\":\"#{uuid}\"}}"
+          }
+
+        %{method: :post, url: "https://partner.gupshup.io/partner/app/Glific42/upload/media"} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"handleId\":{\"message\":\"123\"},\"status\":\"success\"}"
+          }
       end)
 
       data =
-        "Language,Title,Message,Sample Message,Element Name,Category,Attachment Type,Attachment URL,Has Buttons,Button Type,CTA Button 1 Type,CTA Button 1 Title,CTA Button 1 Value,CTA Button 2 Type,CTA Button 2 Title,CTA Button 2 Value,Quick Reply 1 Title,Quick Reply 2 Title,Quick Reply 3 Title\r\nEnglish,Signup Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",welcome_arogya,SEMI-UTILITY,,,FALSE,,,,,,,,,,\r\nEnglish,Welcome Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",signup_arogya,UTILITY,,,TRUE,QUICK_REPLY,,,,,,,Yes,No,\r\nMandarin,Help Arogya,\"Hi {{1}},Need help?\",\"Hi [Akhilesh],Need help?\",help_arogya,UTILITY,,,TRUE,CALL_TO_ACTION,Phone Number,Call here,8979120220,URL,Visit Here,https://github.com/glific,,,\r\nEnglish,Activity,\"Hi {{1}},\nLook at this image.\",\"Hi [Akhilesh],\nLook at this image.\",activity,UTILITY,image,https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg,FALSE,,,,,,,,,,\r\nEnglish,Signout Arogya,\"Hi {{1}},\nSorry to see you go\",\"Hi [Akhilesh],\nSorry to see you move out\",signout_arogya,UTILITY,,,FALSE,,,,,,,,,,\r\nEnglish,Optin Arogya,\"Hi {{1}},\n Reply with yes to optin\",\"Hi [Akhilesh],\Reply with yes to optin\",optin_arogya,UTILITY,,,TRUE,,,,,,,,,,\r\nEnglish,Help Arogya 2,\"Hi {{1}},Need help?\",\"Hi [Akhilesh],Need help?\",help_arogya_2,UTILITY,,,TRUE,CALL_TO_ACTION,Phone Number,Call here,8979120220,URL,Visit Here,https://github.com/glific,,,\r\nEnglish,Signup Arogya 2,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",welcome_arogya,UTILITY,,,FALSE,,,,,,,,,,\r\nEnglish,Welcome Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",signup_arogya_2,UTILITY,,,TRUE,QUICK_REPLY,,,,,,,Yes,No,"
+        "Language,Title,Message,Sample Message,Element Name,Category,Attachment Type,Attachment URL,Has Buttons,Button Type,CTA Button 1 Type,CTA Button 1 Title,CTA Button 1 Value,CTA Button 2 Type,CTA Button 2 Title,CTA Button 2 Value,Quick Reply 1 Title,Quick Reply 2 Title,Quick Reply 3 Title\r\nEnglish,Signup Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",welcome_arogya,SEMI-UTILITY,,,FALSE,,,,,,,,,,\r\nEnglish,Welcome Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",signup_arogya,UTILITY,,,TRUE,QUICK_REPLY,,,,,,,Yes,No,\r\nMandarin,Help Arogya,\"Hi {{1}},Need help?\",\"Hi [Akhilesh],Need help?\",help_arogya,UTILITY,,,TRUE,CALL_TO_ACTION,PHONE_NUMBER,Call here,8979120220,URL,Visit Here,https://github.com/glific,,,\r\nEnglish,Activity,\"Hi {{1}},\nLook at this image.\",\"Hi [Akhilesh],\nLook at this image.\",activity,UTILITY,image,https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg,FALSE,,,,,,,,,,\r\nEnglish,Signout Arogya,\"Hi {{1}},\nSorry to see you go\",\"Hi [Akhilesh],\nSorry to see you move out\",signout_arogya,UTILITY,,,FALSE,,,,,,,,,,\r\nEnglish,Optin Arogya,\"Hi {{1}},\n Reply with yes to optin\",\"Hi [Akhilesh],\Reply with yes to optin\",optin_arogya,UTILITY,,,TRUE,,,,,,,,,,\r\nEnglish,Help Arogya 2,\"Hi {{1}},Need help?\",\"Hi [Akhilesh],Need help?\",help_arogya_2,UTILITY,,,TRUE,CALL_TO_ACTION,PHONE_NUMBER,Call here,8979120220,URL,Visit Here,https://github.com/glific,,,\r\nEnglish,Signup Arogya 2,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",welcome_arogya,UTILITY,,,FALSE,,,,,,,,,,\r\nEnglish,Welcome Arogya 2,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",signup_arogya_2,UTILITY,,,TRUE,QUICK_REPLY,,,,,,,Yes,No,"
 
       {:ok, %{csv_rows: csv_rows}} =
         Gupshup.Template.bulk_apply_templates(attrs.organization_id, data)
 
       assert csv_rows ==
-               "Title,Status\r\nSignup Arogya,Invalid Category\r\nWelcome Arogya,Template has been applied successfully\r\nHelp Arogya,Invalid Language\r\nActivity,Template has been applied successfully\r\nSignout Arogya,Message and Sample Message does not match\r\nOptin Arogya,Invalid Button Type\r\nHelp Arogya 2,Template has been applied successfully\r\nSignup Arogya 2,Template has been applied successfully\r\nWelcome Arogya,Template has been applied successfully"
+               "Title,Status\r\nSignup Arogya,Invalid Category\r\nWelcome Arogya,Template has been applied successfully\r\nHelp Arogya,Invalid Language\r\nActivity,Template has been applied successfully\r\nSignout Arogya,Message and Sample Message does not match\r\nOptin Arogya,Invalid Button Type\r\nHelp Arogya 2,Template has been applied successfully\r\nSignup Arogya 2,Template has been applied successfully\r\nWelcome Arogya 2,Template has been applied successfully"
+
+      assert %{success: 5, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default)
     end
 
     test "update_hsms/1 should insert newly received HSM", attrs do
