@@ -24,6 +24,8 @@ defmodule Glific.Contacts.Import do
     Users.User
   }
 
+  use Publicist
+
   @doc """
   This method allows importing of contacts to a particular organization and group
 
@@ -328,8 +330,8 @@ defmodule Glific.Contacts.Import do
       {:error, error} when is_list(error) ->
         {:error, %{contact_attrs.phone => "Contact not found."}}
 
-      {:error, %Ecto.Changeset{} = error} ->
-        {:error, %{contact_attrs.phone => error}}
+      {:error, %Ecto.Changeset{}} ->
+        {:error, %{contact_attrs.phone => "Contact upload failed."}}
     end
   end
 

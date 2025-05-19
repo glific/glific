@@ -1561,5 +1561,22 @@ defmodule Glific.ContactsTest do
 
       assert length(language_history) == 1
     end
+
+    test "may_update_contact/1 returns error when contact does not exist" do
+      update_attrs = %{
+        name: "updated",
+        delete: nil,
+        organization_id: 1,
+        phone: "phone number that does not exist",
+        contact_fields: %{"collection" => "collection"},
+        language_id: 1,
+        optin_time: "2025-05-19 03:49:07.595436",
+        collection: "collection"
+      }
+
+      {:error, error} = Import.may_update_contact(update_attrs)
+
+      assert error == %{"phone number that does not exist" => "Contact not found."}
+    end
   end
 end
