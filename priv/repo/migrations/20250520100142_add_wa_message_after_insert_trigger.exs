@@ -6,7 +6,7 @@ defmodule Glific.Repo.Migrations.AddWaMessageAfterInsertTrigger do
   end
 
   def down do
-    drop_trigger()
+    drop_wa_message_after_insert_trigger()
   end
 
   defp create_wa_message_after_insert_trigger do
@@ -33,7 +33,7 @@ defmodule Glific.Repo.Migrations.AddWaMessageAfterInsertTrigger do
     """)
   end
 
-  defp drop_trigger do
+  defp drop_wa_message_after_insert_trigger do
     execute("DROP TRIGGER IF EXISTS wa_message_after_insert_trigger ON wa_messages;")
     execute("DROP FUNCTION IF EXISTS public.wa_message_after_insert_callback();")
   end
