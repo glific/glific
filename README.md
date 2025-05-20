@@ -215,7 +215,76 @@ createuser postgres -s # needed for more recent versions of postgres on MacOSgit
 sudo -u postgres psql
 ALTER USER postgres WITH PASSWORD 'postgres';
 ```
-Exit the PostgreSQL terminal by typing `\q` and pressing Enter. Run `mix setup` again.
+Exit the PostgreSQL terminal by typing `\q` and pressing Enter.
+
+#### Setting up SSL for Postgres (Optional but recommended)
+
+To enable SSL connections to Postgres:
+
+1. Find your Postgres data directory:
+```bash
+psql -U postgres -c "SHOW data_directory;"
+```
+
+2. Create SSL certificates using mkcert:
+```bash
+mkcert -cert-file server.crt -key-file server.key localhost 127.0.0.1 ::1
+```
+
+3. Copy the certificates to Postgres data directory:
+```bash
+sudo cp server.crt /path/to/postgres/data/directory/
+sudo cp server.key /path/to/postgres/data/directory/
+sudo chmod 600 /path/to/postgres/data/directory/server.key
+```
+
+4. Configure Postgres to use SSL. Edit postgresql.conf:
+```bash
+sudo nano /path/to/postgres/data/directory/postgresql.conf
+```
+Add:
+```conf
+ssl = on
+ssl_cert_file = 'server.crt'
+ssl_key_file = 'server.key'
+```
+
+5. Configure client authentication. Edit pg_hba.conf:
+```bash
+sudo nano /path/to/postgres/data/directory/pg_hba.conf
+```
+Add:
+```conf
+hostssl glific_dev      all             127.0.0.1/32            trust
+hostssl glific_test     all             127.0.0.1/32            trust
+```
+
+6. Restart Postgres:
+```bash
+# For Linux:
+sudo systemctl restart postgresql
+# For MacOS:
+brew services restart postgresql
+# For MacOS, if you installed Postgres with Postgres.app, quit and run Postgres.app
+```
+
+7. Setup CA certificates for Glific:
+```bash
+CAROOT=$(mkcert -CAROOT)
+cp "$CAROOT/rootCA.pem" priv/cert/glific-CA.pem
+```
+
+8. Test SSL connection:
+```bash
+psql "sslmode=require dbname=glific_dev host=localhost"
+```
+You should see SSL connection details. Verify with:
+```sql
+SHOW ssl;
+SELECT * FROM pg_stat_ssl WHERE pid=pg_backend_pid();
+```
+
+Run `mix setup` again.
 
 - Run `iex -S mix phx.server`
 - Inside the iex (you might need to hit enter/return to see the prompt)
