@@ -5,10 +5,10 @@ defmodule Glific.BigQueryTest do
   import Mock
 
   alias Glific.{
-    Contacts.Contact,
     BigQuery,
     BigQuery.BigQueryJob,
     BigQuery.BigQueryWorker,
+    Contacts.Contact,
     Flows.FlowResult,
     Partners,
     Seeds.SeedsDev
@@ -416,7 +416,7 @@ defmodule Glific.BigQueryTest do
 
       org_id = 1
 
-      #check the table id before syncing the flow_results table
+      # check the table id before syncing the flow_results table
       job_before =
         BigQueryJob
         |> where([b], b.organization_id == ^org_id and b.table == "flow_results")
@@ -424,7 +424,7 @@ defmodule Glific.BigQueryTest do
 
       initial_table_id = job_before.table_id
 
-      #add the simulator contact's entry only in the flow results
+      # add the simulator contact's entry only in the flow results
       phone = "9876543210_1"
       {:ok, contact} = Repo.fetch_by(Contact, %{phone: phone})
 
@@ -452,6 +452,7 @@ defmodule Glific.BigQueryTest do
           "action" => "insert"
         }
       }
+
       BigQueryWorker.perform(job)
 
       job_after =
