@@ -1578,5 +1578,24 @@ defmodule Glific.ContactsTest do
 
       assert error == %{"phone number that does not exist" => "Contact not found."}
     end
+
+    test "may_update_contact/1 returns error when contact upload fails", attrs do
+      {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+
+      update_attrs = %{
+        name: %{"val" => "name val"},
+        delete: nil,
+        organization_id: 1,
+        phone: contact.phone,
+        contact_fields: %{"collection" => "collection"},
+        language_id: 1,
+        optin_time: "2025-05-19 03:49:07.595436",
+        collection: "collection"
+      }
+
+      {:error, error} = Import.may_update_contact(update_attrs)
+
+      assert error == %{"919917443992" => "Contact upload failed."}
+    end
   end
 end
