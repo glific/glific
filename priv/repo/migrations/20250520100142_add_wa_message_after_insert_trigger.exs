@@ -1,11 +1,15 @@
 defmodule Glific.Repo.Migrations.AddWaMessageAfterInsertTrigger do
   use Ecto.Migration
 
-  def change do
-    wa_message_after_insert_trigger()
+  def up do
+    create_wa_message_after_insert_trigger()
   end
 
-  defp wa_message_after_insert_trigger do
+  def down do
+    drop_trigger()
+  end
+
+  defp create_wa_message_after_insert_trigger do
     execute("""
     CREATE OR REPLACE FUNCTION public.wa_message_after_insert_callback()
     RETURNS trigger
@@ -27,5 +31,10 @@ defmodule Glific.Repo.Migrations.AddWaMessageAfterInsertTrigger do
     FOR EACH ROW
     EXECUTE PROCEDURE wa_message_after_insert_callback();
     """)
+  end
+
+  defp drop_trigger do
+    execute("DROP TRIGGER IF EXISTS wa_message_after_insert_trigger ON wa_messages;")
+    execute("DROP FUNCTION IF EXISTS public.wa_message_after_insert_callback();")
   end
 end
