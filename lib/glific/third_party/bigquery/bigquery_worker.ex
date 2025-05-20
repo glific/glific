@@ -856,7 +856,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :contacts, organization_id, attrs))
+    |> then(&enqueue_chunks(&1, :contacts, organization_id, attrs))
 
     :ok
   end
@@ -1042,42 +1042,35 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching flow_results data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    data =
-      get_query("flow_results", organization_id, attrs)
-      |> Repo.all()
-      |> Enum.reduce(
-        [],
-        fn row, acc ->
-          if Contacts.simulator_contact?(row.contact.phone),
-            do: acc,
-            else: [
-              %{
-                id: row.id,
-                name: row.flow.name,
-                uuid: row.flow.uuid,
-                inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
-                updated_at: format_date_with_millisecond(row.updated_at, organization_id),
-                results: BigQuery.format_json(row.results),
-                contact_phone: row.contact.phone,
-                contact_name: row.contact.name,
-                flow_version: row.flow_version,
-                flow_context_id: row.flow_context_id,
-                profile_id: row.profile_id
-              }
-              |> Map.merge(bq_fields(organization_id))
-              |> then(&%{json: &1})
-              | acc
-            ]
-        end
-      )
-
-    chunks = Enum.chunk_every(data, 100)
-
-    if chunks == [] do
-      make_job([], :flow_results, organization_id, attrs)
-    else
-      Enum.each(chunks, &make_job(&1, :flow_results, organization_id, attrs))
-    end
+    get_query("flow_results", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        if Contacts.simulator_contact?(row.contact.phone),
+          do: acc,
+          else: [
+            %{
+              id: row.id,
+              name: row.flow.name,
+              uuid: row.flow.uuid,
+              inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
+              updated_at: format_date_with_millisecond(row.updated_at, organization_id),
+              results: BigQuery.format_json(row.results),
+              contact_phone: row.contact.phone,
+              contact_name: row.contact.name,
+              flow_version: row.flow_version,
+              flow_context_id: row.flow_context_id,
+              profile_id: row.profile_id
+            }
+            |> Map.merge(bq_fields(organization_id))
+            |> then(&%{json: &1})
+            | acc
+          ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> then(&enqueue_chunks(&1, :flow_results, organization_id, attrs))
 
     :ok
   end
@@ -1871,5 +1864,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
         value: format_value(field["value"])
       }
     end)
+  end
+
+  @spec enqueue_chunks(list(), atom(), non_neg_integer(), map()) :: :ok
+  defp enqueue_chunks(chunks, job_type, organization_id, attrs) do
+    if chunks == [] do
+      make_job([], job_type, organization_id, attrs)
+    else
+      Enum.each(chunks, &make_job(&1, job_type, organization_id, attrs))
+    end
   end
 end
