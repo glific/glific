@@ -242,9 +242,9 @@ defmodule Glific.Sheets do
           key
           |> String.downcase()
           |> String.replace(" ", "_")
-          |> String.replace(@invisible_unicode_range, "")
+          |> trim_string()
 
-        Map.put(acc, key, value |> String.replace(@invisible_unicode_range, ""))
+        Map.put(acc, key, value |> trim_string())
       end)
 
     errors =
@@ -413,5 +413,12 @@ defmodule Glific.Sheets do
     })
 
     :ok
+  end
+
+  @spec trim_string(String.t()) :: String.t()
+  defp trim_string(str) do
+    str
+    |> String.trim()
+    |> String.replace(@invisible_unicode_range, "")
   end
 end
