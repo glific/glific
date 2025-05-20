@@ -14,6 +14,9 @@ config :glific, Glific.Repo,
   url: env!("DATABASE_URL", :string!),
   pool_size: env!("POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
+  ssl: [
+    cacertfile: Path.expand("../", __DIR__) <> env!("CACERT_PATH")
+  ],
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
