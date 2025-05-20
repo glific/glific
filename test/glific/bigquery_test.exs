@@ -1,13 +1,15 @@
 defmodule Glific.BigQueryTest do
-  alias Glific.BigQuery.BigQueryJob
   use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
   use ExUnit.Case
   import Mock
 
   alias Glific.{
+    Contacts.Contact,
     BigQuery,
+    BigQuery.BigQueryJob,
     BigQuery.BigQueryWorker,
+    Flows.FlowResult,
     Partners,
     Seeds.SeedsDev
   }
@@ -385,21 +387,7 @@ defmodule Glific.BigQueryTest do
     end
   end
 
-  @simulator_prefix "9876543210"
-
-  @valid_attrs %{
-    name: "Simulator Contact",
-    optin_time: ~U[2010-04-17 14:00:00Z],
-    optin_status: false,
-    optout_time: nil,
-    phone: "0000000000",
-    status: :valid,
-    bsp_status: :hsm,
-    language_id: 1,
-    fields: %{}
-  }
-
-  test "queue_table_data/3 should process and skip simulator contacts, ensuring table_id should be updated" do
+  test "queue_table_data/3 should process and skip simulator contacts, ensuring table_id should be updated for flow_results table" do
     with_mocks([
       {
         Goth.Token,
@@ -428,36 +416,50 @@ defmodule Glific.BigQueryTest do
 
       org_id = 1
 
+      #check the table id before syncing the flow_results table
       job_before =
         BigQueryJob
-        |> where([b], b.organization_id == ^org_id and b.table == "contacts")
+        |> where([b], b.organization_id == ^org_id and b.table == "flow_results")
         |> Repo.one()
 
       initial_table_id = job_before.table_id
 
-      Enum.each(1..500, fn i ->
-        attrs =
-          Map.merge(@valid_attrs, %{
-            name: "Simulator Contact #{i}",
-            phone: "#{@simulator_prefix}#{i}",
-            language_id: 1,
-            organization_id: org_id
-          })
+      #add the simulator contact's entry only in the flow results
+      phone = "9876543210_1"
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: phone})
 
-        {:ok, _contact} = Glific.Contacts.create_contact(attrs)
+      Repo.delete_all(
+        from fr in FlowResult,
+          where: fr.organization_id == ^org_id
+      )
+
+      1..100
+      |> Enum.each(fn _ ->
+        Repo.insert!(%FlowResult{
+          results: %{language: %{input: Enum.random(0..10), category: "English"}},
+          contact_id: contact.id,
+          flow_id: 1,
+          flow_uuid: Ecto.UUID.generate(),
+          flow_version: 1,
+          organization_id: org_id
+        })
       end)
 
-      result =
-        BigQueryWorker.queue_table_data("contacts", org_id, %{some_attr: "value"}) |> IO.inspect()
-
-      assert result == :ok
+      job = %Oban.Job{
+        args: %{
+          "table" => "flow_results",
+          "organization_id" => org_id,
+          "action" => "insert"
+        }
+      }
+      BigQueryWorker.perform(job)
 
       job_after =
         BigQueryJob
-        |> where([b], b.organization_id == ^org_id and b.table == "contacts")
+        |> where([b], b.organization_id == ^org_id and b.table == "flow_results")
         |> Repo.one()
 
-      assert job_after.table_id == initial_table_id
+      assert job_after.table_id != initial_table_id
     end
   end
 end
