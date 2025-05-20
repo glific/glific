@@ -257,6 +257,7 @@ Add:
 ```conf
 hostssl glific_dev      all             127.0.0.1/32            trust
 hostssl glific_test     all             127.0.0.1/32            trust
+hostssl postgres        all             127.0.0.1/32            trust
 ```
 
 6. Restart Postgres:
