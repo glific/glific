@@ -181,7 +181,7 @@ defmodule Glific.Profiles do
   """
   @spec handle_flow_action(atom() | nil, FlowContext.t(), Action.t()) ::
           {FlowContext.t(), Message.t()}
-  def handle_flow_action(:sdeac_profile, context, action) do
+  def handle_flow_action(:switch_profile, context, action) do
     value = ContactField.parse_contact_field_value(context, action.value)
 
     with {:ok, contact} <- switch_profile(context.contact, value),
@@ -231,8 +231,9 @@ defmodule Glific.Profiles do
     end
   end
 
-  def handle_flow_action(:switch_profile, context, action) do
-    value = ContactField.parse_contact_field_value(context, action.value) |> IO.inspect()
+  def handle_flow_action(:deactivate_profile, context, action) do
+    value =
+      ContactField.parse_contact_field_value(context, action.value)
 
     with {:ok, index} <- Glific.parse_maybe_integer(value),
          {profile, _index} <- fetch_indexed_profile(context.contact, index),
