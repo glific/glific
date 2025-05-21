@@ -35,6 +35,7 @@ defmodule Glific.Providers.GupshupContacts do
   @doc """
   Fetch opted in contacts data from providers server
   """
+  @deprecated "Gupshup deprecated /users api which this function uses underneath"
   @spec fetch_opted_in_contacts(map()) :: :ok | {:error, String.t()}
   def fetch_opted_in_contacts(attrs) do
     do_fetch_opted_in_contacts(attrs.organization_id, @per_page_limit, 1)
