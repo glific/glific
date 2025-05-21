@@ -181,7 +181,7 @@ defmodule Glific.Profiles do
   """
   @spec handle_flow_action(atom() | nil, FlowContext.t(), Action.t()) ::
           {FlowContext.t(), Message.t()}
-  def handle_flow_action(:switch_profile, context, action) do
+  def handle_flow_action(:sdeac_profile, context, action) do
     value = ContactField.parse_contact_field_value(context, action.value)
 
     with {:ok, contact} <- switch_profile(context.contact, value),
@@ -231,14 +231,16 @@ defmodule Glific.Profiles do
     end
   end
 
-  def handle_flow_action(:deactivate_profile, context, action) do
-    value =
-      ContactField.parse_contact_field_value(context, action.value)
+  def handle_flow_action(:switch_profile, context, action) do
+    value = ContactField.parse_contact_field_value(context, action.value) |> IO.inspect()
 
     with {:ok, index} <- Glific.parse_maybe_integer(value),
-         {profile, _index} <- fetch_indexed_profile(context.contact, index) do
-      attrs = %{is_active: false}
-      update_profile(profile, attrs)
+         {profile, _index} <- fetch_indexed_profile(context.contact, index),
+         {:ok, _updated_profile} <- update_profile(profile, %{is_active: false}) do
+      {context, Messages.create_temp_message(context.organization_id, "Success")}
+    else
+      _error ->
+        {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
   end
 

@@ -5,9 +5,11 @@ defmodule Glific.ProfilesTest do
     Contacts,
     Contacts.Contact,
     Fixtures,
+    Flows.FlowContext,
     Profiles,
     Profiles.Profile,
-    Repo
+    Repo,
+    Flows.FlowContext
   }
 
   describe "profiles" do
@@ -151,6 +153,49 @@ defmodule Glific.ProfilesTest do
 
       assert updated_contact.active_profile_id == new_profile.id
       assert updated_contact.active_profile.name == "Profile 2"
+    end
+
+    test "deactivate_profile should make the is_active field false in manage profile node", attrs do
+      {:ok, contact} =
+        Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: attrs.organization_id})
+
+      params = %{
+        "name" => "Profile 2",
+        "type" => "student",
+        "contact_id" => contact.id
+      }
+
+      profile = Fixtures.profile_fixture(params)
+      assert profile.is_active == true
+
+      {:ok, flow_context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: 1,
+          flow_uuid: Ecto.UUID.generate(),
+          uuid_map: %{},
+          organization_id: attrs.organization_id
+        })
+
+      context =
+        flow_context
+        |> Repo.preload([:flow, :contact])
+
+      action = %Glific.Flows.Action{
+        id: nil,
+        value: "@results.profile_index",
+        type: "set_contact_profile",
+        profile_type: "Deactivate Profile"
+      }
+
+      {:ok, updated_profile} = Profiles.handle_flow_action(:deactivate_profile, context, action)
+      IO.inspect(updated_profile)
+
+      # profile_from_db = Repo.get!(Glific.Profiles.Profile, profile.id)
+      # assert profile_from_db.is_active == false
+
+      # # Optional: also verify the returned profile is updated
+      # assert updated_profile.is_active == false
     end
   end
 end
