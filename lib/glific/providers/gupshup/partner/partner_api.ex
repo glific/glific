@@ -23,7 +23,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @app_url "https://partner.gupshup.io/partner/app/"
 
   @doc """
-    Fetch App details based on API key and App name
+  Fetch app details org id
   """
   @spec fetch_app_details(non_neg_integer()) :: map() | String.t()
   def fetch_app_details(org_id) do
@@ -122,7 +122,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-    Getting app ID once the app is already linked
+  Getting app ID once the app is already linked
   """
   @spec fetch_gupshup_app_id(non_neg_integer()) :: map() | String.t()
   def fetch_gupshup_app_id(org_id) do
@@ -515,5 +515,16 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       |> List.last()
 
     "template-asset-#{media_name}.#{file_format}"
+  end
+
+  @spec fetch_partner_apps :: list() | String.t()
+  defp fetch_partner_apps do
+    case get_request(@partner_url <> "/api/partnerApps", token_type: :partner_token) do
+      {:ok, %{"partnerAppsList" => list}} ->
+        list
+
+      {:error, error} ->
+        error
+    end
   end
 end
