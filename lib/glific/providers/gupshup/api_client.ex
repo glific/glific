@@ -63,17 +63,6 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   end
 
   @doc """
-  Update a contact phone as opted in
-  """
-  @spec optin_contact(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
-  def optin_contact(org_id, payload) do
-    with {:ok, credentials} <- get_credentials(org_id) do
-      url = @gupshup_api_url <> "/app/opt/in/" <> credentials.app_name
-      gupshup_post(url, payload, credentials.api_key)
-    end
-  end
-
-  @doc """
   Fetch opted in contacts data from providers server
   """
   @spec fetch_opted_in_contacts(non_neg_integer(), non_neg_integer()) ::

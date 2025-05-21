@@ -23,19 +23,12 @@ defmodule Glific.Providers.GupshupContacts do
   @spec optin_contact(map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, list()}
   def optin_contact(%{organization_id: organization_id} = attrs) do
-    ApiClient.optin_contact(organization_id, %{user: attrs.phone})
-    |> case do
-      {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
-        Contacts.contact_opted_in(
-          attrs,
-          organization_id,
-          attrs[:optin_time] || DateTime.utc_now(),
-          method: attrs[:method] || "BSP"
-        )
-
-      _ ->
-        {:error, ["gupshup", "couldn't connect"]}
-    end
+    Contacts.contact_opted_in(
+      attrs,
+      organization_id,
+      attrs[:optin_time] || DateTime.utc_now(),
+      method: attrs[:method] || "BSP"
+    )
   end
 
   @per_page_limit 5000
