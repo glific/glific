@@ -5,11 +5,12 @@ defmodule Glific.ProfilesTest do
     Contacts,
     Contacts.Contact,
     Fixtures,
+    Flows.Action,
+    Flows.Flow,
     Flows.FlowContext,
     Profiles,
     Profiles.Profile,
-    Repo,
-    Flows.FlowContext
+    Repo
   }
 
   describe "profiles" do
@@ -155,7 +156,8 @@ defmodule Glific.ProfilesTest do
       assert updated_contact.active_profile.name == "Profile 2"
     end
 
-    test "deactivate_profile should make the is_active field false in manage profile node", attrs do
+    test "deactivate_profile should make the is_active field false in manage profile node",
+         attrs do
       {:ok, contact} =
         Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: attrs.organization_id})
 
@@ -168,34 +170,35 @@ defmodule Glific.ProfilesTest do
       profile = Fixtures.profile_fixture(params)
       assert profile.is_active == true
 
-      {:ok, flow_context} =
+      {:ok, flow} = Repo.fetch_by(Flow, %{name: "Deactivate Profile Flow"})
+
+      {:ok, context} =
         FlowContext.create_flow_context(%{
           contact_id: contact.id,
-          flow_id: 1,
-          flow_uuid: Ecto.UUID.generate(),
-          uuid_map: %{},
-          organization_id: attrs.organization_id
+          flow_uuid: flow.uuid,
+          flow_id: flow.id,
+          flow: flow,
+          organization_id: flow.organization_id,
+          uuid_map: flow.uuid_map
         })
 
       context =
-        flow_context
+        context
         |> Repo.preload([:flow, :contact])
 
-      action = %Glific.Flows.Action{
+      action = %Action{
         id: nil,
-        value: "@results.profile_index",
+        value: "1",
         type: "set_contact_profile",
         profile_type: "Deactivate Profile"
       }
 
-      {:ok, updated_profile} = Profiles.handle_flow_action(:deactivate_profile, context, action)
-      IO.inspect(updated_profile)
+      Profiles.handle_flow_action(:deactivate_profile, context, action)
 
-      # profile_from_db = Repo.get!(Glific.Profiles.Profile, profile.id)
-      # assert profile_from_db.is_active == false
+      {:ok, profile} =
+        Repo.fetch_by(Profile, %{id: profile.id})
 
-      # # Optional: also verify the returned profile is updated
-      # assert updated_profile.is_active == false
+      assert profile.is_active == false
     end
   end
 end
