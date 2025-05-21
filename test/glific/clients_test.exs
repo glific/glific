@@ -675,4 +675,42 @@ defmodule Glific.ClientsTest do
              "acp_submissions_2425/TFI Mumbai/Grade_1/"
            )
   end
+
+  @tag :tt
+  test "gcs_file_name/1, nil values - sarc" do
+    # Doesn't have schoolName in contact.fields
+    contact =
+      Fixtures.contact_fixture(%{
+        phone: "918634278954",
+        fields: %{
+          "name_of_organization" => %{
+            type: "string",
+            label: "name_of_organization",
+            value: "TFI Mumbai",
+            inserted_at: ~U[2024-09-07 15:17:53.964448Z]
+          },
+          "acp_submission" => %{
+            type: "string",
+            label: "acp_submission",
+            value: "Grade_1",
+            inserted_at: ~U[2024-09-07 15:17:53.964448Z]
+          }
+        }
+      })
+
+    media = %{
+      "contact_id" => contact.id,
+      "flow_id" => 26_384,
+      "id" => 6,
+      "local_name" =>
+        "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T//20240907150900_C20_F18_M6.pdf",
+      "organization_id" => 1,
+      "remote_name" => "20240907150900_C20_F18_M6.pdf",
+      "type" => "document",
+      "url" =>
+        "https://filemanager.gupshup.io/wa/11b17c2a-0f56-4651-9c9d-4d2e518b8d8c/wa/media/64195750-4a70-48c1-85ae-c2a1bd95193f?download=false"
+    }
+
+    "20240907150900_C20_F18_M6.pdf" = Sarc.gcs_file_name(media)
+  end
 end

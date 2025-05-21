@@ -94,10 +94,10 @@ defmodule Glific.Bhasini do
               },
               "serviceId" => get_tts_model(target_language),
               "gender" => "female",
-              "preProcessors" => [
-                "vad",
-                "denoiser"
-              ],
+              # "preProcessors" => [
+              #   # "vad",
+              #   # "denoiser"
+              # ],
               "postProcessors" => [
                 "itn"
               ],
