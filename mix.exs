@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "7.2.4",
+      version: "7.2.6",
       elixir: "~> 1.18.3",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -44,7 +44,8 @@ defmodule Glific.MixProject do
         coveralls: :test,
         "coveralls.html": :test,
         "coveralls.json": :test,
-        test_full: :test
+        test_full: :test,
+        "test.watch": :test
       ],
       # Lets add meta information on project
       name: "Glific",
@@ -165,7 +166,8 @@ defmodule Glific.MixProject do
       {:resvg, "~> 0.3.0"},
       {:google_api_translate, "~> 0.15"},
       {:passgen, "~> 0.1.1"},
-      {:tarams, "~> 1.8"}
+      {:tarams, "~> 1.8"},
+      {:mix_test_watch, "~> 1.2", only: @test_envs}
     ]
   end
 
