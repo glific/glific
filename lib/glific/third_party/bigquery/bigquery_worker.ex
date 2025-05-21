@@ -856,7 +856,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> then(&enqueue_chunks(&1, :contacts, organization_id, attrs))
+    |> enqueue_chunks(:contacts, organization_id, attrs)
 
     :ok
   end
@@ -1070,7 +1070,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> then(&enqueue_chunks(&1, :flow_results, organization_id, attrs))
+    |> enqueue_chunks(:contacts, organization_id, attrs)
 
     :ok
   end
