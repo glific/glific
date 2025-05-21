@@ -231,6 +231,17 @@ defmodule Glific.Profiles do
     end
   end
 
+  def handle_flow_action(:deactivate_profile, context, action) do
+    value =
+      ContactField.parse_contact_field_value(context, action.value)
+
+    with {:ok, index} <- Glific.parse_maybe_integer(value),
+         {profile, _index} <- fetch_indexed_profile(context.contact, index) do
+      attrs = %{is_active: false}
+      update_profile(profile, attrs)
+    end
+  end
+
   def handle_flow_action(_profile_type, context, _action) do
     {context, Messages.create_temp_message(context.organization_id, "Failure")}
   end
