@@ -5,9 +5,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.DefaultController do
 
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
-  def handler(conn, _params, _msg) do
-    json(conn, "")
-  end
+  def handler(conn, _params, _msg), do: json(conn, "")
 
   @doc false
   @spec unknown(Plug.Conn.t(), map()) :: Plug.Conn.t()
