@@ -11,9 +11,7 @@ defmodule Glific.Providers.GupshupContacts do
 
   alias Glific.{
     Contacts,
-    Contacts.Contact,
-    Providers.Gupshup.ApiClient,
-    Providers.Gupshup.ContactWorker
+    Contacts.Contact
   }
 
   @doc """
@@ -30,39 +28,6 @@ defmodule Glific.Providers.GupshupContacts do
       method: attrs[:method] || "BSP"
     )
   end
-
-  @per_page_limit 5000
-  @doc """
-  Fetch opted in contacts data from providers server
-  """
-  @deprecated "Gupshup deprecated /users api which this function uses underneath"
-  @spec fetch_opted_in_contacts(map()) :: :ok | {:error, String.t()}
-  def fetch_opted_in_contacts(attrs) do
-    do_fetch_opted_in_contacts(attrs.organization_id, @per_page_limit, 1)
-  end
-
-  @spec do_fetch_opted_in_contacts(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
-          :ok | {:error, String.t()}
-  defp do_fetch_opted_in_contacts(org_id, @per_page_limit, page) do
-    ApiClient.fetch_opted_in_contacts(org_id, page)
-    |> validate_opted_in_contacts()
-    |> case do
-      {:ok, users} ->
-        Enum.chunk_every(users, 1000)
-        |> Enum.each(fn users ->
-          ContactWorker.make_job(users, org_id)
-        end)
-
-        do_fetch_opted_in_contacts(org_id, length(users), page + 1)
-
-      error ->
-        error
-    end
-  end
-
-  # Putting a check if the page number is 10 then stop, as we don't want recursion to go on indefinitely
-  defp do_fetch_opted_in_contacts(_org_id, _user_count, 10), do: :ok
-  defp do_fetch_opted_in_contacts(_org_id, _user_count, _page), do: :ok
 
   @doc """
   Perform the gupshup API call and parse the results for downstream functions.
