@@ -182,9 +182,7 @@ defmodule Glific.ProfilesTest do
           uuid_map: flow.uuid_map
         })
 
-      context =
-        context
-        |> Repo.preload([:flow, :contact])
+      context = Repo.preload(context, [:flow, :contact])
 
       action = %Action{
         id: nil,
