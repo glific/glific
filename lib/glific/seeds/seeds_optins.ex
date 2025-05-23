@@ -8,8 +8,7 @@ defmodule Glific.Seeds.SeedsOptins do
 
   alias Glific.{
     Contacts,
-    Partners,
-    Providers.GupshupContacts
+    Partners
   }
 
   @spec import_optin_contacts(map(), list()) :: :ok | any
@@ -67,12 +66,5 @@ defmodule Glific.Seeds.SeedsOptins do
       # upsert contact with provided phone and name
       import_optin_contacts(organization, contact)
     end)
-
-    # fetch and update contact details of optin time, last message at, bsp status
-    {:ok, credential} =
-      %{organization_id: organization.id, shortcode: "gupshup"}
-      |> Partners.get_credential()
-
-    GupshupContacts.fetch_opted_in_contacts(credential)
   end
 end

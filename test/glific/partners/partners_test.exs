@@ -1011,6 +1011,46 @@ defmodule Glific.PartnersTest do
       assert "updated_user_id" == updated_credential.secrets["user_id"]
     end
 
+    test "update_credential/2 for gupshup  should update credentials",
+         %{organization_id: organization_id} = _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          {:error,
+           %Tesla.Env{
+             status: 400,
+             body:
+               Jason.encode!(%{
+                 "error" => "some error"
+               })
+           }}
+
+        %{method: :post} ->
+          {:error,
+           %Tesla.Env{
+             status: 400,
+             body:
+               Jason.encode!(%{
+                 "error" => "Re-linking"
+               })
+           }}
+      end)
+
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
+
+      assert {:ok, %Credential{} = credential} =
+               Repo.fetch_by(Credential, %{provider_id: provider.id})
+
+      valid_update_attrs = %{
+        keys: %{"api_end_point" => "test_end_point"},
+        shortcode: provider.shortcode,
+        secrets: %{"app_name" => "some_app", "api_key" => "some_key"},
+        organization_id: organization_id
+      }
+
+      {:ok, updated_credential} = Partners.update_credential(credential, valid_update_attrs)
+      assert "some_app" == updated_credential.secrets["app_name"]
+    end
+
     test "update_credential/2 for bigquery should call create bigquery dataset",
          %{organization_id: organization_id} = _attrs do
       valid_attrs = %{
