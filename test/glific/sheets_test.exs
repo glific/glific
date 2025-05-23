@@ -110,7 +110,7 @@ defmodule Glific.SheetsTest do
           %Tesla.Env{
             status: 200,
             body:
-              "Key,Day,Message English\r\n1/10/\u202C2022,1,Hi welcome to Glific.\r\n1/10/2023\u200B,1,Hi welcome to Glific 2.\r\n1/10/2024,1,Hi welcome to Glific 3"
+              "Key,Day,Message English\r\n1/10/\u202C2022,1,Hi welcome to Glific.\r\n1/10/2023\u200B,1,Hi welcome to Glific 2.\r\n1/10/2024,1,Hi welcome to Glific 3\r\n1/10/2026 ,1,Hi welcome to Glific 4  "
           }
       end)
 
@@ -130,7 +130,7 @@ defmodule Glific.SheetsTest do
       assert sheet.is_active == true
       assert sheet.organization_id == organization_id
 
-      [h | [t | [t1 | _]]] =
+      [h | [t | [t1 | [t2 | _]]]] =
         SheetData
         |> where([sd], sd.sheet_id == ^sheet.id)
         |> Repo.all([])
@@ -138,6 +138,8 @@ defmodule Glific.SheetsTest do
       assert h.row_data["key"] == "1/10/2022"
       assert t.row_data["key"] == "1/10/2023"
       assert t1.row_data["key"] == "1/10/2024"
+      assert t2.row_data["key"] == "1/10/2026"
+      assert t2.row_data["message_english"] == "Hi welcome to Glific 4"
     end
   end
 end
