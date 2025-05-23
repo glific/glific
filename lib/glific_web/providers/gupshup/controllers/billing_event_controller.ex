@@ -14,9 +14,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.BillingEventController do
   Default handle for all billing event callbacks
   """
   @spec handler(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def handler(conn, _params) do
-    json(conn, nil)
-  end
+  def handler(conn, _params), do: json(conn, "")
 
   @doc """
   Message status when the message has been sent to gupshup
