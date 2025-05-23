@@ -333,7 +333,7 @@ defmodule Glific.Saas.Queries do
   # Validate the APIKey and AppName entered by the organization. We will use the gupshup
   # opt-in url which requires both and ensure that it returns success to validate these two
   # parameters
-  @spec validate_bsp_keys(map(), map() | String.t()) :: map()
+  @spec validate_bsp_keys(map(), map()) :: map()
   defp validate_bsp_keys(result, params) do
     api_key = params["api_key"]
     app_name = params["app_name"]

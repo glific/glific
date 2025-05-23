@@ -23,7 +23,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @app_url "https://partner.gupshup.io/partner/app/"
 
   @doc """
-  Fetch app details org id
+  Fetch app details by org id, will link the app if not linked
   """
   @spec fetch_app_details(non_neg_integer()) :: map() | String.t()
   def fetch_app_details(org_id) do
@@ -125,9 +125,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-  Getting app ID once the app is already linked
+  Fetch Gupshup app details by orgId or Gupshup app name
   """
-  @spec fetch_gupshup_app_details(non_neg_integer()) :: map() | String.t()
+  @spec fetch_gupshup_app_details(non_neg_integer() | String.t()) :: map() | String.t()
   def fetch_gupshup_app_details(org_id) when is_number(org_id) do
     organization = Partners.organization(org_id)
     gupshup_secrets = organization.services["bsp"].secrets

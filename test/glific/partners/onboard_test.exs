@@ -654,7 +654,6 @@ defmodule Glific.OnboardTest do
     assert result.organization.shortcode == "new_glific"
   end
 
-  @tag :tt
   test "Handling submitting invalid app name" do
     Tesla.Mock.mock(fn
       %{method: :get} ->
