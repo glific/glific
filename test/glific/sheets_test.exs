@@ -1,11 +1,15 @@
 defmodule Glific.SheetsTest do
+  import Ecto.Query
+
   use Glific.DataCase
   use ExUnit.Case
 
   alias Glific.{
     Fixtures,
+    Repo,
     Sheets,
-    Sheets.Sheet
+    Sheets.Sheet,
+    Sheets.SheetData
   }
 
   describe "sheets" do
@@ -96,6 +100,46 @@ defmodule Glific.SheetsTest do
          %{organization_id: organization_id} = attrs do
       Fixtures.sheet_fixture(attrs)
       assert Sheets.sync_organization_sheets(organization_id) == :ok
+    end
+
+    test "create_sheet/1 with valid data creates a sheet, where Key has invisible characters", %{
+      organization_id: organization_id
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "Key,Day,Message English\r\n1/10/\u202C2022,1,Hi welcome to Glific.\r\n1/10/2023\u200B,1,Hi welcome to Glific 2.\r\n1/10/2024,1,Hi welcome to Glific 3\r\n1/10/2026 ,1,Hi welcome to Glific 4  "
+          }
+      end)
+
+      valid_attrs = %{
+        type: "READ",
+        label: "sample sheet",
+        # this is sample sheet url
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
+      }
+
+      attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
+
+      assert {:ok, %Sheet{} = sheet} = Sheets.create_sheet(attrs)
+      assert sheet.label == "sample sheet"
+      assert sheet.url == valid_attrs.url
+      assert sheet.is_active == true
+      assert sheet.organization_id == organization_id
+
+      [h | [t | [t1 | [t2 | _]]]] =
+        SheetData
+        |> where([sd], sd.sheet_id == ^sheet.id)
+        |> Repo.all([])
+
+      assert h.row_data["key"] == "1/10/2022"
+      assert t.row_data["key"] == "1/10/2023"
+      assert t1.row_data["key"] == "1/10/2024"
+      assert t2.row_data["key"] == "1/10/2026"
+      assert t2.row_data["message_english"] == "Hi welcome to Glific 4"
     end
   end
 end
