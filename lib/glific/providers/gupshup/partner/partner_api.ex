@@ -34,7 +34,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
       {:error, error} ->
         error = "#{inspect(error)}"
-        if String.contains?(error, "Re-linking"), do: fetch_gupshup_app_id(org_id), else: error
+
+        if String.contains?(error, "Re-linking"),
+          do: fetch_gupshup_app_details(org_id),
+          else: error
     end
   end
 
@@ -124,20 +127,16 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
   Getting app ID once the app is already linked
   """
-  @spec fetch_gupshup_app_id(non_neg_integer()) :: map() | String.t()
-  def fetch_gupshup_app_id(org_id) do
+  @spec fetch_gupshup_app_details(non_neg_integer()) :: map() | String.t()
+  def fetch_gupshup_app_details(org_id) when is_number(org_id) do
     organization = Partners.organization(org_id)
     gupshup_secrets = organization.services["bsp"].secrets
     gupshup_app_name = gupshup_secrets["app_name"]
+    do_fetch_app_details(gupshup_app_name)
+  end
 
-    case get_request(@partner_url <> "/api/partnerApps", token_type: :partner_token) do
-      {:ok, %{"partnerAppsList" => list}} ->
-        Enum.filter(list, fn app -> app["name"] == gupshup_app_name end)
-        |> hd()
-
-      {:error, error} ->
-        error
-    end
+  def fetch_gupshup_app_details(app_name) when is_binary(app_name) do
+    do_fetch_app_details(app_name)
   end
 
   @doc """
@@ -517,14 +516,18 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     "template-asset-#{media_name}.#{file_format}"
   end
 
-  @spec fetch_partner_apps :: list() | String.t()
-  defp fetch_partner_apps do
-    case get_request(@partner_url <> "/api/partnerApps", token_type: :partner_token) do
-      {:ok, %{"partnerAppsList" => list}} ->
-        list
-
+  @spec do_fetch_app_details(String.t()) :: map() | String.t()
+  defp do_fetch_app_details(app_name) do
+    with {:ok, %{"partnerAppsList" => list}} <-
+           get_request(@partner_url <> "/api/partnerApps", token_type: :partner_token),
+         [app | _] <- Enum.filter(list, fn app -> app["name"] == app_name end) do
+      app
+    else
       {:error, error} ->
         error
+
+      _ ->
+        "Invalid Gupshup App"
     end
   end
 end

@@ -18,8 +18,7 @@ defmodule Glific.Saas.Queries do
     Partners,
     Partners.Organization,
     Partners.Provider,
-    Providers.Gupshup.ApiClient,
-    Providers.GupshupContacts,
+    Providers.Gupshup.PartnerAPI,
     Registrations,
     Registrations.Registration,
     Repo,
@@ -334,7 +333,7 @@ defmodule Glific.Saas.Queries do
   # Validate the APIKey and AppName entered by the organization. We will use the gupshup
   # opt-in url which requires both and ensure that it returns success to validate these two
   # parameters
-  @spec validate_bsp_keys(map(), map()) :: map()
+  @spec validate_bsp_keys(map(), map() | String.t()) :: map()
   defp validate_bsp_keys(result, params) do
     api_key = params["api_key"]
     app_name = params["app_name"]
@@ -343,19 +342,15 @@ defmodule Glific.Saas.Queries do
       dgettext("error", "API Key or App Name is empty.")
       |> error(result, :api_key_name)
     else
-      validate_bsp_keys(result, api_key, app_name)
+      validate_app(result, app_name)
     end
   end
 
-  @spec validate_bsp_keys(map(), String.t(), String.t()) :: map()
-  defp validate_bsp_keys(result, api_key, app_name) do
-    response =
-      ApiClient.users_get(api_key, app_name)
-      |> GupshupContacts.validate_opted_in_contacts()
-
-    case response do
-      {:ok, _users} -> result
-      {:error, message, key} -> error(message, result, key)
+  @spec validate_app(map(), String.t()) :: map()
+  defp validate_app(result, app_name) do
+    case PartnerAPI.fetch_gupshup_app_details(app_name) do
+      resp when is_map(resp) -> result
+      _ -> error("Invalid Gupshup App", result, :app_name)
     end
   end
 
