@@ -144,6 +144,14 @@ defmodule Glific.Profiles do
              language_id: profile.language_id,
              fields: profile.fields
            }) do
+      ContactField.do_add_contact_field(
+        contact,
+        "active_profile",
+        "active_profile_name",
+        profile.name,
+        "string"
+      )
+
       {:ok, Contacts.get_contact!(contact.id)}
     else
       _ -> {:error, contact}
@@ -227,6 +235,20 @@ defmodule Glific.Profiles do
         handle_flow_action(:switch_profile, context, action)
 
       {:error, _error} ->
+        {context, Messages.create_temp_message(context.organization_id, "Failure")}
+    end
+  end
+
+  def handle_flow_action(:deactivate_profile, context, action) do
+    value =
+      ContactField.parse_contact_field_value(context, action.value)
+
+    with {:ok, index} <- Glific.parse_maybe_integer(value),
+         {profile, _index} <- fetch_indexed_profile(context.contact, index),
+         {:ok, _updated_profile} <- update_profile(profile, %{is_active: false}) do
+      {context, Messages.create_temp_message(context.organization_id, "Success")}
+    else
+      _error ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
   end
