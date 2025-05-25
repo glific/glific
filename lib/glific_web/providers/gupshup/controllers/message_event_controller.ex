@@ -10,9 +10,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
   Default handle for all message event callbacks
   """
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
-  def handler(conn, _params, _msg) do
-    json(conn, nil)
-  end
+  def handler(conn, _params, _msg), do: json(conn, "")
 
   @doc """
   Message status when the message has been sent to gupshup
