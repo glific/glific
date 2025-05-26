@@ -676,7 +676,6 @@ defmodule Glific.ClientsTest do
            )
   end
 
-  @tag :tt
   test "gcs_file_name/1, nil values - sarc" do
     # Doesn't have schoolName in contact.fields
     contact =
