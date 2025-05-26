@@ -144,16 +144,15 @@ defmodule Glific.Profiles do
              language_id: profile.language_id,
              fields: profile.fields
            }) do
-      contact =
-        ContactField.do_add_contact_field(
-          contact,
-          "active_profile_name",
-          "active_profile_name",
-          profile.name,
-          "string"
-        )
+      ContactField.do_add_contact_field(
+        contact,
+        "active_profile_name",
+        "active_profile_name",
+        profile.name,
+        "string"
+      )
 
-      {:ok, contact}
+      {:ok, Contacts.get_contact!(contact.id)}
     else
       _ -> {:error, contact}
     end
