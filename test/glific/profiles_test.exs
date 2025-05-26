@@ -197,6 +197,30 @@ defmodule Glific.ProfilesTest do
         Repo.fetch_by(Profile, %{id: profile.id})
 
       assert profile.is_active == false
+
+      # failure case
+      params = %{
+        "name" => "Profile 3",
+        "type" => "student",
+        "contact_id" => contact.id
+      }
+
+      profile = Fixtures.profile_fixture(params)
+      assert profile.is_active == true
+
+      action = %Action{
+        id: nil,
+        # random profile index
+        value: "x",
+        type: "set_contact_profile",
+        profile_type: "Deactivate Profile"
+      }
+
+      {_updated_context, message} =
+        Profiles.handle_flow_action(:deactivate_profile, context, action)
+
+      assert message.body == "Failure"
+      assert profile.is_active == true
     end
   end
 end
