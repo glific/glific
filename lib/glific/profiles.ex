@@ -239,6 +239,10 @@ defmodule Glific.Profiles do
     end
   end
 
+  def handle_flow_action(_profile_type, context, _action) do
+    {context, Messages.create_temp_message(context.organization_id, "Failure")}
+  end
+
   # Sync existing contact fields to the first profile to prevent data loss
   @spec first_profile?(map(), FlowContext.t()) :: map()
   defp first_profile?(attrs, context) do
