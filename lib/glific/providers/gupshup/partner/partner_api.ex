@@ -19,6 +19,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     encode: &Query.encode/1
   )
 
+  plug Tesla.Middleware.Logger
+
   @partner_url "https://partner.gupshup.io/partner/account"
   @app_url "https://partner.gupshup.io/partner/app/"
 
@@ -413,7 +415,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:ok, %{partner_token: partner_token}} ->
         [
           {"token", partner_token},
-          {"Authorization", partner_token}
+          {"Authorization", "Bearer #{partner_token}"}
         ]
 
       _ ->
@@ -495,6 +497,22 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     else
       {:ok, gupshup_secrets["app_id"]}
     end
+  end
+
+  @spec set_subscription(non_neg_integer(), String.t(), list(String.t()), non_neg_integer()) ::
+          tuple()
+  def set_subscription(org_id, callback_url, modes, version \\ 2) do
+    url = app_url(org_id) <> "/subscription"
+
+    data = %{
+      "modes" => Enum.join(modes, ","),
+      # TODO: maybe we can append an unique one
+      "tag" => "app_#{org_id}",
+      "url" => callback_url,
+      "version" => version
+    }
+
+    post_request(url, data, token_type: :partner_token)
   end
 
   @spec app_id!(non_neg_integer()) :: String.t()
