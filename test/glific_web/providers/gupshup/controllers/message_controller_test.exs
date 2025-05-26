@@ -41,7 +41,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   describe "handler" do
     test "handler should return nil data", %{conn: conn} do
       conn = post(conn, "/gupshup", @message_request_params)
-      assert json_response(conn, 200) == nil
+      assert json_response(conn, 200) == ""
     end
   end
 
@@ -64,7 +64,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     test "Incoming interactive message should be stored in the database",
          %{conn: conn, message_params: message_params} do
       conn = post(conn, "/gupshup", message_params)
-      assert conn.halted
+      assert json_response(conn, 200) == ""
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
@@ -118,7 +118,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     test "Incoming text message should be stored in the database",
          %{conn: conn, message_params: message_params} do
       conn2 = post(conn, "/gupshup", message_params)
-      assert conn2.halted
+      assert json_response(conn2, 200) == ""
 
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
@@ -146,7 +146,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       # This will call the lib/glific/communications/message.ex:error function for coverage
       conn3 = post(conn, "/gupshup", message_params)
-      assert conn3.halted
+      assert json_response(conn3, 200) == ""
     end
 
     test "Updating the contacts due to sender contact already existing", %{
@@ -156,7 +156,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       # handling a message from gupshup, so that the phone number will be already existing
       # in contacts table.
       gupshup_conn = post(conn, "/gupshup", message_params)
-      assert gupshup_conn.halted
+      assert json_response(gupshup_conn, 200) == ""
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
@@ -188,7 +188,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "id"], Faker.String.base64(36))
 
       gupshup_conn = post(conn, "/gupshup", message_params)
-      assert gupshup_conn.halted
+      assert json_response(gupshup_conn, 200) == ""
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
@@ -223,7 +223,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "sender", "name"], "Sumit")
 
       gupshup_conn = post(conn, "/gupshup", message_params)
-      assert gupshup_conn.halted
+      assert json_response(gupshup_conn, 200) == ""
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
@@ -266,7 +266,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "sender", "phone"], contact.phone)
 
       conn = post(conn, "/gupshup", message_params)
-      assert conn.halted
+      assert json_response(conn, 200) == ""
 
       {:error, ["Elixir.Glific.Messages.Message", "Resource not found"]} =
         Repo.fetch_by(Message, %{
@@ -296,7 +296,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     test "Incoming image message should be stored in the database",
          setup_config = %{conn: conn} do
       conn = post(conn, "/gupshup", setup_config.message_params)
-      assert conn.halted
+      assert json_response(conn, 200) == ""
 
       bsp_message_id = get_in(setup_config.message_params, ["payload", "id"])
 
@@ -336,7 +336,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "payload", "caption"], nil)
 
       conn = post(conn, "/gupshup", message_params)
-      assert conn.halted
+      assert json_response(conn, 200) == ""
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
@@ -366,7 +366,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "type"], "video")
 
       conn = post(conn, "/gupshup", message_params)
-      assert conn.halted
+      assert json_response(conn, 200) == ""
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
@@ -395,7 +395,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "type"], "file")
 
       conn = post(conn, "/gupshup", message_params)
-      assert conn.halted
+      assert json_response(conn, 200) == ""
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
@@ -425,7 +425,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "type"], "sticker")
 
       conn = post(conn, "/gupshup", message_params)
-      assert conn.halted
+      assert json_response(conn, 200) == ""
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
@@ -470,7 +470,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       message_params = setup_config.message_params
 
       conn = post(conn, "/gupshup", message_params)
-      assert conn.halted
+      assert json_response(conn, 200) == ""
 
       # text_response(conn, 200)
       bsp_message_id = get_in(message_params, ["payload", "id"])
