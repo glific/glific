@@ -12,7 +12,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
 
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
-  def handler(conn, _params, _msg), do: json(conn, "")
+  def handler(conn, _params, _msg) do
+    conn
+    |> Plug.Conn.send_resp(200, "")
+    |> Plug.Conn.halt()
+  end
 
   @doc """
   Parse text message payload and convert that into Glific message struct
