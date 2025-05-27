@@ -818,7 +818,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "filter" => %{
             "term" => "",
             "dateRange" => %{
-              "from" => DateTime.utc_now() |> DateTime.add(-2, :hour) |> Date.to_iso8601()
+              "from" => DateTime.utc_now() |> DateTime.add(-2, :hour) |> Date.to_iso8601(),
             }
           },
           "contactOpts" => %{"limit" => contact_count},
