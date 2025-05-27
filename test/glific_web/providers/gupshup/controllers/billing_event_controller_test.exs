@@ -50,7 +50,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.BillingEventControllerTest do
         |> put_in(["payload", "references", "gsId"], message.bsp_message_id)
 
       conn = post(conn, "/gupshup", billing_event_params)
-      assert json_response(conn, 200) == ""
+      assert json_response(conn, 200) == nil
 
       {:ok, message_conversation} =
         Repo.fetch_by(MessageConversation, %{
