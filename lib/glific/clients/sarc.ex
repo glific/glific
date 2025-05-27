@@ -49,9 +49,14 @@ defmodule Glific.Clients.Sarc do
       remote_name
     else
       [org_name, acp_submission, name_of_educator] = contact_fields
-      url = "acp_submissions_2425/#{org_name}/#{acp_submission}/"
       [message_name, ext] = String.split(remote_name, ".")
-      url <> message_name <> "_" <> name_of_educator <> "." <> ext
+
+      Path.join([
+        "acp_submissions_2425",
+        org_name,
+        acp_submission,
+        "#{message_name}_#{name_of_educator}.#{ext}"
+      ])
     end
   end
 end
