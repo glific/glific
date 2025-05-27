@@ -33,7 +33,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
   describe "handler" do
     test "handler should return nil data", %{conn: conn} do
       conn = post(conn, "/gupshup", @message_event_request_params)
-      assert json_response(conn, 200) == ""
+      assert json_response(conn, 200) == nil
     end
   end
 
