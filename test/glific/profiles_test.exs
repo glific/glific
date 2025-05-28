@@ -222,5 +222,43 @@ defmodule Glific.ProfilesTest do
       assert message.body == "Failure"
       assert profile.is_active == true
     end
+
+    test "deactivate_profile should make the active_profile_id null in contacts table",
+         attrs do
+      {:ok, contact} =
+        Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: attrs.organization_id})
+
+      {:ok, updated_contact} = Profiles.switch_profile(contact, "1")
+      contact = Repo.preload(updated_contact, [:active_profile])
+      assert is_nil(contact.active_profile_id) == false
+
+      {:ok, flow} = Repo.fetch_by(Flow, %{name: "Deactivate Profile Flow"})
+
+      {:ok, context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_uuid: flow.uuid,
+          flow_id: flow.id,
+          flow: flow,
+          organization_id: flow.organization_id,
+          uuid_map: flow.uuid_map
+        })
+
+      context = Repo.preload(context, [:flow, :contact])
+
+      action = %Action{
+        id: nil,
+        value: "1",
+        type: "set_contact_profile",
+        profile_type: "Deactivate Profile"
+      }
+
+      Profiles.handle_flow_action(:deactivate_profile, context, action)
+
+      {:ok, updated_contact} =
+        Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: attrs.organization_id})
+
+      assert is_nil(updated_contact.active_profile_id) == true
+    end
   end
 end

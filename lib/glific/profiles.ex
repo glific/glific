@@ -237,7 +237,11 @@ defmodule Glific.Profiles do
 
     with {:ok, index} <- Glific.parse_maybe_integer(value),
          {profile, _index} <- fetch_indexed_profile(context.contact, index),
-         {:ok, _updated_profile} <- update_profile(profile, %{is_active: false}) do
+         {:ok, _updated_profile} <- update_profile(profile, %{is_active: false}),
+         {:ok, _updated_contact} <-
+           Contacts.update_contact(context.contact, %{
+             active_profile_id: nil
+           }) do
       {context, Messages.create_temp_message(context.organization_id, "Success")}
     else
       _error ->
