@@ -489,7 +489,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # handling a message from gupshup, so that the phone number will be already existing
       # in contacts table.
       gupshup_conn = post(conn, "/gupshup", message_params)
-      assert json_response(gupshup_conn, 200) == ""
+      assert gupshup_conn.halted
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
@@ -795,7 +795,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # handling a message from gupshup, so that the phone number will be already existing
       # in contacts table.
       gupshup_conn = post(conn, "/gupshup", message_params)
-      assert json_response(gupshup_conn, 200) == ""
+      assert gupshup_conn.halted
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
