@@ -245,7 +245,7 @@ defmodule Glific.Flows.Webhook do
       webhook_log_id: webhook_log.id,
       # for job uniqueness,
       context_id: context.id,
-      context: %{id: context.id, delay: context.delay},
+      context: %{id: context.id, delay: context.dela, uuids_seen: context.uuids_seen},
       organization_id: context.organization_id,
       action_id: action.uuid
     }
