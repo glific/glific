@@ -7,7 +7,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
 
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
-  def handler(conn, _params, _msg), do: json(conn, "")
+  def handler(conn, _params, _msg) do
+    conn
+    |> Plug.Conn.send_resp(200, "")
+    |> Plug.Conn.halt()
+  end
 
   @doc false
   @spec opted_in(Plug.Conn.t(), map()) :: Plug.Conn.t()

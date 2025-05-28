@@ -60,8 +60,7 @@ defmodule Glific.OnboardTest do
           status: 200,
           body:
             Jason.encode!(%{
-              "status" => "ok",
-              "users" => [1, 2, 3]
+              "partnerAppsList" => [%{"name" => "fake app name"}]
             })
         }
 
@@ -653,5 +652,72 @@ defmodule Glific.OnboardTest do
 
     assert result.organization.name == "First"
     assert result.organization.shortcode == "new_glific"
+  end
+
+  test "Handling submitting invalid app name" do
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "partnerAppsList" => []
+            })
+        }
+
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "token" => "ks_test_token",
+              "status" => "success",
+              "templates" => [],
+              "template" => %{"id" => Ecto.UUID.generate(), "status" => "PENDING"}
+            })
+        }
+    end)
+
+    attrs =
+      @valid_attrs
+      |> Map.put("name", " First")
+      |> Map.put("shortcode", "NEW_Glific")
+      |> Map.put("phone", "919917443995")
+
+    assert %{is_valid: false} = Onboard.setup(attrs)
+  end
+
+  test "Partnerapps api returns error" do
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        {:error,
+        %Tesla.Env{
+          status: 400,
+          body:
+            Jason.encode!(%{
+              "error" => "some error"
+            })
+        }}
+
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "token" => "ks_test_token",
+              "status" => "success",
+              "templates" => [],
+              "template" => %{"id" => Ecto.UUID.generate(), "status" => "PENDING"}
+            })
+        }
+    end)
+
+    attrs =
+      @valid_attrs
+      |> Map.put("name", " First")
+      |> Map.put("shortcode", "NEW_Glific")
+      |> Map.put("phone", "919917443995")
+
+    assert %{is_valid: false} = Onboard.setup(attrs)
   end
 end
