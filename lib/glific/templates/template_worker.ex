@@ -4,6 +4,7 @@ defmodule Glific.Templates.TemplateWorker do
   """
 
   require Logger
+  alias Glific.{Notification, Notifications, Notifications.Notification, Templates}
 
   use Oban.Worker,
     queue: :default,
@@ -47,13 +48,53 @@ defmodule Glific.Templates.TemplateWorker do
     :ok
   end
 
+  def perform(%Oban.Job{args: %{"organization_id" => org_id, "sync_hsm" => true}}) do
+    case Templates.sync_hsms_from_bsp(org_id) do
+      :ok ->
+        Logger.info("HSM template sync completed successfully for org_id: #{org_id}")
+
+        send_notification(
+          org_id,
+          "HSM template sync completed successfully.",
+          Notifications.types().info
+        )
+
+      {:error, reason} ->
+        Logger.error(
+          "Failed to sync HSM templates for org_id: #{org_id}, reason: #{inspect(reason)}"
+        )
+
+        send_notification(
+          org_id,
+          "Failed to sync HSM templates: #{inspect(reason)}",
+          Notifications.types().critical
+        )
+    end
+
+    :ok
+  end
+
+  @spec send_notification(non_neg_integer(), String.t(), String.t()) ::
+          {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
+  defp send_notification(org_id, message, severity) do
+    Notifications.create_notification(%{
+      category: "HSM template",
+      message: message,
+      severity: severity,
+      organization_id: org_id,
+      entity: %{Provider: "Gupshup"}
+    })
+  end
+
   defp process_template(template) do
     button_type = Glific.safe_string_to_atom(template["button_type"])
     type = Glific.safe_string_to_atom(template["type"])
+    buttons = template["buttons"] || []
 
     template
     |> Glific.atomize_keys()
     |> Map.put(:button_type, button_type)
     |> Map.put(:type, type)
+    |> Map.put(:buttons, buttons)
   end
 end

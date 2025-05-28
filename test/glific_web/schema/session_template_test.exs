@@ -1,5 +1,6 @@
 defmodule GlificWeb.Schema.SessionTemplateTest do
   use GlificWeb.ConnCase
+  use Oban.Pro.Testing, repo: Glific.Repo
   use Wormwood.GQLCase
 
   alias Glific.{
@@ -8,7 +9,8 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     Repo,
     Seeds.SeedsDev,
     Templates,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Templates.TemplateWorker
   }
 
   setup do
@@ -93,13 +95,21 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     {:ok, %{data: %{"syncHSMTemplate" => %{"message" => message}}}} =
       auth_query_gql_by(:sync, user)
 
+    assert_enqueued(
+      worker: TemplateWorker,
+      prefix: "global"
+    )
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default)
+
     {:ok, updated_hsm} =
       Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid, organization_id: user.organization_id})
 
     {:ok, updated_hsm2} =
       Repo.fetch_by(SessionTemplate, %{uuid: hsm2.uuid, organization_id: user.organization_id})
 
-    assert message == "successful"
+    assert message == "HSM sync job queued successfully"
     assert updated_hsm.category == "MARKETING"
     assert updated_hsm2.category == "AUTHENTICATION"
     assert updated_hsm.quality == "UNKNOWN"
@@ -414,84 +424,5 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
       get_in(query_data, [:data, "createTemplateFormMessage", "errors", Access.at(0), "message"])
 
     assert message =~ "has already been taken"
-  end
-
-  test "create session template with allow category change category", %{manager: user} do
-    Templates.list_session_templates(%{
-      filter: %{organization_id: user.organization_id, is_hsm: true}
-    })
-
-    [hsm, hsm2 | _] =
-      Templates.list_session_templates(%{
-        filter: %{organization_id: user.organization_id, is_hsm: true}
-      })
-
-    Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body:
-            Jason.encode!(%{
-              "status" => "success",
-              "template" => %{
-                "id" => hsm2.uuid,
-                "allowTemplateCategoryChange" => false
-              }
-            })
-        }
-    end)
-
-    language_id = hsm.language_id
-
-    # Create first template with allowTemplateCategoryChange set to false
-    result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "label" => "Test Label 1",
-            "body" => "Test Template 1",
-            "type" => "TEXT",
-            "languageId" => language_id,
-            "allowTemplateCategoryChange" => false
-          }
-        }
-      )
-
-    assert {:ok, query_data} = result
-
-    allow_template_change =
-      get_in(query_data, [
-        :data,
-        "createSessionTemplate",
-        "sessionTemplate",
-        "allow_template_category_change"
-      ])
-
-    assert allow_template_change == false
-
-    # Create second template without passing allowTemplateCategoryChange (should default to true)
-    result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "label" => "Test Label 2",
-            "body" => "Test Template 2",
-            "type" => "TEXT",
-            "languageId" => language_id
-          }
-        }
-      )
-
-    assert {:ok, query_data} = result
-
-    allow_template_change =
-      get_in(query_data, [
-        :data,
-        "createSessionTemplate",
-        "sessionTemplate",
-        "allow_template_category_change"
-      ])
-
-    assert allow_template_change == true
   end
 end

@@ -10,6 +10,7 @@ defmodule Glific.Contacts.Import do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.ContactHistory,
     Contacts.ImportWorker,
     Flows.ContactField,
     Groups,
@@ -22,6 +23,8 @@ defmodule Glific.Contacts.Import do
     Settings,
     Users.User
   }
+
+  use Publicist
 
   @doc """
   This method allows importing of contacts to a particular organization and group
@@ -312,14 +315,23 @@ defmodule Glific.Contacts.Import do
 
   @spec may_update_contact(map()) :: {:ok, any} | {:error, any}
   defp may_update_contact(contact_attrs) do
-    case Contacts.maybe_update_contact(contact_attrs) do
-      {:ok, contact} ->
-        create_group_and_contact_fields(contact_attrs, contact)
-        {:ok, %{contact.phone => "Contact has been updated"}}
+    with {:ok, old_contact} <- Repo.fetch_by(Contact, %{phone: contact_attrs.phone}),
+         {:ok, contact} <- Contacts.maybe_update_contact(contact_attrs) do
+      create_group_and_contact_fields(contact_attrs, contact)
 
-      {:error, error} ->
-        Map.put(%{}, contact_attrs.phone, "#{error}")
-        {:error, %{contact_attrs.phone => "#{error}"}}
+      capture_language_history(
+        contact,
+        old_contact.language_id,
+        contact_attrs.language_id
+      )
+
+      {:ok, %{contact.phone => "Contact has been updated"}}
+    else
+      {:error, error} when is_list(error) ->
+        {:error, %{contact_attrs.phone => "Contact not found."}}
+
+      {:error, %Ecto.Changeset{}} ->
+        {:error, %{contact_attrs.phone => "Contact upload failed."}}
     end
   end
 
@@ -423,6 +435,31 @@ defmodule Glific.Contacts.Import do
 
       [lang | _] ->
         Map.put(results, :language_id, lang.id)
+    end
+  end
+
+  @spec capture_language_history(
+          Contact.t(),
+          non_neg_integer() | String.t(),
+          non_neg_integer() | String.t()
+        ) ::
+          {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()} | nil
+  defp capture_language_history(contact, old_language_id, language_id) do
+    changed_language = Settings.get_language!(language_id)
+    old_language = Settings.get_language!(old_language_id)
+
+    if changed_language.id != old_language.id do
+      Contacts.capture_history(contact, :contact_language_updated, %{
+        event_label:
+          "Changed contact language to #{changed_language.label} from #{old_language.label}, via import.",
+        event_meta: %{
+          language: %{
+            id: changed_language.id,
+            label: changed_language.label,
+            old_language: old_language.id
+          }
+        }
+      })
     end
   end
 

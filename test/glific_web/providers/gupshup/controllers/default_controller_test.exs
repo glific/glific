@@ -4,7 +4,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.DefaultControllerTest do
   describe "unknown" do
     test "unknown should return empty data", %{conn: conn} do
       conn = post(conn, "/gupshup")
-      assert json_response(conn, 200) == nil
+      assert response(conn, 200) == ""
     end
   end
 end

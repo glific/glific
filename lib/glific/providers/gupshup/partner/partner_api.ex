@@ -23,7 +23,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @app_url "https://partner.gupshup.io/partner/app/"
 
   @doc """
-    Fetch App details based on API key and App name
+  Fetch app details by org id, will link the app if not linked
   """
   @spec fetch_app_details(non_neg_integer()) :: map() | String.t()
   def fetch_app_details(org_id) do
@@ -34,7 +34,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
       {:error, error} ->
         error = "#{inspect(error)}"
-        if String.contains?(error, "Re-linking"), do: fetch_gupshup_app_id(org_id), else: error
+
+        if String.contains?(error, "Re-linking"),
+          do: fetch_gupshup_app_details(org_id),
+          else: error
     end
   end
 
@@ -122,22 +125,18 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-    Getting app ID once the app is already linked
+  Fetch Gupshup app details by orgId or Gupshup app name
   """
-  @spec fetch_gupshup_app_id(non_neg_integer()) :: map() | String.t()
-  def fetch_gupshup_app_id(org_id) do
+  @spec fetch_gupshup_app_details(non_neg_integer() | String.t()) :: map() | String.t()
+  def fetch_gupshup_app_details(org_id) when is_number(org_id) do
     organization = Partners.organization(org_id)
     gupshup_secrets = organization.services["bsp"].secrets
     gupshup_app_name = gupshup_secrets["app_name"]
+    do_fetch_app_details(gupshup_app_name)
+  end
 
-    case get_request(@partner_url <> "/api/partnerApps", token_type: :partner_token) do
-      {:ok, %{"partnerAppsList" => list}} ->
-        Enum.filter(list, fn app -> app["name"] == gupshup_app_name end)
-        |> hd()
-
-      {:error, error} ->
-        error
-    end
+  def fetch_gupshup_app_details(app_name) when is_binary(app_name) do
+    do_fetch_app_details(app_name)
   end
 
   @doc """
@@ -189,12 +188,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
   Remove hsm template from the WABA.
   """
-  @spec apply_for_template(non_neg_integer(), map, boolean()) :: tuple()
-  def apply_for_template(org_id, payload, allow_category_change) do
-    payload =
-      payload
-      |> Map.put("allowTemplateCategoryChange", allow_category_change)
-      |> Map.put("appId", app_id!(org_id))
+  @spec apply_for_template(non_neg_integer(), map) :: tuple()
+  def apply_for_template(org_id, payload) do
+    payload = Map.put(payload, :appId, app_id!(org_id))
 
     (app_url(org_id) <> "/templates")
     |> post_request(payload,
@@ -518,5 +514,20 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       |> List.last()
 
     "template-asset-#{media_name}.#{file_format}"
+  end
+
+  @spec do_fetch_app_details(String.t()) :: map() | String.t()
+  defp do_fetch_app_details(app_name) do
+    with {:ok, %{"partnerAppsList" => list}} <-
+           get_request(@partner_url <> "/api/partnerApps", token_type: :partner_token),
+         [app | _] <- Enum.filter(list, fn app -> app["name"] == app_name end) do
+      app
+    else
+      {:error, error} ->
+        error
+
+      _ ->
+        "Invalid Gupshup App"
+    end
   end
 end

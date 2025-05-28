@@ -1,10 +1,13 @@
 defmodule Glific.TemplatesTest do
-  alias Glific.Messages.MessageMedia
   use Glific.DataCase
+  use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
     Fixtures,
     Mails.MailLog,
+    Messages.MessageMedia,
+    Notifications,
+    Notifications.Notification,
     Partners,
     Providers.Gupshup,
     Providers.Gupshup.PartnerAPI,
@@ -12,7 +15,8 @@ defmodule Glific.TemplatesTest do
     Seeds.SeedsDev,
     Settings,
     Templates,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Templates.TemplateWorker
   }
 
   setup do
@@ -709,46 +713,6 @@ defmodule Glific.TemplatesTest do
       assert session_template.language_id == language.id
     end
 
-    test "create_session_template/1 for apply template change category" do
-      Tesla.Mock.mock(fn
-        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
-          %Tesla.Env{
-            status: 200,
-            body: Jason.encode!(%{"access_token" => "mocked_token"})
-          }
-
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              Jason.encode!(%{
-                "status" => "success",
-                "template" => %{
-                  "allowTemplateCategoryChange" => true
-                }
-              })
-          }
-      end)
-
-      attrs = %{
-        label: "Default Template Label",
-        type: :text,
-        category: "AUTHENTICATION",
-        body: "some body",
-        is_hsm: true,
-        shortcode: "some_sc",
-        language_id: 1,
-        organization_id: 1,
-        example: "some example",
-        allow_template_category_change: true
-      }
-
-      result = Templates.create_session_template(attrs)
-
-      assert {:ok, template} = result
-      assert template.allow_template_category_change == true
-    end
-
     test "update_session_template/2 with invalid data returns error changeset", attrs do
       session_template = session_template_fixture(attrs)
 
@@ -944,24 +908,54 @@ defmodule Glific.TemplatesTest do
 
     test "bulk_apply_templates/2 should bulk apply templates", attrs do
       Tesla.Mock.mock(fn
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+          }
+
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
+            body: Jason.encode!(%{}),
             headers: %{
               "content-type" => "image",
               "content-length" => "1232"
             }
           }
+
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"token\":\"abc123\"}"
+          }
+
+        %{method: :post, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
+          uuid = Ecto.UUID.generate()
+
+          %Tesla.Env{
+            status: 200,
+            body: "{\"template\":{\"id\":\"#{uuid}\"}}"
+          }
+
+        %{method: :post, url: "https://partner.gupshup.io/partner/app/Glific42/upload/media"} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"handleId\":{\"message\":\"123\"},\"status\":\"success\"}"
+          }
       end)
 
       data =
-        "Language,Title,Message,Sample Message,Element Name,Category,Attachment Type,Attachment URL,Has Buttons,Button Type,CTA Button 1 Type,CTA Button 1 Title,CTA Button 1 Value,CTA Button 2 Type,CTA Button 2 Title,CTA Button 2 Value,Quick Reply 1 Title,Quick Reply 2 Title,Quick Reply 3 Title\r\nEnglish,Signup Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",welcome_arogya,SEMI-UTILITY,,,FALSE,,,,,,,,,,\r\nEnglish,Welcome Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",signup_arogya,UTILITY,,,TRUE,QUICK_REPLY,,,,,,,Yes,No,\r\nMandarin,Help Arogya,\"Hi {{1}},Need help?\",\"Hi [Akhilesh],Need help?\",help_arogya,UTILITY,,,TRUE,CALL_TO_ACTION,Phone Number,Call here,8979120220,URL,Visit Here,https://github.com/glific,,,\r\nEnglish,Activity,\"Hi {{1}},\nLook at this image.\",\"Hi [Akhilesh],\nLook at this image.\",activity,UTILITY,image,https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg,FALSE,,,,,,,,,,\r\nEnglish,Signout Arogya,\"Hi {{1}},\nSorry to see you go\",\"Hi [Akhilesh],\nSorry to see you move out\",signout_arogya,UTILITY,,,FALSE,,,,,,,,,,\r\nEnglish,Optin Arogya,\"Hi {{1}},\n Reply with yes to optin\",\"Hi [Akhilesh],\Reply with yes to optin\",optin_arogya,UTILITY,,,TRUE,,,,,,,,,,\r\nEnglish,Help Arogya 2,\"Hi {{1}},Need help?\",\"Hi [Akhilesh],Need help?\",help_arogya_2,UTILITY,,,TRUE,CALL_TO_ACTION,Phone Number,Call here,8979120220,URL,Visit Here,https://github.com/glific,,,\r\nEnglish,Signup Arogya 2,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",welcome_arogya,UTILITY,,,FALSE,,,,,,,,,,\r\nEnglish,Welcome Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",signup_arogya_2,UTILITY,,,TRUE,QUICK_REPLY,,,,,,,Yes,No,"
+        "Language,Title,Message,Sample Message,Element Name,Category,Attachment Type,Attachment URL,Has Buttons,Button Type,CTA Button 1 Type,CTA Button 1 Title,CTA Button 1 Value,CTA Button 2 Type,CTA Button 2 Title,CTA Button 2 Value,Quick Reply 1 Title,Quick Reply 2 Title,Quick Reply 3 Title\r\nEnglish,Signup Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",welcome_arogya,SEMI-UTILITY,,,FALSE,,,,,,,,,,\r\nEnglish,Welcome Arogya,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",signup_arogya,UTILITY,,,TRUE,QUICK_REPLY,,,,,,,Yes,No,\r\nMandarin,Help Arogya,\"Hi {{1}},Need help?\",\"Hi [Akhilesh],Need help?\",help_arogya,UTILITY,,,TRUE,CALL_TO_ACTION,PHONE_NUMBER,Call here,8979120220,URL,Visit Here,https://github.com/glific,,,\r\nEnglish,Activity,\"Hi {{1}},\nLook at this image.\",\"Hi [Akhilesh],\nLook at this image.\",activity,UTILITY,image,https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg,FALSE,,,,,,,,,,\r\nEnglish,Signout Arogya,\"Hi {{1}},\nSorry to see you go\",\"Hi [Akhilesh],\nSorry to see you move out\",signout_arogya,UTILITY,,,FALSE,,,,,,,,,,\r\nEnglish,Optin Arogya,\"Hi {{1}},\n Reply with yes to optin\",\"Hi [Akhilesh],\Reply with yes to optin\",optin_arogya,UTILITY,,,TRUE,,,,,,,,,,\r\nEnglish,Help Arogya 2,\"Hi {{1}},Need help?\",\"Hi [Akhilesh],Need help?\",help_arogya_2,UTILITY,,,TRUE,CALL_TO_ACTION,PHONE_NUMBER,Call here,8979120220,URL,Visit Here,https://github.com/glific,,,\r\nEnglish,Signup Arogya 2,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",welcome_arogya,UTILITY,,,FALSE,,,,,,,,,,\r\nEnglish,Welcome Arogya 2,\"Hi {{1}},\nWelcome to the world\",\"Hi [Akhilesh],\nWelcome to the world\",signup_arogya_2,UTILITY,,,TRUE,QUICK_REPLY,,,,,,,Yes,No,"
 
       {:ok, %{csv_rows: csv_rows}} =
         Gupshup.Template.bulk_apply_templates(attrs.organization_id, data)
 
       assert csv_rows ==
-               "Title,Status\r\nSignup Arogya,Invalid Category\r\nWelcome Arogya,Template has been applied successfully\r\nHelp Arogya,Invalid Language\r\nActivity,Template has been applied successfully\r\nSignout Arogya,Message and Sample Message does not match\r\nOptin Arogya,Invalid Button Type\r\nHelp Arogya 2,Template has been applied successfully\r\nSignup Arogya 2,Template has been applied successfully\r\nWelcome Arogya,Template has been applied successfully"
+               "Title,Status\r\nSignup Arogya,Invalid Category\r\nWelcome Arogya,Template has been applied successfully\r\nHelp Arogya,Invalid Language\r\nActivity,Template has been applied successfully\r\nSignout Arogya,Message and Sample Message does not match\r\nOptin Arogya,Invalid Button Type\r\nHelp Arogya 2,Template has been applied successfully\r\nSignup Arogya 2,Template has been applied successfully\r\nWelcome Arogya 2,Template has been applied successfully"
+
+      assert %{success: 5, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default)
     end
 
     test "update_hsms/1 should insert newly received HSM", attrs do
@@ -1877,5 +1871,128 @@ defmodule Glific.TemplatesTest do
     assert session_template.shortcode == "conference_ticket_status"
     assert session_template.is_hsm == true
     assert session_template.language_id == language.id
+  end
+
+  @org_id 1
+
+  test "successful HSM sync from BSP", attrs do
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => "sk_test_partner_token"})
+        }
+
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "data" => %{
+                "partner_app_token" => "fake-token"
+              }
+            })
+        }
+
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "templates" => [
+                %{
+                  "id" => "51eddb1e-8e36-44df-a9e5-2815e4f8463b",
+                  "elementName" => "qa_automation_qa_automation_112907flejpaiqah9z",
+                  "languageCode" => "en",
+                  "category" => "MARKETING",
+                  "status" => "APPROVED",
+                  "templateType" => "TEXT",
+                  "data" =>
+                    "Dear {{1}}\nExclusive deals on car and train bookings. Book now..!!\nThank you"
+                }
+              ]
+            })
+        }
+    end)
+
+    context = %{context: %{current_user: attrs}}
+
+    assert {:ok, %{message: "HSM sync job queued successfully"}} =
+             GlificWeb.Resolvers.Templates.sync_hsm_template(nil, %{}, context)
+
+    assert_enqueued(worker: TemplateWorker, prefix: "global")
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default)
+
+    notifications =
+      Repo.all(
+        from n in Notification,
+          where: n.organization_id == ^@org_id and n.category == "HSM template",
+          order_by: [desc: n.inserted_at]
+      )
+
+    messages = Enum.map(notifications, & &1.message)
+
+    assert "Syncing of HSM templates has started in the background." in messages
+    assert "HSM template sync completed successfully." in messages
+
+    severities = Enum.map(notifications, & &1.severity)
+    assert Notifications.types().info in severities
+  end
+
+  test "handle the failure case when the sync fails", attrs do
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => "sk_test_partner_token"})
+        }
+
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "data" => %{
+                "partner_app_token" => "fake-token"
+              }
+            })
+        }
+
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
+        %Tesla.Env{
+          status: 500,
+          body: "Internal Server Error"
+        }
+    end)
+
+    context = %{context: %{current_user: attrs}}
+
+    assert {:ok, %{message: "HSM sync job queued successfully"}} =
+             GlificWeb.Resolvers.Templates.sync_hsm_template(nil, %{}, context)
+
+    assert_enqueued(worker: TemplateWorker, prefix: "global")
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default)
+
+    notifications =
+      Repo.all(
+        from n in Notification,
+          where: n.organization_id == ^@org_id and n.category == "HSM template",
+          order_by: [desc: n.inserted_at]
+      )
+
+    messages = Enum.map(notifications, & &1.message)
+
+    assert "Syncing of HSM templates has started in the background." in messages
+
+    assert Enum.any?(messages, fn msg ->
+             String.contains?(msg, "Failed to sync HSM templates")
+           end)
+
+    severities = Enum.map(notifications, & &1.severity)
+    assert Notifications.types().critical in severities
   end
 end
