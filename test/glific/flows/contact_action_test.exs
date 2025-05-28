@@ -23,7 +23,7 @@ defmodule Glific.Flows.ContactActionTest do
     :ok
   end
 
-  test "optout", attrs do
+  test "optout/optin", attrs do
     [contact | _] =
       Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
@@ -37,6 +37,11 @@ defmodule Glific.Flows.ContactActionTest do
     contact = Contacts.get_contact!(contact.id)
     assert contact.optout_time != nil
     assert contact.optin_time == nil
+
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time == nil
+    assert contact.optin_time != nil
   end
 
   test "send message text", attrs do

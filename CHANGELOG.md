@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.2.5] -- 2025-05-20
+
+### Fixed
+- Handled empty `contact_id` during media filename generation
+- Fixed HSM template sync when there is a large number of templates to sync
+- Fixed bulk applying HSM templates failures
+
+### Removed
+- Disabled internal dashboard mails
+- Removed firing events to AppSignal when Poolboy timesout
+- Removed `allow_template_category_change` option from session template APIs
+
+
+
 ## [1.7.0] -- 2021-06-22
 
 - Add/Edit Stripe customer and TDS support.
