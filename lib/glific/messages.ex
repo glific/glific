@@ -1042,14 +1042,20 @@ defmodule Glific.Messages do
           Ecto.Queryable.t()
   defp apply_date_range(query, nil, nil), do: query
 
-  defp apply_date_range(query, nil, to) do
-    query
-    |> where([m: m], m.inserted_at <= ^Timex.to_datetime(to))
-  end
-
   defp apply_date_range(query, from, nil) do
     query
-    |> where([m: m], m.inserted_at >= ^Timex.to_datetime(from))
+    |> where(
+      [m],
+      m.inserted_at >= ^Timex.to_datetime(from)
+    )
+  end
+
+  defp apply_date_range(query, nil, to) do
+    query
+    |> where(
+      [m],
+      m.inserted_at <= ^Timex.to_datetime(to)
+    )
   end
 
   defp apply_date_range(query, from, to) do
@@ -1083,7 +1089,9 @@ defmodule Glific.Messages do
       {:include_users, user_ids}, query ->
         include_user_filter(query, user_ids)
 
-      {:date_range, %{from: from, to: to}}, query ->
+      {:date_range, date_range}, query ->
+        from = Map.get(date_range, :from)
+        to = Map.get(date_range, :to)
         apply_date_range(query, from, to)
 
       _filter, query ->
