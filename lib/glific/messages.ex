@@ -1054,7 +1054,7 @@ defmodule Glific.Messages do
     query
     |> where(
       [m],
-      m.inserted_at <= ^Timex.to_datetime(to)
+      m.inserted_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day())
     )
   end
 
@@ -1063,7 +1063,7 @@ defmodule Glific.Messages do
     |> where(
       [m],
       m.inserted_at >= ^Timex.to_datetime(from) and
-        m.inserted_at <= ^Timex.to_datetime(to)
+        m.inserted_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day())
     )
   end
 
