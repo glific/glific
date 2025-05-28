@@ -38,7 +38,6 @@ defmodule Glific.Providers.GupshupEnterpriseContacts do
   @doc """
   Fetch opted in contacts data from providers server
   """
-  @impl Glific.Providers.ContactBehaviour
   @spec fetch_opted_in_contacts(map()) :: :ok | {:error, String.t()}
   def fetch_opted_in_contacts(_attrs), do: :ok
 end
