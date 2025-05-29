@@ -24,14 +24,22 @@ defmodule Glific.ProfilesTest do
       "name" => "profile 2",
       "contact_id" => 2
     }
+
+    @valid_attrs_2 %{
+      "name" => "profile 3",
+      "type" => "student",
+      "is_active" => false
+    }
+
     test "get_profile!/1 returns the profile with given id" do
       profile = profile_fixture()
       assert Profiles.get_profile!(profile.id) == profile
     end
 
-    test "list_contacts/1 with multiple profiles filtered" do
+    test "list_profiles/1 with multiple profiles filtered" do
       _p1 = profile_fixture(@valid_attrs)
       _p2 = profile_fixture(@valid_attrs_1)
+      _p3 = profile_fixture(@valid_attrs_2)
 
       # fliter by name
       [profile | _] = Profiles.list_profiles(%{filter: %{name: "profile 1"}})
@@ -39,11 +47,18 @@ defmodule Glific.ProfilesTest do
 
       # If no filter is given it will return all the profile
       profile2 = Profiles.list_profiles(%{})
-      assert Enum.count(profile2) == 3
+      assert Enum.count(profile2) == 4
 
       # filter by contact_id
       profile3 = Profiles.list_profiles(%{filter: %{contact_id: 1}})
       assert Enum.count(profile3) == 1
+
+      # filter by active status
+      profile4 = Profiles.list_profiles(%{filter: %{is_active: false}})
+      assert Enum.count(profile4) == 1
+
+      profile4 = Profiles.list_profiles(%{filter: %{is_active: true}})
+      assert Enum.count(profile4) == 3
     end
 
     test "create_profile/1 with valid data creates a profile" do
