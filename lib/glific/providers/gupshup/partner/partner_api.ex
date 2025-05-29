@@ -19,8 +19,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     encode: &Query.encode/1
   )
 
-  plug Tesla.Middleware.Logger
-
   @partner_url "https://partner.gupshup.io/partner/account"
   @app_url "https://partner.gupshup.io/partner/app/"
 
@@ -511,8 +509,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec set_subscription(non_neg_integer(), String.t(), list(String.t()), non_neg_integer()) ::
           tuple()
   def set_subscription(org_id, callback_url \\ nil, modes \\ [], version \\ 2) do
-    Glific.Repo.put_process_state(org_id)
-    IO.inspect(org_id, label: :subsc)
     url = app_url(org_id) <> "/subscription"
     organization = Partners.organization(org_id)
 
@@ -537,12 +533,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       "version" => version
     }
 
-    post_request(url, data, [])
+    post_request(url, data, org_id: org_id)
   end
 
   @spec app_id!(non_neg_integer()) :: String.t()
   defp app_id!(org_id) do
-    IO.inspect(org_id, label: "orggg")
     {:ok, app_id} = app_id(org_id)
     app_id
   end
