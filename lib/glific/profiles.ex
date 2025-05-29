@@ -211,6 +211,8 @@ defmodule Glific.Profiles do
       organization_id: context.contact.organization_id
     }
 
+    create_default_profile(attrs, context)
+
     attrs
     |> first_profile?(context)
     |> create_profile()
@@ -242,5 +244,16 @@ defmodule Glific.Profiles do
       Repo.one(from(p in Profile, select: count("*"), where: p.contact_id == ^attrs.contact_id))
 
     if profile_count == 0, do: Map.merge(attrs, %{fields: context.contact.fields}), else: attrs
+  end
+
+  @spec create_default_profile(map(), map()) :: {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
+  defp create_default_profile(attrs, context) do
+    default_attrs =
+      attrs
+      |> Map.put(:name, context.contact.name)
+      |> Map.put(:is_default, true)
+      |> Map.put(:fields, context.contact.fields)
+
+    create_profile(default_attrs)
   end
 end
