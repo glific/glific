@@ -22,7 +22,8 @@ defmodule Glific.Profiles.Profile do
   @optional_fields [
     :name,
     :type,
-    :fields
+    :fields,
+    :is_active
   ]
 
   @type t() :: %__MODULE__{
@@ -31,6 +32,7 @@ defmodule Glific.Profiles.Profile do
           name: String.t() | nil,
           type: String.t() | nil,
           fields: map() | nil,
+          is_active: boolean() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
           language_id: non_neg_integer | nil,
@@ -45,6 +47,7 @@ defmodule Glific.Profiles.Profile do
     field(:name, :string)
     field(:type, :string)
     field(:fields, :map, default: %{})
+    field(:is_active, :boolean, default: true)
 
     belongs_to(:language, Language, foreign_key: :language_id)
     belongs_to(:contact, Contact, foreign_key: :contact_id)
