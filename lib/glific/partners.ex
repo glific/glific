@@ -488,6 +488,7 @@ defmodule Glific.Partners do
   """
   @spec load_cache(tuple()) :: {:ignore, Organization.t()}
   def load_cache(cachex_key) do
+    IO.inspect(cachex_key)
     # this is of the form {:global_org_key, {:organization, value}}
     # we want the value element
     cache_key = cachex_key |> elem(1) |> elem(1)
@@ -518,6 +519,7 @@ defmodule Glific.Partners do
   @spec organization(non_neg_integer | String.t()) ::
           Organization.t() | nil | {:error, String.t()}
   def organization(cache_key) do
+    IO.inspect(cache_key, label: :cache)
     case Caches.fetch(@global_organization_id, {:organization, cache_key}, &load_cache/1) do
       {:error, error} ->
         {:error, error}

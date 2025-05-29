@@ -24,6 +24,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @partner_url "https://partner.gupshup.io/partner/account"
   @app_url "https://partner.gupshup.io/partner/app/"
 
+  @modes ["Enqueued", "Failed", "Read", "Sent", "Delivered", "Others", "Delete", "Message"]
   @doc """
     Fetch App details based on API key and App name
   """
@@ -499,24 +500,49 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @doc """
+  Creates a webhook in gupshup
+
+  - org_id - Unique organization Id
+  - callback_url - Webhook callback url
+  - modes - Different modes we want to listen to, check `@modes` for defaults
+  - version - Payload format, by default its v2 (gupshup format)
+  """
   @spec set_subscription(non_neg_integer(), String.t(), list(String.t()), non_neg_integer()) ::
           tuple()
-  def set_subscription(org_id, callback_url, modes, version \\ 2) do
+  def set_subscription(org_id, callback_url \\ nil, modes \\ [], version \\ 2) do
+    Glific.Repo.put_process_state(org_id)
+    IO.inspect(org_id, label: :subsc)
     url = app_url(org_id) <> "/subscription"
+    organization = Partners.organization(org_id)
+
+    # sometimes callback url can be ngrok or other test urls, in that
+    # case we can pass in the function
+    callback_url =
+      if is_nil(callback_url) do
+        "https://api.#{organization.shortcode}.glific.com/gupshup"
+      else
+        callback_url
+      end
+
+    # modes can be passed in params,
+    # if we want to add a newly introduced event other than
+    # the defaults
+    modes = Enum.uniq(@modes ++ modes)
 
     data = %{
       "modes" => Enum.join(modes, ","),
-      # TODO: maybe we can append an unique one
-      "tag" => "app_#{org_id}",
+      "tag" => "webhook_#{organization.name}",
       "url" => callback_url,
       "version" => version
     }
 
-    post_request(url, data, token_type: :partner_token)
+    post_request(url, data, [])
   end
 
   @spec app_id!(non_neg_integer()) :: String.t()
   defp app_id!(org_id) do
+    IO.inspect(org_id, label: "orggg")
     {:ok, app_id} = app_id(org_id)
     app_id
   end
