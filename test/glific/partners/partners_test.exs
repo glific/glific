@@ -171,20 +171,53 @@ defmodule Glific.PartnersTest do
       assert %{"status" => "success"} == result
     end
 
-    test "enable DLR Events for an app" do
+    @tag :tt
+    test "enable webhook subscription for an app" do
       org = SeedsDev.seed_organizations()
 
       Tesla.Mock.mock(fn
-        %{method: :put} ->
+        %{method: :post} ->
           %Tesla.Env{
-            status: 204,
-            body: "{\"status\":\"success\"}"
+            status: 200,
+            body:
+              JSON.encode!(%{
+                "status" => "success",
+                "subscription" => %{
+                  "active" => true,
+                  "createdOn" => 1_748_489_845_881,
+                  "id" => "10380410",
+                  "mode" => 1143,
+                  "modes" => [
+                    "SENT",
+                    "DELIVERED",
+                    "READ",
+                    "OTHERS",
+                    "FAILED",
+                    "MESSAGE",
+                    "ENQUEUED"
+                  ],
+                  "modifiedOn" => 1_748_489_845_881,
+                  "showOnUI" => false,
+                  "tag" => "webhook_glific",
+                  "url" => "https://v.com/gupshup",
+                  "version" => 2
+                }
+              })
+          }
+
+        %{method: :get, url: url} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                partner_app_token: "sk_test_partner_app_token"
+              })
           }
       end)
 
       modes = ["DELIVERED", "READ"]
-      {:ok, data} = PartnerAPI.enable_dlr_events(org.id, modes)
-      assert %{"status" => "success"} == data
+      {:ok, data} = PartnerAPI.set_subscription(org.id)
+      assert %{"status" => "success"} = data
     end
 
     test "set_callback_url/2 for setting callback URL" do
