@@ -1648,35 +1648,59 @@ defmodule Glific.PartnersTest do
 
   describe "Partner.set_subscription/4" do
     setup do
+      error = %{
+        "status" => "error",
+        "message" => "Duplicate component"
+      }
+
       Tesla.Mock.mock(fn
-        %{method: :post} ->
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
           %Tesla.Env{
             status: 200,
             body:
               JSON.encode!(%{
-                "status" => "success",
-                "subscription" => %{
-                  "active" => true,
-                  "createdOn" => 1_748_489_845_881,
-                  "id" => "10380410",
-                  "mode" => 1143,
-                  "modes" => [
-                    "SENT",
-                    "DELIVERED",
-                    "READ",
-                    "OTHERS",
-                    "FAILED",
-                    "MESSAGE",
-                    "ENQUEUED"
-                  ],
-                  "modifiedOn" => 1_748_489_845_881,
-                  "showOnUI" => false,
-                  "tag" => "webhook_glific",
-                  "url" => "https://v.com/gupshup",
-                  "version" => 2
-                }
+                "token" => "token"
               })
           }
+
+        %{method: :post, body: body} ->
+          cond do
+            String.contains?(body, "error-ngrok.app") ->
+              %Tesla.Env{
+                status: 400,
+                body: JSON.encode!(error)
+              }
+
+            true ->
+              %Tesla.Env{
+                status: 200,
+                body:
+                  JSON.encode!(%{
+                    "status" => "success",
+                    "subscription" => %{
+                      "active" => true,
+                      "createdOn" => 1_748_489_845_881,
+                      "id" => "10380410",
+                      "mode" => 1143,
+                      "modes" => [
+                        "SENT",
+                        "DELIVERED",
+                        "READ",
+                        "OTHERS",
+                        "FAILED",
+                        "MESSAGE",
+                        "ENQUEUED"
+                      ],
+                      "modifiedOn" => 1_748_489_845_881,
+                      "showOnUI" => false,
+                      "tag" => "webhook_glific",
+                      "url" =>
+                        Regex.run(~r/&url=([^&]+?)&version/, body) |> List.last() |> URI.decode(),
+                      "version" => 2
+                    }
+                  })
+              }
+          end
 
         %{method: :get} ->
           %Tesla.Env{
@@ -1688,7 +1712,7 @@ defmodule Glific.PartnersTest do
           }
       end)
 
-      :ok
+      {:ok, %{error: error}}
     end
 
     test "enable webhook subscription for an app" do
@@ -1704,35 +1728,20 @@ defmodule Glific.PartnersTest do
       {:ok, data} =
         PartnerAPI.set_subscription(org.id, "https://4bff-116-68-82-101.ngrok-free.app/gupshup")
 
-      assert %{"status" => "success"} = data
+      assert %{
+               "status" => "success",
+               "subscription" => %{"url" => "https://4bff-116-68-82-101.ngrok-free.app/gupshup"}
+             } = data
     end
 
-    test "enable webhook subscription for an app, duplicate webhook error" do
+    test "enable webhook subscription for an app, duplicate webhook error", state do
       org = SeedsDev.seed_organizations()
 
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 400,
-            body:
-              JSON.encode!(%{
-                "status" => "error",
-                "message" => "Duplicate component"
-              })
-          }
+      {:error, %{body: body}} =
+        PartnerAPI.set_subscription(org.id, "https://error-ngrok.app/gupshup")
 
-        %{method: :get} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              Jason.encode!(%{
-                partner_app_token: "sk_test_partner_app_token"
-              })
-          }
-      end)
-
-      {:error, _} =
-        PartnerAPI.set_subscription(org.id, "https://4bff-116-68-82-101.ngrok-free.app/gupshup")
+      assert body ==
+               JSON.encode!(state.error)
     end
   end
 end

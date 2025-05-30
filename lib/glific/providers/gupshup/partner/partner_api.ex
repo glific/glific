@@ -22,7 +22,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @partner_url "https://partner.gupshup.io/partner/account"
   @app_url "https://partner.gupshup.io/partner/app/"
 
-  @modes ["Enqueued", "Failed", "Read", "Sent", "Delivered", "Others", "Delete", "Message"]
+  @modes ["ENQUEUED", "FAILED", "READ", "SENT", "DELIVERED", "OTHERS", "DELETE", "MESSAGE"]
+
   @doc """
   Fetch app details by org id, will link the app if not linked
   """
@@ -504,10 +505,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     # modes can be passed in params,
     # if we want to add a newly introduced event other than
     # the defaults
-    modes = Enum.uniq(@modes ++ modes)
+    modes = (@modes ++ Enum.map(modes, &String.upcase/1)) |> Enum.uniq() |> Enum.join(",")
 
     data = %{
-      "modes" => Enum.join(modes, ","),
+      "modes" => modes,
       "tag" => "webhook_#{organization.shortcode}",
       "url" => callback_url,
       "version" => version
