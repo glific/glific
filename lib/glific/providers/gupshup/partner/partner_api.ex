@@ -507,7 +507,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   - modes - Different modes we want to listen to, check `@modes` for defaults
   - version - Payload format, by default its v2 (gupshup format)
   """
-  @spec set_subscription(non_neg_integer(), String.t(), list(String.t()), non_neg_integer()) ::
+  @spec set_subscription(non_neg_integer(), String.t() | nil, list(String.t()), non_neg_integer()) ::
           tuple()
   def set_subscription(org_id, callback_url \\ nil, modes \\ [], version \\ 2)
       when is_list(modes) do

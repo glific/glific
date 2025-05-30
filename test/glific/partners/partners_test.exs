@@ -1067,11 +1067,12 @@ defmodule Glific.PartnersTest do
           {:ok,
            %Tesla.Env{
              status: 200,
-             body: Jason.encode!(%{
-               "partnerApps" => %{
-                 "id" => "app_id"
-               }
-             })
+             body:
+               Jason.encode!(%{
+                 "partnerApps" => %{
+                   "id" => "app_id"
+                 }
+               })
            }}
       end)
 
