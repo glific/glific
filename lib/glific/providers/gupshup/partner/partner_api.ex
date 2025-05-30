@@ -503,7 +503,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   Creates a webhook in gupshup
 
   - org_id - Unique organization Id
-  - callback_url - Webhook callback url
+  - callback_url - Webhook callback url, defaults to auto generated url wrto org shortcode
   - modes - Different modes we want to listen to, check `@modes` for defaults
   - version - Payload format, by default its v2 (gupshup format)
   """
