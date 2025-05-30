@@ -248,12 +248,15 @@ defmodule Glific.Profiles do
 
   @spec create_default_profile(map(), map()) :: {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
   defp create_default_profile(attrs, context) do
-    default_attrs =
-      attrs
-      |> Map.put(:name, context.contact.name)
-      |> Map.put(:is_default, true)
-      |> Map.put(:fields, context.contact.fields)
+    case Repo.get_by(Profile, contact_id: context.contact.id, is_default: true) do
+      nil ->
+        default_attrs =
+          attrs
+          |> Map.put(:name, context.contact.name)
+          |> Map.put(:is_default, true)
+          |> Map.put(:fields, context.contact.fields)
 
-    create_profile(default_attrs)
+        create_profile(default_attrs)
+    end
   end
 end
