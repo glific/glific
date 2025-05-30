@@ -1664,42 +1664,40 @@ defmodule Glific.PartnersTest do
           }
 
         %{method: :post, body: body} ->
-          cond do
-            String.contains?(body, "error-ngrok.app") ->
-              %Tesla.Env{
-                status: 400,
-                body: JSON.encode!(error)
-              }
-
-            true ->
-              %Tesla.Env{
-                status: 200,
-                body:
-                  JSON.encode!(%{
-                    "status" => "success",
-                    "subscription" => %{
-                      "active" => true,
-                      "createdOn" => 1_748_489_845_881,
-                      "id" => "10380410",
-                      "mode" => 1143,
-                      "modes" => [
-                        "SENT",
-                        "DELIVERED",
-                        "READ",
-                        "OTHERS",
-                        "FAILED",
-                        "MESSAGE",
-                        "ENQUEUED"
-                      ],
-                      "modifiedOn" => 1_748_489_845_881,
-                      "showOnUI" => false,
-                      "tag" => "webhook_glific",
-                      "url" =>
-                        Regex.run(~r/&url=([^&]+?)&version/, body) |> List.last() |> URI.decode(),
-                      "version" => 2
-                    }
-                  })
-              }
+          if String.contains?(body, "error-ngrok.app") do
+            %Tesla.Env{
+              status: 400,
+              body: JSON.encode!(error)
+            }
+          else
+            %Tesla.Env{
+              status: 200,
+              body:
+                JSON.encode!(%{
+                  "status" => "success",
+                  "subscription" => %{
+                    "active" => true,
+                    "createdOn" => 1_748_489_845_881,
+                    "id" => "10380410",
+                    "mode" => 1143,
+                    "modes" => [
+                      "SENT",
+                      "DELIVERED",
+                      "READ",
+                      "OTHERS",
+                      "FAILED",
+                      "MESSAGE",
+                      "ENQUEUED"
+                    ],
+                    "modifiedOn" => 1_748_489_845_881,
+                    "showOnUI" => false,
+                    "tag" => "webhook_glific",
+                    "url" =>
+                      Regex.run(~r/&url=([^&]+?)&version/, body) |> List.last() |> URI.decode(),
+                    "version" => 2
+                  }
+                })
+            }
           end
 
         %{method: :get} ->
