@@ -138,13 +138,23 @@ defmodule Glific.Profiles do
 
     with {:ok, index} <- Glific.parse_maybe_integer(profile_index),
          {profile, _index} <- fetch_indexed_profile(contact, index),
-         {:ok, _updated_contact} <-
+         {:ok, updated_contact} <-
            Contacts.update_contact(contact, %{
              active_profile_id: profile.id,
              language_id: profile.language_id,
              fields: profile.fields
            }) do
-      {:ok, Contacts.get_contact!(contact.id)}
+      contact =
+        ContactField.do_add_contact_field(
+          updated_contact,
+          "active_profile_name",
+          "active_profile_name",
+          profile.name,
+          "string"
+        )
+        |> Repo.preload([:active_profile], force: true)
+
+      {:ok, contact}
     else
       _ -> {:error, contact}
     end
