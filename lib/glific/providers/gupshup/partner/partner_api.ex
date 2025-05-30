@@ -212,28 +212,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-  For setting callback URL
-  """
-  @deprecated "use set_subscription/4"
-  @spec set_callback_url(non_neg_integer(), String.t()) :: tuple()
-  def set_callback_url(org_id, callback_url) do
-    url = app_url(org_id) <> "/callbackUrl"
-    data = %{"callbackUrl" => callback_url}
-    put_request(url, data, org_id: org_id)
-  end
-
-  @doc """
-  Enable DLR events for an app.
-  """
-  @deprecated "use set_subscription/4"
-  @spec enable_dlr_events(non_neg_integer(), list(String.t())) :: tuple()
-  def enable_dlr_events(org_id, modes) do
-    url = app_url(org_id) <> "/callback/mode"
-    data = %{"modes" => Enum.join(modes, ",")}
-    put_request(url, data, org_id: org_id)
-  end
-
-  @doc """
   Setting Business Profile Details.
   Following parameters can be updated in the given form:
   %{
