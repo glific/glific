@@ -226,6 +226,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
   Enable DLR events for an app.
   """
+  @deprecated "use set_subscription/4"
   @spec enable_dlr_events(non_neg_integer(), list(String.t())) :: tuple()
   def enable_dlr_events(org_id, modes) do
     url = app_url(org_id) <> "/callback/mode"
