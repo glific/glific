@@ -26,7 +26,6 @@ defmodule Glific.Partners do
     Partners.Provider,
     Providers.Gupshup.GupshupWallet,
     Providers.Gupshup.PartnerAPI,
-    Providers.GupshupContacts,
     Providers.Maytapi.WAWorker,
     Repo,
     Settings.Language,
@@ -917,8 +916,6 @@ defmodule Glific.Partners do
       update_organization(organization, %{bsp_id: credential.provider.id})
 
       if credential.is_active do
-        GupshupContacts.fetch_opted_in_contacts(credential)
-
         set_bsp_app_id(organization, "gupshup")
       else
         {:ok, credential}

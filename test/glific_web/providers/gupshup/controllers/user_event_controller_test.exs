@@ -33,7 +33,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
     test "handler should return nil data", %{conn: conn} do
       params = put_in(@user_event_request_params, ["payload", "type"], "not defined")
       conn = post(conn, "/gupshup", params)
-      assert json_response(conn, 200) == nil
+      assert response(conn, 200) == ""
     end
   end
 
@@ -54,7 +54,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
     test "optin_time and status should be updated", setup_config = %{conn: conn} do
       phone = get_in(setup_config.message_params, ["payload", "phone"])
       conn = post(conn, "/gupshup", setup_config.message_params)
-      json_response(conn, 200)
+      response(conn, 200)
 
       {:ok, contact} =
         Repo.fetch_by(Contact, %{phone: phone, organization_id: conn.assigns[:organization_id]})
@@ -83,7 +83,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
     test "optout_time and status should be updated", setup_config = %{conn: conn} do
       phone = get_in(setup_config.message_params, ["payload", "phone"])
       conn = post(conn, "/gupshup", setup_config.message_params)
-      json_response(conn, 200)
+      response(conn, 200)
 
       {:ok, contact} =
         Repo.fetch_by(Contact, %{phone: phone, organization_id: conn.assigns[:organization_id]})
