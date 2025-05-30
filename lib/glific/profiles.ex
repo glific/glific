@@ -257,6 +257,9 @@ defmodule Glific.Profiles do
           |> Map.put(:fields, context.contact.fields)
 
         create_profile(default_attrs)
+
+      profile ->
+        {:ok, profile}
     end
   end
 end

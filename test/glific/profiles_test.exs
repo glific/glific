@@ -203,5 +203,23 @@ defmodule Glific.ProfilesTest do
       |> Repo.all()
 
     assert length(profiles) == 2
+
+    #if user again creates a new profile the default profile shouldn't be created
+    action = %Action{
+      id: nil,
+      type: "set_contact_profile",
+      value: %{"name" => "profile3", "type" => "student"},
+      profile_type: "Create Profile"
+    }
+
+    Profiles.handle_flow_action(:create_profile, context, action)
+
+    profiles =
+      Profile
+      |> where([p], p.contact_id == ^contact.id and p.organization_id == ^attrs.organization_id)
+      |> Repo.all()
+
+    assert length(profiles) == 3
+
   end
 end
