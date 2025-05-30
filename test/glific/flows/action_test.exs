@@ -893,7 +893,8 @@ defmodule Glific.Flows.ActionTest do
     message_stream = []
 
     Action.execute(action, context, message_stream)
-    {:ok, profile} = Repo.fetch_by(Profiles.Profile, %{name: "name"})
+    #first profile is the default profile
+    {:ok, profile} = Repo.fetch_by(Profiles.Profile, %{name: contact.name})
     assert profile.type == "student"
 
     # Create a second profile for a contact
