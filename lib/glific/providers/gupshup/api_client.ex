@@ -7,7 +7,6 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   use Gettext, backend: GlificWeb.Gettext
 
   @gupshup_msg_url "https://api.gupshup.io/wa/api/v1"
-  @gupshup_api_url "https://api.gupshup.io/sm/api/v1"
 
   use Tesla
   # you can add , log_level: :debug to the below if you want debugging info
@@ -60,36 +59,5 @@ defmodule Glific.Providers.Gupshup.ApiClient do
       url = @gupshup_msg_url <> "/msg"
       gupshup_post(url, payload, credentials.api_key)
     end
-  end
-
-  @doc """
-  Update a contact phone as opted in
-  """
-  @spec optin_contact(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
-  def optin_contact(org_id, payload) do
-    with {:ok, credentials} <- get_credentials(org_id) do
-      url = @gupshup_api_url <> "/app/opt/in/" <> credentials.app_name
-      gupshup_post(url, payload, credentials.api_key)
-    end
-  end
-
-  @doc """
-  Fetch opted in contacts data from providers server
-  """
-  @spec fetch_opted_in_contacts(non_neg_integer(), non_neg_integer()) ::
-          Tesla.Env.result() | {:error, String.t()}
-  def fetch_opted_in_contacts(org_id, page) do
-    with {:ok, credentials} <- get_credentials(org_id),
-         do: users_get(credentials.api_key, credentials.app_name, page)
-  end
-
-  @doc """
-  Build the Gupshup user list url
-  """
-  @spec users_get(String.t(), String.t(), non_neg_integer()) ::
-          Tesla.Env.result() | {:error, String.t()}
-  def users_get(api_key, app_name, page \\ 0) do
-    url = @gupshup_api_url <> "/users/" <> app_name <> "?maxResult=5000&pageNo=#{page}"
-    gupshup_get(url, api_key)
   end
 end
