@@ -415,7 +415,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:ok, %{partner_token: partner_token}} ->
         [
           {"token", partner_token},
-          {"Authorization", "Bearer #{partner_token}"}
+          {"Authorization", partner_token}
         ]
 
       _ ->
@@ -509,7 +509,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec set_subscription(non_neg_integer(), String.t(), list(String.t()), non_neg_integer()) ::
           tuple()
-  def set_subscription(org_id, callback_url \\ nil, modes \\ [], version \\ 2) do
+  def set_subscription(org_id, callback_url \\ nil, modes \\ [], version \\ 2)
+      when is_list(modes) do
     url = app_url(org_id) <> "/subscription"
     organization = Partners.organization(org_id)
 

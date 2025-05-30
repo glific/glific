@@ -171,70 +171,6 @@ defmodule Glific.PartnersTest do
       assert %{"status" => "success"} == result
     end
 
-    @tag :tt
-    test "enable webhook subscription for an app" do
-      org = SeedsDev.seed_organizations()
-
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              JSON.encode!(%{
-                "status" => "success",
-                "subscription" => %{
-                  "active" => true,
-                  "createdOn" => 1_748_489_845_881,
-                  "id" => "10380410",
-                  "mode" => 1143,
-                  "modes" => [
-                    "SENT",
-                    "DELIVERED",
-                    "READ",
-                    "OTHERS",
-                    "FAILED",
-                    "MESSAGE",
-                    "ENQUEUED"
-                  ],
-                  "modifiedOn" => 1_748_489_845_881,
-                  "showOnUI" => false,
-                  "tag" => "webhook_glific",
-                  "url" => "https://v.com/gupshup",
-                  "version" => 2
-                }
-              })
-          }
-
-        %{method: :get, url: url} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              Jason.encode!(%{
-                partner_app_token: "sk_test_partner_app_token"
-              })
-          }
-      end)
-
-      modes = ["DELIVERED", "READ"]
-      {:ok, data} = PartnerAPI.set_subscription(org.id)
-      assert %{"status" => "success"} = data
-    end
-
-    test "set_callback_url/2 for setting callback URL" do
-      Tesla.Mock.mock(fn
-        %{method: :put} ->
-          %Tesla.Env{
-            status: 200,
-            body: "{\"status\":\"success\"}"
-          }
-      end)
-
-      org = SeedsDev.seed_organizations()
-      callback_url = "https://webhook.site/"
-      {:ok, data} = PartnerAPI.set_callback_url(org.id, callback_url)
-      assert %{"status" => "success"} == data
-    end
-
     test "test app link using api key" do
       org = SeedsDev.seed_organizations()
 
@@ -1594,6 +1530,96 @@ defmodule Glific.PartnersTest do
 
       assert {:ok, %{"message" => "Success", "status" => "error"}} =
                PartnerAPI.apply_for_template(1, %{elementName: "trial"})
+    end
+  end
+
+  describe "Partner.set_subscription/4" do
+    setup do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              JSON.encode!(%{
+                "status" => "success",
+                "subscription" => %{
+                  "active" => true,
+                  "createdOn" => 1_748_489_845_881,
+                  "id" => "10380410",
+                  "mode" => 1143,
+                  "modes" => [
+                    "SENT",
+                    "DELIVERED",
+                    "READ",
+                    "OTHERS",
+                    "FAILED",
+                    "MESSAGE",
+                    "ENQUEUED"
+                  ],
+                  "modifiedOn" => 1_748_489_845_881,
+                  "showOnUI" => false,
+                  "tag" => "webhook_glific",
+                  "url" => "https://v.com/gupshup",
+                  "version" => 2
+                }
+              })
+          }
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                partner_app_token: "sk_test_partner_app_token"
+              })
+          }
+      end)
+
+      :ok
+    end
+
+    test "enable webhook subscription for an app" do
+      org = SeedsDev.seed_organizations()
+
+      {:ok, data} = PartnerAPI.set_subscription(org.id, nil, ["NEW_EVENT"])
+      assert %{"status" => "success"} = data
+    end
+
+    test "enable webhook subscription for an app, passing callback url" do
+      org = SeedsDev.seed_organizations()
+
+      {:ok, data} =
+        PartnerAPI.set_subscription(org.id, "https://4bff-116-68-82-101.ngrok-free.app/gupshup")
+
+      assert %{"status" => "success"} = data
+    end
+
+    test "enable webhook subscription for an app, duplicate webhook error" do
+      org = SeedsDev.seed_organizations()
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 400,
+            body:
+              JSON.encode!(%{
+                "status" => "error",
+                "message" => "Duplicate component"
+              })
+          }
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                partner_app_token: "sk_test_partner_app_token"
+              })
+          }
+      end)
+
+      {:error, _} =
+        PartnerAPI.set_subscription(org.id, "https://4bff-116-68-82-101.ngrok-free.app/gupshup")
     end
   end
 end
