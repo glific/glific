@@ -1050,7 +1050,7 @@ defmodule GlificWeb.Schema.SearchTest do
       end)
     end)
 
-    # case 3: both dates are same
+    # case 4: both dates are same
     result =
       auth_query_gql_by(:search, user,
         variables: %{
