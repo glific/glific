@@ -204,7 +204,7 @@ defmodule Glific.ProfilesTest do
 
     assert length(profiles) == 2
 
-    #if user again creates a new profile the default profile shouldn't be created
+    # if user again creates a new profile the default profile shouldn't be created
     action = %Action{
       id: nil,
       type: "set_contact_profile",
@@ -220,6 +220,5 @@ defmodule Glific.ProfilesTest do
       |> Repo.all()
 
     assert length(profiles) == 3
-
   end
 end

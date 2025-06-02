@@ -211,23 +211,19 @@ defmodule Glific.Profiles do
       organization_id: context.contact.organization_id
     }
 
-    create_default_profile(attrs, context)
+    with {:ok, _default_profile} <- maybe_create_default_profile(attrs, context),
+         updated_attrs <- first_profile?(attrs, context),
+         {:ok, profile} <- create_profile(updated_attrs) do
+      indexed_profile = get_indexed_profile(context.contact)
 
-    attrs
-    |> first_profile?(context)
-    |> create_profile()
-    |> case do
-      {:ok, profile} ->
-        indexed_profile = get_indexed_profile(context.contact)
+      {_profile, profile_index} =
+        Enum.find(indexed_profile, fn {index_profile, _index} ->
+          index_profile.id == profile.id
+        end)
 
-        {_profile, profile_index} =
-          Enum.find(indexed_profile, fn {index_profile, _index} ->
-            index_profile.id == profile.id
-          end)
-
-        action = Map.put(action, :value, to_string(profile_index))
-        handle_flow_action(:switch_profile, context, action)
-
+      action = Map.put(action, :value, to_string(profile_index))
+      handle_flow_action(:switch_profile, context, action)
+    else
       {:error, _error} ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
@@ -246,17 +242,16 @@ defmodule Glific.Profiles do
     if profile_count == 0, do: Map.merge(attrs, %{fields: context.contact.fields}), else: attrs
   end
 
-  @spec create_default_profile(map(), map()) :: {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
-  defp create_default_profile(attrs, context) do
+  @spec maybe_create_default_profile(map(), map()) ::
+          {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
+  defp maybe_create_default_profile(attrs, context) do
     case Repo.get_by(Profile, contact_id: context.contact.id, is_default: true) do
       nil ->
-        default_attrs =
-          attrs
-          |> Map.put(:name, context.contact.name)
-          |> Map.put(:is_default, true)
-          |> Map.put(:fields, context.contact.fields)
-
-        create_profile(default_attrs)
+        attrs
+        |> Map.put(:name, context.contact.name)
+        |> Map.put(:is_default, true)
+        |> Map.put(:fields, context.contact.fields)
+        |> create_profile()
 
       profile ->
         {:ok, profile}
