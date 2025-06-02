@@ -6,6 +6,7 @@ defmodule Glific.EraseTest do
     Fixtures,
     Flows.FlowRevision,
     Flows.WebhookLog,
+    Messages,
     Messages.Message,
     Notifications,
     Notifications.Notification,
@@ -85,5 +86,71 @@ defmodule Glific.EraseTest do
 
     assert {:error, ["Elixir.Glific.Contacts.Contact", "Resource not found"]} =
              Erase.delete_benefeciary_data(attrs.organization_id, contact_1.phone)
+  end
+
+  test "delete old messages, stops when rows deleted become 0 first", attrs do
+    sender = Fixtures.contact_fixture(attrs)
+    IO.inspect(sender.id, label: "ID")
+    # > 2 month old messages
+    for _i <- 0..5 do
+      Fixtures.message_fixture(%{
+        organization_id: attrs.organization_id,
+        sender_id: sender.id
+      })
+      |> Ecto.Changeset.change(%{
+        inserted_at: DateTime.add(DateTime.utc_now(), -90, :day),
+        updated_at: DateTime.add(DateTime.utc_now(), -90, :day)
+      })
+      |> Repo.update()
+    end
+
+    # > 2 month old messages
+    for _i <- 0..5 do
+      Fixtures.message_fixture(%{
+        organization_id: attrs.organization_id,
+        sender_id: sender.id
+      })
+      |> Ecto.Changeset.change(%{
+        inserted_at: DateTime.add(DateTime.utc_now(), -40, :day),
+        updated_at: DateTime.add(DateTime.utc_now(), -40, :day)
+      })
+      |> Repo.update()
+    end
+
+    assert {:ok, 6} = Erase.delete_old_messages(3, 10, false)
+    assert length(Messages.list_messages(%{filter: %{contact_id: sender.id}})) == 6
+  end
+
+  test "delete old messages, stops when rows deleted become >= 5 first", attrs do
+    sender = Fixtures.contact_fixture(attrs)
+    # > 2 month old messages
+    for _i <- 0..10 do
+      Fixtures.message_fixture(%{
+        organization_id: attrs.organization_id,
+        sender_id: sender.id
+      })
+      |> Ecto.Changeset.change(%{
+        inserted_at: DateTime.add(DateTime.utc_now(), -90, :day),
+        updated_at: DateTime.add(DateTime.utc_now(), -90, :day)
+      })
+      |> Repo.update()
+    end
+
+    # > 2 month old messages
+    for _i <- 0..5 do
+      Fixtures.message_fixture(%{
+        organization_id: attrs.organization_id,
+        sender_id: sender.id
+      })
+      |> Ecto.Changeset.change(%{
+        inserted_at: DateTime.add(DateTime.utc_now(), -40, :day),
+        updated_at: DateTime.add(DateTime.utc_now(), -40, :day)
+      })
+      |> Repo.update()
+    end
+
+    assert {:ok, 6} = Erase.delete_old_messages(3, 5, false)
+
+    assert length(Messages.list_messages(%{filter: %{contact_id: sender.id}})) == 11
   end
 end
