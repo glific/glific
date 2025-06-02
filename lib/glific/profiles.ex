@@ -196,8 +196,6 @@ defmodule Glific.Profiles do
 
     with {:ok, contact} <- switch_profile(context.contact, value),
          context <- Map.put(context, :contact, contact) do
-      contact = Repo.preload(contact, [:active_profile])
-
       Contacts.capture_history(context.contact.id, :profile_switched, %{
         event_label: "Switched profile to #{contact.active_profile.name}",
         event_meta: %{
