@@ -1014,7 +1014,7 @@ defmodule GlificWeb.Schema.SearchTest do
       end)
     end)
 
-    # case 3:  messages before a date
+    # case 3: messages before a date
     result =
       auth_query_gql_by(:search, user,
         variables: %{
@@ -1047,6 +1047,42 @@ defmodule GlificWeb.Schema.SearchTest do
           |> DateTime.to_date()
 
         assert Date.compare(message_date, to_date) in [:eq, :lt]
+      end)
+    end)
+
+    # case 3: both dates are same
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{
+            "dateRange" => %{
+              "from" => "2025-05-17",
+              "to" => "2025-05-17"
+            }
+          },
+          "contactOpts" => %{"limit" => 10},
+          "messageOpts" => %{"limit" => 10}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    contacts = get_in(query_data, [:data, "search"])
+    to_date = ~D[2025-05-17]
+
+    # ensure all messages are of same date
+    Enum.each(contacts, fn contact ->
+      messages = get_in(contact, ["messages"])
+
+      Enum.each(messages, fn message ->
+        inserted_at = get_in(message, ["inserted_at"])
+
+        message_date =
+          inserted_at
+          |> DateTime.from_iso8601()
+          |> elem(1)
+          |> DateTime.to_date()
+
+        assert Date.compare(message_date, to_date) == :eq
       end)
     end)
   end
