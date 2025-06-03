@@ -692,12 +692,12 @@ defmodule Glific.OnboardTest do
       %{method: :get} ->
         {:error,
          %Tesla.Env{
-           status: 400,
-           body:
-             Jason.encode!(%{
-               "error" => "some error"
-             })
-         }}
+          status: 400,
+          body:
+            Jason.encode!(%{
+              "error" => "some error"
+            })
+        }}
 
       %{method: :post} ->
         %Tesla.Env{
