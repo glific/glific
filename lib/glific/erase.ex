@@ -24,18 +24,30 @@ defmodule Glific.Erase do
     refresh_tables()
   end
 
+  @doc """
+  Creates an Oban job for purging old messages in batch
+
+  - batch_size - size of a batch (limit in select query)
+  - max_rows_to_delete - Maximum rows to delete weekly
+  - sleep_after_delete? - sleeps for 1 sec if true.
+  """
+  @spec perform_message_purge(number(), number(), boolean()) :: tuple()
   def perform_message_purge(
         batch_size \\ nil,
         max_rows_to_delete \\ nil,
         sleep_after_delete? \\ true
       ) do
+    batch_size =
+      batch_size ||
+        Application.get_env(:glific, :msg_delete_batch_size) |> Glific.parse_maybe_integer!()
+
+    max_rows_to_delete =
+      max_rows_to_delete ||
+        Application.get_env(:glific, :max_msg_rows_to_delete) |> Glific.parse_maybe_integer!()
+
     __MODULE__.new(%{
-      batch_size:
-        batch_size ||
-          Application.get_env(:glific, :delete_batch_size) |> Glific.parse_maybe_integer(),
-      max_rows_to_delete:
-        max_rows_to_delete ||
-          Application.get_env(:glific, :max_rows_to_delete) |> Glific.parse_maybe_integer(),
+      batch_size: batch_size,
+      max_rows_to_delete: max_rows_to_delete,
       sleep_after_delete?: sleep_after_delete?
     })
     |> Oban.insert()
@@ -299,21 +311,13 @@ defmodule Glific.Erase do
     end
   end
 
-  @doc """
-  Purges old messages in batch
-
-  - batch_size - size of a batch (limit in select query)
-  - max_rows_to_delete - Maximum rows to delete weekly
-  - sleep_after_delete? - sleeps for 1 sec if true.
-  - total_rows_deleted - Default 0, used as an accumulator
-  """
   @spec delete_old_messages(number(), number(), boolean(), number()) :: any()
-  def delete_old_messages(
-        batch_size,
-        max_rows_to_delete,
-        sleep_after_delete?,
-        total_rows_deleted \\ 0
-      ) do
+  defp delete_old_messages(
+         batch_size,
+         max_rows_to_delete,
+         sleep_after_delete?,
+         total_rows_deleted \\ 0
+       ) do
     time_before_delete = DateTime.utc_now()
 
     {:ok, %{num_rows: rows_deleted}} =
@@ -338,8 +342,8 @@ defmodule Glific.Erase do
     total_rows_deleted = total_rows_deleted + rows_deleted
     time_after_delete = DateTime.diff(DateTime.utc_now(), time_before_delete)
 
-    if rows_deleted < batch_size || total_rows_deleted >= max_rows_to_delete do
-      Logger.info("Total rows deleted: #{total_rows_deleted}, time taken: #{time_after_delete}")
+    if rows_deleted < batch_size or total_rows_deleted >= max_rows_to_delete do
+      Logger.info("Total rows deleted: #{total_rows_deleted}, time taken: #{time_after_delete} s")
       {:ok, total_rows_deleted}
     else
       # deleting the next batch after a second, to ease the DB load

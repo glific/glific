@@ -163,4 +163,42 @@ defmodule Glific.EraseTest do
 
     assert length(Messages.list_messages(%{filter: %{contact_id: sender.id}})) == 11
   end
+
+  test "delete old messages with envs", attrs do
+    sender = Fixtures.contact_fixture(attrs)
+    # > 2 month old messages
+    for _i <- 0..10 do
+      Fixtures.message_fixture(%{
+        organization_id: attrs.organization_id,
+        sender_id: sender.id
+      })
+      |> Ecto.Changeset.change(%{
+        inserted_at: DateTime.add(DateTime.utc_now(), -90, :day),
+        updated_at: DateTime.add(DateTime.utc_now(), -90, :day)
+      })
+      |> Repo.update()
+    end
+
+    # > 2 month old messages
+    for _i <- 0..5 do
+      Fixtures.message_fixture(%{
+        organization_id: attrs.organization_id,
+        sender_id: sender.id
+      })
+      |> Ecto.Changeset.change(%{
+        inserted_at: DateTime.add(DateTime.utc_now(), -40, :day),
+        updated_at: DateTime.add(DateTime.utc_now(), -40, :day)
+      })
+      |> Repo.update()
+    end
+
+    {:ok, _} = Erase.perform_message_purge()
+
+    assert_enqueued(worker: Erase, prefix: "global")
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} =
+             Oban.drain_queue(queue: :purge, with_safety: false)
+
+    assert length(Messages.list_messages(%{filter: %{contact_id: sender.id}})) == 6
+  end
 end
