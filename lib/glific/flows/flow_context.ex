@@ -186,8 +186,7 @@ defmodule Glific.Flows.FlowContext do
           flow_id: context.flow_id,
           flow_uuid: context.flow.uuid,
           parent_id: context.parent_id,
-          name: context.flow.name,
-          node_uuid: context.node_uuid
+          name: context.flow.name
         }
       })
 
