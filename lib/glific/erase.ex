@@ -31,7 +31,7 @@ defmodule Glific.Erase do
   - max_rows_to_delete - Maximum rows to delete weekly
   - sleep_after_delete? - sleeps for 1 sec if true.
   """
-  @spec perform_message_purge(number(), number(), boolean()) :: tuple()
+  @spec perform_message_purge(number() | nil, number() | nil, boolean()) :: tuple()
   def perform_message_purge(
         batch_size \\ nil,
         max_rows_to_delete \\ nil,
