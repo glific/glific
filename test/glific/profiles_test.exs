@@ -324,4 +324,56 @@ defmodule Glific.ProfilesTest do
 
     assert length(profiles) == 3
   end
+
+  test "after deactivating profile should switch back to the default profile for the user", %{
+    organization_id: org_id
+  } do
+    fetch_contact = fn name -> Repo.fetch_by(Contact, %{name: name, organization_id: org_id}) end
+
+    fetch_profile = fn params ->
+      Repo.fetch_by(Profile, Map.put(params, :organization_id, org_id))
+    end
+
+    {:ok, contact} = fetch_contact.("NGO Main Account")
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Multiple Profile Creation Flow"})
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: contact.id,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id,
+        flow: flow,
+        organization_id: flow.organization_id,
+        uuid_map: flow.uuid_map
+      })
+
+    context = Repo.preload(context, [:flow, :contact])
+
+    action = %Action{
+      id: nil,
+      type: "set_contact_profile",
+      value: %{"name" => "profile2", "type" => "parent"},
+      profile_type: "Create Profile"
+    }
+
+    Profiles.handle_flow_action(:create_profile, context, action)
+
+    {:ok, profile} = fetch_profile.(%{name: "profile2"})
+
+    {:ok, contact} = fetch_contact.("NGO Main Account")
+    assert contact.active_profile_id == profile.id
+
+    action = %Action{
+      id: nil,
+      value: "1",
+      type: "set_contact_profile",
+      profile_type: "Deactivate Profile"
+    }
+
+    Profiles.handle_flow_action(:deactivate_profile, context, action)
+
+    {:ok, default_profile} = fetch_profile.(%{is_default: true})
+    {:ok, contact} = fetch_contact.("NGO Main Account")
+    assert contact.active_profile_id == default_profile.id
+  end
 end
