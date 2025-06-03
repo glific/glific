@@ -147,13 +147,9 @@ defmodule Glific.ProfilesTest do
         contact_with_profile_2
         |> Profiles.switch_profile("1")
 
-      assert contact_with_profile_1.active_profile_id == new_profile.id
-      assert contact_with_profile_1.active_profile.name == "Profile 2"
-
-      # active_profile name should be in the contact fields
-      fields = get_in(contact_with_profile_1.fields)
-      profile_name = Map.get(fields["active_profile_name"], :value)
-      assert profile_name == "Profile 2"
+      updated_contact = Repo.preload(contact_with_profile_1, [:active_profile])
+      assert updated_contact.active_profile_id == new_profile.id
+      assert updated_contact.active_profile.name == "Profile 2"
     end
   end
 end

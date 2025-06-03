@@ -15,6 +15,7 @@ defmodule Glific.ContactsTest do
     Partners,
     Partners.Organization,
     Partners.Saas,
+    Profiles,
     Seeds.SeedsDev,
     Settings,
     Settings.Language,
@@ -1596,6 +1597,27 @@ defmodule Glific.ContactsTest do
       {:error, error} = Import.may_update_contact(update_attrs)
 
       assert error == %{"919917443992" => "Contact upload failed."}
+    end
+
+    test "get_contact_field_map/1 should return the active_profile_name if active profile is there",
+         attrs do
+      {:ok, contact} =
+        Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: attrs.organization_id})
+
+      params = %{
+        "name" => "Profile 2",
+        "type" => "student",
+        "contact_id" => contact.id
+      }
+
+      Fixtures.profile_fixture(params)
+
+      {:ok, _contact_with_profile} =
+        Contacts.get_contact!(contact.id)
+        |> Profiles.switch_profile("1")
+
+      contact = Contacts.get_contact_field_map(contact.id)
+      assert contact.active_profile_name == "Profile 2"
     end
   end
 end
