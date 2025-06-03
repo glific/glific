@@ -875,11 +875,10 @@ defmodule Glific.Contacts do
 
   @spec get_contact_profile_name(map(), Contact.t()) :: map()
   defp get_contact_profile_name(field_map, contact) do
-    with false <- is_nil(contact.active_profile_id),
-         profile <- contact.active_profile do
-      Map.put(field_map, :active_profile_name, profile.name)
+    if contact.active_profile_id != nil do
+      Map.put(field_map, :active_profile_name, contact.active_profile.name)
     else
-      _ -> field_map
+      field_map
     end
   end
 
