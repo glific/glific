@@ -23,7 +23,7 @@ defmodule Glific.Profiles.Profile do
     :name,
     :type,
     :fields,
-    :is_active
+    :is_default
   ]
 
   @type t() :: %__MODULE__{
@@ -39,6 +39,7 @@ defmodule Glific.Profiles.Profile do
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          is_default: boolean(),
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
         }
@@ -47,7 +48,7 @@ defmodule Glific.Profiles.Profile do
     field(:name, :string)
     field(:type, :string)
     field(:fields, :map, default: %{})
-    field(:is_active, :boolean, default: true)
+    field(:is_default, :boolean, default: false)
 
     belongs_to(:language, Language, foreign_key: :language_id)
     belongs_to(:contact, Contact, foreign_key: :contact_id)
