@@ -1620,7 +1620,8 @@ defmodule Glific.ContactsTest do
       assert contact.active_profile_name == "Profile 2"
 
       # when no active profile is there for a contact
-      {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+      {:ok, new_contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+      contact = Contacts.get_contact_field_map(new_contact.id)
       assert contact.active_profile_id == nil
       refute Map.has_key?(contact, :active_profile_name)
     end
