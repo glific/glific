@@ -691,7 +691,7 @@ defmodule Glific.OnboardTest do
     Tesla.Mock.mock(fn
       %{method: :get} ->
         {:error,
-         %Tesla.Env{
+        %Tesla.Env{
           status: 400,
           body:
             Jason.encode!(%{
