@@ -211,21 +211,18 @@ defmodule Glific.Profiles do
       organization_id: context.contact.organization_id
     }
 
-    attrs
-    |> first_profile?(context)
-    |> create_profile()
-    |> case do
-      {:ok, profile} ->
-        indexed_profile = get_indexed_profile(context.contact)
+    with {:ok, _default_profile} <- maybe_create_default_profile(attrs, context),
+         {:ok, profile} <- create_profile(attrs) do
+      indexed_profile = get_indexed_profile(context.contact)
 
-        {_profile, profile_index} =
-          Enum.find(indexed_profile, fn {index_profile, _index} ->
-            index_profile.id == profile.id
-          end)
+      {_profile, profile_index} =
+        Enum.find(indexed_profile, fn {index_profile, _index} ->
+          index_profile.id == profile.id
+        end)
 
-        action = Map.put(action, :value, to_string(profile_index))
-        handle_flow_action(:switch_profile, context, action)
-
+      action = Map.put(action, :value, to_string(profile_index))
+      handle_flow_action(:switch_profile, context, action)
+    else
       {:error, _error} ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
@@ -235,12 +232,19 @@ defmodule Glific.Profiles do
     {context, Messages.create_temp_message(context.organization_id, "Failure")}
   end
 
-  # Sync existing contact fields to the first profile to prevent data loss
-  @spec first_profile?(map(), FlowContext.t()) :: map()
-  defp first_profile?(attrs, context) do
-    profile_count =
-      Repo.one(from(p in Profile, select: count("*"), where: p.contact_id == ^attrs.contact_id))
+  @spec maybe_create_default_profile(map(), map()) ::
+          {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
+  defp maybe_create_default_profile(attrs, context) do
+    case Repo.get_by(Profile, contact_id: context.contact.id, is_default: true) do
+      nil ->
+        attrs
+        |> Map.put(:name, context.contact.name)
+        |> Map.put(:is_default, true)
+        |> Map.put(:fields, context.contact.fields)
+        |> create_profile()
 
-    if profile_count == 0, do: Map.merge(attrs, %{fields: context.contact.fields}), else: attrs
+      profile ->
+        {:ok, profile}
+    end
   end
 end

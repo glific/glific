@@ -5,6 +5,9 @@ defmodule Glific.ProfilesTest do
     Contacts,
     Contacts.Contact,
     Fixtures,
+    Flows.Action,
+    Flows.Flow,
+    Flows.FlowContext,
     Profiles,
     Profiles.Profile,
     Repo
@@ -152,5 +155,70 @@ defmodule Glific.ProfilesTest do
       assert updated_contact.active_profile_id == new_profile.id
       assert updated_contact.active_profile.name == "Profile 2"
     end
+  end
+
+  test "handle_flow_action/3 creates both a default profile and a new profile for the contact",
+       attrs do
+    {:ok, contact} =
+      Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: attrs.organization_id})
+
+    contact =
+      contact
+      |> Ecto.Changeset.change(fields: %{"collection" => "collection", "name" => "test"})
+      |> Repo.update!()
+
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Multiple Profile Creation Flow"})
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: contact.id,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id,
+        flow: flow,
+        organization_id: flow.organization_id,
+        uuid_map: flow.uuid_map
+      })
+
+    context = Repo.preload(context, [:flow, :contact])
+    Repo.delete_all(from(p in Profile, where: p.contact_id == ^contact.id))
+
+    action = %Action{
+      id: nil,
+      type: "set_contact_profile",
+      value: %{"name" => "profile2", "type" => "parent"},
+      profile_type: "Create Profile"
+    }
+
+    Profiles.handle_flow_action(:create_profile, context, action)
+
+    {:ok, default_profile} =
+      Repo.fetch_by(Profile, %{name: contact.name, organization_id: attrs.organization_id})
+
+    assert default_profile.is_default == true
+    assert default_profile.fields == %{"collection" => "collection", "name" => "test"}
+
+    profiles =
+      Profile
+      |> where([p], p.contact_id == ^contact.id and p.organization_id == ^attrs.organization_id)
+      |> Repo.all()
+
+    assert length(profiles) == 2
+
+    # if user again creates a new profile the default profile shouldn't be created
+    action = %Action{
+      id: nil,
+      type: "set_contact_profile",
+      value: %{"name" => "profile3", "type" => "student"},
+      profile_type: "Create Profile"
+    }
+
+    Profiles.handle_flow_action(:create_profile, context, action)
+
+    profiles =
+      Profile
+      |> where([p], p.contact_id == ^contact.id and p.organization_id == ^attrs.organization_id)
+      |> Repo.all()
+
+    assert length(profiles) == 3
   end
 end
