@@ -212,8 +212,7 @@ defmodule Glific.Profiles do
     }
 
     with {:ok, _default_profile} <- maybe_create_default_profile(attrs, context),
-         updated_attrs <- first_profile?(attrs, context),
-         {:ok, profile} <- create_profile(updated_attrs) do
+         {:ok, profile} <- create_profile(attrs) do
       indexed_profile = get_indexed_profile(context.contact)
 
       {_profile, profile_index} =
@@ -231,15 +230,6 @@ defmodule Glific.Profiles do
 
   def handle_flow_action(_profile_type, context, _action) do
     {context, Messages.create_temp_message(context.organization_id, "Failure")}
-  end
-
-  # Sync existing contact fields to the first profile to prevent data loss
-  @spec first_profile?(map(), FlowContext.t()) :: map()
-  defp first_profile?(attrs, context) do
-    profile_count =
-      Repo.one(from(p in Profile, select: count("*"), where: p.contact_id == ^attrs.contact_id))
-
-    if profile_count == 0, do: Map.merge(attrs, %{fields: context.contact.fields}), else: attrs
   end
 
   @spec maybe_create_default_profile(map(), map()) ::
