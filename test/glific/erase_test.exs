@@ -1,5 +1,6 @@
 defmodule Glific.EraseTest do
   use Glific.DataCase
+  use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
     Erase,
@@ -90,7 +91,6 @@ defmodule Glific.EraseTest do
 
   test "delete old messages, stops when rows deleted become 0 first", attrs do
     sender = Fixtures.contact_fixture(attrs)
-    IO.inspect(sender.id, label: "ID")
     # > 2 month old messages
     for _i <- 0..5 do
       Fixtures.message_fixture(%{
@@ -117,7 +117,12 @@ defmodule Glific.EraseTest do
       |> Repo.update()
     end
 
-    assert {:ok, 6} = Erase.delete_old_messages(3, 10, false)
+    {:ok, _} = Erase.perform_message_purge(3, 10, false)
+    assert_enqueued(worker: Erase, prefix: "global")
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} =
+             Oban.drain_queue(queue: :purge, with_safety: false)
+
     assert length(Messages.list_messages(%{filter: %{contact_id: sender.id}})) == 6
   end
 
@@ -149,7 +154,12 @@ defmodule Glific.EraseTest do
       |> Repo.update()
     end
 
-    assert {:ok, 6} = Erase.delete_old_messages(3, 5, false)
+    {:ok, _} = Erase.perform_message_purge(3, 5, false)
+
+    assert_enqueued(worker: Erase, prefix: "global")
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} =
+             Oban.drain_queue(queue: :purge, with_safety: false)
 
     assert length(Messages.list_messages(%{filter: %{contact_id: sender.id}})) == 11
   end

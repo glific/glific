@@ -9,11 +9,9 @@ defmodule Glific.Erase do
   require Logger
 
   use Oban.Worker,
-    queue: :erase,
+    queue: :purge,
     max_attempts: 1
 
-  @delete_batch_size 100_000
-  @max_rows_cap 2_000_000
   @batch_sleep 1_000
   @no_of_months 2
 
@@ -26,8 +24,16 @@ defmodule Glific.Erase do
     refresh_tables()
   end
 
-  def perform_message_purge() do
-    __MODULE__.new(%{})
+  def perform_message_purge(
+        batch_size \\ nil,
+        max_rows_to_delete \\ nil,
+        sleep_after_delete? \\ true
+      ) do
+    __MODULE__.new(%{
+      batch_size: batch_size || Application.get_env(:glific, :delete_batch_size),
+      max_rows_to_delete: max_rows_to_delete || Application.get_env(:glific, :max_rows_to_delete),
+      sleep_after_delete?: sleep_after_delete?
+    })
     |> Oban.insert()
   end
 
@@ -52,8 +58,14 @@ defmodule Glific.Erase do
   end
 
   @impl Oban.Worker
-  def perform(%Oban.Job{}) do
-    delete_old_messages()
+  def perform(%Oban.Job{
+        args: %{
+          "batch_size" => batch_size,
+          "max_rows_to_delete" => max_rows_to_delete,
+          "sleep_after_delete?" => sleep_after_delete?
+        }
+      }) do
+    delete_old_messages(batch_size, max_rows_to_delete, sleep_after_delete?)
   end
 
   @spec refresh_tables() :: any
@@ -283,42 +295,47 @@ defmodule Glific.Erase do
     end
   end
 
-  # TODO: Log the time taken for deletion
-  # TODO: Add try catch to log the timeout.
-
   @doc """
   Purges old messages in batch
 
   - batch_size - size of a batch (limit in select query)
-  - max_rows_delete - Maximum rows to delete weekly
+  - max_rows_to_delete - Maximum rows to delete weekly
   - sleep_after_delete? - sleeps for 1 sec if true.
   - total_rows_deleted - Default 0, used as an accumulator
   """
   @spec delete_old_messages(number(), number(), boolean(), number()) :: any()
-
   def delete_old_messages(
-        batch_size \\ @delete_batch_size,
-        max_rows_delete \\ @max_rows_cap,
-        sleep_after_delete? \\ true,
+        batch_size,
+        max_rows_to_delete,
+        sleep_after_delete?,
         total_rows_deleted \\ 0
       ) do
+    time_before_delete = DateTime.utc_now()
+
     {:ok, %{num_rows: rows_deleted}} =
-      """
-      WITH rows_to_delete AS (
-      SELECT id FROM messages
-      WHERE inserted_at <= CURRENT_DATE - interval '#{@no_of_months} months'
-      ORDER BY id
-      LIMIT #{batch_size}
-      )
-      DELETE FROM messages
-      WHERE id IN (SELECT id FROM rows_to_delete);
-      """
-      |> Repo.query([], timeout: 400_000, skip_organization_id: true)
+      try do
+        """
+        WITH rows_to_delete AS (
+        SELECT id FROM messages
+        WHERE inserted_at <= CURRENT_DATE - interval '#{@no_of_months} months'
+        ORDER BY id
+        LIMIT #{batch_size}
+        )
+        DELETE FROM messages
+        WHERE id IN (SELECT id FROM rows_to_delete);
+        """
+        |> Repo.query([], timeout: 400_000, skip_organization_id: true)
+      rescue
+        err ->
+          Logger.error("Messages purge timedout #{inspect(err)}")
+          {:ok, %{num_rows: 0}}
+      end
 
     total_rows_deleted = total_rows_deleted + rows_deleted
+    time_after_delete = DateTime.diff(DateTime.utc_now(), time_before_delete)
 
-    if rows_deleted < batch_size || total_rows_deleted >= max_rows_delete do
-      Logger.info("Total rows deleted: #{total_rows_deleted}")
+    if rows_deleted < batch_size || total_rows_deleted >= max_rows_to_delete do
+      Logger.info("Total rows deleted: #{total_rows_deleted}, time taken: #{time_after_delete}")
       {:ok, total_rows_deleted}
     else
       # deleting the next batch after a second, to ease the DB load
@@ -328,7 +345,7 @@ defmodule Glific.Erase do
 
       delete_old_messages(
         batch_size,
-        max_rows_delete,
+        max_rows_to_delete,
         sleep_after_delete?,
         total_rows_deleted
       )

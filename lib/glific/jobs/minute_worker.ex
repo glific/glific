@@ -101,7 +101,7 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&Glific.Clients.weekly_tasks/1, nil, [])
         Erase.perform_weekly()
 
-      "weekly_msg_purge" ->
+      "weekly_message_purge" ->
         Erase.perform_message_purge()
     end
 
