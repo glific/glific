@@ -22,8 +22,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @partner_url "https://partner.gupshup.io/partner/account"
   @app_url "https://partner.gupshup.io/partner/app/"
 
-  @modes ["ENQUEUED", "FAILED", "READ", "SENT", "DELIVERED", "OTHERS", "DELETE", "MESSAGE"]
-
   @doc """
   Fetch app details by org id, will link the app if not linked
   """
@@ -210,6 +208,26 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         Logger.error("#{inspect(unmatched_response)}")
         {:error, "Something went wrong, not able to submit the template for approval."}
     end
+  end
+
+  @doc """
+  For setting callback URL
+  """
+  @spec set_callback_url(non_neg_integer(), String.t()) :: tuple()
+  def set_callback_url(org_id, callback_url) do
+    url = app_url(org_id) <> "/callbackUrl"
+    data = %{"callbackUrl" => callback_url}
+    put_request(url, data, org_id: org_id)
+  end
+
+  @doc """
+  Enable DLR events for an app.
+  """
+  @spec enable_dlr_events(non_neg_integer(), list(String.t())) :: tuple()
+  def enable_dlr_events(org_id, modes) do
+    url = app_url(org_id) <> "/callback/mode"
+    data = %{"modes" => Enum.join(modes, ",")}
+    put_request(url, data, org_id: org_id)
   end
 
   @doc """
@@ -476,45 +494,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     else
       {:ok, gupshup_secrets["app_id"]}
     end
-  end
-
-  @doc """
-  Creates a webhook in gupshup
-
-  - org_id - Unique organization Id
-  - callback_url - Webhook callback url, defaults to auto generated url wrto org shortcode
-  - modes - Different modes we want to listen to, check `@modes` for defaults
-  - version - Payload format, by default its v2 (gupshup format)
-  """
-  @spec set_subscription(non_neg_integer(), String.t() | nil, list(String.t()), non_neg_integer()) ::
-          tuple()
-  def set_subscription(org_id, callback_url \\ nil, modes \\ [], version \\ 2)
-      when is_list(modes) do
-    url = app_url(org_id) <> "/subscription"
-    organization = Partners.organization(org_id)
-
-    # sometimes callback url can be ngrok or other test urls, in that
-    # case we can pass in the function
-    callback_url =
-      if is_nil(callback_url) do
-        "https://api.#{organization.shortcode}.glific.com/gupshup"
-      else
-        callback_url
-      end
-
-    # modes can be passed in params,
-    # if we want to add a newly introduced event other than
-    # the defaults
-    modes = (@modes ++ Enum.map(modes, &String.upcase/1)) |> Enum.uniq() |> Enum.join(",")
-
-    data = %{
-      "modes" => modes,
-      "tag" => "webhook_#{organization.shortcode}",
-      "url" => callback_url,
-      "version" => version
-    }
-
-    post_request(url, data, org_id: org_id)
   end
 
   @spec app_id!(non_neg_integer()) :: String.t()
