@@ -1952,13 +1952,13 @@ defmodule Glific.BigQuery.Schema do
         description: "Active status of the profile",
         name: "is_active",
         type: "BOOLEAN",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description: "Default status of the profile",
         name: "is_default",
         type: "BOOLEAN",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       }
     ]
   end
