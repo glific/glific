@@ -38,7 +38,7 @@ defmodule Glific.Profiles.Profile do
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
-          is_default: boolean() | false,
+          is_default: boolean(),
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
         }
