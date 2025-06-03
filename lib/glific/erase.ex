@@ -317,7 +317,8 @@ defmodule Glific.Erase do
          max_rows_to_delete,
          sleep_after_delete?,
          total_rows_deleted \\ 0
-       ) do
+       )
+       when is_number(batch_size) and is_number(max_rows_to_delete) do
     time_before_delete = DateTime.utc_now()
 
     {:ok, %{num_rows: rows_deleted}} =
@@ -343,7 +344,10 @@ defmodule Glific.Erase do
     time_after_delete = DateTime.diff(DateTime.utc_now(), time_before_delete)
 
     if rows_deleted < batch_size or total_rows_deleted >= max_rows_to_delete do
-      Logger.info("Total rows deleted: #{total_rows_deleted}, time taken: #{time_after_delete} s")
+      Logger.info(
+        "Total rows deleted: #{total_rows_deleted}, time taken for this batch: #{time_after_delete} s"
+      )
+
       {:ok, total_rows_deleted}
     else
       # deleting the next batch after a second, to ease the DB load
