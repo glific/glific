@@ -17,7 +17,8 @@ defmodule Glific.ProfilesTest do
 
     @valid_attrs %{
       "name" => "profile 1",
-      "type" => "pro"
+      "type" => "pro",
+      "is_default" => true
     }
 
     @valid_attrs_1 %{
@@ -57,8 +58,10 @@ defmodule Glific.ProfilesTest do
       profile4 = Profiles.list_profiles(%{filter: %{is_active: false}})
       assert Enum.count(profile4) == 1
 
+      # filter by active status and sorts default profile first
       profile4 = Profiles.list_profiles(%{filter: %{is_active: true}})
       assert Enum.count(profile4) == 3
+      assert [%Profile{is_default: true} | _] = profile4
     end
 
     test "create_profile/1 with valid data creates a profile" do
