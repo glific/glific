@@ -213,7 +213,7 @@ defmodule Glific.Profiles do
       organization_id: context.contact.organization_id
     }
 
-    with {:ok, _default_profile} <- maybe_create_default_profile(attrs, context),
+    with {:ok, _default_profile} <- maybe_setup_default_profile(attrs, context),
          {:ok, profile} <- create_profile(attrs) do
       indexed_profile = get_indexed_profile(context.contact)
 
@@ -234,7 +234,13 @@ defmodule Glific.Profiles do
     value =
       ContactField.parse_contact_field_value(context, action.value)
 
-    default_profile = Repo.get_by(Profile, contact_id: context.contact.id, is_default: true)
+    attrs = %{
+      contact_id: context.contact.id,
+      language_id: context.contact.language_id,
+      organization_id: context.contact.organization_id
+    }
+
+    {:ok, default_profile} = maybe_setup_default_profile(attrs, context)
 
     with {:ok, index} <- Glific.parse_maybe_integer(value),
          {profile, _index} <- fetch_indexed_profile(context.contact, index),
@@ -254,19 +260,36 @@ defmodule Glific.Profiles do
     {context, Messages.create_temp_message(context.organization_id, "Failure")}
   end
 
-  @spec maybe_create_default_profile(map(), map()) ::
+  @spec maybe_setup_default_profile(map(), map()) ::
           {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
-  defp maybe_create_default_profile(attrs, context) do
+  defp maybe_setup_default_profile(attrs, context) do
     case Repo.get_by(Profile, contact_id: context.contact.id, is_default: true) do
       nil ->
-        attrs
-        |> Map.put(:name, context.contact.name)
-        |> Map.put(:is_default, true)
-        |> Map.put(:fields, context.contact.fields)
-        |> create_profile()
+        setup_default_profile(context.contact, attrs)
 
       profile ->
         {:ok, profile}
+    end
+  end
+
+  @spec setup_default_profile(Contact.t(), map()) :: map()
+  defp setup_default_profile(contact, attrs) do
+    args = %{
+      filter: %{contact_id: contact.id},
+      opts: %{offset: 0, order: :desc, order_with: :inserted_at},
+      organization_id: contact.organization_id
+    }
+
+    case list_profiles(args) do
+      [] ->
+        attrs
+        |> Map.put(:name, contact.name)
+        |> Map.put(:is_default, true)
+        |> Map.put(:fields, contact.fields)
+        |> create_profile()
+
+      [first_profile | _] ->
+        update_profile(first_profile, %{is_default: true})
     end
   end
 end
