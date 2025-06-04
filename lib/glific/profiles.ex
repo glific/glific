@@ -244,6 +244,7 @@ defmodule Glific.Profiles do
 
     with {:ok, index} <- Glific.parse_maybe_integer(value),
          {profile, _index} <- fetch_indexed_profile(context.contact, index),
+         false <- is_deactivating_default_profile?(default_profile, profile),
          {:ok, _updated_profile} <- update_profile(profile, %{is_active: false}),
          {:ok, _updated_contact} <-
            Contacts.update_contact(context.contact, %{
@@ -251,6 +252,10 @@ defmodule Glific.Profiles do
            }) do
       {context, Messages.create_temp_message(context.organization_id, "Success")}
     else
+      # If deactivating default profile, return success and no other operation required
+      true ->
+        {context, Messages.create_temp_message(context.organization_id, "Success")}
+
       _error ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
@@ -292,4 +297,10 @@ defmodule Glific.Profiles do
         update_profile(first_profile, %{is_default: true})
     end
   end
+
+  @spec is_deactivating_default_profile?(Profile.t(), Profile.t()) :: boolean()
+  defp is_deactivating_default_profile?(%Profile{id: profile_id}, %Profile{id: profile_id}),
+    do: true
+
+  defp is_deactivating_default_profile?(_, _), do: false
 end

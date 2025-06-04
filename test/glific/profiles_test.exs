@@ -154,7 +154,7 @@ defmodule Glific.ProfilesTest do
       assert contact_with_profile_1.active_profile.name == "Profile 2"
     end
 
-    test "deactivate_profile should make the is_active field false in manage profile node",
+    test "deactivate_profile doesn't deactivate default profile",
          attrs do
       {:ok, contact} =
         Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: attrs.organization_id})
@@ -165,6 +165,7 @@ defmodule Glific.ProfilesTest do
         "contact_id" => contact.id
       }
 
+      # This profile will become default of the contact
       profile = Fixtures.profile_fixture(params)
       assert profile.is_active == true
 
@@ -194,7 +195,8 @@ defmodule Glific.ProfilesTest do
       {:ok, profile} =
         Repo.fetch_by(Profile, %{id: profile.id})
 
-      assert profile.is_active == false
+      # Default profile doesn't get deactivated
+      assert profile.is_active == true
 
       # failure case
       params = %{
@@ -219,6 +221,76 @@ defmodule Glific.ProfilesTest do
 
       assert message.body == "Failure"
       assert profile.is_active == true
+    end
+
+    test "deactivate_profile should deactivate non-default profile", %{
+      organization_id: org_id
+    } do
+      {:ok, contact} =
+        Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: org_id})
+
+      params = %{
+        "name" => "Profile 2",
+        "type" => "student",
+        "contact_id" => contact.id
+      }
+
+      # This profile will become default of the contact
+      profile = Fixtures.profile_fixture(params)
+      assert profile.is_active == true
+
+      {:ok, flow} = Repo.fetch_by(Flow, %{name: "Deactivate Profile Flow"})
+
+      {:ok, context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_uuid: flow.uuid,
+          flow_id: flow.id,
+          flow: flow,
+          organization_id: flow.organization_id,
+          uuid_map: flow.uuid_map
+        })
+
+      context = Repo.preload(context, [:flow, :contact])
+
+      action = %Action{
+        id: nil,
+        type: "set_contact_profile",
+        value: %{"name" => "profile2", "type" => "parent"},
+        profile_type: "Create Profile"
+      }
+
+      Profiles.handle_flow_action(:create_profile, context, action)
+
+      # Can remove this when we add sorting by is_default value in the following PRs
+      {non_default_profile, index} =
+        contact
+        |> Profiles.get_indexed_profile()
+        |> Enum.find(fn {profile, _index} -> !profile.is_default end)
+
+      action = %Action{
+        id: nil,
+        type: "set_contact_profile",
+        value: "#{index}",
+        profile_type: "Switch Profile"
+      }
+
+      Profiles.handle_flow_action(:switch_profile, context, action)
+
+      {:ok, contact} = Repo.fetch_by(Contact, %{name: "NGO Main Account"})
+      assert contact.active_profile_id == non_default_profile.id
+
+      action = %Action{
+        id: nil,
+        value: "#{index}",
+        type: "set_contact_profile",
+        profile_type: "Deactivate Profile"
+      }
+
+      Profiles.handle_flow_action(:deactivate_profile, context, action)
+
+      assert {:ok, %Profile{is_active: false}} =
+               Repo.fetch_by(Profile, %{id: non_default_profile.id})
     end
   end
 
