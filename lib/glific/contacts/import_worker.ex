@@ -95,7 +95,8 @@ defmodule Glific.Contacts.ImportWorker do
   end
 
   defp validate_contact(%{"phone" => phone, "name" => name}) do
-    case ExPhoneNumber.parse(phone, "IN") do
+    phone_with_plus = if String.starts_with?(phone, "+"), do: phone, else: "+#{phone}"
+    case ExPhoneNumber.parse(phone_with_plus, "") do
       {:ok, _} -> validate_name(name, phone)
       {:error, reason} -> %{phone => "Phone number is not valid because #{reason}."}
     end
