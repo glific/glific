@@ -247,9 +247,7 @@ defmodule Glific.Profiles do
          false <- is_deactivating_default_profile?(default_profile, profile),
          {:ok, _updated_profile} <- update_profile(profile, %{is_active: false}),
          {:ok, _updated_contact} <-
-           Contacts.update_contact(context.contact, %{
-             active_profile_id: default_profile.id
-           }) do
+           maybe_switch_profile(context.contact, profile, default_profile) do
       {context, Messages.create_temp_message(context.organization_id, "Success")}
     else
       # If deactivating default profile, return success and no other operation required
@@ -295,6 +293,19 @@ defmodule Glific.Profiles do
 
       [first_profile | _] ->
         update_profile(first_profile, %{is_default: true})
+    end
+  end
+
+  @spec maybe_switch_profile(Contact.t(), Profile.t(), Profile.t()) :: Contact.t()
+  defp maybe_switch_profile(contact, deactivated_profile, default_profile) do
+    if contact.active_profile_id == deactivated_profile.id do
+      Contacts.update_contact(contact, %{
+        active_profile_id: default_profile.id,
+        language_id: default_profile.language_id,
+        fields: default_profile.fields
+      })
+    else
+      {:ok, contact}
     end
   end
 
