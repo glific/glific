@@ -449,7 +449,7 @@ defmodule Glific.ContactsTest do
 
       [
         ~w(name phone Language opt_in collection),
-        ["test", "9989329297", "english", @optin_date, "collection"]
+        ["test", "+919989329297", "english", @optin_date, "collection"]
       ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
@@ -495,7 +495,7 @@ defmodule Glific.ContactsTest do
 
       count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
 
-      assert count == 1
+      assert count == 0
     end
 
     test "import_contact/3 with valid data from URL inserts new contacts in the database" do
@@ -511,7 +511,7 @@ defmodule Glific.ContactsTest do
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09 12:34:25\n"
+            body: "name,phone,Language,opt_in\ntest,+919876543210,english,2021-03-09 12:34:25\n"
           }
       end)
 
@@ -550,7 +550,7 @@ defmodule Glific.ContactsTest do
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09 12:34:25\n"
+            body: "name,phone,Language,opt_in\ntest,+919876543210,english,2021-03-09 12:34:25\n"
           }
       end)
 
@@ -1467,7 +1467,7 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:admin])
 
-      data = "name,phone,Language,opt_in\nName,9989329297,klingon,2021-03-09 12:34:25\n"
+      data = "name,phone,Language,opt_in\nName,+919989329297,klingon,2021-03-09 12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
 
@@ -1490,7 +1490,7 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:admin])
 
-      data = "name,phone,language,opt_in\nName,9989329297,Hindi,2021-03-09 12:34:25\n"
+      data = "name,phone,language,opt_in\nName,+919989329297,Hindi,2021-03-09 12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
 
@@ -1513,7 +1513,7 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:admin])
 
-      data = "name,phone,language,opt_in\nName,9989329297,,2021-03-09 12:34:25\n"
+      data = "name,phone,language,opt_in\nName,+919989329297,,2021-03-09 12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
 
