@@ -279,7 +279,7 @@ defmodule Glific.Profiles do
   defp setup_default_profile(contact, attrs) do
     args = %{
       filter: %{contact_id: contact.id},
-      opts: %{offset: 0, order: :desc, order_with: :inserted_at},
+      opts: %{offset: 0, order: :asc, order_with: :inserted_at},
       organization_id: contact.organization_id
     }
 

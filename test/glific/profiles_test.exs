@@ -159,16 +159,6 @@ defmodule Glific.ProfilesTest do
       {:ok, contact} =
         Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: attrs.organization_id})
 
-      params = %{
-        "name" => "Profile 2",
-        "type" => "student",
-        "contact_id" => contact.id
-      }
-
-      # This profile will become default of the contact
-      profile = Fixtures.profile_fixture(params)
-      assert profile.is_active == true
-
       {:ok, flow} = Repo.fetch_by(Flow, %{name: "Deactivate Profile Flow"})
 
       {:ok, context} =
@@ -185,7 +175,23 @@ defmodule Glific.ProfilesTest do
 
       action = %Action{
         id: nil,
-        value: "1",
+        type: "set_contact_profile",
+        value: %{"name" => "profile2", "type" => "parent"},
+        profile_type: "Create Profile"
+      }
+
+      # This will update the contact's first profile to default profile
+      Profiles.handle_flow_action(:create_profile, context, action)
+
+      # Can remove this when we add sorting by is_default value in the following PRs
+      {default_profile, index} =
+        contact
+        |> Profiles.get_indexed_profile()
+        |> Enum.find(fn {profile, _index} -> profile.is_default end)
+
+      action = %Action{
+        id: nil,
+        value: "#{index}",
         type: "set_contact_profile",
         profile_type: "Deactivate Profile"
       }
@@ -193,7 +199,7 @@ defmodule Glific.ProfilesTest do
       Profiles.handle_flow_action(:deactivate_profile, context, action)
 
       {:ok, profile} =
-        Repo.fetch_by(Profile, %{id: profile.id})
+        Repo.fetch_by(Profile, %{id: default_profile.id})
 
       # Default profile doesn't get deactivated
       assert profile.is_active == true
