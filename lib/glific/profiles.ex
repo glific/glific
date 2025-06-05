@@ -275,7 +275,7 @@ defmodule Glific.Profiles do
     end
   end
 
-  @spec setup_default_profile(Contact.t(), map()) :: map()
+  @spec setup_default_profile(Contact.t(), map()) :: {:ok, Profile.t()}
   defp setup_default_profile(contact, attrs) do
     args = %{
       filter: %{contact_id: contact.id},
@@ -296,7 +296,7 @@ defmodule Glific.Profiles do
     end
   end
 
-  @spec maybe_switch_profile(Contact.t(), Profile.t(), Profile.t()) :: Contact.t()
+  @spec maybe_switch_profile(Contact.t(), Profile.t(), Profile.t()) :: {:ok, Contact.t()}
   defp maybe_switch_profile(contact, deactivated_profile, default_profile) do
     if contact.active_profile_id == deactivated_profile.id do
       Contacts.update_contact(contact, %{
