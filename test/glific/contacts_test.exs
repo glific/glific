@@ -478,7 +478,7 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:admin])
 
-      data = "name,phone,Language,opt_in\ncontact_test,9989329297,english,2021-03-09 12:34:25\n"
+      data = "name,phone,Language,opt_in\ncontact_test,+919989329297,english,2021-03-09 12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
 
@@ -493,9 +493,9 @@ defmodule Glific.ContactsTest do
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :default, with_scheduled: true)
 
-      count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
+      count = Contacts.count_contacts(%{filter: %{phone: "+919989329297"}})
 
-      assert count == 0
+      assert count == 1
     end
 
     test "import_contact/3 with valid data from URL inserts new contacts in the database" do
