@@ -154,11 +154,6 @@
           "type": "text"
         },
         {
-          "key": "active_profile_name",
-          "help": "the active profile name of the contact",
-          "type": "text"
-        },
-        {
           "key": "language",
           "help": "the language of the contact as 3-letter ISO code",
           "type": "text"

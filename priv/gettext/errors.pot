@@ -298,7 +298,7 @@ msgstr ""
 msgid "Group not found or permission denied."
 msgstr ""
 
-#: lib/glific/contacts.ex:1005
+#: lib/glific/contacts.ex:995
 #, elixir-autogen, elixir-format
 msgid "Invalid event type"
 msgstr ""

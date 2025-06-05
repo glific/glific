@@ -837,7 +837,6 @@ defmodule Glific.Contacts do
     contact
     |> Map.put(:active_profile_id, contact.active_profile_id)
     |> get_contact_fields(contact)
-    |> get_contact_profile_name(contact)
     |> get_contact_fields_language(contact)
     |> get_contact_field_groups()
     |> get_contact_field_list_profiles(contact)
@@ -870,15 +869,6 @@ defmodule Glific.Contacts do
           [:fields, :language],
           %{label: contact.language.label}
         )
-    end
-  end
-
-  @spec get_contact_profile_name(map(), Contact.t()) :: map()
-  defp get_contact_profile_name(field_map, contact) do
-    if contact.active_profile_id != nil do
-      Map.put(field_map, :active_profile_name, contact.active_profile.name)
-    else
-      field_map
     end
   end
 
