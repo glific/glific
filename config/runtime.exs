@@ -112,3 +112,9 @@ config :glific,
 
 config :glific,
   avni_password: env!("AVNI_PASSWORD", :string!, "This is not a secret")
+
+config :glific,
+  msg_delete_batch_size: env!("MSG_DELETE_BATCH_SIZE", :integer, 100_000)
+
+config :glific,
+  max_msg_rows_to_delete: env!("MAX_MSG_ROWS_TO_DELETE", :integer, 2_000_000)
