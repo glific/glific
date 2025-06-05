@@ -474,6 +474,36 @@ defmodule Glific.ContactsTest do
       assert count == 1
     end
 
+    test "import_contact/3 with invalid data from file inserts new contacts without +prefix in the database" do
+      file = get_tmp_file()
+
+      [
+        ~w(name phone Language opt_in collection),
+        ["test", "9989329297", "english", @optin_date, "collection"]
+      ]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
+      [organization | _] = Partners.list_organizations()
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:glific_admin])
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        file_path: get_tmp_path()
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{name: "test"}})
+
+      assert count == 0
+    end
+
     test "import_contact/3 with valid data from string inserts new contacts in the database" do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:admin])
