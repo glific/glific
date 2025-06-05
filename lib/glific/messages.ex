@@ -1038,35 +1038,6 @@ defmodule Glific.Messages do
     [Conversation.new(contact, nil, []) | results]
   end
 
-  @spec apply_date_range(Ecto.Queryable.t(), DateTime.t() | nil, DateTime.t() | nil) ::
-          Ecto.Queryable.t()
-  defp apply_date_range(query, nil, nil), do: query
-
-  defp apply_date_range(query, from, nil) do
-    query
-    |> where(
-      [m],
-      m.inserted_at >= ^Timex.to_datetime(from)
-    )
-  end
-
-  defp apply_date_range(query, nil, to) do
-    query
-    |> where(
-      [m],
-      m.inserted_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day())
-    )
-  end
-
-  defp apply_date_range(query, from, to) do
-    query
-    |> where(
-      [m],
-      m.inserted_at >= ^Timex.to_datetime(from) and
-        m.inserted_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day())
-    )
-  end
-
   # restrict the conversations query based on the filters in the input args
   @spec conversations_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp conversations_with(query, filter) do
@@ -1088,11 +1059,6 @@ defmodule Glific.Messages do
 
       {:include_users, user_ids}, query ->
         include_user_filter(query, user_ids)
-
-      {:date_range, date_range}, query ->
-        from = Map.get(date_range, :from)
-        to = Map.get(date_range, :to)
-        apply_date_range(query, from, to)
 
       _filter, query ->
         query
