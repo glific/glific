@@ -244,7 +244,7 @@ defmodule Glific.Profiles do
 
     with {:ok, index} <- Glific.parse_maybe_integer(value),
          {profile, _index} <- fetch_indexed_profile(context.contact, index),
-         false <- is_deactivating_default_profile?(default_profile, profile),
+         false <- deactivating_default_profile?(default_profile, profile),
          {:ok, _updated_profile} <- update_profile(profile, %{is_active: false}),
          {:ok, _updated_contact} <-
            maybe_switch_profile(context.contact, profile, default_profile) do
@@ -309,9 +309,9 @@ defmodule Glific.Profiles do
     end
   end
 
-  @spec is_deactivating_default_profile?(Profile.t(), Profile.t()) :: boolean()
-  defp is_deactivating_default_profile?(%Profile{id: profile_id}, %Profile{id: profile_id}),
+  @spec deactivating_default_profile?(Profile.t(), Profile.t()) :: boolean()
+  defp deactivating_default_profile?(%Profile{id: profile_id}, %Profile{id: profile_id}),
     do: true
 
-  defp is_deactivating_default_profile?(_, _), do: false
+  defp deactivating_default_profile?(_, _), do: false
 end
