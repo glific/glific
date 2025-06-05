@@ -40,6 +40,9 @@ defmodule Glific.Profiles do
       {:contact_id, contact_id}, query ->
         from(q in query, where: q.contact_id == ^contact_id)
 
+      {:is_active, is_active}, query when is_boolean(is_active) ->
+        from(q in query, where: q.is_active == ^is_active)
+
       _, query ->
         query
     end)
@@ -172,8 +175,8 @@ defmodule Glific.Profiles do
   @spec get_indexed_profile(Contact.t()) :: [{any, integer}]
   def get_indexed_profile(contact) do
     %{
-      filter: %{contact_id: contact.id},
-      opts: %{offset: 0, order: :asc},
+      filter: %{contact_id: contact.id, is_active: true},
+      opts: %{offset: 0, order: :desc, order_with: :is_default},
       organization_id: contact.organization_id
     }
     |> list_profiles()
