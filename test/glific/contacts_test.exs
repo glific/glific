@@ -1417,7 +1417,7 @@ defmodule Glific.ContactsTest do
       assert count == 0
     end
 
-    test "import_contact/3 with valid phone number without country code should be accepted" do
+    test "import_contact/3 with valid phone number without + prefix should be accepted" do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:admin])
 
@@ -1440,7 +1440,7 @@ defmodule Glific.ContactsTest do
       assert count == 1
     end
 
-    test "import_contact/3 with valid phone number with country code should be accepted" do
+    test "import_contact/3 with valid phone number with + prefix should be accepted" do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:admin])
 
