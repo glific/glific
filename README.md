@@ -57,10 +57,10 @@ asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
 
 If you want to install the specific versions that were used for developing and testing:
 ``` bash
-asdf install erlang 26.1.2
-asdf install elixir 1.15.7-otp-26
-asdf global erlang 26.1.2
-asdf global elixir 1.15.7-otp-26
+asdf install erlang 27.3.3
+asdf install elixir 1.18.3-otp-27
+asdf global erlang 27.3.3
+asdf global elixir 1.18.3-otp-27
 ```
 
 If you get any warnings for missing packages, just install them using apt and try again.
