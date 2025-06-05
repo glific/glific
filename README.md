@@ -44,8 +44,8 @@ For Ubuntu users, you also need to install the `inotify-tools` package.
 We tested and developed against the following versions (please check .tool-versions in the repository for the latest version we are using):
 
 ```bash
-    - erlang : 26.1.2
-    - elixir : 1.15.7-otp-26
+    - erlang 27.3.3
+    - elixir 1.18.3-otp-27
 ```
 
 After installing the asdf core, install the Erlang and Elixir plugins.
@@ -57,10 +57,10 @@ asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
 
 If you want to install the specific versions that were used for developing and testing:
 ``` bash
-asdf install erlang 26.1.2
-asdf install elixir 1.15.7-otp-26
-asdf global erlang 26.1.2
-asdf global elixir 1.15.7-otp-26
+asdf install erlang 27.3.3
+asdf install elixir 1.18.3-otp-27
+asdf global erlang 27.3.3
+asdf global elixir 1.18.3-otp-27
 ```
 
 If you get any warnings for missing packages, just install them using apt and try again.
@@ -126,9 +126,10 @@ mix hex.repo list
 ```
 
     Name        URL                             Public key                                          Auth key
+    hexpm       https://repo.hex.pm             SHA256:abc/edf/gef+aIWPc    
     oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
 
-If you see two key entries - caused by Oban moving from a public to a private repository - it will fail.
+If you see two Auth key entries - caused by Oban moving from a public to a private repository - it will fail.
 This is what an example of failing looks like:
 
     Name        URL                             Public key                                          Auth key
@@ -154,7 +155,7 @@ mix hex.repo list
 ### 6. Install certificate - Use SSL for frontend and backend
 
 Before completing the install, you need to create an SSL cert.
-Go to the glific_backend folder in the terminal console, and:
+Go to the GLIFIC folder in the terminal console, and:
 
 - Install mkcert (https://github.com/FiloSottile/mkcert)
 - `mkcert --install`
