@@ -215,15 +215,8 @@ defmodule Glific.Profiles do
 
     with {:ok, _default_profile} <- maybe_setup_default_profile(attrs, context),
          {:ok, profile} <- create_profile(attrs) do
-      indexed_profile = get_indexed_profile(context.contact)
-
-      {_profile, profile_index} =
-        Enum.find(indexed_profile, fn {index_profile, _index} ->
-          index_profile.id == profile.id
-        end)
-
-      action = Map.put(action, :value, to_string(profile_index))
-      handle_flow_action(:switch_profile, context, action)
+      profile_action = profile_action(context, action, profile)
+      handle_flow_action(:switch_profile, context, profile_action)
     else
       {:error, _error} ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
@@ -240,20 +233,13 @@ defmodule Glific.Profiles do
       organization_id: context.contact.organization_id
     }
 
-    {:ok, default_profile} = maybe_setup_default_profile(attrs, context)
-
-    with {:ok, index} <- Glific.parse_maybe_integer(value),
+    with {:ok, default_profile} <- maybe_setup_default_profile(attrs, context),
+         {:ok, index} <- Glific.parse_maybe_integer(value),
          {profile, _index} <- fetch_indexed_profile(context.contact, index),
          false <- deactivating_default_profile?(default_profile, profile),
-         {:ok, _updated_profile} <- update_profile(profile, %{is_active: false}),
-         {:ok, _updated_contact} <-
-           maybe_switch_profile(context.contact, profile, default_profile) do
-      {context, Messages.create_temp_message(context.organization_id, "Success")}
+         {:ok, _updated_profile} <- update_profile(profile, %{is_active: false}) do
+      handle_deactivation_flow(context, action, default_profile, profile)
     else
-      # If deactivating default profile, return success and no other operation required
-      true ->
-        {context, Messages.create_temp_message(context.organization_id, "Success")}
-
       _error ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
@@ -263,6 +249,20 @@ defmodule Glific.Profiles do
     {context, Messages.create_temp_message(context.organization_id, "Failure")}
   end
 
+  @spec profile_action(FlowContext.t(), Action.t(), map()) :: Action.t()
+  defp profile_action(context, action, profile) do
+    indexed_profile = get_indexed_profile(context.contact)
+
+    {_profile, profile_index} =
+      Enum.find(indexed_profile, fn {index_profile, _index} ->
+        index_profile.id == profile.id
+      end)
+
+    Map.put(action, :value, to_string(profile_index))
+  end
+
+  # Creating a default profile that mirrors the contact and preserve the original contact fields.
+  # When a profile is deactivated, the user will automatically switch to this default profile.
   @spec maybe_setup_default_profile(map(), map()) ::
           {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
   defp maybe_setup_default_profile(attrs, context) do
@@ -296,22 +296,22 @@ defmodule Glific.Profiles do
     end
   end
 
-  @spec maybe_switch_profile(Contact.t(), Profile.t(), Profile.t()) :: {:ok, Contact.t()}
-  defp maybe_switch_profile(contact, deactivated_profile, default_profile) do
-    if contact.active_profile_id == deactivated_profile.id do
-      Contacts.update_contact(contact, %{
-        active_profile_id: default_profile.id,
-        language_id: default_profile.language_id,
-        fields: default_profile.fields
-      })
-    else
-      {:ok, contact}
-    end
-  end
-
   @spec deactivating_default_profile?(Profile.t(), Profile.t()) :: boolean()
   defp deactivating_default_profile?(%Profile{id: profile_id}, %Profile{id: profile_id}),
     do: true
 
   defp deactivating_default_profile?(_, _), do: false
+
+  @spec handle_deactivation_flow(FlowContext.t(), Action.t(), map(), map()) ::
+          {FlowContext.t(), Message.t()}
+  defp handle_deactivation_flow(context, action, default_profile, current_profile) do
+    active_profile_id = context.contact.active_profile_id
+
+    if active_profile_id == current_profile.id do
+      profile_action = profile_action(context, action, default_profile)
+      handle_flow_action(:switch_profile, context, profile_action)
+    else
+      {context, Messages.create_temp_message(context.organization_id, "Success")}
+    end
+  end
 end

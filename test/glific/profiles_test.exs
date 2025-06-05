@@ -373,7 +373,7 @@ defmodule Glific.ProfilesTest do
       assert contact.active_profile_id == default_profile.id
     end
 
-    test "after deactivating a profile other than active profile of the user, should not switch profile for the user",
+    test "after deactivating a profile other than the current active profile, the user's profile should not be switched",
          %{
            organization_id: org_id
          } do
