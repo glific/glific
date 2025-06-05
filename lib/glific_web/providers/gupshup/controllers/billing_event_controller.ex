@@ -15,7 +15,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.BillingEventController do
   """
   @spec handler(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def handler(conn, _params) do
-    json(conn, nil)
+    conn
+    |> Plug.Conn.send_resp(200, "")
+    |> Plug.Conn.halt()
   end
 
   @doc """
