@@ -923,4 +923,167 @@ defmodule GlificWeb.Schema.SearchTest do
     [wa_message] = get_in(query_data, [:data, "WaSearchMulti", "waMessages"])
     assert wa_message["body"] == "wa search multi"
   end
+
+  test "search query with date range filters", %{staff: user} do
+    message_dates = [
+      ~U[2025-05-15 10:00:00Z],
+      ~U[2025-05-20 10:00:00Z],
+      ~U[2025-05-25 10:00:00Z]
+    ]
+
+    Enum.map(message_dates, fn date ->
+      message = Fixtures.message_fixture()
+
+      Repo.update_all(
+        from(m in Messages.Message, where: m.id == ^message.id),
+        set: [inserted_at: date]
+      )
+    end)
+
+    # case 1: messages between a date range
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{
+            "dateRange" => %{
+              "from" => "2025-05-19",
+              "to" => "2025-05-22"
+            }
+          },
+          "contactOpts" => %{"limit" => 10},
+          "messageOpts" => %{"limit" => 10}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    contacts = get_in(query_data, [:data, "search"])
+    from_date = ~D[2025-05-19]
+    to_date = ~D[2025-05-22]
+
+    # ensure all messages are within the date range
+    Enum.each(contacts, fn contact ->
+      messages = get_in(contact, ["messages"])
+
+      Enum.each(messages, fn message ->
+        inserted_at = get_in(message, ["inserted_at"])
+
+        message_date =
+          inserted_at
+          |> DateTime.from_iso8601()
+          |> elem(1)
+          |> DateTime.to_date()
+
+        assert Date.compare(message_date, from_date) in [:eq, :gt]
+        assert Date.compare(message_date, to_date) in [:eq, :lt]
+      end)
+    end)
+
+    # case 2: messages after a date
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{
+            "dateRange" => %{
+              "from" => "2025-05-22",
+              "to" => nil
+            }
+          },
+          "contactOpts" => %{"limit" => 10},
+          "messageOpts" => %{"limit" => 10}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    contacts = get_in(query_data, [:data, "search"])
+    from_date = ~D[2025-05-22]
+
+    # ensure all messages are after the date
+    Enum.each(contacts, fn contact ->
+      messages = get_in(contact, ["messages"])
+
+      Enum.each(messages, fn message ->
+        inserted_at = get_in(message, ["inserted_at"])
+
+        message_date =
+          inserted_at
+          |> DateTime.from_iso8601()
+          |> elem(1)
+          |> DateTime.to_date()
+
+        assert Date.compare(message_date, from_date) in [:eq, :gt]
+      end)
+    end)
+
+    # case 3: messages before a date
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{
+            "dateRange" => %{
+              "from" => nil,
+              "to" => "2025-05-17"
+            }
+          },
+          "contactOpts" => %{"limit" => 10},
+          "messageOpts" => %{"limit" => 10}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    contacts = get_in(query_data, [:data, "search"])
+    to_date = ~D[2025-05-17]
+
+    # ensure all messages are before the date
+    Enum.each(contacts, fn contact ->
+      messages = get_in(contact, ["messages"])
+
+      Enum.each(messages, fn message ->
+        inserted_at = get_in(message, ["inserted_at"])
+
+        message_date =
+          inserted_at
+          |> DateTime.from_iso8601()
+          |> elem(1)
+          |> DateTime.to_date()
+
+        assert Date.compare(message_date, to_date) in [:eq, :lt]
+      end)
+    end)
+
+    # case 4: both dates are same
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{
+            "dateRange" => %{
+              "from" => "2025-05-17",
+              "to" => "2025-05-17"
+            }
+          },
+          "contactOpts" => %{"limit" => 10},
+          "messageOpts" => %{"limit" => 10}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    contacts = get_in(query_data, [:data, "search"])
+    to_date = ~D[2025-05-17]
+
+    # ensure all messages are of same date
+    Enum.each(contacts, fn contact ->
+      messages = get_in(contact, ["messages"])
+
+      Enum.each(messages, fn message ->
+        inserted_at = get_in(message, ["inserted_at"])
+
+        message_date =
+          inserted_at
+          |> DateTime.from_iso8601()
+          |> elem(1)
+          |> DateTime.to_date()
+
+        assert Date.compare(message_date, to_date) == :eq
+      end)
+    end)
+  end
 end
