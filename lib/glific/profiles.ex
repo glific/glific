@@ -215,7 +215,7 @@ defmodule Glific.Profiles do
 
     with {:ok, _default_profile} <- maybe_setup_default_profile(attrs, context),
          {:ok, profile} <- create_profile(attrs) do
-      profile_action = profile_action(context, action, profile)
+      profile_action = get_action_with_index(context, action, profile)
       handle_flow_action(:switch_profile, context, profile_action)
     else
       {:error, _error} ->
@@ -240,6 +240,11 @@ defmodule Glific.Profiles do
          {:ok, _updated_profile} <- update_profile(profile, %{is_active: false}) do
       handle_deactivation_flow(context, action, default_profile, profile)
     else
+      # we don't deactivate the default profile, but still return success
+      # because the default profile is treated as a contact.
+      true ->
+        {context, Messages.create_temp_message(context.organization_id, "Success")}
+
       _error ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
@@ -249,8 +254,8 @@ defmodule Glific.Profiles do
     {context, Messages.create_temp_message(context.organization_id, "Failure")}
   end
 
-  @spec profile_action(FlowContext.t(), Action.t(), map()) :: Action.t()
-  defp profile_action(context, action, profile) do
+  @spec get_action_with_index(FlowContext.t(), Action.t(), map()) :: Action.t()
+  defp get_action_with_index(context, action, profile) do
     indexed_profile = get_indexed_profile(context.contact)
 
     {_profile, profile_index} =
@@ -261,8 +266,6 @@ defmodule Glific.Profiles do
     Map.put(action, :value, to_string(profile_index))
   end
 
-  # Creating a default profile that mirrors the contact and preserve the original contact fields.
-  # When a profile is deactivated, the user will automatically switch to this default profile.
   @spec maybe_setup_default_profile(map(), map()) ::
           {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
   defp maybe_setup_default_profile(attrs, context) do
@@ -275,6 +278,11 @@ defmodule Glific.Profiles do
     end
   end
 
+  # Create the default profile for the user:
+  # 1. To preserve the original `contact_fields` of the contact. These fields
+  #    are overwritten when switching to other profiles.
+  # 2. To allow the user to switch back to the original contact state,
+  #    instead of being locked into a specific profile.
   @spec setup_default_profile(Contact.t(), map()) :: {:ok, Profile.t()}
   defp setup_default_profile(contact, attrs) do
     args = %{
@@ -308,7 +316,7 @@ defmodule Glific.Profiles do
     active_profile_id = context.contact.active_profile_id
 
     if active_profile_id == current_profile.id do
-      profile_action = profile_action(context, action, default_profile)
+      profile_action = get_action_with_index(context, action, default_profile)
       handle_flow_action(:switch_profile, context, profile_action)
     else
       {context, Messages.create_temp_message(context.organization_id, "Success")}

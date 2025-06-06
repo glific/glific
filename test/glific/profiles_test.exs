@@ -196,13 +196,15 @@ defmodule Glific.ProfilesTest do
         profile_type: "Deactivate Profile"
       }
 
-      Profiles.handle_flow_action(:deactivate_profile, context, action)
+      {_updated_context, message} =
+        Profiles.handle_flow_action(:deactivate_profile, context, action)
 
       {:ok, profile} =
         Repo.fetch_by(Profile, %{id: default_profile.id})
 
       # Default profile doesn't get deactivated
       assert profile.is_active == true
+      assert message.body == "Success"
 
       # failure case
       params = %{
