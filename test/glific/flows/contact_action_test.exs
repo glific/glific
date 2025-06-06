@@ -273,7 +273,8 @@ defmodule Glific.Flows.ContactActionTest do
              "Hi var_1,\n\nYour account image was updated on var_2 by var_3 with above"
   end
 
-  test "if loop is detected then flow should be aborted and a notification should be created", attrs do
+  test "if loop is detected then flow should be aborted and a notification should be created",
+       attrs do
     node_uuid = "8b4d2e09-9d72-4436-a01a-8e3def9cf4e5"
     message = "This is test message"
 
@@ -304,7 +305,7 @@ defmodule Glific.Flows.ContactActionTest do
           |> DateTime.to_iso8601()
 
         %{
-          "contact" => %{"name"=> contact.name, "uuid" => contact.id},
+          "contact" => %{"name" => contact.name, "uuid" => contact.id},
           "date" => date,
           "message" => message,
           "message_id" => index,
@@ -321,7 +322,9 @@ defmodule Glific.Flows.ContactActionTest do
 
     [notification | _] = Notifications.list_notifications(%{filter: %{category: "Flow"}})
 
-    assert notification.message == "Infinite loop detected, body: This is test message. Aborting flow."
+    assert notification.message ==
+             "Infinite loop detected, body: This is test message. Aborting flow."
+
     assert notification.entity["flow_uuid"] == flow.uuid
     assert notification.entity["node_uuid"] == node_uuid
   end
