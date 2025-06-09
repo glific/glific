@@ -171,37 +171,6 @@ defmodule Glific.PartnersTest do
       assert %{"status" => "success"} == result
     end
 
-    test "enable DLR Events for an app" do
-      org = SeedsDev.seed_organizations()
-
-      Tesla.Mock.mock(fn
-        %{method: :put} ->
-          %Tesla.Env{
-            status: 204,
-            body: "{\"status\":\"success\"}"
-          }
-      end)
-
-      modes = ["DELIVERED", "READ"]
-      {:ok, data} = PartnerAPI.enable_dlr_events(org.id, modes)
-      assert %{"status" => "success"} == data
-    end
-
-    test "set_callback_url/2 for setting callback URL" do
-      Tesla.Mock.mock(fn
-        %{method: :put} ->
-          %Tesla.Env{
-            status: 200,
-            body: "{\"status\":\"success\"}"
-          }
-      end)
-
-      org = SeedsDev.seed_organizations()
-      callback_url = "https://webhook.site/"
-      {:ok, data} = PartnerAPI.set_callback_url(org.id, callback_url)
-      assert %{"status" => "success"} == data
-    end
-
     test "test app link using api key" do
       org = SeedsDev.seed_organizations()
 
@@ -1098,11 +1067,12 @@ defmodule Glific.PartnersTest do
           {:ok,
            %Tesla.Env{
              status: 200,
-             body: Jason.encode!(%{
-               "partnerApps" => %{
-                 "id" => "app_id"
-               }
-             })
+             body:
+               Jason.encode!(%{
+                 "partnerApps" => %{
+                   "id" => "app_id"
+                 }
+               })
            }}
       end)
 
@@ -1673,6 +1643,103 @@ defmodule Glific.PartnersTest do
 
       assert {:ok, %{"message" => "Success", "status" => "error"}} =
                PartnerAPI.apply_for_template(1, %{elementName: "trial"})
+    end
+  end
+
+  describe "Partner.set_subscription/4" do
+    setup do
+      error = %{
+        "status" => "error",
+        "message" => "Duplicate component"
+      }
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              JSON.encode!(%{
+                "token" => "token"
+              })
+          }
+
+        %{method: :post, body: body} ->
+          if String.contains?(body, "error-ngrok.app") do
+            %Tesla.Env{
+              status: 400,
+              body: JSON.encode!(error)
+            }
+          else
+            %Tesla.Env{
+              status: 200,
+              body:
+                JSON.encode!(%{
+                  "status" => "success",
+                  "subscription" => %{
+                    "active" => true,
+                    "createdOn" => 1_748_489_845_881,
+                    "id" => "10380410",
+                    "mode" => 1143,
+                    "modes" => [
+                      "SENT",
+                      "DELIVERED",
+                      "READ",
+                      "OTHERS",
+                      "FAILED",
+                      "MESSAGE",
+                      "ENQUEUED"
+                    ],
+                    "modifiedOn" => 1_748_489_845_881,
+                    "showOnUI" => false,
+                    "tag" => "webhook_glific",
+                    "url" =>
+                      Regex.run(~r/&url=([^&]+?)&version/, body) |> List.last() |> URI.decode(),
+                    "version" => 2
+                  }
+                })
+            }
+          end
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                partner_app_token: "sk_test_partner_app_token"
+              })
+          }
+      end)
+
+      {:ok, %{error: error}}
+    end
+
+    test "enable webhook subscription for an app" do
+      org = SeedsDev.seed_organizations()
+
+      {:ok, data} = PartnerAPI.set_subscription(org.id, nil, ["NEW_EVENT"])
+      assert %{"status" => "success"} = data
+    end
+
+    test "enable webhook subscription for an app, passing callback url" do
+      org = SeedsDev.seed_organizations()
+
+      {:ok, data} =
+        PartnerAPI.set_subscription(org.id, "https://4bff-116-68-82-101.ngrok-free.app/gupshup")
+
+      assert %{
+               "status" => "success",
+               "subscription" => %{"url" => "https://4bff-116-68-82-101.ngrok-free.app/gupshup"}
+             } = data
+    end
+
+    test "enable webhook subscription for an app, duplicate webhook error", state do
+      org = SeedsDev.seed_organizations()
+
+      {:error, %{body: body}} =
+        PartnerAPI.set_subscription(org.id, "https://error-ngrok.app/gupshup")
+
+      assert body ==
+               JSON.encode!(state.error)
     end
   end
 end

@@ -893,8 +893,9 @@ defmodule Glific.Flows.ActionTest do
     message_stream = []
 
     Action.execute(action, context, message_stream)
-    {:ok, profile} = Repo.fetch_by(Profiles.Profile, %{name: "name"})
-    assert profile.type == "student"
+    # first profile is the default profile
+    {:ok, profile} = Repo.fetch_by(Profiles.Profile, %{name: profile.name})
+    assert profile.type == "some type"
 
     # Create a second profile for a contact
     action = %Action{
@@ -910,6 +911,9 @@ defmodule Glific.Flows.ActionTest do
 
     {:ok, contact} = Repo.fetch_by(Contact, %{id: profile.contact_id})
     assert contact.active_profile_id == profile2.id
+
+    # Can remove this when we add sorting by is_default value in the following PRs
+    [{profile, 1} | _] = Profiles.get_indexed_profile(contact)
 
     # Switch to first profile for a contact
     action = %Action{
