@@ -213,19 +213,39 @@ defmodule Glific.Profiles do
       organization_id: context.contact.organization_id
     }
 
-    with {:ok, _default_profile} <- maybe_create_default_profile(attrs, context),
+    with {:ok, _default_profile} <- maybe_setup_default_profile(attrs, context),
          {:ok, profile} <- create_profile(attrs) do
-      indexed_profile = get_indexed_profile(context.contact)
-
-      {_profile, profile_index} =
-        Enum.find(indexed_profile, fn {index_profile, _index} ->
-          index_profile.id == profile.id
-        end)
-
-      action = Map.put(action, :value, to_string(profile_index))
-      handle_flow_action(:switch_profile, context, action)
+      profile_action = get_action_with_index(context, action, profile)
+      handle_flow_action(:switch_profile, context, profile_action)
     else
       {:error, _error} ->
+        {context, Messages.create_temp_message(context.organization_id, "Failure")}
+    end
+  end
+
+  def handle_flow_action(:deactivate_profile, context, action) do
+    value =
+      ContactField.parse_contact_field_value(context, action.value)
+
+    attrs = %{
+      contact_id: context.contact.id,
+      language_id: context.contact.language_id,
+      organization_id: context.contact.organization_id
+    }
+
+    with {:ok, default_profile} <- maybe_setup_default_profile(attrs, context),
+         {:ok, index} <- Glific.parse_maybe_integer(value),
+         {profile, _index} <- fetch_indexed_profile(context.contact, index),
+         false <- deactivating_default_profile?(default_profile, profile),
+         {:ok, _updated_profile} <- update_profile(profile, %{is_active: false}) do
+      handle_deactivation_flow(context, action, default_profile, profile)
+    else
+      # we don't deactivate the default profile, but still return success
+      # because the default profile is treated as a contact.
+      true ->
+        {context, Messages.create_temp_message(context.organization_id, "Success")}
+
+      _error ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
   end
@@ -234,19 +254,72 @@ defmodule Glific.Profiles do
     {context, Messages.create_temp_message(context.organization_id, "Failure")}
   end
 
-  @spec maybe_create_default_profile(map(), map()) ::
+  @spec get_action_with_index(FlowContext.t(), Action.t(), map()) :: Action.t()
+  defp get_action_with_index(context, action, profile) do
+    indexed_profile = get_indexed_profile(context.contact)
+
+    {_profile, profile_index} =
+      Enum.find(indexed_profile, fn {index_profile, _index} ->
+        index_profile.id == profile.id
+      end)
+
+    Map.put(action, :value, to_string(profile_index))
+  end
+
+  @spec maybe_setup_default_profile(map(), map()) ::
           {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
-  defp maybe_create_default_profile(attrs, context) do
+  defp maybe_setup_default_profile(attrs, context) do
     case Repo.get_by(Profile, contact_id: context.contact.id, is_default: true) do
       nil ->
-        attrs
-        |> Map.put(:name, context.contact.name)
-        |> Map.put(:is_default, true)
-        |> Map.put(:fields, context.contact.fields)
-        |> create_profile()
+        setup_default_profile(context.contact, attrs)
 
       profile ->
         {:ok, profile}
+    end
+  end
+
+  # Create the default profile for the user:
+  # 1. To preserve the original `contact_fields` of the contact. These fields
+  #    are overwritten when switching to other profiles.
+  # 2. To allow the user to switch back to the original contact state,
+  #    instead of being locked into a specific profile.
+  @spec setup_default_profile(Contact.t(), map()) :: {:ok, Profile.t()}
+  defp setup_default_profile(contact, attrs) do
+    args = %{
+      filter: %{contact_id: contact.id},
+      opts: %{offset: 0, order: :asc, order_with: :inserted_at},
+      organization_id: contact.organization_id
+    }
+
+    case list_profiles(args) do
+      [] ->
+        attrs
+        |> Map.put(:name, contact.name)
+        |> Map.put(:is_default, true)
+        |> Map.put(:fields, contact.fields)
+        |> create_profile()
+
+      [first_profile | _] ->
+        update_profile(first_profile, %{is_default: true})
+    end
+  end
+
+  @spec deactivating_default_profile?(Profile.t(), Profile.t()) :: boolean()
+  defp deactivating_default_profile?(%Profile{id: profile_id}, %Profile{id: profile_id}),
+    do: true
+
+  defp deactivating_default_profile?(_, _), do: false
+
+  @spec handle_deactivation_flow(FlowContext.t(), Action.t(), map(), map()) ::
+          {FlowContext.t(), Message.t()}
+  defp handle_deactivation_flow(context, action, default_profile, current_profile) do
+    active_profile_id = context.contact.active_profile_id
+
+    if active_profile_id == current_profile.id do
+      profile_action = get_action_with_index(context, action, default_profile)
+      handle_flow_action(:switch_profile, context, profile_action)
+    else
+      {context, Messages.create_temp_message(context.organization_id, "Success")}
     end
   end
 end
