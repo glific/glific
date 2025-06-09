@@ -46,6 +46,8 @@ defmodule Glific.Conversations do
     |> Repo.all(timeout: 10_000)
   end
 
+  @spec apply_offset_or_date_range(Ecto.Query.t(), map(), integer(), integer(), integer()) ::
+          Ecto.Query.t()
   defp apply_offset_or_date_range(
          query,
          %{filter: %{date_range: %{from: from_date, to: to_date}}},
