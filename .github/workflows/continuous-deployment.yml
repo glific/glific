@@ -2,14 +2,14 @@ name: Continuous Deployment
 
 on:
   push:
-    branches: [master, fix/cd-fail, v1.0]
+    branches: [master, v1.0]
 
 jobs:
   deploy:
     # only run this job if the verify job succeeds
 
     # only run this job if the workflow is running on the feature/master branch
-    # if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
 
     runs-on: ubuntu-latest
 
