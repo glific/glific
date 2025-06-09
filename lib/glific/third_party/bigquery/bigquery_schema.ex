@@ -1947,6 +1947,18 @@ defmodule Glific.BigQuery.Schema do
         name: "language",
         type: "STRING",
         mode: "NULLABLE"
+      },
+      %{
+        description: "Active status of the profile",
+        name: "is_active",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Default status of the profile",
+        name: "is_default",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
       }
     ]
   end
