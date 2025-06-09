@@ -210,7 +210,7 @@ defmodule Glific.Sheets do
             "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{inspect(err)}"
           )
 
-          create_sync_fail_notification(sheet)
+          create_sync_fail_notification(sheet, inspect(err))
           {:halt, Map.put(acc, export_url, err)}
       end)
 
@@ -397,16 +397,16 @@ defmodule Glific.Sheets do
             "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{inspect(err)}"
           )
 
-          create_sync_fail_notification(sheet)
+          create_sync_fail_notification(sheet, inspect(err))
       end
     end)
   end
 
-  @spec create_sync_fail_notification(Sheet.t()) :: :ok
-  defp create_sync_fail_notification(sheet) do
+  @spec create_sync_fail_notification(Sheet.t(), String.t()) :: :ok
+  defp create_sync_fail_notification(sheet, error_reason) do
     Notifications.create_notification(%{
       category: "Google sheets",
-      message: "Google sheet sync failed",
+      message: "Google sheet sync failed: #{error_reason}",
       severity: Notifications.types().warning,
       organization_id: sheet.organization_id,
       entity: %{url: sheet.url, id: sheet.id, name: sheet.label}
