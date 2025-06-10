@@ -245,7 +245,7 @@ defmodule Glific.Flows.Webhook do
       webhook_log_id: webhook_log.id,
       # for job uniqueness,
       context_id: context.id,
-      context: %{id: context.id, delay: context.dela, uuids_seen: context.uuids_seen},
+      context: %{id: context.id, delay: context.delay, uuids_seen: context.uuids_seen},
       organization_id: context.organization_id,
       action_id: action.uuid
     }
@@ -371,6 +371,7 @@ defmodule Glific.Flows.Webhook do
       Repo.get!(FlowContext, context_id)
       |> Repo.preload(:flow)
       |> Map.put(:delay, context_data["delay"] || 0)
+      |> Map.put(:uuids_seen, context_data["uuids_seen"])
 
     {context, message} =
       if is_nil(result) || !is_map(result) || is_nil(result_name) do
