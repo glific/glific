@@ -474,7 +474,7 @@ defmodule Glific.ContactsTest do
       assert count == 1
     end
 
-    test "import_contact/3 with invalid data from file inserts new contacts without +prefix in the database" do
+    test "import_contact/3 does not insert contacts without country code prefix"do
       file = get_tmp_file()
 
       [
