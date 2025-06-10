@@ -165,13 +165,8 @@ msgstr ""
 msgid "Error while fetching the BSP balance"
 msgstr ""
 
-#: lib/glific/providers/gupshup/contacts.ex:93
-#, elixir-format, elixir-autogen
-msgid "Invalid BSP API key"
-msgstr ""
-
-#: lib/glific/partners.ex:426
-#: lib/glific/partners.ex:443
+#: lib/glific/partners.ex:425
+#: lib/glific/partners.ex:442
 #, elixir-format, elixir-autogen
 msgid "Invalid BSP provider"
 msgstr ""
@@ -181,9 +176,9 @@ msgstr ""
 msgid "Invoice status updated for %{invoice_id}"
 msgstr ""
 
-#: lib/glific/partners.ex:422
-#: lib/glific/partners.ex:439
-#: lib/glific/providers/gupshup/api_client.ex:37
+#: lib/glific/partners.ex:421
+#: lib/glific/partners.ex:438
+#: lib/glific/providers/gupshup/api_client.ex:36
 #: lib/glific/providers/gupshup_enterprise/api_client.ex:36
 #, elixir-format, elixir-autogen
 msgid "No active BSP available"
@@ -244,7 +239,7 @@ msgstr ""
 msgid "Unsupported node type"
 msgstr ""
 
-#: lib/glific/flows/flow_context.ex:482
+#: lib/glific/flows/flow_context.ex:483
 #, elixir-format, elixir-autogen
 msgid "We have finished the flow"
 msgstr ""
@@ -308,19 +303,9 @@ msgstr ""
 msgid "Invalid event type"
 msgstr ""
 
-#: lib/glific/providers/gupshup/contacts.ex:85
-#, elixir-autogen, elixir-format
-msgid "Message: %{message}"
-msgstr ""
-
 #: lib/glific_web/resolvers/profiles.ex:22
 #, elixir-autogen, elixir-format
 msgid "Profile not found or permission denied."
-msgstr ""
-
-#: lib/glific/providers/gupshup/contacts.ex:96
-#, elixir-autogen, elixir-format
-msgid "Reason: %{reason}"
 msgstr ""
 
 #: lib/glific_web/resolvers/wa_group.ex:21
