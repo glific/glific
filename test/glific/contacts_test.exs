@@ -499,7 +499,7 @@ defmodule Glific.ContactsTest do
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :default, with_scheduled: true)
 
-      count = Contacts.count_contacts(%{filter: %{name: "test"}})
+      count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
 
       assert count == 0
     end
