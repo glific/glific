@@ -7,6 +7,7 @@ defmodule GlificWeb.Schema.ProfileTest do
 
   alias Glific.{
     Contacts.Contact,
+    Fixtures,
     Profiles.Profile,
     Repo,
     Seeds.SeedsDev
@@ -156,6 +157,24 @@ defmodule GlificWeb.Schema.ProfileTest do
 
     [profile | _] = get_in(query_data, [:data, "profiles"])
     assert profile["name"] == "user"
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"organization_id" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "profiles"])) == 1
+
+    # Only returns active profiles
+    Fixtures.profile_fixture(%{
+      "name" => "john",
+      "type" => "admin",
+      "is_active" => false,
+      "organization_id" => 1
+    })
 
     result =
       auth_query_gql_by(:list, user,

@@ -56,6 +56,8 @@ defmodule GlificWeb.Resolvers.Profiles do
   @spec profiles(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [any]}
   def profiles(_, args, _) do
+    filters = args |> Map.get(:filter, %{}) |> Map.put(:is_active, true)
+    args = Map.put(args, :filter, filters)
     {:ok, Profiles.list_profiles(args)}
   end
 end
