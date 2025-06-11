@@ -33,13 +33,7 @@
 
 ---
 
-## Clone Backend Repository
-
-```bash
-git clone https://github.com/glific/glific
-```
-
-## Pre-requisites
+## 1. Pre-requisites
 
 ### Software Dependencies
 
@@ -86,7 +80,13 @@ Tested with Postgres versions:
 * v13.x
 * v14.x
 
-####  Install certificate - Use SSL for frontend and backend
+## 2. Clone Backend Repository
+
+```bash
+git clone https://github.com/glific/glific
+```
+
+## 3. Install certificate - Use SSL for frontend and backend
 
 Install from [mkcert GitHub repo](https://github.com/FiloSottile/mkcert)
 
@@ -142,9 +142,9 @@ If it returns nothing, add these 3 lines to the hosts file:
 127.0.0.1 api.glific.test
 127.0.0.1 postgres
 ```
-### External Services
+## 4. External Services
 
-#### Gupshup
+### Gupshup
 
 * Register: [Gupshup Developer](https://www.gupshup.io/developer/home)
 * Create an app and select Access API
@@ -153,7 +153,7 @@ If it returns nothing, add these 3 lines to the hosts file:
 * Now, in Gupshup, find your API Key: check the top right corner and click the profile picture or inside the curl sample message
 * Enter your APP name and API Key in the dev.secret.exs file using any text editor.
 
-#### Oban
+### Oban
 
 [Oban](https://getoban.pro) is a cron-like library. Glific depends 100% on job processing.
 Oban is **required** before running mix for Glific to operate.
@@ -215,14 +215,81 @@ mix hex.repo list
     Name        URL                             Public key                                          Auth key
     oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
 
-Install frontend: [Glific Frontend Repo](https://github.com/glific/glific-frontend)
+### 5. Backend - Config
 
-### Frontend credentials
+- Run: `cp config/.env.dev.txt config/.env.dev`
+- Run `mix deps.get`
+  if this fails try `mix local.hex --force` followed by `mix deps.get`
+
+  if you see the error below, then your Oban key is wrong or failing. Check step 5 or contact Oban.
+
+  ❯ mix deps.get
+  Failed to fetch record for 'hexpm:oban/oban_pro' from registry (using cache instead)
+  This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
+  Failed to fetch record for 'hexpm:oban/oban_web' from registry (using cache instead)
+  This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
+  \*\* (Mix) Unknown package oban_pro in lockfile
+
+- Run `mix setup`
+ At this point, you may get an error saying `password authentication failed for user "postgres"`, in which case, you need to configure the postgres server properly:
+
+```bash
+createuser postgres -s # needed for more recent versions of postgres on MacOSgit
+sudo -u postgres psql
+ALTER USER postgres WITH PASSWORD 'postgres';
+```
+Exit the PostgreSQL terminal by typing `\q` and pressing Enter. Run `mix setup` again.
+
+- Run `iex -S mix phx.server`
+- Inside the iex (you might need to hit enter/return to see the prompt)
+  - Update HSM templates by running the following command:
+  - `Glific.Templates.sync_hsms_from_bsp(1)`
+
+Now you can visit [`https://glific.test:4001`](https://glific.test:4001) from your browser.
+
+
+
+**For Windows the steps is as follows:**
+
+- Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs`
+- Copy the file: `cp config/.env.dev.txt config/.env.dev`.
+  You may not need to edit the default values for DB URL and hostnames in this file if they look suitable for your needs.
+
+- Run this on the command prompt:
+  ```
+  cd <path-to-glific-backend>
+  set /p=DUMMY < config\.env.dev
+  ```
+  Replace <path-to-glific-backend> with the actual path to the glific_backend directory. This will load the environment variables from the .env.dev file.
+- Run `mix deps.get`
+  if this fails try `mix local.hex --force` followed by `mix deps.get`
+
+  if you see the error below, then your Oban key is wrong or failing. Check step 5 or contact Oban.
+
+  ❯ mix deps.get
+  Failed to fetch record for 'hexpm:oban/oban_pro' from registry (using cache instead)
+  This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
+  Failed to fetch record for 'hexpm:oban/oban_web' from registry (using cache instead)
+  This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
+  \*\* (Mix) Unknown package oban_pro in lockfile
+
+- Run `mix setup`
+- Run `iex -S mix phx.server`
+- Inside the iex (you might need to hit enter/return to see the prompt)
+  - Update HSM templates by running the following command:
+  - `Glific.Templates.sync_hsms_from_bsp(1)`
+
+Now you can visit [`https://glific.test:4001`](https://glific.test:4001) from your browser.
+
+## 6. Installed fronted
+ [Glific Frontend Repo](https://github.com/glific/glific-frontend)
+
+#### Frontend credentials
 
 * Phone: `917834811114`
 * Password: `Secret1234!`
 
-## Unit Testing
+## 7. Unit Testing
 
 ```bash
 mix test_full
@@ -237,7 +304,7 @@ mix test_full
 Glific.Templates.sync_hsms_from_bsp(1)
 ```
 
-## Optional - Using NGROK
+### Optional - Using NGROK
 
 * Download: [ngrok](https://ngrok.com/download)
 * Run:
@@ -248,7 +315,7 @@ ngrok http 4000 --host-header=glific.test:4000
 
 * Set webhook in Gupshup app settings to `https://<ngrok-url>/gupshup`
 
-## Updating Your Instance
+### Updating Your Instance
 Run the following commands to update your codebase from the Glific repository.
 ```bash
 * Ensure you are in the top-level directory of the Glific API code.
@@ -257,14 +324,14 @@ Run the following commands to update your codebase from the Glific repository.
 * Run the setup command: mix deps.get, compile, ecto.migrate
 ```
 
-## Documentation
+### Documentation
 
 * [User Guide](https://docs.glific.com)
 * [API docs](https://api.glific.com/)
 * [Code Documentation](https://hexdocs.pm/glific/5.1.6/readme.html)
 * [Recipes](https://github.com/glific/recipes)
 
-## Learn More
+### Learn More
 
 * [Demo Video](https://drive.google.com/file/d/1T8nBKMt1oFndfIHEVlQ38K8lGqjajYaZ/view?usp=sharing)
 * [One Pager](https://docs.google.com/document/d/1XYxNvIYzNyX2Ve99-HrmTC8utyBFaf_Y7NP1dFYxI9Q/edit?usp=sharing)
@@ -272,11 +339,11 @@ Run the following commands to update your codebase from the Glific repository.
 * [Glific Blogs](https://chintugudiya.org/tag/glific/)
 * [Google Drive](https://drive.google.com/drive/folders/1aMQvS8xWRnIEtsIkRgLodhDAM-0hg0v1?usp=sharing)
 
-## Chat With Us
+### Chat With Us
 
 * [Join Discord](https://discord.gg/me6NCMu)
 
-## Funders
+### Funders
 
 Thanks to our funders for supporting Glific:
 
