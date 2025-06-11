@@ -155,7 +155,7 @@ mix hex.repo list
 ### 6. Install certificate - Use SSL for frontend and backend
 
 Before completing the install, you need to create an SSL cert.
-Go to the GLIFIC folder in the terminal console, and:
+Go to the glific folder in the terminal console, and:
 
 - Install mkcert (https://github.com/FiloSottile/mkcert)
 - `mkcert --install`
