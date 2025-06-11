@@ -20,21 +20,30 @@ defmodule Glific.ProfilesTest do
 
     @valid_attrs %{
       "name" => "profile 1",
-      "type" => "pro"
+      "type" => "pro",
+      "is_default" => true
     }
 
     @valid_attrs_1 %{
       "name" => "profile 2",
       "contact_id" => 2
     }
+
+    @valid_attrs_2 %{
+      "name" => "profile 3",
+      "type" => "student",
+      "is_active" => false
+    }
+
     test "get_profile!/1 returns the profile with given id" do
       profile = profile_fixture()
       assert Profiles.get_profile!(profile.id) == profile
     end
 
-    test "list_contacts/1 with multiple profiles filtered" do
+    test "list_profiles/1 with multiple profiles filtered" do
       _p1 = profile_fixture(@valid_attrs)
       _p2 = profile_fixture(@valid_attrs_1)
+      _p3 = profile_fixture(@valid_attrs_2)
 
       # fliter by name
       [profile | _] = Profiles.list_profiles(%{filter: %{name: "profile 1"}})
@@ -42,11 +51,25 @@ defmodule Glific.ProfilesTest do
 
       # If no filter is given it will return all the profile
       profile2 = Profiles.list_profiles(%{})
-      assert Enum.count(profile2) == 3
+      assert Enum.count(profile2) == 4
 
       # filter by contact_id
       profile3 = Profiles.list_profiles(%{filter: %{contact_id: 1}})
       assert Enum.count(profile3) == 1
+
+      # filter by active status
+      profile4 = Profiles.list_profiles(%{filter: %{is_active: false}})
+      assert Enum.count(profile4) == 1
+
+      # filter by active status and sorts default profile first
+      profile4 =
+        Profiles.list_profiles(%{
+          filter: %{is_active: true},
+          opts: %{order: :desc, order_with: :is_default}
+        })
+
+      assert Enum.count(profile4) == 3
+      assert [%Profile{is_default: true} | _] = profile4
     end
 
     test "create_profile/1 with valid data creates a profile" do
@@ -146,12 +169,8 @@ defmodule Glific.ProfilesTest do
         Contacts.get_contact!(contact.id)
         |> Profiles.switch_profile("2")
 
-      {:ok, contact_with_profile_1} =
-        contact_with_profile_2
-        |> Profiles.switch_profile("1")
-
-      assert contact_with_profile_1.active_profile_id == new_profile.id
-      assert contact_with_profile_1.active_profile.name == "Profile 2"
+      assert contact_with_profile_2.active_profile_id == new_profile.id
+      assert contact_with_profile_2.active_profile.name == "Profile 2"
     end
 
     test "deactivate_profile doesn't deactivate default profile",
@@ -183,15 +202,11 @@ defmodule Glific.ProfilesTest do
       # This will update the contact's first profile to default profile
       Profiles.handle_flow_action(:create_profile, context, action)
 
-      # Can remove this when we add sorting by is_default value in the following PRs
-      {default_profile, index} =
-        contact
-        |> Profiles.get_indexed_profile()
-        |> Enum.find(fn {profile, _index} -> profile.is_default end)
+      {:ok, default_profile} = Repo.fetch_by(Profile, %{contact_id: contact.id, is_default: true})
 
       action = %Action{
         id: nil,
-        value: "#{index}",
+        value: "1",
         type: "set_contact_profile",
         profile_type: "Deactivate Profile"
       }
@@ -199,8 +214,7 @@ defmodule Glific.ProfilesTest do
       {_updated_context, message} =
         Profiles.handle_flow_action(:deactivate_profile, context, action)
 
-      {:ok, profile} =
-        Repo.fetch_by(Profile, %{id: default_profile.id})
+      {:ok, profile} = Repo.fetch_by(Profile, %{id: default_profile.id})
 
       # Default profile doesn't get deactivated
       assert profile.is_active == true
@@ -243,9 +257,8 @@ defmodule Glific.ProfilesTest do
         "contact_id" => contact.id
       }
 
-      # This profile will become default of the contact
-      profile = Fixtures.profile_fixture(params)
-      assert profile.is_active == true
+      non_default_profile1 = Fixtures.profile_fixture(params)
+      assert non_default_profile1.is_active == true
 
       {:ok, flow} = Repo.fetch_by(Flow, %{name: "Deactivate Profile Flow"})
 
@@ -270,27 +283,24 @@ defmodule Glific.ProfilesTest do
 
       Profiles.handle_flow_action(:create_profile, context, action)
 
-      # Can remove this when we add sorting by is_default value in the following PRs
-      {non_default_profile, index} =
-        contact
-        |> Profiles.get_indexed_profile()
-        |> Enum.find(fn {profile, _index} -> !profile.is_default end)
+      {:ok, non_default_profile2} =
+        Repo.fetch_by(Profile, %{name: "profile2", contact_id: contact.id})
 
       action = %Action{
         id: nil,
         type: "set_contact_profile",
-        value: "#{index}",
+        value: "3",
         profile_type: "Switch Profile"
       }
 
       Profiles.handle_flow_action(:switch_profile, context, action)
 
       {:ok, contact} = Repo.fetch_by(Contact, %{name: "NGO Main Account"})
-      assert contact.active_profile_id == non_default_profile.id
+      assert contact.active_profile_id == non_default_profile2.id
 
       action = %Action{
         id: nil,
-        value: "#{index}",
+        value: "2",
         type: "set_contact_profile",
         profile_type: "Deactivate Profile"
       }
@@ -298,7 +308,7 @@ defmodule Glific.ProfilesTest do
       Profiles.handle_flow_action(:deactivate_profile, context, action)
 
       assert {:ok, %Profile{is_active: false}} =
-               Repo.fetch_by(Profile, %{id: non_default_profile.id})
+               Repo.fetch_by(Profile, %{id: non_default_profile1.id})
     end
 
     test "after deactivating current active profile of the user, should switch back to the default profile for the user",
@@ -342,16 +352,13 @@ defmodule Glific.ProfilesTest do
       {:ok, contact} = fetch_contact.("NGO Main Account")
       assert contact.active_profile_id == profile.id
 
-      # Can remove this when we add sorting by is_default value in the following PRs
-      {non_default_profile, index} =
-        contact
-        |> Profiles.get_indexed_profile()
-        |> Enum.find(fn {profile, _index} -> !profile.is_default end)
+      {:ok, non_default_profile} =
+        Repo.fetch_by(Profile, %{name: "profile2", contact_id: contact.id})
 
       action = %Action{
         id: nil,
         type: "set_contact_profile",
-        value: "#{index}",
+        value: "2",
         profile_type: "Switch Profile"
       }
 
@@ -362,7 +369,7 @@ defmodule Glific.ProfilesTest do
 
       action = %Action{
         id: nil,
-        value: "#{index}",
+        value: "2",
         type: "set_contact_profile",
         profile_type: "Deactivate Profile"
       }
@@ -423,7 +430,6 @@ defmodule Glific.ProfilesTest do
       {:ok, contact} = fetch_contact.("NGO Main Account")
       assert contact.active_profile_id == profile.id
 
-      # Can remove this when we add sorting by is_default value in the following PRs
       indexed_profiles = Profiles.get_indexed_profile(contact)
 
       {_profile1, profile1_index} =

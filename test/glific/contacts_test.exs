@@ -1610,11 +1610,12 @@ defmodule Glific.ContactsTest do
         "contact_id" => contact.id
       }
 
+      # First index will be the default profile
       Fixtures.profile_fixture(params)
 
       {:ok, _contact_with_profile} =
         Contacts.get_contact!(contact.id)
-        |> Profiles.switch_profile("1")
+        |> Profiles.switch_profile("2")
 
       contact = Contacts.get_contact_field_map(contact.id)
       assert contact.active_profile_name == "Profile 2"
