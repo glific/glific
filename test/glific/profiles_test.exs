@@ -347,6 +347,15 @@ defmodule Glific.ProfilesTest do
 
       Profiles.handle_flow_action(:create_profile, context, action)
 
+      switch_action = %Action{
+        id: nil,
+        type: "set_contact_profile",
+        value: "2",
+        profile_type: "Switch Profile"
+      }
+
+      Profiles.handle_flow_action(:switch_profile, context, switch_action)
+
       {:ok, profile} = fetch_profile.(%{name: "profile2"})
 
       {:ok, contact} = fetch_contact.("NGO Main Account")
@@ -354,15 +363,6 @@ defmodule Glific.ProfilesTest do
 
       {:ok, non_default_profile} =
         Repo.fetch_by(Profile, %{name: "profile2", contact_id: contact.id})
-
-      action = %Action{
-        id: nil,
-        type: "set_contact_profile",
-        value: "2",
-        profile_type: "Switch Profile"
-      }
-
-      Profiles.handle_flow_action(:switch_profile, context, action)
 
       {:ok, contact} = fetch_contact.("NGO Main Account")
       assert contact.active_profile_id == non_default_profile.id
@@ -425,6 +425,20 @@ defmodule Glific.ProfilesTest do
         Profiles.handle_flow_action(:create_profile, context, action)
       end
 
+      indexed_profiles = Profiles.get_indexed_profile(contact)
+
+      {_, profile2_index} =
+        Enum.find(indexed_profiles, fn {profile, _index} -> profile.name == "profile2" end)
+
+      switch_action = %Action{
+        id: nil,
+        type: "set_contact_profile",
+        value: "#{profile2_index}",
+        profile_type: "Switch Profile"
+      }
+
+      Profiles.handle_flow_action(:switch_profile, context, switch_action)
+
       {:ok, profile} = fetch_profile.(%{name: "profile2"})
 
       {:ok, contact} = fetch_contact.("NGO Main Account")
@@ -435,17 +449,8 @@ defmodule Glific.ProfilesTest do
       {_profile1, profile1_index} =
         Enum.find(indexed_profiles, fn {profile, _index} -> profile.name == "profile1" end)
 
-      {profile2, profile2_index} =
+      {profile2, _profile2_index} =
         Enum.find(indexed_profiles, fn {profile, _index} -> profile.name == "profile2" end)
-
-      action = %Action{
-        id: nil,
-        type: "set_contact_profile",
-        value: "#{profile2_index}",
-        profile_type: "Switch Profile"
-      }
-
-      Profiles.handle_flow_action(:switch_profile, context, action)
 
       {:ok, contact} = fetch_contact.("NGO Main Account")
       assert contact.active_profile_id == profile2.id
@@ -615,5 +620,38 @@ defmodule Glific.ProfilesTest do
       |> Repo.all()
 
     assert length(profiles) == 3
+  end
+
+  test "creating a new profile should not switch to the new profile" do
+    {:ok, contact} =
+      Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: 1})
+
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Multiple Profile Creation Flow"})
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: contact.id,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id,
+        flow: flow,
+        organization_id: flow.organization_id,
+        uuid_map: flow.uuid_map
+      })
+
+    context = Repo.preload(context, [:flow, :contact])
+
+    action = %Action{
+      id: nil,
+      type: "set_contact_profile",
+      value: %{"name" => "profile2", "type" => "parent"},
+      profile_type: "Create Profile"
+    }
+
+    Profiles.handle_flow_action(:create_profile, context, action)
+
+    {:ok, contact} =
+      Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: 1})
+
+    assert contact.active_profile_id == nil
   end
 end
