@@ -292,8 +292,18 @@ Now you can visit [`https://glific.test:4001`](https://glific.test:4001) from yo
 
 * Phone: `917834811114`
 * Password: `Secret1234!`
+## 7. Sync Gupshup Settings
+ After setting up both backend and frontend repositories, you need to sync the Gupshup settings:
+  - Login to the frontend using the credentials provided above
+  - Go to Settings -> Gupshup Settings
+  - Click on "Save" button
+  - Wait for confirmation that settings were synced successfully.
+    
+ This step is crucial as it fetches and stores your Gupshup `app_id` in the database, which is required for proper functioning of various APIs including the wallet API.
 
-## 7. Unit Testing
+
+
+## 8. Unit Testing
  Execute All Tests with:
 ```bash
 mix test_full
