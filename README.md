@@ -88,6 +88,7 @@ git clone https://github.com/glific/glific
 
 ## 3. Install certificate - Use SSL for frontend and backend
 
+Before completing the install, you need to create an SSL cert. Go to the glific folder in the terminal console, and:
 Install from [mkcert GitHub repo](https://github.com/FiloSottile/mkcert)
 
 To generate a certificate:
@@ -116,7 +117,7 @@ If it returns nothing, add these 3 lines to the hosts file:
 127.0.0.1 api.glific.test
 127.0.0.1 postgres
 ```
-For Windows the steps is as Follows:
+### For Windows the steps is as Follows:
 
 ```bash
 mkcert --install
@@ -290,9 +291,13 @@ Now you can visit [`https://glific.test:4001`](https://glific.test:4001) from yo
 * Password: `Secret1234!`
 
 ## 7. Unit Testing
-
+ Execute All Tests with:
 ```bash
 mix test_full
+```
+ To run Specific test File 
+ ```bash
+mix test Path_to_the_specific_test_file_you_want_to_run.
 ```
 
 ## Optional - Setup HSM Messaging
