@@ -12,8 +12,8 @@
 
 ## Table of Contents
 
-* [Clone Backend Repository](#clone-backend-repository)
 * [Pre-requisites](#pre-requisites)
+* [Clone Backend Repository](#clone-backend-repository)
   * [Software Dependencies](#software-dependencies)
     * [Erlang / Elixir](#erlang--elixir)
     * [Postgres](#postgres)
@@ -79,6 +79,7 @@ Tested with Postgres versions:
 
 * v13.x
 * v14.x
+* v17.x
 
 ## 2. Clone Backend Repository
 
