@@ -58,14 +58,16 @@ asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
 asdf plugin add elixir https://github.com/asdf-vm/asdf-elixir.git
 ```
 
-If you want to install the specific versions that were used for developing and testing:
-
+Install all required versions listed in `.tool-versions` by
 ```bash
-asdf install erlang 27.3.3
-asdf install elixir 1.18.3-otp-27
-asdf global erlang 27.3.3
-asdf global elixir 1.18.3-otp-27
+asdf install
 ```
+Set versions locally for this project (optional if .tool-versions already exists)
+```bash
+asdf local erlang 27.3.3
+asdf local elixir 1.18.3-otp-27
+```
+
 
 If you get any warnings for missing packages, just install them using `apt` and try again.
 
@@ -283,10 +285,10 @@ Now you can visit [`https://glific.test:4001`](https://glific.test:4001) from yo
 
 Now you can visit [`https://glific.test:4001`](https://glific.test:4001) from your browser.
 
-## 6. Installed fronted
+## 6. Installed frontend
  [Glific Frontend Repo](https://github.com/glific/glific-frontend)
 
-#### Frontend credentials
+### Frontend credentials
 
 * Phone: `917834811114`
 * Password: `Secret1234!`
