@@ -321,7 +321,7 @@ defmodule GlificWeb.Schema.ContactTest do
     end)
 
     test_name = "test2"
-    test_phone = "919917443992"
+    test_phone = "+919917443992"
 
     data =
       "name,phone,language,opt_in,collection\n#{test_name},#{test_phone},english,2021-03-09 12:34:25,collection"
@@ -391,7 +391,7 @@ defmodule GlificWeb.Schema.ContactTest do
       %{method: :get} ->
         %Tesla.Env{
           body:
-            "name,phone,Language,opt_in,delete,collection\r\nuploaded_contact,9876543311,english,2021-03-09 12:34:25,,collection",
+            "name,phone,Language,opt_in,delete,collection\r\nuploaded_contact,+919876543211,english,2021-03-09 12:34:25,,collection",
           status: 200
         }
     end)
@@ -426,7 +426,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     [
       ~w(name phone Language opt_in collection),
-      ["test", "9989329297", "english", "2021-03-09 12:34:25", "collection"]
+      ["test", "+919876543210", "english", "2021-03-09 12:34:25", "collection"]
     ]
     |> CSV.encode()
     |> Enum.each(&IO.write(file, &1))
@@ -465,7 +465,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     [
       ~w(name phone Language opt_in collection),
-      ["test", "9989329297", "english", "2021-03-09 12:34:25", "collection"]
+      ["test", "+91989329297", "english", "2021-03-09 12:34:25", "collection"]
     ]
     |> CSV.encode()
     |> Enum.each(&IO.write(file, &1))
@@ -500,7 +500,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     [
       ~w(name phone language opt_in delete collection),
-      ["test", "9989329297", "english", "2021-03-09 12:34:25", "0", "collection"]
+      ["test", "+919989329297", "english", "2021-03-09 12:34:25", "0", "collection"]
     ]
     |> CSV.encode()
     |> Enum.each(&IO.write(file, &1))
