@@ -322,7 +322,7 @@ If it returns nothing, add these 3 lines to the hosts file:
  Glific.Templates.sync_hsms_from_bsp(1)
  ```
 
-### Optional - Using NGROK
+## Optional - Using NGROK
 
  * Download: [ngrok](https://ngrok.com/download)
  * Run:
