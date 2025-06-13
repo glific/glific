@@ -33,8 +33,7 @@ defmodule Glific.Clients.Sarc do
 
         name_of_educator = get_in(contact.fields, ["name_of_educator", "value"])
 
-        "acp_submissions_2425/#{org_name}/#{acp_submission}/" <>
-          generate_filename(media["remote_name"], name_of_educator)
+        generate_filename(media["remote_name"], [org_name, acp_submission, name_of_educator])
 
       {:error, _} ->
         media["remote_name"]
@@ -44,9 +43,20 @@ defmodule Glific.Clients.Sarc do
   def gcs_file_name(media), do: media["remote_name"]
 
   # We need the ending part of the file name to be educator name
-  @spec generate_filename(String.t(), String.t()) :: String.t()
-  defp generate_filename(remote_name, name_of_educator) do
-    [message_name, ext] = String.split(remote_name, ".")
-    message_name <> "_" <> name_of_educator <> "." <> ext
+  @spec generate_filename(String.t(), list()) :: String.t()
+  defp generate_filename(remote_name, contact_fields) do
+    if Enum.any?(contact_fields, &is_nil/1) do
+      remote_name
+    else
+      [org_name, acp_submission, name_of_educator] = contact_fields
+      [message_name, ext] = String.split(remote_name, ".")
+
+      Path.join([
+        "acp_submissions_2425",
+        org_name,
+        acp_submission,
+        "#{message_name}_#{name_of_educator}.#{ext}"
+      ])
+    end
   end
 end
