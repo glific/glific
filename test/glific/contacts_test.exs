@@ -450,7 +450,7 @@ defmodule Glific.ContactsTest do
 
       [
         ~w(name phone Language opt_in collection),
-        ["test", "9989329297", "english", @optin_date, "collection"]
+        ["test", "+919989329297", "english", @optin_date, "collection"]
       ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
@@ -475,11 +475,41 @@ defmodule Glific.ContactsTest do
       assert count == 1
     end
 
+    test "import_contact/3 does not insert contacts without country code prefix"do
+      file = get_tmp_file()
+
+      [
+        ~w(name phone Language opt_in collection),
+        ["test", "9989329297", "english", @optin_date, "collection"]
+      ]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
+      [organization | _] = Partners.list_organizations()
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:glific_admin])
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        file_path: get_tmp_path()
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
+
+      assert count == 0
+    end
+
     test "import_contact/3 with valid data from string inserts new contacts in the database" do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:admin])
 
-      data = "name,phone,Language,opt_in\ncontact_test,9989329297,english,2021-03-09 12:34:25\n"
+      data = "name,phone,Language,opt_in\ncontact_test,+919989329297,english,2021-03-09 12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
 
@@ -494,7 +524,7 @@ defmodule Glific.ContactsTest do
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :default, with_scheduled: true)
 
-      count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
+      count = Contacts.count_contacts(%{filter: %{phone: "+919989329297"}})
 
       assert count == 1
     end
@@ -512,7 +542,7 @@ defmodule Glific.ContactsTest do
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09 12:34:25\n"
+            body: "name,phone,Language,opt_in\ntest,+919876543210,english,2021-03-09 12:34:25\n"
           }
       end)
 
@@ -551,7 +581,7 @@ defmodule Glific.ContactsTest do
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09 12:34:25\n"
+            body: "name,phone,Language,opt_in\ntest,+919876543210,english,2021-03-09 12:34:25\n"
           }
       end)
 
@@ -1399,7 +1429,7 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:admin])
 
-      data = "name,phone,Language,opt_in\n,abcdef,english,2021-03-09 12:34:25\n"
+      data = "name,phone,Language,opt_in\nTest Name,abcdef,english,2021-03-09 12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
 
@@ -1415,15 +1445,60 @@ defmodule Glific.ContactsTest do
                Oban.drain_queue(queue: :default, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "abcdef"}})
-
       assert count == 0
+    end
+
+    test "import_contact/3 with valid phone number without + prefix should be accepted" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+
+      data = "name,phone,Language,opt_in\nTest Name,919876543210,english,2021-03-09 12:34:25\n"
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{phone: "919876543210"}})
+      assert count == 1
+    end
+
+    test "import_contact/3 with valid phone number with + prefix should be accepted" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+
+      data = "name,phone,Language,opt_in\nTest Name,+919876543210,english,2021-03-09 12:34:25\n"
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{phone: "+919876543210"}})
+      assert count == 1
     end
 
     test "import_contact/3 with language not available , contact should be added with default language" do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:admin])
 
-      data = "name,phone,Language,opt_in\nName,9989329297,klingon,2021-03-09 12:34:25\n"
+      data = "name,phone,Language,opt_in\nName,+919989329297,klingon,2021-03-09 12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
 
@@ -1446,7 +1521,7 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:admin])
 
-      data = "name,phone,language,opt_in\nName,9989329297,Hindi,2021-03-09 12:34:25\n"
+      data = "name,phone,language,opt_in\nName,+919989329297,Hindi,2021-03-09 12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
 
@@ -1469,7 +1544,7 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:admin])
 
-      data = "name,phone,language,opt_in\nName,9989329297,,2021-03-09 12:34:25\n"
+      data = "name,phone,language,opt_in\nName,+919989329297,,2021-03-09 12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
 
