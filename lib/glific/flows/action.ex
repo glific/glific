@@ -41,7 +41,8 @@ defmodule Glific.Flows.Action do
 
   @contact_profile %{
     "Switch Profile" => :switch_profile,
-    "Create Profile" => :create_profile
+    "Create Profile" => :create_profile,
+    "Deactivate Profile" => :deactivate_profile
   }
 
   @required_field_common [:uuid, :type]
