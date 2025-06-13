@@ -544,7 +544,7 @@ defmodule Glific.Flows.WebhookTest do
     context =
       context
       |> Repo.preload([:contact, :flow])
-      |> Map.put(:uuids_seen, flow_uuid)
+      |> Map.put(:uuids_seen, %{flow_uuid => 1})
 
     action = %Action{
       headers: %{"Accept" => "application/json"},
@@ -557,6 +557,6 @@ defmodule Glific.Flows.WebhookTest do
     [job] = all_enqueued(worker: Webhook, prefix: "global")
 
     context_map = job.args["context"]
-    assert context_map["uuids_seen"] == flow_uuid
+    assert context_map["uuids_seen"] == %{flow_uuid => 1}
   end
 end
