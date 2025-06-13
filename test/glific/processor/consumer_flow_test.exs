@@ -244,12 +244,15 @@ defmodule Glific.Processor.ConsumerFlowTest do
     assert latest_message.body == "hey"
   end
 
-  @tag :node
   test "received interactive msg node_id not present in flow, returns the non-updated context",
        %{
          conn: conn,
          message_params: message_params
        } = attrs do
+    FunWithFlags.enable(:is_interactive_re_response_enabled,
+      for_actor: %{organization_id: attrs.organization_id}
+    )
+
     conn = post(conn, "/gupshup", message_params)
     assert conn.halted
     bsp_message_id = get_in(message_params, ["payload", "id"])
@@ -273,12 +276,15 @@ defmodule Glific.Processor.ConsumerFlowTest do
     assert :error = Map.fetch(flow.uuid_map, message.interactive_content["id"])
   end
 
-  @tag :nodes
   test "received interactive msg node_id present in flow, returns the updated context",
        %{
          conn: conn,
          message_params: message_params
        } = attrs do
+    FunWithFlags.enable(:is_interactive_re_response_enabled,
+      for_actor: %{organization_id: attrs.organization_id}
+    )
+
     conn = post(conn, "/gupshup", message_params)
     assert conn.halted
     bsp_message_id = get_in(message_params, ["payload", "id"])
@@ -313,12 +319,14 @@ defmodule Glific.Processor.ConsumerFlowTest do
     refute is_nil(Repo.get_by(FlowContext, contact_id: contact.id, flow_id: flow.id).completed_at)
   end
 
-  @tag :nodez
   test "chooses correct wait_for_response, even if there are multiple of them",
        %{
          conn: conn,
          message_params: message_params
        } = attrs do
+    FunWithFlags.enable(:is_interactive_re_response_enabled,
+      for_actor: %{organization_id: attrs.organization_id}
+    )
 
     # Refer int_msg_re_response.json
 
@@ -425,5 +433,90 @@ defmodule Glific.Processor.ConsumerFlowTest do
     # Flow finished.
     assert new_context.node_uuid == "5824604b-d9b6-429a-b442-153c091756fe"
     refute is_nil(new_context.completed_at)
+  end
+
+  test "Flag is disabled for re-response feature",
+       %{
+         conn: conn,
+         message_params: message_params
+       } = attrs do
+    FunWithFlags.disable(:is_interactive_re_response_enabled,
+      for_actor: %{organization_id: attrs.organization_id}
+    )
+
+    # Refer int_msg_re_response.json
+    # sending RCB as the response to the interactive template
+    message_params =
+      put_in(message_params, ["payload", "payload"], %{
+        "id" => "62ff6da6-00f2-400d-ae43-253470d1a6be",
+        "reply" => "RCB 1",
+        "title" => "RCB"
+      })
+
+    conn2 = conn
+    conn = post(conn, "/gupshup", message_params)
+    assert conn.halted
+    bsp_message_id = get_in(message_params, ["payload", "id"])
+
+    {:ok, message} =
+      Repo.fetch_by(Message, %{
+        bsp_message_id: bsp_message_id,
+        organization_id: conn.assigns[:organization_id]
+      })
+
+    assert message.bsp_status == :delivered
+
+    flow =
+      Flow.get_loaded_flow(attrs.organization_id, "published", %{
+        uuid: "0633e385-0625-4432-98f7-e780a73944aa"
+      })
+
+    contact = Fixtures.contact_fixture()
+    {:ok, flow_context, _} = FlowContext.init_context(flow, contact, "published")
+    state = ConsumerFlow.load_state(Fixtures.get_org_id())
+    assert is_tuple(ConsumerFlow.continue_current_context(flow_context, message, "body", state))
+
+    new_context =
+      Repo.get_by(FlowContext, contact_id: contact.id, flow_id: flow.id)
+
+    # check the int_msg_re_response.json for more info. The message we send via webhook has reply "RCB 1"
+    # according to it flow continues after continue_current_context and reach the next wait for response
+    # which is awaiting response for "what u think, who will win" (which is a normal send_msg node).
+    assert new_context.node_uuid == "f54b0868-8fb0-42fd-a9fc-8e15274bcea9"
+
+    # But we again send response from the first interactive msg
+    message_params =
+      put_in(message_params, ["payload", "payload"], %{
+        "id" => "62ff6da6-00f2-400d-ae43-253470d1a6be",
+        "reply" => "KKR 1",
+        "title" => "KKR"
+      })
+
+    conn2 = post(conn2, "/gupshup", message_params)
+    assert conn2.halted
+    bsp_message_id = get_in(message_params, ["payload", "id"])
+
+    {:ok, message} =
+      Repo.fetch_by(Message, %{
+        bsp_message_id: bsp_message_id,
+        organization_id: attrs.organization_id
+      })
+
+    assert message.bsp_status == :delivered
+
+    assert is_tuple(ConsumerFlow.continue_current_context(new_context, message, "body", state))
+
+    new_context =
+      Repo.get_by(FlowContext, contact_id: contact.id, flow_id: flow.id)
+
+    # Since the flag is disabled re-response didnt work and we reach end of the flow and
+    # flow is completed
+    refute new_context.node_uuid == "f54b0868-8fb0-42fd-a9fc-8e15274bcea9"
+
+    refute is_nil(new_context.completed_at)
+
+    FunWithFlags.disable(:is_interactive_re_response_enabled,
+      for_actor: %{organization_id: attrs.organization_id}
+    )
   end
 end

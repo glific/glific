@@ -104,9 +104,9 @@ defmodule Glific.StateTest do
   test "Ensure cache is initialized to all flows in free state" do
     %{flow: %{free: free_flows, busy: busy_flows}} = State.state(1)
 
-    # we have 20 flows in our dev seeder
+    # we have 21 flows in our dev seeder
     # two template flows
-    assert length(free_flows) == 20
+    assert length(free_flows) == 21
     assert Enum.empty?(busy_flows)
   end
 

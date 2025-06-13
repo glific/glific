@@ -307,6 +307,18 @@ defmodule Glific.Processor.ConsumerFlow do
   @spec maybe_update_current_node(FlowContext.t(), Flow.t(), Message.t()) :: FlowContext.t()
   defp maybe_update_current_node(context, flow, message)
        when map_size(message.interactive_content) > 0 do
+    if FunWithFlags.enabled?(
+         :is_interactive_re_response_enabled,
+         for: %{organization_id: message.organization_id}
+       ),
+       do: do_update_current_node(context, flow, message),
+       else: context
+  end
+
+  defp maybe_update_current_node(context, _flow, _message), do: context
+
+  @spec do_update_current_node(FlowContext.t(), Flow.t(), Message.t()) :: FlowContext.t()
+  defp do_update_current_node(context, flow, message) do
     case Map.fetch(flow.uuid_map, message.interactive_content["id"]) do
       {:ok, {:node, node}} ->
         # In case of no exits, the flow would have been already finished
@@ -324,6 +336,4 @@ defmodule Glific.Processor.ConsumerFlow do
         context
     end
   end
-
-  defp maybe_update_current_node(context, _flow, _message), do: context
 end
