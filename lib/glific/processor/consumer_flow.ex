@@ -180,6 +180,7 @@ defmodule Glific.Processor.ConsumerFlow do
       |> Messages.update_message(%{flow_id: context.flow_id})
 
     context
+    |> maybe_update_current_node(flow, message)
     |> Map.merge(%{last_message: message})
     |> FlowContext.load_context(flow)
     # we are using message.body here since we want to use the original message
@@ -302,4 +303,27 @@ defmodule Glific.Processor.ConsumerFlow do
   @spec context_nil?(FlowContext.t() | nil) :: boolean()
   ## not sure why this is giving dialyzer error. Ignoring for now
   defp context_nil?(context), do: is_nil(context)
+
+  @spec maybe_update_current_node(FlowContext.t(), Flow.t(), Message.t()) :: FlowContext.t()
+  defp maybe_update_current_node(context, flow, message)
+       when map_size(message.interactive_content) > 0 do
+    case Map.fetch(flow.uuid_map, message.interactive_content["id"]) do
+      {:ok, {:node, node}} ->
+        # In case of no exits, the flow would have been already finished
+        # Also we can't have multiple exits for interactive message
+        [node_exit | _] = node.exits
+
+        {:ok, flow_context} =
+          FlowContext.update_flow_context(context, %{node_uuid: node_exit.destination_node_uuid})
+
+        flow_context
+
+      _ ->
+        # we return the current context in case of error for backward compatibility with
+        # the messages which will not send any ID in webhook
+        context
+    end
+  end
+
+  defp maybe_update_current_node(context, _flow, _message), do: context
 end
