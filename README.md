@@ -21,7 +21,7 @@
      * [Gupshup](#Gupshup)
      * [Oban](#oban)
 * [Clone Backend Repository](#2-clone-backend-repository)
-* [Installed frontend](#6-Installed-frontend)
+* [Install Frontend](#6-Install-Frontend)
 * [Unit Testing](#8-unit-testing)
 * [Optional - Setup HSM Messaging](#optional---setup-hsm-messaging)
 * [Optional - Using NGROK](#optional---using-ngrok)
@@ -285,7 +285,7 @@ If it returns nothing, add these 3 lines to the hosts file:
 
  Now you can visit [`https://glific.test:4001`](https://glific.test:4001) from your browser.
 
-## 6. Installed frontend
+## 6. Install Frontend
   [Glific Frontend Repo](https://github.com/glific/glific-frontend)
 
 ### Frontend credentials
