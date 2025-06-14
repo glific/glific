@@ -12,7 +12,7 @@
 
 ## Table of Contents
 
-* [Pre-requisites](#pre-requisites)
+* [Pre-requisites](#1-pre-requisites)
 * [Clone Backend Repository](#clone-backend-repository)
   * [Software Dependencies](#software-dependencies)
     * [Erlang / Elixir](#erlang--elixir)
