@@ -16,7 +16,7 @@
    * [Software Dependencies](#software-dependencies)
      * [Erlang / Elixir](#erlang--elixir)
      * [Postgres](#postgres)
-     * [mkcert](#mkcert)
+     * [mkcert](#3-Install-certificate-Use-SSL-for-frontend-and-backend)
    * [External Services](#4-external-services)
      * [Gupshup](#Gupshup)
      * [Oban](#oban)
