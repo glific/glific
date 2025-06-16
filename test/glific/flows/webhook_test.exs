@@ -511,4 +511,52 @@ defmodule Glific.Flows.WebhookTest do
     jobs = all_enqueued(worker: Webhook, prefix: "global")
     assert 1 == length(jobs)
   end
+
+  test "after executing a webhook the uuids_seen value should be preserved",
+       attrs do
+    Tesla.Mock.mock(fn
+      %{url: "https://api.openai.com/v1/chat/completions"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            "choices" => [
+              %{
+                "message" => %{
+                  "content" => "{\"maximum_value\":\"10\",\"minimum_value\":\"1\"}"
+                }
+              }
+            ]
+          }
+        }
+    end)
+
+    flow_uuid = Ecto.UUID.generate()
+
+    attrs = %{
+      flow_id: 1,
+      flow_uuid: flow_uuid,
+      contact_id: Fixtures.contact_fixture(attrs).id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+
+    context =
+      context
+      |> Repo.preload([:contact, :flow])
+      |> Map.put(:uuids_seen, %{flow_uuid => 1})
+
+    action = %Action{
+      headers: %{"Accept" => "application/json"},
+      method: "FUNCTION",
+      url: "parse_via_gpt_vision",
+      body: Jason.encode!(@action_body)
+    }
+
+    assert Webhook.execute(action, context) == nil
+    [job] = all_enqueued(worker: Webhook, prefix: "global")
+
+    context_map = job.args["context"]
+    assert context_map["uuids_seen"] == %{flow_uuid => 1}
+  end
 end

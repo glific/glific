@@ -474,7 +474,7 @@ defmodule Glific.ContactsTest do
       assert count == 1
     end
 
-    test "import_contact/3 does not insert contacts without country code prefix"do
+    test "import_contact/3 does not insert contacts without country code prefix" do
       file = get_tmp_file()
 
       [
@@ -508,7 +508,8 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:admin])
 
-      data = "name,phone,Language,opt_in\ncontact_test,+919989329297,english,2021-03-09 12:34:25\n"
+      data =
+        "name,phone,Language,opt_in\ncontact_test,+919989329297,english,2021-03-09 12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
 
