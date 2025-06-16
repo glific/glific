@@ -123,21 +123,20 @@ defmodule Glific.Seeds.SeedsMigration do
       shortcode: "common_otp",
       label: "common_otp",
       body: """
-      Hello {{1}},
-
-      Please find the verification number is {{2}} for resetting your account.
+      {{1}} is your verification code. For your security, do not share this code.
       """,
       type: :text,
-      category: "UTILITY",
+      category: "AUTHENTICATION",
       example: """
-      Hello [Anil],
-
-      Please find the verification number is [112233] for resetting your account.
+      [112233] is your verification code. For your security, do not share this code.
       """,
+      has_buttons: true,
       is_active: true,
       is_source: false,
       language_id: 1,
-      organization_id: org_id
+      organization_id: org_id,
+      button_type: :otp,
+      buttons: [%{"type" => "OTP", "text" => "Copy OTP", "otp_type" => "COPY_CODE"}]
     }
     |> Templates.create_session_template()
   end
