@@ -13,6 +13,7 @@ defmodule Glific.TemplatesTest do
     Providers.Gupshup.PartnerAPI,
     Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
+    Seeds.SeedsMigration,
     Settings,
     Templates,
     Templates.SessionTemplate,
@@ -2050,7 +2051,7 @@ defmodule Glific.TemplatesTest do
     end)
 
     assert {:ok, %SessionTemplate{} = template} =
-             Glific.Seeds.SeedsMigration.submit_otp_template_for_org(attrs.organization_id)
+             SeedsMigration.submit_otp_template_for_org(attrs.organization_id)
 
     assert template.label == "common_otp"
     assert template.uuid == otp_uuid
