@@ -73,6 +73,8 @@ If you get any warnings for missing packages, just install them using `apt` and 
 
 > **Note**: It is important to use `asdf` to install Erlang and Elixir.
 
+> **Note**: Windows users should use WSL (Windows Subsystem for Linux) to install and manage Elixir and Erlang via asdf
+
 #### Postgres
 
 Install from [PostgreSQL official site](https://www.postgresql.org/download/)
@@ -163,7 +165,7 @@ If it returns nothing, add these 3 lines to the hosts file:
  Oban is **required** before running mix for Glific to operate.
 
  **For contributors on social impact projects (including NGOs):**
- Please get in touch with the team on Discord and get a limited-time key. Once they're provided to you, run: 
+ Please get in touch with the team on [Discord](https://discord.gg/me6NCMu) and get a limited-time key. Once they're provided to you, run: 
 
  **For others, if you want to use the free Oban solution**
  People have created and contributed versions of the code to allow Glific to work with the free version of Oban: https://github.com/glific/glific/pull/2391
