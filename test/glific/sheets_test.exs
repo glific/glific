@@ -164,6 +164,7 @@ defmodule Glific.SheetsTest do
 
       assert h.row_data["key"] == "apple"
       assert h.row_data["val"] == "3"
+      assert h.row_data[""] == ["3", "4"]
     end
 
     test "create_sheet/1, Handling case where multiple headers having same name", %{
@@ -188,6 +189,7 @@ defmodule Glific.SheetsTest do
 
       assert h.row_data["key"] == "apple"
       assert h.row_data["val"] == "3"
+      assert h.row_data["same"] == ["3", "2"]
     end
   end
 end
