@@ -104,7 +104,7 @@ defmodule Glific.EraseTest do
       |> Repo.update()
     end
 
-    # > 2 month old messages
+    # < 2 month old messages
     for _i <- 0..5 do
       Fixtures.message_fixture(%{
         organization_id: attrs.organization_id,
@@ -141,7 +141,7 @@ defmodule Glific.EraseTest do
       |> Repo.update()
     end
 
-    # > 2 month old messages
+    # < 2 month old messages
     for _i <- 0..5 do
       Fixtures.message_fixture(%{
         organization_id: attrs.organization_id,
@@ -179,7 +179,7 @@ defmodule Glific.EraseTest do
       |> Repo.update()
     end
 
-    # > 2 month old messages
+    # < 2 month old messages
     for _i <- 0..5 do
       Fixtures.message_fixture(%{
         organization_id: attrs.organization_id,

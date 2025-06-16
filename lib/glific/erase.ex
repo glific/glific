@@ -336,7 +336,7 @@ defmodule Glific.Erase do
         |> Repo.query([], timeout: 400_000, skip_organization_id: true)
       rescue
         err ->
-          Logger.error("Messages purge timedout #{inspect(err)}")
+          Logger.error("Messages purge timed out #{inspect(err)}")
           {:ok, %{num_rows: 0}}
       end
 
