@@ -42,10 +42,10 @@ defmodule Glific.Erase do
     __MODULE__.new(%{
       batch_size:
         batch_size ||
-          purge_config[:msg_delete_batch_size] |> Glific.parse_maybe_integer!(),
+          Keyword.get(purge_config, :msg_delete_batch_size) |> Glific.parse_maybe_integer!(),
       max_rows_to_delete:
         max_rows_to_delete ||
-          purge_config[:max_msg_rows_to_delete] |> Glific.parse_maybe_integer!(),
+          Keyword.get(purge_config, :max_msg_rows_to_delete) |> Glific.parse_maybe_integer!(),
       sleep_after_delete?: sleep_after_delete?
     })
     |> Oban.insert()
