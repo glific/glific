@@ -37,17 +37,15 @@ defmodule Glific.Erase do
         max_rows_to_delete \\ nil,
         sleep_after_delete? \\ true
       ) do
-    batch_size =
-      batch_size ||
-        Application.get_env(:glific, :msg_delete_batch_size) |> Glific.parse_maybe_integer!()
-
-    max_rows_to_delete =
-      max_rows_to_delete ||
-        Application.get_env(:glific, :max_msg_rows_to_delete) |> Glific.parse_maybe_integer!()
+    purge_config = Application.get_env(:glific, Glific.Erase)
 
     __MODULE__.new(%{
-      batch_size: batch_size,
-      max_rows_to_delete: max_rows_to_delete,
+      batch_size:
+        batch_size ||
+          purge_config[:msg_delete_batch_size] |> Glific.parse_maybe_integer!(),
+      max_rows_to_delete:
+        max_rows_to_delete ||
+          purge_config[:max_msg_rows_to_delete] |> Glific.parse_maybe_integer!(),
       sleep_after_delete?: sleep_after_delete?
     })
     |> Oban.insert()
