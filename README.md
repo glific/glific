@@ -18,7 +18,7 @@
      * [Postgres](#postgres)
      * [mkcert](##3-install-certificate---use-ssl-for-frontend-and-backend)
 * [External Services](#4-external-services)
-   * [Gupshup](#Gupshup)
+   * [Gupshup](#gupshup)
    * [Oban](#oban)
 * [Clone Backend Repository](#2-clone-backend-repository)
 * [Install Frontend](#6-Install-Frontend)
@@ -177,8 +177,8 @@ If it returns nothing, add these 3 lines to the hosts file:
  with your keys
 
  **For production use:**
- You must purchase a license.
- When purchasing, you must buy WEB+PRO.
+ You must purchase a license for Oban Pro.
+ Note: Oban Web is now open source and does not require a license.
  After purchasing,
  Go to account and run this command in glific_backend:
 
