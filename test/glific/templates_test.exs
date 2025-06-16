@@ -2051,11 +2051,13 @@ defmodule Glific.TemplatesTest do
 
     assert {:ok, %SessionTemplate{} = template} =
              Glific.Seeds.SeedsMigration.submit_otp_template_for_org(attrs.organization_id)
-             |> IO.inspect()
 
     assert template.label == "common_otp"
     assert template.uuid == otp_uuid
     assert template.category == "AUTHENTICATION"
-    assert template.buttons == [%{"otp_type" => "COPY_CODE", "text" => "Copy OTP", "type" => "OTP"}]
+
+    assert template.buttons == [
+             %{"otp_type" => "COPY_CODE", "text" => "Copy OTP", "type" => "OTP"}
+           ]
   end
 end
