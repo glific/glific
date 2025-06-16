@@ -242,9 +242,9 @@ defmodule Glific.Sheets do
           key
           |> String.downcase()
           |> String.replace(" ", "_")
-          |> trim_string()
+          |> trim_value()
 
-        Map.put(acc, key, value |> trim_string())
+        Map.put(acc, key, value |> trim_value())
       end)
 
     errors =
@@ -415,10 +415,12 @@ defmodule Glific.Sheets do
     :ok
   end
 
-  @spec trim_string(String.t()) :: String.t()
-  defp trim_string(str) do
-    str
+  @spec trim_value(any()) :: any()
+  defp trim_value(value) when is_binary(value) do
+    value
     |> String.trim()
     |> String.replace(@invisible_unicode_range, "")
   end
+
+  defp trim_value(value), do: value
 end
