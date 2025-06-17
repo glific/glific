@@ -809,7 +809,7 @@ defmodule Glific.Flows.ActionTest do
       results: %{"result1" => "shyness"}
     }
 
-    # preload contact
+    # preload wa_group
     {:ok, context} = FlowContext.create_flow_context(context_attrs)
     set_run_result_context = Repo.preload(context, [:flow, :wa_group])
 
