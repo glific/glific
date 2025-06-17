@@ -185,5 +185,29 @@ defmodule GlificWeb.Schema.ProfileTest do
 
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "profiles"])) == 1
+
+    # Test that listing without is_active filter returns all profiles
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"organization_id" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    profiles = get_in(query_data, [:data, "profiles"])
+    assert length(profiles) == 2
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"organization_id" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    profiles = get_in(query_data, [:data, "profiles"])
+    assert length(profiles) == 2
+    assert Enum.any?(profiles, &(&1["name"] == "john"))
+    assert Enum.any?(profiles, &(&1["name"] == "user"))
   end
 end
