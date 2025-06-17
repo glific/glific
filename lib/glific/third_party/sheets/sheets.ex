@@ -210,6 +210,7 @@ defmodule Glific.Sheets do
             "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{inspect(err)}"
           )
 
+          Glific.Metrics.increment("Sheets Sync Failed")
           create_sync_fail_notification(sheet)
           {:halt, Map.put(acc, export_url, err)}
       end)
@@ -295,6 +296,10 @@ defmodule Glific.Sheets do
     %SheetData{}
     |> SheetData.changeset(attrs)
     |> Repo.insert()
+    |> case do
+      {:ok, _sheet_data} -> Glific.Metrics.increment("Sheets Sync Successful")
+      {:error, _changeset} -> Glific.Metrics.increment("Sheets Sync Failed")
+    end
   end
 
   @doc """
