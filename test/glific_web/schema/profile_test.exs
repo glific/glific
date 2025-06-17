@@ -179,7 +179,7 @@ defmodule GlificWeb.Schema.ProfileTest do
     result =
       auth_query_gql_by(:list, user,
         variables: %{
-          "filter" => %{"organization_id" => 1}
+          "filter" => %{"organization_id" => 1, "is_active" => true}
         }
       )
 
