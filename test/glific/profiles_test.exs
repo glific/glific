@@ -347,10 +347,15 @@ defmodule Glific.ProfilesTest do
 
       Profiles.handle_flow_action(:create_profile, context, action)
 
+      indexed_profiles = Profiles.get_indexed_profile(contact)
+
+      {_, profile2_index} =
+        Enum.find(indexed_profiles, fn {profile, _index} -> profile.name == "profile2" end)
+
       switch_action = %Action{
         id: nil,
         type: "set_contact_profile",
-        value: "2",
+        value: "#{profile2_index}",
         profile_type: "Switch Profile"
       }
 
@@ -622,9 +627,9 @@ defmodule Glific.ProfilesTest do
     assert length(profiles) == 3
   end
 
-  test "creating a new profile should not switch to the new profile" do
+  test "creating a new profile should not switch to the new profile", attrs do
     {:ok, contact} =
-      Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: 1})
+      Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: attrs.organization_id})
 
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Multiple Profile Creation Flow"})
 
