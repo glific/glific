@@ -202,6 +202,7 @@ defmodule Glific.Sheets do
           }
           |> create_sheet_data()
 
+          Glific.Metrics.increment("Sheets Sync Successful")
           {:cont, Map.merge(acc, parsed_rows.errors)}
 
         {:error, err}, acc ->
@@ -296,10 +297,6 @@ defmodule Glific.Sheets do
     %SheetData{}
     |> SheetData.changeset(attrs)
     |> Repo.insert()
-    |> case do
-      {:ok, _sheet_data} -> Glific.Metrics.increment("Sheets Sync Successful")
-      {:error, _changeset} -> Glific.Metrics.increment("Sheets Sync Failed")
-    end
   end
 
   @doc """
