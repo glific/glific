@@ -120,8 +120,8 @@ defmodule Glific.Seeds.SeedsMigration do
   def submit_otp_template_for_org(org_id) do
     %{
       is_hsm: true,
-      shortcode: "common_otp",
-      label: "common_otp",
+      shortcode: "verify_otp",
+      label: "verify_otp",
       body: """
       {{1}} is your verification code. For your security, do not share this code.
       """,
