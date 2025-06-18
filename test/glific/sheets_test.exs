@@ -141,5 +141,55 @@ defmodule Glific.SheetsTest do
       assert t2.row_data["key"] == "1/10/2026"
       assert t2.row_data["message_english"] == "Hi welcome to Glific 4"
     end
+
+    test "create_sheet/1, Handling case where some column having no headers", %{
+      organization_id: organization_id
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: "Key,Val,,\r\napple,3,3,4"
+          }
+      end)
+
+      attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
+
+      assert {:ok, %Sheet{} = sheet} = Sheets.create_sheet(attrs)
+
+      [h | _] =
+        SheetData
+        |> where([sd], sd.sheet_id == ^sheet.id)
+        |> Repo.all([])
+
+      assert h.row_data["key"] == "apple"
+      assert h.row_data["val"] == "3"
+      assert h.row_data[""] == ["3", "4"]
+    end
+
+    test "create_sheet/1, Handling case where multiple headers having same name", %{
+      organization_id: organization_id
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: "Key,Val,same,samed,same\r\napple,3,3,4,2"
+          }
+      end)
+
+      attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
+
+      assert {:ok, %Sheet{} = sheet} = Sheets.create_sheet(attrs)
+
+      [h | _] =
+        SheetData
+        |> where([sd], sd.sheet_id == ^sheet.id)
+        |> Repo.all([])
+
+      assert h.row_data["key"] == "apple"
+      assert h.row_data["val"] == "3"
+      assert h.row_data["same"] == ["3", "2"]
+    end
   end
 end
