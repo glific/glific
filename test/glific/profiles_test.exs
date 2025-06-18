@@ -652,6 +652,8 @@ defmodule Glific.ProfilesTest do
     {:ok, contact} =
       Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: 1})
 
-    assert contact.active_profile_id == nil
+    default_profile = Repo.get_by(Profile, contact_id: context.contact.id, is_default: true)
+
+    assert contact.active_profile_id == default_profile.id
   end
 end

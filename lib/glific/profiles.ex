@@ -216,9 +216,10 @@ defmodule Glific.Profiles do
       organization_id: context.contact.organization_id
     }
 
-    with {:ok, _default_profile} <- maybe_setup_default_profile(attrs, context),
+    with {:ok, default_profile} <- maybe_setup_default_profile(attrs, context),
          {:ok, _profile} <- create_profile(attrs) do
-      {context, Messages.create_temp_message(context.organization_id, "Success")}
+      profile = get_action_with_index(context, action, default_profile)
+      handle_flow_action(:switch_profile, context, profile)
     else
       {:error, _error} ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
