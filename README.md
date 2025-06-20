@@ -116,7 +116,7 @@ If it returns nothing, add these 3 lines to the hosts file:
 127.0.0.1 api.glific.test
 127.0.0.1 postgres
 ```
-### For Windows the steps is as Follows:
+### For Windows, the steps is are Follows:
 
 ```bash
 mkcert --install
