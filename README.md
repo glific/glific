@@ -116,7 +116,7 @@ If it returns nothing, add these 3 lines to the hosts file:
 127.0.0.1 api.glific.test
 127.0.0.1 postgres
 ```
-### For Windows, the steps is are Follows:
+### For Windows, the steps is are as Follows:
 
 ```bash
 mkcert --install
@@ -241,7 +241,7 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
   At this point, you may get an error saying `password authentication failed for user "postgres"`, in which case, you need to configure the postgres server properly:
 
  ```bash
- createuser postgres -s # needed for more recent versions of postgres on MacOSgit
+ createuser postgres -s # needed for more recent versions of postgres on MacOS
  sudo -u postgres psql
  ALTER USER postgres WITH PASSWORD 'postgres';
  ```
