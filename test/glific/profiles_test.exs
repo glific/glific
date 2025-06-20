@@ -274,38 +274,38 @@ defmodule Glific.ProfilesTest do
 
       context = Repo.preload(context, [:flow, :contact])
 
-      action = %Action{
+      create_action = %Action{
         id: nil,
         type: "set_contact_profile",
         value: %{"name" => "profile2", "type" => "parent"},
         profile_type: "Create Profile"
       }
 
-      Profiles.handle_flow_action(:create_profile, context, action)
+      Profiles.handle_flow_action(:create_profile, context, create_action)
 
       {:ok, non_default_profile2} =
         Repo.fetch_by(Profile, %{name: "profile2", contact_id: contact.id})
 
-      action = %Action{
+      switch_action = %Action{
         id: nil,
         type: "set_contact_profile",
         value: "3",
         profile_type: "Switch Profile"
       }
 
-      Profiles.handle_flow_action(:switch_profile, context, action)
+      Profiles.handle_flow_action(:switch_profile, context, switch_action)
 
       {:ok, contact} = Repo.fetch_by(Contact, %{name: "NGO Main Account"})
       assert contact.active_profile_id == non_default_profile2.id
 
-      action = %Action{
+      deactivate_action = %Action{
         id: nil,
         value: "2",
         type: "set_contact_profile",
         profile_type: "Deactivate Profile"
       }
 
-      Profiles.handle_flow_action(:deactivate_profile, context, action)
+      Profiles.handle_flow_action(:deactivate_profile, context, deactivate_action)
 
       assert {:ok, %Profile{is_active: false}} =
                Repo.fetch_by(Profile, %{id: non_default_profile1.id})
@@ -338,18 +338,18 @@ defmodule Glific.ProfilesTest do
 
       context = Repo.preload(context, [:flow, :contact])
 
-      action = %Action{
+      create_action = %Action{
         id: nil,
         type: "set_contact_profile",
         value: %{"name" => "profile2", "type" => "parent"},
         profile_type: "Create Profile"
       }
 
-      Profiles.handle_flow_action(:create_profile, context, action)
+      Profiles.handle_flow_action(:create_profile, context, create_action)
 
       indexed_profiles = Profiles.get_indexed_profile(contact)
 
-      {profile, profile2_index} =
+      {profile2, profile2_index} =
         Enum.find(indexed_profiles, fn {profile, _index} -> profile.name == "profile2" end)
 
       switch_action = %Action{
@@ -362,17 +362,17 @@ defmodule Glific.ProfilesTest do
       Profiles.handle_flow_action(:switch_profile, context, switch_action)
 
       {:ok, contact} = fetch_contact.("NGO Main Account")
-      assert contact.active_profile_id == profile.id
+      assert contact.active_profile_id == profile2.id
 
-      action = %Action{
+      deactivate_action = %Action{
         id: nil,
-        value: "2",
+        value: "#{profile2_index}",
         type: "set_contact_profile",
         profile_type: "Deactivate Profile"
       }
 
       context = Repo.preload(context, [:contact], force: true)
-      Profiles.handle_flow_action(:deactivate_profile, context, action)
+      Profiles.handle_flow_action(:deactivate_profile, context, deactivate_action)
 
       {:ok, default_profile} = fetch_profile.(%{is_default: true})
       {:ok, contact} = fetch_contact.("NGO Main Account")
@@ -424,7 +424,10 @@ defmodule Glific.ProfilesTest do
 
       indexed_profiles = Profiles.get_indexed_profile(contact)
 
-      {_, profile2_index} =
+      {_profile1, profile1_index} =
+        Enum.find(indexed_profiles, fn {profile, _index} -> profile.name == "profile1" end)
+
+      {profile2, profile2_index} =
         Enum.find(indexed_profiles, fn {profile, _index} -> profile.name == "profile2" end)
 
       switch_action = %Action{
@@ -435,19 +438,6 @@ defmodule Glific.ProfilesTest do
       }
 
       Profiles.handle_flow_action(:switch_profile, context, switch_action)
-
-      {:ok, profile} = fetch_profile.(%{name: "profile2"})
-
-      {:ok, contact} = fetch_contact.("NGO Main Account")
-      assert contact.active_profile_id == profile.id
-
-      indexed_profiles = Profiles.get_indexed_profile(contact)
-
-      {_profile1, profile1_index} =
-        Enum.find(indexed_profiles, fn {profile, _index} -> profile.name == "profile1" end)
-
-      {profile2, _profile2_index} =
-        Enum.find(indexed_profiles, fn {profile, _index} -> profile.name == "profile2" end)
 
       {:ok, contact} = fetch_contact.("NGO Main Account")
       assert contact.active_profile_id == profile2.id
