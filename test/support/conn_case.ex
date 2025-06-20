@@ -31,7 +31,12 @@ defmodule GlificWeb.ConnCase do
       import Plug.Conn
       import Phoenix.ConnTest
       import GlificWeb.ConnCase
+      alias Glific.Repo
 
+      import Ecto
+      import Ecto.Changeset
+      import Ecto.Query
+      import Glific.DataCase
       alias GlificWeb.Router.Helpers, as: Routes
 
       # The default endpoint for testing

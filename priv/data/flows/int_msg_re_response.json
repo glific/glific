@@ -1,0 +1,236 @@
+{
+  "_ui": {
+    "nodes": {
+      "06755ec1-78bb-41ce-bac3-3119c4a8f609": {
+        "type": "wait_for_response",
+        "config": { "cases": {} },
+        "position": { "top": 100, "left": 320 }
+      },
+      "5824604b-d9b6-429a-b442-153c091756fe": {
+        "type": "execute_actions",
+        "position": { "top": 560, "left": 300 }
+      },
+      "62ff6da6-00f2-400d-ae43-253470d1a6be": {
+        "type": "execute_actions",
+        "position": { "top": 0, "left": 0 }
+      },
+      "689f65c5-3e2d-4415-8a8a-46b3c67f3160": {
+        "type": "execute_actions",
+        "position": { "top": 300, "left": 720 }
+      },
+      "f54b0868-8fb0-42fd-a9fc-8e15274bcea9": {
+        "type": "wait_for_response",
+        "config": { "cases": {} },
+        "position": { "top": 420, "left": 540 }
+      }
+    }
+  },
+  "name": "interactive_re_response",
+  "type": "messaging",
+  "uuid": "0633e385-0625-4432-98f7-e780a73944aa",
+  "vars": ["0633e385-0625-4432-98f7-e780a73944aa"],
+  "nodes": [
+    {
+      "uuid": "62ff6da6-00f2-400d-ae43-253470d1a6be",
+      "exits": [
+        {
+          "uuid": "f002d8fa-ca1c-44f2-a294-ee2d575d6f0d",
+          "destination_uuid": "06755ec1-78bb-41ce-bac3-3119c4a8f609"
+        }
+      ],
+      "actions": [
+        {
+          "id": 16,
+          "name": "ipls",
+          "text": "{\"body\":\"know about ipl\",\"globalButtons\":[{\"title\":\"choose team\",\"type\":\"text\"}],\"items\":[{\"options\":[{\"description\":\"blr\",\"title\":\"RCB\",\"type\":\"text\"},{\"description\":\"chennai\",\"title\":\"CSK\",\"type\":\"text\"},{\"description\":\"Mumbai\",\"title\":\"MI\",\"type\":\"text\"},{\"description\":\"Kolkata\",\"title\":\"KKR\",\"type\":\"text\"},{\"description\":\"Delhi\",\"title\":\"DC\",\"type\":\"text\"}],\"subtitle\":\"IPL teams\",\"title\":\"IPL teams\"}],\"title\":\"ipls\",\"type\":\"list\"}",
+          "type": "send_interactive_msg",
+          "uuid": "3a8d8483-c1ec-4839-ac05-f0c09240f9f4",
+          "labels": [],
+          "attachment_url": "",
+          "attachment_type": ""
+        }
+      ]
+    },
+    {
+      "uuid": "06755ec1-78bb-41ce-bac3-3119c4a8f609",
+      "exits": [
+        {
+          "uuid": "d2d1d1f5-cfb0-46c3-a0d4-b2342708f0dd",
+          "destination_uuid": "689f65c5-3e2d-4415-8a8a-46b3c67f3160"
+        },
+        {
+          "uuid": "14469aa8-241a-4635-80a0-b015d118b34a",
+          "destination_uuid": "689f65c5-3e2d-4415-8a8a-46b3c67f3160"
+        },
+        {
+          "uuid": "ec9a8b93-94e1-49f4-bea0-127818fbd1b4",
+          "destination_uuid": "689f65c5-3e2d-4415-8a8a-46b3c67f3160"
+        },
+        {
+          "uuid": "cf059727-28d1-40d0-8db7-defd916b2e9a",
+          "destination_uuid": "689f65c5-3e2d-4415-8a8a-46b3c67f3160"
+        },
+        {
+          "uuid": "bfaa5ce4-e336-48d7-bac8-1d93bc188e8f",
+          "destination_uuid": "689f65c5-3e2d-4415-8a8a-46b3c67f3160"
+        },
+        {
+          "uuid": "96892d6d-6f58-46ed-8171-d9fd921adba6",
+          "destination_uuid": "689f65c5-3e2d-4415-8a8a-46b3c67f3160"
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "wait": { "type": "msg" },
+        "cases": [
+          {
+            "type": "has_any_word",
+            "uuid": "109fef31-2638-4948-a620-51a58bdb21bc",
+            "arguments": ["RCB"],
+            "translations": { "en": { "arguments": ["RCB"] } },
+            "category_uuid": "6b3d9891-7928-467d-855f-7120e4048ee6"
+          },
+          {
+            "type": "has_any_word",
+            "uuid": "8a1b8fb7-4241-47a5-8746-b51361137b92",
+            "arguments": ["CSK"],
+            "translations": { "en": { "arguments": ["CSK"] } },
+            "category_uuid": "47f6a119-ac2a-44e7-8792-0effd0181967"
+          },
+          {
+            "type": "has_any_word",
+            "uuid": "3dc3a54b-37f7-47f4-9c17-9cf77b9e2642",
+            "arguments": ["MI"],
+            "translations": { "en": { "arguments": ["MI"] } },
+            "category_uuid": "562e9771-ee5d-4619-b9c2-231f97949302"
+          },
+          {
+            "type": "has_any_word",
+            "uuid": "bd889aa6-8b0f-4070-9e55-0d4561ccc389",
+            "arguments": ["KKR"],
+            "translations": { "en": { "arguments": ["KKR"] } },
+            "category_uuid": "d3235c60-e105-4a99-b1fe-475ca511e1dc"
+          },
+          {
+            "type": "has_any_word",
+            "uuid": "4b7c2621-6b86-49e1-b0df-0a94201e4ba8",
+            "arguments": ["DC"],
+            "translations": { "en": { "arguments": ["DC"] } },
+            "category_uuid": "02aeed44-de7a-4cff-b1f2-c8928c45c692"
+          }
+        ],
+        "operand": "@input.text",
+        "categories": [
+          {
+            "name": "RCB",
+            "uuid": "6b3d9891-7928-467d-855f-7120e4048ee6",
+            "exit_uuid": "d2d1d1f5-cfb0-46c3-a0d4-b2342708f0dd"
+          },
+          {
+            "name": "CSK",
+            "uuid": "47f6a119-ac2a-44e7-8792-0effd0181967",
+            "exit_uuid": "14469aa8-241a-4635-80a0-b015d118b34a"
+          },
+          {
+            "name": "MI",
+            "uuid": "562e9771-ee5d-4619-b9c2-231f97949302",
+            "exit_uuid": "ec9a8b93-94e1-49f4-bea0-127818fbd1b4"
+          },
+          {
+            "name": "KKR",
+            "uuid": "d3235c60-e105-4a99-b1fe-475ca511e1dc",
+            "exit_uuid": "cf059727-28d1-40d0-8db7-defd916b2e9a"
+          },
+          {
+            "name": "DC",
+            "uuid": "02aeed44-de7a-4cff-b1f2-c8928c45c692",
+            "exit_uuid": "bfaa5ce4-e336-48d7-bac8-1d93bc188e8f"
+          },
+          {
+            "name": "Other",
+            "uuid": "300d291e-ea27-4824-8b99-fb534b826c79",
+            "exit_uuid": "96892d6d-6f58-46ed-8171-d9fd921adba6"
+          }
+        ],
+        "result_name": "result_1",
+        "default_category_uuid": "300d291e-ea27-4824-8b99-fb534b826c79"
+      },
+      "actions": []
+    },
+    {
+      "uuid": "689f65c5-3e2d-4415-8a8a-46b3c67f3160",
+      "exits": [
+        {
+          "uuid": "162a4822-467c-429c-8c9d-c98f7ea3ed92",
+          "destination_uuid": "f54b0868-8fb0-42fd-a9fc-8e15274bcea9"
+        }
+      ],
+      "actions": [
+        {
+          "text": "what u think, who will win, @results.result_1?",
+          "type": "send_msg",
+          "uuid": "91525488-ec93-4c40-ba57-283df802b4f5",
+          "labels": [],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "f54b0868-8fb0-42fd-a9fc-8e15274bcea9",
+      "exits": [
+        {
+          "uuid": "54de5ee6-08d8-4e15-b2c2-1d90a394b5f5",
+          "destination_uuid": "5824604b-d9b6-429a-b442-153c091756fe"
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "wait": { "type": "msg" },
+        "cases": [],
+        "operand": "@input.text",
+        "categories": [
+          {
+            "name": "All Responses",
+            "uuid": "7de9ec67-f80f-46c9-8236-a3c4353cdb51",
+            "exit_uuid": "54de5ee6-08d8-4e15-b2c2-1d90a394b5f5"
+          }
+        ],
+        "result_name": "result_2",
+        "default_category_uuid": "7de9ec67-f80f-46c9-8236-a3c4353cdb51"
+      },
+      "actions": []
+    },
+    {
+      "uuid": "5824604b-d9b6-429a-b442-153c091756fe",
+      "exits": [
+        {
+          "uuid": "9a101c35-ff75-4563-aa73-42b5c189aec3",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "text": "thanks, so @results.result_2 it is!!",
+          "type": "send_msg",
+          "uuid": "833a9f8e-9222-4ee1-a493-dd7bc0faaa2f",
+          "labels": [],
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    }
+  ],
+  "language": "base",
+  "localization": {
+    "en": {
+      "109fef31-2638-4948-a620-51a58bdb21bc": { "arguments": ["RCB"] },
+      "3dc3a54b-37f7-47f4-9c17-9cf77b9e2642": { "arguments": ["MI"] },
+      "4b7c2621-6b86-49e1-b0df-0a94201e4ba8": { "arguments": ["DC"] },
+      "8a1b8fb7-4241-47a5-8746-b51361137b92": { "arguments": ["CSK"] },
+      "bd889aa6-8b0f-4070-9e55-0d4561ccc389": { "arguments": ["KKR"] }
+    }
+  },
+  "spec_version": "13.2.0",
+  "expire_after_minutes": 10080
+}
