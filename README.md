@@ -160,8 +160,13 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  Oban is **required** before running mix for Glific to operate.
 
  **For contributors on social impact projects (including NGOs):**
- Please get in touch with the team on [Discord](https://discord.gg/me6NCMu) and get a limited-time key. Once they're provided to you, run: 
-
+ 
+  Please get in touch with the team on Discord and request a limited-time Oban Pro key.
+  Once provided, run the following command to add the Oban repository with your credentials:
+   ```bash
+ mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
+ ```
+  
  **For others, if you want to use the free Oban solution**
  People have created and contributed versions of the code to allow Glific to work with the free version of Oban: https://github.com/glific/glific/pull/2391
 
