@@ -164,62 +164,63 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
   Please get in touch with the team on Discord and request a limited-time Oban Pro key.
   Once provided, run the following command to add the Oban repository with your credentials:
    ```bash
- mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
- ```
+  mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
+   ```
   
  **For others, if you want to use the free Oban solution**
- People have created and contributed versions of the code to allow Glific to work with the free version of Oban: https://github.com/glific/glific/pull/2391
-
- ```bash
- mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
- ```
-
- with your keys
+ People have contributed code changes to allow Glific to work with the free version of Oban. You can view the details here: https://github.com/glific/glific/pull/2391
 
  **For production use:**
- You must purchase a license for Oban Pro.
- Note: Oban Web is now open source and does not require a license.
- After purchasing,
- Go to account and run this command in glific_backend:
+ 
+  *You must purchase a license for Oban Pro to use advanced features in production.
+  
+  *Note: Oban Web is now open source and does not require a license.
+  
+  *If you're using Oban Pro, after purchasing the license:
+      
 
- ```bash
- mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
- ```
+   Go to your Oban account dashboard.
+   
+   Run the following command inside your glific_backend directory:
 
- where public key "SHA256:4/abc/edf/gef+aIWPc" is replaced by your public key and auth key "abcdefghi" is replaced by your auth key.
+  ```bash
+     mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
+  ```
 
- Make sure your key is in the list:
+   where public key "SHA256:4/abc/edf/gef+aIWPc" is replaced by your public key and auth key "abcdefghi" is replaced by your auth key.
 
- ```bash
- mix hex.repo list
- ```
+   Make sure your key is in the list:
 
-    Name        URL                             Public key                                          Auth key
-    hexpm       https://repo.hex.pm             SHA256:abc/edf/gef+aIWPc    
-    oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
+   ```bash
+   mix hex.repo list
+   ```
 
- If you see two Auth key entries - caused by Oban moving from a public to a private repository - it will fail.
- This is what an example of failing looks like:
+     Name        URL                             Public key                                          Auth key
+     hexpm       https://repo.hex.pm             SHA256:abc/edf/gef+aIWPc    
+     oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
 
-    Name        URL                             Public key                                          Auth key
-    hexpm:oban  https://repo.hex.pm/repos/oban  SHA256:abc/edf/gef+aIWPc     abdedcqweasdj__KEY_AUTH__asdafasdf
-    oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
+   If you see two Auth key entries - caused by Oban moving from a public to a private repository - it will fail.
+   This is what an example of failing looks like:
 
- This is wrong. When you run mix deps.get as is, it will try to fetch from the public repository instead of the private one and fail.
- Simply follow the instructions below to remove the public key:
+     Name        URL                             Public key                                          Auth key
+     hexpm:oban  https://repo.hex.pm/repos/oban  SHA256:abc/edf/gef+aIWPc     abdedcqweasdj__KEY_AUTH__asdafasdf
+     oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
 
- ```bash
- mix hex.repo remove hexpm:oban
- ```
+   This is wrong. When you run mix deps.get as is, it will try to fetch from the public repository instead of the private one and fail.
+   Simply follow the instructions below to remove the public key:
 
- Now, check again:
+   ```bash
+    mix hex.repo remove hexpm:oban
+   ```
 
- ```bash
- mix hex.repo list
- ```
+  Now, check again:
 
-    Name        URL                             Public key                                          Auth key
-    oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
+   ```bash
+    mix hex.repo list
+   ```
+
+     Name        URL                             Public key                                          Auth key
+     oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
 
 ### 5. Backend - Config
 
