@@ -53,6 +53,9 @@ defmodule GlificWeb.Schema.ProfileTypes do
 
     @desc "search profile by name"
     field(:name, :string)
+
+    @desc "filter by active status"
+    field(:is_active, :boolean)
   end
 
   object :profile_queries do
