@@ -39,4 +39,7 @@ jobs:
 
       # Install ffmpeg for file conversion
       - name: install ffmpeg
-        run: sudo apt-get -y install ffmpeg
+        run: |
+          sudo sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+          sudo apt-get update
+          sudo apt-get -y install ffmpeg

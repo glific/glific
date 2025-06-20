@@ -11,7 +11,7 @@ defmodule Glific.Conversations do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{Contacts.Contact, Messages, Messages.Message, Repo}
+  alias Glific.{Contacts.Contact, Messages, Messages.Message, Repo, Search.Full}
 
   @doc """
   Returns the last M conversations, each conversation not more than N messages
@@ -27,23 +27,39 @@ defmodule Glific.Conversations do
       []
   end
 
-  @spec get_message_ids(map(), map(), map() | nil) :: list()
-  defp get_message_ids(_contact_opts, message_opts, %{filter: %{id: id}}),
-    do: get_message_ids([id], message_opts)
+  @spec get_message_ids(map(), map(), map()) :: list()
+  defp get_message_ids(_contact_opts, message_opts, %{filter: %{id: id}} = args),
+    do: do_get_message_ids([id], message_opts, args)
 
-  defp get_message_ids(_contact_opts, message_opts, %{filter: %{ids: ids}}),
-    do: get_message_ids(ids, message_opts)
+  defp get_message_ids(_contact_opts, message_opts, %{filter: %{ids: ids}} = args),
+    do: do_get_message_ids(ids, message_opts, args)
 
-  @spec get_message_ids(list(), map()) :: list()
-  defp get_message_ids(ids, %{limit: message_limit, offset: message_offset}) do
+  @spec do_get_message_ids(list(), map(), map()) :: list()
+  defp do_get_message_ids(ids, %{limit: message_limit, offset: message_offset}, args) do
     query = from m in Message, as: :m
 
     query
     |> join(:inner, [m: m], c in Contact, as: :c, on: c.id == m.contact_id)
     |> where([m: m], m.contact_id in ^ids and m.receiver_id != m.sender_id)
-    |> add_special_offset(length(ids), message_limit, message_offset)
+    |> apply_offset_or_date_range(args, length(ids), message_limit, message_offset)
     |> select([m: m], m.id)
     |> Repo.all(timeout: 10_000)
+  end
+
+  @spec apply_offset_or_date_range(Ecto.Query.t(), map(), integer(), integer(), integer()) ::
+          Ecto.Query.t()
+  defp apply_offset_or_date_range(
+         query,
+         %{filter: %{date_range: %{from: from_date, to: to_date}}},
+         _ids_length,
+         _limit,
+         _offset
+       ) do
+    Full.run_date_range(query, from_date, to_date)
+  end
+
+  defp apply_offset_or_date_range(query, _args, ids_length, message_limit, message_offset) do
+    add_special_offset(query, ids_length, message_limit, message_offset)
   end
 
   @doc """
