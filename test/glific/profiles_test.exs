@@ -274,38 +274,38 @@ defmodule Glific.ProfilesTest do
 
       context = Repo.preload(context, [:flow, :contact])
 
-      create_action = %Action{
+      action = %Action{
         id: nil,
         type: "set_contact_profile",
         value: %{"name" => "profile2", "type" => "parent"},
         profile_type: "Create Profile"
       }
 
-      Profiles.handle_flow_action(:create_profile, context, create_action)
+      Profiles.handle_flow_action(:create_profile, context, action)
 
       {:ok, non_default_profile2} =
         Repo.fetch_by(Profile, %{name: "profile2", contact_id: contact.id})
 
-      switch_action = %Action{
+      action = %Action{
         id: nil,
         type: "set_contact_profile",
         value: "3",
         profile_type: "Switch Profile"
       }
 
-      Profiles.handle_flow_action(:switch_profile, context, switch_action)
+      Profiles.handle_flow_action(:switch_profile, context, action)
 
       {:ok, contact} = Repo.fetch_by(Contact, %{name: "NGO Main Account"})
       assert contact.active_profile_id == non_default_profile2.id
 
-      deactivate_action = %Action{
+      action = %Action{
         id: nil,
         value: "2",
         type: "set_contact_profile",
         profile_type: "Deactivate Profile"
       }
 
-      Profiles.handle_flow_action(:deactivate_profile, context, deactivate_action)
+      Profiles.handle_flow_action(:deactivate_profile, context, action)
 
       assert {:ok, %Profile{is_active: false}} =
                Repo.fetch_by(Profile, %{id: non_default_profile1.id})
