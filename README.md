@@ -145,6 +145,7 @@ If it returns nothing, add these 3 lines to the hosts file:
 ## 4. External Services
 
 ### Gupshup
+Gupshup is a messaging platform that enables bots and businesses to communicate with users over WhatsApp and other channels. In Glific, we use Gupshup to send and receive WhatsApp messages via API integration.
 
  * Register: [Gupshup Developer](https://www.gupshup.io/developer/home)
  * Create an app and select Access API
