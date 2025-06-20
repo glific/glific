@@ -797,6 +797,42 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.results["video_code"]["value"] == "shyness"
   end
 
+  test "execute an action for WA Group when type is set_run_result", attrs do
+    [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+
+    context_attrs = %{
+      flow_id: flow.id,
+      flow_uuid: Ecto.UUID.generate(),
+      wa_group_id: wa_group.id,
+      organization_id: attrs.organization_id,
+      results: %{"result1" => "shyness"}
+    }
+
+    # preload wa_group
+    {:ok, context} = FlowContext.create_flow_context(context_attrs)
+    set_run_result_context = Repo.preload(context, [:flow, :wa_group])
+
+    set_run_result_action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "set_run_result",
+      name: "video_code",
+      value: "@results.result1",
+      category: "Video",
+      flow: %{
+        "name" => flow.name,
+        "uuid" => flow.uuid
+      }
+    }
+
+    result = Action.execute(set_run_result_action, set_run_result_context, [])
+    assert {:ok, updated_context, _updated_message_stream} = result
+
+    assert updated_context.results["video_code"]["category"] == "Video"
+    assert updated_context.results["video_code"]["value"] == "shyness"
+  end
+
   test "execute an action when type is set_contact_name", _attrs do
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 

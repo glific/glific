@@ -678,6 +678,28 @@ defmodule Glific.Flows.Action do
     WAGroupAction.send_message(context, action, messages)
   end
 
+  def execute(%{type: "set_run_result"} = action, context, messages) do
+    value =
+      context
+      |> FlowContext.parse_context_string(action.value)
+      |> Glific.execute_eex()
+
+    category =
+      context
+      |> FlowContext.parse_context_string(action.category)
+
+    results = %{
+      "input" => value,
+      "value" => value,
+      "category" => category,
+      "inserted_at" => DateTime.utc_now()
+    }
+
+    updated_context = FlowContext.update_results(context, %{action.name => results})
+
+    {:ok, updated_context, messages}
+  end
+
   def execute(action, %{wa_group_id: wa_group_id} = context, messages)
       when wa_group_id != nil do
     Logger.error(
@@ -937,28 +959,6 @@ defmodule Glific.Flows.Action do
     end
 
     {:ok, context, messages}
-  end
-
-  def execute(%{type: "set_run_result"} = action, context, messages) do
-    value =
-      context
-      |> FlowContext.parse_context_string(action.value)
-      |> Glific.execute_eex()
-
-    category =
-      context
-      |> FlowContext.parse_context_string(action.category)
-
-    results = %{
-      "input" => value,
-      "value" => value,
-      "category" => category,
-      "inserted_at" => DateTime.utc_now()
-    }
-
-    updated_context = FlowContext.update_results(context, %{action.name => results})
-
-    {:ok, updated_context, messages}
   end
 
   def execute(%{type: type} = _action, context, [msg])
