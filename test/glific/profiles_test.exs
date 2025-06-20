@@ -349,7 +349,7 @@ defmodule Glific.ProfilesTest do
 
       indexed_profiles = Profiles.get_indexed_profile(contact)
 
-      {_, profile2_index} =
+      {profile, profile2_index} =
         Enum.find(indexed_profiles, fn {profile, _index} -> profile.name == "profile2" end)
 
       switch_action = %Action{
@@ -361,16 +361,8 @@ defmodule Glific.ProfilesTest do
 
       Profiles.handle_flow_action(:switch_profile, context, switch_action)
 
-      {:ok, profile} = fetch_profile.(%{name: "profile2"})
-
       {:ok, contact} = fetch_contact.("NGO Main Account")
       assert contact.active_profile_id == profile.id
-
-      {:ok, non_default_profile} =
-        Repo.fetch_by(Profile, %{name: "profile2", contact_id: contact.id})
-
-      {:ok, contact} = fetch_contact.("NGO Main Account")
-      assert contact.active_profile_id == non_default_profile.id
 
       action = %Action{
         id: nil,
