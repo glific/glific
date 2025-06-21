@@ -13,6 +13,7 @@ defmodule Glific.TemplatesTest do
     Providers.Gupshup.PartnerAPI,
     Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
+    Seeds.SeedsMigration,
     Settings,
     Templates,
     Templates.SessionTemplate,
@@ -1263,7 +1264,7 @@ defmodule Glific.TemplatesTest do
               Jason.encode!(%{
                 "status" => "success",
                 "template" => %{
-                  "elementName" => "common_otp",
+                  "elementName" => "verify_otp",
                   "id" => uuid,
                   "languageCode" => "en",
                   "status" => status
@@ -1274,17 +1275,13 @@ defmodule Glific.TemplatesTest do
 
       Fixtures.session_template_fixture(%{
         body: """
-        Hello {{1}},
-
-        Please find the verification number is {{2}} for resetting your account.
+        {{1}} is your verification code. For your security, do not share this code.
         """,
-        shortcode: "common_otp",
+        shortcode: "verify_otp",
         is_hsm: true,
         category: "AUTHENTICATION",
         example: """
-        Hello [Anil],
-
-        Please find the verification number is [112233] for resetting your account.
+        [112233] is your verification code. For your security, do not share this code.
         """,
         language_id: language_id,
         uuid: uuid,
@@ -1994,5 +1991,70 @@ defmodule Glific.TemplatesTest do
 
     severities = Enum.map(notifications, & &1.severity)
     assert Notifications.types().critical in severities
+  end
+
+  test "submit_otp_template_for_org/1 should submit verify_otp template for approval", attrs do
+    otp_uuid = Ecto.UUID.generate()
+
+    token_response =
+      Jason.encode!(%{
+        "data" => %{
+          "partner_app_token" => "fake-partner-token"
+        }
+      })
+
+    body =
+      Jason.encode!(%{
+        "status" => "success",
+        "template" => %{
+          "category" => "AUTHENTICATION",
+          "createdOn" => 1_695_904_220_000,
+          "data" => "{{1}} is your verification code. For your security, do not share this code.",
+          "elementName" => "verify_otp",
+          "id" => otp_uuid,
+          "languageCode" => "en",
+          "languagePolicy" => "deterministic",
+          "master" => true,
+          "meta" =>
+            "{\"example\":\"[112233] is your verification code. For your security, do not share this code.\"}",
+          "modifiedOn" => 1_695_904_220_000,
+          "status" => "PENDING",
+          "templateType" => "TEXT",
+          "vertical" => "AUTHENTICATION"
+        }
+      })
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => "sk_test_partner_token"})
+        }
+
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{status: 200, body: token_response}
+
+      %{method: :post, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
+        uuid = otp_uuid
+
+        %Tesla.Env{
+          status: 200,
+          body: "{\"template\":{\"id\":\"#{uuid}\"}}"
+        }
+
+      %{method: :post, url: "https://partner.gupshup.io/partner/message/template"} ->
+        %Tesla.Env{status: 200, body: body}
+    end)
+
+    assert {:ok, %SessionTemplate{} = template} =
+             SeedsMigration.submit_otp_template_for_org(attrs.organization_id)
+
+    assert template.label == "verify_otp"
+    assert template.uuid == otp_uuid
+    assert template.category == "AUTHENTICATION"
+
+    assert template.buttons == [
+             %{"otp_type" => "COPY_CODE", "text" => "Copy OTP", "type" => "OTP"}
+           ]
   end
 end
