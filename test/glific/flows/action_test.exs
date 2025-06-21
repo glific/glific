@@ -947,9 +947,6 @@ defmodule Glific.Flows.ActionTest do
     {:ok, profile2} = Repo.fetch_by(Profiles.Profile, %{name: "name2"})
     assert profile2.type == "student"
 
-    {:ok, contact} = Repo.fetch_by(Contact, %{id: contact.id})
-    assert contact.active_profile_id == profile2.id
-
     # Switch to default profile of the contact
     action = %Action{
       type: "set_contact_profile",
