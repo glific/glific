@@ -609,9 +609,13 @@ defmodule Glific.ProfilesTest do
     assert length(profiles) == 3
   end
 
-  test "creating a new profile should not switch to the new profile", attrs do
+  test "creating a new profile should switch to the default profile if no active profile exists",
+       attrs do
     {:ok, contact} =
-      Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: attrs.organization_id})
+      Repo.fetch_by(Contact, %{
+        name: "Glific Simulator Two",
+        organization_id: attrs.organization_id
+      })
 
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Multiple Profile Creation Flow"})
 
@@ -637,10 +641,50 @@ defmodule Glific.ProfilesTest do
     Profiles.handle_flow_action(:create_profile, context, action)
 
     {:ok, contact} =
-      Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: 1})
+      Repo.fetch_by(Contact, %{name: "Glific Simulator Two", organization_id: 1})
 
     default_profile = Repo.get_by(Profile, contact_id: context.contact.id, is_default: true)
-
     assert contact.active_profile_id == default_profile.id
+  end
+
+  test "creating a new profile should not switch to the default profile if active profile exists",
+       attrs do
+    {:ok, contact} =
+      Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: attrs.organization_id})
+
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Multiple Profile Creation Flow"})
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: contact.id,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id,
+        flow: flow,
+        organization_id: flow.organization_id,
+        uuid_map: flow.uuid_map
+      })
+
+    context = Repo.preload(context, [:flow, :contact])
+
+    action = %Action{
+      id: nil,
+      type: "set_contact_profile",
+      value: "1",
+      profile_type: "Switch Profile"
+    }
+
+    Profiles.handle_flow_action(:switch_profile, context, action)
+    active_profile_id = contact.active_profile_id
+
+    action = %Action{
+      id: nil,
+      type: "set_contact_profile",
+      value: %{"name" => "new profile", "type" => "parent"},
+      profile_type: "Create Profile"
+    }
+
+    Profiles.handle_flow_action(:create_profile, context, action)
+
+    assert contact.active_profile_id == active_profile_id
   end
 end

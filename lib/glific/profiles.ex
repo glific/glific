@@ -273,12 +273,7 @@ defmodule Glific.Profiles do
   defp maybe_setup_default_profile(attrs, context, action) do
     case Repo.get_by(Profile, contact_id: context.contact.id, is_default: true) do
       nil ->
-        case setup_default_profile(context.contact, attrs) do
-          {:ok, profile} ->
-            profile_action = get_action_with_index(context, action, profile)
-            handle_flow_action(:switch_profile, context, profile_action)
-            {:ok, profile}
-        end
+        setup_default_profile(context, attrs, action)
 
       profile ->
         {:ok, profile}
@@ -290,8 +285,11 @@ defmodule Glific.Profiles do
   #    are overwritten when switching to other profiles.
   # 2. To allow the user to switch back to the original contact state,
   #    instead of being locked into a specific profile.
-  @spec setup_default_profile(Contact.t(), map()) :: {:ok, Profile.t()}
-  defp setup_default_profile(contact, attrs) do
+  @spec setup_default_profile(map(), map(), Action.t()) ::
+          {:ok, Profile.t()}
+  defp setup_default_profile(context, attrs, action) do
+    contact = context.contact
+
     args = %{
       filter: %{contact_id: contact.id},
       opts: %{offset: 0, order: :asc, order_with: :inserted_at},
@@ -300,11 +298,16 @@ defmodule Glific.Profiles do
 
     case list_profiles(args) do
       [] ->
-        attrs
-        |> Map.put(:name, contact.name)
-        |> Map.put(:is_default, true)
-        |> Map.put(:fields, contact.fields)
-        |> create_profile()
+        case attrs
+             |> Map.put(:name, contact.name)
+             |> Map.put(:is_default, true)
+             |> Map.put(:fields, contact.fields)
+             |> create_profile do
+          {:ok, profile} ->
+            profile_action = get_action_with_index(context, action, profile)
+            handle_flow_action(:switch_profile, context, profile_action)
+            {:ok, profile}
+        end
 
       [first_profile | _] ->
         update_profile(first_profile, %{is_default: true})
