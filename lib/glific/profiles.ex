@@ -216,10 +216,9 @@ defmodule Glific.Profiles do
       organization_id: context.contact.organization_id
     }
 
-    with {:ok, default_profile} <- maybe_setup_default_profile(attrs, context),
+    with {:ok, _default_profile} <- maybe_setup_default_profile(attrs, context, action),
          {:ok, _profile} <- create_profile(attrs) do
-      profile_action = get_action_with_index(context, action, default_profile)
-      handle_flow_action(:switch_profile, context, profile_action)
+      {context, Messages.create_temp_message(context.organization_id, "Success")}
     else
       {:error, _error} ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
@@ -236,7 +235,7 @@ defmodule Glific.Profiles do
       organization_id: context.contact.organization_id
     }
 
-    with {:ok, default_profile} <- maybe_setup_default_profile(attrs, context),
+    with {:ok, default_profile} <- maybe_setup_default_profile(attrs, context, action),
          {:ok, index} <- Glific.parse_maybe_integer(value),
          {profile, _index} <- fetch_indexed_profile(context.contact, index),
          false <- deactivating_default_profile?(default_profile, profile),
@@ -269,12 +268,17 @@ defmodule Glific.Profiles do
     Map.put(action, :value, to_string(profile_index))
   end
 
-  @spec maybe_setup_default_profile(map(), map()) ::
+  @spec maybe_setup_default_profile(map(), map(), Action.t()) ::
           {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
-  defp maybe_setup_default_profile(attrs, context) do
+  defp maybe_setup_default_profile(attrs, context, action) do
     case Repo.get_by(Profile, contact_id: context.contact.id, is_default: true) do
       nil ->
-        setup_default_profile(context.contact, attrs)
+        case setup_default_profile(context.contact, attrs) do
+          {:ok, profile} ->
+            profile_action = get_action_with_index(context, action, profile)
+            handle_flow_action(:switch_profile, context, profile_action)
+            {:ok, profile}
+        end
 
       profile ->
         {:ok, profile}
