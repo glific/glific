@@ -3,5 +3,6 @@ query profiles ($filter: ProfileFilter, $opts: Opts) {
     id
     name
     fields
+    is_active
   }
 }

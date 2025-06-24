@@ -24,6 +24,7 @@ defmodule GlificWeb.Schema.ProfileTypes do
     field :name, :string
     field :type, :string
     field :fields, :json
+    field :is_active, :boolean
     field :inserted_at, :datetime
     field :updated_at, :datetime
 
