@@ -134,7 +134,7 @@ defmodule GlificWeb.Schema.ProfileTest do
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "profiles"])) == 1
 
-    # returns the is_active field
+    # returns the is_active and is_default fields
 
     result =
       auth_query_gql_by(:list, user,
@@ -147,6 +147,7 @@ defmodule GlificWeb.Schema.ProfileTest do
 
     [profile | _] = get_in(query_data, [:data, "profiles"])
     assert profile["is_active"] == true
+    assert profile["is_default"] == false
 
     result =
       auth_query_gql_by(:list, user,

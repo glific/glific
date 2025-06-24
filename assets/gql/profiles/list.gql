@@ -4,5 +4,6 @@ query profiles ($filter: ProfileFilter, $opts: Opts) {
     name
     fields
     is_active
+    is_default
   }
 }
