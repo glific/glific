@@ -134,6 +134,21 @@ defmodule GlificWeb.Schema.ProfileTest do
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "profiles"])) == 1
 
+    # returns the is_active and is_default fields
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"contact_id" => contact.id}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    [profile | _] = get_in(query_data, [:data, "profiles"])
+    assert profile["is_active"] == true
+    assert profile["is_default"] == false
+
     result =
       auth_query_gql_by(:list, user,
         variables: %{
@@ -197,6 +212,7 @@ defmodule GlificWeb.Schema.ProfileTest do
     assert {:ok, query_data} = result
     profiles = get_in(query_data, [:data, "profiles"])
     assert length(profiles) == 2
+
     result =
       auth_query_gql_by(:list, user,
         variables: %{
