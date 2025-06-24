@@ -216,9 +216,9 @@ defmodule Glific.Profiles do
       organization_id: context.contact.organization_id
     }
 
-    with {:ok, _default_profile} <- maybe_setup_default_profile(attrs, context, action),
+    with {:ok, _default_profile} <- maybe_setup_default_profile(attrs, context),
          {:ok, _profile} <- create_profile(attrs) do
-      {context, Messages.create_temp_message(context.organization_id, "Success")}
+      maybe_switch_to_default_profile(context, action)
     else
       {:error, _error} ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
@@ -235,7 +235,7 @@ defmodule Glific.Profiles do
       organization_id: context.contact.organization_id
     }
 
-    with {:ok, default_profile} <- maybe_setup_default_profile(attrs, context, action),
+    with {:ok, default_profile} <- maybe_setup_default_profile(attrs, context),
          {:ok, index} <- Glific.parse_maybe_integer(value),
          {profile, _index} <- fetch_indexed_profile(context.contact, index),
          false <- deactivating_default_profile?(default_profile, profile),
@@ -256,6 +256,20 @@ defmodule Glific.Profiles do
     {context, Messages.create_temp_message(context.organization_id, "Failure")}
   end
 
+  @spec maybe_switch_to_default_profile(FlowContext.t(), Action.t()) ::
+          {FlowContext.t(), Message.t()}
+  defp maybe_switch_to_default_profile(context, action) do
+    contact = context.contact
+
+    if contact.active_profile_id do
+      {context, Messages.create_temp_message(context.organization_id, "Success")}
+    else
+      default_profile = Repo.get_by(Profile, contact_id: contact.id, is_default: true)
+      profile_action = get_action_with_index(context, action, default_profile)
+      handle_flow_action(:switch_profile, context, profile_action)
+    end
+  end
+
   @spec get_action_with_index(FlowContext.t(), Action.t(), map()) :: Action.t()
   defp get_action_with_index(context, action, profile) do
     indexed_profile = get_indexed_profile(context.contact)
@@ -268,12 +282,12 @@ defmodule Glific.Profiles do
     Map.put(action, :value, to_string(profile_index))
   end
 
-  @spec maybe_setup_default_profile(map(), map(), Action.t()) ::
+  @spec maybe_setup_default_profile(map(), map()) ::
           {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
-  defp maybe_setup_default_profile(attrs, context, action) do
+  defp maybe_setup_default_profile(attrs, context) do
     case Repo.get_by(Profile, contact_id: context.contact.id, is_default: true) do
       nil ->
-        setup_default_profile(context, attrs, action)
+        setup_default_profile(context.contact, attrs)
 
       profile ->
         {:ok, profile}
@@ -285,11 +299,8 @@ defmodule Glific.Profiles do
   #    are overwritten when switching to other profiles.
   # 2. To allow the user to switch back to the original contact state,
   #    instead of being locked into a specific profile.
-  @spec setup_default_profile(map(), map(), Action.t()) ::
-          {:ok, Profile.t()}
-  defp setup_default_profile(context, attrs, action) do
-    contact = context.contact
-
+  @spec setup_default_profile(Contact.t(), map()) :: {:ok, Profile.t()}
+  defp setup_default_profile(contact, attrs) do
     args = %{
       filter: %{contact_id: contact.id},
       opts: %{offset: 0, order: :asc, order_with: :inserted_at},
@@ -298,16 +309,11 @@ defmodule Glific.Profiles do
 
     case list_profiles(args) do
       [] ->
-        case attrs
-             |> Map.put(:name, contact.name)
-             |> Map.put(:is_default, true)
-             |> Map.put(:fields, contact.fields)
-             |> create_profile do
-          {:ok, profile} ->
-            profile_action = get_action_with_index(context, action, profile)
-            handle_flow_action(:switch_profile, context, profile_action)
-            {:ok, profile}
-        end
+        attrs
+        |> Map.put(:name, contact.name)
+        |> Map.put(:is_default, true)
+        |> Map.put(:fields, contact.fields)
+        |> create_profile()
 
       [first_profile | _] ->
         update_profile(first_profile, %{is_default: true})
