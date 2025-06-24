@@ -216,9 +216,9 @@ defmodule Glific.Profiles do
       organization_id: context.contact.organization_id
     }
 
-    with {:ok, _default_profile} <- maybe_setup_default_profile(attrs, context),
+    with {:ok, default_profile} <- maybe_setup_default_profile(attrs, context),
          {:ok, _profile} <- create_profile(attrs) do
-      maybe_switch_to_default_profile(context, action)
+      maybe_switch_to_default_profile(context, action, default_profile)
     else
       {:error, _error} ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
@@ -256,18 +256,20 @@ defmodule Glific.Profiles do
     {context, Messages.create_temp_message(context.organization_id, "Failure")}
   end
 
-  @spec maybe_switch_to_default_profile(FlowContext.t(), Action.t()) ::
+  @spec maybe_switch_to_default_profile(FlowContext.t(), Action.t(), Profile.t()) ::
           {FlowContext.t(), Message.t()}
-  defp maybe_switch_to_default_profile(context, action) do
-    contact = context.contact
+  defp maybe_switch_to_default_profile(
+         %{contact: %{active_profile_id: nil}} = context,
+         action,
+         default_profile
+       ) do
+    profile_action = get_action_with_index(context, action, default_profile)
+    handle_flow_action(:switch_profile, context, profile_action)
+  end
 
-    if contact.active_profile_id do
-      {context, Messages.create_temp_message(context.organization_id, "Success")}
-    else
-      default_profile = Repo.get_by(Profile, contact_id: contact.id, is_default: true)
-      profile_action = get_action_with_index(context, action, default_profile)
-      handle_flow_action(:switch_profile, context, profile_action)
-    end
+  defp maybe_switch_to_default_profile(context, _action, _default_profile)
+       when not is_nil(context.contact.active_profile_id) do
+    {context, Messages.create_temp_message(context.organization_id, "Success")}
   end
 
   @spec get_action_with_index(FlowContext.t(), Action.t(), map()) :: Action.t()
