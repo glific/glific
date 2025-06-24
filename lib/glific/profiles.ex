@@ -258,18 +258,15 @@ defmodule Glific.Profiles do
 
   @spec maybe_switch_to_default_profile(FlowContext.t(), Action.t(), Profile.t()) ::
           {FlowContext.t(), Message.t()}
-  defp maybe_switch_to_default_profile(
-         %{contact: %{active_profile_id: nil}} = context,
-         action,
-         default_profile
-       ) do
-    profile_action = get_action_with_index(context, action, default_profile)
-    handle_flow_action(:switch_profile, context, profile_action)
-  end
+  defp maybe_switch_to_default_profile(context, action, default_profile) do
+    contact = context.contact
 
-  defp maybe_switch_to_default_profile(context, _action, _default_profile)
-       when not is_nil(context.contact.active_profile_id) do
-    {context, Messages.create_temp_message(context.organization_id, "Success")}
+    if contact.active_profile_id do
+      {context, Messages.create_temp_message(context.organization_id, "Success")}
+    else
+      profile_action = get_action_with_index(context, action, default_profile)
+      handle_flow_action(:switch_profile, context, profile_action)
+    end
   end
 
   @spec get_action_with_index(FlowContext.t(), Action.t(), map()) :: Action.t()
