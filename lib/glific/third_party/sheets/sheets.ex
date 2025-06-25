@@ -202,6 +202,7 @@ defmodule Glific.Sheets do
           }
           |> create_sheet_data()
 
+          Glific.Metrics.increment("Sheets Sync Successful")
           {:cont, Map.merge(acc, parsed_rows.errors)}
 
         {:error, err}, acc ->
@@ -210,6 +211,7 @@ defmodule Glific.Sheets do
             "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{inspect(err)}"
           )
 
+          Glific.Metrics.increment("Sheets Sync Failed")
           create_sync_fail_notification(sheet)
           {:halt, Map.put(acc, export_url, err)}
       end)
@@ -242,9 +244,9 @@ defmodule Glific.Sheets do
           key
           |> String.downcase()
           |> String.replace(" ", "_")
-          |> trim_string()
+          |> trim_value()
 
-        Map.put(acc, key, value |> trim_string())
+        Map.put(acc, key, value |> trim_value())
       end)
 
     errors =
@@ -415,10 +417,12 @@ defmodule Glific.Sheets do
     :ok
   end
 
-  @spec trim_string(String.t()) :: String.t()
-  defp trim_string(str) do
-    str
+  @spec trim_value(any()) :: any()
+  defp trim_value(value) when is_binary(value) do
+    value
     |> String.trim()
     |> String.replace(@invisible_unicode_range, "")
   end
+
+  defp trim_value(value), do: value
 end

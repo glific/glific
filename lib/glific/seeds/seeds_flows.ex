@@ -412,6 +412,7 @@ defmodule Glific.Seeds.SeedsFlows do
       clear_var: generate_uuid(organization, "3ac6ec5e-041a-4b0f-9dad-9b2b9a9545ce"),
       direct_gpt: generate_uuid(organization, "0d51efbb-a8b4-4c32-828c-47ac915da479"),
       media: generate_uuid(organization, "0b2d5b19-bd94-44e0-b2e6-0ea7d7033de5"),
+      deactivate_profile: generate_uuid(organization, "db0404ad-8c73-40b8-ac3b-47464c4f8cdf"),
       int_re_response: generate_uuid(organization, "0633e385-0625-4432-98f7-e780a73944aa")
     }
 
@@ -432,6 +433,8 @@ defmodule Glific.Seeds.SeedsFlows do
       {"Clear_Variables flow", [], uuid_map.clear_var, false, "clear_var.json"},
       {"Direct with GPT", [], uuid_map.direct_gpt, false, "direct_gpt.json"},
       {"Media flow", ["media"], uuid_map.media, true, "media.json"},
+      {"Deactivate Profile Flow", ["deactivate"], uuid_map.deactivate_profile, true,
+       "deactivate_profile.json"},
       {"interactive_re_response", [], uuid_map.int_re_response, true, "int_msg_re_response.json"}
     ]
 

@@ -7,6 +7,7 @@ defmodule GlificWeb.Schema.ProfileTest do
 
   alias Glific.{
     Contacts.Contact,
+    Fixtures,
     Profiles.Profile,
     Repo,
     Seeds.SeedsDev
@@ -133,6 +134,21 @@ defmodule GlificWeb.Schema.ProfileTest do
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "profiles"])) == 1
 
+    # returns the is_active and is_default fields
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"contact_id" => contact.id}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    [profile | _] = get_in(query_data, [:data, "profiles"])
+    assert profile["is_active"] == true
+    assert profile["is_default"] == false
+
     result =
       auth_query_gql_by(:list, user,
         variables: %{
@@ -166,5 +182,48 @@ defmodule GlificWeb.Schema.ProfileTest do
 
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "profiles"])) == 1
+
+    # Only returns active profiles
+    Fixtures.profile_fixture(%{
+      "name" => "john",
+      "type" => "admin",
+      "is_active" => false,
+      "organization_id" => 1
+    })
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"organization_id" => 1, "is_active" => true}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "profiles"])) == 1
+
+    # Test that listing without is_active filter returns all profiles
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"organization_id" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    profiles = get_in(query_data, [:data, "profiles"])
+    assert length(profiles) == 2
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{"organization_id" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    profiles = get_in(query_data, [:data, "profiles"])
+    assert length(profiles) == 2
+    assert Enum.any?(profiles, &(&1["name"] == "john"))
+    assert Enum.any?(profiles, &(&1["name"] == "user"))
   end
 end

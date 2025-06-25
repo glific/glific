@@ -6,8 +6,14 @@ defmodule Glific.Erase do
 
   alias Glific.Contacts.Contact
   alias Glific.Repo
-
   require Logger
+
+  use Oban.Worker,
+    queue: :purge,
+    max_attempts: 1
+
+  @batch_sleep 1_000
+  @no_of_months 2
 
   @doc """
   Do the weekly DB cleaner tasks, typically in the middle of the night on sunday morning
@@ -16,6 +22,37 @@ defmodule Glific.Erase do
   def perform_weekly do
     clean_old_records()
     refresh_tables()
+  end
+
+  @doc """
+  Creates an Oban job for purging old messages in batch
+
+  - batch_size - size of a batch (limit in select query)
+  - max_rows_to_delete - Maximum rows to delete weekly
+  - sleep_after_delete? - sleeps for 1 sec if true.
+  """
+  @spec perform_message_purge(number() | nil, number() | nil, boolean()) :: tuple()
+  def perform_message_purge(
+        batch_size \\ nil,
+        max_rows_to_delete \\ nil,
+        sleep_after_delete? \\ true
+      ) do
+    purge_config = Application.get_env(:glific, Glific.Erase)
+
+    batch_size =
+      batch_size ||
+        Keyword.get(purge_config, :msg_delete_batch_size) |> Glific.parse_maybe_integer!()
+
+    max_rows_to_delete =
+      max_rows_to_delete ||
+        Keyword.get(purge_config, :max_msg_rows_to_delete) |> Glific.parse_maybe_integer!()
+
+    __MODULE__.new(%{
+      batch_size: batch_size,
+      max_rows_to_delete: max_rows_to_delete,
+      sleep_after_delete?: sleep_after_delete?
+    })
+    |> Oban.insert()
   end
 
   @doc """
@@ -36,6 +73,17 @@ defmodule Glific.Erase do
   def clean_old_records do
     remove_old_records()
     clean_flow_revision()
+  end
+
+  @impl Oban.Worker
+  def perform(%Oban.Job{
+        args: %{
+          "batch_size" => batch_size,
+          "max_rows_to_delete" => max_rows_to_delete,
+          "sleep_after_delete?" => sleep_after_delete?
+        }
+      }) do
+    delete_old_messages(batch_size, max_rows_to_delete, sleep_after_delete?)
   end
 
   @spec refresh_tables() :: any
@@ -262,6 +310,59 @@ defmodule Glific.Erase do
       Logger.info("Deleted beneficiary data for contact #{phone} and organization_id #{org_id}")
 
       :ok
+    end
+  end
+
+  @spec delete_old_messages(number(), number(), boolean(), number()) :: any()
+  defp delete_old_messages(
+         batch_size,
+         max_rows_to_delete,
+         sleep_after_delete?,
+         total_rows_deleted \\ 0
+       )
+       when is_number(batch_size) and is_number(max_rows_to_delete) do
+    time_before_delete = DateTime.utc_now()
+
+    {:ok, %{num_rows: rows_deleted}} =
+      try do
+        """
+        WITH rows_to_delete AS (
+        SELECT id FROM messages
+        WHERE inserted_at <= CURRENT_DATE - interval '#{@no_of_months} months'
+        ORDER BY id
+        LIMIT #{batch_size}
+        )
+        DELETE FROM messages
+        WHERE id IN (SELECT id FROM rows_to_delete);
+        """
+        |> Repo.query([], timeout: 400_000, skip_organization_id: true)
+      rescue
+        err ->
+          Logger.error("Messages purge timed out #{inspect(err)}")
+          {:ok, %{num_rows: 0}}
+      end
+
+    total_rows_deleted = total_rows_deleted + rows_deleted
+    time_after_delete = DateTime.diff(DateTime.utc_now(), time_before_delete)
+
+    if rows_deleted < batch_size or total_rows_deleted >= max_rows_to_delete do
+      Logger.info(
+        "Total rows deleted: #{total_rows_deleted}, time taken for this batch: #{time_after_delete} s"
+      )
+
+      {:ok, total_rows_deleted}
+    else
+      # deleting the next batch after a second, to ease the DB load
+      if sleep_after_delete? do
+        Process.sleep(@batch_sleep)
+      end
+
+      delete_old_messages(
+        batch_size,
+        max_rows_to_delete,
+        sleep_after_delete?,
+        total_rows_deleted
+      )
     end
   end
 end
