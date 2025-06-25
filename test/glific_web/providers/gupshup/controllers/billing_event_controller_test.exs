@@ -73,7 +73,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.BillingEventControllerTest do
           &Map.update(@billing_event_request_params, "payload", &1, fn _ ->
             %{
               "references" => &1,
-              "deductions" => @billing_event_request_params["payload"]["references"]
+              "deductions" => @billing_event_request_params["payload"]["deductions"]
             }
           end)
         )
