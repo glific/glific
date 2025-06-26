@@ -1,5 +1,5 @@
 defmodule Glific.Processor.ConsumerFlowTest do
-  use GlificWeb.ConnCase, async: false
+  use GlificWeb.ConnCase
 
   import Ecto.Query
 
