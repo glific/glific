@@ -123,12 +123,12 @@ defmodule Glific.Seeds.SeedsMigration do
       shortcode: "verify_otp",
       label: "verify_otp",
       body: """
-      {{1}} is your verification code. For your security, do not share this code.
+      {{1}} is your verification code.
       """,
       type: :text,
       category: "AUTHENTICATION",
       example: """
-      [112233] is your verification code. For your security, do not share this code.
+      [112233] is your verification code.
       """,
       has_buttons: true,
       is_active: true,

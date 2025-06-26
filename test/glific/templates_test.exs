@@ -2009,6 +2009,9 @@ defmodule Glific.TemplatesTest do
         "template" => %{
           "category" => "AUTHENTICATION",
           "createdOn" => 1_695_904_220_000,
+          # returning additional content beyond what we are passing to the template
+          # because of the `addSecurityRecommendation` check. In the OTP template,
+          # this adds the default security message: “For your security, do not share this code.”
           "data" => "{{1}} is your verification code. For your security, do not share this code.",
           "elementName" => "verify_otp",
           "id" => otp_uuid,
