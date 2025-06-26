@@ -24,6 +24,8 @@ defmodule GlificWeb.Schema.ProfileTypes do
     field :name, :string
     field :type, :string
     field :fields, :json
+    field :is_active, :boolean
+    field :is_default, :boolean
     field :inserted_at, :datetime
     field :updated_at, :datetime
 
@@ -53,6 +55,9 @@ defmodule GlificWeb.Schema.ProfileTypes do
 
     @desc "search profile by name"
     field(:name, :string)
+
+    @desc "filter by active status"
+    field(:is_active, :boolean)
   end
 
   object :profile_queries do

@@ -914,6 +914,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             updated_at: BigQuery.format_date(row.updated_at, organization_id),
             phone: row.contact.phone,
             language: row.language.label,
+            is_default: row.is_default,
+            is_active: row.is_active,
             fields:
               Enum.map(row.fields, fn {_key, field} ->
                 %{

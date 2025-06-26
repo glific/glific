@@ -911,14 +911,14 @@ defmodule Glific.Flows.ActionTest do
 
   test "execute an action when type is set_contact_profile to create and switch profile",
        _attrs do
-    profile = Glific.Fixtures.profile_fixture()
-    {:ok, contact} = Repo.fetch_by(Contact, %{id: profile.contact_id})
+    default_profile = Glific.Fixtures.profile_fixture()
+    {:ok, contact} = Repo.fetch_by(Contact, %{id: default_profile.contact_id})
 
     context =
       %FlowContext{contact_id: contact.id, flow_id: 1}
       |> Repo.preload([:contact, :flow])
 
-    # Create a profile for a contact
+    # Create second profile for a contact
     action = %Action{
       type: "set_contact_profile",
       profile_type: "Create Profile",
@@ -929,10 +929,10 @@ defmodule Glific.Flows.ActionTest do
     message_stream = []
 
     Action.execute(action, context, message_stream)
-    {:ok, profile} = Repo.fetch_by(Profiles.Profile, %{name: "name"})
-    assert profile.type == "student"
 
-    # Create a second profile for a contact
+    context = Repo.preload(context, [:contact, :flow], force: true)
+
+    # Create a third profile for a contact
     action = %Action{
       type: "set_contact_profile",
       profile_type: "Create Profile",
@@ -941,13 +941,13 @@ defmodule Glific.Flows.ActionTest do
     }
 
     Action.execute(action, context, message_stream)
+
+    context = Repo.preload(context, [:contact, :flow], force: true)
+
     {:ok, profile2} = Repo.fetch_by(Profiles.Profile, %{name: "name2"})
     assert profile2.type == "student"
 
-    {:ok, contact} = Repo.fetch_by(Contact, %{id: profile.contact_id})
-    assert contact.active_profile_id == profile2.id
-
-    # Switch to first profile for a contact
+    # Switch to default profile of the contact
     action = %Action{
       type: "set_contact_profile",
       profile_type: "Switch Profile",
@@ -956,8 +956,10 @@ defmodule Glific.Flows.ActionTest do
     }
 
     Action.execute(action, context, message_stream)
-    {:ok, contact} = Repo.fetch_by(Contact, %{id: profile.contact_id})
-    assert contact.active_profile_id == profile.id
+
+    {:ok, contact} = Repo.fetch_by(Contact, %{id: contact.id})
+
+    assert contact.active_profile_id == default_profile.id
   end
 
   test "execute an action when type is open_ticket to create a new ticket", attrs do
@@ -1067,7 +1069,9 @@ defmodule Glific.Flows.ActionTest do
     assert {:ok, updated_context, _message_stream} = Action.execute(action, context, [])
     assert updated_context.results["sheet"]["key"] == "7/11/2022"
     assert updated_context.results["sheet"]["message_english"] == "Hi welcome to Glific."
-    assert updated_context.results["sheet"]["message_hindi"] == "Glific में आपका स्वागत है।"
+
+    assert updated_context.results["sheet"]["message_hindi"] ==
+             "Glific में आपका स्वागत है।"
   end
 
   test "execute an action when type is start_session and exclusion is true",

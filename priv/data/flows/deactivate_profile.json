@@ -1,0 +1,190 @@
+{
+    "_ui": {
+        "nodes": {
+            "35d25a32-ff83-4507-bf96-79d1a9584b64": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 800,
+                    "left": 1120
+                }
+            },
+            "4bcc3632-4afa-4600-bc59-bc7d7db1d7db": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 540,
+                    "left": 180
+                }
+            },
+            "63a36f33-fb82-4f28-86f6-7207fd04c711": {
+                "type": "wait_for_response",
+                "config": {
+                    "cases": {}
+                },
+                "position": {
+                    "top": 220,
+                    "left": 300
+                }
+            },
+            "b6a5c6aa-2be7-4681-8885-db32751c6dea": {
+                "type": "set_contact_profile",
+                "config": {},
+                "position": {
+                    "top": 400,
+                    "left": 560
+                }
+            },
+            "c73425cc-7d1f-4bde-b923-2d0cd59c1913": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 0,
+                    "left": 0
+                }
+            }
+        }
+    },
+    "name": "Deactivate Profile Flow",
+    "type": "messaging",
+    "uuid": "db0404ad-8c73-40b8-ac3b-47464c4f8cdf",
+    "vars": [
+        "db0404ad-8c73-40b8-ac3b-47464c4f8cdf"
+    ],
+    "nodes": [
+        {
+            "uuid": "c73425cc-7d1f-4bde-b923-2d0cd59c1913",
+            "exits": [
+                {
+                    "uuid": "ae3efc78-f894-426c-92ab-de2a3edb8a49",
+                    "destination_uuid": "63a36f33-fb82-4f28-86f6-7207fd04c711"
+                }
+            ],
+            "actions": [
+                {
+                    "text": "Send the *number* for the profile you want to deactivatet👇🏼\n\n@contact.list_profiles",
+                    "type": "send_msg",
+                    "uuid": "9e9f5b41-7b2c-41b2-b47c-934dff60ac08",
+                    "labels": [],
+                    "attachments": [],
+                    "quick_replies": []
+                }
+            ]
+        },
+        {
+            "uuid": "63a36f33-fb82-4f28-86f6-7207fd04c711",
+            "exits": [
+                {
+                    "uuid": "887e6cd4-411a-4125-b3a6-4d33ec5cce34",
+                    "destination_uuid": "b6a5c6aa-2be7-4681-8885-db32751c6dea"
+                }
+            ],
+            "router": {
+                "type": "switch",
+                "wait": {
+                    "type": "msg"
+                },
+                "cases": [],
+                "operand": "@input.text",
+                "categories": [
+                    {
+                        "name": "All Responses",
+                        "uuid": "46e1ea35-6f0d-458d-97e0-b56a5aac0bb1",
+                        "exit_uuid": "887e6cd4-411a-4125-b3a6-4d33ec5cce34"
+                    }
+                ],
+                "result_name": "profile_index",
+                "default_category_uuid": "46e1ea35-6f0d-458d-97e0-b56a5aac0bb1"
+            },
+            "actions": []
+        },
+        {
+            "uuid": "b6a5c6aa-2be7-4681-8885-db32751c6dea",
+            "exits": [
+                {
+                    "uuid": "2b98092d-7531-4486-870d-427c32058689",
+                    "destination_uuid": "4bcc3632-4afa-4600-bc59-bc7d7db1d7db"
+                },
+                {
+                    "uuid": "c456b0c9-255b-4380-aefe-9254651bacff",
+                    "destination_uuid": "35d25a32-ff83-4507-bf96-79d1a9584b64"
+                }
+            ],
+            "router": {
+                "type": "switch",
+                "cases": [
+                    {
+                        "type": "has_only_text",
+                        "uuid": "6fa060e3-7ea0-42f7-92c4-caf48d64ab60",
+                        "arguments": [
+                            "Success"
+                        ],
+                        "category_uuid": "c989746b-4b0b-42e1-b4da-5b3d4bce976d"
+                    }
+                ],
+                "operand": "@results.@results.profile_index.category",
+                "categories": [
+                    {
+                        "name": "Success",
+                        "uuid": "c989746b-4b0b-42e1-b4da-5b3d4bce976d",
+                        "exit_uuid": "2b98092d-7531-4486-870d-427c32058689"
+                    },
+                    {
+                        "name": "Failure",
+                        "uuid": "298e708a-0877-43aa-9d0d-ee5efd0a8c04",
+                        "exit_uuid": "c456b0c9-255b-4380-aefe-9254651bacff"
+                    }
+                ],
+                "default_category_uuid": "298e708a-0877-43aa-9d0d-ee5efd0a8c04"
+            },
+            "actions": [
+                {
+                    "type": "set_contact_profile",
+                    "uuid": "e771bca2-58df-4977-858f-f0ca2a8315fe",
+                    "value": "@results.profile_index",
+                    "result_name": "@results.profile_index",
+                    "profile_type": "Deactivate Profile"
+                }
+            ]
+        },
+        {
+            "uuid": "4bcc3632-4afa-4600-bc59-bc7d7db1d7db",
+            "exits": [
+                {
+                    "uuid": "120617f3-a988-4813-b349-3fe0635d7eee",
+                    "destination_uuid": null
+                }
+            ],
+            "actions": [
+                {
+                    "text": "Profile deactivated ",
+                    "type": "send_msg",
+                    "uuid": "f2158dd1-f67f-4008-afe5-e2987ed12fe6",
+                    "labels": [],
+                    "attachments": [],
+                    "quick_replies": []
+                }
+            ]
+        },
+        {
+            "uuid": "35d25a32-ff83-4507-bf96-79d1a9584b64",
+            "exits": [
+                {
+                    "uuid": "cc63dcfd-88ca-4599-a0c9-2f784cfc0a7f",
+                    "destination_uuid": null
+                }
+            ],
+            "actions": [
+                {
+                    "text": "Sorry, there was some issue in choosing profile.",
+                    "type": "send_msg",
+                    "uuid": "b56dd1f8-ce8f-4c5e-8838-503f7155f15b",
+                    "labels": [],
+                    "attachments": [],
+                    "quick_replies": []
+                }
+            ]
+        }
+    ],
+    "language": "base",
+    "localization": {},
+    "spec_version": "13.2.0",
+    "expire_after_minutes": 10080
+}
