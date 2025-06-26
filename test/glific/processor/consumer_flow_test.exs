@@ -1,7 +1,7 @@
 defmodule Glific.Processor.ConsumerFlowTest do
-  # use ExUnit.Case, async: false
-  # use Glific.DataCase, async: false
   use GlificWeb.ConnCase, async: false
+
+  import Ecto.Query
 
   alias Glific.{
     Contacts,

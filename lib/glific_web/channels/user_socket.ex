@@ -16,7 +16,7 @@ defmodule GlificWeb.UserSocket do
     |> APIAuthPlug.get_credentials(token, @pow_config)
     |> case do
       nil ->
-        :error
+        {:error, %{}, socket}
 
       {user, metadata} ->
         Logger.info("Verifying tokens: user_id: '#{user.id}'")
@@ -30,11 +30,13 @@ defmodule GlificWeb.UserSocket do
 
         Glific.Repo.put_current_user(user)
         Glific.Repo.put_organization_id(user.organization_id)
-
+        IO.inspect(self(), label: :self)
         {:ok, %{name: user.name}, socket}
     end
   end
 
   # This function will be called when there was no authentication information
   def handle_init(_params, _socket), do: :error
+
+  def handle_message(:msg, socket), do: {:ok, socket}
 end
