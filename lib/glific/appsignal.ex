@@ -21,7 +21,6 @@ defmodule Glific.Appsignal do
     @tracer.close_span(span, end_time: time)
   end
 
-  @spec handle_event(list(), map(), map(), any()) :: any()
   def handle_event([:oban, :job, :stop], measurement, meta, _) do
     # sampling only 1% of the total jobs processed to reduce cost and noise.
     if :rand.uniform() < 0.01 do
@@ -40,6 +39,7 @@ defmodule Glific.Appsignal do
   @doc """
   Sends oban queue size metric to Appsignal
   """
+  @spec send_oban_queue_size :: any()
   def send_oban_queue_size do
     get_oban_queue_data()
     |> Enum.each(fn [queue, state, length] ->
