@@ -11,7 +11,7 @@ defmodule GlificWeb.Telemetry do
   @impl true
   def init(_arg) do
     children = [
-      {:telemetry_poller, measurements: periodic_measurements(), period: 10_000}
+      {:telemetry_poller, measurements: periodic_measurements(), period: 60_000}
       # Add reporters as children of your supervision tree.
       # {Telemetry.Metrics.ConsoleReporter, metrics: metrics()}
     ]
@@ -53,6 +53,7 @@ defmodule GlificWeb.Telemetry do
       # A module, function and arguments to be invoked periodically.
       # This function must call :telemetry.execute/3 and a metric must be added above.
       # {GlificWeb, :count_users, []}
+      {Glific.Appsignal, :send_oban_queue_size, []}
     ]
   end
 end

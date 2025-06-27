@@ -129,6 +129,13 @@ defmodule Glific.Application do
       &Glific.Appsignal.handle_event/4,
       []
     )
+
+    :telemetry.attach(
+      "oban-success",
+      [:oban, :job, :stop],
+      &Glific.Appsignal.handle_success_metrics/4,
+      []
+    )
   end
 
   defp attach_mailer_telemetry_event do

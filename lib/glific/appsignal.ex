@@ -6,6 +6,7 @@ defmodule Glific.Appsignal do
   @tracer Appsignal.Tracer
   @span Appsignal.Span
 
+  alias Glific.Repo
   @doc false
   @spec handle_event(list(), any(), any(), any()) :: any()
   def handle_event([:oban, action, event], measurement, meta, _)
@@ -22,6 +23,29 @@ defmodule Glific.Appsignal do
   end
 
   def handle_event(_, _, _, _), do: nil
+
+  # TODO: docs
+  @spec handle_success_metrics(list(), map(), map(), any()) :: any()
+  def handle_success_metrics([:oban, :job, :stop], measurement, meta, _) do
+    # sampling only 1% of the total jobs processed to reduce cost and noise.
+    if :rand.uniform() < 0.01 do
+      queue_time_sec = measurement.queue_time / 1_000_000
+      queue_time_sec_trunc = trunc(queue_time_sec * 100) / 100
+
+      Appsignal.add_distribution_value("oban_job_latency", queue_time_sec_trunc, %{
+        queue: meta.queue,
+        worker: meta.worker
+      })
+    end
+  end
+
+  # TODO: spec
+  def send_oban_queue_size do
+    get_oban_queue_data()
+    |> Enum.each(fn [queue, state, length] ->
+      Appsignal.set_gauge("oban_queue_size", length, %{queue: queue, state: state})
+    end)
+  end
 
   @spec record_event(atom(), any(), any(), integer()) :: any()
   defp record_event(:job, measurement, meta, time) do
@@ -64,5 +88,19 @@ defmodule Glific.Appsignal do
   @spec set_namespace(String.t()) :: any()
   def set_namespace(namespace) do
     Appsignal.Span.set_namespace(Appsignal.Tracer.root_span(), namespace)
+  end
+
+  @spec get_oban_queue_data :: list()
+  def get_oban_queue_data do
+    {:ok, %{rows: rows}} =
+      """
+      SELECT queue, state, count(id)
+      from global.oban_jobs
+      where state in ('executing', 'available', 'scheduled', 'retryable')
+      group by queue, state
+      """
+      |> Repo.query([], skip_organization_id: true)
+
+    rows
   end
 end
