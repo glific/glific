@@ -22,8 +22,11 @@ defmodule Glific.Appsignal do
   end
 
   def handle_event([:oban, :job, :stop], measurement, meta, _) do
-    # sampling only 1% of the total jobs processed to reduce cost and noise.
-    if :rand.uniform() < 0.01 do
+    # sampling only x% of the total jobs processed to reduce cost and noise.
+    sampling_rate =
+      Application.get_env(:glific, :appsignal_sampling_rate) |> Glific.parse_maybe_integer!()
+
+    if :rand.uniform() < sampling_rate / 100 * 1 do
       queue_time_sec = measurement.queue_time / 1_000_000
       queue_time_sec_trunc = trunc(queue_time_sec * 100) / 100
 
