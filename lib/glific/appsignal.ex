@@ -24,7 +24,7 @@ defmodule Glific.Appsignal do
   @spec handle_event(list(), map(), map(), any()) :: any()
   def handle_event([:oban, :job, :stop], measurement, meta, _) do
     # sampling only 1% of the total jobs processed to reduce cost and noise.
-    # if :rand.uniform() < 0.01 do
+    if :rand.uniform() < 0.01 do
       queue_time_sec = measurement.queue_time / 1_000_000
       queue_time_sec_trunc = trunc(queue_time_sec * 100) / 100
 
@@ -32,7 +32,7 @@ defmodule Glific.Appsignal do
         queue: meta.queue,
         worker: meta.worker
       })
-    # end
+    end
   end
 
   def handle_event(_, _, _, _), do: nil
