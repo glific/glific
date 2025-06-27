@@ -9,12 +9,11 @@ defmodule Glific.Appsignal do
   alias Glific.Repo
   @doc false
   @spec handle_event(list(), any(), any(), any()) :: any()
-  def handle_event([:oban, action, event], measurement, meta, _)
-      when event in [:stop, :exception] do
+  def handle_event([:oban, action, :exception], measurement, meta, _) do
     time = :os.system_time()
     span = record_event(action, measurement, meta, time)
 
-    if event == :exception && meta.attempt >= meta.max_attempts do
+    if meta.attempt >= meta.max_attempts do
       error = inspect(meta.error)
       @span.add_error(span, meta.kind, error, meta.stacktrace)
     end
@@ -22,13 +21,10 @@ defmodule Glific.Appsignal do
     @tracer.close_span(span, end_time: time)
   end
 
-  def handle_event(_, _, _, _), do: nil
-
-  # TODO: docs
-  @spec handle_success_metrics(list(), map(), map(), any()) :: any()
-  def handle_success_metrics([:oban, :job, :stop], measurement, meta, _) do
+  @spec handle_event(list(), map(), map(), any()) :: any()
+  def handle_event([:oban, :job, :stop], measurement, meta, _) do
     # sampling only 1% of the total jobs processed to reduce cost and noise.
-    # if :rand.uniform() < 0.5 do
+    # if :rand.uniform() < 0.01 do
       queue_time_sec = measurement.queue_time / 1_000_000
       queue_time_sec_trunc = trunc(queue_time_sec * 100) / 100
 
@@ -39,7 +35,11 @@ defmodule Glific.Appsignal do
     # end
   end
 
-  # TODO: spec
+  def handle_event(_, _, _, _), do: nil
+
+  @doc """
+  Sends oban queue size metric to Appsignal
+  """
   def send_oban_queue_size do
     get_oban_queue_data()
     |> Enum.each(fn [queue, state, length] ->
@@ -91,7 +91,7 @@ defmodule Glific.Appsignal do
   end
 
   @spec get_oban_queue_data :: list()
-  def get_oban_queue_data do
+  defp get_oban_queue_data do
     {:ok, %{rows: rows}} =
       """
       SELECT queue, state, count(id)
