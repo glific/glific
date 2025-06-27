@@ -82,7 +82,7 @@ Tested with Postgres versions:
 ## 2. Clone Backend Repository
 
 ```bash
-git clone https://github.com/glific/glific
+git clone git@github.com:glific/glific.git
 ```
 
 ## 3. Install certificate - Use SSL for frontend and backend
