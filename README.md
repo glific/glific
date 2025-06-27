@@ -82,7 +82,7 @@ Tested with Postgres versions:
 ## 2. Clone Backend Repository
 
 ```bash
-git clone https://github.com/glific/glific
+git clone git@github.com:glific/glific.git
 ```
 
 ## 3. Install certificate - Use SSL for frontend and backend
@@ -103,8 +103,9 @@ ls -1  # Check that glific.test+1-key.pem and glific.test+1.pem exist
 
 Check port 4001:
 ```bash
-sudo lsof -n -i:4001 | grep LISTEN should return nothing.
+sudo lsof -n -i:4001 | grep LISTEN 
 ```
+should return nothing.
 
 Check `host file`:
 ```bash
@@ -129,8 +130,9 @@ dir # Check that glific.test+1-key.pem and glific.test+1.pem exist
 
 Check port 4001:
 ```bash
-netstat -ano | findstr :4001 should return nothing.
+netstat -ano | findstr :4001
 ```
+should return nothing.
 
 Check `host file by type`:
 ```bash
@@ -248,9 +250,6 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  Exit the PostgreSQL terminal by typing `\q` and pressing Enter. Run `mix setup` again.
 
  - Run `iex -S mix phx.server`
- - Inside the iex (you might need to hit enter/return to see the prompt)
-   - Update HSM templates by running the following command:
-   - `Glific.Templates.sync_hsms_from_bsp(1)`
 
  Now you can visit [`https://glific.test:4001`](https://glific.test:4001) from your browser.
 
