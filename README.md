@@ -250,9 +250,6 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  Exit the PostgreSQL terminal by typing `\q` and pressing Enter. Run `mix setup` again.
 
  - Run `iex -S mix phx.server`
- - Inside the iex (you might need to hit enter/return to see the prompt)
-   - Update HSM templates by running the following command:
-   - `Glific.Templates.sync_hsms_from_bsp(1)`
 
  Now you can visit [`https://glific.test:4001`](https://glific.test:4001) from your browser.
 
