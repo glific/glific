@@ -456,6 +456,9 @@ defmodule Glific.Providers.Gupshup.Template do
 
   @spec attach_otp_params(map(), map()) :: map()
   defp attach_otp_params(template_payload, %{category: "AUTHENTICATION"} = _attrs) do
+    # `addSecurityRecommendation` is the security check recommended by Meta. 
+    # In the OTP template, this adds the default security message i.e
+    # "For your security, do not share this code."
     Map.merge(template_payload, %{addSecurityRecommendation: true})
   end
 
