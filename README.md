@@ -103,8 +103,9 @@ ls -1  # Check that glific.test+1-key.pem and glific.test+1.pem exist
 
 Check port 4001:
 ```bash
-sudo lsof -n -i:4001 | grep LISTEN should return nothing.
+sudo lsof -n -i:4001 | grep LISTEN 
 ```
+should return nothing.
 
 Check `host file`:
 ```bash
@@ -129,8 +130,9 @@ dir # Check that glific.test+1-key.pem and glific.test+1.pem exist
 
 Check port 4001:
 ```bash
-netstat -ano | findstr :4001 should return nothing.
+netstat -ano | findstr :4001
 ```
+should return nothing.
 
 Check `host file by type`:
 ```bash
