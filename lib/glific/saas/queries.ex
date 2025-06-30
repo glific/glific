@@ -104,6 +104,7 @@ defmodule Glific.Saas.Queries do
   @spec seed_data(map()) :: map()
 
   def seed_data(%{organization: organization} = results) when is_map(organization) do
+    delete_migration_if_exists(organization.shortcode)
     Seeder.seed(tenant: organization.shortcode, tenant_id: organization.id)
     results
   end
@@ -549,4 +550,14 @@ defmodule Glific.Saas.Queries do
   end
 
   defp validate_true(results, _, _key), do: results
+
+  @spec delete_migration_if_exists(String.t()) :: any()
+  defp delete_migration_if_exists(tenant) do
+    query =
+      from schema in "schema_seeds",
+        where: schema.tenant == ^tenant,
+        select: %{version: schema.version}
+
+    Repo.delete_all(query, skip_organization_id: true)
+  end
 end
