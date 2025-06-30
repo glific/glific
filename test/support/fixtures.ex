@@ -588,7 +588,7 @@ defmodule Glific.Fixtures do
               "status" => "success",
               "token" => "new_partner_token",
               "template" => %{
-                "elementName" => "common_otp",
+                "elementName" => "verify_otp",
                 "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
                 "languageCode" => "en_US",
                 "status" => "APPROVED"
@@ -603,7 +603,7 @@ defmodule Glific.Fixtures do
 
       Please find the verification number is {{2}} for resetting your account.
       """,
-      shortcode: "common_otp",
+      shortcode: "verify_otp",
       is_hsm: true,
       category: "AUTHENTICATION",
       example: """

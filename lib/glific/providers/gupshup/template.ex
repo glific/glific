@@ -423,6 +423,7 @@ defmodule Glific.Providers.Gupshup.Template do
     }
     |> attach_media_params(attrs)
     |> attach_button_param(attrs)
+    |> attach_otp_params(attrs)
   end
 
   defp attach_media_params(template_payload, %{type: :text} = _attrs), do: template_payload
@@ -452,4 +453,14 @@ defmodule Glific.Providers.Gupshup.Template do
   end
 
   defp attach_button_param(template_payload, _attrs), do: template_payload
+
+  @spec attach_otp_params(map(), map()) :: map()
+  defp attach_otp_params(template_payload, %{category: "AUTHENTICATION"} = _attrs) do
+    # `addSecurityRecommendation` is the security check recommended by Meta.
+    # In the OTP template, this adds the default security message i.e
+    # "For your security, do not share this code."
+    Map.merge(template_payload, %{addSecurityRecommendation: true})
+  end
+
+  defp attach_otp_params(template_payload, _attrs), do: template_payload
 end
