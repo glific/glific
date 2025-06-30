@@ -632,6 +632,9 @@ defmodule Glific.Templates do
   end
 
   defp change_template_status("REJECTED", db_template, bsp_template) do
+    Logger.info(
+      "org_id:#{db_template.organization_id} template:#{db_template.shortcode} bsp_id:#{bsp_template["bsp_id"]} has been REJECTED"
+    )
     Notifications.create_notification(%{
       category: "Templates",
       message: "Template #{db_template.shortcode} has been rejected",
@@ -647,6 +650,28 @@ defmodule Glific.Templates do
 
     %{status: "REJECTED", reason: bsp_template["reason"]}
   end
+
+  defp change_template_status("FAILED", db_template, bsp_template) do
+    Logger.info(
+      "org_id:#{db_template.organization_id} template:#{db_template.shortcode} bsp_id:#{bsp_template["bsp_id"]} has been FAILED"
+    )
+    Notifications.create_notification(%{
+      category: "Templates",
+      message: "Template #{db_template.shortcode} has been failed",
+      severity: Notifications.types().info,
+      organization_id: db_template.organization_id,
+      entity: %{
+        id: db_template.id,
+        shortcode: db_template.shortcode,
+        label: db_template.label,
+        uuid: db_template.uuid
+      }
+    })
+
+    %{status: "FAILED", reason: bsp_template["reason"]}
+  end
+
+
 
   defp change_template_status(status, _db_template, _bsp_template), do: %{status: status}
 
