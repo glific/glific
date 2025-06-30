@@ -5,6 +5,8 @@ defmodule Glific.TemplatesTest do
   alias Glific.{
     Fixtures,
     Mails.MailLog,
+    Messages,
+    Messages.Message,
     Messages.MessageMedia,
     Notifications,
     Notifications.Notification,
@@ -1993,7 +1995,9 @@ defmodule Glific.TemplatesTest do
     assert Notifications.types().critical in severities
   end
 
-  test "submit_otp_template_for_org/1 should submit verify_otp template for approval", attrs do
+  test "submit_otp_template_for_org/1 should submit verify_otp template for approval" <>
+         "create_and_send_otp_template_message/2 sends OTP with only [otp] as parameters",
+       attrs do
     otp_uuid = Ecto.UUID.generate()
 
     token_response =
@@ -2059,5 +2063,23 @@ defmodule Glific.TemplatesTest do
     assert template.buttons == [
              %{"otp_type" => "COPY_CODE", "text" => "Copy OTP", "type" => "OTP"}
            ]
+
+    contact = Fixtures.contact_fixture(attrs)
+
+    # Incorrect number of parameters should give an error
+    parameters = ["registration", "otp"]
+
+    {:error, error_message} =
+      %{template_id: template.id, receiver_id: contact.id, parameters: parameters}
+      |> Messages.create_and_send_hsm_message()
+
+    assert error_message == "Please provide the right number of parameters for the template."
+
+    # Correct number of parameters should create and send hsm message
+    parameters = ["otp"]
+
+    assert {:ok, %Message{}} =
+             %{template_id: template.id, receiver_id: contact.id, parameters: parameters}
+             |> Messages.create_and_send_hsm_message()
   end
 end
