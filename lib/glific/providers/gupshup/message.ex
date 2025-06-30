@@ -194,7 +194,7 @@ defmodule Glific.Providers.Gupshup.Message do
       end
 
     message_conversation = %{
-      deduction_type: deductions["type"],
+      deduction_type: deductions["category"],
       is_billable: deductions["billable"],
       conversation_id: references["conversationId"],
       payload: params,

@@ -31,7 +31,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.BillingEventController do
   """
   @spec handle_billing_event(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def handle_billing_event(conn, params) do
-    with {:ok, message_conversation} <- Gupshup.Message.receive_billing_event(params) do
+    # Since we only get non-nil conversationId on free-entry messages, we only have to
+    # add entries where conversationId is not nil.
+    with {:ok, message_conversation} <- Gupshup.Message.receive_billing_event(params),
+         false <- is_nil(message_conversation.conversation_id) do
       message_conversation
       |> Map.put(:organization_id, conn.assigns[:organization_id])
       |> MessageConversations.create_message_conversation()
