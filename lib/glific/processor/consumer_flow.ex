@@ -332,7 +332,8 @@ defmodule Glific.Processor.ConsumerFlow do
 
       _ ->
         # we return the current context in case of error for backward compatibility with
-        # the messages which will not send any ID in webhook
+        # the messages which will not send any ID in webhook and also in cases of entering a sub-flow
+        # where the current node will not be in the uuid_map
         context
     end
   end
