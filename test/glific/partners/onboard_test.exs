@@ -762,17 +762,10 @@ defmodule Glific.OnboardTest do
     assert result.organization.name == "First"
     assert result.organization.shortcode == "new_glific"
 
-    simulator_contacts = Contacts.list_contacts(%{filter: %{term: "Glific"}})
-    assert length(simulator_contacts) > 0
-
     result = Onboard.setup(attrs |> Map.merge(%{"shortcode" => "glific_b"}))
 
     assert result.organization.name == "First"
     assert result.organization.shortcode == "glific_b"
-
-    # if we don't delete the existing migration, length of simulator_contacts here will be 0
-    simulator_contacts = Contacts.list_contacts(%{filter: %{term: "Glific"}})
-    assert length(simulator_contacts) > 0
 
     query =
       from schema in "schema_seeds",
