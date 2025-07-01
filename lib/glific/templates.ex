@@ -635,6 +635,7 @@ defmodule Glific.Templates do
     Logger.info(
       "org_id:#{db_template.organization_id} template:#{db_template.shortcode} bsp_id:#{bsp_template["bsp_id"]} has been REJECTED"
     )
+
     Notifications.create_notification(%{
       category: "Templates",
       message: "Template #{db_template.shortcode} has been rejected",
@@ -652,7 +653,6 @@ defmodule Glific.Templates do
   end
 
   def change_template_status("FAILED", db_template, bsp_template) do
-
     Notifications.create_notification(%{
       category: "Templates",
       message: "Template #{db_template.shortcode} has been failed",
@@ -668,8 +668,6 @@ defmodule Glific.Templates do
 
     %{status: "FAILED", reason: bsp_template["reason"]}
   end
-
-
 
   def change_template_status(status, _db_template, _bsp_template), do: %{status: status}
 
