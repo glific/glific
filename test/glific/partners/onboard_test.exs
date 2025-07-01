@@ -19,8 +19,6 @@ defmodule Glific.OnboardTest do
     Seeds.SeedsDev
   }
 
-  import Ecto.Query
-
   @valid_attrs %{
     "name" => "First",
     "phone" => "+911234567890",
