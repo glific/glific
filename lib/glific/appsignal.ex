@@ -7,6 +7,7 @@ defmodule Glific.Appsignal do
   @span Appsignal.Span
 
   alias Glific.Repo
+  
   @doc false
   @spec handle_event(list(), any(), any(), any()) :: any()
   def handle_event([:oban, action, :exception], measurement, meta, _) do
