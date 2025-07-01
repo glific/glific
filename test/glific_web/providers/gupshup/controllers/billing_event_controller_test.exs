@@ -17,7 +17,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.BillingEventControllerTest do
         "billable" => true,
         "model" => "CBP",
         "source" => "whatsapp",
-        "type" => "UIC"
+        "type" => "regular",
+        "category" => "marketing"
       },
       "references" => %{
         "conversationId" => "c3dcdb2f4f227931248cc080c387e484",
@@ -40,7 +41,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.BillingEventControllerTest do
   end
 
   describe "status" do
-    test "handler should return nil data", %{conn: conn} do
+    test "When there is non-nil conversation_id", %{conn: conn} do
       [message | _] = Messages.list_messages(%{})
       contact = Contacts.get_contact!(message.contact_id)
 
@@ -58,8 +59,34 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.BillingEventControllerTest do
         })
 
       assert message_conversation.is_billable == true
-      assert message_conversation.deduction_type == "UIC"
+      assert message_conversation.deduction_type == "marketing"
       assert message_conversation.message_id == message.id
+    end
+
+    test "When conversation_id is nil", %{conn: conn} do
+      [message | _] = Messages.list_messages(%{})
+      contact = Contacts.get_contact!(message.contact_id)
+
+      billing_event_params =
+        Map.delete(@billing_event_request_params["payload"]["references"], "conversationId")
+        |> then(
+          &Map.update(@billing_event_request_params, "payload", &1, fn _ ->
+            %{
+              "references" => &1,
+              "deductions" => @billing_event_request_params["payload"]["deductions"]
+            }
+          end)
+        )
+        |> put_in(["payload", "references", "destination"], contact.phone)
+        |> put_in(["payload", "references", "gsId"], message.bsp_message_id)
+
+      conn = post(conn, "/gupshup", billing_event_params)
+      assert response(conn, 200) == ""
+
+      {:error, ["Elixir.Glific.Messages.MessageConversation", "Resource not found"]} =
+        Repo.fetch_by(MessageConversation, %{
+          conversation_id: "c3dcdb2f4f227931248cc080c387e484"
+        })
     end
   end
 end
