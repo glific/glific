@@ -1995,9 +1995,7 @@ defmodule Glific.TemplatesTest do
     assert Notifications.types().critical in severities
   end
 
-  test "submit_otp_template_for_org/1 should submit verify_otp template for approval" <>
-         "create_and_send_otp_template_message/2 sends OTP with only [otp] as parameters",
-       attrs do
+  test "submit_otp_template_for_org/1 should submit verify_otp template for approval", attrs do
     otp_uuid = Ecto.UUID.generate()
 
     token_response =
@@ -2014,7 +2012,7 @@ defmodule Glific.TemplatesTest do
           "category" => "AUTHENTICATION",
           "createdOn" => 1_695_904_220_000,
           # returning additional content beyond what we are passing to the template
-          # because of the `addSecurityRecommendation` check. In the OTP template,
+          # because of the addSecurityRecommendation check. In the OTP template,
           # this adds the default security message: “For your security, do not share this code.”
           "data" => "{{1}} is your verification code. For your security, do not share this code.",
           "elementName" => "verify_otp",
@@ -2063,8 +2061,46 @@ defmodule Glific.TemplatesTest do
     assert template.buttons == [
              %{"otp_type" => "COPY_CODE", "text" => "Copy OTP", "type" => "OTP"}
            ]
+  end
 
+  test "create_and_send_otp_template_message/2 validates parameters and sends OTP", attrs do
     contact = Fixtures.contact_fixture(attrs)
+
+    template =
+      Fixtures.session_template_fixture(%{
+        organization_id: attrs.organization_id,
+        label: "verify_otp",
+        shortcode: "verify_otp",
+        body: "{{1}} is your verification code.",
+        example: "[112233] is your verification code.",
+        number_parameters: 1
+      })
+
+    body =
+      Jason.encode!(%{
+        "status" => "success",
+        "template" => %{
+          "category" => "AUTHENTICATION",
+          "createdOn" => 1_695_904_220_000,
+          "data" => "{{1}} is your verification code. For your security, do not share this code.",
+          "elementName" => "verify_otp",
+          "id" => template.uuid,
+          "languageCode" => "en",
+          "languagePolicy" => "deterministic",
+          "master" => true,
+          "meta" =>
+            "{\"example\":\"[112233] is your verification code. For your security, do not share this code.\"}",
+          "modifiedOn" => 1_695_904_220_000,
+          "status" => "PENDING",
+          "templateType" => "TEXT",
+          "vertical" => "AUTHENTICATION"
+        }
+      })
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://partner.gupshup.io/partner/message/template"} ->
+        %Tesla.Env{status: 200, body: body}
+    end)
 
     # Incorrect number of parameters should give an error
     parameters = ["registration", "otp"]
