@@ -1941,6 +1941,33 @@ defmodule Glific.TemplatesTest do
     assert Notifications.types().info in severities
   end
 
+  test "change_template_status/3 with FAILED status should create a notification", attrs do
+    db_template = session_template_fixture(attrs)
+
+    bsp_template = %{
+      "bsp_id" => "bsp_123456",
+      "reason" => "Policy Violation"
+    }
+
+    result = Templates.change_template_status("FAILED", db_template, bsp_template)
+
+    assert result.status == "FAILED"
+    assert result.reason == "Policy Violation"
+
+    notification =
+      Notifications.Notification
+      |> where([n], n.organization_id == ^attrs.organization_id)
+      |> order_by(desc: :inserted_at)
+      |> limit(1)
+      |> Glific.Repo.one()
+
+    assert notification != nil
+    assert notification.message == "Template #{db_template.shortcode} has been failed"
+    assert notification.severity == Notifications.types().info
+    assert notification.category == "Templates"
+    assert notification.entity["uuid"] == db_template.uuid
+  end
+
   test "handle the failure case when the sync fails", attrs do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
