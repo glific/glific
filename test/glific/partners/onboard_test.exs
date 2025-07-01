@@ -19,6 +19,8 @@ defmodule Glific.OnboardTest do
     Seeds.SeedsDev
   }
 
+  import Ecto.Query
+
   @valid_attrs %{
     "name" => "First",
     "phone" => "+911234567890",
@@ -734,7 +736,12 @@ defmodule Glific.OnboardTest do
     assert result.organization.name == "First"
     assert result.organization.shortcode == "new_glific"
 
-    simulator_contacts = Contacts.list_contacts(%{filter: %{term: "Glific"}})
+    simulator_contacts =
+      Contacts.list_contacts(%{
+        filter: %{term: "Glific"},
+        organization_id: result.organization.id
+      })
+
     assert length(simulator_contacts) > 0
 
     {:ok, _} =
@@ -746,7 +753,12 @@ defmodule Glific.OnboardTest do
     assert result.organization.shortcode == "new_glific"
 
     # if we don't delete the existing migration, length of simulator_contacts here will be 0
-    simulator_contacts = Contacts.list_contacts(%{filter: %{term: "Glific"}})
+    simulator_contacts =
+      Contacts.list_contacts(%{
+        filter: %{term: "Glific"},
+        organization_id: result.organization.id
+      })
+
     assert length(simulator_contacts) > 0
   end
 
