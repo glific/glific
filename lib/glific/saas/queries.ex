@@ -559,7 +559,6 @@ defmodule Glific.Saas.Queries do
     query =
       from schema in "schema_seeds",
         where: schema.tenant == ^tenant
-        # select: %{version: schema.version}
 
     Repo.delete_all(query, skip_organization_id: true)
   end
