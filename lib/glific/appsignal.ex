@@ -26,7 +26,7 @@ defmodule Glific.Appsignal do
     sampling_rate =
       Application.get_env(:glific, :appsignal_sampling_rate) |> Glific.parse_maybe_integer!()
 
-    if :rand.uniform() < sampling_rate / 100 * 1 do
+    if :rand.uniform() < sampling_rate / 100 do
       queue_time_sec = measurement.queue_time / 1_000_000
       queue_time_sec_trunc = trunc(queue_time_sec * 100) / 100
 
