@@ -1738,7 +1738,7 @@ defmodule Glific.MessagesTest do
       {:ok, %Message{} = message} = Messages.create_and_send_otp_session_message(contact, otp)
 
       assert message.body ==
-               "112233 is your verification code. For your security, do not share this code. It is valid for 5 minutes."
+               "112233 is your verification code. For your security, do not share this code."
     end
   end
 end
