@@ -189,12 +189,12 @@ msgstr ""
 msgid "Not handling %{return} value"
 msgstr ""
 
-#: lib/glific/messages.ex:622
+#: lib/glific/messages.ex:620
 #, elixir-format, elixir-autogen
 msgid "Please provide media for media template."
 msgstr ""
 
-#: lib/glific/messages.ex:616
+#: lib/glific/messages.ex:614
 #, elixir-format, elixir-autogen
 msgid "Please provide the right number of parameters for the template."
 msgstr ""
