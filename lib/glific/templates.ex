@@ -769,7 +769,7 @@ defmodule Glific.Templates do
   defp do_parse_buttons("PHONE_NUMBER", button),
     do: button["text"] <> ", " <> button["phone_number"]
 
-  defp do_parse_buttons("QUICK_REPLY", button), do: button["text"]
+  defp do_parse_buttons(type, button) when type in ["QUICK_REPLY", "OTP"], do: button["text"]
 
   @doc """
   List of available categories provided by whatsapp
