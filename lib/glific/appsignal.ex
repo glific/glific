@@ -7,7 +7,7 @@ defmodule Glific.Appsignal do
   @span Appsignal.Span
 
   alias Glific.Repo
-  
+
   @doc false
   @spec handle_event(list(), any(), any(), any()) :: any()
   def handle_event([:oban, action, :exception], measurement, meta, _) do
@@ -28,10 +28,10 @@ defmodule Glific.Appsignal do
       Application.get_env(:glific, :appsignal_sampling_rate) |> Glific.parse_maybe_integer!()
 
     if :rand.uniform() < sampling_rate / 100 do
-      queue_time_sec = measurement.queue_time / 1_000_000
-      queue_time_sec_trunc = trunc(queue_time_sec * 100) / 100
+      # oban telemetry measurements are in microseconds
+      queue_time_sec = Float.ceil(measurement.queue_time / 1_000_000, 2)
 
-      Appsignal.add_distribution_value("oban_job_latency", queue_time_sec_trunc, %{
+      Appsignal.add_distribution_value("oban_job_latency", queue_time_sec, %{
         queue: meta.queue,
         worker: meta.worker
       })
