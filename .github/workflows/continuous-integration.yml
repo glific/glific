@@ -16,6 +16,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: glific_test
+          POSTGRES_INITDB_ARGS: "--auth-host=trust"
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
@@ -23,6 +24,7 @@ jobs:
     env:
       MIX_ENV: test
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CACERT_PATH: /priv/cert/ca-cert.pem
 
     strategy:
       matrix: # build matrix for the job
@@ -41,10 +43,15 @@ jobs:
           elixir-version: ${{ matrix.elixir }}
           otp-version: ${{ matrix.otp }}
 
-      - name: Decode SSL Certeficate
+      - name: Generate SSL certificates
         run: |
-          mkdir -p priv/cert
-          echo "${{ secrets.DB_SSL_CERT_BASE64 }}" | base64 --decode > priv/cert/glific-CA.pem
+          # Generate SSL certificates for testing
+          cd priv
+          mkdir cert
+          cd cert
+          chmod +x generate_certs.sh
+          ./generate_certs.sh
+          echo "SSL certificates generated for CI"
 
       - name: Retrieve Mix Dependencies Cache
         uses: actions/cache@v4
