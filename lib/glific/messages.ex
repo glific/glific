@@ -459,12 +459,12 @@ defmodule Glific.Messages do
     # fetch session template by shortcode "verification"
     {:ok, session_template} =
       Repo.fetch_by(SessionTemplate, %{
-        shortcode: "common_otp",
+        shortcode: "verify",
         is_hsm: true,
         organization_id: contact.organization_id
       })
 
-    parameters = ["Registration", otp]
+    parameters = [otp]
 
     %{template_id: session_template.id, receiver_id: contact.id, parameters: parameters}
     |> create_and_send_hsm_message()
