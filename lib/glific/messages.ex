@@ -448,7 +448,9 @@ defmodule Glific.Messages do
   def create_and_send_otp_session_message(contact, otp) do
     ttl = Application.get_env(:passwordless_auth, :verification_code_ttl) |> div(60)
 
-    body = "Your OTP for Registration is #{otp}. This is valid for #{ttl} minutes."
+    body =
+      "#{otp} is your verification code. For your security, do not share this code. It is valid for #{ttl} minutes."
+
     send_default_message(contact, body)
   end
 

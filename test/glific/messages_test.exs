@@ -1730,5 +1730,15 @@ defmodule Glific.MessagesTest do
       message_media = message_media_fixture(%{organization_id: attrs.organization_id})
       assert %Ecto.Changeset{} = Messages.change_message_media(message_media)
     end
+
+    test "create_and_send_otp_session_message/2 should send the correct session otp message",
+         attrs do
+      contact = Fixtures.contact_fixture(attrs)
+      otp = "112233"
+      {:ok, %Message{} = message} = Messages.create_and_send_otp_session_message(contact, otp)
+
+      assert message.body ==
+               "112233 is your verification code. For your security, do not share this code. It is valid for 5 minutes."
+    end
   end
 end
