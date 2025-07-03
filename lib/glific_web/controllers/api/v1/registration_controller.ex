@@ -5,7 +5,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @dialyzer {:no_return, reset_password: 2}
   @dialyzer {:no_return, reset_user_password: 2}
 
-  alias Glific.Partners.Organization
   use GlificWeb, :controller
 
   alias Ecto.Changeset
@@ -24,6 +23,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
     Repo,
     Users,
     Users.User,
+    Partners.Organization,
     Providers.Gupshup.PartnerAPI
   }
 
@@ -145,9 +145,9 @@ defmodule GlificWeb.API.V1.RegistrationController do
       _ ->
         with {:ok, contact} <- optin_contact(organization_id, phone),
              {:ok, new_contact} <- check_balance_and_set_bot(contact),
-             {:ok, _contact} <- can_send_otp_to_phone?(new_contact.organization_id, phone) |> IO.inspect(label: "optin"),
-             true <- send_otp_allowed?(new_contact.organization_id, phone, registration) |> IO.inspect(label: "sendotp"),
-             {:ok, _otp} <- create_and_send_verification_code(new_contact) |> IO.inspect() do
+             {:ok, _contact} <- can_send_otp_to_phone?(new_contact.organization_id, phone),
+             true <- send_otp_allowed?(new_contact.organization_id, phone, registration),
+             {:ok, _otp} <- create_and_send_verification_code(new_contact) do
           json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
         else
           _ ->
@@ -211,7 +211,9 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   @spec send_otp_allowed?(integer, String.t(), String.t()) :: boolean
   defp send_otp_allowed?(organization_id, phone, registration) do
-    {result, _} = Repo.fetch_by(User, %{phone: phone, organization_id: organization_id}) |> IO.inspect()
+    {result, _} =
+      Repo.fetch_by(User, %{phone: phone, organization_id: organization_id}) |> IO.inspect()
+
     (result == :ok && registration == "false") || (result == :error && registration != "false")
   end
 
@@ -291,10 +293,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
       {:ok, contact}
     else
       build_context(2)
-
-      org =
-        Glific.Repo.get_by(Organization, id: 2)
-
+      org = Repo.get_by(Organization, id: 2)
       optin_contact(org.id, contact.phone)
     end
   end
