@@ -46,9 +46,7 @@ jobs:
       - name: Generate SSL certificates
         run: |
           # Generate SSL certificates for testing
-          cd priv
-          mkdir cert
-          cd cert
+          cd priv/cd
           chmod +x generate_certs.sh
           ./generate_certs.sh
           echo "SSL certificates generated for CI"
