@@ -143,12 +143,28 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       :ok
     end
 
-    test "send otp", %{conn: conn} do
+    test "send otp successfully from NGO bot when balance is greater than 0", %{conn: conn} do
       valid_params = %{
         "user" => %{"phone" => "918456732456", "registration" => "true", "token" => "some_token"}
       }
 
-      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":1.787,\"overDraftLimit\":-20.0}}"
+          }
+
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"status\":\"success\"}"
+          }
+      end)
+
+      conn =
+        post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
 
       assert json = json_response(conn, 200)
       assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
@@ -224,6 +240,21 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
     test "send otp to optout contact will optin the contact again", %{conn: conn} do
       receiver = Fixtures.contact_fixture()
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":1.787,\"overDraftLimit\":-20.0}}"
+          }
+
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"status\":\"success\"}"
+          }
+      end)
 
       Contacts.contact_opted_out(receiver.phone, receiver.organization_id, DateTime.utc_now())
 
@@ -412,4 +443,24 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert conn.resp_body == "Rate limit exceeded"
     end
   end
+
+  #   test "wallet > 0: sends OTP via NGO bot", %{conn: conn} do
+  #   phone = "+911234567890"
+  #   # Assume NGO has sufficient balance
+  #   PartnerAPI.mock_balance(10)
+
+  #   valid_params = %{
+  #     "user" => %{
+  #       "phone" => phone,
+  #       "registration" => "true",
+  #       "token" => "valid_captcha_token"
+  #     }
+  #   }
+
+  #   conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+
+  #   assert json = json_response(conn, 200)
+  #   assert json["data"]["message"] =~ "OTP sent successfully"
+  #   assert_sent_from_bot(:ngo)
+  # end
 end

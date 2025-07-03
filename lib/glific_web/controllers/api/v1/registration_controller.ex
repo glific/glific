@@ -212,7 +212,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @spec send_otp_allowed?(integer, String.t(), String.t()) :: boolean
   defp send_otp_allowed?(organization_id, phone, registration) do
     {result, _} =
-      Repo.fetch_by(User, %{phone: phone, organization_id: organization_id}) |> IO.inspect()
+      Repo.fetch_by(User, %{phone: phone, organization_id: organization_id})
 
     (result == :ok && registration == "false") || (result == :error && registration != "false")
   end
@@ -287,9 +287,9 @@ defmodule GlificWeb.API.V1.RegistrationController do
   end
 
   defp check_balance_and_set_bot(contact) do
-    {:ok, balance} = PartnerAPI.get_balance(contact.organization_id) |> IO.inspect()
+    {:ok, %{"balance" => balance}} = PartnerAPI.get_balance(contact.organization_id)
 
-    if balance < 0 do
+    if balance > 0 do
       {:ok, contact}
     else
       build_context(2)
