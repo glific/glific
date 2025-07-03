@@ -103,7 +103,7 @@ ls -1  # Check that glific.test+1-key.pem and glific.test+1.pem exist
 
 Check port 4001:
 ```bash
-sudo lsof -n -i:4001 | grep LISTEN 
+sudo lsof -n -i:4001 | grep LISTEN
 ```
 should return nothing.
 
@@ -162,27 +162,27 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  Oban is **required** before running mix for Glific to operate.
 
  **For contributors on social impact projects (including NGOs):**
- 
+
   Please get in touch with the team on Discord and request a limited-time Oban Pro key.
   Once provided, run the following command to add the Oban repository with your credentials:
    ```bash
   mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
    ```
-  
+
  **For others, if you want to use the free Oban solution**
  People have contributed code changes to allow Glific to work with the free version of Oban. You can view the details here: https://github.com/glific/glific/pull/2391
 
  **For production use:**
- 
+
   *You must purchase a license for Oban Pro to use advanced features in production.
-  
+
   *Note: Oban Web is now open source and does not require a license.
-  
+
   *If you're using Oban Pro, after purchasing the license:
-      
+
 
    Go to your Oban account dashboard.
-   
+
    Run the following command inside your glific_backend directory:
 
   ```bash
@@ -198,7 +198,7 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
    ```
 
      Name        URL                             Public key                                          Auth key
-     hexpm       https://repo.hex.pm             SHA256:abc/edf/gef+aIWPc    
+     hexpm       https://repo.hex.pm             SHA256:abc/edf/gef+aIWPc
      oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
 
    If you see two Auth key entries - caused by Oban moving from a public to a private repository - it will fail.
@@ -247,7 +247,77 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  sudo -u postgres psql
  ALTER USER postgres WITH PASSWORD 'postgres';
  ```
- Exit the PostgreSQL terminal by typing `\q` and pressing Enter. Run `mix setup` again.
+ Exit the PostgreSQL terminal by typing `\q` and pressing Enter.
+
+#### Setting up SSL for Postgres (Optional but recommended)
+
+ To enable SSL connections to Postgres:
+
+ 1. Find your Postgres data directory:
+ ```bash
+ psql -U postgres -c "SHOW data_directory;"
+ ```
+
+ 2. Create SSL certificates using mkcert:
+ ```bash
+ mkcert -cert-file server.crt -key-file server.key localhost 127.0.0.1 ::1
+ ```
+
+ 3. Copy the certificates to Postgres data directory:
+ ```bash
+ sudo cp server.crt /path/to/postgres/data/directory/
+ sudo cp server.key /path/to/postgres/data/directory/
+ sudo chmod 600 /path/to/postgres/data/directory/server.key
+ ```
+
+ 4. Configure Postgres to use SSL. Edit postgresql.conf:
+ ```bash
+ sudo nano /path/to/postgres/data/directory/postgresql.conf
+ ```
+ Add:
+ ```conf
+ ssl = on
+ ssl_cert_file = 'server.crt'
+ ssl_key_file = 'server.key'
+ ```
+
+ 5. Configure client authentication. Edit pg_hba.conf:
+ ```bash
+ sudo nano /path/to/postgres/data/directory/pg_hba.conf
+ ```
+ Add:
+ ```conf
+ hostssl glific_dev      all             127.0.0.1/32            trust
+ hostssl glific_test     all             127.0.0.1/32            trust
+ hostssl postgres        all             127.0.0.1/32            trust
+ ```
+
+ 6. Restart Postgres:
+ ```bash
+ # For Linux:
+ sudo systemctl restart postgresql
+ # For MacOS:
+ brew services restart postgresql
+ # For MacOS, if you installed Postgres with Postgres.app, quit and run Postgres.app
+ ```
+
+ 7. Setup CA certificates for Glific:
+ ```bash
+ CAROOT=$(mkcert -CAROOT)
+ cp "$CAROOT/rootCA.pem" priv/cert/glific-CA.pem
+ ```
+
+ 8. Test SSL connection:
+ ```bash
+ psql "sslmode=require dbname=glific_dev host=localhost"
+ ```
+ You should see SSL connection details. Verify with:
+ ```sql
+ SHOW ssl;
+ SELECT * FROM pg_stat_ssl WHERE pid=pg_backend_pid();
+ ```
+
+ Run `mix setup` again.
 
  - Run `iex -S mix phx.server`
 
@@ -300,7 +370,7 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
    - Go to Settings -> Gupshup Settings
    - Click on "Save" button
    - Wait for confirmation that settings were synced successfully.
-    
+
   This step is crucial as it fetches and stores your Gupshup `app_id` in the database, which is required for proper functioning of various APIs including the wallet API.
 
 
@@ -310,7 +380,7 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  ```bash
  mix test_full
  ```
-  To run Specific test File 
+  To run Specific test File
   ```bash
  mix test Path_to_the_specific_test_file_you_want_to_run.
  ```
@@ -328,7 +398,7 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
 
  * Download: [ngrok](https://ngrok.com/download)
  * Run:
- 
+
  ```bash
  ngrok http 4000 --host-header=glific.test:4000
   ```
