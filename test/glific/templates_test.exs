@@ -5,6 +5,8 @@ defmodule Glific.TemplatesTest do
   alias Glific.{
     Fixtures,
     Mails.MailLog,
+    Messages,
+    Messages.Message,
     Messages.MessageMedia,
     Notifications,
     Notifications.Notification,
@@ -13,6 +15,7 @@ defmodule Glific.TemplatesTest do
     Providers.Gupshup.PartnerAPI,
     Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
+    Seeds.SeedsMigration,
     Settings,
     Templates,
     Templates.SessionTemplate,
@@ -1263,7 +1266,7 @@ defmodule Glific.TemplatesTest do
               Jason.encode!(%{
                 "status" => "success",
                 "template" => %{
-                  "elementName" => "common_otp",
+                  "elementName" => "verify_otp",
                   "id" => uuid,
                   "languageCode" => "en",
                   "status" => status
@@ -1274,17 +1277,13 @@ defmodule Glific.TemplatesTest do
 
       Fixtures.session_template_fixture(%{
         body: """
-        Hello {{1}},
-
-        Please find the verification number is {{2}} for resetting your account.
+        {{1}} is your verification code. For your security, do not share this code.
         """,
-        shortcode: "common_otp",
+        shortcode: "verify_otp",
         is_hsm: true,
         category: "AUTHENTICATION",
         example: """
-        Hello [Anil],
-
-        Please find the verification number is [112233] for resetting your account.
+        [112233] is your verification code. For your security, do not share this code.
         """,
         language_id: language_id,
         uuid: uuid,
@@ -1994,5 +1993,129 @@ defmodule Glific.TemplatesTest do
 
     severities = Enum.map(notifications, & &1.severity)
     assert Notifications.types().critical in severities
+  end
+
+  test "submit_otp_template_for_org/1 should submit verify_otp template for approval", attrs do
+    otp_uuid = Ecto.UUID.generate()
+
+    token_response =
+      Jason.encode!(%{
+        "data" => %{
+          "partner_app_token" => "fake-partner-token"
+        }
+      })
+
+    body =
+      Jason.encode!(%{
+        "status" => "success",
+        "template" => %{
+          "category" => "AUTHENTICATION",
+          "createdOn" => 1_695_904_220_000,
+          # returning additional content beyond what we are passing to the template
+          # because of the addSecurityRecommendation check. In the OTP template,
+          # this adds the default security message: “For your security, do not share this code.”
+          "data" => "{{1}} is your verification code. For your security, do not share this code.",
+          "elementName" => "verify_otp",
+          "id" => otp_uuid,
+          "languageCode" => "en",
+          "languagePolicy" => "deterministic",
+          "master" => true,
+          "meta" =>
+            "{\"example\":\"[112233] is your verification code. For your security, do not share this code.\"}",
+          "modifiedOn" => 1_695_904_220_000,
+          "status" => "PENDING",
+          "templateType" => "TEXT",
+          "vertical" => "AUTHENTICATION"
+        }
+      })
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => "sk_test_partner_token"})
+        }
+
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{status: 200, body: token_response}
+
+      %{method: :post, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
+        uuid = otp_uuid
+
+        %Tesla.Env{
+          status: 200,
+          body: "{\"template\":{\"id\":\"#{uuid}\"}}"
+        }
+
+      %{method: :post, url: "https://partner.gupshup.io/partner/message/template"} ->
+        %Tesla.Env{status: 200, body: body}
+    end)
+
+    assert {:ok, %SessionTemplate{} = template} =
+             SeedsMigration.submit_otp_template_for_org(attrs.organization_id)
+
+    assert template.label == "verify_otp"
+    assert template.uuid == otp_uuid
+    assert template.category == "AUTHENTICATION"
+
+    assert template.buttons == [
+             %{"otp_type" => "COPY_CODE", "text" => "Copy OTP", "type" => "OTP"}
+           ]
+  end
+
+  test "create_and_send_otp_template_message/2 validates parameters and sends OTP", attrs do
+    contact = Fixtures.contact_fixture(attrs)
+
+    template =
+      Fixtures.session_template_fixture(%{
+        organization_id: attrs.organization_id,
+        label: "verify_otp",
+        shortcode: "verify_otp",
+        body: "{{1}} is your verification code.",
+        example: "[112233] is your verification code.",
+        number_parameters: 1
+      })
+
+    body =
+      Jason.encode!(%{
+        "status" => "success",
+        "template" => %{
+          "category" => "AUTHENTICATION",
+          "createdOn" => 1_695_904_220_000,
+          "data" => "{{1}} is your verification code. For your security, do not share this code.",
+          "elementName" => "verify_otp",
+          "id" => template.uuid,
+          "languageCode" => "en",
+          "languagePolicy" => "deterministic",
+          "master" => true,
+          "meta" =>
+            "{\"example\":\"[112233] is your verification code. For your security, do not share this code.\"}",
+          "modifiedOn" => 1_695_904_220_000,
+          "status" => "PENDING",
+          "templateType" => "TEXT",
+          "vertical" => "AUTHENTICATION"
+        }
+      })
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://partner.gupshup.io/partner/message/template"} ->
+        %Tesla.Env{status: 200, body: body}
+    end)
+
+    # Incorrect number of parameters should give an error
+    parameters = ["registration", "otp"]
+
+    {:error, error_message} =
+      %{template_id: template.id, receiver_id: contact.id, parameters: parameters}
+      |> Messages.create_and_send_hsm_message()
+
+    assert error_message == "Please provide the right number of parameters for the template."
+
+    # Correct number of parameters should create and send hsm message
+    parameters = ["otp"]
+
+    assert {:ok, %Message{}} =
+             %{template_id: template.id, receiver_id: contact.id, parameters: parameters}
+             |> Messages.create_and_send_hsm_message()
   end
 end
