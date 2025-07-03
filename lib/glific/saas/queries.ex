@@ -18,8 +18,7 @@ defmodule Glific.Saas.Queries do
     Partners,
     Partners.Organization,
     Partners.Provider,
-    Providers.Gupshup.ApiClient,
-    Providers.GupshupContacts,
+    Providers.Gupshup.PartnerAPI,
     Registrations,
     Registrations.Registration,
     Repo,
@@ -105,6 +104,10 @@ defmodule Glific.Saas.Queries do
   @spec seed_data(map()) :: map()
 
   def seed_data(%{organization: organization} = results) when is_map(organization) do
+    # Sometime we delete an org and create new org with the same previous shortcode.
+    # But seeding won't work for the new org, since its already done(seeding is based on shortcode).
+    # so we delete existing migrations in that case.
+    delete_migration_if_exists(organization.shortcode)
     Seeder.seed(tenant: organization.shortcode, tenant_id: organization.id)
     results
   end
@@ -343,19 +346,15 @@ defmodule Glific.Saas.Queries do
       dgettext("error", "API Key or App Name is empty.")
       |> error(result, :api_key_name)
     else
-      validate_bsp_keys(result, api_key, app_name)
+      validate_app(result, app_name)
     end
   end
 
-  @spec validate_bsp_keys(map(), String.t(), String.t()) :: map()
-  defp validate_bsp_keys(result, api_key, app_name) do
-    response =
-      ApiClient.users_get(api_key, app_name)
-      |> GupshupContacts.validate_opted_in_contacts()
-
-    case response do
-      {:ok, _users} -> result
-      {:error, message, key} -> error(message, result, key)
+  @spec validate_app(map(), String.t()) :: map()
+  defp validate_app(result, app_name) do
+    case PartnerAPI.fetch_gupshup_app_details(app_name) do
+      resp when is_map(resp) -> result
+      _ -> error("Invalid Gupshup App", result, :app_name)
     end
   end
 
@@ -554,4 +553,13 @@ defmodule Glific.Saas.Queries do
   end
 
   defp validate_true(results, _, _key), do: results
+
+  @spec delete_migration_if_exists(String.t()) :: any()
+  defp delete_migration_if_exists(tenant) do
+    query =
+      from schema in "schema_seeds",
+        where: schema.tenant == ^tenant
+
+    Repo.delete_all(query, skip_organization_id: true)
+  end
 end

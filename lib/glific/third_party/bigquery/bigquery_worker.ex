@@ -856,7 +856,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :contacts, organization_id, attrs))
+    |> enqueue_chunks(:contacts, organization_id, attrs)
 
     :ok
   end
@@ -914,6 +914,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             updated_at: BigQuery.format_date(row.updated_at, organization_id),
             phone: row.contact.phone,
             language: row.language.label,
+            is_default: row.is_default,
+            is_active: row.is_active,
             fields:
               Enum.map(row.fields, fn {_key, field} ->
                 %{
@@ -1070,7 +1072,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :flow_results, organization_id, attrs))
+    |> enqueue_chunks(:flow_results, organization_id, attrs)
 
     :ok
   end
@@ -1864,5 +1866,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
         value: format_value(field["value"])
       }
     end)
+  end
+
+  @spec enqueue_chunks(list(), atom(), non_neg_integer(), map()) :: :ok
+  defp enqueue_chunks(chunks, job_type, organization_id, attrs) do
+    if chunks == [] do
+      make_job([], job_type, organization_id, attrs)
+    else
+      Enum.each(chunks, &make_job(&1, job_type, organization_id, attrs))
+    end
   end
 end

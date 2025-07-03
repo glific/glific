@@ -133,22 +133,24 @@ defmodule Glific.Search.Full do
       |> Timex.to_datetime()
       |> Timex.end_of_day()
 
-  # Filter based on the date range
+  @doc """
+  Filter the query based on a date range. If both from and to are nil, it returns the original query.
+  """
   @spec run_date_range(Ecto.Queryable.t(), DateTime.t() | nil, DateTime.t() | nil) ::
           Ecto.Queryable.t()
-  defp run_date_range(query, nil, nil), do: query
+  def run_date_range(query, nil, nil), do: query
 
-  defp run_date_range(query, nil, to) do
+  def run_date_range(query, nil, to) do
     query
     |> where([m: m], m.inserted_at <= ^end_of_day(to))
   end
 
-  defp run_date_range(query, from, nil) do
+  def run_date_range(query, from, nil) do
     query
     |> where([m: m], m.inserted_at >= ^Timex.to_datetime(from))
   end
 
-  defp run_date_range(query, from, to) do
+  def run_date_range(query, from, to) do
     query
     |> where(
       [m: m],

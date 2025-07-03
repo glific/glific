@@ -92,7 +92,7 @@ defmodule Glific.Jobs.MinuteWorker do
   end
 
   defp perform(%Oban.Job{args: %{"job" => job}} = _args, _services)
-       when job in ["weekly_report", "weekly_tasks"] do
+       when job in ["weekly_report", "weekly_tasks", "weekly_message_purge"] do
     case job do
       "weekly_report" ->
         GCS.send_internal_media_sync_report()
@@ -100,6 +100,9 @@ defmodule Glific.Jobs.MinuteWorker do
       "weekly_tasks" ->
         Partners.perform_all(&Glific.Clients.weekly_tasks/1, nil, [])
         Erase.perform_weekly()
+
+      "weekly_message_purge" ->
+        Erase.perform_message_purge()
     end
 
     :ok

@@ -19,6 +19,8 @@ defmodule Glific.Sheets do
     Sheets.SheetData
   }
 
+  # zero width unicode characters
+  @invisible_unicode_range ~r/[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2060}-\x{206F}\x{FEFF}]/u
   @doc """
   Creates a sheet
 
@@ -192,7 +194,7 @@ defmodule Glific.Sheets do
 
           %{
             ## we can also think in case we need first column.
-            key: row["Key"],
+            key: parsed_rows.values["key"],
             row_data: parsed_rows.values,
             sheet_id: sheet.id,
             organization_id: sheet.organization_id,
@@ -200,6 +202,7 @@ defmodule Glific.Sheets do
           }
           |> create_sheet_data()
 
+          Glific.Metrics.increment("Sheets Sync Successful")
           {:cont, Map.merge(acc, parsed_rows.errors)}
 
         {:error, err}, acc ->
@@ -208,6 +211,7 @@ defmodule Glific.Sheets do
             "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{inspect(err)}"
           )
 
+          Glific.Metrics.increment("Sheets Sync Failed")
           create_sync_fail_notification(sheet)
           {:halt, Map.put(acc, export_url, err)}
       end)
@@ -236,8 +240,13 @@ defmodule Glific.Sheets do
   defp parse_row_values(row) do
     clean_row_values =
       Enum.reduce(row, %{}, fn {key, value}, acc ->
-        key = key |> String.downcase() |> String.replace(" ", "_")
-        Map.put(acc, key, value)
+        key =
+          key
+          |> String.downcase()
+          |> String.replace(" ", "_")
+          |> trim_value()
+
+        Map.put(acc, key, value |> trim_value())
       end)
 
     errors =
@@ -407,4 +416,13 @@ defmodule Glific.Sheets do
 
     :ok
   end
+
+  @spec trim_value(any()) :: any()
+  defp trim_value(value) when is_binary(value) do
+    value
+    |> String.trim()
+    |> String.replace(@invisible_unicode_range, "")
+  end
+
+  defp trim_value(value), do: value
 end
