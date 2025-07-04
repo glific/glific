@@ -6,14 +6,15 @@ defmodule Glific.Appsignal do
   @tracer Appsignal.Tracer
   @span Appsignal.Span
 
+  alias Glific.Repo
+
   @doc false
   @spec handle_event(list(), any(), any(), any()) :: any()
-  def handle_event([:oban, action, event], measurement, meta, _)
-      when event in [:stop, :exception] do
+  def handle_event([:oban, action, :exception], measurement, meta, _) do
     time = :os.system_time()
     span = record_event(action, measurement, meta, time)
 
-    if event == :exception && meta.attempt >= meta.max_attempts do
+    if meta.attempt >= meta.max_attempts do
       error = inspect(meta.error)
       @span.add_error(span, meta.kind, error, meta.stacktrace)
     end
@@ -21,7 +22,34 @@ defmodule Glific.Appsignal do
     @tracer.close_span(span, end_time: time)
   end
 
+  def handle_event([:oban, :job, :stop], measurement, meta, _) do
+    # sampling only x% of the total jobs processed to reduce cost and noise.
+    sampling_rate =
+      Application.get_env(:glific, :appsignal_sampling_rate) |> Glific.parse_maybe_integer!()
+
+    if :rand.uniform() < sampling_rate / 100 do
+      # oban telemetry measurements are in microseconds
+      queue_time_sec = Float.ceil(measurement.queue_time / 1_000_000, 2)
+
+      Appsignal.add_distribution_value("oban_job_latency", queue_time_sec, %{
+        queue: meta.queue,
+        worker: meta.worker
+      })
+    end
+  end
+
   def handle_event(_, _, _, _), do: nil
+
+  @doc """
+  Sends oban queue size metric to Appsignal
+  """
+  @spec send_oban_queue_size :: any()
+  def send_oban_queue_size do
+    get_oban_queue_data()
+    |> Enum.each(fn [queue, state, length] ->
+      Appsignal.set_gauge("oban_queue_size", length, %{queue: queue, state: state})
+    end)
+  end
 
   @spec record_event(atom(), any(), any(), integer()) :: any()
   defp record_event(:job, measurement, meta, time) do
@@ -64,5 +92,19 @@ defmodule Glific.Appsignal do
   @spec set_namespace(String.t()) :: any()
   def set_namespace(namespace) do
     Appsignal.Span.set_namespace(Appsignal.Tracer.root_span(), namespace)
+  end
+
+  @spec get_oban_queue_data :: list()
+  defp get_oban_queue_data do
+    {:ok, %{rows: rows}} =
+      """
+      SELECT queue, state, count(id)
+      from global.oban_jobs
+      where state in ('executing', 'available', 'scheduled', 'retryable')
+      group by queue, state
+      """
+      |> Repo.query([], skip_organization_id: true)
+
+    rows
   end
 end
