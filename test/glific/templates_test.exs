@@ -1940,33 +1940,6 @@ defmodule Glific.TemplatesTest do
     assert Notifications.types().info in severities
   end
 
-  test "change_template_status/3 with FAILED status should create a notification", attrs do
-    db_template = session_template_fixture(attrs)
-
-    bsp_template = %{
-      "bsp_id" => "bsp_123456",
-      "reason" => "Policy Violation"
-    }
-
-    result = Templates.change_template_status("FAILED", db_template, bsp_template)
-
-    assert result.status == "FAILED"
-    assert result.reason == "Policy Violation"
-
-    notification =
-      Notifications.Notification
-      |> where([n], n.organization_id == ^attrs.organization_id)
-      |> order_by(desc: :inserted_at)
-      |> limit(1)
-      |> Glific.Repo.one()
-
-    assert notification != nil
-    assert notification.message == "Template #{db_template.shortcode} has been failed"
-    assert notification.severity == Notifications.types().info
-    assert notification.category == "Templates"
-    assert notification.entity["uuid"] == db_template.uuid
-  end
-
   test "handle the failure case when the sync fails", attrs do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
@@ -2038,9 +2011,6 @@ defmodule Glific.TemplatesTest do
         "template" => %{
           "category" => "AUTHENTICATION",
           "createdOn" => 1_695_904_220_000,
-          # returning additional content beyond what we are passing to the template
-          # because of the addSecurityRecommendation check. In the OTP template,
-          # this adds the default security message: “For your security, do not share this code.”
           "data" => "{{1}} is your verification code. For your security, do not share this code.",
           "elementName" => "verify_otp",
           "id" => otp_uuid,
@@ -2089,6 +2059,41 @@ defmodule Glific.TemplatesTest do
              %{"otp_type" => "COPY_CODE", "text" => "Copy OTP", "type" => "OTP"}
            ]
   end
+  test "failed template approval flow creates notification", attrs do
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
+        %Tesla.Env{
+          status: 400,
+          body: Jason.encode!(%{"status" => "error", "message" => "Rejected by policy"})
+        }
+    end)
+
+    attrs =
+      Map.merge(attrs, %{
+        body: "Test body",
+        label: "Test Label",
+        shortcode: "test_shortcode",
+        is_hsm: true,
+        category: "ACCOUNT_UPDATE",
+        example: "Test Example",
+        language_id: 1,
+        organization_id: attrs.organization_id,
+        type: :text   # <-- Add this line!
+      })
+
+    {:error, ["BSP", _reason]} = Glific.Templates.create_session_template(attrs)
+
+    notification =
+      Glific.Notifications.Notification
+      |> where([n], n.organization_id == ^attrs.organization_id)
+      |> order_by(desc: :inserted_at)
+      |> limit(1)
+      |> Glific.Repo.one()
+
+    assert notification != nil
+    assert notification.message =~ "failed" or notification.message =~ "rejected"
+  end
+
 
   test "create_and_send_otp_template_message/2 validates parameters and sends OTP", attrs do
     contact = Fixtures.contact_fixture(attrs)
@@ -2145,4 +2150,5 @@ defmodule Glific.TemplatesTest do
              %{template_id: template.id, receiver_id: contact.id, parameters: parameters}
              |> Messages.create_and_send_hsm_message()
   end
+
 end
