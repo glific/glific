@@ -182,11 +182,12 @@ defmodule Glific.Sheets do
     gid_param = uri.fragment
 
     export_url =
-       if gid_param do
-           sheet_url <> "export?format=csv&" <> gid_param
-       else
-           sheet_url <> "export?format=csv"
-       end
+      with gid when is_binary(gid) <- uri.fragment do
+        sheet_url <> "export?format=csv&" <> gid
+      else
+        _ -> sheet_url <> "export?format=csv"
+      end
+
 
 
     SheetData
