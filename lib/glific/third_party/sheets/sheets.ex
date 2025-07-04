@@ -179,8 +179,15 @@ defmodule Glific.Sheets do
     {:ok, uri} = URI.new(sheet.url)
     # https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id
 
-    gid_params = uri.fragment || "gid=0"
-    export_url = sheet_url <> "export?format=csv&" <> gid_params
+    gid_param = uri.fragment
+
+    export_url =
+       if gid_param do
+           sheet_url <> "export?format=csv&" <> gid_param
+       else
+           sheet_url <> "export?format=csv"
+       end
+
 
     SheetData
     |> where([sd], sd.sheet_id == ^sheet.id)
