@@ -88,7 +88,7 @@ defmodule Glific.Enums.Constants do
       @user_roles_const [:none, :staff, :manager, :admin, :glific_admin]
 
       # Template button types
-      @template_button_type_const [:call_to_action, :quick_reply]
+      @template_button_type_const [:call_to_action, :quick_reply, :otp]
 
       # organization status types
       @organization_status_const [
