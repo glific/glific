@@ -116,3 +116,7 @@ config :glific,
 config :glific, Glific.Erase,
   msg_delete_batch_size: env!("MSG_DELETE_BATCH_SIZE", :integer, 100_000),
   max_msg_rows_to_delete: env!("MAX_MSG_ROWS_TO_DELETE", :integer, 2_000_000)
+
+# Percent of total job metrics to be sent to appsignal
+config :glific,
+  appsignal_sampling_rate: env!("APPSIGNAL_SAMPLING_RATE", :integer, 10)
