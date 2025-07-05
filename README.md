@@ -260,7 +260,7 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
 
  2. Create SSL certificates using mkcert:
  ```bash
- mkcert -cert-file server.crt -key-file server.key localhost 127.0.0.1 ::1
+ mkcert -cert-file server.crt -key-file server.key postgres localhost 127.0.0.1 ::1
  ```
 
  3. Copy the certificates to Postgres data directory:
