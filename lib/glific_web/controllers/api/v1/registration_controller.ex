@@ -5,6 +5,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @dialyzer {:no_return, reset_password: 2}
   @dialyzer {:no_return, reset_user_password: 2}
 
+  alias Glific.Partners.Saas
   use GlificWeb, :controller
 
   alias Ecto.Changeset
@@ -158,12 +159,14 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   defp handle_non_registration_otp(conn, organization_id, phone, registration) do
     existing_user = Repo.fetch_by(User, %{phone: phone})
+    {:ok, contact} = Repo.fetch_by(Contact, %{phone: phone})
 
     case existing_user do
       {:ok, _user} ->
-        with {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
+        with {:ok, new_contact} <- check_balance_and_set_bot(contact),
+             {:ok, _contact} <- can_send_otp_to_phone?(organization_id, phone),
              true <- send_otp_allowed?(organization_id, phone, registration),
-             {:ok, _otp} <- create_and_send_verification_code(contact) do
+             {:ok, _otp} <- create_and_send_verification_code(new_contact) do
           json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
         else
           _ ->
@@ -292,9 +295,9 @@ defmodule GlificWeb.API.V1.RegistrationController do
     if balance > 0 do
       {:ok, contact}
     else
-      build_context(2)
-      org = Repo.get_by(Organization, id: 2)
-      optin_contact(org.id, contact.phone)
+      org_id = Saas.organization_id()
+      build_context(org_id)
+      optin_contact(org_id, contact.phone)
     end
   end
 end
