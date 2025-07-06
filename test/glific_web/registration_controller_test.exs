@@ -149,12 +149,16 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       }
 
       Tesla.Mock.mock(fn
-        %{method: :get} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":1.787,\"overDraftLimit\":-20.0}}"
-          }
+        %{method: :get, url: url} = env ->
+          if String.contains?(url, "/wallet/balance") do
+            %Tesla.Env{
+              status: 200,
+              body:
+                "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":1.787,\"overDraftLimit\":-20.0}}"
+            }
+          else
+            env
+          end
 
         %{method: :post} ->
           %Tesla.Env{
@@ -230,6 +234,22 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         "user" => %{"phone" => receiver.phone, "registration" => "false"}
       }
 
+      Tesla.Mock.mock(fn
+        %{method: :get, url: url} = env ->
+          if String.contains?(url, "/wallet/balance") do
+            %Tesla.Env{
+              status: 200,
+              body:
+                "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":1.0,\"overDraftLimit\":-20.0}}"
+            }
+          else
+            env
+          end
+
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: "{\"status\":\"success\"}"}
+      end)
+
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp), invalid_params)
 
       assert json = json_response(conn, 400)
@@ -242,12 +262,16 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       receiver = Fixtures.contact_fixture()
 
       Tesla.Mock.mock(fn
-        %{method: :get} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":1.787,\"overDraftLimit\":-20.0}}"
-          }
+        %{method: :get, url: url} = env ->
+          if String.contains?(url, "/wallet/balance") do
+            %Tesla.Env{
+              status: 200,
+              body:
+                "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":1.787,\"overDraftLimit\":-20.0}}"
+            }
+          else
+            env
+          end
 
         %{method: :post} ->
           %Tesla.Env{
@@ -266,6 +290,37 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
       assert json = json_response(conn, 400)
       assert get_in(json, ["error", "message"]) == "Cannot send the otp to #{receiver.phone}"
+    end
+
+    test "send otp from Glific when NGO's wallet balance is less than 0", %{conn: conn} do
+      valid_params = %{
+        "user" => %{"phone" => "918456732456", "registration" => "true", "token" => "some_token"}
+      }
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: url} = env ->
+          if String.contains?(url, "/wallet/balance") do
+            %Tesla.Env{
+              status: 200,
+              body:
+                "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":-1.0,\"overDraftLimit\":-20.0}}"
+            }
+          else
+            env
+          end
+
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"status\":\"success\"}"
+          }
+      end)
+
+      conn =
+        post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+
+      assert json = json_response(conn, 200)
+      assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
     end
 
     test "send otp with registration 'false' flag to existing user should succeed", %{conn: conn} do
@@ -297,10 +352,85 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         }
       }
 
+      Tesla.Mock.mock(fn
+        %{method: :get, url: url} = env ->
+          if String.contains?(url, "/wallet/balance") do
+            %Tesla.Env{
+              status: 200,
+              body:
+                "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":1.0,\"overDraftLimit\":-20.0}}"
+            }
+          else
+            env
+          end
+
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: "{\"status\":\"success\"}"}
+      end)
+
       conn =
         post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
 
       assert _json = json_response(conn, 200)
+    end
+
+    test "send otp when Gupshup is not active", %{conn: conn} do
+      valid_params = %{
+        "user" => %{"phone" => "919999999999", "registration" => "true", "token" => "some_token"}
+      }
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: url} = env ->
+          if String.contains?(url, "/wallet/balance") do
+            %Tesla.Env{
+              status: 200,
+              body:
+                "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":0,\"overDraftLimit\":-20.0}}"
+            }
+          else
+            env
+          end
+
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: "{\"status\":\"success\"}"}
+      end)
+
+      # Remove BSP service from organization
+      org =
+        Fixtures.organization_fixture(%{
+          shortcode: "unique_shortcode_#{System.unique_integer([:positive])}"
+        })
+
+      _org = Map.put(org, :services, Map.put(org.services, "bsp", nil))
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+      assert json = json_response(conn, 200)
+      assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
+    end
+
+    test "send otp when Gupshup app_id is missing", %{conn: conn} do
+      valid_params = %{
+        "user" => %{"phone" => "919888888888", "registration" => "true", "token" => "some_token"}
+      }
+
+      # BSP service present but app_id missing
+      org =
+        Fixtures.organization_fixture(%{
+          shortcode: "shortcode"
+        })
+
+      bsp =
+        Map.put(
+          org.services["bsp"],
+          :secrets,
+          Map.put(org.services["bsp"].secrets, "app_id", nil)
+        )
+
+      _org = Map.put(org, :services, Map.put(org.services, "bsp", bsp))
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+      assert json = json_response(conn, 200)
+      assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
     end
   end
 
@@ -443,24 +573,4 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert conn.resp_body == "Rate limit exceeded"
     end
   end
-
-  #   test "wallet > 0: sends OTP via NGO bot", %{conn: conn} do
-  #   phone = "+911234567890"
-  #   # Assume NGO has sufficient balance
-  #   PartnerAPI.mock_balance(10)
-
-  #   valid_params = %{
-  #     "user" => %{
-  #       "phone" => phone,
-  #       "registration" => "true",
-  #       "token" => "valid_captcha_token"
-  #     }
-  #   }
-
-  #   conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
-
-  #   assert json = json_response(conn, 200)
-  #   assert json["data"]["message"] =~ "OTP sent successfully"
-  #   assert_sent_from_bot(:ngo)
-  # end
 end
