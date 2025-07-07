@@ -288,10 +288,10 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   @spec check_balance_and_set_bot(Contact.t()) :: {:ok, map()}
   defp check_balance_and_set_bot(contact) do
-    with {:ok, %{"balance" => balance}} when balance > 0 <-
-           PartnerAPI.get_balance(contact.organization_id) do
-      {:ok, contact}
-    else
+    case PartnerAPI.get_balance(contact.organization_id) do
+      {:ok, %{"balance" => balance}} when balance > 0 ->
+        {:ok, contact}
+
       _ ->
         org_id = Saas.organization_id()
         build_context(org_id)
