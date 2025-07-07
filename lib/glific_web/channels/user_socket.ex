@@ -16,7 +16,8 @@ defmodule GlificWeb.UserSocket do
     |> APIAuthPlug.get_credentials(token, @pow_config)
     |> case do
       nil ->
-        :error
+        Logger.error("UserSocket connection failed due to authentication failure")
+        {:error, %{}, socket}
 
       {user, metadata} ->
         Logger.info("Verifying tokens: user_id: '#{user.id}'")
@@ -36,5 +37,5 @@ defmodule GlificWeb.UserSocket do
   end
 
   # This function will be called when there was no authentication information
-  def handle_init(_params, _socket), do: :error
+  def handle_init(_params, socket), do: {:error, %{}, socket}
 end
