@@ -2059,39 +2059,31 @@ defmodule Glific.TemplatesTest do
              %{"otp_type" => "COPY_CODE", "text" => "Copy OTP", "type" => "OTP"}
            ]
   end
-  test "failed template approval flow creates notification", attrs do
-    Tesla.Mock.mock(fn
-      %{method: :post, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
-        %Tesla.Env{
-          status: 400,
-          body: Jason.encode!(%{"status" => "error", "message" => "Rejected by policy"})
-        }
-    end)
+  test "change_template_status/3 with FAILED status should create a notification", attrs do
+    db_template = session_template_fixture(attrs)
 
-    attrs =
-      Map.merge(attrs, %{
-        body: "Test body",
-        label: "Test Label",
-        shortcode: "test_shortcode",
-        is_hsm: true,
-        category: "ACCOUNT_UPDATE",
-        example: "Test Example",
-        language_id: 1,
-        organization_id: attrs.organization_id,
-        type: :text   # <-- Add this line!
-      })
+    bsp_template = %{
+      "bsp_id" => "bsp_123456",
+      "reason" => "Policy Violation"
+    }
 
-    {:error, ["BSP", _reason]} = Glific.Templates.create_session_template(attrs)
+    result = Templates.change_template_status("FAILED", db_template, bsp_template)
+
+    assert result.status == "FAILED"
+    assert result.reason == "Policy Violation"
 
     notification =
-      Glific.Notifications.Notification
+      Notifications.Notification
       |> where([n], n.organization_id == ^attrs.organization_id)
       |> order_by(desc: :inserted_at)
       |> limit(1)
       |> Glific.Repo.one()
 
     assert notification != nil
-    assert notification.message =~ "failed" or notification.message =~ "rejected"
+    assert notification.message == "Template #{db_template.shortcode} has been failed"
+    assert notification.severity == Notifications.types().info
+    assert notification.category == "Templates"
+    assert notification.entity["uuid"] == db_template.uuid
   end
 
 

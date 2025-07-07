@@ -2,6 +2,8 @@ defmodule Glific.Templates do
   @moduledoc """
   The Templates context.
   """
+  use Publicist
+
   import Ecto.Query, warn: false
 
   use Tesla
