@@ -2162,6 +2162,4 @@ defmodule Glific.TemplatesTest do
     severities = Enum.map(notifications, & &1.severity)
     assert Notifications.types().critical in severities
   end
-
-
 end
