@@ -16,6 +16,7 @@ defmodule GlificWeb.UserSocket do
     |> APIAuthPlug.get_credentials(token, @pow_config)
     |> case do
       nil ->
+        Logger.error("UserSocket connection failed due to authentication failure")
         {:error, %{}, socket}
 
       {user, metadata} ->
