@@ -2115,6 +2115,7 @@ defmodule Glific.TemplatesTest do
              %{template_id: template.id, receiver_id: contact.id, parameters: parameters}
              |> Messages.create_and_send_hsm_message()
   end
+
   test "failed HSM sync from BSP creates critical notification", attrs do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
