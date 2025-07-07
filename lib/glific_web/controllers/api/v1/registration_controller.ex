@@ -143,7 +143,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
         send_otp_error(conn, "Account with phone number #{phone} already exists")
 
       _ ->
-        with {:ok, contact} <- optin_contact(organization_id, phone),
+        with {:ok, _contact} <- optin_contact(organization_id, phone),
+             {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
              {:ok, new_contact} <- check_balance_and_set_bot(contact),
              true <- send_otp_allowed?(new_contact.organization_id, phone, registration),
              {:ok, _otp} <- create_and_send_verification_code(new_contact) do

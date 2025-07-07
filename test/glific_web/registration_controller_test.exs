@@ -239,15 +239,14 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
       Contacts.contact_opted_out(receiver.phone, receiver.organization_id, DateTime.utc_now())
 
-      params = %{
+      invalid_params = %{
         "user" => %{"phone" => receiver.phone, "registration" => "true", "token" => "some_token"}
       }
 
-      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, params))
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
 
-      # we are sending OTP message to the uses in all the scenarios
-      assert json = json_response(conn, 200)
-      assert get_in(json, ["data", "phone"]) == params["user"]["phone"]
+      assert json = json_response(conn, 400)
+      assert get_in(json, ["error", "message"]) == "Cannot send the otp to #{receiver.phone}"
     end
 
     test "send otp from Glific when NGO's wallet balance is less than 0", %{conn: conn} do
