@@ -5,7 +5,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @dialyzer {:no_return, reset_password: 2}
   @dialyzer {:no_return, reset_user_password: 2}
 
-  alias Glific.Partners.Saas
   use GlificWeb, :controller
 
   alias Ecto.Changeset
@@ -24,7 +23,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
     Repo,
     Users,
     Users.User,
-    Partners.Organization,
+    Partners.Saas,
     Providers.Gupshup.PartnerAPI
   }
 
@@ -146,7 +145,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
       _ ->
         with {:ok, contact} <- optin_contact(organization_id, phone),
              {:ok, new_contact} <- check_balance_and_set_bot(contact),
-             {:ok, _contact} <- can_send_otp_to_phone?(new_contact.organization_id, phone),
              true <- send_otp_allowed?(new_contact.organization_id, phone, registration),
              {:ok, _otp} <- create_and_send_verification_code(new_contact) do
           json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
@@ -159,12 +157,11 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   defp handle_non_registration_otp(conn, organization_id, phone, registration) do
     existing_user = Repo.fetch_by(User, %{phone: phone})
-    {:ok, contact} = Repo.fetch_by(Contact, %{phone: phone})
 
     case existing_user do
       {:ok, _user} ->
-        with {:ok, new_contact} <- check_balance_and_set_bot(contact),
-             {:ok, _contact} <- can_send_otp_to_phone?(organization_id, phone),
+        with {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
+             {:ok, new_contact} <- check_balance_and_set_bot(contact),
              true <- send_otp_allowed?(organization_id, phone, registration),
              {:ok, _otp} <- create_and_send_verification_code(new_contact) do
           json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
@@ -289,15 +286,16 @@ defmodule GlificWeb.API.V1.RegistrationController do
     end
   end
 
+  @spec check_balance_and_set_bot(Contact.t()) :: {:ok, map()}
   defp check_balance_and_set_bot(contact) do
-    {:ok, %{"balance" => balance}} = PartnerAPI.get_balance(contact.organization_id)
-
-    if balance > 0 do
+    with {:ok, %{"balance" => balance}} when balance > 0 <-
+           PartnerAPI.get_balance(contact.organization_id) do
       {:ok, contact}
     else
-      org_id = Saas.organization_id()
-      build_context(org_id)
-      optin_contact(org_id, contact.phone)
+      _ ->
+        org_id = Saas.organization_id()
+        build_context(org_id)
+        optin_contact(org_id, contact.phone)
     end
   end
 end

@@ -288,19 +288,12 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec get_balance(non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
   def get_balance(org_id) do
-    case app_id(org_id) do
-      {:ok, _app_id} ->
-        with {:ok, resp} <-
-               get_request(
-                 app_url(org_id) <> "/wallet/balance",
-                 org_id: org_id
-               ) do
-          {:ok, %{"balance" => resp["walletResponse"]["currentBalance"]}}
-        end
-
-      {:error, _reason} ->
-        # For sending OTP to NGO even in case of gupshup is not active
-        {:ok, %{"balance" => 0}}
+    with {:ok, resp} <-
+           get_request(
+             app_url(org_id) <> "/wallet/balance",
+             org_id: org_id
+           ) do
+      {:ok, %{"balance" => resp["walletResponse"]["currentBalance"]}}
     end
   end
 
