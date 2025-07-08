@@ -390,7 +390,7 @@ defmodule Glific.Flows.Flow do
   @spec validate_flow(map()) :: Keyword.t()
   defp validate_flow(flow) do
     if flow.definition["nodes"] == [] do
-      [Flow: "Flow is empty"]
+      [{Flow, "Flow is empty", "Critical"}]
     else
       all_nodes = flow_objects(flow, :node)
       all_translation = flow.definition["localization"]

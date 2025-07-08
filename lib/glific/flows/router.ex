@@ -143,20 +143,24 @@ defmodule Glific.Flows.Router do
       else: category.exit_uuid
   end
 
-  @spec validate_eex(Keyword.t(), String.t()) :: Keyword.t()
-  defp validate_eex(errors, content) do
-    cond do
-      Glific.suspicious_code(content) ->
-        [{EEx, "Suspicious Code"}] ++ errors
+  @spec validate_eex(Keyword.t(), Router.t()) :: Keyword.t()
+  defp validate_eex(errors, router) do
+    node_uuid_sliced = String.slice(router.node_uuid, -4, 4)
 
-      !is_nil(EEx.compile_string(content)) ->
-        errors
+    try do
+      cond do
+        Glific.suspicious_code(router.operand) ->
+          [{EEx, "Node #{node_uuid_sliced} has unsupported expression", "Critical"}] ++ errors
+
+        !is_nil(EEx.compile_string(router.operand)) ->
+          errors
+      end
+    rescue
+      # if there is a syntax error or anything else
+      # an exception is thrown and hence we rescue it here
+      _ ->
+        [{EEx, "Node #{node_uuid_sliced} has invalid expression", "Critical"}] ++ errors
     end
-  rescue
-    # if there is a syntax error or anything else
-    # an exception is thrown and hence we rescue it here
-    _ ->
-      [{EEx, "Invalid Code"}] ++ errors
   end
 
   @doc """
@@ -164,7 +168,7 @@ defmodule Glific.Flows.Router do
   """
   @spec validate(Router.t(), Keyword.t(), map()) :: Keyword.t()
   def validate(router, errors, flow) do
-    errors = validate_eex(errors, router.operand)
+    errors = validate_eex(errors, router)
 
     errors =
       router.categories

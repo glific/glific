@@ -870,6 +870,26 @@ if Code.ensure_loaded?(Faker) do
         status: "published",
         organization_id: organization.id
       })
+
+      invalid_exp_flow =
+        Repo.insert!(%Flow{
+          name: "Invalid expression",
+          keywords: ["ie"],
+          version_number: "13.2.0",
+          uuid: "5f85cc81-3893-4fbf-ab56-73421fbba05f",
+          organization_id: organization.id
+        })
+
+      definition =
+        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> "invalid_expression.json"))
+        |> Jason.decode!()
+
+      Repo.insert!(%FlowRevision{
+        definition: definition,
+        flow_id: invalid_exp_flow.id,
+        status: "published",
+        organization_id: organization.id
+      })
     end
 
     @doc false
