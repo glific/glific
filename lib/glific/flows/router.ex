@@ -143,7 +143,7 @@ defmodule Glific.Flows.Router do
       else: category.exit_uuid
   end
 
-  @spec validate_eex(Keyword.t(), Router.t()) :: Keyword.t()
+  @spec validate_eex(list(), map()) :: list()
   defp validate_eex(errors, router) do
     node_uuid_sliced = String.slice(router.node_uuid, -4, 4)
 
@@ -166,7 +166,7 @@ defmodule Glific.Flows.Router do
   @doc """
   Validate a action and all its children
   """
-  @spec validate(Router.t(), Keyword.t(), map()) :: Keyword.t()
+  @spec validate(Router.t(), list(), map()) :: list()
   def validate(router, errors, flow) do
     errors = validate_eex(errors, router)
 
