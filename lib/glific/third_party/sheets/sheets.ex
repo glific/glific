@@ -188,8 +188,6 @@ defmodule Glific.Sheets do
         _ -> sheet_url <> "export?format=csv"
       end
 
-
-
     SheetData
     |> where([sd], sd.sheet_id == ^sheet.id)
     |> Repo.delete_all()
