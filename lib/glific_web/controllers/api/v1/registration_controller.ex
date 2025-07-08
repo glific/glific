@@ -20,11 +20,11 @@ defmodule GlificWeb.API.V1.RegistrationController do
     Contacts,
     Contacts.Contact,
     Partners,
+    Partners.Saas,
+    Providers.Gupshup.PartnerAPI,
     Repo,
     Users,
-    Users.User,
-    Partners.Saas,
-    Providers.Gupshup.PartnerAPI
+    Users.User
   }
 
   @doc false
