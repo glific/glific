@@ -2119,7 +2119,7 @@ defmodule Glific.TemplatesTest do
              |> Messages.create_and_send_hsm_message()
   end
 
-  test "failed HSM sync from BSP creates critical notification",
+  test "info notification created on existing HSM template status change to FAILED",
        %{organization_id: organization_id} = attrs do
     whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9c94e53b4b"
 
@@ -2194,16 +2194,16 @@ defmodule Glific.TemplatesTest do
     Templates.sync_hsms_from_bsp(attrs.organization_id)
 
     notifications =
-  Repo.all(
-    from n in Notification,
-      where: n.organization_id == ^organization_id and n.category == "Templates",
-      order_by: [desc: n.inserted_at]
-  )
+      Repo.all(
+        from n in Notification,
+          where: n.organization_id == ^organization_id and n.category == "Templates",
+          order_by: [desc: n.inserted_at]
+      )
 
-messages = Enum.map(notifications, & &1.message)
-assert [
-  "Template conference_ticket_status has been failed"
-] = messages
+    messages = Enum.map(notifications, & &1.message)
 
+    assert [
+             "Template conference_ticket_status has been failed"
+           ] = messages
   end
 end
