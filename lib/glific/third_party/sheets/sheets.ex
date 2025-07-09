@@ -179,14 +179,12 @@ defmodule Glific.Sheets do
     {:ok, uri} = URI.new(sheet.url)
     # https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id
 
-    gid_param = uri.fragment
-
     export_url =
-      with gid when is_binary(gid) <- uri.fragment do
-        sheet_url <> "export?format=csv&" <> gid
-      else
+      case uri.fragment do
+        gid when is_binary(gid) -> sheet_url <> "export?format=csv&" <> gid
         _ -> sheet_url <> "export?format=csv"
       end
+
 
     SheetData
     |> where([sd], sd.sheet_id == ^sheet.id)
