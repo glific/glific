@@ -588,8 +588,7 @@ defmodule Glific.Templates do
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
 
   defp do_update_hsm(template, db_templates) do
-    current_template =
-      db_templates[template["bsp_id"]]
+    current_template = db_templates[template["bsp_id"]]
 
     update_attrs =
       if current_template.status != template["status"] do

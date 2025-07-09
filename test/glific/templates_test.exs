@@ -2119,50 +2119,91 @@ defmodule Glific.TemplatesTest do
              |> Messages.create_and_send_hsm_message()
   end
 
-  test "failed HSM sync from BSP creates critical notification", attrs do
+  test "failed HSM sync from BSP creates critical notification",
+       %{organization_id: organization_id} = attrs do
+    whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9c94e53b4b"
+
     Tesla.Mock.mock(fn
-      %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
-        %Tesla.Env{
-          status: 200,
-          body: Jason.encode!(%{"token" => "sk_test_partner_token"})
-        }
-
-      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
-        %Tesla.Env{
-          status: 200,
-          body: Jason.encode!(%{"data" => %{"partner_app_token" => "fake-token"}})
-        }
-
       %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
-        %Tesla.Env{status: 500, body: "Internal Server Error"}
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "templates" => [
+                %{
+                  "id" => whatspp_hsm_uuid,
+                  "elementName" => "conference_ticket_status",
+                  "languageCode" => "en",
+                  "category" => "UTILITY",
+                  "status" => "FAILED",
+                  "templateType" => "TEXT",
+                  "data" => "Your conference ticket no. {{1}}"
+                }
+              ]
+            })
+        }
+
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})
+        }
+
+      %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+        %Tesla.Env{status: 200, body: Jason.encode!(%{"token" => "sk_test_partner_token"})}
+
+      %{method: :post, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "success",
+              "template" => %{
+                "category" => "UTILITY",
+                "createdOn" => 1_595_904_220_495,
+                "data" => "Your conference ticket no. {{1}}",
+                "elementName" => "conference_ticket_status",
+                "id" => whatspp_hsm_uuid,
+                "languageCode" => "en",
+                "languagePolicy" => "deterministic",
+                "bsp_id" => 1,
+                "master" => true,
+                "meta" => "{\"example\":\"Your conference ticket no. [1234]\"}",
+                "modifiedOn" => 1_595_904_220_495,
+                "status" => "PENDING",
+                "templateType" => "TEXT"
+              }
+            })
+        }
     end)
 
-    context = %{context: %{current_user: attrs}}
+    Fixtures.session_template_fixture(%{
+      body: "Your conference ticket no. {{1}}",
+      label: "New Label",
+      language_id: 1,
+      is_hsm: true,
+      type: :text,
+      shortcode: "conference_ticket_status",
+      category: "UTILITY",
+      example: "Your conference ticket no. 1234",
+      organization_id: attrs.organization_id,
+      has_buttons: false,
+      bsp_id: whatspp_hsm_uuid
+    })
 
-    assert {:ok, %{message: "HSM sync job queued successfully"}} =
-             GlificWeb.Resolvers.Templates.sync_hsm_template(nil, %{}, context)
-
-    assert_enqueued(worker: TemplateWorker, prefix: "global")
-
-    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :default)
+    Templates.sync_hsms_from_bsp(attrs.organization_id)
 
     notifications =
-      Repo.all(
-        from n in Notification,
-          where: n.organization_id == ^@org_id and n.category == "HSM template",
-          order_by: [desc: n.inserted_at]
-      )
+  Repo.all(
+    from n in Notification,
+      where: n.organization_id == ^organization_id and n.category == "Templates",
+      order_by: [desc: n.inserted_at]
+  )
 
-    messages = Enum.map(notifications, & &1.message)
+messages = Enum.map(notifications, & &1.message)
+assert [
+  "Template conference_ticket_status has been failed"
+] = messages
 
-    assert "Syncing of HSM templates has started in the background." in messages
-
-    assert Enum.any?(messages, fn msg ->
-             String.contains?(msg, "Failed to sync HSM templates")
-           end)
-
-    severities = Enum.map(notifications, & &1.severity)
-    assert Notifications.types().critical in severities
   end
 end
