@@ -130,25 +130,19 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
   describe "send_otp/2" do
     setup do
       Tesla.Mock.mock(fn
-        %{
-          method: :post
-        } ->
+        %{method: :post} ->
           %Tesla.Env{
             body:
               "{\n  \"success\": true,\n  \"challenge_ts\": \"2023-01-09T04:58:39Z\",\n  \"hostname\": \"glific.test\",\n  \"score\": 0.9,\n  \"action\": \"register\"\n}",
             status: 200
           }
 
-        %{method: :get, url: url} = env ->
-          if String.contains?(url, "/wallet/balance") do
-            %Tesla.Env{
-              status: 200,
-              body:
-                "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":1.787,\"overDraftLimit\":-20.0}}"
-            }
-          else
-            env
-          end
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/wallet/balance"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":1.787,\"overDraftLimit\":-20.0}}"
+          }
       end)
 
       :ok
