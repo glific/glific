@@ -588,8 +588,7 @@ defmodule Glific.Templates do
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
 
   defp do_update_hsm(template, db_templates) do
-    current_template =
-      db_templates[template["bsp_id"]]
+    current_template = db_templates[template["bsp_id"]]
 
     update_attrs =
       if current_template.status != template["status"] do
@@ -615,11 +614,7 @@ defmodule Glific.Templates do
   end
 
   @spec change_template_status(String.t(), map(), map()) :: map()
-  defp change_template_status("APPROVED", db_template, bsp_template) do
-    Logger.info(
-      "org_id:#{db_template.organization_id} template:#{db_template.shortcode} bsp_id:#{bsp_template["bsp_id"]} has been approved"
-    )
-
+  defp change_template_status("APPROVED", db_template, _bsp_template) do
     Notifications.create_notification(%{
       category: "Templates",
       message: "Template #{db_template.shortcode} has been approved",
@@ -651,6 +646,23 @@ defmodule Glific.Templates do
     })
 
     %{status: "REJECTED", reason: bsp_template["reason"]}
+  end
+
+  defp change_template_status("FAILED", db_template, bsp_template) do
+    Notifications.create_notification(%{
+      category: "Templates",
+      message: "Template #{db_template.shortcode} has been failed",
+      severity: Notifications.types().info,
+      organization_id: db_template.organization_id,
+      entity: %{
+        id: db_template.id,
+        shortcode: db_template.shortcode,
+        label: db_template.label,
+        uuid: db_template.uuid
+      }
+    })
+
+    %{status: "FAILED", reason: bsp_template["reason"]}
   end
 
   defp change_template_status(status, _db_template, _bsp_template), do: %{status: status}
