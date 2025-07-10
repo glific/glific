@@ -265,8 +265,8 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
 
  3. Copy the certificates to Postgres data directory:
  ```bash
- sudo cp server.crt /path/to/postgres/data/directory/
- sudo cp server.key /path/to/postgres/data/directory/
+ sudo mv server.crt /path/to/postgres/data/directory/
+ sudo mv server.key /path/to/postgres/data/directory/
  sudo chmod 600 /path/to/postgres/data/directory/server.key
  ```
 
