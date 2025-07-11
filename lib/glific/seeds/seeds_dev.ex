@@ -820,9 +820,7 @@ if Code.ensure_loaded?(Faker) do
           organization_id: organization.id
         })
 
-      definition =
-        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> "test.json"))
-        |> Jason.decode!()
+      definition = get_flow_definition("test")
 
       Repo.insert!(%FlowRevision{
         definition: definition,
@@ -840,9 +838,7 @@ if Code.ensure_loaded?(Faker) do
           organization_id: organization.id
         })
 
-      definition =
-        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> "import.json"))
-        |> Jason.decode!()
+      definition = get_flow_definition("import")
 
       Repo.insert!(%FlowRevision{
         definition: definition,
@@ -860,13 +856,29 @@ if Code.ensure_loaded?(Faker) do
           organization_id: organization.id
         })
 
-      definition =
-        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> "wa_group.json"))
-        |> Jason.decode!()
+      definition = get_flow_definition("wa_group")
 
       Repo.insert!(%FlowRevision{
         definition: definition,
         flow_id: wa_group_flow.id,
+        status: "published",
+        organization_id: organization.id
+      })
+
+      invalid_exp_flow =
+        Repo.insert!(%Flow{
+          name: "Invalid expression",
+          keywords: ["ie"],
+          version_number: "13.2.0",
+          uuid: "5f85cc81-3893-4fbf-ab56-73421fbba05f",
+          organization_id: organization.id
+        })
+
+      definition = get_flow_definition("invalid_expression")
+
+      Repo.insert!(%FlowRevision{
+        definition: definition,
+        flow_id: invalid_exp_flow.id,
         status: "published",
         organization_id: organization.id
       })
@@ -1923,6 +1935,14 @@ if Code.ensure_loaded?(Faker) do
 
       seed_wa_group_collections(organization)
       :ok
+    end
+
+    @spec get_flow_definition(String.t()) :: map()
+    defp get_flow_definition(flow_json_name) do
+      :code.priv_dir(:glific)
+      |> Path.join("data/flows/" <> "#{flow_json_name}.json")
+      |> File.read!()
+      |> Jason.decode!()
     end
   end
 end

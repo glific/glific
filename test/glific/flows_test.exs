@@ -801,4 +801,22 @@ defmodule Glific.FLowsTest do
 
     assert loaded_flow.skip_validation == true
   end
+
+  test "publish_flow/1 handles invalid expression errors",
+       %{organization_id: organization_id} = _attrs do
+    user = Repo.get_current_user()
+
+    SeedsDev.seed_test_flows()
+
+    name = "Invalid expression"
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: name, organization_id: organization_id})
+    flow = Repo.preload(flow, [:revisions])
+
+    assert {:errors, errors} = Flows.publish_flow(flow, user.id)
+
+    # In this flow there are 3 split-by expressions in which 2 of them are not valid/unsupported
+    assert Enum.count(errors, fn error ->
+             error.category == "Critical" and String.contains?(error.message, "expression")
+           end) == 2
+  end
 end
