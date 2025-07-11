@@ -470,6 +470,7 @@ defmodule Glific.Partners do
       |> Flags.set_whatsapp_group_enabled()
       |> Flags.set_ticketing_enabled()
       |> Flags.set_certificate_enabled()
+      |> Flags.set_interactive_re_response_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -1201,7 +1202,8 @@ defmodule Glific.Partners do
       "auto_translation_enabled" =>
         Flags.get_open_ai_auto_translation_enabled(organization) or
           Flags.get_google_auto_translation_enabled(organization),
-      "certificate_enabled" => Flags.get_certificate_enabled(organization)
+      "certificate_enabled" => Flags.get_certificate_enabled(organization),
+      "interactive_re_response_enabled" => Flags.get_interactive_re_response_enabled(organization)
     }
   end
 
