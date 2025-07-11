@@ -471,7 +471,7 @@ defmodule Glific.Flows.Action do
   @doc """
   Validate a action and all its children
   """
-  @spec validate(Action.t(), Keyword.t(), map()) :: Keyword.t()
+  @spec validate(Action.t(), list(), map()) :: list()
   def validate(%{type: type, groups: groups} = action, errors, _flow)
       when type in ["add_contact_groups", "remove_contact_groups", "send_broadcast"] do
     # ensure that the contacts and/or groups exist that are involved in the above
@@ -546,7 +546,7 @@ defmodule Glific.Flows.Action do
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
 
-  @spec check_missing_interactive_template(Keyword.t(), Action.t(), map()) :: Keyword.t()
+  @spec check_missing_interactive_template(list(), Action.t(), map()) :: list()
   defp check_missing_interactive_template(errors, action, flow) do
     Repo.fetch_by(
       InteractiveTemplate,
@@ -558,7 +558,7 @@ defmodule Glific.Flows.Action do
     end
   end
 
-  @spec check_the_next_node(Keyword.t(), map(), map()) :: Keyword.t()
+  @spec check_the_next_node(list(), map(), map()) :: list()
   defp check_the_next_node(errors, node, flow) do
     [exit | _] = node.exits
 
@@ -578,7 +578,7 @@ defmodule Glific.Flows.Action do
     end
   end
 
-  @spec warning_message(Keyword.t(), String.t()) :: Keyword.t()
+  @spec warning_message(list(), String.t()) :: list()
   defp warning_message(errors, node_id) do
     node_label = String.slice(node_id, -4..-1)
 
