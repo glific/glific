@@ -116,10 +116,18 @@ defmodule Glific.Profiles do
       {:error, %Ecto.Changeset{}}
 
   """
+
   @spec delete_profile(Profile.t()) ::
           {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
   def delete_profile(%Profile{} = profile) do
-    Repo.delete(profile)
+    case profile.is_default do
+      true ->
+        contact = Repo.preload(profile, :contact).contact
+        Contacts.delete_contact(contact)
+
+      false ->
+        Repo.delete(profile)
+    end
   end
 
   @doc """
