@@ -7,6 +7,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     Contacts,
     Contacts.Contact,
     Fixtures,
+    Partners.Saas,
     Repo,
     Seeds.SeedsDev,
     Users
@@ -244,9 +245,15 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "send otp from Glific when NGO's wallet balance is less than 0", %{conn: conn} do
+      org = Fixtures.organization_fixture(%{shortcode: "neworg"})
+
+      conn = assign(conn, :organization_id, org.id)
+
       valid_params = %{
         "user" => %{"phone" => "918456732456", "registration" => "true", "token" => "some_token"}
       }
+
+      glific_org_id = Saas.organization_id()
 
       Tesla.Mock.mock(fn
         %{
@@ -275,6 +282,15 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
       assert json = json_response(conn, 200)
       assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
+
+      contact =
+        Repo.get_by!(Contacts.Contact,
+          phone: valid_params["user"]["phone"]
+        )
+
+      # it used the fallback org
+      assert contact.organization_id == glific_org_id
+      assert contact.organization_id != org.id
     end
 
     test "send otp with registration 'false' flag to existing user should succeed", %{conn: conn} do
@@ -313,9 +329,15 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "send otp when Gupshup is not active", %{conn: conn} do
+      org = Fixtures.organization_fixture(%{shortcode: "neworg"})
+
+      conn = assign(conn, :organization_id, org.id)
+
       valid_params = %{
         "user" => %{"phone" => "919999999999", "registration" => "true", "token" => "some_token"}
       }
+
+      glific_org_id = Saas.organization_id()
 
       org =
         Fixtures.organization_fixture(%{
@@ -347,6 +369,15 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
       assert json = json_response(conn, 200)
       assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
+
+      contact =
+        Repo.get_by!(Contacts.Contact,
+          phone: valid_params["user"]["phone"]
+        )
+
+      # it used the fallback org
+      assert contact.organization_id == glific_org_id
+      assert contact.organization_id != org.id
     end
   end
 
