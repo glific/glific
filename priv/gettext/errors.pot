@@ -115,7 +115,7 @@ msgstr ""
 msgid "Contact status is not valid."
 msgstr ""
 
-#: lib/glific/flows/router.ex:262
+#: lib/glific/flows/router.ex:266
 #, elixir-format, elixir-autogen
 msgid "Could not find category for: %{body}"
 msgstr ""

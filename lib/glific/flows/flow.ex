@@ -380,17 +380,17 @@ defmodule Glific.Flows.Flow do
   @doc """
   Validate a flow and ensures the flow  is valid with our internal rule-set
   """
-  @spec validate_flow(non_neg_integer, String.t(), map()) :: Keyword.t()
+  @spec validate_flow(non_neg_integer, String.t(), map()) :: list()
   def validate_flow(organization_id, status, args) do
     organization_id
     |> get_loaded_flow(status, args)
     |> validate_flow()
   end
 
-  @spec validate_flow(map()) :: Keyword.t()
+  @spec validate_flow(map()) :: list()
   defp validate_flow(flow) do
     if flow.definition["nodes"] == [] do
-      [Flow: "Flow is empty"]
+      [{Flow, "Flow is empty", "Critical"}]
     else
       all_nodes = flow_objects(flow, :node)
       all_translation = flow.definition["localization"]
@@ -423,7 +423,7 @@ defmodule Glific.Flows.Flow do
     |> MapSet.new()
   end
 
-  @spec dangling_nodes(Keyword.t(), map(), MapSet.t()) :: Keyword.t()
+  @spec dangling_nodes(list(), map(), MapSet.t()) :: list()
   defp dangling_nodes(errors, flow, all_nodes) do
     all_exits = flow_objects(flow, :exit)
 
@@ -446,7 +446,7 @@ defmodule Glific.Flows.Flow do
       else: [{dangling, "Your flow has dangling nodes", "Warning"} | errors]
   end
 
-  @spec missing_flow_context_nodes(Keyword.t(), map(), MapSet.t()) :: Keyword.t()
+  @spec missing_flow_context_nodes(list(), map(), MapSet.t()) :: list()
   defp missing_flow_context_nodes(errors, flow, all_nodes) do
     flow_context_nodes =
       FlowContext
@@ -464,7 +464,7 @@ defmodule Glific.Flows.Flow do
       ]
   end
 
-  @spec missing_localization(Keyword.t(), map(), map(), map()) :: Keyword.t()
+  @spec missing_localization(list(), map(), map(), map()) :: list()
   defp missing_localization(errors, flow, all_localization, action_to_node_map) do
     localizable_nodes_list =
       flow.nodes
@@ -508,8 +508,8 @@ defmodule Glific.Flows.Flow do
     )
   end
 
-  @spec has_missing_localization(Keyword.t(), list(), map(), non_neg_integer(), map()) ::
-          Keyword.t()
+  @spec has_missing_localization(list(), list(), map(), non_neg_integer(), map()) ::
+          list()
   defp has_missing_localization(
          errors,
          localizable_nodes_list,
@@ -609,7 +609,7 @@ defmodule Glific.Flows.Flow do
     end)
   end
 
-  @spec has_missing_translated_template(Keyword.t(), list(), map(), map()) :: Keyword.t()
+  @spec has_missing_translated_template(list(), list(), map(), map()) :: list()
   defp has_missing_translated_template(
          errors,
          localizable_nodes_list,
