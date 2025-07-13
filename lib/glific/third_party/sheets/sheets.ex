@@ -179,8 +179,9 @@ defmodule Glific.Sheets do
     {:ok, uri} = URI.new(sheet.url)
     # https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id
 
-    gid_params = uri.fragment || "gid=0"
-    export_url = sheet_url <> "export?format=csv&" <> gid_params
+    gid = uri.fragment || ""
+    export_url = sheet_url <> "export?format=csv&" <> gid
+    export_url = String.trim_trailing(export_url, "&")
 
     SheetData
     |> where([sd], sd.sheet_id == ^sheet.id)
@@ -202,6 +203,7 @@ defmodule Glific.Sheets do
           }
           |> create_sheet_data()
 
+          Glific.Metrics.increment("Sheets Sync Successful")
           {:cont, Map.merge(acc, parsed_rows.errors)}
 
         {:error, err}, acc ->
@@ -242,9 +244,9 @@ defmodule Glific.Sheets do
           key
           |> String.downcase()
           |> String.replace(" ", "_")
-          |> trim_string()
+          |> trim_value()
 
-        Map.put(acc, key, value |> trim_string())
+        Map.put(acc, key, value |> trim_value())
       end)
 
     errors =
@@ -415,10 +417,12 @@ defmodule Glific.Sheets do
     :ok
   end
 
-  @spec trim_string(String.t()) :: String.t()
-  defp trim_string(str) do
-    str
+  @spec trim_value(any()) :: any()
+  defp trim_value(value) when is_binary(value) do
+    value
     |> String.trim()
     |> String.replace(@invisible_unicode_range, "")
   end
+
+  defp trim_value(value), do: value
 end
