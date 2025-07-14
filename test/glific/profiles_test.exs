@@ -127,7 +127,7 @@ defmodule Glific.ProfilesTest do
 
       assert {:ok, profile} = Profiles.create_profile(valid_attrs)
       assert {:ok, %Contact{}} = Profiles.delete_profile(profile)
-      assert_raise Ecto.NoResultsError, fn -> Glific.Contacts.get_contact!(7) end
+      assert_raise Ecto.NoResultsError, fn -> Contacts.get_contact!(7) end
     end
 
     test "get_indexed_profile/1 returns all indexed profile for a contact", attrs do
