@@ -114,6 +114,22 @@ defmodule Glific.ProfilesTest do
       assert_raise Ecto.NoResultsError, fn -> Profiles.get_profile!(profile.id) end
     end
 
+    test "delete_profile/1 deletes default profile and verifies contact is also removed" do
+      valid_attrs = %{
+        name: "some name",
+        type: "some type",
+        contact_id: 7,
+        language_id: 1,
+        is_default: true,
+        organization_id: 1,
+        fields: %{name: "max"}
+      }
+
+      assert {:ok, profile} = Profiles.create_profile(valid_attrs)
+      assert {:ok, %Contact{}} = Profiles.delete_profile(profile)
+      assert_raise Ecto.NoResultsError, fn -> Glific.Contacts.get_contact!(7) end
+    end
+
     test "get_indexed_profile/1 returns all indexed profile for a contact", attrs do
       {:ok, contact} =
         Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: attrs.organization_id})
