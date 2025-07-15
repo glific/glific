@@ -108,26 +108,18 @@ defmodule Glific.ProfilesTest do
       assert profile == Profiles.get_profile!(profile.id)
     end
 
-    test "delete_profile/1 deletes the profile" do
+    test "deletes a regular profile" do
       profile = profile_fixture()
       assert {:ok, %Profile{}} = Profiles.delete_profile(profile)
       assert_raise Ecto.NoResultsError, fn -> Profiles.get_profile!(profile.id) end
     end
 
-    test "delete_profile/1 deletes default profile and verifies contact is also removed" do
-      valid_attrs = %{
-        name: "some name",
-        type: "some type",
-        contact_id: 7,
-        language_id: 1,
-        is_default: true,
-        organization_id: 1,
-        fields: %{name: "max"}
-      }
+    test "deletes default profile and also removes the associated contact" do
+      profile = profile_fixture(%{"is_default" => true})
+      contact_id = profile.contact_id
 
-      assert {:ok, profile} = Profiles.create_profile(valid_attrs)
       assert {:ok, %Contact{}} = Profiles.delete_profile(profile)
-      assert_raise Ecto.NoResultsError, fn -> Contacts.get_contact!(7) end
+      assert_raise Ecto.NoResultsError, fn -> Contacts.get_contact!(contact_id) end
     end
 
     test "get_indexed_profile/1 returns all indexed profile for a contact", attrs do
