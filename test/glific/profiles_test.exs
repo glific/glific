@@ -108,7 +108,7 @@ defmodule Glific.ProfilesTest do
       assert profile == Profiles.get_profile!(profile.id)
     end
 
-    test "deletes a regular profile" do
+    test "delete_profile/1 deletes the profile" do
       profile = profile_fixture()
       assert {:ok, %Profile{}} = Profiles.delete_profile(profile)
       assert_raise Ecto.NoResultsError, fn -> Profiles.get_profile!(profile.id) end
