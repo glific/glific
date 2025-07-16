@@ -262,12 +262,25 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  ```bash
  mkcert -cert-file server.crt -key-file server.key postgres localhost 127.0.0.1 ::1
  ```
+ In case you get the following error/warning:
 
- 3. Copy the certificates to Postgres data directory:
+ ```
+ Note: the local CA is not installed in the Java trust store.
+ Run "mkcert -install" for certificates to be trusted automatically ⚠️
+ ```
+
+ Run `mkcert -install` and then run the above command again.
+
+ 3. Move the certificates to Postgres data directory and set the permissions:
  ```bash
  sudo mv server.crt /path/to/postgres/data/directory/
  sudo mv server.key /path/to/postgres/data/directory/
  sudo chmod 600 /path/to/postgres/data/directory/server.key
+ ```
+
+ If you installed Postgres using the Postgress.app,
+ ```bash
+ sudo chown username:_postgres /path/to/postgres/data/directory/server.key
  ```
 
  4. Configure Postgres to use SSL. Edit postgresql.conf:
@@ -299,6 +312,15 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  # For MacOS:
  brew services restart postgresql
  # For MacOS, if you installed Postgres with Postgres.app, quit and run Postgres.app
+ ```
+
+ If you get errors, try selecting the correct postgres version in your device
+
+ ```bash
+ # For Linux:
+ sudo systemctl restart postgresql@<version>
+ # For MacOS:
+ brew services restart postgresql@<version>
  ```
 
  7. Setup CA certificates for Glific:
