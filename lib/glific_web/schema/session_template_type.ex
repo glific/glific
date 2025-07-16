@@ -57,6 +57,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :buttons, :json
     field :reason, :string
     field :quality, :string
+    field :footer, :string
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -124,6 +125,9 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
 
     @desc "a static date range input field which will apply on updated at column."
     field(:date_range, :date_range_input)
+
+    @desc "Match the footer"
+    field(:footer, :string)
   end
 
   input_object :session_template_input do
@@ -143,6 +147,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :has_buttons, :boolean
     field :button_type, :template_button_type_enum
     field :buttons, :json
+    field :footer, :string
   end
 
   input_object :edit_approved_template_input do
