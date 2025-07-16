@@ -47,7 +47,8 @@ defmodule Glific.Templates.SessionTemplate do
           button_type: String.t() | nil,
           buttons: [map()] | [],
           bsp_id: String.t() | nil,
-          reason: String.t() | nil
+          reason: String.t() | nil,
+          footer: String.t() | nil
         }
 
   @required_fields [
@@ -77,7 +78,8 @@ defmodule Glific.Templates.SessionTemplate do
     :buttons,
     :bsp_id,
     :reason,
-    :quality
+    :quality,
+    :footer
   ]
 
   schema "session_templates" do
@@ -87,6 +89,7 @@ defmodule Glific.Templates.SessionTemplate do
     field(:type, MessageType)
     field(:shortcode, :string)
     field(:quality, :string)
+    field(:footer, :string)
 
     field(:status, :string)
     field(:is_hsm, :boolean, default: false)
