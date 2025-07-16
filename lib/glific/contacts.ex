@@ -835,7 +835,6 @@ defmodule Glific.Contacts do
     # we are splitting this up since we need to use contact within the various function
     # calls and a lot cleaner this way
     contact
-    |> Map.put(:active_profile_id, contact.active_profile_id)
     |> get_contact_fields(contact)
     |> get_contact_profile_name(contact)
     |> get_contact_fields_language(contact)
