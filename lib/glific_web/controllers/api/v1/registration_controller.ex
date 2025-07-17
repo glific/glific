@@ -20,6 +20,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
     Contacts,
     Contacts.Contact,
     Partners,
+    Partners.Saas,
+    Providers.Gupshup.PartnerAPI,
     Repo,
     Users,
     Users.User
@@ -141,10 +143,11 @@ defmodule GlificWeb.API.V1.RegistrationController do
         send_otp_error(conn, "Account with phone number #{phone} already exists")
 
       _ ->
-        with {:ok, contact} <- optin_contact(organization_id, phone),
-             {:ok, _contact} <- can_send_otp_to_phone?(organization_id, phone),
-             true <- send_otp_allowed?(organization_id, phone, registration),
-             {:ok, _otp} <- create_and_send_verification_code(contact) do
+        with {:ok, _contact} <- optin_contact(organization_id, phone),
+             {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
+             {:ok, contact_to_send} <- check_balance_and_set_bot(contact),
+             true <- send_otp_allowed?(contact_to_send.organization_id, phone, registration),
+             {:ok, _otp} <- create_and_send_verification_code(contact_to_send) do
           json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
         else
           _ ->
@@ -159,8 +162,9 @@ defmodule GlificWeb.API.V1.RegistrationController do
     case existing_user do
       {:ok, _user} ->
         with {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
-             true <- send_otp_allowed?(organization_id, phone, registration),
-             {:ok, _otp} <- create_and_send_verification_code(contact) do
+             {:ok, contact_to_send} <- check_balance_and_set_bot(contact),
+             true <- send_otp_allowed?(contact_to_send.organization_id, phone, registration),
+             {:ok, _otp} <- create_and_send_verification_code(contact_to_send) do
           json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
         else
           _ ->
@@ -208,7 +212,9 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   @spec send_otp_allowed?(integer, String.t(), String.t()) :: boolean
   defp send_otp_allowed?(organization_id, phone, registration) do
-    {result, _} = Repo.fetch_by(User, %{phone: phone, organization_id: organization_id})
+    {result, _} =
+      Repo.fetch_by(User, %{phone: phone, organization_id: organization_id})
+
     (result == :ok && registration == "false") || (result == :error && registration != "false")
   end
 
@@ -278,6 +284,19 @@ defmodule GlificWeb.API.V1.RegistrationController do
           method: "registration"
         }
         |> Contacts.contact_opted_in(organization_id, DateTime.utc_now(), method: "registration")
+    end
+  end
+
+  @spec check_balance_and_set_bot(Contact.t()) :: {:ok, map()}
+  defp check_balance_and_set_bot(contact) do
+    case PartnerAPI.get_balance(contact.organization_id) do
+      {:ok, %{"balance" => balance}} when balance > 0 ->
+        {:ok, contact}
+
+      _ ->
+        org_id = Saas.organization_id()
+        build_context(org_id)
+        optin_contact(org_id, contact.phone)
     end
   end
 end
