@@ -71,6 +71,7 @@ defmodule Glific.Clients.CommonWebhook do
       headers: headers,
       opts: [adapter: [recv_timeout: 300_000]]
     )
+    |> IO.inspect(label: "from AI platform")
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         response = Jason.decode!(body)

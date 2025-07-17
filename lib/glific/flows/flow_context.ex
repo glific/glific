@@ -865,7 +865,7 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec step_forward(FlowContext.t(), Message.t()) :: {:ok, map()} | {:error, String.t()}
   def step_forward(context, message) do
-    case execute(context, [message]) do
+    case execute(context, [message]) |> IO.inspect(label: "execute node") do
       {:ok, context, []} ->
         {:ok, context}
 
@@ -911,6 +911,7 @@ defmodule Glific.Flows.FlowContext do
           is_await_result: false
         }
       )
+      |> IO.inspect(label: "wakeup_one")
 
     # also mark all newer contexts as completed
     mark_flows_complete(context,
@@ -929,9 +930,10 @@ defmodule Glific.Flows.FlowContext do
         {:flow_uuid, context.flow_uuid, context.status}
       )
 
+    # check feature for ai
     message =
       if is_nil(message),
-        do: Messages.create_temp_message(context.organization_id, "No Response"),
+        do: Messages.create_temp_message(context.organization_id, "Failure"),
         else: message
 
     context

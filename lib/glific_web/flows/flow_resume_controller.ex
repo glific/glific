@@ -16,7 +16,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         result
       ) do
-    response = result["data"]
+    response = result["data"] |> IO.inspect()
     organization = Partners.organization(organization_id)
     Repo.put_process_state(organization.id)
     # need to validate signature
@@ -31,6 +31,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
         contact,
         response["flow_id"],
         %{"response" => response}
+        # msg
       )
     end
 
