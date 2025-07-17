@@ -44,6 +44,7 @@ defmodule GlificWeb.Schema.MessageTypes do
   object :message do
     field :id, :id
     field :body, :string
+    field :uuid, :string
     field :type, :message_type_enum
     field :flow, :message_flow_enum
     field :flow_label, :string
