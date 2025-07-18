@@ -561,6 +561,7 @@ defmodule Glific.Messages do
       template_id: template_id,
       template_type: session_template.type,
       has_buttons: session_template.has_buttons,
+      footer: session_template.footer,
       params: parameters,
       media_id: media_id,
       is_optin_flow: Map.get(attrs, :is_optin_flow, false),
