@@ -187,10 +187,10 @@ defmodule Glific.Sheets do
     |> where([sd], sd.sheet_id == ^sheet.id)
     |> Repo.delete_all()
 
-    media_warnings =
+    {media_warnings, no_of_fail} =
       ApiClient.get_csv_content(url: export_url)
-      |> Enum.reduce_while(%{}, fn
-        {:ok, row}, acc ->
+      |> Enum.reduce_while({%{}, true}, fn
+        {:ok, row}, {acc, _} ->
           parsed_rows = parse_row_values(row)
 
           %{
@@ -203,8 +203,7 @@ defmodule Glific.Sheets do
           }
           |> create_sheet_data()
 
-          Glific.Metrics.increment("Sheets Sync Successful")
-          {:cont, Map.merge(acc, parsed_rows.errors)}
+          {:cont, {Map.merge(acc, parsed_rows.errors), true}}
 
         {:error, err}, acc ->
           # If we get any error, we stop executing the current sheet further, log it.
@@ -212,10 +211,14 @@ defmodule Glific.Sheets do
             "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{inspect(err)}"
           )
 
-          Glific.Metrics.increment("Sheets Sync Failed")
           create_sync_fail_notification(sheet)
-          {:halt, Map.put(acc, export_url, err)}
+          {:halt, {Map.put(acc, export_url, err), false}}
       end)
+
+    case no_of_fail do
+      true -> Glific.Metrics.increment("Sheets Sync Successful")
+      false -> Glific.Metrics.increment("Sheets Sync Failed")
+    end
 
     remove_stale_sheet_data(sheet, last_synced_at)
 
