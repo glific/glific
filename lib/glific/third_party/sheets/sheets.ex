@@ -190,7 +190,7 @@ defmodule Glific.Sheets do
     {media_warnings, sync_successful?} =
       ApiClient.get_csv_content(url: export_url)
       |> Enum.reduce_while({%{}, true}, fn
-        {:ok, row}, {acc, false} ->
+        {:ok, row}, {acc, _} ->
           parsed_rows = parse_row_values(row)
 
           %{
@@ -203,10 +203,9 @@ defmodule Glific.Sheets do
           }
           |> create_sheet_data()
 
-          IO.puts("ppp")
           {:cont, {Map.merge(acc, parsed_rows.errors), true}}
 
-        {:error, err}, acc ->
+        {:error, err}, {acc, _} ->
           # If we get any error, we stop executing the current sheet further, log it.
           Logger.error(
             "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{inspect(err)}"
@@ -216,8 +215,6 @@ defmodule Glific.Sheets do
           IO.puts("kkk")
           {:halt, {Map.put(acc, export_url, err), false}}
       end)
-
-    IO.inspect("ascjsdk")
 
     case sync_successful? do
       true -> Glific.Metrics.increment("Sheets Sync Successful")
