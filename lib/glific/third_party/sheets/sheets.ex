@@ -212,7 +212,6 @@ defmodule Glific.Sheets do
           )
 
           create_sync_fail_notification(sheet)
-          IO.puts("kkk")
           {:halt, {Map.put(acc, export_url, err), false}}
       end)
 
