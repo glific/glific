@@ -190,37 +190,30 @@ defmodule Glific.Sheets do
     {media_warnings, sync_successful?} =
       ApiClient.get_csv_content(url: export_url)
       |> Enum.reduce_while({%{}, true}, fn
-        {:ok, row}, {acc, status} ->
+        {:ok, row}, {acc, false} ->
           parsed_rows = parse_row_values(row)
 
-          sheet_data = %{
+          %{
+            ## we can also think in case we need first column.
             key: parsed_rows.values["key"],
             row_data: parsed_rows.values,
             sheet_id: sheet.id,
             organization_id: sheet.organization_id,
             last_synced_at: last_synced_at
           }
+          |> create_sheet_data()
 
-          # If create_sheet_data can fail, you should match its result here
-          case create_sheet_data(sheet_data) do
-            {:ok, _} ->
-              {:cont, {Map.merge(acc, parsed_rows.errors), status}}
+          IO.puts("ppp")
+          {:cont, {Map.merge(acc, parsed_rows.errors), true}}
 
-            {:error, reason} ->
-              Logger.error("Failed to create sheet data: #{inspect(reason)}")
-              create_sync_fail_notification(sheet)
-              {:halt, {Map.put(acc, export_url, reason), false}}
-          end
-
-        {:error, err}, {acc, _status} ->
-          # Stop processing on fatal error from CSV row
-          Logger.error("""
-          Error while syncing Google Sheet.
-          Org ID: #{sheet.organization_id}, Sheet ID: #{sheet.id}
-          Reason: #{inspect(err)}
-          """)
+        {:error, err}, acc ->
+          # If we get any error, we stop executing the current sheet further, log it.
+          Logger.error(
+            "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{inspect(err)}"
+          )
 
           create_sync_fail_notification(sheet)
+          IO.puts("kkk")
           {:halt, {Map.put(acc, export_url, err), false}}
       end)
 
