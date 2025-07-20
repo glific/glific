@@ -16,7 +16,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         result
       ) do
-    response = result["data"] |> IO.inspect()
+    response = result["data"] |> IO.inspect(label: "coming from AI")
     organization = Partners.organization(organization_id)
     Repo.put_process_state(organization.id)
     # need to validate signature

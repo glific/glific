@@ -667,7 +667,7 @@ defmodule Glific.Flows.Action do
 
     fields = %{
       "assistant_id" => "asst_pJMbE1OALvgWtZfGfDicrgAD",
-      "callback_url" => "https://3994289c9e89.ngrok-free.app/webhook/flow_resume",
+      "callback_url" => "https://762ca34a3d30.ngrok-free.app/webhook/flow_resume",
       "contact_id" => "4",
       "endpoint" => "http://0.0.0.0:8000/api/v1/responses",
       "flow_id" => "22",

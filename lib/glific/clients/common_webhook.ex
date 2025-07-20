@@ -58,12 +58,16 @@ defmodule Glific.Clients.CommonWebhook do
         "timestamp=#{timestamp}&" <>
         "signature=#{signature}"
 
+    IO.inspect(callback, label: "callabck_url")
+
     payload =
       fields
       |> Map.merge(signature_payload)
       |> Map.put("signature", signature)
       |> Map.put("callback", callback)
       |> Jason.encode!()
+
+    IO.inspect(payload)
 
     endpoint
     |> Tesla.post(
