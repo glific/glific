@@ -473,7 +473,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     bsp_service = organization.services["bsp"]
 
     cond do
-      bsp_service == nil ->
+      is_nil(bsp_service) ->
         {:error, "Gupshup is not active"}
 
       bsp_service.secrets["app_id"] in [nil, ""] ->
