@@ -145,7 +145,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
       _ ->
         with {:ok, _contact} <- optin_contact(organization_id, phone),
              {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
-             {:ok, contact_to_send} <- check_balance_and_set_bot(contact),
+             {:ok, contact_to_send} <- fallback_to_glific_if_low_balance(contact),
              true <- send_otp_allowed?(contact_to_send.organization_id, phone, registration),
              {:ok, _otp} <- create_and_send_verification_code(contact_to_send) do
           json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
@@ -162,9 +162,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
     case existing_user do
       {:ok, _user} ->
         with {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
-             {:ok, contact_to_send} <- check_balance_and_set_bot(contact),
-             true <- send_otp_allowed?(contact_to_send.organization_id, phone, registration),
-             {:ok, _otp} <- create_and_send_verification_code(contact_to_send) do
+             true <- send_otp_allowed?(organization_id, phone, registration),
+             {:ok, _otp} <- create_and_send_verification_code(contact) do
           json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
         else
           _ ->
@@ -287,13 +286,14 @@ defmodule GlificWeb.API.V1.RegistrationController do
     end
   end
 
-  @spec check_balance_and_set_bot(Contact.t()) :: {:ok, map()}
-  defp check_balance_and_set_bot(contact) do
+  @spec fallback_to_glific_if_low_balance(Contact.t()) :: {:ok, map()}
+  defp fallback_to_glific_if_low_balance(contact) do
     case PartnerAPI.get_balance(contact.organization_id) do
       {:ok, %{"balance" => balance}} when balance > 0 ->
         {:ok, contact}
 
       _ ->
+        # fallback to glific bot for sending otp
         org_id = Saas.organization_id()
         build_context(org_id)
         optin_contact(org_id, contact.phone)
