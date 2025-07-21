@@ -121,7 +121,6 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   defp copy_slide(token, presentation_id) do
     url = "#{@drive_url}/#{presentation_id}/copy"
     headers = auth_headers(token)
-    Logger.info("bumping giga deployment")
     case Tesla.post(client(), url, "{}", headers: headers) do
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
         case Jason.decode(response_body) do
