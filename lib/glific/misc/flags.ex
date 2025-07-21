@@ -232,6 +232,27 @@ defmodule Glific.Flags do
   end
 
   @doc """
+  Get Interactive Message re-response value for organization flag
+  """
+  @spec get_interactive_re_response_enabled(map()) :: boolean
+  def get_interactive_re_response_enabled(organization) do
+    app_env = Application.get_env(:glific, :environment)
+
+    cond do
+      FunWithFlags.enabled?(:is_interactive_re_response_enabled,
+        for: %{organization_id: organization.id}
+      ) ->
+        true
+
+      Glific.trusted_env?(app_env, organization.id) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  @doc """
   Get OpenAI auto translation value for organization flag
   """
   @spec get_open_ai_auto_translation_enabled(map()) :: boolean
@@ -292,6 +313,18 @@ defmodule Glific.Flags do
       organization,
       :is_certificate_enabled,
       get_certificate_enabled(organization)
+    )
+  end
+
+  @doc """
+  Set fun_with_flag toggle for Interactive Message re-response for an organization
+  """
+  @spec set_interactive_re_response_enabled(map()) :: map()
+  def set_interactive_re_response_enabled(organization) do
+    Map.put(
+      organization,
+      :is_interactive_re_response_enabled,
+      get_interactive_re_response_enabled(organization)
     )
   end
 
@@ -383,7 +416,8 @@ defmodule Glific.Flags do
       :is_open_ai_auto_translation_enabled,
       :is_google_auto_translation_enabled,
       :is_whatsapp_group_enabled,
-      :is_certificate_enabled
+      :is_certificate_enabled,
+      :is_interactive_re_response_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(
