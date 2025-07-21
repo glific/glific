@@ -134,6 +134,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:is_auto_translation_enabled, :boolean)
     field(:is_whatsapp_group_enabled, :boolean)
     field(:is_certificate_enabled, :boolean)
+    field(:is_ai_platform_enabled, :boolean)
 
     field(:inserted_at, :datetime)
 

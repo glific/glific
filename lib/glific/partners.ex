@@ -471,6 +471,7 @@ defmodule Glific.Partners do
       |> Flags.set_ticketing_enabled()
       |> Flags.set_certificate_enabled()
       |> Flags.set_interactive_re_response_enabled()
+      |> Flags.set_ai_platform_enabled()
 
     Caches.set(
       @global_organization_id,

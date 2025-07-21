@@ -232,6 +232,25 @@ defmodule Glific.Flags do
   end
 
   @doc """
+  Get ai-platform value for organization flag
+  """
+  @spec get_ai_platform_enabled(map()) :: boolean
+  def get_ai_platform_enabled(organization) do
+    app_env = Application.get_env(:glific, :environment)
+
+    cond do
+      FunWithFlags.enabled?(:is_ai_platform_enabled, for: %{organization_id: organization.id}) ->
+        true
+
+      Glific.trusted_env?(app_env, organization.id) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  @doc """
   Get Interactive Message re-response value for organization flag
   """
   @spec get_interactive_re_response_enabled(map()) :: boolean
@@ -305,7 +324,7 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  Set fun_with_flag toggle forcustom certificate for an organization
+  Set fun_with_flag toggle for custom certificate for an organization
   """
   @spec set_certificate_enabled(map()) :: map()
   def set_certificate_enabled(organization) do
@@ -313,6 +332,18 @@ defmodule Glific.Flags do
       organization,
       :is_certificate_enabled,
       get_certificate_enabled(organization)
+    )
+  end
+
+  @doc """
+  Set fun_with_flag toggle for ai-platform for an organization
+  """
+  @spec set_ai_platform_enabled(map()) :: map()
+  def set_ai_platform_enabled(organization) do
+    Map.put(
+      organization,
+      :is_ai_platform_enabled,
+      get_ai_platform_enabled(organization)
     )
   end
 
@@ -417,6 +448,7 @@ defmodule Glific.Flags do
       :is_google_auto_translation_enabled,
       :is_whatsapp_group_enabled,
       :is_certificate_enabled,
+      :is_ai_platform_enabled,
       :is_interactive_re_response_enabled
     ]
     |> Enum.each(fn flag ->
