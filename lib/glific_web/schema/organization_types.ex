@@ -27,6 +27,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:auto_translation_enabled, :boolean)
     field(:whatsapp_group_enabled, :boolean)
     field(:certificate_enabled, :boolean)
+    field(:ai_platform_enabled, :boolean)
     field(:errors, list_of(:input_error))
   end
 
