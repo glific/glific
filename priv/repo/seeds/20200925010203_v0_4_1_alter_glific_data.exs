@@ -5,6 +5,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
 
   import Ecto.Query
 
+  alias Ecto.Query.API
+
   alias Glific.{
     Partners,
     Partners.Credential,
@@ -136,6 +138,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     add_google_sheet()
 
     add_maytapi()
+
+    add_ai_platform()
   end
 
   defp add_dialogflow do
@@ -438,6 +442,30 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               type: :string,
               label: "Token",
               is_required: true,
+              default: nil,
+              view_only: false
+            }
+          }
+        })
+  end
+
+  defp add_ai_platform() do
+    query = from(p in Provider, where: p.shortcode == "ai_platform")
+
+    # add only if does not exist
+    if !Repo.exists?(query),
+      do:
+        Repo.insert!(%Provider{
+          name: "AI Platform",
+          shortcode: "ai_platform",
+          description: "Handles OpenAI-based operations and integrations in Glific.",
+          group: nil,
+          is_required: false,
+          keys: %{},
+          secrets: %{
+            api_key: %{
+              type: :string,
+              label: "API Key",
               default: nil,
               view_only: false
             }
