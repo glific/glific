@@ -210,12 +210,9 @@ defmodule Glific.Providers.Gupshup.Message do
     payload = params["payload"]
     message_payload = payload["payload"]
 
-    ## Gupshup does not send an option id back as a response.
-    ## They just send the postbackText back as the option id.
-    ## formatting that here will help us to keep that consistent.
-    ## We might remove this in the future when gupshup will start sending the option id.
-
-    interactive_content = message_payload |> Map.merge(%{"id" => message_payload["postbackText"]})
+    # The msgId we send as part of payload is received back as `id`, which we
+    # later use to determine the next node to run
+    interactive_content = message_payload |> Map.merge(%{"id" => message_payload["id"]})
 
     %{
       bsp_message_id: payload["id"],
@@ -260,6 +257,10 @@ defmodule Glific.Providers.Gupshup.Message do
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
   defp send_message(payload, message, attrs) do
+    # sending the node reference also with message, so that we can track when we
+    # receive the response incase of a particular message
+    payload = Map.put(payload, "msgid", message.uuid)
+
     request_body =
       %{"channel" => @channel}
       |> Map.merge(format_sender(message))
