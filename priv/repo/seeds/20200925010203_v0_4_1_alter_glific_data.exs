@@ -5,8 +5,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
 
   import Ecto.Query
 
-  alias Ecto.Query.API
-
   alias Glific.{
     Partners,
     Partners.Credential,
