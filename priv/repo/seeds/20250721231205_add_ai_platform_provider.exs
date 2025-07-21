@@ -16,6 +16,11 @@ defmodule Glific.Seeds.Seeds20250721231205AddAiPlatformProvider do
     add_ai_platform()
   end
 
+  def down(_repo, _opts) do
+    from(p in Provider, where: p.shortcode == "ai_platform")
+    |> Repo.delete_all()
+  end
+
   @spec add_ai_platform() :: any()
   defp add_ai_platform() do
     query = from(p in Provider, where: p.shortcode == "ai_platform")
