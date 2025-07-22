@@ -27,20 +27,19 @@ defmodule GlificWeb.Flows.FlowResumeController do
         "failure" -> Messages.create_temp_message(organization_id, "Failure")
       end
 
-    with true <- validate_request(organization_id, response)
-
-    {:ok, contact} <-
-      Repo.fetch_by Contact, %{
-        id: response["contact_id"],
-        organization_id: organization.id
-      } do
-        FlowContext.resume_contact_flow(
-          contact,
-          response["flow_id"],
-          %{"response" => response},
-          message
-        )
-      end
+    with true <- validate_request(organization_id, response),
+         {:ok, contact} <-
+           Repo.fetch_by(Contact, %{
+             id: response["contact_id"],
+             organization_id: organization.id
+           }) do
+      FlowContext.resume_contact_flow(
+        contact,
+        response["flow_id"],
+        %{"response" => response},
+        message
+      )
+    end
 
     # always return 200 and an empty response
     json(conn, "")

@@ -865,10 +865,12 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec step_forward(FlowContext.t(), Message.t()) :: {:ok, map()} | {:error, String.t()}
   def step_forward(context, message) do
-    IO.inspect(context)
+    IO.inspect(context.results)
+    context.results["response"]["message"] |> IO.inspect()
 
     case execute(context, [message]) |> IO.inspect(label: "execute node") do
       {:ok, context, []} ->
+        IO.inspect(context)
         {:ok, context}
 
       {:wait, context, _messages} ->
