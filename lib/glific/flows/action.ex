@@ -644,9 +644,7 @@ defmodule Glific.Flows.Action do
   def execute(%{type: "call_webhook"} = action, context, messages) do
     # Check if the feature flag is enabled and if the conditions match
     if action.method == "FUNCTION" and Enum.empty?(messages) and
-         action.result_name == "filesearch" do
-      # Log the entry into webhook_and_wait
-
+         action.url == "filesearch-gpt" do
       # Call the webhook and wait
       webhook_and_wait(action, context, messages)
     else
@@ -656,26 +654,24 @@ defmodule Glific.Flows.Action do
   end
 
   defp webhook_and_wait(action, context, _messages) do
-    # Get the necessary headers and fields
-    headers = [
-      {"Accept", "application/json"},
-      {"Content-Type", "application/json"},
-      {"X-API-KEY", "ApiKey No3x47A5qoIGhm0kVKjQ77dhCqEdWRIQZlEPzzzh7i8"},
-      {"X-Glific-Signature",
-       "t=1752690515,v1=28d116ef749e29d54bcec66920bbda8004c05aa5f8c43b177407706e69e9f1a4"}
-    ]
+    parsed_attrs = Webhook.parse_header_and_url(action, context)
 
-    fields = %{
-      "assistant_id" => "asst_pJMbE1OALvgWtZfGfDicrgAD",
-      "callback_url" => "https://762ca34a3d30.ngrok-free.app/webhook/flow_resume",
-      "contact_id" => "4",
-      "endpoint" => "http://0.0.0.0:8000/api/v1/responses",
-      "flow_id" => "22",
-      "organization_id" => 1,
-      "project_id" => 7,
-      "question" => "Tell me a story",
-      "remove_citation" => true
-    }
+    body =
+      case Webhook.create_body(context, action.body) do
+        {:error, message} ->
+          action
+          |> Webhook.create_log(%{}, action.headers, context)
+          |> Webhook.update_log(message)
+
+        {_map, body} ->
+          body
+      end
+
+    fields = Jason.decode!(body)
+
+    headers =
+      Webhook.add_signature(parsed_attrs.header, context.organization_id, body)
+      |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
     # Call the webhook "call_and_wait"
     response = CommonWebhook.webhook("call_and_wait", fields, headers)
@@ -684,7 +680,6 @@ defmodule Glific.Flows.Action do
       %{"success" => true, "data" => _data} ->
         # If the success field is true, proceed with updating the context
         wait_time = action.wait_time || 60
-        IO.inspect(wait_time)
         # Update the flow context with the calculated wakeup_at time
         {:ok, context} =
           FlowContext.update_flow_context(

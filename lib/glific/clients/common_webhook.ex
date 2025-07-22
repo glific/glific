@@ -58,8 +58,6 @@ defmodule Glific.Clients.CommonWebhook do
         "timestamp=#{timestamp}&" <>
         "signature=#{signature}"
 
-    IO.inspect(callback, label: "callabck_url")
-
     payload =
       fields
       |> Map.merge(signature_payload)
@@ -67,15 +65,12 @@ defmodule Glific.Clients.CommonWebhook do
       |> Map.put("callback", callback)
       |> Jason.encode!()
 
-    IO.inspect(payload)
-
     endpoint
     |> Tesla.post(
       payload,
       headers: headers,
       opts: [adapter: [recv_timeout: 300_000]]
     )
-    |> IO.inspect(label: "from AI platform")
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         response = Jason.decode!(body)

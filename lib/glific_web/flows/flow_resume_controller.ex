@@ -6,7 +6,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
   use GlificWeb, :controller
   require Logger
 
-  alias Glific.{Contacts.Contact, Flows.FlowContext, Partners, Repo}
+  alias Glific.{Messages, Contacts.Contact, Flows.FlowContext, Partners, Repo}
 
   @doc """
   Implementation of resuming the flow after the flow was waiting for result from 3rd party service
@@ -16,24 +16,31 @@ defmodule GlificWeb.Flows.FlowResumeController do
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         result
       ) do
-    response = result["data"] |> IO.inspect(label: "coming from AI")
+    response = result["data"]
     organization = Partners.organization(organization_id)
     Repo.put_process_state(organization.id)
     # need to validate signature
     # need to validate timestamp
-    with true <- validate_request(organization_id, response),
-         {:ok, contact} <-
-           Repo.fetch_by(Contact, %{
-             id: response["contact_id"],
-             organization_id: organization.id
-           }) do
-      FlowContext.resume_contact_flow(
-        contact,
-        response["flow_id"],
-        %{"response" => response}
-        # msg
-      )
-    end
+    message =
+      case response["status"] do
+        "success" -> Messages.create_temp_message(organization_id, "Success")
+        "failure" -> Messages.create_temp_message(organization_id, "Failure")
+      end
+
+    with true <- validate_request(organization_id, response)
+
+    {:ok, contact} <-
+      Repo.fetch_by Contact, %{
+        id: response["contact_id"],
+        organization_id: organization.id
+      } do
+        FlowContext.resume_contact_flow(
+          contact,
+          response["flow_id"],
+          %{"response" => response},
+          message
+        )
+      end
 
     # always return 200 and an empty response
     json(conn, "")

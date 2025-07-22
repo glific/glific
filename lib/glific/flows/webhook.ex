@@ -31,7 +31,7 @@ defmodule Glific.Flows.Webhook do
   ]
 
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
-  defp add_signature(headers, organization_id, body) do
+  def add_signature(headers, organization_id, body) do
     now = System.system_time(:second)
     sig = "t=#{now},v1=#{Glific.signature(organization_id, body, now)}"
 
@@ -55,7 +55,7 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec create_log(Action.t(), map(), map(), FlowContext.t()) :: WebhookLog.t()
-  defp create_log(action, body, headers, context) do
+  def create_log(action, body, headers, context) do
     {:ok, webhook_log} =
       %{
         request_json: body,
@@ -73,12 +73,12 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec update_log(WebhookLog.t() | non_neg_integer, map()) :: {:ok, WebhookLog.t()}
-  defp update_log(webhook_log_id, message) when is_integer(webhook_log_id) do
+  def update_log(webhook_log_id, message) when is_integer(webhook_log_id) do
     webhook_log = Repo.get!(WebhookLog, webhook_log_id)
     update_log(webhook_log, message)
   end
 
-  defp update_log(webhook_log, %{body: body} = message) when is_map(message) and body != nil do
+  def update_log(webhook_log, %{body: body} = message) when is_map(message) and body != nil do
     # handle incorrect json body
     json_body =
       case Jason.decode(body) do
@@ -99,7 +99,7 @@ defmodule Glific.Flows.Webhook do
   end
 
   # this is when we are storing the return from an internal function call
-  defp update_log(webhook_log, result) when is_map(result) do
+  def update_log(webhook_log, result) when is_map(result) do
     attrs = %{
       response_json: result,
       status_code: 200
@@ -110,7 +110,7 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec update_log(WebhookLog.t(), String.t()) :: {:ok, WebhookLog.t()}
-  defp update_log(webhook_log, error_message) do
+  def update_log(webhook_log, error_message) do
     attrs = %{
       error: error_message,
       status_code: 400
@@ -121,9 +121,9 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
-  defp create_body(_context, action_body) when action_body in [nil, ""], do: {%{}, "{}"}
+  def create_body(_context, action_body) when action_body in [nil, ""], do: {%{}, "{}"}
 
-  defp create_body(context, action_body) do
+  def create_body(context, action_body) do
     case Jason.decode(action_body) do
       {:ok, action_body_map} ->
         do_create_body(context, action_body_map)
@@ -219,7 +219,7 @@ defmodule Glific.Flows.Webhook do
 
   # THis function will create a dynamic headers
   @spec parse_header_and_url(Action.t(), FlowContext.t()) :: map()
-  defp parse_header_and_url(action, context) do
+  def parse_header_and_url(action, context) do
     fields = FlowContext.get_vars_to_parse(context)
 
     header = MessageVarParser.parse_map(action.headers, fields)
