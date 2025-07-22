@@ -653,7 +653,7 @@ defmodule Glific.Flows do
         "Last published flow revision for flow_id: #{flow.id} is updated with revision_id: #{revision_id} by user_id: #{user_id}"
       )
 
-      update_cached_flow(flow, "published") |> IO.inspect()
+      update_cached_flow(flow, "published")
       clean_cached_flow_keywords_map(flow.organization_id)
     end
 

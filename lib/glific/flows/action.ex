@@ -3,13 +3,13 @@ defmodule Glific.Flows.Action do
   The Action object which encapsulates one action in a given node.
   """
 
-  alias Glific.Clients.CommonWebhook
   alias __MODULE__
 
   use Ecto.Schema
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Clients.CommonWebhook,
     Contacts,
     Contacts.Contact,
     Dialogflow,
