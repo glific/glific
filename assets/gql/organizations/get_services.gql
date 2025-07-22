@@ -11,6 +11,7 @@ query organizationServices {
     auto_translation_enabled
     whatsapp_group_enabled
     certificate_enabled
+    ai_platform_enabled
     errors {
       key
       message
