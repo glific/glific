@@ -10,28 +10,29 @@ defmodule Glific.Seeds.Seeds20250721231205AddAiPlatformProvider do
 
   envs([:dev, :test, :prod])
 
-  tags([:ai_platform])
+  tags([:kaapi])
 
   def up(_repo, _opts) do
-    add_ai_platform()
+    add_kaapi()
   end
 
   def down(_repo, _opts) do
-    from(p in Provider, where: p.shortcode == "ai_platform")
+    from(p in Provider, where: p.shortcode == "kaapi")
     |> Repo.delete_all()
   end
 
-  @spec add_ai_platform() :: any()
-  defp add_ai_platform() do
-    query = from(p in Provider, where: p.shortcode == "ai_platform")
+  @spec add_kaapi() :: any()
+  defp add_kaapi() do
+    query = from(p in Provider, where: p.shortcode == "kaapi")
 
     # add only if does not exist
     if !Repo.exists?(query),
       do:
         Repo.insert!(%Provider{
-          name: "AI Platform",
-          shortcode: "ai_platform",
-          description: "Handles OpenAI-based operations and integrations in Glific.",
+          name: "Kaapi",
+          shortcode: "kaapi",
+          description:
+            "AI platform to handle OpenAI-based operations and integrations in Glific.",
           group: nil,
           is_required: false,
           keys: %{},
