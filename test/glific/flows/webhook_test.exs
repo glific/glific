@@ -555,8 +555,42 @@ defmodule Glific.Flows.WebhookTest do
 
     assert Webhook.execute(action, context) == nil
     [job] = all_enqueued(worker: Webhook, prefix: "global")
-
+    assert job.queue == "webhook"
     context_map = job.args["context"]
     assert context_map["uuids_seen"] == %{flow_uuid => 1}
+  end
+
+  test "custom_certificate webhook should run in its own queue",
+       attrs do
+    flow_uuid = Ecto.UUID.generate()
+
+    attrs = %{
+      flow_id: 1,
+      flow_uuid: flow_uuid,
+      contact_id: Fixtures.contact_fixture(attrs).id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+
+    context =
+      context
+      |> Repo.preload([:contact, :flow])
+      |> Map.put(:uuids_seen, %{flow_uuid => 1})
+
+    action = %Action{
+      headers: %{"Accept" => "application/json"},
+      method: "FUNCTION",
+      url: "create_certificate",
+      body:
+        Jason.encode!(%{
+          certificate_id: 1,
+          results: "@results"
+        })
+    }
+
+    assert Webhook.execute(action, context) == nil
+    [job] = all_enqueued(worker: Webhook, prefix: "global")
+    assert job.queue == "custom_certificate"
   end
 end

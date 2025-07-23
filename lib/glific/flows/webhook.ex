@@ -412,6 +412,12 @@ defmodule Glific.Flows.Webhook do
   defp format_response(response_json), do: response_json
 
   @spec create_oban_changeset(map()) :: Oban.Job.changeset()
+  defp create_oban_changeset(%{url: "create_certificate"} = payload) do
+    __MODULE__.new(payload,
+      queue: :custom_certificate
+    )
+  end
+
   defp create_oban_changeset(%{url: url} = payload) when url in @non_unique_urls,
     do: __MODULE__.new(payload, unique: nil)
 

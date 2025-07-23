@@ -37,7 +37,8 @@ oban_queues = [
   webhook: 10,
   broadcast: 5,
   wa_group: 5,
-  purge: 1
+  purge: 1,
+  custom_certificate: 10
 ]
 
 oban_crontab = [
