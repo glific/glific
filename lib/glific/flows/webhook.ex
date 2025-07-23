@@ -6,6 +6,7 @@ defmodule Glific.Flows.Webhook do
   use Gettext, backend: GlificWeb.Gettext
   require Logger
 
+  alias Glific.Clients.CommonWebhook
   alias Glific.{Messages, Repo}
   alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
 
@@ -31,7 +32,7 @@ defmodule Glific.Flows.Webhook do
   ]
 
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
-  def add_signature(headers, organization_id, body) do
+  defp add_signature(headers, organization_id, body) do
     now = System.system_time(:second)
     sig = "t=#{now},v1=#{Glific.signature(organization_id, body, now)}"
 
@@ -55,7 +56,7 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec create_log(Action.t(), map(), map(), FlowContext.t()) :: WebhookLog.t()
-  def create_log(action, body, headers, context) do
+  defp create_log(action, body, headers, context) do
     {:ok, webhook_log} =
       %{
         request_json: body,
@@ -94,8 +95,7 @@ defmodule Glific.Flows.Webhook do
       status_code: message.status
     }
 
-    webhook_log
-    |> WebhookLog.update_webhook_log(attrs)
+    webhook_log |> WebhookLog.update_webhook_log(attrs)
   end
 
   # this is when we are storing the return from an internal function call
@@ -121,9 +121,9 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
-  def create_body(_context, action_body) when action_body in [nil, ""], do: {%{}, "{}"}
+  defp create_body(_context, action_body) when action_body in [nil, ""], do: {%{}, "{}"}
 
-  def create_body(context, action_body) do
+  defp create_body(context, action_body) do
     case Jason.decode(action_body) do
       {:ok, action_body_map} ->
         do_create_body(context, action_body_map)
@@ -219,7 +219,7 @@ defmodule Glific.Flows.Webhook do
 
   # THis function will create a dynamic headers
   @spec parse_header_and_url(Action.t(), FlowContext.t()) :: map()
-  def parse_header_and_url(action, context) do
+  defp parse_header_and_url(action, context) do
     fields = FlowContext.get_vars_to_parse(context)
 
     header = MessageVarParser.parse_map(action.headers, fields)
@@ -416,4 +416,60 @@ defmodule Glific.Flows.Webhook do
     do: __MODULE__.new(payload, unique: nil)
 
   defp create_oban_changeset(payload), do: __MODULE__.new(payload)
+
+  @spec webhook_and_wait(Action.t(), FlowContext.t(), [Message.t()]) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+  def webhook_and_wait(action, context, _messages) do
+    parsed_attrs = parse_header_and_url(action, context)
+
+    body =
+      case create_body(context, action.body) do
+        {:error, message} ->
+          action
+          |> create_log(%{}, action.headers, context)
+          |> update_log(message)
+
+        {_map, body} ->
+          body
+      end
+
+    fields = Jason.decode!(body)
+
+    webhook_log =
+      create_log(action, fields, action.headers, context)
+
+    fields = Map.put(fields, "webhook_log_id", webhook_log.id)
+
+    headers =
+      add_signature(parsed_attrs.header, context.organization_id, body)
+      |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
+
+    # Call the webhook "call_and_wait"
+    response = CommonWebhook.webhook("call_and_wait", fields, headers)
+
+    case response do
+      %{"success" => true, "data" => data} ->
+        # log the success response
+        update_log(webhook_log.id, data)
+
+        # wait for 1 minute by default for AI platform to respond
+        wait_time = action.wait_time || 60
+
+        {:ok, context} =
+          FlowContext.update_flow_context(
+            context,
+            %{
+              wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
+              is_background_flow: context.flow.is_background,
+              is_await_result: true
+            }
+          )
+
+        {:wait, context, []}
+
+      %{"success" => false, "data" => data} ->
+        update_log(webhook_log.id, data)
+        {:ok, context, "Failure"}
+    end
+  end
 end

@@ -6,7 +6,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
   use GlificWeb, :controller
   require Logger
 
-  alias Glific.{Messages, Contacts.Contact, Flows.FlowContext, Partners, Repo}
+  alias Glific.{Messages, Contacts.Contact, Flows.FlowContext, Partners, Repo, Flows.Webhook}
 
   @doc """
   Implementation of resuming the flow after the flow was waiting for result from 3rd party service
@@ -17,16 +17,34 @@ defmodule GlificWeb.Flows.FlowResumeController do
         result
       ) do
     response = result["data"]
+    # Map the response_id to thread_id, since we treat response_id as the thread ID in Glific
+    # and use thread_id throughout the platform for OpenAI conversation support
+    thread_id = response["response_id"]
+    response = Map.put(response, "thread_id", thread_id)
+
     organization = Partners.organization(organization_id)
     Repo.put_process_state(organization.id)
-    # need to validate signature
-    # need to validate timestamp
+
+    # updated the webhook log with latest response
+    message = %{
+      status: response["status"],
+      response: response["message"],
+      thread_id: thread_id
+    }
+
+    Webhook.update_log(response["webhook_log_id"], message)
+    #
     message =
       case response["status"] do
-        "success" -> Messages.create_temp_message(organization_id, "Success")
-        "failure" -> Messages.create_temp_message(organization_id, "Failure")
+        "success" ->
+          Messages.create_temp_message(organization_id, "Success")
+
+        "failure" ->
+          Messages.create_temp_message(organization_id, "Failure")
       end
 
+    # need to validate timestamp
+    # need to validate signature
     with true <- validate_request(organization_id, response),
          {:ok, contact} <-
            Repo.fetch_by(Contact, %{

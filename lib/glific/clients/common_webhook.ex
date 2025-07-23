@@ -3,6 +3,8 @@ defmodule Glific.Clients.CommonWebhook do
   Common webhooks which we can call with any clients.
   """
 
+  alias Glific.Flows.Webhook
+
   alias Glific.{
     ASR.Bhasini,
     ASR.GoogleASR,
@@ -30,6 +32,7 @@ defmodule Glific.Clients.CommonWebhook do
     endpoint = fields["endpoint"]
     {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
     {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
+    {:ok, webhook_log_id} = fields["webhook_log_id"] |> Glific.parse_maybe_integer()
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
     timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
@@ -63,6 +66,7 @@ defmodule Glific.Clients.CommonWebhook do
       |> Map.merge(signature_payload)
       |> Map.put("signature", signature)
       |> Map.put("callback", callback)
+      |> Map.put("webhook_log_id", webhook_log_id)
       |> Jason.encode!()
 
     endpoint

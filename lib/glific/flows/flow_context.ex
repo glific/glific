@@ -865,12 +865,10 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec step_forward(FlowContext.t(), Message.t()) :: {:ok, map()} | {:error, String.t()}
   def step_forward(context, message) do
-    IO.inspect(context.results)
-    context.results["response"]["message"] |> IO.inspect()
+    context.results["response"]["message"]
 
-    case execute(context, [message]) |> IO.inspect(label: "execute node") do
+    case execute(context, [message]) do
       {:ok, context, []} ->
-        IO.inspect(context)
         {:ok, context}
 
       {:wait, context, _messages} ->
@@ -933,10 +931,19 @@ defmodule Glific.Flows.FlowContext do
         {:flow_uuid, context.flow_uuid, context.status}
       )
 
-    # check feature for ai
+    message =
+      if is_nil(message) and
+           FunWithFlags.enabled?(:is_ai_platform_enabled,
+             for: %{organization_id: context.organization_id}
+           ) do
+        Messages.create_temp_message(context.organization_id, "Failure")
+      else
+        message
+      end
+
     message =
       if is_nil(message),
-        do: Messages.create_temp_message(context.organization_id, "Failure"),
+        do: Messages.create_temp_message(context.organization_id, "No Response"),
         else: message
 
     context

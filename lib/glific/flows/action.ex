@@ -34,8 +34,7 @@ defmodule Glific.Flows.Action do
     Flow,
     FlowContext,
     Node,
-    Templating,
-    Webhook
+    Templating
   }
 
   require Logger
@@ -642,63 +641,22 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
-    # Check if the feature flag is enabled and if the conditions match
-    if action.method == "FUNCTION" and Enum.empty?(messages) and
-         action.url == "filesearch-gpt" do
-      # Call the webhook and wait
-      webhook_and_wait(action, context, messages)
-    else
-      # If the conditions are not met, return {:wait, context, messages}
-      {:wait, context, messages}
-    end
-  end
+    cond do
+      # for the orgs who has been re-routed to ai-platform
+      FunWithFlags.enabled?(:is_ai_platform_enabled,
+        for: %{organization_id: context.organization_id}
+      ) and
+        action.method == "FUNCTION" and Enum.empty?(messages) and
+          action.url == "filesearch-gpt" ->
+        Glific.Flows.Webhook.webhook_and_wait(action, context, messages)
 
-  defp webhook_and_wait(action, context, _messages) do
-    parsed_attrs = Webhook.parse_header_and_url(action, context)
+      # If messages are empty, execute the webhook
+      Enum.empty?(messages) ->
+        Glific.Flows.Webhook.execute(action, context)
 
-    body =
-      case Webhook.create_body(context, action.body) do
-        {:error, message} ->
-          action
-          |> Webhook.create_log(%{}, action.headers, context)
-          |> Webhook.update_log(message)
-
-        {_map, body} ->
-          body
-      end
-
-    fields = Jason.decode!(body)
-
-    headers =
-      Webhook.add_signature(parsed_attrs.header, context.organization_id, body)
-      |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
-
-    # Call the webhook "call_and_wait"
-    response = CommonWebhook.webhook("call_and_wait", fields, headers)
-
-    case response do
-      %{"success" => true, "data" => _data} ->
-        # If the success field is true, proceed with updating the context
-        wait_time = action.wait_time || 60
-        # Update the flow context with the calculated wakeup_at time
-        {:ok, context} =
-          FlowContext.update_flow_context(
-            context,
-            %{
-              wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
-              is_background_flow: context.flow.is_background,
-              is_await_result: true
-            }
-          )
-
-        {:wait, context, []}
-
-      %{"success" => false, "data" => _body} ->
-        # If the success field is false, handle the failure case
-        # updated_context =
-        #   FlowContext.update_results(context, %{"failure_reason" => body})
-        # created webhook log
-        {:ok, context, "Failure"}
+      # Default case if none of the conditions are met
+      true ->
+        {:wait, context, messages}
     end
   end
 
