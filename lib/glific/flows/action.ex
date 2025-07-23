@@ -9,7 +9,6 @@ defmodule Glific.Flows.Action do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Clients.CommonWebhook,
     Contacts,
     Contacts.Contact,
     Dialogflow,
@@ -34,7 +33,8 @@ defmodule Glific.Flows.Action do
     Flow,
     FlowContext,
     Node,
-    Templating
+    Templating,
+    Webhook
   }
 
   require Logger
@@ -648,11 +648,11 @@ defmodule Glific.Flows.Action do
       ) and
         action.method == "FUNCTION" and Enum.empty?(messages) and
           action.url == "filesearch-gpt" ->
-        Glific.Flows.Webhook.webhook_and_wait(action, context, messages)
+        Webhook.webhook_and_wait(action, context, messages)
 
       # If messages are empty, execute the webhook
       Enum.empty?(messages) ->
-        Glific.Flows.Webhook.execute(action, context)
+        Webhook.execute(action, context)
 
       # Default case if none of the conditions are met
       true ->

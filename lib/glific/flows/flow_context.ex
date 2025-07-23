@@ -865,8 +865,6 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec step_forward(FlowContext.t(), Message.t()) :: {:ok, map()} | {:error, String.t()}
   def step_forward(context, message) do
-    context.results["response"]["message"]
-
     case execute(context, [message]) do
       {:ok, context, []} ->
         {:ok, context}
