@@ -34,7 +34,7 @@ oban_queues = [
   dialogflow: 5,
   gcs: 10,
   gupshup: 10,
-  webhook: 50,
+  webhook: 20,
   broadcast: 5,
   wa_group: 5,
   purge: 1,
