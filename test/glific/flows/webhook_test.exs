@@ -555,7 +555,7 @@ defmodule Glific.Flows.WebhookTest do
 
     assert Webhook.execute(action, context) == nil
     [job] = all_enqueued(worker: Webhook, prefix: "global")
-    assert job.queue == "webhook"
+    assert job.queue == "gpt_webhook_queue"
     context_map = job.args["context"]
     assert context_map["uuids_seen"] == %{flow_uuid => 1}
   end

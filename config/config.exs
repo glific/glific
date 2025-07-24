@@ -34,11 +34,12 @@ oban_queues = [
   dialogflow: 5,
   gcs: 10,
   gupshup: 10,
-  webhook: 10,
+  webhook: 50,
   broadcast: 5,
   wa_group: 5,
   purge: 1,
-  custom_certificate: 10
+  custom_certificate: 10,
+  gpt_webhook_queue: 20
 ]
 
 oban_crontab = [

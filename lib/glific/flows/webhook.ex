@@ -419,7 +419,7 @@ defmodule Glific.Flows.Webhook do
   end
 
   defp create_oban_changeset(%{url: url} = payload) when url in @non_unique_urls,
-    do: __MODULE__.new(payload, unique: nil)
+    do: __MODULE__.new(payload, queue: :gpt_webhook_queue, unique: nil)
 
   defp create_oban_changeset(payload), do: __MODULE__.new(payload)
 end
