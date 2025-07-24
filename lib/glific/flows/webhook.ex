@@ -467,9 +467,11 @@ defmodule Glific.Flows.Webhook do
 
         {:wait, context, []}
 
-      %{"success" => false, "data" => data} ->
+      %{success: false, response: data} ->
         update_log(webhook_log.id, data)
-        {:ok, context, "Failure"}
+        message = Messages.create_temp_message(context.organization_id, "Failure")
+        # for failure response we move to next node
+        FlowContext.wakeup_one(context, message)
     end
   end
 end

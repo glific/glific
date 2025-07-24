@@ -650,11 +650,9 @@ defmodule Glific.Flows.Action do
           action.url == "filesearch-gpt" ->
         Webhook.webhook_and_wait(action, context, messages)
 
-      # If messages are empty, execute the webhook
       Enum.empty?(messages) ->
         Webhook.execute(action, context)
 
-      # Default case if none of the conditions are met
       true ->
         {:wait, context, messages}
     end
