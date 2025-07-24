@@ -420,6 +420,7 @@ defmodule Glific.Flows.Webhook do
   @spec webhook_and_wait(Action.t(), FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def webhook_and_wait(action, context, _messages) do
+    IO.inspect(action)
     parsed_attrs = parse_header_and_url(action, context)
 
     body =

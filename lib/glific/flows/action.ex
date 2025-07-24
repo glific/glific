@@ -19,6 +19,7 @@ defmodule Glific.Flows.Action do
     Groups.Group,
     Messages,
     Messages.Message,
+    Partners,
     Profiles,
     Repo,
     Sheets,
@@ -648,7 +649,12 @@ defmodule Glific.Flows.Action do
       ) and
         action.method == "FUNCTION" and Enum.empty?(messages) and
           action.url == "filesearch-gpt" ->
-        Webhook.webhook_and_wait(action, context, messages)
+        with {:ok, kaapi_secrets} <- fetch_kaapi_creds(context.organization_id),
+             api_key <- Map.get(kaapi_secrets, "api_key"),
+             updated_headers <- Map.put(action.headers, "X-API-KEY", api_key),
+             updated_action <- %{action | headers: updated_headers} do
+          Webhook.webhook_and_wait(updated_action, context, messages)
+        end
 
       Enum.empty?(messages) ->
         Webhook.execute(action, context)
@@ -1112,4 +1118,18 @@ defmodule Glific.Flows.Action do
 
   defp get_flow_uuid(action, _),
     do: action.enter_flow_uuid
+
+  @spec fetch_kaapi_creds(non_neg_integer) :: nil | {:ok, any} | {:error, any}
+  defp fetch_kaapi_creds(organization_id) do
+    organization = Partners.organization(organization_id)
+
+    organization.services["kaapi"]
+    |> case do
+      nil ->
+        {:error, "Kaapi is not active"}
+
+      credentials ->
+        {:ok, credentials.secrets}
+    end
+  end
 end
