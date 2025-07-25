@@ -194,7 +194,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
       {
         Tesla.Middleware.Retry,
         delay: 500,
-        max_retries: 5,
+        max_retries: 3,
         should_retry: fn
           {:ok, %{status: status}}, _, _ when status in @retry_error_codes ->
             true
