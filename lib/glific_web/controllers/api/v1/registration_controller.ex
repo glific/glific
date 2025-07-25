@@ -20,6 +20,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
     Contacts,
     Contacts.Contact,
     Partners,
+    Partners.Saas,
+    Providers.Gupshup.PartnerAPI,
     Repo,
     Users,
     Users.User
@@ -141,10 +143,11 @@ defmodule GlificWeb.API.V1.RegistrationController do
         send_otp_error(conn, "Account with phone number #{phone} already exists")
 
       _ ->
-        with {:ok, contact} <- optin_contact(organization_id, phone),
-             {:ok, _contact} <- can_send_otp_to_phone?(organization_id, phone),
-             true <- send_otp_allowed?(organization_id, phone, registration),
-             {:ok, _otp} <- create_and_send_verification_code(contact) do
+        with {:ok, _contact} <- optin_contact(organization_id, phone),
+             {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
+             {:ok, otp_contact} <- fallback_to_glific_if_low_balance(contact),
+             true <- send_otp_allowed?(otp_contact.organization_id, phone, registration),
+             {:ok, _otp} <- create_and_send_verification_code(otp_contact) do
           json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
         else
           _ ->
@@ -208,7 +211,9 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   @spec send_otp_allowed?(integer, String.t(), String.t()) :: boolean
   defp send_otp_allowed?(organization_id, phone, registration) do
-    {result, _} = Repo.fetch_by(User, %{phone: phone, organization_id: organization_id})
+    {result, _} =
+      Repo.fetch_by(User, %{phone: phone, organization_id: organization_id})
+
     (result == :ok && registration == "false") || (result == :error && registration != "false")
   end
 
@@ -278,6 +283,20 @@ defmodule GlificWeb.API.V1.RegistrationController do
           method: "registration"
         }
         |> Contacts.contact_opted_in(organization_id, DateTime.utc_now(), method: "registration")
+    end
+  end
+
+  @spec fallback_to_glific_if_low_balance(Contact.t()) :: {:ok, map()}
+  defp fallback_to_glific_if_low_balance(contact) do
+    case PartnerAPI.get_balance(contact.organization_id) do
+      {:ok, %{"balance" => balance}} when balance > 0 ->
+        {:ok, contact}
+
+      _ ->
+        # fallback to glific bot for sending otp
+        org_id = Saas.organization_id()
+        build_context(org_id)
+        optin_contact(org_id, contact.phone)
     end
   end
 end
