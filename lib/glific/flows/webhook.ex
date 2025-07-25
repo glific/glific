@@ -6,6 +6,7 @@ defmodule Glific.Flows.Webhook do
   use Gettext, backend: GlificWeb.Gettext
   require Logger
 
+  alias Glific.Clients.CommonWebhook
   alias Glific.{Messages, Repo}
   alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
 
@@ -73,12 +74,12 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec update_log(WebhookLog.t() | non_neg_integer, map()) :: {:ok, WebhookLog.t()}
-  defp update_log(webhook_log_id, message) when is_integer(webhook_log_id) do
+  def update_log(webhook_log_id, message) when is_integer(webhook_log_id) do
     webhook_log = Repo.get!(WebhookLog, webhook_log_id)
     update_log(webhook_log, message)
   end
 
-  defp update_log(webhook_log, %{body: body} = message) when is_map(message) and body != nil do
+  def update_log(webhook_log, %{body: body} = message) when is_map(message) and body != nil do
     # handle incorrect json body
     json_body =
       case Jason.decode(body) do
@@ -94,12 +95,13 @@ defmodule Glific.Flows.Webhook do
       status_code: message.status
     }
 
-    webhook_log
-    |> WebhookLog.update_webhook_log(attrs)
+    webhook_log |> WebhookLog.update_webhook_log(attrs)
   end
 
-  # this is when we are storing the return from an internal function call
-  defp update_log(webhook_log, result) when is_map(result) do
+  @doc """
+  this is when we are storing the return from a function call
+  """
+  def update_log(webhook_log, result) when is_map(result) do
     attrs = %{
       response_json: result,
       status_code: 200
@@ -110,7 +112,7 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec update_log(WebhookLog.t(), String.t()) :: {:ok, WebhookLog.t()}
-  defp update_log(webhook_log, error_message) do
+  def update_log(webhook_log, error_message) do
     attrs = %{
       error: error_message,
       status_code: 400
@@ -416,4 +418,62 @@ defmodule Glific.Flows.Webhook do
     do: __MODULE__.new(payload, unique: nil)
 
   defp create_oban_changeset(payload), do: __MODULE__.new(payload)
+
+  @spec webhook_and_wait(Action.t(), FlowContext.t(), any()) ::
+          {:ok | :wait, FlowContext.t(), any()} | {:error, String.t()}
+  def webhook_and_wait(action, context, _messages) do
+    parsed_attrs = parse_header_and_url(action, context)
+
+    body =
+      case create_body(context, action.body) do
+        {:error, message} ->
+          action
+          |> create_log(%{}, action.headers, context)
+          |> update_log(message)
+
+        {_map, body} ->
+          body
+      end
+
+    fields = Jason.decode!(body)
+
+    webhook_log =
+      create_log(action, fields, action.headers, context)
+
+    fields = Map.put(fields, "webhook_log_id", webhook_log.id)
+
+    headers =
+      add_signature(parsed_attrs.header, context.organization_id, body)
+      |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
+
+    # Call the webhook "call_and_wait" for routing to AI platform
+    response = CommonWebhook.webhook("call_and_wait", fields, headers)
+
+    case response do
+      %{"success" => true, "data" => data} ->
+        # log the success response
+        update_log(webhook_log.id, data)
+
+        # wait for 1 minute by default for AI platform to respond
+        wait_time = action.wait_time || 60
+
+        {:ok, context} =
+          FlowContext.update_flow_context(
+            context,
+            %{
+              wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
+              is_background_flow: context.flow.is_background,
+              is_await_result: true
+            }
+          )
+
+        {:wait, context, []}
+
+      %{success: false, response: data} ->
+        update_log(webhook_log.id, data)
+        message = Messages.create_temp_message(context.organization_id, "Failure")
+        # for failure response we move to next node
+        FlowContext.wakeup_one(context, message)
+    end
+  end
 end

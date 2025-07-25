@@ -1,0 +1,119 @@
+{
+    "_ui": {
+        "nodes": {
+            "0105a032-2158-415e-949d-5cff2f4a8eda": {
+                "type": "execute_actions",
+                "position": { "top": 380, "left": 260 }
+            },
+            "9ddfef7c-c7a2-4922-9734-6b4c1185fb56": {
+                "type": "execute_actions",
+                "position": { "top": 320, "left": 840 }
+            },
+            "ea115d54-363c-44b6-a69a-f2637b6f62ce": {
+                "type": "split_by_webhook",
+                "config": {},
+                "position": { "top": 0, "left": 100 }
+            }
+        }
+    },
+    "name": "Call and Wait Flow",
+    "type": "messaging",
+    "uuid": "3fb647a3-c935-4906-8dd0-c0e63105ee3d",
+    "vars": ["3fb647a3-c935-4906-8dd0-c0e63105ee3d"],
+    "nodes": [
+        {
+            "uuid": "ea115d54-363c-44b6-a69a-f2637b6f62ce",
+            "exits": [
+                {
+                    "uuid": "ed93240a-455b-4a98-b3bc-e3dae64697e8",
+                    "destination_uuid": "0105a032-2158-415e-949d-5cff2f4a8eda"
+                },
+                {
+                    "uuid": "57dd13dc-7290-4a24-b27f-71f0d56b2050",
+                    "destination_uuid": "9ddfef7c-c7a2-4922-9734-6b4c1185fb56"
+                }
+            ],
+            "router": {
+                "type": "switch",
+                "cases": [
+                    {
+                        "type": "has_only_text",
+                        "uuid": "a60af939-e39e-45fc-af1f-d9eb85eac00d",
+                        "arguments": ["Success"],
+                        "category_uuid": "7b818dea-4207-4298-93c8-4be9701ee805"
+                    }
+                ],
+                "operand": "@results.result.category",
+                "categories": [
+                    {
+                        "name": "Success",
+                        "uuid": "7b818dea-4207-4298-93c8-4be9701ee805",
+                        "exit_uuid": "ed93240a-455b-4a98-b3bc-e3dae64697e8"
+                    },
+                    {
+                        "name": "Failure",
+                        "uuid": "ec4dca30-36e5-44ba-b1b5-9043dad1c397",
+                        "exit_uuid": "57dd13dc-7290-4a24-b27f-71f0d56b2050"
+                    }
+                ],
+                "default_category_uuid": "ec4dca30-36e5-44ba-b1b5-9043dad1c397"
+            },
+            "actions": [
+                {
+                    "url": "filesearch-gpt",
+                    "body": "{\n\"question\": \"tell me a fact about consistency\",\n  \"flow_id\": \"@flow.id\",\n  \"endpoint\": \"http://0.0.0.0:8000/api/v1/responses\",\n  \"contact_id\": \"@contact.id\",\n  \"callback_url\": \"https://b4dddefdb039.ngrok-free.app/webhook/flow_resume\",\n  \"assistant_id\": \"asst_pJMbE1OALvgWtZfGfDicrgAD\"\n}",
+                    "type": "call_webhook",
+                    "uuid": "b0750ab6-7523-4496-b4af-e15c8f5d29c1",
+                    "method": "FUNCTION",
+                    "headers": {
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    },
+                    "result_name": "result"
+                }
+            ]
+        },
+        {
+            "uuid": "9ddfef7c-c7a2-4922-9734-6b4c1185fb56",
+            "exits": [
+                {
+                    "uuid": "343bb24d-017d-4c4a-829d-964da282d4d3",
+                    "destination_uuid": null
+                }
+            ],
+            "actions": [
+                {
+                    "text": "failure",
+                    "type": "send_msg",
+                    "uuid": "e6e018fc-e1b5-4383-a447-78c73ecc8041",
+                    "labels": [],
+                    "attachments": [],
+                    "quick_replies": []
+                }
+            ]
+        },
+        {
+            "uuid": "0105a032-2158-415e-949d-5cff2f4a8eda",
+            "exits": [
+                {
+                    "uuid": "33b8c6a0-a755-422c-bd6a-4c719404d11c",
+                    "destination_uuid": null
+                }
+            ],
+            "actions": [
+                {
+                    "text": "@results.response.message",
+                    "type": "send_msg",
+                    "uuid": "fbae0439-ca20-405c-b272-2dcd53523488",
+                    "labels": [],
+                    "attachments": [],
+                    "quick_replies": []
+                }
+            ]
+        }
+    ],
+    "language": "base",
+    "localization": {},
+    "spec_version": "13.2.0",
+    "expire_after_minutes": 10080
+}

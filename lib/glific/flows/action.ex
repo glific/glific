@@ -19,6 +19,7 @@ defmodule Glific.Flows.Action do
     Groups.Group,
     Messages,
     Messages.Message,
+    Partners,
     Profiles,
     Repo,
     Sheets,
@@ -641,17 +642,26 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
-    # just call the webhook, and ask the caller to wait
-    # we are processing the webhook using Oban and this happens asynchronously
+    cond do
+      # for the orgs that has been re-routed to ai-platform
+      FunWithFlags.enabled?(:is_ai_platform_enabled,
+        for: %{organization_id: context.organization_id}
+      ) and
+        action.method == "FUNCTION" and Enum.empty?(messages) and
+          action.url == "filesearch-gpt" ->
+        with {:ok, kaapi_secrets} <- fetch_kaapi_creds(context.organization_id),
+             api_key <- Map.get(kaapi_secrets, "api_key"),
+             updated_headers <- Map.put(action.headers, "X-API-KEY", api_key),
+             updated_action <- %{action | headers: updated_headers} do
+          Webhook.webhook_and_wait(updated_action, context, messages)
+        end
 
-    # Webhooks don't consume message, so if we send a message while a webhook node is running
-    # this check will prevent webhook node from running again
-    if Enum.empty?(messages) do
-      Webhook.execute(action, context)
+      Enum.empty?(messages) ->
+        Webhook.execute(action, context)
+
+      true ->
+        {:wait, context, messages}
     end
-
-    # webhooks don't consume a message, so we send it forward
-    {:wait, context, messages}
   end
 
   def execute(
@@ -1108,4 +1118,18 @@ defmodule Glific.Flows.Action do
 
   defp get_flow_uuid(action, _),
     do: action.enter_flow_uuid
+
+  @spec fetch_kaapi_creds(non_neg_integer) :: nil | {:ok, any} | {:error, any}
+  defp fetch_kaapi_creds(organization_id) do
+    organization = Partners.organization(organization_id)
+
+    organization.services["kaapi"]
+    |> case do
+      nil ->
+        {:error, "Kaapi is not active"}
+
+      credentials ->
+        {:ok, credentials.secrets}
+    end
+  end
 end

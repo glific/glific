@@ -413,7 +413,8 @@ defmodule Glific.Seeds.SeedsFlows do
       direct_gpt: generate_uuid(organization, "0d51efbb-a8b4-4c32-828c-47ac915da479"),
       media: generate_uuid(organization, "0b2d5b19-bd94-44e0-b2e6-0ea7d7033de5"),
       deactivate_profile: generate_uuid(organization, "db0404ad-8c73-40b8-ac3b-47464c4f8cdf"),
-      int_re_response: generate_uuid(organization, "0633e385-0625-4432-98f7-e780a73944aa")
+      int_re_response: generate_uuid(organization, "0633e385-0625-4432-98f7-e780a73944aa"),
+      call_and_wait: generate_uuid(organization, "3fb647a3-c935-4906-8dd0-c0e63105ee3d")
     }
 
     data = [
@@ -435,7 +436,8 @@ defmodule Glific.Seeds.SeedsFlows do
       {"Media flow", ["media"], uuid_map.media, true, "media.json"},
       {"Deactivate Profile Flow", ["deactivate"], uuid_map.deactivate_profile, true,
        "deactivate_profile.json"},
-      {"interactive_re_response", [], uuid_map.int_re_response, true, "int_msg_re_response.json"}
+      {"interactive_re_response", [], uuid_map.int_re_response, true, "int_msg_re_response.json"},
+      {"call_and_wait", ["call_and_wait"], uuid_map.call_and_wait, true, "call_and_wait.json"}
     ]
 
     {uuid_map, data}
