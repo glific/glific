@@ -643,7 +643,7 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
     cond do
-      # for the orgs who has been re-routed to ai-platform
+      # for the orgs that has been re-routed to ai-platform
       FunWithFlags.enabled?(:is_ai_platform_enabled,
         for: %{organization_id: context.organization_id}
       ) and

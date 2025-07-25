@@ -98,7 +98,9 @@ defmodule Glific.Flows.Webhook do
     webhook_log |> WebhookLog.update_webhook_log(attrs)
   end
 
-  # this is when we are storing the return from an internal function call
+  @doc """
+  this is when we are storing the return from a function call
+  """
   def update_log(webhook_log, result) when is_map(result) do
     attrs = %{
       response_json: result,
@@ -417,10 +419,9 @@ defmodule Glific.Flows.Webhook do
 
   defp create_oban_changeset(payload), do: __MODULE__.new(payload)
 
-  @spec webhook_and_wait(Action.t(), FlowContext.t(), [Message.t()]) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+  @spec webhook_and_wait(Action.t(), FlowContext.t(), any()) ::
+          {:ok | :wait, FlowContext.t(), any()} | {:error, String.t()}
   def webhook_and_wait(action, context, _messages) do
-    IO.inspect(action)
     parsed_attrs = parse_header_and_url(action, context)
 
     body =
@@ -445,7 +446,7 @@ defmodule Glific.Flows.Webhook do
       add_signature(parsed_attrs.header, context.organization_id, body)
       |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
-    # Call the webhook "call_and_wait"
+    # Call the webhook "call_and_wait" for routing to AI platform
     response = CommonWebhook.webhook("call_and_wait", fields, headers)
 
     case response do

@@ -6,7 +6,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
   use GlificWeb, :controller
   require Logger
 
-  alias Glific.{Messages, Contacts.Contact, Flows.FlowContext, Partners, Repo, Flows.Webhook}
+  alias Glific.{Contacts.Contact, Flows.FlowContext, Flows.Webhook, Messages, Partners, Repo}
 
   @doc """
   Implementation of resuming the flow after the flow was waiting for result from 3rd party service
@@ -19,8 +19,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
     response = result["data"]
     # Map the response_id to thread_id, since we treat response_id as the thread ID in Glific
     # and use thread_id throughout the platform for OpenAI conversation support
-    thread_id = response["response_id"]
-    response = Map.put(response, "thread_id", thread_id)
+    thread_id = Map.get(response, "response_id")
 
     organization = Partners.organization(organization_id)
     Repo.put_process_state(organization.id)
