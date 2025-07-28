@@ -492,7 +492,6 @@ defmodule Glific.Messages do
     message_params = %{
       body: session_template.body,
       type: session_template.type,
-      footer: session_template.footer,
       template_id: session_template.id,
       media_id: session_template.message_media_id,
       sender_id: Partners.organization_contact_id(session_template.organization_id),
@@ -561,7 +560,6 @@ defmodule Glific.Messages do
       template_id: template_id,
       template_type: session_template.type,
       has_buttons: session_template.has_buttons,
-      footer: session_template.footer,
       params: parameters,
       media_id: media_id,
       is_optin_flow: Map.get(attrs, :is_optin_flow, false),
