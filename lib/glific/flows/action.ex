@@ -646,6 +646,11 @@ defmodule Glific.Flows.Action do
         context,
         []
       ) do
+    # just call the webhook, and ask the caller to wait
+    # we are processing the webhook using Oban and this happens asynchronously
+
+    # Webhooks don't consume message, so if we send a message while a webhook node is running
+    # the empty message filter will prevent webhook node from running again
     if FunWithFlags.enabled?(:is_kaapi_enabled,
          for: %{organization_id: context.organization_id}
        ) do
