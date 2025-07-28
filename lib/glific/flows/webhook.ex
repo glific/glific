@@ -457,7 +457,6 @@ defmodule Glific.Flows.Webhook do
       add_signature(parsed_attrs.header, context.organization_id, body)
       |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
-    # Call the webhook "call_and_wait" for routing to AI platform
     response = CommonWebhook.webhook("call_and_wait", fields, headers)
 
     case response do

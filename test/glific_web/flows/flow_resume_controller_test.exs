@@ -100,7 +100,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           opts: %{limit: 1, order: :desc}
         })
 
-      # Checking the latest message should be same as the one received at the endpoint
+      # Checking the latest message, should be same as the one received at the endpoint
       assert message.body == @ai_response
     end
 
@@ -179,8 +179,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           opts: %{limit: 1, order: :desc}
         })
 
-      # Checking the latest message should be failed because in the flow
-      # the failure category's next send msg node has failure as body
+      # Checking the latest message, should be failure because in the flow
+      # the failed category's next send msg node has failure as body
       assert message.body == "failure"
     end
   end
