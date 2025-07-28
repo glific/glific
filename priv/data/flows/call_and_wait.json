@@ -102,7 +102,7 @@
             ],
             "actions": [
                 {
-                    "text": "@results.response.message",
+                    "text": "@results.result.message",
                     "type": "send_msg",
                     "uuid": "fbae0439-ca20-405c-b272-2dcd53523488",
                     "labels": [],

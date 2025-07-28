@@ -641,27 +641,33 @@ defmodule Glific.Flows.Action do
     {:ok, context, [message]}
   end
 
-  def execute(%{type: "call_webhook"} = action, context, messages) do
-    cond do
-      # for the orgs that has been re-routed to ai-platform
-      FunWithFlags.enabled?(:is_ai_platform_enabled,
-        for: %{organization_id: context.organization_id}
-      ) and
-        action.method == "FUNCTION" and Enum.empty?(messages) and
-          action.url == "filesearch-gpt" ->
-        with {:ok, kaapi_secrets} <- fetch_kaapi_creds(context.organization_id),
-             api_key <- Map.get(kaapi_secrets, "api_key"),
-             updated_headers <- Map.put(action.headers, "X-API-KEY", api_key),
-             updated_action <- %{action | headers: updated_headers} do
-          Webhook.webhook_and_wait(updated_action, context, messages)
-        end
-
-      Enum.empty?(messages) ->
-        Webhook.execute(action, context)
-
-      true ->
-        {:wait, context, messages}
+  def execute(
+        %{type: "call_webhook", method: "FUNCTION", url: "filesearch-gpt"} = action,
+        context,
+        []
+      ) do
+    if FunWithFlags.enabled?(:is_ai_platform_enabled,
+         for: %{organization_id: context.organization_id}
+       ) do
+      with {:ok, kaapi_secrets} <- fetch_kaapi_creds(context.organization_id),
+           api_key when is_binary(api_key) <- Map.get(kaapi_secrets, "api_key"),
+           updated_headers <- Map.put(action.headers, "X-API-KEY", api_key),
+           updated_action <- %{action | headers: updated_headers} do
+        Webhook.webhook_and_wait(updated_action, context, [])
+      end
+    else
+      Webhook.execute(action, context)
+      {:wait, context, []}
     end
+  end
+
+  def execute(%{type: "call_webhook"} = action, context, []) do
+    Webhook.execute(action, context)
+    {:wait, context, []}
+  end
+
+  def execute(%{type: "call_webhook"} = _action, context, messages) do
+    {:wait, context, messages}
   end
 
   def execute(

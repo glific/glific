@@ -27,7 +27,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
     # updated the webhook log with latest response
     message = %{
       status: response["status"],
-      response: response["message"],
+      message: response["message"],
       thread_id: thread_id
     }
 
@@ -53,7 +53,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
       FlowContext.resume_contact_flow(
         contact,
         response["flow_id"],
-        %{"response" => response},
+        %{"result" => response},
         message
       )
     end
