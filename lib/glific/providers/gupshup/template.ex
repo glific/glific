@@ -417,7 +417,7 @@ defmodule Glific.Providers.Gupshup.Template do
       category: attrs.category,
       vertical: attrs.label,
       templateType: String.upcase(Atom.to_string(attrs.type)),
-      content: attrs.body,
+      content: maybe_append_footer(attrs.body, attrs[:footer]),
       example: attrs.example,
       enableSample: true
     }
@@ -463,4 +463,9 @@ defmodule Glific.Providers.Gupshup.Template do
   end
 
   defp attach_otp_params(template_payload, _attrs), do: template_payload
+
+  @spec maybe_append_footer(String.t(), String.t() | nil) :: String.t()
+  def maybe_append_footer(body, nil), do: body
+  def maybe_append_footer(body, ""), do: body
+  def maybe_append_footer(body, footer), do: body <> "\n\n" <> footer
 end
