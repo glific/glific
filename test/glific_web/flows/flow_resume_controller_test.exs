@@ -67,7 +67,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "signature" => signature,
           "status" => "success",
           "timestamp" => timestamp,
-          "webhook_log_id" => webhook_log.id
+          "webhook_log_id" => webhook_log.id,
+          "result_name" => "filesearch"
         }
       }
 
@@ -145,7 +146,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "signature" => signature,
           "status" => "failure",
           "timestamp" => timestamp,
-          "webhook_log_id" => webhook_log.id
+          "webhook_log_id" => webhook_log.id,
+          "result_name" => "filesearch"
         }
       }
 

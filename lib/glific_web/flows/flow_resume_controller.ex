@@ -32,7 +32,10 @@ defmodule GlificWeb.Flows.FlowResumeController do
     }
 
     Webhook.update_log(response["webhook_log_id"], message)
-    #
+
+    # check lib/glific/flows/webhook.ex:449
+    respone_key = response["result_name"] || "response"
+
     message =
       case response["status"] do
         "success" ->
@@ -53,7 +56,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
       FlowContext.resume_contact_flow(
         contact,
         response["flow_id"],
-        %{"result" => response},
+        %{respone_key => response},
         message
       )
     end

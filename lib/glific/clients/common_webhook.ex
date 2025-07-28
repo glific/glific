@@ -28,6 +28,7 @@ defmodule Glific.Clients.CommonWebhook do
   @spec webhook(String.t(), map(), list()) :: map()
   def webhook("call_and_wait", fields, headers) do
     endpoint = fields["endpoint"]
+    result_name = fields["result_name"]
     {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
     {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
     {:ok, webhook_log_id} = fields["webhook_log_id"] |> Glific.parse_maybe_integer()
@@ -65,6 +66,7 @@ defmodule Glific.Clients.CommonWebhook do
       |> Map.put("signature", signature)
       |> Map.put("callback", callback)
       |> Map.put("webhook_log_id", webhook_log_id)
+      |> Map.put("result_name", result_name)
       |> Jason.encode!()
 
     endpoint

@@ -63,7 +63,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           Accept: "application/json",
           "Content-Type": "application/json"
         },
-        result_name: "test_webhook",
+        result_name: "filesearch",
         node_uuid: "Test UUID"
       }
 
@@ -127,7 +127,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "signature" => signature,
           "status" => "success",
           "timestamp" => timestamp,
-          "webhook_log_id" => webhook_log.id
+          "webhook_log_id" => webhook_log.id,
+          "result_name" => "filesearch"
         }
       }
 
@@ -193,7 +194,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           Accept: "application/json",
           "Content-Type": "application/json"
         },
-        result_name: "test_webhook",
+        result_name: "filesearch",
         node_uuid: "Test UUID"
       }
 
@@ -265,7 +266,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           Accept: "application/json",
           "Content-Type": "application/json"
         },
-        result_name: "test_webhook",
+        result_name: "filesearch",
         node_uuid: "Test UUID"
       }
 
@@ -353,7 +354,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           Accept: "application/json",
           "Content-Type": "application/json"
         },
-        result_name: "test_webhook",
+        result_name: "filesearch",
         node_uuid: "Test UUID",
         wait_time: 10
       }

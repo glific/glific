@@ -443,7 +443,15 @@ defmodule Glific.Flows.Webhook do
     webhook_log =
       create_log(action, fields, action.headers, context)
 
-    fields = Map.put(fields, "webhook_log_id", webhook_log.id)
+    # Sending the webhook log ID so that we can update the webhook log later with the response from Kaapi.
+    # In the FlowResumeController, we use this webhook_log_id to update the log.
+
+    # Sending the result name so that we can store Kaapi’s response inside the corresponding result variable.
+    # This allows the user to access the message later using @results.{result_name}.message
+    fields =
+      fields
+      |> Map.put("webhook_log_id", webhook_log.id)
+      |> Map.put("result_name", action.result_name)
 
     headers =
       add_signature(parsed_attrs.header, context.organization_id, body)
