@@ -509,7 +509,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert services["auto_translation_enabled"] == false
     assert services["whatsapp_group_enabled"] == false
     assert services["certificate_enabled"] == false
-    assert services["ai_platform_enabled"] == false
+    assert services["kaapi_enabled"] == false
   end
 
   test "update an organization with organization settings", %{user: user} do

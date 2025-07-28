@@ -28,7 +28,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       # activate kaapi
       enable_kaapi(%{organization_id: organization_id})
 
-      FunWithFlags.enable(:is_ai_platform_enabled,
+      FunWithFlags.enable(:is_kaapi_enabled,
         for_actor: %{organization_id: organization_id}
       )
 
@@ -159,7 +159,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       # activate kaapi
       enable_kaapi(%{organization_id: organization_id})
 
-      FunWithFlags.enable(:is_ai_platform_enabled,
+      FunWithFlags.enable(:is_kaapi_enabled,
         for_actor: %{organization_id: organization_id}
       )
 
@@ -231,7 +231,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       # activate kaapi
       enable_kaapi(%{organization_id: organization_id})
 
-      FunWithFlags.enable(:is_ai_platform_enabled,
+      FunWithFlags.enable(:is_kaapi_enabled,
         for_actor: %{organization_id: organization_id}
       )
 
@@ -319,7 +319,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       # activate kaapi
       enable_kaapi(%{organization_id: organization_id})
 
-      FunWithFlags.enable(:is_ai_platform_enabled,
+      FunWithFlags.enable(:is_kaapi_enabled,
         for_actor: %{organization_id: organization_id}
       )
 

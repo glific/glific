@@ -646,7 +646,7 @@ defmodule Glific.Flows.Action do
         context,
         []
       ) do
-    if FunWithFlags.enabled?(:is_ai_platform_enabled,
+    if FunWithFlags.enabled?(:is_kaapi_enabled,
          for: %{organization_id: context.organization_id}
        ) do
       with {:ok, kaapi_secrets} <- fetch_kaapi_creds(context.organization_id),

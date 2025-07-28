@@ -19,7 +19,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     test "resumes an existing flow on receiving webhook event with success response", %{
       conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
-      FunWithFlags.enable(:is_ai_platform_enabled,
+      FunWithFlags.enable(:is_kaapi_enabled,
         for_actor: %{organization_id: organization_id}
       )
 
@@ -107,7 +107,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     test "resumes an existing flow on receiving webhook event with failure response", %{
       conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
-      FunWithFlags.enable(:is_ai_platform_enabled,
+      FunWithFlags.enable(:is_kaapi_enabled,
         for_actor: %{organization_id: organization_id}
       )
 
