@@ -49,7 +49,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec get_quality_rating(non_neg_integer()) :: {:error, any} | {:ok, map()}
   def get_quality_rating(org_id) do
-    (app_url(org_id) <> "/ratings")
+    (app_url!(org_id) <> "/ratings")
     |> get_request(org_id: org_id)
     |> case do
       {:ok, res} ->
@@ -77,7 +77,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         |> Multipart.add_file(path, name: "file")
         |> Multipart.add_field("file_type", MIME.from_path(url))
 
-      (app_url(org_id) <> "/upload/media")
+      (app_url!(org_id) <> "/upload/media")
       |> post_request(data,
         org_id: org_id
       )
@@ -146,7 +146,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec enable_template_messaging(non_neg_integer()) :: tuple()
   def enable_template_messaging(org_id) do
-    url = app_url(org_id) <> "/appPreference"
+    url = app_url!(org_id) <> "/appPreference"
     data = %{"isHSMEnabled" => "true"}
     put_request(url, data, org_id: org_id)
   end
@@ -156,7 +156,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec delete_hsm_template(non_neg_integer, binary) :: tuple()
   def delete_hsm_template(org_id, element_name) do
-    (app_url(org_id) <> "/template/" <> element_name)
+    (app_url!(org_id) <> "/template/" <> element_name)
     |> delete_request(org_id: org_id)
     |> case do
       {:ok, %{"status" => "success"} = res} ->
@@ -172,7 +172,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec edit_approved_template(non_neg_integer(), String.t(), map) :: tuple()
   def edit_approved_template(org_id, bsp_id, params) do
-    (app_url(org_id) <> "/templates/" <> bsp_id)
+    (app_url!(org_id) <> "/templates/" <> bsp_id)
     |> put_request(params, org_id: org_id)
   end
 
@@ -183,7 +183,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   def send_template(org_id, payload) do
     req_headers = headers(:app_token, org_id: org_id)
 
-    (app_url(org_id) <> "/template/msg")
+    (app_url!(org_id) <> "/template/msg")
     |> post(payload, headers: req_headers)
   end
 
@@ -194,7 +194,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   def apply_for_template(org_id, payload) do
     payload = Map.put(payload, :appId, app_id!(org_id))
 
-    (app_url(org_id) <> "/templates")
+    (app_url!(org_id) <> "/templates")
     |> post_request(payload,
       org_id: org_id
     )
@@ -230,7 +230,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec set_business_profile(integer(), map()) :: tuple()
   def set_business_profile(org_id, params \\ %{}) do
-    url = app_url(org_id) <> "/business/profile"
+    url = app_url!(org_id) <> "/business/profile"
 
     body_params =
       Enum.reduce(params, %{}, fn {key, value}, acc ->
@@ -275,7 +275,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec get_app_usage(non_neg_integer(), String.t(), String.t()) ::
           {:error, String.t()} | {:ok, list(map())}
   def get_app_usage(org_id, from_date, to_date) do
-    url = app_url(org_id) <> "/usage?from=" <> from_date <> "&to=" <> to_date
+    url = app_url!(org_id) <> "/usage?from=" <> from_date <> "&to=" <> to_date
 
     case get_request(url, org_id: org_id) do
       {:ok, %{"partnerAppUsageList" => result}} -> {:ok, result}
@@ -288,10 +288,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec get_balance(non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
   def get_balance(org_id) do
-    with {:ok, app_id} <- app_id(org_id),
+    with {:ok, app_url} <- app_url(org_id),
          {:ok, resp} <-
            get_request(
-             @app_url <> app_id <> "/wallet/balance",
+             app_url <> "/wallet/balance",
              org_id: org_id
            ) do
       {:ok, %{"balance" => resp["walletResponse"]["currentBalance"]}}
@@ -304,7 +304,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec get_templates(non_neg_integer()) :: {:ok, any()} | {:error, String.t()}
   def get_templates(org_id) do
     with {:ok, %{partner_app_token: token}} <- get_partner_app_token(org_id) do
-      url = app_url(org_id) <> "/templates"
+      url = app_url!(org_id) <> "/templates"
       headers = [{"Authorization", token}]
       get(url, headers: headers)
     end
@@ -360,7 +360,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec fetch_partner_app_token(non_neg_integer) ::
           {:error, String.t()} | {:ok, %{partner_app_token: any}}
   defp fetch_partner_app_token(org_id) do
-    url = app_url(org_id) <> "/token"
+    url = app_url!(org_id) <> "/token"
 
     get_request(url, token_type: :partner_token)
     |> case do
@@ -496,7 +496,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
           tuple()
   def set_subscription(org_id, callback_url \\ nil, modes \\ [], version \\ 2)
       when is_list(modes) do
-    url = app_url(org_id) <> "/subscription"
+    url = app_url!(org_id) <> "/subscription"
     organization = Partners.organization(org_id)
 
     # sometimes callback url can be ngrok or other test urls, in that
@@ -529,9 +529,16 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     app_id
   end
 
-  @spec app_url(non_neg_integer()) :: String.t()
-  defp app_url(org_id),
+  @spec app_url!(non_neg_integer()) :: String.t()
+  defp app_url!(org_id),
     do: @app_url <> app_id!(org_id)
+
+  @spec app_url(non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
+  defp app_url(org_id) do
+    with {:ok, app_id} <- app_id(org_id) do
+      {:ok, @app_url <> app_id}
+    end
+  end
 
   @spec get_filename_from_resource_url(String.t(), String.t()) :: String.t()
   defp get_filename_from_resource_url(resource_url, media_name) do
