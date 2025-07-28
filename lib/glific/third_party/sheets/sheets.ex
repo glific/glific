@@ -216,8 +216,8 @@ defmodule Glific.Sheets do
       end)
 
     case sync_successful? do
-      true -> Glific.Metrics.increment("Sheets Sync Attempt Success")
-      false -> Glific.Metrics.increment("Sheets Sync Failed")
+      true -> Glific.Metrics.increment("Google Sheets Sync Success")
+      false -> Glific.Metrics.increment("Google Sheets Sync Failed")
     end
 
     remove_stale_sheet_data(sheet, last_synced_at)
