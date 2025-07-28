@@ -28,8 +28,6 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
-      Glific.Flows.list_flows(%{organization_id: organization_id})
-
       flow =
         Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
 

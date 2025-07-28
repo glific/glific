@@ -419,6 +419,9 @@ defmodule Glific.Flows.Webhook do
 
   defp create_oban_changeset(payload), do: __MODULE__.new(payload)
 
+  @doc """
+  The function updates the flow_context and waits for Kaapi to send a response.
+  """
   @spec webhook_and_wait(Action.t(), FlowContext.t(), any()) ::
           {:ok | :wait, FlowContext.t(), any()} | {:error, String.t()}
   def webhook_and_wait(action, context, _messages) do
