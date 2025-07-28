@@ -216,7 +216,7 @@ defmodule Glific.Sheets do
       end)
 
     case sync_successful? do
-      true -> Glific.Metrics.increment("Sheets Sync Successful")
+      true -> Glific.Metrics.increment("Sheets Sync Attempt Success")
       false -> Glific.Metrics.increment("Sheets Sync Failed")
     end
 
