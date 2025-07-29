@@ -7,6 +7,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     Contacts,
     Contacts.Contact,
     Fixtures,
+    Partners.Saas,
     Repo,
     Seeds.SeedsDev,
     Users
@@ -130,25 +131,31 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
   describe "send_otp/2" do
     setup do
       Tesla.Mock.mock(fn
-        %{
-          method: :post
-        } ->
+        %{method: :post} ->
           %Tesla.Env{
             body:
               "{\n  \"success\": true,\n  \"challenge_ts\": \"2023-01-09T04:58:39Z\",\n  \"hostname\": \"glific.test\",\n  \"score\": 0.9,\n  \"action\": \"register\"\n}",
             status: 200
+          }
+
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/wallet/balance"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":1.787,\"overDraftLimit\":-20.0}}"
           }
       end)
 
       :ok
     end
 
-    test "send otp", %{conn: conn} do
+    test "send otp successfully from NGO bot when balance is greater than 0", %{conn: conn} do
       valid_params = %{
         "user" => %{"phone" => "918456732456", "registration" => "true", "token" => "some_token"}
       }
 
-      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+      conn =
+        post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
 
       assert json = json_response(conn, 200)
       assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
@@ -237,6 +244,127 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert get_in(json, ["error", "message"]) == "Cannot send the otp to #{receiver.phone}"
     end
 
+    test "send otp from Glific when NGO's wallet balance is less than 0", %{conn: conn} do
+      org = Fixtures.organization_fixture(%{shortcode: "neworg"})
+
+      conn = assign(conn, :organization_id, org.id)
+
+      valid_params = %{
+        "user" => %{"phone" => "918456732456", "registration" => "true", "token" => "some_token"}
+      }
+
+      glific_org_id = Saas.organization_id()
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :post
+        } ->
+          %Tesla.Env{
+            body:
+              "{\n  \"success\": true,\n  \"challenge_ts\": \"2023-01-09T04:58:39Z\",\n  \"hostname\": \"glific.test\",\n  \"score\": 0.9,\n  \"action\": \"register\"\n}",
+            status: 200
+          }
+
+        %{method: :get, url: url} = env ->
+          if String.contains?(url, "/wallet/balance") do
+            %Tesla.Env{
+              status: 200,
+              body:
+                "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":-1.787,\"overDraftLimit\":-20.0}}"
+            }
+          else
+            env
+          end
+      end)
+
+      conn =
+        post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+
+      assert json = json_response(conn, 200)
+      assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
+
+      contact =
+        Repo.get_by!(Contacts.Contact,
+          phone: valid_params["user"]["phone"]
+        )
+
+      # it used the fallback org
+      assert contact.organization_id == glific_org_id
+      assert contact.organization_id != org.id
+    end
+
+    @tag :fgt
+    test "send otp with registration 'false' flag when NGO's wallet balance is less than 0", %{
+      conn: conn
+    } do
+      org = Fixtures.organization_fixture(%{shortcode: "neworg"})
+
+      conn = assign(conn, :organization_id, org.id)
+
+      # create a user for a contact
+      receiver = Fixtures.contact_fixture(%{organization_id: org.id, phone: "918456732452"})
+
+      Contacts.contact_opted_in(
+        %{phone: receiver.phone},
+        receiver.organization_id,
+        DateTime.utc_now()
+      )
+
+      {:ok, _user} =
+        %{
+          "phone" => receiver.phone,
+          "name" => receiver.name,
+          "password" => @password,
+          "password_confirmation" => @password,
+          "contact_id" => receiver.id,
+          "organization_id" => receiver.organization_id
+        }
+        |> Users.create_user()
+
+      valid_params = %{
+        "user" => %{"phone" => "918456732452", "registration" => "false", "token" => "some_token"}
+      }
+
+      glific_org_id = Saas.organization_id()
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :post
+        } ->
+          %Tesla.Env{
+            body:
+              "{\n  \"success\": true,\n  \"challenge_ts\": \"2023-01-09T04:58:39Z\",\n  \"hostname\": \"glific.test\",\n  \"score\": 0.9,\n  \"action\": \"register\"\n}",
+            status: 200
+          }
+
+        %{method: :get, url: url} = env ->
+          if String.contains?(url, "/wallet/balance") do
+            %Tesla.Env{
+              status: 200,
+              body:
+                "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":-1.787,\"overDraftLimit\":-20.0}}"
+            }
+          else
+            env
+          end
+      end)
+
+      conn =
+        post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+
+      assert json = json_response(conn, 200)
+      assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
+
+      contact =
+        Repo.get_by!(Contacts.Contact,
+          phone: valid_params["user"]["phone"]
+        )
+
+      # it used the fallback org
+      assert contact.organization_id == glific_org_id
+      assert contact.organization_id != org.id
+    end
+
     test "send otp with registration 'false' flag to existing user should succeed", %{conn: conn} do
       # create a user for a contact
       receiver = Fixtures.contact_fixture()
@@ -270,6 +398,58 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
 
       assert _json = json_response(conn, 200)
+    end
+
+    test "send otp when Gupshup is not active", %{conn: conn} do
+      org = Fixtures.organization_fixture(%{shortcode: "neworg"})
+
+      conn = assign(conn, :organization_id, org.id)
+
+      valid_params = %{
+        "user" => %{"phone" => "919999999999", "registration" => "true", "token" => "some_token"}
+      }
+
+      glific_org_id = Saas.organization_id()
+
+      org =
+        Fixtures.organization_fixture(%{
+          shortcode: "shortcode"
+        })
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :post
+        } ->
+          %Tesla.Env{
+            body:
+              "{\n  \"success\": true,\n  \"challenge_ts\": \"2023-01-09T04:58:39Z\",\n  \"hostname\": \"glific.test\",\n  \"score\": 0.9,\n  \"action\": \"register\"\n}",
+            status: 200
+          }
+
+        %{method: :get, url: url} = _env ->
+          if String.contains?(url, "/wallet/balance") do
+            %Tesla.Env{
+              status: 500,
+              body:
+                "{\"status\":\"error\",\"message\":\"Unauthorised access to the resource. Please review request parameters and headers and retry\"}"
+            }
+          end
+      end)
+
+      _org = Map.put(org, :services, Map.put(org.services, "bsp", nil))
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+      assert json = json_response(conn, 200)
+      assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
+
+      contact =
+        Repo.get_by!(Contacts.Contact,
+          phone: valid_params["user"]["phone"]
+        )
+
+      # it used the fallback org
+      assert contact.organization_id == glific_org_id
+      assert contact.organization_id != org.id
     end
   end
 
