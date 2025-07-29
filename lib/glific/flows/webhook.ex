@@ -74,7 +74,7 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec update_log(WebhookLog.t() | non_neg_integer, map()) ::
-          {:ok, WebhookLog.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, WebhookLog.t()}
   def update_log(webhook_log_id, message) when is_integer(webhook_log_id) do
     webhook_log = Repo.get!(WebhookLog, webhook_log_id)
     update_log(webhook_log, message)
@@ -113,7 +113,7 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec update_log(WebhookLog.t(), String.t()) ::
-          {:ok, WebhookLog.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, WebhookLog.t()}
   def update_log(webhook_log, error_message) do
     attrs = %{
       error: error_message,
@@ -425,7 +425,7 @@ defmodule Glific.Flows.Webhook do
   The function updates the flow_context and waits for Kaapi to send a response.
   """
   @spec webhook_and_wait(Action.t(), FlowContext.t(), boolean()) ::
-          {:ok | :wait, FlowContext.t(), any()} | {:error, String.t()}
+          :ok | {:wait, FlowContext.t(), any()}
   def webhook_and_wait(action, context, is_active?) do
     parsed_attrs = parse_header_and_url(action, context)
 
@@ -481,13 +481,24 @@ defmodule Glific.Flows.Webhook do
           # for failure response we move to next node
           message = Messages.create_temp_message(context.organization_id, "Failure")
           FlowContext.wakeup_one(context, message)
+          :ok
       end
     else
-      # kaapi not active — create webhook log and send in failed category
       update_log(webhook_log.id, "Kaapi is not active")
 
       message = Messages.create_temp_message(context.organization_id, "Failure")
       FlowContext.wakeup_one(context, message)
+
+      # Report the failure to AppSignal with org_id metadata
+      try do
+        raise "Kaapi integration failed: Service not active"
+      rescue
+        exception ->
+          Appsignal.send_error(:error, exception, __STACKTRACE__, fn span ->
+            # Attach org ID so you can filter/group by it in the AppSignal UI
+            Appsignal.Span.set_attribute(span, "organization_id", context.organization_id)
+          end)
+      end
     end
   end
 end
