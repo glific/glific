@@ -73,7 +73,8 @@ defmodule Glific.Flows.Webhook do
     webhook_log
   end
 
-  @spec update_log(WebhookLog.t() | non_neg_integer, map()) :: {:ok, WebhookLog.t()}
+  @spec update_log(WebhookLog.t() | non_neg_integer, map()) ::
+          {:ok, WebhookLog.t()} | {:error, Ecto.Changeset.t()}
   def update_log(webhook_log_id, message) when is_integer(webhook_log_id) do
     webhook_log = Repo.get!(WebhookLog, webhook_log_id)
     update_log(webhook_log, message)
@@ -111,7 +112,8 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
-  @spec update_log(WebhookLog.t(), String.t()) :: {:ok, WebhookLog.t()}
+  @spec update_log(WebhookLog.t(), String.t()) ::
+          {:ok, WebhookLog.t()} | {:error, Ecto.Changeset.t()}
   def update_log(webhook_log, error_message) do
     attrs = %{
       error: error_message,
@@ -422,9 +424,9 @@ defmodule Glific.Flows.Webhook do
   @doc """
   The function updates the flow_context and waits for Kaapi to send a response.
   """
-  @spec webhook_and_wait(Action.t(), FlowContext.t(), any()) ::
+  @spec webhook_and_wait(Action.t(), FlowContext.t(), boolean()) ::
           {:ok | :wait, FlowContext.t(), any()} | {:error, String.t()}
-  def webhook_and_wait(action, context, _messages) do
+  def webhook_and_wait(action, context, is_active?) do
     parsed_attrs = parse_header_and_url(action, context)
 
     body =
@@ -443,11 +445,6 @@ defmodule Glific.Flows.Webhook do
     webhook_log =
       create_log(action, fields, action.headers, context)
 
-    # Sending the webhook log ID so that we can update the webhook log later with the response from Kaapi.
-    # In the FlowResumeController, we use this webhook_log_id to update the log.
-
-    # Sending the result name so that we can store Kaapi’s response inside the corresponding result variable.
-    # This allows the user to access the message later using @results.{result_name}.message
     fields =
       fields
       |> Map.put("webhook_log_id", webhook_log.id)
@@ -457,33 +454,40 @@ defmodule Glific.Flows.Webhook do
       add_signature(parsed_attrs.header, context.organization_id, body)
       |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
-    response = CommonWebhook.webhook("call_and_wait", fields, headers)
+    if is_active? do
+      response = CommonWebhook.webhook("call_and_wait", fields, headers)
 
-    case response do
-      %{"success" => true, "data" => data} ->
-        # log the success response
-        update_log(webhook_log.id, data)
+      case response do
+        %{"success" => true, "data" => data} ->
+          update_log(webhook_log.id, data)
 
-        # wait for 1 minute by default for AI platform to respond
-        wait_time = action.wait_time || 60
+          # wait for 1 minute by default for AI platform to respond
+          wait_time = action.wait_time || 60
 
-        {:ok, context} =
-          FlowContext.update_flow_context(
-            context,
-            %{
-              wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
-              is_background_flow: context.flow.is_background,
-              is_await_result: true
-            }
-          )
+          {:ok, context} =
+            FlowContext.update_flow_context(
+              context,
+              %{
+                wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
+                is_background_flow: context.flow.is_background,
+                is_await_result: true
+              }
+            )
 
-        {:wait, context, []}
+          {:wait, context, []}
 
-      %{success: false, response: data} ->
-        update_log(webhook_log.id, data)
-        message = Messages.create_temp_message(context.organization_id, "Failure")
-        # for failure response we move to next node
-        FlowContext.wakeup_one(context, message)
+        %{success: false, response: data} ->
+          update_log(webhook_log.id, data)
+          # for failure response we move to next node
+          message = Messages.create_temp_message(context.organization_id, "Failure")
+          FlowContext.wakeup_one(context, message)
+      end
+    else
+      # kaapi not active — create webhook log and send in failed category
+      update_log(webhook_log.id, "Kaapi is not active")
+
+      message = Messages.create_temp_message(context.organization_id, "Failure")
+      FlowContext.wakeup_one(context, message)
     end
   end
 end

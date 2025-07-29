@@ -396,6 +396,73 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       # after a minute and send the failure message,
       assert message.body == "failure"
     end
+
+    test "logs descriptive error when kaapi is not active", %{conn: conn} do
+      organization_id = conn.assigns.organization_id
+
+      FunWithFlags.enable(:is_kaapi_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      contact = Fixtures.contact_fixture()
+
+      flow =
+        Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+
+      [node | _tail] = flow.nodes
+
+      {:ok, context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: organization_id,
+          node_uuid: node.uuid
+        })
+
+      context = Repo.preload(context, [:flow, :contact])
+
+      action = %Action{
+        type: "call_webhook",
+        uuid: "UUID 1",
+        url: "filesearch-gpt",
+        body:
+          "{\n\"question\": \"tell me a fact about consistency\",\n  \"flow_id\": \"@flow.id\",\n  \"endpoint\": \"http://0.0.0.0:8000/api/v1/responses\",\n
+          \"contact_id\": \"@contact.id\",\n  \"callback_url\": \"https://91e372283c55/webhook/flow_resume\",\n  \"assistant_id\": \"asst_pJxxD\"\n}",
+        method: "FUNCTION",
+        headers: %{
+          Accept: "application/json",
+          "Content-Type": "application/json"
+        },
+        result_name: "filesearch",
+        node_uuid: "Test UUID"
+      }
+
+      message_stream = []
+
+      Action.execute(action, context, message_stream)
+
+      webhook_log =
+        WebhookLog
+        |> where(url: "filesearch-gpt")
+        |> order_by(desc: :inserted_at)
+        |> limit(1)
+        |> Repo.one()
+
+      assert webhook_log.error ==
+               "Kaapi is not active"
+
+      [message | _messages] =
+        Glific.Messages.list_messages(%{
+          filter: %{contact_id: contact.id},
+          opts: %{limit: 1, order: :desc}
+        })
+
+      # It should go to the failure category and send the failure message,
+      # since the node in the failure category has the failure message as its body.
+      assert message.body == "failure"
+    end
   end
 
   defp enable_kaapi(attrs) do
