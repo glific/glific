@@ -246,7 +246,8 @@ defmodule Glific.Fixtures do
       },
       secrets: %{
         api_key: "Please enter your key here",
-        app_name: "Please enter your App Name here"
+        app_name: "Please enter your App Name here",
+        app_id: "Please enter app_id"
       },
       is_active: true
     })
