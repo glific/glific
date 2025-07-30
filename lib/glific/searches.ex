@@ -255,6 +255,7 @@ defmodule Glific.Searches do
     |> add_message_clause(args)
     |> order_by([c: c], desc: c.last_communication_at, desc: c.id)
     |> where([c: c], c.status != :blocked)
+    |> where([c: c], c.contact_type in ["WABA", "WABA+WA"])
     |> group_by([c: c], c.id)
     |> Repo.add_permission(&Searches.add_permission/2)
   end
