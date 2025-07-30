@@ -21,6 +21,16 @@ defmodule Glific.Flows.Webhook do
       states: [:available, :scheduled, :executing, :completed]
     ]
 
+  defmodule Error do
+    @moduledoc """
+    Custom error module for Kaapi webhook failures.
+    Since Kaapi is a backend service (NGOs don’t interact with it directly),
+    sending errors to them won’t resolve the issue.
+    Reporting these failures to AppSignal lets us detect and fix problems
+    """
+    defexception [:message]
+  end
+
   @non_unique_urls [
     "parse_via_gpt_vision",
     "parse_via_chat_gpt",
@@ -489,16 +499,12 @@ defmodule Glific.Flows.Webhook do
       message = Messages.create_temp_message(context.organization_id, "Failure")
       FlowContext.wakeup_one(context, message)
 
-      # Report the failure to AppSignal with org_id metadata
-      try do
-        raise "Kaapi integration failed: Service not active"
-      rescue
-        exception ->
-          Appsignal.send_error(:error, exception, __STACKTRACE__, fn span ->
-            # Attach org ID
-            Appsignal.Span.set_attribute(span, "organization_id", context.organization_id)
-          end)
-      end
+      Appsignal.send_error(
+        %Error{message: "Kaapi is not active (org_id=#{context.organization_id})"},
+        []
+      )
+
+      :ok
     end
   end
 end
