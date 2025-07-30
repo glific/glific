@@ -421,7 +421,7 @@ defmodule Glific.Providers.Gupshup.Template do
       example: attrs.example,
       enableSample: true
     }
-    |> attach_footer(attrs.footer)
+    |> attach_footer(attrs)
     |> attach_media_params(attrs)
     |> attach_button_param(attrs)
     |> attach_otp_params(attrs)
@@ -466,7 +466,11 @@ defmodule Glific.Providers.Gupshup.Template do
   defp attach_otp_params(template_payload, _attrs), do: template_payload
 
   @spec attach_footer(map(), String.t() | nil) :: map()
-  def attach_footer(template_payload, ""), do: template_payload
-  def attach_footer(template_payload, nil), do: template_payload
-  def attach_footer(template_payload, footer), do: Map.put(template_payload, :footer, footer)
+  def attach_footer(template_payload, attrs) do
+    case Map.get(attrs, :footer) do
+      "" -> template_payload
+      nil -> template_payload
+      footer -> Map.put(template_payload, :footer, footer)
+    end
+  end
 end
