@@ -495,7 +495,7 @@ defmodule Glific.Flows.Webhook do
       rescue
         exception ->
           Appsignal.send_error(:error, exception, __STACKTRACE__, fn span ->
-            # Attach org ID so you can filter/group by it in the AppSignal UI
+            # Attach org ID
             Appsignal.Span.set_attribute(span, "organization_id", context.organization_id)
           end)
       end
