@@ -465,7 +465,7 @@ defmodule Glific.Providers.Gupshup.Template do
 
   defp attach_otp_params(template_payload, _attrs), do: template_payload
 
-  @spec attach_footer(map(), map() | nil) :: map()
+  @spec attach_footer(map(), map()) :: map()
   def attach_footer(template_payload, attrs) do
     case Map.get(attrs, :footer) do
       footer when footer in [nil, ""] -> template_payload
