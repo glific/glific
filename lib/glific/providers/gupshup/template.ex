@@ -469,7 +469,7 @@ defmodule Glific.Providers.Gupshup.Template do
   Add footer to the  template_payload
   """
   @spec attach_footer(map(), map()) :: map()
-  def attach_footer(template_payload, attrs) do
+  defp attach_footer(template_payload, attrs) do
     case Map.get(attrs, :footer) do
       footer when footer in [nil, ""] -> template_payload
       footer -> Map.put(template_payload, :footer, footer)
