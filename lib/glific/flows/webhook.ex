@@ -434,77 +434,63 @@ defmodule Glific.Flows.Webhook do
   @doc """
   The function updates the flow_context and waits for Kaapi to send a response.
   """
-  @spec webhook_and_wait(Action.t(), FlowContext.t(), boolean()) ::
-          :ok | {:wait, FlowContext.t(), any()}
   def webhook_and_wait(action, context, is_active?) do
     parsed_attrs = parse_header_and_url(action, context)
+    failure_message = Messages.create_temp_message(context.organization_id, "Failure")
 
-    body =
-      case create_body(context, action.body) do
-        {:error, message} ->
-          action
-          |> create_log(%{}, action.headers, context)
-          |> update_log(message)
+    case create_body(context, action.body) do
+      {:error, message} ->
+        webhook_log = create_log(action, %{}, action.headers, context)
+        update_log(webhook_log, message)
+        {:ok, context, [failure_message]}
 
-        {_map, body} ->
-          body
-      end
+      {fields, body} ->
+        webhook_log = create_log(action, fields, action.headers, context)
 
-    fields = Jason.decode!(body)
+        fields =
+          fields
+          |> Map.put("webhook_log_id", webhook_log.id)
+          |> Map.put("result_name", action.result_name)
 
-    webhook_log =
-      create_log(action, fields, action.headers, context)
+        headers =
+          add_signature(parsed_attrs.header, context.organization_id, body)
+          |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
-    fields =
-      fields
-      |> Map.put("webhook_log_id", webhook_log.id)
-      |> Map.put("result_name", action.result_name)
+        if is_active? do
+          response = CommonWebhook.webhook("call_and_wait", fields, headers)
 
-    headers =
-      add_signature(parsed_attrs.header, context.organization_id, body)
-      |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
+          case response do
+            %{"success" => true, "data" => data} ->
+              update_log(webhook_log.id, data)
+              wait_time = action.wait_time || 60
 
-    if is_active? do
-      response = CommonWebhook.webhook("call_and_wait", fields, headers)
+              {:ok, context} =
+                FlowContext.update_flow_context(
+                  context,
+                  %{
+                    wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
+                    is_background_flow: context.flow.is_background,
+                    is_await_result: true
+                  }
+                )
 
-      case response do
-        %{"success" => true, "data" => data} ->
-          update_log(webhook_log.id, data)
+              {:wait, context, []}
 
-          # wait for 1 minute by default for AI platform to respond
-          wait_time = action.wait_time || 60
+            %{success: false, response: data} ->
+              update_log(webhook_log.id, data)
 
-          {:ok, context} =
-            FlowContext.update_flow_context(
-              context,
-              %{
-                wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
-                is_background_flow: context.flow.is_background,
-                is_await_result: true
-              }
-            )
+              {:ok, context, [failure_message]}
+          end
+        else
+          update_log(webhook_log.id, "Kaapi is not active")
 
-          {:wait, context, []}
+          Appsignal.send_error(
+            %Error{message: "Kaapi is not active (org_id=#{context.organization_id})"},
+            []
+          )
 
-        %{success: false, response: data} ->
-          update_log(webhook_log.id, data)
-          # for failure response we move to next node
-          message = Messages.create_temp_message(context.organization_id, "Failure")
-          FlowContext.wakeup_one(context, message)
-          :ok
-      end
-    else
-      update_log(webhook_log.id, "Kaapi is not active")
-
-      message = Messages.create_temp_message(context.organization_id, "Failure")
-      FlowContext.wakeup_one(context, message)
-
-      Appsignal.send_error(
-        %Error{message: "Kaapi is not active (org_id=#{context.organization_id})"},
-        []
-      )
-
-      :ok
+          {:ok, context, [failure_message]}
+        end
     end
   end
 end

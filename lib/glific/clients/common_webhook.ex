@@ -27,13 +27,21 @@ defmodule Glific.Clients.CommonWebhook do
   """
   @spec webhook(String.t(), map(), list()) :: map()
   def webhook("call_and_wait", fields, headers) do
-    endpoint = fields["endpoint"]
     result_name = fields["result_name"]
     {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
     {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
     {:ok, webhook_log_id} = fields["webhook_log_id"] |> Glific.parse_maybe_integer()
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
     timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+    endpoint =
+      if Mix.env() == :prod do
+        Application.fetch_env!(:glific, :ai_prod_endpoint)
+      else
+        Application.fetch_env!(:glific, :ai_staging_endpoint)
+      end
+
+    endpoint = endpoint <> "api/v1/responses"
 
     signature_payload = %{
       "organization_id" => organization_id,
@@ -51,22 +59,18 @@ defmodule Glific.Clients.CommonWebhook do
 
     organization = Partners.organization(organization_id)
 
-    callback =
+    callback_url =
       "https://api.#{organization.shortcode}.glific.com" <>
-        "/webhook/flow_resume?" <>
-        "organization_id=#{organization_id}&" <>
-        "flow_id=#{flow_id}&" <>
-        "contact_id=#{contact_id}&" <>
-        "timestamp=#{timestamp}&" <>
-        "signature=#{signature}"
+        "/webhook/flow_resume"
 
     payload =
       fields
       |> Map.merge(signature_payload)
       |> Map.put("signature", signature)
-      |> Map.put("callback", callback)
+      |> Map.put("callback_url", callback_url)
       |> Map.put("webhook_log_id", webhook_log_id)
       |> Map.put("result_name", result_name)
+      |> maybe_put_response_id(fields)
       |> Jason.encode!()
 
     endpoint
@@ -506,6 +510,14 @@ defmodule Glific.Clients.CommonWebhook do
         )
 
         {:error, "Certificate template not found for ID: #{fields.certificate_id}"}
+    end
+  end
+
+  @spec maybe_put_response_id(map(), map()) :: map()
+  defp maybe_put_response_id(map, fields) do
+    case fields["thread_id"] do
+      nil -> map
+      thread_id -> Map.put(map, "response_id", thread_id)
     end
   end
 end
