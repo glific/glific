@@ -234,7 +234,7 @@ defmodule GlificWeb.Schema.SearchTest do
     # search excludes the org contact id since that is the sender of all messages
     # this is no longer true, hence removing the -1
     assert length(get_in(query_data, [:data, "search"])) ==
-             get_contacts_count(user.organization_id) |> IO.inspect
+             get_contacts_count(user.organization_id)
   end
 
   test "search for conversations group", %{staff: user} = attrs do

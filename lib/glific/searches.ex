@@ -176,6 +176,7 @@ defmodule Glific.Searches do
 
     query
     |> where([c], c.status != :blocked)
+    |> where([c], c.contact_type in ["WABA", "WABA+WA"])
     |> select([c], %{id: c.id, last_communication_at: c.last_communication_at})
     |> distinct(true)
     |> add_contact_opts(opts)
