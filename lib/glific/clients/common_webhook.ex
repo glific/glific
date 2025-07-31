@@ -67,6 +67,7 @@ defmodule Glific.Clients.CommonWebhook do
       fields
       |> Map.merge(signature_payload)
       |> Map.put("signature", signature)
+      |> Map.put("endpoint", endpoint)
       |> Map.put("callback_url", callback_url)
       |> Map.put("webhook_log_id", webhook_log_id)
       |> Map.put("result_name", result_name)
