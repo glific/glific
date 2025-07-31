@@ -19,8 +19,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
     response = result["data"]
     # Map the response_id to thread_id, since we treat response_id as the thread ID in Glific
     # and use thread_id throughout the platform for OpenAI conversation support
-    thread_id = Map.get(response, "response_id")
-    response = Map.put(response, :thread_id, thread_id)
+    thread_id = if is_map(response), do: Map.get(response, "response_id"), else: nil
 
     organization = Partners.organization(organization_id)
     Repo.put_process_state(organization.id)
@@ -28,7 +27,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
     # updated the webhook log with latest response
     message = %{
       status: response["status"],
-      message: response["message"],
+      message: response["message"] || response["error"],
       thread_id: thread_id
     }
 
