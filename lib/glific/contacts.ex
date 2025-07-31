@@ -1062,7 +1062,6 @@ defmodule Glific.Contacts do
     %{contact_type: "WABA+WA"}
   end
 
-  @spec get_contact_update_attrs(Contact.t(), map()) :: map() | nil
   defp get_contact_update_attrs(
          %Contact{contact_type: "WA"} = _contact,
          %{name: sender_name, contact_type: "WABA"} = _sender
