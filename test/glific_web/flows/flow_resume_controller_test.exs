@@ -69,7 +69,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "timestamp" => timestamp,
           "webhook_log_id" => webhook_log.id,
           "result_name" => "filesearch"
-        }
+        },
+        "success" => true
       }
 
       wait_time = 60
@@ -148,7 +149,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "timestamp" => timestamp,
           "webhook_log_id" => webhook_log.id,
           "result_name" => "filesearch"
-        }
+        },
+        "success" => false
       }
 
       wait_time = 60

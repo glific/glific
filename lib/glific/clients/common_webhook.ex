@@ -28,9 +28,9 @@ defmodule Glific.Clients.CommonWebhook do
   @spec webhook(String.t(), map(), list()) :: map()
   def webhook("call_and_wait", fields, headers) do
     result_name = fields["result_name"]
+    {:ok, webhook_log_id} = fields["webhook_log_id"]
     {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
     {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
-    {:ok, webhook_log_id} = fields["webhook_log_id"] |> Glific.parse_maybe_integer()
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
     timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
