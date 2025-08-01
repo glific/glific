@@ -120,3 +120,5 @@ config :glific, Glific.Erase,
 # Percent of total job metrics to be sent to appsignal
 config :glific,
   appsignal_sampling_rate: env!("APPSIGNAL_SAMPLING_RATE", :integer, 10)
+
+config :glific, :kaapi_endpoint, env!("KAAPI_ENDPOINT", :string, "This is not a secret")

@@ -19,6 +19,7 @@ defmodule Glific.Flows.Action do
     Groups.Group,
     Messages,
     Messages.Message,
+    Partners,
     Profiles,
     Repo,
     Sheets,
@@ -640,17 +641,38 @@ defmodule Glific.Flows.Action do
     {:ok, context, [message]}
   end
 
-  def execute(%{type: "call_webhook"} = action, context, messages) do
+  def execute(
+        %{type: "call_webhook", method: "FUNCTION", url: "filesearch-gpt"} = action,
+        context,
+        []
+      ) do
     # just call the webhook, and ask the caller to wait
     # we are processing the webhook using Oban and this happens asynchronously
 
-    # Webhooks don't consume message, so if we send a message while a webhook node is running
-    # this check will prevent webhook node from running again
-    if Enum.empty?(messages) do
+    # Webhooks don't consume messages, so if we send a message while a webhook node is running,
+    # the node won't be executed again because it only matches when the message list is empty (`[]`)
+    if FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: context.organization_id}) do
+      with {:ok, kaapi_secrets} <- fetch_kaapi_creds(context.organization_id),
+           api_key when is_binary(api_key) <- Map.get(kaapi_secrets, "api_key"),
+           updated_headers <- Map.put(action.headers, "X-API-KEY", api_key),
+           updated_action <- %{action | headers: updated_headers} do
+        Webhook.webhook_and_wait(updated_action, context, true)
+      else
+        {:error, _error} ->
+          Webhook.webhook_and_wait(action, context, false)
+      end
+    else
       Webhook.execute(action, context)
+      {:wait, context, []}
     end
+  end
 
-    # webhooks don't consume a message, so we send it forward
+  def execute(%{type: "call_webhook"} = action, context, []) do
+    Webhook.execute(action, context)
+    {:wait, context, []}
+  end
+
+  def execute(%{type: "call_webhook"} = _action, context, messages) do
     {:wait, context, messages}
   end
 
@@ -1108,4 +1130,18 @@ defmodule Glific.Flows.Action do
 
   defp get_flow_uuid(action, _),
     do: action.enter_flow_uuid
+
+  @spec fetch_kaapi_creds(non_neg_integer) :: nil | {:ok, any} | {:error, any}
+  defp fetch_kaapi_creds(organization_id) do
+    organization = Partners.organization(organization_id)
+
+    organization.services["kaapi"]
+    |> case do
+      nil ->
+        {:error, "Kaapi is not active"}
+
+      credentials ->
+        {:ok, credentials.secrets}
+    end
+  end
 end

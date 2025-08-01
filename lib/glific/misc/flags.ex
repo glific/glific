@@ -234,12 +234,12 @@ defmodule Glific.Flags do
   @doc """
   Get ai-platform value for organization flag
   """
-  @spec get_ai_platform_enabled(map()) :: boolean
-  def get_ai_platform_enabled(organization) do
+  @spec get_is_kaapi_enabled(map()) :: boolean
+  def get_is_kaapi_enabled(organization) do
     app_env = Application.get_env(:glific, :environment)
 
     cond do
-      FunWithFlags.enabled?(:is_ai_platform_enabled, for: %{organization_id: organization.id}) ->
+      FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: organization.id}) ->
         true
 
       Glific.trusted_env?(app_env, organization.id) ->
@@ -338,12 +338,12 @@ defmodule Glific.Flags do
   @doc """
   Set fun_with_flag toggle for ai-platform for an organization
   """
-  @spec set_ai_platform_enabled(map()) :: map()
-  def set_ai_platform_enabled(organization) do
+  @spec set_is_kaapi_enabled(map()) :: map()
+  def set_is_kaapi_enabled(organization) do
     Map.put(
       organization,
-      :is_ai_platform_enabled,
-      get_ai_platform_enabled(organization)
+      :is_kaapi_enabled,
+      get_is_kaapi_enabled(organization)
     )
   end
 
@@ -448,7 +448,7 @@ defmodule Glific.Flags do
       :is_google_auto_translation_enabled,
       :is_whatsapp_group_enabled,
       :is_certificate_enabled,
-      :is_ai_platform_enabled,
+      :is_kaapi_enabled,
       :is_interactive_re_response_enabled
     ]
     |> Enum.each(fn flag ->

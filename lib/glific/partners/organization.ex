@@ -174,8 +174,8 @@ defmodule Glific.Partners.Organization do
     # A virtual field for now to conditionally enable custom certificate feature for an organization
     field(:is_certificate_enabled, :boolean, default: false, virtual: true)
 
-    # A virtual field for now to conditionally enable ai-platform for an organization
-    field(:is_ai_platform_enabled, :boolean, default: false, virtual: true)
+    # A virtual field for now to conditionally enable kaapi for an organization
+    field(:is_kaapi_enabled, :boolean, default: false, virtual: true)
 
     field(:is_interactive_re_response_enabled, :boolean, default: false, virtual: true)
 
