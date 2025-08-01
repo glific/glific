@@ -460,7 +460,7 @@ defmodule Glific.Flows.Webhook do
           response = CommonWebhook.webhook("call_and_wait", fields, headers)
 
           case response do
-            %{"success" => true, "data" => data} ->
+            %{success: true, data: data} ->
               update_log(webhook_log.id, data)
               wait_time = action.wait_time || 60
 
@@ -479,6 +479,15 @@ defmodule Glific.Flows.Webhook do
             %{success: false, response: data} ->
               update_log(webhook_log.id, data)
 
+              {:ok, context, [failure_message]}
+
+            %{reason: data, success: false} ->
+              update_log(webhook_log.id, data)
+
+              {:ok, context, [failure_message]}
+
+            _ ->
+              update_log(webhook_log.id, "Something went wrong")
               {:ok, context, [failure_message]}
           end
         else
