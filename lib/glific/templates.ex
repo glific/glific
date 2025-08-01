@@ -230,19 +230,25 @@ defmodule Glific.Templates do
   @spec validate_template_length(map()) :: :ok | {:error, [String.t()]}
   defp validate_template_length(%{body: body} = attrs) do
     buttons = Map.get(attrs, :buttons, [])
+    footer = Map.get(attrs, :footer, "")
 
     total_length =
       String.length(body || "") +
-        calculate_buttons_length(buttons)
+        calculate_buttons_length(buttons) +
+        String.length(footer)
 
-    if Enum.any?(buttons, fn %{"text" => text} -> String.length(text || "") > 20 end) do
-      {:error, ["Button Validation", "Buttons text cannot be greater than 20"]}
-    else
-      if total_length <= 1024 do
+    cond do
+      Enum.any?(buttons, fn %{"text" => text} -> String.length(text || "") > 20 end) ->
+        {:error, ["Button Validation", "Buttons text cannot be greater than 20"]}
+
+      String.length(footer) > 60 ->
+        {:error, ["Footer Validation", "Footer text cannot be greater than 60 characters"]}
+
+      total_length <= 1024 ->
         :ok
-      else
+
+      true ->
         {:error, ["Character Limit", "Exceeding character limit"]}
-      end
     end
   end
 
