@@ -28,7 +28,7 @@ defmodule Glific.Clients.CommonWebhook do
   @spec webhook(String.t(), map(), list()) :: map()
   def webhook("call_and_wait", fields, headers) do
     result_name = fields["result_name"]
-    {:ok, webhook_log_id} = fields["webhook_log_id"]
+    webhook_log_id = fields["webhook_log_id"]
     {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
     {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
@@ -65,12 +65,15 @@ defmodule Glific.Clients.CommonWebhook do
       |> Map.put("webhook_log_id", webhook_log_id)
       |> Map.put("result_name", result_name)
       |> maybe_put_response_id(fields)
+      |> IO.inspect()
       |> Jason.encode!()
 
     client =
       Tesla.client([
         {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]}
       ])
+
+    IO.inspect(headers)
 
     client
     |> Tesla.post(
@@ -79,6 +82,7 @@ defmodule Glific.Clients.CommonWebhook do
       headers: headers,
       opts: [adapter: [recv_timeout: 300_000]]
     )
+    |> IO.inspect()
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Map.merge(%{success: true}, body)
