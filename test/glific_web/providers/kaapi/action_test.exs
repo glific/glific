@@ -212,7 +212,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       Action.execute(action, context, message_stream)
 
       # error should be logged
-      webhook_log = Repo.get_by(WebhookLog, %{url: "filesearch-gpt"}) |> IO.inspect()
+      webhook_log = Repo.get_by(WebhookLog, %{url: "filesearch-gpt"})
       assert webhook_log.error == "{\"error\":\"Not found\",\"success\":false}"
       assert webhook_log.status_code == 400
 
