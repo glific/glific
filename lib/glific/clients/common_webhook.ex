@@ -34,12 +34,7 @@ defmodule Glific.Clients.CommonWebhook do
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
     timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
-    endpoint =
-      if Mix.env() == :prod do
-        Application.fetch_env!(:glific, :ai_prod_endpoint)
-      else
-        Application.fetch_env!(:glific, :ai_staging_endpoint)
-      end
+    endpoint = Application.get_env(:glific, :kaapi_endpoint)
 
     endpoint = endpoint <> "api/v1/responses"
 

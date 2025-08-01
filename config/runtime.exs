@@ -121,11 +121,4 @@ config :glific, Glific.Erase,
 config :glific,
   appsignal_sampling_rate: env!("APPSIGNAL_SAMPLING_RATE", :integer, 10)
 
-config :glific,
-  ai_staging_endpoint:
-    env!(
-      "AI_STAGING_ENDPOINT",
-      :string,
-      "This is not a region"
-    ),
-  ai_prod_endpoint: env!("AI_PROD_ENDPOINT", :string, "This is not a region")
+config :glific, :kaapi_endpoint, env!("KAAPI_ENDPOINT", :string, "This is not a secret")

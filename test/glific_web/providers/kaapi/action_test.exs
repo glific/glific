@@ -207,7 +207,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       message_stream = []
 
-      Action.execute(action, context, message_stream) |> IO.inspect()
+      Action.execute(action, context, message_stream)
 
       # error should be logged
       webhook_log = Repo.get_by(WebhookLog, %{url: "filesearch-gpt"})

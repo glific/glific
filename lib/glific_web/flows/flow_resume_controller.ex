@@ -43,8 +43,13 @@ defmodule GlificWeb.Flows.FlowResumeController do
         "success" ->
           Messages.create_temp_message(organization_id, "Success")
 
-        _ ->
+        "failure" ->
           Messages.create_temp_message(organization_id, "Failure")
+
+        _ ->
+          # Sending nil so that it remains compatible with other webhook responses
+          # (besides Kaapi) and falls back to the default behavior.
+          nil
       end
 
     # need to validate timestamp
