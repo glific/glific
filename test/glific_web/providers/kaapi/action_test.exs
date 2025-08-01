@@ -56,7 +56,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         uuid: "UUID 1",
         url: "filesearch-gpt",
         body:
-          "{\n\"question\": \"tell me a fact about consistency\",\n  \"flow_id\": \"@flow.id\",\n  \"endpoint\": \"http://0.0.0.0:8000/api/v1/responses\",\n
+          "{\n\"question\": \"tell me a fact about consistency\",\n  \"flow_id\": \"@flow.id\",\n  \"endpoint\": \"This is not a secretapi/v1/responses\",\n
           \"contact_id\": \"@contact.id\",\n  \"callback_url\": \"https://91e372283c55/webhook/flow_resume\",\n  \"assistant_id\": \"asst_pJxxD\"\n}",
         method: "FUNCTION",
         headers: %{
@@ -68,19 +68,17 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       }
 
       Tesla.Mock.mock(fn
-        %Tesla.Env{method: :post, url: "http://0.0.0.0:8000/api/v1/responses"} ->
+        %Tesla.Env{method: :post, url: "This is not a secretapi/v1/responses"} ->
           %Tesla.Env{
             status: 200,
-            body:
-              Jason.encode!(%{
-                :success => true,
-                "data" => %{
-                  "message" => "Response creation started",
-                  "status" => "processing",
-                  "success" => true
-                },
-                "success" => true
-              })
+            body: %{
+              error: nil,
+              data: %{
+                message: "Response creation started",
+                status: "processing",
+                success: true
+              }
+            }
           }
       end)
 
@@ -119,7 +117,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
             "output_tokens" => 343,
             "total_tokens" => 370
           },
-          "endpoint" => "http://0.0.0.0:8000/api/v1/responses",
+          "endpoint" => "This is not a secretapi/v1/responses",
           "flow_id" => flow.id,
           "message" => @kaapi_response,
           "organization_id" => organization_id,
@@ -129,7 +127,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "timestamp" => timestamp,
           "webhook_log_id" => webhook_log.id,
           "result_name" => "filesearch"
-        }
+        },
+        "success" => true
       }
 
       conn =
@@ -187,7 +186,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         uuid: "UUID 1",
         url: "filesearch-gpt",
         body:
-          "{\n\"question\": \"tell me a fact about consistency\",\n  \"flow_id\": \"@flow.id\",\n  \"endpoint\": \"wrong_endpoint\",\n
+          "{\n\"question\": \"tell me a fact about consistency\",\n  \"flow_id\": \"@flow.id\",\n  \"endpoint\": \"This is not a secretapi/v1/responses\",\n
           \"contact_id\": \"@contact.id\",\n  \"callback_url\": \"https://91e372283c55/webhook/flow_resume\",\n  \"assistant_id\": \"asst_pJxxD\"\n}",
         method: "FUNCTION",
         headers: %{
@@ -199,9 +198,12 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       }
 
       Tesla.Mock.mock(fn
-        %Tesla.Env{method: :post, url: "wrong_endpoint"} ->
+        %Tesla.Env{method: :post, url: "This is not a secretapi/v1/responses"} ->
           %Tesla.Env{
-            body: "{\"detail\":\"Not Found\"}"
+            body: %{
+              error: "Not found",
+              success: false
+            }
           }
       end)
 
@@ -210,8 +212,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       Action.execute(action, context, message_stream)
 
       # error should be logged
-      webhook_log = Repo.get_by(WebhookLog, %{url: "filesearch-gpt"})
-      assert webhook_log.error == "{\"detail\":\"Not Found\"}"
+      webhook_log = Repo.get_by(WebhookLog, %{url: "filesearch-gpt"}) |> IO.inspect()
+      assert webhook_log.error == "{\"error\":\"Not found\",\"success\":false}"
       assert webhook_log.status_code == 400
 
       [message | _messages] =
@@ -222,7 +224,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       # It should go to the failure category and send the failure message,
       # since the node in the failure category has the failure message as its body.
-      assert message.body == "failure"
+      assert message.body == "Failure"
     end
 
     test "logs descriptive error when assistant id is invalid", %{conn: conn} do
@@ -259,7 +261,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         uuid: "UUID 1",
         url: "filesearch-gpt",
         body:
-          "{\n\"question\": \"tell me a fact about consistency\",\n  \"flow_id\": \"@flow.id\",\n  \"endpoint\": \"http://0.0.0.0:8000/api/v1/responses\",\n
+          "{\n\"question\": \"tell me a fact about consistency\",\n  \"flow_id\": \"@flow.id\",\n  \"endpoint\": \"This is not a secretapi/v1/responsess\",\n
           \"contact_id\": \"@contact.id\",\n  \"callback_url\": \"https://91e372283c55/webhook/flow_resume\",\n  \"assistant_id\": \"asst_pJxxD\"\n}",
         method: "FUNCTION",
         headers: %{
@@ -270,25 +272,18 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         node_uuid: "Test UUID"
       }
 
-      # when endpoint is wrong
       Tesla.Mock.mock(fn
-        %Tesla.Env{method: :post, url: "http://0.0.0.0:8000/api/v1/responses"} ->
+        %Tesla.Env{method: :post, url: "This is not a secretapi/v1/responses"} ->
           %Tesla.Env{
-            body: "{\"detail\":\"Not Found\"}"
+            status: 404,
+            body: %{
+              error: "Assistant not found or not active",
+              success: false
+            }
           }
       end)
 
       message_stream = []
-
-      Tesla.Mock.mock(fn
-        %Tesla.Env{method: :post, url: "http://0.0.0.0:8000/api/v1/responses"} ->
-          %Tesla.Env{
-            status: 404,
-            body:
-              "{\"success\":false,\"data\":null,\"error\":\"Assistant not found or not active\",\"metadata\":null}"
-          }
-      end)
-
       Action.execute(action, context, message_stream)
 
       # error should be logged
@@ -300,7 +295,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         |> Repo.one()
 
       assert webhook_log.error ==
-               "{\"success\":false,\"data\":null,\"error\":\"Assistant not found or not active\",\"metadata\":null}"
+               "{\"error\":\"Assistant not found or not active\",\"success\":false}"
 
       [message | _messages] =
         Glific.Messages.list_messages(%{
@@ -310,7 +305,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       # It should go to the failure category and send the failure message,
       # since the node in the failure category has the failure message as its body.
-      assert message.body == "failure"
+      assert message.body == "Failure"
     end
 
     test "Send to failure category if no response is received from Kaapi after waiting for 60 seconds",
@@ -347,7 +342,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         uuid: "UUID 1",
         url: "filesearch-gpt",
         body:
-          "{\n\"question\": \"tell me a fact about consistency\",\n  \"flow_id\": \"@flow.id\",\n  \"endpoint\": \"http://0.0.0.0:8000/api/v1/responses\",\n
+          "{\n\"question\": \"tell me a fact about consistency\",\n  \"flow_id\": \"@flow.id\",\n  \"endpoint\": \"This is not a secretapi/v1/responses\",\n
           \"contact_id\": \"@contact.id\",\n  \"callback_url\": \"https://91e372283c55/webhook/flow_resume\",\n  \"assistant_id\": \"asst_pJxxD\"\n}",
         method: "FUNCTION",
         headers: %{
@@ -356,23 +351,21 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         },
         result_name: "filesearch",
         node_uuid: "Test UUID",
-        wait_time: 10
+        wait_time: 5
       }
 
       Tesla.Mock.mock(fn
-        %Tesla.Env{method: :post, url: "http://0.0.0.0:8000/api/v1/responses"} ->
+        %Tesla.Env{method: :post, url: "This is not a secretapi/v1/responses"} ->
           %Tesla.Env{
             status: 200,
-            body:
-              Jason.encode!(%{
-                :success => true,
-                "data" => %{
-                  "message" => "Response creation started",
-                  "status" => "processing",
-                  "success" => true
-                },
-                "success" => true
-              })
+            body: %{
+              error: nil,
+              data: %{
+                message: "Response creation started",
+                status: "processing",
+                success: true
+              }
+            }
           }
       end)
 
@@ -383,7 +376,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       # Reduce wait_time to 10 seconds(above in action.wait_time) to avoid actual 60-second delay in test.
       # This simulates the behavior of waiting for a webhook response and triggering the flow
       # via the wakeup_flows scheduler, also makes the test faster and avoids ExUnit timeouts.
-      :timer.sleep(11_000)
+      :timer.sleep(6_000)
       Partners.perform_all(&FlowContext.wakeup_flows/1, nil, [])
 
       [message | _messages] =
@@ -428,7 +421,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         uuid: "UUID 1",
         url: "filesearch-gpt",
         body:
-          "{\n\"question\": \"tell me a fact about consistency\",\n  \"flow_id\": \"@flow.id\",\n  \"endpoint\": \"http://0.0.0.0:8000/api/v1/responses\",\n
+          "{\n\"question\": \"tell me a fact about consistency\",\n  \"flow_id\": \"@flow.id\",\n  \"endpoint\": \"This is not a secretapi/v1/responses\",\n
           \"contact_id\": \"@contact.id\",\n  \"callback_url\": \"https://91e372283c55/webhook/flow_resume\",\n  \"assistant_id\": \"asst_pJxxD\"\n}",
         method: "FUNCTION",
         headers: %{

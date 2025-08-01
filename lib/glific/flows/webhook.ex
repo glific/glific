@@ -476,12 +476,7 @@ defmodule Glific.Flows.Webhook do
 
               {:wait, context, []}
 
-            %{success: false, response: data} ->
-              update_log(webhook_log.id, data)
-
-              {:ok, context, [failure_message]}
-
-            %{reason: data, success: false} ->
+            %{success: false, reason: data} ->
               update_log(webhook_log.id, data)
 
               {:ok, context, [failure_message]}

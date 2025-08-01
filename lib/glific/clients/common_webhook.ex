@@ -2,8 +2,6 @@ defmodule Glific.Clients.CommonWebhook do
   @moduledoc """
   Common webhooks which we can call with any clients.
   """
-  use Tesla
-  plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
 
   alias Glific.{
     ASR.Bhasini,
@@ -63,15 +61,20 @@ defmodule Glific.Clients.CommonWebhook do
       fields
       |> Map.merge(signature_payload)
       |> Map.put("signature", signature)
-      |> Map.put("endpoint", endpoint)
       |> Map.put("callback_url", callback_url)
       |> Map.put("webhook_log_id", webhook_log_id)
       |> Map.put("result_name", result_name)
       |> maybe_put_response_id(fields)
       |> Jason.encode!()
 
-    endpoint
-    |> post(
+    client =
+      Tesla.client([
+        {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]}
+      ])
+
+    client
+    |> Tesla.post(
+      endpoint,
       payload,
       headers: headers,
       opts: [adapter: [recv_timeout: 300_000]]
@@ -81,10 +84,11 @@ defmodule Glific.Clients.CommonWebhook do
         Map.merge(%{success: true}, body)
 
       {:ok, %Tesla.Env{status: _status, body: body}} ->
-        %{success: false, response: body}
+        reason = Jason.encode!(body)
+        %{success: false, reason: reason}
 
       {:error, reason} ->
-        %{success: false, reason: reason}
+        %{success: false, reason: inspect(reason)}
     end
   end
 

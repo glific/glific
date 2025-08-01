@@ -28,7 +28,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
     # updated the webhook log with latest response
     message =
       %{
-        status: response["status"],
+        success: result["success"],
         message: response["message"] || response["error"],
         thread_id: thread_id
       }
@@ -39,11 +39,11 @@ defmodule GlificWeb.Flows.FlowResumeController do
     respone_key = response["result_name"] || "response"
 
     message =
-      case response["status"] do
-        "success" ->
+      case result["success"] do
+        true ->
           Messages.create_temp_message(organization_id, "Success")
 
-        "failure" ->
+        false ->
           Messages.create_temp_message(organization_id, "Failure")
 
         _ ->
