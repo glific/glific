@@ -20,7 +20,6 @@ defmodule GlificWeb.Flows.FlowResumeController do
     # Map the response_id to thread_id, since we treat response_id as the thread ID in Glific
     # and use thread_id throughout the platform for OpenAI conversation support
     thread_id = if is_map(response), do: Map.get(response, "response_id"), else: nil
-    response = Map.put(response, "thread_id", thread_id)
 
     organization = Partners.organization(organization_id)
     Repo.put_process_state(organization.id)
@@ -33,17 +32,20 @@ defmodule GlificWeb.Flows.FlowResumeController do
         thread_id: thread_id
       }
 
-    Webhook.update_log(response["webhook_log_id"], message)
+    if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], message)
 
     # check lib/glific/flows/webhook.ex:449
     respone_key = response["result_name"] || "response"
 
     message =
-      case result["success"] do
-        true ->
+      case {result["success"], response["webhook_log_id"]} do
+        {true, nil} ->
+          Messages.create_temp_message(organization_id, "No Response")
+
+        {true, _} ->
           Messages.create_temp_message(organization_id, "Success")
 
-        false ->
+        {false, _} ->
           Messages.create_temp_message(organization_id, "Failure")
 
         _ ->
