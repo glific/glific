@@ -446,7 +446,11 @@ defmodule Glific.Flows.FlowContext do
   Count the number of times we have sent the same message in the recent past
   """
   @spec match_outbound(FlowContext.t(), String.t(), integer) :: integer
-  def match_outbound(context, body, go_back \\ 6) do
+  def match_outbound(context, body, go_back \\ 6)
+  # If body of message is empty then that means it must have been an audio/video message
+  def match_outbound(_context, "", _), do: 0
+
+  def match_outbound(context, body, go_back) do
     since = Glific.go_back_time(go_back)
 
     Enum.filter(
