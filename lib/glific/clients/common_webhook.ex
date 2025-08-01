@@ -34,9 +34,8 @@ defmodule Glific.Clients.CommonWebhook do
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
     timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
-    endpoint = Application.get_env(:glific, :kaapi_endpoint)
-
-    endpoint = endpoint <> "api/v1/responses"
+    endpoint =
+      Application.get_env(:glific, :kaapi_endpoint) <> "api/v1/responses"
 
     signature_payload = %{
       "organization_id" => organization_id,
