@@ -91,7 +91,8 @@ if Code.ensure_loaded?(Faker) do
           optin_time: utc_now,
           optin_status: true,
           optin_method: "BSP",
-          bsp_status: :session_and_hsm
+          bsp_status: :session_and_hsm,
+          contact_type: "WABA"
         },
         %{
           name: "Adelle Cavin",
@@ -99,7 +100,8 @@ if Code.ensure_loaded?(Faker) do
           language_id: hi_in.id,
           bsp_status: :session_and_hsm,
           optin_time: utc_now,
-          optin_status: true
+          optin_status: true,
+          contact_type: "WABA"
         },
         %{
           name: "Margarita Quinteros",
@@ -107,7 +109,8 @@ if Code.ensure_loaded?(Faker) do
           language_id: hi_in.id,
           bsp_status: :session_and_hsm,
           optin_time: utc_now,
-          optin_status: true
+          optin_status: true,
+          contact_type: "WABA"
         },
         %{
           name: "Chrissy Cron",
@@ -115,7 +118,8 @@ if Code.ensure_loaded?(Faker) do
           language_id: en.id,
           bsp_status: :session_and_hsm,
           optin_time: utc_now,
-          optin_status: true
+          optin_status: true,
+          contact_type: "WABA"
         }
       ]
 
