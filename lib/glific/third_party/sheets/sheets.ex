@@ -271,9 +271,15 @@ defmodule Glific.Sheets do
              })}
         end
 
-      {:error, err} ->
+      [{:error, err}] ->
         media_warnings = Map.new([{sheet.url, err}])
         {:error, handle_sync_failure(sheet, inspect(err), media_warnings)}
+
+      _ ->
+        {:error,
+         handle_sync_failure(sheet, "unknown error or empty content", %{
+           content: "Google sheet failure or empty content"
+         })}
     end
   end
 
