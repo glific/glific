@@ -175,47 +175,55 @@ defmodule Glific.Sheets do
 
   def sync_sheet_data(sheet) do
     Glific.Metrics.increment("Sheets Read")
-    [sheet_url, _gid] = String.split(sheet.url, ["edit", "view", "comment"])
 
     last_synced_at = DateTime.utc_now()
-    {:ok, uri} = URI.new(sheet.url)
-    # https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id
+    export_url = build_export_url(sheet.url)
 
-    gid = uri.fragment || ""
-    export_url = sheet_url <> "export?format=csv&" <> gid
-    export_url = String.trim_trailing(export_url, "&")
-
-    %{
-      sync_successful?: sync_successful?,
-      media_warnings: media_warnings,
-      error_message: error_message
-    } =
+    sync_result =
       [url: export_url]
       |> ApiClient.get_csv_content()
-      |> handle_sheet_data(sheet, last_synced_at)
+      |> run_sync_transaction(sheet, last_synced_at)
 
-    sync_status =
-      if sync_successful? do
-        Glific.Metrics.increment("Google Sheets Sync Success")
-        :success
-      else
-        Glific.Metrics.increment("Google Sheets Sync Failed")
-        :failed
-      end
-
-    sheet_data_count =
-      SheetData
-      |> where([sd], sd.sheet_id == ^sheet.id)
-      |> Repo.aggregate(:count)
+    sync_status = record_sync_metrics(sync_result.sync_successful?)
+    sheet_data_count = count_sheet_data(sheet.id)
 
     sheet
     |> update_sheet(%{
       last_synced_at: last_synced_at,
       sheet_data_count: sheet_data_count,
       sync_status: sync_status,
-      failure_reason: error_message
+      failure_reason: sync_result.error_message
     })
-    |> append_warnings(media_warnings)
+    |> append_warnings(sync_result.media_warnings)
+  end
+
+  @spec build_export_url(String.t()) :: String.t()
+  defp build_export_url(sheet_url) do
+    # https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id
+    [base_url, _gid] = String.split(sheet_url, ["edit", "view", "comment"])
+    {:ok, uri} = URI.new(sheet_url)
+
+    gid = uri.fragment || ""
+    export_url = base_url <> "export?format=csv&" <> gid
+    String.trim_trailing(export_url, "&")
+  end
+
+  @spec record_sync_metrics(boolean()) :: :success | :failed
+  defp record_sync_metrics(true) do
+    Glific.Metrics.increment("Google Sheets Sync Success")
+    :success
+  end
+
+  defp record_sync_metrics(false) do
+    Glific.Metrics.increment("Google Sheets Sync Failed")
+    :failed
+  end
+
+  @spec count_sheet_data(integer()) :: integer()
+  defp count_sheet_data(sheet_id) do
+    SheetData
+    |> where([sd], sd.sheet_id == ^sheet_id)
+    |> Repo.aggregate(:count)
   end
 
   defp append_warnings({:error, _error} = sheet, _media_warnings), do: sheet
@@ -226,8 +234,8 @@ defmodule Glific.Sheets do
     |> then(&{:ok, &1})
   end
 
-  @spec handle_sheet_data(list, Sheet.t(), DateTime.t()) :: map()
-  defp handle_sheet_data(csv_content, sheet, last_synced_at) do
+  @spec run_sync_transaction(Enumerable.t(), Sheet.t(), DateTime.t()) :: map()
+  defp run_sync_transaction(csv_content, sheet, last_synced_at) do
     # Convert the stream to a list once to avoid consumption issues
     csv_content_list = Enum.to_list(csv_content)
 
@@ -270,29 +278,38 @@ defmodule Glific.Sheets do
   end
 
   defp process_sheet_data(csv_content, sheet, last_synced_at) do
+    initial_acc = %{sync_successful?: true, media_warnings: %{}, error_message: nil}
+
     csv_content
-    |> Enum.reduce_while(%{sync_successful?: true, media_warnings: %{}, error_message: nil}, fn
+    |> Enum.reduce_while(initial_acc, fn
       {:ok, row}, acc ->
-        %{values: row_values, errors: errors} = parse_row_values(row)
-
-        row_values
-        |> prepare_sheet_data_attrs(sheet, last_synced_at)
-        |> create_sheet_data()
-
-        {:cont, %{acc | media_warnings: Map.merge(acc.media_warnings, errors)}}
+        process_row(row, acc, sheet, last_synced_at)
 
       {:error, err}, acc ->
-        # If we get any error, we stop executing the current sheet further, log it.
-        media_warnings = Map.put(acc.media_warnings, sheet.url, err)
-        {:halt, handle_sync_failure(sheet, inspect(err), media_warnings)}
+        handle_row_error(err, acc, sheet)
     end)
     |> case do
-      %{sync_successful?: true} = result ->
-        {:ok, result}
-
-      result ->
-        {:error, result}
+      %{sync_successful?: true} = result -> {:ok, result}
+      result -> {:error, result}
     end
+  end
+
+  @spec process_row(map(), map(), Sheet.t(), DateTime.t()) :: {:cont, map()}
+  defp process_row(row, acc, sheet, last_synced_at) do
+    %{values: row_values, errors: errors} = parse_row_values(row)
+
+    row_values
+    |> prepare_sheet_data_attrs(sheet, last_synced_at)
+    |> create_sheet_data()
+
+    {:cont, %{acc | media_warnings: Map.merge(acc.media_warnings, errors)}}
+  end
+
+  @spec handle_row_error(any(), map(), Sheet.t()) :: {:halt, map()}
+  defp handle_row_error(err, acc, sheet) do
+    # If we get any error, we stop executing the current sheet further, log it.
+    media_warnings = Map.put(acc.media_warnings, sheet.url, err)
+    {:halt, handle_sync_failure(sheet, inspect(err), media_warnings)}
   end
 
   defp prepare_sheet_data_attrs(values, sheet, last_synced_at) do
@@ -315,33 +332,40 @@ defmodule Glific.Sheets do
 
   @spec parse_row_values(map()) :: map()
   defp parse_row_values(row) do
-    clean_row_values =
-      Enum.reduce(row, %{}, fn {key, value}, acc ->
-        key =
-          key
-          |> String.downcase()
-          |> String.replace(" ", "_")
-          |> trim_value()
-
-        Map.put(acc, key, value |> trim_value())
-      end)
-
-    errors =
-      clean_row_values
-      |> Enum.reduce(%{}, fn {_key, value}, acc ->
-        {media_type, _media} = Messages.get_media_type_from_url(value, log_error: false)
-
-        with true <- media_type != :text,
-             %{is_valid: is_valid, message: message} <-
-               Glific.Messages.validate_media(value, Atom.to_string(media_type)),
-             false <- is_valid do
-          Map.put(acc, value, message)
-        else
-          _ -> acc
-        end
-      end)
+    clean_row_values = clean_row_keys_and_values(row)
+    errors = validate_media_values(clean_row_values)
 
     %{values: clean_row_values, errors: errors}
+  end
+
+  @spec clean_row_keys_and_values(map()) :: map()
+  defp clean_row_keys_and_values(row) do
+    Enum.reduce(row, %{}, fn {key, value}, acc ->
+      clean_key =
+        key
+        |> String.downcase()
+        |> String.replace(" ", "_")
+        |> trim_value()
+
+      Map.put(acc, clean_key, trim_value(value))
+    end)
+  end
+
+  @spec validate_media_values(map()) :: map()
+  defp validate_media_values(values) do
+    values
+    |> Enum.reduce(%{}, fn {_key, value}, acc ->
+      {media_type, _media} = Messages.get_media_type_from_url(value, log_error: false)
+
+      with true <- media_type != :text,
+           %{is_valid: is_valid, message: message} <-
+             Glific.Messages.validate_media(value, Atom.to_string(media_type)),
+           false <- is_valid do
+        Map.put(acc, value, message)
+      else
+        _ -> acc
+      end
+    end)
   end
 
   @doc """
