@@ -1,22 +1,31 @@
 name: Continuous Deployment
 
 on:
+  on:
+  pull_request:
+    types: [labeled, opened, synchronize, reopened]
   push:
-    branches: [master, feat/ai_platform_re-routing, v1.0]
+    branches: [master]
 
 jobs:
   deploy:
     # only run this job if the verify job succeeds
 
-    # only run this job if the workflow is running on the feature/master branch
-    if: github.ref == 'refs/heads/master'
-
+    # only run this job if the workflow is running on the feature/master branch or
+    # a branch which has staging has label
+    if: |
+      (
+        github.event_name == 'pull_request' &&
+        contains(join(github.event.pull_request.labels.*.name, ','), 'staging')
+      ) || (
+        github.event_name == 'push' &&
+        github.ref == 'refs/heads/master'
+      )
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: master # Checkout out master instead of the latest commit
+          ref: ${{ github.event_name == 'push' && 'master' || github.event.pull_request.head.ref }} # Checkout out master or the PR commit
           fetch-depth: 0 # Checkout the whole branch
 
       # setup  python
