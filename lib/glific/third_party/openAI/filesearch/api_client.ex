@@ -19,6 +19,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   end
 
   plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
+  plug Tesla.Middleware.FollowRedirects
 
   @doc """
   Create a VectorStore
@@ -129,29 +130,34 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   """
   @spec create_assistant(map()) :: {:ok, map()} | {:error, String.t()}
   def create_assistant(params) do
-    url = @endpoint <> "/assistants"
+    {:ok, %{"api_key" => key}} =
+      Glific.Flows.Action.fetch_kaapi_creds(params.organization_id) |> IO.inspect()
+
+    header =
+      [
+        {"X-API-KEY", key},
+        {"Content-Type", "application/json"}
+      ]
+      |> IO.inspect()
+
+    url =
+      "http://ai-platform-staging-alb-844976708.ap-south-1.elb.amazonaws.com/api/v1/assistant"
 
     payload =
       %{
-        "name" => params.name,
-        "model" => params.model,
-        "instructions" => params[:instructions],
-        "temperature" => params.temperature,
-        "tools" => [
-          %{
-            "type" => "file_search"
-          }
-        ],
-        "tool_resources" => %{
-          "file_search" => %{
-            "vector_store_ids" => params.vector_store_ids
-          }
-        }
+        name: params.name,
+        instructions: "String should have at least 10 characters",
+        model: params.model,
+        vector_store_ids: params.vector_store_ids,
+        temperature: params.temperature
       }
       |> Jason.encode!()
+      |> IO.inspect()
 
-    post(url, payload, headers: headers())
+    post(url, payload, headers: header)
+    |> IO.inspect()
     |> parse_response()
+    |> IO.inspect()
   end
 
   @doc """
