@@ -6,6 +6,8 @@ defmodule Glific.Sheets do
   import Ecto.Query, warn: false
   require Logger
 
+  alias Ecto.Multi
+
   alias Glific.{
     Flows.Action,
     Flows.FlowContext,
@@ -183,52 +185,36 @@ defmodule Glific.Sheets do
     export_url = sheet_url <> "export?format=csv&" <> gid
     export_url = String.trim_trailing(export_url, "&")
 
-    SheetData
-    |> where([sd], sd.sheet_id == ^sheet.id)
-    |> Repo.delete_all()
+    %{
+      sync_successful?: sync_successful?,
+      media_warnings: media_warnings,
+      error_message: error_message
+    } =
+      [url: export_url]
+      |> ApiClient.get_csv_content()
+      |> handle_sheet_data(sheet, last_synced_at)
 
-    {media_warnings, sync_successful?} =
-      ApiClient.get_csv_content(url: export_url)
-      |> Enum.reduce_while({%{}, true}, fn
-        {:ok, row}, {acc, _} ->
-          parsed_rows = parse_row_values(row)
-
-          %{
-            ## we can also think in case we need first column.
-            key: parsed_rows.values["key"],
-            row_data: parsed_rows.values,
-            sheet_id: sheet.id,
-            organization_id: sheet.organization_id,
-            last_synced_at: last_synced_at
-          }
-          |> create_sheet_data()
-
-          {:cont, {Map.merge(acc, parsed_rows.errors), true}}
-
-        {:error, err}, {acc, _} ->
-          # If we get any error, we stop executing the current sheet further, log it.
-          Logger.error(
-            "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{inspect(err)}"
-          )
-
-          create_sync_fail_notification(sheet)
-          {:halt, {Map.put(acc, export_url, err), false}}
-      end)
-
-    case sync_successful? do
-      true -> Glific.Metrics.increment("Google Sheets Sync Success")
-      false -> Glific.Metrics.increment("Google Sheets Sync Failed")
-    end
-
-    remove_stale_sheet_data(sheet, last_synced_at)
+    sync_status =
+      if sync_successful? do
+        Glific.Metrics.increment("Google Sheets Sync Success")
+        :success
+      else
+        Glific.Metrics.increment("Google Sheets Sync Failed")
+        :failed
+      end
 
     sheet_data_count =
       SheetData
       |> where([sd], sd.sheet_id == ^sheet.id)
       |> Repo.aggregate(:count)
 
-    ## we can move this to top of the function also. We can change that later.
-    update_sheet(sheet, %{last_synced_at: last_synced_at, sheet_data_count: sheet_data_count})
+    sheet
+    |> update_sheet(%{
+      last_synced_at: last_synced_at,
+      sheet_data_count: sheet_data_count,
+      sync_status: sync_status,
+      failure_reason: error_message
+    })
     |> append_warnings(media_warnings)
   end
 
@@ -238,6 +224,93 @@ defmodule Glific.Sheets do
     updated_sheet
     |> Map.put(:warnings, media_warnings)
     |> then(&{:ok, &1})
+  end
+
+  @spec handle_sheet_data(list, Sheet.t(), DateTime.t()) :: map()
+  defp handle_sheet_data(csv_content, sheet, last_synced_at) do
+    # Convert the stream to a list once to avoid consumption issues
+    csv_content_list = Enum.to_list(csv_content)
+
+    delete_query = from(sd in SheetData, where: sd.sheet_id == ^sheet.id)
+
+    Multi.new()
+    |> Multi.delete_all(:delete_sheet_data, delete_query)
+    |> Multi.run(:validate_headers, fn _, _ -> validate_headers(csv_content_list, sheet) end)
+    |> Multi.run(:process_sheet_data, fn _, _ ->
+      process_sheet_data(csv_content_list, sheet, last_synced_at)
+    end)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{process_sheet_data: result}} -> result
+      {:error, _, result, _} -> result
+    end
+  end
+
+  defp validate_headers(csv_content, sheet) do
+    case Enum.take(csv_content, 1) do
+      [{:ok, row}] ->
+        row
+        |> Map.values()
+        |> Enum.all?(&(!is_list(&1)))
+        |> case do
+          true ->
+            {:ok, true}
+
+          false ->
+            {:error,
+             handle_sync_failure(sheet, "repeated or missing headers", %{
+               headers: "Headers repeated or missing"
+             })}
+        end
+
+      {:error, err} ->
+        media_warnings = Map.new([{sheet.url, err}])
+        {:error, handle_sync_failure(sheet, inspect(err), media_warnings)}
+    end
+  end
+
+  defp process_sheet_data(csv_content, sheet, last_synced_at) do
+    csv_content
+    |> Enum.reduce_while(%{sync_successful?: true, media_warnings: %{}, error_message: nil}, fn
+      {:ok, row}, acc ->
+        %{values: row_values, errors: errors} = parse_row_values(row)
+
+        row_values
+        |> prepare_sheet_data_attrs(sheet, last_synced_at)
+        |> create_sheet_data()
+
+        {:cont, %{acc | media_warnings: Map.merge(acc.media_warnings, errors)}}
+
+      {:error, err}, acc ->
+        # If we get any error, we stop executing the current sheet further, log it.
+        media_warnings = Map.put(acc.media_warnings, sheet.url, err)
+        {:halt, handle_sync_failure(sheet, inspect(err), media_warnings)}
+    end)
+    |> case do
+      %{sync_successful?: true} = result ->
+        {:ok, result}
+
+      result ->
+        {:error, result}
+    end
+  end
+
+  defp prepare_sheet_data_attrs(values, sheet, last_synced_at) do
+    %{
+      key: values["key"],
+      row_data: values,
+      sheet_id: sheet.id,
+      organization_id: sheet.organization_id,
+      last_synced_at: last_synced_at
+    }
+  end
+
+  defp handle_sync_failure(sheet, reason, media_warnings) do
+    create_sync_fail_notification(sheet)
+
+    message = "Sheet sync failed due to #{reason}"
+    Logger.error("#{message}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id})}")
+    %{sync_successful?: false, media_warnings: media_warnings, error_message: message}
   end
 
   @spec parse_row_values(map()) :: map()
@@ -269,19 +342,6 @@ defmodule Glific.Sheets do
       end)
 
     %{values: clean_row_values, errors: errors}
-  end
-
-  ## We are removing all the rows which are not refreshed in the last sync.
-  ## We are assuming that these rows have been deleted from the sheet also.
-  @spec remove_stale_sheet_data(Sheet.t(), DateTime.t()) :: {integer(), nil | [term()]}
-  defp remove_stale_sheet_data(sheet, last_synced_at) do
-    Repo.delete_all(
-      from(sd in SheetData,
-        where:
-          sd.organization_id == ^sheet.organization_id and sd.sheet_id == ^sheet.id and
-            sd.last_synced_at != ^last_synced_at
-      )
-    )
   end
 
   @doc """
