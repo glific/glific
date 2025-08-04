@@ -8,6 +8,7 @@ defmodule Glific.Sheets.Sheet do
   alias __MODULE__
 
   alias Glific.{
+    Enums.SheetSyncStatus,
     Partners.Organization
   }
 
@@ -40,7 +41,7 @@ defmodule Glific.Sheets.Sheet do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           sheet_data_count: non_neg_integer | nil,
-          sync_status: String.t() | nil,
+          sync_status: String.t() | nil | atom(),
           failure_reason: String.t() | nil,
           updated_at: :utc_datetime | nil
         }
@@ -54,7 +55,7 @@ defmodule Glific.Sheets.Sheet do
     field(:auto_sync, :boolean, default: false)
     field(:warnings, :map, default: %{}, virtual: true)
     field(:sheet_data_count, :integer)
-    field(:sync_status, :string, default: "pending")
+    field(:sync_status, SheetSyncStatus, default: "pending")
     field(:failure_reason, :string)
 
     belongs_to(:organization, Organization)
