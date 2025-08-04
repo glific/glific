@@ -184,7 +184,7 @@ defmodule Glific.Sheets do
       |> ApiClient.get_csv_content()
       |> run_sync_transaction(sheet, last_synced_at)
 
-    sync_status = record_sync_metrics(sync_result.sync_successful?)
+    sync_status = report_sync_result(sync_result.sync_successful?, sheet)
     sheet_data_count = count_sheet_data(sheet.id)
 
     sheet
@@ -208,13 +208,14 @@ defmodule Glific.Sheets do
     String.trim_trailing(export_url, "&")
   end
 
-  @spec record_sync_metrics(boolean()) :: :success | :failed
-  defp record_sync_metrics(true) do
+  @spec report_sync_result(boolean(), Sheet.t()) :: :success | :failed
+  defp report_sync_result(true, _sheet) do
     Glific.Metrics.increment("Google Sheets Sync Success")
     :success
   end
 
-  defp record_sync_metrics(false) do
+  defp report_sync_result(false, sheet) do
+    create_sync_fail_notification(sheet)
     Glific.Metrics.increment("Google Sheets Sync Failed")
     :failed
   end
@@ -329,8 +330,6 @@ defmodule Glific.Sheets do
   end
 
   defp handle_sync_failure(sheet, reason, media_warnings) do
-    create_sync_fail_notification(sheet)
-
     message = "Sheet sync failed due to #{reason}"
     Logger.error("#{message}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id})}")
     %{sync_successful?: false, media_warnings: media_warnings, error_message: message}
