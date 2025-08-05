@@ -84,7 +84,8 @@ defmodule Glific.Filesearch do
       }
       |> Map.merge(params)
 
-    with {:ok, %{id: assistant_id}} <- ApiClient.create_assistant(attrs) |> IO.inspect(),
+    with {:ok, %{id: assistant_id}} <-
+           ApiClient.create_assistant(attrs),
          {:ok, assistant} <-
            Assistant.create_assistant(Map.put(attrs, :assistant_id, assistant_id)) do
       {:ok, %{assistant: assistant}}
