@@ -345,7 +345,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
-  @spec make_kaapi_request(String.t(), map(), String.t(), atom()) ::
+  @spec make_kaapi_request(String.t(), map(), non_neg_integer(), atom()) ::
           {:ok, map()} | {:error, String.t()}
   defp make_kaapi_request(endpoint, params, organization_id, method) do
     with {:ok, %{"api_key" => key}} <- Glific.Flows.Action.fetch_kaapi_creds(organization_id) do

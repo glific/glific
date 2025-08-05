@@ -4,6 +4,7 @@ defmodule Glific.FilesearchTest do
   """
 
   alias Glific.Filesearch.Assistant
+  alias Glific.Partners
 
   alias Glific.{
     Filesearch,
@@ -935,5 +936,230 @@ defmodule Glific.FilesearchTest do
 
     {:error, _} =
       Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2", attrs.user.organization_id)
+  end
+
+  describe "assistant operations when Kaapi is enabled" do
+    test "create_assistant/1 successfully creates assistant via KAAPI", %{user: user} do
+      enable_kaapi(%{organization_id: user.organization_id})
+
+      FunWithFlags.enable(:is_kaapi_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "This is not a secret" <> "api/v1/assistant"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              error: nil,
+              data: %{
+                assistant_id: "asst_123",
+                name: "Assistant-d03a37f8",
+                model: "gpt-4o",
+                temperature: 1
+              },
+              success: true
+            }
+          }
+      end)
+
+      result = auth_query_gql_by(:create_assistant, user, variables: %{})
+      assert {:ok, query_data} = result
+
+      assert "Assistant" <> _ =
+               query_data.data["createAssistant"]["assistant"]["name"]
+    end
+
+    test "update_assistant/2 updates assistant via KAAPI", attrs do
+      enable_kaapi(%{organization_id: attrs.organization_id})
+
+      FunWithFlags.enable(:is_kaapi_enabled,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
+
+      valid_attrs = %{
+        assistant_id: "asst_aaa",
+        name: "new assistant",
+        temperature: 1,
+        model: "gpt-4o",
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, assistant} = Assistant.create_assistant(valid_attrs)
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :patch,
+          url: "This is not a secret" <> "api/v1/assistant/asst_aaa"
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              error: nil,
+              data: %{
+                assistant_id: "asst_aaa",
+                name: "new assistant",
+                model: "gpt-4o",
+                temperature: 1.8,
+                instructions: "String should have at least 10 characters"
+              },
+              success: true
+            }
+          }
+      end)
+
+      {:ok, query_data} =
+        auth_query_gql_by(:update_assistant, attrs.user,
+          variables: %{
+            "input" => %{
+              "name" => assistant.name,
+              "instructions" => "String should have at least 10 characters",
+              "temperature" => 1.8
+            },
+            "id" => assistant.id
+          }
+        )
+
+      assert {:ok, %{temperature: 1.8}} = Assistant.get_assistant(assistant.id)
+
+      assert %{"name" => "new assistant", "temperature" => 1.8} =
+               query_data.data["updateAssistant"]["assistant"]
+    end
+
+    test "delete_assistant/1 removes assistant via KAAPI", attrs do
+      enable_kaapi(%{organization_id: attrs.organization_id})
+
+      FunWithFlags.enable(:is_kaapi_enabled,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :delete} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              error: nil,
+              data: %{
+                assistant_id: "asst_abc",
+                deleted: true
+              },
+              success: true
+            }
+          }
+      end)
+
+      valid_attrs = %{
+        vector_store_id: "vs_abcdef",
+        name: "VectorStore 1",
+        files: %{},
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
+
+      valid_attrs = %{
+        assistant_id: "asst_abc",
+        name: "new assistant",
+        temperature: 1,
+        model: "gpt-4o",
+        organization_id: attrs.organization_id,
+        vector_store_id: vector_store.id
+      }
+
+      {:ok, assistant} = Assistant.create_assistant(valid_attrs)
+
+      result =
+        auth_query_gql_by(:delete_assistant, attrs.user,
+          variables: %{
+            "id" => assistant.id
+          }
+        )
+
+      assert {:ok, query_data} = result
+      assert query_data.data["deleteAssistant"]["assistant"]["name"] == "new assistant"
+    end
+
+    # Error cases
+    test "create_assistant/1 handles kaapi error response", %{user: user} do
+      enable_kaapi(%{organization_id: user.organization_id})
+
+      FunWithFlags.enable(:is_kaapi_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "This is not a secret" <> "api/v1/assistant"} ->
+          %Tesla.Env{
+            status: 500,
+            body: %{}
+          }
+      end)
+
+      result =
+        auth_query_gql_by(:create_assistant, user, variables: %{})
+
+      assert {:ok, query_data} = result
+      assert length(query_data.errors) == 1
+    end
+
+    test "update_assistant/2 handles update errors", %{user: user} do
+      enable_kaapi(%{organization_id: user.organization_id})
+
+      FunWithFlags.enable(:is_kaapi_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :patch} ->
+          %Tesla.Env{
+            status: 400,
+            body: %{
+              error: "('body', 'instructions'): String should have at least 10 characters",
+              data: nil,
+              metadata: nil,
+              success: false
+            }
+          }
+      end)
+
+      result =
+        auth_query_gql_by(:update_assistant, user,
+          variables: %{
+            "input" => %{
+              "name" => "name",
+              "instructions" => "",
+              "temperature" => 1.8
+            },
+            "id" => 11
+          }
+        )
+
+      assert {:ok, query_data} = result
+      assert query_data.data["updateAssistant"]["errors"] != nil
+    end
+  end
+
+  defp enable_kaapi(attrs) do
+    {:ok, credential} =
+      Partners.create_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "kaapi",
+        keys: %{},
+        secrets: %{
+          "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+        }
+      })
+
+    valid_update_attrs = %{
+      keys: %{},
+      secrets: %{
+        "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+      },
+      is_active: true,
+      organization_id: attrs.organization_id,
+      shortcode: "kaapi"
+    }
+
+    Partners.update_credential(credential, valid_update_attrs)
   end
 end
