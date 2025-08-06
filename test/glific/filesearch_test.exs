@@ -64,6 +64,14 @@ defmodule Glific.FilesearchTest do
     "assets/gql/filesearch/list_models.gql"
   )
 
+  setup do
+    FunWithFlags.disable(:is_kaapi_enabled,
+      for_actor: %{organization_id: 1}
+    )
+
+    :ok
+  end
+
   test "upload_file/1, uploads the file successfully", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://api.openai.com/v1/files"} ->

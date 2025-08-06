@@ -348,7 +348,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   @spec make_kaapi_request(String.t(), map(), non_neg_integer(), atom()) ::
           {:ok, map()} | {:error, String.t()}
   defp make_kaapi_request(endpoint, params, organization_id, method) do
-    with {:ok, %{"api_key" => key}} <- Glific.Flows.Action.fetch_kaapi_creds(organization_id) do
+    with {:ok, %{"api_key" => key}} <- fetch_kaapi_creds(organization_id) do
       header = [
         {"X-API-KEY", key},
         {"Content-Type", "application/json"}
@@ -367,8 +367,25 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     end
   end
 
-  @spec org_id() :: String.t()
+  @spec org_id() :: non_neg_integer()
   defp org_id do
     Glific.Partners.Saas.organization_id()
+  end
+
+  @doc """
+  fetch the kaapi credentials
+  """
+  @spec fetch_kaapi_creds(non_neg_integer) :: nil | {:ok, any} | {:error, any}
+  def fetch_kaapi_creds(organization_id) do
+    organization = Glific.Partners.organization(organization_id)
+
+    organization.services["kaapi"]
+    |> case do
+      nil ->
+        {:error, "Kaapi is not active"}
+
+      credentials ->
+        {:ok, credentials.secrets}
+    end
   end
 end
