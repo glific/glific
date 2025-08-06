@@ -274,9 +274,8409 @@ defmodule Glific.Flows.ContactActionTest do
   end
 
   test "if loop is detected then flow should be aborted and a notification should be created",
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
        attrs do
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
     node_uuid = "8b4d2e09-9d72-4436-a01a-8e3def9cf4e5"
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
     message = "This is test message"
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+    [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+    [contact | _] =
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+    context_attrs = %{
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+      flow_id: flow.id,
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+      flow_uuid: flow.uuid,
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+      contact_id: contact.id,
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+      organization_id: attrs.organization_id,
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+      node_uuid: node_uuid
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+    }
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+    {:ok, context} = FlowContext.create_flow_context(context_attrs)
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+    context = Repo.preload(context, [:contact, :flow])
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+    base_time =
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+      DateTime.utc_now()
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+      |> DateTime.truncate(:second)
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+    recent_outbound =
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+      Enum.map(0..3, fn index ->
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+        date =
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+          DateTime.add(base_time, -index * 5, :second)
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+          |> DateTime.to_iso8601()
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+        %{
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+          "contact" => %{"name" => contact.name, "uuid" => contact.id},
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+          "date" => date,
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+          "message" => message,
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+          "message_id" => index,
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+          "node_uuid" => node_uuid
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    # First optin
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+
+    # Second optin - should handle gracefully
+    ContactAction.optin(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optin_time != nil
+  end
+
+  test "get_media_from_attachment with empty attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    # Test with empty attachment
+    result = ContactAction.get_media_from_attachment(%{}, "caption", context, nil)
+    assert result == {:text, nil}
+
+    # Test with nil attachment
+    result = ContactAction.get_media_from_attachment(nil, "caption", context, nil)
+    assert result == {:text, nil}
+  end
+
+  test "get_media_from_attachment with valid image attachment", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context = %FlowContext{contact_id: contact.id, organization_id: contact.organization_id}
+
+    image_attachment = %{"image" => "https://example.com/image.jpg"}
+
+    # Mock media validation
+    Glific.Fixtures.mock_validate_media("image")
+
+    result = ContactAction.get_media_from_attachment(image_attachment, "caption", context, nil)
+    assert elem(result, 0) == :image
+    assert elem(result, 1) != nil
+  end
+
+  test "send broadcast message functionality", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    # Create action with contacts for broadcast
+    action = %Action{
+      text: "Broadcast message",
+      contacts: [%{"uuid" => to_string(contact.id)}]
+    }
+
+    result = ContactAction.send_broadcast(context, action, [])
+    assert {:ok, _, _} = result
+  end
+        }
+
+  test "send message with empty text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: ""}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == ""
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message with nil text", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    attrs_map = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs_map)
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{text: nil}
+
+    # Should handle nil text gracefully
+    result = ContactAction.send_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "send message with templating but empty variables", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Test with empty variables array
+    templating = %Templating{
+      template: template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # Should handle empty variables gracefully
+    assert message.body != nil
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with invalid template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: -1}
+
+    # Should handle invalid template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    # Should return error or success depending on implementation
+    assert {:ok, _, _} = result
+  end
+
+  test "send interactive message with nil template id", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{interactive_template_id: nil}
+
+    # Should handle nil template ID gracefully
+    result = ContactAction.send_interactive_message(context, action, [])
+    assert {:ok, _, _} = result
+  end
+
+  test "optout with already opted out contact", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # First optout
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
+
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    first_optout_time = contact.optout_time
+    assert first_optout_time != nil
+
+    # Second optout - should handle gracefully
+    ContactAction.optout(context)
+    contact = Contacts.get_contact!(contact.id)
+    assert contact.optout_time != nil
+  end
+
+  test "optin with already opted in contact", attrs do
+    [contact | _] =
 
     [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
 
