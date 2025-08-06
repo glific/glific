@@ -236,13 +236,15 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  defp do_execute(%{type: "has_pattern"} = c, _context, %{type: type} = msg)
-       when type in @text_types,
-       do:
-         c.arguments
-         |> strip()
-         |> Regex.compile!()
-         |> Regex.match?(strip(msg))
+  def do_execute(%{type: "has_pattern", arguments: pattern} = c, %{type: type} = msg) do
+    with true <- type in @text_types,
+         stripped_pattern <- strip(pattern),
+         {:ok, regex} <- Regex.compile(stripped_pattern) do
+      Regex.match?(regex, strip(msg))
+    else
+      _ -> false
+    end
+  end
 
   defp do_execute(%{type: "has_beginning"} = c, _context, %{type: type} = msg)
        when type in @text_types do
