@@ -458,7 +458,7 @@ defmodule Glific.Contacts do
         end
 
       contact ->
-        # If either the sender name have changed or the provider is maytapi we need to update the contact
+        # If either the sender name have changed or if we need to update contact_type, we need to update the contact
         case get_contact_update_attrs(contact, sender) do
           nil ->
             {:ok, contact}
