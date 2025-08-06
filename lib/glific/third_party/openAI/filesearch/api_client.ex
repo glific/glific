@@ -5,8 +5,12 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   alias Tesla.Multipart
   require Logger
   @endpoint "https://api.openai.com/v1"
-
   use Tesla
+
+  alias Glific.{
+    Partners,
+    Partners.Saas
+  }
 
   @spec headers() :: list()
   defp headers do
@@ -369,7 +373,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
 
   @spec org_id() :: non_neg_integer()
   defp org_id do
-    Glific.Partners.Saas.organization_id()
+    Saas.organization_id()
   end
 
   @doc """
@@ -377,7 +381,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   """
   @spec fetch_kaapi_creds(non_neg_integer) :: nil | {:ok, any} | {:error, any}
   def fetch_kaapi_creds(organization_id) do
-    organization = Glific.Partners.organization(organization_id)
+    organization = Partners.organization(organization_id)
 
     organization.services["kaapi"]
     |> case do

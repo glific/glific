@@ -1145,6 +1145,54 @@ defmodule Glific.FilesearchTest do
       assert {:ok, query_data} = result
       assert query_data.data["updateAssistant"]["errors"] != nil
     end
+
+    test "import_assistant/2, valid assistant but without vector_store", attrs do
+      enable_kaapi(%{organization_id: attrs.organization_id})
+
+      FunWithFlags.enable(:is_kaapi_enabled,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :post,
+          url: "This is not a secretapi/v1/assistant/asst_ljpFv60NIlSmXZdnVYHMNuq2/ingest"
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              error: nil,
+              data: %{
+                id: 27,
+                name: "Assistant-9924f8d1",
+                instructions: "test",
+                organization_id: 1,
+                model: "gpt-4o",
+                vector_store_ids: [],
+                temperature: 0.07,
+                assistant_id: "asst_utiXX5DfXK1hwVp9qRSVRTrX",
+                inserted_at: "2025-08-06T05:12:35.819836",
+                updated_at: "2025-08-06T05:12:35.819848",
+                project_id: 1,
+                deleted_at: nil,
+                max_num_results: 20,
+                is_deleted: false
+              },
+              metadata: nil,
+              success: true
+            }
+          }
+      end)
+
+      {:ok,
+       %Assistant{
+         vector_store_id: nil,
+         name: "Assistant-9924f8d1",
+         temperature: 0.07,
+         assistant_id: "asst_utiXX5DfXK1hwVp9qRSVRTrX"
+       }} =
+        Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2", attrs.user.organization_id)
+    end
   end
 
   defp enable_kaapi(attrs) do

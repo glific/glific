@@ -83,6 +83,9 @@ defmodule Glific.Flows.Webhook do
     webhook_log
   end
 
+  @doc """
+  Update a webhook log with the given message.
+  """
   @spec update_log(WebhookLog.t() | non_neg_integer, map()) ::
           {:ok, WebhookLog.t()}
   def update_log(webhook_log_id, message) when is_integer(webhook_log_id) do
@@ -109,9 +112,6 @@ defmodule Glific.Flows.Webhook do
     webhook_log |> WebhookLog.update_webhook_log(attrs)
   end
 
-  @doc """
-  this is when we are storing the return from a function call
-  """
   def update_log(webhook_log, result) when is_map(result) do
     attrs = %{
       response_json: result,

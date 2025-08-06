@@ -208,21 +208,35 @@ defmodule Glific.Filesearch do
   def import_assistant(assistant_id, org_id) do
     Repo.put_process_state(org_id)
 
-    with {:ok, assistant_data} <- ApiClient.retrieve_assistant(assistant_id),
-         {:ok, _} <- filesearch_enabled?(assistant_data) do
-      vector_store_id = List.first(assistant_data.tool_resources.file_search.vector_store_ids)
-
-      if is_nil(vector_store_id) do
+    with {:ok, assistant_data} <- ApiClient.retrieve_assistant(assistant_id) do
+      if FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: org_id}) do
+        # For KAAPI, directly create assistant without filesearch check,
+        # because kaapi has a different response format
         Assistant.create_assistant(
           %{
             assistant_id: assistant_id,
-            inserted_at: DateTime.from_unix!(assistant_data.created_at),
             organization_id: Repo.get_organization_id()
           }
           |> Map.merge(assistant_data)
         )
       else
-        create_assistant_and_vector_store(vector_store_id, assistant_data)
+        # For OpenAI, continue with filesearch check
+        with {:ok, _} <- filesearch_enabled?(assistant_data) do
+          vector_store_id = List.first(assistant_data.tool_resources.file_search.vector_store_ids)
+
+          if is_nil(vector_store_id) do
+            Assistant.create_assistant(
+              %{
+                assistant_id: assistant_id,
+                inserted_at: DateTime.from_unix!(assistant_data.created_at),
+                organization_id: Repo.get_organization_id()
+              }
+              |> Map.merge(assistant_data)
+            )
+          else
+            create_assistant_and_vector_store(vector_store_id, assistant_data)
+          end
+        end
       end
     end
   end
