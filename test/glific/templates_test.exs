@@ -2220,7 +2220,6 @@ defmodule Glific.TemplatesTest do
           "data" => "Your train ticket no. {{1}}",
           "elementName" => "ticket_update_status",
           "id" => whatspp_hsm_uuid,
-          "footer" => "footer",
           "languageCode" => "en",
           "languagePolicy" => "deterministic",
           "master" => true,
