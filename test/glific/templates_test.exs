@@ -2206,4 +2206,63 @@ defmodule Glific.TemplatesTest do
              "Template conference_ticket_status has been failed"
            ] = messages
   end
+
+  test "attach_footer adds the footer to the template if provided", attrs do
+    whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9b94e53b4b"
+
+    body =
+      Jason.encode!(%{
+        "status" => "success",
+        "token" => "new_partner_token",
+        "template" => %{
+          "category" => "ACCOUNT_UPDATE",
+          "createdOn" => 1_595_904_220_495,
+          "data" => "Your train ticket no. {{1}}",
+          "elementName" => "ticket_update_status",
+          "id" => whatspp_hsm_uuid,
+          "languageCode" => "en",
+          "languagePolicy" => "deterministic",
+          "master" => true,
+          "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
+          "modifiedOn" => 1_595_904_220_495,
+          "status" => "PENDING",
+          "templateType" => "TEXT",
+          "vertical" => "ACTION_BUTTON"
+        }
+      })
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: body
+        }
+
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})
+        }
+    end)
+
+    language = language_fixture()
+
+    attrs = %{
+      body: "Your train ticket no. {{1}}",
+      label: "New Label",
+      language_id: language.id,
+      is_hsm: true,
+      footer: "footer",
+      type: :text,
+      shortcode: "ticket_update_status",
+      category: "ACCOUNT_UPDATE",
+      example: "Your train ticket no. [1234]",
+      organization_id: attrs.organization_id
+    }
+
+    assert {:ok, %SessionTemplate{} = session_template} =
+             Templates.create_session_template(attrs)
+
+    assert session_template.footer == "footer"
+  end
 end
