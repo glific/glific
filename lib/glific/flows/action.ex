@@ -1132,7 +1132,7 @@ defmodule Glific.Flows.Action do
     do: action.enter_flow_uuid
 
   @spec fetch_kaapi_creds(non_neg_integer) :: nil | {:ok, any} | {:error, any}
-  defp fetch_kaapi_creds(organization_id) do
+  def fetch_kaapi_creds(organization_id) do
     organization = Partners.organization(organization_id)
 
     organization.services["kaapi"]
