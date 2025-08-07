@@ -2206,4 +2206,18 @@ defmodule Glific.TemplatesTest do
              "Template conference_ticket_status has been failed"
            ] = messages
   end
+
+  test "create_session_template/1 with footer adds it to the template", attrs do
+    language = language_fixture()
+
+    new_attrs =
+      attrs
+      |> Map.merge(@valid_attrs)
+      |> Map.merge(%{language_id: language.id, footer: "footer"})
+
+    assert {:ok, %SessionTemplate{} = session_template_data} =
+             Templates.create_session_template(new_attrs)
+
+    assert session_template_data.footer == "footer"
+  end
 end
