@@ -331,7 +331,7 @@ defmodule Glific.Sheets do
 
   defp handle_sync_failure(sheet, reason, media_warnings) do
     message = "Sheet sync failed due to #{reason}"
-    Logger.error("#{message}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id})}")
+    Logger.error("#{message}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id}")
     %{sync_successful?: false, media_warnings: media_warnings, error_message: message}
   end
 
