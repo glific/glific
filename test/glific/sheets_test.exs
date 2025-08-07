@@ -141,55 +141,383 @@ defmodule Glific.SheetsTest do
       assert t2.row_data["key"] == "1/10/2026"
       assert t2.row_data["message_english"] == "Hi welcome to Glific 4"
     end
+  end
 
-    test "create_sheet/1, Handling case where some column having no headers", %{
-      organization_id: organization_id
-    } do
+  describe "sync_sheet_data/1" do
+    setup do
+      # Default success mock for CSV content
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "Key,Val,,\r\napple,3,3,4"
+            body: "Key,Value,Message\r\nkey1,val1,Hello\r\nkey2,val2,World"
           }
       end)
 
-      attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
-
-      assert {:ok, %Sheet{} = sheet} = Sheets.create_sheet(attrs)
-
-      [h | _] =
-        SheetData
-        |> where([sd], sd.sheet_id == ^sheet.id)
-        |> Repo.all([])
-
-      assert h.row_data["key"] == "apple"
-      assert h.row_data["val"] == "3"
-      assert h.row_data[""] == ["3", "4"]
+      :ok
     end
 
-    test "create_sheet/1, Handling case where multiple headers having same name", %{
-      organization_id: organization_id
-    } do
+    test "handles successful sync with valid data", %{organization_id: organization_id} do
+      # Create a sheet to sync
+      attrs = %{
+        type: "READ",
+        label: "sync test sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      # Sync the sheet
+      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+
+      # Check sheet was updated correctly
+      assert updated_sheet.sync_status == :success
+      assert updated_sheet.sheet_data_count == 2
+      assert updated_sheet.last_synced_at != nil
+      assert updated_sheet.failure_reason == nil
+
+      # Check sheet data was created correctly
+      sheet_data = SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.all()
+      assert length(sheet_data) == 2
+
+      # Check specific row data
+      first_row = Enum.find(sheet_data, fn sd -> sd.key == "key1" end)
+      assert first_row.row_data["key"] == "key1"
+      assert first_row.row_data["value"] == "val1"
+      assert first_row.row_data["message"] == "Hello"
+    end
+
+    test "handles write-only sheets without syncing", %{organization_id: organization_id} do
+      # Create a WRITE type sheet
+      attrs = %{
+        type: "WRITE",
+        label: "write only sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      # WRITE sheets should return immediately without syncing
+      assert {:ok, sheet} = Sheets.sync_sheet_data(sheet)
+
+      # No sheet data should be created
+      sheet_data_count =
+        SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
+
+      assert sheet_data_count == 0
+    end
+
+    test "handles repeated headers", %{organization_id: organization_id} do
+      # Mock a CSV with invalid headers (repeated headers)
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "Key,Val,same,samed,same\r\napple,3,3,4,2"
+            body: "Key,Key,Value\r\nkey1,val1,Hello\r\nkey2,val2,World"
           }
       end)
 
-      attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
+      attrs = %{
+        type: "READ",
+        label: "invalid headers sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
 
-      assert {:ok, %Sheet{} = sheet} = Sheets.create_sheet(attrs)
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
 
-      [h | _] =
-        SheetData
-        |> where([sd], sd.sheet_id == ^sheet.id)
-        |> Repo.all([])
+      # Sync should fail due to invalid headers
+      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+      assert updated_sheet.sync_status == :failed
 
-      assert h.row_data["key"] == "apple"
-      assert h.row_data["val"] == "3"
-      assert h.row_data["same"] == ["3", "2"]
+      assert updated_sheet.failure_reason =~
+               "Sheet sync failed due to repeated or missing headers"
+
+      assert updated_sheet.warnings == %{headers: "Headers repeated or missing"}
+
+      # No sheet data should be created
+      sheet_data_count =
+        SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
+
+      assert sheet_data_count == 0
+    end
+
+    test "handles missing headers", %{organization_id: organization_id} do
+      # Mock a CSV with invalid headers (missing headers)
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: "Key,,\r\nkey1,val1,Hello\r\nkey2,val2,World"
+          }
+      end)
+
+      attrs = %{
+        type: "READ",
+        label: "invalid headers sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      # Sync should fail due to invalid headers
+      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+      assert updated_sheet.sync_status == :failed
+
+      assert updated_sheet.failure_reason =~
+               "Sheet sync failed due to repeated or missing headers"
+
+      assert updated_sheet.warnings == %{headers: "Headers repeated or missing"}
+
+      # No sheet data should be created
+      sheet_data_count =
+        SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
+
+      assert sheet_data_count == 0
+    end
+
+    test "handles CSV parsing errors", %{organization_id: organization_id} do
+      # Mock a CSV with parsing error
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: "Key,Value,Message\r\n\"unclosed quote,val1,Hello\r\nkey2,val2,World"
+          }
+      end)
+
+      attrs = %{
+        type: "READ",
+        label: "parse error sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      # Should handle the CSV parsing error gracefully
+      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+      assert updated_sheet.sync_status == :failed
+      assert updated_sheet.failure_reason =~ "Sheet sync failed"
+    end
+
+    test "handles HTTP errors when fetching CSV", %{organization_id: organization_id} do
+      # Mock an HTTP failure
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 500,
+            body: "Internal Server Error"
+          }
+      end)
+
+      attrs = %{
+        type: "READ",
+        label: "http error sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      # Should handle the HTTP error gracefully
+      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+      assert updated_sheet.sync_status == :failed
+
+      assert updated_sheet.failure_reason ==
+               "Sheet sync failed due to unknown error or empty content"
+    end
+
+    test "handles media validation in sheet content", %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "http://invalid-domain-for-testing.xyz/bad.mp4"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/octet-stream"}]
+          }
+
+        %{method: :get, url: "http://example.com/video.mp4"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "video/mp4"}]
+          }
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "Key,Value,MediaUrl\r\nkey1,val1,http://invalid-domain-for-testing.xyz/bad.mp4\r\nkey2,val2,http://example.com/video.mp4"
+          }
+      end)
+
+      attrs = %{
+        type: "READ",
+        label: "media validation sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      # Run sync and check results
+      {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+
+      # We can verify the sheet data was created correctly
+      sheet_data = SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.all()
+      assert length(sheet_data) == 2
+
+      # The sync should complete, though there should be warnings
+      assert updated_sheet.sync_status == :success
+
+      assert updated_sheet.warnings == %{
+               "http://invalid-domain-for-testing.xyz/bad.mp4" =>
+                 "Media content-type is not valid"
+             }
+    end
+
+    test "handles invalid CSV format gracefully", %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            # This CSV has no headers, which will cause validation to fail
+            body: "row1value1,row1value2\r\nrow2value1,row2value2"
+          }
+      end)
+
+      attrs = %{
+        type: "READ",
+        label: "invalid csv format sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      # Sync should handle the invalid format gracefully but won't insert the data to the table
+      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+      assert updated_sheet.sync_status == :success
+
+      # Verify no data was created
+      sheet_data_count =
+        SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
+
+      assert sheet_data_count == 0
+    end
+
+    test "cleans up existing sheet data before syncing", %{organization_id: organization_id} do
+      # Create a sheet
+      attrs = %{
+        type: "READ",
+        label: "cleanup test sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      # Create some initial sheet data
+      {:ok, _} =
+        Sheets.create_sheet_data(%{
+          key: "old_key",
+          row_data: %{"key" => "old_key", "value" => "old_value"},
+          sheet_id: sheet.id,
+          organization_id: organization_id,
+          last_synced_at: DateTime.utc_now()
+        })
+
+      # Verify initial data exists
+      initial_count = SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
+      assert initial_count == 1
+
+      # Sync sheet
+      assert {:ok, _updated_sheet} = Sheets.sync_sheet_data(sheet)
+
+      # Check that old data was deleted and new data was created
+      sheet_data = SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.all()
+      assert length(sheet_data) == 2
+
+      # Verify old data is gone
+      refute Enum.find(sheet_data, fn sd -> sd.key == "old_key" end)
+
+      # Verify new data exists
+      new_data = Enum.find(sheet_data, fn sd -> sd.key == "key1" end)
+      assert new_data != nil
+    end
+
+    test "preserves existing sheet data when resync fails", %{organization_id: organization_id} do
+      # First create a sheet with valid data
+      attrs = %{
+        type: "READ",
+        label: "data preservation test sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      # Setup initial successful sync
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: "Key,Value,Message\r\nkey1,val1,Initial data\r\nkey2,val2,Should be preserved"
+          }
+      end)
+
+      # Create and sync the sheet for the first time
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+      {:ok, sheet_after_first_sync} = Sheets.sync_sheet_data(sheet)
+
+      # Verify initial data exists
+      initial_data = SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.all()
+      assert length(initial_data) == 2
+
+      # Store the IDs of the initial data
+      initial_data_ids = Enum.map(initial_data, fn data -> data.id end)
+
+      # Now mock a failing sync
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            # This invalid format will cause the sync to fail
+            body: "Invalid CSV format that will cause a failure"
+          }
+      end)
+
+      # Attempt to resync which should fail
+      {:ok, sheet_after_failed_sync} = Sheets.sync_sheet_data(sheet_after_first_sync)
+
+      # Verify the sync failed
+      assert sheet_after_failed_sync.sync_status == :failed
+      assert sheet_after_failed_sync.failure_reason != nil
+
+      # Check that the original data is still there
+      data_after_failed_sync = SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.all()
+
+      # The data should be preserved - same count as before
+      assert length(data_after_failed_sync) == 2
+
+      # Verify it's the same data as before by checking IDs
+      preserved_data_ids = Enum.map(data_after_failed_sync, fn data -> data.id end)
+      assert Enum.sort(initial_data_ids) == Enum.sort(preserved_data_ids)
+
+      # Double check the content is also preserved
+      assert Enum.any?(data_after_failed_sync, fn data ->
+               data.key == "key1" && data.row_data["message"] == "Initial data"
+             end)
     end
   end
 end
