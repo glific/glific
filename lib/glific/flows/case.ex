@@ -236,7 +236,7 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  defp do_execute(%{type: "has_pattern", arguments: pattern} = c, %{type: type} = msg) do
+  defp do_execute(%{type: "has_pattern", arguments: pattern} = _c, _context, %{type: type} = msg) do
     with true <- type in @text_types,
          stripped_pattern <- strip(pattern),
          {:ok, regex} <- Regex.compile(stripped_pattern) do
