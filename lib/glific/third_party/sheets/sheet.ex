@@ -55,7 +55,7 @@ defmodule Glific.Sheets.Sheet do
     field(:auto_sync, :boolean, default: false)
     field(:warnings, :map, default: %{}, virtual: true)
     field(:sheet_data_count, :integer)
-    field(:sync_status, SheetSyncStatus, default: "pending")
+    field(:sync_status, SheetSyncStatus, default: :pending)
     field(:failure_reason, :string)
 
     belongs_to(:organization, Organization)
