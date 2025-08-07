@@ -211,13 +211,49 @@ defmodule Glific.SheetsTest do
       assert sheet_data_count == 0
     end
 
-    test "handles headers with invalid format", %{organization_id: organization_id} do
-      # Mock a CSV with invalid headers (repeated headers as nested list)
+    test "handles repeated headers", %{organization_id: organization_id} do
+      # Mock a CSV with invalid headers (repeated headers)
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
             body: "Key,Key,Value\r\nkey1,val1,Hello\r\nkey2,val2,World"
+          }
+      end)
+
+      attrs = %{
+        type: "READ",
+        label: "invalid headers sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      # Sync should fail due to invalid headers
+      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+      assert updated_sheet.sync_status == :failed
+
+      assert updated_sheet.failure_reason =~
+               "Sheet sync failed due to repeated or missing headers"
+
+      assert updated_sheet.warnings == %{headers: "Headers repeated or missing"}
+
+      # No sheet data should be created
+      sheet_data_count =
+        SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
+
+      assert sheet_data_count == 0
+    end
+
+    test "handles missing headers", %{organization_id: organization_id} do
+      # Mock a CSV with invalid headers (missing headers)
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: "Key,,\r\nkey1,val1,Hello\r\nkey2,val2,World"
           }
       end)
 
