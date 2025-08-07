@@ -2207,7 +2207,7 @@ defmodule Glific.TemplatesTest do
            ] = messages
   end
 
-  test "create_session_template/1 with footer adds it to the template", attrs do
+  test "attach_footer adds the footer to the template if provided", attrs do
     language = language_fixture()
 
     new_attrs =
