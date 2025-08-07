@@ -203,7 +203,7 @@ defmodule Glific.Flows.ContactAction do
     attachment = Localization.get_translation(context, action, :attachments)
 
     # This will resolve expressions also to corresponding url value
-    {type, url} = get_attachement_details(attachment, context)
+    {type, url} = get_attachment_details(attachment, context)
 
     with {false, context} <- has_loops?(context, body, messages, url) do
       do_send_message(context, action, messages, %{
@@ -259,7 +259,7 @@ defmodule Glific.Flows.ContactAction do
   def get_media_from_attachment(attachment, caption, context, cid, attachment_type) do
     {type, url} =
       if is_nil(attachment_type) do
-        get_attachement_details(attachment, context)
+        get_attachment_details(attachment, context)
       else
         attachment_type
       end
@@ -491,8 +491,8 @@ defmodule Glific.Flows.ContactAction do
     end
   end
 
-  @spec get_attachement_details(String.t() | nil | map(), FlowContext.t()) :: {atom(), any()}
-  defp get_attachement_details(attachment, context) do
+  @spec get_attachment_details(String.t() | nil | map(), FlowContext.t()) :: {atom(), any()}
+  defp get_attachment_details(attachment, context) do
     if attachment == %{} or is_nil(attachment) do
       {:text, nil}
     else
