@@ -852,22 +852,22 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
            conn: conn,
            message_params: message_params
          } do
-      # handling a message from gupshup, so that the phone number will be already existing
+      # handling a message from maytapi, so that the phone number will be already existing
       # in contacts table.
       text_webhook_params =
         @media_message_webhook
         |> put_in(["user", "phone"], get_in(message_params, ["payload", "sender", "phone"]))
 
-      gupshup_conn = post(conn, "/maytapi", text_webhook_params)
+      maytapi_conn = post(conn, "/maytapi", text_webhook_params)
 
-      assert gupshup_conn.halted
+      assert maytapi_conn.halted
 
       bsp_message_id = get_in(text_webhook_params, ["message", "id"])
 
       {:ok, message} =
         Repo.fetch_by(WAMessage, %{
           bsp_id: bsp_message_id,
-          organization_id: gupshup_conn.assigns[:organization_id]
+          organization_id: maytapi_conn.assigns[:organization_id]
         })
 
       message = Repo.preload(message, [:media, :contact])
@@ -893,22 +893,22 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
            conn: conn,
            message_params: message_params
          } do
-      # handling a message from gupshup, so that the phone number will be already existing
+      # handling a message from maytapi, so that the phone number will be already existing
       # in contacts table.
       text_webhook_params =
         @media_message_webhook
         |> put_in(["user", "phone"], get_in(message_params, ["payload", "sender", "phone"]))
 
-      gupshup_conn = post(conn, "/maytapi", text_webhook_params)
+      maytapi_conn = post(conn, "/maytapi", text_webhook_params)
 
-      assert gupshup_conn.halted
+      assert maytapi_conn.halted
 
       bsp_message_id = get_in(text_webhook_params, ["message", "id"])
 
       {:ok, message} =
         Repo.fetch_by(WAMessage, %{
           bsp_id: bsp_message_id,
-          organization_id: gupshup_conn.assigns[:organization_id]
+          organization_id: maytapi_conn.assigns[:organization_id]
         })
 
       message = Repo.preload(message, [:media, :contact])
