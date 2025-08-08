@@ -847,6 +847,99 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.contact.contact_type == "WABA+WA"
     end
 
+    test "Updating the contact_type to WABA+WA due to sender contact already existing as a WA contact",
+         %{
+           conn: conn,
+           message_params: message_params
+         } do
+      # handling a message from maytapi, so that the phone number will be already existing
+      # in contacts table.
+      text_webhook_params =
+        @media_message_webhook
+        |> put_in(["user", "phone"], get_in(message_params, ["payload", "sender", "phone"]))
+
+      maytapi_conn = post(conn, "/maytapi", text_webhook_params)
+
+      assert maytapi_conn.halted
+
+      bsp_message_id = get_in(text_webhook_params, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
+          organization_id: maytapi_conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:media, :contact])
+
+      assert message.contact.contact_type == "WA"
+
+      gupshup_conn = post(conn, "/gupshup", message_params)
+      assert gupshup_conn.halted
+      bsp_message_id = get_in(message_params, ["payload", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: gupshup_conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:contact])
+      assert message.contact.contact_type == "WABA+WA"
+    end
+
+    test "Updating the contact_type to WABA+WA due to sender contact already existing as a WA contact, but no name update",
+         %{
+           conn: conn,
+           message_params: message_params
+         } do
+      # handling a message from maytapi, so that the phone number will be already existing
+      # in contacts table.
+      text_webhook_params =
+        @media_message_webhook
+        |> put_in(["user", "phone"], get_in(message_params, ["payload", "sender", "phone"]))
+
+      maytapi_conn = post(conn, "/maytapi", text_webhook_params)
+
+      assert maytapi_conn.halted
+
+      bsp_message_id = get_in(text_webhook_params, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(WAMessage, %{
+          bsp_id: bsp_message_id,
+          organization_id: maytapi_conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:media, :contact])
+
+      assert message.contact.contact_type == "WA"
+      name_a = message.contact.name
+
+      # deletes the name from the map
+      message_params = %{
+        message_params
+        | "payload" => %{
+            message_params["payload"]
+            | "sender" => Map.delete(message_params["payload"]["sender"], "name")
+          }
+      }
+
+      gupshup_conn = post(conn, "/gupshup", message_params)
+      assert gupshup_conn.halted
+      bsp_message_id = get_in(message_params, ["payload", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: gupshup_conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:contact])
+      assert message.contact.contact_type == "WABA+WA"
+      assert name_a == message.contact.name
+    end
+
     test "Incoming media message should be stored in the database, but group doesnt exist, so creates group",
          %{
            conn: conn

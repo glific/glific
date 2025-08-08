@@ -272,7 +272,8 @@ defmodule Glific.Seeds.SeedsMigration do
             attrs,
             %{
               name: "Glific Simulator " <> name,
-              phone: simulator_phone_prefix <> phone
+              phone: simulator_phone_prefix <> phone,
+              contact_type: "WABA"
             }
           )
         end
