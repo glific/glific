@@ -127,8 +127,8 @@ defmodule Glific.Flows.ContactAction do
 
   @spec has_loops?(FlowContext.t(), String.t(), [Message.t()]) ::
           {:ok, map(), any()} | {false, FlowContext.t()}
-  defp has_loops?(context, body, messages) do
-    {context, count} = check_recent_outbound_count(context, body)
+  defp has_loops?(context, body, messages, outbound_media \\ nil) do
+    {context, count} = check_recent_outbound_count(context, body, outbound_media)
 
     if count <= @max_loop_limit,
       do: {false, context},
@@ -158,15 +158,15 @@ defmodule Glific.Flows.ContactAction do
       }
     }
 
-  @spec check_recent_outbound_count(FlowContext.t(), String.t()) ::
+  @spec check_recent_outbound_count(FlowContext.t(), String.t(), String.t() | nil) ::
           {FlowContext.t(), non_neg_integer}
-  defp check_recent_outbound_count(context, body) do
+  defp check_recent_outbound_count(context, body, outbound_media) do
     # we'll mark that we came here and are planning to send it, even if
     # we don't end up sending it. This allows us to detect and abort infinite loops
 
     # count the number of times we sent the same message in the recent list
     # in the past 6 hours
-    count = FlowContext.match_outbound(context, body)
+    count = FlowContext.match_outbound(context, body, outbound_media)
     {context, count}
   end
 
@@ -200,12 +200,18 @@ defmodule Glific.Flows.ContactAction do
       text
       |> MessageVarParser.parse(message_vars)
 
-    with {false, context} <- has_loops?(context, body, messages) do
+    attachment = Localization.get_translation(context, action, :attachments)
+
+    # This will resolve expressions also to corresponding url value
+    {type, url} = get_attachment_details(attachment, context)
+
+    with {false, context} <- has_loops?(context, body, messages, url) do
       do_send_message(context, action, messages, %{
         cid: cid,
         body: body,
         text: text,
-        flow_label: action.labels
+        flow_label: action.labels,
+        attachment_details: {attachment, type, url}
       })
     end
   end
@@ -237,16 +243,26 @@ defmodule Glific.Flows.ContactAction do
   end
 
   @doc false
-  @spec get_media_from_attachment(any(), any(), FlowContext.t(), non_neg_integer() | nil) :: any()
-  def get_media_from_attachment(attachment, _, _, _)
+  @spec get_media_from_attachment(
+          any(),
+          any(),
+          FlowContext.t(),
+          non_neg_integer() | nil,
+          tuple() | nil
+        ) :: tuple()
+  def get_media_from_attachment(attachment, caption, context, cid, attachment_type \\ nil)
+
+  def get_media_from_attachment(attachment, _, _, _, _)
       when attachment == %{} or is_nil(attachment),
       do: {:text, nil}
 
-  def get_media_from_attachment(attachment, caption, context, cid) do
-    [type | _tail] = Map.keys(attachment)
-    url = String.trim(attachment[type])
-
-    {type, url} = handle_attachment_expression(context, type, url)
+  def get_media_from_attachment(attachment, caption, context, cid, attachment_type) do
+    {type, url} =
+      if is_nil(attachment_type) do
+        get_attachment_details(attachment, context)
+      else
+        attachment_type
+      end
 
     type = Glific.safe_string_to_atom(type)
 
@@ -356,14 +372,15 @@ defmodule Glific.Flows.ContactAction do
            body: body,
            text: text,
            cid: cid,
-           flow_label: flow_label
+           flow_label: flow_label,
+           attachment_details: attachment_details
          }
        ) do
     organization_id = context.organization_id
+    {attachment, type, url} = attachment_details
 
-    attachments = Localization.get_translation(context, action, :attachments)
-
-    {type, media_id} = get_media_from_attachment(attachments, text, context, cid)
+    {type, media_id} =
+      get_media_from_attachment(attachment, text, context, cid, {type, url})
 
     attrs = %{
       uuid: action.node_uuid,
@@ -471,6 +488,18 @@ defmodule Glific.Flows.ContactAction do
       {:ok, nil} -> 0
       {:ok, value} -> value
       _ -> 0
+    end
+  end
+
+  @spec get_attachment_details(String.t() | nil | map(), FlowContext.t()) :: {atom(), any()}
+  defp get_attachment_details(attachment, context) do
+    if attachment == %{} or is_nil(attachment) do
+      {:text, nil}
+    else
+      [type | _tail] = Map.keys(attachment)
+      url = String.trim(attachment[type])
+
+      handle_attachment_expression(context, type, url)
     end
   end
 end
