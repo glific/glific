@@ -249,7 +249,7 @@ defmodule Glific.Flows.ContactAction do
           FlowContext.t(),
           non_neg_integer() | nil,
           tuple() | nil
-        ) :: any()
+        ) :: tuple()
   def get_media_from_attachment(attachment, caption, context, cid, attachment_type \\ nil)
 
   def get_media_from_attachment(attachment, _, _, _, _)
