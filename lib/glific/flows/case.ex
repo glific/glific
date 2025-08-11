@@ -239,15 +239,9 @@ defmodule Glific.Flows.Case do
 
   defp do_execute(%{type: "has_pattern", arguments: pattern} = _c, context, %{type: type} = msg)
        when type in @text_types do
-    stripped_pattern = strip(pattern)
-
-    case Regex.compile(stripped_pattern) do
-      {:ok, regex} ->
-        Regex.match?(regex, strip(msg))
-
-      {:error, _reason} ->
-        create_regex_failure_notification(context)
-    end
+    pattern
+    |> strip()
+    |> compile_pattern(context, msg)
   end
 
   defp do_execute(%{type: "has_beginning"} = c, _context, %{type: type} = msg)
@@ -313,11 +307,26 @@ defmodule Glific.Flows.Case do
     Notifications.create_notification(%{
       category: "flows",
       message: "Flow execution failed due to invalid regular expression",
-      severity: Notifications.types().warning,
+      severity: Notifications.types().critical,
       organization_id: context.organization_id,
-      entity: %{flow_uuid: context.flow_uuid, id: context.organization_id}
+      entity: %{
+        flow_uuid: context.flow_uuid,
+        node_uuid: context.node_uuid,
+        id: context.organization_id
+      }
     })
 
     false
+  end
+
+  @spec compile_pattern(String.t(), FlowContext.t(), Message.t()) :: boolean()
+  defp compile_pattern(pattern, context, msg) do
+    case Regex.compile(pattern) do
+      {:ok, regex} ->
+        Regex.match?(regex, strip(msg))
+
+      {:error, _reason} ->
+        create_regex_failure_notification(context)
+    end
   end
 end
