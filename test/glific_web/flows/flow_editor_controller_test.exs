@@ -308,11 +308,15 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
         |> get("/flow-editor/languages", %{})
 
       languages = json_response(conn, 200)["results"]
-      default_language = Glific.Partners.organization(conn.assigns[:organization_id])|> Repo.preload(:default_language) |> Map.get(:default_language)
+
+      default_language =
+        Glific.Partners.organization(conn.assigns[:organization_id])
+        |> Repo.preload(:default_language)
+        |> Map.get(:default_language)
 
       assert Enum.all?(languages, fn lang ->
-        lang["locale"] != default_language.locale
-      end)
+               lang["locale"] != default_language.locale
+             end)
     end
 
     test "environment", %{conn: conn, access_token: token} do
