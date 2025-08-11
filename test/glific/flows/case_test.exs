@@ -164,12 +164,12 @@ defmodule Glific.Flows.CaseTest do
   end
 
   test "check if the regex pattern is valid" do
-    c = %Case{
+    case = %Case{
       type: "has_pattern",
       arguments: "1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/(?:202[5-9]|2030)$"
     }
 
-    assert wrap_execute(c, nil, "15/07/2025") == false
+    assert wrap_execute(case, nil, "15/07/2025") == false
 
     notifications =
       Repo.all(
