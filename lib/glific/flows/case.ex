@@ -9,6 +9,7 @@ defmodule Glific.Flows.Case do
   alias Glific.{
     Enums.FlowCase,
     Flows,
+    Notifications,
     Messages.Message
   }
 
@@ -236,13 +237,16 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  defp do_execute(%{type: "has_pattern", arguments: pattern} = _c, _context, %{type: type} = msg) do
-    with true <- type in @text_types,
-         stripped_pattern <- strip(pattern),
-         {:ok, regex} <- Regex.compile(stripped_pattern) do
-      Regex.match?(regex, strip(msg))
-    else
-      _ -> false
+  defp do_execute(%{type: "has_pattern", arguments: pattern} = _c, context, %{type: type} = msg)
+       when type in @text_types do
+    stripped_pattern = strip(pattern)
+
+    case Regex.compile(stripped_pattern) do
+      {:ok, regex} ->
+        Regex.match?(regex, strip(msg))
+
+      {:error, _reason} ->
+        create_regex_failure_notification(context)
     end
   end
 
@@ -303,4 +307,17 @@ defmodule Glific.Flows.Case do
         message:
           "Function not implemented for cases of case type: #{c.type}, message type: #{msg.type}"
       )
+
+  @spec create_regex_failure_notification(FlowContext.t()) :: false
+  defp create_regex_failure_notification(context) do
+    Notifications.create_notification(%{
+      category: "flows",
+      message: "Flow execution failed due to invalid regular expression",
+      severity: Notifications.types().warning,
+      organization_id: context.organization_id,
+      entity: %{flow_uuid: context.flow_uuid, id: context.organization_id}
+    })
+
+    false
+  end
 end
