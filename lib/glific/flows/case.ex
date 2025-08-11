@@ -239,11 +239,14 @@ defmodule Glific.Flows.Case do
 
   defp do_execute(%{type: "has_pattern", arguments: pattern} = _c, context, %{type: type} = msg)
        when type in @text_types do
-    case pattern
-         |> strip()
-         |> Regex.compile() do
+    pattern
+    |> strip()
+    |> Regex.compile()
+    |> case do
       {:ok, regex} ->
-        Regex.match?(regex, strip(msg))
+        msg
+        |> strip()
+        |> (&Regex.match?(regex, &1)).()
 
       {:error, _reason} ->
         create_regex_failure_notification(context)
