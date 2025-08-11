@@ -239,9 +239,16 @@ defmodule Glific.Flows.Case do
 
   defp do_execute(%{type: "has_pattern", arguments: pattern} = _c, context, %{type: type} = msg)
        when type in @text_types do
-    pattern
-    |> strip()
-    |> compile_pattern(context, msg)
+    case pattern
+         |> strip()
+         |> Regex.compile() do
+      {:ok, regex} ->
+        Regex.match?(regex, strip(msg))
+
+      {:error, _reason} ->
+        create_regex_failure_notification(context)
+        false
+    end
   end
 
   defp do_execute(%{type: "has_beginning"} = c, _context, %{type: type} = msg)
@@ -302,7 +309,7 @@ defmodule Glific.Flows.Case do
           "Function not implemented for cases of case type: #{c.type}, message type: #{msg.type}"
       )
 
-  @spec create_regex_failure_notification(FlowContext.t()) :: false
+  @spec create_regex_failure_notification(FlowContext.t()) :: any()
   defp create_regex_failure_notification(context) do
     Notifications.create_notification(%{
       category: "flows",
@@ -315,18 +322,5 @@ defmodule Glific.Flows.Case do
         id: context.organization_id
       }
     })
-
-    false
-  end
-
-  @spec compile_pattern(String.t(), FlowContext.t(), Message.t()) :: boolean()
-  defp compile_pattern(pattern, context, msg) do
-    case Regex.compile(pattern) do
-      {:ok, regex} ->
-        Regex.match?(regex, strip(msg))
-
-      {:error, _reason} ->
-        create_regex_failure_notification(context)
-    end
   end
 end

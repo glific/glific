@@ -4,7 +4,8 @@ defmodule Glific.Flows.CaseTest do
   alias Glific.{
     Fixtures,
     Flows.Case,
-    Messages
+    Messages,
+    Notifications.Notification
   }
 
   test "process extracts the right values from json" do
@@ -160,6 +161,29 @@ defmodule Glific.Flows.CaseTest do
     assert wrap_execute(c, nil, "senTence 123  !@#") == false
 
     assert wrap_execute(c, nil, "Wwhateever", type: :audio) == false
+  end
+
+  test "check if the regex pattern is valid" do
+    c = %Case{
+      type: "has_pattern",
+      arguments: "1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/(?:202[5-9]|2030)$"
+    }
+
+    assert wrap_execute(c, nil, "15/07/2025") == false
+
+    notifications =
+      Repo.all(
+        from n in Notification,
+          where: n.category == "flows",
+          order_by: [desc: n.inserted_at]
+      )
+
+    messages = Enum.map(notifications, & &1.message)
+    IO.inspect(messages)
+
+    assert [
+             "Flow execution failed due to invalid regular expression"
+           ] = messages
   end
 
   test "test the execute function for has_location" do
