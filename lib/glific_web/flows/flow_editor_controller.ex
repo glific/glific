@@ -18,6 +18,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     GCS.GcsWorker,
     Groups,
     Partners,
+    Partners.Organization,
     Repo,
     Settings,
     Sheets,
@@ -380,8 +381,12 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec languages(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def languages(conn, _params) do
+    organization_id = conn.assigns[:organization_id]
+    organization = Repo.get(Organization, organization_id) |> Repo.preload(:default_language)
+
     results =
       Glific.Partners.organization(conn.assigns[:organization_id]).languages
+      |> Enum.filter(fn language -> language.id != organization.default_language.id end)
       |> Enum.reduce([], fn language, acc ->
         [%{iso: language.locale, name: language.label} | acc]
       end)

@@ -12,7 +12,9 @@ defmodule Glific.Flows.Translate.Import do
   alias Glific.{
     Flows,
     Flows.Flow,
-    Settings
+    Settings,
+    Partners.Organization,
+    Repo
   }
 
   @doc """
@@ -24,15 +26,20 @@ defmodule Glific.Flows.Translate.Import do
   """
   @spec import_localization(list(), map()) :: any()
   def import_localization(csv, flow) do
+    organization = Repo.get(Organization, flow.organization_id) |> Repo.preload(:default_language)
+
     # get language labels here in one query for all languages if you want
     language_labels = Settings.locale_label_map(flow.organization_id)
     language_keys = Map.keys(language_labels)
+
+    non_default_language_keys =
+      Enum.filter(language_keys, fn key -> key != organization.default_language.locale end)
 
     [_header_1 | [_header_2 | rows]] = csv
 
     {:ok, _revision} =
       rows
-      |> collect_by_language(language_keys, flow)
+      |> collect_by_language(non_default_language_keys, flow)
       |> merge_with_latest_localization(flow)
       |> Flows.update_flow_localization(flow)
   end
