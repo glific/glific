@@ -9,8 +9,8 @@ defmodule Glific.Flows.Case do
   alias Glific.{
     Enums.FlowCase,
     Flows,
-    Notifications,
-    Messages.Message
+    Messages.Message,
+    Notifications
   }
 
   alias Glific.Flows.{
