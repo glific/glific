@@ -179,7 +179,6 @@ defmodule Glific.Flows.CaseTest do
       )
 
     messages = Enum.map(notifications, & &1.message)
-    IO.inspect(messages)
 
     assert [
              "Flow execution failed due to invalid regular expression"
