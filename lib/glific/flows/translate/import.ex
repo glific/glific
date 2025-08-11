@@ -12,9 +12,9 @@ defmodule Glific.Flows.Translate.Import do
   alias Glific.{
     Flows,
     Flows.Flow,
-    Settings,
     Partners.Organization,
-    Repo
+    Repo,
+    Settings
   }
 
   @doc """
