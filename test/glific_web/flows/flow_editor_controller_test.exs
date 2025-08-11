@@ -6,6 +6,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     Flows,
     Flows.FlowLabel,
     Groups,
+    Repo,
     Seeds.SeedsDev,
     Settings,
     Templates,
@@ -294,9 +295,24 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
         |> get("/flow-editor/languages", %{})
 
       languages = json_response(conn, 200)["results"]
+      org_languages = Glific.Partners.organization(conn.assigns[:organization_id]).languages
 
-      assert length(Glific.Partners.organization(conn.assigns[:organization_id]).languages) ==
+      # because we don't return the default language in the list
+      assert length(org_languages) - 1 ==
                length(languages)
+    end
+
+    test "languages should not return default language", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/languages", %{})
+
+      languages = json_response(conn, 200)["results"]
+      default_language = Glific.Partners.organization(conn.assigns[:organization_id])|> Repo.preload(:default_language) |> Map.get(:default_language)
+
+      assert Enum.all?(languages, fn lang ->
+        lang["locale"] != default_language.locale
+      end)
     end
 
     test "environment", %{conn: conn, access_token: token} do
