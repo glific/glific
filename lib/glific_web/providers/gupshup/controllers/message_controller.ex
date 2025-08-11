@@ -25,7 +25,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   def text(conn, params) do
     params
     |> Gupshup.Message.receive_text()
-    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> update_message_params(%{organization_id: conn.assigns[:organization_id]})
     |> Communications.Message.receive_message()
 
     handler(conn, params, "text handler")
@@ -67,7 +67,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   defp media(conn, params, type) do
     params
     |> Gupshup.Message.receive_media()
-    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> update_message_params(%{organization_id: conn.assigns[:organization_id]})
     |> Communications.Message.receive_message(type)
 
     handler(conn, params, "media handler")
@@ -91,7 +91,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   defp interactive(conn, params, type) do
     params
     |> Gupshup.Message.receive_interactive()
-    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> update_message_params(%{organization_id: conn.assigns[:organization_id]})
     |> Communications.Message.receive_message(type)
 
     handler(conn, params, "interactive handler")
@@ -103,9 +103,16 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   def location(conn, params) do
     params
     |> Gupshup.Message.receive_location()
-    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> update_message_params(%{organization_id: conn.assigns[:organization_id]})
     |> Communications.Message.receive_message(:location)
 
     handler(conn, params, "location handler")
+  end
+
+  @spec update_message_params(map(), map()) :: map()
+  defp update_message_params(message_payload, params) do
+    message_payload
+    |> Map.put(:organization_id, params.organization_id)
+    |> put_in([:sender, :contact_type], "WABA")
   end
 end
