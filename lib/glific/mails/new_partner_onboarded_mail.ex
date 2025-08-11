@@ -9,6 +9,40 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
   }
 
   @doc false
+  @spec support_mail(Organization.t(), map()) :: Swoosh.Email.t()
+  def support_mail(org, login_details) do
+    team = "support"
+
+    subject = """
+    Glific: New Partner Onboarded - #{org.name}
+    """
+
+    body = """
+    Hello Glific Support Team,
+
+    A new partner organization has been successfully onboarded.
+
+    Organization Details:
+    ---------------------
+    Name: #{org.name}
+    Email: #{org.email}
+
+    Login Details:
+    --------------
+    Phone Number: #{login_details[:phnum]}
+    Password: #{login_details[:password]}
+
+    """
+
+    opts = [
+      team: team,
+      send_to: {"Glific Support", Saas.primary_email()}
+    ]
+
+    Mailer.common_send(org, subject, body, opts)
+  end
+
+  @doc false
   @spec new_mail(Organization.t()) :: Swoosh.Email.t()
   def new_mail(org) do
     team = ""
