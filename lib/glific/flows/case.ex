@@ -246,7 +246,7 @@ defmodule Glific.Flows.Case do
       {:ok, regex} ->
         msg
         |> strip()
-        |> (&Regex.match?(regex, &1)).()
+        |> then(fn stripped_msg -> Regex.match?(regex, stripped_msg) end)
 
       {:error, _reason} ->
         create_regex_failure_notification(context)
