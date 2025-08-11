@@ -1,84 +1,113 @@
 defmodule Glific.KaapiKeysMigration do
   use Tesla
   plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
+
   import Logger
+  import Ecto.Query
+
+  alias Glific.Repo
+  alias Glific.Partners.Organization
 
   @doc """
-  Onboards organizations from a CSV file, processes each line and handles onboarding, credential updates, and feature flag enabling.
-
-  ## Parameters
-    * csv_path - Path to the CSV file containing the organization details.
-
-  ## Returns
-    * {:ok, list(map())} - List of organizations with their onboarding status.
-    * {:error, reason} - If there is an error in processing.
+  Onboard **all** organizations from the DB.
   """
-  @spec onboard_organizations_from_csv(String.t()) :: {:ok, list(map())} | {:error, String.t()}
-  def onboard_organizations_from_csv(csv_path) do
-    case File.read(csv_path) |> IO.inspect() do
-      {:ok, content} ->
-        results =
-          content
-          |> String.split("\n", trim: true)
-          # Skip header row
-          |> Enum.drop(1)
-          |> Enum.map(&process_csv_line/1)
-          |> Enum.reject(&is_nil/1)
+  @spec onboard_organizations_from_db() :: {:ok, list(map())} | {:error, String.t()}
+  def onboard_organizations_from_db() do
+    try do
+      organizations =
+        Repo.all(from(o in Organization))
 
-        {:ok, results} |> IO.inspect()
+      results =
+        organizations
+        |> Enum.map(&process_org_record/1)
+        |> Enum.reject(&is_nil/1)
 
-      {:error, reason} ->
-        {:error, "Failed to read CSV file: #{inspect(reason)}"}
+      {:ok, results}
+    rescue
+      e ->
+        {:error, "Failed to read organizations: #{Exception.message(e)}"}
     end
   end
 
-  @spec process_csv_line(String.t()) :: map() | nil
-  defp process_csv_line(line) do
-    line = String.trim(line)
+  @doc """
+  Onboard only the organizations whose IDs are provided.
+  """
+  @spec onboard_organizations_from_db([non_neg_integer()]) ::
+          {:ok, list(map())} | {:error, String.t()}
+  def onboard_organizations_from_db(ids) when is_list(ids) do
+    organizations =
+      Repo.all(from o in Organization, where: o.id in ^ids)
 
-    fields = String.split(line, ",", trim: true)
+    results =
+      organizations
+      |> Enum.map(&process_org_record/1)
+      |> Enum.reject(&is_nil/1)
 
-    if length(fields) == 6 do
-      [org_name, project_name, email, password, username, org_id] = fields
-      password = generate_random_password() |> IO.inspect()
+    {:ok, results}
+  rescue
+    e ->
+      # Logger.error(
+      #   "Failed to read organizations by ids: #{inspect(org.id)}, message: #{Exception.message(e)}"
+      # )
 
-      params =
+      {:error, "Failed to read organizations by ids: #{Exception.message(e)}"}
+  end
+
+  @spec process_org_record(Organization.t()) :: map() | nil
+  defp process_org_record(%Organization{} = org) do
+    email = (org.email || "") |> String.trim()
+    user_name = email |> String.first() |> to_string()
+    password = generate_random_password()
+
+    organization_name =
+      org.parent_org
+      |> to_string()
+      |> String.trim()
+      |> case do
+        "" -> org.name
+        other -> other
+      end
+
+    params = %{
+      # keep as integer
+      organization_id: org.id,
+      # if callers still expect org_id
+      org_id: org.id,
+      organization_name: organization_name,
+      project_name: org.name,
+      email: email,
+      password: password,
+      user_name: user_name
+    }
+
+    case complete_kaapi_onboarding(params) do
+      {:ok, result} ->
         %{
-          organization_name: String.trim(org_name),
-          project_name: String.trim(project_name),
-          email: String.trim(email),
-          password: password,
-          user_name: String.trim(username),
-          org_id: String.trim(org_id)
+          organization_name: organization_name,
+          org_id: org.id,
+          status: :success,
+          result: result
         }
 
-      case complete_kaapi_onboarding(params) do
-        {:ok, result} ->
-          %{
-            organization_name: org_name,
-            org_id: org_id,
-            status: :success,
-            result: result
-          }
-
-        {:error, error} ->
-          %{
-            organization_name: org_name,
-            org_id: org_id,
-            status: :error,
-            error: error
-          }
-      end
-    else
-      Logger.error("Invalid CSV line format: #{inspect(line)}")
-      nil
+      {:error, error} ->
+        %{
+          organization_name: organization_name,
+          org_id: org.id,
+          status: :error,
+          error: error
+        }
     end
+  rescue
+    e ->
+      Logger.error("Invalid org record (id=#{inspect(org.id)}): #{Exception.message(e)}")
+      nil
   end
 
   @spec complete_kaapi_onboarding(map()) :: {:ok, map()} | {:error, String.t()}
   defp complete_kaapi_onboarding(params) do
-    with {:ok, %{api_key: api_key}} <- onboard_to_kaapi(params) |> IO.inspect(),
-         {:ok, _credential} <- update_kaapi_provider(params.org_id, api_key) do
+    with {:ok, %{api_key: api_key}} <- onboard_to_kaapi(params),
+         {:ok, _credential} <- update_kaapi_provider(params.organization_id, api_key) do
+      # enable flag for THIS org id (was previously mismatched)
       FunWithFlags.enable(:is_kaapi_enabled, for: %{organization_id: params.organization_id})
       {:ok, %{message: "KAAPI onboarding completed successfully"}}
     else
@@ -90,7 +119,9 @@ defmodule Glific.KaapiKeysMigration do
   defp onboard_to_kaapi(params) do
     kaapi_url = Application.fetch_env!(:glific, :kaapi_endpoint)
     url = kaapi_url <> "api/v1/onboard"
-    org_id = Glific.Partners.Saas.organization_id()
+
+    # This is YOUR platform org used to fetch the X-API-KEY for KAAPI
+    platform_org_id = Glific.Partners.Saas.organization_id()
 
     payload = %{
       organization_name: params.organization_name,
@@ -100,8 +131,7 @@ defmodule Glific.KaapiKeysMigration do
       user_name: params.user_name
     }
 
-    {:ok, %{"api_key" => key}} =
-      Glific.Flows.Action.fetch_kaapi_creds(org_id)
+    {:ok, %{"api_key" => key}} = Glific.Flows.Action.fetch_kaapi_creds(platform_org_id)
 
     post(
       url,
@@ -120,46 +150,30 @@ defmodule Glific.KaapiKeysMigration do
     case Glific.Partners.get_credential(%{
            organization_id: organization_id,
            shortcode: "kaapi"
-         })
-         |> IO.inspect() do
+         }) do
       nil ->
-        # Create new KAAPI provider credentials
         Glific.Partners.create_credential(%{
           organization_id: organization_id,
           shortcode: "kaapi",
           keys: %{},
-          secrets: %{
-            "api_key" => api_key
-          },
+          secrets: %{"api_key" => api_key},
           is_active: true
         })
 
       {:ok, credential} ->
-        Glific.Partners.update_credential(
-          credential,
-          %{
-            keys: %{},
-            secrets: %{
-              "api_key" => api_key
-            },
-            organization_id: organization_id,
-            is_active: true
-          }
-        )
+        Glific.Partners.update_credential(credential, %{
+          keys: %{},
+          secrets: %{"api_key" => api_key},
+          organization_id: organization_id,
+          is_active: true
+        })
     end
   end
 
   @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t()}
-  defp parse_kaapi_response(
-         {:ok,
-          %Tesla.Env{status: status, body: %{api_key: api_key, organization_id: _org_id} = _body}}
-       )
+  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: %{api_key: api_key}}})
        when status in 200..299 do
-    data = %{
-      api_key: api_key
-    }
-
-    {:ok, data}
+    {:ok, %{api_key: api_key}}
   end
 
   defp parse_kaapi_response({:ok, %Tesla.Env{body: %{error: error_msg}}})
@@ -175,10 +189,9 @@ defmodule Glific.KaapiKeysMigration do
 
   defp generate_random_password() do
     length = 8
-    random_bytes = :crypto.strong_rand_bytes(length)
-    # Limit to the first `length` characters
-    random_password = Base.encode64(random_bytes) |> String.slice(0, length)
 
-    random_password
+    :crypto.strong_rand_bytes(length)
+    |> Base.encode64()
+    |> String.slice(0, length)
   end
 end
