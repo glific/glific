@@ -11,7 +11,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
   @doc false
   @spec support_mail(Organization.t(), map()) :: Swoosh.Email.t()
   def support_mail(org, login_details) do
-    team = "support"
+    team = ""
 
     subject = """
     Glific: New Partner Onboarded - #{org.name}
@@ -36,7 +36,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
 
     opts = [
       team: team,
-      send_to: {"Glific Support", Saas.primary_email()}
+      send_to: {"", Saas.primary_email()}
     ]
 
     Mailer.common_send(org, subject, body, opts)
