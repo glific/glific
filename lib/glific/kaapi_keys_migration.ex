@@ -186,6 +186,7 @@ defmodule Glific.KaapiKeysMigration do
            shortcode: "kaapi"
          }) do
       {:ok, _credential} ->
+        # if kaapi is already active then we dont update the existing entry
         Logger.info("Kaapi is alredy active: for org: #{organization_id}")
 
       {:error, _} ->
