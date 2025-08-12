@@ -11,8 +11,6 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
   @doc false
   @spec support_mail(Organization.t(), map()) :: Swoosh.Email.t()
   def support_mail(org, login_details) do
-    team = ""
-
     subject = """
     Glific: New Partner Onboarded - #{org.name}
     """
