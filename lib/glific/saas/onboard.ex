@@ -42,6 +42,16 @@ defmodule Glific.Saas.Onboard do
   end
 
   @doc """
+  params we need
+    - name
+    - bsp_keys would be
+  """
+  @spec setup_v2(map()) :: map()
+  def setup_v2(params) do
+
+  end
+
+  @doc """
   Updates the registration details and send submission mail to user
   """
   @spec update_registration(map(), Organization.t()) :: map()

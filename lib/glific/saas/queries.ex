@@ -187,7 +187,7 @@ defmodule Glific.Saas.Queries do
   defp organization(result, params) do
     org_name = String.trim(params["name"])
 
-    case fetch_erp_organizations(org_name) do
+    case ERP.fetch_organization_detail(org_name) do
       {:ok, %{data: %{customer_name: customer_name}}} ->
         {:ok, provider} =
           Repo.fetch_by(Provider, %{shortcode: @default_provider, group: "bsp"},
@@ -206,7 +206,7 @@ defmodule Glific.Saas.Queries do
           is_approved: false,
           status: :inactive,
           parent_org: params["name"],
-          setting: %{"send_warning_mail" => false, "run_flow_each_time" => false},
+          setting: %{"send_warning_mail" => false, "run_flow_each_time" => false, "allow_bot_number_update" => true},
           team_emails: %{
             "finance" => params["email"],
             "analytics" => params["email"],
@@ -229,17 +229,6 @@ defmodule Glific.Saas.Queries do
 
       {:error, error_message} ->
         error(inspect(error_message), result, :global)
-    end
-  end
-
-  @spec fetch_erp_organizations(String.t()) :: {:ok, map()} | {:error, String.t()}
-  defp fetch_erp_organizations(org_name) do
-    case ERP.fetch_organization_detail(org_name) do
-      {:ok, organizations} ->
-        {:ok, organizations}
-
-      {:error, error_message} ->
-        {:error, error_message}
     end
   end
 
