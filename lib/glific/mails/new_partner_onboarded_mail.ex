@@ -35,8 +35,8 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
     """
 
     opts = [
-      team: team,
-      send_to: {"", Saas.primary_email()}
+      send_to: Mailer.glific_support(),
+      ignore_cc_support: true
     ]
 
     Mailer.common_send(org, subject, body, opts)
