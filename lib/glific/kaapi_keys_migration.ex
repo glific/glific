@@ -1,19 +1,23 @@
 defmodule Glific.KaapiKeysMigration do
+  @moduledoc """
+  This is the module to onboard glific orgs in kaapi and add the kaapi api keys in glific
+  """
+
   use Tesla
   plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
 
   require Logger
   import Ecto.Query
 
-  alias Glific.Repo
   alias Glific.Partners.Organization
+  alias Glific.Repo
 
   @doc """
   Onboard **all** organizations from the DB.
   Returns {:ok, [%{org_id, organization_name, status, result|error}, ...]} | {:error, reason}
   """
   @spec onboard_organizations_from_db() :: {:ok, list(map())} | {:error, String.t()}
-  def onboard_organizations_from_db() do
+  def onboard_organizations_from_db do
     organizations =
       from(o in Organization,
         select: %{
@@ -134,21 +138,20 @@ defmodule Glific.KaapiKeysMigration do
 
   @spec complete_kaapi_onboarding(map()) :: {:ok, map()} | {:error, String.t()}
   defp complete_kaapi_onboarding(params) do
-    case onboard_to_kaapi(params) do
-      {:ok, %{api_key: api_key}} ->
-        with {:ok, _} <-
-               update_kaapi_provider(params.organization_id, api_key) do
-          {:ok, %{message: "KAAPI onboarding completed successfully"}}
-        else
-          {:error, error} -> {:error, "KAAPI onboarding failed: #{inspect(error)}"}
-        end
-
+    with {:ok, %{api_key: api_key}} <- onboard_to_kaapi(params),
+         {:ok, _} <- update_kaapi_provider(params.organization_id, api_key) do
+      {:ok, %{message: "KAAPI onboarding completed successfully"}}
+    else
       {:error, error} ->
         Logger.error(
           "KAAPI onboarding failed for org: #{params.organization_id}, reason: #{inspect(error)}"
         )
 
-        {:error, error}
+        {:error, "KAAPI onboarding failed: #{inspect(error)}"}
+
+      other ->
+        Logger.error("Unexpected result in onboarding pipeline: #{inspect(other)}")
+        {:error, "KAAPI onboarding failed"}
     end
   end
 
@@ -230,7 +233,7 @@ defmodule Glific.KaapiKeysMigration do
   end
 
   @spec generate_random_password() :: String.t()
-  defp generate_random_password() do
+  defp generate_random_password do
     length = 8
 
     :crypto.strong_rand_bytes(length)

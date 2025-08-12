@@ -1131,6 +1131,9 @@ defmodule Glific.Flows.Action do
   defp get_flow_uuid(action, _),
     do: action.enter_flow_uuid
 
+  @doc """
+  fetch the kaapi creds
+  """
   @spec fetch_kaapi_creds(non_neg_integer) :: nil | {:ok, any} | {:error, any}
   def fetch_kaapi_creds(organization_id) do
     organization = Partners.organization(organization_id)
