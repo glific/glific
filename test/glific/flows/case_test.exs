@@ -174,7 +174,7 @@ defmodule Glific.Flows.CaseTest do
     notifications =
       Repo.all(
         from n in Notification,
-          where: n.category == "flows",
+          where: n.category == "Flow",
           order_by: [desc: n.inserted_at]
       )
 
