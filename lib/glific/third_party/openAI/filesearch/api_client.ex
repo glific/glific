@@ -21,14 +21,9 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   # using "Content-Type: application/json" in the file upload API caused intermittent errors
   # because OpenAI's handling of this header was inconsistent. Removing the Content-Type header
   # from the upload request resolved the issue.
-  @spec upload_file_headers() :: list()
-  defp upload_file_headers do
-    open_ai_key = Glific.get_open_ai_key()
-
-    [
-      {"Authorization", "Bearer #{open_ai_key}"},
-      {"OpenAI-Beta", "assistants=v2"}
-    ]
+  @spec remove_content_type(list()) :: list()
+  defp remove_content_type(headers) do
+    Enum.reject(headers, fn {key, _} -> String.downcase(key) == "content-type" end)
   end
 
   plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
@@ -71,7 +66,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
       |> Multipart.add_file(media_info.path, name: "file", filename: media_info.filename)
       |> Multipart.add_field("purpose", "assistants")
 
-    post(url, data, headers: upload_file_headers())
+    post(url, data, headers: remove_content_type(headers()))
     |> parse_response()
   end
 
