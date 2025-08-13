@@ -237,9 +237,9 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  defp do_execute(%{type: "has_pattern", arguments: pattern} = _c, context, %{type: type} = msg)
+  defp do_execute(%{type: "has_pattern"} = c, context, %{type: type} = msg)
        when type in @text_types do
-    pattern
+    c.arguments
     |> strip()
     |> Regex.compile()
     |> case do
@@ -315,9 +315,9 @@ defmodule Glific.Flows.Case do
   @spec create_regex_failure_notification(FlowContext.t()) :: any()
   defp create_regex_failure_notification(context) do
     Notifications.create_notification(%{
-      category: "flows",
+      category: "Flow",
       message: "Flow execution failed due to invalid regular expression",
-      severity: Notifications.types().critical,
+      severity: Notifications.types().warning,
       organization_id: context.organization_id,
       entity: %{
         flow_uuid: context.flow_uuid,
