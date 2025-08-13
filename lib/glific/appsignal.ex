@@ -38,6 +38,39 @@ defmodule Glific.Appsignal do
     end
   end
 
+  def handle_event([:tesla, :request, :stop], measurement, meta, _) do
+    # sampling only x% of the total requests processed to reduce cost and noise.
+    # The percentage is set as a config value.
+    sampling_rate = :glific |> Application.get_env(:appsignal_sampling_rate) |> Glific.parse_maybe_integer!()
+
+    time = :os.system_time()
+    span = record_tesla_event(measurement, meta, time)
+
+    if :rand.uniform() < sampling_rate / 100 do
+      # tesla telemetry measurements are in microseconds
+      request_duration_seconds = System.convert_time_unit(measurement.duration, :native, :second)
+
+      Appsignal.add_distribution_value("tesla_request_data", request_duration_seconds, %{
+        method: meta.method,
+        url: meta.url,
+        status: meta.status
+      })
+    end
+
+    @tracer.close_span(span, end_time: time)
+  end
+
+  def handle_event([:tesla, :request, :exception], measurement, meta, _) do
+    time = :os.system_time()
+    span = record_tesla_event(measurement, meta, time)
+
+    error = inspect(meta.reason)
+    @span.add_error(span, meta.kind, error, meta.stacktrace)
+
+    @tracer.close_span(span, end_time: time)
+  end
+
+
   def handle_event(_, _, _, _), do: nil
 
   @doc """
@@ -106,5 +139,18 @@ defmodule Glific.Appsignal do
       |> Repo.query([], skip_organization_id: true)
 
     rows
+  end
+
+  @spec record_tesla_event(any(), any(), integer()) :: any()
+  defp record_tesla_event(measurement, meta, time) do
+    metadata = %{"method" => meta.env.method, "url" => meta.env.url}
+    request_duration_microseconds = System.convert_time_unit(measurement.duration, :native, :microsecond)
+    host = URI.parse(meta.env.url).host
+
+    "tesla_request"
+    |> @tracer.create_span(@tracer.current_span(), start_time: time - request_duration_microseconds)
+    |> @span.set_name("Tesla #{meta.method} #{host}")
+    |> @span.set_attribute("appsignal:category", "tesla.request")
+    |> @span.set_attribute("appsignal:status", meta.env.status)
   end
 end

@@ -49,7 +49,9 @@ defmodule Glific.OpenAI.ChatGPT do
 
     middleware = [
       Tesla.Middleware.JSON,
-      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]}
+      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]},
+      {Tesla.Middleware.BaseUrl, @endpoint},
+      Tesla.Middleware.Telemetry
     ]
 
     middleware
@@ -114,7 +116,9 @@ defmodule Glific.OpenAI.ChatGPT do
 
     middleware = [
       Tesla.Middleware.JSON,
-      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]}
+      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]},
+      {Tesla.Middleware.BaseUrl, @endpoint},
+      Tesla.Middleware.Telemetry
     ]
 
     middleware
@@ -164,7 +168,9 @@ defmodule Glific.OpenAI.ChatGPT do
 
     middleware = [
       Tesla.Middleware.JSON,
-      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]}
+      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]},
+      {Tesla.Middleware.BaseUrl, @endpoint},
+      Tesla.Middleware.Telemetry
     ]
 
     middleware
@@ -229,7 +235,15 @@ defmodule Glific.OpenAI.ChatGPT do
   def create_thread do
     url = @endpoint <> "threads"
 
-    Tesla.post(url, "", headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
+    middleware = [
+      {Tesla.Middleware.Headers, headers()},
+      {Tesla.Middleware.BaseUrl, @endpoint},
+      Tesla.Middleware.Telemetry
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.post(url, "", opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
@@ -257,7 +271,15 @@ defmodule Glific.OpenAI.ChatGPT do
       }
       |> Jason.encode!()
 
-    Tesla.post(url, payload, headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
+    middleware = [
+      {Tesla.Middleware.Headers, headers()},
+      {Tesla.Middleware.BaseUrl, @endpoint},
+      Tesla.Middleware.Telemetry
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.post(url, payload, opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         {:ok, Jason.decode!(body)}
@@ -287,7 +309,15 @@ defmodule Glific.OpenAI.ChatGPT do
   def fetch_thread(%{thread_id: thread_id}) do
     url = @endpoint <> "/threads/#{thread_id}"
 
-    Tesla.get(url, headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
+    middleware = [
+      {Tesla.Middleware.Headers, headers()},
+      {Tesla.Middleware.BaseUrl, @endpoint},
+      Tesla.Middleware.Telemetry
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.get(url, opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: _body}} ->
         {:ok, thread_id}
@@ -315,7 +345,15 @@ defmodule Glific.OpenAI.ChatGPT do
       }
       |> Jason.encode!()
 
-    Tesla.post(url, payload, headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
+    middleware = [
+      {Tesla.Middleware.Headers, headers()},
+      {Tesla.Middleware.BaseUrl, @endpoint},
+      Tesla.Middleware.Telemetry
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.post(url, payload, opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
@@ -332,7 +370,15 @@ defmodule Glific.OpenAI.ChatGPT do
   def list_thread_messages(params) do
     url = @endpoint <> "/threads/#{params.thread_id}/messages"
 
-    Tesla.get(url, headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
+    middleware = [
+      {Tesla.Middleware.Headers, headers()},
+      {Tesla.Middleware.BaseUrl, @endpoint},
+      Tesla.Middleware.Telemetry
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.get(url, opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
@@ -371,7 +417,15 @@ defmodule Glific.OpenAI.ChatGPT do
 
     payload = Jason.encode!(%{"assistant_id" => params.assistant_id})
 
-    Tesla.post(url, payload, headers: headers(), opts: [adapter: [recv_timeout: 20_000]])
+    middleware = [
+      {Tesla.Middleware.Headers, headers()},
+      {Tesla.Middleware.BaseUrl, @endpoint},
+      Tesla.Middleware.Telemetry
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.post(url, payload, opts: [adapter: [recv_timeout: 20_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         run = Jason.decode!(body)
@@ -468,7 +522,15 @@ defmodule Glific.OpenAI.ChatGPT do
   def cancel_run(thread_id, run_id) do
     url = @endpoint <> "/threads/#{thread_id}/runs/#{run_id}/cancel"
 
-    Tesla.post(url, "", headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
+    middleware = [
+      {Tesla.Middleware.Headers, headers()},
+      {Tesla.Middleware.BaseUrl, @endpoint},
+      Tesla.Middleware.Telemetry
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.post(url, "", opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200}} ->
         {:ok, "run cancelled"}
@@ -485,7 +547,15 @@ defmodule Glific.OpenAI.ChatGPT do
   def retrieve_run(params) do
     url = @endpoint <> "/threads/#{params.thread_id}/runs/#{params.run_id}"
 
-    Tesla.get(url, headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
+    middleware = [
+      {Tesla.Middleware.Headers, headers()},
+      {Tesla.Middleware.BaseUrl, @endpoint},
+      Tesla.Middleware.Telemetry
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.get(url, opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         {:ok, Jason.decode!(body)}
@@ -560,7 +630,15 @@ defmodule Glific.OpenAI.ChatGPT do
   def retrieve_assistant(assistant_id) do
     url = @endpoint <> "/assistants/#{assistant_id}"
 
-    Tesla.get(url, headers: headers(), opts: [adapter: [recv_timeout: 120_000]])
+    middleware = [
+      {Tesla.Middleware.Headers, headers()},
+      {Tesla.Middleware.BaseUrl, @endpoint},
+      Tesla.Middleware.Telemetry
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> Tesla.get(url, opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         response = Jason.decode!(body)
