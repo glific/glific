@@ -458,7 +458,7 @@ defmodule Glific.Contacts do
         end
 
       contact ->
-        # If either the sender name have changed or the provider is maytapi we need to update the contact
+        # If either the sender name have changed or if we need to update contact_type, we need to update the contact
         case get_contact_update_attrs(contact, sender) do
           nil ->
             {:ok, contact}
@@ -1050,16 +1050,22 @@ defmodule Glific.Contacts do
   @spec get_contact_update_attrs(Contact.t(), map()) :: map() | nil
   defp get_contact_update_attrs(
          %Contact{contact_type: "WABA"} = _contact,
-         %{name: sender_name, contact_type: "WA"} = _sender
+         %{contact_type: "WA"} = sender
        ) do
-    %{name: sender_name, contact_type: "WABA+WA"}
+    case Map.get(sender, :name) do
+      nil -> %{contact_type: "WABA+WA"}
+      sender_name -> %{name: sender_name, contact_type: "WABA+WA"}
+    end
   end
 
   defp get_contact_update_attrs(
-         %Contact{contact_type: "WABA"} = _contact,
-         %{contact_type: "WA"} = _sender
+         %Contact{contact_type: "WA"} = _contact,
+         %{contact_type: "WABA"} = sender
        ) do
-    %{contact_type: "WABA+WA"}
+    case Map.get(sender, :name) do
+      nil -> %{contact_type: "WABA+WA"}
+      sender_name -> %{name: sender_name, contact_type: "WABA+WA"}
+    end
   end
 
   defp get_contact_update_attrs(%Contact{name: name} = _contact, %{name: sender_name} = _sender)
