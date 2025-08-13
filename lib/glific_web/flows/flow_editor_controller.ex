@@ -382,11 +382,10 @@ defmodule GlificWeb.Flows.FlowEditorController do
   def languages(conn, _params) do
     organization =
       Glific.Partners.organization(conn.assigns[:organization_id])
-      |> Repo.preload(:default_language)
 
     results =
       organization.languages
-      |> Enum.filter(fn language -> language.id != organization.default_language.id end)
+      |> Enum.filter(fn language -> language.id != organization.default_language_id end)
       |> Enum.reduce([], fn language, acc ->
         [%{iso: language.locale, name: language.label} | acc]
       end)
