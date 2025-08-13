@@ -9,7 +9,8 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
 
   alias Glific.{
     Partners,
-    Partners.Saas
+    Partners.Saas,
+    Repo
   }
 
   @spec headers() :: list()
@@ -135,6 +136,22 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   """
   @spec create_assistant(map()) :: {:ok, map()} | {:error, String.t()}
   def create_assistant(params) do
+    openai_params = %{
+      "name" => params.name,
+      "model" => params.model,
+      "instructions" => params[:instructions],
+      "temperature" => params.temperature,
+      "tools" => [%{"type" => "file_search"}],
+      "tool_resources" => %{
+        "file_search" => %{
+          "vector_store_ids" => params.vector_store_ids
+        }
+      }
+    }
+
+    openai_result = make_openai_request("/assistants", openai_params) |> IO.inspect()
+
+    # Conditionally call Kaapi if the flag is enabled
     if FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: params.organization_id}) do
       kaapi_params = %{
         name: params.name,
@@ -145,22 +162,10 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
       }
 
       make_kaapi_request("api/v1/assistant", kaapi_params, params.organization_id, :post)
-    else
-      openai_params = %{
-        "name" => params.name,
-        "model" => params.model,
-        "instructions" => params[:instructions],
-        "temperature" => params.temperature,
-        "tools" => [%{"type" => "file_search"}],
-        "tool_resources" => %{
-          "file_search" => %{
-            "vector_store_ids" => params.vector_store_ids
-          }
-        }
-      }
-
-      make_openai_request("/assistants", openai_params)
+      |> IO.inspect()
     end
+
+    openai_result |> IO.inspect()
   end
 
   @doc """
@@ -198,6 +203,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
         params.organization_id,
         :patch
       )
+      |> IO.inspect()
     else
       openai_params = %{
         "name" => params.name,
@@ -257,7 +263,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   @spec retrieve_assistant(String.t()) :: {:ok, map()} | {:error, String.t()}
   def retrieve_assistant(assistant_id) do
     if FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: org_id()}) do
-      make_kaapi_request("api/v1/assistant/#{assistant_id}/ingest", %{}, org_id(), :post)
+      make_kaapi_request("api/v1/assistant/#{assistant_id}", %{}, org_id(), :get)
     else
       url = @endpoint <> "/assistants/#{assistant_id}"
 
@@ -373,7 +379,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
 
   @spec org_id() :: non_neg_integer()
   defp org_id do
-    Saas.organization_id()
+    Repo.get_organization_id()
   end
 
   @doc """
