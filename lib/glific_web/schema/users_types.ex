@@ -70,7 +70,7 @@ defmodule GlificWeb.Schema.UserTypes do
   input_object :current_user_input do
     field :name, :string
     field :password, :string
-    field :otp, :strings
+    field :otp, :string
     field :language_id, :id
     field :email, :string
   end
