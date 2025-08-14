@@ -1244,7 +1244,7 @@ defmodule Glific.Partners do
     {:ok, bsp_cred} =
       Repo.fetch_by(Credential, %{provider_id: provider.id, organization_id: org.id})
 
-    # Can be NA while onboarding
+    # Will be NA in onboarding v2
     if bsp_cred.secrets["api_key"] == "NA" do
       {:ok, bsp_cred}
     else
