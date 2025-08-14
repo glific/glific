@@ -1,4 +1,8 @@
 defmodule Glific.Providers.Kaapi do
+  @moduledoc """
+  Provider module for integrating with Kaapi AI platform.
+  """
+
   alias Glific.{Filesearch, Filesearch.Assistant, Partners}
   require Logger
   use Tesla
@@ -13,16 +17,9 @@ defmodule Glific.Providers.Kaapi do
       iex> Glific.Providers.Kaapi.sync_assistants(999)
       {:error, "Organization not found"}
   """
-
-  @spec sync_assistants(non_neg_integer) :: {:ok, any()} | {:error, String.t()}
+  @spec sync_assistants(non_neg_integer) :: {:ok, any()}
   def sync_assistants(organisation_id) do
-    case ingest_assistants(organisation_id) do
-      {:ok, results} ->
-        {:ok, results}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    ingest_assistants(organisation_id)
   end
 
   @spec get_kaapi_ingest_url(String.t()) :: String.t()
@@ -74,6 +71,7 @@ defmodule Glific.Providers.Kaapi do
   @spec check_and_process_assistant(non_neg_integer, Assistant.t()) ::
           {:ok, any()} | {:error, String.t()}
   defp check_and_process_assistant(organization_id, assistant) do
+
     # if no instructions are present, set default instructions
     case has_valid_instruction?(assistant) do
       false ->
@@ -92,7 +90,7 @@ defmodule Glific.Providers.Kaapi do
     end
   end
 
-  @spec ingest_assistants(non_neg_integer) :: {:ok, any()} | {:error, String.t()}
+  @spec ingest_assistants(non_neg_integer) :: {:ok, any()}
   defp ingest_assistants(organization_id) do
     case fetch_assistansts(organization_id) do
       {:ok, assistants} ->
@@ -103,9 +101,6 @@ defmodule Glific.Providers.Kaapi do
           end)
 
         {:ok, results}
-
-      {:error, reason} ->
-        {:error, reason}
     end
   end
 
