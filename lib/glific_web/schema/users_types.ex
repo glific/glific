@@ -70,6 +70,7 @@ defmodule GlificWeb.Schema.UserTypes do
   input_object :current_user_input do
     field :name, :string
     field :password, :string
+    field :email, :string
     field :otp, :string
     field :language_id, :id
   end
@@ -82,6 +83,7 @@ defmodule GlificWeb.Schema.UserTypes do
     field :language_id, :id
     field :add_role_ids, list_of(:id)
     field :delete_role_ids, list_of(:id)
+    field :email, :string
   end
 
   object :user_queries do
