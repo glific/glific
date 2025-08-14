@@ -7,6 +7,12 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   @endpoint "https://api.openai.com/v1"
   use Tesla
 
+  alias Glific.{
+    Partners,
+    Partners.Saas,
+    Repo
+  }
+
   @spec headers() :: list()
   defp headers do
     open_ai_key = Glific.get_open_ai_key()
@@ -27,6 +33,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   end
 
   plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
+  plug Tesla.Middleware.FollowRedirects
 
   @doc """
   Create a VectorStore
@@ -137,29 +144,36 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   """
   @spec create_assistant(map()) :: {:ok, map()} | {:error, String.t()}
   def create_assistant(params) do
-    url = @endpoint <> "/assistants"
-
-    payload =
-      %{
-        "name" => params.name,
-        "model" => params.model,
-        "instructions" => params[:instructions],
-        "temperature" => params.temperature,
-        "tools" => [
-          %{
-            "type" => "file_search"
-          }
-        ],
-        "tool_resources" => %{
-          "file_search" => %{
-            "vector_store_ids" => params.vector_store_ids
-          }
+    openai_params = %{
+      "name" => params.name,
+      "model" => params.model,
+      "instructions" => params[:instructions],
+      "temperature" => params.temperature,
+      "tools" => [%{"type" => "file_search"}],
+      "tool_resources" => %{
+        "file_search" => %{
+          "vector_store_ids" => params.vector_store_ids
         }
       }
-      |> Jason.encode!()
+    }
 
-    post(url, payload, headers: headers())
-    |> parse_response()
+    openai_result = make_openai_request("/assistants", openai_params) |> IO.inspect()
+
+    # Conditionally call Kaapi if the flag is enabled
+    if FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: params.organization_id}) do
+      kaapi_params = %{
+        name: params.name,
+        instructions: "String should have at least 10 characters",
+        model: params.model,
+        vector_store_ids: params.vector_store_ids,
+        temperature: params.temperature
+      }
+
+      make_kaapi_request("api/v1/assistant", kaapi_params, params.organization_id, :post)
+      |> IO.inspect()
+    end
+
+    openai_result |> IO.inspect()
   end
 
   @doc """
@@ -167,10 +181,14 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   """
   @spec delete_assistant(String.t()) :: {:ok, map()} | {:error, String.t()}
   def delete_assistant(assistant_id) do
-    url = @endpoint <> "/assistants/#{assistant_id}"
+    if FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: org_id()}) do
+      make_kaapi_request("api/v1/assistant/#{assistant_id}", %{}, org_id(), :delete)
+    else
+      url = @endpoint <> "/assistants/#{assistant_id}"
 
-    delete(url, headers: headers())
-    |> parse_response()
+      delete(url, headers: headers())
+      |> parse_response()
+    end
   end
 
   @doc """
@@ -178,30 +196,45 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   """
   @spec modify_assistant(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
   def modify_assistant(assistant_id, params) do
-    url = @endpoint <> "/assistants/#{assistant_id}"
+    if FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: params.organization_id}) do
+      kaapi_params = %{
+        name: params.name,
+        model: params.model,
+        instructions: params.instructions || "",
+        temperature: params.temperature,
+        vector_store_ids: params[:vector_store_ids]
+      }
 
-    payload =
-      %{
+      make_kaapi_request(
+        "api/v1/assistant/#{assistant_id}",
+        kaapi_params,
+        params.organization_id,
+        :patch
+      )
+      |> IO.inspect()
+    else
+      openai_params = %{
         "name" => params.name,
         "model" => params.model,
         "instructions" => params.instructions || "",
         "temperature" => params.temperature
       }
 
-    if Map.has_key?(params, :vector_store_ids) do
-      Map.merge(payload, %{
-        "tool_resources" => %{
-          "file_search" => %{
-            "vector_store_ids" => params.vector_store_ids
-          }
-        }
-      })
-    else
-      payload
+      openai_params =
+        if Map.has_key?(params, :vector_store_ids) do
+          Map.merge(openai_params, %{
+            "tool_resources" => %{
+              "file_search" => %{
+                "vector_store_ids" => params.vector_store_ids
+              }
+            }
+          })
+        else
+          openai_params
+        end
+
+      make_openai_request("/assistants/#{assistant_id}", openai_params)
     end
-    |> Jason.encode!()
-    |> then(&post(url, &1, headers: headers()))
-    |> parse_response()
   end
 
   @doc """
@@ -237,10 +270,14 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   """
   @spec retrieve_assistant(String.t()) :: {:ok, map()} | {:error, String.t()}
   def retrieve_assistant(assistant_id) do
-    url = @endpoint <> "/assistants/#{assistant_id}"
+    if FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: org_id()}) do
+      make_kaapi_request("api/v1/assistant/#{assistant_id}", %{}, org_id(), :get)
+    else
+      url = @endpoint <> "/assistants/#{assistant_id}"
 
-    get(url, headers: headers())
-    |> parse_response()
+      get(url, headers: headers())
+      |> parse_response()
+    end
   end
 
   @doc """
@@ -276,6 +313,32 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
+  @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t()}
+  defp parse_kaapi_response(
+         {:ok, %Tesla.Env{status: status, body: %{error: nil, data: data, success: true}}}
+       )
+       when status in 200..299 do
+    data =
+      if Map.has_key?(data, :assistant_id) do
+        Map.put(data, :id, data.assistant_id)
+      else
+        data
+      end
+
+    {:ok, data}
+  end
+
+  defp parse_kaapi_response({:ok, %Tesla.Env{body: %{error: error_msg}}})
+       when is_binary(error_msg) do
+    Logger.error("kaapi_url api error due to #{inspect(error_msg)}")
+    {:error, error_msg}
+  end
+
+  defp parse_kaapi_response({:error, message}) do
+    Logger.error("Kaapi api error due to #{inspect(message)}")
+    {:error, "API request failed"}
+  end
+
   @spec parse_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t()}
   defp parse_response({:ok, %{body: resp_body, status: status}})
        when status >= 200 and status < 300 do
@@ -290,5 +353,57 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   defp parse_response({:error, message}) do
     Logger.error("Filesearch api error due to #{inspect(message)}")
     {:error, "OpenAI api failed"}
+  end
+
+  @spec make_openai_request(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp make_openai_request(endpoint, params) do
+    url = @endpoint <> endpoint
+
+    post(url, Jason.encode!(params), headers: headers())
+    |> parse_response()
+  end
+
+  @spec make_kaapi_request(String.t(), map(), non_neg_integer(), atom()) ::
+          {:ok, map()} | {:error, String.t()}
+  defp make_kaapi_request(endpoint, params, organization_id, method) do
+    with {:ok, %{"api_key" => key}} <- fetch_kaapi_creds(organization_id) do
+      header = [
+        {"X-API-KEY", key},
+        {"Content-Type", "application/json"}
+      ]
+
+      kaapi_url = Application.fetch_env!(:glific, :kaapi_endpoint)
+      url = kaapi_url <> endpoint
+      request_body = if map_size(params) > 0, do: Jason.encode!(params), else: ""
+
+      case method do
+        :delete -> delete(url, headers: header)
+        :post -> post(url, request_body, headers: header)
+        :patch -> patch(url, request_body, headers: header)
+      end
+      |> parse_kaapi_response()
+    end
+  end
+
+  @spec org_id() :: non_neg_integer()
+  defp org_id do
+    Repo.get_organization_id()
+  end
+
+  @doc """
+  fetch the kaapi credentials
+  """
+  @spec fetch_kaapi_creds(non_neg_integer) :: nil | {:ok, any} | {:error, any}
+  def fetch_kaapi_creds(organization_id) do
+    organization = Partners.organization(organization_id)
+
+    organization.services["kaapi"]
+    |> case do
+      nil ->
+        {:error, "Kaapi is not active"}
+
+      credentials ->
+        {:ok, credentials.secrets}
+    end
   end
 end
