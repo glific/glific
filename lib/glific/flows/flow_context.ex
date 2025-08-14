@@ -944,6 +944,16 @@ defmodule Glific.Flows.FlowContext do
       )
 
     message =
+      if is_nil(message) and
+           FunWithFlags.enabled?(:is_kaapi_enabled,
+             for: %{organization_id: context.organization_id}
+           ) do
+        Messages.create_temp_message(context.organization_id, "Failure")
+      else
+        message
+      end
+
+    message =
       if is_nil(message),
         do: Messages.create_temp_message(context.organization_id, "No Response"),
         else: message
