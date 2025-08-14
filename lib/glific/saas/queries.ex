@@ -47,6 +47,20 @@ defmodule Glific.Saas.Queries do
   end
 
   @doc """
+  Main function to setup the organization entity in Glific
+  """
+  @spec setup_v2(map(), map()) :: map()
+  def setup_v2(result, params) do
+    result
+    # first create the organization
+    |> organization(params)
+    # then create the contact and associate contact with organization
+    |> contact(params)
+    # create the credentials
+    |> credentials(params)
+  end
+
+  @doc """
   Validate all the input elements
   """
   @spec validate(map(), map()) :: map()
@@ -153,8 +167,8 @@ defmodule Glific.Saas.Queries do
   defp validate_text_field(result, field, key, length, optional \\ false)
 
   defp validate_text_field(result, field, _key, {_min_len, _max_len}, true)
-       when field in [nil, ""],
-       do: result
+      when field in [nil, ""],
+      do: result
 
   defp validate_text_field(result, field, key, {min_len, max_len}, _optional) do
     cond do
@@ -206,7 +220,11 @@ defmodule Glific.Saas.Queries do
           is_approved: false,
           status: :inactive,
           parent_org: params["name"],
-          setting: %{"send_warning_mail" => false, "run_flow_each_time" => false, "allow_bot_number_update" => true},
+          setting: %{
+            "send_warning_mail" => false,
+            "run_flow_each_time" => false,
+            "allow_bot_number_update" => true
+          },
           team_emails: %{
             "finance" => params["email"],
             "analytics" => params["email"],
@@ -290,8 +308,8 @@ defmodule Glific.Saas.Queries do
         "api_end_point" => "https://api.gupshup.io/wa/api/v1"
       },
       secrets: %{
-        "api_key" => params["api_key"],
-        "app_name" => params["app_name"],
+        "api_key" => params["api_key"] || "NA",
+        "app_name" => params["app_name"] || "NA",
         "app_id" => params["app_id"] || "NA"
       },
       is_active: true,
@@ -299,8 +317,8 @@ defmodule Glific.Saas.Queries do
     }
 
     case Partners.create_credential(attrs) do
-      {:ok, credential} ->
-        Partners.set_bsp_app_id(result.organization, @default_provider)
+      {:ok, _credential} ->
+        {:ok, credential} = Partners.set_bsp_app_id(result.organization, @default_provider)
         Map.put(result, :credential, credential)
 
       {:error, errors} ->
@@ -349,20 +367,40 @@ defmodule Glific.Saas.Queries do
 
   # Ensure this shortcode is currently not being used
   @spec validate_shortcode(map(), String.t()) :: map()
-  defp validate_shortcode(result, nil) do
+  def validate_shortcode(result, nil) do
     dgettext("error", "Shortcode cannot be empty.") |> error(result, :shortcode)
   end
 
-  defp validate_shortcode(result, shortcode) do
-    Repo.fetch_by(Organization, %{shortcode: shortcode}, skip_organization_id: true)
-    |> case do
+  @doc """
+  Validates organization shortocode
+  """
+  def validate_shortcode(result, shortcode) do
+    with true <- Regex.match?(~r/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/, shortcode),
+         {:error, _} <-
+           Repo.fetch_by(Organization, %{shortcode: shortcode}, skip_organization_id: true) do
+      result
+    else
       {:ok, _} ->
         dgettext("error", "Shortcode has already been taken.")
         |> error(result, :shortcode)
 
-      {:error, _} ->
-        result
+      _ ->
+        dgettext(
+          "error",
+          "Invalid shortcode. It should match the regex /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/."
+        )
+        |> error(result, :shortcode)
     end
+  end
+
+  @doc """
+  Validate onboarding params such as email and org name
+  """
+  @spec validate_onboard_params(map(), map()) :: result :: map()
+  def validate_onboard_params(result, params) do
+    result
+    |> validate_text_field(params["name"], :name, {1, 250})
+    |> validate_email(params["email"], :email)
   end
 
   @spec validate_email(map(), String.t(), atom()) :: map()
