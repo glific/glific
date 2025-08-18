@@ -154,7 +154,6 @@ defmodule Glific.Users.User do
     |> Changeset.validate_format(:email, ~r/^[^\s]+@[^\s]+$/)
     |> password_changeset(params, @pow_config)
     |> Changeset.unique_constraint(:contact_id)
-    |> Changeset.unique_constraint(:email)
   end
 
   defp maybe_normalize_user_id_field_value(value) when is_binary(value),
