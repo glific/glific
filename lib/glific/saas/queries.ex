@@ -167,8 +167,8 @@ defmodule Glific.Saas.Queries do
   defp validate_text_field(result, field, key, length, optional \\ false)
 
   defp validate_text_field(result, field, _key, {_min_len, _max_len}, true)
-      when field in [nil, ""],
-      do: result
+       when field in [nil, ""],
+       do: result
 
   defp validate_text_field(result, field, key, {min_len, max_len}, _optional) do
     cond do
@@ -365,15 +365,14 @@ defmodule Glific.Saas.Queries do
     end
   end
 
-  # Ensure this shortcode is currently not being used
+  @doc """
+  Validates organization shortocode
+  """
   @spec validate_shortcode(map(), String.t()) :: map()
   def validate_shortcode(result, nil) do
     dgettext("error", "Shortcode cannot be empty.") |> error(result, :shortcode)
   end
 
-  @doc """
-  Validates organization shortocode
-  """
   def validate_shortcode(result, shortcode) do
     with true <- Regex.match?(~r/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/, shortcode),
          {:error, _} <-
