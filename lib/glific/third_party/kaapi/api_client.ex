@@ -8,9 +8,25 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   use Tesla
   require Logger
 
+  @kaapi_endpoint Application.get_env(:glific, :kaapi_endpoint)
+
+  @doc """
+    Ingests an assistant into the Kaapi platform.
+  """
+
+  @spec call_ingest_api(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
+  def call_ingest_api(organization_id, assistant_id) do
+    post(
+      get_kaapi_ingest_url(assistant_id),
+      "",
+      headers: headers(organization_id)
+    )
+    |> parse_response()
+  end
+
   @spec get_kaapi_ingest_url(String.t()) :: String.t()
   defp get_kaapi_ingest_url(assistant_id) do
-    Application.get_env(:glific, :kaapi_endpoint) <> "api/v1/assistant/#{assistant_id}/ingest"
+    @kaapi_endpoint <> "api/v1/assistant/#{assistant_id}/ingest"
   end
 
   @spec get_kaapi_api_key(non_neg_integer) :: {:ok, String.t()} | {:error, String.t()}
@@ -28,20 +44,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
       {"X-API-KEY", "ApiKey #{kaapi_api_key}"},
       {"accept", "application/json"}
     ]
-  end
-
-  @doc """
-    Ingests an assistant into the Kaapi platform.
-  """
-
-  @spec call_ingest_api(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
-  def call_ingest_api(organization_id, assistant_id) do
-    post(
-      get_kaapi_ingest_url(assistant_id),
-      "",
-      headers: headers(organization_id)
-    )
-    |> parse_response()
   end
 
   @spec parse_response(Tesla.Env.result()) :: {:ok, any()} | {:error, String.t()}

@@ -87,7 +87,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
   @spec get_organisations() :: [Organization.t()]
   defp get_organisations do
     Organization
-    |> where([o], o.is_active == true)
+    |> where([o], o.status != "inactive")
     |> Repo.all(skip_organization_id: true)
     |> Enum.filter(fn org ->
       has_kaapi_enabled?(org.id)
@@ -128,7 +128,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
     # if no instructions are present, set default instructions
     case has_valid_instruction?(assistant) do
       false ->
-        attrs = %{instructions: "Default instructions"}
+        attrs = %{instructions: "You are a helpful assistant."}
 
         case Filesearch.update_assistant(assistant.id, attrs) do
           {:ok, updated_assistant} ->
@@ -139,7 +139,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
             {:error, "Failed to update assistant"}
         end
 
-      _ ->
+      true ->
         ApiClient.call_ingest_api(organization_id, assistant.assistant_id)
     end
   end
