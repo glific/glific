@@ -835,7 +835,6 @@ defmodule Glific.OnboardTest do
              Onboard.setup_v2(attrs)
   end
 
-  @tag :tt
   test "onboard setup v2, valid params" do
     attrs = %{
       "name" => "orgname is acme",
@@ -871,7 +870,6 @@ defmodule Glific.OnboardTest do
     assert organization.shortcode == "oia"
   end
 
-  @tag :tt
   test "onboard setup v2, valid params, but we also pass shortcode" do
     attrs = %{
       "name" => "orgname",
