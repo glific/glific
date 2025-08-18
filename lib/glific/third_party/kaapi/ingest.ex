@@ -28,16 +28,46 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
 
   @spec sync_assistants() :: [{non_neg_integer, {:ok, any()}}]
   def sync_assistants do
-    get_organisations()
-    |> Enum.map(fn org ->
-      Logger.info("Syncing for organization: #{org.id}")
+    organizations = get_organisations()
+    total_orgs = length(organizations)
+    Logger.info("Starting sync for #{total_orgs} organizations")
 
-      {:ok, results} = ingest_assistants(org.id)
+    results =
+      organizations
+      |> Task.async_stream(
+        &sync_organization_assistants/1,
+        max_concurrency: 10,
+        timeout: 60_000,
+        on_timeout: :kill_task
+      )
+      |> Enum.map(fn
+        {:ok, result} -> result
+        {:exit, :timeout} -> {:error, :timeout}
+        {:exit, reason} -> {:error, reason}
+      end)
 
-      Logger.info("synced for organization #{org.id}")
+    Logger.info("Completed sync for #{total_orgs} organizations")
+    {:ok, results}
+  end
 
-      {org.id, {:ok, results}}
-    end)
+  def sync_organization_assistants(%{id: org_id}) do
+    Logger.info("Starting sync for organization: #{org_id}")
+
+    result =
+      case ingest_assistants(org_id) do
+        {:ok, assistant_results} ->
+          Logger.info(
+            "Successfully synced #{length(assistant_results)} assistants for organization #{org_id}"
+          )
+
+          {:ok, assistant_results}
+
+        {:error, reason} ->
+          Logger.error("Failed to sync assistants for organization #{org_id}: #{inspect(reason)}")
+          {:error, reason}
+      end
+
+    {org_id, result}
   end
 
   @spec has_kaapi_enabled?(non_neg_integer) :: boolean()
@@ -77,7 +107,10 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
 
   @spec fetch_assistansts(non_neg_integer) :: {:ok, [Assistant.t()]}
   defp fetch_assistansts(organization_id) do
-    assistants = Assistant.list_assistants(%{organization_id: organization_id})
+    assistants =
+      Assistant
+      |> where([a], a.organization_id == ^organization_id)
+      |> Repo.all(organization_id: organization_id)
 
     case assistants do
       [] ->
@@ -101,7 +134,8 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
           {:ok, updated_assistant} ->
             ApiClient.call_ingest_api(organization_id, updated_assistant.assistant_id)
 
-          {:error, _} ->
+          {:error, reason} ->
+            Logger.error("Failed to update assistant #{assistant.id}: #{inspect(reason)}")
             {:error, "Failed to update assistant"}
         end
 
@@ -117,10 +151,27 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
         results =
           assistants
           |> Enum.map(fn assistant ->
-            check_and_process_assistant(organization_id, assistant)
+            case check_and_process_assistant(organization_id, assistant) do
+              {:ok, result} ->
+                Logger.info(
+                  "Successfully processed assistant #{assistant.assistant_id} for org #{organization_id}"
+                )
+
+                {:ok, result}
+
+              {:error, reason} ->
+                Logger.error(
+                  "Failed to process assistant #{assistant.assistant_id} for org #{organization_id}: #{inspect(reason)}"
+                )
+
+                {:error, reason}
+            end
           end)
 
         {:ok, results}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 end

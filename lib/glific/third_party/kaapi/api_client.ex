@@ -1,5 +1,5 @@
 defmodule Glific.ThirdParty.Kaapi.ApiClient do
-    @moduledoc """
+  @moduledoc """
   Glific module for API calls to kaapi
   """
 
@@ -13,7 +13,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     Application.get_env(:glific, :kaapi_endpoint) <> "api/v1/assistant/#{assistant_id}/ingest"
   end
 
-  @spec get_kaapi_api_key(non_neg_integer) :: String.t()
+  @spec get_kaapi_api_key(non_neg_integer) :: {:ok, String.t()} | {:error, String.t()}
   defp get_kaapi_api_key(organization_id) do
     organization = Partners.organization(organization_id)
     kaapi_credentials = organization.services["kaapi"]
@@ -61,5 +61,4 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   defp parse_response({:error, reason}) do
     {:error, reason}
   end
-
 end
