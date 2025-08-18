@@ -123,4 +123,4 @@ config :glific,
 
 config :glific, :kaapi_endpoint, env!("KAAPI_ENDPOINT", :string, "This is not a secret")
 
-config :glific, :glific_x_api_key, env!("GLIFIC_X_API_KEY", :string, "This is not a secret")
+config :glific, :kaapi_api_key, env!("KAAPI_API_KEY", :string, "This is not a secret")

@@ -1,81 +1,111 @@
 defmodule Glific.KaapiKeysMigration do
   @moduledoc """
-  This is the module to onboard glific orgs in kaapi and add the kaapi api keys in glific
+  Onboard Glific orgs to KAAPI and store KAAPI API keys as provider credentials.
   """
-
-  use Tesla
-  plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
 
   require Logger
   import Ecto.Query
 
-  alias Glific.Partners.Organization
-  alias Glific.Repo
+  alias Glific.{
+    Partners,
+    Partners.Credential,
+    Partners.Organization,
+    Partners.Provider,
+    Repo,
+    ThirdParty.Kaapi
+  }
 
   @doc """
-  Onboard **all** organizations from the DB.
-  Returns {:ok, [%{org_id, organization_name, status, result|error}, ...]} | {:error, reason}
+  Onboard all eligible organizations from the DB.
   """
-  @spec onboard_organizations_from_db() :: {:ok, list(map())} | {:error, String.t()}
+  @spec onboard_organizations_from_db() :: {:ok, any()} | {:error, String.t()}
   def onboard_organizations_from_db do
-    organizations =
-      from(o in Organization,
-        select: %{
-          id: o.id,
-          name: o.name,
-          parent_org: o.parent_org,
-          shortcode: o.shortcode,
-          email: o.email
-        }
-      )
-      |> Repo.all(skip_organization_id: true)
-
-    results =
-      organizations
-      |> Enum.map(&process_org_record/1)
-
-    {:ok, results}
+    organizations = fetch_eligible_orgs()
+    {:ok, process_orgs_concurrently(organizations)}
   rescue
     e ->
       {:error, "Failed to read organizations: #{Exception.message(e)}"}
   end
 
   @doc """
-  Onboard only the organizations whose IDs are provided.
-  Returns {:ok, [%{org_id, organization_name, status, result|error}, ...]} | {:error, reason}
+  Onboard only the given organization IDs (but still only if they are eligible).
   """
   @spec onboard_organizations_from_db([non_neg_integer()]) ::
-          {:ok, list(map())} | {:error, String.t()}
+          {:ok, any()} | {:error, String.t()}
   def onboard_organizations_from_db(ids) when is_list(ids) do
-    organizations =
+    organizations = fetch_eligible_orgs(ids)
+    {:ok, process_orgs_concurrently(organizations)}
+  rescue
+    e ->
+      {:error, "Failed to read organizations by ids: #{Exception.message(e)}"}
+  end
+
+  @spec fetch_eligible_orgs(nil | [non_neg_integer()]) :: [map()]
+  defp fetch_eligible_orgs(ids \\ nil) do
+    {:ok, %Provider{id: provider_id}} =
+      Repo.fetch_by(Provider, %{shortcode: "kaapi"})
+
+    base_query =
       from(o in Organization,
-        where: o.id in ^ids,
+        left_join: c in Credential,
+        on: c.organization_id == o.id and c.provider_id == ^provider_id,
+        where: is_nil(c.id),
         select: %{
           id: o.id,
           name: o.name,
           parent_org: o.parent_org,
           shortcode: o.shortcode,
           email: o.email
-        }
+        },
+        distinct: o.id
       )
-      |> Repo.all(skip_organization_id: true)
 
-    results =
-      organizations
-      |> Enum.map(&process_org_record/1)
+    query =
+      case ids do
+        nil ->
+          base_query
 
-    {:ok, results}
-  rescue
-    e ->
-      {:error, "Failed to read organizations by ids: #{Exception.message(e)}"}
+        list when is_list(list) ->
+          from(o in subquery(base_query), where: o.id in ^list)
+      end
+
+    Repo.all(query, skip_organization_id: true)
   end
 
-  @spec process_org_record(map()) :: map()
-  defp process_org_record(%{id: _, name: _, parent_org: _, shortcode: _, email: _} = org_map) do
-    do_process_org(org_map)
+  @spec process_orgs_concurrently([map()]) :: [map()]
+  defp process_orgs_concurrently(orgs) do
+    orgs
+    |> Task.async_stream(fn org ->
+      try do
+        {:ok, org.id, process_org_record(org)}
+      rescue
+        e -> {:error, org.id, Exception.message(e)}
+      catch
+        type, reason -> {:error, org.id, {type, reason}}
+      end
+    end)
+    |> Enum.map(fn
+      {:ok, {:ok, _org_id, res}} ->
+        res
+
+      {:ok, {:error, org_id, reason}} ->
+        unexpected_task_error(reason, org_id)
+
+      {:exit, reason} ->
+        unexpected_task_error(reason, -1)
+    end)
   end
 
-  defp do_process_org(org) when is_map(org) do
+  @spec unexpected_task_error(any(), integer()) :: map()
+  defp unexpected_task_error(reason, org_id) do
+    Logger.error("Task error for org_id=#{org_id}: #{inspect(reason)}")
+    %{org_id: org_id, status: :error, error: "Task error: #{inspect(reason)}"}
+  end
+
+  @spec process_org_record(map()) :: any()
+  defp process_org_record(%{id: _, name: _, parent_org: _, shortcode: _, email: _} = org) do
+    Logger.metadata(org_id: org.id)
+
     email = (org.email || "") |> String.trim()
 
     user_name =
@@ -117,6 +147,8 @@ defmodule Glific.KaapiKeysMigration do
         }
 
       {:error, error} ->
+        Logger.error("Onboarding failed for org_id=#{org.id}: #{inspect(error)}")
+
         %{
           organization_name: organization_name,
           org_id: org.id,
@@ -126,7 +158,7 @@ defmodule Glific.KaapiKeysMigration do
     end
   rescue
     e ->
-      Logger.error("Onboarding failed for org_id=#{inspect(org[:id])}: #{Exception.message(e)}")
+      Logger.error("Onboarding crashed for org_id=#{inspect(org[:id])}: #{Exception.message(e)}")
 
       %{
         organization_name: org[:name],
@@ -138,8 +170,8 @@ defmodule Glific.KaapiKeysMigration do
 
   @spec complete_kaapi_onboarding(map()) :: {:ok, map()} | {:error, String.t()}
   defp complete_kaapi_onboarding(params) do
-    with {:ok, %{api_key: api_key}} <- onboard_to_kaapi(params),
-         {:ok, _} <- update_kaapi_provider(params.organization_id, api_key) do
+    with {:ok, %{api_key: api_key}} <- Kaapi.onboard_to_kaapi(params),
+         {:ok, _} <- upsert_kaapi_provider(params.organization_id, api_key) do
       {:ok, %{message: "KAAPI onboarding completed successfully"}}
     else
       {:error, error} ->
@@ -148,96 +180,31 @@ defmodule Glific.KaapiKeysMigration do
         )
 
         {:error, "KAAPI onboarding failed: #{inspect(error)}"}
-
-      other ->
-        Logger.error("Unexpected result in onboarding pipeline: #{inspect(other)}")
-        {:error, "KAAPI onboarding failed"}
     end
   end
 
-  @spec onboard_to_kaapi(map()) :: {:ok, map()} | {:error, String.t()}
-  defp onboard_to_kaapi(params) do
-    kaapi_url = Application.fetch_env!(:glific, :kaapi_endpoint)
-    url = kaapi_url <> "api/v1/onboard"
-
-    payload = %{
-      organization_name: params.organization_name,
-      project_name: params.project_name,
-      email: params.email,
-      password: params.password,
-      user_name: params.user_name
-    }
-
-    key = Application.fetch_env!(:glific, :glific_x_api_key)
-
-    post(
-      url,
-      Jason.encode!(payload),
-      headers: [
-        {"X-API-KEY", key},
-        {"Content-Type", "application/json"}
-      ]
-    )
-    |> parse_kaapi_response()
-  end
-
-  @spec update_kaapi_provider(non_neg_integer(), String.t()) ::
-          {:ok, map()} | {:error, any()}
-  defp update_kaapi_provider(organization_id, api_key) do
-    case Glific.Partners.get_credential(%{
-           organization_id: organization_id,
-           shortcode: "kaapi"
-         }) do
-      {:ok, _credential} ->
-        # if kaapi is already active then we dont update the existing entry
-        Logger.info("Kaapi is alredy active: for org: #{organization_id}")
-
-      {:error, _} ->
-        Glific.Partners.create_credential(%{
-          organization_id: organization_id,
-          shortcode: "kaapi",
-          keys: %{},
-          secrets: %{"api_key" => api_key},
-          is_active: true
-        })
+  @spec upsert_kaapi_provider(non_neg_integer(), String.t()) ::
+          {:ok, :created | :already_active} | {:error, any()}
+  defp upsert_kaapi_provider(organization_id, api_key) do
+    Partners.create_credential(%{
+      organization_id: organization_id,
+      shortcode: "kaapi",
+      keys: %{},
+      secrets: %{"api_key" => api_key},
+      is_active: true
+    })
+    |> case do
+      {:ok, _} -> {:ok, :created}
+      {:error, reason} -> {:error, reason}
     end
-  end
-
-  @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t()}
-  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: %{api_key: api_key}}})
-       when status in 200..299 do
-    {:ok, %{api_key: api_key}}
-  end
-
-  defp parse_kaapi_response({:ok, %Tesla.Env{body: %{error: error_msg}}})
-       when is_binary(error_msg) do
-    Logger.error("kaapi_url api error due to #{inspect(error_msg)}")
-    {:error, error_msg}
-  end
-
-  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
-       when status >= 400 do
-    msg =
-      case body do
-        %{error: e} when is_binary(e) -> e
-        _ -> "HTTP #{status}"
-      end
-
-    Logger.error("kaapi_url api error due to #{inspect(msg)}")
-    {:error, msg}
-  end
-
-  defp parse_kaapi_response({:error, message}) do
-    Logger.error("Kaapi api error due to #{inspect(message)}")
-    {:error, "API request failed"}
   end
 
   @spec generate_random_password() :: String.t()
   defp generate_random_password do
-    length = 8
+    length = 12
 
     :crypto.strong_rand_bytes(length)
     |> Base.encode64()
-    |> String.slice(0, length)
+    |> binary_part(0, length)
   end
 end
