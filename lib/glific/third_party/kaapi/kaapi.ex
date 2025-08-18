@@ -2,6 +2,7 @@ defmodule Glific.ThirdParty.Kaapi do
   @moduledoc """
   Kaapi Integration Module
   """
+  alias Glific.Partners
   require Logger
 
   use Tesla
@@ -18,8 +19,6 @@ defmodule Glific.ThirdParty.Kaapi do
     payload = %{
       organization_name: params.organization_name,
       project_name: params.project_name,
-      email: params.email,
-      password: params.password,
       user_name: params.user_name
     }
 
@@ -34,6 +33,23 @@ defmodule Glific.ThirdParty.Kaapi do
       ]
     )
     |> parse_kaapi_response()
+  end
+
+  @doc """
+  Fetch the kaapi creds
+  """
+  @spec fetch_kaapi_creds(non_neg_integer) :: nil | {:ok, any} | {:error, any}
+  def fetch_kaapi_creds(organization_id) do
+    organization = Partners.organization(organization_id)
+
+    organization.services["kaapi"]
+    |> case do
+      nil ->
+        {:error, "Kaapi is not active"}
+
+      credentials ->
+        {:ok, credentials.secrets}
+    end
   end
 
   @spec parse_kaapi_response(Tesla.Env.result()) ::

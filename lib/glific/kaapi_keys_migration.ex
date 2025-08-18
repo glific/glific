@@ -54,8 +54,7 @@ defmodule Glific.KaapiKeysMigration do
           id: o.id,
           name: o.name,
           parent_org: o.parent_org,
-          shortcode: o.shortcode,
-          email: o.email
+          shortcode: o.shortcode
         },
         distinct: o.id
       )
@@ -103,37 +102,14 @@ defmodule Glific.KaapiKeysMigration do
   end
 
   @spec process_org_record(map()) :: any()
-  defp process_org_record(%{id: _, name: _, parent_org: _, shortcode: _, email: _} = org) do
-    Logger.metadata(org_id: org.id)
-
-    email = (org.email || "") |> String.trim()
-
-    user_name =
-      case String.split(email, "@", parts: 2) do
-        [local, _] ->
-          local = String.trim(local)
-          if local == "", do: "user#{org.id}", else: local
-
-        _ ->
-          "user#{org.id}"
-      end
-
-    organization_name =
-      org.parent_org
-      |> to_string()
-      |> String.trim()
-      |> case do
-        "" -> org.name
-        other -> other
-      end
+  defp process_org_record(%{id: _, name: _, parent_org: _, shortcode: _} = org) do
+    user_name = org.shortcode
+    organization_name = if org.parent_org in [nil, ""], do: org.name, else: org.parent_org
 
     params = %{
       organization_id: org.id,
-      org_id: org.id,
       organization_name: organization_name,
       project_name: org.name,
-      email: email,
-      password: generate_random_password(),
       user_name: user_name
     }
 
@@ -141,7 +117,6 @@ defmodule Glific.KaapiKeysMigration do
       {:ok, result} ->
         %{
           organization_name: organization_name,
-          org_id: org.id,
           status: :success,
           result: result
         }
@@ -151,7 +126,6 @@ defmodule Glific.KaapiKeysMigration do
 
         %{
           organization_name: organization_name,
-          org_id: org.id,
           status: :error,
           error: error
         }
@@ -162,7 +136,6 @@ defmodule Glific.KaapiKeysMigration do
 
       %{
         organization_name: org[:name],
-        org_id: org[:id],
         status: :error,
         error: Exception.message(e)
       }
@@ -197,14 +170,5 @@ defmodule Glific.KaapiKeysMigration do
       {:ok, _} -> {:ok, :created}
       {:error, reason} -> {:error, reason}
     end
-  end
-
-  @spec generate_random_password() :: String.t()
-  defp generate_random_password do
-    length = 12
-
-    :crypto.strong_rand_bytes(length)
-    |> Base.encode64()
-    |> binary_part(0, length)
   end
 end
