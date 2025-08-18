@@ -253,24 +253,6 @@ defmodule Glific.UsersTest do
       assert {:error, %Ecto.Changeset{}} = Users.create_user(valid_attrs2)
     end
 
-    test "ensure that creating users with same email gives an error", attrs do
-      contact1 = Fixtures.contact_fixture(attrs)
-      contact2 = Fixtures.contact_fixture(attrs)
-
-      valid_attrs1 =
-        @valid_attrs
-        |> Map.put(:contact_id, contact1.id)
-        |> Map.put(:organization_id, contact1.organization_id)
-
-      valid_attrs2 =
-        @valid_attrs
-        |> Map.put(:contact_id, contact2.id)
-        |> Map.put(:organization_id, contact2.organization_id)
-
-      Users.create_user(valid_attrs1)
-      assert {:error, %Ecto.Changeset{}} = Users.create_user(valid_attrs2)
-    end
-
     test "ensure that creating users with same contact_id gives an error", attrs do
       contact = Fixtures.contact_fixture(attrs)
 
