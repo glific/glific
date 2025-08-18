@@ -33,7 +33,11 @@ defmodule Glific.Saas.Onboard do
 
   @dummy_phone_number "91783481114"
 
-  @type setup_params :: %{(name :: String.t()) => String.t(), (email :: String.t()) => String.t()}
+  @type setup_params :: %{
+          (name :: String.t()) => String.t(),
+          (email :: String.t()) => String.t(),
+          optional(shortcode :: String.t()) => String.t()
+        }
   @doc """
   Setup all the tables and necessary values to onboard an organization
   """
@@ -47,9 +51,12 @@ defmodule Glific.Saas.Onboard do
   end
 
   @doc """
-  V2 of setup/1, where other than email and name are the only values we need to provide
+  V2 of setup/1, where email and name are the only mandatory values we need to provide
 
   example argument %{"email" => "foo@bar.com", "name" => "test"}
+
+  Optionally we can provide "shortcode" too, incase system generated shortcode
+  has any validation issue.
   """
   @spec setup_v2(setup_params()) :: map()
   def setup_v2(params) do
@@ -64,7 +71,7 @@ defmodule Glific.Saas.Onboard do
     result = %{is_valid: true, messages: %{}}
 
     with %{is_valid: true} <- Queries.validate_onboard_params(result, params),
-         shortcode <- generate_shortcode(params["name"]),
+         shortcode <- generate_shortcode(params["name"], params["shortcode"]),
          %{is_valid: true} <- Queries.validate_shortcode(result, shortcode),
          %{is_valid: true} = result <-
            Queries.setup_v2(result, params |> Map.put("shortcode", shortcode)) do
@@ -76,8 +83,8 @@ defmodule Glific.Saas.Onboard do
     end
   end
 
-  @spec generate_shortcode(String.t()) :: String.t()
-  defp generate_shortcode(org_name) do
+  @spec generate_shortcode(String.t(), String.t() | nil) :: String.t()
+  defp generate_shortcode(org_name, nil) do
     name_parts = String.split(org_name, " ")
 
     if length(name_parts) > 1 do
@@ -88,6 +95,8 @@ defmodule Glific.Saas.Onboard do
     |> String.slice(0..7)
     |> String.downcase()
   end
+
+  defp generate_shortcode(_org_name, shortcode), do: shortcode
 
   @doc """
   Updates the registration details and send submission mail to user

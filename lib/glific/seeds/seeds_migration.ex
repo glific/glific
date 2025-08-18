@@ -57,7 +57,7 @@ defmodule Glific.Seeds.SeedsMigration do
   defp do_migrate_data(:simulator, organizations), do: add_simulators(organizations)
 
   defp do_migrate_data(:template_flows, organizations) do
-    # since in test env we are seeding some of the template flows
+    # since in test and dev  env we are seeding some of the template flows
     # priv/repo/seeds/20200723172939_add_glific_data.exs:flows/1
     if Application.get_env(:glific, :environment) in [:prod] do
       SeedsFlows.add_template_flows(organizations)

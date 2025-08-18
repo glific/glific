@@ -835,9 +835,10 @@ defmodule Glific.OnboardTest do
              Onboard.setup_v2(attrs)
   end
 
+  @tag :tt
   test "onboard setup v2, valid params" do
     attrs = %{
-      "name" => "orgname",
+      "name" => "orgname is acme",
       "email" => "foobar@gmail.com"
     }
 
@@ -867,5 +868,43 @@ defmodule Glific.OnboardTest do
     assert %{"api_key" => "NA", "app_id" => "NA", "app_name" => "NA"} = credential.secrets
     assert organization.is_active
     assert organization.status == :active
+    assert organization.shortcode == "oia"
+  end
+
+  @tag :tt
+  test "onboard setup v2, valid params, but we also pass shortcode" do
+    attrs = %{
+      "name" => "orgname",
+      "email" => "foobar@gmail.com",
+      "shortcode" => "org"
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{name: "name", customer_name: "name"}
+          }
+        }
+    end)
+
+    assert %{
+             is_valid: true,
+             messages: %{},
+             organization: organization,
+             contact: contact,
+             credential: credential
+           } =
+             Onboard.setup_v2(attrs)
+
+    assert contact.phone == @dummy_phone_number
+    assert contact.name == "NGO Main Account"
+    user = Repo.preload(contact, [:user])
+    assert user.phone == @dummy_phone_number
+    assert %{"api_key" => "NA", "app_id" => "NA", "app_name" => "NA"} = credential.secrets
+    assert organization.is_active
+    assert organization.status == :active
+    assert organization.shortcode == "org"
   end
 end
