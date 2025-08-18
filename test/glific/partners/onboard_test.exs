@@ -905,4 +905,28 @@ defmodule Glific.OnboardTest do
     assert organization.status == :active
     assert organization.shortcode == "org"
   end
+
+  test "onboard setup v2, valid params, but erp api fails" do
+    attrs = %{
+      "name" => "orgname",
+      "email" => "foobar@gmail.com",
+      "shortcode" => "org"
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        {:error,
+         %Tesla.Env{
+           status: 500,
+           body: %{
+             _server_messages: "[{\"message\":\"reason\"}]"
+           }
+         }}
+    end)
+
+    assert %{
+             is_valid: false
+           } =
+             Onboard.setup_v2(attrs)
+  end
 end
