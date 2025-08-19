@@ -29,7 +29,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
     middleware
     |> Tesla.client()
-    |> Tesla.post("/api/v1/onboard", payload)
+    |> post("/api/v1/onboard", payload)
     |> parse_kaapi_response()
   end
 
