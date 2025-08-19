@@ -12,7 +12,7 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
     Partners.Organization,
     Partners.Provider,
     Repo,
-    ThirdParty.Kaapi.ApiClient
+    ThirdParty.Kaapi
   }
 
   @doc """
@@ -74,91 +74,45 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
   @spec process_orgs_concurrently([map()]) :: [map()]
   defp process_orgs_concurrently(orgs) do
     orgs
-    |> Task.async_stream(fn org ->
-      try do
-        {:ok, org.id, process_org_record(org)}
-      rescue
-        e -> {:error, org.id, Exception.message(e)}
-      catch
-        type, reason -> {:error, org.id, {type, reason}}
-      end
-    end)
-    |> Enum.map(fn
-      {:ok, {:ok, _org_id, res}} ->
-        res
-
-      {:ok, {:error, org_id, reason}} ->
-        unexpected_task_error(reason, org_id)
-
-      {:exit, reason} ->
-        unexpected_task_error(reason, -1)
-    end)
-  end
-
-  @spec unexpected_task_error(any(), integer()) :: map()
-  defp unexpected_task_error(reason, org_id) do
-    Logger.error("Task error for org_id=#{org_id}: #{inspect(reason)}")
-    %{org_id: org_id, status: :error, error: "Task error: #{inspect(reason)}"}
+    |> Task.async_stream(fn org -> {:ok, org.id, process_org_record(org)} end)
+    |> Enum.into([])
   end
 
   @spec process_org_record(map()) :: any()
-  defp process_org_record(%{id: _, name: _, parent_org: _, shortcode: _} = org) do
-    user_name = org.shortcode
-    organization_name = if org.parent_org in [nil, ""], do: org.name, else: org.parent_org
+  defp process_org_record(
+         %{id: id, name: org_name, parent_org: parent_org, shortcode: shortcode} = org
+       ) do
+    organization_name = if parent_org in [nil, ""], do: org_name, else: parent_org
 
     params = %{
-      organization_id: org.id,
+      organization_id: id,
       organization_name: organization_name,
-      project_name: org.name,
-      user_name: user_name
+      project_name: org_name,
+      user_name: shortcode
     }
 
-    case complete_kaapi_onboarding(params) do
-      {:ok, result} ->
-        %{
-          organization_name: organization_name,
-          status: :success,
-          result: result
-        }
-
-      {:error, error} ->
-        Logger.error("Onboarding failed for org_id=#{org.id}: #{inspect(error)}")
-
-        %{
-          organization_name: organization_name,
-          status: :error,
-          error: error
-        }
-    end
+    complete_kaapi_onboarding(params)
   rescue
-    e ->
-      Logger.error("Onboarding crashed for org_id=#{inspect(org[:id])}: #{Exception.message(e)}")
-
-      %{
-        organization_name: org[:name],
-        status: :error,
-        error: Exception.message(e)
-      }
+    error ->
+      Logger.error("Onboarding crashed for org_id=#{inspect(org[:id])}: #{inspect(error)}")
   end
 
   @spec complete_kaapi_onboarding(map()) :: {:ok, map()} | {:error, String.t()}
   defp complete_kaapi_onboarding(params) do
-    with {:ok, %{api_key: api_key}} <- ApiClient.onboard_to_kaapi(params),
-         {:ok, _} <- upsert_kaapi_provider(params.organization_id, api_key) do
-      {:ok, %{message: "KAAPI onboarding completed successfully"}}
+    with {:ok, %{api_key: api_key}} <- Kaapi.onboard(params),
+         {:ok, _} <- insert_kaapi_provider(params.organization_id, api_key) do
+      Logger.info("KAAPI onboarding success for org: #{params.organization_id}")
     else
       {:error, error} ->
         Logger.error(
           "KAAPI onboarding failed for org: #{params.organization_id}, reason: #{inspect(error)}"
         )
-
-        {:error, "KAAPI onboarding failed: #{inspect(error)}"}
     end
   end
 
-  @spec upsert_kaapi_provider(non_neg_integer(), String.t()) ::
+  @spec insert_kaapi_provider(non_neg_integer(), String.t()) ::
           {:ok, :created | :already_active} | {:error, any()}
-  defp upsert_kaapi_provider(organization_id, api_key) do
+  defp insert_kaapi_provider(organization_id, api_key) do
     Partners.create_credential(%{
       organization_id: organization_id,
       shortcode: "kaapi",
