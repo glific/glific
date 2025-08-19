@@ -13,7 +13,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
     Partners.Provider,
     Partners.Credential,
     Repo,
-    ThirdParty.Kaapi.ApiClient
+    ThirdParty.Kaapi
   }
 
   require Logger
@@ -161,7 +161,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
               "KAAPI_ASSISTANT_UPDATED: Successfully updated assistant id: #{assistant.assistant_id} org: #{organization_id} with default instructions."
             )
 
-            ApiClient.call_ingest_api(organization_id, updated_assistant.assistant_id)
+            Kaapi.ingest_ai_assistant(organization_id, updated_assistant.assistant_id)
 
           {:error, reason} ->
             Logger.error(
@@ -172,7 +172,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
         end
 
       true ->
-        ApiClient.call_ingest_api(organization_id, assistant.assistant_id)
+        Kaapi.ingest_ai_assistant(organization_id, assistant.assistant_id)
     end
   end
 
@@ -212,7 +212,6 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
         )
 
         {:ok, results}
-
     end
   end
 

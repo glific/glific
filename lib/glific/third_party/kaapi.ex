@@ -37,6 +37,14 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  def ingest_ai_assistant(organization_id, assistant_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id) do
+      ApiClient.ingest_ai_assistats(secrets[:api_key], assistant_id)
+    else
+      error -> error
+    end
+  end
+
   @spec insert_kaapi_provider(non_neg_integer(), String.t()) ::
           {:ok, :created | :already_active} | {:error, any()}
   defp insert_kaapi_provider(organization_id, api_key) do
