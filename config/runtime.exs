@@ -121,6 +121,6 @@ config :glific, Glific.Erase,
 config :glific,
   appsignal_sampling_rate: env!("APPSIGNAL_SAMPLING_RATE", :integer, 10)
 
-config :glific, :kaapi_endpoint, env!("KAAPI_ENDPOINT", :string, "This is not a secret")
-
-config :glific, :kaapi_api_key, env!("KAAPI_API_KEY", :string, "This is not a secret")
+config :glific,
+  kaapi_endpoint: env!("KAAPI_ENDPOINT", :string, "This is not a secret"),
+  kaapi_api_key: env!("KAAPI_API_KEY", :string, "This is not a secret")
