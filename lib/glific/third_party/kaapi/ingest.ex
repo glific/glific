@@ -125,8 +125,8 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
     end
   end
 
-  @spec fetch_assistansts(non_neg_integer) :: {:ok, [Assistant.t()]} | {:error, String.t()}
-  defp fetch_assistansts(organization_id) do
+  @spec fetch_assistants(non_neg_integer) :: {:ok, [Assistant.t()]} | {:error, String.t()}
+  defp fetch_assistants(organization_id) do
     assistants =
       Assistant
       |> where([a], a.organization_id == ^organization_id)
@@ -178,7 +178,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
 
   @spec ingest_assistants(non_neg_integer) :: {:ok, any()} | {:error, String.t()}
   defp ingest_assistants(organization_id) do
-    case fetch_assistansts(organization_id) do
+    case fetch_assistants(organization_id) do
       {:ok, assistants} ->
         Logger.info(
           "KAAPI_PROCESSING_START: Starting to process #{length(assistants)} assistants for org: #{organization_id}"
@@ -213,8 +213,6 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
 
         {:ok, results}
 
-      _ ->
-        {:error, "Failed to fetch assistants"}
     end
   end
 

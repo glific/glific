@@ -8,7 +8,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   use Tesla
   require Logger
 
-  @kaapi_endpoint Application.get_env(:glific, :kaapi_endpoint)
+  @kaapi_endpoint Application.compile_env(:glific, :kaapi_endpoint)
 
   @doc """
     Ingests an assistant into the Kaapi platform.
