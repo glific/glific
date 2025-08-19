@@ -75,7 +75,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
        when status >= 400 do
     Logger.error("KAAPI API HTTP error with status #{status}, reason: #{inspect(body)}")
-    {:error, msg}
+    {:error, "API request failed"}
   end
 
   defp parse_kaapi_response({:error, message}) do
