@@ -7,11 +7,9 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
   import Ecto.Query
 
   alias Glific.{
-    Partners,
-    Partners.Credential,
+    Repo,
     Partners.Organization,
     Partners.Provider,
-    Repo,
     ThirdParty.Kaapi
   }
 
@@ -91,38 +89,9 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
       user_name: shortcode
     }
 
-    complete_kaapi_onboarding(params)
+    Kaapi.onboard(params)
   rescue
     error ->
       Logger.error("Onboarding crashed for org_id=#{inspect(org[:id])}: #{inspect(error)}")
-  end
-
-  @spec complete_kaapi_onboarding(map()) :: {:ok, map()} | {:error, String.t()}
-  defp complete_kaapi_onboarding(params) do
-    with {:ok, %{api_key: api_key}} <- Kaapi.onboard(params),
-         {:ok, _} <- insert_kaapi_provider(params.organization_id, api_key) do
-      Logger.info("KAAPI onboarding success for org: #{params.organization_id}")
-    else
-      {:error, error} ->
-        Logger.error(
-          "KAAPI onboarding failed for org: #{params.organization_id}, reason: #{inspect(error)}"
-        )
-    end
-  end
-
-  @spec insert_kaapi_provider(non_neg_integer(), String.t()) ::
-          {:ok, :created | :already_active} | {:error, any()}
-  defp insert_kaapi_provider(organization_id, api_key) do
-    Partners.create_credential(%{
-      organization_id: organization_id,
-      shortcode: "kaapi",
-      keys: %{},
-      secrets: %{"api_key" => api_key},
-      is_active: true
-    })
-    |> case do
-      {:ok, _} -> {:ok, :created}
-      {:error, reason} -> {:error, reason}
-    end
   end
 end
