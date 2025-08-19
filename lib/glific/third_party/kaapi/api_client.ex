@@ -5,6 +5,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   use Tesla
   require Logger
 
+  plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
   plug(Tesla.Middleware.Telemetry)
 
   @doc """
@@ -23,8 +24,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
     middleware = [
       {Tesla.Middleware.Headers, headers(api_key)},
-      {Tesla.Middleware.BaseUrl, endpoint},
-      {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]}
+      {Tesla.Middleware.BaseUrl, endpoint}
     ]
 
     middleware
