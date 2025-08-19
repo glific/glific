@@ -12,7 +12,7 @@ defmodule Glific.KaapiKeysMigration do
     Partners.Organization,
     Partners.Provider,
     Repo,
-    ThirdParty.Kaapi
+    ThirdParty.Kaapi.ApiClient
   }
 
   @doc """
@@ -143,7 +143,7 @@ defmodule Glific.KaapiKeysMigration do
 
   @spec complete_kaapi_onboarding(map()) :: {:ok, map()} | {:error, String.t()}
   defp complete_kaapi_onboarding(params) do
-    with {:ok, %{api_key: api_key}} <- Kaapi.onboard_to_kaapi(params),
+    with {:ok, %{api_key: api_key}} <- ApiClient.onboard_to_kaapi(params),
          {:ok, _} <- upsert_kaapi_provider(params.organization_id, api_key) do
       {:ok, %{message: "KAAPI onboarding completed successfully"}}
     else

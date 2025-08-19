@@ -1,4 +1,4 @@
-defmodule Glific.ThirdParty.Kaapi do
+defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @moduledoc """
   Kaapi Integration Module
   """

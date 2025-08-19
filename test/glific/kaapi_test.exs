@@ -2,7 +2,7 @@ defmodule Glific.KaapiTest do
   use Glific.DataCase, async: true
 
   import Tesla.Mock
-  alias Glific.ThirdParty.Kaapi
+  alias Glific.ThirdParty.Kaapi.ApiClient
 
   @params %{
     organization_id: 1,
@@ -20,7 +20,7 @@ defmodule Glific.KaapiTest do
         }
     end)
 
-    assert {:ok, %{api_key: key}} = Kaapi.onboard_to_kaapi(@params)
+    assert {:ok, %{api_key: key}} = ApiClient.onboard_to_kaapi(@params)
     assert key == "ApiKey XoxxxxabcDefGhfKSDrs"
   end
 
@@ -34,6 +34,6 @@ defmodule Glific.KaapiTest do
     end)
 
     assert {:error, "API key already exists for this user and project."} =
-             Kaapi.onboard_to_kaapi(@params)
+             ApiClient.onboard_to_kaapi(@params)
   end
 end
