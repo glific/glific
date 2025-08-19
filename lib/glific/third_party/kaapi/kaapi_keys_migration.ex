@@ -1,4 +1,4 @@
-defmodule Glific.KaapiKeysMigration do
+defmodule Glific.ThirdParty.Kaapi.Migration do
   @moduledoc """
   Onboard Glific orgs to KAAPI and store KAAPI API keys as provider credentials.
   """
