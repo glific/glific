@@ -67,7 +67,7 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
   @spec process_orgs_concurrently([map()]) :: [map()]
   defp process_orgs_concurrently(orgs) do
     orgs
-    |> Task.async_stream(fn org -> {:ok, org.id, process_org_record(org)} end)
+    |> Task.async_stream(&process_org_record/1)
     |> Enum.into([])
   end
 
