@@ -290,20 +290,53 @@ defmodule Glific.Partners do
 
   """
   @spec update_organization(Organization.t(), map()) ::
-          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def update_organization(%Organization{} = organization, attrs) do
-    # first delete the cached organization
-    remove_organization_cache(organization.id, organization.shortcode)
+    case Map.fetch(attrs, :phone) do
+      :error ->
+        # Normal flow without phone update
+        do_update_org(organization, attrs)
 
-    ## in case user updates the out of office flow it should update the flow keyword map as well.
-    ## We need to think about a better approach to handle this one.
+      {:ok, phone} ->
+        # Validate the phone number first
+        case validate_number(phone) do
+          :ok ->
+            # If valid, update the contact and main user
+            with {:ok, _contact} <- update_org_contact(organization, phone),
+                 {:ok, _user} <- update_main_user(organization, phone) do
+              attrs = Map.put(attrs, :allow_bot_number_update, false)
+              do_update_org(organization, Map.delete(attrs, :phone))
+            end
+
+          {:error, message} ->
+            {:error, message}
+        end
+    end
+  end
+
+  @spec update_main_user(Organization.t(), String.t()) :: {:ok, User.t()} | {:error, String.t()}
+  defp update_main_user(org, phone) do
+    case Repo.fetch_by(User, %{organization_id: org.id, contact_id: org.contact_id}) do
+      {:ok, user} ->
+        user
+        |> Ecto.Changeset.change(%{phone: phone})
+        |> Repo.update()
+
+      _ ->
+        {:error, "Main user not found"}
+    end
+  end
+
+  @spec do_update_org(Organization.t(), map()) ::
+          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
+  defp do_update_org(%Organization{} = organization, attrs) do
+    remove_organization_cache(organization.id, organization.shortcode)
     Caches.remove(organization.id, ["flow_keywords_map"])
 
     with {:ok, updated_organization} <-
            organization
            |> Organization.changeset(attrs)
            |> Repo.update(skip_organization_id: true) do
-      # pin both new contact and optin flow id
       maybe_pin_flow(
         updated_organization.newcontact_flow_id,
         organization.newcontact_flow_id,
@@ -315,6 +348,36 @@ defmodule Glific.Partners do
         organization.optin_flow_id,
         updated_organization
       )
+    end
+  end
+
+  @spec validate_number(String.t()) :: :ok | {:error, String.t()}
+  defp validate_number(phone) do
+    phone_with_plus =
+      if String.starts_with?(phone, "+"), do: phone, else: "+#{phone}"
+
+    with {:ok, phone_number} <- ExPhoneNumber.parse(phone_with_plus, ""),
+         true <- ExPhoneNumber.is_valid_number?(phone_number) do
+      :ok
+    else
+      {:error, reason} ->
+        {:error, "Phone number is not valid because #{reason}."}
+
+      false ->
+        {:error,
+         "Phone number is not valid. Please enter the phone number with country code, without the + symbol."}
+    end
+  end
+
+  defp update_org_contact(org, phone) do
+    case Repo.fetch(Contact, org.contact_id) do
+      {:ok, contact} ->
+        contact
+        |> Ecto.Changeset.change(%{phone: phone})
+        |> Repo.update()
+
+      _ ->
+        {:error, "Organization contact not found"}
     end
   end
 

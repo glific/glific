@@ -70,6 +70,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:shortcode, :string)
     field(:email, :string)
     field(:fields, :json)
+    field(:phone, :string)
 
     field :bsp, :provider do
       resolve(dataloader(Repo))
@@ -217,6 +218,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:name, :string)
     field(:shortcode, :string)
     field(:email, :string)
+    field(:phone, :string)
 
     field(:bsp_id, :id)
     field(:contact_id, :id)
