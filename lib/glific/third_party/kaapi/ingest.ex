@@ -213,12 +213,8 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
 
         {:ok, results}
 
-      {:error, reason} ->
-        Logger.error(
-          "KAAPI_FETCH_ERROR: Failed to fetch assistants for org: #{organization_id}. Reason: #{inspect(reason)}"
-        )
-
-        {:error, reason}
+      _ ->
+        {:error, "Failed to fetch assistants"}
     end
   end
 

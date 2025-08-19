@@ -8,6 +8,8 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   use Tesla
   require Logger
 
+  @kaapi_endpoint Application.get_env(:glific, :kaapi_endpoint)
+
   @doc """
     Ingests an assistant into the Kaapi platform.
   """
@@ -24,7 +26,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
   @spec get_kaapi_ingest_url(String.t()) :: String.t()
   defp get_kaapi_ingest_url(assistant_id) do
-    Application.get_env(:glific, :kaapi_endpoint) <> "api/v1/assistant/#{assistant_id}/ingest"
+    @kaapi_endpoint <> "api/v1/assistant/#{assistant_id}/ingest"
   end
 
   @spec get_kaapi_api_key(non_neg_integer) :: {:ok, String.t()} | {:error, String.t()}
