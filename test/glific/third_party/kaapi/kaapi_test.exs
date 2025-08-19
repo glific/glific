@@ -1,4 +1,4 @@
-defmodule Glific.KaapiTest do
+defmodule Glific.ThirdParty.Kaapi.ApiClienTest do
   use Glific.DataCase, async: true
 
   import Tesla.Mock
@@ -35,5 +35,38 @@ defmodule Glific.KaapiTest do
 
     assert {:error, "API key already exists for this user and project."} =
              ApiClient.onboard_to_kaapi(@params)
+  end
+
+  test "returns {:error, msg} when API returns error status code (400+)" do
+    mock(fn
+      %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 400,
+          body: %{error: "Bad request"}
+        }
+    end)
+
+    assert {:error, "Bad request"} = ApiClient.onboard_to_kaapi(@params)
+  end
+
+  test "returns {:error, msg} when API returns error status code without error field" do
+    mock(fn
+      %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 404,
+          body: %{}
+        }
+    end)
+
+    assert {:error, "HTTP 404"} = ApiClient.onboard_to_kaapi(@params)
+  end
+
+  test "returns {:error, msg} when API transport fails" do
+    mock(fn
+      %Tesla.Env{method: :post} ->
+        {:error, :timeout}
+    end)
+
+    assert {:error, "API request failed"} = ApiClient.onboard_to_kaapi(@params)
   end
 end
