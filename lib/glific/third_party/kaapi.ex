@@ -24,6 +24,9 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @doc """
+  Onboard an organization to Kaapi
+  """
   @spec onboard(map()) :: :ok
   def onboard(params) do
     with {:ok, %{api_key: api_key}} <- ApiClient.onboard_to_kaapi(params),
@@ -37,6 +40,9 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @doc """
+  Ingest an AI assistant to Kaapi
+  """
   def ingest_ai_assistant(organization_id, assistant_id) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id) do
       ApiClient.ingest_ai_assistats(secrets[:api_key], assistant_id)
