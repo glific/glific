@@ -373,7 +373,6 @@ defmodule Glific.Flows.FlowContext do
 
     # since we are storing in DB and want to avoid hassle of atom <-> string conversion
     # we'll always use strings as keys
-
     messages =
       [
         %{
@@ -383,6 +382,8 @@ defmodule Glific.Flows.FlowContext do
           },
           "message" => msg.body,
           "message_id" => msg.id,
+          "message_type" => msg.type,
+          "message_media" => get_message_media(msg),
           "date" => now,
           "node_uuid" => context.node_uuid
         }
@@ -445,8 +446,10 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Count the number of times we have sent the same message in the recent past
   """
-  @spec match_outbound(FlowContext.t(), String.t(), integer) :: integer
-  def match_outbound(context, body, go_back \\ 6) do
+  @spec match_outbound(FlowContext.t(), String.t(), String.t() | nil, integer) :: integer
+  def match_outbound(context, body, outbound_media \\ nil, go_back \\ 6)
+
+  def match_outbound(context, body, outbound_media, go_back) do
     since = Glific.go_back_time(go_back)
 
     Enum.filter(
@@ -454,15 +457,26 @@ defmodule Glific.Flows.FlowContext do
       fn item ->
         date = get_datetime(item)
 
-        # comparing node uuids is a lot more powerful than comparing message body
-        # but for webhooks, the function can return something different every time
-        # so we check for both node uuid and body
-        item["node_uuid"] == context.node_uuid and
-          item["message"] == body and
+        same_message?(context, item, body, outbound_media) and
           DateTime.compare(date, since) in [:gt, :eq]
       end
     )
     |> length()
+  end
+
+  # comparing node uuids is a lot more powerful than comparing message body
+  # but for webhooks, the function can return something different every time
+  # so we check for both node uuid and body.
+
+  # If the message is only media (audio, image etc..) then the message body will be empty
+  # in that case we check the outbound attachment instead of body
+  @spec same_message?(FlowContext.t(), map(), body :: String.t(), String.t()) :: boolean()
+  defp same_message?(context, item, "", outbound_media) do
+    item["node_uuid"] == context.node_uuid and item["message_media"] == outbound_media
+  end
+
+  defp same_message?(context, item, body, _outbound_media) do
+    item["node_uuid"] == context.node_uuid and item["message"] == body
   end
 
   @doc """
@@ -1133,4 +1147,11 @@ defmodule Glific.Flows.FlowContext do
   end
 
   defp validate_contact_and_wa_groups(changeset, _flow_context), do: changeset
+
+  @spec get_message_media(map()) :: String.t() | nil
+  defp get_message_media(%{media_id: media_id} = msg) when media_id != nil do
+    msg.media.url
+  end
+
+  defp get_message_media(_msg), do: nil
 end

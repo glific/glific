@@ -20,6 +20,10 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     ]
   end
 
+
+  # using "Content-Type: application/json" in the file upload API caused intermittent errors
+  # because OpenAI's handling of this header was inconsistent. Removing the Content-Type header
+  # from the upload request resolved the issue.
   @spec remove_content_type(list()) :: list()
   defp remove_content_type(headers) do
     Enum.reject(headers, fn {key, _} -> String.downcase(key) == "content-type" end)
