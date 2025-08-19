@@ -49,10 +49,18 @@ defmodule Glific.Partners do
   @spec list_providers(map()) :: [Provider.t(), ...]
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
+    |> Enum.map(&clear_provider_keys/1)
     |> Enum.reject(fn provider ->
       Enum.member?(["goth"], provider.shortcode)
     end)
   end
+
+  @spec clear_provider_keys(map()) :: map()
+  defp clear_provider_keys(%{shortcode: shortcode} = provider) when shortcode in ["gupshup"] do
+    Map.put(provider, :keys, %{})
+  end
+
+  defp clear_provider_keys(provider), do: provider
 
   @doc """
   Return the count of providers, using the same filter as list_providers
