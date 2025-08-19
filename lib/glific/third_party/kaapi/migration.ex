@@ -21,9 +21,6 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
   def onboard_organizations_from_db do
     organizations = fetch_eligible_orgs()
     {:ok, process_orgs_concurrently(organizations)}
-  rescue
-    e ->
-      {:error, "Failed to read organizations: #{Exception.message(e)}"}
   end
 
   @doc """
@@ -34,9 +31,6 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
   def onboard_organizations_from_db(ids) when is_list(ids) do
     organizations = fetch_eligible_orgs(ids)
     {:ok, process_orgs_concurrently(organizations)}
-  rescue
-    e ->
-      {:error, "Failed to read organizations by ids: #{Exception.message(e)}"}
   end
 
   @spec fetch_eligible_orgs(nil | [non_neg_integer()]) :: [map()]
