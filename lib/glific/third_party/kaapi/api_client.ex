@@ -1,66 +1,95 @@
 defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @moduledoc """
-  Glific module for API calls to kaapi
+  API Client for Kaapi Integration.
   """
-
-  alias Glific.Partners
 
   use Tesla
   require Logger
 
-  @kaapi_endpoint Application.compile_env(:glific, :kaapi_endpoint)
+  plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
+  plug(Tesla.Middleware.Telemetry)
 
   @doc """
-    Ingests an assistant into the Kaapi platform.
+  Onboard NGOs to kaapi
   """
+  @spec onboard_to_kaapi(map()) :: {:ok, %{api_key: String.t()}} | {:error, String.t()}
+  def onboard_to_kaapi(params) do
+    endpoint = kaapi_config(:kaapi_endpoint)
+    api_key = kaapi_config(:kaapi_api_key)
 
-  @spec call_ingest_api(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
-  def call_ingest_api(organization_id, assistant_id) do
-    post(
-      get_kaapi_ingest_url(assistant_id),
-      "",
-      headers: headers(organization_id)
-    )
-    |> parse_response()
-  end
+    payload = %{
+      organization_name: params.organization_name,
+      project_name: params.project_name,
+      user_name: params.user_name
+    }
 
-  @spec get_kaapi_ingest_url(String.t()) :: String.t()
-  defp get_kaapi_ingest_url(assistant_id) do
-    @kaapi_endpoint <> "api/v1/assistant/#{assistant_id}/ingest"
-  end
-
-  @spec get_kaapi_api_key(non_neg_integer) :: {:ok, String.t()} | {:error, String.t()}
-  defp get_kaapi_api_key(organization_id) do
-    organization = Partners.organization(organization_id)
-    kaapi_credentials = organization.services["kaapi"]
-    kaapi_credentials.secrets["api_key"]
-  end
-
-  @spec headers(non_neg_integer) :: [{String.t(), String.t()}]
-  defp headers(organization_id) do
-    kaapi_api_key = get_kaapi_api_key(organization_id)
-
-    [
-      {"X-API-KEY", "ApiKey #{kaapi_api_key}"},
-      {"accept", "application/json"}
+    middleware = [
+      {Tesla.Middleware.Headers, headers(api_key)},
+      {Tesla.Middleware.BaseUrl, endpoint}
     ]
+
+    middleware
+    |> Tesla.client()
+    |> post("/api/v1/onboard", payload)
+    |> parse_kaapi_response()
   end
 
-  @spec parse_response(Tesla.Env.result()) :: {:ok, any()} | {:error, String.t()}
-  defp parse_response({:ok, %{status: status}})
-       when status >= 200 and status < 300 do
-    {:ok, "Assistant synced successfully"}
+  @doc """
+  Ingests an assistant into the Kaapi platform.
+  """
+  @spec call_ingest_api(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
+  def call_ingest_api(org_api_key, assistant_id) do
+    endpoint = kaapi_config(:kaapi_endpoint)
+
+    middleware = [
+      {Tesla.Middleware.Headers, headers(org_api_key)},
+      {Tesla.Middleware.BaseUrl, endpoint}
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> post("api/v1/assistant/#{assistant_id}/ingest")
+    |> case do
+      {:ok, %Tesla.Env{status: 409}} ->
+        # In this API, 409 cannot be considered as a failure so treating it as a special case
+        {:ok, %{message: "Assistant already exists in kaapi"}}
+
+      result ->
+        parse_kaapi_response(result)
+    end
   end
 
-  defp parse_response({:ok, %{status: 409}}) do
-    {:ok, "Assistant already exists in kaapi"}
+  # Private
+  @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t()}
+  defp parse_kaapi_response({:ok, %Tesla.Env{body: %{error: error_msg}}})
+       when is_binary(error_msg) do
+    Logger.error("KAAPI API error: #{inspect(error_msg)}")
+    {:error, error_msg}
   end
 
-  defp parse_response({:ok, %{body: resp_body, status: status}}) do
-    {:error, "Request failed with status #{status}. #{inspect(resp_body)}"}
+  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
+       when status in 200..299 do
+    {:ok, body}
   end
 
-  defp parse_response({:error, reason}) do
-    {:error, reason}
+  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
+       when status >= 400 do
+    Logger.error("KAAPI API HTTP error with status #{status}, reason: #{inspect(body)}")
+    {:error, msg}
+  end
+
+  defp parse_kaapi_response({:error, message}) do
+    Logger.error("KAAPI API transport error: #{inspect(message)}")
+    {:error, "API request failed"}
+  end
+
+  defp kaapi_config, do: Application.fetch_env!(:glific, __MODULE__)
+  defp kaapi_config(key), do: kaapi_config()[key]
+
+  defp headers(api_key) do
+    [
+      {"X-API-KEY", api_key},
+      {"content-type", "application/json"}
+    ]
   end
 end

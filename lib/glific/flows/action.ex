@@ -19,11 +19,11 @@ defmodule Glific.Flows.Action do
     Groups.Group,
     Messages,
     Messages.Message,
-    Partners,
     Profiles,
     Repo,
     Sheets,
     Templates.InteractiveTemplate,
+    ThirdParty.Kaapi,
     Tickets
   }
 
@@ -652,7 +652,7 @@ defmodule Glific.Flows.Action do
     # Webhooks don't consume messages, so if we send a message while a webhook node is running,
     # the node won't be executed again because it only matches when the message list is empty (`[]`)
     if FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: context.organization_id}) do
-      with {:ok, kaapi_secrets} <- fetch_kaapi_creds(context.organization_id),
+      with {:ok, kaapi_secrets} <- Kaapi.fetch_kaapi_creds(context.organization_id),
            api_key when is_binary(api_key) <- Map.get(kaapi_secrets, "api_key"),
            updated_headers <- Map.put(action.headers, "X-API-KEY", api_key),
            updated_action <- %{action | headers: updated_headers} do
@@ -1130,18 +1130,4 @@ defmodule Glific.Flows.Action do
 
   defp get_flow_uuid(action, _),
     do: action.enter_flow_uuid
-
-  @spec fetch_kaapi_creds(non_neg_integer) :: nil | {:ok, any} | {:error, any}
-  defp fetch_kaapi_creds(organization_id) do
-    organization = Partners.organization(organization_id)
-
-    organization.services["kaapi"]
-    |> case do
-      nil ->
-        {:error, "Kaapi is not active"}
-
-      credentials ->
-        {:ok, credentials.secrets}
-    end
-  end
 end
