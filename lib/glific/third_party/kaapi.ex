@@ -44,10 +44,15 @@ defmodule Glific.ThirdParty.Kaapi do
   Ingest an AI assistant to Kaapi
   """
   def ingest_ai_assistant(organization_id, assistant_id) do
-    with {:ok, secrets} <- fetch_kaapi_creds(organization_id) do
-      ApiClient.ingest_ai_assistats(secrets[:api_key], assistant_id)
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, _} <- ApiClient.ingest_ai_assistats(secrets[:api_key], assistant_id) do
     else
-      error -> error
+      error ->
+        Logger.error(
+          "KAAPI ingest failed for org: #{organization_id}, assistant: #{assistant_id}, reason: #{inspect(error)}"
+        )
+
+        error
     end
   end
 

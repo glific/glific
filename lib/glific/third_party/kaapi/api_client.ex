@@ -37,8 +37,8 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @doc """
   Ingests an assistant into the Kaapi platform.
   """
-  @spec call_ingest_api(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
-  def call_ingest_api(org_api_key, assistant_id) do
+  @spec ingest_ai_assistats(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
+  def ingest_ai_assistats(org_api_key, assistant_id) do
     endpoint = kaapi_config(:kaapi_endpoint)
 
     middleware = [
@@ -63,7 +63,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t()}
   defp parse_kaapi_response({:ok, %Tesla.Env{body: %{error: error_msg}}})
        when is_binary(error_msg) do
-    Logger.error("KAAPI API error: #{inspect(error_msg)}")
     {:error, error_msg}
   end
 
@@ -74,13 +73,11 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
        when status >= 400 do
-    Logger.error("KAAPI API HTTP error with status #{status}, reason: #{inspect(body)}")
-    {:error, "API request failed"}
+    {:error, %{status: status, message: body}}
   end
 
   defp parse_kaapi_response({:error, message}) do
-    Logger.error("KAAPI API transport error: #{inspect(message)}")
-    {:error, "API request failed"}
+    {:error, %{message: message}}
   end
 
   defp kaapi_config, do: Application.fetch_env!(:glific, __MODULE__)
