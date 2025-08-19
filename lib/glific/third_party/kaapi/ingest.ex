@@ -7,8 +7,9 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
   alias Glific.{
     Filesearch,
     Filesearch.Assistant,
-    Partners,
     Partners.Organization,
+    Partners.Provider,
+    Partners.Credential,
     Repo,
     ThirdParty.Kaapi.ApiClient
   }
@@ -68,7 +69,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
     {:ok, results}
   end
 
-  def sync_organization_assistants(%{id: org_id}) do
+  defp sync_organization_assistants(%{id: org_id}) do
     Logger.info("KAAPI_ORG_START: Starting sync for organization id: #{org_id}")
 
     result =
@@ -94,25 +95,22 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
     {org_id, result}
   end
 
-  @spec has_kaapi_enabled?(non_neg_integer) :: boolean()
-  defp has_kaapi_enabled?(organization_id) do
-    with %{services: services} when is_map(services) <- Partners.organization(organization_id),
-         %{"kaapi" => _} <- services do
-      true
-    else
-      _ -> false
-    end
-  end
-
   @spec get_organisations() :: [Organization.t()]
   defp get_organisations do
-    Organization
-    |> where([o], o.status != "inactive")
-    |> Repo.all(skip_organization_id: true)
-    |> Enum.filter(fn org ->
-      has_kaapi_enabled?(org.id)
-    end)
-    |> Enum.reject(&is_nil/1)
+    query =
+      from(o in Organization,
+        left_join: p in Provider,
+        on: p.shortcode == "kaapi",
+        left_join: c in Credential,
+        on: c.organization_id == o.id and c.provider_id == p.id,
+        where: not is_nil(c.id),
+        select: %{
+          id: o.id
+        },
+        distinct: o.id
+      )
+
+    Repo.all(query, skip_organization_id: true)
   end
 
   @spec has_valid_instruction?(Assistant.t()) :: boolean()
@@ -148,6 +146,8 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
   @spec check_and_process_assistant(non_neg_integer, Assistant.t()) ::
           {:ok, any()} | {:error, String.t()}
   defp check_and_process_assistant(organization_id, assistant) do
+    Repo.put_process_state(organization_id)
+
     # if no instructions are present, set default instructions
     case has_valid_instruction?(assistant) do
       false ->
@@ -220,7 +220,6 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
     end
   end
 
-  # Helper function to calculate summary statistics
   @spec calculate_summary_stats(list()) ::
           {non_neg_integer(), non_neg_integer(), non_neg_integer()}
   defp calculate_summary_stats(results) do
