@@ -49,7 +49,7 @@ defmodule Glific.Partners do
   @spec list_providers(map()) :: [Provider.t(), ...]
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
-    |> Enum.map(&clear_provider_keys/1)
+    # |> Enum.map(&clear_provider_keys/1)
     |> Enum.reject(fn provider ->
       Enum.member?(["goth"], provider.shortcode)
     end)
@@ -868,6 +868,7 @@ defmodule Glific.Partners do
     organization = organization(credential.organization_id)
 
     remove_organization_cache(organization.id, organization.shortcode)
+    # attrs = maybe_remove_keys(attrs)
 
     {:ok, credential} =
       credential
@@ -879,6 +880,10 @@ defmodule Glific.Partners do
     credential.organization
     |> credential_update_callback(credential, credential.provider.shortcode)
   end
+
+  # For gupshup we don't want the 
+  defp maybe_remove_keys(%{shortcode: "gupshup"} = attrs), do: Map.delete(attrs, :keys)
+  defp maybe_remove_keys(attrs), do: attrs
 
   @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
           {:ok, any} | {:error, any}

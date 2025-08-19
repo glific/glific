@@ -344,7 +344,7 @@ defmodule GlificWeb.Resolvers.Partners do
       {:ok, %{credential: updated_credential}}
     end
   end
-
+  
   @doc """
   Gets daily app usage
   """
