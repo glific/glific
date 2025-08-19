@@ -1,20 +1,21 @@
 defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @moduledoc """
-  Kaapi Integration Module
+  API Client for Kaapi Integration.
   """
-  alias Glific.Partners
+  use Tesla
   require Logger
 
-  use Tesla
   plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
+  plug(Tesla.Middleware.Telemetry)
 
   @doc """
   Onboard NGOs to kaapi
   """
   @spec onboard_to_kaapi(map()) :: {:ok, %{api_key: String.t()}} | {:error, String.t()}
   def onboard_to_kaapi(params) do
-    kaapi_url = Application.fetch_env!(:glific, :kaapi_endpoint)
-    url = kaapi_url <> "api/v1/onboard"
+    endpoint = kaapi_config(:kaapi_endpoint)
+    api_key = kaapi_config(:kaapi_api_key)
+    url = endpoint <> "/api/v1/onboard"
 
     payload = %{
       organization_name: params.organization_name,
@@ -22,34 +23,15 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
       user_name: params.user_name
     }
 
-    key = Application.fetch_env!(:glific, :kaapi_api_key)
+    middleware = [
+      {Tesla.Middleware.Headers, headers(api_key)},
+      {Tesla.Middleware.BaseUrl, endpoint}
+    ]
 
-    post(
-      url,
-      Jason.encode!(payload),
-      headers: [
-        {"X-API-KEY", key},
-        {"Content-Type", "application/json"}
-      ]
-    )
+    middleware
+    |> Tesla.client()
+    |> post(url, Jason.encode!(payload))
     |> parse_kaapi_response()
-  end
-
-  @doc """
-  Fetch the kaapi creds
-  """
-  @spec fetch_kaapi_creds(non_neg_integer) :: nil | {:ok, any} | {:error, any}
-  def fetch_kaapi_creds(organization_id) do
-    organization = Partners.organization(organization_id)
-
-    organization.services["kaapi"]
-    |> case do
-      nil ->
-        {:error, "Kaapi is not active"}
-
-      credentials ->
-        {:ok, credentials.secrets}
-    end
   end
 
   @spec parse_kaapi_response(Tesla.Env.result()) ::
@@ -80,5 +62,15 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   defp parse_kaapi_response({:error, message}) do
     Logger.error("KAAPI API transport error: #{inspect(message)}")
     {:error, "API request failed"}
+  end
+
+  defp kaapi_config(), do: Application.fetch_env!(:glific, __MODULE__)
+  defp kaapi_config(key), do: kaapi_config()[key]
+
+  defp headers(api_key) do
+    [
+      {"X-API-KEY", api_key},
+      {"content-type", "application/json"}
+    ]
   end
 end
