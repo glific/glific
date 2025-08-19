@@ -292,6 +292,8 @@ defmodule Glific.Partners do
   @spec update_organization(Organization.t(), map()) ::
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def update_organization(%Organization{} = organization, attrs) do
+    # IO.inspect("Pp")
+
     case Map.fetch(attrs, :phone) do
       :error ->
         # Normal flow without phone update
@@ -299,9 +301,12 @@ defmodule Glific.Partners do
 
       {:ok, phone} ->
         # Validate the phone number first
+        # IO.inspect("lll")
+
         case validate_number(phone) do
           :ok ->
             # If valid, update the contact and main user
+
             with {:ok, _contact} <- update_org_contact(organization, phone),
                  {:ok, _user} <- update_main_user(organization, phone) do
               attrs = Map.put(attrs, :allow_bot_number_update, false)
@@ -370,6 +375,10 @@ defmodule Glific.Partners do
   end
 
   defp update_org_contact(org, phone) do
+    # IO.inspect("kkk")
+    # IO.inspect(org.contact_id)
+    # IO.inspect("jjjj")
+
     case Repo.fetch(Contact, org.contact_id) do
       {:ok, contact} ->
         contact
@@ -377,6 +386,7 @@ defmodule Glific.Partners do
         |> Repo.update()
 
       _ ->
+        # IO.inspect("oooo")
         {:error, "Organization contact not found"}
     end
   end

@@ -209,6 +209,8 @@ defmodule Glific.Fixtures do
 
     _user = user_fixture(attrs)
 
+    # IO.inspect(contact1, label: "plpl")
+
     Application.put_env(
       :glific,
       String.to_atom("provider_key_#{organization.id}"),
