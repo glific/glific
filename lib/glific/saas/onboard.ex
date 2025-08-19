@@ -23,6 +23,7 @@ defmodule Glific.Saas.Onboard do
     Registrations.Registration,
     Repo,
     Saas.Queries,
+    ThirdParty.Kaapi,
     Users.User
   }
 
@@ -237,6 +238,9 @@ defmodule Glific.Saas.Onboard do
       notify_on_submission(org, registration)
       notify_saas_team(org)
 
+      # onboard the organization to KAAPI
+      setup_kaapi_for_organization(org)
+
       Task.start(fn ->
         Notion.update_table_properties(registration)
         |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
@@ -391,5 +395,17 @@ defmodule Glific.Saas.Onboard do
       {false, _} -> Map.put(params, "is_disputed", true)
       _ -> params
     end
+  end
+
+  @spec setup_kaapi_for_organization(Organization.t()) :: :ok | {:error, any()}
+  defp setup_kaapi_for_organization(organization) do
+    attrs = %{
+      organization_id: organization.id,
+      organization_name: organization.parent_org || organization.name,
+      project_name: organization.name,
+      user_name: organization.shortcode
+    }
+
+    Kaapi.onboard(attrs)
   end
 end
