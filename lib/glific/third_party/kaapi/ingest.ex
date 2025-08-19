@@ -1,6 +1,8 @@
 defmodule Glific.ThirdParty.Kaapi.Ingest do
   @moduledoc """
-  Provider module for integrating with Kaapi AI platform.
+  Handles synchronization of assistants with the Kaapi AI platform.
+
+  Provides functionality to sync assistants across organizations which have Kaapi enabled.
   """
   import Ecto.Query, warn: false
 
@@ -17,14 +19,14 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
   require Logger
 
   @doc """
-  Syncs all assistants for an organization with the Kaapi platform.
+  Syncs all assistants for organizations with Kaapi platform enabled.
+
+  Processes organizations concurrently and syncs their assistants.
+  Returns summary of success/error counts with detailed logging.
 
   ## Examples
-      iex> Glific.ThirdParty.Kaapi.Ingest.sync_assistants()
-      {:ok, [ok: "Assistant synced successfully"]}
-
-      iex> Glific.Providers.Kaapi.sync_assistants(999)
-      {:error, "Organization not found"}
+      iex> sync_assistants()
+      {:ok, [{1, {:ok, [{:ok, "Assistant synced successfully"}]}}]}
   """
 
   @spec sync_assistants() :: [{non_neg_integer, {:ok, any()}}]
