@@ -27,9 +27,8 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
       {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]}
     ]
 
-    client = Tesla.client(middleware)
-
-    client
+    middleware
+    |> Tesla.client()
     |> Tesla.post("/api/v1/onboard", payload)
     |> parse_kaapi_response()
   end
