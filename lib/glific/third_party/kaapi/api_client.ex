@@ -15,7 +15,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   def onboard_to_kaapi(params) do
     endpoint = kaapi_config(:kaapi_endpoint)
     api_key = kaapi_config(:kaapi_api_key)
-    url = endpoint <> "/api/v1/onboard"
 
     payload = %{
       organization_name: params.organization_name,
@@ -25,12 +24,12 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
     middleware = [
       {Tesla.Middleware.Headers, headers(api_key)},
-      {Tesla.Middleware.BaseUrl, endpoint}
+      {Tesla.Middleware.BaseUrl, endpoint},
+      {Tesla.Middleware.JSON, engine_opts: [keys: :atoms!]}
     ]
 
-    middleware
-    |> Tesla.client()
-    |> post(url, Jason.encode!(payload))
+    Tesla.client(middleware)
+    |> Tesla.post("/api/v1/onboard", payload)
     |> parse_kaapi_response()
   end
 
@@ -64,7 +63,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     {:error, "API request failed"}
   end
 
-  defp kaapi_config(), do: Application.fetch_env!(:glific, __MODULE__)
+  defp kaapi_config, do: Application.fetch_env!(:glific, __MODULE__)
   defp kaapi_config(key), do: kaapi_config()[key]
 
   defp headers(api_key) do

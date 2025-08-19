@@ -7,9 +7,10 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
   import Ecto.Query
 
   alias Glific.{
-    Repo,
+    Partners.Credential,
     Partners.Organization,
     Partners.Provider,
+    Repo,
     ThirdParty.Kaapi
   }
 
