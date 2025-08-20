@@ -39,16 +39,18 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
     )
 
     results =
-      organizations
-      |> Task.async_stream(
+      Task.Supervisor.async_stream_nolink(
+        Glific.TaskSupervisor,
+        organizations,
         &sync_organization_assistants/1,
+        ordered: false,
         max_concurrency: 10,
         timeout: 60_000,
         on_timeout: :kill_task
       )
       |> Enum.map(fn
-        {:ok, result} ->
-          result
+        {:ok, {org_id, result}} ->
+          {org_id, result}
 
         {:exit, :timeout} ->
           Logger.error("KAAPI_SYNC_TIMEOUT: Organization sync timed out after 60 seconds")
@@ -84,14 +86,16 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
             "KAAPI_ORG_SUCCESS: Organization id: #{org_id} sync completed in. Assistants - Success: #{success_count}, Errors: #{error_count}, Total: #{length(assistant_results)}"
           )
 
-          {:ok, assistant_results}
+          assistant_results_only = Enum.map(assistant_results, fn {_status, result} -> result end)
+
+          {org_id, assistant_results_only}
 
         {:error, reason} ->
           Logger.error(
             "KAAPI_ORG_ERROR: Organization id: #{org_id} sync failed. Reason: #{inspect(reason)}"
           )
 
-          {:error, reason}
+          {org_id, {:error, reason}}
       end
 
     result
@@ -194,8 +198,12 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
           {non_neg_integer(), non_neg_integer(), non_neg_integer()}
   defp calculate_summary_stats(results) do
     Enum.reduce(results, {0, 0, 0}, fn
-      {:ok, assistant_results}, {success_orgs, error_orgs, total_assistants} ->
+      {_org_id, assistant_results}, {success_orgs, error_orgs, total_assistants}
+      when is_list(assistant_results) ->
         {success_orgs + 1, error_orgs, total_assistants + length(assistant_results)}
+
+      {_org_id, {:error, _reason}}, {success_orgs, error_orgs, total_assistants} ->
+        {success_orgs, error_orgs + 1, total_assistants}
 
       {:error, _reason}, {success_orgs, error_orgs, total_assistants} ->
         {success_orgs, error_orgs + 1, total_assistants}

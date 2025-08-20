@@ -29,7 +29,7 @@ defmodule Glific.ThirdParty.Kaapi do
   """
   @spec onboard(map()) :: :ok
   def onboard(params) do
-    with {:ok, api_key} <- ApiClient.onboard_to_kaapi(params),
+    with {:ok, %{api_key: api_key}} <- ApiClient.onboard_to_kaapi(params),
          {:ok, _} <- insert_kaapi_provider(params.organization_id, api_key) do
       Logger.info("KAAPI onboarding success for org: #{params.organization_id}")
     else

@@ -50,6 +50,9 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> Tesla.client()
     |> post("api/v1/assistant/#{assistant_id}/ingest", %{})
     |> case do
+      {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
+        {:ok, %{message: "Assistant synced successfully"}}
+
       {:ok, %Tesla.Env{status: 409}} ->
         # In this API, 409 cannot be considered as a failure so treating it as a special case
         {:ok, %{message: "Assistant already exists in kaapi"}}
@@ -66,21 +69,9 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     {:error, error_msg}
   end
 
-  defp parse_kaapi_response(
-         {:ok, %Tesla.Env{status: status, body: %{data: %{assistant_id: assistant_id}}}}
-       )
-       when status in 200..299 do
-    {:ok, %{message: "Assistant synced successfully"}}
-  end
-
-  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: %{api_key: api_key}}})
-       when status in 200..299 do
-    {:ok, api_key}
-  end
-
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
-       when status >= 400 do
-    {:error, %{status: status, message: body}}
+       when status in 200..299 do
+    {:ok, body}
   end
 
   defp parse_kaapi_response({:error, message}) do
