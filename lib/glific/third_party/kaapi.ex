@@ -7,6 +7,16 @@ defmodule Glific.ThirdParty.Kaapi do
   alias Glific.Partners
   alias Glific.ThirdParty.Kaapi.ApiClient
 
+  defmodule Error do
+    @moduledoc """
+    Custom error module for Kaapi webhook failures.
+    Since Kaapi is a backend service (NGOs don’t interact with it directly),
+    sending errors to them won’t resolve the issue.
+    Reporting these failures to AppSignal lets us detect and fix problems
+    """
+    defexception [:message]
+  end
+
   @doc """
   Fetch the kaapi creds
   """
@@ -29,11 +39,14 @@ defmodule Glific.ThirdParty.Kaapi do
     with {:ok, %{api_key: api_key}} <- ApiClient.onboard_to_kaapi(params),
          {:ok, _} <- insert_kaapi_provider(params.organization_id, api_key) do
       Logger.info("KAAPI onboarding success for org: #{params.organization_id}")
+      {:ok, "KAAPI onboarding successful"}
     else
       {:error, error} ->
         Logger.error(
           "KAAPI onboarding failed for org: #{params.organization_id}, reason: #{inspect(error)}"
         )
+
+        {:error, error}
     end
   end
 

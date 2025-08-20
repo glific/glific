@@ -24,6 +24,7 @@ defmodule Glific.Saas.Onboard do
     Repo,
     Saas.Queries,
     ThirdParty.Kaapi,
+    ThirdParty.Kaapi.Error,
     Users.User
   }
 
@@ -406,6 +407,20 @@ defmodule Glific.Saas.Onboard do
       user_name: organization.shortcode
     }
 
-    Kaapi.onboard(attrs)
+    case Kaapi.onboard(attrs) do
+      {:ok, _} ->
+        :ok
+
+      {:error, error} ->
+        Appsignal.send_error(
+          %Error{
+            message:
+              "Kaapi onboarding failed for org: #{organization.id}. Reason: #{inspect(error)}"
+          },
+          []
+        )
+
+        {:error, error}
+    end
   end
 end
