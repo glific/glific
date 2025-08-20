@@ -47,7 +47,7 @@ defmodule Glific.ThirdParty.Kaapi do
   def ingest_ai_assistant(organization_id, assistant_id) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <-
-           ApiClient.ingest_ai_assistats(secrets["api_key"], assistant_id) do
+           ApiClient.ingest_ai_assistants(secrets["api_key"], assistant_id) do
       Logger.info(
         "KAAPI ingest successful for org: #{organization_id}, assistant: #{assistant_id}"
       )

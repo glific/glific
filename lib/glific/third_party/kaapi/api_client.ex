@@ -37,8 +37,8 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @doc """
   Ingests an assistant into the Kaapi platform.
   """
-  @spec ingest_ai_assistats(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
-  def ingest_ai_assistats(org_api_key, assistant_id) do
+  @spec ingest_ai_assistants(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
+  def ingest_ai_assistants(org_api_key, assistant_id) do
     endpoint = kaapi_config(:kaapi_endpoint)
 
     middleware = [
@@ -63,7 +63,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   # Private
-  @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t()}
+  @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t() | map()}
   defp parse_kaapi_response({:ok, %Tesla.Env{body: %{error: error_msg}}})
        when is_binary(error_msg) do
     {:error, error_msg}

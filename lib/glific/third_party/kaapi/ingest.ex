@@ -30,7 +30,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
       {:ok, [{1, {:ok, [{:ok, "Assistant synced successfully"}]}}]}
   """
 
-  @spec sync_assistants() :: [{non_neg_integer, {:ok, any()}}]
+  @spec sync_assistants() :: {:ok, list({non_neg_integer(), any()} | {:error, atom()})}
   def sync_assistants do
     organizations = get_organisations()
     total_orgs = length(organizations)
@@ -119,7 +119,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
     Repo.all(query, skip_organization_id: true)
   end
 
-  @spec fetch_assistants(non_neg_integer) :: {:ok, [Assistant.t()]} | {:error, String.t()}
+  @spec fetch_assistants(non_neg_integer) :: [Assistant.t()]
   defp fetch_assistants(organization_id) do
     Assistant
     |> where([a], a.organization_id == ^organization_id)
