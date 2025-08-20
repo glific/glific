@@ -338,6 +338,7 @@ defmodule Glific.Partners do
            organization
            |> Organization.changeset(attrs)
            |> Repo.update(skip_organization_id: true) do
+      # pin both new contact and optin flow id
       maybe_pin_flow(
         updated_organization.newcontact_flow_id,
         organization.newcontact_flow_id,
