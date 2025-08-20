@@ -332,6 +332,24 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert contact.phone == valid_phone
   end
 
+  test "updating an organization with invalid phone returns error", %{user: user} do
+    organization = Repo.get!(Glific.Partners.Organization, user.organization_id)
+    invalid_phone = "123abc"
+
+    {:ok, result} =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => organization.id,
+          "input" => %{"phone" => invalid_phone, "status" => "ACTIVE"}
+        }
+      )
+
+    assert get_in(result, [:data, "updateOrganization"]) == nil
+    errors = get_in(result, [:errors])
+    assert [%{message: message}] = errors
+    assert message =~ "Phone number is not valid"
+  end
+
   test "Updating an Organization with Invalid Phone Number Does Not Update main user and contact phone number",
        %{user: user} do
     organization =
