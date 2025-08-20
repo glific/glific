@@ -293,7 +293,6 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert contact.organization_id != org.id
     end
 
-    @tag :fgt
     test "send otp with registration 'false' flag when NGO's wallet balance is less than 0", %{
       conn: conn
     } do
