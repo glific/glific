@@ -304,8 +304,7 @@ defmodule Glific.Saas.Queries do
         "url" => "https://gupshup.io/",
         "worker" => "Glific.Providers.Gupshup.Worker",
         "handler" => "Glific.Providers.Gupshup.Message",
-        "bsp_limit" => 40,
-        "api_end_point" => "https://api.gupshup.io/wa/api/v1"
+        "bsp_limit" => 40
       },
       secrets: %{
         "api_key" => params["api_key"] || "NA",

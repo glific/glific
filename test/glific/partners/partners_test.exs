@@ -969,7 +969,7 @@ defmodule Glific.PartnersTest do
                Repo.fetch_by(Credential, %{provider_id: provider.id})
 
       valid_update_attrs = %{
-        keys: %{"api_end_point" => "test_end_point"},
+        keys: %{},
         shortcode: provider.shortcode,
         secrets: %{"user_id" => "updated_user_id", "password" => "updated_password"},
         organization_id: organization_id
@@ -1009,7 +1009,7 @@ defmodule Glific.PartnersTest do
                Repo.fetch_by(Credential, %{provider_id: provider.id})
 
       valid_update_attrs = %{
-        keys: %{"api_end_point" => "test_end_point"},
+        keys: %{},
         shortcode: provider.shortcode,
         secrets: %{"app_name" => "some_app", "api_key" => "some_key"},
         organization_id: organization_id
@@ -1049,7 +1049,7 @@ defmodule Glific.PartnersTest do
                Repo.fetch_by(Credential, %{provider_id: provider.id})
 
       valid_update_attrs = %{
-        keys: %{"api_end_point" => "test_end_point"},
+        keys: %{},
         shortcode: provider.shortcode,
         secrets: %{"app_name" => "some_app", "api_key" => "some_key"},
         organization_id: organization_id
@@ -1082,7 +1082,7 @@ defmodule Glific.PartnersTest do
                Repo.fetch_by(Credential, %{provider_id: provider.id})
 
       valid_update_attrs = %{
-        keys: %{"api_end_point" => "test_end_point"},
+        keys: %{},
         shortcode: provider.shortcode,
         secrets: %{"app_name" => "some_app", "api_key" => "some_key"},
         organization_id: organization_id
