@@ -29,7 +29,7 @@ defmodule Glific.ThirdParty.Kaapi do
   """
   @spec onboard(map()) :: :ok
   def onboard(params) do
-    with {:ok, %{api_key: api_key}} <- ApiClient.onboard_to_kaapi(params),
+    with {:ok, api_key} <- ApiClient.onboard_to_kaapi(params),
          {:ok, _} <- insert_kaapi_provider(params.organization_id, api_key) do
       Logger.info("KAAPI onboarding success for org: #{params.organization_id}")
     else
@@ -45,11 +45,17 @@ defmodule Glific.ThirdParty.Kaapi do
   """
   def ingest_ai_assistant(organization_id, assistant_id) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, _} <- ApiClient.ingest_ai_assistats(secrets[:api_key], assistant_id) do
+         {:ok, result} <-
+           ApiClient.ingest_ai_assistats(secrets["api_key"], assistant_id) do
+      Logger.info(
+        "KAAPI ingest successful for org: #{organization_id}, assistant: #{assistant_id}"
+      )
+
+      {:ok, result}
     else
       {:error, reason} ->
         Logger.error(
-          "KAAPI_INGEST failed for org: #{organization_id}, assistant: #{assistant_id}, reason: #{inspect(error)}"
+          "KAAPI_INGEST failed for org: #{organization_id}, assistant: #{assistant_id}, reason: #{inspect(reason)}"
         )
 
         {:error, reason}

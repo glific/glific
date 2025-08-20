@@ -106,6 +106,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
         left_join: c in Credential,
         on: c.organization_id == o.id and c.provider_id == p.id,
         where: not is_nil(c.id),
+        where: c.is_active == true,
         select: o.id,
         distinct: o.id
       )
@@ -126,7 +127,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
     Repo.put_process_state(organization_id)
 
     case maybe_set_default_instruction(assistant) do
-      {:ok, %{id: assistant_id}} ->
+      {:ok, %{assistant_id: assistant_id}} ->
         Kaapi.ingest_ai_assistant(organization_id, assistant_id)
 
       {:error, changeset} ->
@@ -165,7 +166,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
         case check_and_process_assistant(organization_id, assistant) do
           {:ok, result} ->
             Logger.info(
-              "KAAPI_ASSISTANT_SUCCESS: Successfully processed assistant id: #{assistant.assistant_id} org: #{organization_id}. Response: #{result}"
+              "KAAPI_ASSISTANT_SUCCESS: Successfully processed assistant id: #{assistant.assistant_id} org: #{organization_id}. Response: #{inspect(result)}"
             )
 
             {:ok, result}

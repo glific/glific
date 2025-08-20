@@ -48,7 +48,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
     middleware
     |> Tesla.client()
-    |> post("api/v1/assistant/#{assistant_id}/ingest")
+    |> post("api/v1/assistant/#{assistant_id}/ingest", %{})
     |> case do
       {:ok, %Tesla.Env{status: 409}} ->
         # In this API, 409 cannot be considered as a failure so treating it as a special case
@@ -66,9 +66,16 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     {:error, error_msg}
   end
 
-  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
+  defp parse_kaapi_response(
+         {:ok, %Tesla.Env{status: status, body: %{data: %{assistant_id: assistant_id}}}}
+       )
        when status in 200..299 do
-    {:ok, body}
+    {:ok, %{message: "Assistant synced successfully"}}
+  end
+
+  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: %{api_key: api_key}}})
+       when status in 200..299 do
+    {:ok, api_key}
   end
 
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
