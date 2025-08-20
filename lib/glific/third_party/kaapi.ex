@@ -32,6 +32,7 @@ defmodule Glific.ThirdParty.Kaapi do
     with {:ok, %{api_key: api_key}} <- ApiClient.onboard_to_kaapi(params),
          {:ok, _} <- insert_kaapi_provider(params.organization_id, api_key) do
       Logger.info("KAAPI onboarding success for org: #{params.organization_id}")
+      {:ok, "KAAPI onboarding successful for org #{params.organization_id}"}
     else
       {:error, error} ->
         Logger.error(

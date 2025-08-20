@@ -11,6 +11,7 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
     Partners.Organization,
     Partners.Provider,
     Repo,
+    TaskSupervisor,
     ThirdParty.Kaapi
   }
 
@@ -65,10 +66,30 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
   end
 
   @spec process_orgs_concurrently([map()]) :: [map()]
-  defp process_orgs_concurrently(orgs) do
-    orgs
-    |> Task.async_stream(&process_org_record/1)
-    |> Enum.into([])
+  defp process_orgs_concurrently(organizations) do
+    Task.Supervisor.async_stream_nolink(
+      TaskSupervisor,
+      organizations,
+      &process_org_record/1,
+      max_concurrency: 20,
+      timeout: 60_000,
+      on_timeout: :kill_task
+    )
+    |> Enum.map(fn
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, :timeout} ->
+        Logger.error("KAAPI_ONBOARD_TIMEOUT: Organization onboard timed out after 60 seconds")
+        {:error, :timeout}
+
+      {:exit, reason} ->
+        Logger.error(
+          "KAAPI_ONBOARD_EXIT: Organization onboard exited with reason: #{inspect(reason)}"
+        )
+
+        {:error, reason}
+    end)
   end
 
   @spec process_org_record(map()) :: any()
@@ -84,7 +105,13 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
       user_name: shortcode
     }
 
-    Kaapi.onboard(params)
+    case Kaapi.onboard(params) do
+      {:ok, result} ->
+        "Org #{id} onboarded successfully"
+
+      {:error, error} ->
+        "Org #{id} onboarding failed: #{inspect(error)}"
+    end
   rescue
     error ->
       Logger.error("Onboarding crashed for org_id=#{inspect(org[:id])}: #{inspect(error)}")

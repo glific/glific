@@ -13,6 +13,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
     Partners.Provider,
     Partners.Credential,
     Repo,
+    TaskSupervisor,
     ThirdParty.Kaapi
   }
 
@@ -40,11 +41,11 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
 
     results =
       Task.Supervisor.async_stream_nolink(
-        Glific.TaskSupervisor,
+        TaskSupervisor,
         organizations,
         &sync_organization_assistants/1,
         ordered: false,
-        max_concurrency: 10,
+        max_concurrency: 20,
         timeout: 60_000,
         on_timeout: :kill_task
       )
