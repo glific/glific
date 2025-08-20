@@ -358,7 +358,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
     user: user
   } do
     organization = Repo.get!(Glific.Partners.Organization, user.organization_id)
-    # This will cause ExPhoneNumber.parse to fail
     invalid_phone = "abcd"
 
     {:ok, result} =
@@ -369,10 +368,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
         }
       )
 
-    # The organization object should be nil
     assert get_in(result, [:data, "updateOrganization"]) == nil
 
-    # The error should contain the parse failure message
     errors = get_in(result, [:errors])
     assert [%{message: message}] = errors
     assert message =~ "Phone number is not valid because"
@@ -403,7 +400,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
     organization =
       Repo.get!(Glific.Partners.Organization, user.organization_id)
 
-    # obviously invalid
     invalid_phone = "12345"
 
     result =
