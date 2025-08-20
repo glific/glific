@@ -6,10 +6,11 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   use Tesla
   require Logger
 
+  alias Glific.ThirdParty.Kaapi
+
   # client with runtime config (API key / base URL).
-  defp client do
+  defp client(api_key) do
     base_url = kaapi_config(:kaapi_endpoint)
-    api_key = kaapi_config(:kaapi_api_key)
 
     Tesla.client([
       {Tesla.Middleware.BaseUrl, base_url},
@@ -20,17 +21,18 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
-  Onboard NGOs to kaapi
+  Onboard NGOs to Kaapi
   """
-  @spec onboard_to_kaapi(map()) :: {:ok, %{api_key: String.t()}} | {:error, String.t()}
   def onboard_to_kaapi(params) do
+    api_key = kaapi_config(:kaapi_api_key)
+
     body = %{
       organization_name: params.organization_name,
       project_name: params.project_name,
       user_name: params.user_name
     }
 
-    client()
+    client(api_key)
     |> Tesla.post("/api/v1/onboard", body)
     |> parse_onboard_response()
   end
@@ -49,7 +51,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
         organization_id: org_id
       }
 
-    request(:post, "/api/v1/assistant/", body) |> IO.inspect()
+    request(:post, "/api/v1/assistant/", body)
   end
 
   @doc """
@@ -72,10 +74,13 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
   @spec request(:post | :patch, String.t(), map()) :: {:ok, map()} | {:error, String.t()}
   defp request(method, path, body) do
+    # Use the kaapi API key specific to each organization
+    {:ok, %{"api_key" => api_key}} = Kaapi.fetch_kaapi_creds(body.organization_id)
+
     resp =
       case method do
-        :post -> client() |> Tesla.post(path, body) |> IO.inspect()
-        :patch -> client() |> Tesla.patch(path, body)
+        :post -> client(api_key) |> Tesla.post(path, body)
+        :patch -> client(api_key) |> Tesla.patch(path, body)
       end
 
     parse_assistant_response(resp)

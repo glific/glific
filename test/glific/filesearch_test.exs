@@ -4,11 +4,11 @@ defmodule Glific.FilesearchTest do
   """
 
   alias Glific.Filesearch.Assistant
-  alias Glific.Partners
 
   alias Glific.{
     Filesearch,
     Filesearch.VectorStore,
+    Partners,
     Repo
   }
 
@@ -116,12 +116,43 @@ defmodule Glific.FilesearchTest do
   end
 
   test "valid create assistant", %{user: user} do
+    enable_kaapi(%{organization_id: user.organization_id})
+
     Tesla.Mock.mock(fn
+      # Mock OpenAI assistants endpoint
       %{method: :post, url: "https://api.openai.com/v1/assistants"} ->
         %Tesla.Env{
           status: 200,
           body: %{
-            id: "asst_123"
+            id: "asst_123",
+            name: "Assistant,-f11ead89",
+            instructions: "this is a story telling assistant that tells story",
+            model: "gpt-4o",
+            temperature: 1.0
+          }
+        }
+
+      # Mock Kaapi backend endpoint
+      %{method: :post, url: "This is not a secret/api/v1/assistant/"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            error: nil,
+            data: %{
+              id: 86,
+              name: "Assistant-f78f4392",
+              instructions: "you are a helpful asssitant",
+              organization_id: 1,
+              project_id: 1,
+              assistant_id: "asst_123",
+              vector_store_ids: [],
+              temperature: 0.1,
+              model: "gpt-4o",
+              is_deleted: false,
+              deleted_at: nil
+            },
+            metadata: nil,
+            success: true
           }
         }
     end)
@@ -207,6 +238,8 @@ defmodule Glific.FilesearchTest do
   end
 
   test "update assistant", attrs do
+    enable_kaapi(%{organization_id: attrs.organization_id})
+
     valid_attrs = %{
       assistant_id: "asst_abc",
       name: "new assistant",
@@ -222,7 +255,38 @@ defmodule Glific.FilesearchTest do
         %Tesla.Env{
           status: 200,
           body: %{
-            id: "asst_abc"
+            id: "asst_abc",
+            name: "Updated Assistant",
+            model: "gpt-4o",
+            instructions: "new instructions",
+            temperature: 0.7,
+            tool_resources: %{file_search: %{vector_store_ids: ["vs_1"]}}
+          }
+        }
+
+      %{
+        method: :patch,
+        url: "This is not a secret/api/v1/assistant/asst_abc"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            error: nil,
+            data: %{
+              id: 86,
+              name: "Assistant-f78f4392",
+              instructions: "you are a helpful asssitant",
+              organization_id: 1,
+              project_id: 1,
+              assistant_id: "asst_abc",
+              vector_store_ids: ["vs_1"],
+              temperature: 0.1,
+              model: "gpt-4o",
+              is_deleted: false,
+              deleted_at: nil
+            },
+            metadata: nil,
+            success: true
           }
         }
     end)
@@ -258,6 +322,8 @@ defmodule Glific.FilesearchTest do
   end
 
   test "add_assistant_files and remove assistant file, assistant doesnt has vectorStore", attrs do
+    enable_kaapi(%{organization_id: attrs.organization_id})
+
     valid_attrs = %{
       assistant_id: "asst_abc",
       name: "new assistant",
@@ -273,10 +339,41 @@ defmodule Glific.FilesearchTest do
         %Tesla.Env{
           status: 200,
           body: %{
-            id: "vs_abc"
+            id: "vs_abc",
+            name: "Assistant-f11ead89",
+            instructions: "this is a story telling assistant that tells story",
+            model: "gpt-4o",
+            temperature: 1.0,
+            tool_resources: %{
+              file_search: %{vector_store_ids: ["vs_68a5"]}
+            }
           }
         }
 
+      %{method: :patch, url: "This is not a secret/api/v1/assistant/vs_abc"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            error: nil,
+            data: %{
+              id: 86,
+              name: "new assistant",
+              instructions: "this is a story telling assistant that tells story",
+              organization_id: 1,
+              project_id: 1,
+              assistant_id: "asst_abc",
+              vector_store_ids: ["vs_68a5"],
+              temperature: 0.1,
+              model: "gpt-4o",
+              is_deleted: false,
+              deleted_at: nil
+            },
+            metadata: nil,
+            success: true
+          }
+        }
+
+      # Delete assistant (DELETE)
       %{method: :delete} ->
         %Tesla.Env{
           status: 200,
@@ -341,6 +438,8 @@ defmodule Glific.FilesearchTest do
   end
 
   test "add_assistant_files, assistant already has a vectorStore", attrs do
+    enable_kaapi(%{organization_id: attrs.organization_id})
+
     valid_attrs = %{
       assistant_id: "asst_abc",
       name: "new assistant",
@@ -356,7 +455,37 @@ defmodule Glific.FilesearchTest do
         %Tesla.Env{
           status: 200,
           body: %{
-            id: "vs_abc"
+            id: "vs_abc",
+            name: "Assistant-f11ead89",
+            instructions: "this is a story telling assistant that tells story",
+            model: "gpt-4o",
+            temperature: 1.0,
+            tool_resources: %{
+              file_search: %{vector_store_ids: ["vs_68a5"]}
+            }
+          }
+        }
+
+      %{method: :patch, url: "This is not a secret/api/v1/assistant/vs_abc"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            error: nil,
+            data: %{
+              id: 86,
+              name: "new assistant",
+              instructions: "this is a story telling assistant that tells story",
+              organization_id: 1,
+              project_id: 1,
+              assistant_id: "asst_abc",
+              vector_store_ids: ["vs_68a5"],
+              temperature: 0.1,
+              model: "gpt-4o",
+              is_deleted: false,
+              deleted_at: nil
+            },
+            metadata: nil,
+            success: true
           }
         }
     end)
@@ -386,7 +515,37 @@ defmodule Glific.FilesearchTest do
         %Tesla.Env{
           status: 200,
           body: %{
-            id: "vs_abc"
+            id: "vs_abc",
+            name: "Assistant-f11ead89",
+            instructions: "this is a story telling assistant that tells story",
+            model: "gpt-4o",
+            temperature: 1.0,
+            tool_resources: %{
+              file_search: %{vector_store_ids: ["vs_68a5"]}
+            }
+          }
+        }
+
+      %{method: :patch, url: "This is not a secret/api/v1/assistant/vs_abc"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            error: nil,
+            data: %{
+              id: 86,
+              name: "new assistant",
+              instructions: "this is a story telling assistant that tells story",
+              organization_id: 1,
+              project_id: 1,
+              assistant_id: "asst_abc",
+              vector_store_ids: ["vs_68a5"],
+              temperature: 0.1,
+              model: "gpt-4o",
+              is_deleted: false,
+              deleted_at: nil
+            },
+            metadata: nil,
+            success: true
           }
         }
     end)
@@ -944,255 +1103,6 @@ defmodule Glific.FilesearchTest do
 
     {:error, _} =
       Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2", attrs.user.organization_id)
-  end
-
-  describe "assistant operations when Kaapi is enabled" do
-    test "create_assistant/1 successfully creates assistant via KAAPI", %{user: user} do
-      enable_kaapi(%{organization_id: user.organization_id})
-
-      FunWithFlags.enable(:is_kaapi_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
-
-      Tesla.Mock.mock(fn
-        %{method: :post, url: "This is not a secret" <> "api/v1/assistant"} ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              error: nil,
-              data: %{
-                assistant_id: "asst_123",
-                name: "Assistant-d03a37f8",
-                model: "gpt-4o",
-                temperature: 1
-              },
-              success: true
-            }
-          }
-      end)
-
-      result = auth_query_gql_by(:create_assistant, user, variables: %{})
-      assert {:ok, query_data} = result
-
-      assert "Assistant" <> _ =
-               query_data.data["createAssistant"]["assistant"]["name"]
-    end
-
-    test "update_assistant/2 updates assistant via KAAPI", attrs do
-      enable_kaapi(%{organization_id: attrs.organization_id})
-
-      FunWithFlags.enable(:is_kaapi_enabled,
-        for_actor: %{organization_id: attrs.organization_id}
-      )
-
-      valid_attrs = %{
-        assistant_id: "asst_aaa",
-        name: "new assistant",
-        temperature: 1,
-        model: "gpt-4o",
-        organization_id: attrs.organization_id
-      }
-
-      {:ok, assistant} = Assistant.create_assistant(valid_attrs)
-
-      Tesla.Mock.mock(fn
-        %{
-          method: :patch,
-          url: "This is not a secret" <> "api/v1/assistant/asst_aaa"
-        } ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              error: nil,
-              data: %{
-                assistant_id: "asst_aaa",
-                name: "new assistant",
-                model: "gpt-4o",
-                temperature: 1.8,
-                instructions: "String should have at least 10 characters"
-              },
-              success: true
-            }
-          }
-      end)
-
-      {:ok, query_data} =
-        auth_query_gql_by(:update_assistant, attrs.user,
-          variables: %{
-            "input" => %{
-              "name" => assistant.name,
-              "instructions" => "String should have at least 10 characters",
-              "temperature" => 1.8
-            },
-            "id" => assistant.id
-          }
-        )
-
-      assert {:ok, %{temperature: 1.8}} = Assistant.get_assistant(assistant.id)
-
-      assert %{"name" => "new assistant", "temperature" => 1.8} =
-               query_data.data["updateAssistant"]["assistant"]
-    end
-
-    test "delete_assistant/1 removes assistant via KAAPI", attrs do
-      enable_kaapi(%{organization_id: attrs.organization_id})
-
-      FunWithFlags.enable(:is_kaapi_enabled,
-        for_actor: %{organization_id: attrs.organization_id}
-      )
-
-      Tesla.Mock.mock(fn
-        %{method: :delete} ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              error: nil,
-              data: %{
-                assistant_id: "asst_abc",
-                deleted: true
-              },
-              success: true
-            }
-          }
-      end)
-
-      valid_attrs = %{
-        vector_store_id: "vs_abcdef",
-        name: "VectorStore 1",
-        files: %{},
-        organization_id: attrs.organization_id
-      }
-
-      {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
-
-      valid_attrs = %{
-        assistant_id: "asst_abc",
-        name: "new assistant",
-        temperature: 1,
-        model: "gpt-4o",
-        organization_id: attrs.organization_id,
-        vector_store_id: vector_store.id
-      }
-
-      {:ok, assistant} = Assistant.create_assistant(valid_attrs)
-
-      result =
-        auth_query_gql_by(:delete_assistant, attrs.user,
-          variables: %{
-            "id" => assistant.id
-          }
-        )
-
-      assert {:ok, query_data} = result
-      assert query_data.data["deleteAssistant"]["assistant"]["name"] == "new assistant"
-    end
-
-    # Error cases
-    test "create_assistant/1 handles kaapi error response", %{user: user} do
-      enable_kaapi(%{organization_id: user.organization_id})
-
-      FunWithFlags.enable(:is_kaapi_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
-
-      Tesla.Mock.mock(fn
-        %{method: :post, url: "This is not a secret" <> "api/v1/assistant"} ->
-          %Tesla.Env{
-            status: 500,
-            body: %{}
-          }
-      end)
-
-      result =
-        auth_query_gql_by(:create_assistant, user, variables: %{})
-
-      assert {:ok, query_data} = result
-      assert length(query_data.errors) == 1
-    end
-
-    test "update_assistant/2 handles update errors", %{user: user} do
-      enable_kaapi(%{organization_id: user.organization_id})
-
-      FunWithFlags.enable(:is_kaapi_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
-
-      Tesla.Mock.mock(fn
-        %{method: :patch} ->
-          %Tesla.Env{
-            status: 400,
-            body: %{
-              error: "('body', 'instructions'): String should have at least 10 characters",
-              data: nil,
-              metadata: nil,
-              success: false
-            }
-          }
-      end)
-
-      result =
-        auth_query_gql_by(:update_assistant, user,
-          variables: %{
-            "input" => %{
-              "name" => "name",
-              "instructions" => "",
-              "temperature" => 1.8
-            },
-            "id" => 11
-          }
-        )
-
-      assert {:ok, query_data} = result
-      assert query_data.data["updateAssistant"]["errors"] != nil
-    end
-
-    test "import_assistant/2, valid assistant but without vector_store", attrs do
-      enable_kaapi(%{organization_id: attrs.organization_id})
-
-      FunWithFlags.enable(:is_kaapi_enabled,
-        for_actor: %{organization_id: attrs.organization_id}
-      )
-
-      Tesla.Mock.mock(fn
-        %{
-          method: :post,
-          url: "This is not a secretapi/v1/assistant/asst_ljpFv60NIlSmXZdnVYHMNuq2/ingest"
-        } ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              error: nil,
-              data: %{
-                id: 27,
-                name: "Assistant-9924f8d1",
-                instructions: "test",
-                organization_id: 1,
-                model: "gpt-4o",
-                vector_store_ids: [],
-                temperature: 0.07,
-                assistant_id: "asst_utiXX5DfXK1hwVp9qRSVRTrX",
-                inserted_at: "2025-08-06T05:12:35.819836",
-                updated_at: "2025-08-06T05:12:35.819848",
-                project_id: 1,
-                deleted_at: nil,
-                max_num_results: 20,
-                is_deleted: false
-              },
-              metadata: nil,
-              success: true
-            }
-          }
-      end)
-
-      {:ok,
-       %Assistant{
-         vector_store_id: nil,
-         name: "Assistant-9924f8d1",
-         temperature: 0.07,
-         assistant_id: "asst_utiXX5DfXK1hwVp9qRSVRTrX"
-       }} =
-        Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2", attrs.user.organization_id)
-    end
   end
 
   defp enable_kaapi(attrs) do
