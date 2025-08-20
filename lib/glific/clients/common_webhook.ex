@@ -69,7 +69,7 @@ defmodule Glific.Clients.CommonWebhook do
     client =
       Tesla.client([
         {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
-        {Tesla.Middleware.BaseUrl, kaapi_config[:kaapi_endpoint] }
+        {Tesla.Middleware.BaseUrl, kaapi_config[:kaapi_endpoint]}
       ])
 
     client
