@@ -332,6 +332,38 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert contact.phone == valid_phone
   end
 
+  test "Updating an Organization with Invalid Phone Number Does Not Update main user and contact phone number",
+       %{user: user} do
+    organization =
+      Repo.get!(Glific.Partners.Organization, user.organization_id)
+
+    # obviously invalid
+    invalid_phone = "12345"
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => organization.id,
+          "input" => %{
+            "phone" => invalid_phone
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    updated_org = get_in(query_data, [:data, "updateOrganization", "organization"])
+    assert updated_org == nil
+
+    {:ok, main_user} =
+      Repo.fetch_by(Glific.Users.User, %{contact_id: organization.contact_id})
+
+    {:ok, contact} =
+      Repo.fetch_by(Glific.Contacts.Contact, %{id: organization.contact_id})
+
+    assert main_user.phone != invalid_phone
+    assert contact.phone != invalid_phone
+  end
+
   test "update an organization and test possible scenarios and errors", %{user: user} do
     name = "Organization Test Name"
     shortcode = "org_shortcode"
