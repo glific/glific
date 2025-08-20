@@ -313,8 +313,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
         variables: %{
           "id" => organization.id,
           "input" => %{
-            "phone" => valid_phone,
-            "status" => "ACTIVE"
+            "phone" => valid_phone
           }
         }
       )
@@ -332,7 +331,56 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert contact.phone == valid_phone
   end
 
-  test "updating an organization with invalid phone returns error", %{user: user} do
+  test "updating phone fails if main user does not exist", %{user: user} do
+    organization = Fixtures.organization_fixture()
+    valid_phone = "917905556238"
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => organization.id,
+          "input" => %{
+            "phone" => valid_phone
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    updated_organization = get_in(query_data, [:data, "updateOrganization", "organization"])
+    assert updated_organization == nil
+
+    [error] = get_in(query_data, [:errors])
+    assert error.message =~ "Organization contact not found"
+  end
+
+  test "updating an organization with a completely invalid phone triggers parse error", %{
+    user: user
+  } do
+    organization = Repo.get!(Glific.Partners.Organization, user.organization_id)
+    # This will cause ExPhoneNumber.parse to fail
+    invalid_phone = "abcd"
+
+    {:ok, result} =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => organization.id,
+          "input" => %{"phone" => invalid_phone}
+        }
+      )
+
+    # The organization object should be nil
+    assert get_in(result, [:data, "updateOrganization"]) == nil
+
+    # The error should contain the parse failure message
+    errors = get_in(result, [:errors])
+    assert [%{message: message}] = errors
+    assert message =~ "Phone number is not valid because"
+  end
+
+  test "updating an organization with improperly formatted phone returns validation error", %{
+    user: user
+  } do
     organization = Repo.get!(Glific.Partners.Organization, user.organization_id)
     invalid_phone = "123abc"
 
@@ -340,7 +388,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
       auth_query_gql_by(:update, user,
         variables: %{
           "id" => organization.id,
-          "input" => %{"phone" => invalid_phone, "status" => "ACTIVE"}
+          "input" => %{"phone" => invalid_phone}
         }
       )
 
