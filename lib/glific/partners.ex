@@ -327,7 +327,11 @@ defmodule Glific.Partners do
   @spec do_update_org(Organization.t(), map()) ::
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   defp do_update_org(%Organization{} = organization, attrs) do
+    # first delete the cached organization
     remove_organization_cache(organization.id, organization.shortcode)
+
+    ## in case user updates the out of office flow it should update the flow keyword map as well.
+    ## We need to think about a better approach to handle this one.
     Caches.remove(organization.id, ["flow_keywords_map"])
 
     with {:ok, updated_organization} <-
@@ -366,6 +370,8 @@ defmodule Glific.Partners do
     end
   end
 
+  @spec update_org_contact(Organization.t(), String.t()) ::
+          {:ok, Contact.t()} | {:error, String.t()}
   defp update_org_contact(org, phone) do
     case Repo.fetch(Contact, org.contact_id) do
       {:ok, contact} ->
