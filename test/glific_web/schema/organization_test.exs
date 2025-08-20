@@ -279,7 +279,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     assert {:ok, query_data} = result
     organization = get_in(query_data, [:data, "updateOrganizationStatus", "organization"])
-
     assert organization["isActive"] == true
     assert organization["isApproved"] == true
     assert organization["name"] == "Fixture Organization"
@@ -304,7 +303,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
   test "updating an organization with a valid phone number will update the main user and contact phone number",
        %{user: user} do
-    # fetch the organization that the test context's user belongs to
     organization =
       Repo.get!(Glific.Partners.Organization, user.organization_id)
 
