@@ -302,23 +302,15 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert organization["name"] == "Fixture Organization"
   end
 
-  test "update an organization and test phone validation scenarios", %{user: user} do
-    # Setup
-    # contact = contact_fixture()
-    organization = Fixtures.organization_fixture()
+  test "updating an organization with a valid phone number will update the main user and contact phone number",
+       %{user: user} do
+    # fetch the organization that the test context's user belongs to
+    organization =
+      Repo.get!(Glific.Partners.Organization, user.organization_id)
 
-    # --- Valid Phone Update ---
-    valid_phone = "+917905556238"
+    valid_phone = "917905556238"
 
-    {:ok, user} =
-      Glific.Users.update_user(user, %{
-        roles: ["glific_admin"],
-        organization_id: user.organization_id
-      })
-
-    valid_phone = "+917905556238"
-
-    valid_result =
+    result =
       auth_query_gql_by(:update, user,
         variables: %{
           "id" => organization.id,
@@ -329,67 +321,17 @@ defmodule GlificWeb.Schema.OrganizationTest do
         }
       )
 
-    assert {:ok, valid_query_data} = valid_result
+    assert {:ok, query_data} = result
+    _updated_organization = get_in(query_data, [:data, "updateOrganization", "organization"])
 
-    updated_org =
-      get_in(valid_query_data, [:data, "updateOrganization", "organization"])
+    {:ok, main_user} =
+      Repo.fetch_by(Glific.Users.User, %{contact_id: organization.contact_id})
 
-    # Assert organization ID is correct
-    assert updated_org["id"] == "#{organization.id}"
-    IO.inspect(updated_org)
+    {:ok, contact} =
+      Repo.fetch_by(Glific.Contacts.Contact, %{id: organization.contact_id})
 
-    # {:ok, updated_contact} =
-    #   Repo.fetch_by(Glific.Contact, %{id: organization.contact_id})
-    Repo.put_process_state(organization.id)
-
-    {:ok, updated_contact} =
-      Repo.fetch_by(Glific.Partners.Organization, %{id: organization.id})
-
-    IO.inspect(updated_contact, label: "updated_value")
-    # {:ok, updated_contact} = Repo.fetch_by(Glific.Contacts.Contact, %{id: contact.id})
-    # {:ok, main_user} = Repo.fetch_by(Glific.Users.User, %{contact_id: organization.contact_id})
-
-    # assert updated_contact.phone == valid_phone
-    # assert main_user.phone == valid_phone
-    # {:ok, main_user} = Repo.fetch_by(Glific.Users.User, %{contact_id: organization.contact_id})
-    # IO.inspect(main_user.contact_id, label: "user contact_id")
-    # IO.inspect(Repo.all(Glific.Users.User))
-    # IO.inspect(Repo.all(Glific.Contacts.Contact))
-
-    # IO.inspect(main_user.phone)
-    # # IO.inspect(contact)
-    # IO.inspect("qqq")
-    # # Assert valid update succeeds
-    # assert {:ok, valid_query_data} = valid_result
-    # updated_org = get_in(valid_query_data, [:data, "updateOrganization", "organization"])
-    # # IO.inspect(updated_org, label: "Updated Org with Valid Phone")
-    # assert updated_org["id"] == "#{organization.id}"
-
-    # # Fetch contact & main user to check phone updated
-    # {:ok, main_user} = Repo.fetch_by(Glific.Users.User, %{contact_id: organization.contact_id})
-    # {:ok, contact} = Repo.fetch_by(Glific.Contacts.Contact, %{id: organization.contact_id})
-
-    # assert main_user.phone == valid_phone
-    # assert contact.phone == valid_phone
-
-    # # --- Invalid Phone Update ---
-    # invalid_phone = "12345"
-
-    # invalid_result =
-    #   auth_query_gql_by(:update, user,
-    #     variables: %{
-    #       "id" => organization.id,
-    #       "input" => %{
-    #         "phone" => invalid_phone
-    #       }
-    #     }
-    #   )
-
-    # # Assert mutation returns nil for organization and has an error
-    # assert {:ok, invalid_query_data} = invalid_result
-    # invalid_org = get_in(invalid_query_data, [:data, "updateOrganization", "organization"])
-    # IO.inspect(invalid_org, label: "Updated Org with Invalid Phone")
-    # assert invalid_org == nil
+    assert main_user.phone == valid_phone
+    assert contact.phone == valid_phone
   end
 
   test "update an organization and test possible scenarios and errors", %{user: user} do
