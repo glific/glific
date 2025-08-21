@@ -134,7 +134,7 @@ defmodule Glific.ThirdParty.Kaapi do
         Appsignal.send_error(
           %Error{
             message:
-              "Kaapi AI Assistant delete failed for org_id=#{params.organization_id}, assistant_id=#{assistant_id})",
+              "Kaapi AI Assistant delete failed for org_id=#{organization_id}, assistant_id=#{assistant_id})",
             reason: reason
           },
           []
