@@ -168,8 +168,10 @@ defmodule Glific.Filesearch do
   def update_assistant(id, attrs) do
     with {:ok, %Assistant{} = assistant} <- Assistant.get_assistant(id),
          {:ok, params} <- parse_assistant_attrs(assistant, attrs),
-         {:ok, _} <-
+         {:ok, openai_response} <-
            ApiClient.modify_assistant(assistant.assistant_id, params) do
+      Kaapi.update_assistant(openai_response, params.organization_id)
+
       Assistant.update_assistant(
         assistant,
         params

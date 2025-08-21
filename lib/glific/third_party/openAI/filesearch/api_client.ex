@@ -179,33 +179,27 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   def modify_assistant(assistant_id, params) do
     url = @endpoint <> "/assistants/#{assistant_id}"
 
-    base_payload = %{
+    payload = %{
       "name" => params.name,
       "model" => params.model,
       "instructions" => params.instructions || "",
       "temperature" => params.temperature
     }
 
-    payload =
-      if Map.has_key?(params, :vector_store_ids) do
-        Map.merge(base_payload, %{
-          "tool_resources" => %{
-            "file_search" => %{
-              "vector_store_ids" => params.vector_store_ids
-            }
+    if Map.has_key?(params, :vector_store_ids) do
+      Map.merge(payload, %{
+        "tool_resources" => %{
+          "file_search" => %{
+            "vector_store_ids" => params.vector_store_ids
           }
-        })
-      else
-        base_payload
-      end
-      |> Jason.encode!()
-
-    with {:ok, updated_data} <-
-           post(url, payload, headers: headers()) |> parse_response(),
-         {:ok, _kaapi_response} <-
-           ApiClient.update_assistant(updated_data, params.organization_id) do
-      {:ok, updated_data}
+        }
+      })
+    else
+      payload
     end
+    |> Jason.encode!()
+    |> then(&post(url, &1, headers: headers()))
+    |> parse_response()
   end
 
   @doc """
