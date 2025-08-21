@@ -2,7 +2,6 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   @moduledoc """
   Glific module for API calls to OpenAI related to Filesearch
   """
-  alias Glific.ThirdParty.Kaapi.ApiClient
 
   use Tesla
   alias Tesla.Multipart

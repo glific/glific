@@ -73,7 +73,7 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @spec update_assistant(map(), non_neg_integer()) :: {:ok, map()} | {:error, map() | binary()}
-  def update_assistant(params, organization_id) do
+  def update_assistant(%{id: assistant_id} = params, organization_id) do
     params = %{
       name: params.name,
       model: params.model,
@@ -86,9 +86,9 @@ defmodule Glific.ThirdParty.Kaapi do
 
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <-
-           ApiClient.update_assistant(params.assistant_id, params, secrets["api_key"]) do
+           ApiClient.update_assistant(assistant_id, params, secrets["api_key"]) do
       Logger.info(
-        "KAAPI AI Assistant update successful for org: #{organization_id}, assistant: #{params.assistant_id}"
+        "KAAPI AI Assistant update successful for org: #{organization_id}, assistant: #{assistant_id}"
       )
 
       {:ok, result}
@@ -97,7 +97,7 @@ defmodule Glific.ThirdParty.Kaapi do
         Appsignal.send_error(
           %Error{
             message:
-              "Kaapi AI Assistant update failed for org_id=#{params.organization_id}, assistant_id=#{params.assistant_id})",
+              "Kaapi AI Assistant update failed for org_id=#{params.organization_id}, assistant_id=#{assistant_id})",
             reason: reason
           },
           []

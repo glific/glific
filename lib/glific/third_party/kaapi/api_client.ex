@@ -6,8 +6,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   use Tesla
   require Logger
 
-  alias Glific.ThirdParty.Kaapi
-
   # client with runtime config (API key / base URL).
   defp client(api_key) do
     base_url = kaapi_config(:kaapi_endpoint)
@@ -42,7 +40,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   Create an assistant in Kaapi
   """
   @spec create_assistant(map(), binary()) :: {:ok, map()} | {:error, String.t()}
-  def create_assistant(params, org_api_key) do
+  def create_assistant(body, org_api_key) do
     org_api_key
     |> client()
     |> Tesla.post("/api/v1/assistant", body)
@@ -52,14 +50,12 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @doc """
   Update an assistant in Kaapi
   """
-  @spec update_assistant(map(), binary()) :: {:ok, map()} | {:error, String.t()}
-  def update_assistant(assistant_id, params, org_api_key) do
+  @spec update_assistant(binary(), map(), binary()) :: {:ok, map()} | {:error, String.t()}
+  def update_assistant(assistant_id, body, org_api_key) do
     org_api_key
     |> client()
     |> Tesla.patch("/api/v1/assistant/#{assistant_id}", body)
     |> parse_kaapi_response()
-
-    request(:patch, "/api/v1/assistant/#{params.id}", body)
   end
 
   @spec parse_kaapi_response(Tesla.Env.result()) ::
