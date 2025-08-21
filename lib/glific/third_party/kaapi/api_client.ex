@@ -71,9 +71,9 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
   @spec parse_kaapi_response(Tesla.Env.result()) ::
           {:ok, %{api_key: String.t()}} | {:error, String.t()}
-  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: %{api_key: api_key}}})
-       when status in 200..299 and is_binary(api_key) do
-    {:ok, %{api_key: api_key}}
+  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
+       when status in 200..299 do
+    {:ok, body}
   end
 
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: %{error: msg}}})
