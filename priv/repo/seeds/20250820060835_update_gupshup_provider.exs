@@ -19,7 +19,7 @@ defmodule Glific.Repo.Seeds.UpdateGupshupProvider do
       {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
       # Removed api_end_point
-      keys = Map.delete(gupshup.keys, "api_end_point") |> IO.inspect()
+      keys = Map.delete(gupshup.keys, "api_end_point")
 
       Repo.update!(
         Ecto.Changeset.change(gupshup, %{

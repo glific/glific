@@ -316,6 +316,10 @@ defmodule Glific.Saas.Queries do
     }
 
     case Partners.create_credential(attrs) do
+      {:ok, %{secrets: %{"api_key" => "NA"}} = credential} ->
+        # This will be case in onboarding v2
+        Map.put(result, :credential, credential)
+
       {:ok, _credential} ->
         {:ok, credential} = Partners.set_bsp_app_id(result.organization, @default_provider)
         Map.put(result, :credential, credential)

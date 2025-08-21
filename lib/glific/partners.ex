@@ -1256,24 +1256,19 @@ defmodule Glific.Partners do
     {:ok, bsp_cred} =
       Repo.fetch_by(Credential, %{provider_id: provider.id, organization_id: org.id})
 
-    # Will be NA in onboarding v2
-    if bsp_cred.secrets["api_key"] == "NA" do
-      {:ok, bsp_cred}
-    else
-      app_details = PartnerAPI.fetch_app_details(org.id)
-      app_id = if is_map(app_details), do: app_details["id"], else: "NA"
+    app_details = PartnerAPI.fetch_app_details(org.id)
+    app_id = if is_map(app_details), do: app_details["id"], else: "NA"
 
-      updated_secrets = Map.put(bsp_cred.secrets, "app_id", app_id)
-      attrs = %{secrets: updated_secrets, organization_id: org.id}
+    updated_secrets = Map.put(bsp_cred.secrets, "app_id", app_id)
+    attrs = %{secrets: updated_secrets, organization_id: org.id}
 
-      {:ok, credential} =
-        bsp_cred
-        |> Credential.changeset(attrs)
-        |> Repo.update()
+    {:ok, credential} =
+      bsp_cred
+      |> Credential.changeset(attrs)
+      |> Repo.update()
 
-      remove_organization_cache(org.id, org.shortcode)
-      {:ok, credential}
-    end
+    remove_organization_cache(org.id, org.shortcode)
+    {:ok, credential}
   end
 
   def set_bsp_app_id(org, shortcode) do
