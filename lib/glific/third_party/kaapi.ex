@@ -29,7 +29,7 @@ defmodule Glific.ThirdParty.Kaapi do
   """
   @spec onboard(map()) :: :ok
   def onboard(params) do
-    with {:ok, %{api_key: api_key}} <- ApiClient.onboard_to_kaapi(params),
+    with {:ok, %{data: %{api_key: api_key}}} <- ApiClient.onboard_to_kaapi(params),
          {:ok, _} <- insert_kaapi_provider(params.organization_id, api_key) do
       Logger.info("KAAPI onboarding success for org: #{params.organization_id}")
       {:ok, "KAAPI onboarding successful for org #{params.organization_id}"}
@@ -38,6 +38,8 @@ defmodule Glific.ThirdParty.Kaapi do
         Logger.error(
           "KAAPI onboarding failed for org: #{params.organization_id}, reason: #{inspect(error)}"
         )
+
+        {:error, "KAAPI onboarding failed for org #{params.organization_id}: #{inspect(error)}"}
     end
   end
 

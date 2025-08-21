@@ -20,7 +20,8 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     payload = %{
       organization_name: params.organization_name,
       project_name: params.project_name,
-      user_name: params.user_name
+      user_name: params.user_name,
+      openai_api_key: params.openai_api_key
     }
 
     middleware = [
