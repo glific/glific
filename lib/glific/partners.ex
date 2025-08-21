@@ -14,6 +14,7 @@ defmodule Glific.Partners do
   alias Glific.{
     BigQuery,
     Caches,
+    Contacts,
     Contacts.Contact,
     Flags,
     Flows,
@@ -291,24 +292,20 @@ defmodule Glific.Partners do
   """
   @spec update_organization(Organization.t(), map()) ::
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
-  def update_organization(%Organization{} = organization, attrs) do
-    case Map.fetch(attrs, :phone) do
-      :error ->
-        do_update_org(organization, attrs)
-
-      {:ok, phone} ->
-        case validate_number(phone) do
-          :ok ->
-            with {:ok, _contact} <- update_org_contact(organization, phone),
-                 {:ok, _user} <- update_main_user(organization, phone) do
-              attrs = Map.put(attrs, :allow_bot_number_update, false)
-              do_update_org(organization, Map.delete(attrs, :phone))
-            end
-
-          {:error, message} ->
-            {:error, message}
-        end
+  def update_organization(%Organization{} = organization, %{phone: phone} = attrs)
+      when phone != nil do
+    with :ok <- Contacts.validate_number(phone),
+         {:ok, _contact} <- update_org_contact(organization, phone),
+         {:ok, _user} <- update_main_user(organization, phone) do
+      attrs = Map.put(attrs, :allow_bot_number_update, false)
+      do_update_org(organization, attrs)
+    else
+      {:error, message} -> {:error, message}
     end
+  end
+
+  def update_organization(%Organization{} = organization, attrs) do
+    do_update_org(organization, attrs)
   end
 
   @spec update_main_user(Organization.t(), String.t()) :: {:ok, User.t()} | {:error, String.t()}
@@ -320,7 +317,7 @@ defmodule Glific.Partners do
         |> Repo.update()
 
       _ ->
-        {:error, "Main user not found"}
+        {:error, "NGO Main Account not found"}
     end
   end
 
@@ -350,24 +347,6 @@ defmodule Glific.Partners do
         organization.optin_flow_id,
         updated_organization
       )
-    end
-  end
-
-  @spec validate_number(String.t()) :: :ok | {:error, String.t()}
-  defp validate_number(phone) do
-    phone_with_plus =
-      if String.starts_with?(phone, "+"), do: phone, else: "+#{phone}"
-
-    with {:ok, phone_number} <- ExPhoneNumber.parse(phone_with_plus, ""),
-         true <- ExPhoneNumber.is_valid_number?(phone_number) do
-      :ok
-    else
-      {:error, reason} ->
-        {:error, "Phone number is not valid because #{reason}."}
-
-      false ->
-        {:error,
-         "Phone number is not valid. Please enter the phone number with country code, without the + symbol."}
     end
   end
 

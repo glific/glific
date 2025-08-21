@@ -10,6 +10,7 @@ defmodule Glific.Contacts.ImportWorker do
     priority: 2
 
   alias Glific.{
+    Contacts,
     Contacts.Import,
     Jobs.UserJob,
     Repo
@@ -95,14 +96,12 @@ defmodule Glific.Contacts.ImportWorker do
   end
 
   defp validate_contact(%{"phone" => phone, "name" => name}) do
-    phone_with_plus = if String.starts_with?(phone, "+"), do: phone, else: "+#{phone}"
+    case Contacts.validate_number(phone) do
+      :ok ->
+        validate_name(name, phone)
 
-    with {:ok, phone_number} <- ExPhoneNumber.parse(phone_with_plus, ""),
-         true <- ExPhoneNumber.is_valid_number?(phone_number) do
-      validate_name(name, phone)
-    else
-      {:error, reason} -> %{phone => "Phone number is not valid because #{reason}."}
-      false -> %{phone => "Phone number is not valid."}
+      {:error, message} ->
+        %{phone => message}
     end
   end
 

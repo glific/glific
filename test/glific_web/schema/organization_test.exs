@@ -331,7 +331,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert contact.phone == valid_phone
   end
 
-  test "updating phone fails if main user does not exist", %{user: user} do
+  test "updating phone fails if NGO Main Account does not exist", %{user: user} do
     organization = Fixtures.organization_fixture()
     valid_phone = "917905556238"
 
@@ -395,7 +395,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message =~ "Phone number is not valid"
   end
 
-  test "Updating an Organization with Invalid Phone Number Does Not Update main user and contact phone number",
+  test "Updating an Organization with Invalid Phone Number does not update NGO Main Account number and Contact phone number",
        %{user: user} do
     organization =
       Repo.get!(Glific.Partners.Organization, user.organization_id)
