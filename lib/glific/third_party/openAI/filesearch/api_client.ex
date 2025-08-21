@@ -157,13 +157,8 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
       }
       |> Jason.encode!()
 
-    # calling kaapi right after open ai so that the latest details of the assistant can be synced with kaapi
-    with {:ok, openai_response} <-
-           post(url, payload, headers: headers()) |> parse_response(),
-         {:ok, _kaapi_response} <-
-           ApiClient.create_assistant(openai_response, params.organization_id) do
-      {:ok, openai_response}
-    end
+    post(url, payload, headers: headers())
+    |> parse_response()
   end
 
   @doc """

@@ -9,7 +9,8 @@ defmodule Glific.Filesearch do
     Filesearch.Assistant,
     Filesearch.VectorStore,
     OpenAI.Filesearch.ApiClient,
-    Repo
+    Repo,
+    ThirdParty.Kaapi
   }
 
   require Logger
@@ -84,10 +85,12 @@ defmodule Glific.Filesearch do
       }
       |> Map.merge(params)
 
-    with {:ok, %{id: assistant_id}} <-
+    with {:ok, %{id: assistant_id} = openai_response} <-
            ApiClient.create_assistant(attrs),
          {:ok, assistant} <-
            Assistant.create_assistant(Map.put(attrs, :assistant_id, assistant_id)) do
+      # calling kaapi right after open ai so that the latest details of the assistant can be synced with kaapi
+      Kaapi.create_assistant(openai_response, params.organization_id)
       {:ok, %{assistant: assistant}}
     else
       {:error, %Ecto.Changeset{} = err} ->

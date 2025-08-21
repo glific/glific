@@ -32,7 +32,8 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
       user_name: params.user_name
     }
 
-    client(api_key)
+    api_key
+    |> client()
     |> Tesla.post("/api/v1/onboard", body)
     |> parse_onboard_response()
   end
@@ -41,17 +42,11 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   Create an assistant in Kaapi
   """
   @spec create_assistant(map(), non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
-  def create_assistant(params, org_id) do
-    body =
-      %{
-        name: params.name,
-        model: params.model,
-        assistant_id: params.id,
-        instructions: "you are a helpful asssitant",
-        organization_id: org_id
-      }
-
-    request(:post, "/api/v1/assistant/", body)
+  def create_assistant(params, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/assistant", body)
+    |> parse_onboard_response()
   end
 
   @doc """

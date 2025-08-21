@@ -4,6 +4,8 @@ defmodule Glific.ThirdParty.Kaapi do
   """
   require Logger
 
+  # Replace this with the new exception after PR #4365 is merged
+  alias Glific.Flows.Webhook.Error
   alias Glific.Partners
   alias Glific.ThirdParty.Kaapi.ApiClient
 
@@ -34,6 +36,39 @@ defmodule Glific.ThirdParty.Kaapi do
         Logger.error(
           "KAAPI onboarding failed for org: #{params.organization_id}, reason: #{inspect(error)}"
         )
+    end
+  end
+
+  @spec create_assistant(map(), binary()) :: {:ok, map()} | {:error, map() | binary()}
+  def create_assistant(openai_response, organization_id) do
+    params = %{
+      name: openai_response.name,
+      model: openai_response.model,
+      assistant_id: openai_response.id,
+      instructions: "you are a helpful asssitant",
+      organization_id: organization_id
+    }
+
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <-
+           ApiClient.create_assistant(params, secrets["api_key"]) do
+      Logger.info(
+        "KAAPI AI Assistant creation successful for org: #{organization_id}, assistant: #{params.assistant_id}"
+      )
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message:
+              "Kaapi AI Assistant creation failed org_id=#{params.organization_id}, assistant_id=#{params.assistant_id})",
+            reason: reason
+          },
+          []
+        )
+
+        {:error, reason}
     end
   end
 
