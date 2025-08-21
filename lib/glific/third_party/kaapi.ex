@@ -107,6 +107,34 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @doc """
+  Delete an assistant in Kaapi, send error to Appsignal if failed.
+  """
+  @spec delete_assistant(binary(), non_neg_integer()) :: {:ok, map()} | {:error, map() | binary()}
+  def delete_assistant(assistant_id, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <-
+           ApiClient.delete_assistant(assistant_id, secrets["api_key"]) do
+      Logger.info(
+        "KAAPI AI Assistant delete successful for org: #{organization_id}, assistant: #{assistant_id}"
+      )
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message:
+              "Kaapi AI Assistant delete failed for org_id=#{params.organization_id}, assistant_id=#{assistant_id})",
+            reason: reason
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
   @spec insert_kaapi_provider(non_neg_integer(), String.t()) ::
           {:ok, :created | :already_active} | {:error, any()}
   defp insert_kaapi_provider(organization_id, api_key) do

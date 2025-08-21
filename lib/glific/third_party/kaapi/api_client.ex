@@ -58,6 +58,17 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> parse_kaapi_response()
   end
 
+  @doc """
+  Delete an assistant in Kaapi
+  """
+  @spec delete_assistant(binary(), binary()) :: {:ok, map()} | {:error, map() | String.t()}
+  def delete_assistant(assistant_id, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.delete("/api/v1/assistant/#{assistant_id}")
+    |> parse_kaapi_response()
+  end
+
   @spec parse_kaapi_response(Tesla.Env.result()) ::
           {:ok, %{api_key: String.t()}} | {:error, String.t()}
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: %{api_key: api_key}}})

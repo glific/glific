@@ -112,6 +112,8 @@ defmodule Glific.Filesearch do
         delete_vector_store(assistant.vector_store_id)
       end
 
+      Kaapi.delete_assistant(assistant.assistant_id, assistant.organization_id)
+
       Repo.delete(assistant)
     end
   end
