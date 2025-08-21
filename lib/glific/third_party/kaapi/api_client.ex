@@ -67,7 +67,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: %{error: msg}}})
        when is_binary(msg) do
-    Logger.error("KAAPI onboard error (status=#{status}): #{inspect(msg)}")
+    Logger.error("KAAPI API error (status=#{status}): #{inspect(msg)}")
     {:error, msg}
   end
 
@@ -79,12 +79,12 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
         _ -> "HTTP #{status}"
       end
 
-    Logger.error("KAAPI onboard HTTP error (status=#{status}): #{inspect(msg)}")
+    Logger.error("KAAPI API HTTP error (status=#{status}): #{inspect(msg)}")
     {:error, msg}
   end
 
   defp parse_kaapi_response({:error, reason}) do
-    Logger.error("KAAPI onboard transport error: #{inspect(reason)}")
+    Logger.error("KAAPI API transport error: #{inspect(reason)}")
     {:error, "API request failed"}
   end
 
