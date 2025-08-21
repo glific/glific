@@ -1046,6 +1046,7 @@ defmodule Glific.MessagesTest do
       assert message.body == "test message from Glific"
     end
 
+    @tag :tt
     test "create and send message should send message to contact should return error", attrs do
       updated_attrs = %{
         is_active: false,

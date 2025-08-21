@@ -71,6 +71,7 @@ defmodule Glific.OnboardTest do
           status: 200,
           body:
             Jason.encode!(%{
+              "partnerApps" => %{"name" => "fake app name", "id" => "fake_app_id"},
               "token" => "ks_test_token",
               "status" => "success",
               "templates" => [],
@@ -483,6 +484,7 @@ defmodule Glific.OnboardTest do
                Onboard.update_registration(valid_params, org)
     end
 
+    @tag :tt
     test "update_registration, terms_agreed and support_staff_acount were true on submission", %{
       org: org,
       registration_id: reg_id

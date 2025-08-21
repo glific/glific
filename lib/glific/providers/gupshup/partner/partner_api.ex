@@ -15,6 +15,13 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   alias Plug.Conn.Query
   alias Tesla.Multipart
 
+  defmodule Error do
+    @moduledoc """
+    Custom Error module for Gupshup partner api failures
+    """
+    defexception [:message]
+  end
+
   plug(Tesla.Middleware.FormUrlencoded,
     encode: &Query.encode/1
   )
@@ -37,9 +44,13 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:error, error} ->
         error = "#{inspect(error)}"
 
-        if String.contains?(error, "Re-linking"),
-          do: fetch_gupshup_app_details(org_id),
-          else: error
+        if String.contains?(error, "Re-linking") do
+          fetch_gupshup_app_details(org_id)
+        else
+          Glific.log_exception(%Error{message: "Linking App to partner failed due to #{error}"})
+
+          "Linking App to partner failed, please double-check and enter correct App name and API key"
+        end
     end
   end
 
@@ -558,7 +569,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       app
     else
       {:error, error} ->
-        error
+        Glific.log_exception(%Error{
+          message: "Fetching app details for app #{app_name} failed due to #{error}"
+        })
+
+        "Fetching app details failed, please double check App name and API key are correct"
 
       _ ->
         "Invalid Gupshup App"

@@ -62,7 +62,7 @@ defmodule GlificWeb.Tenants do
   def organization_handler(nil) do
     # in the normal case we'll redirect them here to glific.io
     # and halt this connection
-    default = Partners.organization("test")
+    default = Partners.organization("glific")
     default.id
   end
 

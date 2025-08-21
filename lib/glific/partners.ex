@@ -49,18 +49,10 @@ defmodule Glific.Partners do
   @spec list_providers(map()) :: [Provider.t(), ...]
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
-    # |> Enum.map(&clear_provider_keys/1)
     |> Enum.reject(fn provider ->
       Enum.member?(["goth"], provider.shortcode)
     end)
   end
-
-  @spec clear_provider_keys(map()) :: map()
-  defp clear_provider_keys(%{shortcode: shortcode} = provider) when shortcode in ["gupshup"] do
-    Map.put(provider, :keys, %{})
-  end
-
-  defp clear_provider_keys(provider), do: provider
 
   @doc """
   Return the count of providers, using the same filter as list_providers
@@ -867,7 +859,6 @@ defmodule Glific.Partners do
     organization = organization(credential.organization_id)
 
     remove_organization_cache(organization.id, organization.shortcode)
-    # attrs = maybe_remove_keys(attrs)
 
     {:ok, credential} =
       credential
@@ -879,10 +870,6 @@ defmodule Glific.Partners do
     credential.organization
     |> credential_update_callback(credential, credential.provider.shortcode)
   end
-
-  # For gupshup we don't want the 
-  defp maybe_remove_keys(%{shortcode: "gupshup"} = attrs), do: Map.delete(attrs, :keys)
-  defp maybe_remove_keys(attrs), do: attrs
 
   @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
           {:ok, any} | {:error, any}
@@ -925,14 +912,18 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(organization, credential, "gupshup") do
-    if valid_bsp?(credential) do
-      update_organization(organization, %{bsp_id: credential.provider.id})
+    cond do
+      not valid_bsp?(credential) ->
+        {:error, "App Name and API Key can't be empty"}
 
-      if credential.is_active do
+      credential.is_active ->
+        update_organization(organization, %{bsp_id: credential.provider.id})
+
         set_bsp_app_id(organization, "gupshup")
-      else
+
+      true ->
+        update_organization(organization, %{bsp_id: credential.provider.id})
         {:ok, credential}
-      end
     end
   end
 
@@ -1248,7 +1239,7 @@ defmodule Glific.Partners do
   @doc """
   Set BSP APP id whenever we update the bsp credentials.
   """
-  @spec set_bsp_app_id(Organization.t(), String.t()) :: any()
+  @spec set_bsp_app_id(Organization.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
   def set_bsp_app_id(org, "gupshup") do
     # restricting this function  for BSP only
     {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup", group: "bsp"})
@@ -1256,25 +1247,39 @@ defmodule Glific.Partners do
     {:ok, bsp_cred} =
       Repo.fetch_by(Credential, %{provider_id: provider.id, organization_id: org.id})
 
-    app_details = PartnerAPI.fetch_app_details(org.id)
-    app_id = if is_map(app_details), do: app_details["id"], else: "NA"
+    case PartnerAPI.fetch_app_details(org.id) do
+      %{"id" => app_id} ->
+        update_gupshup_secrets(bsp_cred, app_id, org)
 
-    updated_secrets = Map.put(bsp_cred.secrets, "app_id", app_id)
-    attrs = %{secrets: updated_secrets, organization_id: org.id}
-
-    {:ok, credential} =
-      bsp_cred
-      |> Credential.changeset(attrs)
-      |> Repo.update()
-
-    remove_organization_cache(org.id, org.shortcode)
-    {:ok, credential}
+      error ->
+        update_gupshup_secrets(bsp_cred, "NA", org)
+        {:error, error}
+    end
   end
 
   def set_bsp_app_id(org, shortcode) do
     {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: shortcode, group: "bsp"})
 
     Repo.fetch_by(Credential, %{provider_id: provider.id, organization_id: org.id})
+  end
+
+  @spec update_gupshup_secrets(Credential.t(), String.t(), Organization.t()) ::
+          {:ok, Credential.t()} | {:error, any()}
+  defp update_gupshup_secrets(bsp_cred, app_id, org) do
+    updated_secrets = Map.put(bsp_cred.secrets, "app_id", app_id)
+    attrs = %{secrets: updated_secrets, organization_id: org.id}
+
+    bsp_cred
+    |> Credential.changeset(attrs)
+    |> Repo.update()
+    |> tap(fn _ ->
+      remove_organization_cache(org.id, org.shortcode)
+
+      # If we remove cache in tests, it will be flaky since some tests need to be mocked token fetch api due to parallel cache clearing
+      if Application.get_env(:glific, :environment) != :test do
+        Glific.Caches.remove(org.id, ["partner_app_token"])
+      end
+    end)
   end
 
   @doc """

@@ -346,6 +346,23 @@ defmodule Glific do
   end
 
   @doc """
+  Handles logging and sending defexception erros to Appsignal
+  """
+  @spec log_exception(map()) :: :ok
+  def log_exception(%{message: message} = error) when is_binary(message) do
+    Logger.error(message)
+
+    Appsignal.send_error(
+      error,
+      []
+    )
+
+    :ok
+  end
+
+  def log_exception(_error), do: :ok
+
+  @doc """
   Verifying Google Captcha
   """
   @spec verify_google_captcha(String.t()) :: {:ok, String.t()} | {:error, any()}
@@ -353,7 +370,6 @@ defmodule Glific do
     create_request(token)
     |> then(&Tesla.post(@captcha_verify_url, &1))
     |> handle_response()
-    {:ok, "success"}
   end
 
   @spec create_request(String.t()) :: Tesla.Multipart.t()

@@ -1020,6 +1020,24 @@ defmodule Glific.PartnersTest do
       assert "app_id" == updated_credential.secrets["app_id"]
     end
 
+    test "update_credential/2 for gupshup with empty creds, should error out",
+         %{organization_id: organization_id} = _attrs do
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
+
+      assert {:ok, %Credential{} = credential} =
+               Repo.fetch_by(Credential, %{provider_id: provider.id})
+
+      valid_update_attrs = %{
+        keys: %{},
+        shortcode: provider.shortcode,
+        secrets: %{"app_name" => "", "api_key" => ""},
+        organization_id: organization_id
+      }
+
+      {:error, "App Name and API Key can't be empty"} =
+        Partners.update_credential(credential, valid_update_attrs)
+    end
+
     test "update_credential/2 for gupshup with linking error",
          %{organization_id: organization_id} = _attrs do
       Tesla.Mock.mock(fn
@@ -1055,9 +1073,12 @@ defmodule Glific.PartnersTest do
         organization_id: organization_id
       }
 
-      {:ok, updated_credential} = Partners.update_credential(credential, valid_update_attrs)
-      assert "some_app" == updated_credential.secrets["app_name"]
-      assert "NA" == updated_credential.secrets["app_id"]
+      {:error, _} = Partners.update_credential(credential, valid_update_attrs)
+
+      assert {:ok, %Credential{} = credential} =
+               Repo.fetch_by(Credential, %{provider_id: provider.id})
+
+      assert credential.secrets["app_id"] == "NA"
     end
 
     test "update_credential/2 for gupshup with first time linking",
