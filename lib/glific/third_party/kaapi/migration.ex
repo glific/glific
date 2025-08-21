@@ -96,17 +96,19 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
   defp process_org_record(
          %{id: id, name: org_name, parent_org: parent_org, shortcode: shortcode} = org
        ) do
+    open_ai_key = Application.fetch_env!(:glific, :open_ai)
     organization_name = if parent_org in [nil, ""], do: org_name, else: parent_org
 
     params = %{
       organization_id: id,
       organization_name: organization_name,
       project_name: org_name,
-      user_name: shortcode
+      user_name: shortcode,
+      openai_api_key: open_ai_key
     }
 
     case Kaapi.onboard(params) do
-      {:ok, result} ->
+      {:ok, _result} ->
         "Org #{id} onboarded successfully"
 
       {:error, error} ->
