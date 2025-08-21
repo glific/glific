@@ -201,6 +201,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:low_balance_threshold, :string)
     field(:critical_balance_threshold, :string)
     field(:send_warning_mail, :boolean)
+    field(:allow_bot_number_update, :boolean)
   end
 
   input_object :regx_flow_input do

@@ -297,7 +297,15 @@ defmodule Glific.Partners do
     with :ok <- Contacts.validate_number(phone),
          {:ok, _contact} <- update_org_contact(organization, phone),
          {:ok, _user} <- update_main_user(organization, phone) do
-      attrs = Map.put(attrs, :allow_bot_number_update, false)
+      setting_map =
+        (organization.setting || %{})
+        |> Map.from_struct()
+        |> Map.put(:allow_bot_number_update, false)
+
+      attrs =
+        attrs
+        |> Map.put(:setting, setting_map)
+
       do_update_org(organization, attrs)
     else
       {:error, message} -> {:error, message}
