@@ -26,6 +26,9 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @doc """
+  Onboard an organization to Kaapi.
+  """
   @spec onboard(map()) :: :ok
   def onboard(params) do
     with {:ok, %{api_key: api_key}} <- ApiClient.onboard_to_kaapi(params),
@@ -39,6 +42,9 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @doc """
+  Create an AI assistant in Kaapi, send error to Appsignal if failed.
+  """
   @spec create_assistant(map(), non_neg_integer()) :: {:ok, map()} | {:error, map() | binary()}
   def create_assistant(openai_response, organization_id) do
     params = %{
@@ -72,6 +78,9 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @doc """
+  Update an AI assistant in Kaapi, send error to Appsignal if failed.
+  """
   @spec update_assistant(map(), non_neg_integer()) :: {:ok, map()} | {:error, map() | binary()}
   def update_assistant(%{id: assistant_id} = params, organization_id) do
     params = %{
