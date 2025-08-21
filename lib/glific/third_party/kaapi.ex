@@ -39,7 +39,7 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
-  @spec create_assistant(map(), binary()) :: {:ok, map()} | {:error, map() | binary()}
+  @spec create_assistant(map(), non_neg_integer()) :: {:ok, map()} | {:error, map() | binary()}
   def create_assistant(openai_response, organization_id) do
     params = %{
       name: openai_response.name,

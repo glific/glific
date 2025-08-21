@@ -35,18 +35,18 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     api_key
     |> client()
     |> Tesla.post("/api/v1/onboard", body)
-    |> parse_onboard_response()
+    |> parse_kaapi_response()
   end
 
   @doc """
   Create an assistant in Kaapi
   """
-  @spec create_assistant(map(), non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
+  @spec create_assistant(map(), binary()) :: {:ok, map()} | {:error, String.t()}
   def create_assistant(params, org_api_key) do
     org_api_key
     |> client()
     |> Tesla.post("/api/v1/assistant", body)
-    |> parse_onboard_response()
+    |> parse_kaapi_response()
   end
 
   @doc """
@@ -83,18 +83,18 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
   @spec parse_onboard_response(Tesla.Env.result()) ::
           {:ok, %{api_key: String.t()}} | {:error, String.t()}
-  defp parse_onboard_response({:ok, %Tesla.Env{status: status, body: %{api_key: api_key}}})
+  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: %{api_key: api_key}}})
        when status in 200..299 and is_binary(api_key) do
     {:ok, %{api_key: api_key}}
   end
 
-  defp parse_onboard_response({:ok, %Tesla.Env{status: status, body: %{error: msg}}})
+  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: %{error: msg}}})
        when is_binary(msg) do
     Logger.error("KAAPI onboard error (status=#{status}): #{inspect(msg)}")
     {:error, msg}
   end
 
-  defp parse_onboard_response({:ok, %Tesla.Env{status: status, body: body}})
+  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
        when status >= 400 do
     msg =
       case body do
@@ -106,7 +106,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     {:error, msg}
   end
 
-  defp parse_onboard_response({:error, reason}) do
+  defp parse_kaapi_response({:error, reason}) do
     Logger.error("KAAPI onboard transport error: #{inspect(reason)}")
     {:error, "API request failed"}
   end
