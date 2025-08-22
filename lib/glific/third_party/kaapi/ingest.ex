@@ -80,8 +80,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
     result =
       case ingest_assistants(org_id) do
         {:ok, assistant_results} ->
-          success_count = Enum.count(assistant_results, fn {status, _} -> status == :ok end)
-          error_count = Enum.count(assistant_results, fn {status, _} -> status == :error end)
+          {success_count, error_count} = count_results(assistant_results)
 
           Logger.info(
             "KAAPI_ORG_SUCCESS: Organization id: #{org_id} sync completed in. Assistants - Success: #{success_count}, Errors: #{error_count}, Total: #{length(assistant_results)}"
@@ -95,7 +94,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
     result
   end
 
-  @spec get_organisations() :: [Organization.t()]
+  @spec get_organisations() :: [non_neg_integer()]
   defp get_organisations do
     query =
       from(o in Organization,
@@ -135,8 +134,8 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
 
   @spec maybe_set_default_instruction(Assistant.t()) ::
           {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
-  defp maybe_set_default_instruction(%{instruction: instruction} = assistant)
-       when is_binary(instruction) and instruction != "",
+  defp maybe_set_default_instruction(%{instructions: instructions} = assistant)
+       when is_binary(instructions) and instructions != "",
        do: {:ok, assistant}
 
   defp maybe_set_default_instruction(assistant) do
@@ -178,11 +177,10 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
         end
       end)
 
-    success_count = Enum.count(results, fn {status, _} -> status == :ok end)
-    error_count = Enum.count(results, fn {status, _} -> status == :error end)
+    {success_count, error_count} = count_results(results)
 
     Logger.info(
-      "KAAPI_PROCESSING_COMPLETE: Completed processing assistants for org: #{organization_id}. Success: #{success_count}, Errors: #{error_count}, Total: #{length(results)}"
+      "KAAPI_PROCESSING_COMPLETE: Completed processing assistants for org: #{organization_id}. Success: #{success_count}, Errors: #{error_count}, Total: #{length(assistants)}"
     )
 
     {:ok, results}
@@ -204,6 +202,14 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
 
       _, acc ->
         acc
+    end)
+  end
+
+  @spec count_results([{:ok | :error, any()}]) :: {non_neg_integer(), non_neg_integer()}
+  defp count_results(results) do
+    Enum.reduce(results, {0, 0}, fn
+      {:ok, _}, {success, error} -> {success + 1, error}
+      {:error, _}, {success, error} -> {success, error + 1}
     end)
   end
 end
