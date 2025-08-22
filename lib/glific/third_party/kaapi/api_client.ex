@@ -3,7 +3,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   API Client for Kaapi Integration.
   """
 
-  use Tesla
   require Logger
 
   # client with runtime config (API key / base URL).
@@ -83,16 +82,9 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   """
   @spec ingest_ai_assistants(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
   def ingest_ai_assistants(org_api_key, assistant_id) do
-    endpoint = kaapi_config(:kaapi_endpoint)
-
-    middleware = [
-      {Tesla.Middleware.Headers, headers(org_api_key)},
-      {Tesla.Middleware.BaseUrl, endpoint}
-    ]
-
-    middleware
-    |> Tesla.client()
-    |> post("api/v1/assistant/#{assistant_id}/ingest", %{})
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/assistant/#{assistant_id}/ingest", %{})
     |> case do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
         {:ok, %{message: "Assistant synced successfully"}}
