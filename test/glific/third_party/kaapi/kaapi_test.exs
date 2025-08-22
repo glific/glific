@@ -54,11 +54,11 @@ defmodule Glific.ThirdParty.Kaapi.ApiClienTest do
       %Tesla.Env{method: :post} ->
         %Tesla.Env{
           status: 404,
-          body: %{}
+          body: "Not Found"
         }
     end)
 
-    assert {:error, "HTTP 404"} = ApiClient.onboard_to_kaapi(@params)
+    assert {:error, %{status: 404, body: "Not Found"}} = ApiClient.onboard_to_kaapi(@params)
   end
 
   test "returns {:error, msg} when API transport fails" do
@@ -67,6 +67,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClienTest do
         {:error, :timeout}
     end)
 
-    assert {:error, "API request failed"} = ApiClient.onboard_to_kaapi(@params)
+    assert {:error, :timeout} = ApiClient.onboard_to_kaapi(@params)
   end
 end

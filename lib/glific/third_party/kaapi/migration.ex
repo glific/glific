@@ -11,6 +11,7 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
     Partners.Organization,
     Partners.Provider,
     Repo,
+    TaskSupervisor,
     ThirdParty.Kaapi
   }
 
@@ -65,28 +66,51 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
   end
 
   @spec process_orgs_concurrently([map()]) :: [map()]
-  defp process_orgs_concurrently(orgs) do
-    orgs
-    |> Task.async_stream(fn org -> {:ok, org.id, process_org_record(org)} end)
-    |> Enum.into([])
+  defp process_orgs_concurrently(organizations) do
+    Task.Supervisor.async_stream_nolink(
+      TaskSupervisor,
+      organizations,
+      &process_org_record/1,
+      max_concurrency: 20,
+      timeout: 60_000,
+      on_timeout: :kill_task
+    )
+    |> Enum.map(fn
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, :timeout} ->
+        Logger.error("KAAPI_ONBOARD_TIMEOUT: Organization onboard timed out after 60 seconds")
+        {:error, :timeout}
+
+      {:exit, reason} ->
+        Logger.error(
+          "KAAPI_ONBOARD_EXIT: Organization onboard exited with reason: #{inspect(reason)}"
+        )
+
+        {:error, reason}
+    end)
   end
 
-  @spec process_org_record(map()) :: any()
-  defp process_org_record(
-         %{id: id, name: org_name, parent_org: parent_org, shortcode: shortcode} = org
-       ) do
+  @spec process_org_record(map()) :: String.t()
+  defp process_org_record(%{id: id, name: org_name, parent_org: parent_org, shortcode: shortcode}) do
+    open_ai_key = Application.fetch_env!(:glific, :open_ai)
     organization_name = if parent_org in [nil, ""], do: org_name, else: parent_org
 
     params = %{
       organization_id: id,
       organization_name: organization_name,
       project_name: org_name,
-      user_name: shortcode
+      user_name: shortcode,
+      openai_api_key: open_ai_key
     }
 
-    Kaapi.onboard(params)
-  rescue
-    error ->
-      Logger.error("Onboarding crashed for org_id=#{inspect(org[:id])}: #{inspect(error)}")
+    case Kaapi.onboard(params) do
+      {:ok, _result} ->
+        "Org #{id} onboarded successfully"
+
+      {:error, error} ->
+        "Org #{id} onboarding failed: #{inspect(error)}"
+    end
   end
 end

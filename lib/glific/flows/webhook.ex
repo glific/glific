@@ -7,8 +7,10 @@ defmodule Glific.Flows.Webhook do
   require Logger
 
   alias Glific.Clients.CommonWebhook
-  alias Glific.{Messages, Repo}
   alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
+  alias Glific.Messages
+  alias Glific.Messages.Message
+  alias Glific.Repo
 
   use Oban.Worker,
     queue: :webhook,
@@ -83,8 +85,11 @@ defmodule Glific.Flows.Webhook do
     webhook_log
   end
 
-  @spec update_log(WebhookLog.t() | non_neg_integer, map()) ::
-          {:ok, WebhookLog.t()}
+  @doc """
+  Update a webhook log with the response message.
+  """
+  @spec update_log(WebhookLog.t() | non_neg_integer, map() | binary()) ::
+          {:ok, WebhookLog.t()} | {:error, Ecto.Changeset.t()}
   def update_log(webhook_log_id, message) when is_integer(webhook_log_id) do
     webhook_log = Repo.get!(WebhookLog, webhook_log_id)
     update_log(webhook_log, message)
@@ -109,9 +114,6 @@ defmodule Glific.Flows.Webhook do
     webhook_log |> WebhookLog.update_webhook_log(attrs)
   end
 
-  @doc """
-  this is when we are storing the return from a function call
-  """
   def update_log(webhook_log, result) when is_map(result) do
     attrs = %{
       response_json: result,
@@ -122,8 +124,6 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
-  @spec update_log(WebhookLog.t(), String.t()) ::
-          {:ok, WebhookLog.t()}
   def update_log(webhook_log, error_message) do
     attrs = %{
       error: error_message,
@@ -440,6 +440,8 @@ defmodule Glific.Flows.Webhook do
   @doc """
   The function updates the flow_context and waits for Kaapi to send a response.
   """
+  @spec webhook_and_wait(map(), FlowContext.t(), boolean()) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]}
   def webhook_and_wait(action, context, is_active?) do
     parsed_attrs = parse_header_and_url(action, context)
     failure_message = Messages.create_temp_message(context.organization_id, "Failure")

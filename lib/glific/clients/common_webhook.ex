@@ -15,6 +15,7 @@ defmodule Glific.Clients.CommonWebhook do
     Providers.Maytapi,
     Repo,
     ThirdParty.GoogleSlide.Slide,
+    ThirdParty.Kaapi.ApiClient,
     WAGroup.WAManagedPhone,
     WAGroup.WaPoll
   }
@@ -33,9 +34,7 @@ defmodule Glific.Clients.CommonWebhook do
     {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
     timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-
-    endpoint =
-      Application.get_env(:glific, :kaapi_endpoint) <> "api/v1/responses"
+    kaapi_config = Application.fetch_env!(:glific, ApiClient)
 
     signature_payload = %{
       "organization_id" => organization_id,
@@ -69,12 +68,13 @@ defmodule Glific.Clients.CommonWebhook do
 
     client =
       Tesla.client([
-        {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]}
+        {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+        {Tesla.Middleware.BaseUrl, kaapi_config[:kaapi_endpoint]}
       ])
 
     client
     |> Tesla.post(
-      endpoint,
+      "api/v1/responses",
       payload,
       headers: headers,
       opts: [adapter: [recv_timeout: 300_000]]
