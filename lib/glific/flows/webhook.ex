@@ -7,8 +7,10 @@ defmodule Glific.Flows.Webhook do
   require Logger
 
   alias Glific.Clients.CommonWebhook
-  alias Glific.{Messages, Repo}
   alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
+  alias Glific.Messages
+  alias Glific.Messages.Message
+  alias Glific.Repo
 
   use Oban.Worker,
     queue: :webhook,

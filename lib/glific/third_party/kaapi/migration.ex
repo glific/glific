@@ -92,7 +92,7 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
     end)
   end
 
-  @spec process_org_record(map()) :: any()
+  @spec process_org_record(map()) :: :ok | binary()
   defp process_org_record(
          %{id: id, name: org_name, parent_org: parent_org, shortcode: shortcode} = org
        ) do

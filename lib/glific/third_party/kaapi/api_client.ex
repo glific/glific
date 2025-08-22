@@ -12,7 +12,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @doc """
   Onboard NGOs to kaapi
   """
-  @spec onboard_to_kaapi(map()) :: {:ok, %{api_key: String.t()}} | {:error, String.t()}
+  @spec onboard_to_kaapi(map()) :: {:ok, %{data: %{api_key: String.t()}}} | {:error, String.t()}
   def onboard_to_kaapi(params) do
     endpoint = kaapi_config(:kaapi_endpoint)
     api_key = kaapi_config(:kaapi_api_key)
