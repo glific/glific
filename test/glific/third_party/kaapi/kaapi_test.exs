@@ -34,7 +34,8 @@ defmodule Glific.ThirdParty.Kaapi.ApiClienTest do
         }
     end)
 
-    assert {:error, "API key already exists for this user and project."} =
+    assert {:error,
+            %{status: 422, body: %{error: "API key already exists for this user and project."}}} =
              ApiClient.onboard_to_kaapi(@params)
   end
 
@@ -47,7 +48,8 @@ defmodule Glific.ThirdParty.Kaapi.ApiClienTest do
         }
     end)
 
-    assert {:error, "Bad request"} = ApiClient.onboard_to_kaapi(@params)
+    assert {:error, %{status: 400, body: %{error: "Bad request"}}} =
+             ApiClient.onboard_to_kaapi(@params)
   end
 
   test "returns {:error, body} when API returns status code > 299" do
@@ -59,7 +61,8 @@ defmodule Glific.ThirdParty.Kaapi.ApiClienTest do
         }
     end)
 
-    assert {:error, %{message: "Redirected"}} = ApiClient.onboard_to_kaapi(@params)
+    assert {:error, %{status: 307, body: %{message: "Redirected"}}} =
+             ApiClient.onboard_to_kaapi(@params)
   end
 
   test "returns {:error, msg} when API returns error status code without error field" do
@@ -67,11 +70,12 @@ defmodule Glific.ThirdParty.Kaapi.ApiClienTest do
       %Tesla.Env{method: :post} ->
         %Tesla.Env{
           status: 404,
-          body: %{message: "Not found"}
+          body: %{message: "Not Found"}
         }
     end)
 
-    assert {:error, %{status: 404, body: "Not Found"}} = ApiClient.onboard_to_kaapi(@params)
+    assert {:error, %{status: 404, body: %{message: "Not Found"}}} =
+             ApiClient.onboard_to_kaapi(@params)
   end
 
   test "returns {:error, msg} when API transport fails" do
@@ -132,21 +136,23 @@ defmodule Glific.ThirdParty.Kaapi.ApiClienTest do
         temperature: 1.0
       }
 
+      response_body = %{
+        error: "Assistant already exists",
+        data: %{},
+        metadata: nil,
+        success: true
+      }
+
       mock(fn
         %Tesla.Env{method: :post} ->
           %Tesla.Env{
             status: 409,
-            body: %{
-              error: "Assistant already exists",
-              data: %{},
-              metadata: nil,
-              success: true
-            }
+            body: response_body
           }
       end)
 
-      assert {:error, resp} = ApiClient.create_assistant(params, @org_kaapi_api_key)
-      assert resp == "Assistant already exists"
+      assert {:error, %{status: 409, body: ^response_body}} =
+               ApiClient.create_assistant(params, @org_kaapi_api_key)
     end
   end
 
@@ -207,8 +213,8 @@ defmodule Glific.ThirdParty.Kaapi.ApiClienTest do
         %Tesla.Env{status: 404, body: %{error: "Not Found", data: %{}}}
       end)
 
-      assert {:error, res} = ApiClient.update_assistant("invalid_id", params, @org_kaapi_api_key)
-      assert res == "Not Found"
+      assert {:error, %{status: 404, body: %{error: "Not Found", data: %{}}}} =
+               ApiClient.update_assistant("invalid_id", params, @org_kaapi_api_key)
     end
   end
 
@@ -232,8 +238,8 @@ defmodule Glific.ThirdParty.Kaapi.ApiClienTest do
         %Tesla.Env{status: 404, body: %{error: "Not Found", data: %{}}}
       end)
 
-      assert {:error, res} = ApiClient.delete_assistant("invalid_id", @org_kaapi_api_key)
-      assert res == "Not Found"
+      assert {:error, %{status: 404, body: %{error: "Not Found", data: %{}}}} =
+               ApiClient.delete_assistant("invalid_id", @org_kaapi_api_key)
     end
   end
 end

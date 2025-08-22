@@ -114,21 +114,11 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     {:ok, body}
   end
 
-  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: %{error: msg}}})
-       when is_binary(msg) do
-    Logger.error("KAAPI API error (status=#{status}): #{inspect(msg)}")
-    {:error, msg}
-  end
-
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}}) do
-    Logger.error("KAAPI API HTTP error (status=#{status}): #{inspect(body)}")
-    {:error, body}
+    {:error, %{status: status, body: body}}
   end
 
-  defp parse_kaapi_response({:error, reason}) do
-    Logger.error("KAAPI API transport error: #{inspect(reason)}")
-    {:error, "API request failed"}
-  end
+  defp parse_kaapi_response(error), do: error
 
   defp kaapi_config, do: Application.fetch_env!(:glific, __MODULE__)
   defp kaapi_config(key), do: kaapi_config()[key]
