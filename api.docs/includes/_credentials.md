@@ -145,7 +145,7 @@ mutation updateCredential($id: ID!, $input: CredentialInput!) {
       "credential": {
         "id": "1",
         "isActive": true,
-        "keys": "{\"worker\":\"Glific.Providers.Gupshup.Worker\",\"url\":\"https://gupshup.io/\",\"handler\":\"Glific.Providers.Gupshup.Message\"},
+        "keys": "{\"worker\":\"Glific.Providers.Gupshup.Worker\",\"url\":\"https://gupshup.io/\",\"handler\":\"Glific.Providers.Gupshup.Message\"}",
         "provider": {
           "shortcode": "gupshup"
         },
