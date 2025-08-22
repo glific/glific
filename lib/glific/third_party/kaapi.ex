@@ -4,6 +4,8 @@ defmodule Glific.ThirdParty.Kaapi do
   """
   require Logger
 
+  # Replace this with the new exception after PR #4365 is merged
+  alias Glific.Flows.Webhook.Error
   alias Glific.Partners
   alias Glific.ThirdParty.Kaapi.ApiClient
 
@@ -24,6 +26,9 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @doc """
+  Onboard an organization to Kaapi.
+  """
   @spec onboard(map()) :: :ok
   def onboard(params) do
     with {:ok, %{api_key: api_key}} <- ApiClient.onboard_to_kaapi(params),
@@ -34,6 +39,108 @@ defmodule Glific.ThirdParty.Kaapi do
         Logger.error(
           "KAAPI onboarding failed for org: #{params.organization_id}, reason: #{inspect(error)}"
         )
+    end
+  end
+
+  @doc """
+  Create an AI assistant in Kaapi, send error to Appsignal if failed.
+  """
+  @spec create_assistant(map(), non_neg_integer()) :: {:ok, map()} | {:error, map() | binary()}
+  def create_assistant(openai_response, organization_id) do
+    params = %{
+      name: openai_response.name,
+      model: openai_response.model,
+      assistant_id: openai_response.id,
+      instructions: "you are a helpful asssitant",
+      organization_id: organization_id
+    }
+
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <-
+           ApiClient.create_assistant(params, secrets["api_key"]) do
+      Logger.info(
+        "KAAPI AI Assistant creation successful for org: #{organization_id}, assistant: #{params.assistant_id}"
+      )
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message:
+              "Kaapi AI Assistant creation failed for org_id=#{params.organization_id}, assistant_id=#{params.assistant_id})",
+            reason: reason
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Update an AI assistant in Kaapi, send error to Appsignal if failed.
+  """
+  @spec update_assistant(map(), non_neg_integer()) :: {:ok, map()} | {:error, map() | binary()}
+  def update_assistant(%{id: assistant_id} = params, organization_id) do
+    params = %{
+      name: params.name,
+      model: params.model,
+      instructions: params.instructions,
+      temperature: params.temperature,
+      organization_id: organization_id,
+      vector_store_ids_add:
+        get_in(params, [:tool_resources, :file_search, :vector_store_ids]) || []
+    }
+
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <-
+           ApiClient.update_assistant(assistant_id, params, secrets["api_key"]) do
+      Logger.info(
+        "KAAPI AI Assistant update successful for org: #{organization_id}, assistant: #{assistant_id}"
+      )
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message:
+              "Kaapi AI Assistant update failed for org_id=#{params.organization_id}, assistant_id=#{assistant_id})",
+            reason: reason
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Delete an assistant in Kaapi, send error to Appsignal if failed.
+  """
+  @spec delete_assistant(binary(), non_neg_integer()) :: {:ok, map()} | {:error, map() | binary()}
+  def delete_assistant(assistant_id, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <-
+           ApiClient.delete_assistant(assistant_id, secrets["api_key"]) do
+      Logger.info(
+        "KAAPI AI Assistant delete successful for org: #{organization_id}, assistant: #{assistant_id}"
+      )
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message:
+              "Kaapi AI Assistant delete failed for org_id=#{organization_id}, assistant_id=#{assistant_id})",
+            reason: reason
+          },
+          []
+        )
+
+        {:error, reason}
     end
   end
 

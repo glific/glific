@@ -2,48 +2,84 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @moduledoc """
   API Client for Kaapi Integration.
   """
+
   use Tesla
   require Logger
 
-  plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
-  plug(Tesla.Middleware.Telemetry)
+  # client with runtime config (API key / base URL).
+  defp client(api_key) do
+    base_url = kaapi_config(:kaapi_endpoint)
+
+    Tesla.client([
+      {Tesla.Middleware.BaseUrl, base_url},
+      {Tesla.Middleware.Headers, headers(api_key)},
+      {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+      Tesla.Middleware.Telemetry
+    ])
+  end
 
   @doc """
-  Onboard NGOs to kaapi
+  Onboard NGOs to Kaapi
   """
-  @spec onboard_to_kaapi(map()) :: {:ok, %{api_key: String.t()}} | {:error, String.t()}
   def onboard_to_kaapi(params) do
-    endpoint = kaapi_config(:kaapi_endpoint)
     api_key = kaapi_config(:kaapi_api_key)
 
-    payload = %{
+    body = %{
       organization_name: params.organization_name,
       project_name: params.project_name,
       user_name: params.user_name
     }
 
-    middleware = [
-      {Tesla.Middleware.Headers, headers(api_key)},
-      {Tesla.Middleware.BaseUrl, endpoint}
-    ]
+    api_key
+    |> client()
+    |> Tesla.post("/api/v1/onboard", body)
+    |> parse_kaapi_response()
+  end
 
-    middleware
-    |> Tesla.client()
-    |> post("/api/v1/onboard", payload)
+  @doc """
+  Create an assistant in Kaapi
+  """
+  @spec create_assistant(map(), binary()) :: {:ok, map()} | {:error, String.t()}
+  def create_assistant(body, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/assistant", body)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Update an assistant in Kaapi
+  """
+  @spec update_assistant(binary(), map(), binary()) :: {:ok, map()} | {:error, String.t()}
+  def update_assistant(assistant_id, body, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.patch("/api/v1/assistant/#{assistant_id}", body)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Delete an assistant in Kaapi
+  """
+  @spec delete_assistant(binary(), binary()) :: {:ok, map()} | {:error, map() | String.t()}
+  def delete_assistant(assistant_id, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.delete("/api/v1/assistant/#{assistant_id}")
     |> parse_kaapi_response()
   end
 
   @spec parse_kaapi_response(Tesla.Env.result()) ::
           {:ok, %{api_key: String.t()}} | {:error, String.t()}
-  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: %{api_key: api_key}}})
-       when status in 200..299 and is_binary(api_key) do
-    {:ok, %{api_key: api_key}}
+  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
+       when status in 200..299 do
+    {:ok, body}
   end
 
-  defp parse_kaapi_response({:ok, %Tesla.Env{body: %{error: error_msg}}})
-       when is_binary(error_msg) do
-    Logger.error("KAAPI API error: #{inspect(error_msg)}")
-    {:error, error_msg}
+  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: %{error: msg}}})
+       when is_binary(msg) do
+    Logger.error("KAAPI API error (status=#{status}): #{inspect(msg)}")
+    {:error, msg}
   end
 
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
@@ -54,12 +90,12 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
         _ -> "HTTP #{status}"
       end
 
-    Logger.error("KAAPI API HTTP error: #{inspect(msg)}")
+    Logger.error("KAAPI API HTTP error (status=#{status}): #{inspect(msg)}")
     {:error, msg}
   end
 
-  defp parse_kaapi_response({:error, message}) do
-    Logger.error("KAAPI API transport error: #{inspect(message)}")
+  defp parse_kaapi_response({:error, reason}) do
+    Logger.error("KAAPI API transport error: #{inspect(reason)}")
     {:error, "API request failed"}
   end
 

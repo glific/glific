@@ -27,8 +27,20 @@ config :glific, GlificWeb.Endpoint,
     tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
   ]
 
-config :logger,
-  level: :error
+# config :absinthe, Absinthe.Logger,
+#   pipeline: true,
+#   level: :debug
+
+# Watch static and templates for browser reloading.
+config :glific, GlificWeb.Endpoint,
+  live_reload: [
+    patterns: [
+      ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
+      ~r"priv/gettext/.*(po)$",
+      ~r"lib/glific_web/(live|views)/.*(ex)$",
+      ~r"lib/glific_web/templates/.*(eex)$"
+    ]
+  ]
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.

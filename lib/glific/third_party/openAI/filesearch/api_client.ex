@@ -2,12 +2,12 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   @moduledoc """
   Glific module for API calls to OpenAI related to Filesearch
   """
-  alias Glific.Repo
-  alias Glific.Partners
+
+  use Tesla
   alias Tesla.Multipart
+
   require Logger
   @endpoint "https://api.openai.com/v1"
-  use Tesla
 
   @spec headers() :: list()
   defp headers do
@@ -19,7 +19,6 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
       {"OpenAI-Beta", "assistants=v2"}
     ]
   end
-
 
   # using "Content-Type: application/json" in the file upload API caused intermittent errors
   # because OpenAI's handling of this header was inconsistent. Removing the Content-Type header
@@ -139,7 +138,6 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   Create an Assistant
   """
   @spec create_assistant(map()) :: {:ok, map()} | {:error, String.t()}
-  @spec create_assistant(map()) :: {:ok, map()} | {:error, String.t()}
   def create_assistant(params) do
     url = @endpoint <> "/assistants"
 
@@ -147,7 +145,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
       %{
         "name" => params.name,
         "model" => params.model,
-        "instructions" => params[:instructions],
+        "instructions" => "you are a helpful assistant",
         "temperature" => params.temperature,
         "tools" => [%{"type" => "file_search"}],
         "tool_resources" => %{
@@ -158,12 +156,8 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
       }
       |> Jason.encode!()
 
-    with {:ok, openai_response} <- post(url, payload, headers: headers()) |> parse_response(),
-         :ok <- sync_with_kaapi_create(openai_response, params.organization_id) do
-      {:ok, openai_response}
-    else
-      error -> error
-    end
+    post(url, payload, headers: headers())
+    |> parse_response()
   end
 
   @doc """
@@ -184,34 +178,27 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   def modify_assistant(assistant_id, params) do
     url = @endpoint <> "/assistants/#{assistant_id}"
 
-    base_payload = %{
+    payload = %{
       "name" => params.name,
       "model" => params.model,
       "instructions" => params.instructions || "",
       "temperature" => params.temperature
     }
 
-    payload =
-      if Map.has_key?(params, :vector_store_ids) do
-        Map.merge(base_payload, %{
-          "tool_resources" => %{
-            "file_search" => %{
-              "vector_store_ids" => params.vector_store_ids
-            }
+    if Map.has_key?(params, :vector_store_ids) do
+      Map.merge(payload, %{
+        "tool_resources" => %{
+          "file_search" => %{
+            "vector_store_ids" => params.vector_store_ids
           }
-        })
-      else
-        base_payload
-      end
-      |> Jason.encode!()
-
-    with {:ok, updated_data} <-
-           post(url, payload, headers: headers()) |> parse_response(),
-         :ok <- sync_with_kaapi(assistant_id, updated_data, params.organization_id) do
-      {:ok, updated_data}
+        }
+      })
     else
-      error -> error
+      payload
     end
+    |> Jason.encode!()
+    |> then(&post(url, &1, headers: headers()))
+    |> parse_response()
   end
 
   @doc """
@@ -286,45 +273,6 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
-  @spec sync_with_kaapi_create(map(), non_neg_integer()) :: :ok | {:error, String.t()}
-  defp sync_with_kaapi_create(openai_data, org_id) do
-    kaapi_payload =
-      %{
-        name: openai_data.name,
-        model: openai_data.model,
-        instructions: openai_data.instructions || "you are a helpful asssitant",
-        temperature: openai_data.temperature,
-        vector_store_ids: get_in(openai_data, [:tool_resources, :file_search, :vector_store_ids])
-      }
-      |> IO.inspect()
-
-    make_kaapi_request("api/v1/assistant", kaapi_payload, org_id, :post)
-    |> IO.inspect()
-    |> case do
-      {:ok, _} -> :ok
-      error -> error
-    end
-  end
-
-  @spec sync_with_kaapi(String.t(), map(), non_neg_integer()) :: :ok | {:error, String.t()}
-  defp sync_with_kaapi(assistant_id, updated_data, org_id) do
-    kaapi_payload =
-      %{
-        name: updated_data.name,
-        model: updated_data.model,
-        instructions: updated_data.instructions || "",
-        temperature: updated_data.temperature,
-        vector_store_ids:
-          get_in(updated_data, [:tool_resources, :file_search, :vector_store_ids]) || []
-      }
-      |> IO.inspect()
-
-    case make_kaapi_request("api/v1/assistant/#{assistant_id}", kaapi_payload, org_id, :patch) do
-      {:ok, _} -> :ok
-      error -> error
-    end
-  end
-
   @spec parse_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t()}
   defp parse_response({:ok, %{body: resp_body, status: status}})
        when status >= 200 and status < 300 do
@@ -339,78 +287,5 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   defp parse_response({:error, message}) do
     Logger.error("Filesearch api error due to #{inspect(message)}")
     {:error, "OpenAI api failed"}
-  end
-
-  @spec make_kaapi_request(String.t(), map(), non_neg_integer(), atom()) ::
-          {:ok, map()} | {:error, String.t()}
-  defp make_kaapi_request(endpoint, params, organization_id, method) do
-    with {:ok, %{"api_key" => key}} <- fetch_kaapi_creds(organization_id) do
-      IO.inspect(key)
-
-      header = [
-        {"X-API-KEY", key},
-        {"Content-Type", "application/json"}
-      ]
-
-      kaapi_base_url = Application.fetch_env!(:glific, :kaapi_endpoint) |> IO.inspect()
-      url = kaapi_base_url <> endpoint
-      request_body = if map_size(params) > 0, do: Jason.encode!(params), else: ""
-
-      case method do
-        :delete -> delete(url, headers: header)
-        :post -> post(url, request_body, headers: header)
-        :patch -> patch(url, request_body, headers: header)
-      end
-      |> IO.inspect()
-      |> parse_kaapi_response()
-    end
-  end
-
-  @spec org_id() :: non_neg_integer()
-  defp org_id do
-    Repo.get_organization_id()
-  end
-
-  @doc """
-  fetch the kaapi credentials
-  """
-  @spec fetch_kaapi_creds(non_neg_integer) :: nil | {:ok, any} | {:error, any}
-  def fetch_kaapi_creds(organization_id) do
-    organization = Partners.organization(organization_id)
-
-    organization.services["kaapi"]
-    |> case do
-      nil ->
-        {:error, "Kaapi is not active"}
-
-      credentials ->
-        {:ok, credentials.secrets}
-    end
-  end
-
-  @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t()}
-  defp parse_kaapi_response(
-         {:ok, %Tesla.Env{status: status, body: %{error: nil, data: data, success: true}}}
-       )
-       when status in 200..299 do
-    data =
-      if Map.has_key?(data, :assistant_id) do
-        Map.put(data, :id, data.assistant_id)
-      else
-        data
-      end
-
-    {:ok, data}
-  end
-
-  defp parse_kaapi_response({:ok, %Tesla.Env{body: %{error: error_msg}}})
-       when is_binary(error_msg) do
-    Logger.error("kaapi_url api error due to #{inspect(error_msg)}")
-    {:error, error_msg}
-  end
-
-  defp parse_kaapi_response({:error, message}) do
-    Logger.error("Kaapi api error due to #{inspect(message)}")
-    {:error, "API request failed"}
   end
 end

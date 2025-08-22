@@ -15,6 +15,7 @@ defmodule Glific.Clients.CommonWebhook do
     Providers.Maytapi,
     Repo,
     ThirdParty.GoogleSlide.Slide,
+    ThirdParty.Kaapi.ApiClient,
     WAGroup.WAManagedPhone,
     WAGroup.WaPoll
   }
@@ -35,7 +36,8 @@ defmodule Glific.Clients.CommonWebhook do
     timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
     endpoint =
-      Application.get_env(:glific, :kaapi_endpoint) <> "api/v1/responses"
+      Application.get_env(:glific, ApiClient)[:kaapi_endpoint] <>
+        "api/v1/responses"
 
     signature_payload = %{
       "organization_id" => organization_id,
