@@ -90,13 +90,6 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
           assistant_results_only = Enum.map(assistant_results, fn {_status, result} -> result end)
 
           {org_id, assistant_results_only}
-
-        {:error, reason} ->
-          Logger.error(
-            "KAAPI_ORG_ERROR: Organization id: #{org_id} sync failed. Reason: #{inspect(reason)}"
-          )
-
-          {org_id, {:error, reason}}
       end
 
     result
