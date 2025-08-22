@@ -1275,7 +1275,8 @@ defmodule Glific.Partners do
     |> tap(fn _ ->
       remove_organization_cache(org.id, org.shortcode)
 
-      # If we remove cache in tests, it will be flaky since some tests need to be mocked token fetch api due to parallel cache clearing
+      # If we remove cache in tests, it will be flaky since some tests need to be mocked
+      #  token fetch api due to parallel cache clearing
       if Application.get_env(:glific, :environment) != :test do
         Glific.Caches.remove(org.id, ["partner_app_token"])
       end
