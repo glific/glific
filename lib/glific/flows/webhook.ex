@@ -457,6 +457,9 @@ defmodule Glific.Flows.Webhook do
           fields
           |> Map.put("webhook_log_id", webhook_log.id)
           |> Map.put("result_name", action.result_name)
+          |> Map.put("flow_id", context.flow_id)
+          |> Map.put("contact_id", context.contact_id)
+
 
         headers =
           add_signature(parsed_attrs.header, context.organization_id, body)
@@ -479,7 +482,6 @@ defmodule Glific.Flows.Webhook do
                     is_await_result: true
                   }
                 )
-
               {:wait, context, []}
 
             %{success: false, reason: data} ->
