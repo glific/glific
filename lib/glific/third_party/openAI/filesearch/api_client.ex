@@ -145,7 +145,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
       %{
         "name" => params.name,
         "model" => params.model,
-        "instructions" => "you are a helpful assistant",
+        "instructions" => params.instructions,
         "temperature" => params.temperature,
         "tools" => [%{"type" => "file_search"}],
         "tool_resources" => %{

@@ -81,7 +81,8 @@ defmodule Glific.Filesearch do
         temperature: 1,
         model: @default_model,
         organization_id: Repo.get_organization_id(),
-        vector_store_ids: vector_store_ids
+        vector_store_ids: vector_store_ids,
+        instructions: "You are a helpful assistant"
       }
       |> Map.merge(params)
 

@@ -43,7 +43,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   def create_assistant(body, org_api_key) do
     org_api_key
     |> client()
-    |> Tesla.post("/api/v1/assistant", body)
+    |> Tesla.post("/api/v1/assistant/", body)
     |> parse_kaapi_response()
   end
 

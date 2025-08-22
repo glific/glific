@@ -51,8 +51,9 @@ defmodule Glific.ThirdParty.Kaapi do
       name: openai_response.name,
       model: openai_response.model,
       assistant_id: openai_response.id,
-      instructions: "you are a helpful asssitant",
-      organization_id: organization_id
+      organization_id: organization_id,
+      instructions: openai_response.instructions,
+      temperature: openai_response.temperature
     }
 
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
