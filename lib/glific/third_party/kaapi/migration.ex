@@ -114,8 +114,5 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
       {:error, error} ->
         "Org #{id} onboarding failed: #{inspect(error)}"
     end
-  rescue
-    error ->
-      Logger.error("Onboarding crashed for org_id=#{inspect(org[:id])}: #{inspect(error)}")
   end
 end

@@ -77,21 +77,15 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
   defp sync_organization_assistants(org_id) do
     Logger.info("KAAPI_ORG_START: Starting sync for organization id: #{org_id}")
 
-    result =
-      case ingest_assistants(org_id) do
-        {:ok, assistant_results} ->
-          {success_count, error_count} = count_results(assistant_results)
+    {:ok, assistant_results} = ingest_assistants(org_id)
+    {success_count, error_count} = count_results(assistant_results)
 
-          Logger.info(
-            "KAAPI_ORG_SUCCESS: Organization id: #{org_id} sync completed in. Assistants - Success: #{success_count}, Errors: #{error_count}, Total: #{length(assistant_results)}"
-          )
+    Logger.info(
+      "KAAPI_ORG_SUCCESS: Organization id: #{org_id} sync completed in. Assistants - Success: #{success_count}, Errors: #{error_count}, Total: #{length(assistant_results)}"
+    )
 
-          assistant_results_only = Enum.map(assistant_results, fn {_status, result} -> result end)
-
-          {org_id, assistant_results_only}
-      end
-
-    result
+    assistant_results_only = Enum.map(assistant_results, fn {_status, result} -> result end)
+    {org_id, assistant_results_only}
   end
 
   @spec get_organisations() :: [non_neg_integer()]
@@ -114,7 +108,6 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
   @spec fetch_assistants(non_neg_integer) :: [Assistant.t()]
   defp fetch_assistants(organization_id) do
     Assistant
-    |> where([a], a.organization_id == ^organization_id)
     |> Repo.all(organization_id: organization_id)
   end
 
