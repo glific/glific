@@ -92,7 +92,7 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
     end)
   end
 
-  @spec process_org_record(map()) :: :ok | binary()
+  @spec process_org_record(map()) :: String.t()
   defp process_org_record(%{id: id, name: org_name, parent_org: parent_org, shortcode: shortcode}) do
     open_ai_key = Application.fetch_env!(:glific, :open_ai)
     organization_name = if parent_org in [nil, ""], do: org_name, else: parent_org
