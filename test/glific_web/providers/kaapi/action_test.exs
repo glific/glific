@@ -1,4 +1,4 @@
-defmodule GlificWeb.Flows.FlowResumeControllerTest do
+defmodule GlificWeb.Providers.Kaapi.ActionTest do
   use GlificWeb.ConnCase
   import Ecto.Query
 
@@ -68,7 +68,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       }
 
       Tesla.Mock.mock(fn
-        %Tesla.Env{method: :post, url: "This is not a secretapi/v1/responses"} ->
+        %Tesla.Env{method: :post} ->
           %Tesla.Env{
             status: 200,
             body: %{
@@ -198,7 +198,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       }
 
       Tesla.Mock.mock(fn
-        %Tesla.Env{method: :post, url: "This is not a secretapi/v1/responses"} ->
+        %Tesla.Env{method: :post} ->
           %Tesla.Env{
             body: %{
               error: "Not found",
@@ -209,22 +209,17 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       message_stream = []
 
-      Action.execute(action, context, message_stream)
+      assert {:ok, flow_context, [message]} = Action.execute(action, context, message_stream)
 
       # error should be logged
       webhook_log = Repo.get_by(WebhookLog, %{url: "filesearch-gpt"})
       assert webhook_log.error == "{\"error\":\"Not found\",\"success\":false}"
       assert webhook_log.status_code == 400
 
-      [message | _messages] =
-        Glific.Messages.list_messages(%{
-          filter: %{contact_id: contact.id},
-          opts: %{limit: 1, order: :desc}
-        })
-
       # It should go to the failure category and send the failure message,
       # since the node in the failure category has the failure message as its body.
       assert message.body == "Failure"
+      assert flow_context.id == context.id
     end
 
     test "logs descriptive error when assistant id is invalid", %{conn: conn} do
@@ -273,7 +268,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       }
 
       Tesla.Mock.mock(fn
-        %Tesla.Env{method: :post, url: "This is not a secretapi/v1/responses"} ->
+        %Tesla.Env{method: :post} ->
           %Tesla.Env{
             status: 404,
             body: %{
@@ -284,7 +279,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       end)
 
       message_stream = []
-      Action.execute(action, context, message_stream)
+      assert {:ok, flow_context, [message]} = Action.execute(action, context, message_stream)
 
       # error should be logged
       webhook_log =
@@ -297,15 +292,10 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert webhook_log.error ==
                "{\"error\":\"Assistant not found or not active\",\"success\":false}"
 
-      [message | _messages] =
-        Glific.Messages.list_messages(%{
-          filter: %{contact_id: contact.id},
-          opts: %{limit: 1, order: :desc}
-        })
-
       # It should go to the failure category and send the failure message,
       # since the node in the failure category has the failure message as its body.
       assert message.body == "Failure"
+      assert flow_context.id == context.id
     end
 
     test "Send to failure category if no response is received from Kaapi after waiting for 60 seconds",
@@ -355,7 +345,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       }
 
       Tesla.Mock.mock(fn
-        %Tesla.Env{method: :post, url: "This is not a secretapi/v1/responses"} ->
+        %Tesla.Env{method: :post} ->
           %Tesla.Env{
             status: 200,
             body: %{
@@ -434,7 +424,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       message_stream = []
 
-      Action.execute(action, context, message_stream)
+      assert {:ok, flow_context, [message]} = Action.execute(action, context, message_stream)
 
       webhook_log =
         WebhookLog
@@ -446,15 +436,10 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert webhook_log.error ==
                "Kaapi is not active"
 
-      [message | _messages] =
-        Glific.Messages.list_messages(%{
-          filter: %{contact_id: contact.id},
-          opts: %{limit: 1, order: :desc}
-        })
-
       # It should go to the failure category and send the failure message,
       # since the node in the failure category has the failure message as its body.
-      assert message.body == "failure"
+      assert message.body == "Failure"
+      assert flow_context.id == context.id
     end
   end
 

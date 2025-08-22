@@ -7,6 +7,7 @@ defmodule Glific.ThirdParty.Kaapi do
   # Replace this with the new exception after PR #4365 is merged
   alias Glific.Flows.Webhook.Error
   alias Glific.Partners
+  alias Glific.Partners.Credential
   alias Glific.ThirdParty.Kaapi.ApiClient
 
   @doc """
@@ -29,16 +30,42 @@ defmodule Glific.ThirdParty.Kaapi do
   @doc """
   Onboard an organization to Kaapi.
   """
-  @spec onboard(map()) :: :ok
+  @spec onboard(map()) :: {:ok | :error, binary()}
   def onboard(params) do
-    with {:ok, %{api_key: api_key}} <- ApiClient.onboard_to_kaapi(params),
+    with {:ok, %{data: %{api_key: api_key}}} <- ApiClient.onboard_to_kaapi(params),
          {:ok, _} <- insert_kaapi_provider(params.organization_id, api_key) do
       Logger.info("KAAPI onboarding success for org: #{params.organization_id}")
+      {:ok, "KAAPI onboarding successful for org #{params.organization_id}"}
     else
       {:error, error} ->
         Logger.error(
           "KAAPI onboarding failed for org: #{params.organization_id}, reason: #{inspect(error)}"
         )
+
+        {:error, "KAAPI onboarding failed for org #{params.organization_id}: #{inspect(error)}"}
+    end
+  end
+
+  @doc """
+  Ingest an AI assistant to Kaapi
+  """
+  @spec ingest_ai_assistant(non_neg_integer(), binary()) :: {:ok, map()} | {:error, any()}
+  def ingest_ai_assistant(organization_id, assistant_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <-
+           ApiClient.ingest_ai_assistants(secrets["api_key"], assistant_id) do
+      Logger.info(
+        "KAAPI ingest successful for org: #{organization_id}, assistant: #{assistant_id}"
+      )
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Logger.error(
+          "KAAPI_INGEST failed for org: #{organization_id}, assistant: #{assistant_id}, reason: #{inspect(reason)}"
+        )
+
+        {:error, reason}
     end
   end
 
@@ -146,7 +173,7 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @spec insert_kaapi_provider(non_neg_integer(), String.t()) ::
-          {:ok, :created | :already_active} | {:error, any()}
+          {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   defp insert_kaapi_provider(organization_id, api_key) do
     Partners.create_credential(%{
       organization_id: organization_id,

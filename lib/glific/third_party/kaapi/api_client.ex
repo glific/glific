@@ -21,6 +21,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @doc """
   Onboard NGOs to Kaapi
   """
+  @spec onboard_to_kaapi(map()) :: {:ok, %{data: %{api_key: String.t()}}} | {:error, String.t()}
   def onboard_to_kaapi(params) do
     api_key = kaapi_config(:kaapi_api_key)
 
@@ -29,6 +30,13 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
       project_name: params.project_name,
       user_name: params.user_name
     }
+
+    body =
+      if params[:openai_api_key] do
+        Map.put(body, :openai_api_key, params[:openai_api_key])
+      else
+        body
+      end
 
     api_key
     |> client()
@@ -69,6 +77,35 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> parse_kaapi_response()
   end
 
+  @doc """
+  Ingests an assistant into the Kaapi platform.
+  """
+  @spec ingest_ai_assistants(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
+  def ingest_ai_assistants(org_api_key, assistant_id) do
+    endpoint = kaapi_config(:kaapi_endpoint)
+
+    middleware = [
+      {Tesla.Middleware.Headers, headers(org_api_key)},
+      {Tesla.Middleware.BaseUrl, endpoint}
+    ]
+
+    middleware
+    |> Tesla.client()
+    |> post("api/v1/assistant/#{assistant_id}/ingest", %{})
+    |> case do
+      {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
+        {:ok, %{message: "Assistant synced successfully"}}
+
+      {:ok, %Tesla.Env{status: 409}} ->
+        # In this API, 409 cannot be considered as a failure so treating it as a special case
+        {:ok, %{message: "Assistant already exists in kaapi"}}
+
+      result ->
+        parse_kaapi_response(result)
+    end
+  end
+
+  # Private
   @spec parse_kaapi_response(Tesla.Env.result()) ::
           {:ok, %{api_key: String.t()}} | {:error, String.t()}
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
