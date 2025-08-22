@@ -20,9 +20,15 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     payload = %{
       organization_name: params.organization_name,
       project_name: params.project_name,
-      user_name: params.user_name,
-      openai_api_key: params.openai_api_key
+      user_name: params.user_name
     }
+
+    payload =
+      if params[:openai_api_key] do
+        Map.put(payload, :openai_api_key, params[:openai_api_key])
+      else
+        payload
+      end
 
     middleware = [
       {Tesla.Middleware.Headers, headers(api_key)},
@@ -75,8 +81,12 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     {:ok, body}
   end
 
-  defp parse_kaapi_response({:error, message}) do
-    {:error, %{message: message}}
+  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}}) do
+    {:error, %{status: status, body: body}}
+  end
+
+  defp parse_kaapi_response({:error, reason}) do
+    {:error, reason}
   end
 
   defp kaapi_config, do: Application.fetch_env!(:glific, __MODULE__)
