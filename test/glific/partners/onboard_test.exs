@@ -926,9 +926,6 @@ defmodule Glific.OnboardTest do
          }}
     end)
 
-    assert %{
-             is_valid: false
-           } =
-             Onboard.setup_v2(attrs)
+    assert %{is_valid: false} = Onboard.setup_v2(attrs)
   end
 end

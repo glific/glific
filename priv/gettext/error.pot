@@ -21,6 +21,7 @@ msgstr ""
 msgid "Billing frequency cannot be empty."
 msgstr ""
 
+
 #: lib/glific/saas/queries.ex:425
 #, elixir-autogen, elixir-format
 msgid "Email is not valid."

@@ -318,6 +318,7 @@ defmodule Glific.Saas.Queries do
     case Partners.create_credential(attrs) do
       {:ok, %{secrets: %{"app_name" => "NA"}} = credential} ->
         # This will be case in onboarding v2
+
         Map.put(result, :credential, credential)
 
       {:ok, _credential} ->
