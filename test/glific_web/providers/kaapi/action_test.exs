@@ -1,4 +1,4 @@
-defmodule GlificWeb.Flows.FlowResumeControllerTest do
+defmodule GlificWeb.Providers.Kaapi.ActionTest do
   use GlificWeb.ConnCase
   import Ecto.Query
 
