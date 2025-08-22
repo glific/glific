@@ -46,6 +46,7 @@ defmodule Glific.ThirdParty.Kaapi do
   @doc """
   Ingest an AI assistant to Kaapi
   """
+  @spec ingest_ai_assistant(non_neg_integer(), binary()) :: {:ok, map()} | {:error, any()}
   def ingest_ai_assistant(organization_id, assistant_id) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <-
