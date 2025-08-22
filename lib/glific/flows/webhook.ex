@@ -7,7 +7,7 @@ defmodule Glific.Flows.Webhook do
   require Logger
 
   alias Glific.Clients.CommonWebhook
-  alias Glific.{Messages, Repo}
+  alias Glific.{Messages, Repo, ThirdParty.Kaapi}
   alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
 
   use Oban.Worker,
@@ -20,16 +20,6 @@ defmodule Glific.Flows.Webhook do
       keys: [:context_id, :url, :action_id],
       states: [:available, :scheduled, :executing, :completed]
     ]
-
-  defmodule Error do
-    @moduledoc """
-    Custom error module for Kaapi webhook failures.
-    Since Kaapi is a backend service (NGOs don’t interact with it directly),
-    sending errors to them won’t resolve the issue.
-    Reporting these failures to AppSignal lets us detect and fix problems
-    """
-    defexception [:message]
-  end
 
   @non_unique_urls [
     "parse_via_gpt_vision",
@@ -495,7 +485,7 @@ defmodule Glific.Flows.Webhook do
           update_log(webhook_log.id, "Kaapi is not active")
 
           Appsignal.send_error(
-            %Error{message: "Kaapi is not active (org_id=#{context.organization_id})"},
+            %Kaapi.Error{message: "Kaapi is not active (org_id=#{context.organization_id})"},
             []
           )
 
