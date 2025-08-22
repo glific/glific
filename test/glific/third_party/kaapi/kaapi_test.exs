@@ -50,16 +50,28 @@ defmodule Glific.ThirdParty.Kaapi.ApiClienTest do
     assert {:error, "Bad request"} = ApiClient.onboard_to_kaapi(@params)
   end
 
+  test "returns {:error, body} when API returns status code > 299" do
+    mock(fn
+      %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 307,
+          body: %{message: "Redirected"}
+        }
+    end)
+
+    assert {:error, %{message: "Redirected"}} = ApiClient.onboard_to_kaapi(@params)
+  end
+
   test "returns {:error, msg} when API returns error status code without error field" do
     mock(fn
       %Tesla.Env{method: :post} ->
         %Tesla.Env{
           status: 404,
-          body: %{}
+          body: %{message: "Not found"}
         }
     end)
 
-    assert {:error, "HTTP 404"} = ApiClient.onboard_to_kaapi(@params)
+    assert {:error, %{message: "Not found"}} = ApiClient.onboard_to_kaapi(@params)
   end
 
   test "returns {:error, msg} when API transport fails" do

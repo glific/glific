@@ -82,16 +82,9 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     {:error, msg}
   end
 
-  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
-       when status >= 400 do
-    msg =
-      case body do
-        %{error: e} when is_binary(e) -> e
-        _ -> "HTTP #{status}"
-      end
-
-    Logger.error("KAAPI API HTTP error (status=#{status}): #{inspect(msg)}")
-    {:error, msg}
+  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}}) do
+    Logger.error("KAAPI API HTTP error (status=#{status}): #{inspect(body)}")
+    {:error, body}
   end
 
   defp parse_kaapi_response({:error, reason}) do
