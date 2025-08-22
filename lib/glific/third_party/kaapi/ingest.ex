@@ -9,9 +9,9 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
   alias Glific.{
     Filesearch,
     Filesearch.Assistant,
+    Partners.Credential,
     Partners.Organization,
     Partners.Provider,
-    Partners.Credential,
     Repo,
     TaskSupervisor,
     ThirdParty.Kaapi
