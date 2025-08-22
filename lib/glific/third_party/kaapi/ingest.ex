@@ -183,15 +183,24 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
           {non_neg_integer(), non_neg_integer(), non_neg_integer()}
   defp calculate_summary_stats(results) do
     Enum.reduce(results, {0, 0, 0}, fn
-      {_org_id, assistant_results}, {success_orgs, error_orgs, total_assistants}
+      {_, assistant_results}, {success_orgs, error_orgs, successful_assistants}
       when is_list(assistant_results) ->
-        {success_orgs + 1, error_orgs, total_assistants + length(assistant_results)}
 
-      {_org_id, {:error, _reason}}, {success_orgs, error_orgs, total_assistants} ->
-        {success_orgs, error_orgs + 1, total_assistants}
+        successful_count =
+          Enum.count(assistant_results, fn result ->
+            case result do
+              %{message: _} -> true
+              _ -> false
+            end
+          end)
 
-      {:error, _reason}, {success_orgs, error_orgs, total_assistants} ->
-        {success_orgs, error_orgs + 1, total_assistants}
+        {success_orgs + 1, error_orgs, successful_assistants + successful_count}
+
+      {_, {:error, _}}, {success_orgs, error_orgs, successful_assistants} ->
+        {success_orgs, error_orgs + 1, successful_assistants}
+
+      {:error, _}, {success_orgs, error_orgs, successful_assistants} ->
+        {success_orgs, error_orgs + 1, successful_assistants}
 
       _, acc ->
         acc
