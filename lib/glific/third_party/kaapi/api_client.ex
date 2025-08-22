@@ -3,41 +3,77 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   API Client for Kaapi Integration.
   """
 
-  use Tesla
   require Logger
 
-  plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
-  plug(Tesla.Middleware.Telemetry)
+  # client with runtime config (API key / base URL).
+  defp client(api_key) do
+    base_url = kaapi_config(:kaapi_endpoint)
+
+    Tesla.client([
+      {Tesla.Middleware.BaseUrl, base_url},
+      {Tesla.Middleware.Headers, headers(api_key)},
+      {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+      Tesla.Middleware.Telemetry
+    ])
+  end
 
   @doc """
-  Onboard NGOs to kaapi
+  Onboard NGOs to Kaapi
   """
-  @spec onboard_to_kaapi(map()) :: {:ok, %{data: %{api_key: String.t()}}} | {:error, String.t()}
+  @spec onboard_to_kaapi(map()) ::
+          {:ok, %{data: %{api_key: String.t()}}} | {:error, map() | String.t()}
   def onboard_to_kaapi(params) do
-    endpoint = kaapi_config(:kaapi_endpoint)
     api_key = kaapi_config(:kaapi_api_key)
 
-    payload = %{
+    body = %{
       organization_name: params.organization_name,
       project_name: params.project_name,
       user_name: params.user_name
     }
 
-    payload =
+    body =
       if params[:openai_api_key] do
-        Map.put(payload, :openai_api_key, params[:openai_api_key])
+        Map.put(body, :openai_api_key, params[:openai_api_key])
       else
-        payload
+        body
       end
 
-    middleware = [
-      {Tesla.Middleware.Headers, headers(api_key)},
-      {Tesla.Middleware.BaseUrl, endpoint}
-    ]
+    api_key
+    |> client()
+    |> Tesla.post("/api/v1/onboard", body)
+    |> parse_kaapi_response()
+  end
 
-    middleware
-    |> Tesla.client()
-    |> post("/api/v1/onboard", payload)
+  @doc """
+  Create an assistant in Kaapi
+  """
+  @spec create_assistant(map(), binary()) :: {:ok, map()} | {:error, String.t()}
+  def create_assistant(body, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/assistant/", body)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Update an assistant in Kaapi
+  """
+  @spec update_assistant(binary(), map(), binary()) :: {:ok, map()} | {:error, String.t()}
+  def update_assistant(assistant_id, body, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.patch("/api/v1/assistant/#{assistant_id}", body)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Delete an assistant in Kaapi
+  """
+  @spec delete_assistant(binary(), binary()) :: {:ok, map()} | {:error, map() | String.t()}
+  def delete_assistant(assistant_id, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.delete("/api/v1/assistant/#{assistant_id}")
     |> parse_kaapi_response()
   end
 
@@ -46,16 +82,9 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   """
   @spec ingest_ai_assistants(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
   def ingest_ai_assistants(org_api_key, assistant_id) do
-    endpoint = kaapi_config(:kaapi_endpoint)
-
-    middleware = [
-      {Tesla.Middleware.Headers, headers(org_api_key)},
-      {Tesla.Middleware.BaseUrl, endpoint}
-    ]
-
-    middleware
-    |> Tesla.client()
-    |> post("api/v1/assistant/#{assistant_id}/ingest", %{})
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/assistant/#{assistant_id}/ingest", %{})
     |> case do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
         {:ok, %{message: "Assistant synced successfully"}}
@@ -70,12 +99,8 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   # Private
-  @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t() | map()}
-  defp parse_kaapi_response({:ok, %Tesla.Env{body: %{error: error_msg}}})
-       when is_binary(error_msg) do
-    {:error, error_msg}
-  end
-
+  @spec parse_kaapi_response(Tesla.Env.result()) ::
+          {:ok, %{data: %{api_key: String.t()}}} | {:error, String.t()}
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
        when status in 200..299 do
     {:ok, body}
@@ -85,9 +110,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     {:error, %{status: status, body: body}}
   end
 
-  defp parse_kaapi_response({:error, reason}) do
-    {:error, reason}
-  end
+  defp parse_kaapi_response(error), do: error
 
   defp kaapi_config, do: Application.fetch_env!(:glific, __MODULE__)
   defp kaapi_config(key), do: kaapi_config()[key]

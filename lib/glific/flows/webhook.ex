@@ -30,7 +30,7 @@ defmodule Glific.Flows.Webhook do
     sending errors to them won’t resolve the issue.
     Reporting these failures to AppSignal lets us detect and fix problems
     """
-    defexception [:message]
+    defexception [:message, :reason]
   end
 
   @non_unique_urls [
@@ -86,7 +86,7 @@ defmodule Glific.Flows.Webhook do
   end
 
   @doc """
-  Update a webhook log with the response message.
+  Update a webhook log with the given message.
   """
   @spec update_log(WebhookLog.t() | non_neg_integer, map() | binary()) ::
           {:ok, WebhookLog.t()} | {:error, Ecto.Changeset.t()}
@@ -459,6 +459,8 @@ defmodule Glific.Flows.Webhook do
           fields
           |> Map.put("webhook_log_id", webhook_log.id)
           |> Map.put("result_name", action.result_name)
+          |> Map.put("flow_id", context.flow_id)
+          |> Map.put("contact_id", context.contact_id)
 
         headers =
           add_signature(parsed_attrs.header, context.organization_id, body)
