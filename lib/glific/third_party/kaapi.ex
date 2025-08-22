@@ -5,6 +5,7 @@ defmodule Glific.ThirdParty.Kaapi do
   require Logger
 
   alias Glific.Partners
+  alias Glific.Partners.Credential
   alias Glific.ThirdParty.Kaapi.ApiClient
 
   @doc """
@@ -67,7 +68,7 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @spec insert_kaapi_provider(non_neg_integer(), String.t()) ::
-          {:ok, :created | :already_active} | {:error, any()}
+          {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   defp insert_kaapi_provider(organization_id, api_key) do
     Partners.create_credential(%{
       organization_id: organization_id,
