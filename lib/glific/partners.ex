@@ -294,8 +294,6 @@ defmodule Glific.Partners do
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def update_organization(%Organization{} = organization, %{phone: phone} = attrs)
       when phone != nil do
-    IO.inspect(organization)
-
     with :ok <- Contacts.validate_number(phone),
          {:ok, %{contact: _contact, user: _user}} <-
            Ecto.Multi.new()
