@@ -304,8 +304,7 @@ defmodule Glific.Saas.Queries do
         "url" => "https://gupshup.io/",
         "worker" => "Glific.Providers.Gupshup.Worker",
         "handler" => "Glific.Providers.Gupshup.Message",
-        "bsp_limit" => 40,
-        "api_end_point" => "https://api.gupshup.io/wa/api/v1"
+        "bsp_limit" => 40
       },
       secrets: %{
         "api_key" => params["api_key"] || "NA",
@@ -317,12 +316,27 @@ defmodule Glific.Saas.Queries do
     }
 
     case Partners.create_credential(attrs) do
-      {:ok, _credential} ->
-        {:ok, credential} = Partners.set_bsp_app_id(result.organization, @default_provider)
+      {:ok, %{secrets: %{"app_name" => "NA"}} = credential} ->
+        # This will be case in onboarding v2
+
         Map.put(result, :credential, credential)
+
+      {:ok, _credential} ->
+        update_bsp_id(result)
 
       {:error, errors} ->
         error(inspect(errors), result, :global)
+    end
+  end
+
+  @spec update_bsp_id(map()) :: map()
+  defp update_bsp_id(result) do
+    case Partners.set_bsp_app_id(result.organization, @default_provider) do
+      {:ok, credential} ->
+        Map.put(result, :credential, credential)
+
+      {:error, error} ->
+        error(error, result, :global)
     end
   end
 
