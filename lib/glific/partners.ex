@@ -1241,7 +1241,7 @@ defmodule Glific.Partners do
   """
   @spec set_bsp_app_id(Organization.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
   def set_bsp_app_id(org, "gupshup") do
-    # restricting this function  for BSP only
+    # restricting this function for BSP only
     {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup", group: "bsp"})
 
     {:ok, bsp_cred} =
@@ -1273,12 +1273,11 @@ defmodule Glific.Partners do
     |> Credential.changeset(attrs)
     |> Repo.update()
     |> tap(fn _ ->
-      remove_organization_cache(org.id, org.shortcode)
+      if app_id != "NA" do
+        remove_organization_cache(org.id, org.shortcode)
 
-      # If we remove cache in tests, it will be flaky since some tests need to be mocked
-      #  token fetch api due to parallel cache clearing
-      if Application.get_env(:glific, :environment) != :test do
-        Glific.Caches.remove(org.id, ["partner_app_token"])
+        Repo.put_process_state(org.id)
+        PartnerAPI.apply_gupshup_settings(org.id)
       end
     end)
   end

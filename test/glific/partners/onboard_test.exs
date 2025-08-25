@@ -484,7 +484,6 @@ defmodule Glific.OnboardTest do
                Onboard.update_registration(valid_params, org)
     end
 
-    @tag :tt
     test "update_registration, terms_agreed and support_staff_acount were true on submission", %{
       org: org,
       registration_id: reg_id

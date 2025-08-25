@@ -8,12 +8,12 @@ defmodule Glific.Repo.Seeds.UpdateGupshupProvider do
 
   envs([:dev, :test, :prod])
 
-  def up(_repo, opts) do
-    update_gupshup_provider_config(opts)
+  def up(_repo, _opts) do
+    update_gupshup_provider_config()
   end
 
-  @spec update_gupshup_provider_config(Keyword.t()) :: :ok
-  defp update_gupshup_provider_config(opts) do
+  @spec update_gupshup_provider_config() :: :ok
+  defp update_gupshup_provider_config() do
     {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
     # Removed api_end_point and added `hide: true` to hide the gupshup provider keys from UI for now.
@@ -23,11 +23,10 @@ defmodule Glific.Repo.Seeds.UpdateGupshupProvider do
       end)
       |> Map.delete("api_end_point")
 
-    Repo.update!(
-      Ecto.Changeset.change(gupshup, %{
-        keys: updated_keys
-      })
-    )
+    Ecto.Changeset.change(gupshup, %{
+      keys: updated_keys
+    })
+    |> Repo.update!()
 
     :ok
   end
