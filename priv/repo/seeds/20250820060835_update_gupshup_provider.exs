@@ -23,9 +23,8 @@ defmodule Glific.Repo.Seeds.UpdateGupshupProvider do
       end)
       |> Map.delete("api_end_point")
 
-    Ecto.Changeset.change(gupshup, %{
-      keys: updated_keys
-    })
+    gupshup
+    |> Ecto.Changeset.change(%{keys: updated_keys})
     |> Repo.update!()
 
     :ok
