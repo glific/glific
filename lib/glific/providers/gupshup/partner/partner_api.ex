@@ -329,9 +329,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       :ok
     rescue
       error ->
-        Glific.log_error(
-          "Error occurred while applying gupshup settings due to #{inspect(error)}"
-        )
+        Glific.log_exception(%Error{
+          message: "Error occurred while applying gupshup settings due to #{inspect(error)}"
+        })
 
         :ok
     end
