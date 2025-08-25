@@ -294,9 +294,18 @@ defmodule Glific.Partners do
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def update_organization(%Organization{} = organization, %{phone: phone} = attrs)
       when phone != nil do
+    IO.inspect(organization)
+
     with :ok <- Contacts.validate_number(phone),
-         {:ok, _contact} <- update_org_contact(organization, phone),
-         {:ok, _user} <- update_main_user(organization, phone) do
+         {:ok, %{contact: _contact, user: _user}} <-
+           Ecto.Multi.new()
+           |> Ecto.Multi.run(:contact, fn _repo, _changes ->
+             update_org_contact(organization, phone)
+           end)
+           |> Ecto.Multi.run(:user, fn _repo, _changes ->
+             update_main_user(organization, phone)
+           end)
+           |> Glific.Repo.transaction() do
       setting_map =
         (organization.setting || %{})
         |> Map.from_struct()
@@ -308,6 +317,8 @@ defmodule Glific.Partners do
 
       do_update_org(organization, attrs)
     else
+      {:error, :contact, reason, _changes_so_far} -> {:error, reason}
+      {:error, :user, reason, _changes_so_far} -> {:error, reason}
       {:error, message} -> {:error, message}
     end
   end
@@ -318,6 +329,8 @@ defmodule Glific.Partners do
 
   @spec update_main_user(Organization.t(), String.t()) :: {:ok, User.t()} | {:error, String.t()}
   defp update_main_user(org, phone) do
+    IO.inspect("tt")
+
     case Repo.fetch_by(User, %{organization_id: org.id, contact_id: org.contact_id}) do
       {:ok, user} ->
         user
@@ -325,6 +338,7 @@ defmodule Glific.Partners do
         |> Repo.update()
 
       _ ->
+        IO.inspect("gg")
         {:error, "NGO Main Account not found"}
     end
   end
@@ -361,6 +375,8 @@ defmodule Glific.Partners do
   @spec update_org_contact(Organization.t(), String.t()) ::
           {:ok, Contact.t()} | {:error, String.t()}
   defp update_org_contact(org, phone) do
+    IO.inspect("fff")
+
     case Repo.fetch(Contact, org.contact_id) do
       {:ok, contact} ->
         contact
