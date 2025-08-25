@@ -329,8 +329,6 @@ defmodule Glific.Partners do
 
   @spec update_main_user(Organization.t(), String.t()) :: {:ok, User.t()} | {:error, String.t()}
   defp update_main_user(org, phone) do
-    IO.inspect("tt")
-
     case Repo.fetch_by(User, %{organization_id: org.id, contact_id: org.contact_id}) do
       {:ok, user} ->
         user
@@ -338,7 +336,6 @@ defmodule Glific.Partners do
         |> Repo.update()
 
       _ ->
-        IO.inspect("gg")
         {:error, "NGO Main Account not found"}
     end
   end
@@ -375,8 +372,6 @@ defmodule Glific.Partners do
   @spec update_org_contact(Organization.t(), String.t()) ::
           {:ok, Contact.t()} | {:error, String.t()}
   defp update_org_contact(org, phone) do
-    IO.inspect("fff")
-
     case Repo.fetch(Contact, org.contact_id) do
       {:ok, contact} ->
         contact
