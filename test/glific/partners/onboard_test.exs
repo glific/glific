@@ -71,6 +71,7 @@ defmodule Glific.OnboardTest do
           status: 200,
           body:
             Jason.encode!(%{
+              "partnerApps" => %{"name" => "fake app name", "id" => "fake_app_id"},
               "token" => "ks_test_token",
               "status" => "success",
               "templates" => [],
