@@ -51,11 +51,10 @@ defmodule Glific.Flows.TranslateTest do
     Import.import_localization(csv, flow)
 
     flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
-    assert map_size(flow.definition["localization"]) == 1
-    assert map_size(flow.definition["localization"]["hi"]) == 6
 
-    # we don't auto translate the default language
-    assert flow.definition["localization"]["en"] == nil
+    assert map_size(flow.definition["localization"]) == 2
+    assert map_size(flow.definition["localization"]["hi"]) == 6
+    assert map_size(flow.definition["localization"]["en"]) == 6
   end
 
   test "ensure that import doesn't change the attachment url", attrs do
