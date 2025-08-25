@@ -352,10 +352,7 @@ defmodule Glific do
   def log_exception(%{message: message} = error) when is_binary(message) do
     Logger.error(message)
 
-    Appsignal.send_error(
-      error,
-      []
-    )
+    Appsignal.send_error(error, [])
 
     :ok
   end
