@@ -34,7 +34,7 @@ defmodule Glific.Partners.Setting do
     field :send_warning_mail, :boolean, default: false
     field :bookmarks, :map, default: %{}
     field :critical_balance_threshold, :integer, default: 3
-    field :allow_bot_number_update, :boolean, default: true
+    field :allow_bot_number_update, :boolean, default: false
   end
 
   @doc """
