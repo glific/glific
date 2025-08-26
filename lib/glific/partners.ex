@@ -296,12 +296,10 @@ defmodule Glific.Partners do
       when phone != nil do
     with :ok <- Contacts.validate_number(phone),
          {:ok, %{organization: updated_org}} <-
-           transaction_update_org_contact_and_user(organization, phone, attrs) do
+           update_org_contact_and_user(organization, phone, attrs) do
       {:ok, updated_org}
     else
-      {:error, :contact, reason, _changes_so_far} -> {:error, reason}
-      {:error, :user, reason, _changes_so_far} -> {:error, reason}
-      {:error, :organization, reason, _changes_so_far} -> {:error, reason}
+      {:error, _step, reason, _changes_so_far} -> {:error, reason}
       {:error, message} -> {:error, message}
     end
   end
@@ -310,10 +308,10 @@ defmodule Glific.Partners do
     do_update_org(organization, attrs)
   end
 
-  @spec transaction_update_org_contact_and_user(Organization.t(), String.t(), map()) ::
+  @spec update_org_contact_and_user(Organization.t(), String.t(), map()) ::
           {:ok, %{contact: any(), user: any(), organization: any()}}
           | {:error, atom(), any(), any()}
-  defp transaction_update_org_contact_and_user(organization, phone, attrs) do
+  defp update_org_contact_and_user(organization, phone, attrs) do
     setting_map =
       (organization.setting || %{})
       |> Map.from_struct()
@@ -331,7 +329,7 @@ defmodule Glific.Partners do
     |> Ecto.Multi.run(:organization, fn _repo, _changes ->
       do_update_org(organization, attrs)
     end)
-    |> Glific.Repo.transaction()
+    |> Repo.transaction()
   end
 
   @spec update_main_user(Organization.t(), String.t()) :: {:ok, User.t()} | {:error, String.t()}
