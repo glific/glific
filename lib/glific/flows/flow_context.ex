@@ -4,6 +4,7 @@ defmodule Glific.Flows.FlowContext do
   contact and/or a conversation (or other Glific data types). Let encapsulate
   this in a module and isolate the flow from the other aspects of Glific
   """
+  alias Glific.Flows.WebhookLog
   alias Glific.Groups.WAGroups
   alias __MODULE__
 
@@ -22,6 +23,7 @@ defmodule Glific.Flows.FlowContext do
     Flows.MessageBroadcast,
     Flows.MessageVarParser,
     Flows.Node,
+    Flows.Webhook,
     Groups.WAGroup,
     Messages,
     Messages.Message,
@@ -948,6 +950,13 @@ defmodule Glific.Flows.FlowContext do
            FunWithFlags.enabled?(:is_kaapi_enabled,
              for: %{organization_id: context.organization_id}
            ) do
+        {:ok, webhook_log} =
+          Repo.fetch_by(WebhookLog, %{
+            organization_id: context.organization_id,
+            flow_context_id: context.id
+          })
+
+        Webhook.update_log(webhook_log.id, "Timeout: taking long to process response")
         Messages.create_temp_message(context.organization_id, "Failure")
       else
         message

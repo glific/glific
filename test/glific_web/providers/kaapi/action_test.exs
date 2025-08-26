@@ -378,6 +378,16 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
       # It should go to the failure after not getting any resposne from kaapi
       # after a minute and send the failure message,
       assert message.body == "failure"
+
+      webhook_log =
+        from(w in WebhookLog,
+          where: w.flow_context_id == ^context.id,
+          order_by: [desc: w.inserted_at],
+          limit: 1
+        )
+        |> Repo.one()
+
+      assert webhook_log.error == "Timeout: taking long to process response"
     end
 
     test "logs descriptive error when kaapi is not active", %{conn: conn} do
