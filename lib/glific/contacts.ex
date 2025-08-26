@@ -1085,4 +1085,25 @@ defmodule Glific.Contacts do
       {:error, error} -> error
     end
   end
+
+  @doc """
+  Ensures phone numbers are normalized to international E.164 format and validated using ExPhoneNumber to prevent invalid entries.
+  """
+  @spec validate_number(String.t()) :: :ok | {:error, String.t()}
+  def validate_number(phone) do
+    phone_with_plus =
+      if String.starts_with?(phone, "+"), do: phone, else: "+#{phone}"
+
+    with {:ok, phone_number} <- ExPhoneNumber.parse(phone_with_plus, ""),
+         true <- ExPhoneNumber.is_valid_number?(phone_number) do
+      :ok
+    else
+      {:error, reason} ->
+        {:error, "Phone number is not valid because #{reason}."}
+
+      false ->
+        {:error,
+         "Phone number is not valid. Please enter the phone number with country code, without the + symbol."}
+    end
+  end
 end
