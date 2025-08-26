@@ -36,9 +36,15 @@ defmodule Glific.Seeds.Seeds20250826044001AddLangfuseProvider do
           is_required: false,
           keys: %{},
           secrets: %{
-            api_key: %{
+            secret_key: %{
               type: :string,
-              label: "API Key",
+              label: "Secret Key",
+              default: nil,
+              view_only: false
+            },
+            public_key: %{
+              type: :string,
+              label: "Public Key",
               default: nil,
               view_only: false
             }
