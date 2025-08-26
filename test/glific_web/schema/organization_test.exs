@@ -301,6 +301,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert organization["name"] == "Fixture Organization"
   end
 
+  @tag :tt
   test "updating an organization with a valid phone number will update the main user and contact phone number",
        %{user: user} do
     organization =
@@ -319,7 +320,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
       )
 
     assert {:ok, query_data} = result
-    _updated_organization = get_in(query_data, [:data, "updateOrganization", "organization"])
+    updated_organization = get_in(query_data, [:data, "updateOrganization", "organization"])
 
     {:ok, main_user} =
       Repo.fetch_by(Glific.Users.User, %{contact_id: organization.contact_id})
@@ -327,7 +328,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     {:ok, contact} =
       Repo.fetch_by(Glific.Contacts.Contact, %{id: organization.contact_id})
 
-    assert organization.setting.allow_bot_number_update
+    refute updated_organization["setting"]["allow_bot_number_update"]
     assert main_user.phone == valid_phone
     assert contact.phone == valid_phone
   end
