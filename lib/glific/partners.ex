@@ -295,21 +295,13 @@ defmodule Glific.Partners do
   def update_organization(%Organization{} = organization, %{phone: phone} = attrs)
       when phone != nil do
     with :ok <- Contacts.validate_number(phone),
-         {:ok, %{contact: _contact, user: _user}} <-
-           transaction_update_org_contact_and_user(organization, phone) do
-      setting_map =
-        (organization.setting || %{})
-        |> Map.from_struct()
-        |> Map.put(:allow_bot_number_update, false)
-
-      attrs =
-        attrs
-        |> Map.put(:setting, setting_map)
-
-      do_update_org(organization, attrs)
+         {:ok, %{organization: updated_org}} <-
+           transaction_update_org_contact_and_user(organization, phone, attrs) do
+      {:ok, updated_org}
     else
       {:error, :contact, reason, _changes_so_far} -> {:error, reason}
       {:error, :user, reason, _changes_so_far} -> {:error, reason}
+      {:error, :organization, reason, _changes_so_far} -> {:error, reason}
       {:error, message} -> {:error, message}
     end
   end
@@ -318,16 +310,26 @@ defmodule Glific.Partners do
     do_update_org(organization, attrs)
   end
 
-  @spec transaction_update_org_contact_and_user(Organization.t(), String.t()) ::
-          {:ok, %{contact: any(), user: any()}}
+  @spec transaction_update_org_contact_and_user(Organization.t(), String.t(), map()) ::
+          {:ok, %{contact: any(), user: any(), organization: any()}}
           | {:error, atom(), any(), any()}
-  defp transaction_update_org_contact_and_user(organization, phone) do
+  defp transaction_update_org_contact_and_user(organization, phone, attrs) do
+    setting_map =
+      (organization.setting || %{})
+      |> Map.from_struct()
+      |> Map.put(:allow_bot_number_update, false)
+
+    attrs = Map.put(attrs, :setting, setting_map)
+
     Ecto.Multi.new()
     |> Ecto.Multi.run(:contact, fn _repo, _changes ->
       update_org_contact(organization, phone)
     end)
     |> Ecto.Multi.run(:user, fn _repo, _changes ->
       update_main_user(organization, phone)
+    end)
+    |> Ecto.Multi.run(:organization, fn _repo, _changes ->
+      do_update_org(organization, attrs)
     end)
     |> Glific.Repo.transaction()
   end
