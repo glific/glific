@@ -217,6 +217,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:name, :string)
     field(:shortcode, :string)
     field(:email, :string)
+    field(:phone, :string)
 
     field(:bsp_id, :id)
     field(:contact_id, :id)
