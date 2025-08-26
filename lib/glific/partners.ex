@@ -14,6 +14,7 @@ defmodule Glific.Partners do
   alias Glific.{
     BigQuery,
     Caches,
+    Contacts,
     Contacts.Contact,
     Flags,
     Flows,
@@ -290,8 +291,63 @@ defmodule Glific.Partners do
 
   """
   @spec update_organization(Organization.t(), map()) ::
-          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
+  def update_organization(%Organization{} = organization, %{phone: phone} = attrs)
+      when phone != nil do
+    with :ok <- Contacts.validate_number(phone),
+         {:ok, %{organization: updated_org}} <-
+           update_org_contact_and_user(organization, phone, attrs) do
+      {:ok, updated_org}
+    else
+      {:error, _step, reason, _changes_so_far} -> {:error, reason}
+      {:error, message} -> {:error, message}
+    end
+  end
+
   def update_organization(%Organization{} = organization, attrs) do
+    do_update_org(organization, attrs)
+  end
+
+  @spec update_org_contact_and_user(Organization.t(), String.t(), map()) ::
+          {:ok, %{contact: any(), user: any(), organization: any()}}
+          | {:error, atom(), any(), any()}
+  defp update_org_contact_and_user(organization, phone, attrs) do
+    setting_map =
+      (organization.setting || %{})
+      |> Map.from_struct()
+      |> Map.put(:allow_bot_number_update, false)
+
+    attrs = Map.put(attrs, :setting, setting_map)
+
+    Ecto.Multi.new()
+    |> Ecto.Multi.run(:contact, fn _repo, _changes ->
+      update_org_contact(organization, phone)
+    end)
+    |> Ecto.Multi.run(:user, fn _repo, _changes ->
+      update_main_user(organization, phone)
+    end)
+    |> Ecto.Multi.run(:organization, fn _repo, _changes ->
+      do_update_org(organization, attrs)
+    end)
+    |> Repo.transaction()
+  end
+
+  @spec update_main_user(Organization.t(), String.t()) :: {:ok, User.t()} | {:error, String.t()}
+  defp update_main_user(org, phone) do
+    case Repo.fetch_by(User, %{organization_id: org.id, contact_id: org.contact_id}) do
+      {:ok, user} ->
+        user
+        |> Ecto.Changeset.change(%{phone: phone})
+        |> Repo.update()
+
+      _ ->
+        {:error, "NGO Main Account not found"}
+    end
+  end
+
+  @spec do_update_org(Organization.t(), map()) ::
+          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
+  defp do_update_org(%Organization{} = organization, attrs) do
     # first delete the cached organization
     remove_organization_cache(organization.id, organization.shortcode)
 
@@ -315,6 +371,20 @@ defmodule Glific.Partners do
         organization.optin_flow_id,
         updated_organization
       )
+    end
+  end
+
+  @spec update_org_contact(Organization.t(), String.t()) ::
+          {:ok, Contact.t()} | {:error, String.t()}
+  defp update_org_contact(org, phone) do
+    case Repo.fetch(Contact, org.contact_id) do
+      {:ok, contact} ->
+        contact
+        |> Ecto.Changeset.change(%{phone: phone})
+        |> Repo.update()
+
+      _ ->
+        {:error, "Organization contact not found"}
     end
   end
 
