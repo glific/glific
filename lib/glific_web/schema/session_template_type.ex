@@ -57,6 +57,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :buttons, :json
     field :reason, :string
     field :quality, :string
+    field :footer, :string
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -143,6 +144,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :has_buttons, :boolean
     field :button_type, :template_button_type_enum
     field :buttons, :json
+    field :footer, :string
   end
 
   input_object :edit_approved_template_input do

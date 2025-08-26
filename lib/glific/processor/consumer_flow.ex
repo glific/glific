@@ -325,6 +325,10 @@ defmodule Glific.Processor.ConsumerFlow do
         # Also we can't have multiple exits for interactive message
         [node_exit | _] = node.exits
 
+        if context.node_uuid != node_exit.destination_node_uuid do
+          Glific.Metrics.increment("interactive_msg_re_responded")
+        end
+
         {:ok, flow_context} =
           FlowContext.update_flow_context(context, %{node_uuid: node_exit.destination_node_uuid})
 
