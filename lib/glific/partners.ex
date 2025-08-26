@@ -296,14 +296,7 @@ defmodule Glific.Partners do
       when phone != nil do
     with :ok <- Contacts.validate_number(phone),
          {:ok, %{contact: _contact, user: _user}} <-
-           Ecto.Multi.new()
-           |> Ecto.Multi.run(:contact, fn _repo, _changes ->
-             update_org_contact(organization, phone)
-           end)
-           |> Ecto.Multi.run(:user, fn _repo, _changes ->
-             update_main_user(organization, phone)
-           end)
-           |> Glific.Repo.transaction() do
+           update_contact_and_user(organization, phone) do
       setting_map =
         (organization.setting || %{})
         |> Map.from_struct()
@@ -323,6 +316,20 @@ defmodule Glific.Partners do
 
   def update_organization(%Organization{} = organization, attrs) do
     do_update_org(organization, attrs)
+  end
+
+  @spec update_contact_and_user(Organization.t(), String.t()) ::
+          {:ok, %{contact: any(), user: any()}}
+          | {:error, atom(), any(), any()}
+  defp update_contact_and_user(organization, phone) do
+    Ecto.Multi.new()
+    |> Ecto.Multi.run(:contact, fn _repo, _changes ->
+      update_org_contact(organization, phone)
+    end)
+    |> Ecto.Multi.run(:user, fn _repo, _changes ->
+      update_main_user(organization, phone)
+    end)
+    |> Glific.Repo.transaction()
   end
 
   @spec update_main_user(Organization.t(), String.t()) :: {:ok, User.t()} | {:error, String.t()}
