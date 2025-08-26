@@ -38,6 +38,8 @@ defmodule GlificWeb.Schema.ProviderTest do
 
     # check for kaapi
     assert Enum.any?(providers, fn p -> p["name"] == "Kaapi" end)
+    # check for OpenAI
+    assert Enum.any?(providers, fn p -> p["name"] == "OpenAI" end)
   end
 
   test "count returns the number of providers", %{user: user} do
