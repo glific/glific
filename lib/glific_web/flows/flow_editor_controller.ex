@@ -380,12 +380,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec languages(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def languages(conn, _params) do
-    organization =
-      Glific.Partners.organization(conn.assigns[:organization_id])
-
     results =
-      organization.languages
-      |> Enum.filter(fn language -> language.id != organization.default_language_id end)
+      Glific.Partners.organization(conn.assigns[:organization_id]).languages
       |> Enum.reduce([], fn language, acc ->
         [%{iso: language.locale, name: language.label} | acc]
       end)

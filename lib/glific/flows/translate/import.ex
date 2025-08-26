@@ -12,8 +12,6 @@ defmodule Glific.Flows.Translate.Import do
   alias Glific.{
     Flows,
     Flows.Flow,
-    Partners.Organization,
-    Repo,
     Settings
   }
 
@@ -29,6 +27,7 @@ defmodule Glific.Flows.Translate.Import do
     # get language labels here in one query for all languages if you want
     language_labels = Settings.locale_label_map(flow.organization_id)
     language_keys = Map.keys(language_labels)
+
     [_header_1 | [_header_2 | rows]] = csv
 
     {:ok, _revision} =
@@ -40,8 +39,6 @@ defmodule Glific.Flows.Translate.Import do
 
   @spec collect_by_language(list(), list(), map()) :: map()
   defp collect_by_language(rows, language_keys, flow) do
-    organization = Repo.get(Organization, flow.organization_id) |> Repo.preload(:default_language)
-
     rows
     |> Enum.reduce(%{}, fn row, acc ->
       [_type | [uuid | translations]] = row
@@ -49,17 +46,12 @@ defmodule Glific.Flows.Translate.Import do
       translations
       |> Enum.zip(language_keys)
       |> Enum.reduce(acc, fn {translation, lang_key}, acc ->
-        # skip the default language during processing
-        if lang_key == organization.default_language.locale do
-          acc
-        else
-          update_language_map(acc, %{
-            flow: flow,
-            lang_key: lang_key,
-            uuid: uuid,
-            translation: translation
-          })
-        end
+        update_language_map(acc, %{
+          flow: flow,
+          lang_key: lang_key,
+          uuid: uuid,
+          translation: translation
+        })
       end)
     end)
   end
