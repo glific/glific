@@ -4,34 +4,33 @@ defmodule Glific.Flows.FlowContext do
   contact and/or a conversation (or other Glific data types). Let encapsulate
   this in a module and isolate the flow from the other aspects of Glific
   """
-  alias Glific.Flows.WebhookLog
-  alias Glific.Groups.WAGroups
-  alias __MODULE__
 
   use Ecto.Schema
+  use Gettext, backend: GlificWeb.Gettext
+
   import Ecto.Changeset
   import Ecto.Query, warn: false
-  use Gettext, backend: GlificWeb.Gettext
   require Logger
 
-  alias Glific.{
-    Contacts,
-    Contacts.Contact,
-    Flows,
-    Flows.Flow,
-    Flows.FlowResult,
-    Flows.MessageBroadcast,
-    Flows.MessageVarParser,
-    Flows.Node,
-    Flows.Webhook,
-    Groups.WAGroup,
-    Messages,
-    Messages.Message,
-    Notifications,
-    Partners.Organization,
-    Profiles.Profile,
-    Repo
-  }
+  alias __MODULE__
+  alias Glific.Contacts
+  alias Glific.Contacts.Contact
+  alias Glific.Flows
+  alias Glific.Flows.Flow
+  alias Glific.Flows.FlowResult
+  alias Glific.Flows.MessageBroadcast
+  alias Glific.Flows.MessageVarParser
+  alias Glific.Flows.Node
+  alias Glific.Flows.Webhook
+  alias Glific.Flows.WebhookLog
+  alias Glific.Groups.WAGroup
+  alias Glific.Groups.WAGroups
+  alias Glific.Messages
+  alias Glific.Messages.Message
+  alias Glific.Notifications
+  alias Glific.Partners.Organization
+  alias Glific.Profiles.Profile
+  alias Glific.Repo
 
   @required_fields [:flow_id, :flow_uuid, :status, :organization_id]
   @optional_fields [
