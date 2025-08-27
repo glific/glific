@@ -299,8 +299,13 @@ defmodule Glific.Partners do
            update_org_contact_and_user(organization, phone, attrs) do
       {:ok, updated_org}
     else
-      {:error, _step, reason, _changes_so_far} -> {:error, reason}
-      {:error, message} -> {:error, message}
+      {:error, _step, reason, _changes_so_far} ->
+        Glific.Metrics.increment("errors_phone_number_validation_total")
+        {:error, reason}
+
+      {:error, message} ->
+        Glific.Metrics.increment("errors_phone_number_validation_total")
+        {:error, message}
     end
   end
 
@@ -984,6 +989,7 @@ defmodule Glific.Partners do
   defp credential_update_callback(organization, credential, "gupshup") do
     cond do
       not valid_bsp?(credential) ->
+        Glific.Metrics.increment("errors_gupshup_id_validation_total")
         {:error, "App Name and API Key can't be empty"}
 
       credential.is_active ->
