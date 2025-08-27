@@ -7,5 +7,7 @@ defmodule Glific.Repo.Migrations.AddFlowContextInWebhookLogs do
           references(:flow_contexts, on_delete: :delete_all),
           null: true
     end
+
+    create index(:webhook_logs, [:flow_context_id], where: "flow_context_id IS NOT NULL")
   end
 end
