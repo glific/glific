@@ -989,7 +989,6 @@ defmodule Glific.Partners do
   defp credential_update_callback(organization, credential, "gupshup") do
     cond do
       not valid_bsp?(credential) ->
-        Glific.Metrics.increment("errors_gupshup_id_validation_total")
         {:error, "App Name and API Key can't be empty"}
 
       credential.is_active ->
