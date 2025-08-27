@@ -300,11 +300,11 @@ defmodule Glific.Partners do
       {:ok, updated_org}
     else
       {:error, _step, reason, _changes_so_far} ->
-        Glific.Metrics.increment("errors_phone_number_validation_total")
+        Glific.Metrics.increment("error_on_phone_number_update_total")
         {:error, reason}
 
       {:error, message} ->
-        Glific.Metrics.increment("errors_phone_number_validation_total")
+        Glific.Metrics.increment("error_on_phone_number_update_total")
         {:error, message}
     end
   end
