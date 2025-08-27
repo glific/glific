@@ -50,7 +50,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
           fetch_gupshup_app_details(org_id)
         else
           Glific.log_exception(%Error{message: "Linking App to partner failed due to #{error}"})
-          Glific.Metrics.increment("error_on_gupshup_credential_update_total")
+          Glific.Metrics.increment("Gupshup Credential Update Failed")
 
           "Linking App to partner failed, please double-check and enter correct App name and API key"
         end
