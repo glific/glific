@@ -1327,6 +1327,7 @@ defmodule Glific.Partners do
         update_gupshup_secrets(bsp_cred, app_id, org)
 
       error ->
+        Glific.Metrics.increment("Gupshup Credential Update Failed")
         update_gupshup_secrets(bsp_cred, "NA", org)
         {:error, error}
     end
