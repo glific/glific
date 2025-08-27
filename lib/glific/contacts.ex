@@ -1089,14 +1089,14 @@ defmodule Glific.Contacts do
   @doc """
   Ensures phone numbers are normalized to international E.164 format and validated using ExPhoneNumber to prevent invalid entries.
   """
-  @spec validate_number(String.t()) :: :ok | {:error, String.t()}
-  def validate_number(phone) do
+  @spec parse_phone_number(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  def parse_phone_number(phone) do
     phone_with_plus =
       if String.starts_with?(phone, "+"), do: phone, else: "+#{phone}"
 
     with {:ok, phone_number} <- ExPhoneNumber.parse(phone_with_plus, ""),
          true <- ExPhoneNumber.is_valid_number?(phone_number) do
-      :ok
+      {:ok, "#{phone_number.country_code}#{phone_number.national_number}"}
     else
       {:error, reason} ->
         {:error, "Phone number is not valid because #{reason}."}

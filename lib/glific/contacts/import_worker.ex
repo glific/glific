@@ -96,8 +96,8 @@ defmodule Glific.Contacts.ImportWorker do
   end
 
   defp validate_contact(%{"phone" => phone, "name" => name}) do
-    case Contacts.validate_number(phone) do
-      :ok ->
+    case Contacts.parse_phone_number(phone) do
+      {:ok, phone} ->
         validate_name(name, phone)
 
       {:error, message} ->
