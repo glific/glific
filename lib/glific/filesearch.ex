@@ -226,6 +226,14 @@ defmodule Glific.Filesearch do
     end
   end
 
+  @doc """
+  Sync the assistants from OpenAI
+  """
+  @spec sync_assistants() :: {:ok, map()} | {:error, String.t()}
+  def sync_assistants do
+    ApiClient.sync_assistants()
+  end
+
   @spec create_vector_store(map()) :: {:ok, map()} | {:error, any()}
   defp create_vector_store(params) do
     params = Map.put(params, :name, generate_temp_name(params[:name], "VectorStore"))
