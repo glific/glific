@@ -847,6 +847,8 @@ defmodule Glific.Partners do
     end
   end
 
+  defp credential_insert_callback(credential, _), do: {:ok, credential}
+
   # check for non empty string or nil
   @spec non_nil_string(String.t() | nil) :: boolean()
   defp non_nil_string(str) do
