@@ -2,10 +2,12 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   @moduledoc """
   Glific module for API calls to OpenAI related to Filesearch
   """
+
+  use Tesla
   alias Tesla.Multipart
+
   require Logger
   @endpoint "https://api.openai.com/v1"
-  use Tesla
 
   @spec headers() :: list()
   defp headers do
@@ -143,13 +145,9 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
       %{
         "name" => params.name,
         "model" => params.model,
-        "instructions" => params[:instructions],
+        "instructions" => params.instructions,
         "temperature" => params.temperature,
-        "tools" => [
-          %{
-            "type" => "file_search"
-          }
-        ],
+        "tools" => [%{"type" => "file_search"}],
         "tool_resources" => %{
           "file_search" => %{
             "vector_store_ids" => params.vector_store_ids
@@ -180,13 +178,12 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   def modify_assistant(assistant_id, params) do
     url = @endpoint <> "/assistants/#{assistant_id}"
 
-    payload =
-      %{
-        "name" => params.name,
-        "model" => params.model,
-        "instructions" => params.instructions || "",
-        "temperature" => params.temperature
-      }
+    payload = %{
+      "name" => params.name,
+      "model" => params.model,
+      "instructions" => params.instructions || "",
+      "temperature" => params.temperature
+    }
 
     if Map.has_key?(params, :vector_store_ids) do
       Map.merge(payload, %{

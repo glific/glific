@@ -15,6 +15,7 @@ defmodule Glific.Clients.CommonWebhook do
     Providers.Maytapi,
     Repo,
     ThirdParty.GoogleSlide.Slide,
+    ThirdParty.Kaapi.ApiClient,
     WAGroup.WAManagedPhone,
     WAGroup.WaPoll
   }
@@ -27,11 +28,13 @@ defmodule Glific.Clients.CommonWebhook do
   """
   @spec webhook(String.t(), map(), list()) :: map()
   def webhook("call_and_wait", fields, headers) do
-    endpoint = fields["endpoint"]
+    result_name = fields["result_name"]
+    webhook_log_id = fields["webhook_log_id"]
     {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
     {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
     timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+    kaapi_config = Application.fetch_env!(:glific, ApiClient)
 
     signature_payload = %{
       "organization_id" => organization_id,
@@ -49,38 +52,43 @@ defmodule Glific.Clients.CommonWebhook do
 
     organization = Partners.organization(organization_id)
 
-    callback =
+    callback_url =
       "https://api.#{organization.shortcode}.glific.com" <>
-        "/webhook/flow_resume?" <>
-        "organization_id=#{organization_id}&" <>
-        "flow_id=#{flow_id}&" <>
-        "contact_id=#{contact_id}&" <>
-        "timestamp=#{timestamp}&" <>
-        "signature=#{signature}"
+        "/webhook/flow_resume"
 
     payload =
       fields
       |> Map.merge(signature_payload)
       |> Map.put("signature", signature)
-      |> Map.put("callback", callback)
+      |> Map.put("callback_url", callback_url)
+      |> Map.put("webhook_log_id", webhook_log_id)
+      |> Map.put("result_name", result_name)
+      |> maybe_put_response_id(fields)
       |> Jason.encode!()
 
-    endpoint
+    client =
+      Tesla.client([
+        {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+        {Tesla.Middleware.BaseUrl, kaapi_config[:kaapi_endpoint]}
+      ])
+
+    client
     |> Tesla.post(
+      "api/v1/responses",
       payload,
       headers: headers,
       opts: [adapter: [recv_timeout: 300_000]]
     )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        response = Jason.decode!(body)
-        Map.merge(%{success: true}, response)
+        Map.merge(%{success: true}, body)
 
       {:ok, %Tesla.Env{status: _status, body: body}} ->
-        %{success: false, response: body}
+        reason = Jason.encode!(body)
+        %{success: false, reason: reason}
 
       {:error, reason} ->
-        %{success: false, reason: reason}
+        %{success: false, reason: inspect(reason)}
     end
   end
 
@@ -502,6 +510,14 @@ defmodule Glific.Clients.CommonWebhook do
         )
 
         {:error, "Certificate template not found for ID: #{fields.certificate_id}"}
+    end
+  end
+
+  @spec maybe_put_response_id(map(), map()) :: map()
+  defp maybe_put_response_id(map, fields) do
+    case fields["thread_id"] do
+      nil -> map
+      thread_id -> Map.put(map, "response_id", thread_id)
     end
   end
 end

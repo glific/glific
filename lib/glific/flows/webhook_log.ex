@@ -13,6 +13,7 @@ defmodule Glific.Flows.WebhookLog do
   alias Glific.{
     Contacts.Contact,
     Flows.Flow,
+    Flows.FlowContext,
     Partners.Organization,
     Repo
   }
@@ -24,7 +25,8 @@ defmodule Glific.Flows.WebhookLog do
     :status_code,
     :error,
     :contact_id,
-    :wa_group_id
+    :wa_group_id,
+    :flow_context_id
   ]
 
   @type t() :: %__MODULE__{
@@ -43,6 +45,8 @@ defmodule Glific.Flows.WebhookLog do
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           wa_group_id: non_neg_integer | nil,
           wa_group: WAGroup.t() | Ecto.Association.NotLoaded.t() | nil,
+          flow_context_id: non_neg_integer() | nil,
+          flow_context: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -64,6 +68,7 @@ defmodule Glific.Flows.WebhookLog do
     belongs_to :contact, Contact
     belongs_to :organization, Organization
     belongs_to :wa_group, WAGroup
+    belongs_to :flow_context, FlowContext
     timestamps(type: :utc_datetime)
   end
 
