@@ -977,6 +977,22 @@ defmodule Glific.Partners do
     end
   end
 
+  defp credential_update_callback(organization, credential, "openai") do
+    params = %{
+      is_active: credential.is_active,
+      credential: %{openai: %{api_key: credential.keys["api_key"]}}
+    }
+
+    case Kaapi.update_credential(organization.id, params) do
+      {:ok, _} ->
+        {:ok, credential}
+
+      {:error, error} ->
+        disable_credential(credential, error)
+        {:error, "Failed to validate OpenAI API keys, try again."}
+    end
+  end
+
   defp credential_update_callback(_organization, credential, _provider), do: {:ok, credential}
 
   @doc """
