@@ -2,10 +2,8 @@ defmodule Glific.Repo.Seeds.AddOpenAiProvider do
   use Glific.Seeds.Seed
   import Ecto.Query
 
-  alias Glific.{
-    Partners.Provider,
-    Repo
-  }
+  alias Glific.Partners.Provider
+  alias Glific.Repo
 
   envs([:dev, :test, :prod])
 
