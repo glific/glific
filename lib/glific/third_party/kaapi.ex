@@ -172,6 +172,55 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @doc """
+  Create a credential in Kaapi, send error to Appsignal if failed.
+  """
+  @spec create_credential(non_neg_integer(), map()) ::
+          {:ok, Credential.t()} | {:error, map() | binary()}
+  def create_credential(organization_id, params) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.create_credential(params, secrets["api_key"]) do
+      Logger.info("KAAPI credential creation successful for org: #{organization_id}")
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message: "Kaapi credentials creation failed for org_id=#{organization_id}",
+            reason: reason
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Updates an existing credential in the Kaapi platform.
+  """
+  @spec update_credential(non_neg_integer(), map()) :: {:ok, map()} | {:error, map() | binary()}
+  def update_credential(organization_id, params) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.update_credential(params, secrets["api_key"]) do
+      Logger.info("KAAPI credential update successful for org: #{organization_id}")
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message: "Kaapi credentials update failed for org_id=#{organization_id}",
+            reason: reason
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
   @spec insert_kaapi_provider(non_neg_integer(), String.t()) ::
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   defp insert_kaapi_provider(organization_id, api_key) do
