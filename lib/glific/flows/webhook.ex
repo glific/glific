@@ -78,7 +78,8 @@ defmodule Glific.Flows.Webhook do
         organization_id: context.organization_id,
         flow_id: context.flow_id,
         contact_id: context.contact_id,
-        wa_group_id: context.wa_group_id
+        wa_group_id: context.wa_group_id,
+        flow_context_id: context.id
       }
       |> WebhookLog.create_webhook_log()
 

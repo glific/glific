@@ -185,7 +185,6 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
     Enum.reduce(results, {0, 0, 0}, fn
       {_, assistant_results}, {success_orgs, error_orgs, successful_assistants}
       when is_list(assistant_results) ->
-
         successful_count =
           Enum.count(assistant_results, fn result ->
             case result do
