@@ -276,6 +276,17 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
     |> parse_response()
   end
 
+  @doc """
+  Sync assistants from openAI to glific
+  """
+  @spec sync_assistants() :: {:ok, map()} | {:error, String.t()}
+  def sync_assistants do
+    url = @endpoint <> "/assistants"
+
+    get(url, headers: headers())
+    |> parse_response()
+  end
+
   @spec parse_response(Tesla.Env.result()) :: {:ok, map()} | {:error, String.t()}
   defp parse_response({:ok, %{body: resp_body, status: status}})
        when status >= 200 and status < 300 do
