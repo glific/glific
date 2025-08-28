@@ -832,7 +832,10 @@ defmodule Glific.Partners do
   @spec credential_insert_callback(Credential.t(), String.t()) ::
           {:ok, Credential.t()} | {:error, any()}
   defp credential_insert_callback(credential, "openai") do
-    params = %{is_active: true, credential: %{openai: %{api_key: credential.keys["api_key"]}}}
+    params = %{
+      is_active: credential.is_active,
+      credential: %{openai: %{api_key: credential.keys["api_key"]}}
+    }
 
     case Kaapi.create_credential(credential.organization_id, params) do
       {:ok, _} ->
@@ -840,7 +843,7 @@ defmodule Glific.Partners do
 
       {:error, error} ->
         disable_credential(credential, error)
-        {:error, ["openai", "Failed to validate OpenAI API keys, try again."]}
+        {:error, ["OpenAI", "Failed to validate API keys, try again."]}
     end
   end
 
