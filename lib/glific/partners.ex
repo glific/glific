@@ -30,6 +30,7 @@ defmodule Glific.Partners do
     Repo,
     Settings.Language,
     Stats,
+    ThirdParty.Kaapi,
     Users.User
   }
 
@@ -803,19 +804,43 @@ defmodule Glific.Partners do
   """
   @spec create_credential(map()) :: {:ok, Credential.t()} | {:error, any()}
   def create_credential(attrs) do
-    case Repo.fetch_by(Provider, %{shortcode: attrs[:shortcode]}) do
-      {:ok, provider} ->
-        # first delete the cached organization
-        organization = get_organization!(attrs.organization_id)
-        remove_organization_cache(organization.id, organization.shortcode)
-        attrs = Map.merge(attrs, %{provider_id: provider.id})
-
-        %Credential{}
-        |> Credential.changeset(attrs)
-        |> Repo.insert()
+    with {:ok, provider} <- Repo.fetch_by(Provider, %{shortcode: attrs[:shortcode]}),
+         {:ok, credential} <- create_credential(provider, attrs) do
+      credential = Repo.preload(credential, [:organization, :provider])
+      credential_insert_callback(credential, provider.shortcode)
+    else
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:error, changeset}
 
       _ ->
         {:error, ["shortcode", "Invalid provider shortcode: #{attrs[:shortcode]}."]}
+    end
+  end
+
+  @spec create_credential(Provider.t(), map()) :: {:ok, Credential.t()} | {:error, any()}
+  defp create_credential(provider, attrs) do
+    # first delete the cached organization
+    organization = get_organization!(attrs.organization_id)
+    remove_organization_cache(organization.id, organization.shortcode)
+    attrs = Map.merge(attrs, %{provider_id: provider.id})
+
+    %Credential{}
+    |> Credential.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @spec credential_insert_callback(Credential.t(), String.t()) ::
+          {:ok, Credential.t()} | {:error, any()}
+  defp credential_insert_callback(credential, "openai") do
+    params = %{is_active: true, credential: %{openai: %{api_key: credential.keys["api_key"]}}}
+
+    case Kaapi.create_credential(credential.organization_id, params) do
+      {:ok, _} ->
+        {:ok, credential}
+
+      {:error, error} ->
+        disable_credential(credential, error)
+        {:error, ["openai", "Failed to validate OpenAI API keys, try again."]}
     end
   end
 
@@ -1088,6 +1113,33 @@ defmodule Glific.Partners do
       _ ->
         {:error, ["shortcode", "Invalid provider shortcode to disable: #{shortcode}."]}
     end
+  end
+
+  @doc """
+  Same as disable_credential/3, but accepts the credential instead of organization_id and provider.
+  """
+  @spec disable_credential(%Credential{}, String.t()) :: :ok
+  def disable_credential(%Credential{} = credential, error_message) do
+    credential
+    |> Credential.changeset(%{is_active: false})
+    |> Repo.update()
+
+    Logger.info(
+      "Disable #{credential.provider.shortcode} credential for org_id: #{credential.organization_id}"
+    )
+
+    Notifications.create_notification(%{
+      category: "Partner",
+      message: "Disabling #{credential.provider.shortcode}. #{inspect(error_message)}",
+      severity: Notifications.types().critical,
+      organization_id: organization_id,
+      entity: %{
+        id: credential.provider_id,
+        shortcode: credential.provider.shortcode
+      }
+    })
+
+    :ok
   end
 
   @doc """
