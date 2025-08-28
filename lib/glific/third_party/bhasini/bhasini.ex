@@ -166,8 +166,8 @@ defmodule Glific.Bhasini do
   @doc """
   This function makes an API call to the Bhashini ASR service using the provided configuration parameters and returns the public media URL of the file.
   """
-  @spec text_to_speech(String.t(), non_neg_integer(), String.t()) :: map()
-  def text_to_speech(source_language, org_id, text) do
+  @spec text_to_speech(String.t(), non_neg_integer(), String.t(), Keyword.t()) :: map()
+  def text_to_speech(source_language, org_id, text, opts \\ []) do
     bhashini_keys = Glific.get_bhashini_keys()
 
     source_language = get_iso_code(source_language, "iso_639_1")
@@ -186,7 +186,7 @@ defmodule Glific.Bhasini do
               "language" => %{"sourceLanguage" => source_language},
               "serviceId" => get_tts_model(source_language),
               "gender" => "female",
-              "samplingRate" => 16_000
+              "samplingRate" => get_sampling_rate(opts)
             }
           }
         ],
@@ -224,6 +224,15 @@ defmodule Glific.Bhasini do
       error ->
         Logger.info("Error from Bhashini: #{inspect(error)}")
         %{success: false, reason: "could not fetch data"}
+    end
+  end
+
+  defp get_sampling_rate(opts) do
+    quality = Keyword.get(opts, :quality, "medium")
+
+    case quality do
+      "high" -> 24_000
+      _ -> 16_000
     end
   end
 
