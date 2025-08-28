@@ -949,11 +949,12 @@ defmodule Glific.Flows.FlowContext do
            FunWithFlags.enabled?(:is_kaapi_enabled,
              for: %{organization_id: context.organization_id}
            ) do
-        {:ok, webhook_log} =
-          Repo.fetch_by(WebhookLog, %{
-            organization_id: context.organization_id,
-            flow_context_id: context.id
-          })
+        webhook_log =
+          WebhookLog
+          |> where([w], w.flow_context_id == ^context.id)
+          |> order_by([w], desc: w.inserted_at)
+          |> limit(1)
+          |> Repo.one()
 
         Webhook.update_log(webhook_log.id, "Timeout: taking long to process response")
         Messages.create_temp_message(context.organization_id, "Failure")
