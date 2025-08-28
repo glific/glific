@@ -211,7 +211,7 @@ defmodule Glific.ThirdParty.Kaapi do
       {:error, reason} ->
         Appsignal.send_error(
           %Error{
-            message: "Kaapi credentials update failed for org_id=#{credential.organization_id}",
+            message: "Kaapi credentials update failed for org_id=#{organization_id}",
             reason: reason
           },
           []
