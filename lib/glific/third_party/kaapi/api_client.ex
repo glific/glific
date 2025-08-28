@@ -101,11 +101,11 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @doc """
   Creates a new credential in the Kaapi platform.
   """
-  @spec create_credentials(map(), String.t()) :: {:ok, map()} | {:error, map() | String.t()}
-  def create_credentials(params, org_api_key) do
+  @spec create_credential(map(), String.t()) :: {:ok, map()} | {:error, map() | String.t()}
+  def create_credential(params, org_api_key) do
     org_api_key
     |> client()
-    |> Tesla.post("/api/v1/credentials", params)
+    |> Tesla.post("/api/v1/credentials/", params)
     |> parse_kaapi_response()
   end
 

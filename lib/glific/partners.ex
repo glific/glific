@@ -1128,7 +1128,7 @@ defmodule Glific.Partners do
       category: "Partner",
       message: "Disabling #{credential.provider.shortcode}. #{inspect(error_message)}",
       severity: Notifications.types().critical,
-      organization_id: organization_id,
+      organization_id: credential.organization_id,
       entity: %{
         id: credential.provider_id,
         shortcode: credential.provider.shortcode
