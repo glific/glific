@@ -908,11 +908,7 @@ defmodule Glific.Partners do
         {:ok, credential}
 
       {:error, error} ->
-        Partners.disable_credential(
-          organization.id,
-          "bigquery",
-          error
-        )
+        disable_credential(organization.id, "bigquery", error)
 
         {:error, error}
     end

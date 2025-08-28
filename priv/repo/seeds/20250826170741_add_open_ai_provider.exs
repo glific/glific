@@ -18,7 +18,7 @@ defmodule Glific.Repo.Seeds.AddOpenAiProvider do
         Repo.insert!(%Provider{
           name: "OpenAI",
           shortcode: "openai",
-          description: "To bring AI capabilities to your bot using your own OpenAI keys",
+          description: "To bring AI capabilities to your bot using your own OpenAI keys.",
           group: nil,
           is_required: false,
           keys: %{},
