@@ -834,7 +834,7 @@ defmodule Glific.Partners do
   defp credential_insert_callback(credential, "openai") do
     params = %{
       is_active: credential.is_active,
-      credential: %{openai: %{api_key: credential.keys["api_key"]}}
+      credential: %{openai: %{api_key: credential.secrets["api_key"]}}
     }
 
     case Kaapi.create_credential(credential.organization_id, params) do
@@ -982,8 +982,9 @@ defmodule Glific.Partners do
 
   defp credential_update_callback(organization, credential, "openai") do
     params = %{
+      provider: "openai",
       is_active: credential.is_active,
-      credential: %{openai: %{api_key: credential.keys["api_key"]}}
+      credential: %{api_key: credential.secrets["api_key"]}
     }
 
     case Kaapi.update_credential(organization.id, params) do
