@@ -23,12 +23,21 @@ defmodule Glific.Saas.Onboard do
     Registrations.Registration,
     Repo,
     Saas.Queries,
+    Seeds.SeedsMigration,
     Users.User
   }
 
   alias Pow.Ecto.Schema.Password
   # 1 year
   @forced_suspension_hrs 8760
+
+  @dummy_phone_number "91783481114"
+
+  @type setup_params :: %{
+          (name :: String.t()) => String.t(),
+          (email :: String.t()) => String.t(),
+          optional(shortcode :: String.t()) => String.t()
+        }
   @doc """
   Setup all the tables and necessary values to onboard an organization
   """
@@ -40,6 +49,54 @@ defmodule Glific.Saas.Onboard do
     |> Queries.seed_data()
     |> format_results()
   end
+
+  @doc """
+  V2 of setup/1, where email and name are the only mandatory values we need to provide
+
+  example argument %{"email" => "foo@bar.com", "name" => "test"}
+
+  Optionally we can provide "shortcode" too, incase system generated shortcode
+  has any validation issue.
+  """
+  @spec setup_v2(setup_params()) :: map()
+  def setup_v2(params) do
+    params =
+      Map.merge(params, %{
+        "phone" => @dummy_phone_number,
+        "api_key" => nil,
+        "app_name" => nil,
+        "app_id" => nil
+      })
+
+    result = %{is_valid: true, messages: %{}}
+
+    with %{is_valid: true} <- Queries.validate_onboard_params(result, params),
+         shortcode <- generate_shortcode(params["name"], params["shortcode"]),
+         %{is_valid: true} <- Queries.validate_shortcode(result, shortcode),
+         %{is_valid: true} = result <-
+           Queries.setup_v2(result, params |> Map.put("shortcode", shortcode)) do
+      Queries.seed_data(result)
+      SeedsMigration.migrate_data(:template_flows, result.organization)
+      org = status(result.organization.id, :active)
+      notify_saas_team(result.organization)
+      Map.put(result, :organization, org)
+    end
+  end
+
+  @spec generate_shortcode(String.t(), String.t() | nil) :: String.t()
+  defp generate_shortcode(org_name, nil) do
+    name_parts = String.split(org_name, " ")
+
+    if length(name_parts) > 1 do
+      Enum.map_join(name_parts, fn parts -> String.first(parts) end)
+    else
+      org_name
+    end
+    |> String.slice(0..7)
+    |> String.downcase()
+  end
+
+  defp generate_shortcode(_org_name, shortcode), do: shortcode
 
   @doc """
   Updates the registration details and send submission mail to user
