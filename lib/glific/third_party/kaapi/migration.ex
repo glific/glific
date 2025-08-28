@@ -100,8 +100,7 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
     params = %{
       organization_id: id,
       organization_name: organization_name,
-      project_name: org_name,
-      user_name: shortcode,
+      project_name: shortcode,
       openai_api_key: open_ai_key
     }
 

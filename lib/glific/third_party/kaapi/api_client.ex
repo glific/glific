@@ -27,8 +27,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
     body = %{
       organization_name: params.organization_name,
-      project_name: params.project_name,
-      user_name: params.user_name
+      project_name: params.project_name
     }
 
     body =
