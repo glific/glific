@@ -35,14 +35,14 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   @doc """
   create custom certificate
   """
-  @spec create_certificate(non_neg_integer(), String.t(), map()) ::
+  @spec create_certificate(non_neg_integer(), String.t(), map(), String.t()) ::
           {:ok, String.t()} | {:error, String.t()}
-  def create_certificate(org_id, presentation_id, fields) do
+  def create_certificate(org_id, presentation_id, fields, slide_id) do
     with %{token: token} <-
            Partners.get_goth_token(org_id, "google_slides", scopes: @drive_scopes),
          {:ok, copied_slide} <- copy_slide(token, presentation_id),
          {:ok, _} <- replace_text(token, copied_slide["id"], fields),
-         {:ok, data} <- fetch_thumbnail(token, copied_slide["id"]) do
+         {:ok, data} <- fetch_thumbnail(token, copied_slide["id"], slide_id) do
       delete_template_copy(token, copied_slide["id"])
       {:ok, data["contentUrl"]}
     else
@@ -175,9 +175,9 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
     end
   end
 
-  @spec fetch_thumbnail(String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
-  defp fetch_thumbnail(token, presentation_id) do
-    url = "#{@slide_url}/#{presentation_id}/pages/p/thumbnail"
+  @spec fetch_thumbnail(String.t(), String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
+  defp fetch_thumbnail(token, presentation_id, slide_id) do
+    url = "#{@slide_url}/#{presentation_id}/pages/#{slide_id}/thumbnail"
 
     case Tesla.get(client(), url,
            headers: auth_headers(token),
@@ -219,6 +219,8 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   @spec delete_template_copy(String.t(), String.t()) :: any()
   defp delete_template_copy(token, presentation_id) do
     Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
+      # There's a chance metadata not yet ready for just copied file, so deleting after 10s
+      Process.sleep(10_000)
       delete_url = "#{@drive_url}/#{presentation_id}?supportsAllDrives=true"
 
       case Tesla.patch(client(), delete_url, Jason.encode!(%{"trashed" => true}),

@@ -407,7 +407,10 @@ defmodule GlificWeb.Schema.CertificateTest do
                result
 
       Tesla.Mock.mock(fn
-        %{method: :get, url: "https://www.googleapis.com/drive/v3/files/id2?supportsAllDrives=true"} ->
+        %{
+          method: :get,
+          url: "https://www.googleapis.com/drive/v3/files/id2?supportsAllDrives=true"
+        } ->
           %Tesla.Env{
             status: 400
           }

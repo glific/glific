@@ -27,13 +27,14 @@ defmodule Glific.Certificates.Certificate do
   @doc """
   Generates the certificate url and link with the contact and certificate template
   """
-  @spec generate_certificate(map(), integer(), String.t()) :: map()
-  def generate_certificate(fields, contact_id, presentation_id) do
+  @spec generate_certificate(map(), integer(), String.t(), String.t()) :: map()
+  def generate_certificate(fields, contact_id, presentation_id, slide_id) do
     with {:ok, thumbnail} <-
            Slide.create_certificate(
              fields.organization_id,
              presentation_id,
-             fields.replace_texts
+             fields.replace_texts,
+             slide_id
            ),
          {:ok, image} <-
            download_file(thumbnail, presentation_id, contact_id, fields.organization_id) do
