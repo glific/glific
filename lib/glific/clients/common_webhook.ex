@@ -353,8 +353,7 @@ defmodule Glific.Clients.CommonWebhook do
       Certificate.generate_certificate(
         parsed_fields,
         parsed_fields.contact["id"],
-        slide_details.presentation_id,
-        slide_details.page_id
+        slide_details.presentation_id
       )
     else
       {:error, reason} ->

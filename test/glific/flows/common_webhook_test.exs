@@ -657,7 +657,7 @@ defmodule Glific.Flows.CommonWebhookTest do
 
       %{
         method: :post,
-        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy"
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy?supportsAllDrives=true"
       } ->
         {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_copied_slide)}}
 
@@ -676,13 +676,13 @@ defmodule Glific.Flows.CommonWebhookTest do
       %{
         method: :get,
         url:
-          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/g2/thumbnail"
+          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/p/thumbnail"
       } ->
         {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_thumbnail)}}
 
       %{
         method: :get,
-        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}"
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}?supportsAllDrives=true"
       } ->
         {:ok, %Tesla.Env{status: 200, body: ""}}
 
@@ -752,7 +752,7 @@ defmodule Glific.Flows.CommonWebhookTest do
 
       %{
         method: :post,
-        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy"
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy?supportsAllDrives=true"
       } ->
         {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_copied_slide)}}
 
@@ -771,13 +771,13 @@ defmodule Glific.Flows.CommonWebhookTest do
       %{
         method: :get,
         url:
-          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/g2/thumbnail"
+          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/p/thumbnail"
       } ->
         {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_thumbnail)}}
 
       %{
         method: :get,
-        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}"
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}?supportsAllDrives=true"
       } ->
         {:ok, %Tesla.Env{status: 200, body: ""}}
 
@@ -843,7 +843,7 @@ defmodule Glific.Flows.CommonWebhookTest do
 
       %{
         method: :post,
-        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy"
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy?supportsAllDrives=true"
       } ->
         {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_copied_slide)}}
 
@@ -862,13 +862,13 @@ defmodule Glific.Flows.CommonWebhookTest do
       %{
         method: :get,
         url:
-          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/g2/thumbnail"
+          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/p/thumbnail"
       } ->
         {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_thumbnail)}}
 
       %{
         method: :get,
-        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}"
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}?supportsAllDrives=true"
       } ->
         {:ok, %Tesla.Env{status: 200, body: ""}}
 
@@ -912,13 +912,13 @@ defmodule Glific.Flows.CommonWebhookTest do
     Tesla.Mock.mock(fn
       %{
         method: :get,
-        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}"
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}?supportsAllDrives=true"
       } ->
         {:ok, %Tesla.Env{status: 200, body: ""}}
 
       %{
         method: :post,
-        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy"
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy?supportsAllDrives=true"
       } ->
         {:ok, %Tesla.Env{status: 400, body: Jason.encode!(@mock_copied_slide)}}
     end)
