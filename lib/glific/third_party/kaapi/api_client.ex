@@ -7,6 +7,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
   # client with runtime config (API key / base URL).
   defp client(api_key) do
+    Glific.Metrics.increment("Kaapi Requests")
     base_url = kaapi_config(:kaapi_endpoint)
 
     Tesla.client([
@@ -107,10 +108,14 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}}) do
+    Glific.Metrics.increment("Kaapi Failed")
     {:error, %{status: status, body: body}}
   end
 
-  defp parse_kaapi_response(error), do: error
+  defp parse_kaapi_response(error) do
+    if {:error, :timeout} == error, do: Glific.Metrics.increment("Kaapi Timedout")
+    error
+  end
 
   defp kaapi_config, do: Application.fetch_env!(:glific, __MODULE__)
   defp kaapi_config(key), do: kaapi_config()[key]
