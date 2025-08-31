@@ -66,6 +66,8 @@ defmodule Glific.Clients.CommonWebhook do
       |> maybe_put_response_id(fields)
       |> Jason.encode!()
 
+    Glific.Metrics.increment("Kaapi Requests")
+
     client =
       Tesla.client([
         {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
@@ -84,8 +86,13 @@ defmodule Glific.Clients.CommonWebhook do
         Map.merge(%{success: true}, body)
 
       {:ok, %Tesla.Env{status: _status, body: body}} ->
+        Glific.Metrics.increment("Kaapi Failed")
         reason = Jason.encode!(body)
         %{success: false, reason: reason}
+
+      {:error, :timeout} ->
+        Glific.Metrics.increment("Kaapi Timeout")
+        %{success: false, reason: :timeout}
 
       {:error, reason} ->
         %{success: false, reason: inspect(reason)}
