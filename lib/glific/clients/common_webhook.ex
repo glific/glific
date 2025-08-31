@@ -90,11 +90,8 @@ defmodule Glific.Clients.CommonWebhook do
         reason = Jason.encode!(body)
         %{success: false, reason: reason}
 
-      {:error, :timeout} ->
-        Glific.Metrics.increment("Kaapi Timeout")
-        %{success: false, reason: :timeout}
-
       {:error, reason} ->
+        if reason == :timeout, do: Glific.Metrics.increment("Kaapi Timeout")
         %{success: false, reason: inspect(reason)}
     end
   end
